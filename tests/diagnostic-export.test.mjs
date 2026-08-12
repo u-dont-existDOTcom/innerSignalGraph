@@ -29,6 +29,8 @@ test("diagnostic bundle exports packet recovery evidence without private therapy
   await fs.mkdir(ledgerDir, { recursive: true });
   await fs.mkdir(stateDir, { recursive: true });
   await fs.mkdir(path.join(stateDir, "development-jobs", "job-1"), { recursive: true });
+  const latestRunDir = path.join(stateDir, "run-20260812T050000Z");
+  await fs.mkdir(latestRunDir, { recursive: true });
   await fs.writeFile(path.join(ledgerDir, "one.json"), JSON.stringify({ ledgerId: "abc-123", evidence: { candidate: "PRIVATE_REASONING_MARKER" } }));
   await fs.writeFile(path.join(stateDir, "resume-state.json"), JSON.stringify({ ok: true }));
   await fs.writeFile(path.join(stateDir, "development-supervisor.json"), JSON.stringify({ worker: { running: true }, lastAnalysis: { action: "AUTO_REPAIR" }, actionHistory: [] }));
@@ -62,6 +64,37 @@ test("diagnostic bundle exports packet recovery evidence without private therapy
     raw: "PRIVATE_A001_RAW_OUTPUT_MARKER",
     prompt: "PRIVATE_A001_PROMPT_MARKER"
   }));
+  await fs.writeFile(path.join(latestRunDir, "test-failure-summary.json"), JSON.stringify({
+    format: "inner-signal-test-failure-v1",
+    command: "npm test",
+    exitCode: 1,
+    counts: { tests: 193, pass: 192, fail: 1 },
+    failures: [{
+      name: "package contract stays deterministic",
+      errorCode: "ERR_ASSERTION",
+      rawOutput: "PRIVATE_REMOTE_TEST_LOG_MARKER"
+    }],
+    arbitrary: "PRIVATE_REMOTE_TEST_OBJECT_MARKER"
+  }));
+  await fs.writeFile(path.join(stateDir, "git-update-status.json"), JSON.stringify({
+    format: "inner-signal-git-update-status-v1",
+    status: "validation-failed",
+    checkedAt: "2026-08-12T05:00:00.000Z",
+    installedCommit: "0123456789abcdef0123456789abcdef01234567",
+    availableCommit: "89abcdef0123456789abcdef0123456789abcdef",
+    actionCode: "KEEP_CURRENT_RUNTIME",
+    rawLog: "PRIVATE_GIT_UPDATE_LOG_MARKER"
+  }));
+  await fs.writeFile(path.join(stateDir, "diagnostic-sync-status.json"), JSON.stringify({
+    format: "inner-signal-diagnostic-sync-status-v1",
+    status: "synced",
+    updatedAt: "2026-08-12T05:01:00.000Z",
+    synced: 1,
+    pending: 0,
+    branch: "runtime-diagnostics",
+    paths: ["diagnostics/123e4567-e89b-42d3-a456-426614174000/" + "a".repeat(64) + ".json"],
+    error: "PRIVATE_GITHUB_ERROR_MARKER"
+  }));
   const config = loadConfig({ mode: "mock", ledgerMode: "full", ledgerDir, autopilotStateDir: stateDir, guidePacketRoot: path.join(stateDir, "guide-packets") });
   config.devJobRoot = path.join(stateDir, "development-jobs");
   const providers = createProviders(config);
@@ -87,12 +120,16 @@ test("diagnostic bundle exports packet recovery evidence without private therapy
   assert.ok(names.includes("guide-packets/installed-manifest.json"));
   assert.ok(names.includes("runtime/model-resolution-latest.json"));
   assert.ok(names.includes("runtime/a001-stage-attempts.json"));
+  assert.ok(names.includes("runtime/latest-run/test-failure-summary.json"));
+  assert.ok(names.includes("runtime/git-update-status.json"));
+  assert.ok(names.includes("runtime/diagnostic-sync-status.json"));
   assert.equal(names.some((name) => name.includes("a001-stage/fable")), false);
   assert.equal(names.some((name) => name.startsWith("chat/") || name.startsWith("reasoning/") || name.startsWith("development-jobs/")), false);
   assert.equal(names.some((name) => /\.env|credential|token/i.test(name)), false);
   const entries = readZipEntries(buffer);
   const joined = Buffer.concat([...entries.values()]).toString("utf8");
-  assert.doesNotMatch(joined, /PRIVATE_CHAT_MARKER|PRIVATE_REASONING_MARKER|PRIVATE_JOB_MARKER|PRIVATE_A001_CLINICAL_CHECKPOINT_MARKER|PRIVATE_A001_RAW_OUTPUT_MARKER|PRIVATE_A001_PROMPT_MARKER/);
+  assert.match(joined, /package contract stays deterministic|runtime-diagnostics/);
+  assert.doesNotMatch(joined, /PRIVATE_CHAT_MARKER|PRIVATE_REASONING_MARKER|PRIVATE_JOB_MARKER|PRIVATE_A001_CLINICAL_CHECKPOINT_MARKER|PRIVATE_A001_RAW_OUTPUT_MARKER|PRIVATE_A001_PROMPT_MARKER|PRIVATE_REMOTE_TEST_LOG_MARKER|PRIVATE_REMOTE_TEST_OBJECT_MARKER|PRIVATE_GIT_UPDATE_LOG_MARKER|PRIVATE_GITHUB_ERROR_MARKER/);
   assert.equal(manifest.format, "inner-signal-diagnostic-bundle-v2");
   assert.equal(manifest.privacy.includesChatContent, false);
   assert.equal(manifest.privacy.includesReasoningLedgers, false);

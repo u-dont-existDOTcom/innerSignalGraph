@@ -1,8 +1,8 @@
 {
   "name": "inner-signal-runtime",
-  "version": "0.14.4",
+  "version": "0.15.0",
   "private": true,
-  "description": "Inner Signal runtime with timezone-stable ZIP validation, stage-aware A001 audit recovery, resumable model checkpoints, exact-model role enforcement, owner-gated Guide Packets, and privacy-safe diagnostics.",
+  "description": "Inner Signal runtime with verified stable-branch updates, automatic privacy-safe diagnostics, stage-aware recovery, exact-model role enforcement, and owner-gated Guide Packets.",
   "type": "module",
   "engines": {
     "node": ">=20"

@@ -32,6 +32,63 @@ const STATIC = Object.freeze({
   "/app.js": ["app.js", "text/javascript; charset=utf-8"],
   "/styles.css": ["styles.css", "text/css; charset=utf-8"]
 });
+const SAFE_SLUG = /^[a-z][a-z0-9-]{0,63}$/;
+const SAFE_BRANCH = /^[A-Za-z0-9._/-]+$/;
+const GIT_SHA = /^[a-f0-9]{40}$/i;
+const DIAGNOSTIC_PATH = /^diagnostics\/[0-9a-f-]{36}\/[a-f0-9]{64}\.json$/i;
+
+async function readStatusJson(file) {
+  try {
+    return JSON.parse(await fs.readFile(file, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function safeText(value, expression) {
+  return typeof value === "string" && expression.test(value) ? value : null;
+}
+
+function safeTimestamp(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.valueOf()) || parsed.toISOString() !== value ? null : value;
+}
+
+function shortCommit(value) {
+  const commit = safeText(value, GIT_SHA);
+  return commit ? commit.slice(0, 12) : null;
+}
+
+async function readGitAutomationStatus(config) {
+  const [update, diagnostics] = await Promise.all([
+    readStatusJson(path.join(config.autopilotStateDir, "git-update-status.json")),
+    readStatusJson(path.join(config.autopilotStateDir, "diagnostic-sync-status.json"))
+  ]);
+  const branch = safeText(diagnostics?.branch, SAFE_BRANCH);
+  const safeBranch = branch && !branch.includes("..") && !branch.includes("//") && !branch.startsWith("/") && !branch.endsWith("/")
+    ? branch
+    : null;
+  const paths = Array.isArray(diagnostics?.paths)
+    ? diagnostics.paths.filter((value) => typeof value === "string" && DIAGNOSTIC_PATH.test(value))
+    : [];
+  return {
+    update: {
+      status: safeText(update?.status, SAFE_SLUG) ?? "not-checked",
+      checkedAt: safeTimestamp(update?.checkedAt),
+      stage: safeText(update?.stage, SAFE_SLUG),
+      installedCommit: shortCommit(update?.installedCommit),
+      availableCommit: shortCommit(update?.availableCommit)
+    },
+    diagnostics: {
+      status: safeText(diagnostics?.status, SAFE_SLUG) ?? "not-synced",
+      branch: safeBranch,
+      path: paths.at(-1) ?? null,
+      pending: Number.isSafeInteger(diagnostics?.pending) && diagnostics.pending >= 0 ? diagnostics.pending : null,
+      lastSyncAt: safeTimestamp(diagnostics?.updatedAt)
+    }
+  };
+}
 
 function securityHeaders(extra = {}) {
   return {
@@ -255,6 +312,7 @@ export function createInnerSignalServer({ config, providers }) {
           .filter((task) => task.autoStart && ["engineering", "safety-sensitive-engineering"].includes(task.automationClass) && !["complete", "promotion-ready", "awaiting-human", "running"].includes(task.state?.status ?? ""))
           .sort((a, b) => Number(b.priority ?? 0) - Number(a.priority ?? 0))[0] ?? null;
         const supervisor = await buildDevelopmentSupervisorSnapshot(config);
+        const gitAutomation = await readGitAutomationStatus(config);
         return send(res, 200, {
           enabled: config.devAutomationEnabled,
           autoRepair: config.devAutoRepair,
@@ -262,7 +320,8 @@ export function createInnerSignalServer({ config, providers }) {
           latest,
           jobs: jobs.slice(0, 10),
           roadmap: { active: activeRoadmap, next: nextRoadmap, tasks: roadmapTasks },
-          supervisor
+          supervisor,
+          gitAutomation
         });
       }
       if (req.method === "POST" && url.pathname === "/v1/dev/decision") {

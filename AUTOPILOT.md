@@ -1,4 +1,21 @@
-# Inner Signal Autopilot v0.14.4
+# Inner Signal Autopilot v0.15.0
+
+## Git-native launch contract
+
+Every ordinary launch first retries the private diagnostic outbox, then checks the remote `stable` branch. The Git source checkout and installed runtime are deliberately separate:
+
+- source checkout: `~/Téléchargements/innerSignalGraph`;
+- installed runtime: `~/Téléchargements/inner-signal-runtime`;
+- update source: `stable`;
+- automatic failure destination: `runtime-diagnostics`.
+
+A new stable commit is checked out as a detached temporary worktree, copied without Git or runtime state, and tested with empty `AUTOPILOT_STATE_DIR` and `GUIDE_PACKET_ROOT` directories. Only after package and graph tests pass are `.env`, `.inner-signal-autopilot`, `.inner-signal-dev`, `ledgers`, and `data` overlaid and hash-verified. The staging runtime then replaces the installed runtime atomically and the launcher restarts once with a loop guard. Fetch, authentication, validation, or delivery failure keeps the prior runtime in service.
+
+## Automatic diagnostic handoff
+
+Failures are reconstructed field-by-field as `inner-signal-remote-diagnostic-v1`; arbitrary status objects are never sanitized and forwarded. A random local UUID identifies the installation without using a username, hostname, IP address, email, home path, or hardware identifier. The incident ID hashes stable safe fields and excludes timestamps, so retries are idempotent.
+
+Pending records are written mode `0600` under `.inner-signal-autopilot/diagnostic-outbox`. The authenticated GitHub CLI creates `diagnostics/<machineId>/<incidentId>.json` on `runtime-diagnostics`, writes a local receipt, and only then removes the outbox record. Remote outages are non-blocking. Browser chat, therapy/hypnosis content, model prompts/output/reasoning, raw test output, credentials, `.env`, and absolute paths cannot enter the contract.
 
 ## Timezone-stable validation
 

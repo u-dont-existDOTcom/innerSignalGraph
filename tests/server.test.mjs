@@ -86,6 +86,24 @@ test("development status endpoint exposes deterministic overall supervisor analy
   await recordDevelopmentWorkerRuntime(config, { running: true, pid: 777, startedAt: new Date(Date.now() - 5000).toISOString() });
   await markRoadmapTask(config, "DEV-R004", { status: "repairing", jobId: "roadmap-DEV-R004", model: "claude-fable-5" });
   await recordDevelopmentProgress(config, { jobId: "roadmap-DEV-R004", taskId: "DEV-R004", stage: "roadmap-repair-2", status: "started", detail: "claude-fable-5" });
+  await fs.writeFile(path.join(root, "git-update-status.json"), JSON.stringify({
+    format: "inner-signal-git-update-status-v1",
+    status: "failed-safe",
+    checkedAt: "2026-08-12T06:00:00.000Z",
+    stage: "package-tests",
+    installedCommit: "0123456789abcdef0123456789abcdef01234567",
+    availableCommit: "89abcdef0123456789abcdef0123456789abcdef",
+    rawOutput: "PRIVATE_UPDATE_STATUS_MARKER"
+  }));
+  await fs.writeFile(path.join(root, "diagnostic-sync-status.json"), JSON.stringify({
+    format: "inner-signal-diagnostic-sync-status-v1",
+    status: "synced",
+    updatedAt: "2026-08-12T06:01:00.000Z",
+    pending: 0,
+    branch: "runtime-diagnostics",
+    paths: ["diagnostics/123e4567-e89b-42d3-a456-426614174000/" + "a".repeat(64) + ".json"],
+    credential: "PRIVATE_SYNC_STATUS_MARKER"
+  }));
   const server = createInnerSignalServer({ config, providers });
   await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
   try {
@@ -96,6 +114,23 @@ test("development status endpoint exposes deterministic overall supervisor analy
     assert.equal(value.supervisor.worker.running, true);
     assert.equal(value.supervisor.current.taskId, "DEV-R004");
     assert.equal(value.supervisor.nextAutomaticAction, "AUTO_CONTINUE");
+    assert.deepEqual(value.gitAutomation, {
+      update: {
+        status: "failed-safe",
+        checkedAt: "2026-08-12T06:00:00.000Z",
+        stage: "package-tests",
+        installedCommit: "0123456789ab",
+        availableCommit: "89abcdef0123"
+      },
+      diagnostics: {
+        status: "synced",
+        branch: "runtime-diagnostics",
+        path: "diagnostics/123e4567-e89b-42d3-a456-426614174000/" + "a".repeat(64) + ".json",
+        pending: 0,
+        lastSyncAt: "2026-08-12T06:01:00.000Z"
+      }
+    });
+    assert.doesNotMatch(JSON.stringify(value.gitAutomation), /PRIVATE_|credential|rawOutput/);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

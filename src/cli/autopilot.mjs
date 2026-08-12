@@ -32,6 +32,7 @@ import {
   decideA001FailureRoute,
   buildA001StageTerminal
 } from "../autopilot/a001-stage-recovery.mjs";
+import { summarizeTestFailure } from "../diagnostics/test-failure-summary.mjs";
 
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
@@ -280,6 +281,14 @@ try {
     await fs.writeFile(path.join(runDir, "tests.stdout.log"), tests.stdout);
     await fs.writeFile(path.join(runDir, "tests.stderr.log"), tests.stderr);
     if (tests.code !== 0) {
+      const testSummary = summarizeTestFailure({
+        command: "npm test",
+        exitCode: tests.code,
+        stdout: tests.stdout,
+        stderr: tests.stderr,
+        projectRoot
+      });
+      await writeJson(path.join(runDir, "test-failure-summary.json"), testSummary);
       const diagnosis = config.autopilotDiagnoseFailures
         ? await diagnoseFailure({ provider: null, stage: "tests", summary: `Package tests exited with status ${tests.code}.`, evidence: `${tests.stdout}\n${tests.stderr}` })
         : null;
@@ -291,7 +300,7 @@ try {
         summary: diagnosis?.summary ?? "The installed package failed its deterministic tests and stopped safely.",
         nextAction: diagnosis?.next_action ?? "Install a corrected runtime release. Local evidence is already preserved.",
         doNotDo: diagnosis?.do_not_do ?? ["Do not bypass the failed tests.", "Do not upload logs."],
-        details: { testExitCode: tests.code },
+        details: { testExitCode: tests.code, testSummary },
         exitCode: 1
       });
       throw new AutopilotTerminal();

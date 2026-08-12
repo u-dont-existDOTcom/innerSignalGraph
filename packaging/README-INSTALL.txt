@@ -1,13 +1,15 @@
-Inner Signal Runtime v0.14.4 — Timezone-Stable ZIP Validation
+Inner Signal Runtime v0.15.0 — Git-Native Updates and Safe Diagnostics
 
-Install on French Zorin:
+One-time French Zorin bootstrap:
 
   cd "$HOME/Téléchargements"
-  unzip -o inner-signal-runtime-v0.14.4-timezone-stable-validation.zip
-  ./install-and-run.sh
+  gh auth status >/dev/null 2>&1 || gh auth login --web --git-protocol https
+  gh auth setup-git
+  gh repo clone u-dont-existDOTcom/innerSignalGraph innerSignalGraph -- --branch stable
+  bash innerSignalGraph/packaging/install-from-git.sh
 
-The atomic installer preserves .env, ledgers, browser/runtime data, exact Guide Packet candidate bytes, owner decisions, stage attempts, installed policy, rollback history, and autonomous-development state. It runs the complete runtime test suite and production guide-graph regressions before launching the normal one-command autopilot. Re-running it is safe.
+The source checkout and installed runtime remain separate. Future launches fetch and validate `stable`, preserve every pre-existing private file byte-for-byte while updating only Git automation metadata, install transactionally, and restart once only after success.
 
-v0.14.4 fixes the installation rollback caused by timezone-sensitive ZIP header timestamps. It also prevents tests from writing rebuilt packets into the immutable r01/r02 fixture directories. The original r01 and corrected r02 candidate archives remain byte-for-byte unchanged, and production remains on r5.
+Failures are automatically reduced to a strict privacy-safe record and pushed to the separate `runtime-diagnostics` branch. GitHub outages keep the record queued privately for retry and never take down the local runtime. Routine release-ZIP downloads and diagnostic-ZIP uploads are unnecessary.
 
-A001 stage-aware recovery from v0.14.3 remains intact: completed extraction is checkpointed, retryable Codex audit failure retries only Codex, restarts resume the audit without repeating Claude, Codex failure cannot trigger Fable, and safe local status replaces manual log collection.
+Guide Packet candidates, owner decisions, and production r5 policy remain unchanged and owner-gated.

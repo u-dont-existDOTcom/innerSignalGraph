@@ -246,12 +246,25 @@ function overallDevelopmentLabel(value) {
     COMPLETE: "Complete", IDLE: "Idle"
   })[value] || value || "Unknown";
 }
+function renderGitAutomation(gitAutomation = {}) {
+  const update = gitAutomation.update || {};
+  const diagnostics = gitAutomation.diagnostics || {};
+  const commits = update.installedCommit || update.availableCommit
+    ? ` · installed ${update.installedCommit || "unknown"} · available ${update.availableCommit || "unknown"}`
+    : "";
+  const branch = diagnostics.branch || "runtime-diagnostics";
+  const pending = Number.isInteger(diagnostics.pending) ? diagnostics.pending : 0;
+  const remotePath = diagnostics.path ? ` · ${diagnostics.path}` : "";
+  const lastSync = diagnostics.lastSyncAt ? ` · ${new Date(diagnostics.lastSyncAt).toLocaleString()}` : "";
+  $("#dev-git-automation").textContent = `Git update: ${update.status || "not-checked"}${commits}. Diagnostics: ${diagnostics.status || "not-synced"} · ${pending} pending · ${branch}${remotePath}${lastSync}`;
+}
 async function refreshDevelopmentStatus() {
   const summary = $("#dev-automation-summary");
   const decisionBox = $("#dev-human-decision");
   const panel = $("#dev-automation");
   try {
     const status = await getJson("/v1/dev/status");
+    renderGitAutomation(status.gitAutomation);
     if (!status.enabled) {
       summary.textContent = "Development automation off";
       $("#dev-overall-state").textContent = "Off";

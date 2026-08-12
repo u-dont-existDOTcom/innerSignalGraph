@@ -20,6 +20,25 @@ if [[ "$DRY_RUN" == true ]]; then
   fi
 fi
 
+run_git_helper() {
+  if [[ -f .env ]]; then
+    node --env-file=.env "$@"
+  else
+    node "$@"
+  fi
+}
+
+# Remote outages never block the already-installed local runtime.
+run_git_helper src/cli/sync-diagnostics.mjs --flush-only >/dev/null || true
+set +e
+run_git_helper src/cli/git-update.mjs >/dev/null
+UPDATE_STATUS=$?
+set -e
+if [[ $UPDATE_STATUS -eq 10 && "${INNER_SIGNAL_UPDATE_APPLIED:-0}" != "1" ]]; then
+  exec env INNER_SIGNAL_UPDATE_APPLIED=1 "$ROOT/run-autopilot.sh" "$@"
+fi
+run_git_helper src/cli/sync-diagnostics.mjs --flush-only >/dev/null || true
+
 # Normalize stale persisted settings before any strict config loader starts.
 node src/cli/prepare-environment.mjs --quiet
 
@@ -244,6 +263,7 @@ node --env-file=.env src/cli/autopilot.mjs --no-launch --external-launch "$@"
 STATUS=$?
 set -e
 if [[ $STATUS -ne 0 ]]; then
+  run_git_helper src/cli/sync-diagnostics.mjs --latest >/dev/null || true
   ACTION_CODE="$(latest_action_code)"
   if [[ "$ACTION_CODE" == "CLAUDE_REAUTH" ]]; then
     recover_claude_auth_and_resume "$@"

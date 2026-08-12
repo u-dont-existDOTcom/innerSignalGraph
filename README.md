@@ -1,6 +1,14 @@
-# Inner Signal Runtime v0.14.4
+# Inner Signal Runtime v0.15.0
 
-## Timezone-stable package validation
+## Git-native updates and automatic safe diagnostics
+
+Inner Signal now installs verified commits from the private `stable` branch and sends a strictly allowlisted failure record to the separate `runtime-diagnostics` branch. `main` remains the development branch; `stable` is the only installation source; `runtime-diagnostics` is an append-only repair handoff and is never merged into runtime source.
+
+One GitHub web login is required during bootstrap. After that, an ordinary launch retries queued incidents, checks `stable`, validates a candidate against empty temporary state, preserves every pre-existing private file byte-for-byte while updating only Git automation metadata, and swaps the runtime only after every deterministic gate passes. A GitHub, network, fetch, or diagnostic-sync outage leaves the current local server usable.
+
+Remote incidents contain only random machine and deterministic incident identifiers, version/commit/status fields, bounded test names and locations, allowlisted error codes and scalar values, and integrity hashes. They never include browser chat, therapy or hypnosis content, model prompts/output/reasoning, raw logs, `.env`, credentials, usernames, hostnames, IP addresses, or absolute home paths.
+
+## Preserved timezone-stable package validation
 
 This release fixes the Zorin installation rollback in which the r01 Guide Packet rebuilt to `d93f…8738` while the preserved archive correctly remained `9395…5263`. The packet contents were identical; the ZIP writer had encoded the same absolute timestamp through the host timezone, and one test wrote its rebuild into the immutable fixture directory.
 
@@ -80,15 +88,23 @@ Deterministic code owns path safety, checksums, schemas, source/graph freshness,
 
 All local development uses subscription-backed CLIs rather than API billing. Guide Packet compilation accepts only `claude-opus-5`; independent review accepts only `gpt-5.6-sol`; conditional adjudication accepts only `claude-fable-5`. Blank selectors, CLI defaults, aliases, and other models cannot satisfy these roles. Live entitlement evidence is recorded before work begins.
 
-## One-command French Zorin workflow
+## One-time French Zorin bootstrap
 
 ```bash
 cd "$HOME/Téléchargements"
-unzip -o inner-signal-runtime-v0.14.4-timezone-stable-validation.zip
-./install-and-run.sh
+command -v gh >/dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y gh; }
+gh auth status >/dev/null 2>&1 || gh auth login --web --git-protocol https
+gh auth setup-git
+if [[ -d innerSignalGraph/.git ]]; then
+  git -C innerSignalGraph fetch --prune origin stable
+  git -C innerSignalGraph merge --ff-only origin/stable
+else
+  gh repo clone u-dont-existDOTcom/innerSignalGraph innerSignalGraph -- --branch stable
+fi
+bash innerSignalGraph/packaging/install-from-git.sh
 ```
 
-The installer cleanly replaces managed source while preserving `.env`, browser/runtime state, decision ledgers, installed guide packets, rollback history, owner decisions, and autonomous-development state.
+The bootstrap installs to `~/Téléchargements/inner-signal-runtime` while keeping the checkout at `~/Téléchargements/innerSignalGraph`. Future launches update and repair automatically; routine release-ZIP downloads and diagnostic-ZIP uploads are unnecessary.
 
 ## Executive development supervision
 
@@ -102,4 +118,4 @@ The current production bundle `inner-child-somatic-pilot-2026-08-09-r5`, directe
 
 ## Local state
 
-Browser conversations stay browser-local. Runtime evidence, candidate packets, owner decisions, installed packets, and rollback history remain under `.inner-signal-autopilot/`. The one-click recovery ZIP includes packet status/attempts, normalized errors, candidate manifest/hash/state, model-entitlement evidence, production manifest, gate summaries, and supervisor history. It excludes browser chat, therapy reasoning ledgers, development-case payloads, Guide Packet ZIP bodies, `.env`, credentials, tokens, and runtime secrets.
+Browser conversations stay browser-local. Runtime evidence, queued safe incidents, delivery receipts, candidate packets, owner decisions, installed packets, and rollback history remain under `.inner-signal-autopilot/`. Automatic remote diagnostics use the stricter ten-field allowlist described above. The optional one-click local recovery ZIP remains available for support and excludes browser chat, therapy reasoning ledgers, development-case payloads, Guide Packet ZIP bodies, `.env`, credentials, tokens, and runtime secrets.

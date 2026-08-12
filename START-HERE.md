@@ -1,25 +1,29 @@
-# Start here — Inner Signal v0.14.4
+# Start here — Inner Signal v0.15.0
 
-On French Zorin:
+On French Zorin, run this once:
 
 ```bash
 cd "$HOME/Téléchargements"
-unzip -o inner-signal-runtime-v0.14.4-timezone-stable-validation.zip
-./install-and-run.sh
+command -v gh >/dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y gh; }
+gh auth status >/dev/null 2>&1 || gh auth login --web --git-protocol https
+gh auth setup-git
+if [[ -d innerSignalGraph/.git ]]; then
+  git -C innerSignalGraph fetch --prune origin stable
+  git -C innerSignalGraph merge --ff-only origin/stable
+else
+  gh repo clone u-dont-existDOTcom/innerSignalGraph innerSignalGraph -- --branch stable
+fi
+bash innerSignalGraph/packaging/install-from-git.sh
 ```
 
-The installer preserves your `.env`, browser/runtime state, Guide Packet candidate bytes, owner decisions, installed packet, rollback history, ledgers, and autonomous-development state. It replaces stale managed source cleanly, runs deterministic tests, then resumes the local runtime. Running the installer again is safe.
+Complete the official GitHub browser login if it opens. The bootstrap verifies access to the private repository, installs the exact `stable` commit at `~/Téléchargements/inner-signal-runtime`, and starts Inner Signal. Leave the terminal running; `Ctrl+C` stops the local server and development worker safely.
 
-The browser opens automatically. Leave the terminal running; `Ctrl+C` stops the local server and development worker safely.
+From then on, launch `~/Téléchargements/inner-signal-runtime/run-autopilot.sh`. Inner Signal automatically retries queued diagnostics, checks `stable`, validates updates without private state, preserves `.env`, both private state trees, ledgers, data, Guide Packet candidate bytes, owner decisions, and production policy, then restarts once only when an update was installed.
 
-v0.14.4 makes Guide Packet ZIP validation independent of the computer's timezone and prevents tests from writing into the preserved r01/r02 fixture directories. The r01 and r02 candidate archives remain byte-for-byte unchanged, and production remains on r5.
+When a deterministic failure occurs, Inner Signal creates a new allowlisted record and pushes it automatically to `runtime-diagnostics`. The record contains safe version, commit, stage, count, test-location, error-code, and hash evidence only. It excludes chat, therapy and hypnosis content, prompts, model output/reasoning, raw logs, credentials, environment values, usernames, hostnames, IP addresses, and home paths. If GitHub is unavailable, the incident stays in the private local outbox and retries on the next launch. You do not need to download a new release ZIP or upload a diagnostic ZIP.
 
-A001 validation is now stage-aware. A completed Claude extraction is checkpointed before the Codex audit. A retryable Codex failure retries only Codex once; a restart resumes the audit without repeating Claude. A Codex audit failure cannot trigger Fable, and authentication expiry opens the official Codex browser login once before automatic resume. The terminal and local status show the normalized cause without requiring a log upload.
+The browser opens automatically. The Overall Development panel shows concise update and diagnostic status, abbreviated commits, the diagnostics branch/path, and pending retry count.
 
-The Fable extraction completed by the failed v0.14.2 run was never checkpointed by that version, so the first stage-aware validation on v0.14.3 or later may need to repeat it once. Future completed extractions are preserved for resume.
+Guide Packet r02 remains a candidate whose guide prose is the unchanged r01 article revision. The original r01 candidate remains byte-identical, production remains on r5, and no candidate becomes therapy policy until every substantive behavioral decision is approved and installed through the existing owner gate.
 
-Open **Guide Packet** to review the corrected r02 candidate. Its guide prose is still the unchanged r01 article revision; r02 supplies complete model-readable canonical source, attached Vagal Blitz page-5 evidence, and an explicit graph-owned advanced-release safety block with five affected regressions. The original r01 candidate is retained unchanged. No candidate becomes production therapy policy until you approve every substantive behavioral decision and click **Install approved packet**. You can keep the current behavior or request an edit one decision at a time.
-
-The Overall Development panel remains visible while packet verification, Opus compilation, Codex review, conditional Fable adjudication, recovery, install, rollback, or autonomous repair is running. Guide Packet status no longer inherits stale development-repair instructions. Interrupted model stages resume automatically from the staged packet, and status/export remain available if validation or promotion fails. Routine engineering proceeds automatically; only genuine therapy/safety/framework decisions or authentication/permission requirements stop for you.
-
-Use **Export recovery ZIP** if troubleshooting is needed. It contains deterministic recovery evidence, including the safe A001 attempt ledger, but no A001 clinical checkpoint, browser chat, therapy reasoning, raw provider output, credentials, or API keys.
+The optional **Export recovery ZIP** remains a local support tool. Routine failure delivery no longer depends on it.

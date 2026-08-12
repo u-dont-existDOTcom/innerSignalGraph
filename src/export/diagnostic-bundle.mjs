@@ -6,6 +6,7 @@ import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
 import { createStoredZip, readZipEntries } from "../core/zip.mjs";
 import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
 import { safePacketId } from "../guide-packet/contract.mjs";
+import { buildRemoteSafeTestSummary } from "../diagnostics/remote-diagnostic.mjs";
 
 const RUN_EVIDENCE_FILES = Object.freeze([
   "model-resolution.json",
@@ -22,6 +23,12 @@ const RUN_EVIDENCE_FILES = Object.freeze([
   "final-status.json"
 ]);
 const SENSITIVE_KEY = /(?:api.?key|access.?token|refresh.?token|password|secret|credential|authorization|cookie)/i;
+const GIT_SHA = /^[a-f0-9]{40}$/i;
+const SHA256 = /^[a-f0-9]{64}$/i;
+const SLUG = /^[a-z][a-z0-9-]{0,63}$/;
+const CODE = /^[A-Z][A-Z0-9_]{0,63}$/;
+const BRANCH = /^[A-Za-z0-9._/-]+$/;
+const REMOTE_DIAGNOSTIC_PATH = /^diagnostics\/[0-9a-f-]{36}\/[a-f0-9]{64}\.json$/i;
 
 function json(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
@@ -61,6 +68,60 @@ async function addSanitizedJson(entries, name, filePath) {
   return true;
 }
 
+async function addAllowlistedJson(entries, name, filePath, construct) {
+  const value = await readJsonIfExists(filePath);
+  if (value == null) return false;
+  entries.push({ name, data: json(construct(value)) });
+  return true;
+}
+
+function safeMatch(value, expression) {
+  return typeof value === "string" && expression.test(value) ? value : null;
+}
+
+function safeTimestamp(value) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) return null;
+  const instant = new Date(value);
+  return Number.isNaN(instant.valueOf()) || instant.toISOString() !== value ? null : value;
+}
+
+function safeCount(value) {
+  return Number.isSafeInteger(value) && value >= 0 && value <= 10_000_000 ? value : null;
+}
+
+function safeGitUpdateStatus(value) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return {
+    format: "inner-signal-git-update-status-v1",
+    status: safeMatch(source.status, SLUG),
+    checkedAt: safeTimestamp(source.checkedAt),
+    installedCommit: safeMatch(source.installedCommit, GIT_SHA),
+    availableCommit: safeMatch(source.availableCommit, GIT_SHA),
+    candidateCommit: safeMatch(source.candidateCommit, GIT_SHA),
+    actionCode: safeMatch(source.actionCode, CODE),
+    integrity: {
+      runtimeTreeSha256: safeMatch(source.integrity?.runtimeTreeSha256, SHA256),
+      graphBundleSha256: safeMatch(source.integrity?.graphBundleSha256, SHA256)
+    }
+  };
+}
+
+function safeDiagnosticSyncStatus(value) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  const branch = safeMatch(source.branch, BRANCH);
+  return {
+    format: "inner-signal-diagnostic-sync-status-v1",
+    status: safeMatch(source.status, SLUG),
+    updatedAt: safeTimestamp(source.updatedAt),
+    synced: safeCount(source.synced),
+    pending: safeCount(source.pending),
+    branch: branch && !branch.includes("..") && !branch.includes("//") && !branch.startsWith("/") && !branch.endsWith("/") ? branch : null,
+    paths: Array.isArray(source.paths)
+      ? source.paths.filter((item) => typeof item === "string" && REMOTE_DIAGNOSTIC_PATH.test(item)).slice(0, 100)
+      : []
+  };
+}
+
 async function latestRunDirectory(root) {
   try {
     const candidates = (await fs.readdir(root, { withFileTypes: true }))
@@ -83,6 +144,12 @@ async function addLatestRunEvidence(entries, config) {
   );
   const runDir = await latestRunDirectory(config.autopilotStateDir);
   if (!runDir) return;
+  await addAllowlistedJson(
+    entries,
+    "runtime/latest-run/test-failure-summary.json",
+    path.join(runDir, "test-failure-summary.json"),
+    buildRemoteSafeTestSummary
+  );
   for (const filename of RUN_EVIDENCE_FILES) {
     if (filename === "model-resolution.json" && stableAdded) continue;
     await addSanitizedJson(entries, `runtime/latest-run/${filename}`, path.join(runDir, filename));
@@ -171,6 +238,18 @@ export async function buildDiagnosticBundle({ config, providers, browserState = 
   const activeCandidate = await readJsonIfExists(path.join(guidePacketRoot, "active-candidate.json"));
   const candidateEvidence = await addCandidateEvidence(entries, guidePacketRoot, activeCandidate);
   await addLatestRunEvidence(entries, config);
+  await addAllowlistedJson(
+    entries,
+    "runtime/git-update-status.json",
+    path.join(config.autopilotStateDir, "git-update-status.json"),
+    safeGitUpdateStatus
+  );
+  await addAllowlistedJson(
+    entries,
+    "runtime/diagnostic-sync-status.json",
+    path.join(config.autopilotStateDir, "diagnostic-sync-status.json"),
+    safeDiagnosticSyncStatus
+  );
 
   const manifest = {
     format: "inner-signal-diagnostic-bundle-v2",

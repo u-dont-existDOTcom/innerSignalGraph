@@ -84,7 +84,11 @@ test("development UI keeps overall supervisor analysis visible while autonomous 
   assert.match(html, /dev-overall-state/);
   assert.match(html, /dev-overall-detail/);
   assert.match(html, /dev-next-action/);
+  assert.match(html, /dev-git-automation/);
   assert.match(js, /status\.supervisor/);
+  assert.match(js, /status\.gitAutomation/);
+  assert.match(js, /Diagnostics:.*pending/);
+  assert.match(js, /runtime-diagnostics/);
   assert.match(js, /BLOCKED_AUTO_RECOVERY/);
   assert.match(js, /Human action required/);
   assert.match(css, /\.dev-overall-analysis/);
