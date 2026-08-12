@@ -1,0 +1,196 @@
+{
+  "id": "A001",
+  "title": "Love feels unsafe and the adult resents the child",
+  "input": {
+    "recentTranscript": "The user says they can access love, but the younger self looks at the adult outcome and says things did not go well. The user becomes resentful and says the younger self had the opportunity to grow up. The attempted vow of protection lands as 'big fuckity whoopty doo, what are you gonna do for me.' Relaxation has not changed the standoff.",
+    "userMessage": "Help me understand what is happening without assuming which inner voice is which. What is the next useful move?",
+    "userFacts": [
+      "The user can access love; the problem is that accepting the love feels unsafe.",
+      "Relaxation has not resolved the conflict."
+    ]
+  },
+  "mockFixture": "fixtures/mock-responses/A001.json",
+  "acceptance": {
+    "response": {
+      "requiredConcepts": [
+        {
+          "id": "credibility_conflict",
+          "description": "The standoff is substantially about trust, credibility, or evidence rather than access to love.",
+          "anyPatterns": [
+            "credibil",
+            "trust problem",
+            "problem of trust",
+            "evidence problem",
+            "evidence of reliability",
+            "prove itself trustworthy",
+            "does not trust",
+            "doesn't trust"
+          ]
+        },
+        {
+          "id": "relaxation_not_sufficient",
+          "description": "Relaxation may regulate arousal but does not by itself settle the relational or evidentiary conflict.",
+          "anyPatterns": [
+            "relaxation has not",
+            "relaxation hasn't",
+            "relaxation cannot",
+            "relaxation can't",
+            "relaxation alone",
+            "not a relaxation problem",
+            "regulation alone",
+            "exhaling does not",
+            "exhaling doesn't",
+            "nervous-system charge"
+          ]
+        },
+        {
+          "id": "sarcastic_question_is_actionable",
+          "description": "The sarcastic question about what the adult will do should be treated as a real request for concrete evidence or action.",
+          "anyPatterns": [
+            "what are you going to do for me",
+            "what are you gonna do for me",
+            "answer the question",
+            "real request for evidence",
+            "demand for evidence",
+            "concrete evidence",
+            "concrete answer",
+            "practical question",
+            "actionable question",
+            "sarcastic demand",
+            "observable protection",
+            "request for proof",
+            "request for concrete action",
+            "request for action",
+            "track record"
+          ]
+        },
+        {
+          "id": "separate_age_and_agency",
+          "description": "The next inquiry should distinguish which age or developmental version is being blamed and what agency it actually had.",
+          "anyPatterns": [
+            "which age",
+            "what age",
+            "which younger version",
+            "what younger version",
+            "which version of you",
+            "literal child",
+            "adolescent self",
+            "younger adult",
+            "separate the ages",
+            "age and agency",
+            "developmental responsibility"
+          ]
+        },
+        {
+          "id": "repeated_follow_through_without_demanding_trust",
+          "description": "Concrete protection should accumulate through repeated non-defensive follow-through without demanding immediate trust or gratitude.",
+          "anyPatterns": [
+            "show up again",
+            "keep showing up",
+            "do it again",
+            "repeat",
+            "consisten",
+            "another one later",
+            "again tuesday",
+            "do not ask the younger side to be impressed",
+            "don't ask the younger side to be impressed",
+            "without demanding trust",
+            "without demanding gratitude"
+          ]
+        }
+      ],
+      "forbiddenClaims": [
+        {
+          "id": "categorical_cynical_guard",
+          "description": "Do not conclusively identify the contempt as the cynical guard.",
+          "anyPatterns": [
+            "is the cynical guard"
+          ]
+        },
+        {
+          "id": "categorical_inherited_parent",
+          "description": "Do not conclusively identify the angry voice as the inherited parent.",
+          "anyPatterns": [
+            "is the inherited parent"
+          ]
+        },
+        {
+          "id": "no_adult_absolute",
+          "description": "Do not claim there is no adult function in the room at all.",
+          "anyPatterns": [
+            "no adult in the room"
+          ]
+        },
+        {
+          "id": "exclusive_witness_authority",
+          "description": "Do not grant the younger state exclusive epistemic authority.",
+          "anyPatterns": [
+            "only witness who was there"
+          ]
+        },
+        {
+          "id": "action_only_remedy",
+          "description": "Do not say accumulated action is the only remedy.",
+          "anyPatterns": [
+            "only accumulated action"
+          ]
+        },
+        {
+          "id": "untriggered_memory_disclaimer",
+          "description": "Do not append recovered-memory or historical-fact boilerplate when this case contains no memory-evidence question or safety flag.",
+          "anyPatterns": [
+            "imagery itself does not prove",
+            "historical events",
+            "recovered memory"
+          ]
+        },
+        {
+          "id": "untriggered_generic_grounding_append",
+          "description": "Do not append generic grounding/live-support boilerplate when no present safety or orientation problem is identified.",
+          "anyPatterns": [
+            "if this dialogue becomes difficult to stop",
+            "pause the deeper work and use eyes-open grounding",
+            "live support from a therapist or trusted person"
+          ]
+        },
+        {
+          "id": "adverse_track_record_erased",
+          "description": "Do not describe an already adverse adult track record as though no track record exists yet.",
+          "anyPatterns": [
+            "has no track record yet",
+            "has not established any track record yet",
+            "hasn't established any track record yet",
+            "no track record has been built yet"
+          ]
+        },
+        {
+          "id": "speaker_merge_same_voice",
+          "description": "Do not merge the resentful voice and vow-making adult position without evidence.",
+          "anyPatterns": [
+            "the same voice offering a vow",
+            "same voice offering the vow",
+            "same voice offering a vow of protection"
+          ]
+        }
+      ]
+    },
+    "plan": {
+      "primary": "IC.CREDIBILITY_REPAIR",
+      "selectedIncludes": [
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.AGE_RESPONSIBILITY_CLARIFICATION"
+      ],
+      "deferredIncludes": [],
+      "selectedExcludes": [
+        "IC.NEUTRAL_WITNESS"
+      ],
+      "nextQuestion": "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?",
+      "requiredNuancePatterns": [
+        "existing adverse track record",
+        "Chronological adulthood does not establish",
+        "already demonstrates witness capacity"
+      ]
+    }
+  },
+  "acceptanceVersion": "A001-plan-response-realization-v6"
+}

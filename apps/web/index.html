@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inner Signal</title>
+  <meta name="description" content="Local guide-graph planning, adversarial therapy, and structured hypnosis runtime.">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">LOCAL RUNTIME</p>
+      <h1>Inner Signal</h1>
+    </div>
+    <div id="runtime-status" class="status pending" aria-live="polite">Checking runtime…</div>
+  </header>
+
+  <main>
+    <section id="dev-automation" class="dev-automation" aria-live="polite">
+      <div id="dev-overall-analysis" class="dev-overall-analysis">
+        <div class="dev-overall-heading">
+          <strong>Overall development</strong><span class="dev-automation-label">Development automation</span>
+          <span id="dev-overall-state" class="dev-state-chip">Checking…</span>
+        </div>
+        <span id="dev-overall-detail">Checking deterministic worker state…</span>
+        <span id="dev-current-stage"></span>
+        <span id="dev-last-event"></span>
+        <span id="dev-next-action"></span>
+        <span id="dev-human-required"></span>
+        <span id="dev-automation-summary" class="dev-legacy-summary"></span>
+      </div>
+      <div id="dev-human-decision" class="dev-human-decision" hidden>
+        <div class="dev-decision-copy">
+          <strong id="dev-human-reason"></strong>
+          <span id="dev-human-effect"></span>
+          <span id="dev-human-worst"></span>
+          <span id="dev-human-default"></span>
+        </div>
+        <button id="dev-approve" type="button">Approve candidate</button>
+        <button id="dev-reject" class="secondary" type="button">Keep current</button>
+      </div>
+    </section>
+    <nav class="tabs" aria-label="Inner Signal modes">
+      <button class="tab active" data-tab="therapy" type="button">Therapy dialogue</button>
+      <button class="tab" data-tab="hypnosis" type="button">Structured hypnosis</button>
+      <button class="tab" data-tab="guides" type="button">Guide Packet</button>
+      <button class="tab" data-tab="data" type="button">Local data</button>
+    </nav>
+
+    <section id="therapy" class="panel active" aria-labelledby="therapy-heading">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">AUTO-TIERED GUIDE-GRAPH REASONING</p>
+          <h2 id="therapy-heading">Therapy dialogue</h2>
+        </div>
+        <div class="actions wrap">
+          <button id="export-diagnostic" class="secondary" type="button">Export recovery ZIP</button>
+          <button id="clear-therapy" class="secondary" type="button">Clear transcript</button>
+        </div>
+      </div>
+      <p class="notice">This is a reflective companion, not emergency care. Ordinary low-ambiguity turns use a fast Sonnet + decision-graph path. The runtime automatically adds Codex review or the full Opus + GPT adversarial pipeline when ambiguity, depth, or safety makes that worthwhile.</p>
+      <div id="therapy-transcript" class="transcript" aria-live="polite"></div>
+      <form id="therapy-form" class="composer">
+        <label for="therapy-message">What is happening?</label>
+        <textarea id="therapy-message" rows="5" required placeholder="Describe the live conflict in your own words."></textarea>
+        <div class="therapy-controls">
+          <label>Reasoning depth
+            <select id="therapy-processing-mode">
+              <option value="auto" selected>Auto</option>
+              <option value="fast">Fast</option>
+              <option value="reviewed">Reviewed</option>
+              <option value="deep">Deep review</option>
+              <option value="forensic">Forensic council</option>
+            </select>
+          </label>
+          <div class="actions">
+            <button id="therapy-send" type="submit">Send</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <section id="hypnosis" class="panel" aria-labelledby="hypnosis-heading" hidden>
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">APP-OWNED CONSENT AND RETURN</p>
+          <h2 id="hypnosis-heading">Structured awake hypnosis</h2>
+        </div>
+      </div>
+      <p class="notice">The model writes bounded components. The application owns the gate, route selection, route isolation, and waking return.</p>
+      <form id="hypnosis-form" class="settings-grid">
+        <label class="wide">Target
+          <textarea id="hypnosis-target" rows="4" required>Build one credible adult function through observable action without pretending trust or transformation already exists.</textarea>
+        </label>
+        <label>Relationship
+          <select id="hypnosis-relationship">
+            <option value="communion">Communion</option>
+            <option value="command">Command</option>
+          </select>
+        </label>
+        <label>Depth
+          <select id="hypnosis-depth">
+            <option value="subtle">Subtle</option>
+            <option value="classic" selected>Classic</option>
+            <option value="deep">Deep</option>
+          </select>
+        </label>
+        <label>Minutes
+          <input id="hypnosis-duration" type="number" min="2" max="60" value="10">
+        </label>
+        <label class="wide">Context
+          <textarea id="hypnosis-context" rows="4" placeholder="Optional recent context, protectors, constraints, or desired ending."></textarea>
+        </label>
+        <div class="actions wide">
+          <button id="hypnosis-compile" type="submit">Compile and review session</button>
+        </div>
+      </form>
+
+      <section id="hypnosis-result" class="session" hidden>
+        <div id="hypnosis-pre-gate" class="script-block"></div>
+        <div id="hypnosis-gate" class="gate" hidden>
+          <h3 id="gate-title"></h3>
+          <p id="gate-intro"></p>
+          <p id="gate-note" class="small"></p>
+          <div id="gate-actions" class="gate-actions"></div>
+        </div>
+        <div id="hypnosis-route" class="script-block" hidden></div>
+        <div class="playback-controls">
+          <button id="speak-session" class="secondary" type="button" disabled>Read selected route aloud</button>
+          <button id="stop-speaking" class="secondary" type="button" disabled>Stop voice</button>
+        </div>
+      </section>
+    </section>
+
+    <section id="guides" class="panel" aria-labelledby="guides-heading" hidden>
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">VERSIONED THERAPY POLICY</p>
+          <h2 id="guides-heading">Guide Packet</h2>
+        </div>
+        <div class="actions wrap">
+          <label class="file-button">Import packet ZIP<input id="guide-packet-import" type="file" accept="application/zip,.zip"></label>
+          <button id="guide-packet-export" class="secondary" type="button">Export installed packet</button>
+          <button id="guide-packet-rollback" class="secondary" type="button">Rollback</button>
+        </div>
+      </div>
+      <p class="notice">Packets preserve canonical guide source, source maps, executable graphs, cross-guide edges, provenance, certainty, regression cases, and owner decisions. Importing only stages a candidate. Therapy or safety changes do not install until you approve every substantive decision.</p>
+      <div class="guide-status-grid">
+        <article class="guide-summary-card"><h3>Installed</h3><div id="guide-installed-summary">No packet installed; using bundled validated guides.</div></article>
+        <article class="guide-summary-card"><h3>Candidate</h3><div id="guide-candidate-summary">No candidate staged.</div></article>
+        <article class="guide-summary-card"><h3>Verification</h3><div id="guide-verification-summary">Waiting for a packet.</div></article>
+        <article class="guide-summary-card"><h3>Opus source-role compilation</h3><div id="guide-compilation-summary">No candidate compilation.</div></article>
+        <article class="guide-summary-card"><h3>Independent review</h3><div id="guide-review-summary">No candidate review.</div></article>
+        <article class="guide-summary-card"><h3>Source identity diff</h3><div id="guide-source-diff-summary">No candidate source comparison.</div></article>
+        <article class="guide-summary-card"><h3>Affected regressions</h3><div id="guide-regression-summary">None.</div></article>
+      </div>
+      <section class="guide-review-section">
+        <h3>Behavioral decisions</h3>
+        <p class="small">Approve or keep the current behavior one decision at a time. Raw JSON remains available inside the packet, but these cards are the primary review.</p>
+        <div id="guide-decision-cards" class="guide-decision-list"></div>
+      </section>
+      <section class="guide-review-section">
+        <h3>Guide-quality audit</h3>
+        <div id="guide-quality-summary" class="guide-quality-list">No candidate audit.</div>
+      </section>
+      <div class="actions wrap">
+        <button id="guide-packet-install" type="button" disabled>Install approved packet</button>
+        <button id="guide-refresh" class="secondary" type="button">Refresh status</button>
+      </div>
+    </section>
+
+    <section id="data" class="panel" aria-labelledby="data-heading" hidden>
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">BROWSER-LOCAL</p>
+          <h2 id="data-heading">Local data</h2>
+        </div>
+      </div>
+      <p class="notice">Transcript and settings are stored only in this browser profile. Export a browser backup for restoration. The recovery ZIP contains deterministic runtime, Guide Packet, model-entitlement, gate, and supervisor evidence; it excludes chat, therapy reasoning, development-case payloads, .env, and credentials.</p>
+      <div class="actions wrap">
+        <button id="export-data" type="button">Export backup</button>
+        <button id="export-diagnostic-data" class="secondary" type="button">Export recovery ZIP</button>
+        <label class="file-button">Import backup<input id="import-data" type="file" accept="application/json"></label>
+        <button id="erase-data" class="danger" type="button">Erase local data</button>
+      </div>
+      <pre id="data-summary" class="data-summary"></pre>
+    </section>
+  </main>
+
+  <footer>
+    <span id="runtime-version">Inner Signal runtime</span>
+    <span>Ctrl+C in the terminal stops the local server.</span>
+  </footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

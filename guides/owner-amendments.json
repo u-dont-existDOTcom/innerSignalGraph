@@ -1,0 +1,60 @@
+{
+  "version": "2026-08-06-r1",
+  "approvedAt": "2026-08-06",
+  "items": [
+    {
+      "id": "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "Gentle, present-focused self-hypnosis may be used early to calm the nervous system or support warmth and borrowed adulthood. It must not go deeply into memories or immersive child dialogue before enough stopping and recovery capacity exists."
+    },
+    {
+      "id": "AMEND.IC.BORROW_LOVE_EXTERNAL",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "When self-directed love feels inaccessible or unsafe, first feel real love for a pet, baby, friend, child, partner, or anyone naturally loved. Do not force an immediate transfer; let the familiar feeling become available, then offer only as much toward the younger self as feels possible."
+    },
+    {
+      "id": "AMEND.IC.BEST_FRIEND_PROMPT",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "Ask: 'What would I tell my best friend in this exact situation?' Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action for the self."
+    },
+    {
+      "id": "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
+      "domain": "somatic",
+      "status": "owner-approved",
+      "text": "Early inner-child work may run alongside somatic preparation when it remains present-focused: neutral witness, borrowed adulthood, non-cruelty, Protector actions, borrowed love, and limited dialogue. Deep memories, immersive child dialogue, and deep hypnosis wait for adequate capacity."
+    },
+    {
+      "id": "AMEND.SOM.PREP_MODALITIES",
+      "domain": "somatic",
+      "status": "owner-approved",
+      "text": "EFT, gentle qigong shaking, longer unforced exhales, gentle Buteyko-style breathing, Somatic Experiencing, trauma-sensitive yoga, and resource-oriented Brainspotting may prepare for or accompany inner-child work."
+    },
+    {
+      "id": "AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL",
+      "domain": "somatic",
+      "status": "owner-approved",
+      "text": "For diffuse developmental or relational trauma, EMDR may fit better after some basic inner-child reparenting and access to Nurturer/Protector capacity. This is not universal: a stable person with one discrete traumatic event may be ready earlier."
+    },
+    {
+      "id": "AMEND.SOM.ADVANCED_RELEASE_PARALLEL",
+      "domain": "somatic",
+      "status": "owner-approved",
+      "text": "Sky Hypnosis and Vagal Blitz are optional advanced-release practices that may be considered by stable people even before other therapies. They do not prove readiness for deep trauma processing and are not prerequisites."
+    },
+    {
+      "id": "AMEND.SOM.ADVANCED_RELEASE_BYPASS",
+      "domain": "somatic",
+      "status": "owner-approved",
+      "text": "Advanced release can produce bliss or dramatic state shifts that bypass trauma. Judge it by later functioning, boundaries, willingness to meet pain, and whether it becomes compulsive or replaces relational and practical work."
+    },
+    {
+      "id": "AMEND.EVIDENCE.PROVENANCE",
+      "domain": "cross-guide",
+      "status": "owner-approved",
+      "text": "Personal outcomes remain author experience, community reports remain community signal, first-principles explanations remain provisional mechanism models, and strong physiological claims do not become deterministic medical facts without separate evidence review."
+    }
+  ]
+}

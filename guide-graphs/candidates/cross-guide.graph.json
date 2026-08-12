@@ -1,0 +1,60 @@
+{
+  "contractVersion": "guide-graph-v1",
+  "graphId": "inner-child-somatic-cross-guide",
+  "guideId": "cross-guide",
+  "version": "2026-08-09-r5",
+  "description": "Cross-guide dependencies and sequencing decisions approved for the pilot.",
+  "nodes": [],
+  "edges": [
+    {
+      "from": "SOM.GENTLE_REGULATION",
+      "to": "IC.SOLAR_PLEXUS_RELAXATION",
+      "relation": "supports"
+    },
+    {
+      "from": "IC.SOLAR_PLEXUS_RELAXATION",
+      "to": "IC.BORROW_LOVE",
+      "relation": "may-enable"
+    },
+    {
+      "from": "SOM.EFT_PORTABLE",
+      "to": "IC.BORROW_ONE_FUNCTION",
+      "relation": "parallel-preparation"
+    },
+    {
+      "from": "SOM.GENTLE_SHAKING",
+      "to": "IC.NEUTRAL_WITNESS",
+      "relation": "parallel-preparation"
+    },
+    {
+      "from": "SOM.RESOURCE_BRAINSPOTTING",
+      "to": "IC.MEET_GUARD",
+      "relation": "parallel-preparation"
+    },
+    {
+      "from": "IC.BORROW_ONE_FUNCTION",
+      "to": "SOM.EMDR_DEVELOPMENTAL",
+      "relation": "capacity-prerequisite"
+    },
+    {
+      "from": "IC.PROTECTOR_ACTION",
+      "to": "SOM.EMDR_DEVELOPMENTAL",
+      "relation": "capacity-prerequisite"
+    },
+    {
+      "from": "SOM.ADVANCED_RELEASE_OPTIONAL",
+      "to": "IC.DEEP_CHILD_DIALOGUE",
+      "relation": "does-not-establish-readiness"
+    },
+    {
+      "from": "SOM.BYPASS_AUDIT",
+      "to": "IC.GUIDE_LATER",
+      "relation": "integration-check"
+    },
+    {
+      "from": "IC.GENTLE_SELF_HYPNOSIS",
+      "to": "IC.DEEP_CHILD_DIALOGUE",
+      "relation": "does-not-imply-readiness"
+    }
+  ]
+}

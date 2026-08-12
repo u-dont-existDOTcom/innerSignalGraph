@@ -1,0 +1,47 @@
+{
+  "guideId": "vagal-blitz-source",
+  "file": "vagal-blitz-source.pdf",
+  "sections": [
+    {
+      "id": "VAGAL.CLAIMS.P1_4",
+      "sourceId": "vagal-blitz-source",
+      "pages": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "sha256": "79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c",
+      "excerpt": "PDF source pages 1, 2, 3, 4"
+    },
+    {
+      "id": "VAGAL.SAFETY.P5",
+      "sourceId": "vagal-blitz-source",
+      "pages": [
+        5
+      ],
+      "sha256": "79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c",
+      "excerpt": "PDF source pages 5"
+    },
+    {
+      "id": "VAGAL.MAINTENANCE.P6_7",
+      "sourceId": "vagal-blitz-source",
+      "pages": [
+        6,
+        7
+      ],
+      "sha256": "79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c",
+      "excerpt": "PDF source pages 6, 7"
+    },
+    {
+      "id": "VAGAL.PROTOCOL.P7_8",
+      "sourceId": "vagal-blitz-source",
+      "pages": [
+        7,
+        8
+      ],
+      "sha256": "79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c",
+      "excerpt": "PDF source pages 7, 8"
+    }
+  ]
+}

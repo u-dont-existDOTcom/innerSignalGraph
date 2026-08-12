@@ -1,0 +1,38 @@
+{
+  "affectedNodeIds": [
+    "SOM.EMDR_DISCRETE",
+    "SOM.EMDR_DEVELOPMENTAL",
+    "SOM.EMDR_DEVELOPMENTAL_DEFER"
+  ],
+  "contractVersion": "guide-decision-case-v1",
+  "expectations": {
+    "activationIncludes": [
+      {
+        "field": "target_type",
+        "group": "all",
+        "op": "eq",
+        "value": "discrete"
+      },
+      {
+        "field": "deep_work_readiness",
+        "group": "all",
+        "op": "eq",
+        "value": "yes"
+      }
+    ],
+    "nodeId": "SOM.EMDR_DISCRETE",
+    "recommendationIncludes": [
+      "clear event or residual trigger"
+    ],
+    "relatedForbiddenOverclaimIncludes": [
+      "Do not say everyone must finish inner-child therapy before EMDR"
+    ],
+    "relatedNodeIds": [
+      "SOM.EMDR_DEVELOPMENTAL",
+      "SOM.EMDR_DEVELOPMENTAL_DEFER"
+    ]
+  },
+  "id": "G-EMDR-DISCRETE",
+  "title": "Stable discrete target may use EMDR earlier",
+  "type": "graph-structure"
+}

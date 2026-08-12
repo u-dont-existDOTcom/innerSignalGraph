@@ -1,0 +1,82 @@
+{
+  "affectedNodeIds": [
+    "IC.CREDIBILITY_REPAIR",
+    "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+    "IC.BORROW_ONE_FUNCTION",
+    "IC.DEEP_CHILD_DIALOGUE"
+  ],
+  "contractVersion": "guide-decision-case-v1",
+  "expectations": {
+    "deferredNodeIds": [],
+    "excludedNodeIds": [
+      "IC.NEUTRAL_WITNESS"
+    ],
+    "forbiddenOverclaimIncludes": [
+      "no track record yet",
+      "Do not merge the resentful voice"
+    ],
+    "nextQuestionIncludes": [
+      "Which age or version of you",
+      "opportunity",
+      "knowledge, support, safety, money, and freedom"
+    ],
+    "primaryJobId": "IC.CREDIBILITY_REPAIR",
+    "requiredNuanceIncludes": [
+      "adverse track record",
+      "Chronological adulthood does not establish",
+      "already demonstrates witness capacity"
+    ],
+    "selectedNodeIds": [
+      "IC.BORROW_ONE_FUNCTION",
+      "IC.AGE_RESPONSIBILITY_CLARIFICATION"
+    ]
+  },
+  "id": "A001",
+  "title": "Love feels unsafe and adult credibility is disputed",
+  "type": "planner",
+  "unknowns": [],
+  "variables": {
+    "ability_to_return": "yes",
+    "ability_to_stop": "yes",
+    "activation": "moderate",
+    "advanced_release_interest": "absent",
+    "advanced_release_physical_risk": "unknown",
+    "age_agency_ambiguity": "present",
+    "altered_state": "sober",
+    "basic_reparenting_capacity": "unknown",
+    "belonging_pressure": "absent",
+    "body_capacity": "adequate",
+    "bypass_risk": "absent",
+    "coherent_child_state": "present",
+    "credibility_conflict": "present",
+    "credibility_evidence_state": "adverse",
+    "current_intent": "conversation",
+    "deep_work_readiness": "unknown",
+    "discharge_used": "no",
+    "dissociation": "none",
+    "emdr_interest": "absent",
+    "forgiveness_interest": "absent",
+    "freeze_pattern": "absent",
+    "guide_readiness": "absent",
+    "identity_blur": "absent",
+    "inner_adult_access": "partial",
+    "internal_speaker_relation": "unresolved",
+    "love_access": "accessible",
+    "memory_source_risk": "absent",
+    "orientation": "oriented",
+    "panic_instability": "absent",
+    "parent_imagery": "not_used",
+    "present_safety": "safe",
+    "protective_response": "present",
+    "resentment_toward_younger_self": "present",
+    "self_criticism": "present",
+    "self_directed_love": "unsafe",
+    "solar_plexus_tension": "absent",
+    "stable_for_advanced_release": "unknown",
+    "support_available": "present",
+    "target_type": "developmental",
+    "trigger_loop": "absent",
+    "urge_to_escape": "absent",
+    "witness_capacity": "present"
+  }
+}

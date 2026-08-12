@@ -1,0 +1,59 @@
+INNER SIGNAL RUNTIME v0.14.4 — BUILD VERIFICATION
+Timezone-Stable ZIP and Fixture Validation
+
+Verified UTC: 2026-08-12
+Target: local French Zorin Linux workflow under ~/Téléchargements
+Node used for verification: v24.14.0
+npm used for verification: 11.9.0
+
+BASELINE AND SCOPE
+- Input: verified Inner Signal runtime v0.14.3 A001 Stage-Aware Audit Recovery.
+- Prior v0.14.3 suite: 192/192 PASS.
+- This release repairs timezone-sensitive ZIP timestamps, fixture-writing test isolation, and archive/content verification semantics.
+- It does not change canonical guide prose, therapy graphs, owner decisions, hypnosis contracts, candidate state, or active production policy.
+
+OBSERVED FAILURE AND ROOT CAUSE
+- v0.14.3 installation passed 191/192 tests and rolled back at the r01-preservation test.
+- The rebuilt archive hashed to d93fda96d9a2fcc7fd81d371055fe00aa64efa7afd223704c959dbdbd4388738 while the preserved r01 archive hashed to 9395cf2382ce14647d7f14c97268c53094ba822486be72a104e0e24fb0295263.
+- Both archives contained the same 25 member names and byte-identical member contents.
+- The ZIP writer encoded DOS timestamps with local-time getters, so one absolute instant produced different container bytes by host timezone.
+- A packet validation test also built directly into the immutable r01 fixture directory, allowing the test suite to rewrite the archive.
+
+CORRECTED VALIDATION CONTRACT
+- ZIP DOS date/time fields are derived with UTC getters.
+- Identical entries and timestamps produce identical ZIP bytes under UTC, Dakar, Lisbon, New York, and Kolkata timezones.
+- Rebuilt packet contracts are compared by member names and member bytes, independent of legacy container metadata.
+- Tests build candidates only in temporary directories.
+- The exact archived r01 and r02 hashes are verified after the complete test suite.
+
+PRIVACY AND DIAGNOSTICS
+- Terminal JSON and local Markdown status display the safe failure class/model/cause.
+- Recovery export includes the safe A001 audit-attempt ledger and latest safe failure.
+- Recovery export excludes the clinical extraction checkpoint, raw provider output, browser chat, therapy reasoning, development-case payloads, Guide Packet ZIP bodies, .env, credentials, and tokens.
+
+GUIDE PACKET AND POLICY NON-REGRESSION
+- Production bundle remains inner-child-somatic-pilot-2026-08-09-r5.
+- Original r01 candidate remains byte-preserved at SHA-256 9395cf2382ce14647d7f14c97268c53094ba822486be72a104e0e24fb0295263.
+- Corrected r02 remains the active uninstalled candidate with five owner-gated affected regressions.
+- No recovery, test, install, or packaging step approves or installs a candidate.
+
+FRESH SOURCE-TREE VERIFICATION
+- npm test: 193/193 PASS, 0 failures.
+- npm run graph:test: 12/12 PASS.
+- npm run verify: PASS.
+- Preserved r01 affected regressions: 4/4 PASS.
+- Corrected r02 affected regressions: 5/5 PASS; owner gate remains closed.
+- Mock A001 formulated replay: PASS against production r5.
+- Mock H001 compiler: PASS with app-owned gate, route isolation, and waking return.
+- Web/runtime smoke: PASS.
+- Fake-CLI autopilot: PASS with exact model selectors and r02 staged but not installed.
+- Package syntax and hygiene gates: PASS.
+
+LIVE-MODEL LIMITATION
+- The build environment did not run real subscription-backed Codex/Claude calls.
+- Official OpenAI documentation confirms gpt-5.6-sol structured outputs and codex exec --output-schema support.
+- Exact live entitlement and provider behavior remain locally probed before model work.
+
+RELEASE ARTIFACTS
+- Clean extraction and two-pass dirty-upgrade/idempotence verification are mandatory release gates.
+- The release ZIP SHA-256 recorded in its sidecar and final implementation report is authoritative.

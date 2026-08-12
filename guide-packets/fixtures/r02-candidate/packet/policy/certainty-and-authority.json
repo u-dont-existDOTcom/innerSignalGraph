@@ -1,0 +1,19 @@
+{
+  "contractVersion": "guide-certainty-v1",
+  "levels": [
+    "external-evidence",
+    "common-clinical-practice",
+    "author-framework",
+    "author-experience",
+    "community-signal",
+    "traditional-explanation",
+    "provisional-mechanism",
+    "product-only-operational"
+  ],
+  "rules": [
+    "A source hash proves identity, not truth.",
+    "Author experience, community signal, traditional explanation, provisional mechanism, and external evidence remain distinct.",
+    "Product-only operational rules may constrain the app but must not be presented as therapeutic source claims.",
+    "Model inference never becomes owner policy without an explicit owner decision."
+  ]
+}

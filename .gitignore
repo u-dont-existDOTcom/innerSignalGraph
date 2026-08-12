@@ -1,0 +1,9 @@
+.env
+node_modules/
+.inner-signal-autopilot/
+.inner-signal-dev/
+data/
+dist/
+ledgers/*.json
+!ledgers/.gitkeep
+.DS_Store

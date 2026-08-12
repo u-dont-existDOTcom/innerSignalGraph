@@ -1,0 +1,32 @@
+{
+  "affectedNodeIds": [
+    "SOM.DELAYED_RESPONSE_REASSESSMENT",
+    "SOM.GENTLE_SHAKING",
+    "SOM.DEEP_BRAINSPOTTING",
+    "SOM.EMDR_DISCRETE",
+    "SOM.EMDR_DEVELOPMENTAL",
+    "SOM.ADVANCED_RELEASE_OPTIONAL"
+  ],
+  "contractVersion": "guide-decision-case-v1",
+  "expectations": {
+    "defaultQuestionIncludes": [
+      "next two or three days"
+    ],
+    "inboundEdgesFrom": [
+      "SOM.GENTLE_SHAKING",
+      "SOM.DEEP_BRAINSPOTTING",
+      "SOM.EMDR_DISCRETE",
+      "SOM.EMDR_DEVELOPMENTAL",
+      "SOM.ADVANCED_RELEASE_OPTIONAL"
+    ],
+    "nodeId": "SOM.DELAYED_RESPONSE_REASSESSMENT",
+    "recommendationIncludes": [
+      "next morning",
+      "following two or three days",
+      "repeat, reduce, stop, or intensify"
+    ]
+  },
+  "id": "G-SOM-DELAYED",
+  "title": "Calm session followed by delayed destabilization",
+  "type": "graph-structure"
+}

@@ -1,0 +1,96 @@
+{
+  "guideId": "owner-amendments",
+  "file": "owner-amendments.json",
+  "sections": [
+    {
+      "id": "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
+      "heading": "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "0a606b619736bce19277aec03344ff98422d752e95d6ce17bf01385a610488eb",
+      "excerpt": "Gentle, present-focused self-hypnosis may be used early to calm the nervous system or support warmth and borrowed adulthood. It must not go deeply into memories or immersive child dialogue before enough stopping and recovery capacity exists.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.BORROW_LOVE_EXTERNAL",
+      "heading": "AMEND.IC.BORROW_LOVE_EXTERNAL",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "81a6b117249bf2af08794814d9eae8c094acaa117102de10d9e897c7c925b18d",
+      "excerpt": "When self-directed love feels inaccessible or unsafe, first feel real love for a pet, baby, friend, child, partner, or anyone naturally loved. Do not force an immediate transfer; let the familiar feeling become available, then offer only as much toward the younger self as feels possible.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.BEST_FRIEND_PROMPT",
+      "heading": "AMEND.IC.BEST_FRIEND_PROMPT",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "492baccc8b8e0dda611e082a4aea9c51170ea4d3461c147e211a53b82fec6121",
+      "excerpt": "Ask: 'What would I tell my best friend in this exact situation?' Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action for the self.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
+      "heading": "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "766b82344b2a2cea0d55ad0d72508c162132b9f11e65630a5eb8bf2bd61a2a1d",
+      "excerpt": "Early inner-child work may run alongside somatic preparation when it remains present-focused: neutral witness, borrowed adulthood, non-cruelty, Protector actions, borrowed love, and limited dialogue. Deep memories, immersive child dialogue, and deep hypnosis wait for adequate capacity.",
+      "status": "owner-approved",
+      "domain": "somatic"
+    },
+    {
+      "id": "AMEND.SOM.PREP_MODALITIES",
+      "heading": "AMEND.SOM.PREP_MODALITIES",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "62869fd188e810a0e67d82c8dc864827ea8f0a88befec3496857857daf794f44",
+      "excerpt": "EFT, gentle qigong shaking, longer unforced exhales, gentle Buteyko-style breathing, Somatic Experiencing, trauma-sensitive yoga, and resource-oriented Brainspotting may prepare for or accompany inner-child work.",
+      "status": "owner-approved",
+      "domain": "somatic"
+    },
+    {
+      "id": "AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL",
+      "heading": "AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "ebaee19e563beacf42c81170e430e165a328df5ee76ae19968da8656cc98b785",
+      "excerpt": "For diffuse developmental or relational trauma, EMDR may fit better after some basic inner-child reparenting and access to Nurturer/Protector capacity. This is not universal: a stable person with one discrete traumatic event may be ready earlier.",
+      "status": "owner-approved",
+      "domain": "somatic"
+    },
+    {
+      "id": "AMEND.SOM.ADVANCED_RELEASE_PARALLEL",
+      "heading": "AMEND.SOM.ADVANCED_RELEASE_PARALLEL",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "22a84115771ca01a605cf97216f442b4c4973e1a4218b6a8349ea7698304a06b",
+      "excerpt": "Sky Hypnosis and Vagal Blitz are optional advanced-release practices that may be considered by stable people even before other therapies. They do not prove readiness for deep trauma processing and are not prerequisites.",
+      "status": "owner-approved",
+      "domain": "somatic"
+    },
+    {
+      "id": "AMEND.SOM.ADVANCED_RELEASE_BYPASS",
+      "heading": "AMEND.SOM.ADVANCED_RELEASE_BYPASS",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "f519674221cb06a7df7ff9b77ed5c5f0c6df0905d8345525926905391560ab8f",
+      "excerpt": "Advanced release can produce bliss or dramatic state shifts that bypass trauma. Judge it by later functioning, boundaries, willingness to meet pain, and whether it becomes compulsive or replaces relational and practical work.",
+      "status": "owner-approved",
+      "domain": "somatic"
+    },
+    {
+      "id": "AMEND.EVIDENCE.PROVENANCE",
+      "heading": "AMEND.EVIDENCE.PROVENANCE",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "46cdc7230f2544ca6051c547c883289e9d56afebe8b2d45cd7b9a85ba4f525bd",
+      "excerpt": "Personal outcomes remain author experience, community reports remain community signal, first-principles explanations remain provisional mechanism models, and strong physiological claims do not become deterministic medical facts without separate evidence review.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    }
+  ]
+}

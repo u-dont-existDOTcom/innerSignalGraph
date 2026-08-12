@@ -1,0 +1,70 @@
+{
+  "id": "G001",
+  "description": "Accessible love feels unsafe and the younger state disputes adult credibility.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "partial",
+    "parent_imagery": "not_used",
+    "love_access": "accessible",
+    "self_directed_love": "unsafe",
+    "solar_plexus_tension": "absent",
+    "protective_response": "present",
+    "urge_to_escape": "absent",
+    "credibility_conflict": "present",
+    "age_agency_ambiguity": "present",
+    "resentment_toward_younger_self": "present",
+    "coherent_child_state": "present",
+    "identity_blur": "absent",
+    "belonging_pressure": "absent",
+    "self_criticism": "present",
+    "current_intent": "conversation",
+    "memory_source_risk": "absent",
+    "forgiveness_interest": "absent",
+    "support_available": "present",
+    "body_capacity": "adequate",
+    "target_type": "developmental",
+    "trigger_loop": "absent",
+    "freeze_pattern": "absent",
+    "discharge_used": "no",
+    "emdr_interest": "absent",
+    "advanced_release_interest": "absent",
+    "advanced_release_physical_risk": "unknown",
+    "panic_instability": "absent",
+    "bypass_risk": "absent",
+    "guide_readiness": "absent",
+    "deep_work_readiness": "unknown",
+    "basic_reparenting_capacity": "unknown",
+    "stable_for_advanced_release": "unknown",
+    "witness_capacity": "present",
+    "credibility_evidence_state": "adverse",
+    "internal_speaker_relation": "unresolved"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.CREDIBILITY_REPAIR",
+    "selectedIncludes": [
+      "IC.BORROW_ONE_FUNCTION",
+      "IC.AGE_RESPONSIBILITY_CLARIFICATION"
+    ],
+    "deferredIncludes": [],
+    "selectedExcludes": [
+      "IC.NEUTRAL_WITNESS"
+    ],
+    "nextQuestion": "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?",
+    "requiredNuancePatterns": [
+      "existing adverse track record",
+      "Chronological adulthood does not establish",
+      "already demonstrates witness capacity"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "no track record yet",
+      "Do not merge the resentful voice"
+    ]
+  }
+}

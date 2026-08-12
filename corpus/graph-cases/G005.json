@@ -1,0 +1,57 @@
+{
+  "id": "G005",
+  "description": "Developmental trauma and EMDR interest without basic reparenting capacity.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "low",
+    "parent_imagery": "not_used",
+    "love_access": "accessible",
+    "self_directed_love": "inaccessible",
+    "solar_plexus_tension": "absent",
+    "protective_response": "absent",
+    "urge_to_escape": "absent",
+    "credibility_conflict": "absent",
+    "age_agency_ambiguity": "absent",
+    "resentment_toward_younger_self": "absent",
+    "coherent_child_state": "present",
+    "identity_blur": "absent",
+    "belonging_pressure": "absent",
+    "self_criticism": "absent",
+    "current_intent": "memory_processing",
+    "memory_source_risk": "absent",
+    "forgiveness_interest": "absent",
+    "support_available": "absent",
+    "body_capacity": "adequate",
+    "target_type": "developmental",
+    "trigger_loop": "absent",
+    "freeze_pattern": "absent",
+    "discharge_used": "no",
+    "emdr_interest": "present",
+    "advanced_release_interest": "absent",
+    "advanced_release_physical_risk": "unknown",
+    "panic_instability": "absent",
+    "bypass_risk": "absent",
+    "guide_readiness": "absent",
+    "deep_work_readiness": "unknown",
+    "basic_reparenting_capacity": "unknown",
+    "stable_for_advanced_release": "unknown"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.NEUTRAL_WITNESS",
+    "selectedIncludes": [
+      "IC.BORROW_ONE_FUNCTION",
+      "SOM.EMDR_DEVELOPMENTAL_DEFER"
+    ],
+    "deferredIncludes": [
+      "SOM.EMDR_DEVELOPMENTAL",
+      "IC.DEEP_CHILD_DIALOGUE"
+    ]
+  }
+}

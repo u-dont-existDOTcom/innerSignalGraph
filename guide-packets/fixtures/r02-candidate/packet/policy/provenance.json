@@ -1,0 +1,856 @@
+{
+  "contractVersion": "guide-provenance-v1",
+  "nodes": {
+    "IC.ADULT_APPRENTICE": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.ADULT_APPRENTICE",
+        "IC.RELATIONSHIP"
+      ]
+    },
+    "IC.AGE_RESPONSIBILITY_CLARIFICATION": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.INHERITED_PARENT",
+        "IC.BOTTOM_UP_SEQUENCE"
+      ]
+    },
+    "IC.ALTERED_STATE_GATE": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.ALTERED_STATES",
+        "IC.ESCAPE_URGE"
+      ]
+    },
+    "IC.BEST_FRIEND_PERSPECTIVE": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.BORROW_LOVE_PERSPECTIVE",
+        "IC.BORROW_ONE_FUNCTION"
+      ]
+    },
+    "IC.BORROW_LOVE": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.LOVE_MISSING",
+        "IC.HEART_SOLAR_LOOP",
+        "IC.BORROW_LOVE_PERSPECTIVE"
+      ]
+    },
+    "IC.BORROW_ONE_FUNCTION": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.ADULT_APPRENTICE"
+      ]
+    },
+    "IC.CREDIBILITY_REPAIR": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.PROTECTOR_VISIBLE",
+        "IC.VOW",
+        "IC.BOTTOM_UP_SEQUENCE",
+        "IC.LOVE_UNSAFE"
+      ]
+    },
+    "IC.DEEP_CHILD_DIALOGUE": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.BEFORE_DEEP",
+        "IC.ALTERED_STATES",
+        "SOM.INNER_CHILD_PARALLEL"
+      ]
+    },
+    "IC.DIFFERENTIATION": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.DIFFERENTIATION"
+      ]
+    },
+    "IC.FORGIVENESS_LATER": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.FORGIVENESS"
+      ]
+    },
+    "IC.GENTLE_SELF_HYPNOSIS": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.ESCAPE_URGE"
+      ]
+    },
+    "IC.GUIDE_LATER": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.GUIDE_LATER",
+        "IC.THREE_FUNCTIONS"
+      ]
+    },
+    "IC.IDENTITY_FORMATION": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.NO_CLEAR_CHILD",
+        "IC.IDENTITY_PLAY",
+        "IC.CHILD_BAD_THINGS"
+      ]
+    },
+    "IC.MEET_GUARD": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.START_WHATEVER",
+        "IC.GUARDS",
+        "IC.BOTTOM_UP_SEQUENCE",
+        "IC.ESCAPE_URGE"
+      ]
+    },
+    "IC.NEUTRAL_WITNESS": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.NEUTRAL_WITNESS",
+        "IC.BORROW_ADULT"
+      ]
+    },
+    "IC.PHOTO_EPISTEMIC_CAUTION": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.PHOTOS"
+      ]
+    },
+    "IC.PROTECTOR_ACTION": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.PROTECTOR_VISIBLE",
+        "IC.ADULT_APPRENTICE"
+      ]
+    },
+    "IC.SAFETY_ORIENTATION": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.BEFORE_DEEP",
+        "IC.REGULATION_BEFORE_DIALOGUE"
+      ]
+    },
+    "IC.SOLAR_PLEXUS_RELAXATION": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "IC.REGULATION_BEFORE_DIALOGUE",
+        "IC.HEART_SOLAR_LOOP",
+        "SOM.INNER_CHILD_PARALLEL"
+      ]
+    },
+    "SOM.ADVANCED_RELEASE_BLOCK": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "author-experience-and-conditional-safety",
+      "sourceRefs": [
+        "SOM.ADVANCED_RELEASE_SOURCE",
+        "VAGAL.SAFETY.P5"
+      ]
+    },
+    "SOM.ADVANCED_RELEASE_OPTIONAL": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "author-experience-and-conditional-safety",
+      "sourceRefs": [
+        "SOM.ADVANCED_RELEASE_SOURCE",
+        "VAGAL.SAFETY.P5",
+        "SOM.MAP_NOT_LADDER"
+      ]
+    },
+    "SOM.BYPASS_AUDIT": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.JUDGE_HELP",
+        "SOM.ADVANCED_RELEASE_SOURCE"
+      ]
+    },
+    "SOM.DEEP_BRAINSPOTTING": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.PHASE3",
+        "SOM.BRAINSPOTTING",
+        "SOM.POST_BRAINSPOTTING"
+      ]
+    },
+    "SOM.DELAYED_RESPONSE_REASSESSMENT": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.JUDGE_HELP",
+        "SOM.ADVANCED_RELEASE_SOURCE"
+      ]
+    },
+    "SOM.DISCHARGE_SETTLE_STACK": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.STACK",
+        "SOM.POST_BRAINSPOTTING",
+        "SOM.POST_EMDR"
+      ]
+    },
+    "SOM.EFT_PORTABLE": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.EFT",
+        "SOM.INNER_CHILD_PARALLEL"
+      ]
+    },
+    "SOM.EMDR_DEVELOPMENTAL": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.EMDR",
+        "SOM.INNER_CHILD_PARALLEL"
+      ]
+    },
+    "SOM.EMDR_DEVELOPMENTAL_DEFER": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.INNER_CHILD_PARALLEL",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.PROTECTOR_VISIBLE"
+      ]
+    },
+    "SOM.EMDR_DISCRETE": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.PHASE4",
+        "SOM.EMDR",
+        "SOM.INNER_CHILD_PARALLEL"
+      ]
+    },
+    "SOM.GENTLE_REGULATION": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.PHASE1",
+        "SOM.SE",
+        "SOM.YOGA",
+        "SOM.INNER_CHILD_PARALLEL"
+      ]
+    },
+    "SOM.GENTLE_SHAKING": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.GENTLE_SHAKING",
+        "SOM.SHAKING_QIGONG",
+        "SOM.INNER_CHILD_PARALLEL"
+      ]
+    },
+    "SOM.MEANING_INTEGRATION": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.PHASE5",
+        "SOM.INTEGRATION",
+        "SOM.JUDGE_HELP"
+      ]
+    },
+    "SOM.RESOURCE_BRAINSPOTTING": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.BRAINSPOTTING",
+        "SOM.INNER_CHILD_PARALLEL"
+      ]
+    },
+    "SOM.SAFETY_STABILIZATION": {
+      "authority": "author-framework",
+      "certainty": "author-framework",
+      "role": "source-prose",
+      "sourceRefs": [
+        "SOM.MAP_NOT_LADDER",
+        "SOM.PHASE1",
+        "SOM.SE"
+      ]
+    }
+  },
+  "sourceFamilies": [
+    {
+      "availableInWorker": true,
+      "expectedSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0",
+      "id": "inner-child-canonical-source-html",
+      "packetPath": "guides/inner-child/canonical-source.html",
+      "role": "canonical-source-prose"
+    },
+    {
+      "availableInWorker": true,
+      "expectedSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701",
+      "id": "somatic-canonical-source-html",
+      "packetPath": "guides/somatic/canonical-source.html",
+      "role": "canonical-source-prose"
+    },
+    {
+      "availableInWorker": true,
+      "excerptPath": "sources/vagal-blitz-safety-p5.txt",
+      "expectedSha256": "79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c",
+      "id": "vagal-blitz-source-pdf",
+      "packetPath": "sources/vagal-blitz-source.pdf",
+      "role": "author-provided-external-source"
+    }
+  ],
+  "sourceRefs": {
+    "IC.ADULT_APPRENTICE": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "2b70282ebfd052ff78bb3668a433374289a03adbec1f38ccf683f73147c05670",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.ADULT_VOICE_FAKE": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "2eb2b8e9fe77a2d65a99062a2767aaf3233af57489d941ac55eea633efd7db1e",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.ALTERED_STATES": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "cd932eec81f30ac9c17deff35091bbfe1380273cb3ccf6c327274a65c5aa1dd6",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.BEFORE_DEEP": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "7340c2c5418e12771889e4244de9af7bcfce1d502f658f1c8456553cfc1263d2",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.BORROW_ADULT": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "f3059d010ed548364eac0a2f96ce438808e207c00cc442b8baddb8209b3c5aaf",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.BORROW_LOVE_PERSPECTIVE": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "7a2892167adc7c97571f57492cbb9fa27b7ed2642b27945d7305e1222cc9e710",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.BORROW_ONE_FUNCTION": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "80e699e66c0bf5412916ceb10cde0cd4a68baa5547b794077f2f334e1a211449",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.BOTTOM_UP_SEQUENCE": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "ef2f9ee174718f602c1ec54fb4aae2019b282e8c332a656267bf2b4051ff313c",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.CHICKEN_EGG": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "685079de3d043874aa0635f62ac0457e2e555c5cca4f647548679c77e1e54668",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.CHILD_BAD_THINGS": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "9bb153aaf8674e331190f28d403d92d0c0202e7bd78f52c11f65b421c96a474b",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.DIFFERENTIATION": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "69ea37ddc916f093e683a559aa56154ba8717894d4526f3955affee50b5bd041",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.ESCAPE_URGE": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "4f6e9f1723a88b8d069dd5b1e3990a7d8501a31a1904240570e2d31bbc1c1051",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.FORGIVENESS": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "e3592d731454edde7919e4a9705de4568301c0128250c20d78702083a11b44bb",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.GUARDS": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "030b44f9fdafb2575756f14719060d62e95b2223ecf08b75fbe8906571e58447",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.GUIDE_LATER": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "1e4f8ac9b747280c76d9fef283a515574c7fd2995ff8703a4513db972c3cf08d",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.HEART_SOLAR_LOOP": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "24578658e1c436702e0a1370a646289462f03a01215f292c3c5d947ab00be1aa",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.IDENTITY_PLAY": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "0915df156a70188bf75310715e3542939851503acad0ee129218577bc6a768d8",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.IFS": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "1b58bd6c7975576d585ac5b9c31ef07f6d4c2cca1bcc1a5503fc9dd8278a6cb8",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.INHERITED_PARENT": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "7862f1df788cca4e7cbb29d2ad305a1d7956883776b49e6db058ef6b40a37ded",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.LOVE_MISSING": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "555a2432bb43b8826416a3b4321150767b5831d1bca92ffbedf457a409b1fdbb",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.LOVE_UNSAFE": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "846962bba7508b2f310b33f2bb7f077dfab455c0d63935da712e823b19ecf501",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.NEUTRAL_WITNESS": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "00fec289d3b5d830f25c064a428525e380e844ac3a6085bd2c4243db9039299a",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.NO_CLEAR_CHILD": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "a775c159cb3c20d8eab99f229730f305fbd52a5f136ada2d1181e28310422f2c",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.PHOTOS": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "a41cb741fe3ab8a9a1b0f2306803c47e940a05efbc04c769695dac92b1d0dca7",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.PROTECTOR_VISIBLE": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "ac922d51aef353ec8d6a1b60c4ea22b8835630307758b40048cf4b9544a09850",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.REGULATION_BEFORE_DIALOGUE": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "47b3c18eedaf2027a7bbac0f89429f0c204ec6896bdf8a20ce1f4189070d2671",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.RELATIONSHIP": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "9381a118bee9127d9b6e6dd1df83a128ce45cba3bbd7f06e40d59ccb2b7731a4",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.START_WHATEVER": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "f866dc30bfa63f1d7db5b382bdbbce24bc40256f2920d9508cb1bb4d1255722a",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.THREE_FUNCTIONS": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "b60f3cc29e5269f459fdcdd111707bb692167bbec866d5dcaed4eecc92012d2e",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "IC.VOW": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "ef980308aa6ba775121f6ea87570e1c850396cc7a41c9cafefab93e0236d4f91",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.APPENDIX": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "2ad7e32a1a6d8d0ebd4534f3f20adc1bbbfae9a1cb3fee46c03873746d1300aa",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.BOTTOM-UP-HEALING-FOR-TRAUMA-ADDICTION-NEUROLOGICAL-DE-ARMORING-BRAINSTEM-RELAXATION": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "b0465db45b54d6cf913d8103e00106f83804a3aca02a046d8401a77ef5cf307c",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.GIVE-THE-VOW-A-PHYSICAL-REMINDER": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "841933ac733c4fe8f741307414b157f2d32fc9f925c2e280792b4675125c5e76",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.HITTING-THE-WALL-RADICAL-ACCEPTANCE": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "d8f0e75ad747b878f5cd24f3daee582165ab707cda3e5c1b8dbbd79b786ff37d",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.JOURNAL-WITH-EACH-HAND": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "2a4be928fd62bb28b6bd786c671e7be16fea2cc1372c4f93a094ce9eab5e1f6a",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.LISTEN-WATCH": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "99ebcd308c56b950baf8de3e00cfb8b8b9eee548a69f9fc4d28c83b4766b912d",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.MY-JOURNEY": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "0f1851894558709faec28552380eb06f14b56ef2373f981f2b610b6e826cb05b",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.SIMPLE-PRACTICES": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "f82bf75f8e22a1187384dbc094d6a93b12d927901be6b87bc4e343b438ad92c9",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.SOMATIC-HEART-OPENING": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "2de6d1424976b1df431821c3f4fac9b916461e16c4cfb1ab662aa5db774a27cf",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.SOMATIC-MODALITIES-STRATEGIC-SEQUENCING-ROADMAP": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "c1158ab3a4dde422e4fa64a8da41b7fde856b13cf12c6277e3fce3aed7201647",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.TEACHERS-AND-PRACTICE-RESOURCES": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "bb923fecfcdd01d363f36f72e17387022e8e9d4c1a7dfbb89a92241e2d52b683",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.THE-CHATBOT-FOR-PAID-SUBSCRIBERS": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "c2108958035fd0c0f362ed895aa4a7421dea9955a2cb63feaccd6ce5cf7fb124",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.THE-I-AM-CONTEMPLATION": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "9fb356412dd073bae7e5259f65b20d817828d668260d657103cf210ba63e1809",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.WHEN-THE-PRACTICE-FEELS-REAL-BUT-STAYS-SHALLOW": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "b5c872df5425b21280deb1bcfd3be706221ed87d0b67b1e25e2e301e34d655d9",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "INNER.CHILD.YOU-ARE-WORTHY-OF-LOVE-ALWAYS": {
+      "certainty": "author-framework",
+      "guideId": "inner-child",
+      "role": "canonical-source-prose",
+      "sectionSha256": "9cf39c7ed0be0817d04020eaf1b2b07cff715af007c69fdf1660d42f6799cbde",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    "OWNER.PRODUCT.APP_OWNED_HYPNOSIS_CONTROL": {
+      "certainty": "owner-approved-operational",
+      "role": "product-only-operational",
+      "sourceIntegrated": false
+    },
+    "OWNER.PRODUCT.RENDERER_FIDELITY": {
+      "certainty": "owner-approved-operational",
+      "role": "product-only-operational",
+      "sourceIntegrated": false
+    },
+    "SOM.ADVANCED_RELEASE_SOURCE": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "9cc2066768d92bfdc96f21ac64fb6e1ad4bd0e6c0eb9331a45911ff25d601830",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.BRAINSPOTTING": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "c1489d6437ea04227160b831c3d1f114c1c1b9d21fdf5bdca93b98ed0cce6aeb",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.EFT": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "0e2222983cc64901330f3095b5ad8e58ecf196d76ca4013184ead80d7a51969e",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.EMDR": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "1d09562a54e1d4cecdda6d459010d12ed1f585163d2e396eff3f03c7cdae406b",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.GENTLE_SHAKING": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "15df07d2420d5404c9201db6d91f4cd7eb7307973dae599ab37bf6a65665bb94",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.INNER_CHILD_PARALLEL": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "590b7e6a0647853c506c46322170687e40c981fafc1e5fdad32d91ba25225593",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.INTEGRATION": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "e8b28cf09773f8e4011575a86b7463b892a2d0bfba37480fffc24eb876ea5041",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.INTRO": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "e4c9876fd06c002b0d73377090a84280a4663431129519b907c82e90cae17709",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.JUDGE_HELP": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "28d07803a0a89efac757a26ab23795531a9224ae0261a9993c7a9dba963fe079",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.MAP_GLANCE": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "d7ddcaed8dc64e0680ef99a50d4fdb63eec25ef2c54e8332ff3b2d8fabed4615",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.MAP_NOT_LADDER": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "e726fb37810edcb3737c09b73838fe3fb66af90a81e3c41ea0c114ad2833bb93",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.PHASE1": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "eeeda19736d36ae4591cd708a3c793c5f678a9395caea00887c7dbd08762aff2",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.PHASE2": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "19b93ded13da50578df8606e21936af3c54e193f0185a6987d8567811084a79f",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.PHASE3": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "229aaf861c988a74bce02d47f27167539d4183210a81f3be248fbdd5de54dd27",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.PHASE4": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "2d7d731b9818ce8a05c551726da588e6dcacbbfe0ac872be401517a189792bed",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.PHASE5": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "5917012cec33482b8d6c00575a164030a9f55a66b86932becdee854556725786",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.POST_BRAINSPOTTING": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "693eb7fd1b5f701ee25f3caec47fd46acb63ad1bf17f8d510096ae1e32555e28",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.POST_EMDR": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "671f35de287993c3a66ec58530ac4384c9d8f19ce10d5c6efcdfcee36b0e6484",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.SE": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "405a51e708ce80f841f59d6d9c03e47ff022d6a4c5dc3aeb0a6fb61a994fc6ce",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.SHAKING_QIGONG": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "8ac72f2fe68748b7b31058fa57ee4ddc66e0183743f7154b7c1f7ea5dd9efe3c",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.STACK": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "5f73fa720b98e56d27e23137108711c5a04bb7adcd822e7e09adf729cef93152",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOM.YOGA": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "94997a8aa5baa56eb505c6c5507136349c9440f39b4ace0e4accc49f5ae80eca",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOMATIC.DONT-BE-SO-SERIOUS-YOU-SILLY-WILLY": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "c2f36487409e629cdde6ecc0c5baa139ed17e125b130ce1f0a21b48bdfb1a8d2",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "SOMATIC.NEUROLOGICAL-DE-ARMORING-SUPPORT": {
+      "certainty": "author-framework",
+      "guideId": "somatic",
+      "role": "canonical-source-prose",
+      "sectionSha256": "5d440a0a0c6764933530bd4d8816ea6c00039e971a8f587a6610bd1e5e47a647",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    },
+    "VAGAL.SAFETY.P5": {
+      "availableInWorker": true,
+      "certainty": "author-provided-source-specific-safety-caution",
+      "excerptPath": "sources/vagal-blitz-safety-p5.txt",
+      "excerptSha256": "f95e06d1af7d631c3c7414cb44ee88af1d21064f8d9a86320dcb14fc5a29a792",
+      "guideId": "vagal-blitz-source",
+      "independentlyValidated": false,
+      "page": 5,
+      "role": "external-source",
+      "sourcePath": "sources/vagal-blitz-source.pdf",
+      "sourceSha256": "79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c"
+    }
+  }
+}

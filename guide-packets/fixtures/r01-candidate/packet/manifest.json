@@ -1,0 +1,63 @@
+{
+  "approvalRequired": true,
+  "candidateOnly": true,
+  "createdAt": "2026-08-11T19:30:00.000Z",
+  "format": "inner-signal-guide-packet-v1",
+  "graphBundleVersion": "inner-child-somatic-packet-2026.08.11-r01-candidate",
+  "graphContractVersion": "guide-graph-v1",
+  "guides": [
+    {
+      "editorBodyPath": "guides/inner-child/editor-body.txt",
+      "editorBodySha256": "043870d7dffd56fa8c2c92b7e7b47c9a658693fe55bb7771c3f14b812c89eaab",
+      "graphPath": "graphs/inner-child.graph.json",
+      "graphSha256": "353381fdc0f64fabe261562abf9a6e22db8c56226e1629da4d8bf1bc80259496",
+      "graphSourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0",
+      "id": "inner-child",
+      "revision": "r01-candidate",
+      "sectionsPath": "guides/inner-child/sections.json",
+      "sourceMapPath": "guides/inner-child/source-map.json",
+      "sourcePath": "guides/inner-child/canonical-source.html",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    {
+      "editorBodyPath": "guides/somatic/editor-body.txt",
+      "editorBodySha256": "8c8a0ef5ce88d90e46dc8b8760488abe766a125b7851f9d987d82ee32ab39bf5",
+      "graphPath": "graphs/somatic.graph.json",
+      "graphSha256": "dbbb95a2e3dd81fdd9a7f28194694e7dc33bfc3eea32f00da1b4fde113a3b3a6",
+      "graphSourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701",
+      "id": "somatic",
+      "revision": "r01-candidate",
+      "sectionsPath": "guides/somatic/sections.json",
+      "sourceMapPath": "guides/somatic/source-map.json",
+      "sourcePath": "guides/somatic/canonical-source.html",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    }
+  ],
+  "minimumRuntimeVersion": "0.14.0",
+  "packetId": "inner-signal-guides-2026.08.11-r01-candidate",
+  "packetRevision": 1,
+  "packetVersion": "2026.08.11-r01-candidate",
+  "paths": {
+    "behavioralDiff": "audit/behavioral-diff.json",
+    "certainty": "policy/certainty-and-authority.json",
+    "ownerAmendments": "policy/owner-amendments.json",
+    "ownerDecisions": "audit/owner-decisions.json",
+    "provenance": "policy/provenance.json",
+    "qualityAudit": "audit/guide-quality-findings.json"
+  },
+  "privateDataIncluded": false,
+  "schemaVersion": 1,
+  "sourceFamilyPackages": [
+    {
+      "availableInWorker": false,
+      "expectedSha256": "f2c6d822d230a71fd3cd478b84afea4f44c4e291b38914a6709b5dbd58b2dc74",
+      "id": "somatic-guide-r01-candidate-package"
+    },
+    {
+      "availableInWorker": false,
+      "expectedSha256": "73e2bb6ae0c8f88737f0d78b4f032c8bb7e7c471cba9f075f6e6a948e54acb82",
+      "id": "inner-child-guide-r01-candidate-package"
+    }
+  ],
+  "status": "candidate"
+}

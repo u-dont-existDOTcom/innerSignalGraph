@@ -1,0 +1,68 @@
+{
+  "bundleVersion": "inner-child-somatic-packet-2026.08.12-r02-candidate",
+  "contractVersion": "guide-graph-v1",
+  "description": "Candidate cross-guide dependencies for the r01 article candidates.",
+  "edges": [
+    {
+      "from": "SOM.GENTLE_REGULATION",
+      "relation": "supports",
+      "to": "IC.SOLAR_PLEXUS_RELAXATION"
+    },
+    {
+      "from": "IC.SOLAR_PLEXUS_RELAXATION",
+      "relation": "may-enable",
+      "to": "IC.BORROW_LOVE"
+    },
+    {
+      "from": "SOM.EFT_PORTABLE",
+      "relation": "parallel-preparation",
+      "to": "IC.BORROW_ONE_FUNCTION"
+    },
+    {
+      "from": "SOM.GENTLE_SHAKING",
+      "relation": "parallel-preparation",
+      "to": "IC.NEUTRAL_WITNESS"
+    },
+    {
+      "from": "SOM.RESOURCE_BRAINSPOTTING",
+      "relation": "parallel-preparation",
+      "to": "IC.MEET_GUARD"
+    },
+    {
+      "from": "IC.BORROW_ONE_FUNCTION",
+      "relation": "capacity-prerequisite",
+      "to": "SOM.EMDR_DEVELOPMENTAL"
+    },
+    {
+      "from": "IC.PROTECTOR_ACTION",
+      "relation": "capacity-prerequisite",
+      "to": "SOM.EMDR_DEVELOPMENTAL"
+    },
+    {
+      "from": "SOM.ADVANCED_RELEASE_OPTIONAL",
+      "relation": "does-not-establish-readiness",
+      "to": "IC.DEEP_CHILD_DIALOGUE"
+    },
+    {
+      "from": "SOM.BYPASS_AUDIT",
+      "relation": "integration-check",
+      "to": "IC.GUIDE_LATER"
+    },
+    {
+      "from": "IC.GENTLE_SELF_HYPNOSIS",
+      "relation": "does-not-imply-readiness",
+      "to": "IC.DEEP_CHILD_DIALOGUE"
+    }
+  ],
+  "graphId": "inner-child-somatic-cross-guide",
+  "guideId": "cross-guide",
+  "nodes": [],
+  "sourceRevision": {
+    "guideIds": [
+      "inner-child",
+      "somatic"
+    ],
+    "sourceSha256": "6f275eb0d61e48693b91b3e676a4ac7c1fc1ce7251ee7366b122f5de02f7608a"
+  },
+  "version": "inner-child-somatic-packet-2026.08.12-r02-candidate"
+}

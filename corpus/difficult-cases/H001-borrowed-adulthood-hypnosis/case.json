@@ -1,0 +1,28 @@
+{
+  "id": "H001",
+  "title": "Awake borrowed-adulthood session with an app-owned protector gate",
+  "input": {
+    "recentTranscript": "The user says loving-parent imagery invokes a critical voice. One part wants to stop and another wants to check the phone. The user feels small and tired, cannot picture a child, and wants to build adult presence without pretending it already exists.",
+    "userMessage": "Create an awake inner-child hypnosis session that borrows only one bounded adult function, respects uncertainty, and returns me fully awake.",
+    "userFacts": [
+      "The user is sober and safe at home.",
+      "The user wants to be fully awake afterward.",
+      "The user does not want adult capacity or inner-child contact falsely claimed."
+    ],
+    "hypnosisRequest": {
+      "target": "Practice one bounded borrowed function of steady witnessing without claiming that a reliable inner adult already exists.",
+      "relationship": "communion",
+      "language": "en",
+      "depth": "deep",
+      "sessionType": "awake",
+      "durationMinutes": 10,
+      "protectorGateRequired": true,
+      "fullyAwakeAfterward": true,
+      "notes": [
+        "The app must own the gate and the waking return.",
+        "The external route must not secretly deepen."
+      ]
+    }
+  },
+  "mockFixture": "fixtures/mock-responses/H001.json"
+}

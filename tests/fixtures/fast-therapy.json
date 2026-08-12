@@ -1,0 +1,67 @@
+{
+  "anthropic": {
+    "case_extraction": {
+      "user_goal": "Get one gentle next step for an ordinary low-ambiguity self-care question.",
+      "current_issue": "User wants a simple present-focused suggestion.",
+      "direct_observations": [
+        {
+          "id": "O1",
+          "statement": "The user asks for one simple present-focused suggestion.",
+          "evidence": "simple suggestion"
+        }
+      ],
+      "variables": {
+        "present_safety": "safe",
+        "orientation": "oriented",
+        "ability_to_stop": "yes",
+        "ability_to_return": "yes",
+        "activation": "low",
+        "dissociation": "none",
+        "altered_state": "sober",
+        "inner_adult_access": "available",
+        "parent_imagery": "not_used",
+        "love_access": "accessible",
+        "self_directed_love": "safe",
+        "solar_plexus_tension": "unknown",
+        "protective_response": "absent",
+        "urge_to_escape": "absent",
+        "credibility_conflict": "absent",
+        "age_agency_ambiguity": "absent",
+        "resentment_toward_younger_self": "absent",
+        "coherent_child_state": "present",
+        "identity_blur": "absent",
+        "belonging_pressure": "absent",
+        "self_criticism": "absent",
+        "current_intent": "conversation",
+        "memory_source_risk": "absent",
+        "forgiveness_interest": "absent",
+        "support_available": "unknown",
+        "body_capacity": "adequate",
+        "target_type": "none",
+        "trigger_loop": "absent",
+        "freeze_pattern": "absent",
+        "discharge_used": "no",
+        "emdr_interest": "absent",
+        "advanced_release_interest": "absent",
+        "advanced_release_physical_risk": "unknown",
+        "panic_instability": "absent",
+        "bypass_risk": "absent",
+        "guide_readiness": "absent",
+        "deep_work_readiness": "unknown",
+        "basic_reparenting_capacity": "unknown",
+        "stable_for_advanced_release": "unknown",
+        "witness_capacity": "unknown",
+        "credibility_evidence_state": "none",
+        "internal_speaker_relation": "unknown"
+      },
+      "hypotheses": [],
+      "unknowns": []
+    },
+    "realization": {
+      "answer": "Try one small, present-focused act that fits what you already know you need, then notice whether it actually helps.",
+      "next_question": "",
+      "realized_nodes": []
+    }
+  },
+  "openai": {}
+}

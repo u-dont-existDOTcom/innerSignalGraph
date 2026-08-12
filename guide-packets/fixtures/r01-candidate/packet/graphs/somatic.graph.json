@@ -1,0 +1,1016 @@
+{
+  "bundleVersion": "inner-child-somatic-packet-2026.08.11-r01-candidate",
+  "contractVersion": "guide-graph-v1",
+  "description": "Candidate executable graph derived from the r01 five-job somatic article candidate and explicit provenance separation.",
+  "edges": [
+    {
+      "from": "SOM.SAFETY_STABILIZATION",
+      "relation": "enables",
+      "to": "SOM.GENTLE_REGULATION"
+    },
+    {
+      "from": "SOM.GENTLE_REGULATION",
+      "relation": "enables",
+      "to": "SOM.RESOURCE_BRAINSPOTTING"
+    },
+    {
+      "from": "SOM.GENTLE_SHAKING",
+      "relation": "requires-aftercare",
+      "to": "SOM.DISCHARGE_SETTLE_STACK"
+    },
+    {
+      "from": "SOM.RESOURCE_BRAINSPOTTING",
+      "relation": "may-precede",
+      "to": "SOM.DEEP_BRAINSPOTTING"
+    },
+    {
+      "from": "SOM.EMDR_DEVELOPMENTAL_DEFER",
+      "relation": "defers-until-capacity",
+      "to": "SOM.EMDR_DEVELOPMENTAL"
+    },
+    {
+      "from": "SOM.ADVANCED_RELEASE_OPTIONAL",
+      "relation": "requires-audit",
+      "to": "SOM.BYPASS_AUDIT"
+    },
+    {
+      "from": "SOM.DEEP_BRAINSPOTTING",
+      "relation": "followed-by",
+      "to": "SOM.MEANING_INTEGRATION"
+    },
+    {
+      "from": "SOM.EMDR_DISCRETE",
+      "relation": "followed-by",
+      "to": "SOM.MEANING_INTEGRATION"
+    },
+    {
+      "from": "SOM.GENTLE_SHAKING",
+      "relation": "followed-by-delayed-reassessment",
+      "to": "SOM.DELAYED_RESPONSE_REASSESSMENT"
+    },
+    {
+      "from": "SOM.DEEP_BRAINSPOTTING",
+      "relation": "followed-by-delayed-reassessment",
+      "to": "SOM.DELAYED_RESPONSE_REASSESSMENT"
+    },
+    {
+      "from": "SOM.EMDR_DISCRETE",
+      "relation": "followed-by-delayed-reassessment",
+      "to": "SOM.DELAYED_RESPONSE_REASSESSMENT"
+    },
+    {
+      "from": "SOM.EMDR_DEVELOPMENTAL",
+      "relation": "followed-by-delayed-reassessment",
+      "to": "SOM.DELAYED_RESPONSE_REASSESSMENT"
+    },
+    {
+      "from": "SOM.ADVANCED_RELEASE_OPTIONAL",
+      "relation": "followed-by-delayed-reassessment",
+      "to": "SOM.DELAYED_RESPONSE_REASSESSMENT"
+    }
+  ],
+  "graphId": "somatic-directed-graph",
+  "guideId": "somatic-sequencing-guide",
+  "nodes": [
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not treat capacity-building as proof that trauma processing occurred."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "SOM.DEEP_BRAINSPOTTING",
+          "SOM.EMDR_DEVELOPMENTAL",
+          "SOM.EMDR_DISCRETE",
+          "SOM.ADVANCED_RELEASE_OPTIONAL"
+        ],
+        "forbiddenOverclaims": [
+          "Do not confuse intensity with healing."
+        ],
+        "requiredNuance": [
+          "Capacity-building should not become an endless waiting room."
+        ]
+      },
+      "id": "SOM.SAFETY_STABILIZATION",
+      "kind": "decision-node",
+      "priority": 100,
+      "recommendations": [
+        "Use outside safety, orientation, low-dose regulation, and qualified support before processing.",
+        "Choose the smallest step that can be stopped and recovered from."
+      ],
+      "sourceRefs": [
+        "SOM.MAP_NOT_LADDER",
+        "SOM.PHASE1",
+        "SOM.SE"
+      ],
+      "successSignals": [
+        "The person can remain present, stop, and return to ordinary life."
+      ],
+      "tags": [
+        "safety",
+        "stabilization"
+      ],
+      "tier": 1,
+      "title": "Safety, orientation, and stopping capacity"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "activation",
+            "op": "in",
+            "value": [
+              "moderate",
+              "high"
+            ]
+          },
+          {
+            "field": "solar_plexus_tension",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "body_capacity",
+            "op": "in",
+            "value": [
+              "low",
+              "unknown"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not force breath, use long holds, push through sensation, or turn regulation into catharsis."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.GENTLE_REGULATION",
+      "kind": "decision-node",
+      "priority": 93,
+      "recommendations": [
+        "Use titrated Somatic Experiencing, trauma-sensitive yoga, gentle longer exhales, gentle Buteyko-style breathing, or low-dose body awareness.",
+        "Keep eyes open and choices explicit when imagery or inward focus destabilizes."
+      ],
+      "sourceRefs": [
+        "SOM.PHASE1",
+        "SOM.SE",
+        "SOM.YOGA",
+        "SOM.INNER_CHILD_PARALLEL"
+      ],
+      "successSignals": [
+        "Activation can rise and settle without flooding."
+      ],
+      "tags": [
+        "regulation",
+        "SE",
+        "yoga",
+        "breathing"
+      ],
+      "tier": 3,
+      "title": "Gentle regulation and embodiment"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "activation",
+            "op": "in",
+            "value": [
+              "moderate",
+              "high"
+            ]
+          },
+          {
+            "field": "trigger_loop",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "gentle_practice"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not present EFT as the sole treatment for severe trauma or a substitute for deeper work when needed."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.EFT_PORTABLE",
+      "kind": "decision-node",
+      "priority": 86,
+      "recommendations": [
+        "Use tapping before or after difficult conversations or therapy, and when thought loops and bodily activation occur together."
+      ],
+      "sourceRefs": [
+        "SOM.EFT",
+        "SOM.INNER_CHILD_PARALLEL"
+      ],
+      "successSignals": [
+        "The person can return to the task or relationship with more choice."
+      ],
+      "tags": [
+        "EFT",
+        "portable",
+        "regulation"
+      ],
+      "tier": 4,
+      "title": "Portable EFT for real-world triggers"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "freeze_pattern",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "activation",
+            "op": "in",
+            "value": [
+              "moderate",
+              "high"
+            ]
+          },
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "gentle_practice"
+          }
+        ],
+        "none": [
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not chase catharsis, let unsupported neck whipping continue, or treat shaking as the primary treatment for severe PTSD."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.GENTLE_SHAKING",
+      "kind": "decision-node",
+      "priority": 82,
+      "recommendations": [
+        "Use short, playful movement that can stop easily; increase dose only when the person can orient and settle afterward.",
+        "Follow stronger discharge with settling rather than walking away raw."
+      ],
+      "sourceRefs": [
+        "SOM.GENTLE_SHAKING",
+        "SOM.SHAKING_QIGONG",
+        "SOM.INNER_CHILD_PARALLEL"
+      ],
+      "successSignals": [
+        "The person finishes more regulated rather than blasted open."
+      ],
+      "tags": [
+        "shaking",
+        "qigong",
+        "discharge"
+      ],
+      "tier": 4,
+      "title": "Gentle shaking or qigong as regulation or discharge"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "discharge_used",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not stack several intense processing methods on the same day without established tolerance and skilled support."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.DISCHARGE_SETTLE_STACK",
+      "kind": "decision-node",
+      "priority": 80,
+      "recommendations": [
+        "After discharge, use restorative movement, gentle yoga, walking, hydration, food, rest, or light EFT according to what the body needs."
+      ],
+      "sourceRefs": [
+        "SOM.STACK",
+        "SOM.POST_BRAINSPOTTING",
+        "SOM.POST_EMDR"
+      ],
+      "successSignals": [
+        "The person returns to ordinary functioning rather than remaining raw."
+      ],
+      "tags": [
+        "settle",
+        "integration",
+        "aftercare"
+      ],
+      "tier": 5,
+      "title": "Discharge, then settle and reorient"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "oriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "any": [
+          {
+            "field": "target_type",
+            "op": "in",
+            "value": [
+              "developmental",
+              "diffuse"
+            ]
+          },
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "gentle_practice"
+          }
+        ],
+        "none": [
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "activation",
+            "op": "eq",
+            "value": "high"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not assume resource-oriented use is equivalent to deep subcortical processing."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.RESOURCE_BRAINSPOTTING",
+      "kind": "decision-node",
+      "priority": 74,
+      "recommendations": [
+        "Use resource-oriented or carefully titrated gaze work as preparation or alongside inner-child work."
+      ],
+      "sourceRefs": [
+        "SOM.BRAINSPOTTING",
+        "SOM.INNER_CHILD_PARALLEL"
+      ],
+      "successSignals": [
+        "The person can contact material in small doses and return."
+      ],
+      "tags": [
+        "brainspotting",
+        "resource",
+        "titration"
+      ],
+      "tier": 5,
+      "title": "Resource-oriented or titrated Brainspotting"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "deep_work_readiness",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "target_type",
+            "op": "in",
+            "value": [
+              "developmental",
+              "diffuse"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not rush directly into analysis afterward or treat every image as historical fact."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.DEEP_BRAINSPOTTING",
+      "kind": "decision-node",
+      "priority": 66,
+      "recommendations": [
+        "Use deeper gaze-position work when regulation, discharge, body awareness, and integration skills are established."
+      ],
+      "sourceRefs": [
+        "SOM.PHASE3",
+        "SOM.BRAINSPOTTING",
+        "SOM.POST_BRAINSPOTTING"
+      ],
+      "successSignals": [
+        "Deeper material can be contacted without loss of orientation or prolonged destabilization."
+      ],
+      "tags": [
+        "brainspotting",
+        "deep-processing"
+      ],
+      "tier": 6,
+      "title": "Deep Brainspotting for diffuse or body-held material"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "target_type",
+            "op": "eq",
+            "value": "discrete"
+          },
+          {
+            "field": "deep_work_readiness",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "none": [
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not require a long preliminary sequence merely because the modality is placed in Phase 4."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.EMDR_DISCRETE",
+      "kind": "decision-node",
+      "priority": 72,
+      "recommendations": [
+        "Consider EMDR for a clear event or residual trigger when the person can regulate and integrate afterward."
+      ],
+      "sourceRefs": [
+        "SOM.PHASE4",
+        "SOM.EMDR",
+        "SOM.INNER_CHILD_PARALLEL"
+      ],
+      "successSignals": [
+        "The specific trigger changes without broad destabilization."
+      ],
+      "tags": [
+        "EMDR",
+        "discrete-target"
+      ],
+      "tier": 6,
+      "title": "EMDR for a discrete target in a stable person"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "target_type",
+            "op": "in",
+            "value": [
+              "developmental",
+              "diffuse"
+            ]
+          },
+          {
+            "field": "deep_work_readiness",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "basic_reparenting_capacity",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "none": [
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not turn this conditional sequencing preference into a universal prerequisite."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.EMDR_DEVELOPMENTAL",
+      "kind": "decision-node",
+      "priority": 68,
+      "recommendations": [
+        "For diffuse developmental or relational material, use EMDR after some access to Nurturer/Protector capacity and post-session integration."
+      ],
+      "sourceRefs": [
+        "SOM.EMDR",
+        "SOM.INNER_CHILD_PARALLEL"
+      ],
+      "successSignals": [
+        "Memory work can be held by enough present-day adult and relational capacity."
+      ],
+      "tags": [
+        "EMDR",
+        "developmental",
+        "reparenting"
+      ],
+      "tier": 6,
+      "title": "Developmental EMDR after basic reparenting capacity"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "target_type",
+            "op": "in",
+            "value": [
+              "developmental",
+              "diffuse"
+            ]
+          },
+          {
+            "field": "basic_reparenting_capacity",
+            "op": "eq",
+            "value": "no"
+          }
+        ],
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "memory_processing"
+          },
+          {
+            "field": "emdr_interest",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not imply EMDR is permanently contraindicated."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "SOM.EMDR_DEVELOPMENTAL"
+        ],
+        "forbiddenOverclaims": [
+          "Do not say everyone must finish inner-child therapy before EMDR."
+        ],
+        "requiredNuance": [
+          "A stable discrete target is a different case."
+        ]
+      },
+      "id": "SOM.EMDR_DEVELOPMENTAL_DEFER",
+      "kind": "decision-node",
+      "priority": 89,
+      "recommendations": [
+        "Build basic Nurturer/Protector or borrowed-adulthood capacity first while continuing appropriate regulation and present-focused work."
+      ],
+      "sourceRefs": [
+        "SOM.INNER_CHILD_PARALLEL",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.PROTECTOR_VISIBLE"
+      ],
+      "successSignals": [
+        "The person gains enough capacity to hold what memory work opens."
+      ],
+      "tags": [
+        "EMDR",
+        "defer",
+        "developmental"
+      ],
+      "tier": 3,
+      "title": "Defer developmental EMDR while reparenting capacity is missing"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "advanced_release_interest",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "any": [
+          {
+            "field": "stable_for_advanced_release",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "advanced_release_physical_risk",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "panic_instability",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not coach syncope, prolonged forceful breath holds, standing lightheadedness, or substance potentiation."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.ADVANCED_RELEASE_BLOCK",
+      "kind": "decision-node",
+      "priority": 98,
+      "recommendations": [
+        "Use gentler regulation instead and reassess only after physical and psychological safety are established."
+      ],
+      "sourceRefs": [
+        "SOM.ADVANCED_RELEASE_SOURCE",
+        "VAGAL.SAFETY.P5"
+      ],
+      "successSignals": [
+        "No advanced-release attempt occurs under unstable conditions."
+      ],
+      "tags": [
+        "advanced-release",
+        "safety",
+        "block"
+      ],
+      "tier": 1,
+      "title": "Block advanced release when physical or regulatory safety is not established"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "advanced_release_interest",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "stable_for_advanced_release",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "none": [
+          {
+            "field": "advanced_release_physical_risk",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "panic_instability",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not chase loss of consciousness, use while standing once lightheaded, combine with substances, or interpret bliss as trauma resolution."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.ADVANCED_RELEASE_OPTIONAL",
+      "kind": "decision-node",
+      "priority": 64,
+      "recommendations": [
+        "Treat Sky Hypnosis and Vagal Blitz as optional advanced state-shift practices that may occur early, not as prerequisites or proof of readiness.",
+        "Use the least intense version that produces a useful shift; preserve stopping, orientation, and ordinary recovery.",
+        "Present physiological explanations and efficacy claims as author experience or provisional mechanism, not settled fact."
+      ],
+      "sourceRefs": [
+        "SOM.ADVANCED_RELEASE_SOURCE",
+        "VAGAL.SAFETY.P5",
+        "SOM.MAP_NOT_LADDER"
+      ],
+      "successSignals": [
+        "The practice increases later capacity and functioning without compulsion or bypass."
+      ],
+      "tags": [
+        "advanced-release",
+        "optional",
+        "provenance"
+      ],
+      "tier": 5,
+      "title": "Optional advanced release for a stable, informed person"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "bypass_risk",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "advanced_release_interest",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not treat bliss, intensity, or temporary relief as proof that trauma was processed."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.BYPASS_AUDIT",
+      "kind": "decision-node",
+      "priority": 85,
+      "recommendations": [
+        "Judge the practice by later sleep, relationships, functioning, boundaries, willingness to meet pain, and whether it replaces practical or relational work."
+      ],
+      "sourceRefs": [
+        "SOM.JUDGE_HELP",
+        "SOM.ADVANCED_RELEASE_SOURCE"
+      ],
+      "successSignals": [
+        "The practice supports rather than replaces contact with the actual issue."
+      ],
+      "tags": [
+        "bypass",
+        "bliss",
+        "integration"
+      ],
+      "tier": 4,
+      "title": "Audit bliss and state shifts for trauma bypass"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "integration"
+          },
+          {
+            "field": "guide_readiness",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "activation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not try to think the body out of an active survival state."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "SOM.MEANING_INTEGRATION",
+      "kind": "decision-node",
+      "priority": 58,
+      "recommendations": [
+        "Use light cognitive or narrative work for beliefs, values, boundaries, agency, and a coherent life story."
+      ],
+      "sourceRefs": [
+        "SOM.PHASE5",
+        "SOM.INTEGRATION",
+        "SOM.JUDGE_HELP"
+      ],
+      "successSignals": [
+        "Meaning-making improves life participation rather than becoming another processing project."
+      ],
+      "tags": [
+        "integration",
+        "meaning",
+        "CBT"
+      ],
+      "tier": 7,
+      "title": "Meaning-making after the body is less trapped in survival mode"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "discharge_used",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "advanced_release_interest",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "integration"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not treat a calm ending or dramatic session as sufficient evidence that the dose was right."
+      ],
+      "defaultQuestion": "How were sleep, irritability, dissociation, pain, compulsive processing, relationships, and ordinary functioning later that day and over the next two or three days?",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": [
+          "Immediate relief and delayed response are different evidence."
+        ]
+      },
+      "id": "SOM.DELAYED_RESPONSE_REASSESSMENT",
+      "kind": "decision-node",
+      "priority": 67,
+      "recommendations": [
+        "Assess immediate regulation, then sleep, irritability, dissociation, pain, compulsive processing, relationships, and ordinary functioning the next morning and over the following two or three days.",
+        "Use the delayed response to decide whether to repeat, reduce, stop, or intensify the practice."
+      ],
+      "sourceRefs": [
+        "SOM.JUDGE_HELP",
+        "SOM.ADVANCED_RELEASE_SOURCE"
+      ],
+      "successSignals": [
+        "Later functioning and recovery improve without delayed destabilization."
+      ],
+      "tags": [
+        "response-history",
+        "dose",
+        "integration"
+      ],
+      "tier": 6,
+      "title": "Reassess the dose immediately, next morning, and over two or three days"
+    }
+  ],
+  "sourceRevision": {
+    "guideId": "somatic",
+    "revision": "r01-candidate",
+    "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+  },
+  "version": "inner-child-somatic-packet-2026.08.11-r01-candidate"
+}

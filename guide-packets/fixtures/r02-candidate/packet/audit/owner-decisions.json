@@ -1,0 +1,89 @@
+{
+  "allApproved": false,
+  "cards": [
+    {
+      "affectedRegressions": [
+        "G-SOM-DELAYED"
+      ],
+      "behavioralEffect": "Presentations matching this node can receive a distinct route rather than being folded into a neighboring intervention.",
+      "candidate": "SOM.DELAYED_RESPONSE_REASSESSMENT becomes available in somatic-directed-graph.",
+      "classification": "substantive",
+      "current": "No equivalent executable node is installed.",
+      "id": "decision-1",
+      "provenance": "source-prose",
+      "recommended": "approve",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "Add route: Reassess the dose immediately, next morning, and over two or three days",
+      "worstPlausibleFailure": "The new route could activate too broadly and add an unnecessary follow-up or delay a better-established intervention."
+    },
+    {
+      "affectedRegressions": [
+        "A001"
+      ],
+      "behavioralEffect": "The candidate asks a different question before resolving the route, which can change the interpretation and next intervention.",
+      "candidate": "Which age or version of you is the resentment actually directed toward, what opportunity do you believe that version failed to use, and what knowledge, support, safety, money, and freedom were actually available then?",
+      "classification": "substantive",
+      "current": "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?",
+      "id": "decision-2",
+      "provenance": "source-prose",
+      "recommended": "approve",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "Change discriminating question: Separate developmental ages and responsibility",
+      "worstPlausibleFailure": "The app may ask a more detailed question when the user would have benefited from immediate action."
+    },
+    {
+      "affectedRegressions": [
+        "A001",
+        "H001"
+      ],
+      "behavioralEffect": "When several jobs match, this route may now appear earlier or later in the intervention plan.",
+      "candidate": "Priority 95",
+      "classification": "substantive",
+      "current": "Priority 94",
+      "id": "decision-3",
+      "provenance": "source-prose",
+      "recommended": "approve",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "Reprioritize route: Borrow one bounded adult function",
+      "worstPlausibleFailure": "The reprioritized route could crowd out another useful job in ambiguous cases."
+    },
+    {
+      "affectedRegressions": [
+        "A001"
+      ],
+      "behavioralEffect": "A deeper or downstream route may now wait, remain available, or be blocked under different conditions.",
+      "candidate": "{\"deferNodes\":[\"IC.DEEP_CHILD_DIALOGUE\"],\"blockNodes\":[]}",
+      "classification": "substantive",
+      "current": "{\"deferNodes\":[],\"blockNodes\":[]}",
+      "id": "decision-4",
+      "provenance": "source-prose",
+      "recommended": "approve",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "Change prerequisite or deferral: Repair credibility through non-defensive follow-through",
+      "worstPlausibleFailure": "The app could postpone useful work or allow depth before sufficient capacity if the dependency is wrong."
+    },
+    {
+      "affectedRegressions": [
+        "G-SOM-DELAYED",
+        "G-SOM-ADVANCED-BLOCK"
+      ],
+      "behavioralEffect": "A deeper or downstream route may now wait, remain available, or be blocked under different conditions.",
+      "candidate": "{\"deferNodes\":[],\"blockNodes\":[\"SOM.ADVANCED_RELEASE_OPTIONAL\"]}",
+      "classification": "substantive",
+      "current": "{\"deferNodes\":[],\"blockNodes\":[]}",
+      "id": "decision-5",
+      "provenance": "author-experience-and-conditional-safety",
+      "recommended": "approve",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "Change prerequisite or deferral: Block advanced release when physical or regulatory safety is not established",
+      "worstPlausibleFailure": "The app could postpone useful work or allow depth before sufficient capacity if the dependency is wrong."
+    }
+  ],
+  "contractVersion": "guide-owner-decisions-v1",
+  "status": "awaiting-owner"
+}

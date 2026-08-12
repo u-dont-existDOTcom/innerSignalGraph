@@ -1,0 +1,192 @@
+{
+  "contractVersion": "guide-quality-audit-v1",
+  "counts": {
+    "block": 0,
+    "info": 24,
+    "review": 5,
+    "total": 29
+  },
+  "findings": [
+    {
+      "code": "GRAPH_ONLY_OWNER_AMENDMENT",
+      "guideId": "product-only",
+      "recommendation": "Keep explicitly product-only.",
+      "severity": "info",
+      "sourceRef": "OWNER.PRODUCT.APP_OWNED_HYPNOSIS_CONTROL",
+      "summary": "Owner amendment OWNER.PRODUCT.APP_OWNED_HYPNOSIS_CONTROL is not present in canonical guide prose."
+    },
+    {
+      "code": "GRAPH_ONLY_OWNER_AMENDMENT",
+      "guideId": "product-only",
+      "recommendation": "Keep explicitly product-only.",
+      "severity": "info",
+      "sourceRef": "OWNER.PRODUCT.RENDERER_FIDELITY",
+      "summary": "Owner amendment OWNER.PRODUCT.RENDERER_FIDELITY is not present in canonical guide prose."
+    },
+    {
+      "code": "CATEGORICAL_SOURCE_WORDING",
+      "guideId": "inner-child",
+      "recommendation": "Keep the executable graph conditional or revise the article wording after owner review.",
+      "severity": "review",
+      "sourceRef": "IC.RELATIONSHIP",
+      "summary": "Source wording in “Borrowed Adulthood in Relationship” may compile as a universal rule."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.THE-CHATBOT-FOR-PAID-SUBSCRIBERS",
+      "summary": "Section “The Chatbot for Paid Subscribers” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.LISTEN-WATCH",
+      "summary": "Section “Listen & Watch:” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "IC.CHICKEN_EGG",
+      "summary": "Section “The Chicken-and-Egg Problem” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.MY-JOURNEY",
+      "summary": "Section “My Journey” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.BOTTOM-UP-HEALING-FOR-TRAUMA-ADDICTION-NEUROLOGICAL-DE-ARMORING-BRAINSTEM-RELAXATION",
+      "summary": "Section “Bottom-up Healing for Trauma & Addiction: \"Neurological De-Armoring\" + Brainstem Relaxation” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.SOMATIC-MODALITIES-STRATEGIC-SEQUENCING-ROADMAP",
+      "summary": "Section “Somatic Modalities Strategic Sequencing Roadmap” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "IC.ADULT_VOICE_FAKE",
+      "summary": "Section “When the Adult Voice Feels Fake” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.SIMPLE-PRACTICES",
+      "summary": "Section “Simple Practices” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.JOURNAL-WITH-EACH-HAND",
+      "summary": "Section “Journal With Each Hand” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.HITTING-THE-WALL-RADICAL-ACCEPTANCE",
+      "summary": "Section “Hitting the Wall: Radical Acceptance” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.SOMATIC-HEART-OPENING",
+      "summary": "Section “Somatic Heart Opening” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.THE-I-AM-CONTEMPLATION",
+      "summary": "Section “The “I Am” Contemplation” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.WHEN-THE-PRACTICE-FEELS-REAL-BUT-STAYS-SHALLOW",
+      "summary": "Section “When the Practice Feels Real but Stays Shallow” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.YOU-ARE-WORTHY-OF-LOVE-ALWAYS",
+      "summary": "Section “You Are Worthy of Love. Always.” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.APPENDIX",
+      "summary": "Section “Appendix” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "IC.IFS",
+      "summary": "Section “How This Relates to IFS” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "INNER.CHILD.TEACHERS-AND-PRACTICE-RESOURCES",
+      "summary": "Section “Teachers and Practice Resources” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "SOM.INTRO",
+      "summary": "Section “Introduction” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "SOMATIC.DONT-BE-SO-SERIOUS-YOU-SILLY-WILLY",
+      "summary": "Section “Don’t be so serious, you silly willy!” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "SOM.MAP_GLANCE",
+      "summary": "Section “The Map at a Glance” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "SOM.PHASE2",
+      "summary": "Section “Job 2: Daily Regulation and Discharge — Keep the Pressure Low” has no direct executable graph reference."
+    },
+    {
+      "code": "SOURCE_SECTION_WITHOUT_GRAPH_REPRESENTATION",
+      "severity": "info",
+      "sourceRef": "SOMATIC.NEUROLOGICAL-DE-ARMORING-SUPPORT",
+      "summary": "Section “Neurological De-Armoring Support” has no direct executable graph reference."
+    },
+    {
+      "code": "ISOLATED_GRAPH_NODE",
+      "nodeId": "IC.BEST_FRIEND_PERSPECTIVE",
+      "severity": "review",
+      "summary": "IC.BEST_FRIEND_PERSPECTIVE is isolated from graph sequencing."
+    },
+    {
+      "code": "ISOLATED_GRAPH_NODE",
+      "nodeId": "IC.DIFFERENTIATION",
+      "severity": "review",
+      "summary": "IC.DIFFERENTIATION is isolated from graph sequencing."
+    },
+    {
+      "code": "ISOLATED_GRAPH_NODE",
+      "nodeId": "IC.PHOTO_EPISTEMIC_CAUTION",
+      "severity": "review",
+      "summary": "IC.PHOTO_EPISTEMIC_CAUTION is isolated from graph sequencing."
+    },
+    {
+      "code": "ISOLATED_GRAPH_NODE",
+      "nodeId": "IC.FORGIVENESS_LATER",
+      "severity": "review",
+      "summary": "IC.FORGIVENESS_LATER is isolated from graph sequencing."
+    }
+  ],
+  "generatedAt": "2026-08-11T19:30:00.000Z"
+}

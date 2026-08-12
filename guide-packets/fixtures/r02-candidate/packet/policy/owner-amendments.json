@@ -1,0 +1,20 @@
+{
+  "items": [
+    {
+      "domain": "product-only",
+      "id": "OWNER.PRODUCT.APP_OWNED_HYPNOSIS_CONTROL",
+      "sourceIntegrated": false,
+      "status": "owner-approved-operational",
+      "text": "The application, not the guide prose or model, owns formal hypnosis consent gates, route isolation, and the final waking return."
+    },
+    {
+      "domain": "product-only",
+      "id": "OWNER.PRODUCT.RENDERER_FIDELITY",
+      "sourceIntegrated": false,
+      "status": "owner-approved-operational",
+      "text": "The renderer must materially realize selected graph interventions and preserve the graph-owned substantive question."
+    }
+  ],
+  "status": "candidate",
+  "version": "2026-08-12-r02-candidate"
+}

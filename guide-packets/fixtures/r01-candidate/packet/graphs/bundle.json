@@ -1,0 +1,3110 @@
+{
+  "compiledAt": "2026-08-11T19:30:00.000Z",
+  "contractVersion": "guide-graph-v1",
+  "graphs": [
+    {
+      "bundleVersion": "inner-child-somatic-packet-2026.08.11-r01-candidate",
+      "contractVersion": "guide-graph-v1",
+      "description": "Candidate executable graph derived from the r01 inner-child article candidate and explicit product-only operational amendments.",
+      "edges": [
+        {
+          "from": "IC.SAFETY_ORIENTATION",
+          "relation": "enables",
+          "to": "IC.NEUTRAL_WITNESS"
+        },
+        {
+          "from": "IC.SOLAR_PLEXUS_RELAXATION",
+          "relation": "enables",
+          "to": "IC.BORROW_LOVE"
+        },
+        {
+          "from": "IC.NEUTRAL_WITNESS",
+          "relation": "enables",
+          "to": "IC.BORROW_ONE_FUNCTION"
+        },
+        {
+          "from": "IC.BORROW_ONE_FUNCTION",
+          "relation": "enables",
+          "to": "IC.ADULT_APPRENTICE"
+        },
+        {
+          "from": "IC.ADULT_APPRENTICE",
+          "relation": "enables",
+          "to": "IC.PROTECTOR_ACTION"
+        },
+        {
+          "from": "IC.MEET_GUARD",
+          "relation": "precedes",
+          "to": "IC.DEEP_CHILD_DIALOGUE"
+        },
+        {
+          "from": "IC.CREDIBILITY_REPAIR",
+          "relation": "requires-evidence",
+          "to": "IC.PROTECTOR_ACTION"
+        },
+        {
+          "from": "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+          "relation": "clarifies",
+          "to": "IC.CREDIBILITY_REPAIR"
+        },
+        {
+          "from": "IC.IDENTITY_FORMATION",
+          "relation": "precedes",
+          "to": "IC.GUIDE_LATER"
+        },
+        {
+          "from": "IC.ALTERED_STATE_GATE",
+          "relation": "gates",
+          "to": "IC.DEEP_CHILD_DIALOGUE"
+        }
+      ],
+      "graphId": "inner-child-directed-graph",
+      "guideId": "inner-child-guide",
+      "nodes": [
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "ability_to_stop",
+                "op": "eq",
+                "value": "no"
+              },
+              {
+                "field": "ability_to_return",
+                "op": "eq",
+                "value": "no"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not deepen, interpret memories, or require an inner-child response."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE",
+              "IC.GUIDE_LATER",
+              "IC.FORGIVENESS_LATER"
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim a hidden adult capacity or hidden progress."
+            ],
+            "requiredNuance": [
+              "Present danger and past childhood fear are different problems."
+            ]
+          },
+          "id": "IC.SAFETY_ORIENTATION",
+          "kind": "decision-node",
+          "priority": 100,
+          "recommendations": [
+            "Pause deeper dialogue; orient to the actual room, body, time, and available human support.",
+            "Use eyes-open, present-focused contact and the smallest reversible action."
+          ],
+          "sourceRefs": [
+            "IC.BEFORE_DEEP",
+            "IC.REGULATION_BEFORE_DIALOGUE"
+          ],
+          "successSignals": [
+            "The person can stop, orient, and return to ordinary life."
+          ],
+          "tags": [
+            "safety",
+            "orientation"
+          ],
+          "tier": 1,
+          "title": "Outside safety and present orientation first"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "inner_adult_access",
+                "op": "in",
+                "value": [
+                  "low",
+                  "unknown"
+                ]
+              },
+              {
+                "field": "coherent_child_state",
+                "op": "in",
+                "value": [
+                  "unclear",
+                  "absent",
+                  "unknown"
+                ]
+              },
+              {
+                "field": "activation",
+                "op": "eq",
+                "value": "high"
+              },
+              {
+                "field": "dissociation",
+                "op": "in",
+                "value": [
+                  "mild",
+                  "high"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "witness_capacity",
+                "op": "eq",
+                "value": "present"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not turn witnessing into proof that a complete inner adult is present."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE"
+            ],
+            "forbiddenOverclaims": [
+              "Do not declare the calm Self or adult already exists underneath everything."
+            ],
+            "requiredNuance": [
+              "Witnessing is a starting function, not evidence that the whole adult role is built.",
+              "When the person can already observe and distinguish the internal positions, do not send them back through witness bootstrap merely because the adult role remains incomplete."
+            ]
+          },
+          "id": "IC.NEUTRAL_WITNESS",
+          "kind": "decision-node",
+          "priority": 95,
+          "recommendations": [
+            "Name that a younger or distressed state is present and that something can notice it, without pretending warmth or wisdom already exists."
+          ],
+          "sourceRefs": [
+            "IC.NEUTRAL_WITNESS",
+            "IC.BORROW_ADULT"
+          ],
+          "successSignals": [
+            "A small amount of psychological distance appears without losing present orientation."
+          ],
+          "tags": [
+            "borrowed-adulthood",
+            "witness"
+          ],
+          "tier": 3,
+          "title": "Begin with a neutral witness"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "solar_plexus_tension",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "activation",
+                "op": "eq",
+                "value": "high"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not force breath, chase intensity, or assume tension proves a hidden memory."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE"
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim that energy has definitively moved or trauma has been released."
+            ],
+            "requiredNuance": [
+              "Relaxation may remove a bodily barrier but does not by itself repair credibility or resolve relational conflict."
+            ]
+          },
+          "id": "IC.SOLAR_PLEXUS_RELAXATION",
+          "kind": "decision-node",
+          "priority": 90,
+          "recommendations": [
+            "Use non-forced longer exhales, gentle self-massage, or another low-dose somatic method to reduce holding around the solar plexus or abdomen.",
+            "Treat softening as an opening for love or presence, not an order to enter memories."
+          ],
+          "sourceRefs": [
+            "IC.REGULATION_BEFORE_DIALOGUE",
+            "IC.HEART_SOLAR_LOOP",
+            "SOM.INNER_CHILD_PARALLEL"
+          ],
+          "successSignals": [
+            "The body softens without air hunger, flooding, or loss of orientation."
+          ],
+          "tags": [
+            "regulation",
+            "solar-plexus",
+            "love-access"
+          ],
+          "tier": 3,
+          "title": "Relax solar-plexus or abdominal holding before dialogue"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "love_access",
+                "op": "in",
+                "value": [
+                  "accessible",
+                  "limited"
+                ]
+              }
+            ],
+            "any": [
+              {
+                "field": "self_directed_love",
+                "op": "in",
+                "value": [
+                  "unsafe",
+                  "inaccessible",
+                  "unknown"
+                ]
+              },
+              {
+                "field": "inner_adult_access",
+                "op": "in",
+                "value": [
+                  "low",
+                  "partial"
+                ]
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not manufacture warmth or make the loved being responsible for the session."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [
+              "Do not call reluctance proof that the child rejects love."
+            ],
+            "requiredNuance": [
+              "The problem may be safety of receiving love rather than absence of love."
+            ]
+          },
+          "id": "IC.BORROW_LOVE",
+          "kind": "decision-node",
+          "priority": 92,
+          "recommendations": [
+            "First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.",
+            "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible."
+          ],
+          "sourceRefs": [
+            "IC.LOVE_MISSING",
+            "IC.HEART_SOLAR_LOOP",
+            "IC.BORROW_LOVE_PERSPECTIVE"
+          ],
+          "successSignals": [
+            "The capacity for love becomes experientially available without coercion."
+          ],
+          "tags": [
+            "love",
+            "borrowed-adulthood",
+            "nurturer"
+          ],
+          "tier": 4,
+          "title": "Borrow love from an already-loved being"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "self_criticism",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "inner_adult_access",
+                "op": "in",
+                "value": [
+                  "low",
+                  "partial"
+                ]
+              },
+              {
+                "field": "current_intent",
+                "op": "eq",
+                "value": "conversation"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not use the friend standard to shame the person for not already treating themselves that way."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.BEST_FRIEND_PERSPECTIVE",
+          "kind": "decision-node",
+          "priority": 88,
+          "recommendations": [
+            "Ask: 'What would I tell my best friend in this exact situation?'",
+            "Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action."
+          ],
+          "sourceRefs": [
+            "IC.BORROW_LOVE_PERSPECTIVE",
+            "IC.BORROW_ONE_FUNCTION"
+          ],
+          "successSignals": [
+            "One concrete sentence or action becomes available."
+          ],
+          "tags": [
+            "best-friend",
+            "borrowed-adulthood",
+            "perspective"
+          ],
+          "tier": 4,
+          "title": "Borrow the best-friend standard of care"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "inner_adult_access",
+                "op": "in",
+                "value": [
+                  "low",
+                  "partial",
+                  "unknown"
+                ]
+              },
+              {
+                "field": "parent_imagery",
+                "op": "in",
+                "value": [
+                  "critical",
+                  "frightening",
+                  "blank"
+                ]
+              },
+              {
+                "field": "self_directed_love",
+                "op": "in",
+                "value": [
+                  "unsafe",
+                  "inaccessible"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not demand an ideal parent image or let the helper become authority over memories, medicine, relationships, or future."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE"
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim the inner adult has already been built."
+            ],
+            "requiredNuance": [
+              "Adult identity may form after behavior.",
+              "Borrowed adulthood can support the part attempting the adult role, not only the younger state."
+            ]
+          },
+          "id": "IC.BORROW_ONE_FUNCTION",
+          "kind": "decision-node",
+          "priority": 95,
+          "recommendations": [
+            "Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.",
+            "Keep it bounded, observable, and returnable.",
+            "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness."
+          ],
+          "sourceRefs": [
+            "IC.BORROW_ONE_FUNCTION",
+            "IC.ADULT_APPRENTICE"
+          ],
+          "successSignals": [
+            "The person can perform one adult function without pretending the whole role is available."
+          ],
+          "tags": [
+            "borrowed-adulthood",
+            "nurturer",
+            "protector",
+            "guide",
+            "adult-side-borrowing"
+          ],
+          "tier": 3,
+          "title": "Borrow one bounded adult function"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "inner_adult_access",
+                "op": "in",
+                "value": [
+                  "low",
+                  "partial"
+                ]
+              },
+              {
+                "field": "support_available",
+                "op": "eq",
+                "value": "present"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not create permanent authority dependency."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.ADULT_APPRENTICE",
+          "kind": "decision-node",
+          "priority": 86,
+          "recommendations": [
+            "Name what the helper did, choose five percent to do personally, and test one action in ordinary life.",
+            "Gradually hand the role back to the user."
+          ],
+          "sourceRefs": [
+            "IC.ADULT_APPRENTICE",
+            "IC.RELATIONSHIP"
+          ],
+          "successSignals": [
+            "One protective or nurturing act occurs without the helper present."
+          ],
+          "tags": [
+            "adult-apprentice",
+            "five-percent",
+            "relationship"
+          ],
+          "tier": 4,
+          "title": "Move from receiving care to doing five percent"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "protective_response",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "urge_to_escape",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "dissociation",
+                "op": "in",
+                "value": [
+                  "mild",
+                  "high"
+                ]
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not classify the voice more confidently than the transcript supports or push past it."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE"
+            ],
+            "forbiddenOverclaims": [
+              "Do not definitively label a cynical voice as a guard."
+            ],
+            "requiredNuance": [
+              "The contempt may be child, protector, adult evaluator, or blend."
+            ]
+          },
+          "id": "IC.MEET_GUARD",
+          "kind": "decision-node",
+          "priority": 93,
+          "recommendations": [
+            "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
+            "Ask what the part predicts will happen if it steps back; acknowledge before answering."
+          ],
+          "sourceRefs": [
+            "IC.START_WHATEVER",
+            "IC.GUARDS",
+            "IC.BOTTOM_UP_SEQUENCE",
+            "IC.ESCAPE_URGE"
+          ],
+          "successSignals": [
+            "The protective response can be heard without running the session or being exiled."
+          ],
+          "tags": [
+            "protector",
+            "guard",
+            "avoidance"
+          ],
+          "tier": 3,
+          "title": "Meet the protective response before pushing deeper"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "credibility_conflict",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "self_directed_love",
+                "op": "eq",
+                "value": "unsafe"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE"
+            ],
+            "forbiddenOverclaims": [
+              "Do not say the child is rejecting love when it may be rejecting an unsafe or unproven source.",
+              "Do not describe the problem as simply lacking a track record when the user has already supplied adverse evidence about how things went."
+            ],
+            "requiredNuance": [
+              "Action is essential but not the sole repair; accurate responsibility and non-defensive listening also matter.",
+              "Relaxation may reduce nervous-system charge, but it does not by itself repair a credibility conflict or change a contradictory track record.",
+              "The sarcastic question can be both contempt and a legitimate literal request for evidence; answer it concretely rather than arguing with it.",
+              "A pre-existing adverse track record is different from having no track record yet."
+            ]
+          },
+          "id": "IC.CREDIBILITY_REPAIR",
+          "kind": "decision-node",
+          "priority": 96,
+          "recommendations": [
+            "Hear the angry side's exact accusation before trying to resolve the conflict: what does it believe the younger version should have done, at what age, and with what available capacity?",
+            "Treat skeptical or contemptuous questions as data and, when appropriate, literal requests for evidence.",
+            "Distinguish no track record from an adverse track record. If the younger state is already pointing to how adult life turned out, credibility repair means building counterevidence against an existing negative assessment rather than acting as though evidence starts at zero.",
+            "Make one ordinary protective act visible and do not demand gratitude, trust, or emotional change.",
+            "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently."
+          ],
+          "sourceRefs": [
+            "IC.PROTECTOR_VISIBLE",
+            "IC.VOW",
+            "IC.BOTTOM_UP_SEQUENCE",
+            "IC.LOVE_UNSAFE"
+          ],
+          "successSignals": [
+            "Promises and actions begin to align; an adverse track record starts accumulating credible counterevidence without demanding immediate trust."
+          ],
+          "tags": [
+            "credibility",
+            "protector",
+            "repair"
+          ],
+          "tier": 3,
+          "title": "Repair credibility through non-defensive follow-through"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "age_agency_ambiguity",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "resentment_toward_younger_self",
+                "op": "eq",
+                "value": "present"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not flatten literal childhood, adolescence, younger adulthood, and a present child-state into one powerless category."
+          ],
+          "defaultQuestion": "Which age or version of you is the resentment actually directed toward, what opportunity do you believe that version failed to use, and what knowledge, support, safety, money, and freedom were actually available then?",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+          "kind": "decision-node",
+          "priority": 91,
+          "recommendations": [
+            "Identify which age or version is being blamed and what opportunity it supposedly failed to use.",
+            "Allocate responsibility according to actual developmental capacity and later constrained agency."
+          ],
+          "sourceRefs": [
+            "IC.INHERITED_PARENT",
+            "IC.BOTTOM_UP_SEQUENCE"
+          ],
+          "successSignals": [
+            "The accusation becomes specific enough to evaluate rather than globally prosecuting the child."
+          ],
+          "tags": [
+            "age",
+            "agency",
+            "responsibility"
+          ],
+          "tier": 3,
+          "title": "Separate developmental ages and responsibility"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "credibility_conflict",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "inner_adult_access",
+                "op": "in",
+                "value": [
+                  "low",
+                  "partial"
+                ]
+              },
+              {
+                "field": "protective_response",
+                "op": "eq",
+                "value": "present"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not choose an action so large that failure becomes new evidence of unreliability."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.PROTECTOR_ACTION",
+          "kind": "decision-node",
+          "priority": 90,
+          "recommendations": [
+            "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
+            "Report the action without requiring the younger state to trust it yet."
+          ],
+          "sourceRefs": [
+            "IC.PROTECTOR_VISIBLE",
+            "IC.ADULT_APPRENTICE"
+          ],
+          "successSignals": [
+            "One small promise is kept."
+          ],
+          "tags": [
+            "protector",
+            "ordinary-life",
+            "credibility"
+          ],
+          "tier": 4,
+          "title": "Make the Protector visible in ordinary life"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "current_intent",
+                "op": "in",
+                "value": [
+                  "gentle_practice",
+                  "hypnosis"
+                ]
+              },
+              {
+                "field": "deep_work_readiness",
+                "op": "notIn",
+                "value": [
+                  "yes"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not enter memories, immersive child dialogue, or suggestive origin stories."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.GENTLE_SELF_HYPNOSIS",
+          "kind": "decision-node",
+          "priority": 76,
+          "recommendations": [
+            "Keep the practice present-focused: calming, warmth, non-cruelty, borrowed adulthood, or a simple Protector rehearsal."
+          ],
+          "sourceRefs": [
+            "IC.ESCAPE_URGE"
+          ],
+          "successSignals": [
+            "The person remains oriented, can stop, and returns to ordinary functioning."
+          ],
+          "tags": [
+            "hypnosis",
+            "gentle",
+            "preparation"
+          ],
+          "tier": 4,
+          "title": "Use gentle present-focused self-hypnosis only as preparation"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "current_intent",
+                "op": "in",
+                "value": [
+                  "deep_dialogue",
+                  "memory_processing",
+                  "hypnosis"
+                ]
+              },
+              {
+                "field": "deep_work_readiness",
+                "op": "eq",
+                "value": "yes"
+              }
+            ],
+            "none": [
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              },
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not interrogate imagery or imply emotional truth proves historical fact."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.DEEP_CHILD_DIALOGUE",
+          "kind": "decision-node",
+          "priority": 70,
+          "recommendations": [
+            "Use deeper dialogue only when the person can remain present, stop voluntarily, and recover afterward.",
+            "Keep memory-source distinctions explicit."
+          ],
+          "sourceRefs": [
+            "IC.BEFORE_DEEP",
+            "IC.ALTERED_STATES",
+            "SOM.INNER_CHILD_PARALLEL"
+          ],
+          "successSignals": [
+            "The session increases capacity and functioning rather than compulsion or disorientation."
+          ],
+          "tags": [
+            "deep-work",
+            "child-dialogue",
+            "memory"
+          ],
+          "tier": 6,
+          "title": "Enter deeper child dialogue only when capacity is adequate"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "coherent_child_state",
+                "op": "in",
+                "value": [
+                  "unclear",
+                  "absent"
+                ]
+              },
+              {
+                "field": "identity_blur",
+                "op": "eq",
+                "value": "present"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not assume a fully formed true self is merely hidden and waiting to be uncovered."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.IDENTITY_FORMATION",
+          "kind": "decision-node",
+          "priority": 80,
+          "recommendations": [
+            "Use private journaling, time without external cues, nature, preference recovery, and low-stakes experiments.",
+            "Protect the beginner from immediate talent judgments."
+          ],
+          "sourceRefs": [
+            "IC.NO_CLEAR_CHILD",
+            "IC.IDENTITY_PLAY",
+            "IC.CHILD_BAD_THINGS"
+          ],
+          "successSignals": [
+            "Preferences become more stable across relationships and settings."
+          ],
+          "tags": [
+            "identity",
+            "play",
+            "differentiation"
+          ],
+          "tier": 5,
+          "title": "Build identity through private preference and experimental play"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "belonging_pressure",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "identity_blur",
+                "op": "eq",
+                "value": "present"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not equate differentiation with isolation or automatic permanent cutoff."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.DIFFERENTIATION",
+          "kind": "decision-node",
+          "priority": 65,
+          "recommendations": [
+            "Notice where other people’s emotions and group expectations replace personal knowing.",
+            "Practice selective belonging, disagreement, and leaving when staying requires disappearance."
+          ],
+          "sourceRefs": [
+            "IC.DIFFERENTIATION"
+          ],
+          "successSignals": [
+            "The person remains recognizably themselves across settings."
+          ],
+          "tags": [
+            "differentiation",
+            "belonging",
+            "identity"
+          ],
+          "tier": 6,
+          "title": "Untangle belonging from self-betrayal"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "inner_adult_access",
+                "op": "in",
+                "value": [
+                  "partial",
+                  "available"
+                ]
+              },
+              {
+                "field": "coherent_child_state",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "oriented"
+              }
+            ],
+            "any": [
+              {
+                "field": "current_intent",
+                "op": "eq",
+                "value": "integration"
+              },
+              {
+                "field": "guide_readiness",
+                "op": "eq",
+                "value": "present"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.GUIDE_LATER",
+          "kind": "decision-node",
+          "priority": 55,
+          "recommendations": [
+            "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal."
+          ],
+          "sourceRefs": [
+            "IC.GUIDE_LATER",
+            "IC.THREE_FUNCTIONS"
+          ],
+          "successSignals": [
+            "Direction increases life participation without exiling the child."
+          ],
+          "tags": [
+            "guide",
+            "integration",
+            "meaning"
+          ],
+          "tier": 7,
+          "title": "Bring in direction after warmth, safety, and a coherent child exist"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "memory_source_risk",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "current_intent",
+                "op": "eq",
+                "value": "photo_work"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not ask what abuse must have happened or accuse someone from material generated in the practice."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.PHOTO_EPISTEMIC_CAUTION",
+          "kind": "decision-node",
+          "priority": 92,
+          "recommendations": [
+            "Separate direct memory, report from another person, inference, dream, image, metaphor, altered-state impression, and uncertainty.",
+            "Stop if the practice produces compulsive certainty or dysregulation."
+          ],
+          "sourceRefs": [
+            "IC.PHOTOS"
+          ],
+          "successSignals": [
+            "Emotional meaning can be used without converting uncertain material into historical fact."
+          ],
+          "tags": [
+            "memory",
+            "epistemic",
+            "photo"
+          ],
+          "tier": 2,
+          "title": "Keep photograph and memory sources separate"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "altered_state",
+                "op": "eq",
+                "value": "altered"
+              },
+              {
+                "field": "current_intent",
+                "op": "eq",
+                "value": "altered_state"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.ALTERED_STATE_GATE",
+          "kind": "decision-node",
+          "priority": 89,
+          "recommendations": [
+            "Prefer sober Nurturer and Protector capacity first or grounded support that does not seize authority.",
+            "Return to ordinary orientation when the state outruns the ability to hold what appears."
+          ],
+          "sourceRefs": [
+            "IC.ALTERED_STATES",
+            "IC.ESCAPE_URGE"
+          ],
+          "successSignals": [
+            "The person can stop, orient, and integrate without escalating use."
+          ],
+          "tags": [
+            "altered-state",
+            "gate",
+            "epistemic"
+          ],
+          "tier": 2,
+          "title": "Build sober capacity before using altered states to deepen"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "forgiveness_interest",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "deep_work_readiness",
+                "op": "eq",
+                "value": "yes"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not force forgiveness early or use causal understanding to erase moral judgment."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "IC.FORGIVENESS_LATER",
+          "kind": "decision-node",
+          "priority": 50,
+          "recommendations": [
+            "Use responsibility, remorse, rectification, and release for self-forgiveness; preserve boundaries and consequences for others."
+          ],
+          "sourceRefs": [
+            "IC.FORGIVENESS"
+          ],
+          "successSignals": [
+            "Understanding changes the emotional relationship without erasing the harm."
+          ],
+          "tags": [
+            "forgiveness",
+            "accountability",
+            "integration"
+          ],
+          "tier": 7,
+          "title": "Approach forgiveness without bypassing accountability"
+        }
+      ],
+      "sourceRevision": {
+        "guideId": "inner-child",
+        "revision": "r01-candidate",
+        "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+      },
+      "version": "inner-child-somatic-packet-2026.08.11-r01-candidate"
+    },
+    {
+      "bundleVersion": "inner-child-somatic-packet-2026.08.11-r01-candidate",
+      "contractVersion": "guide-graph-v1",
+      "description": "Candidate executable graph derived from the r01 five-job somatic article candidate and explicit provenance separation.",
+      "edges": [
+        {
+          "from": "SOM.SAFETY_STABILIZATION",
+          "relation": "enables",
+          "to": "SOM.GENTLE_REGULATION"
+        },
+        {
+          "from": "SOM.GENTLE_REGULATION",
+          "relation": "enables",
+          "to": "SOM.RESOURCE_BRAINSPOTTING"
+        },
+        {
+          "from": "SOM.GENTLE_SHAKING",
+          "relation": "requires-aftercare",
+          "to": "SOM.DISCHARGE_SETTLE_STACK"
+        },
+        {
+          "from": "SOM.RESOURCE_BRAINSPOTTING",
+          "relation": "may-precede",
+          "to": "SOM.DEEP_BRAINSPOTTING"
+        },
+        {
+          "from": "SOM.EMDR_DEVELOPMENTAL_DEFER",
+          "relation": "defers-until-capacity",
+          "to": "SOM.EMDR_DEVELOPMENTAL"
+        },
+        {
+          "from": "SOM.ADVANCED_RELEASE_OPTIONAL",
+          "relation": "requires-audit",
+          "to": "SOM.BYPASS_AUDIT"
+        },
+        {
+          "from": "SOM.DEEP_BRAINSPOTTING",
+          "relation": "followed-by",
+          "to": "SOM.MEANING_INTEGRATION"
+        },
+        {
+          "from": "SOM.EMDR_DISCRETE",
+          "relation": "followed-by",
+          "to": "SOM.MEANING_INTEGRATION"
+        },
+        {
+          "from": "SOM.GENTLE_SHAKING",
+          "relation": "followed-by-delayed-reassessment",
+          "to": "SOM.DELAYED_RESPONSE_REASSESSMENT"
+        },
+        {
+          "from": "SOM.DEEP_BRAINSPOTTING",
+          "relation": "followed-by-delayed-reassessment",
+          "to": "SOM.DELAYED_RESPONSE_REASSESSMENT"
+        },
+        {
+          "from": "SOM.EMDR_DISCRETE",
+          "relation": "followed-by-delayed-reassessment",
+          "to": "SOM.DELAYED_RESPONSE_REASSESSMENT"
+        },
+        {
+          "from": "SOM.EMDR_DEVELOPMENTAL",
+          "relation": "followed-by-delayed-reassessment",
+          "to": "SOM.DELAYED_RESPONSE_REASSESSMENT"
+        },
+        {
+          "from": "SOM.ADVANCED_RELEASE_OPTIONAL",
+          "relation": "followed-by-delayed-reassessment",
+          "to": "SOM.DELAYED_RESPONSE_REASSESSMENT"
+        }
+      ],
+      "graphId": "somatic-directed-graph",
+      "guideId": "somatic-sequencing-guide",
+      "nodes": [
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "ability_to_stop",
+                "op": "eq",
+                "value": "no"
+              },
+              {
+                "field": "ability_to_return",
+                "op": "eq",
+                "value": "no"
+              },
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not treat capacity-building as proof that trauma processing occurred."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [
+              "SOM.DEEP_BRAINSPOTTING",
+              "SOM.EMDR_DEVELOPMENTAL",
+              "SOM.EMDR_DISCRETE",
+              "SOM.ADVANCED_RELEASE_OPTIONAL"
+            ],
+            "forbiddenOverclaims": [
+              "Do not confuse intensity with healing."
+            ],
+            "requiredNuance": [
+              "Capacity-building should not become an endless waiting room."
+            ]
+          },
+          "id": "SOM.SAFETY_STABILIZATION",
+          "kind": "decision-node",
+          "priority": 100,
+          "recommendations": [
+            "Use outside safety, orientation, low-dose regulation, and qualified support before processing.",
+            "Choose the smallest step that can be stopped and recovered from."
+          ],
+          "sourceRefs": [
+            "SOM.MAP_NOT_LADDER",
+            "SOM.PHASE1",
+            "SOM.SE"
+          ],
+          "successSignals": [
+            "The person can remain present, stop, and return to ordinary life."
+          ],
+          "tags": [
+            "safety",
+            "stabilization"
+          ],
+          "tier": 1,
+          "title": "Safety, orientation, and stopping capacity"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "activation",
+                "op": "in",
+                "value": [
+                  "moderate",
+                  "high"
+                ]
+              },
+              {
+                "field": "solar_plexus_tension",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "body_capacity",
+                "op": "in",
+                "value": [
+                  "low",
+                  "unknown"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not force breath, use long holds, push through sensation, or turn regulation into catharsis."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.GENTLE_REGULATION",
+          "kind": "decision-node",
+          "priority": 93,
+          "recommendations": [
+            "Use titrated Somatic Experiencing, trauma-sensitive yoga, gentle longer exhales, gentle Buteyko-style breathing, or low-dose body awareness.",
+            "Keep eyes open and choices explicit when imagery or inward focus destabilizes."
+          ],
+          "sourceRefs": [
+            "SOM.PHASE1",
+            "SOM.SE",
+            "SOM.YOGA",
+            "SOM.INNER_CHILD_PARALLEL"
+          ],
+          "successSignals": [
+            "Activation can rise and settle without flooding."
+          ],
+          "tags": [
+            "regulation",
+            "SE",
+            "yoga",
+            "breathing"
+          ],
+          "tier": 3,
+          "title": "Gentle regulation and embodiment"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "activation",
+                "op": "in",
+                "value": [
+                  "moderate",
+                  "high"
+                ]
+              },
+              {
+                "field": "trigger_loop",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "current_intent",
+                "op": "eq",
+                "value": "gentle_practice"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not present EFT as the sole treatment for severe trauma or a substitute for deeper work when needed."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.EFT_PORTABLE",
+          "kind": "decision-node",
+          "priority": 86,
+          "recommendations": [
+            "Use tapping before or after difficult conversations or therapy, and when thought loops and bodily activation occur together."
+          ],
+          "sourceRefs": [
+            "SOM.EFT",
+            "SOM.INNER_CHILD_PARALLEL"
+          ],
+          "successSignals": [
+            "The person can return to the task or relationship with more choice."
+          ],
+          "tags": [
+            "EFT",
+            "portable",
+            "regulation"
+          ],
+          "tier": 4,
+          "title": "Portable EFT for real-world triggers"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "freeze_pattern",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "activation",
+                "op": "in",
+                "value": [
+                  "moderate",
+                  "high"
+                ]
+              },
+              {
+                "field": "current_intent",
+                "op": "eq",
+                "value": "gentle_practice"
+              }
+            ],
+            "none": [
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              },
+              {
+                "field": "ability_to_stop",
+                "op": "eq",
+                "value": "no"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not chase catharsis, let unsupported neck whipping continue, or treat shaking as the primary treatment for severe PTSD."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.GENTLE_SHAKING",
+          "kind": "decision-node",
+          "priority": 82,
+          "recommendations": [
+            "Use short, playful movement that can stop easily; increase dose only when the person can orient and settle afterward.",
+            "Follow stronger discharge with settling rather than walking away raw."
+          ],
+          "sourceRefs": [
+            "SOM.GENTLE_SHAKING",
+            "SOM.SHAKING_QIGONG",
+            "SOM.INNER_CHILD_PARALLEL"
+          ],
+          "successSignals": [
+            "The person finishes more regulated rather than blasted open."
+          ],
+          "tags": [
+            "shaking",
+            "qigong",
+            "discharge"
+          ],
+          "tier": 4,
+          "title": "Gentle shaking or qigong as regulation or discharge"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "discharge_used",
+                "op": "eq",
+                "value": "yes"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not stack several intense processing methods on the same day without established tolerance and skilled support."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.DISCHARGE_SETTLE_STACK",
+          "kind": "decision-node",
+          "priority": 80,
+          "recommendations": [
+            "After discharge, use restorative movement, gentle yoga, walking, hydration, food, rest, or light EFT according to what the body needs."
+          ],
+          "sourceRefs": [
+            "SOM.STACK",
+            "SOM.POST_BRAINSPOTTING",
+            "SOM.POST_EMDR"
+          ],
+          "successSignals": [
+            "The person returns to ordinary functioning rather than remaining raw."
+          ],
+          "tags": [
+            "settle",
+            "integration",
+            "aftercare"
+          ],
+          "tier": 5,
+          "title": "Discharge, then settle and reorient"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "oriented"
+              },
+              {
+                "field": "ability_to_stop",
+                "op": "eq",
+                "value": "yes"
+              }
+            ],
+            "any": [
+              {
+                "field": "target_type",
+                "op": "in",
+                "value": [
+                  "developmental",
+                  "diffuse"
+                ]
+              },
+              {
+                "field": "current_intent",
+                "op": "eq",
+                "value": "gentle_practice"
+              }
+            ],
+            "none": [
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              },
+              {
+                "field": "activation",
+                "op": "eq",
+                "value": "high"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not assume resource-oriented use is equivalent to deep subcortical processing."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.RESOURCE_BRAINSPOTTING",
+          "kind": "decision-node",
+          "priority": 74,
+          "recommendations": [
+            "Use resource-oriented or carefully titrated gaze work as preparation or alongside inner-child work."
+          ],
+          "sourceRefs": [
+            "SOM.BRAINSPOTTING",
+            "SOM.INNER_CHILD_PARALLEL"
+          ],
+          "successSignals": [
+            "The person can contact material in small doses and return."
+          ],
+          "tags": [
+            "brainspotting",
+            "resource",
+            "titration"
+          ],
+          "tier": 5,
+          "title": "Resource-oriented or titrated Brainspotting"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "deep_work_readiness",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "field": "target_type",
+                "op": "in",
+                "value": [
+                  "developmental",
+                  "diffuse"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not rush directly into analysis afterward or treat every image as historical fact."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.DEEP_BRAINSPOTTING",
+          "kind": "decision-node",
+          "priority": 66,
+          "recommendations": [
+            "Use deeper gaze-position work when regulation, discharge, body awareness, and integration skills are established."
+          ],
+          "sourceRefs": [
+            "SOM.PHASE3",
+            "SOM.BRAINSPOTTING",
+            "SOM.POST_BRAINSPOTTING"
+          ],
+          "successSignals": [
+            "Deeper material can be contacted without loss of orientation or prolonged destabilization."
+          ],
+          "tags": [
+            "brainspotting",
+            "deep-processing"
+          ],
+          "tier": 6,
+          "title": "Deep Brainspotting for diffuse or body-held material"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "target_type",
+                "op": "eq",
+                "value": "discrete"
+              },
+              {
+                "field": "deep_work_readiness",
+                "op": "eq",
+                "value": "yes"
+              }
+            ],
+            "none": [
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not require a long preliminary sequence merely because the modality is placed in Phase 4."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.EMDR_DISCRETE",
+          "kind": "decision-node",
+          "priority": 72,
+          "recommendations": [
+            "Consider EMDR for a clear event or residual trigger when the person can regulate and integrate afterward."
+          ],
+          "sourceRefs": [
+            "SOM.PHASE4",
+            "SOM.EMDR",
+            "SOM.INNER_CHILD_PARALLEL"
+          ],
+          "successSignals": [
+            "The specific trigger changes without broad destabilization."
+          ],
+          "tags": [
+            "EMDR",
+            "discrete-target"
+          ],
+          "tier": 6,
+          "title": "EMDR for a discrete target in a stable person"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "target_type",
+                "op": "in",
+                "value": [
+                  "developmental",
+                  "diffuse"
+                ]
+              },
+              {
+                "field": "deep_work_readiness",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "field": "basic_reparenting_capacity",
+                "op": "eq",
+                "value": "yes"
+              }
+            ],
+            "none": [
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not turn this conditional sequencing preference into a universal prerequisite."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.EMDR_DEVELOPMENTAL",
+          "kind": "decision-node",
+          "priority": 68,
+          "recommendations": [
+            "For diffuse developmental or relational material, use EMDR after some access to Nurturer/Protector capacity and post-session integration."
+          ],
+          "sourceRefs": [
+            "SOM.EMDR",
+            "SOM.INNER_CHILD_PARALLEL"
+          ],
+          "successSignals": [
+            "Memory work can be held by enough present-day adult and relational capacity."
+          ],
+          "tags": [
+            "EMDR",
+            "developmental",
+            "reparenting"
+          ],
+          "tier": 6,
+          "title": "Developmental EMDR after basic reparenting capacity"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "target_type",
+                "op": "in",
+                "value": [
+                  "developmental",
+                  "diffuse"
+                ]
+              },
+              {
+                "field": "basic_reparenting_capacity",
+                "op": "eq",
+                "value": "no"
+              }
+            ],
+            "any": [
+              {
+                "field": "current_intent",
+                "op": "eq",
+                "value": "memory_processing"
+              },
+              {
+                "field": "emdr_interest",
+                "op": "eq",
+                "value": "present"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not imply EMDR is permanently contraindicated."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [
+              "SOM.EMDR_DEVELOPMENTAL"
+            ],
+            "forbiddenOverclaims": [
+              "Do not say everyone must finish inner-child therapy before EMDR."
+            ],
+            "requiredNuance": [
+              "A stable discrete target is a different case."
+            ]
+          },
+          "id": "SOM.EMDR_DEVELOPMENTAL_DEFER",
+          "kind": "decision-node",
+          "priority": 89,
+          "recommendations": [
+            "Build basic Nurturer/Protector or borrowed-adulthood capacity first while continuing appropriate regulation and present-focused work."
+          ],
+          "sourceRefs": [
+            "SOM.INNER_CHILD_PARALLEL",
+            "IC.BORROW_ONE_FUNCTION",
+            "IC.PROTECTOR_VISIBLE"
+          ],
+          "successSignals": [
+            "The person gains enough capacity to hold what memory work opens."
+          ],
+          "tags": [
+            "EMDR",
+            "defer",
+            "developmental"
+          ],
+          "tier": 3,
+          "title": "Defer developmental EMDR while reparenting capacity is missing"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "advanced_release_interest",
+                "op": "eq",
+                "value": "present"
+              }
+            ],
+            "any": [
+              {
+                "field": "stable_for_advanced_release",
+                "op": "eq",
+                "value": "no"
+              },
+              {
+                "field": "advanced_release_physical_risk",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "panic_instability",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "ability_to_stop",
+                "op": "eq",
+                "value": "no"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not coach syncope, prolonged forceful breath holds, standing lightheadedness, or substance potentiation."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.ADVANCED_RELEASE_BLOCK",
+          "kind": "decision-node",
+          "priority": 98,
+          "recommendations": [
+            "Use gentler regulation instead and reassess only after physical and psychological safety are established."
+          ],
+          "sourceRefs": [
+            "SOM.ADVANCED_RELEASE_SOURCE",
+            "VAGAL.SAFETY.P5"
+          ],
+          "successSignals": [
+            "No advanced-release attempt occurs under unstable conditions."
+          ],
+          "tags": [
+            "advanced-release",
+            "safety",
+            "block"
+          ],
+          "tier": 1,
+          "title": "Block advanced release when physical or regulatory safety is not established"
+        },
+        {
+          "activation": {
+            "all": [
+              {
+                "field": "advanced_release_interest",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "stable_for_advanced_release",
+                "op": "eq",
+                "value": "yes"
+              }
+            ],
+            "none": [
+              {
+                "field": "advanced_release_physical_risk",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "panic_instability",
+                "op": "eq",
+                "value": "present"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not chase loss of consciousness, use while standing once lightheaded, combine with substances, or interpret bliss as trauma resolution."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.ADVANCED_RELEASE_OPTIONAL",
+          "kind": "decision-node",
+          "priority": 64,
+          "recommendations": [
+            "Treat Sky Hypnosis and Vagal Blitz as optional advanced state-shift practices that may occur early, not as prerequisites or proof of readiness.",
+            "Use the least intense version that produces a useful shift; preserve stopping, orientation, and ordinary recovery.",
+            "Present physiological explanations and efficacy claims as author experience or provisional mechanism, not settled fact."
+          ],
+          "sourceRefs": [
+            "SOM.ADVANCED_RELEASE_SOURCE",
+            "VAGAL.SAFETY.P5",
+            "SOM.MAP_NOT_LADDER"
+          ],
+          "successSignals": [
+            "The practice increases later capacity and functioning without compulsion or bypass."
+          ],
+          "tags": [
+            "advanced-release",
+            "optional",
+            "provenance"
+          ],
+          "tier": 5,
+          "title": "Optional advanced release for a stable, informed person"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "bypass_risk",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "advanced_release_interest",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "altered_state",
+                "op": "eq",
+                "value": "altered"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not treat bliss, intensity, or temporary relief as proof that trauma was processed."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.BYPASS_AUDIT",
+          "kind": "decision-node",
+          "priority": 85,
+          "recommendations": [
+            "Judge the practice by later sleep, relationships, functioning, boundaries, willingness to meet pain, and whether it replaces practical or relational work."
+          ],
+          "sourceRefs": [
+            "SOM.JUDGE_HELP",
+            "SOM.ADVANCED_RELEASE_SOURCE"
+          ],
+          "successSignals": [
+            "The practice supports rather than replaces contact with the actual issue."
+          ],
+          "tags": [
+            "bypass",
+            "bliss",
+            "integration"
+          ],
+          "tier": 4,
+          "title": "Audit bliss and state shifts for trauma bypass"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "current_intent",
+                "op": "eq",
+                "value": "integration"
+              },
+              {
+                "field": "guide_readiness",
+                "op": "eq",
+                "value": "present"
+              }
+            ],
+            "none": [
+              {
+                "field": "activation",
+                "op": "eq",
+                "value": "high"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not try to think the body out of an active survival state."
+          ],
+          "defaultQuestion": "",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": []
+          },
+          "id": "SOM.MEANING_INTEGRATION",
+          "kind": "decision-node",
+          "priority": 58,
+          "recommendations": [
+            "Use light cognitive or narrative work for beliefs, values, boundaries, agency, and a coherent life story."
+          ],
+          "sourceRefs": [
+            "SOM.PHASE5",
+            "SOM.INTEGRATION",
+            "SOM.JUDGE_HELP"
+          ],
+          "successSignals": [
+            "Meaning-making improves life participation rather than becoming another processing project."
+          ],
+          "tags": [
+            "integration",
+            "meaning",
+            "CBT"
+          ],
+          "tier": 7,
+          "title": "Meaning-making after the body is less trapped in survival mode"
+        },
+        {
+          "activation": {
+            "any": [
+              {
+                "field": "discharge_used",
+                "op": "eq",
+                "value": "yes"
+              },
+              {
+                "field": "advanced_release_interest",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "current_intent",
+                "op": "eq",
+                "value": "integration"
+              }
+            ]
+          },
+          "authority": "author-framework",
+          "avoid": [
+            "Do not treat a calm ending or dramatic session as sufficient evidence that the dose was right."
+          ],
+          "defaultQuestion": "How were sleep, irritability, dissociation, pain, compulsive processing, relationships, and ordinary functioning later that day and over the next two or three days?",
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": [
+              "Immediate relief and delayed response are different evidence."
+            ]
+          },
+          "id": "SOM.DELAYED_RESPONSE_REASSESSMENT",
+          "kind": "decision-node",
+          "priority": 67,
+          "recommendations": [
+            "Assess immediate regulation, then sleep, irritability, dissociation, pain, compulsive processing, relationships, and ordinary functioning the next morning and over the following two or three days.",
+            "Use the delayed response to decide whether to repeat, reduce, stop, or intensify the practice."
+          ],
+          "sourceRefs": [
+            "SOM.JUDGE_HELP",
+            "SOM.ADVANCED_RELEASE_SOURCE"
+          ],
+          "successSignals": [
+            "Later functioning and recovery improve without delayed destabilization."
+          ],
+          "tags": [
+            "response-history",
+            "dose",
+            "integration"
+          ],
+          "tier": 6,
+          "title": "Reassess the dose immediately, next morning, and over two or three days"
+        }
+      ],
+      "sourceRevision": {
+        "guideId": "somatic",
+        "revision": "r01-candidate",
+        "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+      },
+      "version": "inner-child-somatic-packet-2026.08.11-r01-candidate"
+    },
+    {
+      "bundleVersion": "inner-child-somatic-packet-2026.08.11-r01-candidate",
+      "contractVersion": "guide-graph-v1",
+      "description": "Candidate cross-guide dependencies for the r01 article candidates.",
+      "edges": [
+        {
+          "from": "SOM.GENTLE_REGULATION",
+          "relation": "supports",
+          "to": "IC.SOLAR_PLEXUS_RELAXATION"
+        },
+        {
+          "from": "IC.SOLAR_PLEXUS_RELAXATION",
+          "relation": "may-enable",
+          "to": "IC.BORROW_LOVE"
+        },
+        {
+          "from": "SOM.EFT_PORTABLE",
+          "relation": "parallel-preparation",
+          "to": "IC.BORROW_ONE_FUNCTION"
+        },
+        {
+          "from": "SOM.GENTLE_SHAKING",
+          "relation": "parallel-preparation",
+          "to": "IC.NEUTRAL_WITNESS"
+        },
+        {
+          "from": "SOM.RESOURCE_BRAINSPOTTING",
+          "relation": "parallel-preparation",
+          "to": "IC.MEET_GUARD"
+        },
+        {
+          "from": "IC.BORROW_ONE_FUNCTION",
+          "relation": "capacity-prerequisite",
+          "to": "SOM.EMDR_DEVELOPMENTAL"
+        },
+        {
+          "from": "IC.PROTECTOR_ACTION",
+          "relation": "capacity-prerequisite",
+          "to": "SOM.EMDR_DEVELOPMENTAL"
+        },
+        {
+          "from": "SOM.ADVANCED_RELEASE_OPTIONAL",
+          "relation": "does-not-establish-readiness",
+          "to": "IC.DEEP_CHILD_DIALOGUE"
+        },
+        {
+          "from": "SOM.BYPASS_AUDIT",
+          "relation": "integration-check",
+          "to": "IC.GUIDE_LATER"
+        },
+        {
+          "from": "IC.GENTLE_SELF_HYPNOSIS",
+          "relation": "does-not-imply-readiness",
+          "to": "IC.DEEP_CHILD_DIALOGUE"
+        }
+      ],
+      "graphId": "inner-child-somatic-cross-guide",
+      "guideId": "cross-guide",
+      "nodes": [],
+      "sourceRevision": {
+        "guideIds": [
+          "inner-child",
+          "somatic"
+        ],
+        "sourceSha256": "6f275eb0d61e48693b91b3e676a4ac7c1fc1ce7251ee7366b122f5de02f7608a"
+      },
+      "version": "inner-child-somatic-packet-2026.08.11-r01-candidate"
+    }
+  ],
+  "sourceManifestVersion": "2026.08.11-r01-candidate",
+  "sourceMaps": [
+    {
+      "editorBodySha256": "043870d7dffd56fa8c2c92b7e7b47c9a658693fe55bb7771c3f14b812c89eaab",
+      "guideId": "inner-child",
+      "revision": "r01-candidate",
+      "sectionCount": 45,
+      "sections": [
+        {
+          "endOffset": 3803,
+          "excerpt": "The Chatbot for Paid Subscribers My therapy bot includes an interactive version of this inner-child method, along with my self-hypnosis guide and other practices.",
+          "heading": "The Chatbot for Paid Subscribers",
+          "id": "INNER.CHILD.THE-CHATBOT-FOR-PAID-SUBSCRIBERS",
+          "level": 1,
+          "ordinal": 1,
+          "rawHtmlSha256": "c2108958035fd0c0f362ed895aa4a7421dea9955a2cb63feaccd6ce5cf7fb124",
+          "startOffset": 3511,
+          "textSha256": "34f1b91a5c8b87ad06bd80a9392f9f3acaacaed28e5d2ee75b30b0e86475c102"
+        },
+        {
+          "endOffset": 11475,
+          "excerpt": "Listen & Watch: Here’s a lovely guided inner-child self-love meditation that I helped my ex, Key, to produce for a group of 20 people in Nairobi: 0:00 -41:56 Audio playback is not supported on your browser. Please upgrade. And here’s the famous inner child re-connection song (“ On ne change pas : We don’t change”) by Céline Dion, which I subtitled in English",
+          "heading": "Listen & Watch:",
+          "id": "INNER.CHILD.LISTEN-WATCH",
+          "level": 1,
+          "ordinal": 2,
+          "rawHtmlSha256": "99ebcd308c56b950baf8de3e00cfb8b8b9eee548a69f9fc4d28c83b4766b912d",
+          "startOffset": 3803,
+          "textSha256": "460a5be7ad31948267b73144cbf6da43b7febee0812ad5a782d54cae405273b6"
+        },
+        {
+          "endOffset": 13848,
+          "excerpt": "The Chicken-and-Egg Problem Céline’s title gets the problem right: we don’t change . The child remains. What can change is who leads. A lot of people stay identified as the child, meeting adult life from the position that still feels small, abandoned, helpless, impulsive, frightened, or desperate to be chosen. My answer has been to stop asking the child to h",
+          "heading": "The Chicken-and-Egg Problem",
+          "id": "IC.CHICKEN_EGG",
+          "level": 1,
+          "ordinal": 3,
+          "rawHtmlSha256": "685079de3d043874aa0635f62ac0457e2e555c5cca4f647548679c77e1e54668",
+          "startOffset": 11475,
+          "textSha256": "3c4c72c4f439f340db4efb94e074b19b7a6794803e5f17621b969144286b29d0"
+        },
+        {
+          "endOffset": 20567,
+          "excerpt": "My Journey I used to preach Buddhism and enlightenment a lot. Eventually I realized that most people chase spiritual freedom as a way to get above childhood trauma or character defects they don’t want to meet. The usual name is spiritual bypassing . It produces a split personality: the spiritual identity loses awareness of the trauma while the buried materia",
+          "heading": "My Journey",
+          "id": "INNER.CHILD.MY-JOURNEY",
+          "level": 1,
+          "ordinal": 4,
+          "rawHtmlSha256": "0f1851894558709faec28552380eb06f14b56ef2373f981f2b610b6e826cb05b",
+          "startOffset": 13848,
+          "textSha256": "37da3d08c063154b537a4248f6a2da3f3cfd01f635d93d92fb187e7f7399ea56"
+        },
+        {
+          "endOffset": 24064,
+          "excerpt": "Before You Try to Go Deep Reparenting needs enough adult capacity to pause, compare options, remain in the present, and act. When somebody is flooded or identified almost completely with a frightened child-state, those capacities can be hard to reach. The immediate task may be outside support and regulation. Deeper dialogue can wait. Spirit and Mind Health",
+          "heading": "Before You Try to Go Deep",
+          "id": "IC.BEFORE_DEEP",
+          "level": 1,
+          "ordinal": 5,
+          "rawHtmlSha256": "7340c2c5418e12771889e4244de9af7bcfce1d502f658f1c8456553cfc1263d2",
+          "startOffset": 20567,
+          "textSha256": "8abf898feac558e61e4861ea427c321303cc799d26a5a6f9ab38f727ddb6b07b"
+        },
+        {
+          "endOffset": 28984,
+          "excerpt": "Bottom-up Healing for Trauma & Addiction: \"Neurological De-Armoring\" + Brainstem Relaxation u-dont-exist.com · 15 décembre 2025 When people tell me they have trauma, I generally recommend they follow my meditation/Mindset advice, including therapy, which includes somatic therapy & breathwork. To help people engage with the mindset practices, I have advised t",
+          "heading": "Bottom-up Healing for Trauma & Addiction: \"Neurological De-Armoring\" + Brainstem Relaxation",
+          "id": "INNER.CHILD.BOTTOM-UP-HEALING-FOR-TRAUMA-ADDICTION-NEUROLOGICAL-DE-ARMORING-BRAINSTEM-RELAXATION",
+          "level": 2,
+          "ordinal": 6,
+          "rawHtmlSha256": "b0465db45b54d6cf913d8103e00106f83804a3aca02a046d8401a77ef5cf307c",
+          "startOffset": 24064,
+          "textSha256": "d141338b2ce662c2859ee85c47f56421f93214f594e476b75d085f4487e33e05"
+        },
+        {
+          "endOffset": 33139,
+          "excerpt": "Regulation May Come Before Dialogue If you notice tension in your solar plexus or abdomen or other areas that seem to be blocking your ability to relax and access that heart chakra love, try some relaxation techniques, like non-forced, slower exhales, and gentle self-massage. I love using one foot to massage the other foot like a Ying/Yang symbol, but you ca",
+          "heading": "Regulation May Come Before Dialogue",
+          "id": "IC.REGULATION_BEFORE_DIALOGUE",
+          "level": 2,
+          "ordinal": 7,
+          "rawHtmlSha256": "47b3c18eedaf2027a7bbac0f89429f0c204ec6896bdf8a20ce1f4189070d2671",
+          "startOffset": 28984,
+          "textSha256": "481b6aaedb1e575b6cbb52fd4aa21f83395fac266ba81126bb4411556bea84ab"
+        },
+        {
+          "endOffset": 38381,
+          "excerpt": "Somatic Modalities Strategic Sequencing Roadmap u-dont-exist.com · 10 juin Trauma healing is rarely a matter of simply revisiting painful memories. For many people, especially those with complex or developmental trauma, lasting recovery follows a sequence: first establishing safety and nervous system regulation, then releasing accumulated stress and survival",
+          "heading": "Somatic Modalities Strategic Sequencing Roadmap",
+          "id": "INNER.CHILD.SOMATIC-MODALITIES-STRATEGIC-SEQUENCING-ROADMAP",
+          "level": 2,
+          "ordinal": 8,
+          "rawHtmlSha256": "c1158ab3a4dde422e4fa64a8da41b7fde856b13cf12c6277e3fce3aed7201647",
+          "startOffset": 33139,
+          "textSha256": "7b691dead88e0a57f0ab1396018cae696e19009f0b896838b0078f940f746bc1"
+        },
+        {
+          "endOffset": 38736,
+          "excerpt": "Borrow the Adult Before You Can Be the Adult Some people can close their eyes, imagine a loving parent, and immediately feel the archetype. Others summon the voice of the person who shamed, controlled, ignored, or frightened them. Some feel nothing. The instruction “be your own loving parent” already assumes the capacity they are missing.",
+          "heading": "Borrow the Adult Before You Can Be the Adult",
+          "id": "IC.BORROW_ADULT",
+          "level": 1,
+          "ordinal": 9,
+          "rawHtmlSha256": "f3059d010ed548364eac0a2f96ce438808e207c00cc442b8baddb8209b3c5aaf",
+          "startOffset": 38381,
+          "textSha256": "866e35dca3106a0f7efe6f99468c00ffa7389828a0e9900f35d71a58cab6ca42"
+        },
+        {
+          "endOffset": 39974,
+          "excerpt": "A Witness Is Enough to Begin The first adult position may be only a witness: “A frightened younger state is here, and something can notice it.” You don’t need warmth, wisdom, or a perfect answer yet. The fact that one part can observe another creates a little space around total identification. Using your own name can help. Instead of “I am terrified,” try, “",
+          "heading": "A Witness Is Enough to Begin",
+          "id": "IC.NEUTRAL_WITNESS",
+          "level": 2,
+          "ordinal": 10,
+          "rawHtmlSha256": "00fec289d3b5d830f25c064a428525e380e844ac3a6085bd2c4243db9039299a",
+          "startOffset": 38736,
+          "textSha256": "84c92e57d0b5749929d7a71881a0bd358401cd51141c943e9c2297b924baf3cc"
+        },
+        {
+          "endOffset": 42369,
+          "excerpt": "Borrow One Function at a Time A complete ideal parent may be impossible to imagine. Borrow one function at a time from a figure who embodies it: a therapist, grandmother, teacher, friend, older sibling, spiritual figure, fictional character, future self, or another presence whose care does not require you to disappear. Borrowed Nurturer: “How would this pers",
+          "heading": "Borrow One Function at a Time",
+          "id": "IC.BORROW_ONE_FUNCTION",
+          "level": 2,
+          "ordinal": 11,
+          "rawHtmlSha256": "80e699e66c0bf5412916ceb10cde0cd4a68baa5547b794077f2f334e1a211449",
+          "startOffset": 39974,
+          "textSha256": "a5e9f89693808dad69239f019f7656218f6f758ae591389fd22a7cf49650cde7"
+        },
+        {
+          "endOffset": 43902,
+          "excerpt": "Borrow Love and Perspective You Already Have Sometimes the missing capacity is not love itself. You can love other people or animals easily, but the feeling becomes inaccessible or unsafe when the recipient is you. Think of a pet, a baby, a friend, your own child, a partner, or anyone you naturally love. Feel the actual love first, without immediately trying",
+          "heading": "Borrow Love and Perspective You Already Have",
+          "id": "IC.BORROW_LOVE_PERSPECTIVE",
+          "level": 2,
+          "ordinal": 12,
+          "rawHtmlSha256": "7a2892167adc7c97571f57492cbb9fa27b7ed2642b27945d7305e1222cc9e710",
+          "startOffset": 42369,
+          "textSha256": "3b23e9700e236e4d8a14a7829660ebe3185539c5c64766d4c2d08f1943a1a2e5"
+        },
+        {
+          "endOffset": 45601,
+          "excerpt": "Become the Adult Apprentice The borrowed adult should stand beside you rather than replace you. The movement is: receive care → observe care → participate in care → initiate care → internalize care . After a therapist, peer, friend, or imagined figure helps, ask: What did they do that felt warm, protective, or wise? Which five percent of that can I do myself",
+          "heading": "Become the Adult Apprentice",
+          "id": "IC.ADULT_APPRENTICE",
+          "level": 2,
+          "ordinal": 13,
+          "rawHtmlSha256": "2b70282ebfd052ff78bb3668a433374289a03adbec1f38ccf683f73147c05670",
+          "startOffset": 43902,
+          "textSha256": "7808d7d8846c1c584532b5b71eb841c41a2b8db5baac48249b9e081e7c26e153"
+        },
+        {
+          "endOffset": 56365,
+          "excerpt": "The Three Adult Functions I call the deeper therapy pl/ork : play + work. Calling it only “work” forgets the inner child, who also wants to play. Most people are stuck identifying as the inner child, which can leave them wandering helplessly through adult life from the place that feels small, frightened, abandoned, impulsive, or helpless. Reparenting begins ",
+          "heading": "The Three Adult Functions",
+          "id": "IC.THREE_FUNCTIONS",
+          "level": 1,
+          "ordinal": 14,
+          "rawHtmlSha256": "b60f3cc29e5269f459fdcdd111707bb692167bbec866d5dcaed4eecc92012d2e",
+          "startOffset": 45601,
+          "textSha256": "589cda16611a7d3011ee47609351b6ef1828c635c050ace9f84a48a1a9c32fc4"
+        },
+        {
+          "endOffset": 56942,
+          "excerpt": "Make the Protector Visible Set one boundary. Say no to something costly. Handle an avoided task or financial mess. Leave a relationship that keeps eroding safety. Keep one small promise. Clean your room. These acts accumulate into trust because internal soothing without external competence can sound like the same unreliability that wounded the child. When th",
+          "heading": "Make the Protector Visible",
+          "id": "IC.PROTECTOR_VISIBLE",
+          "level": 2,
+          "ordinal": 15,
+          "rawHtmlSha256": "ac922d51aef353ec8d6a1b60c4ea22b8835630307758b40048cf4b9544a09850",
+          "startOffset": 56365,
+          "textSha256": "cf08f8e23579566f2d78e669bc41a67c2ac8f0de82d97b27c8509c5a438b6e9d"
+        },
+        {
+          "endOffset": 58171,
+          "excerpt": "When Love Is There but Doesn’t Feel Safe Sometimes love is available and still feels unsafe because the younger state distrusts the person offering it. It looks at the grown-up life it can see—old promises, continuing self-attack, repeated failures of protection—and treats that as evidence. The child thinks it already has a track record to judge, and it does",
+          "heading": "When Love Is There but Doesn’t Feel Safe",
+          "id": "IC.LOVE_UNSAFE",
+          "level": 2,
+          "ordinal": 16,
+          "rawHtmlSha256": "846962bba7508b2f310b33f2bb7f077dfab455c0d63935da712e823b19ecf501",
+          "startOffset": 56942,
+          "textSha256": "18896d412b5416aabb8dc619872b6ee20a884c83530f0226fd73b53c03fc6bb9"
+        },
+        {
+          "endOffset": 59050,
+          "excerpt": "Make a Simple Vow When promises still carry some credibility, a quiet vow can help. You can make it with or without a visualization of the two of you playing on a swing: “I know you’re in there. I know I’ve ignored you, and I know you don’t trust me. That’s okay. You don’t have to do anything. My job, starting today, is to build a life that is safe for you. ",
+          "heading": "Make a Simple Vow",
+          "id": "IC.VOW",
+          "level": 2,
+          "ordinal": 17,
+          "rawHtmlSha256": "ef980308aa6ba775121f6ea87570e1c850396cc7a41c9cafefab93e0236d4f91",
+          "startOffset": 58171,
+          "textSha256": "f71105e82a083f562b11918e62c29812aeb320fe949d6f2ea9ab660b43f62948"
+        },
+        {
+          "endOffset": 59979,
+          "excerpt": "Give the Vow a Physical Reminder You can give the promise a physical place in the room: a childhood toy, familiar stuffed animal, visible self-love note, or another object that feels steady and kind. Choose what it means while you’re sober and regulated. Let it remind you of the Nurturer or Protector you’re practicing becoming. It doesn’t speak for the child",
+          "heading": "Give the Vow a Physical Reminder",
+          "id": "INNER.CHILD.GIVE-THE-VOW-A-PHYSICAL-REMINDER",
+          "level": 3,
+          "ordinal": 18,
+          "rawHtmlSha256": "841933ac733c4fe8f741307414b157f2d32fc9f925c2e280792b4675125c5e76",
+          "startOffset": 59050,
+          "textSha256": "6cf3d0a99c89133e2c24e28150a273bbc846e6d5d729285384c399188463ea7d"
+        },
+        {
+          "endOffset": 60755,
+          "excerpt": "When the Adult Voice Feels Fake This is where many people get stuck. You activate the Nurturer, try to speak to the inner child, and get silence. Or numbness. Or a voice saying, “This is so silly.” Suddenly the phone needs checking, dinner needs planning, and a minor household task becomes emotionally urgent. My friend Scott said: “Half the time when I try t",
+          "heading": "When the Adult Voice Feels Fake",
+          "id": "IC.ADULT_VOICE_FAKE",
+          "level": 1,
+          "ordinal": 19,
+          "rawHtmlSha256": "2eb2b8e9fe77a2d65a99062a2767aaf3233af57489d941ac55eea633efd7db1e",
+          "startOffset": 59979,
+          "textSha256": "7263dcd6170e8b0b65d6d3a4935a589174f2908a707800a83c32a4ddbb0b856f"
+        },
+        {
+          "endOffset": 61748,
+          "excerpt": "The Parent You Inherited Before you deliberately build the Nurturer, Protector, and Guide, you usually already have another inner voice: the parent you inherited from how you were treated. It can be warm, but for many people its first version is a critic or warden: don’t cry, don’t be needy, don’t get angry, don’t embarrass us, don’t become too independent. ",
+          "heading": "The Parent You Inherited",
+          "id": "IC.INHERITED_PARENT",
+          "level": 2,
+          "ordinal": 20,
+          "rawHtmlSha256": "7862f1df788cca4e7cbb29d2ad305a1d7956883776b49e6db058ef6b40a37ded",
+          "startOffset": 60755,
+          "textSha256": "05fa07d162d37d21c5bf45de4fcad19209bb98ae8ecb14a8aa769e82adf225b6"
+        },
+        {
+          "endOffset": 62569,
+          "excerpt": "Start With Whatever Showed Up The cynical voice, numbness, urge to scroll, anger, dissociation, or sudden need to do something else all belong inside the pl/ork. The response may be a protector, the child speaking directly, an inherited critic, a present-day grievance, or a blend. Start with what it is trying to prevent, accomplish, or communicate before dec",
+          "heading": "Start With Whatever Showed Up",
+          "id": "IC.START_WHATEVER",
+          "level": 2,
+          "ordinal": 21,
+          "rawHtmlSha256": "f866dc30bfa63f1d7db5b382bdbbce24bc40256f2920d9508cb1bb4d1255722a",
+          "startOffset": 61748,
+          "textSha256": "43126f3ea541daa8da32235bbeed1e907e41fe5edff30f1b869915ac2ae98703"
+        },
+        {
+          "endOffset": 63674,
+          "excerpt": "Two Common Protective Patterns Two patterns often do have a protective function. Proactive protection stays on duty most of the time: the skeptic, intellectualizer, inner critic, or voice watching for weakness and self-indulgence. It may have spent years preventing humiliation, deception, overwhelm, or another abandonment. It has probably watched you begin o",
+          "heading": "Two Common Protective Patterns",
+          "id": "IC.GUARDS",
+          "level": 3,
+          "ordinal": 22,
+          "rawHtmlSha256": "030b44f9fdafb2575756f14719060d62e95b2223ecf08b75fbe8906571e58447",
+          "startOffset": 62569,
+          "textSha256": "1ac2033c010242904fca915d9dc31ea92cdf2fa52d696c0cb4c90f10072a1212"
+        },
+        {
+          "endOffset": 65263,
+          "excerpt": "A Bottom-Up Sequence Notice the protective part. Don’t push through it. Offer it the same Nurturer voice you intended for the child. “I see you. I know you’re trying to protect something. I want to understand.” Borrow that voice from somebody safe when you can’t generate it yourself. Ask what it expects will happen if it steps back. The answer may be: “This ",
+          "heading": "A Bottom-Up Sequence",
+          "id": "IC.BOTTOM_UP_SEQUENCE",
+          "level": 3,
+          "ordinal": 23,
+          "rawHtmlSha256": "ef2f9ee174718f602c1ec54fb4aae2019b282e8c332a656267bf2b4051ff313c",
+          "startOffset": 63674,
+          "textSha256": "46eb5896782ae0976d4fbd82ca55099d11461e66313d9285fe3022ab95933d12"
+        },
+        {
+          "endOffset": 67496,
+          "excerpt": "When the Urge to Escape Arrives Sometimes the protective response is a sudden desire for a substance, a relationship, a new project, or anything else that can move attention away from pain. Don’t shame the urge. Notice what it may be signaling: something painful has come close enough to require management. That can be progress. Thank the protective part. Slo",
+          "heading": "When the Urge to Escape Arrives",
+          "id": "IC.ESCAPE_URGE",
+          "level": 3,
+          "ordinal": 24,
+          "rawHtmlSha256": "4f6e9f1723a88b8d069dd5b1e3990a7d8501a31a1904240570e2d31bbc1c1051",
+          "startOffset": 65263,
+          "textSha256": "9e9e302cb4079562fd82196d89695827595f97c021ee4be3b0bf29f2732fc3af"
+        },
+        {
+          "endOffset": 68291,
+          "excerpt": "Sometimes There Isn’t a Clear Child Yet Reparenting assumes there is a coherent inner child to love. For many people, there is. For others—especially people raised in controlling families, rigid religious environments, or any setting where belonging required performing someone else—the authentic child-self may never have had room to form. The performed self ",
+          "heading": "Sometimes There Isn’t a Clear Child Yet",
+          "id": "IC.NO_CLEAR_CHILD",
+          "level": 1,
+          "ordinal": 25,
+          "rawHtmlSha256": "a775c159cb3c20d8eab99f229730f305fbd52a5f136ada2d1181e28310422f2c",
+          "startOffset": 67496,
+          "textSha256": "69991cd78e2baad8e6a5a3a5d5d31c0a3ac56d94ea36c60206539a42d31cecd9"
+        },
+        {
+          "endOffset": 70548,
+          "excerpt": "From Survival to Experimental Play When childhood is organized around avoiding pain and preserving attachment, attention goes into reading danger, meeting other people’s expectations, and keeping the bond. There is much less room for the ordinary experiments that answer, “What do I like? What do I want to try? Who am I when nobody is grading me?” Identity gr",
+          "heading": "From Survival to Experimental Play",
+          "id": "IC.IDENTITY_PLAY",
+          "level": 2,
+          "ordinal": 26,
+          "rawHtmlSha256": "0915df156a70188bf75310715e3542939851503acad0ee129218577bc6a768d8",
+          "startOffset": 68291,
+          "textSha256": "c21a7f469ace706032a74b70f8d62ae4b53ef6635f3b8d15d1f6c823cb6f9a39"
+        },
+        {
+          "endOffset": 73646,
+          "excerpt": "Untangling the Belonging Bargains Identity formation also requires untangling from family emotional systems, religious orthodoxies, group identities, political tribes, and individual relationships that pull you away from your own knowing in exchange for belonging. Most social systems ask for some conformity. Families want a particular kind of son, daughter, ",
+          "heading": "Untangling the Belonging Bargains",
+          "id": "IC.DIFFERENTIATION",
+          "level": 2,
+          "ordinal": 27,
+          "rawHtmlSha256": "69ea37ddc916f093e683a559aa56154ba8717894d4526f3955affee50b5bd041",
+          "startOffset": 70548,
+          "textSha256": "9b123a20d9446933be0b2b31af0e9e3bc313590643b599f77320fd38010130f5"
+        },
+        {
+          "endOffset": 74634,
+          "excerpt": "Let the Child Be Bad at Things Reflection can reveal what was suppressed, but identity also needs experiments. Try painting, dancing, gardening, a language, a sport, volunteering, music, or something else that has no obvious value to your résumé or social position. Notice what holds your attention when nobody is impressed. The old internal parent may demand ",
+          "heading": "Let the Child Be Bad at Things",
+          "id": "IC.CHILD_BAD_THINGS",
+          "level": 2,
+          "ordinal": 28,
+          "rawHtmlSha256": "9bb153aaf8674e331190f28d403d92d0c0202e7bd78f52c11f65b421c96a474b",
+          "startOffset": 73646,
+          "textSha256": "f1ad9823984d48ed868050eb00854512a81c28dbd5c6ab87770b3e6c4fc00d2a"
+        },
+        {
+          "endOffset": 76429,
+          "excerpt": "The Inner Guide Comes Later Key adds the third adult function: the Leader, Guide, or Guru. A competent parent does more than soothe and shield. The parent chooses education and experience, holds standards, requires difficult things for growth, and exposes the child to art, music, beauty, nature, and the wider world. Without direction, reparenting can become ",
+          "heading": "The Inner Guide Comes Later",
+          "id": "IC.GUIDE_LATER",
+          "level": 1,
+          "ordinal": 29,
+          "rawHtmlSha256": "1e4f8ac9b747280c76d9fef283a515574c7fd2995ff8703a4513db972c3cf08d",
+          "startOffset": 74634,
+          "textSha256": "d311ba89e65746a1e6b71da1c3621a47904ad020d99c17357e04ed48c980b192"
+        },
+        {
+          "endOffset": 76454,
+          "excerpt": "Simple Practices",
+          "heading": "Simple Practices",
+          "id": "INNER.CHILD.SIMPLE-PRACTICES",
+          "level": 1,
+          "ordinal": 30,
+          "rawHtmlSha256": "f82bf75f8e22a1187384dbc094d6a93b12d927901be6b87bc4e343b438ad92c9",
+          "startOffset": 76429,
+          "textSha256": "835565fdbdc4b595d8adebbe71d4f5c41027969113d682a8b5a470413baae669"
+        },
+        {
+          "endOffset": 77388,
+          "excerpt": "A Heart-to-Child Loop If you can feel even a little warmth, put one hand on the center of your chest, at the heart chakra, and feel for love. Put the other on the solar plexus, just below the chest, and feel for the inner child. The solar plexus is the most vulnerable part of the torso. One punch there hurts a lot, as I sadly learned while getting beaten up ",
+          "heading": "A Heart-to-Child Loop",
+          "id": "IC.HEART_SOLAR_LOOP",
+          "level": 2,
+          "ordinal": 31,
+          "rawHtmlSha256": "24578658e1c436702e0a1370a646289462f03a01215f292c3c5d947ab00be1aa",
+          "startOffset": 76454,
+          "textSha256": "e9e2f9a88a1e23ce61ff3b9b7f68eba4e161b2dad14cb9fac2427b9b522ec963"
+        },
+        {
+          "endOffset": 77851,
+          "excerpt": "Journal With Each Hand Write vulnerable thoughts and feelings with your non-dominant hand—the clumsy hand whose script already looks like a child wrote it. Answer with the dominant hand as the adult, offering love, protection, and guidance. This can bypass the silence people hit with speech or visualization. If the protector is what appears, let that part us",
+          "heading": "Journal With Each Hand",
+          "id": "INNER.CHILD.JOURNAL-WITH-EACH-HAND",
+          "level": 2,
+          "ordinal": 32,
+          "rawHtmlSha256": "2a4be928fd62bb28b6bd786c671e7be16fea2cc1372c4f93a094ce9eab5e1f6a",
+          "startOffset": 77388,
+          "textSha256": "daba9469ab76125a355323bd61d36feb8de4f82be660521481d21963108d4e72"
+        },
+        {
+          "endOffset": 80341,
+          "excerpt": "Use Childhood Photographs Without Interrogating Them A childhood photograph can help when visualization feels fake. You don’t have to invent the child’s face or posture; you can look at an image from that time. Look gently and notice what arises without deciding what the picture is supposed to prove. Useful questions include: What do I notice in my body? Wha",
+          "heading": "Use Childhood Photographs Without Interrogating Them",
+          "id": "IC.PHOTOS",
+          "level": 2,
+          "ordinal": 33,
+          "rawHtmlSha256": "a41cb741fe3ab8a9a1b0f2306803c47e940a05efbc04c769695dac92b1d0dca7",
+          "startOffset": 77851,
+          "textSha256": "3b02acf48fc87b326f57a32948aa9cdd857ab055c173dfaa455da9f0715b899f"
+        },
+        {
+          "endOffset": 82156,
+          "excerpt": "When Love Still Feels Missing If you weren’t well-loved as a child, “love your inner child” may sound like nonsense. You may sincerely want the best for the child, hug them in imagination, or miss them—and still feel none of the beautiful warmth people mean by love. Begin with smaller recognitions: Love may already be familiar in another form. Most people ha",
+          "heading": "When Love Still Feels Missing",
+          "id": "IC.LOVE_MISSING",
+          "level": 1,
+          "ordinal": 34,
+          "rawHtmlSha256": "555a2432bb43b8826416a3b4321150767b5831d1bca92ffbedf457a409b1fdbb",
+          "startOffset": 80341,
+          "textSha256": "8b6fc92a049d3421c8665590a117154e12fcc42ce85315e228c307dec3a13e68"
+        },
+        {
+          "endOffset": 82766,
+          "excerpt": "Hitting the Wall: Radical Acceptance This appears in twelve-step traditions and Zen: stop the self-improvement project for a moment. The effort to fix yourself so you can become worthy keeps reinforcing the belief that you are currently broken. Sit with the loneliness, numbness, or emptiness and say: “This is it. If I never feel love for the rest of my life,",
+          "heading": "Hitting the Wall: Radical Acceptance",
+          "id": "INNER.CHILD.HITTING-THE-WALL-RADICAL-ACCEPTANCE",
+          "level": 2,
+          "ordinal": 35,
+          "rawHtmlSha256": "d8f0e75ad747b878f5cd24f3daee582165ab707cda3e5c1b8dbbd79b786ff37d",
+          "startOffset": 82156,
+          "textSha256": "709bea3a1838e0e914e59a1e24c1e50f680000d7b7035068589fa07c94219fa3"
+        },
+        {
+          "endOffset": 83377,
+          "excerpt": "Somatic Heart Opening Rumi says you must keep breaking your heart until it stays open. The original mechanism language here locates the feeling around the ventral-vagal system and cardiac plexus: some people find that deep grieving eventually drops the nervous system into social engagement and gives way to a physical sense of being held by the universe—a bio",
+          "heading": "Somatic Heart Opening",
+          "id": "INNER.CHILD.SOMATIC-HEART-OPENING",
+          "level": 2,
+          "ordinal": 36,
+          "rawHtmlSha256": "2de6d1424976b1df431821c3f4fac9b916461e16c4cfb1ab662aa5db774a27cf",
+          "startOffset": 82766,
+          "textSha256": "4cc856a6fac13f40fc03b7a6a29a048065fc6a49ffc96f6c7cef3199791df6e4"
+        },
+        {
+          "endOffset": 84001,
+          "excerpt": "The “I Am” Contemplation Advaita Vedanta and non-duality traditions use a different route. Strip away name, job, history, and the identity of “the unloved person.” Attend to the simple fact that you exist. Don’t get stuck at the “I Am” phase; it’s preliminary . The opening comes when existence stops feeling like a neutral fact and begins to feel like infinit",
+          "heading": "The “I Am” Contemplation",
+          "id": "INNER.CHILD.THE-I-AM-CONTEMPLATION",
+          "level": 2,
+          "ordinal": 37,
+          "rawHtmlSha256": "9fb356412dd073bae7e5259f65b20d817828d668260d657103cf210ba63e1809",
+          "startOffset": 83377,
+          "textSha256": "4445350fa125183cb899138cfb1090a12157cdb835c7e5b66e26df7a6f65992b"
+        },
+        {
+          "endOffset": 85022,
+          "excerpt": "Altered States Can Deepen the Therapy Learn to do inner-child therapy sober, in your ordinary mindstate. When you’re ready, my self-hypnosis guide or lucid-dreaming guide can take it deeper. Low doses of entheogens can also synergize: cactus, CBD tea with sublingual mapacho, Loveyhuasca , iboga , and others. The gate matters. Altered states can get past the ",
+          "heading": "Altered States Can Deepen the Therapy",
+          "id": "IC.ALTERED_STATES",
+          "level": 1,
+          "ordinal": 38,
+          "rawHtmlSha256": "cd932eec81f30ac9c17deff35091bbfe1380273cb3ccf6c327274a65c5aa1dd6",
+          "startOffset": 84001,
+          "textSha256": "372c37e46c6df3e8c1a8f788a6185876643484d5904ed8673a11abc2704b0070"
+        },
+        {
+          "endOffset": 85796,
+          "excerpt": "When the Practice Feels Real but Stays Shallow Some people have the opposite problem: they believe they’re connecting when the contact is staying near the surface. Meditating for hours and then sleeping—especially after you have already slept once—can sometimes open much more emotionally direct material. What showed me that the daytime pl/ork had stayed shal",
+          "heading": "When the Practice Feels Real but Stays Shallow",
+          "id": "INNER.CHILD.WHEN-THE-PRACTICE-FEELS-REAL-BUT-STAYS-SHALLOW",
+          "level": 1,
+          "ordinal": 39,
+          "rawHtmlSha256": "b5c872df5425b21280deb1bcfd3be706221ed87d0b67b1e25e2e301e34d655d9",
+          "startOffset": 85022,
+          "textSha256": "3e6aa6480666c04d70e909132f7f802eca4db90d923782bd075350c993289d32"
+        },
+        {
+          "endOffset": 88377,
+          "excerpt": "How to Forgive Without Forgetting For many people, healing eventually includes some form of forgiveness or release from active resentment. It can’t be required on schedule, and it isn’t a prerequisite for safety, accountability, boundaries, justice, or recovery. Active resentment can narrow what you see and keep the child organized around the injury. Pressur",
+          "heading": "How to Forgive Without Forgetting",
+          "id": "IC.FORGIVENESS",
+          "level": 1,
+          "ordinal": 40,
+          "rawHtmlSha256": "e3592d731454edde7919e4a9705de4568301c0128250c20d78702083a11b44bb",
+          "startOffset": 85796,
+          "textSha256": "ef508a78b299e70b579e640d87c2fc8994c0c7bbf32935324b9a6ccfc5920926"
+        },
+        {
+          "endOffset": 89947,
+          "excerpt": "Borrowed Adulthood in Relationship Reparenting is usually framed as something you do alone or with a therapist. The child was wounded in relationship, though, and a relational injury can only heal so far in isolation. Hearthwork , my peer-counseling framework, begins: Equal time. Attention without interpretation, advice, or fixing. You speak. I listen. Then ",
+          "heading": "Borrowed Adulthood in Relationship",
+          "id": "IC.RELATIONSHIP",
+          "level": 1,
+          "ordinal": 41,
+          "rawHtmlSha256": "9381a118bee9127d9b6e6dd1df83a128ce45cba3bbd7f06e40d59ccb2b7731a4",
+          "startOffset": 88377,
+          "textSha256": "be18cc06cdf1167537a4ec69a03fdd3bbef700b97ab2b9544eb126522da4e839"
+        },
+        {
+          "endOffset": 90832,
+          "excerpt": "You Are Worthy of Love. Always. Sometimes self-love begins as warmth. Sometimes it begins as borrowed care, a boundary, a meal, a phone put down, or one sentence you are willing to repeat without believing yet. You don’t have to feel like a parent before taking the first adult action. The role can begin outside you, become shared, and then become yours. Smal",
+          "heading": "You Are Worthy of Love. Always.",
+          "id": "INNER.CHILD.YOU-ARE-WORTHY-OF-LOVE-ALWAYS",
+          "level": 1,
+          "ordinal": 42,
+          "rawHtmlSha256": "9cf39c7ed0be0817d04020eaf1b2b07cff715af007c69fdf1660d42f6799cbde",
+          "startOffset": 89947,
+          "textSha256": "58d2f9bcf0becf58da3e4e997bfe6fe790bb2269c25a2c7b6057b322f7a25105"
+        },
+        {
+          "endOffset": 90849,
+          "excerpt": "Appendix",
+          "heading": "Appendix",
+          "id": "INNER.CHILD.APPENDIX",
+          "level": 1,
+          "ordinal": 43,
+          "rawHtmlSha256": "2ad7e32a1a6d8d0ebd4534f3f20adc1bbbfae9a1cb3fee46c03873746d1300aa",
+          "startOffset": 90832,
+          "textSha256": "2d4b3e2813c6058b5f056f91316db8c83f4d685cc5596bc61e4bb14d4b4b1680"
+        },
+        {
+          "endOffset": 93131,
+          "excerpt": "How This Relates to IFS Internal Family Systems, or IFS, overlaps with this guide. It recognizes protective parts and teaches people to approach them without shame or combat. The “meet the protector first” sequence is compatible with IFS. My reparenting method diverges from IFS at an important point. Standard IFS treats the healer as the Self, a calm and com",
+          "heading": "How This Relates to IFS",
+          "id": "IC.IFS",
+          "level": 2,
+          "ordinal": 44,
+          "rawHtmlSha256": "1b58bd6c7975576d585ac5b9c31ef07f6d4c2cca1bcc1a5503fc9dd8278a6cb8",
+          "startOffset": 90849,
+          "textSha256": "f031fe14e25950d226a1d8670eb854fb652895f3292ce4dacdbca5676adcd0d5"
+        },
+        {
+          "endOffset": 95515,
+          "excerpt": "Teachers and Practice Resources Several teachers directly influenced this method. I can’t fully endorse any of them because none follows my whole approach or has expressed interest in doing so. Daja approaches inner-child pl/ork intuitively through the divine Nurturer and Protector archetypes. Her work is less neuroscience and CBT, more direct archetypal pra",
+          "heading": "Teachers and Practice Resources",
+          "id": "INNER.CHILD.TEACHERS-AND-PRACTICE-RESOURCES",
+          "level": 2,
+          "ordinal": 45,
+          "rawHtmlSha256": "bb923fecfcdd01d363f36f72e17387022e8e9d4c1a7dfbb89a92241e2d52b683",
+          "startOffset": 93131,
+          "textSha256": "eb35bcc8f62ceac56be83f8936f9e457fe10317762cfe4e006caa78dbbef0d6f"
+        }
+      ],
+      "sourcePath": "guides/inner-child/canonical-source.html",
+      "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+    },
+    {
+      "editorBodySha256": "8c8a0ef5ce88d90e46dc8b8760488abe766a125b7851f9d987d82ee32ab39bf5",
+      "guideId": "somatic",
+      "revision": "r01-candidate",
+      "sectionCount": 24,
+      "sections": [
+        {
+          "endOffset": 4820,
+          "excerpt": "Introduction Trauma healing is rarely just a matter of revisiting painful memories. The body was involved in surviving what happened, and it may still brace, collapse, freeze, disconnect, scan for danger, or flood long after the danger is gone. For many people, especially people with complex or developmental trauma, lasting recovery follows a sequence: estab",
+          "heading": "Introduction",
+          "id": "SOM.INTRO",
+          "level": 1,
+          "ordinal": 1,
+          "rawHtmlSha256": "e4c9876fd06c002b0d73377090a84280a4663431129519b907c82e90cae17709",
+          "startOffset": 3511,
+          "textSha256": "448cb461c8098d70ef53161cc64f0ffe7a2fa3b8590b24aab97d3271e44467b7"
+        },
+        {
+          "endOffset": 14143,
+          "excerpt": "Don’t be so serious, you silly willy! Remember, therapy is not just work. It’s also play! We often make the most incredible discoveries when we approach things with playful curiosity. For example, here’s a bridge between somatic therapy and inner-child therapy which I recently learned from Professor Baby Sheep: Professor Baby Sheep Taught Me Inner Child Shak",
+          "heading": "Don’t be so serious, you silly willy!",
+          "id": "SOMATIC.DONT-BE-SO-SERIOUS-YOU-SILLY-WILLY",
+          "level": 2,
+          "ordinal": 2,
+          "rawHtmlSha256": "c2f36487409e629cdde6ecc0c5baa139ed17e125b130ce1f0a21b48bdfb1a8d2",
+          "startOffset": 4820,
+          "textSha256": "84df0a46dfcee3b6bfd2d7ca5d4dca44c661dacc08d7ea2c736fea0a99493e15"
+        },
+        {
+          "endOffset": 16546,
+          "excerpt": "This is a Map, But You Are the Explorer Putting these jobs in a rough order makes intuitive and clinical sense for people who are repeatedly overwhelmed, severely dissociative, actively unsafe, unable to settle after activation, or missing the practical support needed to tolerate trauma work. This five-job map is built from first-principles reasoning and com",
+          "heading": "This is a Map, But You Are the Explorer",
+          "id": "SOM.MAP_NOT_LADDER",
+          "level": 1,
+          "ordinal": 3,
+          "rawHtmlSha256": "e726fb37810edcb3737c09b73838fe3fb66af90a81e3c41ea0c114ad2833bb93",
+          "startOffset": 14143,
+          "textSha256": "67e9eb458759ade82529e32070eb163c4156a8e51fcc2e89be60a1e36dc7c954"
+        },
+        {
+          "endOffset": 17459,
+          "excerpt": "The Map at a Glance Job 1: Stay Present and Keep Choice — build enough safety, orientation, stopping ability, and return capacity for the next step. Job 2: Regulate or Discharge Accumulated Activation — keep pressure from building between deeper sessions. Job 3: Work With Diffuse, Bodily, or Hard-to-Narrate Material — approach sensations, impulses, emotions,",
+          "heading": "The Map at a Glance",
+          "id": "SOM.MAP_GLANCE",
+          "level": 1,
+          "ordinal": 4,
+          "rawHtmlSha256": "d7ddcaed8dc64e0680ef99a50d4fdb63eec25ef2c54e8332ff3b2d8fabed4615",
+          "startOffset": 16546,
+          "textSha256": "ad734821ed041c165716916deaaf061482f161603a7b7627da09d6a2f5f12416"
+        },
+        {
+          "endOffset": 19962,
+          "excerpt": "How Somatic Work and Inner-Child Reparenting Fit Together Inner-child reparenting is not only a Job 5 practice. Lighter forms can begin early and run alongside somatic work. When somebody is flooded, almost completely identified with the child-state, or unable to access a Nurturer or Protector, the first task may be orientation, outside safety, a neutral wit",
+          "heading": "How Somatic Work and Inner-Child Reparenting Fit Together",
+          "id": "SOM.INNER_CHILD_PARALLEL",
+          "level": 1,
+          "ordinal": 5,
+          "rawHtmlSha256": "590b7e6a0647853c506c46322170687e40c981fafc1e5fdad32d91ba25225593",
+          "startOffset": 17459,
+          "textSha256": "bcef1357e9a2a24242906110501a6ab62c7afdf57f21c08df48dbb30e9365bea"
+        },
+        {
+          "endOffset": 20013,
+          "excerpt": "Job 1: Build Enough Safety to Stay Present",
+          "heading": "Job 1: Build Enough Safety to Stay Present",
+          "id": "SOM.PHASE1",
+          "level": 1,
+          "ordinal": 6,
+          "rawHtmlSha256": "eeeda19736d36ae4591cd708a3c793c5f678a9395caea00887c7dbd08762aff2",
+          "startOffset": 19962,
+          "textSha256": "f5e3944c2bee6625a099bd3bc69ccae094b8ccdba369ee497d7e3c8aaf1a8825"
+        },
+        {
+          "endOffset": 21790,
+          "excerpt": "A Useful Starting Modality: Somatic Experiencing Goal: Expand the window of tolerance and establish nervous-system safety. Why it can help here: If the autonomic nervous system cannot return to regulation, deeper trauma work often becomes destabilizing. Somatic Experiencing is useful here because it works with sensation, orientation, impulse, defensive respo",
+          "heading": "A Useful Starting Modality: Somatic Experiencing",
+          "id": "SOM.SE",
+          "level": 2,
+          "ordinal": 7,
+          "rawHtmlSha256": "405a51e708ce80f841f59d6d9c03e47ff022d6a4c5dc3aeb0a6fb61a994fc6ce",
+          "startOffset": 20013,
+          "textSha256": "38bf6b66c54a0181895a36e45ddc744c697b98b32ca07d884cd005303410b73d"
+        },
+        {
+          "endOffset": 23024,
+          "excerpt": "Trauma-Sensitive / Restorative Yoga Goal: Gain body awareness, flexibility, enjoyment, and agency. Yoga often fits early in the sequence. No power yoga. No hot yoga. Nobody announcing, “Open your hips and release your trauma.” The useful version is slow, choice-based, and non-invasive. Best forms: Trauma-sensitive yoga Restorative yoga Gentle somatic yoga Ve",
+          "heading": "Trauma-Sensitive / Restorative Yoga",
+          "id": "SOM.YOGA",
+          "level": 2,
+          "ordinal": 8,
+          "rawHtmlSha256": "94997a8aa5baa56eb505c6c5507136349c9440f39b4ace0e4accc49f5ae80eca",
+          "startOffset": 21790,
+          "textSha256": "655fb3d3979be3be382496c651f4242ebd15cd098c705b135dbbb0a8c900b5c6"
+        },
+        {
+          "endOffset": 24938,
+          "excerpt": "Gentle Support: Shaking / TRE Gentle shaking or basic trauma-release exercises can support Job 1, but the dose should stay low. You should finish feeling more regulated, not blasted open. Double click to interact with video Examples: Basic Trauma Release Exercises, kept very mild Light neurogenic tremoring Gentle shaking while standing Short, playful movemen",
+          "heading": "Gentle Support: Shaking / TRE",
+          "id": "SOM.GENTLE_SHAKING",
+          "level": 2,
+          "ordinal": 9,
+          "rawHtmlSha256": "15df07d2420d5404c9201db6d91f4cd7eb7307973dae599ab37bf6a65665bb94",
+          "startOffset": 23024,
+          "textSha256": "08efce1b7b12fc05bc53378ea47c72cd09cdbd4af1eace55bad247f706e81929"
+        },
+        {
+          "endOffset": 25231,
+          "excerpt": "Job 2: Daily Regulation and Discharge — Keep the Pressure Low Once the system has some basic safety, another common job is daily regulation. Deep sessions can be undermined when the rest of the week keeps accumulating activation. Job 2 creates a regular pressure-release system.",
+          "heading": "Job 2: Daily Regulation and Discharge — Keep the Pressure Low",
+          "id": "SOM.PHASE2",
+          "level": 1,
+          "ordinal": 10,
+          "rawHtmlSha256": "19b93ded13da50578df8606e21936af3c54e193f0185a6987d8567811084a79f",
+          "startOffset": 24938,
+          "textSha256": "0f063c82bf2316e1108d8a42edb57208bdc9e296ed4e354db8e42c027a5a8446"
+        },
+        {
+          "endOffset": 26031,
+          "excerpt": "EFT / Tapping Goal: Portable self-regulation for real-world triggers. EFT is useful because it can be done quickly, privately, and repeatedly. It gives you something concrete to do when old activation appears in ordinary life: conflict, shame spirals, social fear, abandonment panic, freeze, anger, or intrusive memory fragments. Best use: Before difficult con",
+          "heading": "EFT / Tapping",
+          "id": "SOM.EFT",
+          "level": 2,
+          "ordinal": 11,
+          "rawHtmlSha256": "0e2222983cc64901330f3095b5ad8e58ecf196d76ca4013184ead80d7a51969e",
+          "startOffset": 25231,
+          "textSha256": "63378edc7f9697d3763f4f29edab4f7d4ea33b2788820ff298256c4c6ee8398b"
+        },
+        {
+          "endOffset": 28286,
+          "excerpt": "Shaking Qigong / Shaking Medicine Goal: Daily autonomic discharge and energetic decompression. Shaking Qigong is a creative fusion of shaking with qigong. The form I am linking to is a class for $10 per month on Skool which my friend Louka took. I am recommending this specific class because Louka tried many different healing and somatic modalities, including",
+          "heading": "Shaking Qigong / Shaking Medicine",
+          "id": "SOM.SHAKING_QIGONG",
+          "level": 2,
+          "ordinal": 12,
+          "rawHtmlSha256": "8ac72f2fe68748b7b31058fa57ee4ddc66e0183743f7154b7c1f7ea5dd9efe3c",
+          "startOffset": 26031,
+          "textSha256": "47eff6d98a41f0b070d387ff02736a259f376115a0460be0d0172faf0c2fa62c"
+        },
+        {
+          "endOffset": 29296,
+          "excerpt": "The Discharge → Settle Stack A useful daily sequence is: Shaking Qigong / TRE — discharge excess activation. Restorative or gentle yin yoga — let the system soften, settle, and rebalance energy flow. EFT tapping — re-establish emotional calm and cognitive orientation. The point of the stack is to avoid opening a lot of activation through shaking and then wal",
+          "heading": "The Discharge → Settle Stack",
+          "id": "SOM.STACK",
+          "level": 2,
+          "ordinal": 13,
+          "rawHtmlSha256": "5f73fa720b98e56d27e23137108711c5a04bb7adcd822e7e09adf729cef93152",
+          "startOffset": 28286,
+          "textSha256": "07e4d6a2756d2be377dafa011a03e1dda55e4aa6e767298f1f1dc1bd9cfefca4"
+        },
+        {
+          "endOffset": 29652,
+          "excerpt": "Job 3: Work With Diffuse, Bodily, or Hard-to-Narrate Material This is often called deep subcortical processing. I use the word as shorthand for trauma material that shows up through body sensation, impulse, emotion, image, or fragments before it becomes a clear verbal story—not as a claim that one precise brain region contains it.",
+          "heading": "Job 3: Work With Diffuse, Bodily, or Hard-to-Narrate Material",
+          "id": "SOM.PHASE3",
+          "level": 1,
+          "ordinal": 14,
+          "rawHtmlSha256": "229aaf861c988a74bce02d47f27167539d4183210a81f3be248fbdd5de54dd27",
+          "startOffset": 29296,
+          "textSha256": "d5f828b3fee11e1eb364bfa9703ec1891a1a39c35e10087d0effee0241070ab2"
+        },
+        {
+          "endOffset": 31835,
+          "excerpt": "A Deeper-Processing Option: Brainspotting Goal: Work with emotionally charged material through gaze position, focused attention, bodily awareness, and therapist attunement. Double click to interact with video Helpful foundations may include: Enough nervous-system safety to remain present At least one way to regulate ordinary triggers A way to discharge or se",
+          "heading": "A Deeper-Processing Option: Brainspotting",
+          "id": "SOM.BRAINSPOTTING",
+          "level": 2,
+          "ordinal": 15,
+          "rawHtmlSha256": "c1489d6437ea04227160b831c3d1f114c1c1b9d21fdf5bdca93b98ed0cce6aeb",
+          "startOffset": 29652,
+          "textSha256": "651d603cd119c6582f45367fc1fe5942a4284eeca8319102404a72785e51030b"
+        },
+        {
+          "endOffset": 32611,
+          "excerpt": "Post-Brainspotting Integration After Brainspotting, do not rush straight into analysis. Your body may need time to process whatever surfaced. Useful post-session options: Allow spontaneous shaking or tremoring if it arises naturally. Use gentle Shaking Qigong if your body wants discharge. Use walking meditation if you need orientation and grounding. Use rest",
+          "heading": "Post-Brainspotting Integration",
+          "id": "SOM.POST_BRAINSPOTTING",
+          "level": 2,
+          "ordinal": 16,
+          "rawHtmlSha256": "693eb7fd1b5f701ee25f3caec47fd46acb63ad1bf17f8d510096ae1e32555e28",
+          "startOffset": 31835,
+          "textSha256": "d35b3b3cbd88577e7dda854db014a069834b27ebebb3d63f9058ac2189cd4ca8"
+        },
+        {
+          "endOffset": 32658,
+          "excerpt": "Job 4: Targeted Memory Reconsolidation",
+          "heading": "Job 4: Targeted Memory Reconsolidation",
+          "id": "SOM.PHASE4",
+          "level": 1,
+          "ordinal": 17,
+          "rawHtmlSha256": "2d7d731b9818ce8a05c551726da588e6dcacbbfe0ac872be401517a189792bed",
+          "startOffset": 32611,
+          "textSha256": "5ad39f36f1b3cc95d120d123b5855cd977280cd388d50eb661dc2f80df2d3db0"
+        },
+        {
+          "endOffset": 34373,
+          "excerpt": "A Targeted-Memory Option: EMDR Goal: Resolve remaining discrete traumatic memories, flashbacks, and highly specific trigger networks. Double click to interact with video EMDR often fits after you have enough regulation, body capacity, and post-session integration skills. It can be highly effective, but it is not always the best first move for diffuse develop",
+          "heading": "A Targeted-Memory Option: EMDR",
+          "id": "SOM.EMDR",
+          "level": 2,
+          "ordinal": 18,
+          "rawHtmlSha256": "1d09562a54e1d4cecdda6d459010d12ed1f585163d2e396eff3f03c7cdae406b",
+          "startOffset": 32658,
+          "textSha256": "38213da0026d8f966aa142b0150ac967d06399d038497435e16d201b3c21a321"
+        },
+        {
+          "endOffset": 35120,
+          "excerpt": "Neurological De-Armoring Support Sleep, substance use, medication effects, pain, nutrition, and general physiological stability can influence how well you tolerate therapy. I have a separate sleep guide here . This is also one point where neurological de-armoring support may be especially relevant. EMDR directly engages memory reprocessing, so anything that ",
+          "heading": "Neurological De-Armoring Support",
+          "id": "SOMATIC.NEUROLOGICAL-DE-ARMORING-SUPPORT",
+          "level": 2,
+          "ordinal": 19,
+          "rawHtmlSha256": "5d440a0a0c6764933530bd4d8816ea6c00039e971a8f587a6610bd1e5e47a647",
+          "startOffset": 34373,
+          "textSha256": "2042c07ba99f22110217eaa4171ec6bf98b8fd2450270e9e2b6cbef6046da085"
+        },
+        {
+          "endOffset": 35773,
+          "excerpt": "After EMDR After EMDR, keep integration simple instead of piling on more processing: Walking Restorative yoga Healthy food and hydration Journaling only if it feels grounding Early bedtime if your nervous system feels tired Light EFT if activation remains I would not stack Brainspotting, EMDR, intense shaking, and deep yin on the same day unless you already ",
+          "heading": "After EMDR",
+          "id": "SOM.POST_EMDR",
+          "level": 2,
+          "ordinal": 20,
+          "rawHtmlSha256": "671f35de287993c3a66ec58530ac4384c9d8f19ce10d5c6efcdfcee36b0e6484",
+          "startOffset": 35120,
+          "textSha256": "44975b5ce75a6ac3b9e1d285a86b04e9985b3061493f7df1c8eb06692202aae1"
+        },
+        {
+          "endOffset": 35824,
+          "excerpt": "Job 5: Meaning-Making and Life Integration",
+          "heading": "Job 5: Meaning-Making and Life Integration",
+          "id": "SOM.PHASE5",
+          "level": 1,
+          "ordinal": 21,
+          "rawHtmlSha256": "5917012cec33482b8d6c00575a164030a9f55a66b86932becdee854556725786",
+          "startOffset": 35773,
+          "textSha256": "93b4321a17a74fe560dd54ee7d162b6c06cd62523d80254c71cbedd09ab8b05d"
+        },
+        {
+          "endOffset": 36982,
+          "excerpt": "Light CBT / Narrative Integration Goal: Rebuild the life narrative after the body is less trapped in survival mode. Top-down cognitive work often fails when introduced too early because the body still believes the threat is happening. But after regulation, discharge, and deeper processing, light cognitive work can become much more useful. Best use: Reframing",
+          "heading": "Light CBT / Narrative Integration",
+          "id": "SOM.INTEGRATION",
+          "level": 2,
+          "ordinal": 22,
+          "rawHtmlSha256": "e8b28cf09773f8e4011575a86b7463b892a2d0bfba37480fffc24eb876ea5041",
+          "startOffset": 35824,
+          "textSha256": "f115c9063d77ce85b363e3bd17744b59b91909137db91ae39551b4243b1adafc"
+        },
+        {
+          "endOffset": 38756,
+          "excerpt": "How to Judge What Is Helping A common movement is: Regulation → discharge → processing → integration → meaning. Yoga moves through the map: early for awareness, flexibility, enjoyment, and agency; after shaking to help the body settle and rebalance; or after deeper processing for stretching and reconnection. You do not need every modality or a fixed schedule",
+          "heading": "How to Judge What Is Helping",
+          "id": "SOM.JUDGE_HELP",
+          "level": 1,
+          "ordinal": 23,
+          "rawHtmlSha256": "28d07803a0a89efac757a26ab23795531a9224ae0261a9993c7a9dba963fe079",
+          "startOffset": 36982,
+          "textSha256": "29e24cd11f3fcf1a3d378e90fec2b8cc8737fbac86a4f119a29ec7217786ee5d"
+        },
+        {
+          "endOffset": 49188,
+          "excerpt": "Optional High-Intensity State-Shift and Release Practices Sky Hypnosis and Vagal Blitz do not have to wait until the end of the map. Stable people may find them helpful even before doing other therapies. They are optional advanced state-shift and release practices, not ordinary regulation exercises or prerequisites for healing. Physical safety matters. Sky H",
+          "heading": "Optional High-Intensity State-Shift and Release Practices",
+          "id": "SOM.ADVANCED_RELEASE_SOURCE",
+          "level": 1,
+          "ordinal": 24,
+          "rawHtmlSha256": "9cc2066768d92bfdc96f21ac64fb6e1ad4bd0e6c0eb9331a45911ff25d601830",
+          "startOffset": 38756,
+          "textSha256": "75e6e03dc855652669399a4e94f2b777899c05e76ecc03c250e0a58a7aa48064"
+        }
+      ],
+      "sourcePath": "guides/somatic/canonical-source.html",
+      "sourceSha256": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701"
+    }
+  ],
+  "stats": {
+    "edgeCount": 33,
+    "graphCount": 3,
+    "nodeCount": 34,
+    "ownerAmendmentCount": 2,
+    "sourceSectionCount": 69
+  },
+  "version": "inner-child-somatic-packet-2026.08.11-r01-candidate"
+}

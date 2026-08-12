@@ -1,0 +1,41 @@
+{
+  "name": "inner-signal-runtime",
+  "version": "0.14.4",
+  "private": true,
+  "description": "Inner Signal runtime with timezone-stable ZIP validation, stage-aware A001 audit recovery, resumable model checkpoints, exact-model role enforcement, owner-gated Guide Packets, and privacy-safe diagnostics.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "replay": "node src/cli/replay.mjs",
+    "replay:cli": "node --env-file=.env src/cli/replay.mjs",
+    "respond": "node src/cli/respond.mjs",
+    "respond:cli": "node --env-file=.env src/cli/respond.mjs",
+    "check:cli": "node --env-file=.env src/cli/check-cli.mjs",
+    "check:api": "node --env-file=.env src/cli/check-models.mjs",
+    "serve": "node src/cli/serve.mjs",
+    "serve:cli": "node --env-file=.env src/cli/serve.mjs",
+    "verify": "./scripts/verify-package.sh",
+    "hypnosis:replay": "node src/cli/hypnosis-replay.mjs",
+    "hypnosis:replay:cli": "node --env-file=.env src/cli/hypnosis-replay.mjs",
+    "hypnosis:respond": "node src/cli/hypnosis-respond.mjs",
+    "hypnosis:respond:cli": "node --env-file=.env src/cli/hypnosis-respond.mjs",
+    "diagnose:cli": "node --env-file=.env src/cli/diagnose-cli.mjs",
+    "auto:cli": "bash scripts/auto-cli.sh",
+    "autopilot": "node --env-file=.env src/cli/autopilot.mjs",
+    "web:smoke": "node -e \"import('./src/core/config.mjs').then(async ({loadConfig})=>{const {createProviders}=await import('./src/providers/factory.mjs');const {runWebClientSmoke}=await import('./src/autopilot/web-smoke.mjs');const c=loadConfig({mode:'mock'});console.log(JSON.stringify(await runWebClientSmoke({config:c,providers:createProviders(c)}),null,2));})\"",
+    "graph:compile": "node src/cli/compile-guide-graphs.mjs",
+    "graph:test": "node src/cli/run-graph-regressions.mjs",
+    "prepare:env": "node src/cli/prepare-environment.mjs",
+    "dev:worker": "node --env-file=.env src/cli/dev-worker.mjs --watch",
+    "dev:once": "node --env-file=.env src/cli/dev-worker.mjs --once",
+    "dev:replay": "node --env-file=.env src/cli/replay-development-case.mjs",
+    "guide-packet:build-fixture": "node src/cli/guide-packet.mjs build-r02-fixture",
+    "guide-packet:build-r01-fixture": "node src/cli/guide-packet.mjs build-fixture",
+    "guide-packet:verify": "node src/cli/guide-packet.mjs verify guide-packets/fixtures/r02-candidate/inner-signal-guide-packet-r02-candidate.zip",
+    "guide-packet:verify:r01": "node src/cli/guide-packet.mjs verify guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip",
+    "guide-packet:status": "node --env-file=.env src/cli/guide-packet.mjs status"
+  }
+}

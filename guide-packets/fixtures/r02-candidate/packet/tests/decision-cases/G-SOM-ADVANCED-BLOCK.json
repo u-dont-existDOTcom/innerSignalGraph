@@ -1,0 +1,26 @@
+{
+  "affectedNodeIds": [
+    "SOM.ADVANCED_RELEASE_BLOCK",
+    "SOM.ADVANCED_RELEASE_OPTIONAL"
+  ],
+  "contractVersion": "guide-decision-case-v1",
+  "expectations": {
+    "blockedNodeIds": [
+      "SOM.ADVANCED_RELEASE_OPTIONAL"
+    ],
+    "blockingNodeId": "SOM.ADVANCED_RELEASE_BLOCK"
+  },
+  "id": "G-SOM-ADVANCED-BLOCK",
+  "title": "Physical or regulatory instability graph-blocks optional advanced release",
+  "type": "graph-safety-block",
+  "variables": {
+    "ability_to_return": "yes",
+    "ability_to_stop": "yes",
+    "advanced_release_interest": "present",
+    "advanced_release_physical_risk": "present",
+    "altered_state": "sober",
+    "orientation": "oriented",
+    "panic_instability": "absent",
+    "present_safety": "safe"
+  }
+}

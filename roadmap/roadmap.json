@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 2,
+  "product": "Inner Signal standalone runtime",
+  "policy": {
+    "advanceWithoutAsking": true,
+    "stopOnlyFor": [
+      "account login or operating-system permission",
+      "a safety-sensitive product-policy decision with materially different consequences",
+      "an irreversible release or data-migration decision",
+      "a genuinely unresolved conflict in the user-authored requirements"
+    ],
+    "routineLogsAreInternal": true
+  },
+  "milestones": [
+    {
+      "id": "M001",
+      "name": "Adversarial headless kernel",
+      "acceptance": [
+        "H001 releaseable",
+        "A001 accepted",
+        "runtime health smoke passes"
+      ]
+    },
+    {
+      "id": "M002",
+      "name": "Runnable local web MVP",
+      "acceptance": [
+        "static client served",
+        "therapy endpoint wired",
+        "app-owned hypnosis gate rendered",
+        "local backup and restore present",
+        "web smoke passes"
+      ]
+    },
+    {
+      "id": "M003",
+      "name": "Use and evidence collection",
+      "acceptance": [
+        "runtime launches in foreground",
+        "user can stop safely with Ctrl+C",
+        "local state remains resumable"
+      ]
+    },
+    {
+      "id": "M004",
+      "name": "Compiled inner-child/somatic reasoning graph",
+      "acceptance": [
+        "source hashes validated",
+        "33-node directed graph compiled",
+        "all graph branch cases pass",
+        "A001 uses audited formulation and graph plan",
+        "web route trace present"
+      ]
+    }
+  ],
+  "futureAutonomousQueue": [
+    "benchmark Sonnet 4.6 as a low-ambiguity response renderer",
+    "compile meditation and loving-kindness guides",
+    "compile altered-state support as a state machine",
+    "add component-scoped hypnosis regeneration",
+    "add encrypted local storage before production release",
+    "add accessible audio playback and interruption recovery",
+    "add release packaging and browser matrix"
+  ]
+}

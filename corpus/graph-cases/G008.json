@@ -1,0 +1,52 @@
+{
+  "id": "G008",
+  "description": "No clear child-self and unstable preferences across contexts.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "partial",
+    "parent_imagery": "not_used",
+    "love_access": "accessible",
+    "self_directed_love": "safe",
+    "solar_plexus_tension": "absent",
+    "protective_response": "absent",
+    "urge_to_escape": "absent",
+    "credibility_conflict": "absent",
+    "age_agency_ambiguity": "absent",
+    "resentment_toward_younger_self": "absent",
+    "coherent_child_state": "absent",
+    "identity_blur": "present",
+    "belonging_pressure": "present",
+    "self_criticism": "absent",
+    "current_intent": "conversation",
+    "memory_source_risk": "absent",
+    "forgiveness_interest": "absent",
+    "support_available": "present",
+    "body_capacity": "adequate",
+    "target_type": "none",
+    "trigger_loop": "absent",
+    "freeze_pattern": "absent",
+    "discharge_used": "no",
+    "emdr_interest": "absent",
+    "advanced_release_interest": "absent",
+    "advanced_release_physical_risk": "unknown",
+    "panic_instability": "absent",
+    "bypass_risk": "absent",
+    "guide_readiness": "absent",
+    "deep_work_readiness": "unknown",
+    "basic_reparenting_capacity": "unknown",
+    "stable_for_advanced_release": "unknown"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.NEUTRAL_WITNESS",
+    "matchedIncludes": [
+      "IC.IDENTITY_FORMATION"
+    ]
+  }
+}

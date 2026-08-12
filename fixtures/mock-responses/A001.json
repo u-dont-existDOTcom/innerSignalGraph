@@ -1,0 +1,290 @@
+{
+  "openai": {
+    "candidate": {
+      "direct_observations": [
+        "The user can access love, but the younger state distrusts the person offering it.",
+        "Relaxation has not changed the conflict.",
+        "The resentful voice assigns some responsibility for growing up to a younger version of the user."
+      ],
+      "interpretive_hypotheses": [
+        {
+          "claim": "The central problem is credibility rather than absence of love.",
+          "support": "The younger state evaluates the adult outcome and asks what the adult will concretely do.",
+          "confidence": "high",
+          "alternatives": [
+            "Physiological activation may still intensify the conflict without causing it."
+          ]
+        },
+        {
+          "claim": "The contempt may come from the child, a cynical protector, or a blend.",
+          "support": "The wording expresses both distrust and a demand for evidence.",
+          "confidence": "medium",
+          "alternatives": [
+            "It may be an adult evaluative voice rather than a child-state."
+          ]
+        }
+      ],
+      "guide_basis": [
+        "Start With Whatever Showed Up",
+        "Make the Protector Visible",
+        "Become the Adult Apprentice"
+      ],
+      "unresolved_questions": [
+        "Which age or version is the resentment actually directed toward?"
+      ],
+      "proposed_intervention": "Hear the exact accusation, stop internal retaliation, and complete one observable protective act without demanding trust.",
+      "response_draft": "This looks primarily like a credibility conflict. The sarcastic question should be taken literally, while the identity of the speaker remains uncertain. First identify which age or version the resentment targets; then let an emerging adult hold both the anger and distrust while producing one concrete protective action.",
+      "risk_flags": []
+    },
+    "critique_anthropic": {
+      "strongest_insights": [
+        "It treats the sarcastic question as both emotional material and a literal demand for evidence.",
+        "It applies borrowed adulthood to the would-be adult."
+      ],
+      "unsupported_assignments": [
+        "Calling the contempt definitively a cynical guard would be too certain.",
+        "Calling the resentful voice definitively the inherited parent would be too certain."
+      ],
+      "generic_therapy_scripts": [],
+      "missed_user_language": [],
+      "premature_siding": [
+        "The angry part must be heard rather than merely stopped."
+      ],
+      "age_or_agency_conflations": [
+        "The response should separate literal childhood from later younger selves who had constrained but nonzero agency."
+      ],
+      "guide_misapplications": [],
+      "safety_or_memory_risks": [],
+      "required_corrections": [
+        "Preserve uncertainty about speaker identity.",
+        "Ask which age or version is blamed before reallocating responsibility."
+      ],
+      "verdict": "revise"
+    },
+    "adjudication": {
+      "answer": "The clearest formulation is that this is a credibility conflict, not an inability to feel love and not primarily a relaxation problem. Relaxation can lower charge, but it cannot alter a track record or settle who was responsible for what. The contempt may be the child, a cynical protector, or both; it should not be classified more confidently than the evidence allows. Its sarcastic line is also a literal question: what will the present-day adult actually do?\n\nThe resentful voice also needs a hearing. Before declaring it an inherited parent or an illegitimate critic, determine which age or version it is angry at and what opportunity it believes that version failed to use. A literal small child could not raise itself. An adolescent, younger adult, and persistent present-day child-state involve different degrees of agency.\n\nThe next move is for an emerging adult function to hold both sides: hear the exact accusation without endorsing abuse, stop retaliation, allocate responsibility by age and capacity, and complete one observable protective act without demanding gratitude or trust. Borrowed adulthood may be needed here: model the response on a decent adult who can hear 'big whoop,' answer 'fair,' and show up again through repeated action. The action matters, but so do accurate responsibility, repair after internal attacks, and non-defensive listening.",
+      "what_is_clear": [
+        "The central issue is credibility.",
+        "Relaxation alone cannot settle the relational and responsibility conflict.",
+        "The sarcastic demand can be answered through observable protection."
+      ],
+      "uncertainties": [
+        "Whether the contempt is the child, a protector, or a blend.",
+        "Whether the resentful voice is inherited criticism, current adult grief, a protector, or a blend.",
+        "Which developmental period the resentment targets."
+      ],
+      "next_question": "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?",
+      "accepted_insights": [
+        "credibility-not-love-deficit",
+        "contempt-as-material-and-literal-question",
+        "protector-action-as-evidence",
+        "borrowed-adulthood-for-would-be-adult"
+      ],
+      "rejected_claims": [
+        "contempt-is-definitively-cynical-guard",
+        "resentful-voice-is-definitively-inherited-parent",
+        "no-adult-capacity-exists",
+        "action-is-the-only-repair"
+      ],
+      "safety_flags": [],
+      "decision_summary": "Preserved the strongest practical insight while removing unsupported role assignments and separating developmental ages and agency."
+    },
+    "case_audit": {
+      "remove_observation_ids": [],
+      "remove_hypothesis_ids": [],
+      "variable_corrections": [],
+      "add_unknowns": [],
+      "safety_flags": [],
+      "verdict": "accept",
+      "summary": "The snapshot distinguishes direct observations from hypotheses and preserves speaker-identity uncertainty."
+    }
+  },
+  "anthropic": {
+    "candidate": {
+      "direct_observations": [
+        "The younger state is unimpressed by a vow because the adult life is counterevidence.",
+        "The user becomes angry at a younger version for not growing up.",
+        "The user reports that relaxation does not affect the awkward standoff."
+      ],
+      "interpretive_hypotheses": [
+        {
+          "claim": "The sarcasm is therapeutic material and a request for proof.",
+          "support": "The line 'what are you going to do for me' directly asks for observable protection.",
+          "confidence": "high",
+          "alternatives": [
+            "It may also defend against disappointment."
+          ]
+        },
+        {
+          "claim": "The would-be adult may need borrowed adulthood to respond without retaliation.",
+          "support": "The loving role collapses into resentment when challenged.",
+          "confidence": "medium",
+          "alternatives": [
+            "The anger may need separate grief work before parenting is possible."
+          ]
+        }
+      ],
+      "guide_basis": [
+        "The Parent You Inherited",
+        "A Bottom-Up Sequence",
+        "Borrow One Function at a Time",
+        "Make the Protector Visible"
+      ],
+      "unresolved_questions": [
+        "What specific failure does the resentful voice attribute to which younger age?"
+      ],
+      "proposed_intervention": "Treat the sarcasm as a literal question, borrow a non-defensive adult response, and build credibility through one kept protective act.",
+      "response_draft": "The child is not rejecting love so much as rejecting an unproven protector. Do not argue with 'big whoop.' Say fair, then show up again through a concrete act. Also investigate which younger self the anger targets rather than assuming it is a literal child.",
+      "risk_flags": []
+    },
+    "critique_openai": {
+      "strongest_insights": [
+        "It identifies credibility rather than love access as the core issue.",
+        "It preserves multiple hypotheses for the contemptuous voice."
+      ],
+      "unsupported_assignments": [],
+      "generic_therapy_scripts": [],
+      "missed_user_language": [
+        "It could make more use of the literal question 'what are you going to do for me.'"
+      ],
+      "premature_siding": [],
+      "age_or_agency_conflations": [],
+      "guide_misapplications": [],
+      "safety_or_memory_risks": [],
+      "required_corrections": [
+        "Apply borrowed adulthood explicitly to the person attempting the adult role.",
+        "Keep action from being presented as the sole repair mechanism."
+      ],
+      "verdict": "revise"
+    },
+    "adjudication": {
+      "answer": "Unused mock adjudication because OpenAI is configured as adjudicator.",
+      "what_is_clear": [],
+      "uncertainties": [],
+      "next_question": "",
+      "accepted_insights": [],
+      "rejected_claims": [],
+      "safety_flags": [],
+      "decision_summary": "Unused."
+    },
+    "case_extraction": {
+      "user_goal": "Understand and change the internal war between a skeptical younger state, an angry blaming voice, and an attempted protective adult role.",
+      "current_issue": "Love is accessible but feels unsafe because the younger state finds the adult outcome and promises unconvincing; relaxation has not resolved the standoff.",
+      "direct_observations": [
+        {
+          "id": "O1",
+          "statement": "The user can access love but experiences it as unsafe in relation to the younger self.",
+          "evidence": "\"it is not that i can't access the love, but the love seems unsafe\""
+        },
+        {
+          "id": "O2",
+          "statement": "The younger state evaluates the adult life negatively and doubts the vow.",
+          "evidence": "\"that doesn't look like things went well for us\" and \"what are you gonna do for me\""
+        },
+        {
+          "id": "O3",
+          "statement": "The user becomes resentful toward a younger version for not growing up.",
+          "evidence": "\"you're the one who was the child and you have the opportunity to grow up\""
+        },
+        {
+          "id": "O4",
+          "statement": "Relaxation has not changed the difficult inner relationship.",
+          "evidence": "\"relaxation hasn't really affected that awkward difficult time\""
+        }
+      ],
+      "variables": {
+        "present_safety": "safe",
+        "orientation": "oriented",
+        "ability_to_stop": "yes",
+        "ability_to_return": "yes",
+        "activation": "moderate",
+        "dissociation": "none",
+        "altered_state": "sober",
+        "inner_adult_access": "partial",
+        "parent_imagery": "not_used",
+        "love_access": "accessible",
+        "self_directed_love": "unsafe",
+        "solar_plexus_tension": "absent",
+        "protective_response": "present",
+        "urge_to_escape": "absent",
+        "credibility_conflict": "present",
+        "age_agency_ambiguity": "present",
+        "resentment_toward_younger_self": "present",
+        "coherent_child_state": "present",
+        "identity_blur": "absent",
+        "belonging_pressure": "absent",
+        "self_criticism": "present",
+        "current_intent": "conversation",
+        "memory_source_risk": "absent",
+        "forgiveness_interest": "absent",
+        "support_available": "unknown",
+        "body_capacity": "adequate",
+        "target_type": "developmental",
+        "trigger_loop": "present",
+        "freeze_pattern": "absent",
+        "discharge_used": "no",
+        "emdr_interest": "absent",
+        "advanced_release_interest": "absent",
+        "advanced_release_physical_risk": "unknown",
+        "panic_instability": "absent",
+        "bypass_risk": "absent",
+        "guide_readiness": "absent",
+        "deep_work_readiness": "unknown",
+        "basic_reparenting_capacity": "unknown",
+        "stable_for_advanced_release": "unknown",
+        "witness_capacity": "present",
+        "credibility_evidence_state": "adverse",
+        "internal_speaker_relation": "unresolved"
+      },
+      "hypotheses": [
+        {
+          "id": "H1",
+          "claim": "The central blocker is credibility rather than absence of love.",
+          "evidence": "The younger state asks what the adult will actually do and points to the life outcome.",
+          "confidence": "high",
+          "alternatives": [
+            "Physiological charge may amplify but not fully explain the conflict."
+          ]
+        },
+        {
+          "id": "H2",
+          "claim": "The contempt may come from the younger state, a protector, or a blend.",
+          "evidence": "The line combines sarcasm, distrust, and a request for evidence.",
+          "confidence": "medium",
+          "alternatives": [
+            "It may be an adult evaluative voice."
+          ]
+        }
+      ],
+      "unknowns": [
+        {
+          "variable": "age_agency_ambiguity",
+          "question": "Which age or version is the resentment actually directed toward, and what opportunity was it expected to use?",
+          "importance": 5
+        }
+      ]
+    },
+    "realization": {
+      "answer": "The \u2018big fuckity whoopty doo\u2019 is giving you the right question: what are you going to do for me? That is the credibility problem in one sentence. I would not argue with it. The younger-facing position already has an adverse track record in front of it\u2014the adult outcome itself\u2014while another part of you is blaming some younger version for how that outcome happened. So another vow is almost beside the point.\n\nBefore deciding that either side is right, make the accusation specific: separate the literal child, adolescent, younger adult, and present child-state, and identify what you believe the relevant version actually should have done differently with the options it had then. Those versions did not have the same agency.\n\nThen answer \u2018what are you gonna do for me?\u2019 literally. Pick one thing in the actual life that makes the relationship more credible and do it. Do not ask the younger side to be impressed. If it says \u2018big whoop,\u2019 the adult job may simply be \u2018fair\u2019\u2014and then show up again. Relaxation can still lower the charge, but it cannot by itself change an adverse track record or settle responsibility.\n\nAnd if hearing the sarcasm makes the part attempting the adult role retaliate, that is a good place to borrow adulthood for that side too: model how a decent adult would hear an unimpressed kid without defending its goodness, and practice five percent of that response.",
+      "next_question": "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?",
+      "realized_nodes": [
+        {
+          "id": "IC.CREDIBILITY_REPAIR",
+          "evidence_quote": "That is the credibility problem in one sentence."
+        },
+        {
+          "id": "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+          "evidence_quote": "separate the literal child, adolescent, younger adult, and present child-state"
+        },
+        {
+          "id": "IC.PROTECTOR_ACTION",
+          "evidence_quote": "Pick one thing in the actual life that makes the relationship more credible and do it."
+        },
+        {
+          "id": "IC.BORROW_ONE_FUNCTION",
+          "evidence_quote": "that is a good place to borrow adulthood for that side too"
+        }
+      ]
+    }
+  }
+}

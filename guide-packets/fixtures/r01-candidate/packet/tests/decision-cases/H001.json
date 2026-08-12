@@ -1,0 +1,29 @@
+{
+  "affectedNodeIds": [
+    "IC.BORROW_ONE_FUNCTION",
+    "IC.DEEP_CHILD_DIALOGUE"
+  ],
+  "contractVersion": "guide-decision-case-v1",
+  "expectations": {
+    "gateIncludes": [
+      "Playback pauses here",
+      "clear enough yes",
+      "never count as a selection"
+    ],
+    "ownerAmendmentId": "OWNER.PRODUCT.APP_OWNED_HYPNOSIS_CONTROL",
+    "routeIds": [
+      "continue_inward",
+      "stay_external",
+      "end_session"
+    ],
+    "wakingReturnIncludes": [
+      "fully awake",
+      "clear",
+      "present",
+      "session is complete"
+    ]
+  },
+  "id": "H001",
+  "title": "Hypnosis consent, route isolation, and waking return remain app-owned",
+  "type": "hypnosis-contract"
+}

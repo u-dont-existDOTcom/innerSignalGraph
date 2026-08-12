@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "engine": "continuous-autonomous-roadmap",
+  "policy": {
+    "runWhenIncidentQueueIsEmpty": true,
+    "oneCandidateAtATime": true,
+    "autoPromoteOnlyNonSubstantive": true,
+    "stopForHumanPolicyDecision": true,
+    "skipMissingSourceTasksWithoutInterruptingUser": true
+  },
+  "tasks": [
+    {
+      "id": "DEV-R001",
+      "name": "Latency benchmark and avoidable-call optimization",
+      "automationClass": "engineering",
+      "autoStart": true,
+      "priority": 100,
+      "layer": "performance",
+      "objective": "Use the existing stage timing ledger and difficult-case corpus to build or strengthen a repeatable latency benchmark for Fast and Reviewed therapy paths, identify avoidable duplicate model work, and implement only behavior-preserving call or orchestration reductions that keep the same case formulation, graph plan, epistemic constraints, and realization contract.",
+      "acceptance": [
+        "stage-specific latency measurements are retained",
+        "a deterministic or mock benchmark covers Fast and Reviewed paths",
+        "no therapy-routing, graph, safety, or epistemic rule is weakened",
+        "all existing tests, graph regressions, and package verification pass",
+        "independent review classifies any implementation change as non-substantive or restorative"
+      ]
+    },
+    {
+      "id": "DEV-R002",
+      "name": "Accessible audio playback and interruption recovery",
+      "automationClass": "engineering",
+      "autoStart": true,
+      "priority": 90,
+      "layer": "renderer",
+      "objective": "Harden browser speech playback so stop, pause, tab interruption, route changes, and page lifecycle transitions do not leave stale speech running or lose app state. Preserve the current therapy and hypnosis content contracts.",
+      "acceptance": [
+        "speech can be stopped immediately",
+        "route changes cannot continue speech from an abandoned route",
+        "interruption and resume behavior is covered by deterministic web-client tests",
+        "no therapy or hypnosis policy changes are introduced",
+        "all package gates pass"
+      ]
+    },
+    {
+      "id": "DEV-R003",
+      "name": "Release packaging and local browser matrix",
+      "automationClass": "engineering",
+      "autoStart": true,
+      "priority": 80,
+      "layer": "unknown",
+      "objective": "Add a deterministic local release/package verification matrix that discovers the installed browser rather than hardcoding one executable, validates the package on the actual Node major version, and verifies clean install, rollback, loopback startup, and browser-open behavior without requiring user log transfer.",
+      "acceptance": [
+        "browser executable discovery or explicit override is supported",
+        "the current Node major version is recorded and validated",
+        "atomic install and rollback are regression-tested",
+        "loopback startup is verified",
+        "all package gates pass"
+      ]
+    },
+    {
+      "id": "DEV-R004",
+      "name": "Component-scoped hypnosis regeneration",
+      "automationClass": "safety-sensitive-engineering",
+      "autoStart": true,
+      "priority": 70,
+      "layer": "hypnosis-compiler",
+      "objective": "Make hypnosis repair regenerate only failed structured components and their directly dependent transitions rather than rewriting the whole session, while preserving app-owned consent, route isolation, and waking-return contracts.",
+      "acceptance": [
+        "failed-component repair scope is explicit and deterministic",
+        "unaffected components remain byte-identical across a scoped repair when no dependency requires change",
+        "app-owned gate and waking return remain outside model repair scope",
+        "hypnosis compiler tests and package gates pass",
+        "independent review finds no consent or safety weakening"
+      ]
+    },
+    {
+      "id": "DEV-R005",
+      "name": "Encrypted local storage design",
+      "automationClass": "human-policy-required",
+      "autoStart": false,
+      "priority": 60,
+      "layer": "unknown",
+      "objective": "Design encrypted local storage and migration for therapy data before production release.",
+      "acceptance": [
+        "requires a human decision on key management, recovery, migration, and data-loss tradeoffs before implementation"
+      ]
+    },
+    {
+      "id": "GUIDE-R001",
+      "name": "Compile meditation and loving-kindness guide",
+      "automationClass": "source-required",
+      "autoStart": false,
+      "priority": 50,
+      "layer": "guide-graph",
+      "objective": "Compile the canonical meditation/loving-kindness guide after the complete canonical source is available.",
+      "acceptance": ["complete canonical source available"]
+    },
+    {
+      "id": "GUIDE-R002",
+      "name": "Compile altered-state support state machine",
+      "automationClass": "source-required",
+      "autoStart": false,
+      "priority": 40,
+      "layer": "guide-graph",
+      "objective": "Compile altered-state support after the complete canonical guide is available.",
+      "acceptance": ["complete canonical source available"]
+    }
+  ]
+}

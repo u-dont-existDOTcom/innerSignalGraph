@@ -1,0 +1,1230 @@
+{
+  "bundleVersion": "inner-child-somatic-packet-2026.08.11-r01-candidate",
+  "contractVersion": "guide-graph-v1",
+  "description": "Candidate executable graph derived from the r01 inner-child article candidate and explicit product-only operational amendments.",
+  "edges": [
+    {
+      "from": "IC.SAFETY_ORIENTATION",
+      "relation": "enables",
+      "to": "IC.NEUTRAL_WITNESS"
+    },
+    {
+      "from": "IC.SOLAR_PLEXUS_RELAXATION",
+      "relation": "enables",
+      "to": "IC.BORROW_LOVE"
+    },
+    {
+      "from": "IC.NEUTRAL_WITNESS",
+      "relation": "enables",
+      "to": "IC.BORROW_ONE_FUNCTION"
+    },
+    {
+      "from": "IC.BORROW_ONE_FUNCTION",
+      "relation": "enables",
+      "to": "IC.ADULT_APPRENTICE"
+    },
+    {
+      "from": "IC.ADULT_APPRENTICE",
+      "relation": "enables",
+      "to": "IC.PROTECTOR_ACTION"
+    },
+    {
+      "from": "IC.MEET_GUARD",
+      "relation": "precedes",
+      "to": "IC.DEEP_CHILD_DIALOGUE"
+    },
+    {
+      "from": "IC.CREDIBILITY_REPAIR",
+      "relation": "requires-evidence",
+      "to": "IC.PROTECTOR_ACTION"
+    },
+    {
+      "from": "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+      "relation": "clarifies",
+      "to": "IC.CREDIBILITY_REPAIR"
+    },
+    {
+      "from": "IC.IDENTITY_FORMATION",
+      "relation": "precedes",
+      "to": "IC.GUIDE_LATER"
+    },
+    {
+      "from": "IC.ALTERED_STATE_GATE",
+      "relation": "gates",
+      "to": "IC.DEEP_CHILD_DIALOGUE"
+    }
+  ],
+  "graphId": "inner-child-directed-graph",
+  "guideId": "inner-child-guide",
+  "nodes": [
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not deepen, interpret memories, or require an inner-child response."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE",
+          "IC.GUIDE_LATER",
+          "IC.FORGIVENESS_LATER"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim a hidden adult capacity or hidden progress."
+        ],
+        "requiredNuance": [
+          "Present danger and past childhood fear are different problems."
+        ]
+      },
+      "id": "IC.SAFETY_ORIENTATION",
+      "kind": "decision-node",
+      "priority": 100,
+      "recommendations": [
+        "Pause deeper dialogue; orient to the actual room, body, time, and available human support.",
+        "Use eyes-open, present-focused contact and the smallest reversible action."
+      ],
+      "sourceRefs": [
+        "IC.BEFORE_DEEP",
+        "IC.REGULATION_BEFORE_DIALOGUE"
+      ],
+      "successSignals": [
+        "The person can stop, orient, and return to ordinary life."
+      ],
+      "tags": [
+        "safety",
+        "orientation"
+      ],
+      "tier": 1,
+      "title": "Outside safety and present orientation first"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "unknown"
+            ]
+          },
+          {
+            "field": "coherent_child_state",
+            "op": "in",
+            "value": [
+              "unclear",
+              "absent",
+              "unknown"
+            ]
+          },
+          {
+            "field": "activation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "dissociation",
+            "op": "in",
+            "value": [
+              "mild",
+              "high"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "witness_capacity",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not turn witnessing into proof that a complete inner adult is present."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not declare the calm Self or adult already exists underneath everything."
+        ],
+        "requiredNuance": [
+          "Witnessing is a starting function, not evidence that the whole adult role is built.",
+          "When the person can already observe and distinguish the internal positions, do not send them back through witness bootstrap merely because the adult role remains incomplete."
+        ]
+      },
+      "id": "IC.NEUTRAL_WITNESS",
+      "kind": "decision-node",
+      "priority": 95,
+      "recommendations": [
+        "Name that a younger or distressed state is present and that something can notice it, without pretending warmth or wisdom already exists."
+      ],
+      "sourceRefs": [
+        "IC.NEUTRAL_WITNESS",
+        "IC.BORROW_ADULT"
+      ],
+      "successSignals": [
+        "A small amount of psychological distance appears without losing present orientation."
+      ],
+      "tags": [
+        "borrowed-adulthood",
+        "witness"
+      ],
+      "tier": 3,
+      "title": "Begin with a neutral witness"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "solar_plexus_tension",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "activation",
+            "op": "eq",
+            "value": "high"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not force breath, chase intensity, or assume tension proves a hidden memory."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that energy has definitively moved or trauma has been released."
+        ],
+        "requiredNuance": [
+          "Relaxation may remove a bodily barrier but does not by itself repair credibility or resolve relational conflict."
+        ]
+      },
+      "id": "IC.SOLAR_PLEXUS_RELAXATION",
+      "kind": "decision-node",
+      "priority": 90,
+      "recommendations": [
+        "Use non-forced longer exhales, gentle self-massage, or another low-dose somatic method to reduce holding around the solar plexus or abdomen.",
+        "Treat softening as an opening for love or presence, not an order to enter memories."
+      ],
+      "sourceRefs": [
+        "IC.REGULATION_BEFORE_DIALOGUE",
+        "IC.HEART_SOLAR_LOOP",
+        "SOM.INNER_CHILD_PARALLEL"
+      ],
+      "successSignals": [
+        "The body softens without air hunger, flooding, or loss of orientation."
+      ],
+      "tags": [
+        "regulation",
+        "solar-plexus",
+        "love-access"
+      ],
+      "tier": 3,
+      "title": "Relax solar-plexus or abdominal holding before dialogue"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "love_access",
+            "op": "in",
+            "value": [
+              "accessible",
+              "limited"
+            ]
+          }
+        ],
+        "any": [
+          {
+            "field": "self_directed_love",
+            "op": "in",
+            "value": [
+              "unsafe",
+              "inaccessible",
+              "unknown"
+            ]
+          },
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "partial"
+            ]
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not manufacture warmth or make the loved being responsible for the session."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not call reluctance proof that the child rejects love."
+        ],
+        "requiredNuance": [
+          "The problem may be safety of receiving love rather than absence of love."
+        ]
+      },
+      "id": "IC.BORROW_LOVE",
+      "kind": "decision-node",
+      "priority": 92,
+      "recommendations": [
+        "First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.",
+        "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible."
+      ],
+      "sourceRefs": [
+        "IC.LOVE_MISSING",
+        "IC.HEART_SOLAR_LOOP",
+        "IC.BORROW_LOVE_PERSPECTIVE"
+      ],
+      "successSignals": [
+        "The capacity for love becomes experientially available without coercion."
+      ],
+      "tags": [
+        "love",
+        "borrowed-adulthood",
+        "nurturer"
+      ],
+      "tier": 4,
+      "title": "Borrow love from an already-loved being"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "self_criticism",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "partial"
+            ]
+          },
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "conversation"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not use the friend standard to shame the person for not already treating themselves that way."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.BEST_FRIEND_PERSPECTIVE",
+      "kind": "decision-node",
+      "priority": 88,
+      "recommendations": [
+        "Ask: 'What would I tell my best friend in this exact situation?'",
+        "Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action."
+      ],
+      "sourceRefs": [
+        "IC.BORROW_LOVE_PERSPECTIVE",
+        "IC.BORROW_ONE_FUNCTION"
+      ],
+      "successSignals": [
+        "One concrete sentence or action becomes available."
+      ],
+      "tags": [
+        "best-friend",
+        "borrowed-adulthood",
+        "perspective"
+      ],
+      "tier": 4,
+      "title": "Borrow the best-friend standard of care"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "partial",
+              "unknown"
+            ]
+          },
+          {
+            "field": "parent_imagery",
+            "op": "in",
+            "value": [
+              "critical",
+              "frightening",
+              "blank"
+            ]
+          },
+          {
+            "field": "self_directed_love",
+            "op": "in",
+            "value": [
+              "unsafe",
+              "inaccessible"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not demand an ideal parent image or let the helper become authority over memories, medicine, relationships, or future."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim the inner adult has already been built."
+        ],
+        "requiredNuance": [
+          "Adult identity may form after behavior.",
+          "Borrowed adulthood can support the part attempting the adult role, not only the younger state."
+        ]
+      },
+      "id": "IC.BORROW_ONE_FUNCTION",
+      "kind": "decision-node",
+      "priority": 95,
+      "recommendations": [
+        "Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.",
+        "Keep it bounded, observable, and returnable.",
+        "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness."
+      ],
+      "sourceRefs": [
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.ADULT_APPRENTICE"
+      ],
+      "successSignals": [
+        "The person can perform one adult function without pretending the whole role is available."
+      ],
+      "tags": [
+        "borrowed-adulthood",
+        "nurturer",
+        "protector",
+        "guide",
+        "adult-side-borrowing"
+      ],
+      "tier": 3,
+      "title": "Borrow one bounded adult function"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "partial"
+            ]
+          },
+          {
+            "field": "support_available",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not create permanent authority dependency."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.ADULT_APPRENTICE",
+      "kind": "decision-node",
+      "priority": 86,
+      "recommendations": [
+        "Name what the helper did, choose five percent to do personally, and test one action in ordinary life.",
+        "Gradually hand the role back to the user."
+      ],
+      "sourceRefs": [
+        "IC.ADULT_APPRENTICE",
+        "IC.RELATIONSHIP"
+      ],
+      "successSignals": [
+        "One protective or nurturing act occurs without the helper present."
+      ],
+      "tags": [
+        "adult-apprentice",
+        "five-percent",
+        "relationship"
+      ],
+      "tier": 4,
+      "title": "Move from receiving care to doing five percent"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "protective_response",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "urge_to_escape",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "dissociation",
+            "op": "in",
+            "value": [
+              "mild",
+              "high"
+            ]
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not classify the voice more confidently than the transcript supports or push past it."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not definitively label a cynical voice as a guard."
+        ],
+        "requiredNuance": [
+          "The contempt may be child, protector, adult evaluator, or blend."
+        ]
+      },
+      "id": "IC.MEET_GUARD",
+      "kind": "decision-node",
+      "priority": 93,
+      "recommendations": [
+        "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
+        "Ask what the part predicts will happen if it steps back; acknowledge before answering."
+      ],
+      "sourceRefs": [
+        "IC.START_WHATEVER",
+        "IC.GUARDS",
+        "IC.BOTTOM_UP_SEQUENCE",
+        "IC.ESCAPE_URGE"
+      ],
+      "successSignals": [
+        "The protective response can be heard without running the session or being exiled."
+      ],
+      "tags": [
+        "protector",
+        "guard",
+        "avoidance"
+      ],
+      "tier": 3,
+      "title": "Meet the protective response before pushing deeper"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "credibility_conflict",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "self_directed_love",
+            "op": "eq",
+            "value": "unsafe"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not say the child is rejecting love when it may be rejecting an unsafe or unproven source.",
+          "Do not describe the problem as simply lacking a track record when the user has already supplied adverse evidence about how things went."
+        ],
+        "requiredNuance": [
+          "Action is essential but not the sole repair; accurate responsibility and non-defensive listening also matter.",
+          "Relaxation may reduce nervous-system charge, but it does not by itself repair a credibility conflict or change a contradictory track record.",
+          "The sarcastic question can be both contempt and a legitimate literal request for evidence; answer it concretely rather than arguing with it.",
+          "A pre-existing adverse track record is different from having no track record yet."
+        ]
+      },
+      "id": "IC.CREDIBILITY_REPAIR",
+      "kind": "decision-node",
+      "priority": 96,
+      "recommendations": [
+        "Hear the angry side's exact accusation before trying to resolve the conflict: what does it believe the younger version should have done, at what age, and with what available capacity?",
+        "Treat skeptical or contemptuous questions as data and, when appropriate, literal requests for evidence.",
+        "Distinguish no track record from an adverse track record. If the younger state is already pointing to how adult life turned out, credibility repair means building counterevidence against an existing negative assessment rather than acting as though evidence starts at zero.",
+        "Make one ordinary protective act visible and do not demand gratitude, trust, or emotional change.",
+        "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently."
+      ],
+      "sourceRefs": [
+        "IC.PROTECTOR_VISIBLE",
+        "IC.VOW",
+        "IC.BOTTOM_UP_SEQUENCE",
+        "IC.LOVE_UNSAFE"
+      ],
+      "successSignals": [
+        "Promises and actions begin to align; an adverse track record starts accumulating credible counterevidence without demanding immediate trust."
+      ],
+      "tags": [
+        "credibility",
+        "protector",
+        "repair"
+      ],
+      "tier": 3,
+      "title": "Repair credibility through non-defensive follow-through"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "age_agency_ambiguity",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "resentment_toward_younger_self",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not flatten literal childhood, adolescence, younger adulthood, and a present child-state into one powerless category."
+      ],
+      "defaultQuestion": "Which age or version of you is the resentment actually directed toward, what opportunity do you believe that version failed to use, and what knowledge, support, safety, money, and freedom were actually available then?",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+      "kind": "decision-node",
+      "priority": 91,
+      "recommendations": [
+        "Identify which age or version is being blamed and what opportunity it supposedly failed to use.",
+        "Allocate responsibility according to actual developmental capacity and later constrained agency."
+      ],
+      "sourceRefs": [
+        "IC.INHERITED_PARENT",
+        "IC.BOTTOM_UP_SEQUENCE"
+      ],
+      "successSignals": [
+        "The accusation becomes specific enough to evaluate rather than globally prosecuting the child."
+      ],
+      "tags": [
+        "age",
+        "agency",
+        "responsibility"
+      ],
+      "tier": 3,
+      "title": "Separate developmental ages and responsibility"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "credibility_conflict",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "partial"
+            ]
+          },
+          {
+            "field": "protective_response",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not choose an action so large that failure becomes new evidence of unreliability."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.PROTECTOR_ACTION",
+      "kind": "decision-node",
+      "priority": 90,
+      "recommendations": [
+        "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
+        "Report the action without requiring the younger state to trust it yet."
+      ],
+      "sourceRefs": [
+        "IC.PROTECTOR_VISIBLE",
+        "IC.ADULT_APPRENTICE"
+      ],
+      "successSignals": [
+        "One small promise is kept."
+      ],
+      "tags": [
+        "protector",
+        "ordinary-life",
+        "credibility"
+      ],
+      "tier": 4,
+      "title": "Make the Protector visible in ordinary life"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "gentle_practice",
+              "hypnosis"
+            ]
+          },
+          {
+            "field": "deep_work_readiness",
+            "op": "notIn",
+            "value": [
+              "yes"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not enter memories, immersive child dialogue, or suggestive origin stories."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.GENTLE_SELF_HYPNOSIS",
+      "kind": "decision-node",
+      "priority": 76,
+      "recommendations": [
+        "Keep the practice present-focused: calming, warmth, non-cruelty, borrowed adulthood, or a simple Protector rehearsal."
+      ],
+      "sourceRefs": [
+        "IC.ESCAPE_URGE"
+      ],
+      "successSignals": [
+        "The person remains oriented, can stop, and returns to ordinary functioning."
+      ],
+      "tags": [
+        "hypnosis",
+        "gentle",
+        "preparation"
+      ],
+      "tier": 4,
+      "title": "Use gentle present-focused self-hypnosis only as preparation"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "deep_dialogue",
+              "memory_processing",
+              "hypnosis"
+            ]
+          },
+          {
+            "field": "deep_work_readiness",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "none": [
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not interrogate imagery or imply emotional truth proves historical fact."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.DEEP_CHILD_DIALOGUE",
+      "kind": "decision-node",
+      "priority": 70,
+      "recommendations": [
+        "Use deeper dialogue only when the person can remain present, stop voluntarily, and recover afterward.",
+        "Keep memory-source distinctions explicit."
+      ],
+      "sourceRefs": [
+        "IC.BEFORE_DEEP",
+        "IC.ALTERED_STATES",
+        "SOM.INNER_CHILD_PARALLEL"
+      ],
+      "successSignals": [
+        "The session increases capacity and functioning rather than compulsion or disorientation."
+      ],
+      "tags": [
+        "deep-work",
+        "child-dialogue",
+        "memory"
+      ],
+      "tier": 6,
+      "title": "Enter deeper child dialogue only when capacity is adequate"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "coherent_child_state",
+            "op": "in",
+            "value": [
+              "unclear",
+              "absent"
+            ]
+          },
+          {
+            "field": "identity_blur",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not assume a fully formed true self is merely hidden and waiting to be uncovered."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.IDENTITY_FORMATION",
+      "kind": "decision-node",
+      "priority": 80,
+      "recommendations": [
+        "Use private journaling, time without external cues, nature, preference recovery, and low-stakes experiments.",
+        "Protect the beginner from immediate talent judgments."
+      ],
+      "sourceRefs": [
+        "IC.NO_CLEAR_CHILD",
+        "IC.IDENTITY_PLAY",
+        "IC.CHILD_BAD_THINGS"
+      ],
+      "successSignals": [
+        "Preferences become more stable across relationships and settings."
+      ],
+      "tags": [
+        "identity",
+        "play",
+        "differentiation"
+      ],
+      "tier": 5,
+      "title": "Build identity through private preference and experimental play"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "belonging_pressure",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "identity_blur",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not equate differentiation with isolation or automatic permanent cutoff."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.DIFFERENTIATION",
+      "kind": "decision-node",
+      "priority": 65,
+      "recommendations": [
+        "Notice where other people’s emotions and group expectations replace personal knowing.",
+        "Practice selective belonging, disagreement, and leaving when staying requires disappearance."
+      ],
+      "sourceRefs": [
+        "IC.DIFFERENTIATION"
+      ],
+      "successSignals": [
+        "The person remains recognizably themselves across settings."
+      ],
+      "tags": [
+        "differentiation",
+        "belonging",
+        "identity"
+      ],
+      "tier": 6,
+      "title": "Untangle belonging from self-betrayal"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "partial",
+              "available"
+            ]
+          },
+          {
+            "field": "coherent_child_state",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "oriented"
+          }
+        ],
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "integration"
+          },
+          {
+            "field": "guide_readiness",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.GUIDE_LATER",
+      "kind": "decision-node",
+      "priority": 55,
+      "recommendations": [
+        "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal."
+      ],
+      "sourceRefs": [
+        "IC.GUIDE_LATER",
+        "IC.THREE_FUNCTIONS"
+      ],
+      "successSignals": [
+        "Direction increases life participation without exiling the child."
+      ],
+      "tags": [
+        "guide",
+        "integration",
+        "meaning"
+      ],
+      "tier": 7,
+      "title": "Bring in direction after warmth, safety, and a coherent child exist"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "memory_source_risk",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "photo_work"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not ask what abuse must have happened or accuse someone from material generated in the practice."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.PHOTO_EPISTEMIC_CAUTION",
+      "kind": "decision-node",
+      "priority": 92,
+      "recommendations": [
+        "Separate direct memory, report from another person, inference, dream, image, metaphor, altered-state impression, and uncertainty.",
+        "Stop if the practice produces compulsive certainty or dysregulation."
+      ],
+      "sourceRefs": [
+        "IC.PHOTOS"
+      ],
+      "successSignals": [
+        "Emotional meaning can be used without converting uncertain material into historical fact."
+      ],
+      "tags": [
+        "memory",
+        "epistemic",
+        "photo"
+      ],
+      "tier": 2,
+      "title": "Keep photograph and memory sources separate"
+    },
+    {
+      "activation": {
+        "any": [
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "altered_state"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.ALTERED_STATE_GATE",
+      "kind": "decision-node",
+      "priority": 89,
+      "recommendations": [
+        "Prefer sober Nurturer and Protector capacity first or grounded support that does not seize authority.",
+        "Return to ordinary orientation when the state outruns the ability to hold what appears."
+      ],
+      "sourceRefs": [
+        "IC.ALTERED_STATES",
+        "IC.ESCAPE_URGE"
+      ],
+      "successSignals": [
+        "The person can stop, orient, and integrate without escalating use."
+      ],
+      "tags": [
+        "altered-state",
+        "gate",
+        "epistemic"
+      ],
+      "tier": 2,
+      "title": "Build sober capacity before using altered states to deepen"
+    },
+    {
+      "activation": {
+        "all": [
+          {
+            "field": "forgiveness_interest",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "deep_work_readiness",
+            "op": "eq",
+            "value": "yes"
+          }
+        ]
+      },
+      "authority": "author-framework",
+      "avoid": [
+        "Do not force forgiveness early or use causal understanding to erase moral judgment."
+      ],
+      "defaultQuestion": "",
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "id": "IC.FORGIVENESS_LATER",
+      "kind": "decision-node",
+      "priority": 50,
+      "recommendations": [
+        "Use responsibility, remorse, rectification, and release for self-forgiveness; preserve boundaries and consequences for others."
+      ],
+      "sourceRefs": [
+        "IC.FORGIVENESS"
+      ],
+      "successSignals": [
+        "Understanding changes the emotional relationship without erasing the harm."
+      ],
+      "tags": [
+        "forgiveness",
+        "accountability",
+        "integration"
+      ],
+      "tier": 7,
+      "title": "Approach forgiveness without bypassing accountability"
+    }
+  ],
+  "sourceRevision": {
+    "guideId": "inner-child",
+    "revision": "r01-candidate",
+    "sourceSha256": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0"
+  },
+  "version": "inner-child-somatic-packet-2026.08.11-r01-candidate"
+}
