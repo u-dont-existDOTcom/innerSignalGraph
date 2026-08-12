@@ -50,4 +50,20 @@ exit 1
   assert.equal(finalStatus.details.testSummary.failures[0].actual, "d93fda96d9a2fcc7fd81d371055fe00aa64efa7afd223704c959dbdbd4388738");
   assert.doesNotMatch(JSON.stringify(finalStatus), /PRIVATE_CHAT_MARKER|sk-secret-do-not-copy/);
   assert.match(await fs.readFile(path.join(runDir, "tests.stdout.log"), "utf8"), /PRIVATE_CHAT_MARKER/);
+  const progress = JSON.parse(await fs.readFile(path.join(stateDir, "runtime-progress.json"), "utf8"));
+  assert.deepEqual(progress, {
+    format: "inner-signal-runtime-progress-v1",
+    active: false,
+    processPid: progress.processPid,
+    startedAt: progress.startedAt,
+    updatedAt: progress.updatedAt,
+    currentStage: "tests",
+    currentStatus: "BLOCKED",
+    lastCompletedStage: "guide-graph-regressions",
+    terminalStatus: "BLOCKED"
+  });
+  assert.equal(progress.processPid > 0, true);
+  assert.match(progress.startedAt, /^\d{4}-\d{2}-\d{2}T/);
+  assert.doesNotMatch(JSON.stringify(progress), /PRIVATE_|detail|sk-secret/);
+  assert.equal((await fs.stat(path.join(stateDir, "runtime-progress.json"))).mode & 0o777, 0o600);
 });

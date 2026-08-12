@@ -68,6 +68,23 @@ exec ${shellLiteral(process.execPath)} "$@"
   return { bin, marker };
 }
 
+async function installProgressTrackingNodeWrapper(root) {
+  const bin = path.join(root, "progress-test-bin");
+  const started = path.join(root, "progress-watcher-started.txt");
+  const stopped = path.join(root, "progress-watcher-stopped.txt");
+  await fs.mkdir(bin, { recursive: true });
+  const wrapper = `#!/usr/bin/env bash
+if [[ "$*" == *"src/cli/sync-progress.mjs --watch"* ]]; then
+  printf '%s\n' "$$" >> ${shellLiteral(started)}
+  trap 'printf "%s\\n" stopped > ${shellLiteral(stopped)}; exit 0' INT TERM
+  while true; do sleep 0.1; done
+fi
+exec ${shellLiteral(process.execPath)} "$@"
+`;
+  await fs.writeFile(path.join(bin, "node"), wrapper, { mode: 0o755 });
+  return { bin, started, stopped };
+}
+
 async function waitFor(predicate, label, timeoutMs = 15000) {
   const deadline = Date.now() + timeoutMs;
   let lastError = null;
@@ -83,10 +100,19 @@ async function waitFor(predicate, label, timeoutMs = 15000) {
   throw new Error(`${label} did not become true within ${timeoutMs} ms${lastError ? `: ${lastError.message}` : ""}`);
 }
 
-function startWrapper(root, bin, args = []) {
+function startWrapper(root, bin, args = [], extraEnv = {}) {
   const child = spawn("bash", ["./run-autopilot.sh", ...args], {
     cwd: root,
-    env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+    env: {
+      ...process.env,
+      ...extraEnv,
+      PATH: `${bin}:${process.env.PATH}`,
+      AUTOPILOT_STATE_DIR: path.join(root, ".inner-signal-autopilot"),
+      INNER_SIGNAL_GIT_SOURCE: path.join(path.dirname(root), `${path.basename(root)}-source-unavailable`),
+      INNER_SIGNAL_GIT_AUTO_UPDATE: "false",
+      INNER_SIGNAL_GIT_AUTO_DIAGNOSTICS: "false",
+      INNER_SIGNAL_VALIDATION_SANDBOX: "0"
+    },
     detached: true,
     stdio: ["ignore", "pipe", "pipe"]
   });
@@ -94,6 +120,14 @@ function startWrapper(root, bin, args = []) {
   child.stdout.on("data", (chunk) => { output += chunk; });
   child.stderr.on("data", (chunk) => { output += chunk; });
   return { child, output: () => output };
+}
+
+async function installPoisonGh(root) {
+  const poisonBin = path.join(root, "poison-bin");
+  const marker = path.join(root, "external-gh-called.txt");
+  await fs.mkdir(poisonBin, { recursive: true });
+  await fs.writeFile(path.join(poisonBin, "gh"), `#!/usr/bin/env bash\nprintf '%s\n' called > ${shellLiteral(marker)}\nexit 97\n`, { mode: 0o755 });
+  return { command: path.join(poisonBin, "gh"), marker };
 }
 
 async function stopWrapper(child) {
@@ -130,17 +164,28 @@ async function assertRecoverySurface({ port, child, output }) {
 
 test("validation failure leaves health, status, and recovery ZIP available", { timeout: 30000 }, async () => {
   const { root, port } = await copyRuntime();
+  const externalRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-external-state-"));
+  const externalState = path.join(externalRoot, "autopilot");
+  await fs.mkdir(path.join(externalState, "diagnostic-outbox"), { recursive: true });
+  await fs.writeFile(path.join(externalState, "diagnostic-outbox", "decoy.json"), "{}\n");
+  const poison = await installPoisonGh(root);
   const { bin, marker } = await installFailingNodeWrapper(root, {
     targetScript: "src/cli/autopilot.mjs",
     markerName: "validation-attempted.txt"
   });
-  const running = startWrapper(root, bin, ["--force-validation"]);
+  const running = startWrapper(root, bin, ["--force-validation"], {
+    AUTOPILOT_STATE_DIR: externalState,
+    INNER_SIGNAL_GH_COMMAND: poison.command
+  });
   try {
     await waitFor(async () => fs.access(marker).then(() => true, () => false), "validation attempt");
     await assertRecoverySurface({ port, ...running });
   } finally {
     await stopWrapper(running.child);
   }
+  await assert.rejects(fs.access(poison.marker));
+  assert.deepEqual(await fs.readdir(externalState), ["diagnostic-outbox"]);
+  assert.deepEqual(await fs.readdir(path.join(externalState, "diagnostic-outbox")), ["decoy.json"]);
 });
 
 test("promotion failure restarts health, status, and recovery ZIP instead of abandoning the browser", { timeout: 30000 }, async () => {
@@ -159,6 +204,36 @@ test("promotion failure restarts health, status, and recovery ZIP instead of aba
     await waitFor(async () => fs.access(marker).then(() => true, () => false), "promotion attempt");
     await assertRecoverySurface({ port, ...running });
   } finally {
+    await stopWrapper(running.child);
+  }
+});
+
+test("launcher owns one progress watcher and terminates it during cleanup", { timeout: 30000 }, async () => {
+  const { root } = await copyRuntime();
+  const stateRoot = path.join(root, ".inner-signal-autopilot");
+  await fs.mkdir(stateRoot, { recursive: true });
+  const fingerprint = (await execFileAsync(process.execPath, ["src/cli/runtime-fingerprint.mjs"], { cwd: root })).stdout.trim();
+  await fs.writeFile(path.join(stateRoot, "validated-runtime-fingerprint.txt"), `${fingerprint}\n`);
+  const tracker = await installProgressTrackingNodeWrapper(root);
+  const running = startWrapper(root, tracker.bin);
+  let watcherPid = null;
+  try {
+    watcherPid = await waitFor(async () => {
+      const raw = await fs.readFile(tracker.started, "utf8").catch(() => "");
+      const first = raw.trim().split("\n")[0];
+      return /^\d+$/.test(first) ? Number(first) : null;
+    }, "progress watcher start");
+    assert.doesNotThrow(() => process.kill(watcherPid, 0));
+    assert.equal(running.child.exitCode, null);
+    running.child.kill("SIGTERM");
+    await Promise.race([once(running.child, "exit"), new Promise((resolve) => setTimeout(resolve, 3000))]);
+    await waitFor(async () => fs.access(tracker.stopped).then(() => true, () => false), "progress watcher cleanup");
+    assert.throws(() => process.kill(watcherPid, 0), /ESRCH/);
+    assert.equal((await fs.readFile(tracker.started, "utf8")).trim().split("\n").length, 1);
+  } finally {
+    if (watcherPid) {
+      try { process.kill(watcherPid, "SIGKILL"); } catch {}
+    }
     await stopWrapper(running.child);
   }
 });

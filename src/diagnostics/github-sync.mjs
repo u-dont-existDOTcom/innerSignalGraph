@@ -3,6 +3,7 @@ import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { runSubprocess } from "../core/subprocess.mjs";
 import { buildRemoteDiagnosticPayload } from "./remote-diagnostic.mjs";
+import { isRemoteProgressPayload } from "./remote-progress.mjs";
 
 const REPOSITORY = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 const BRANCH = /^[A-Za-z0-9._/-]+$/;
@@ -192,6 +193,188 @@ async function writeSyncStatus({ stateDir, status, synced, pending, branch, path
     branch,
     paths
   });
+}
+
+async function writeProgressSyncStatus({
+  stateDir,
+  status,
+  branch,
+  remotePath,
+  updatedAt,
+  payload = null,
+  commitSha = null
+}) {
+  const statusPath = path.join(stateDir, "progress-sync-status.json");
+  let previous = null;
+  try {
+    previous = JSON.parse(await fs.readFile(statusPath, "utf8"));
+  } catch {
+    previous = null;
+  }
+  await atomicJson(path.join(stateDir, "progress-sync-status.json"), {
+    format: "inner-signal-progress-sync-status-v1",
+    status,
+    updatedAt,
+    lastSyncAt: status === "synced" && payload ? updatedAt : previous?.lastSyncAt ?? null,
+    branch,
+    path: remotePath ?? previous?.path ?? null,
+    assessment: payload?.progress?.assessment ?? previous?.assessment ?? null,
+    observedAt: payload?.observedAt ?? previous?.observedAt ?? null,
+    commitSha: commitSha ?? previous?.commitSha ?? null
+  });
+}
+
+async function readProgressOutbox(stateDir) {
+  const localPath = path.join(stateDir, "progress-outbox", "current.json");
+  try {
+    const bytes = await fs.readFile(localPath);
+    const parsed = JSON.parse(bytes.toString("utf8"));
+    return { localPath, bytes, payload: isRemoteProgressPayload(parsed) ? parsed : null };
+  } catch (error) {
+    if (error?.code === "ENOENT") return { localPath, bytes: null, payload: null };
+    return { localPath, bytes: null, payload: null };
+  }
+}
+
+export async function queueRemoteProgressSnapshot({ stateDir, payload }) {
+  if (typeof stateDir !== "string" || stateDir.length === 0) throw new TypeError("stateDir is required");
+  if (!isRemoteProgressPayload(payload)) throw new TypeError("Invalid remote progress payload");
+  const localPath = path.join(stateDir, "progress-outbox", "current.json");
+  await atomicJson(localPath, payload);
+  return { path: localPath, payload };
+}
+
+export async function syncRemoteProgress({
+  stateDir,
+  repository,
+  stableBranch = "stable",
+  diagnosticsBranch = "runtime-diagnostics",
+  payload = null,
+  ghCommand = "gh",
+  ghBaseArgs = [],
+  env = process.env,
+  now = () => new Date(),
+  runner = runSubprocess,
+  enabled = true,
+  totalTimeoutMs = DEFAULT_TOTAL_TIMEOUT_MS,
+  requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
+  clock = Date.now
+}) {
+  if (typeof stateDir !== "string" || stateDir.length === 0) throw new TypeError("stateDir is required");
+  validateRepository(repository);
+  validateBranch(stableBranch);
+  validateBranch(diagnosticsBranch);
+  if (!Array.isArray(ghBaseArgs) || !ghBaseArgs.every((value) => typeof value === "string")) {
+    throw new TypeError("ghBaseArgs must be an array of strings");
+  }
+  positiveInteger(totalTimeoutMs, "totalTimeoutMs");
+  positiveInteger(requestTimeoutMs, "requestTimeoutMs");
+
+  const updatedAt = nowIso(now);
+  const supplied = payload !== null;
+  if (supplied) {
+    await queueRemoteProgressSnapshot({ stateDir, payload });
+  }
+
+  const pending = await readProgressOutbox(stateDir);
+  const remotePath = pending.payload ? `progress/${pending.payload.machineId}/current.json` : null;
+  const baseResult = { uploaded: false, branch: diagnosticsBranch, path: remotePath, commitSha: null };
+  const finish = async (status, extras = {}) => {
+    const result = { status, ...baseResult, ...extras };
+    await writeProgressSyncStatus({
+      stateDir,
+      status,
+      branch: diagnosticsBranch,
+      remotePath,
+      updatedAt,
+      payload: pending.payload,
+      commitSha: result.commitSha
+    });
+    return result;
+  };
+
+  if (!enabled) return await finish("disabled");
+  if (!pending.bytes || !pending.payload) return await finish(pending.bytes ? "queued-for-retry" : "synced");
+
+  const deadline = clockValue(clock) + totalTimeoutMs;
+  const gh = (args, label) => {
+    const remainingMs = Math.floor(deadline - clockValue(clock));
+    if (remainingMs < 1) return Promise.resolve({ ok: false, value: null, failure: "unavailable" });
+    return ghJson({
+      ghCommand,
+      ghBaseArgs,
+      env,
+      runner,
+      args,
+      label,
+      timeoutMs: Math.min(requestTimeoutMs, remainingMs)
+    });
+  };
+
+  const access = await gh([`repos/${repository}`], "GitHub repository access check");
+  if (!access.ok) {
+    return await finish(access.failure === "authentication-required" ? "authentication-required" : "queued-for-retry");
+  }
+  if (access.value?.permissions?.push !== true) return await finish("authentication-required");
+
+  const branchResult = await ensureDiagnosticsBranch({ repository, stableBranch, diagnosticsBranch, gh });
+  if (!branchResult.sha) {
+    return await finish(branchResult.failure === "authentication-required" ? "authentication-required" : "queued-for-retry");
+  }
+
+  const contentEndpoint = `repos/${repository}/contents/${endpointPath(remotePath)}`;
+  const existing = await gh([
+    `${contentEndpoint}?ref=${encodeURIComponent(diagnosticsBranch)}`
+  ], "GitHub progress existence check");
+
+  let commitSha = branchResult.sha;
+  let uploaded = false;
+  let idempotent = false;
+  if (existing.ok) {
+    const existingSha = existing.value?.sha;
+    const remoteBytes = existing.value?.encoding === "base64" && typeof existing.value?.content === "string"
+      ? Buffer.from(existing.value.content.replace(/\s/g, ""), "base64")
+      : null;
+    if (!GIT_SHA.test(existingSha ?? "") || !remoteBytes) return await finish("queued-for-retry");
+    if (remoteBytes.equals(pending.bytes)) {
+      idempotent = true;
+    } else {
+      const replacement = await gh([
+        "--method", "PUT",
+        contentEndpoint,
+        "-f", `message=Update Inner Signal progress ${pending.payload.machineId.slice(0, 12)}`,
+        "-f", `content=${pending.bytes.toString("base64")}`,
+        "-f", `branch=${diagnosticsBranch}`,
+        "-f", `sha=${existingSha}`
+      ], "GitHub progress replacement");
+      commitSha = replacement.value?.commit?.sha;
+      if (!replacement.ok || !GIT_SHA.test(replacement.value?.content?.sha ?? "") || !GIT_SHA.test(commitSha ?? "")) {
+        return await finish(replacement.failure === "authentication-required" ? "authentication-required" : "queued-for-retry");
+      }
+      uploaded = true;
+    }
+  } else {
+    if (existing.failure === "authentication-required") return await finish("authentication-required");
+    const created = await gh([
+      "--method", "PUT",
+      contentEndpoint,
+      "-f", `message=Update Inner Signal progress ${pending.payload.machineId.slice(0, 12)}`,
+      "-f", `content=${pending.bytes.toString("base64")}`,
+      "-f", `branch=${diagnosticsBranch}`
+    ], "GitHub progress upload");
+    commitSha = created.value?.commit?.sha;
+    if (!created.ok || !GIT_SHA.test(created.value?.content?.sha ?? "") || !GIT_SHA.test(commitSha ?? "")) {
+      return await finish(created.failure === "authentication-required" ? "authentication-required" : "queued-for-retry");
+    }
+    uploaded = true;
+  }
+
+  try {
+    await fs.rm(pending.localPath);
+  } catch {
+    return await finish("queued-for-retry", { uploaded, idempotent, commitSha });
+  }
+  return await finish("synced", { uploaded, idempotent, commitSha });
 }
 
 export async function syncDiagnosticOutbox({

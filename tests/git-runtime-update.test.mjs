@@ -29,7 +29,8 @@ async function writeManagedTree(root, {
   version,
   marker,
   testScript = "node -e \"process.exit(0)\"",
-  graphScript = "node -e \"process.exit(0)\""
+  graphScript = "node -e \"process.exit(0)\"",
+  validationProbe = null
 }) {
   await fs.mkdir(root, { recursive: true });
   await fs.writeFile(path.join(root, "package.json"), `${JSON.stringify({
@@ -42,6 +43,9 @@ async function writeManagedTree(root, {
   await fs.mkdir(path.join(root, "src"), { recursive: true });
   await fs.writeFile(path.join(root, "src/managed.txt"), `${marker}\n`);
   await fs.writeFile(path.join(root, "run-autopilot.sh"), `#!/usr/bin/env bash\necho ${marker}\n`, { mode: 0o755 });
+  const probePath = path.join(root, "validation-probe.mjs");
+  if (validationProbe === null) await fs.rm(probePath, { force: true });
+  else await fs.writeFile(probePath, validationProbe);
 }
 
 async function createRepository(t) {
@@ -214,6 +218,59 @@ test("source, installed runtime, and private state roots cannot overlap unsafely
     }),
     /stateDir must be inside .inner-signal-autopilot/
   );
+});
+
+test("candidate validation receives disposable state and no parent credentials", async (t) => {
+  const context = await createRepository(t);
+  const validationProbe = `
+import assert from "node:assert/strict";
+import path from "node:path";
+
+assert.equal(process.env.INNER_SIGNAL_VALIDATION_SANDBOX, "1");
+assert.equal(process.env.INNER_SIGNAL_GIT_AUTO_UPDATE, "false");
+assert.equal(process.env.INNER_SIGNAL_GIT_AUTO_DIAGNOSTICS, "false");
+assert.equal(path.dirname(process.env.AUTOPILOT_STATE_DIR), path.dirname(process.env.HOME));
+assert.equal(process.env.GH_CONFIG_DIR.startsWith(process.env.HOME), true);
+assert.equal(process.env.HOME === process.env.VALIDATION_PARENT_HOME, false);
+assert.equal(process.env.INNER_SIGNAL_GIT_SOURCE.startsWith(path.dirname(process.env.HOME)), true);
+assert.equal(process.env.INNER_SIGNAL_GIT_INSTALL_ROOT.startsWith(path.dirname(process.env.HOME)), true);
+for (const name of ["GH_TOKEN", "GITHUB_TOKEN", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"]) {
+  assert.equal(process.env[name], undefined, name);
+}
+`;
+  const candidateCommit = await context.advance({
+    version: "1.1.0",
+    marker: "managed-v2",
+    testScript: "node validation-probe.mjs",
+    validationProbe
+  });
+  let completed;
+  try {
+    const success = await execFileAsync(process.execPath, ["src/cli/git-update.mjs"], {
+      cwd: path.resolve("."),
+      env: {
+        ...process.env,
+        AUTOPILOT_STATE_DIR: context.stateDir,
+        INNER_SIGNAL_GIT_INSTALL_ROOT: context.installedRoot,
+        INNER_SIGNAL_GIT_SOURCE: context.sourceRoot,
+        INNER_SIGNAL_GIT_AUTO_UPDATE: "true",
+        INNER_SIGNAL_GIT_AUTO_DIAGNOSTICS: "true",
+        VALIDATION_PARENT_HOME: process.env.HOME ?? "",
+        GH_TOKEN: "PRIVATE_GH_TOKEN",
+        GITHUB_TOKEN: "PRIVATE_GITHUB_TOKEN",
+        OPENAI_API_KEY: "PRIVATE_OPENAI_KEY",
+        ANTHROPIC_API_KEY: "PRIVATE_ANTHROPIC_KEY"
+      }
+    });
+    completed = { code: 0, stdout: success.stdout };
+  } catch (error) {
+    completed = { code: error.code, stdout: error.stdout };
+  }
+
+  const result = JSON.parse(completed.stdout);
+  assert.equal(result.status, "UPDATED", JSON.stringify(result));
+  assert.equal(completed.code, 10);
+  assert.equal(result.installedCommit, candidateCommit);
 });
 
 test("stable update validates against empty state, preserves private bytes, swaps managed source, and is idempotent", async (t) => {
@@ -493,6 +550,7 @@ test("git-update CLI queues a strict incident for candidate test failure and exi
     cwd: path.resolve("."),
     env: {
       ...process.env,
+      AUTOPILOT_STATE_DIR: context.stateDir,
       INNER_SIGNAL_GIT_INSTALL_ROOT: context.installedRoot,
       INNER_SIGNAL_GIT_SOURCE: context.sourceRoot,
       INNER_SIGNAL_GIT_AUTO_UPDATE: "true",
@@ -524,6 +582,7 @@ test("git-update CLI exits 10 only after installing a verified stable commit", a
       cwd: path.resolve("."),
       env: {
         ...process.env,
+        AUTOPILOT_STATE_DIR: context.stateDir,
         INNER_SIGNAL_GIT_INSTALL_ROOT: context.installedRoot,
         INNER_SIGNAL_GIT_SOURCE: context.sourceRoot,
         INNER_SIGNAL_GIT_AUTO_UPDATE: "true",

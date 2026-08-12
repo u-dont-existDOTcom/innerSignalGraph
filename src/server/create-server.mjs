@@ -36,6 +36,8 @@ const SAFE_SLUG = /^[a-z][a-z0-9-]{0,63}$/;
 const SAFE_BRANCH = /^[A-Za-z0-9._/-]+$/;
 const GIT_SHA = /^[a-f0-9]{40}$/i;
 const DIAGNOSTIC_PATH = /^diagnostics\/[0-9a-f-]{36}\/[a-f0-9]{64}\.json$/i;
+const PROGRESS_PATH = /^progress\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/current\.json$/i;
+const PROGRESS_ASSESSMENT = /^(?:ADVANCING|LONG_RUNNING_STAGE|WAITING_FOR_HUMAN|BLOCKED|COMPLETE|IDLE|WORKER_NOT_RUNNING)$/;
 
 async function readStatusJson(file) {
   try {
@@ -61,9 +63,10 @@ function shortCommit(value) {
 }
 
 async function readGitAutomationStatus(config) {
-  const [update, diagnostics] = await Promise.all([
+  const [update, diagnostics, progress] = await Promise.all([
     readStatusJson(path.join(config.autopilotStateDir, "git-update-status.json")),
-    readStatusJson(path.join(config.autopilotStateDir, "diagnostic-sync-status.json"))
+    readStatusJson(path.join(config.autopilotStateDir, "diagnostic-sync-status.json")),
+    readStatusJson(path.join(config.autopilotStateDir, "progress-sync-status.json"))
   ]);
   const branch = safeText(diagnostics?.branch, SAFE_BRANCH);
   const safeBranch = branch && !branch.includes("..") && !branch.includes("//") && !branch.startsWith("/") && !branch.endsWith("/")
@@ -72,6 +75,14 @@ async function readGitAutomationStatus(config) {
   const paths = Array.isArray(diagnostics?.paths)
     ? diagnostics.paths.filter((value) => typeof value === "string" && DIAGNOSTIC_PATH.test(value))
     : [];
+  const progressBranch = safeText(progress?.branch, SAFE_BRANCH);
+  const safeProgressBranch = progressBranch
+    && !progressBranch.includes("..")
+    && !progressBranch.includes("//")
+    && !progressBranch.startsWith("/")
+    && !progressBranch.endsWith("/")
+    ? progressBranch
+    : null;
   return {
     update: {
       status: safeText(update?.status, SAFE_SLUG) ?? "not-checked",
@@ -86,6 +97,14 @@ async function readGitAutomationStatus(config) {
       path: paths.at(-1) ?? null,
       pending: Number.isSafeInteger(diagnostics?.pending) && diagnostics.pending >= 0 ? diagnostics.pending : null,
       lastSyncAt: safeTimestamp(diagnostics?.updatedAt)
+    },
+    progress: {
+      status: safeText(progress?.status, SAFE_SLUG) ?? "not-synced",
+      branch: safeProgressBranch,
+      path: safeText(progress?.path, PROGRESS_PATH),
+      lastSyncAt: safeTimestamp(progress?.lastSyncAt),
+      assessment: safeText(progress?.assessment, PROGRESS_ASSESSMENT),
+      observedAt: safeTimestamp(progress?.observedAt)
     }
   };
 }

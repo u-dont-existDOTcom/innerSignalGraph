@@ -1,12 +1,14 @@
-# Inner Signal Runtime v0.15.0
+# Inner Signal Runtime v0.15.1
 
-## Git-native updates and automatic safe diagnostics
+## Hermetic Git updates, safe diagnostics, and remote progress
 
-Inner Signal now installs verified commits from the private `stable` branch and sends a strictly allowlisted failure record to the separate `runtime-diagnostics` branch. `main` remains the development branch; `stable` is the only installation source; `runtime-diagnostics` is an append-only repair handoff and is never merged into runtime source.
+Inner Signal installs verified commits from the private `stable` branch and uses the separate `runtime-diagnostics` branch for strictly allowlisted failure records and one current progress heartbeat. `main` remains the development branch; `stable` is the only installation source; `runtime-diagnostics` is never merged into runtime source. Failure incidents remain append-only; `progress/<machineId>/current.json` is intentionally replaced with its existing blob SHA.
 
-One GitHub web login is required during bootstrap. After that, an ordinary launch retries queued incidents, checks `stable`, validates a candidate against empty temporary state, preserves every pre-existing private file byte-for-byte while updating only Git automation metadata, and swaps the runtime only after every deterministic gate passes. A GitHub, network, fetch, or diagnostic-sync outage leaves the current local server usable.
+One GitHub web login is required during bootstrap. After that, an ordinary launch retries queued incidents, checks `stable`, validates a candidate inside disposable home/config/state roots with GitHub and model credentials removed, preserves every pre-existing private file byte-for-byte, and swaps the runtime only after every deterministic gate passes. A failed ordinary update keeps the prior runtime usable. A failed bootstrap exits nonzero and never presents that older runtime as the requested release.
 
 Remote incidents contain only random machine and deterministic incident identifiers, version/commit/status fields, bounded test names and locations, allowlisted error codes and scalar values, and integrity hashes. They never include browser chat, therapy or hypnosis content, model prompts/output/reasoning, raw logs, `.env`, credentials, usernames, hostnames, IP addresses, or absolute home paths.
+
+While the launcher runs, a bounded companion publishes generated stage/status codes, counts, timestamps, liveness, elapsed time, and a deterministic assessment. Changed state is coalesced for 30 seconds; unchanged state refreshes every five minutes. `ADVANCING`, `LONG_RUNNING_STAGE`, `WAITING_FOR_HUMAN`, `BLOCKED`, `WORKER_NOT_RUNNING`, `COMPLETE`, and `IDLE` are computed locally. Task prose, job IDs, PIDs, blocker/analysis text, guide content, model content, logs, credentials, and host identity are excluded. Delivery failure retains only the newest private local snapshot and never blocks the app.
 
 ## Preserved timezone-stable package validation
 

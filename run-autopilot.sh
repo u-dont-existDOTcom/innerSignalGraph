@@ -71,6 +71,7 @@ ENV_HASH_BEFORE="$(model_env_hash)"
 SERVER_PID=""
 DEV_PID=""
 DEV_TAIL_PID=""
+PROGRESS_PID=""
 FAILED_PROMOTION_SIGNATURE=""
 cleanup() {
   if [[ -n "${DEV_TAIL_PID:-}" ]] && kill -0 "$DEV_TAIL_PID" 2>/dev/null; then
@@ -81,10 +82,18 @@ cleanup() {
     kill "$DEV_PID" 2>/dev/null || true
     wait "$DEV_PID" 2>/dev/null || true
   fi
+  if [[ -n "${PROGRESS_PID:-}" ]] && kill -0 "$PROGRESS_PID" 2>/dev/null; then
+    kill "$PROGRESS_PID" 2>/dev/null || true
+    wait "$PROGRESS_PID" 2>/dev/null || true
+  fi
   if [[ -n "${SERVER_PID:-}" ]] && kill -0 "$SERVER_PID" 2>/dev/null; then
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
   fi
+  DEV_TAIL_PID=""
+  DEV_PID=""
+  PROGRESS_PID=""
+  SERVER_PID=""
 }
 trap cleanup INT TERM EXIT
 
@@ -95,6 +104,20 @@ PROMOTION_MARKER_VALUE="$(grep -E '^DEV_PROMOTION_MARKER=' .env | tail -1 | cut 
 PROMOTION_MARKER_VALUE="${PROMOTION_MARKER_VALUE:-./.inner-signal-autopilot/promotion-ready.json}"
 if [[ "$PROMOTION_MARKER_VALUE" = /* ]]; then PROMOTION_MARKER="$PROMOTION_MARKER_VALUE"; else PROMOTION_MARKER="$ROOT/${PROMOTION_MARKER_VALUE#./}"; fi
 DEV_LOG="$ROOT/.inner-signal-autopilot/development-worker.log"
+PROGRESS_LOG="$ROOT/.inner-signal-autopilot/progress-sync.log"
+
+start_progress_watcher() {
+  if [[ "${INNER_SIGNAL_VALIDATION_SANDBOX:-0}" == "1" ]]; then
+    return 0
+  fi
+  if [[ -n "${PROGRESS_PID:-}" ]] && kill -0 "$PROGRESS_PID" 2>/dev/null; then
+    return 0
+  fi
+  mkdir -p .inner-signal-autopilot
+  touch "$PROGRESS_LOG"
+  node --env-file=.env src/cli/sync-progress.mjs --watch >>"$PROGRESS_LOG" 2>&1 &
+  PROGRESS_PID=$!
+}
 
 start_dev_worker() {
   if [[ "$DEV_ENABLED" != "true" && "$DEV_ENABLED" != "1" && "$DEV_ENABLED" != "yes" && "$DEV_ENABLED" != "on" ]]; then
@@ -130,6 +153,7 @@ wait_with_dev_supervisor() {
         FAILED_PROMOTION_SIGNATURE="$promotion_signature"
         echo "Promotion failed and was rolled back. Restarting the recovery/status service with the preserved runtime." >&2
         start_server
+        start_progress_watcher
         open_browser "$LOCAL_URL" || true
         start_dev_worker
       fi
@@ -236,6 +260,7 @@ open_browser() {
   return 1
 }
 
+start_progress_watcher
 start_server
 
 echo
@@ -292,6 +317,7 @@ if [[ "$ENV_HASH_AFTER" != "$ENV_HASH_BEFORE" ]]; then
   SERVER_PID=""
   echo
   echo "Validation resolved updated model/runtime settings. Restarting the local server once..."
+  start_progress_watcher
   start_server
   open_browser "$LOCAL_URL" || true
 else

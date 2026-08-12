@@ -165,7 +165,7 @@ export function buildRemoteDiagnosticPayload(input = {}) {
   return payload;
 }
 
-async function readOrCreateMachineId(stateDir, randomUUID) {
+export async function readOrCreateMachineId(stateDir, randomUUID = nodeRandomUUID) {
   const machineIdPath = path.join(stateDir, "machine-id.txt");
   await fs.mkdir(stateDir, { recursive: true, mode: 0o700 });
   try {

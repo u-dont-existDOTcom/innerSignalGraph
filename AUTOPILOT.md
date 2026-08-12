@@ -1,4 +1,4 @@
-# Inner Signal Autopilot v0.15.0
+# Inner Signal Autopilot v0.15.1
 
 ## Git-native launch contract
 
@@ -9,13 +9,19 @@ Every ordinary launch first retries the private diagnostic outbox, then checks t
 - update source: `stable`;
 - automatic failure destination: `runtime-diagnostics`.
 
-A new stable commit is checked out as a detached temporary worktree, copied without Git or runtime state, and tested with empty `AUTOPILOT_STATE_DIR` and `GUIDE_PACKET_ROOT` directories. Only after package and graph tests pass are `.env`, `.inner-signal-autopilot`, `.inner-signal-dev`, `ledgers`, and `data` overlaid and hash-verified. The staging runtime then replaces the installed runtime atomically and the launcher restarts once with a loop guard. Fetch, authentication, validation, or delivery failure keeps the prior runtime in service.
+A new stable commit is checked out as a detached temporary worktree, copied without Git or runtime state, and tested inside disposable `HOME`, XDG, GitHub CLI, autopilot, Guide Packet, ledger, and development roots. GitHub/OpenAI/Anthropic credentials are removed and external update/diagnostic automation is disabled for candidate children. Only after package and graph tests pass are `.env`, `.inner-signal-autopilot`, `.inner-signal-dev`, `ledgers`, and `data` overlaid and hash-verified. The staging runtime then replaces the installed runtime atomically and the launcher restarts once with a loop guard. Ordinary launch failure keeps the prior runtime in service; bootstrap failure is nonzero and never claims the requested runtime was installed.
 
 ## Automatic diagnostic handoff
 
 Failures are reconstructed field-by-field as `inner-signal-remote-diagnostic-v1`; arbitrary status objects are never sanitized and forwarded. A random local UUID identifies the installation without using a username, hostname, IP address, email, home path, or hardware identifier. The incident ID hashes stable safe fields and excludes timestamps, so retries are idempotent.
 
 Pending records are written mode `0600` under `.inner-signal-autopilot/diagnostic-outbox`. The authenticated GitHub CLI creates `diagnostics/<machineId>/<incidentId>.json` on `runtime-diagnostics`, writes a local receipt, and only then removes the outbox record. Remote outages are non-blocking. Browser chat, therapy/hypnosis content, model prompts/output/reasoning, raw test output, credentials, `.env`, and absolute paths cannot enter the contract.
+
+## Bounded current-progress heartbeat
+
+The launcher owns a companion that reads strict local runtime/development state and maintains `progress/<machineId>/current.json` on `runtime-diagnostics`. It replaces that one path only with the exact existing blob SHA. Meaningful changes are coalesced for 30 seconds; unchanged state refreshes every five minutes, so steady remote status is at most five minutes stale. A failed delivery keeps only `.inner-signal-autopilot/progress-outbox/current.json` for retry and never stops the local runtime.
+
+Remote assessment is deterministic: `ADVANCING` means a live worker has recent allowlisted movement; `LONG_RUNNING_STAGE` means a live legitimate stage has had no allowlisted transition for at least 15 minutes, not that it is conclusively stuck; `WORKER_NOT_RUNNING`, `WAITING_FOR_HUMAN`, `BLOCKED`, `COMPLETE`, and `IDLE` describe their literal states. The document contains generated codes, bounded counts, booleans, timestamps, release versions, and Git commits only. It excludes task names/IDs, blocker or supervisor prose, chat, therapy/hypnosis state, guide content, prompts, model output/reasoning, raw logs, credentials, host/user/network identity, absolute paths, PIDs, and hashes derived from excluded content.
 
 ## Timezone-stable validation
 

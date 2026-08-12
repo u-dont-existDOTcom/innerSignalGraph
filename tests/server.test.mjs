@@ -104,6 +104,18 @@ test("development status endpoint exposes deterministic overall supervisor analy
     paths: ["diagnostics/123e4567-e89b-42d3-a456-426614174000/" + "a".repeat(64) + ".json"],
     credential: "PRIVATE_SYNC_STATUS_MARKER"
   }));
+  await fs.writeFile(path.join(root, "progress-sync-status.json"), JSON.stringify({
+    format: "inner-signal-progress-sync-status-v1",
+    status: "synced",
+    updatedAt: "2026-08-12T06:02:00.000Z",
+    lastSyncAt: "2026-08-12T06:02:00.000Z",
+    branch: "runtime-diagnostics",
+    path: "progress/123e4567-e89b-42d3-a456-426614174000/current.json",
+    assessment: "ADVANCING",
+    observedAt: "2026-08-12T06:01:30.000Z",
+    commitSha: "c".repeat(40),
+    payload: "PRIVATE_PROGRESS_BODY_MARKER"
+  }));
   const server = createInnerSignalServer({ config, providers });
   await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
   try {
@@ -128,9 +140,17 @@ test("development status endpoint exposes deterministic overall supervisor analy
         path: "diagnostics/123e4567-e89b-42d3-a456-426614174000/" + "a".repeat(64) + ".json",
         pending: 0,
         lastSyncAt: "2026-08-12T06:01:00.000Z"
+      },
+      progress: {
+        status: "synced",
+        branch: "runtime-diagnostics",
+        path: "progress/123e4567-e89b-42d3-a456-426614174000/current.json",
+        lastSyncAt: "2026-08-12T06:02:00.000Z",
+        assessment: "ADVANCING",
+        observedAt: "2026-08-12T06:01:30.000Z"
       }
     });
-    assert.doesNotMatch(JSON.stringify(value.gitAutomation), /PRIVATE_|credential|rawOutput/);
+    assert.doesNotMatch(JSON.stringify(value.gitAutomation), /PRIVATE_|credential|rawOutput|payload|commitSha/);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

@@ -33,6 +33,7 @@ import {
   buildA001StageTerminal
 } from "../autopilot/a001-stage-recovery.mjs";
 import { summarizeTestFailure } from "../diagnostics/test-failure-summary.mjs";
+import { finalizeRuntimeProgress, recordRuntimeProgress } from "../diagnostics/remote-progress.mjs";
 
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
@@ -44,7 +45,15 @@ const skipRuntimeSmoke = args.has("--no-runtime-smoke");
 const skipWebSmoke = args.has("--no-web-smoke");
 const noLaunch = args.has("--no-launch");
 const externalLaunch = args.has("--external-launch");
-const progress = createProgressReporter({ prefix: "autopilot" });
+const terminalProgress = createProgressReporter({ prefix: "autopilot" });
+let progressStateDir = null;
+const progress = (event) => {
+  terminalProgress(event);
+  if (!progressStateDir) return;
+  recordRuntimeProgress({ stateDir: progressStateDir, event }).catch((error) => {
+    process.stderr.write(`[autopilot] progress-state warning: ${error?.code ?? "WRITE_FAILED"}\n`);
+  });
+};
 class AutopilotTerminal extends Error {}
 
 function errorShape(error) {
@@ -105,6 +114,9 @@ async function finalize({ config, runDir, status, stage, summary, nextAction = "
     actionCode: details?.actionCode ?? null,
     details
   };
+  await finalizeRuntimeProgress({ stateDir: config.autopilotStateDir, status, stage }).catch((error) => {
+    process.stderr.write(`[autopilot] progress-state warning: ${error?.code ?? "WRITE_FAILED"}\n`);
+  });
   await writeJson(path.join(runDir, "final-status.json"), body);
   await writeFinalStatus(config.autopilotStateDir, body);
   const printed = { status, stage, summary, nextAction, localState: config.autopilotStateDir };
@@ -221,6 +233,7 @@ if (dryRun) {
 
 const modelPolicy = normalizeAutopilotModelPolicy(process.env);
 const config = loadConfig({ mode: "cli" });
+progressStateDir = config.autopilotStateDir;
 const { runDir } = await createRunState(config.autopilotStateDir);
 if (modelPolicy.changed) {
   await setEnvValues(path.join(projectRoot, ".env"), modelPolicy.updates);

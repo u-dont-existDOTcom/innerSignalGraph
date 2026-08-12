@@ -71,6 +71,7 @@ await runCliMain(async () => {
   if (args.length > 1 || (args.length === 1 && args[0] !== "--bootstrap")) {
     throw new TypeError("git-update accepts only the optional --bootstrap flag");
   }
+  const bootstrap = args[0] === "--bootstrap";
   const installedRoot = process.env.INNER_SIGNAL_GIT_INSTALL_ROOT ?? projectRoot;
   const config = loadGitAutomationConfig({ env: process.env, installRoot: installedRoot });
   const result = config.autoUpdate
@@ -108,6 +109,7 @@ await runCliMain(async () => {
   }
 
   if (result.status === "UPDATED") process.exitCode = 10;
+  else if (bootstrap && result.status !== "CURRENT") process.exitCode = 12;
   return {
     ...result,
     diagnosticStatus: incidentId ? "queued" : result.status === "FAILED_SAFE" && config.autoDiagnostics ? "queue-unavailable" : "not-queued",

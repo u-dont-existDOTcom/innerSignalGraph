@@ -10,6 +10,19 @@ const GIT_SHA = /^[a-f0-9]{40}$/i;
 const BRANCH = /^[A-Za-z0-9._/-]+$/;
 const REPOSITORY = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
 const PRESERVED = [".env", ".inner-signal-autopilot", ".inner-signal-dev", "ledgers", "data"];
+const VALIDATION_CREDENTIAL_KEYS = [
+  "ANTHROPIC_API_KEY",
+  "ANTHROPIC_AUTH_TOKEN",
+  "CLAUDE_CODE_OAUTH_TOKEN",
+  "CODEX_API_KEY",
+  "GH_ENTERPRISE_TOKEN",
+  "GH_TOKEN",
+  "GITHUB_ENTERPRISE_TOKEN",
+  "GITHUB_TOKEN",
+  "OPENAI_API_KEY",
+  "OPENAI_ORGANIZATION",
+  "OPENAI_PROJECT"
+];
 
 function validateBranch(value) {
   if (typeof value !== "string"
@@ -150,6 +163,40 @@ async function defaultValidateCandidate({ candidateRoot, env, run }) {
     };
   }
   return { ok: true };
+}
+
+export function buildCandidateValidationEnvironment({
+  parentEnv = process.env,
+  validationRoot,
+  validationState,
+  validationGuides
+}) {
+  const home = path.join(validationRoot, "home");
+  const env = { ...parentEnv };
+  for (const key of VALIDATION_CREDENTIAL_KEYS) delete env[key];
+  return {
+    ...env,
+    HOME: home,
+    XDG_CONFIG_HOME: path.join(home, ".config"),
+    XDG_DATA_HOME: path.join(home, ".local", "share"),
+    XDG_STATE_HOME: path.join(home, ".local", "state"),
+    XDG_CACHE_HOME: path.join(home, ".cache"),
+    GH_CONFIG_DIR: path.join(home, ".config", "gh"),
+    AUTOPILOT_STATE_DIR: validationState,
+    GUIDE_PACKET_ROOT: validationGuides,
+    LEDGER_DIR: path.join(validationRoot, "ledgers"),
+    DEV_CANDIDATE_ROOT: path.join(validationRoot, "development-candidates"),
+    DEV_JOB_ROOT: path.join(validationRoot, "development-jobs"),
+    DEV_PROMOTION_MARKER: path.join(validationRoot, "promotion-ready.json"),
+    INNER_SIGNAL_VALIDATION_SANDBOX: "1",
+    INNER_SIGNAL_GIT_AUTO_UPDATE: "false",
+    INNER_SIGNAL_GIT_AUTO_DIAGNOSTICS: "false",
+    INNER_SIGNAL_GIT_SOURCE: path.join(validationRoot, "source-unavailable"),
+    INNER_SIGNAL_GIT_INSTALL_ROOT: path.join(validationRoot, "runtime-unavailable"),
+    INNER_SIGNAL_GH_COMMAND: path.join(validationRoot, "gh-unavailable"),
+    GIT_TERMINAL_PROMPT: "0",
+    GCM_INTERACTIVE: "Never"
+  };
 }
 
 async function copyManagedSource(sourceRoot, targetRoot) {
@@ -388,6 +435,10 @@ export async function runGitUpdate({
   try {
     await fs.mkdir(validationState, { recursive: true, mode: 0o700 });
     await fs.mkdir(validationGuides, { recursive: true, mode: 0o700 });
+    await fs.mkdir(path.join(validationRoot, "home", ".config", "gh"), { recursive: true, mode: 0o700 });
+    await fs.mkdir(path.join(validationRoot, "home", ".local", "share"), { recursive: true, mode: 0o700 });
+    await fs.mkdir(path.join(validationRoot, "home", ".local", "state"), { recursive: true, mode: 0o700 });
+    await fs.mkdir(path.join(validationRoot, "home", ".cache"), { recursive: true, mode: 0o700 });
     await fs.rm(stagingRoot, { recursive: true, force: true });
     const worktree = await git(
       run,
@@ -401,15 +452,12 @@ export async function runGitUpdate({
     worktreeAdded = true;
     await copyManagedSource(candidateRoot, stagingRoot);
 
-    const validationEnv = {
-      ...process.env,
-      AUTOPILOT_STATE_DIR: validationState,
-      GUIDE_PACKET_ROOT: validationGuides,
-      LEDGER_DIR: path.join(validationRoot, "ledgers"),
-      DEV_CANDIDATE_ROOT: path.join(validationRoot, "development-candidates"),
-      DEV_JOB_ROOT: path.join(validationRoot, "development-jobs"),
-      DEV_PROMOTION_MARKER: path.join(validationRoot, "promotion-ready.json")
-    };
+    const validationEnv = buildCandidateValidationEnvironment({
+      parentEnv: process.env,
+      validationRoot,
+      validationState,
+      validationGuides
+    });
     let validation;
     try {
       validation = await validateCandidate({ candidateRoot: stagingRoot, env: validationEnv, run });

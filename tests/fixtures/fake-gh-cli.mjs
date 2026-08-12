@@ -95,12 +95,20 @@ if (endpoint.startsWith(contentsPrefix)) {
   }
 
   if (method === "PUT") {
+    if ((state.conflictPutCount ?? 0) > 0) {
+      state.conflictPutCount -= 1;
+      await fail("HTTP 409: content update conflict");
+    }
     if ((state.failPutCount ?? 0) > 0) {
       state.failPutCount -= 1;
       await fail("simulated upload failure");
     }
     const content = field("content");
     if (!content || !branch || !field("message")) await fail("missing upload field");
+    const existing = state.files[key];
+    const suppliedSha = field("sha");
+    if (existing && suppliedSha !== existing.sha) await fail("sha does not match existing content");
+    if (!existing && suppliedSha !== null) await fail("sha supplied for missing content");
     const bytes = Buffer.from(content, "base64");
     const contentSha = createHash("sha1").update(Buffer.concat([Buffer.from(`blob ${bytes.length}\0`), bytes])).digest("hex");
     const commitSha = createHash("sha1").update(`commit:${key}:${contentSha}`).digest("hex");

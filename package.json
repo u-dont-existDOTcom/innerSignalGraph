@@ -1,8 +1,8 @@
 {
   "name": "inner-signal-runtime",
-  "version": "0.15.0",
+  "version": "0.15.1",
   "private": true,
-  "description": "Inner Signal runtime with verified stable-branch updates, automatic privacy-safe diagnostics, stage-aware recovery, exact-model role enforcement, and owner-gated Guide Packets.",
+  "description": "Inner Signal runtime with verified stable-branch updates, privacy-safe diagnostics and progress, stage-aware recovery, exact-model role enforcement, and owner-gated Guide Packets.",
   "type": "module",
   "engines": {
     "node": ">=20"

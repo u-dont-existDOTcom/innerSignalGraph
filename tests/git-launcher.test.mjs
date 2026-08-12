@@ -87,6 +87,41 @@ exit 0`);
   );
 });
 
+test("bootstrap exits nonzero when the requested stable runtime was not verified while ordinary launch remains fail-safe", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-bootstrap-result-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const installedRoot = path.join(root, "inner-signal-runtime");
+  const sourceRoot = path.join(root, "innerSignalGraph");
+  const stateDir = path.join(installedRoot, ".inner-signal-autopilot");
+  const env = {
+    ...process.env,
+    AUTOPILOT_STATE_DIR: stateDir,
+    INNER_SIGNAL_GIT_INSTALL_ROOT: installedRoot,
+    INNER_SIGNAL_GIT_SOURCE: sourceRoot,
+    INNER_SIGNAL_GIT_AUTO_UPDATE: "false",
+    INNER_SIGNAL_GIT_AUTO_DIAGNOSTICS: "false"
+  };
+
+  let bootstrap;
+  try {
+    const success = await execFileAsync(process.execPath, ["src/cli/git-update.mjs", "--bootstrap"], {
+      cwd: projectRoot,
+      env
+    });
+    bootstrap = { code: 0, stdout: success.stdout };
+  } catch (error) {
+    bootstrap = { code: error.code, stdout: error.stdout };
+  }
+  assert.equal(JSON.parse(bootstrap.stdout).status, "DEFERRED");
+  assert.equal(bootstrap.code, 12);
+
+  const ordinary = await execFileAsync(process.execPath, ["src/cli/git-update.mjs"], {
+    cwd: projectRoot,
+    env
+  });
+  assert.equal(JSON.parse(ordinary.stdout).status, "DEFERRED");
+});
+
 async function launcherFixture(t) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-launcher-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));

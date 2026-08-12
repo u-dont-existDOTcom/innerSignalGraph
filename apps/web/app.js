@@ -249,6 +249,7 @@ function overallDevelopmentLabel(value) {
 function renderGitAutomation(gitAutomation = {}) {
   const update = gitAutomation.update || {};
   const diagnostics = gitAutomation.diagnostics || {};
+  const progress = gitAutomation.progress || {};
   const commits = update.installedCommit || update.availableCommit
     ? ` · installed ${update.installedCommit || "unknown"} · available ${update.availableCommit || "unknown"}`
     : "";
@@ -256,7 +257,19 @@ function renderGitAutomation(gitAutomation = {}) {
   const pending = Number.isInteger(diagnostics.pending) ? diagnostics.pending : 0;
   const remotePath = diagnostics.path ? ` · ${diagnostics.path}` : "";
   const lastSync = diagnostics.lastSyncAt ? ` · ${new Date(diagnostics.lastSyncAt).toLocaleString()}` : "";
-  $("#dev-git-automation").textContent = `Git update: ${update.status || "not-checked"}${commits}. Diagnostics: ${diagnostics.status || "not-synced"} · ${pending} pending · ${branch}${remotePath}${lastSync}`;
+  const progressAssessment = ({
+    ADVANCING: "advancing",
+    LONG_RUNNING_STAGE: "long-running stage",
+    WAITING_FOR_HUMAN: "waiting for human",
+    BLOCKED: "blocked",
+    COMPLETE: "complete",
+    IDLE: "idle",
+    WORKER_NOT_RUNNING: "worker not running"
+  })[progress.assessment] || "unknown";
+  const progressBranch = progress.branch || "runtime-diagnostics";
+  const progressPath = progress.path ? ` · ${progress.path}` : "";
+  const progressSync = progress.lastSyncAt ? ` · ${new Date(progress.lastSyncAt).toLocaleString()}` : "";
+  $("#dev-git-automation").textContent = `Git update: ${update.status || "not-checked"}${commits}. Diagnostics: ${diagnostics.status || "not-synced"} · ${pending} pending · ${branch}${remotePath}${lastSync}. Progress: ${progress.status || "not-synced"} · ${progressAssessment} · ${progressBranch}${progressPath}${progressSync}`;
 }
 async function refreshDevelopmentStatus() {
   const summary = $("#dev-automation-summary");

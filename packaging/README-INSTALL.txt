@@ -1,4 +1,4 @@
-Inner Signal Runtime v0.15.0 — Git-Native Updates and Safe Diagnostics
+Inner Signal Runtime v0.15.1 — Isolated Updates, Safe Diagnostics, and Progress
 
 One-time French Zorin bootstrap:
 
@@ -8,8 +8,8 @@ One-time French Zorin bootstrap:
   gh repo clone u-dont-existDOTcom/innerSignalGraph innerSignalGraph -- --branch stable
   bash innerSignalGraph/packaging/install-from-git.sh
 
-The source checkout and installed runtime remain separate. Future launches fetch and validate `stable`, preserve every pre-existing private file byte-for-byte while updating only Git automation metadata, install transactionally, and restart once only after success.
+The source checkout and installed runtime remain separate. Future launches fetch and validate `stable` inside disposable home/config/state roots without real credentials, preserve every pre-existing private file byte-for-byte, install transactionally, and restart once only after success. Failed bootstrap exits nonzero instead of launching an older runtime as the requested release.
 
-Failures are automatically reduced to a strict privacy-safe record and pushed to the separate `runtime-diagnostics` branch. GitHub outages keep the record queued privately for retry and never take down the local runtime. Routine release-ZIP downloads and diagnostic-ZIP uploads are unnecessary.
+Failures are automatically reduced to a strict privacy-safe record and pushed to the separate `runtime-diagnostics` branch. One strictly allowlisted current-progress document is refreshed at most every 30 seconds after change and every five minutes while steady. GitHub outages keep only private retry state and never take down the local runtime. Routine release-ZIP downloads and diagnostic-ZIP uploads are unnecessary.
 
 Guide Packet candidates, owner decisions, and production r5 policy remain unchanged and owner-gated.
