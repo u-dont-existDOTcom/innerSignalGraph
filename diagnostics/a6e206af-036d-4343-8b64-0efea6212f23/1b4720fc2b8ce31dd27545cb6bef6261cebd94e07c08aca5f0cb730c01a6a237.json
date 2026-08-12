@@ -1,0 +1,51 @@
+{
+  "format": "inner-signal-remote-diagnostic-v1",
+  "incidentId": "1b4720fc2b8ce31dd27545cb6bef6261cebd94e07c08aca5f0cb730c01a6a237",
+  "machineId": "a6e206af-036d-4343-8b64-0efea6212f23",
+  "createdAt": "2026-08-12T18:34:09.904Z",
+  "runtime": {
+    "version": "0.15.0",
+    "installedCommit": null,
+    "nodeVersion": "v24.18.0"
+  },
+  "update": {
+    "status": "validation-failed",
+    "candidateCommit": "c4432d509349d777fa47a792d2c0c498878565b1"
+  },
+  "failure": {
+    "stage": "package-tests",
+    "classification": "UPDATE_TEST_FAILURE",
+    "actionCode": "KEEP_CURRENT_RUNTIME",
+    "retryable": false,
+    "exitCode": 1
+  },
+  "tests": {
+    "format": "inner-signal-test-failure-v1",
+    "command": "npm test",
+    "exitCode": 1,
+    "counts": {
+      "tests": 1,
+      "pass": 0,
+      "fail": 1
+    },
+    "failures": [
+      {
+        "name": "candidate contract fails",
+        "errorCode": "ERR_ASSERTION",
+        "actual": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "expected": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ]
+  },
+  "integrity": {
+    "runtimeTreeSha256": null,
+    "graphBundleSha256": null
+  },
+  "privacy": {
+    "identity": "random-local-uuid",
+    "includesChatContent": false,
+    "includesCredentials": false,
+    "includesModelOutput": false,
+    "includesRawLogs": false
+  }
+}
