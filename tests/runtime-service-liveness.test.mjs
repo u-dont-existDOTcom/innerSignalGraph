@@ -51,7 +51,11 @@ function shellLiteral(value) {
 }
 
 async function installDesktopOpenStubs(bin) {
-  const stub = "#!/usr/bin/env bash\nexit 0\n";
+  const callLog = path.join(path.dirname(bin), "desktop-open-calls.log");
+  const stub = `#!/usr/bin/env bash
+printf '%s\\t%s\\n' "$(basename "$0")" "$*" >> ${shellLiteral(callLog)}
+exit 0
+`;
   await Promise.all([
     fs.writeFile(path.join(bin, "xdg-open"), stub, { mode: 0o755 }),
     fs.writeFile(path.join(bin, "gio"), stub, { mode: 0o755 })
@@ -172,6 +176,15 @@ async function installPoisonGh(root) {
 
 async function stopWrapper(child) {
   const exited = () => child.exitCode != null || child.signalCode != null;
+  const processGroupExists = () => {
+    try {
+      process.kill(-child.pid, 0);
+      return true;
+    } catch (error) {
+      if (error?.code === "ESRCH") return false;
+      throw error;
+    }
+  };
   const waitForExit = async (timeoutMs) => {
     if (exited()) return true;
     return await Promise.race([
@@ -179,11 +192,27 @@ async function stopWrapper(child) {
       new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs))
     ]);
   };
-  if (exited()) return;
+  const waitForProcessGroupExit = async (timeoutMs) => {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (!processGroupExists()) return true;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    return !processGroupExists();
+  };
+  if (!processGroupExists()) {
+    assert.equal(await waitForExit(3000), true, "temporary launcher leader did not exit");
+    return;
+  }
   try { process.kill(-child.pid, "SIGTERM"); } catch {}
-  if (!await waitForExit(3000)) {
+  const [leaderExited, groupExited] = await Promise.all([
+    waitForExit(3000),
+    waitForProcessGroupExit(3000)
+  ]);
+  if (!leaderExited || !groupExited) {
     try { process.kill(-child.pid, "SIGKILL"); } catch {}
-    assert.equal(await waitForExit(3000), true, "temporary launcher process group did not exit");
+    assert.equal(await waitForExit(3000), true, "temporary launcher leader did not exit");
+    assert.equal(await waitForProcessGroupExit(3000), true, "temporary launcher process group did not exit");
   }
 }
 
@@ -241,6 +270,7 @@ test("validation failure leaves health, status, and recovery ZIP available", { t
 test("promotion failure restarts health, status, and recovery ZIP instead of abandoning the browser", { timeout: 30000 }, async (t) => {
   const { root, port } = await copyRuntime();
   t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const desktopOpenCalls = path.join(root, "desktop-open-calls.log");
   const stateRoot = path.join(root, ".inner-signal-autopilot");
   await fs.mkdir(stateRoot, { recursive: true });
   const fingerprint = (await execFileAsync(process.execPath, ["src/cli/runtime-fingerprint.mjs"], { cwd: root })).stdout.trim();
@@ -253,11 +283,56 @@ test("promotion failure restarts health, status, and recovery ZIP instead of aba
     await waitFor(async () => fs.access(recoveryWaiting).then(() => true, () => false), "delayed recovery server");
     assert.equal(running.child.exitCode, null);
     assert.equal(running.child.signalCode, null);
+    const heldCalls = (await fs.readFile(desktopOpenCalls, "utf8").catch(() => "")).trim().split("\n").filter(Boolean);
+    assert.equal(heldCalls.length, 1, "recovery browser open ran before recovery health was ready");
     await assert.rejects(fetch(`http://127.0.0.1:${port}/health`));
     await fs.writeFile(releaseRecovery, "release\n");
     await assertRecoverySurface({ port, ...running });
+    const recoveredCalls = await waitFor(async () => {
+      const calls = (await fs.readFile(desktopOpenCalls, "utf8").catch(() => "")).trim().split("\n").filter(Boolean);
+      return calls.length === 2 ? calls : null;
+    }, "recovery browser open after health");
+    assert.deepEqual(recoveredCalls, [
+      `xdg-open\thttp://localhost:${port}`,
+      `xdg-open\thttp://localhost:${port}`
+    ]);
   } finally {
     await stopWrapper(running.child);
+  }
+});
+
+test("test teardown terminates descendants after the launcher leader has exited", { timeout: 10000 }, async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-process-group-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const descendantMarker = path.join(root, "descendant-pid.txt");
+  const leaderScript = `
+const fs = require("node:fs");
+const { spawn } = require("node:child_process");
+const child = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" });
+fs.writeFileSync(${JSON.stringify(descendantMarker)}, String(child.pid));
+child.unref();
+`;
+  const leader = spawn(process.execPath, ["-e", leaderScript], {
+    detached: true,
+    stdio: "ignore"
+  });
+  const processGroupExists = () => {
+    try {
+      process.kill(-leader.pid, 0);
+      return true;
+    } catch (error) {
+      if (error?.code === "ESRCH") return false;
+      throw error;
+    }
+  };
+  try {
+    await waitFor(async () => fs.access(descendantMarker).then(() => true, () => false), "orphan descendant start");
+    if (leader.exitCode == null && leader.signalCode == null) await once(leader, "exit");
+    assert.equal(processGroupExists(), true);
+    await stopWrapper(leader);
+    assert.equal(processGroupExists(), false, "test-owned descendant survived launcher teardown");
+  } finally {
+    try { process.kill(-leader.pid, "SIGKILL"); } catch {}
   }
 });
 
