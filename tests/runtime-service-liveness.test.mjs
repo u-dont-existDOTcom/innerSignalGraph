@@ -29,9 +29,8 @@ async function copyRuntime() {
     recursive: true,
     filter(source) {
       const relative = path.relative(sourceRoot, source);
-      return !relative.startsWith("node_modules")
-        && !relative.startsWith(".inner-signal-autopilot")
-        && !relative.startsWith("tmp");
+      const first = relative.split(path.sep)[0];
+      return ![".git", ".agents", ".codex", "node_modules", ".inner-signal-autopilot", "tmp"].includes(first);
     }
   });
   const port = await freePort();
