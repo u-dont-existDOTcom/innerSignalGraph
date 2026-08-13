@@ -1,0 +1,82 @@
+{
+  "format": "inner-signal-remote-diagnostic-v1",
+  "incidentId": "8b623168acf8c8cd2959d1366b8470ec7c86bd03222b0f425535c392ecfeec21",
+  "machineId": "6665047a-5392-430e-be1b-a51c30c45c40",
+  "createdAt": "2026-08-13T02:01:45.423Z",
+  "runtime": {
+    "version": "0.15.2",
+    "installedCommit": "78f459d8dbc0ab7257a8d867a50213de13eb0d45",
+    "nodeVersion": "v24.18.0"
+  },
+  "update": {
+    "status": "current",
+    "candidateCommit": "78f459d8dbc0ab7257a8d867a50213de13eb0d45"
+  },
+  "failure": {
+    "stage": "package-tests",
+    "classification": "TEST_FAILURE",
+    "actionCode": "KEEP_CURRENT_RUNTIME",
+    "retryable": false,
+    "exitCode": 1
+  },
+  "tests": {
+    "format": "inner-signal-test-failure-v1",
+    "command": "npm test",
+    "exitCode": 1,
+    "counts": {
+      "tests": 250,
+      "suites": 0,
+      "pass": 247,
+      "fail": 3,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "failures": [
+      {
+        "name": "Git bootstrap performs one official web login, configures Git, verifies the private repository, and invokes the updater"
+      },
+      {
+        "name": "validation failure leaves health, status, and recovery ZIP available"
+      },
+      {
+        "name": "promotion failure restarts health, status, and recovery ZIP instead of abandoning the browser"
+      },
+      {
+        "name": "Git bootstrap performs one official web login, configures Git, verifies the private repository, and invokes the updater",
+        "location": {
+          "file": "tests/git-launcher.test.mjs",
+          "line": 17,
+          "column": 1
+        }
+      },
+      {
+        "name": "validation failure leaves health, status, and recovery ZIP available",
+        "location": {
+          "file": "tests/runtime-service-liveness.test.mjs",
+          "line": 244,
+          "column": 1
+        }
+      },
+      {
+        "name": "promotion failure restarts health, status, and recovery ZIP instead of abandoning the browser",
+        "location": {
+          "file": "tests/runtime-service-liveness.test.mjs",
+          "line": 272,
+          "column": 1
+        }
+      }
+    ]
+  },
+  "integrity": {
+    "runtimeTreeSha256": "f63f8c80370a6b7245ad9ba8447eecbf928e437548f8434a31e3be704cfd8d71",
+    "graphBundleSha256": "d038262b0c6abec43c99c52195ee2a4a3a52f5f3a26216c808054c5978789fc4"
+  },
+  "privacy": {
+    "identity": "random-local-uuid",
+    "includesChatContent": false,
+    "includesCredentials": false,
+    "includesModelOutput": false,
+    "includesRawLogs": false
+  }
+}
