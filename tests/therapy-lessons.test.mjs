@@ -74,6 +74,19 @@ function suggestionBlock(decision, overrides = {}) {
   return `## ${decision.id}\n\n${marker("therapy-suggestion", metadata)}\n\n### Proposal\n\nKeep this exact candidate change pending.\n\n### Guide impact\n\nGuide: inner-child. Graph node: NODE.${decision.id}. Prompt: none. Regression: ${decision.affectedRegressions.join(", ")}.\n\n### Evidence and uncertainty\n\nSource status: canonical packet evidence. Limitation: the packet has not passed review.\n\n### Review result\n\nThe enclosing r02 packet was rejected before the owner gate.\n\n### Why not active\n\nIt has neither a passing packet nor an explicit owner decision.\n\n### Technical next action\n\nCarry the corrected proposal into r03 and rerun its regression.\n\n### Decision needed\n\nAfter r03 passes review, Joel must explicitly approve or decline this proposal.\n\n### Options and trade-offs\n\nOption A — approve after repair. Benefits: gains the proposed behavior. Costs: changes routing. Worst plausible failure: the route activates incorrectly.\n\nOption B — retain current policy. Benefits: avoids an unverified change. Costs: forgoes the candidate behavior. Worst plausible failure: a useful route remains unavailable.\n\n### Recommendation and reasoning\n\nRecommendation: wait for r03. Reasoning: technical review must pass before an owner policy choice is actionable.\n`;
 }
 
+function approvalBlock(overrides = {}) {
+  const metadata = {
+    approvalId: "approval-r02-decision-1",
+    suggestionId: "suggestion-r02-decision-1",
+    decidedAt: "2026-08-13T15:00:00.000Z",
+    decisionSource: "direct-user-conversation",
+    implementationStatus: "approved-not-implemented",
+    guideIds: ["somatic"],
+    ...overrides
+  };
+  return `## Approve delayed reassessment\n\n${marker("therapy-approval", metadata)}\n\n### Exact decision\n\nApprove the bounded policy represented by the linked suggestion.\n\n### Owner reasoning or stated preference\n\nThe owner explicitly selected the proposed behavior.\n\n### Scope and constraints\n\nOnly the linked guide and reviewed regression scope.\n\n### Guide impact\n\nSomatic guide and delayed reassessment node.\n\n### Implementation status\n\nApproved but not implemented.\n\n### Verification evidence\n\nNo implementation evidence is claimed yet.\n`;
+}
+
 function validEntries() {
   return [
     { lessonId: "active-one", learnedAt: createdAt, activation: "active-runtime" },
@@ -112,6 +125,7 @@ async function governanceFixture(t, {
   suggestionsTransform = (source) => source,
   omitSuggestionDecisionId = null,
   duplicateSuggestionDecisionId = null,
+  approvals = "# Approved therapy lessons\n",
   agents = "# Repository instructions\n\n<!-- therapy-owner-decision-protocol-v1 -->\n"
 } = {}) {
   const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-therapy-governance-"));
@@ -134,7 +148,7 @@ async function governanceFixture(t, {
   await Promise.all([
     fs.writeFile(path.join(fixtureRoot, "THERAPY-LESSONS"), `# Therapy lessons\n\n${marker("therapy-lesson", validEntries()[0])}\n`),
     fs.writeFile(path.join(fixtureRoot, "SUGGESTED-THERAPY-LESSONS"), suggestionsTransform(suggestionSource)),
-    fs.writeFile(path.join(fixtureRoot, "APPROVED-THERAPY-LESSONS"), "# Approved therapy lessons\n"),
+    fs.writeFile(path.join(fixtureRoot, "APPROVED-THERAPY-LESSONS"), approvals),
     fs.writeFile(path.join(fixtureRoot, "AGENTS.md"), agents)
   ]);
   return fixtureRoot;
@@ -238,3 +252,35 @@ test("therapy governance requires the root owner protocol marker", async (t) => 
   const rootDir = await governanceFixture(t, { agents: "# Repository instructions\n" });
   await assert.rejects(loadTherapyGovernance({ rootDir }), /AGENTS.md is missing therapy-owner-decision-protocol-v1/);
 });
+
+test("therapy governance accepts an approval implementation status", async (t) => {
+  const rootDir = await governanceFixture(t, { approvals: approvalBlock({ suggestionId: "linked-suggestion-r02-decision-1" }) });
+  const governance = await loadTherapyGovernance({ rootDir });
+  assert.equal(governance.approvals.length, 1);
+});
+
+test("therapy governance rejects an invalid approval implementation status", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    approvals: approvalBlock({
+      suggestionId: "linked-suggestion-r02-decision-1",
+      implementationStatus: "almost-implemented",
+      status: "approved-not-implemented"
+    })
+  });
+  await assert.rejects(loadTherapyGovernance({ rootDir }), /approval-r02-decision-1 has an invalid implementationStatus/);
+});
+
+for (const { entry, field, fixtureOption } of [
+  { entry: "review-r02-live-rejection-20260813", field: "findingIds", fixtureOption: "reviewOverrides" },
+  { entry: "review-r02-live-rejection-20260813", field: "packetLevelFindingIds", fixtureOption: "reviewOverrides" },
+  { entry: "suggestion-r02-decision-1", field: "reviewFindingIds", fixtureOption: "suggestionOverrides" },
+  { entry: "suggestion-r02-decision-1", field: "guideIds", fixtureOption: "suggestionOverrides" },
+  { entry: "suggestion-r02-decision-1", field: "graphNodeIds", fixtureOption: "suggestionOverrides" },
+  { entry: "suggestion-r02-decision-1", field: "promptIds", fixtureOption: "suggestionOverrides" },
+  { entry: "suggestion-r02-decision-1", field: "regressionIds", fixtureOption: "suggestionOverrides" }
+]) {
+  test(`therapy governance requires ${field} on ${entry}`, async (t) => {
+    const rootDir = await governanceFixture(t, { [fixtureOption]: { [field]: undefined } });
+    await assert.rejects(loadTherapyGovernance({ rootDir }), new RegExp(`${entry} has an invalid ${field}`));
+  });
+}

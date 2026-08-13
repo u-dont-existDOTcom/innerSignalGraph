@@ -61,8 +61,8 @@ function assertIdArray({ entry, field, id }) {
   if (new Set(value).size !== value.length) throw new Error(`${id} has duplicate ${field}.`);
 }
 
-function assertIdArrays(entry, id) {
-  for (const field of Object.keys(entry).filter((key) => key.endsWith("Ids"))) {
+function assertIdArrays(entry, id, fields) {
+  for (const field of fields) {
     assertIdArray({ entry, field, id });
   }
 }
@@ -128,7 +128,7 @@ export async function loadTherapyGovernance({ rootDir = root } = {}) {
     marker: "therapy-review-event",
     idField: "eventId",
     timestampField: "occurredAt",
-    validateMetadata: (entry) => assertIdArrays(entry, entry.eventId)
+    validateMetadata: (entry) => assertIdArrays(entry, entry.eventId, ["findingIds", "packetLevelFindingIds"])
   });
   const suggestions = parseLedgerEntries({
     source: suggestionsSource,
@@ -137,7 +137,7 @@ export async function loadTherapyGovernance({ rootDir = root } = {}) {
     idField: "suggestionId",
     timestampField: "createdAt",
     validateMetadata: (entry) => {
-      assertIdArrays(entry, entry.suggestionId);
+      assertIdArrays(entry, entry.suggestionId, ["reviewFindingIds", "guideIds", "graphNodeIds", "promptIds", "regressionIds"]);
       if (!SUGGESTION_STATUSES.has(entry.status)) throw new Error(`${entry.suggestionId} has an invalid status.`);
     }
   });
@@ -148,8 +148,8 @@ export async function loadTherapyGovernance({ rootDir = root } = {}) {
     idField: "approvalId",
     timestampField: "decidedAt",
     validateMetadata: (entry) => {
-      assertIdArrays(entry, entry.approvalId);
-      if (!APPROVAL_STATUSES.has(entry.status)) throw new Error(`${entry.approvalId} has an invalid status.`);
+      assertIdArrays(entry, entry.approvalId, ["guideIds"]);
+      if (!APPROVAL_STATUSES.has(entry.implementationStatus)) throw new Error(`${entry.approvalId} has an invalid implementationStatus.`);
     }
   });
 
