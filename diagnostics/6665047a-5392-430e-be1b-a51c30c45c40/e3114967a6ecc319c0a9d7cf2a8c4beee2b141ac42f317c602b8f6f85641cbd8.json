@@ -1,0 +1,104 @@
+{
+  "format": "inner-signal-remote-diagnostic-v1",
+  "incidentId": "e3114967a6ecc319c0a9d7cf2a8c4beee2b141ac42f317c602b8f6f85641cbd8",
+  "machineId": "6665047a-5392-430e-be1b-a51c30c45c40",
+  "createdAt": "2026-08-12T18:34:50.337Z",
+  "runtime": {
+    "version": "0.15.0",
+    "installedCommit": null,
+    "nodeVersion": "v24.18.0"
+  },
+  "update": {
+    "status": "validation-failed",
+    "candidateCommit": "b3f82e31003c4669a6136695cd2174c09eda61b6"
+  },
+  "failure": {
+    "stage": "package-tests",
+    "classification": "UPDATE_TEST_FAILURE",
+    "actionCode": "KEEP_CURRENT_RUNTIME",
+    "retryable": false,
+    "exitCode": 1
+  },
+  "tests": {
+    "format": "inner-signal-test-failure-v1",
+    "command": "npm test",
+    "exitCode": 1,
+    "counts": {
+      "tests": 229,
+      "suites": 0,
+      "pass": 224,
+      "fail": 5,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "failures": [
+      {
+        "name": "Git bootstrap performs one official web login, configures Git, verifies the private repository, and invokes the updater"
+      },
+      {
+        "name": "git-update CLI queues a strict incident for candidate test failure and exits zero with the current runtime intact"
+      },
+      {
+        "name": "git-update CLI exits 10 only after installing a verified stable commit"
+      },
+      {
+        "name": "validation failure leaves health, status, and recovery ZIP available"
+      },
+      {
+        "name": "promotion failure restarts health, status, and recovery ZIP instead of abandoning the browser"
+      },
+      {
+        "name": "Git bootstrap performs one official web login, configures Git, verifies the private repository, and invokes the updater",
+        "location": {
+          "file": "tests/git-launcher.test.mjs",
+          "line": 17,
+          "column": 1
+        }
+      },
+      {
+        "name": "git-update CLI queues a strict incident for candidate test failure and exits zero with the current runtime intact",
+        "location": {
+          "file": "tests/git-runtime-update.test.mjs",
+          "line": 482,
+          "column": 1
+        }
+      },
+      {
+        "name": "git-update CLI exits 10 only after installing a verified stable commit",
+        "location": {
+          "file": "tests/git-runtime-update.test.mjs",
+          "line": 518,
+          "column": 1
+        }
+      },
+      {
+        "name": "validation failure leaves health, status, and recovery ZIP available",
+        "location": {
+          "file": "tests/runtime-service-liveness.test.mjs",
+          "line": 131,
+          "column": 1
+        }
+      },
+      {
+        "name": "promotion failure restarts health, status, and recovery ZIP instead of abandoning the browser",
+        "location": {
+          "file": "tests/runtime-service-liveness.test.mjs",
+          "line": 146,
+          "column": 1
+        }
+      }
+    ]
+  },
+  "integrity": {
+    "runtimeTreeSha256": null,
+    "graphBundleSha256": null
+  },
+  "privacy": {
+    "identity": "random-local-uuid",
+    "includesChatContent": false,
+    "includesCredentials": false,
+    "includesModelOutput": false,
+    "includesRawLogs": false
+  }
+}
