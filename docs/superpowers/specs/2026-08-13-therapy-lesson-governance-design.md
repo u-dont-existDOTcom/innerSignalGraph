@@ -1,7 +1,7 @@
 # Therapy Lesson Governance and Owner Decision Design
 
 Date: 2026-08-13  
-Status: written from the approved design; awaiting written-spec review  
+Status: owner-approved governance design; lesson suggestions remain unapproved
 Scope: Git-tracked therapy-prompt learning, guide-impacting suggestions, explicit owner approvals, review-rejection explanations, and direct-conversation decision briefs
 
 ## Outcome
