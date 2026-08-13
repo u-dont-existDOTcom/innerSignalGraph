@@ -22,7 +22,7 @@ Evidence: `src/prompts/realize.mjs`, `corpus/difficult-cases/A001-inner-child-cr
 
 <!-- therapy-lesson {"lessonId":"active-tiered-review","learnedAt":"2026-08-12T03:29:10.000Z","activation":"active-runtime"} -->
 
-Low-ambiguity prompts can follow the graph quickly. Protective conflict or moderate ambiguity receives independent review. Unresolved age, responsibility, speaker, and credibility ambiguity receives deeper review, while a safety-sensitive state cannot be forced into fast mode. A narrow follow-up to an already reviewed formulation can update the prior snapshot instead of rebuilding the person from scratch.
+Low-ambiguity prompts can follow the graph quickly. Protective conflict or moderate ambiguity receives independent review. When age, responsibility, speaker, and credibility ambiguity is fully represented in the structured graph variables, reviewed mode can resolve it without unnecessary Opus depth; an unresolved or unstructured version receives deeper review. A safety-sensitive state cannot be forced into fast mode. A narrow follow-up to an already reviewed formulation can update the prior snapshot instead of rebuilding the person from scratch.
 
 Evidence: `src/orchestrator/run-tiered-pipeline.mjs` and `tests/therapy-routing.test.mjs`.
 

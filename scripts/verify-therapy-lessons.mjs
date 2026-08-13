@@ -4,8 +4,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const fixturesRoot = path.join(root, "guide-packets", "fixtures");
-const lessonPath = path.join(root, "THERAPY-LESSONS");
 const ENTRY_PATTERN = /<!-- therapy-lesson (\{[^\r\n]*\}) -->/g;
 const ACTIVATIONS = new Set(["active-runtime", "candidate-awaiting-owner"]);
 
@@ -19,7 +17,8 @@ async function readJson(file) {
   return JSON.parse(await fs.readFile(file, "utf8"));
 }
 
-async function latestCandidate() {
+async function latestCandidate(rootDir) {
+  const fixturesRoot = path.join(rootDir, "guide-packets", "fixtures");
   const candidates = [];
   for (const name of await fs.readdir(fixturesRoot)) {
     const packetRoot = path.join(fixturesRoot, name, "packet");
@@ -61,11 +60,11 @@ function parseEntries(source) {
   return entries;
 }
 
-export async function verifyTherapyLessons() {
-  const { manifest, packetRoot } = await latestCandidate();
+export async function verifyTherapyLessons({ rootDir = root } = {}) {
+  const { manifest, packetRoot } = await latestCandidate(rootDir);
   const decisions = await readJson(path.join(packetRoot, manifest.paths.ownerDecisions));
   const cards = decisions.cards.filter((card) => card.classification === "substantive" && card.requiresHumanDecision === true);
-  const entries = parseEntries(await fs.readFile(lessonPath, "utf8"));
+  const entries = parseEntries(await fs.readFile(path.join(rootDir, "THERAPY-LESSONS"), "utf8"));
   const activeCount = entries.filter((entry) => entry.activation === "active-runtime").length;
   if (activeCount === 0) throw new Error("THERAPY-LESSONS has no active-runtime prompt lesson.");
 
@@ -75,10 +74,13 @@ export async function verifyTherapyLessons() {
   }
 
   for (const card of cards) {
-    const matches = entries.filter((entry) => entry.decisionId === card.id);
+    const sameDecision = entries.filter((entry) => entry.decisionId === card.id);
+    const matches = sameDecision.filter((entry) => entry.packetId === manifest.packetId);
+    if (matches.length === 0 && sameDecision.length === 1) {
+      throw new Error(`Therapy lesson ${card.id} names the wrong Guide Packet.`);
+    }
     if (matches.length !== 1) throw new Error(`Expected exactly one therapy lesson for ${card.id}; found ${matches.length}.`);
     const entry = matches[0];
-    if (entry.packetId !== manifest.packetId) throw new Error(`Therapy lesson ${card.id} names the wrong Guide Packet.`);
     if (entry.activation !== "candidate-awaiting-owner") {
       throw new Error(`Pending Guide Packet decision ${card.id} is falsely marked ${entry.activation}.`);
     }

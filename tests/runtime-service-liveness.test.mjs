@@ -51,8 +51,11 @@ function shellLiteral(value) {
 
 async function installDesktopOpenStubs(bin) {
   const callLog = path.join(path.dirname(bin), "desktop-open-calls.log");
+  const readyFile = path.join(path.dirname(bin), ".inner-signal-autopilot", "current-url.txt");
   const stub = `#!/usr/bin/env bash
-printf '%s\\t%s\\n' "$(basename "$0")" "$*" >> ${shellLiteral(callLog)}
+readiness=not-ready
+if [[ -s ${shellLiteral(readyFile)} ]]; then readiness=ready; fi
+printf '%s\\t%s\\t%s\\n' "$(basename "$0")" "$readiness" "$*" >> ${shellLiteral(callLog)}
 exit 0
 `;
   await Promise.all([
@@ -282,7 +285,13 @@ test("promotion failure restarts health, status, and recovery ZIP instead of aba
     await waitFor(async () => fs.access(recoveryWaiting).then(() => true, () => false), "delayed recovery server");
     assert.equal(running.child.exitCode, null);
     assert.equal(running.child.signalCode, null);
-    const heldCalls = (await fs.readFile(desktopOpenCalls, "utf8").catch(() => "")).trim().split("\n").filter(Boolean);
+    const initialCalls = await waitFor(async () => {
+      const calls = (await fs.readFile(desktopOpenCalls, "utf8").catch(() => "")).trim().split("\n").filter(Boolean);
+      return calls.length === 1 ? calls : null;
+    }, "initial browser open acknowledgment");
+    assert.deepEqual(initialCalls, [`xdg-open\tready\thttp://localhost:${port}`]);
+    await fs.rm(path.join(stateRoot, "current-url.txt"), { force: true });
+    const heldCalls = (await fs.readFile(desktopOpenCalls, "utf8")).trim().split("\n").filter(Boolean);
     assert.equal(heldCalls.length, 1, "recovery browser open ran before recovery health was ready");
     await assert.rejects(fetch(`http://127.0.0.1:${port}/health`));
     await fs.writeFile(releaseRecovery, "release\n");
@@ -292,8 +301,8 @@ test("promotion failure restarts health, status, and recovery ZIP instead of aba
       return calls.length === 2 ? calls : null;
     }, "recovery browser open after health");
     assert.deepEqual(recoveredCalls, [
-      `xdg-open\thttp://localhost:${port}`,
-      `xdg-open\thttp://localhost:${port}`
+      `xdg-open\tready\thttp://localhost:${port}`,
+      `xdg-open\tready\thttp://localhost:${port}`
     ]);
   } finally {
     await stopWrapper(running.child);
