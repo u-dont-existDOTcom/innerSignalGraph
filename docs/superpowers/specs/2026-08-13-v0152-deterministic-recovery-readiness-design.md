@@ -75,12 +75,12 @@ v0.15.2 will include:
 - this approved design specification;
 - an implementation plan with exact RED/GREEN and release commands;
 - an architecture/recovery note at `docs/GIT-UPDATE-AND-DIAGNOSTIC-SYNC-v0.15.2.md`;
-- `IMPLEMENTATION-REPORT-v0.15.2.md` containing the local incident evidence, exact assertion, test counts, repeated-run results, transactional bootstrap results, release ref/tree verification, installer result, and sustained-health observation;
+- `IMPLEMENTATION-REPORT-v0.15.2.md` containing the local incident evidence, exact assertion, test counts, repeated-run results, transactional bootstrap results, release preflight refs, and the exact post-publication installer/health verification contract;
 - version updates in `package.json` and `src/core/runtime-version.mjs`, with related user-facing release references kept consistent.
 
 The release must not advance `main` or `stable` until all focused repetitions, the complete direct `npm test`, graph regressions, package verification, repository release gates, and the real local transactional bootstrap simulation pass. Publication must use non-forced compare-and-swap ref updates and finish with `main` and `stable` at the same verified commit and recursive tree.
 
-After publication, the real installer will run once against `stable`. Verification requires the installed version and commit markers to identify v0.15.2, `/health` plus status and recovery endpoints to remain healthy after the installer returns, and no test browser tabs or leftover test launcher processes.
+After publication, the real installer will run once against `stable`. Verification requires the installed version and commit markers to identify v0.15.2, `/health` plus status and recovery endpoints to remain healthy after the installer returns, and no test browser tabs or leftover test launcher processes. Because those observations occur after the immutable release commit is published, their exact values belong in the final operator handoff rather than a second documentation commit that would move `stable` beyond the installed commit.
 
 ## Non-goals
 
