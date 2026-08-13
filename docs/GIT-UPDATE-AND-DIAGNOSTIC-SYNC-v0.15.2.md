@@ -51,6 +51,8 @@ The real installed autopilot loads `.env` before it invokes `npm test`. Node pre
 
 The liveness harness now removes only the five keys owned by its copied `.env` (`INNER_SIGNAL_MODE`, `PORT`, `LEDGER_MODE`, `DEV_AUTOMATION_ENABLED`, and `GUIDE_PACKET_ROOT`) before it starts the copied launcher. A deterministic regression supplies an invalid parent `PORT` and still requires the complete validation-failure recovery surface to pass on the fixture port. No production environment loader, server port behavior, assertion deadline, or recovery endpoint changed.
 
+The updater's `INNER_SIGNAL_UPDATE_APPLIED=1` value is likewise a one-shot wrapper loop guard, not runtime configuration. After the re-executed wrapper performs its second update check, it now unsets that value before validation or server startup. Launcher fixtures also remove any parent wrapper's guard before simulating a fresh launch. The regression requires two update checks, one validation, and a validation process with no loop guard. This prevents a successful self-update from making nested launcher tests think their first invocation is already a restart.
+
 ## Release gates
 
 `main` and `stable` may advance only together, without force, after:

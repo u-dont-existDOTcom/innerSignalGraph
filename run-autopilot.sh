@@ -37,6 +37,10 @@ set -e
 if [[ $UPDATE_STATUS -eq 10 && "${INNER_SIGNAL_UPDATE_APPLIED:-0}" != "1" ]]; then
   exec env INNER_SIGNAL_UPDATE_APPLIED=1 "$ROOT/run-autopilot.sh" "$@"
 fi
+
+# The update loop guard belongs only to the wrapper's second update check. Do
+# not leak it into validation, tests, the runtime server, or nested launchers.
+unset INNER_SIGNAL_UPDATE_APPLIED
 run_git_helper src/cli/sync-diagnostics.mjs --flush-only >/dev/null || true
 
 # Normalize stale persisted settings before any strict config loader starts.

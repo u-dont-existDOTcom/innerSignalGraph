@@ -130,6 +130,10 @@ Before spawning `run-autopilot.sh`, remove only `INNER_SIGNAL_MODE`, `PORT`, `LE
 
 Run the contaminated focused file ten times, the complete package suite with the installed `.env`, and every release gate. The real transactional candidate validator must also pass while inheriting runtime configuration.
 
+- [ ] **Step 5: Bound the self-update loop guard**
+
+Reproduce the post-update installed failure in which `INNER_SIGNAL_UPDATE_APPLIED=1` reaches `npm test` and the nested launcher sees one update check instead of two. Unset the guard after the re-executed wrapper's second update check, and remove an outer guard from fresh launcher fixtures. Update the existing regression to inject a false parent guard, require exactly two update checks and one validation, and require the validation child to observe no guard.
+
 ---
 
 ### Task 2: Hermetic direct-checkout diagnostic CLI tests

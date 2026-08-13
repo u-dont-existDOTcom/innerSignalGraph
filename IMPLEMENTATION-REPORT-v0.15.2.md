@@ -80,6 +80,10 @@ The corrected harness deletes only the five runtime settings written by `copyRun
 
 On the corrected source tree, ten consecutive focused runs with the installed `.env` inherited passed 4/4 each, with durations from 8.23 to 10.47 seconds. The complete suite under that same installed environment then passed 250/250 in 26.242 seconds. These runs used only test-local `xdg-open`/`gio` stubs. The normal release gates and transactional update are repeated on the committed correction before the refs advance again.
 
+After the corrected commit was transactionally installed, its immediate validation passed both liveness cases but reported 249/250 in `git-launcher.test.mjs`: “an installed update restarts exactly once with the loop guard” observed one Git update invocation instead of two. The successful updater had re-executed the wrapper with `INNER_SIGNAL_UPDATE_APPLIED=1`; that internal recursion marker then reached `npm test`, where a nested fresh-launch fixture mistook it for its own second invocation.
+
+The loop guard now ends immediately after the re-executed wrapper's second update check. It is unset before environment preparation, validation, foreground service startup, or development workers. The launcher fixture independently removes an outer wrapper's marker before simulating a fresh launch. Its deterministic regression injects a false parent marker, still requires exactly two Git update checks and one validation, and requires the validation child to observe `0` for the marker. No update decision, atomic swap, rollback, or retry behavior changed.
+
 ## Therapy prompt lessons
 
 `THERAPY-LESSONS` is intentionally about response quality rather than engineering activity. Its active entries record that prompts should preserve the user's exact distinctions before assigning internal roles; distinguish adverse credibility evidence from missing evidence and from arousal; use reviewed, deep, or forensic processing according to structure, ambiguity, and safety; and produce one focused next move without generic caution that the case variables did not trigger.

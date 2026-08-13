@@ -74,6 +74,8 @@ The installed autopilot adds a second hermeticity requirement: it loads the inst
 
 Launcher-copy subprocesses will therefore remove only the runtime configuration keys explicitly written by `copyRuntime` before starting `run-autopilot.sh`. The copied `.env` remains the single authority for mode, port, ledger mode, development automation, and Guide Packet root. The recovery test will inject a malformed parent `PORT` so this boundary is exercised in an ordinary focused run. This is test-environment isolation; production configuration precedence and all existing time ceilings remain unchanged.
 
+The self-update recursion marker has an even narrower lifetime. `INNER_SIGNAL_UPDATE_APPLIED=1` must survive only through the re-executed wrapper's second Git update check; it must be absent from package validation, runtime servers, development workers, and nested launcher fixtures. The wrapper will unset it immediately after that check. The launcher regression will inject a false parent marker, require that a fresh fixture still restarts exactly once, and require the validation child to observe no marker.
+
 ## Therapy prompt lesson log
 
 The user requires a visible root-level `THERAPY-LESSONS` log showing what has been learned about handling therapy prompts better since the corrected guides were uploaded. This is an audit artifact, not a change to active therapy policy.

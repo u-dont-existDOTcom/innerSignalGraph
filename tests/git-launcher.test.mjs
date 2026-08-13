@@ -154,11 +154,13 @@ exit 0`);
   return { root, bin, log, count };
 }
 
-async function runLauncher(context, mode = "ordinary") {
+async function runLauncher(context, mode = "ordinary", inheritedEnv = process.env) {
+  const env = { ...inheritedEnv };
+  delete env.INNER_SIGNAL_UPDATE_APPLIED;
   return await execFileAsync("bash", ["./run-autopilot.sh", "--no-launch"], {
     cwd: context.root,
     env: {
-      ...process.env,
+      ...env,
       PATH: `${context.bin}:${process.env.PATH}`,
       INNER_SIGNAL_TEST_LOG: context.log,
       INNER_SIGNAL_UPDATE_COUNT: context.count,
@@ -178,13 +180,16 @@ test("ordinary launcher flushes diagnostics and checks stable before model valid
   assert.deepEqual(JSON.parse(stdout), { status: "PASS" });
 });
 
-test("an installed update restarts exactly once with the loop guard", async (t) => {
+test("an installed update owns the loop guard for exactly one restart", async (t) => {
   const context = await launcherFixture(t);
-  await runLauncher(context, "restart");
+  await runLauncher(context, "restart", {
+    ...process.env,
+    INNER_SIGNAL_UPDATE_APPLIED: "1"
+  });
   const calls = (await fs.readFile(context.log, "utf8")).trim().split("\n");
   assert.equal(calls.filter((line) => line.includes("src/cli/git-update.mjs")).length, 2);
   assert.equal(calls.filter((line) => line.includes("src/cli/autopilot.mjs")).length, 1);
-  assert.ok(calls.some((line) => line.startsWith("1|") && line.includes("src/cli/autopilot.mjs")));
+  assert.ok(calls.some((line) => line.startsWith("0|") && line.includes("src/cli/autopilot.mjs")));
 });
 
 test("remote sync and fetch failures do not block the current runtime path or ask for manual files", async (t) => {
