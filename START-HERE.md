@@ -1,4 +1,4 @@
-# Start here — Inner Signal v0.15.1
+# Start here — Inner Signal v0.15.2
 
 On French Zorin, run this once:
 

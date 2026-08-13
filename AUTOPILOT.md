@@ -1,4 +1,4 @@
-# Inner Signal Autopilot v0.15.1
+# Inner Signal Autopilot v0.15.2
 
 ## Git-native launch contract
 
@@ -10,6 +10,8 @@ Every ordinary launch first retries the private diagnostic outbox, then checks t
 - automatic failure destination: `runtime-diagnostics`.
 
 A new stable commit is checked out as a detached temporary worktree, copied without Git or runtime state, and tested inside disposable `HOME`, XDG, GitHub CLI, autopilot, Guide Packet, ledger, and development roots. GitHub/OpenAI/Anthropic credentials are removed and external update/diagnostic automation is disabled for candidate children. Only after package and graph tests pass are `.env`, `.inner-signal-autopilot`, `.inner-signal-dev`, `ledgers`, and `data` overlaid and hash-verified. The staging runtime then replaces the installed runtime atomically and the launcher restarts once with a loop guard. Ordinary launch failure keeps the prior runtime in service; bootstrap failure is nonzero and never claims the requested runtime was installed.
+
+Recovery liveness is verified against the public loopback health condition rather than a fixed delay after promotion begins. The deterministic test holds the post-failure restart, proves the launcher remains alive, releases the restart, and then requires health, status, Guides, and recovery ZIP availability. Test-local `xdg-open` and `gio` stubs prevent package validation from opening desktop tabs; production browser launch remains unchanged.
 
 ## Automatic diagnostic handoff
 

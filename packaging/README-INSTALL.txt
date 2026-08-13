@@ -1,4 +1,4 @@
-Inner Signal Runtime v0.15.1 — Isolated Updates, Safe Diagnostics, and Progress
+Inner Signal Runtime v0.15.2 — Deterministic Recovery, Isolated Updates, Safe Diagnostics, and Progress
 
 One-time French Zorin bootstrap:
 

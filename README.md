@@ -1,6 +1,8 @@
-# Inner Signal Runtime v0.15.1
+# Inner Signal Runtime v0.15.2
 
 ## Hermetic Git updates, safe diagnostics, and remote progress
+
+v0.15.2 makes recovery verification deterministic. Promotion-failure tests now hold the recovery restart at an explicit boundary, prove the launcher stays alive during that transition, then synchronize on the public `/health` endpoint before checking development status, guide status, and the recovery ZIP. Test launchers own inert desktop-open commands and complete process-group cleanup, so package validation cannot open browser tabs or leave temporary services behind. The production recovery path and its time limits are unchanged.
 
 Inner Signal installs verified commits from the private `stable` branch and uses the separate `runtime-diagnostics` branch for strictly allowlisted failure records and one current progress heartbeat. `main` remains the development branch; `stable` is the only installation source; `runtime-diagnostics` is never merged into runtime source. Failure incidents remain append-only; `progress/<machineId>/current.json` is intentionally replaced with its existing blob SHA.
 
