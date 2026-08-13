@@ -50,10 +50,19 @@ function shellLiteral(value) {
   return `'${String(value).replaceAll("'", `'\\''`)}'`;
 }
 
+async function installDesktopOpenStubs(bin) {
+  const stub = "#!/usr/bin/env bash\nexit 0\n";
+  await Promise.all([
+    fs.writeFile(path.join(bin, "xdg-open"), stub, { mode: 0o755 }),
+    fs.writeFile(path.join(bin, "gio"), stub, { mode: 0o755 })
+  ]);
+}
+
 async function installFailingNodeWrapper(root, { targetScript, markerName }) {
   const bin = path.join(root, "test-bin");
   const marker = path.join(root, markerName);
   await fs.mkdir(bin, { recursive: true });
+  await installDesktopOpenStubs(bin);
   const wrapper = `#!/usr/bin/env bash
 for arg in "$@"; do
   if [[ "$arg" == *${shellLiteral(targetScript)}* ]]; then
@@ -68,11 +77,42 @@ exec ${shellLiteral(process.execPath)} "$@"
   return { bin, marker };
 }
 
+async function installFailingPromotionNodeWrapper(root) {
+  const bin = path.join(root, "promotion-test-bin");
+  const marker = path.join(root, "promotion-attempted.txt");
+  const serveCount = path.join(root, "serve-count.txt");
+  const recoveryWaiting = path.join(root, "recovery-server-waiting.txt");
+  const releaseRecovery = path.join(root, "release-recovery-server.txt");
+  await fs.mkdir(bin, { recursive: true });
+  await installDesktopOpenStubs(bin);
+  const wrapper = `#!/usr/bin/env bash
+for arg in "$@"; do
+  if [[ "$arg" == *${shellLiteral("src/cli/promote-candidate.mjs")}* ]]; then
+    printf '%s\n' attempted > ${shellLiteral(marker)}
+    exit 17
+  fi
+  if [[ "$arg" == *${shellLiteral("src/cli/serve.mjs")}* ]]; then
+    count="$(cat ${shellLiteral(serveCount)} 2>/dev/null || printf '0')"
+    count=$((count + 1))
+    printf '%s\n' "$count" > ${shellLiteral(serveCount)}
+    if [[ "$count" -eq 2 ]]; then
+      printf '%s\n' waiting > ${shellLiteral(recoveryWaiting)}
+      while [[ ! -f ${shellLiteral(releaseRecovery)} ]]; do sleep 0.05; done
+    fi
+  fi
+done
+exec ${shellLiteral(process.execPath)} "$@"
+`;
+  await fs.writeFile(path.join(bin, "node"), wrapper, { mode: 0o755 });
+  return { bin, marker, recoveryWaiting, releaseRecovery };
+}
+
 async function installProgressTrackingNodeWrapper(root) {
   const bin = path.join(root, "progress-test-bin");
   const started = path.join(root, "progress-watcher-started.txt");
   const stopped = path.join(root, "progress-watcher-stopped.txt");
   await fs.mkdir(bin, { recursive: true });
+  await installDesktopOpenStubs(bin);
   const wrapper = `#!/usr/bin/env bash
 if [[ "$*" == *"src/cli/sync-progress.mjs --watch"* ]]; then
   printf '%s\n' "$$" >> ${shellLiteral(started)}
@@ -131,22 +171,30 @@ async function installPoisonGh(root) {
 }
 
 async function stopWrapper(child) {
-  if (child.exitCode != null) return;
+  const exited = () => child.exitCode != null || child.signalCode != null;
+  const waitForExit = async (timeoutMs) => {
+    if (exited()) return true;
+    return await Promise.race([
+      once(child, "exit").then(() => true),
+      new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs))
+    ]);
+  };
+  if (exited()) return;
   try { process.kill(-child.pid, "SIGTERM"); } catch {}
-  await Promise.race([
-    once(child, "exit"),
-    new Promise((resolve) => setTimeout(resolve, 3000))
-  ]);
-  if (child.exitCode == null) {
+  if (!await waitForExit(3000)) {
     try { process.kill(-child.pid, "SIGKILL"); } catch {}
+    assert.equal(await waitForExit(3000), true, "temporary launcher process group did not exit");
   }
 }
 
 async function assertRecoverySurface({ port, child, output }) {
   const base = `http://127.0.0.1:${port}`;
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  assert.equal(child.exitCode, null, `launcher exited and took down recovery service:\n${output()}`);
-  const health = await fetch(`${base}/health`);
+  const health = await waitFor(async () => {
+    assert.equal(child.exitCode, null, `launcher exited and took down recovery service:\n${output()}`);
+    assert.equal(child.signalCode, null, `launcher was signaled and took down recovery service:\n${output()}`);
+    const response = await fetch(`${base}/health`).catch(() => null);
+    return response?.status === 200 ? response : null;
+  }, "recovery health");
   assert.equal(health.status, 200);
   const development = await fetch(`${base}/v1/dev/status`);
   assert.equal(development.status, 200);
@@ -162,9 +210,11 @@ async function assertRecoverySurface({ port, child, output }) {
   assert.ok((await recovery.arrayBuffer()).byteLength > 1000);
 }
 
-test("validation failure leaves health, status, and recovery ZIP available", { timeout: 30000 }, async () => {
+test("validation failure leaves health, status, and recovery ZIP available", { timeout: 30000 }, async (t) => {
   const { root, port } = await copyRuntime();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
   const externalRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-external-state-"));
+  t.after(() => fs.rm(externalRoot, { recursive: true, force: true }));
   const externalState = path.join(externalRoot, "autopilot");
   await fs.mkdir(path.join(externalState, "diagnostic-outbox"), { recursive: true });
   await fs.writeFile(path.join(externalState, "diagnostic-outbox", "decoy.json"), "{}\n");
@@ -188,28 +238,32 @@ test("validation failure leaves health, status, and recovery ZIP available", { t
   assert.deepEqual(await fs.readdir(path.join(externalState, "diagnostic-outbox")), ["decoy.json"]);
 });
 
-test("promotion failure restarts health, status, and recovery ZIP instead of abandoning the browser", { timeout: 30000 }, async () => {
+test("promotion failure restarts health, status, and recovery ZIP instead of abandoning the browser", { timeout: 30000 }, async (t) => {
   const { root, port } = await copyRuntime();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
   const stateRoot = path.join(root, ".inner-signal-autopilot");
   await fs.mkdir(stateRoot, { recursive: true });
   const fingerprint = (await execFileAsync(process.execPath, ["src/cli/runtime-fingerprint.mjs"], { cwd: root })).stdout.trim();
   await fs.writeFile(path.join(stateRoot, "validated-runtime-fingerprint.txt"), `${fingerprint}\n`);
   await fs.writeFile(path.join(stateRoot, "promotion-ready.json"), `${JSON.stringify({ format: "inner-signal-promotion-ready-v1", jobId: "test-promotion", candidateRoot: root })}\n`);
-  const { bin, marker } = await installFailingNodeWrapper(root, {
-    targetScript: "src/cli/promote-candidate.mjs",
-    markerName: "promotion-attempted.txt"
-  });
+  const { bin, marker, recoveryWaiting, releaseRecovery } = await installFailingPromotionNodeWrapper(root);
   const running = startWrapper(root, bin);
   try {
     await waitFor(async () => fs.access(marker).then(() => true, () => false), "promotion attempt");
+    await waitFor(async () => fs.access(recoveryWaiting).then(() => true, () => false), "delayed recovery server");
+    assert.equal(running.child.exitCode, null);
+    assert.equal(running.child.signalCode, null);
+    await assert.rejects(fetch(`http://127.0.0.1:${port}/health`));
+    await fs.writeFile(releaseRecovery, "release\n");
     await assertRecoverySurface({ port, ...running });
   } finally {
     await stopWrapper(running.child);
   }
 });
 
-test("launcher owns one progress watcher and terminates it during cleanup", { timeout: 30000 }, async () => {
+test("launcher owns one progress watcher and terminates it during cleanup", { timeout: 30000 }, async (t) => {
   const { root } = await copyRuntime();
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
   const stateRoot = path.join(root, ".inner-signal-autopilot");
   await fs.mkdir(stateRoot, { recursive: true });
   const fingerprint = (await execFileAsync(process.execPath, ["src/cli/runtime-fingerprint.mjs"], { cwd: root })).stdout.trim();
