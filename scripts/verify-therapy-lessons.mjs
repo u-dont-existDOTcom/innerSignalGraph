@@ -127,8 +127,8 @@ export async function loadTherapyGovernance({ rootDir = root } = {}) {
     }
   });
   const reviewEvents = parseLedgerEntries({
-    source: suggestionsSource,
-    fileName: LEDGER_FILES.suggestions,
+    source: historySource,
+    fileName: LEDGER_FILES.history,
     marker: "therapy-review-event",
     idField: "eventId",
     timestampField: "occurredAt",
@@ -158,7 +158,7 @@ export async function loadTherapyGovernance({ rootDir = root } = {}) {
   });
 
   for (const entry of reviewEvents) {
-    assertRequiredSections({ fileName: LEDGER_FILES.suggestions, id: entry.metadata.eventId, body: entry.body, sections: REVIEW_SECTIONS });
+    assertRequiredSections({ fileName: LEDGER_FILES.history, id: entry.metadata.eventId, body: entry.body, sections: REVIEW_SECTIONS });
   }
   for (const entry of suggestions) {
     assertRequiredSections({ fileName: LEDGER_FILES.suggestions, id: entry.metadata.suggestionId, body: entry.body, sections: SUGGESTION_SECTIONS });
@@ -435,41 +435,29 @@ function parseEntries(source) {
 }
 
 export async function verifyTherapyLessons({ rootDir = root } = {}) {
-  const { manifest, packetRoot } = await latestCandidate(rootDir);
-  const decisions = await readJson(path.join(packetRoot, manifest.paths.ownerDecisions));
-  const cards = decisions.cards.filter((card) => card.classification === "substantive" && card.requiresHumanDecision === true);
   const entries = parseEntries(await fs.readFile(path.join(rootDir, "THERAPY-LESSONS"), "utf8"));
   const activeCount = entries.filter((entry) => entry.activation === "active-runtime").length;
   if (activeCount === 0) throw new Error("THERAPY-LESSONS has no active-runtime prompt lesson.");
-
-  const knownDecisionIds = new Set(cards.map((card) => card.id));
-  for (const entry of entries.filter((item) => item.packetId === manifest.packetId && item.decisionId)) {
-    if (!knownDecisionIds.has(entry.decisionId)) throw new Error(`Unknown latest-packet therapy decision: ${entry.decisionId}`);
-  }
-
-  for (const card of cards) {
-    const sameDecision = entries.filter((entry) => entry.decisionId === card.id);
-    const matches = sameDecision.filter((entry) => entry.packetId === manifest.packetId);
-    if (matches.length === 0 && sameDecision.length === 1) {
-      throw new Error(`Therapy lesson ${card.id} names the wrong Guide Packet.`);
-    }
-    if (matches.length !== 1) throw new Error(`Expected exactly one therapy lesson for ${card.id}; found ${matches.length}.`);
-    const entry = matches[0];
-    if (entry.activation !== "candidate-awaiting-owner") {
-      throw new Error(`Pending Guide Packet decision ${card.id} is falsely marked ${entry.activation}.`);
-    }
-    if (new Date(entry.learnedAt) < new Date(manifest.createdAt)) {
-      throw new Error(`Therapy lesson ${card.id} predates its Guide Packet.`);
-    }
-  }
-
-  return { packetId: manifest.packetId, tracked: cards.length, activeCount };
+  const governance = await verifyTherapyGovernance({ rootDir });
+  const suggestions = [...governance.suggestionsByDecision.values()];
+  const blockedCount = suggestions.filter(({ metadata }) =>
+    metadata.status === "blocked-by-packet-review" || metadata.status === "needs-technical-repair"
+  ).length;
+  return {
+    packetId: governance.packetId,
+    tracked: governance.tracked,
+    activeCount,
+    suggestionCount: suggestions.length,
+    blockedCount,
+    approvalCount: (await loadTherapyGovernance({ rootDir })).approvals.length,
+    reviewEventId: governance.reviewEvent.metadata.eventId
+  };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const result = await verifyTherapyLessons();
-    process.stdout.write(`PASS ${result.tracked}/${result.tracked} substantive therapy prompt lessons tracked for ${result.packetId}; ${result.activeCount} active runtime lessons documented.\n`);
+    process.stdout.write(`PASS ${result.suggestionCount}/${result.tracked} substantive therapy suggestions tracked for ${result.packetId}; ${result.activeCount} active runtime lessons; ${result.blockedCount} blocked suggestions; ${result.approvalCount} explicit owner approvals; r02 rejection explained by ${result.reviewEventId}.\n`);
   } catch (error) {
     process.stderr.write(`FAIL ${error.message}\n`);
     process.exitCode = 1;

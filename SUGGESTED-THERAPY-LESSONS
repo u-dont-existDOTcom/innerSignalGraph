@@ -1,0 +1,255 @@
+# Suggested Therapy Lessons
+
+This is the current guide-impacting suggestion queue. Every entry remains inactive until its packet passes independent review and Joel answers its specific decision brief directly. The r02 packet is rejected and uninstalled, so all five suggestions below are blocked by packet review.
+
+Packet context: `CROSS-GUIDE-001` and `OWNER-POLICY-001` require packet repairs. `COVERAGE-001` is future coverage information. `CERTAINTY-LAYER-001` is positive evidence, not a blocker.
+
+## Reassess delayed effects after somatic work
+
+<!-- therapy-suggestion {"suggestionId":"suggestion-r02-decision-1","createdAt":"2026-08-13T14:31:28.000Z","packetId":"inner-signal-guides-2026.08.12-r02-candidate","decisionId":"decision-1","status":"blocked-by-packet-review","reviewFindingIds":[],"ownerDecisionRequired":true,"guideIds":["somatic"],"graphNodeIds":["SOM.DELAYED_RESPONSE_REASSESSMENT"],"promptIds":[],"regressionIds":["G-SOM-DELAYED"]} -->
+
+### Proposal
+
+After somatic work, ask about the immediate response, the next morning, and the following two or three days before suggesting that the practice be repeated, reduced, stopped, or intensified.
+
+### Guide impact
+
+Guide `somatic`; graph node `SOM.DELAYED_RESPONSE_REASSESSMENT`; no prompt identifier; regression `G-SOM-DELAYED`.
+
+### Evidence and uncertainty
+
+Source status: The proposal is recorded in the owner-authored r02 decision card and carried by the candidate packet.
+Limitation: It had no lesson-specific review finding, but r02 failed as a packet and the proposal has not reached Joel's owner-decision gate.
+
+### Review result
+
+Decision 1 had no lesson-specific finding. It is blocked only because the enclosing r02 packet failed review.
+
+### Why not active
+
+r02 is rejected and uninstalled, and Joel has not explicitly approved this proposal.
+
+### Technical next action
+
+Carry the proposal into the deterministically repaired r03 and rerun `G-SOM-DELAYED` before independent review.
+
+### Decision needed
+
+After r03 passes review, ask Joel whether delayed-response reassessment should become somatic guide policy.
+
+### Options and trade-offs
+
+Option A — approve after a passing r03 review.
+Benefits: Delayed adverse or helpful effects can inform later dosing instead of relying only on the calmness of one session.
+Costs: The interaction takes longer and may delay a repeat recommendation.
+Worst plausible failure: Over-monitoring ordinary fluctuations could make a useful gentle practice seem unnecessarily risky.
+
+Option B — retain current policy.
+Benefits: Keeps the current shorter somatic flow unchanged.
+Costs: Delayed effects may remain unexamined when future practice is selected.
+Worst plausible failure: A practice that looked tolerable in-session could be repeated despite a harmful delayed response.
+
+### Recommendation and reasoning
+
+Recommendation: Complete deterministic r03 repair and independent review first, then ask Joel to choose; do not treat this recommendation as an answer.
+Reasoning: The lesson itself received no specific finding, but the rejected packet cannot supply activation authority or evidence that its integration is safe.
+
+## Clarify age, agency, and resources before assigning responsibility
+
+<!-- therapy-suggestion {"suggestionId":"suggestion-r02-decision-2","createdAt":"2026-08-13T14:31:28.000Z","packetId":"inner-signal-guides-2026.08.12-r02-candidate","decisionId":"decision-2","status":"blocked-by-packet-review","reviewFindingIds":["SRC-CITE-001"],"ownerDecisionRequired":true,"guideIds":["inner-child"],"graphNodeIds":["IC.AGE_RESPONSIBILITY_CLARIFICATION"],"promptIds":["response-realization-v5"],"regressionIds":["A001"]} -->
+
+### Proposal
+
+When resentment targets a younger self, distinguish the opportunity being blamed and the knowledge, support, freedom, safety, and money actually available at that age.
+
+### Guide impact
+
+Guide `inner-child`; graph node `IC.AGE_RESPONSIBILITY_CLARIFICATION`; prompt `response-realization-v5`; regression `A001`.
+
+### Evidence and uncertainty
+
+Source status: The canonical antecedent supports clarifying age, knowledge, opportunity, support, and freedom; r02 adds “safety” and “money.”
+Limitation: `SRC-CITE-001` found that r02 cites the wrong canonical antecedent, and the added terms “safety” and “money” are not clearly source-supported.
+
+### Review result
+
+The canonical citation must be corrected before this can reach the owner gate. Repairing the citation does not decide whether the two added terms should become policy.
+
+### Why not active
+
+r02 is rejected and uninstalled; its citation is wrong, and Joel has not decided the scope of the extended resource list.
+
+### Technical next action
+
+Repair `SRC-CITE-001` in r03 by citing the correct canonical source and marking “safety” and “money” as proposed extensions rather than source-established wording.
+
+### Decision needed
+
+After r03 passes review, ask Joel whether “safety” and “money” should extend the canonical source-supported list in active guide and prompt policy.
+
+### Options and trade-offs
+
+Option A — approve after a passing r03 review.
+Benefits: The prompt can represent material and physical constraints that often shape a younger person's actual agency.
+Costs: It intentionally extends the canonical wording and requires careful provenance in the guide and prompt.
+Worst plausible failure: The extension could be presented as source-derived fact or overfit responsibility assessment to resource checklists.
+
+Option B — retain current policy.
+Benefits: Keeps active language tightly bounded to the canonical source.
+Costs: Safety and money constraints may be omitted even when they materially affected agency.
+Worst plausible failure: A younger self could be assigned unrealistic responsibility because decisive constraints were never asked about.
+
+### Recommendation and reasoning
+
+Recommendation: Complete the deterministic r03 citation repair and independent review first, then ask Joel to decide the exact extension; do not infer approval.
+Reasoning: Correct provenance is mechanical, while adding “safety” and “money” is an owner-policy choice that a review model cannot make.
+
+## Offer one bounded adult function with deterministic priority
+
+<!-- therapy-suggestion {"suggestionId":"suggestion-r02-decision-3","createdAt":"2026-08-13T14:31:28.000Z","packetId":"inner-signal-guides-2026.08.12-r02-candidate","decisionId":"decision-3","status":"blocked-by-packet-review","reviewFindingIds":["PRIORITY-TIE-001"],"ownerDecisionRequired":true,"guideIds":["inner-child"],"graphNodeIds":["IC.BORROW_ONE_FUNCTION","IC.NEUTRAL_WITNESS"],"promptIds":["response-realization-v5","hypnosis-session-v3"],"regressionIds":["A001","H001"]} -->
+
+### Proposal
+
+In an ambiguous inner-child case, offer one bounded, non-retaliatory adult function earlier without pretending a complete or trusted inner adult already exists.
+
+### Guide impact
+
+Guide `inner-child`; graph nodes `IC.BORROW_ONE_FUNCTION` and `IC.NEUTRAL_WITNESS`; prompts `response-realization-v5` and `hypnosis-session-v3`; regressions `A001` and `H001`.
+
+### Evidence and uncertainty
+
+Source status: The candidate proposes a bounded-function route and links it to A001 and H001 behavior.
+Limitation: `PRIORITY-TIE-001` found an undocumented priority-95 tie with neutral-witness work; H001 hypnosis routing and waking-return behavior are app-owned policy that still require explicit owner confirmation under `OWNER-POLICY-001`.
+
+### Review result
+
+r02 did not define deterministic ordering between the priority-95 routes. The hypnosis and waking-return provenance is a separate explicit owner-policy issue, not something that tie-break repair can approve.
+
+### Why not active
+
+r02 is rejected and uninstalled, routing order is ambiguous, and Joel has not decided either the therapy proposal or the separate app-owned H001 policy.
+
+### Technical next action
+
+Resolve the priority-95 tie deterministically in r03, expose the app-owned provenance of H001 hypnosis and waking-return policy, and rerun A001 and H001 before independent review.
+
+### Decision needed
+
+After r03 passes review, ask Joel whether the bounded adult-function proposal should become policy. Keep the H001 app-owned hypnosis and waking-return question separate and explicit.
+
+### Options and trade-offs
+
+Option A — approve after a passing r03 review.
+Benefits: A user can borrow one useful adult capacity without being required to claim a fully formed inner adult.
+Costs: Adds routing precedence and requires a precisely bounded relationship to neutral-witness and hypnosis behavior.
+Worst plausible failure: An ambiguous or protective voice could be mislabeled as an adult function and gain inappropriate authority.
+
+Option B — retain current policy.
+Benefits: Avoids introducing a new early bounded-function route or changing present routing order.
+Costs: Users may wait for a complete adult role before receiving a small practical function they could use safely.
+Worst plausible failure: The response remains stuck in observation and fails to offer a bounded next step when one would help.
+
+### Recommendation and reasoning
+
+Recommendation: Complete deterministic r03 tie-break and provenance repair and independent review first, then ask Joel; do not combine repair completion with owner approval.
+Reasoning: Ordering can be made deterministic without owner judgment, but therapy-policy activation and app-owned H001 behavior require separate explicit decisions.
+
+## Repair credibility before deep child dialogue
+
+<!-- therapy-suggestion {"suggestionId":"suggestion-r02-decision-4","createdAt":"2026-08-13T14:31:28.000Z","packetId":"inner-signal-guides-2026.08.12-r02-candidate","decisionId":"decision-4","status":"blocked-by-packet-review","reviewFindingIds":["REG-EVIDENCE-001"],"ownerDecisionRequired":true,"guideIds":["inner-child"],"graphNodeIds":["IC.CREDIBILITY_REPAIR","IC.DEEP_CHILD_DIALOGUE"],"promptIds":["response-realization-v5"],"regressionIds":["A001"]} -->
+
+### Proposal
+
+When the adult position lacks credibility, prioritize bounded non-defensive follow-through and defer deep child dialogue until there is evidence of earned trust.
+
+### Guide impact
+
+Guide `inner-child`; graph nodes `IC.CREDIBILITY_REPAIR` and `IC.DEEP_CHILD_DIALOGUE`; prompt `response-realization-v5`; regression `A001`.
+
+### Evidence and uncertainty
+
+Source status: The proposal follows the current credibility-evidence distinction and the r02 decision card.
+Limitation: `REG-EVIDENCE-001` found that A001 does not prove the claimed deferral of deep child dialogue actually fires.
+
+### Review result
+
+The packet asserts a dependency that its regression evidence cannot currently detect. A passing ordinary case is insufficient evidence for the deferral rule.
+
+### Why not active
+
+r02 is rejected and uninstalled, the claimed routing dependency is not mutation-sensitive, and Joel has not approved the proposal.
+
+### Technical next action
+
+Add a mutation-sensitive A001 case in r03 that fails when the dependency from credibility repair to deferring `IC.DEEP_CHILD_DIALOGUE` is removed, then run independent review.
+
+### Decision needed
+
+After r03 passes review, ask Joel whether credibility repair should be a prerequisite for deep child dialogue in the proposed scope.
+
+### Options and trade-offs
+
+Option A — approve after a passing r03 review.
+Benefits: The prompt demonstrates reliability through bounded action before asking for greater emotional exposure.
+Costs: Deep dialogue may be delayed even when a user wants it sooner, so scope and escape conditions must be clear.
+Worst plausible failure: An overly broad prerequisite could suppress useful dialogue or make trust repair feel procedural and withholding.
+
+Option B — retain current policy.
+Benefits: Preserves current flexibility and avoids adding an unproven routing dependency.
+Costs: The prompt may invite deeper dialogue while the adult position still lacks credibility.
+Worst plausible failure: Premature depth could intensify distrust and confirm that practical objections are being bypassed.
+
+### Recommendation and reasoning
+
+Recommendation: Complete the deterministic mutation-sensitive A001 repair and independent r03 review first, then ask Joel; do not pre-record the decision.
+Reasoning: The proposed dependency cannot be assessed responsibly until the regression visibly fails when that dependency is absent.
+
+## Block advanced release when safety is uncertain
+
+<!-- therapy-suggestion {"suggestionId":"suggestion-r02-decision-5","createdAt":"2026-08-13T14:31:28.000Z","packetId":"inner-signal-guides-2026.08.12-r02-candidate","decisionId":"decision-5","status":"blocked-by-packet-review","reviewFindingIds":["SAFETY-ENCODE-001","EXT-VALID-001"],"ownerDecisionRequired":true,"guideIds":["somatic"],"graphNodeIds":["SOM.ADVANCED_RELEASE_BLOCK","SOM.ADVANCED_RELEASE_OPTIONAL"],"promptIds":["response-realization-v5"],"regressionIds":["G-SOM-DELAYED","G-SOM-ADVANCED-BLOCK"]} -->
+
+### Proposal
+
+When physical risk or regulatory instability is present, block the optional advanced-release route rather than merely surrounding it with softer caution while still offering it.
+
+### Guide impact
+
+Guide `somatic`; graph nodes `SOM.ADVANCED_RELEASE_BLOCK` and `SOM.ADVANCED_RELEASE_OPTIONAL`; prompt `response-realization-v5`; regressions `G-SOM-DELAYED` and `G-SOM-ADVANCED-BLOCK`.
+
+### Evidence and uncertainty
+
+Source status: The Vagal Blitz material is author-provided evidence with `independentlyValidated: false`; it is not established medical fact.
+Limitation: `SAFETY-ENCODE-001` found that r02 omits the source-specific lying-down-only constraint, contraindications, and gentler Bhramari alternative, while `EXT-VALID-001` requires the evidence limitation to remain explicit.
+
+### Review result
+
+The safety encoding is incomplete and the source certainty is insufficiently constrained for activation. These are packet-blocking defects, not owner approval.
+
+### Why not active
+
+r02 is rejected and uninstalled. The advanced route remains blocked, and Joel has not decided the exact language or scope of any future policy.
+
+### Technical next action
+
+Encode the lying-down-only constraint, contraindications, and gentler Bhramari alternative deterministically in r03; preserve author-provided provenance and `independentlyValidated: false`; then run both affected regressions and independent review.
+
+### Decision needed
+
+After r03 passes review, ask Joel to decide the exact safety language and scope for blocking or offering the advanced-release path.
+
+### Options and trade-offs
+
+Option A — approve after a passing r03 review.
+Benefits: Safety-sensitive routing can block advanced practice while still offering a gentler alternative with explicit provenance.
+Costs: Requires conservative routing, maintained contraindication language, and careful separation of author-provided claims from independently validated evidence.
+Worst plausible failure: Incorrect or incomplete rules could either expose a vulnerable user to an advanced practice or overstate unvalidated medical guidance.
+
+Option B — retain current policy.
+Benefits: Avoids activating language derived from evidence that has not been independently validated.
+Costs: The system may lack an explicit, source-bounded route for blocking the advanced option and offering the gentler alternative.
+Worst plausible failure: Softer caution could leave an unsafe advanced option available to a user for whom it should be blocked.
+
+### Recommendation and reasoning
+
+Recommendation: Complete deterministic r03 safety encoding, certainty propagation, affected regressions, and independent review first, then ask Joel for the exact scope; do not imply an answer.
+Reasoning: Safety mechanics can be repaired before owner judgment, but only Joel can authorize the final product-policy language, and unvalidated evidence must remain visibly limited.

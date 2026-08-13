@@ -1,6 +1,6 @@
 # Therapy Prompt Lessons
 
-This root log records concrete lessons about how Inner Signal handles therapy prompts better. Timestamps are UTC. `active-runtime` means the behavior is in the current installed guide/prompt contract. `candidate-awaiting-owner` means the lesson was found in the newest uploaded Guide Packet but is not active until its substantive owner decision is approved and installed.
+This root log is the chronological audit history of what Inner Signal learned and what happened during therapy-prompt and Guide Packet review. It is not the source of approval state. Timestamps are UTC. `active-runtime` means the behavior is in the current installed guide/prompt contract. `candidate-awaiting-owner` records a lesson found in a candidate Guide Packet; it does not make that lesson active or approved.
 
 ## 2026-08-12T03:29:10.000Z — Preserve the user's distinctions before choosing an intervention
 
@@ -83,3 +83,35 @@ Candidate lesson: interest in an intense or advanced release practice is not suf
 Status: awaiting owner approval; not active runtime policy.
 
 Evidence: r02 decision 5, `G-SOM-DELAYED`, `G-SOM-ADVANCED-BLOCK`, and attached author-provided Vagal Blitz page-5 safety evidence. The packet explicitly does not claim independent empirical validation of that source.
+
+## 2026-08-13T14:31:28.000Z — r02 live review rejected the packet before owner approval
+
+<!-- therapy-review-event {"eventId":"review-r02-live-rejection-20260813","occurredAt":"2026-08-13T14:31:28.000Z","packetId":"inner-signal-guides-2026.08.12-r02-candidate","outcome":"rejected-before-owner-gate","findingIds":["SRC-CITE-001","PRIORITY-TIE-001","REG-EVIDENCE-001","SAFETY-ENCODE-001","EXT-VALID-001","CROSS-GUIDE-001","OWNER-POLICY-001","COVERAGE-001","CERTAINTY-LAYER-001"],"suggestionFindings":{"decision-1":[],"decision-2":["SRC-CITE-001"],"decision-3":["PRIORITY-TIE-001"],"decision-4":["REG-EVIDENCE-001"],"decision-5":["SAFETY-ENCODE-001","EXT-VALID-001"]},"packetLevelFindingIds":["CROSS-GUIDE-001","OWNER-POLICY-001","COVERAGE-001","CERTAINTY-LAYER-001"],"nextPhase":"repair-r03"} -->
+
+### Review outcome
+
+The live r02 review rejected `inner-signal-guides-2026.08.12-r02-candidate` as an activatable packet before it reached the owner-decision gate. It remains rejected and uninstalled.
+
+### Why the packet was rejected
+
+The packet could not be activated safely or with adequate evidence as a whole. Before r03 can be reviewed, deterministic work must repair the canonical citation, cross-guide provenance, the priority-95 tie-break, mutation-sensitive regression evidence, certainty propagation, and safety encoding.
+
+### What this does not mean
+
+The rejection does not mean that all five candidate lessons were judged false. Decision 1 received no lesson-specific finding and is blocked only by the packet rejection. The other lesson-specific findings identify repairs or uncertainty that must be resolved before any later owner choice; none is an inferred decision by Joel.
+
+### Finding-to-suggestion mapping
+
+- `decision-1`: no lesson-specific finding.
+- `decision-2`: `SRC-CITE-001`.
+- `decision-3`: `PRIORITY-TIE-001`.
+- `decision-4`: `REG-EVIDENCE-001`.
+- `decision-5`: `SAFETY-ENCODE-001` and `EXT-VALID-001`.
+
+### Packet-level findings
+
+`CROSS-GUIDE-001` and `OWNER-POLICY-001` require packet repair and explicit provenance. `COVERAGE-001` records useful future coverage information rather than a rejection reason. `CERTAINTY-LAYER-001` records positive evidence that source-certainty distinctions were preserved; it is not a blocker.
+
+### Next phase
+
+Build a deterministically repaired r03, review it independently, and ask Joel one substantive decision at a time only if r03 reaches the owner gate. Record only Joel's explicit decisions, then implement and verify only the approved scope.

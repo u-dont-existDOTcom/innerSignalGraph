@@ -8,7 +8,7 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import * as therapyGovernance from "../scripts/verify-therapy-lessons.mjs";
 
-const { loadTherapyGovernance, verifyTherapyGovernance, verifyTherapyLessons } = therapyGovernance;
+const { loadTherapyGovernance, verifyTherapyGovernance } = therapyGovernance;
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -21,10 +21,6 @@ const decisions = Array.from({ length: 5 }, (_, index) => ({
   requiresHumanDecision: true,
   status: "pending"
 }));
-
-function metadata(entry) {
-  return `<!-- therapy-lesson ${JSON.stringify(entry)} -->`;
-}
 
 function marker(kind, entry) {
   return `<!-- ${kind} ${JSON.stringify(entry)} -->`;
@@ -39,11 +35,11 @@ const regressionsByDecision = {
 };
 
 const reviewFindingsByDecision = {
-  "decision-1": ["SAFETY-ENCODE-001", "EXT-VALID-001"],
+  "decision-1": [],
   "decision-2": ["SRC-CITE-001"],
-  "decision-3": ["REG-EVIDENCE-001"],
-  "decision-4": ["PRIORITY-TIE-001"],
-  "decision-5": []
+  "decision-3": ["PRIORITY-TIE-001"],
+  "decision-4": ["REG-EVIDENCE-001"],
+  "decision-5": ["SAFETY-ENCODE-001", "EXT-VALID-001"]
 };
 
 function reviewBlock(overrides = {}) {
@@ -110,23 +106,6 @@ function validEntries() {
   ];
 }
 
-async function fixture(t, { entries = validEntries(), raw = null } = {}) {
-  const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-therapy-lessons-"));
-  t.after(() => fs.rm(fixtureRoot, { recursive: true, force: true }));
-  const packetRoot = path.join(fixtureRoot, "guide-packets", "fixtures", "r02-candidate", "packet");
-  await fs.mkdir(path.join(packetRoot, "audit"), { recursive: true });
-  await fs.writeFile(path.join(packetRoot, "manifest.json"), `${JSON.stringify({
-    status: "candidate",
-    packetRevision: 2,
-    packetId,
-    createdAt,
-    paths: { ownerDecisions: "audit/owner-decisions.json" }
-  }, null, 2)}\n`);
-  await fs.writeFile(path.join(packetRoot, "audit", "owner-decisions.json"), `${JSON.stringify({ cards: decisions }, null, 2)}\n`);
-  await fs.writeFile(path.join(fixtureRoot, "THERAPY-LESSONS"), raw ?? `${entries.map(metadata).join("\n")}\n`);
-  return fixtureRoot;
-}
-
 async function governanceFixture(t, {
   reviewOverrides = {},
   suggestionOverrides = {},
@@ -169,11 +148,11 @@ async function governanceFixture(t, {
     reviewBlock(reviewOverrides),
     duplicateReviewEvent ? reviewBlock({ eventId: "review-r02-live-rejection-duplicate" }) : ""
   ].join("\n");
-  const suggestionSource = suggestions ?? `# Suggested therapy lessons\n\n${reviewSource}\n${selectedSuggestions.join("\n")}`;
+  const suggestionSource = suggestions ?? `# Suggested therapy lessons\n\n${selectedSuggestions.join("\n")}`;
   const packetRoot = path.join(fixtureRoot, "guide-packets", "fixtures", "r02-candidate", "packet");
   await Promise.all([
     fs.mkdir(path.join(packetRoot, "audit"), { recursive: true }),
-    fs.writeFile(path.join(fixtureRoot, "THERAPY-LESSONS"), `# Therapy lessons\n\n${marker("therapy-lesson", validEntries()[0])}\n`),
+    fs.writeFile(path.join(fixtureRoot, "THERAPY-LESSONS"), `# Therapy lessons\n\n${marker("therapy-lesson", validEntries()[0])}\n\n${reviewSource}`),
     fs.writeFile(path.join(fixtureRoot, "SUGGESTED-THERAPY-LESSONS"), suggestionsTransform(suggestionSource)),
     fs.writeFile(path.join(fixtureRoot, "APPROVED-THERAPY-LESSONS"), approvals),
     fs.writeFile(path.join(fixtureRoot, "AGENTS.md"), agents)
@@ -199,49 +178,11 @@ test("therapy lesson log covers every substantive decision in the latest uploade
     (error) => ({ code: error?.code ?? 1, stdout: error?.stdout ?? "", stderr: error?.stderr ?? error?.message ?? "" })
   );
   assert.equal(result.code, 0, result.stderr || result.stdout);
-  assert.match(result.stdout, /^PASS 5\/5 substantive therapy prompt lessons tracked for /);
-});
-
-test("therapy lesson identity is scoped by packet as the cumulative log gains a new revision", async (t) => {
-  const entries = validEntries();
-  entries.push({
-    lessonId: "older-packet-decision-one",
-    decisionId: "decision-1",
-    packetId: "fixture-guides-r01-candidate",
-    learnedAt: createdAt,
-    activation: "candidate-awaiting-owner"
-  });
-  const result = await verifyTherapyLessons({ rootDir: await fixture(t, { entries }) });
-  assert.equal(result.tracked, 5);
-});
-
-test("therapy lesson validation rejects a missing substantive decision", async (t) => {
-  const rootDir = await fixture(t, { entries: validEntries().filter((entry) => entry.decisionId !== "decision-2") });
-  await assert.rejects(verifyTherapyLessons({ rootDir }), /decision-2; found 0/);
-});
-
-test("therapy lesson validation rejects a duplicate substantive decision", async (t) => {
-  const entries = validEntries();
-  entries.push({ ...entries[1], lessonId: "duplicate-decision-one" });
-  await assert.rejects(verifyTherapyLessons({ rootDir: await fixture(t, { entries }) }), /decision-1; found 2/);
-});
-
-test("therapy lesson validation rejects malformed metadata", async (t) => {
-  await assert.rejects(verifyTherapyLessons({
-    rootDir: await fixture(t, { raw: '<!-- therapy-lesson {"lessonId":} -->\n' })
-  }), /Malformed therapy lesson metadata/);
-});
-
-test("therapy lesson validation rejects a wrong packet identity", async (t) => {
-  const entries = validEntries();
-  entries[1] = { ...entries[1], packetId: "wrong-packet" };
-  await assert.rejects(verifyTherapyLessons({ rootDir: await fixture(t, { entries }) }), /decision-1 names the wrong Guide Packet/);
-});
-
-test("therapy lesson validation rejects a pending decision marked active", async (t) => {
-  const entries = validEntries();
-  entries[1] = { ...entries[1], activation: "active-runtime" };
-  await assert.rejects(verifyTherapyLessons({ rootDir: await fixture(t, { entries }) }), /decision-1 is falsely marked active-runtime/);
+  assert.match(result.stdout, /^PASS 5\/5 substantive therapy suggestions tracked for /);
+  assert.match(result.stdout, /4 active runtime lessons/);
+  assert.match(result.stdout, /5 blocked suggestions/);
+  assert.match(result.stdout, /0 explicit owner approvals/);
+  assert.match(result.stdout, /r02 rejection explained/);
 });
 
 test("therapy governance rejects a missing ledger", async (t) => {
