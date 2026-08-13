@@ -1,26 +1,26 @@
 {
   "format": "inner-signal-remote-progress-v1",
   "machineId": "6665047a-5392-430e-be1b-a51c30c45c40",
-  "observedAt": "2026-08-13T02:01:18.004Z",
+  "observedAt": "2026-08-13T02:01:51.304Z",
   "runtime": {
     "version": "0.15.2",
     "installedCommit": "78f459d8dbc0ab7257a8d867a50213de13eb0d45",
     "nodeVersion": "v24.18.0"
   },
   "progress": {
-    "domain": "runtime",
-    "overall": "WORKING",
-    "assessment": "ADVANCING",
-    "currentStage": "tests",
-    "currentStatus": "started",
-    "lastCompletedStage": "guide-graph-regressions",
+    "domain": "development",
+    "overall": "BLOCKED_AUTO_RECOVERY",
+    "assessment": "BLOCKED",
+    "currentStage": "opus-compilation-blocked",
+    "currentStatus": null,
+    "lastCompletedStage": "opus-source-role-compilation",
     "workerAlive": true,
-    "elapsedSeconds": 33,
-    "meaningfulProgressAt": "2026-08-13T02:01:18.004Z",
+    "elapsedSeconds": 90496,
+    "meaningfulProgressAt": "2026-08-13T02:01:51.304Z",
     "secondsSinceMeaningfulProgress": 0,
     "pendingTaskCount": 0,
-    "blockedTaskCount": 0,
-    "nextAutomaticAction": "AUTO_CONTINUE",
+    "blockedTaskCount": 4,
+    "nextAutomaticAction": "AUTO_REPAIR",
     "humanActionRequired": false
   },
   "update": {
