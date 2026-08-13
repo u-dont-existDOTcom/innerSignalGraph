@@ -100,7 +100,7 @@ export function parseLedgerEntries({ source, fileName, marker, idField, timestam
 }
 
 function assertUniqueGovernanceIds(entries) {
-  const ids = entries.map(({ metadata }) => metadata.eventId ?? metadata.suggestionId ?? metadata.approvalId);
+  const ids = entries.map(({ metadata }) => metadata.eventId ?? metadata.approvalId ?? metadata.suggestionId);
   const duplicate = ids.find((id, index) => ids.indexOf(id) !== index);
   if (duplicate) throw new Error(`Duplicate therapy governance ID: ${duplicate}`);
 }
@@ -195,6 +195,74 @@ async function latestCandidate(rootDir) {
 function sectionBody(body, section) {
   const sectionPattern = new RegExp(`^### ${escapeRegExp(section)}\\r?\\n([\\s\\S]*?)(?=^### |(?![\\s\\S]))`, "m");
   return body.match(sectionPattern)?.[1] ?? "";
+}
+
+export function validateApprovalLinks({ suggestions, approvals }) {
+  const suggestionsById = new Map(suggestions.map((suggestion) => [suggestion.metadata.suggestionId, suggestion]));
+  const approvalsBySuggestionId = new Map();
+
+  for (const approval of approvals) {
+    const { approvalId, suggestionId } = approval.metadata;
+    if (!suggestionsById.has(suggestionId)) {
+      throw new Error(`APPROVED-THERAPY-LESSONS ${approvalId} references missing suggestion ${suggestionId}.`);
+    }
+    const linkedApprovals = approvalsBySuggestionId.get(suggestionId) ?? [];
+    linkedApprovals.push(approval);
+    approvalsBySuggestionId.set(suggestionId, linkedApprovals);
+  }
+
+  for (const [suggestionId, linkedApprovals] of approvalsBySuggestionId) {
+    if (linkedApprovals.length > 1) {
+      throw new Error(`APPROVED-THERAPY-LESSONS has duplicate approvals for suggestion ${suggestionId}.`);
+    }
+  }
+
+  for (const approval of approvals) {
+    const { approvalId, suggestionId, decisionSource, guideIds, implementationStatus, implementationCommit } = approval.metadata;
+    const suggestion = suggestionsById.get(suggestionId);
+    if (decisionSource !== "direct-user-conversation") {
+      throw new Error(`APPROVED-THERAPY-LESSONS ${approvalId} must use decisionSource direct-user-conversation.`);
+    }
+    if (!guideIds.length || guideIds.some((guideId) => !suggestion.metadata.guideIds.includes(guideId))) {
+      throw new Error(`${approvalId} guideIds must be a nonempty subset of ${suggestionId} guideIds.`);
+    }
+    if (implementationStatus === "implemented") {
+      if (typeof implementationCommit !== "string" || !/^[0-9a-f]{7,40}$/.test(implementationCommit)) {
+        throw new Error(`${approvalId} must provide a valid implementationCommit.`);
+      }
+      const evidence = sectionBody(approval.body, "Verification evidence").trim();
+      if (!evidence || /no (implementation )?evidence/i.test(evidence)) {
+        throw new Error(`${approvalId} must include substantive implementation verification evidence.`);
+      }
+    }
+  }
+
+  const expectedApprovalStatuses = new Map([
+    ["blocked-by-packet-review", null],
+    ["needs-technical-repair", null],
+    ["ready-for-owner", null],
+    ["approved", "approved-not-implemented"],
+    ["implemented", "implemented"],
+    ["declined", null],
+    ["superseded", null]
+  ]);
+  for (const suggestion of suggestions) {
+    const { suggestionId, status } = suggestion.metadata;
+    const linkedApproval = approvalsBySuggestionId.get(suggestionId)?.[0];
+    const expectedApprovalStatus = expectedApprovalStatuses.get(status);
+    if (expectedApprovalStatus === null && linkedApproval) {
+      throw new Error(`SUGGESTED-THERAPY-LESSONS ${suggestionId} with status ${status} must not have an approval.`);
+    }
+    if (expectedApprovalStatus && !linkedApproval) {
+      throw new Error(`SUGGESTED-THERAPY-LESSONS ${suggestionId} with status ${status} requires exactly one approval.`);
+    }
+    if (expectedApprovalStatus === "implemented" && linkedApproval?.metadata.implementationStatus !== "implemented") {
+      throw new Error(`SUGGESTED-THERAPY-LESSONS ${suggestionId} with status implemented requires an implemented approval.`);
+    }
+    if (expectedApprovalStatus === "approved-not-implemented" && linkedApproval?.metadata.implementationStatus !== expectedApprovalStatus) {
+      throw new Error(`SUGGESTED-THERAPY-LESSONS ${suggestionId} with status approved requires an approved-not-implemented approval.`);
+    }
+  }
 }
 
 function assertDecisionBriefElement({ suggestion, source, label, context = "" }) {
@@ -334,6 +402,10 @@ export async function verifyTherapyGovernance({ rootDir = root } = {}) {
     cards,
     reviewEvents: governance.reviewEvents,
     suggestions: governance.suggestions
+  });
+  validateApprovalLinks({
+    suggestions: governance.suggestions,
+    approvals: governance.approvals
   });
   return { packetId: manifest.packetId, tracked: cards.length, ...latestPacket };
 }

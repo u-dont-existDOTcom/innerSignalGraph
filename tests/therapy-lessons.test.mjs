@@ -398,6 +398,23 @@ function passedPacketSuggestionOverrides() {
   return Object.fromEntries(decisions.map((decision) => [decision.id, { status: "ready-for-owner" }]));
 }
 
+function ownerApprovedSuggestionOverrides(overrides = {}) {
+  return {
+    ...passedPacketSuggestionOverrides(),
+    "decision-1": { status: "approved", guideIds: ["somatic"], ...overrides }
+  };
+}
+
+function implementedApprovalBlock(overrides = {}) {
+  return approvalBlock({
+    implementationStatus: "implemented",
+    implementationCommit: "a1b2c3d",
+    ...overrides
+  })
+    .replace("Approved but not implemented.", "Implemented in the linked revision.")
+    .replace("No implementation evidence is claimed yet.", "The focused regression suite passed after the implementation change.");
+}
+
 test("therapy governance accepts passed-owner-gate suggestions that are ready for the owner", async (t) => {
   const passedOverrides = passedPacketSuggestionOverrides();
   const result = await verifyTherapyGovernance({ rootDir: await governanceFixture(t, {
@@ -406,6 +423,181 @@ test("therapy governance accepts passed-owner-gate suggestions that are ready fo
     suggestionOverridesByDecision: passedOverrides
   }) });
   assert.equal(result.reviewEvent.metadata.outcome, "passed-owner-gate");
+});
+
+test("therapy governance rejects an approval whose suggestion is missing", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    approvals: approvalBlock({ suggestionId: "missing-suggestion" })
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /APPROVED-THERAPY-LESSONS approval-r02-decision-1 references missing suggestion missing-suggestion/
+  );
+});
+
+test("therapy governance rejects duplicate approvals for a suggestion", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    approvals: `${approvalBlock()}\n${approvalBlock({ approvalId: "approval-r02-decision-1-duplicate" })}`
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /APPROVED-THERAPY-LESSONS has duplicate approvals for suggestion suggestion-r02-decision-1/
+  );
+});
+
+test("therapy governance requires approvals to come from a direct user conversation", async (t) => {
+  const overrides = ownerApprovedSuggestionOverrides();
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: overrides["decision-1"],
+    suggestionOverridesByDecision: overrides,
+    approvals: approvalBlock({ decisionSource: "model-review" })
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /APPROVED-THERAPY-LESSONS approval-r02-decision-1 must use decisionSource direct-user-conversation/
+  );
+});
+
+test("therapy governance rejects an approval for a packet-blocked suggestion", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionOverrides: { guideIds: ["somatic"] },
+    approvals: approvalBlock()
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /SUGGESTED-THERAPY-LESSONS suggestion-r02-decision-1 with status blocked-by-packet-review must not have an approval/
+  );
+});
+
+test("therapy governance requires an approval for an approved suggestion", async (t) => {
+  const overrides = ownerApprovedSuggestionOverrides();
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: overrides["decision-1"],
+    suggestionOverridesByDecision: overrides
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /SUGGESTED-THERAPY-LESSONS suggestion-r02-decision-1 with status approved requires exactly one approval/
+  );
+});
+
+test("therapy governance requires implemented suggestions to have implemented approvals", async (t) => {
+  const overrides = ownerApprovedSuggestionOverrides({ status: "implemented" });
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: overrides["decision-1"],
+    suggestionOverridesByDecision: overrides,
+    approvals: approvalBlock()
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /SUGGESTED-THERAPY-LESSONS suggestion-r02-decision-1 with status implemented requires an implemented approval/
+  );
+});
+
+test("therapy governance requires an implementation commit for implemented approvals", async (t) => {
+  const overrides = ownerApprovedSuggestionOverrides({ status: "implemented" });
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: overrides["decision-1"],
+    suggestionOverridesByDecision: overrides,
+    approvals: implementedApprovalBlock({ implementationCommit: undefined })
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }), /approval-r02-decision-1 must provide a valid implementationCommit/
+  );
+});
+
+test("therapy governance rejects malformed implementation commit identifiers", async (t) => {
+  const overrides = ownerApprovedSuggestionOverrides({ status: "implemented" });
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: overrides["decision-1"],
+    suggestionOverridesByDecision: overrides,
+    approvals: implementedApprovalBlock({ implementationCommit: "A1B2C3D" })
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }), /approval-r02-decision-1 must provide a valid implementationCommit/
+  );
+});
+
+test("therapy governance rejects implemented approvals that claim no verification evidence", async (t) => {
+  const overrides = ownerApprovedSuggestionOverrides({ status: "implemented" });
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: overrides["decision-1"],
+    suggestionOverridesByDecision: overrides,
+    approvals: approvalBlock({ implementationStatus: "implemented", implementationCommit: "a1b2c3d" })
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }), /approval-r02-decision-1 must include substantive implementation verification evidence/
+  );
+});
+
+test("therapy governance requires implemented approvals to have nonempty verification evidence", async (t) => {
+  const overrides = ownerApprovedSuggestionOverrides({ status: "implemented" });
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: overrides["decision-1"],
+    suggestionOverridesByDecision: overrides,
+    approvals: implementedApprovalBlock().replace("The focused regression suite passed after the implementation change.", "")
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }), /APPROVED-THERAPY-LESSONS approval-r02-decision-1 is missing section: Verification evidence/
+  );
+});
+
+for (const status of ["declined", "superseded"]) {
+  test(`therapy governance rejects an approval for a ${status} suggestion`, async (t) => {
+    const overrides = ownerApprovedSuggestionOverrides({ status });
+    const rootDir = await governanceFixture(t, {
+      reviewOverrides: { outcome: "passed-owner-gate" },
+      suggestionOverrides: overrides["decision-1"],
+      suggestionOverridesByDecision: overrides,
+      approvals: approvalBlock()
+    });
+    await assert.rejects(
+      verifyTherapyGovernance({ rootDir }),
+      new RegExp(`SUGGESTED-THERAPY-LESSONS suggestion-r02-decision-1 with status ${status} must not have an approval`)
+    );
+  });
+}
+
+test("therapy governance requires approval guide IDs to be a nonempty subset of the suggestion guide IDs", async (t) => {
+  const overrides = ownerApprovedSuggestionOverrides({ guideIds: ["somatic"] });
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: overrides["decision-1"],
+    suggestionOverridesByDecision: overrides,
+    approvals: approvalBlock({ guideIds: ["inner-child"] })
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }), /approval-r02-decision-1 guideIds must be a nonempty subset of suggestion-r02-decision-1 guideIds/
+  );
+});
+
+test("therapy governance accepts a direct owner approval for an approved suggestion", async (t) => {
+  const overrides = ownerApprovedSuggestionOverrides();
+  const result = await verifyTherapyGovernance({ rootDir: await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: overrides["decision-1"],
+    suggestionOverridesByDecision: overrides,
+    approvals: approvalBlock()
+  }) });
+  assert.equal(result.suggestionsByDecision.get("decision-1").metadata.status, "approved");
+});
+
+test("therapy governance accepts implemented suggestions with substantive implementation evidence", async (t) => {
+  const overrides = ownerApprovedSuggestionOverrides({ status: "implemented" });
+  const result = await verifyTherapyGovernance({ rootDir: await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: overrides["decision-1"],
+    suggestionOverridesByDecision: overrides,
+    approvals: implementedApprovalBlock()
+  }) });
+  assert.equal(result.suggestionsByDecision.get("decision-1").metadata.status, "implemented");
 });
 
 test("therapy governance rejects a ready-for-owner status while its packet remains rejected", async (t) => {
