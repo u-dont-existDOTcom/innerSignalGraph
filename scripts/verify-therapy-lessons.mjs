@@ -304,6 +304,43 @@ function assertOptionTradeOffs({ suggestion, body }) {
   }
 }
 
+function decisionBriefValue({ suggestion, source, label, context = "" }) {
+  const match = source.match(new RegExp(`^[\\t ]*${escapeRegExp(label)}[\\t ]*([^\\r\\n]*)$`, "m"));
+  if (!match || !match[1].trim()) {
+    throw new Error(`${suggestion.metadata.suggestionId}${context} is missing decision-card field: ${label}`);
+  }
+  return match[1].trim();
+}
+
+function assertDecisionCardFidelity({ suggestion, card }) {
+  const proposal = sectionBody(suggestion.body, "Proposal");
+  for (const { label, expected } of [
+    { label: "Current behavior:", expected: card.current },
+    { label: "Candidate behavior:", expected: card.candidate }
+  ]) {
+    const actual = decisionBriefValue({ suggestion, source: proposal, label });
+    if (actual !== expected) {
+      throw new Error(`${suggestion.metadata.suggestionId} ${label.slice(0, -1)} does not match ${card.id}.`);
+    }
+  }
+
+  const optionAMatch = sectionBody(suggestion.body, "Options and trade-offs")
+    .match(/^Option\s+A\s*[—:-]\s*([\s\S]*?)(?=^Option\s+|(?![\s\S]))/m);
+  const actualWorstFailure = decisionBriefValue({
+    suggestion,
+    source: optionAMatch?.[1] ?? "",
+    label: "Worst plausible failure:",
+    context: " Option A"
+  });
+  if (actualWorstFailure !== card.worstPlausibleFailure) {
+    throw new Error(`${suggestion.metadata.suggestionId} Option A worst plausible failure does not match ${card.id}.`);
+  }
+}
+
+function sameStringSet(left, right) {
+  return left.length === right.length && left.every((value) => right.includes(value));
+}
+
 export function validateLatestPacket({ manifest, cards, reviewEvents, suggestions }) {
   const packetReviewEvents = reviewEvents.filter((entry) => entry.metadata.packetId === manifest.packetId);
   if (packetReviewEvents.length !== 1) {
@@ -350,10 +387,14 @@ export function validateLatestPacket({ manifest, cards, reviewEvents, suggestion
     if (new Date(metadata.createdAt) < new Date(manifest.createdAt)) {
       throw new Error(`${metadata.suggestionId} predates its Guide Packet.`);
     }
-    for (const regressionId of card.affectedRegressions ?? []) {
+    const affectedRegressions = card.affectedRegressions ?? [];
+    for (const regressionId of affectedRegressions) {
       if (!metadata.regressionIds.includes(regressionId)) {
         throw new Error(`${metadata.suggestionId} is missing affected regression: ${regressionId}`);
       }
+    }
+    if (!sameStringSet(metadata.regressionIds, affectedRegressions)) {
+      throw new Error(`${metadata.suggestionId} regressionIds must exactly match ${card.id} affectedRegressions.`);
     }
     if (![...metadata.guideIds, ...metadata.graphNodeIds, ...metadata.promptIds].length) {
       throw new Error(`${metadata.suggestionId} has no stable affected identifier.`);
@@ -366,6 +407,7 @@ export function validateLatestPacket({ manifest, cards, reviewEvents, suggestion
     const recommendation = sectionBody(suggestion.body, "Recommendation and reasoning");
     assertDecisionBriefElement({ suggestion, source: recommendation, label: "Recommendation:" });
     assertDecisionBriefElement({ suggestion, source: recommendation, label: "Reasoning:" });
+    assertDecisionCardFidelity({ suggestion, card });
   }
 
   const mappedFindingIds = new Set(reviewEvent.metadata.packetLevelFindingIds);
@@ -388,6 +430,28 @@ export function validateLatestPacket({ manifest, cards, reviewEvents, suggestion
   for (const findingId of reviewEvent.metadata.packetLevelFindingIds) {
     if (!reviewFindingIds.has(findingId)) {
       throw new Error(`Packet-level finding ${findingId} is absent from the latest review event.`);
+    }
+  }
+
+  const suggestionFindings = reviewEvent.metadata.suggestionFindings;
+  const suggestionFindingDecisionIds = suggestionFindings && !Array.isArray(suggestionFindings)
+    ? Object.keys(suggestionFindings)
+    : [];
+  const missingDecisionId = cards.find(({ id }) => !suggestionFindingDecisionIds.includes(id))?.id;
+  const extraDecisionId = suggestionFindingDecisionIds.find((id) => !knownDecisionIds.has(id));
+  if (missingDecisionId || extraDecisionId || suggestionFindingDecisionIds.length !== cards.length) {
+    const detail = missingDecisionId ? `missing ${missingDecisionId}` : `extra ${extraDecisionId}`;
+    throw new Error(`${reviewEvent.metadata.eventId} suggestionFindings must contain exactly the latest decision IDs; ${detail}.`);
+  }
+  for (const card of cards) {
+    assertIdArray({
+      entry: suggestionFindings,
+      field: card.id,
+      id: `${reviewEvent.metadata.eventId} suggestionFindings`
+    });
+    const suggestion = suggestionsByDecision.get(card.id);
+    if (!sameStringSet(suggestionFindings[card.id], suggestion.metadata.reviewFindingIds)) {
+      throw new Error(`${reviewEvent.metadata.eventId} suggestionFindings for ${card.id} does not match ${suggestion.metadata.suggestionId} reviewFindingIds.`);
     }
   }
 

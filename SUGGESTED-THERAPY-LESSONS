@@ -12,6 +12,9 @@ Packet context: `CROSS-GUIDE-001` and `OWNER-POLICY-001` require packet repairs.
 
 After somatic work, ask about the immediate response, the next morning, and the following two or three days before suggesting that the practice be repeated, reduced, stopped, or intensified.
 
+Current behavior: No equivalent executable node is installed.
+Candidate behavior: SOM.DELAYED_RESPONSE_REASSESSMENT becomes available in somatic-directed-graph.
+
 ### Guide impact
 
 Guide `somatic`; graph node `SOM.DELAYED_RESPONSE_REASSESSMENT`; no prompt identifier; regression `G-SOM-DELAYED`.
@@ -42,7 +45,7 @@ After r03 passes review, ask Joel whether delayed-response reassessment should b
 Option A — approve after a passing r03 review.
 Benefits: Delayed adverse or helpful effects can inform later dosing instead of relying only on the calmness of one session.
 Costs: The interaction takes longer and may delay a repeat recommendation.
-Worst plausible failure: Over-monitoring ordinary fluctuations could make a useful gentle practice seem unnecessarily risky.
+Worst plausible failure: The new route could activate too broadly and add an unnecessary follow-up or delay a better-established intervention.
 
 Option B — retain current policy.
 Benefits: Keeps the current shorter somatic flow unchanged.
@@ -61,6 +64,9 @@ Reasoning: The lesson itself received no specific finding, but the rejected pack
 ### Proposal
 
 When resentment targets a younger self, distinguish the opportunity being blamed and the knowledge, support, freedom, safety, and money actually available at that age.
+
+Current behavior: Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?
+Candidate behavior: Which age or version of you is the resentment actually directed toward, what opportunity do you believe that version failed to use, and what knowledge, support, safety, money, and freedom were actually available then?
 
 ### Guide impact
 
@@ -92,7 +98,7 @@ After r03 passes review, ask Joel whether “safety” and “money” should ex
 Option A — approve after a passing r03 review.
 Benefits: The prompt can represent material and physical constraints that often shape a younger person's actual agency.
 Costs: It intentionally extends the canonical wording and requires careful provenance in the guide and prompt.
-Worst plausible failure: The extension could be presented as source-derived fact or overfit responsibility assessment to resource checklists.
+Worst plausible failure: The app may ask a more detailed question when the user would have benefited from immediate action.
 
 Option B — retain current policy.
 Benefits: Keeps active language tightly bounded to the canonical source.
@@ -111,6 +117,9 @@ Reasoning: Correct provenance is mechanical, while adding “safety” and “mo
 ### Proposal
 
 In an ambiguous inner-child case, offer one bounded, non-retaliatory adult function earlier without pretending a complete or trusted inner adult already exists.
+
+Current behavior: Priority 94
+Candidate behavior: Priority 95
 
 ### Guide impact
 
@@ -142,7 +151,7 @@ After r03 passes review, ask Joel whether the bounded adult-function proposal sh
 Option A — approve after a passing r03 review.
 Benefits: A user can borrow one useful adult capacity without being required to claim a fully formed inner adult.
 Costs: Adds routing precedence and requires a precisely bounded relationship to neutral-witness and hypnosis behavior.
-Worst plausible failure: An ambiguous or protective voice could be mislabeled as an adult function and gain inappropriate authority.
+Worst plausible failure: The reprioritized route could crowd out another useful job in ambiguous cases.
 
 Option B — retain current policy.
 Benefits: Avoids introducing a new early bounded-function route or changing present routing order.
@@ -161,6 +170,9 @@ Reasoning: Ordering can be made deterministic without owner judgment, but therap
 ### Proposal
 
 When the adult position lacks credibility, prioritize bounded non-defensive follow-through and defer deep child dialogue until there is evidence of earned trust.
+
+Current behavior: {"deferNodes":[],"blockNodes":[]}
+Candidate behavior: {"deferNodes":["IC.DEEP_CHILD_DIALOGUE"],"blockNodes":[]}
 
 ### Guide impact
 
@@ -192,7 +204,7 @@ After r03 passes review, ask Joel whether credibility repair should be a prerequ
 Option A — approve after a passing r03 review.
 Benefits: The prompt demonstrates reliability through bounded action before asking for greater emotional exposure.
 Costs: Deep dialogue may be delayed even when a user wants it sooner, so scope and escape conditions must be clear.
-Worst plausible failure: An overly broad prerequisite could suppress useful dialogue or make trust repair feel procedural and withholding.
+Worst plausible failure: The app could postpone useful work or allow depth before sufficient capacity if the dependency is wrong.
 
 Option B — retain current policy.
 Benefits: Preserves current flexibility and avoids adding an unproven routing dependency.
@@ -211,6 +223,9 @@ Reasoning: The proposed dependency cannot be assessed responsibly until the regr
 ### Proposal
 
 When physical risk or regulatory instability is present, block the optional advanced-release route rather than merely surrounding it with softer caution while still offering it.
+
+Current behavior: {"deferNodes":[],"blockNodes":[]}
+Candidate behavior: {"deferNodes":[],"blockNodes":["SOM.ADVANCED_RELEASE_OPTIONAL"]}
 
 ### Guide impact
 
@@ -242,7 +257,7 @@ After r03 passes review, ask Joel to decide the exact safety language and scope 
 Option A — approve after a passing r03 review.
 Benefits: Safety-sensitive routing can block advanced practice while still offering a gentler alternative with explicit provenance.
 Costs: Requires conservative routing, maintained contraindication language, and careful separation of author-provided claims from independently validated evidence.
-Worst plausible failure: Incorrect or incomplete rules could either expose a vulnerable user to an advanced practice or overstate unvalidated medical guidance.
+Worst plausible failure: The app could postpone useful work or allow depth before sufficient capacity if the dependency is wrong.
 
 Option B — retain current policy.
 Benefits: Avoids activating language derived from evidence that has not been independently validated.

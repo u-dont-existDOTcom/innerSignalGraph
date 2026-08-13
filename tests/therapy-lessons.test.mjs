@@ -8,19 +8,51 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import * as therapyGovernance from "../scripts/verify-therapy-lessons.mjs";
 
-const { loadTherapyGovernance, verifyTherapyGovernance } = therapyGovernance;
+const { loadTherapyGovernance, verifyTherapyGovernance, verifyTherapyLessons } = therapyGovernance;
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const packetId = "fixture-guides-r02-candidate";
 const createdAt = "2026-08-12T02:45:00.000Z";
-const decisions = Array.from({ length: 5 }, (_, index) => ({
-  id: `decision-${index + 1}`,
-  classification: "substantive",
-  requiresHumanDecision: true,
-  status: "pending"
-}));
+const decisionCardDetails = {
+  "decision-1": {
+    current: "No equivalent executable node is installed.",
+    candidate: "SOM.DELAYED_RESPONSE_REASSESSMENT becomes available in somatic-directed-graph.",
+    worstPlausibleFailure: "The new route could activate too broadly and add an unnecessary follow-up or delay a better-established intervention."
+  },
+  "decision-2": {
+    current: "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?",
+    candidate: "Which age or version of you is the resentment actually directed toward, what opportunity do you believe that version failed to use, and what knowledge, support, safety, money, and freedom were actually available then?",
+    worstPlausibleFailure: "The app may ask a more detailed question when the user would have benefited from immediate action."
+  },
+  "decision-3": {
+    current: "Priority 94",
+    candidate: "Priority 95",
+    worstPlausibleFailure: "The reprioritized route could crowd out another useful job in ambiguous cases."
+  },
+  "decision-4": {
+    current: '{"deferNodes":[],"blockNodes":[]}',
+    candidate: '{"deferNodes":["IC.DEEP_CHILD_DIALOGUE"],"blockNodes":[]}',
+    worstPlausibleFailure: "The app could postpone useful work or allow depth before sufficient capacity if the dependency is wrong."
+  },
+  "decision-5": {
+    current: '{"deferNodes":[],"blockNodes":[]}',
+    candidate: '{"deferNodes":[],"blockNodes":["SOM.ADVANCED_RELEASE_OPTIONAL"]}',
+    worstPlausibleFailure: "The app could postpone useful work or allow depth before sufficient capacity if the dependency is wrong."
+  }
+};
+
+const decisions = Array.from({ length: 5 }, (_, index) => {
+  const id = `decision-${index + 1}`;
+  return {
+    id,
+    classification: "substantive",
+    requiresHumanDecision: true,
+    status: "pending",
+    ...decisionCardDetails[id]
+  };
+});
 
 function marker(kind, entry) {
   return `<!-- ${kind} ${JSON.stringify(entry)} -->`;
@@ -53,6 +85,7 @@ function reviewBlock(overrides = {}) {
       "CROSS-GUIDE-001", "REG-EVIDENCE-001", "PRIORITY-TIE-001",
       "OWNER-POLICY-001", "COVERAGE-001", "CERTAINTY-LAYER-001"
     ],
+    suggestionFindings: reviewFindingsByDecision,
     packetLevelFindingIds: [
       "CROSS-GUIDE-001", "OWNER-POLICY-001", "COVERAGE-001", "CERTAINTY-LAYER-001"
     ],
@@ -77,7 +110,7 @@ function suggestionBlock(decision, overrides = {}) {
     regressionIds: decision.affectedRegressions,
     ...overrides
   };
-  return `## ${decision.id}\n\n${marker("therapy-suggestion", metadata)}\n\n### Proposal\n\nKeep this exact candidate change pending.\n\n### Guide impact\n\nGuide: inner-child. Graph node: NODE.${decision.id}. Prompt: none. Regression: ${decision.affectedRegressions.join(", ")}.\n\n### Evidence and uncertainty\n\nSource status: canonical packet evidence.\nLimitation: the packet has not passed review.\n\n### Review result\n\nThe enclosing r02 packet was rejected before the owner gate.\n\n### Why not active\n\nIt has neither a passing packet nor an explicit owner decision.\n\n### Technical next action\n\nCarry the corrected proposal into r03 and rerun its regression.\n\n### Decision needed\n\nAfter r03 passes review, Joel must explicitly approve or decline this proposal.\n\n### Options and trade-offs\n\nOption A — approve after repair.\nBenefits: gains the proposed behavior.\nCosts: changes routing.\nWorst plausible failure: the route activates incorrectly.\n\nOption B — retain current policy.\nBenefits: avoids an unverified change.\nCosts: forgoes the candidate behavior.\nWorst plausible failure: a useful route remains unavailable.\n\n### Recommendation and reasoning\n\nRecommendation: wait for r03.\nReasoning: technical review must pass before an owner policy choice is actionable.\n`;
+  return `## ${decision.id}\n\n${marker("therapy-suggestion", metadata)}\n\n### Proposal\n\nKeep this exact candidate change pending.\n\nCurrent behavior: ${decision.current}\nCandidate behavior: ${decision.candidate}\n\n### Guide impact\n\nGuide: inner-child. Graph node: NODE.${decision.id}. Prompt: none. Regression: ${decision.affectedRegressions.join(", ")}.\n\n### Evidence and uncertainty\n\nSource status: canonical packet evidence.\nLimitation: the packet has not passed review.\n\n### Review result\n\nThe enclosing r02 packet was rejected before the owner gate.\n\n### Why not active\n\nIt has neither a passing packet nor an explicit owner decision.\n\n### Technical next action\n\nCarry the corrected proposal into r03 and rerun its regression.\n\n### Decision needed\n\nAfter r03 passes review, Joel must explicitly approve or decline this proposal.\n\n### Options and trade-offs\n\nOption A — approve after repair.\nBenefits: gains the proposed behavior.\nCosts: changes routing.\nWorst plausible failure: ${decision.worstPlausibleFailure}\n\nOption B — retain current policy.\nBenefits: avoids an unverified change.\nCosts: forgoes the candidate behavior.\nWorst plausible failure: a useful route remains unavailable.\n\n### Recommendation and reasoning\n\nRecommendation: wait for r03.\nReasoning: technical review must pass before an owner policy choice is actionable.\n`;
 }
 
 function approvalBlock(overrides = {}) {
@@ -117,7 +150,8 @@ async function governanceFixture(t, {
   omitReviewEvent = false,
   duplicateReviewEvent = false,
   approvals = "# Approved therapy lessons\n",
-  agents = "# Repository instructions\n\n<!-- therapy-owner-decision-protocol-v1 -->\n"
+  agents = "# Repository instructions\n\n<!-- therapy-owner-decision-protocol-v1 -->\n",
+  historyTransform = (source) => source
 } = {}) {
   const fixtureRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-therapy-governance-"));
   t.after(() => fs.rm(fixtureRoot, { recursive: true, force: true }));
@@ -152,7 +186,7 @@ async function governanceFixture(t, {
   const packetRoot = path.join(fixtureRoot, "guide-packets", "fixtures", "r02-candidate", "packet");
   await Promise.all([
     fs.mkdir(path.join(packetRoot, "audit"), { recursive: true }),
-    fs.writeFile(path.join(fixtureRoot, "THERAPY-LESSONS"), `# Therapy lessons\n\n${marker("therapy-lesson", validEntries()[0])}\n\n${reviewSource}`),
+    fs.writeFile(path.join(fixtureRoot, "THERAPY-LESSONS"), historyTransform(`# Therapy lessons\n\n${marker("therapy-lesson", validEntries()[0])}\n\n${reviewSource}`)),
     fs.writeFile(path.join(fixtureRoot, "SUGGESTED-THERAPY-LESSONS"), suggestionsTransform(suggestionSource)),
     fs.writeFile(path.join(fixtureRoot, "APPROVED-THERAPY-LESSONS"), approvals),
     fs.writeFile(path.join(fixtureRoot, "AGENTS.md"), agents)
@@ -184,6 +218,91 @@ test("therapy lesson log covers every substantive decision in the latest uploade
   assert.match(result.stdout, /0 explicit owner approvals/);
   assert.match(result.stdout, /r02 rejection explained/);
 });
+
+test("production therapy governance preserves the exact r02 mapping", async () => {
+  const governance = await loadTherapyGovernance({ rootDir: root });
+  const actualSuggestions = Object.fromEntries(governance.suggestions.map(({ metadata }) => [metadata.decisionId, {
+    guideIds: metadata.guideIds,
+    graphNodeIds: metadata.graphNodeIds,
+    promptIds: metadata.promptIds,
+    regressionIds: metadata.regressionIds,
+    reviewFindingIds: metadata.reviewFindingIds
+  }]));
+  assert.deepEqual(actualSuggestions, {
+    "decision-1": {
+      guideIds: ["somatic"],
+      graphNodeIds: ["SOM.DELAYED_RESPONSE_REASSESSMENT"],
+      promptIds: [],
+      regressionIds: ["G-SOM-DELAYED"],
+      reviewFindingIds: []
+    },
+    "decision-2": {
+      guideIds: ["inner-child"],
+      graphNodeIds: ["IC.AGE_RESPONSIBILITY_CLARIFICATION"],
+      promptIds: ["response-realization-v5"],
+      regressionIds: ["A001"],
+      reviewFindingIds: ["SRC-CITE-001"]
+    },
+    "decision-3": {
+      guideIds: ["inner-child"],
+      graphNodeIds: ["IC.BORROW_ONE_FUNCTION", "IC.NEUTRAL_WITNESS"],
+      promptIds: ["response-realization-v5", "hypnosis-session-v3"],
+      regressionIds: ["A001", "H001"],
+      reviewFindingIds: ["PRIORITY-TIE-001"]
+    },
+    "decision-4": {
+      guideIds: ["inner-child"],
+      graphNodeIds: ["IC.CREDIBILITY_REPAIR", "IC.DEEP_CHILD_DIALOGUE"],
+      promptIds: ["response-realization-v5"],
+      regressionIds: ["A001"],
+      reviewFindingIds: ["REG-EVIDENCE-001"]
+    },
+    "decision-5": {
+      guideIds: ["somatic"],
+      graphNodeIds: ["SOM.ADVANCED_RELEASE_BLOCK", "SOM.ADVANCED_RELEASE_OPTIONAL"],
+      promptIds: ["response-realization-v5"],
+      regressionIds: ["G-SOM-DELAYED", "G-SOM-ADVANCED-BLOCK"],
+      reviewFindingIds: ["SAFETY-ENCODE-001", "EXT-VALID-001"]
+    }
+  });
+  assert.deepEqual(governance.reviewEvents[0].metadata.suggestionFindings, reviewFindingsByDecision);
+  assert.deepEqual(governance.reviewEvents[0].metadata.packetLevelFindingIds, [
+    "CROSS-GUIDE-001", "OWNER-POLICY-001", "COVERAGE-001", "CERTAINTY-LAYER-001"
+  ]);
+});
+
+for (const { name, historyTransform, error } of [
+  {
+    name: "malformed metadata",
+    historyTransform: (source) => source.replace(
+      marker("therapy-lesson", validEntries()[0]),
+      '<!-- therapy-lesson {"lessonId":} -->'
+    ),
+    error: /Malformed therapy lesson metadata/
+  },
+  {
+    name: "duplicate lesson IDs",
+    historyTransform: (source) => `${source}\n${marker("therapy-lesson", validEntries()[0])}\n`,
+    error: /Duplicate therapy lesson ID: active-one/
+  },
+  {
+    name: "invalid activation",
+    historyTransform: (source) => source.replace('"activation":"active-runtime"', '"activation":"invalid"'),
+    error: /Therapy lesson active-one has an invalid activation state/
+  },
+  {
+    name: "invalid timestamp",
+    historyTransform: (source) => source.replace(`"learnedAt":"${createdAt}"`, '"learnedAt":"2026-08-12"'),
+    error: /Therapy lesson active-one has an invalid UTC timestamp/
+  }
+]) {
+  test(`therapy history parser rejects ${name}`, async (t) => {
+    await assert.rejects(
+      verifyTherapyLessons({ rootDir: await governanceFixture(t, { historyTransform }) }),
+      error
+    );
+  });
+}
 
 test("therapy governance rejects a missing ledger", async (t) => {
   const rootDir = await governanceFixture(t);
@@ -333,6 +452,43 @@ test("therapy governance rejects finding mappings absent from the review", async
     suggestionOverrides: { reviewFindingIds: ["NOT-IN-REVIEW-001"] }
   });
   await assert.rejects(verifyTherapyGovernance({ rootDir }), /Suggestion finding NOT-IN-REVIEW-001 is absent from the latest review event/);
+});
+
+test("therapy governance rejects swapped per-decision findings despite an unchanged overall union", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: {
+      suggestionFindings: {
+        ...reviewFindingsByDecision,
+        "decision-2": ["PRIORITY-TIE-001"],
+        "decision-3": ["SRC-CITE-001"]
+      }
+    }
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /review-r02-live-rejection-20260813 suggestionFindings for decision-2 does not match suggestion-r02-decision-2 reviewFindingIds/
+  );
+});
+
+test("therapy governance rejects a missing latest-decision suggestionFindings key", async (t) => {
+  const { "decision-5": omitted, ...suggestionFindings } = reviewFindingsByDecision;
+  const rootDir = await governanceFixture(t, { reviewOverrides: { suggestionFindings } });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /review-r02-live-rejection-20260813 suggestionFindings must contain exactly the latest decision IDs; missing decision-5/
+  );
+});
+
+test("therapy governance rejects an extra suggestionFindings decision key", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: {
+      suggestionFindings: { ...reviewFindingsByDecision, "decision-extra": [] }
+    }
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /review-r02-live-rejection-20260813 suggestionFindings must contain exactly the latest decision IDs; extra decision-extra/
+  );
 });
 
 for (const label of [
@@ -603,6 +759,44 @@ test("therapy governance rejects a suggestion missing a decision-card regression
   await assert.rejects(verifyTherapyGovernance({ rootDir }), /suggestion-r02-decision-1 is missing affected regression: G-SOM-DELAYED/);
 });
 
+test("therapy governance rejects a suggestion with an extra decision-card regression", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionOverrides: { regressionIds: ["G-SOM-DELAYED", "EXTRA-001"] }
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /suggestion-r02-decision-1 regressionIds must exactly match decision-1 affectedRegressions/
+  );
+});
+
+for (const { field, original, replacement } of [
+  {
+    field: "Current behavior",
+    original: `Current behavior: ${decisionCardDetails["decision-1"].current}`,
+    replacement: "Current behavior: A different current state."
+  },
+  {
+    field: "Candidate behavior",
+    original: `Candidate behavior: ${decisionCardDetails["decision-1"].candidate}`,
+    replacement: "Candidate behavior: A different candidate state."
+  },
+  {
+    field: "Option A worst plausible failure",
+    original: `Worst plausible failure: ${decisionCardDetails["decision-1"].worstPlausibleFailure}`,
+    replacement: "Worst plausible failure: A different failure."
+  }
+]) {
+  test(`therapy governance requires exact decision-card ${field}`, async (t) => {
+    const rootDir = await governanceFixture(t, {
+      suggestionsTransform: (source) => source.replace(original, replacement)
+    });
+    await assert.rejects(
+      verifyTherapyGovernance({ rootDir }),
+      new RegExp(`suggestion-r02-decision-1 ${field} does not match decision-1`)
+    );
+  });
+}
+
 test("therapy governance rejects a suggestion with no stable affected identifier", async (t) => {
   const rootDir = await governanceFixture(t, {
     suggestionOverrides: { guideIds: [], graphNodeIds: [], promptIds: [] }
@@ -647,7 +841,7 @@ for (const { label, content } of [
 for (const { option, label, content } of [
   { option: "A", label: "Benefits:", content: "gains the proposed behavior." },
   { option: "A", label: "Costs:", content: "changes routing." },
-  { option: "A", label: "Worst plausible failure:", content: "the route activates incorrectly." },
+  { option: "A", label: "Worst plausible failure:", content: decisionCardDetails["decision-1"].worstPlausibleFailure },
   { option: "B", label: "Benefits:", content: "avoids an unverified change." },
   { option: "B", label: "Costs:", content: "forgoes the candidate behavior." },
   { option: "B", label: "Worst plausible failure:", content: "a useful route remains unavailable." }
