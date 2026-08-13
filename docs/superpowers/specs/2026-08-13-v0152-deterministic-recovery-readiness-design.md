@@ -66,7 +66,7 @@ This regression fails deterministically with the fixed-delay probe and passes on
 
 The candidate validator supplies disjoint source and installed roots. Direct `npm test` from the source checkout does not. Six diagnostic CLI tests currently inherit the production default source root while passing the checkout itself as `installRoot`, triggering `sourceRoot and installedRoot must not overlap` before their intended assertions.
 
-Every diagnostic CLI subprocess fixture will explicitly provide a nonexistent source root and a distinct installed root under its own temporary fixture directory. This matches the production safety invariant and makes direct checkout tests independent of ambient shell state. The production root-overlap guard remains unchanged.
+Every diagnostic CLI subprocess fixture will explicitly provide a nonexistent source root under its own temporary fixture directory. The CLI already passes the checkout as its installed root, so the two roots are then unambiguously disjoint. This matches the production safety invariant and makes direct checkout tests independent of ambient shell state. The production root-overlap guard remains unchanged.
 
 ## Release and documentation contract
 
