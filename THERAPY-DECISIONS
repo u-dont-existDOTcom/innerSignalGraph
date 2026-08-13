@@ -1,0 +1,5 @@
+# Therapy Decisions
+
+This append-only ledger contains structured receipts only for Joel's explicit approvals and declines given in a direct active conversation. A receipt binds the exact suggestion, packet and packet digest, decision card and card digest, passed review event and review-artifact digest, complete affected scope, explicit choice, direct-conversation source, and decision time. It never contains inferred consent, a model verdict, a technical supersession, or a private therapy transcript.
+
+No therapy-decision receipt exists as of 2026-08-13T14:31:28.000Z. The governance-design approval, including the approval of this four-ledger architecture, is not a therapy-policy decision receipt. The first structured receipt may be appended only after a specific suggestion passes its review gate and Joel explicitly approves or declines it in the active conversation.

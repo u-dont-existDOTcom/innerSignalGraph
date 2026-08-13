@@ -1,0 +1,389 @@
+{
+  "contractVersion": "therapy-review-diagnostic-v1",
+  "artifactId": "r02-live-review-diagnostic-20260813",
+  "reviewEventId": "review-r02-live-rejection-20260813",
+  "occurredAt": "2026-08-13T14:31:28.000Z",
+  "packet": {
+    "packetId": "inner-signal-guides-2026.08.12-r02-candidate",
+    "packetRevision": 2,
+    "packetSha256": "1c2970fbbe6aa3e132e0bfdcb226b3dab5ee5dccda1fde2b554613f8dff7b023",
+    "manifestSha256": "8a7958fe4524b4b0655effc0e2c28ff0ffbead99001ceaf7aa8a221bc1210d0b",
+    "decisionCardsPath": "audit/owner-decisions.json",
+    "decisionCardsSha256": "dd64ae4d19862df6b2af72c6e4e9b8f04e5a5a1b1736a63c14b4fbd7150ff976"
+  },
+  "outcome": "rejected-before-owner-gate",
+  "nextPhase": "repair-r03",
+  "migrationNote": "This diagnostic preserves the retained live-review IDs and mappings. Because the original review was recorded only as ledger metadata and prose, severity and disposition are conservatively reconstructed: every repair-required blocking or review finding remains unresolved, COVERAGE-001 is deferred non-blocking information, and CERTAINTY-LAYER-001 is verified positive evidence.",
+  "decisionCardDigestAlgorithm": "sha256(canonicalJson(card)); canonicalJson recursively sorts object keys, pretty-prints with two-space indentation, and appends a line feed",
+  "decisionCardDigests": {
+    "decision-1": "a8688ed28ba19b29b06a1c9c21da9dfcc104046fb8913654dac5f45563761d3a",
+    "decision-2": "66156dd4e4444a87b904468c4e24de1a9c3d66e6e3d04fe38b3561f2b15f46b5",
+    "decision-3": "fea38fba872891d78c3907910bbaf87e5f28ab4a44d20eeaa23b9aecdf8a4bfb",
+    "decision-4": "51f49cf855ae9c0b156a145ded4acd653a4a15129d3d1c62c83828ca36dfd653",
+    "decision-5": "3698eaa859d00017cf216b4f47ce8f9fcca5ad515ea14ba9ce0d0751c48483fe"
+  },
+  "findings": [
+    {
+      "id": "SRC-CITE-001",
+      "severity": "review",
+      "summary": "Decision 2 cites the wrong canonical antecedent and incorrectly treats opportunity as canonical source wording.",
+      "requiredAction": "In r03, cite IC.LOVE_UNSAFE for knowledge, support, freedom, and responsibility; determine and record the separate installed/A001 provenance of opportunity; and label safety and money as proposed extensions requiring a later owner choice.",
+      "disposition": {
+        "status": "unresolved",
+        "evidence": "The r02 node still cites IC.INHERITED_PARENT and IC.BOTTOM_UP_SEQUENCE, while canonical IC.LOVE_UNSAFE contains knowledge, support, freedom, and responsibility but not opportunity, safety, or money."
+      }
+    },
+    {
+      "id": "PRIORITY-TIE-001",
+      "severity": "review",
+      "summary": "Decision 3 raises IC.BORROW_ONE_FUNCTION to priority 95 without defining its order relative to IC.NEUTRAL_WITNESS, which is also priority 95.",
+      "requiredAction": "Define and regression-test deterministic ordering between the two priority-95 routes in r03 without treating that repair as owner approval.",
+      "disposition": {
+        "status": "unresolved",
+        "evidence": "The archived r02 inner-child graph assigns priority 95 to both IC.BORROW_ONE_FUNCTION and IC.NEUTRAL_WITNESS."
+      }
+    },
+    {
+      "id": "REG-EVIDENCE-001",
+      "severity": "review",
+      "summary": "Decision 4 claims that IC.CREDIBILITY_REPAIR defers IC.DEEP_CHILD_DIALOGUE, but the archived A001 decision case does not require that deferral to appear.",
+      "requiredAction": "Add a mutation-sensitive A001 assertion in r03 that fails when the credibility-to-deep-dialogue deferral is removed.",
+      "disposition": {
+        "status": "unresolved",
+        "evidence": "The archived A001 case has an empty deferredNodeIds expectation, so it cannot prove the proposed dependency fires."
+      }
+    },
+    {
+      "id": "SAFETY-ENCODE-001",
+      "severity": "blocking",
+      "summary": "Decision 5 does not encode the source-specific positioning, contraindication, destabilization, and gentler-alternative cautions associated with VAGAL.SAFETY.P5.",
+      "requiredAction": "In r03, preserve the lying-down-only instruction; the source's claimed syncope, fall, and airway risks; the named aneurysm, severe hypertension, glaucoma, and pregnancy contraindications; the panic or destabilization risk for high anxiety, panic disorder, or CPTSD; and the gentler Bhramari-first alternative.",
+      "disposition": {
+        "status": "unresolved",
+        "evidence": "The archived safety excerpt contains these details, but the r02 advanced-release nodes do not encode all of them."
+      }
+    },
+    {
+      "id": "EXT-VALID-001",
+      "severity": "review",
+      "summary": "The Vagal Blitz safety material is author-provided external evidence and has not been independently validated.",
+      "requiredAction": "Keep every VAGAL.SAFETY.P5 consequence explicitly attributed as an author-provided, not independently validated claim and do not present it as established medical fact.",
+      "disposition": {
+        "status": "unresolved",
+        "evidence": "manifest.externalSources[VAGAL.SAFETY.P5].independentlyValidated and policy.provenance.sourceRefs[VAGAL.SAFETY.P5].independentlyValidated are both false."
+      }
+    },
+    {
+      "id": "CROSS-GUIDE-001",
+      "severity": "review",
+      "summary": "The packet's cross-guide behavior lacks complete source-reference coverage across the inner-child and somatic guide families.",
+      "requiredAction": "Add the missing cross-guide source references in r03 and verify that every cross-guide edge remains source-bound.",
+      "disposition": {
+        "status": "unresolved",
+        "evidence": "The retained live-review outcome identifies cross-guide provenance as required deterministic repair before another review."
+      }
+    },
+    {
+      "id": "OWNER-POLICY-001",
+      "severity": "review",
+      "summary": "H001 consent routing, route isolation, and the final waking return are product-owned policy rather than therapeutic source claims.",
+      "requiredAction": "Expose OWNER.PRODUCT.APP_OWNED_HYPNOSIS_CONTROL explicitly in r03 and keep any later owner choice about it separate from Decision 3's therapy-routing priority choice.",
+      "disposition": {
+        "status": "unresolved",
+        "evidence": "policy/owner-amendments.json marks OWNER.PRODUCT.APP_OWNED_HYPNOSIS_CONTROL as product-only, owner-approved-operational, and sourceIntegrated false."
+      }
+    },
+    {
+      "id": "COVERAGE-001",
+      "severity": "informational",
+      "summary": "Additional future regression coverage would be useful for memory epistemics and altered-state gates.",
+      "requiredAction": "Track the coverage opportunity separately; it is not itself a reason to reject r02 or block a later repaired packet.",
+      "disposition": {
+        "status": "deferred",
+        "evidence": "The retained review record classifies this finding as future coverage information rather than a rejection reason."
+      }
+    },
+    {
+      "id": "CERTAINTY-LAYER-001",
+      "severity": "positive",
+      "summary": "The packet preserves distinctions among source identity, author experience, community signal, provisional mechanism, external evidence, and product-only operational rules.",
+      "requiredAction": "Preserve this certainty separation through r03 and later owner-facing decision briefs.",
+      "disposition": {
+        "status": "verified",
+        "evidence": "policy/certainty-and-authority.json states that a source hash proves identity rather than truth and that model inference never becomes owner policy without an explicit owner decision."
+      }
+    }
+  ],
+  "mappings": {
+    "suggestionFindings": {
+      "decision-1": [],
+      "decision-2": [
+        "SRC-CITE-001"
+      ],
+      "decision-3": [
+        "PRIORITY-TIE-001"
+      ],
+      "decision-4": [
+        "REG-EVIDENCE-001"
+      ],
+      "decision-5": [
+        "SAFETY-ENCODE-001",
+        "EXT-VALID-001"
+      ]
+    },
+    "packetLevelFindingIds": [
+      "CROSS-GUIDE-001",
+      "OWNER-POLICY-001",
+      "COVERAGE-001",
+      "CERTAINTY-LAYER-001"
+    ],
+    "allowMultipleAssignmentsByFinding": {}
+  },
+  "decisionAffectedIds": {
+    "decision-1": {
+      "guideIds": [
+        "somatic"
+      ],
+      "graphNodeIds": [
+        "SOM.DELAYED_RESPONSE_REASSESSMENT"
+      ],
+      "promptContractIds": [],
+      "policySafetyGateIds": [],
+      "regressionIds": [
+        "G-SOM-DELAYED"
+      ]
+    },
+    "decision-2": {
+      "guideIds": [
+        "inner-child"
+      ],
+      "graphNodeIds": [
+        "IC.AGE_RESPONSIBILITY_CLARIFICATION"
+      ],
+      "promptContractIds": [
+        "response-realization-v5"
+      ],
+      "policySafetyGateIds": [],
+      "regressionIds": [
+        "A001"
+      ]
+    },
+    "decision-3": {
+      "guideIds": [
+        "inner-child"
+      ],
+      "graphNodeIds": [
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.NEUTRAL_WITNESS"
+      ],
+      "promptContractIds": [
+        "response-realization-v5"
+      ],
+      "policySafetyGateIds": [
+        "OWNER.PRODUCT.APP_OWNED_HYPNOSIS_CONTROL"
+      ],
+      "regressionIds": [
+        "A001",
+        "H001"
+      ]
+    },
+    "decision-4": {
+      "guideIds": [
+        "inner-child"
+      ],
+      "graphNodeIds": [
+        "IC.CREDIBILITY_REPAIR",
+        "IC.DEEP_CHILD_DIALOGUE"
+      ],
+      "promptContractIds": [
+        "response-realization-v5"
+      ],
+      "policySafetyGateIds": [],
+      "regressionIds": [
+        "A001"
+      ]
+    },
+    "decision-5": {
+      "guideIds": [
+        "somatic"
+      ],
+      "graphNodeIds": [
+        "SOM.ADVANCED_RELEASE_BLOCK",
+        "SOM.ADVANCED_RELEASE_OPTIONAL"
+      ],
+      "promptContractIds": [
+        "response-realization-v5"
+      ],
+      "policySafetyGateIds": [
+        "VAGAL.SAFETY.P5"
+      ],
+      "regressionIds": [
+        "G-SOM-DELAYED",
+        "G-SOM-ADVANCED-BLOCK"
+      ]
+    }
+  },
+  "findingAffectedIds": {
+    "SRC-CITE-001": {
+      "guideIds": [
+        "inner-child"
+      ],
+      "graphNodeIds": [
+        "IC.AGE_RESPONSIBILITY_CLARIFICATION"
+      ],
+      "promptContractIds": [
+        "response-realization-v5"
+      ],
+      "policySafetyGateIds": [],
+      "regressionIds": [
+        "A001"
+      ]
+    },
+    "PRIORITY-TIE-001": {
+      "guideIds": [
+        "inner-child"
+      ],
+      "graphNodeIds": [
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.NEUTRAL_WITNESS"
+      ],
+      "promptContractIds": [
+        "response-realization-v5"
+      ],
+      "policySafetyGateIds": [
+        "OWNER.PRODUCT.APP_OWNED_HYPNOSIS_CONTROL"
+      ],
+      "regressionIds": [
+        "A001",
+        "H001"
+      ]
+    },
+    "REG-EVIDENCE-001": {
+      "guideIds": [
+        "inner-child"
+      ],
+      "graphNodeIds": [
+        "IC.CREDIBILITY_REPAIR",
+        "IC.DEEP_CHILD_DIALOGUE"
+      ],
+      "promptContractIds": [
+        "response-realization-v5"
+      ],
+      "policySafetyGateIds": [],
+      "regressionIds": [
+        "A001"
+      ]
+    },
+    "SAFETY-ENCODE-001": {
+      "guideIds": [
+        "somatic"
+      ],
+      "graphNodeIds": [
+        "SOM.ADVANCED_RELEASE_BLOCK",
+        "SOM.ADVANCED_RELEASE_OPTIONAL"
+      ],
+      "promptContractIds": [
+        "response-realization-v5"
+      ],
+      "policySafetyGateIds": [
+        "VAGAL.SAFETY.P5"
+      ],
+      "regressionIds": [
+        "G-SOM-DELAYED",
+        "G-SOM-ADVANCED-BLOCK"
+      ]
+    },
+    "EXT-VALID-001": {
+      "guideIds": [
+        "somatic"
+      ],
+      "graphNodeIds": [
+        "SOM.ADVANCED_RELEASE_BLOCK",
+        "SOM.ADVANCED_RELEASE_OPTIONAL"
+      ],
+      "promptContractIds": [
+        "response-realization-v5"
+      ],
+      "policySafetyGateIds": [
+        "VAGAL.SAFETY.P5"
+      ],
+      "regressionIds": [
+        "G-SOM-DELAYED",
+        "G-SOM-ADVANCED-BLOCK"
+      ]
+    },
+    "CROSS-GUIDE-001": {
+      "guideIds": [
+        "inner-child",
+        "somatic"
+      ],
+      "graphNodeIds": [],
+      "promptContractIds": [],
+      "policySafetyGateIds": [],
+      "regressionIds": []
+    },
+    "OWNER-POLICY-001": {
+      "guideIds": [],
+      "graphNodeIds": [],
+      "promptContractIds": [],
+      "policySafetyGateIds": [
+        "OWNER.PRODUCT.APP_OWNED_HYPNOSIS_CONTROL"
+      ],
+      "regressionIds": [
+        "H001"
+      ]
+    },
+    "COVERAGE-001": {
+      "guideIds": [
+        "inner-child"
+      ],
+      "graphNodeIds": [],
+      "promptContractIds": [],
+      "policySafetyGateIds": [],
+      "regressionIds": [
+        "A001",
+        "H001"
+      ]
+    },
+    "CERTAINTY-LAYER-001": {
+      "guideIds": [
+        "inner-child",
+        "somatic"
+      ],
+      "graphNodeIds": [],
+      "promptContractIds": [],
+      "policySafetyGateIds": [],
+      "regressionIds": []
+    }
+  },
+  "sourceBindings": {
+    "SOM.JUDGE_HELP": {
+      "path": "guides/somatic/source-map.json",
+      "rawHtmlSha256": "28d07803a0a89efac757a26ab23795531a9224ae0261a9993c7a9dba963fe079"
+    },
+    "SOM.ADVANCED_RELEASE_SOURCE": {
+      "path": "guides/somatic/source-map.json",
+      "rawHtmlSha256": "9cc2066768d92bfdc96f21ac64fb6e1ad4bd0e6c0eb9331a45911ff25d601830"
+    },
+    "IC.LOVE_UNSAFE": {
+      "path": "guides/inner-child/source-map.json",
+      "rawHtmlSha256": "846962bba7508b2f310b33f2bb7f077dfab455c0d63935da712e823b19ecf501"
+    },
+    "VAGAL.SAFETY.P5": {
+      "excerptPath": "sources/vagal-blitz-safety-p5.txt",
+      "excerptSha256": "f95e06d1af7d631c3c7414cb44ee88af1d21064f8d9a86320dcb14fc5a29a792",
+      "sourcePath": "sources/vagal-blitz-source.pdf",
+      "sourceSha256": "79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c",
+      "independentlyValidated": false
+    },
+    "OWNER.PRODUCT.APP_OWNED_HYPNOSIS_CONTROL": {
+      "path": "policy/owner-amendments.json",
+      "sourceIntegrated": false
+    },
+    "opportunity": {
+      "status": "current-installed-and-A001-wording-not-canonical-source-prose",
+      "installedGraphPath": "guide-graphs/compiled/inner-child-directed-graph.json",
+      "casePath": "corpus/difficult-cases/A001-inner-child-credibility/case.json"
+    }
+  }
+}
