@@ -135,6 +135,8 @@ async function governanceFixture(t, {
   suggestionsTransform = (source) => source,
   omitSuggestionDecisionId = null,
   duplicateSuggestionDecisionId = null,
+  omitReviewEvent = false,
+  duplicateReviewEvent = false,
   approvals = "# Approved therapy lessons\n",
   agents = "# Repository instructions\n\n<!-- therapy-owner-decision-protocol-v1 -->\n"
 } = {}) {
@@ -163,7 +165,11 @@ async function governanceFixture(t, {
       ...(suggestionOverridesByDecision[decision.id] ?? {})
     }));
   }
-  const suggestionSource = suggestions ?? `# Suggested therapy lessons\n\n${reviewBlock(reviewOverrides)}\n${selectedSuggestions.join("\n")}`;
+  const reviewSource = omitReviewEvent ? "" : [
+    reviewBlock(reviewOverrides),
+    duplicateReviewEvent ? reviewBlock({ eventId: "review-r02-live-rejection-duplicate" }) : ""
+  ].join("\n");
+  const suggestionSource = suggestions ?? `# Suggested therapy lessons\n\n${reviewSource}\n${selectedSuggestions.join("\n")}`;
   const packetRoot = path.join(fixtureRoot, "guide-packets", "fixtures", "r02-candidate", "packet");
   await Promise.all([
     fs.mkdir(path.join(packetRoot, "audit"), { recursive: true }),
@@ -376,6 +382,127 @@ for (const label of [
     await assert.rejects(
       verifyTherapyGovernance({ rootDir }),
       new RegExp(`suggestion-r02-decision-1 is missing decision-brief element: ${label}`)
+    );
+  });
+}
+
+test("therapy governance accepts a complete latest-packet governance result", async (t) => {
+  const result = await verifyTherapyGovernance({ rootDir: await governanceFixture(t) });
+  assert.equal(result.packetId, packetId);
+  assert.equal(result.tracked, 5);
+  assert.equal(result.reviewEvent.metadata.outcome, "rejected-before-owner-gate");
+  assert.equal(result.suggestionsByDecision.size, 5);
+});
+
+function passedPacketSuggestionOverrides() {
+  return Object.fromEntries(decisions.map((decision) => [decision.id, { status: "ready-for-owner" }]));
+}
+
+test("therapy governance accepts passed-owner-gate suggestions that are ready for the owner", async (t) => {
+  const passedOverrides = passedPacketSuggestionOverrides();
+  const result = await verifyTherapyGovernance({ rootDir: await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: passedOverrides["decision-1"],
+    suggestionOverridesByDecision: passedOverrides
+  }) });
+  assert.equal(result.reviewEvent.metadata.outcome, "passed-owner-gate");
+});
+
+test("therapy governance rejects a ready-for-owner status while its packet remains rejected", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionOverrides: { status: "ready-for-owner" }
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /suggestion-r02-decision-1 has invalid status for a rejected packet/);
+});
+
+test("therapy governance rejects a blocked status after its packet passes owner gate", async (t) => {
+  const passedOverrides = passedPacketSuggestionOverrides();
+  passedOverrides["decision-1"] = { status: "blocked-by-packet-review" };
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { outcome: "passed-owner-gate" },
+    suggestionOverrides: passedOverrides["decision-1"],
+    suggestionOverridesByDecision: passedOverrides
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /suggestion-r02-decision-1 has invalid status for a passed packet/);
+});
+
+test("therapy governance rejects a suggestion that does not require an owner decision", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionOverrides: { ownerDecisionRequired: false }
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /suggestion-r02-decision-1 must require an owner decision/);
+});
+
+test("therapy governance rejects a suggestion created before its Guide Packet", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionOverrides: { createdAt: "2026-08-12T02:44:59.999Z" }
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /suggestion-r02-decision-1 predates its Guide Packet/);
+});
+
+test("therapy governance rejects a suggestion missing a decision-card regression", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionOverrides: { regressionIds: [] }
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /suggestion-r02-decision-1 is missing affected regression: G-SOM-DELAYED/);
+});
+
+test("therapy governance rejects a suggestion with no stable affected identifier", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionOverrides: { guideIds: [], graphNodeIds: [], promptIds: [] }
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /suggestion-r02-decision-1 has no stable affected identifier/);
+});
+
+test("therapy governance rejects packet-level findings absent from the review", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { packetLevelFindingIds: ["CROSS-GUIDE-001", "OWNER-POLICY-001", "COVERAGE-001", "CERTAINTY-LAYER-001", "PACKET-EXTRA-001"] }
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /Packet-level finding PACKET-EXTRA-001 is absent from the latest review event/);
+});
+
+test("therapy governance rejects a latest packet with no review event", async (t) => {
+  const rootDir = await governanceFixture(t, { omitReviewEvent: true });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /Expected exactly one review event for fixture-guides-r02-candidate; found 0/);
+});
+
+test("therapy governance rejects a latest packet with duplicate review events", async (t) => {
+  const rootDir = await governanceFixture(t, { duplicateReviewEvent: true });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /Expected exactly one review event for fixture-guides-r02-candidate; found 2/);
+});
+
+for (const { label, content } of [
+  { label: "Source status:", content: "canonical packet evidence." },
+  { label: "Limitation:", content: "the packet has not passed review." },
+  { label: "Recommendation:", content: "wait for r03." },
+  { label: "Reasoning:", content: "technical review must pass before an owner policy choice is actionable." }
+]) {
+  test(`therapy governance rejects empty ${label} content that would otherwise satisfy its decision-brief label`, async (t) => {
+    const rootDir = await governanceFixture(t, {
+      suggestionsTransform: (source) => source.replace(`${label} ${content}`, `${label}   `)
+    });
+    await assert.rejects(
+      verifyTherapyGovernance({ rootDir }),
+      new RegExp(`suggestion-r02-decision-1 has empty decision-brief element: ${label}`)
+    );
+  });
+}
+
+for (const { option, label, content } of [
+  { option: "A", label: "Benefits:", content: "gains the proposed behavior." },
+  { option: "A", label: "Costs:", content: "changes routing." },
+  { option: "A", label: "Worst plausible failure:", content: "the route activates incorrectly." },
+  { option: "B", label: "Benefits:", content: "avoids an unverified change." },
+  { option: "B", label: "Costs:", content: "forgoes the candidate behavior." },
+  { option: "B", label: "Worst plausible failure:", content: "a useful route remains unavailable." }
+]) {
+  test(`therapy governance rejects empty ${label} content in Option ${option}`, async (t) => {
+    const rootDir = await governanceFixture(t, {
+      suggestionsTransform: (source) => source.replace(`${label} ${content}`, `${label}   `)
+    });
+    await assert.rejects(
+      verifyTherapyGovernance({ rootDir }),
+      new RegExp(`suggestion-r02-decision-1 Option ${option} has empty decision-brief element: ${label}`)
     );
   });
 }

@@ -197,17 +197,42 @@ function sectionBody(body, section) {
   return body.match(sectionPattern)?.[1] ?? "";
 }
 
-function assertDecisionBriefElement({ suggestion, body, section, label }) {
-  if (!sectionBody(body, section).includes(label)) {
+function assertDecisionBriefElement({ suggestion, source, label, followingLabels = [], context = "" }) {
+  const boundary = followingLabels.length
+    ? `(?=${followingLabels.map(escapeRegExp).join("|")}|(?![\\s\\S]))`
+    : "(?![\\s\\S])";
+  const match = source.match(new RegExp(`${escapeRegExp(label)}\\s*([\\s\\S]*?)${boundary}`));
+  if (!match) {
     throw new Error(`${suggestion.metadata.suggestionId} is missing decision-brief element: ${label}`);
+  }
+  if (!match[1].trim()) {
+    throw new Error(`${suggestion.metadata.suggestionId}${context} has empty decision-brief element: ${label}`);
   }
 }
 
-function assertTwoOptionLabels({ suggestion, body }) {
-  const labels = [...sectionBody(body, "Options and trade-offs").matchAll(/^Option\s+([^\s—:-]+)\s*[—:-]/gm)]
-    .map((match) => match[1]);
-  if (new Set(labels).size < 2) {
+function assertOptionTradeOffs({ suggestion, body }) {
+  const options = new Map(
+    [...sectionBody(body, "Options and trade-offs").matchAll(/^Option\s+([^\s—:-]+)\s*[—:-]\s*([\s\S]*?)(?=^Option\s+|(?![\s\S]))/gm)]
+      .map((match) => [match[1], match[2]])
+  );
+  if (options.size < 2) {
     throw new Error(`${suggestion.metadata.suggestionId} is missing decision-brief element: two option labels`);
+  }
+  const labels = ["Benefits:", "Costs:", "Worst plausible failure:"];
+  for (const option of ["A", "B"]) {
+    const optionBody = options.get(option);
+    if (!optionBody) {
+      throw new Error(`${suggestion.metadata.suggestionId} is missing decision-brief element: Option ${option}`);
+    }
+    for (const label of labels) {
+      assertDecisionBriefElement({
+        suggestion,
+        source: optionBody,
+        label,
+        followingLabels: labels.filter((item) => item !== label),
+        context: ` Option ${option}`
+      });
+    }
   }
 }
 
@@ -266,14 +291,13 @@ export function validateLatestPacket({ manifest, cards, reviewEvents, suggestion
       throw new Error(`${metadata.suggestionId} has no stable affected identifier.`);
     }
 
-    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Evidence and uncertainty", label: "Source status:" });
-    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Evidence and uncertainty", label: "Limitation:" });
-    assertTwoOptionLabels({ suggestion, body: suggestion.body });
-    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Options and trade-offs", label: "Benefits:" });
-    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Options and trade-offs", label: "Costs:" });
-    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Options and trade-offs", label: "Worst plausible failure:" });
-    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Recommendation and reasoning", label: "Recommendation:" });
-    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Recommendation and reasoning", label: "Reasoning:" });
+    const evidence = sectionBody(suggestion.body, "Evidence and uncertainty");
+    assertDecisionBriefElement({ suggestion, source: evidence, label: "Source status:", followingLabels: ["Limitation:"] });
+    assertDecisionBriefElement({ suggestion, source: evidence, label: "Limitation:" });
+    assertOptionTradeOffs({ suggestion, body: suggestion.body });
+    const recommendation = sectionBody(suggestion.body, "Recommendation and reasoning");
+    assertDecisionBriefElement({ suggestion, source: recommendation, label: "Recommendation:", followingLabels: ["Reasoning:"] });
+    assertDecisionBriefElement({ suggestion, source: recommendation, label: "Reasoning:" });
   }
 
   const mappedFindingIds = new Set(reviewEvent.metadata.packetLevelFindingIds);
