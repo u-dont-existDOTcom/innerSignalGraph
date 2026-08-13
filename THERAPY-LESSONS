@@ -1,0 +1,85 @@
+# Therapy Prompt Lessons
+
+This root log records concrete lessons about how Inner Signal handles therapy prompts better. Timestamps are UTC. `active-runtime` means the behavior is in the current installed guide/prompt contract. `candidate-awaiting-owner` means the lesson was found in the newest uploaded Guide Packet but is not active until its substantive owner decision is approved and installed.
+
+## 2026-08-12T03:29:10.000Z — Preserve the user's distinctions before choosing an intervention
+
+<!-- therapy-lesson {"lessonId":"active-formulation-distinctions","learnedAt":"2026-08-12T03:29:10.000Z","activation":"active-runtime"} -->
+
+The formulation prompt now treats exact user language as evidence and keeps uncertain inner-role assignments as hypotheses. It distinguishes literal childhood, adolescence, younger adulthood, a present child-state, and chronological adulthood; witness capacity is tracked separately from a stable Nurturer/Protector/Guide capacity. This reduces the risk of deciding who a voice “is” before the user has supplied enough evidence.
+
+Evidence: `src/prompts/case-extract.mjs`, `src/prompts/case-audit.mjs`, and A001 acceptance rules.
+
+## 2026-08-12T03:29:10.000Z — Treat credibility as an evidence problem, not merely an arousal problem
+
+<!-- therapy-lesson {"lessonId":"active-credibility-evidence","learnedAt":"2026-08-12T03:29:10.000Z","activation":"active-runtime"} -->
+
+When a younger position points to how adult life actually turned out, the prompt must preserve an adverse track record rather than saying there is no track record yet. Regulation may help the person remain with the conflict, but it cannot be presented as though relaxation alone repairs credibility. Sarcasm such as “what are you going to do for me?” is handled as a practical request for observable evidence: one bounded act, no demand for immediate trust, then repeated follow-through.
+
+Evidence: `src/prompts/realize.mjs`, `corpus/difficult-cases/A001-inner-child-credibility/case.json`, and graph node `IC.CREDIBILITY_REPAIR`.
+
+## 2026-08-12T03:29:10.000Z — Spend deeper review only where ambiguity or safety requires it
+
+<!-- therapy-lesson {"lessonId":"active-tiered-review","learnedAt":"2026-08-12T03:29:10.000Z","activation":"active-runtime"} -->
+
+Low-ambiguity prompts can follow the graph quickly. Protective conflict or moderate ambiguity receives independent review. Unresolved age, responsibility, speaker, and credibility ambiguity receives deeper review, while a safety-sensitive state cannot be forced into fast mode. A narrow follow-up to an already reviewed formulation can update the prior snapshot instead of rebuilding the person from scratch.
+
+Evidence: `src/orchestrator/run-tiered-pipeline.mjs` and `tests/therapy-routing.test.mjs`.
+
+## 2026-08-12T03:29:10.000Z — Keep the response focused and do not manufacture generic caution
+
+<!-- therapy-lesson {"lessonId":"active-focused-realization","learnedAt":"2026-08-12T03:29:10.000Z","activation":"active-runtime"} -->
+
+The final prompt should lead with the live knot, answer the user's own actionable question, give one main next move, and preserve the graph-owned discriminating question exactly. Generic crisis, grounding, dissociation, or recovered-memory boilerplate is omitted when the deterministic case variables do not trigger it. Every claimed intervention must have an exact supporting quote in the rendered answer.
+
+Evidence: `src/prompts/realize.mjs` response-realization contract.
+
+## 2026-08-12T02:45:00.000Z — Reassess the delayed effects of somatic work
+
+<!-- therapy-lesson {"lessonId":"candidate-decision-1","decisionId":"decision-1","packetId":"inner-signal-guides-2026.08.12-r02-candidate","learnedAt":"2026-08-12T02:45:00.000Z","activation":"candidate-awaiting-owner"} -->
+
+Candidate lesson: a calm session is not enough evidence that the dose was right. Therapy prompts should ask about the immediate response, the next morning, and the following two or three days before recommending that a somatic practice be repeated, reduced, stopped, or intensified.
+
+Status: awaiting owner approval; not active runtime policy.
+
+Evidence: r02 decision 1 and `G-SOM-DELAYED`.
+
+## 2026-08-12T02:45:00.000Z — Ask what agency and resources the blamed younger self actually had
+
+<!-- therapy-lesson {"lessonId":"candidate-decision-2","decisionId":"decision-2","packetId":"inner-signal-guides-2026.08.12-r02-candidate","learnedAt":"2026-08-12T02:45:00.000Z","activation":"candidate-awaiting-owner"} -->
+
+Candidate lesson: when resentment targets a younger version, identifying the age is not enough. The prompt should also discriminate what opportunity is being blamed and what knowledge, support, safety, money, and freedom were genuinely available at that time. This keeps developmental responsibility from being flattened into either total helplessness or retrospective adult blame.
+
+Status: awaiting owner approval; not active runtime policy.
+
+Evidence: r02 decision 2 and `A001`.
+
+## 2026-08-12T02:45:00.000Z — Offer one bounded adult function earlier in ambiguous cases
+
+<!-- therapy-lesson {"lessonId":"candidate-decision-3","decisionId":"decision-3","packetId":"inner-signal-guides-2026.08.12-r02-candidate","learnedAt":"2026-08-12T02:45:00.000Z","activation":"candidate-awaiting-owner"} -->
+
+Candidate lesson: a prompt need not demand that a complete inner adult already exist. It can offer one limited, non-retaliatory Nurturer, Protector, or Guide function sooner, while preserving the distinction between an attempted adult role and any resentful or doubtful internal speaker.
+
+Status: awaiting owner approval; not active runtime policy.
+
+Evidence: r02 decision 3, `A001`, and `H001`.
+
+## 2026-08-12T02:45:00.000Z — Repair credibility before inviting deep child dialogue
+
+<!-- therapy-lesson {"lessonId":"candidate-decision-4","decisionId":"decision-4","packetId":"inner-signal-guides-2026.08.12-r02-candidate","learnedAt":"2026-08-12T02:45:00.000Z","activation":"candidate-awaiting-owner"} -->
+
+Candidate lesson: when the central conflict is whether the adult position has earned trust, therapy prompts should prioritize non-defensive follow-through and defer deep child dialogue. Greater emotional depth is not automatically useful when the credibility prerequisite remains unresolved.
+
+Status: awaiting owner approval; not active runtime policy.
+
+Evidence: r02 decision 4 and `A001`.
+
+## 2026-08-12T02:45:00.000Z — Block optional advanced release when physical or regulatory safety is uncertain
+
+<!-- therapy-lesson {"lessonId":"candidate-decision-5","decisionId":"decision-5","packetId":"inner-signal-guides-2026.08.12-r02-candidate","learnedAt":"2026-08-12T02:45:00.000Z","activation":"candidate-awaiting-owner"} -->
+
+Candidate lesson: interest in an intense or advanced release practice is not sufficient readiness. If physical risk or regulatory instability is present, prompt routing should block the optional advanced-release path rather than surrounding it with softer caution while still offering it.
+
+Status: awaiting owner approval; not active runtime policy.
+
+Evidence: r02 decision 5, `G-SOM-DELAYED`, `G-SOM-ADVANCED-BLOCK`, and attached author-provided Vagal Blitz page-5 safety evidence. The packet explicitly does not claim independent empirical validation of that source.

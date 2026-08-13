@@ -8,6 +8,10 @@ echo "Node: $(node --version)"
 echo "npm: $(npm --version)"
 
 echo
+echo "=== THERAPY PROMPT LESSONS ==="
+npm run therapy-lessons:verify
+
+echo
 echo "=== GUIDE GRAPH COMPILE ==="
 npm run graph:compile
 

@@ -18,6 +18,7 @@
     "serve": "node src/cli/serve.mjs",
     "serve:cli": "node --env-file=.env src/cli/serve.mjs",
     "verify": "./scripts/verify-package.sh",
+    "therapy-lessons:verify": "node scripts/verify-therapy-lessons.mjs",
     "hypnosis:replay": "node src/cli/hypnosis-replay.mjs",
     "hypnosis:replay:cli": "node --env-file=.env src/cli/hypnosis-replay.mjs",
     "hypnosis:respond": "node src/cli/hypnosis-respond.mjs",
