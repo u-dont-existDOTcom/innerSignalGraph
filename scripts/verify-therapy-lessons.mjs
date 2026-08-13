@@ -6,6 +6,29 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ENTRY_PATTERN = /<!-- therapy-lesson (\{[^\r\n]*\}) -->/g;
 const ACTIVATIONS = new Set(["active-runtime", "candidate-awaiting-owner"]);
+const LEDGER_FILES = {
+  history: "THERAPY-LESSONS",
+  suggestions: "SUGGESTED-THERAPY-LESSONS",
+  approvals: "APPROVED-THERAPY-LESSONS"
+};
+const SUGGESTION_STATUSES = new Set([
+  "blocked-by-packet-review", "needs-technical-repair", "ready-for-owner",
+  "approved", "implemented", "declined", "superseded"
+]);
+const APPROVAL_STATUSES = new Set(["approved-not-implemented", "implemented"]);
+const SUGGESTION_SECTIONS = [
+  "Proposal", "Guide impact", "Evidence and uncertainty", "Review result",
+  "Why not active", "Technical next action", "Decision needed",
+  "Options and trade-offs", "Recommendation and reasoning"
+];
+const APPROVAL_SECTIONS = [
+  "Exact decision", "Owner reasoning or stated preference", "Scope and constraints",
+  "Guide impact", "Implementation status", "Verification evidence"
+];
+const REVIEW_SECTIONS = [
+  "Review outcome", "Why the packet was rejected", "What this does not mean",
+  "Finding-to-suggestion mapping", "Packet-level findings", "Next phase"
+];
 
 function validInstant(value) {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)) return false;
@@ -15,6 +38,135 @@ function validInstant(value) {
 
 async function readJson(file) {
   return JSON.parse(await fs.readFile(file, "utf8"));
+}
+
+async function readRequiredFile(rootDir, fileName) {
+  try {
+    return await fs.readFile(path.join(rootDir, fileName), "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") throw new Error(`${fileName} is required.`);
+    throw error;
+  }
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function assertIdArray({ entry, field, id }) {
+  const value = entry[field];
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string" || !item)) {
+    throw new Error(`${id} has an invalid ${field}.`);
+  }
+  if (new Set(value).size !== value.length) throw new Error(`${id} has duplicate ${field}.`);
+}
+
+function assertIdArrays(entry, id) {
+  for (const field of Object.keys(entry).filter((key) => key.endsWith("Ids"))) {
+    assertIdArray({ entry, field, id });
+  }
+}
+
+export function assertRequiredSections({ fileName, id, body, sections }) {
+  for (const section of sections) {
+    const sectionPattern = new RegExp(`^### ${escapeRegExp(section)}\\r?\\n([\\s\\S]*?)(?=^### |(?![\\s\\S]))`, "m");
+    const match = body.match(sectionPattern);
+    if (!match || !match[1].trim()) throw new Error(`${fileName} ${id} is missing section: ${section}`);
+  }
+}
+
+export function parseLedgerEntries({ source, fileName, marker, idField, timestampField, validateMetadata = () => {} }) {
+  const entryPattern = new RegExp(`<!-- ${escapeRegExp(marker)} (\\{[^\\r\\n]*\\}) -->`, "g");
+  const entries = [];
+  for (const match of source.matchAll(entryPattern)) {
+    let metadata;
+    try {
+      metadata = JSON.parse(match[1]);
+    } catch (error) {
+      throw new Error(`${fileName}: malformed ${marker} metadata: ${error.message}`);
+    }
+    const id = metadata[idField];
+    if (typeof id !== "string" || !id) throw new Error(`${fileName}: every ${marker} requires ${idField}.`);
+    if (!validInstant(metadata[timestampField])) throw new Error(`${id} has an invalid UTC ${timestampField}.`);
+    const bodyStart = match.index + match[0].length;
+    const nextEntry = /^## (?!#)/gm;
+    nextEntry.lastIndex = bodyStart;
+    const nextMatch = nextEntry.exec(source);
+    const body = source.slice(bodyStart, nextMatch?.index);
+    validateMetadata(metadata);
+    entries.push({ metadata, body });
+  }
+  return entries;
+}
+
+function assertUniqueGovernanceIds(entries) {
+  const ids = entries.map(({ metadata }) => metadata.eventId ?? metadata.suggestionId ?? metadata.approvalId);
+  const duplicate = ids.find((id, index) => ids.indexOf(id) !== index);
+  if (duplicate) throw new Error(`Duplicate therapy governance ID: ${duplicate}`);
+}
+
+export async function loadTherapyGovernance({ rootDir = root } = {}) {
+  const [historySource, suggestionsSource, approvalsSource, agentsSource] = await Promise.all([
+    readRequiredFile(rootDir, LEDGER_FILES.history),
+    readRequiredFile(rootDir, LEDGER_FILES.suggestions),
+    readRequiredFile(rootDir, LEDGER_FILES.approvals),
+    readRequiredFile(rootDir, "AGENTS.md")
+  ]);
+  const historyLessons = parseLedgerEntries({
+    source: historySource,
+    fileName: LEDGER_FILES.history,
+    marker: "therapy-lesson",
+    idField: "lessonId",
+    timestampField: "learnedAt",
+    validateMetadata: (entry) => {
+      if (!ACTIVATIONS.has(entry.activation)) throw new Error(`Therapy lesson ${entry.lessonId} has an invalid activation state.`);
+    }
+  });
+  const reviewEvents = parseLedgerEntries({
+    source: suggestionsSource,
+    fileName: LEDGER_FILES.suggestions,
+    marker: "therapy-review-event",
+    idField: "eventId",
+    timestampField: "occurredAt",
+    validateMetadata: (entry) => assertIdArrays(entry, entry.eventId)
+  });
+  const suggestions = parseLedgerEntries({
+    source: suggestionsSource,
+    fileName: LEDGER_FILES.suggestions,
+    marker: "therapy-suggestion",
+    idField: "suggestionId",
+    timestampField: "createdAt",
+    validateMetadata: (entry) => {
+      assertIdArrays(entry, entry.suggestionId);
+      if (!SUGGESTION_STATUSES.has(entry.status)) throw new Error(`${entry.suggestionId} has an invalid status.`);
+    }
+  });
+  const approvals = parseLedgerEntries({
+    source: approvalsSource,
+    fileName: LEDGER_FILES.approvals,
+    marker: "therapy-approval",
+    idField: "approvalId",
+    timestampField: "decidedAt",
+    validateMetadata: (entry) => {
+      assertIdArrays(entry, entry.approvalId);
+      if (!APPROVAL_STATUSES.has(entry.status)) throw new Error(`${entry.approvalId} has an invalid status.`);
+    }
+  });
+
+  for (const entry of reviewEvents) {
+    assertRequiredSections({ fileName: LEDGER_FILES.suggestions, id: entry.metadata.eventId, body: entry.body, sections: REVIEW_SECTIONS });
+  }
+  for (const entry of suggestions) {
+    assertRequiredSections({ fileName: LEDGER_FILES.suggestions, id: entry.metadata.suggestionId, body: entry.body, sections: SUGGESTION_SECTIONS });
+  }
+  for (const entry of approvals) {
+    assertRequiredSections({ fileName: LEDGER_FILES.approvals, id: entry.metadata.approvalId, body: entry.body, sections: APPROVAL_SECTIONS });
+  }
+  assertUniqueGovernanceIds([...reviewEvents, ...suggestions, ...approvals]);
+  if (!agentsSource.includes("<!-- therapy-owner-decision-protocol-v1 -->")) {
+    throw new Error("AGENTS.md is missing therapy-owner-decision-protocol-v1.");
+  }
+  return { historyLessons, reviewEvents, suggestions, approvals };
 }
 
 async function latestCandidate(rootDir) {
