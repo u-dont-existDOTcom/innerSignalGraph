@@ -63,6 +63,23 @@ Teardown sends `SIGTERM` only to the test-owned detached process group, checks b
 
 Six diagnostic/progress CLI tests had separately failed when run directly from the checkout because the CLI treated that checkout as its installed root while inheriting the same production source-root default. Each affected fixture now pins `INNER_SIGNAL_GIT_SOURCE` to a distinct nonexistent fixture-local path. Direct execution passes without weakening production overlap validation. The real updater's disposable candidate environment subsequently passed the same package tests during every transactional validation cycle.
 
+## Installed validation follow-up
+
+The first published v0.15.2 tree was installed by the real installer exactly once and then observed through one test-owned application launch. Eleven samples over five minutes all returned HTTP 200 for health, development status, Guide Packet status, and recovery ZIP export; the launcher was then stopped as one owned process group with no survivor. That health harness incorrectly exported four installer-only Git variables into the foreground launch. The background package validation inherited them and reported 247/250 even though the application remained healthy. Running the three affected installed tests with those four variables absent passed 9/9, isolating that harness contamination from the released production path.
+
+A subsequent validation-only run used the supported `--no-launch` path with those Git variables absent. The Git-bootstrap regression became green, but the two launcher liveness scenarios reported 248/250 with exact marker assertions:
+
+```text
+validation attempt did not become true within 15000 ms
+promotion attempt did not become true within 15000 ms
+```
+
+The installed autopilot loads `.env` before spawning `npm test`, so its child inherited `PORT=8787`. Node's environment-file handling does not replace an already-present variable, and the copied launchers therefore ignored the unique ephemeral ports in their own `.env` files. The identical installed liveness file passed 4/4 without the installed environment and failed 2/4 when invoked with it. Supplying only the inherited port reproduced the difference.
+
+The corrected harness deletes only the five runtime settings written by `copyRuntime` before starting its copied launcher. A deterministic regression gives the parent an invalid port value and still requires public recovery health, both status surfaces, the recovery ZIP, browser-stub ordering, and complete process teardown. The 15-second condition deadline and all production configuration/recovery behavior remain unchanged. This finding is a deterministic test-process environment-isolation defect, not evidence of an unhealthy installed server.
+
+On the corrected source tree, ten consecutive focused runs with the installed `.env` inherited passed 4/4 each, with durations from 8.23 to 10.47 seconds. The complete suite under that same installed environment then passed 250/250 in 26.242 seconds. These runs used only test-local `xdg-open`/`gio` stubs. The normal release gates and transactional update are repeated on the committed correction before the refs advance again.
+
 ## Therapy prompt lessons
 
 `THERAPY-LESSONS` is intentionally about response quality rather than engineering activity. Its active entries record that prompts should preserve the user's exact distinctions before assigning internal roles; distinguish adverse credibility evidence from missing evidence and from arousal; use reviewed, deep, or forensic processing according to structure, ambiguity, and safety; and produce one focused next move without generic caution that the case variables did not trigger.

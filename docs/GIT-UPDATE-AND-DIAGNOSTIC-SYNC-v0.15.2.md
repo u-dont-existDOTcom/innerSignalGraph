@@ -2,7 +2,7 @@
 
 ## Outcome
 
-v0.15.2 repairs the nondeterministic readiness assertion that blocked the v0.15.1 transactional installation. It also makes direct-checkout diagnostic CLI tests independent of the production source-root default. The production launcher, update transaction, rollback, diagnostic payload, progress heartbeat, therapy and hypnosis behavior, guide graphs, exact model roles, Guide Packet owner gates, and installed policy are unchanged.
+v0.15.2 repairs the nondeterministic readiness assertion that blocked the v0.15.1 transactional installation. It also makes launcher copies and direct-checkout diagnostic CLI tests independent of ambient installed-runtime configuration. The production launcher, update transaction, rollback, diagnostic payload, progress heartbeat, therapy and hypnosis behavior, guide graphs, exact model roles, Guide Packet owner gates, and installed policy are unchanged.
 
 ## Incident evidence
 
@@ -45,12 +45,19 @@ Teardown addresses only the detached process group created by that test. It send
 
 Each affected CLI fixture now supplies a distinct nonexistent `INNER_SIGNAL_GIT_SOURCE` below its own temporary root. Candidate validation retains its stronger disposable `HOME`, XDG, state, Guide Packet, source, install, credential, and external-automation boundary. The production overlap guard is unchanged.
 
+## Installed-validation port isolation
+
+The real installed autopilot loads `.env` before it invokes `npm test`. Node preserves an already-exported environment value instead of replacing it from a later `--env-file`, so launcher-copy tests could inherit the installed `PORT=8787` instead of using the unique ephemeral port written into each copied runtime's `.env`. The exact contaminated reproduction timed out waiting for the synthetic validation and promotion attempts; the same test bytes passed 4/4 when invoked without the installed `.env`.
+
+The liveness harness now removes only the five keys owned by its copied `.env` (`INNER_SIGNAL_MODE`, `PORT`, `LEDGER_MODE`, `DEV_AUTOMATION_ENABLED`, and `GUIDE_PACKET_ROOT`) before it starts the copied launcher. A deterministic regression supplies an invalid parent `PORT` and still requires the complete validation-failure recovery surface to pass on the fixture port. No production environment loader, server port behavior, assertion deadline, or recovery endpoint changed.
+
 ## Release gates
 
 `main` and `stable` may advance only together, without force, after:
 
 - ten consecutive focused promotion-recovery passes;
 - five consecutive complete liveness-file passes;
+- contaminated-parent-port liveness repetitions and a complete suite run with the installed `.env` inherited;
 - direct diagnostic/progress sync tests;
 - the complete package test suite;
 - 12/12 guide-graph regressions;

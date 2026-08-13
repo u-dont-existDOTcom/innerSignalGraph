@@ -11,6 +11,13 @@ import { fileURLToPath } from "node:url";
 
 const execFileAsync = promisify(execFile);
 const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const copiedRuntimeEnvKeys = [
+  "INNER_SIGNAL_MODE",
+  "PORT",
+  "LEDGER_MODE",
+  "DEV_AUTOMATION_ENABLED",
+  "GUIDE_PACKET_ROOT"
+];
 
 async function freePort() {
   const server = net.createServer();
@@ -146,11 +153,13 @@ async function waitFor(predicate, label, timeoutMs = 15000) {
   throw new Error(`${label} did not become true within ${timeoutMs} ms${lastError ? `: ${lastError.message}` : ""}`);
 }
 
-function startWrapper(root, bin, args = [], extraEnv = {}) {
+function startWrapper(root, bin, args = [], extraEnv = {}, inheritedEnv = process.env) {
+  const env = { ...inheritedEnv };
+  for (const key of copiedRuntimeEnvKeys) delete env[key];
   const child = spawn("bash", ["./run-autopilot.sh", ...args], {
     cwd: root,
     env: {
-      ...process.env,
+      ...env,
       ...extraEnv,
       PATH: `${bin}:${process.env.PATH}`,
       AUTOPILOT_STATE_DIR: path.join(root, ".inner-signal-autopilot"),
@@ -254,10 +263,16 @@ test("validation failure leaves health, status, and recovery ZIP available", { t
     targetScript: "src/cli/autopilot.mjs",
     markerName: "validation-attempted.txt"
   });
+  // The real autopilot loads its installed .env before invoking npm test. Prove
+  // that an ambient runtime port cannot override this fixture's ephemeral port.
+  const contaminatedParentEnv = {
+    ...process.env,
+    PORT: "parent-port-must-not-win"
+  };
   const running = startWrapper(root, bin, ["--force-validation"], {
     AUTOPILOT_STATE_DIR: externalState,
     INNER_SIGNAL_GH_COMMAND: poison.command
-  });
+  }, contaminatedParentEnv);
   try {
     await waitFor(async () => fs.access(marker).then(() => true, () => false), "validation attempt");
     await assertRecoverySurface({ port, ...running });

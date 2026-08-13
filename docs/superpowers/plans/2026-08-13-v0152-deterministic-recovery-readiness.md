@@ -105,6 +105,33 @@ git commit -m "test: make recovery readiness deterministic"
 
 ---
 
+### Task 1A: Isolate copied runtimes from the installed validation environment
+
+**Files:**
+- Modify: `tests/runtime-service-liveness.test.mjs`
+
+**Interfaces:**
+- Consumes: the installed autopilot process environment after `.env` has been loaded.
+- Produces: launcher-copy processes whose five fixture-owned settings come only from the copied runtime's `.env`.
+
+- [ ] **Step 1: Preserve the exact contaminated-environment RED**
+
+Run the focused liveness file through Node with the installed `.env`. Require the observed validation-attempt and promotion-attempt marker timeouts, then run the same bytes without that environment and require 4/4 passing. Confirm `PORT` is the minimal setting that reproduces the difference.
+
+- [ ] **Step 2: Add a deterministic poisoned-parent regression**
+
+Pass an invalid parent `PORT` into the validation-failure liveness scenario. Before the fix, the copied server must fail before the synthetic validation marker. Do not change the 15-second condition deadline.
+
+- [ ] **Step 3: Make the copied `.env` authoritative**
+
+Before spawning `run-autopilot.sh`, remove only `INNER_SIGNAL_MODE`, `PORT`, `LEDGER_MODE`, `DEV_AUTOMATION_ENABLED`, and `GUIDE_PACKET_ROOT` from the inherited environment. Preserve all deliberate test controls and production precedence outside this test fixture.
+
+- [ ] **Step 4: Verify the actual installed condition**
+
+Run the contaminated focused file ten times, the complete package suite with the installed `.env`, and every release gate. The real transactional candidate validator must also pass while inheriting runtime configuration.
+
+---
+
 ### Task 2: Hermetic direct-checkout diagnostic CLI tests
 
 **Files:**
@@ -402,3 +429,11 @@ Create a temporary command directory containing no-op `xdg-open` and `gio`, prep
 - no real browser tab opened.
 
 Terminate only the owned launcher process group after the sustained-health observation, await exit, and confirm no child server/progress process remains.
+
+---
+
+### Task 5A: Correct a post-publication installed-validation finding
+
+If the one real installer reveals a deterministic fixture-isolation defect after the first non-forced publication, retain its diagnostic receipt and do not rerun the installer. Complete Task 1A, update the architecture/spec/plan/report, repeat every source and transactional release gate, obtain independent review, and fast-forward `main` and `stable` together without force from the exact previously published commit.
+
+Apply the corrected release to the installed runtime through the normal transactional Git updater, which is distinct from the one-shot installer. Then run `./run-autopilot.sh --no-launch --force-validation` with installer-only Git variables absent. Require a final `PASS`, zero diagnostic outbox entries, exact source/installed file identity, preserved private state, and no browser or foreground application launch.

@@ -70,6 +70,10 @@ The candidate validator supplies disjoint source and installed roots. Direct `np
 
 Every diagnostic CLI subprocess fixture will explicitly provide a nonexistent source root under its own temporary fixture directory. The CLI already passes the checkout as its installed root, so the two roots are then unambiguously disjoint. This matches the production safety invariant and makes direct checkout tests independent of ambient shell state. The production root-overlap guard remains unchanged.
 
+The installed autopilot adds a second hermeticity requirement: it loads the installed `.env` before spawning `npm test`. Node does not replace an environment variable that is already present with a value from `--env-file`. Consequently, a launcher-copy fixture that writes an ephemeral `PORT` into its own `.env` can still inherit the installed runtime's port and never reach its synthetic validation or promotion boundary.
+
+Launcher-copy subprocesses will therefore remove only the runtime configuration keys explicitly written by `copyRuntime` before starting `run-autopilot.sh`. The copied `.env` remains the single authority for mode, port, ledger mode, development automation, and Guide Packet root. The recovery test will inject a malformed parent `PORT` so this boundary is exercised in an ordinary focused run. This is test-environment isolation; production configuration precedence and all existing time ceilings remain unchanged.
+
 ## Therapy prompt lesson log
 
 The user requires a visible root-level `THERAPY-LESSONS` log showing what has been learned about handling therapy prompts better since the corrected guides were uploaded. This is an audit artifact, not a change to active therapy policy.
@@ -96,6 +100,7 @@ After publication, the real installer will run once against `stable`. Verificati
 ## Non-goals
 
 - No change to launcher production timeout values.
+- No increase to test deadlines as a substitute for fixture environment isolation.
 - No suppression, deletion, skip, or weakening of the failing test.
 - No change to Git update atomicity, rollback, state preservation, diagnostic privacy, or progress delivery.
 - No therapy, hypnosis, guide graph, Guide Packet, model entitlement, or owner-decision changes; the lesson log distinguishes current behavior from unapproved candidate lessons.
