@@ -6,7 +6,9 @@ import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { loadTherapyGovernance, verifyTherapyLessons } from "../scripts/verify-therapy-lessons.mjs";
+import * as therapyGovernance from "../scripts/verify-therapy-lessons.mjs";
+
+const { loadTherapyGovernance, verifyTherapyGovernance, verifyTherapyLessons } = therapyGovernance;
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -36,6 +38,14 @@ const regressionsByDecision = {
   "decision-5": ["G-SOM-DELAYED", "G-SOM-ADVANCED-BLOCK"]
 };
 
+const reviewFindingsByDecision = {
+  "decision-1": ["SAFETY-ENCODE-001", "EXT-VALID-001"],
+  "decision-2": ["SRC-CITE-001"],
+  "decision-3": ["REG-EVIDENCE-001"],
+  "decision-4": ["PRIORITY-TIE-001"],
+  "decision-5": []
+};
+
 function reviewBlock(overrides = {}) {
   const event = {
     eventId: "review-r02-live-rejection-20260813",
@@ -63,7 +73,7 @@ function suggestionBlock(decision, overrides = {}) {
     packetId,
     decisionId: decision.id,
     status: "blocked-by-packet-review",
-    reviewFindingIds: [],
+    reviewFindingIds: reviewFindingsByDecision[decision.id],
     ownerDecisionRequired: true,
     guideIds: ["inner-child"],
     graphNodeIds: [`NODE.${decision.id}`],
@@ -136,20 +146,41 @@ async function governanceFixture(t, {
   }));
   const selectedSuggestions = governanceDecisions
     .filter((decision) => decision.id !== omitSuggestionDecisionId)
-    .map((decision) => suggestionBlock(decision, {
-      ...(decision.id === "decision-1" ? suggestionOverrides : {}),
-      ...(suggestionOverridesByDecision[decision.id] ?? {})
-    }));
+    .map((decision) => {
+      const overrides = {
+        ...(decision.id === "decision-1" ? suggestionOverrides : {}),
+        ...(suggestionOverridesByDecision[decision.id] ?? {})
+      };
+      if (Array.isArray(overrides.reviewFindingIds)) {
+        overrides.reviewFindingIds = [...reviewFindingsByDecision[decision.id], ...overrides.reviewFindingIds];
+      }
+      return suggestionBlock(decision, overrides);
+    });
   if (duplicateSuggestionDecisionId) {
     const decision = governanceDecisions.find((item) => item.id === duplicateSuggestionDecisionId);
-    selectedSuggestions.push(suggestionBlock(decision, suggestionOverridesByDecision[decision.id] ?? {}));
+    selectedSuggestions.push(suggestionBlock(decision, {
+      suggestionId: `suggestion-r02-${decision.id}-duplicate`,
+      ...(suggestionOverridesByDecision[decision.id] ?? {})
+    }));
   }
   const suggestionSource = suggestions ?? `# Suggested therapy lessons\n\n${reviewBlock(reviewOverrides)}\n${selectedSuggestions.join("\n")}`;
+  const packetRoot = path.join(fixtureRoot, "guide-packets", "fixtures", "r02-candidate", "packet");
   await Promise.all([
+    fs.mkdir(path.join(packetRoot, "audit"), { recursive: true }),
     fs.writeFile(path.join(fixtureRoot, "THERAPY-LESSONS"), `# Therapy lessons\n\n${marker("therapy-lesson", validEntries()[0])}\n`),
     fs.writeFile(path.join(fixtureRoot, "SUGGESTED-THERAPY-LESSONS"), suggestionsTransform(suggestionSource)),
     fs.writeFile(path.join(fixtureRoot, "APPROVED-THERAPY-LESSONS"), approvals),
     fs.writeFile(path.join(fixtureRoot, "AGENTS.md"), agents)
+  ]);
+  await Promise.all([
+    fs.writeFile(path.join(packetRoot, "manifest.json"), `${JSON.stringify({
+      status: "candidate",
+      packetRevision: 2,
+      packetId,
+      createdAt,
+      paths: { ownerDecisions: "audit/owner-decisions.json" }
+    }, null, 2)}\n`),
+    fs.writeFile(path.join(packetRoot, "audit", "owner-decisions.json"), `${JSON.stringify({ cards: governanceDecisions }, null, 2)}\n`)
   ]);
   return fixtureRoot;
 }
@@ -282,5 +313,69 @@ for (const { entry, field, fixtureOption } of [
   test(`therapy governance requires ${field} on ${entry}`, async (t) => {
     const rootDir = await governanceFixture(t, { [fixtureOption]: { [field]: undefined } });
     await assert.rejects(loadTherapyGovernance({ rootDir }), new RegExp(`${entry} has an invalid ${field}`));
+  });
+}
+
+test("therapy governance rejects a missing latest-packet suggestion", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    omitSuggestionDecisionId: "decision-2"
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /Expected exactly one suggestion for decision-2; found 0/);
+});
+
+test("therapy governance rejects a duplicate latest-packet suggestion", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    duplicateSuggestionDecisionId: "decision-1"
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /Expected exactly one suggestion for decision-1; found 2/);
+});
+
+test("therapy governance rejects an unknown latest-packet decision", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionOverrides: { decisionId: "decision-unknown" }
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /Unknown latest-packet therapy decision: decision-unknown/);
+});
+
+test("therapy governance rejects a suggestion naming the wrong packet", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionOverrides: { packetId: "wrong-packet" }
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /decision-1 names the wrong Guide Packet/);
+});
+
+test("therapy governance requires one rejected review event for the latest packet", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { outcome: "accepted" }
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /review event has invalid outcome: accepted/);
+});
+
+test("therapy governance rejects unmapped review findings", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    reviewOverrides: { findingIds: ["UNMAPPED-001"] }
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /Review finding UNMAPPED-001 is not mapped to a suggestion or packet-level remediation/);
+});
+
+test("therapy governance rejects finding mappings absent from the review", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionOverrides: { reviewFindingIds: ["NOT-IN-REVIEW-001"] }
+  });
+  await assert.rejects(verifyTherapyGovernance({ rootDir }), /Suggestion finding NOT-IN-REVIEW-001 is absent from the latest review event/);
+});
+
+for (const label of [
+  "Benefits:", "Costs:", "Worst plausible failure:", "Recommendation:",
+  "Reasoning:", "Source status:", "Limitation:"
+]) {
+  test(`therapy governance requires ${label} in each decision brief`, async (t) => {
+    const rootDir = await governanceFixture(t, {
+      suggestionsTransform: (source) => source.replaceAll(label, label.replace(":", ""))
+    });
+    await assert.rejects(
+      verifyTherapyGovernance({ rootDir }),
+      new RegExp(`suggestion-r02-decision-1 is missing decision-brief element: ${label}`)
+    );
   });
 }

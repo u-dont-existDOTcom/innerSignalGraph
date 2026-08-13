@@ -192,6 +192,132 @@ async function latestCandidate(rootDir) {
   return candidates[0];
 }
 
+function sectionBody(body, section) {
+  const sectionPattern = new RegExp(`^### ${escapeRegExp(section)}\\r?\\n([\\s\\S]*?)(?=^### |(?![\\s\\S]))`, "m");
+  return body.match(sectionPattern)?.[1] ?? "";
+}
+
+function assertDecisionBriefElement({ suggestion, body, section, label }) {
+  if (!sectionBody(body, section).includes(label)) {
+    throw new Error(`${suggestion.metadata.suggestionId} is missing decision-brief element: ${label}`);
+  }
+}
+
+function assertTwoOptionLabels({ suggestion, body }) {
+  const labels = [...sectionBody(body, "Options and trade-offs").matchAll(/^Option\s+([^\s—:-]+)\s*[—:-]/gm)]
+    .map((match) => match[1]);
+  if (new Set(labels).size < 2) {
+    throw new Error(`${suggestion.metadata.suggestionId} is missing decision-brief element: two option labels`);
+  }
+}
+
+export function validateLatestPacket({ manifest, cards, reviewEvents, suggestions }) {
+  const packetReviewEvents = reviewEvents.filter((entry) => entry.metadata.packetId === manifest.packetId);
+  if (packetReviewEvents.length !== 1) {
+    throw new Error(`Expected exactly one review event for ${manifest.packetId}; found ${packetReviewEvents.length}.`);
+  }
+  const reviewEvent = packetReviewEvents[0];
+  const outcome = reviewEvent.metadata.outcome;
+  if (outcome !== "rejected-before-owner-gate" && outcome !== "passed-owner-gate") {
+    throw new Error(`${reviewEvent.metadata.eventId} review event has invalid outcome: ${outcome}`);
+  }
+
+  const knownDecisionIds = new Set(cards.map((card) => card.id));
+  const packetSuggestions = suggestions.filter((entry) => entry.metadata.packetId === manifest.packetId);
+  for (const suggestion of packetSuggestions) {
+    if (!knownDecisionIds.has(suggestion.metadata.decisionId)) {
+      throw new Error(`Unknown latest-packet therapy decision: ${suggestion.metadata.decisionId}`);
+    }
+  }
+
+  const suggestionsByDecision = new Map();
+  for (const card of cards) {
+    const sameDecision = suggestions.filter((entry) => entry.metadata.decisionId === card.id);
+    const matches = sameDecision.filter((entry) => entry.metadata.packetId === manifest.packetId);
+    if (matches.length === 0 && sameDecision.length === 1) {
+      throw new Error(`${card.id} names the wrong Guide Packet.`);
+    }
+    if (matches.length !== 1) {
+      throw new Error(`Expected exactly one suggestion for ${card.id}; found ${matches.length}.`);
+    }
+    const suggestion = matches[0];
+    const metadata = suggestion.metadata;
+    suggestionsByDecision.set(card.id, suggestion);
+
+    if (metadata.ownerDecisionRequired !== true) {
+      throw new Error(`${metadata.suggestionId} must require an owner decision.`);
+    }
+    const blockedStatuses = new Set(["blocked-by-packet-review", "needs-technical-repair"]);
+    if (outcome === "rejected-before-owner-gate" && !blockedStatuses.has(metadata.status)) {
+      throw new Error(`${metadata.suggestionId} has invalid status for a rejected packet: ${metadata.status}`);
+    }
+    if (outcome === "passed-owner-gate" && blockedStatuses.has(metadata.status)) {
+      throw new Error(`${metadata.suggestionId} has invalid status for a passed packet: ${metadata.status}`);
+    }
+    if (new Date(metadata.createdAt) < new Date(manifest.createdAt)) {
+      throw new Error(`${metadata.suggestionId} predates its Guide Packet.`);
+    }
+    for (const regressionId of card.affectedRegressions ?? []) {
+      if (!metadata.regressionIds.includes(regressionId)) {
+        throw new Error(`${metadata.suggestionId} is missing affected regression: ${regressionId}`);
+      }
+    }
+    if (![...metadata.guideIds, ...metadata.graphNodeIds, ...metadata.promptIds].length) {
+      throw new Error(`${metadata.suggestionId} has no stable affected identifier.`);
+    }
+
+    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Evidence and uncertainty", label: "Source status:" });
+    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Evidence and uncertainty", label: "Limitation:" });
+    assertTwoOptionLabels({ suggestion, body: suggestion.body });
+    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Options and trade-offs", label: "Benefits:" });
+    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Options and trade-offs", label: "Costs:" });
+    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Options and trade-offs", label: "Worst plausible failure:" });
+    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Recommendation and reasoning", label: "Recommendation:" });
+    assertDecisionBriefElement({ suggestion, body: suggestion.body, section: "Recommendation and reasoning", label: "Reasoning:" });
+  }
+
+  const mappedFindingIds = new Set(reviewEvent.metadata.packetLevelFindingIds);
+  for (const suggestion of suggestionsByDecision.values()) {
+    for (const findingId of suggestion.metadata.reviewFindingIds) mappedFindingIds.add(findingId);
+  }
+  for (const findingId of reviewEvent.metadata.findingIds) {
+    if (!mappedFindingIds.has(findingId)) {
+      throw new Error(`Review finding ${findingId} is not mapped to a suggestion or packet-level remediation.`);
+    }
+  }
+  const reviewFindingIds = new Set(reviewEvent.metadata.findingIds);
+  for (const suggestion of suggestionsByDecision.values()) {
+    for (const findingId of suggestion.metadata.reviewFindingIds) {
+      if (!reviewFindingIds.has(findingId)) {
+        throw new Error(`Suggestion finding ${findingId} is absent from the latest review event.`);
+      }
+    }
+  }
+  for (const findingId of reviewEvent.metadata.packetLevelFindingIds) {
+    if (!reviewFindingIds.has(findingId)) {
+      throw new Error(`Packet-level finding ${findingId} is absent from the latest review event.`);
+    }
+  }
+
+  return { reviewEvent, suggestionsByDecision };
+}
+
+export async function verifyTherapyGovernance({ rootDir = root } = {}) {
+  const governance = await loadTherapyGovernance({ rootDir });
+  const { manifest, packetRoot } = await latestCandidate(rootDir);
+  const decisions = await readJson(path.join(packetRoot, manifest.paths.ownerDecisions));
+  const cards = decisions.cards.filter(
+    (card) => card.classification === "substantive" && card.requiresHumanDecision === true
+  );
+  const latestPacket = validateLatestPacket({
+    manifest,
+    cards,
+    reviewEvents: governance.reviewEvents,
+    suggestions: governance.suggestions
+  });
+  return { packetId: manifest.packetId, tracked: cards.length, ...latestPacket };
+}
+
 function parseEntries(source) {
   const entries = [];
   for (const match of source.matchAll(ENTRY_PATTERN)) {
