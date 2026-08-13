@@ -197,11 +197,8 @@ function sectionBody(body, section) {
   return body.match(sectionPattern)?.[1] ?? "";
 }
 
-function assertDecisionBriefElement({ suggestion, source, label, followingLabels = [], context = "" }) {
-  const boundary = followingLabels.length
-    ? `(?=${followingLabels.map(escapeRegExp).join("|")}|(?![\\s\\S]))`
-    : "(?![\\s\\S])";
-  const match = source.match(new RegExp(`${escapeRegExp(label)}\\s*([\\s\\S]*?)${boundary}`));
+function assertDecisionBriefElement({ suggestion, source, label, context = "" }) {
+  const match = source.match(new RegExp(`^[\\t ]*${escapeRegExp(label)}[\\t ]*([^\\r\\n]*)$`, "m"));
   if (!match) {
     throw new Error(`${suggestion.metadata.suggestionId} is missing decision-brief element: ${label}`);
   }
@@ -229,7 +226,6 @@ function assertOptionTradeOffs({ suggestion, body }) {
         suggestion,
         source: optionBody,
         label,
-        followingLabels: labels.filter((item) => item !== label),
         context: ` Option ${option}`
       });
     }
@@ -292,11 +288,11 @@ export function validateLatestPacket({ manifest, cards, reviewEvents, suggestion
     }
 
     const evidence = sectionBody(suggestion.body, "Evidence and uncertainty");
-    assertDecisionBriefElement({ suggestion, source: evidence, label: "Source status:", followingLabels: ["Limitation:"] });
+    assertDecisionBriefElement({ suggestion, source: evidence, label: "Source status:" });
     assertDecisionBriefElement({ suggestion, source: evidence, label: "Limitation:" });
     assertOptionTradeOffs({ suggestion, body: suggestion.body });
     const recommendation = sectionBody(suggestion.body, "Recommendation and reasoning");
-    assertDecisionBriefElement({ suggestion, source: recommendation, label: "Recommendation:", followingLabels: ["Reasoning:"] });
+    assertDecisionBriefElement({ suggestion, source: recommendation, label: "Recommendation:" });
     assertDecisionBriefElement({ suggestion, source: recommendation, label: "Reasoning:" });
   }
 

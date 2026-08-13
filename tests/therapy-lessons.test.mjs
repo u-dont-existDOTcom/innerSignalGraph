@@ -81,7 +81,7 @@ function suggestionBlock(decision, overrides = {}) {
     regressionIds: decision.affectedRegressions,
     ...overrides
   };
-  return `## ${decision.id}\n\n${marker("therapy-suggestion", metadata)}\n\n### Proposal\n\nKeep this exact candidate change pending.\n\n### Guide impact\n\nGuide: inner-child. Graph node: NODE.${decision.id}. Prompt: none. Regression: ${decision.affectedRegressions.join(", ")}.\n\n### Evidence and uncertainty\n\nSource status: canonical packet evidence. Limitation: the packet has not passed review.\n\n### Review result\n\nThe enclosing r02 packet was rejected before the owner gate.\n\n### Why not active\n\nIt has neither a passing packet nor an explicit owner decision.\n\n### Technical next action\n\nCarry the corrected proposal into r03 and rerun its regression.\n\n### Decision needed\n\nAfter r03 passes review, Joel must explicitly approve or decline this proposal.\n\n### Options and trade-offs\n\nOption A — approve after repair. Benefits: gains the proposed behavior. Costs: changes routing. Worst plausible failure: the route activates incorrectly.\n\nOption B — retain current policy. Benefits: avoids an unverified change. Costs: forgoes the candidate behavior. Worst plausible failure: a useful route remains unavailable.\n\n### Recommendation and reasoning\n\nRecommendation: wait for r03. Reasoning: technical review must pass before an owner policy choice is actionable.\n`;
+  return `## ${decision.id}\n\n${marker("therapy-suggestion", metadata)}\n\n### Proposal\n\nKeep this exact candidate change pending.\n\n### Guide impact\n\nGuide: inner-child. Graph node: NODE.${decision.id}. Prompt: none. Regression: ${decision.affectedRegressions.join(", ")}.\n\n### Evidence and uncertainty\n\nSource status: canonical packet evidence.\nLimitation: the packet has not passed review.\n\n### Review result\n\nThe enclosing r02 packet was rejected before the owner gate.\n\n### Why not active\n\nIt has neither a passing packet nor an explicit owner decision.\n\n### Technical next action\n\nCarry the corrected proposal into r03 and rerun its regression.\n\n### Decision needed\n\nAfter r03 passes review, Joel must explicitly approve or decline this proposal.\n\n### Options and trade-offs\n\nOption A — approve after repair.\nBenefits: gains the proposed behavior.\nCosts: changes routing.\nWorst plausible failure: the route activates incorrectly.\n\nOption B — retain current policy.\nBenefits: avoids an unverified change.\nCosts: forgoes the candidate behavior.\nWorst plausible failure: a useful route remains unavailable.\n\n### Recommendation and reasoning\n\nRecommendation: wait for r03.\nReasoning: technical review must pass before an owner policy choice is actionable.\n`;
 }
 
 function approvalBlock(overrides = {}) {
@@ -506,3 +506,27 @@ for (const { option, label, content } of [
     );
   });
 }
+
+test("therapy governance rejects an empty line-anchored Costs field despite Costs: prose in Benefits", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionsTransform: (source) => source
+      .replace("Benefits: gains the proposed behavior.", "Benefits: Mentioning Costs: here does not supply a cost.")
+      .replace("Costs: changes routing.", "Costs:   ")
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /suggestion-r02-decision-1 Option A has empty decision-brief element: Costs:/
+  );
+});
+
+test("therapy governance rejects an empty line-anchored Limitation field despite Limitation: prose in Source status", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    suggestionsTransform: (source) => source
+      .replace("Source status: canonical packet evidence.", "Source status: Mentioning Limitation: here does not supply a limitation.")
+      .replace("Limitation: the packet has not passed review.", "Limitation:   ")
+  });
+  await assert.rejects(
+    verifyTherapyGovernance({ rootDir }),
+    /suggestion-r02-decision-1 has empty decision-brief element: Limitation:/
+  );
+});
