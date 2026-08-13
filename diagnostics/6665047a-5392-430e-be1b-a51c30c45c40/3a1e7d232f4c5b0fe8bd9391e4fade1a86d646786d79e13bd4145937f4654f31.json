@@ -1,0 +1,60 @@
+{
+  "format": "inner-signal-remote-diagnostic-v1",
+  "incidentId": "3a1e7d232f4c5b0fe8bd9391e4fade1a86d646786d79e13bd4145937f4654f31",
+  "machineId": "6665047a-5392-430e-be1b-a51c30c45c40",
+  "createdAt": "2026-08-12T20:07:31.867Z",
+  "runtime": {
+    "version": "0.15.1",
+    "installedCommit": null,
+    "nodeVersion": "v24.18.0"
+  },
+  "update": {
+    "status": "validation-failed",
+    "candidateCommit": "62418292489cf5c764e767f8b010b98b3e14c71c"
+  },
+  "failure": {
+    "stage": "package-tests",
+    "classification": "UPDATE_TEST_FAILURE",
+    "actionCode": "KEEP_CURRENT_RUNTIME",
+    "retryable": false,
+    "exitCode": 1
+  },
+  "tests": {
+    "format": "inner-signal-test-failure-v1",
+    "command": "npm test",
+    "exitCode": 1,
+    "counts": {
+      "tests": 242,
+      "suites": 0,
+      "pass": 241,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "failures": [
+      {
+        "name": "promotion failure restarts health, status, and recovery ZIP instead of abandoning the browser"
+      },
+      {
+        "name": "promotion failure restarts health, status, and recovery ZIP instead of abandoning the browser",
+        "location": {
+          "file": "tests/runtime-service-liveness.test.mjs",
+          "line": 191,
+          "column": 1
+        }
+      }
+    ]
+  },
+  "integrity": {
+    "runtimeTreeSha256": null,
+    "graphBundleSha256": null
+  },
+  "privacy": {
+    "identity": "random-local-uuid",
+    "includesChatContent": false,
+    "includesCredentials": false,
+    "includesModelOutput": false,
+    "includesRawLogs": false
+  }
+}
