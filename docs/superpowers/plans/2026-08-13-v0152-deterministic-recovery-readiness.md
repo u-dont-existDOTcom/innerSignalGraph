@@ -251,13 +251,12 @@ Read every command's complete output and require exit zero, 242 or more package 
 
 - [ ] **Step 3: Exercise the real transactional bootstrap engine with real Git repositories**
 
-Create a temporary directory containing `Téléchargements/source`, `Téléchargements/installed`, a working repository, and a bare origin. Build two commits derived from the v0.15.2 candidate tree, point bare `stable` first at commit A and then at commit B, and call `runGitUpdate` with the real subprocess runner and default candidate validator for:
+Create a temporary directory containing a source checkout, an installed runtime, a working repository, and a bare origin. Build two commits derived from the v0.15.2 candidate tree, point bare `stable` first at commit A and then at commit B, and call `runGitUpdate` with the real subprocess runner and default candidate validator for:
 
 1. empty install → `UPDATED` at A;
 2. unchanged stable → `CURRENT` at A;
-3. stable advanced → `UPDATED` at B;
-4. injected activation failure → `FAILED_SAFE` with B preserved;
-5. retry after removing the injection → `UPDATED`.
+3. stable advanced with an injected activation failure → `FAILED_SAFE` with A preserved;
+4. retry after removing the injection → `UPDATED` at B.
 
 Before the first update, create byte-recorded sentinels for `.env`, `.inner-signal-autopilot`, `.inner-signal-dev`, `ledgers`, `data`, Guide Packet candidate state, owner decisions, and production manifest. Give candidate validation a decoy ambient state and poison GitHub command. After every transition, require all private sentinels byte-identical, no poison command call, and exact installed commit markers.
 
@@ -268,6 +267,42 @@ ps -eo pid,ppid,pgid,stat,etime,cmd | rg '/tmp/inner-signal-liveness-|run-autopi
 ```
 
 Expected: only the inspection command itself; no desktop opener invocation record outside test-local stubs.
+
+---
+
+### Task 4A: Source-grounded therapy-prompt lesson log
+
+**Files:**
+- Create: `THERAPY-LESSONS`
+- Create: `scripts/verify-therapy-lessons.mjs`
+- Create: `tests/therapy-lessons.test.mjs`
+- Modify: `package.json`
+- Modify: `scripts/verify-package.sh`
+
+**Interfaces:**
+- Consumes: the current therapy-prompt contracts and the latest bundled Guide Packet manifest, behavioral diff, and substantive owner-decision cards.
+- Produces: a readable timestamped prompt-handling lesson log whose candidate claims are structurally synchronized with the owner gate.
+
+- [ ] **Step 1: Add a failing artifact-level contract test**
+
+Run the lesson validator as a real CLI and require exit zero. Before the validator and log exist, record the expected RED failure. The break caught is a missing, duplicated, malformed, or falsely activated lesson for a substantive candidate decision.
+
+- [ ] **Step 2: Create the log and validator**
+
+Create root file `THERAPY-LESSONS`. Include timestamped active lessons grounded in current prompt/routing contracts and one readable `candidate-awaiting-owner` entry for each substantive r02 decision. Give each entry structured metadata containing its stable lesson or decision ID, timestamp, packet ID, and activation state.
+
+The validator must discover the latest bundled candidate by manifest revision, parse real owner-decision cards and log metadata, and require exactly one pending entry for every substantive human decision. It must reject missing/duplicate entries, invalid timestamps, wrong packet IDs, and any active claim for a pending decision.
+
+- [ ] **Step 3: Run GREEN and wire the release gate**
+
+Add `therapy-lessons:verify` to package scripts and run it from `scripts/verify-package.sh`. Run the focused test and CLI directly, then include them in the final complete package and verifier runs.
+
+- [ ] **Step 4: Commit the lesson contract**
+
+```bash
+git add THERAPY-LESSONS scripts/verify-therapy-lessons.mjs tests/therapy-lessons.test.mjs package.json scripts/verify-package.sh
+git commit -m "Document verified therapy prompt lessons"
+```
 
 ---
 
@@ -321,7 +356,7 @@ No publication command may run unless every command is freshly green on this exa
 ```bash
 remote_main="$(git ls-remote origin refs/heads/main | awk '{print $1}')"
 remote_stable="$(git ls-remote origin refs/heads/stable | awk '{print $1}')"
-test "$remote_main" = "b3f82e31003c4669a6136695cd2174c09eda61b6"
+test "$remote_main" = "62418292489cf5c764e767f8b010b98b3e14c71c"
 test "$remote_stable" = "62418292489cf5c764e767f8b010b98b3e14c71c"
 git push --atomic origin HEAD:refs/heads/main HEAD:refs/heads/stable
 ```
