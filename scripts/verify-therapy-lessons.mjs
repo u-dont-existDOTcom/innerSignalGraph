@@ -99,8 +99,12 @@ export function parseLedgerEntries({ source, fileName, marker, idField, timestam
   return entries;
 }
 
-function assertUniqueGovernanceIds(entries) {
-  const ids = entries.map(({ metadata }) => metadata.eventId ?? metadata.approvalId ?? metadata.suggestionId);
+function assertUniqueGovernanceIds({ reviewEvents, suggestions, approvals }) {
+  const ids = [
+    ...reviewEvents.map(({ metadata }) => metadata.eventId),
+    ...suggestions.map(({ metadata }) => metadata.suggestionId),
+    ...approvals.map(({ metadata }) => metadata.approvalId)
+  ];
   const duplicate = ids.find((id, index) => ids.indexOf(id) !== index);
   if (duplicate) throw new Error(`Duplicate therapy governance ID: ${duplicate}`);
 }
@@ -162,7 +166,7 @@ export async function loadTherapyGovernance({ rootDir = root } = {}) {
   for (const entry of approvals) {
     assertRequiredSections({ fileName: LEDGER_FILES.approvals, id: entry.metadata.approvalId, body: entry.body, sections: APPROVAL_SECTIONS });
   }
-  assertUniqueGovernanceIds([...reviewEvents, ...suggestions, ...approvals]);
+  assertUniqueGovernanceIds({ reviewEvents, suggestions, approvals });
   if (!agentsSource.includes("<!-- therapy-owner-decision-protocol-v1 -->")) {
     throw new Error("AGENTS.md is missing therapy-owner-decision-protocol-v1.");
   }

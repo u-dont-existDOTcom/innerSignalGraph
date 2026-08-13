@@ -278,6 +278,29 @@ test("therapy governance rejects duplicate IDs across ledgers", async (t) => {
   await assert.rejects(loadTherapyGovernance({ rootDir }), /Duplicate therapy governance ID: review-r02-live-rejection-20260813/);
 });
 
+test("therapy governance rejects duplicate suggestion IDs despite extraneous approval IDs", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    duplicateSuggestionDecisionId: "decision-1",
+    suggestionsTransform: (source) => source
+      .replace(
+        '"suggestionId":"suggestion-r02-decision-1-duplicate"',
+        '"suggestionId":"suggestion-r02-decision-1","approvalId":"foreign-suggestion-duplicate"'
+      )
+      .replace(
+        '"suggestionId":"suggestion-r02-decision-1","createdAt"',
+        '"suggestionId":"suggestion-r02-decision-1","approvalId":"foreign-suggestion-original","createdAt"'
+      )
+  });
+  await assert.rejects(loadTherapyGovernance({ rootDir }), /Duplicate therapy governance ID: suggestion-r02-decision-1/);
+});
+
+test("therapy governance rejects duplicate approval IDs despite extraneous event IDs", async (t) => {
+  const rootDir = await governanceFixture(t, {
+    approvals: `${approvalBlock({ eventId: "foreign-approval-original" })}\n${approvalBlock({ eventId: "foreign-approval-duplicate" })}`
+  });
+  await assert.rejects(loadTherapyGovernance({ rootDir }), /Duplicate therapy governance ID: approval-r02-decision-1/);
+});
+
 test("therapy governance rejects a missing readable section", async (t) => {
   const rootDir = await governanceFixture(t, {
     suggestionsTransform: (source) => source.replace("### Evidence and uncertainty", "### Evidence")
