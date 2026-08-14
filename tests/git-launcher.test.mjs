@@ -39,7 +39,7 @@ exit 0`);
   await executable(path.join(bin, "node"), `
 printf 'node %s\\n' "$*" >> "$INNER_SIGNAL_TEST_LOG"
 if [[ "$1" == "-p" && "$2" == "process.versions.node" ]]; then
-  printf '%s\\n' "\${INNER_SIGNAL_TEST_NODE_VERSION:-24.0.0}"
+  printf '%s\\n' "\${INNER_SIGNAL_TEST_NODE_VERSION:-24.18.0}"
   exit 0
 fi
 if [[ "$*" == *"src/cli/git-update.mjs"* ]]; then
@@ -71,20 +71,23 @@ exit 0`);
   assert.match(calls, /node .*src\/cli\/git-update\.mjs --bootstrap/);
   assert.doesNotMatch(`${stdout}\n${stderr}`, /upload.*(?:ZIP|log)|download.*ZIP/i);
 
-  await assert.rejects(
-    execFileAsync("bash", ["packaging/install-from-git.sh"], {
-      cwd: projectRoot,
-      env: {
-        ...process.env,
-        HOME: root,
-        PATH: `${bin}:${process.env.PATH}`,
-        INNER_SIGNAL_TEST_LOG: log,
-        INNER_SIGNAL_INSTALL_ONLY: "true",
-        INNER_SIGNAL_TEST_NODE_VERSION: "18.20.0"
-      }
-    }),
-    (error) => /Node\.js 20 or newer is required/.test(error.stderr)
-  );
+  for (const nodeVersion of ["20.0.0", "24.18.1"]) {
+    await assert.rejects(
+      execFileAsync("bash", ["packaging/install-from-git.sh"], {
+        cwd: projectRoot,
+        env: {
+          ...process.env,
+          HOME: root,
+          PATH: `${bin}:${process.env.PATH}`,
+          INNER_SIGNAL_TEST_LOG: log,
+          INNER_SIGNAL_INSTALL_ONLY: "true",
+          INNER_SIGNAL_INSTALL_BASE: path.join(root, `negative-${nodeVersion}`),
+          INNER_SIGNAL_TEST_NODE_VERSION: nodeVersion
+        }
+      }),
+      (error) => /Node\.js 24\.18\.0 is required/.test(error.stderr)
+    );
+  }
 });
 
 test("bootstrap exits nonzero when the requested stable runtime was not verified while ordinary launch remains fail-safe", async (t) => {

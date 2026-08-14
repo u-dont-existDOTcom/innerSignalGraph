@@ -30,16 +30,55 @@ async function writeManagedTree(root, {
   marker,
   testScript = "node -e \"process.exit(0)\"",
   graphScript = "node -e \"process.exit(0)\"",
-  validationProbe = null
+  validationProbe = null,
+  withLocalDependency = false
 }) {
   await fs.mkdir(root, { recursive: true });
-  await fs.writeFile(path.join(root, "package.json"), `${JSON.stringify({
+  const packageJson = {
     name: "inner-signal-update-fixture",
     version,
     private: true,
     type: "module",
     scripts: { test: testScript, "graph:test": graphScript }
-  }, null, 2)}\n`);
+  };
+  if (withLocalDependency) {
+    packageJson.dependencies = { "inner-signal-fixture-dependency": "file:vendor/inner-signal-fixture-dependency" };
+  }
+  await fs.writeFile(path.join(root, "package.json"), `${JSON.stringify(packageJson, null, 2)}\n`);
+  const vendorRoot = path.join(root, "vendor", "inner-signal-fixture-dependency");
+  if (withLocalDependency) {
+    await fs.mkdir(vendorRoot, { recursive: true });
+    await fs.writeFile(path.join(vendorRoot, "package.json"), `${JSON.stringify({
+      name: "inner-signal-fixture-dependency",
+      version: "1.0.0",
+      type: "module",
+      exports: "./index.mjs"
+    }, null, 2)}\n`);
+    await fs.writeFile(path.join(vendorRoot, "index.mjs"), "export const installed = true;\n");
+    await fs.writeFile(path.join(root, "package-lock.json"), `${JSON.stringify({
+      name: "inner-signal-update-fixture",
+      version,
+      lockfileVersion: 3,
+      requires: true,
+      packages: {
+        "": {
+          name: "inner-signal-update-fixture",
+          version,
+          dependencies: packageJson.dependencies
+        },
+        "node_modules/inner-signal-fixture-dependency": {
+          resolved: "vendor/inner-signal-fixture-dependency",
+          link: true
+        },
+        "vendor/inner-signal-fixture-dependency": {
+          version: "1.0.0"
+        }
+      }
+    }, null, 2)}\n`);
+  } else {
+    await fs.rm(path.join(root, "vendor"), { recursive: true, force: true });
+    await fs.rm(path.join(root, "package-lock.json"), { force: true });
+  }
   await fs.mkdir(path.join(root, "src"), { recursive: true });
   await fs.writeFile(path.join(root, "src/managed.txt"), `${marker}\n`);
   await fs.writeFile(path.join(root, "run-autopilot.sh"), `#!/usr/bin/env bash\necho ${marker}\n`, { mode: 0o755 });
@@ -234,7 +273,7 @@ assert.equal(process.env.GH_CONFIG_DIR.startsWith(process.env.HOME), true);
 assert.equal(process.env.HOME === process.env.VALIDATION_PARENT_HOME, false);
 assert.equal(process.env.INNER_SIGNAL_GIT_SOURCE.startsWith(path.dirname(process.env.HOME)), true);
 assert.equal(process.env.INNER_SIGNAL_GIT_INSTALL_ROOT.startsWith(path.dirname(process.env.HOME)), true);
-for (const name of ["GH_TOKEN", "GITHUB_TOKEN", "OPENAI_API_KEY", "ANTHROPIC_API_KEY"]) {
+for (const name of ["GH_TOKEN", "GITHUB_TOKEN", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "NPM_TOKEN", "NODE_AUTH_TOKEN", "NPM_CONFIG_USERCONFIG", "npm_config_registry_auth_token"]) {
   assert.equal(process.env[name], undefined, name);
 }
 `;
@@ -259,7 +298,11 @@ for (const name of ["GH_TOKEN", "GITHUB_TOKEN", "OPENAI_API_KEY", "ANTHROPIC_API
         GH_TOKEN: "PRIVATE_GH_TOKEN",
         GITHUB_TOKEN: "PRIVATE_GITHUB_TOKEN",
         OPENAI_API_KEY: "PRIVATE_OPENAI_KEY",
-        ANTHROPIC_API_KEY: "PRIVATE_ANTHROPIC_KEY"
+        ANTHROPIC_API_KEY: "PRIVATE_ANTHROPIC_KEY",
+        NPM_TOKEN: "PRIVATE_NPM_TOKEN",
+        NODE_AUTH_TOKEN: "PRIVATE_NODE_AUTH_TOKEN",
+        NPM_CONFIG_USERCONFIG: "/private/npmrc",
+        npm_config_registry_auth_token: "PRIVATE_NPM_CONFIG_TOKEN"
       }
     });
     completed = { code: 0, stdout: success.stdout };
@@ -373,6 +416,78 @@ test("an empty install bootstraps the exact stable commit without embedding a Gi
   assert.equal(await fs.readFile(path.join(context.installedRoot, "src/managed.txt"), "utf8"), "managed-v1\n");
   await assert.rejects(fs.access(path.join(context.installedRoot, ".git")));
   assert.equal(JSON.parse(await fs.readFile(path.join(context.stateDir, "git-install.json"), "utf8")).commit, context.firstCommit);
+});
+
+test("transactional validation installs locked dependencies and the atomic runtime retains them", async (t) => {
+  const context = await createRepository(t);
+  const candidateCommit = await context.advance({
+    version: "1.1.0",
+    marker: "managed-with-dependency",
+    testScript: "node -e \"import('inner-signal-fixture-dependency').then(({ installed }) => { if (installed !== true) process.exit(1); })\"",
+    withLocalDependency: true
+  });
+
+  const updated = await runGitUpdate({
+    sourceRoot: context.sourceRoot,
+    installedRoot: context.installedRoot,
+    repository,
+    stableBranch: "stable",
+    stateDir: context.stateDir,
+    now: () => new Date("2026-08-12T06:09:00.000Z")
+  });
+
+  assert.equal(updated.status, "UPDATED", JSON.stringify(updated));
+  assert.equal(updated.installedCommit, candidateCommit);
+  await fs.access(path.join(context.installedRoot, "node_modules", "inner-signal-fixture-dependency", "index.mjs"));
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    ["--input-type=module", "--eval", "import { installed } from 'inner-signal-fixture-dependency'; console.log(installed)"],
+    { cwd: context.installedRoot }
+  );
+  assert.equal(stdout.trim(), "true");
+});
+
+test("dependency bootstrap failures leave the installed runtime byte-identical", async (t) => {
+  for (const [name, failAt, expectedStage] of [
+    ["validation bootstrap", 1, "dependency-bootstrap"],
+    ["pristine install bootstrap", 2, "dependency-install"]
+  ]) {
+    await t.test(name, async (t) => {
+      const context = await createRepository(t);
+      await context.advance({
+        version: "1.1.0",
+        marker: `managed-${name}`,
+        withLocalDependency: true
+      });
+      const before = await treeHash(context.installedRoot);
+      let bootstrapCount = 0;
+      const run = async (input) => {
+        if (input.command === "npm" && input.args?.join(" ") === "ci --ignore-scripts") {
+          bootstrapCount += 1;
+          if (bootstrapCount === failAt) {
+            return { code: 47, signal: null, stdout: "", stderr: "dependency bootstrap failed" };
+          }
+        }
+        return await runSubprocess(input);
+      };
+
+      const result = await runGitUpdate({
+        sourceRoot: context.sourceRoot,
+        installedRoot: context.installedRoot,
+        repository,
+        stableBranch: "stable",
+        stateDir: context.stateDir,
+        run,
+        now: () => new Date("2026-08-12T06:09:30.000Z")
+      });
+
+      assert.equal(result.status, "FAILED_SAFE", JSON.stringify(result));
+      assert.equal(result.stage, expectedStage);
+      assert.equal(result.testSummary?.command, "package tests");
+      assert.equal(result.testSummary?.exitCode, 47);
+      assert.equal(await treeHash(context.installedRoot), before);
+    });
+  }
 });
 
 test("validation and fetch failures leave the installed runtime byte-identical and source checkout intact", async (t) => {

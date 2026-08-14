@@ -5,13 +5,39 @@
   "long_running": true,
   "visibility": "private",
   "risk": "critical",
-  "commands": {},
-  "current_state": null,
-  "github_controls": {
-    "default_branch_rules": "unverified",
-    "secret_scanning": "unverified",
-    "push_protection": "unverified",
-    "code_scanning": "unverified"
+  "commands": {
+    "bootstrap": "npm ci --ignore-scripts",
+    "test": "npm test",
+    "graph": "npm run graph:test",
+    "package": "npm run verify",
+    "audit": "npm run audit:repository",
+    "verify": "npm run verify",
+    "current_state": "bash scripts/report-worktree.sh"
   },
-  "audit_note": "This repository requires verified exact bootstrap/test/build commands, a single authoritative project/current-state entry point, and explicit domain-safety/model-evaluation gates. Do not choose among historical reports or model settings from memory."
+  "current_state": "state/CODEX-CURRENT-STATE.md",
+  "github_controls": {
+    "default_branch_rules": "disabled",
+    "stable_branch_rules": "disabled",
+    "secret_scanning": "disabled",
+    "push_protection": "disabled",
+    "code_scanning": "disabled",
+    "actions_default_permissions": "verified",
+    "actions_allowed_set": "enabled",
+    "actions_sha_pinning": "enabled",
+    "vulnerability_alerts": "enabled",
+    "dependabot_alerts": "enabled",
+    "automated_security_fixes": "enabled",
+    "private_vulnerability_reporting": "not_applicable",
+    "github_app_permissions": "unverified"
+  },
+  "github_controls_evidence": {
+    "checked_at": "2026-08-14T07:28:21Z",
+    "source": "GitHub REST API and repository metadata",
+    "branch_rules": "Rulesets and protection writes for main and stable returned HTTP 403 plan limitations; both branches read back protected=false.",
+    "security": "Vulnerability and Dependabot alerts plus automated fixes read back enabled. Secret scanning and push protection returned HTTP 422 unavailable; code scanning returned HTTP 403 disabled/unavailable; private vulnerability reporting returned HTTP 404 and is public-repository-only.",
+    "actions": "Read back enabled=true, allowed_actions=selected, github_owned_allowed=true, verified_allowed=false, patterns_allowed=[], sha_pinning_required=true, default_workflow_permissions=read, can_approve_pull_request_reviews=false.",
+    "access_inventory": "One admin collaborator and no other collaborators; zero deploy keys, webhooks, and environments. Repository-scoped GitHub App installation permissions remain UNVERIFIED because the OAuth token cannot use the App-JWT-only endpoint.",
+    "hardening_issue": "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4"
+  },
+  "audit_note": "Exact commands are repository-visible and must be rerun on the final commit. Hosted states require GitHub API re-verification; files and CODEOWNERS do not prove enforcement. Stable promotion and therapy/framework policy remain owner-gated."
 }

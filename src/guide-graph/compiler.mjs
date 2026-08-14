@@ -120,7 +120,6 @@ export async function compileGuideGraphs({ root = projectRoot, write = true } = 
   const bundle = {
     contractVersion: GUIDE_GRAPH_CONTRACT,
     version: manifest.version,
-    compiledAt: new Date().toISOString(),
     sourceManifestVersion: manifest.version,
     sourceMaps,
     graphs: compiledGraphs,

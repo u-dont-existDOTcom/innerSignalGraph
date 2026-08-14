@@ -1,5 +1,20 @@
 # Inner Signal Runtime v0.15.2
 
+## Authoritative start path
+
+Inner Signal is private, active, critical-risk software. Start with `AGENTS.md`, then `.github/codex-repository.json` for exact commands, `state/CODEX-CURRENT-STATE.md` for the resumable checkpoint, this README for branch/release/privacy authority, `AUTOPILOT.md` for runtime automation, and `docs/INDEX.md` for current evidence. `IMPLEMENTATION-REPORT-v0.15.2.md` is the current production implementation report; dated reports remain historical evidence rather than current instructions.
+
+The supported development runtime is exactly Node 24.18.0 with npm 11.16.0. The repository-visible path is:
+
+```bash
+npm ci --ignore-scripts
+npm run audit:repository
+npm test
+npm run verify
+```
+
+Provider checks are explicit opt-in live evidence and do not run in ordinary CI. `main` is development authority, `stable` is the sole installation/release source, and `runtime-diagnostics` is generated allowlisted status data that must never merge into source. Release promotion follows `docs/RELEASE-EVIDENCE.md` and remains distinct from merging development work to `main`.
+
 ## Hermetic Git updates, safe diagnostics, and remote progress
 
 v0.15.2 makes recovery verification deterministic. Promotion-failure tests now hold the recovery restart at an explicit boundary, prove the launcher stays alive during that transition, then synchronize on the public `/health` endpoint before checking development status, guide status, and the recovery ZIP. Test launchers own inert desktop-open commands and complete process-group cleanup, so package validation cannot open browser tabs or leave temporary services behind. The production recovery path and its time limits are unchanged.

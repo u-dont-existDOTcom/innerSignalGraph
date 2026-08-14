@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPOSITORY="${INNER_SIGNAL_GITHUB_REPOSITORY:-u-dont-existDOTcom/innerSignalGraph}"
 STABLE_BRANCH="${INNER_SIGNAL_GIT_STABLE_BRANCH:-stable}"
 INSTALL_BASE="${INNER_SIGNAL_INSTALL_BASE:-$HOME/Téléchargements}"
@@ -15,9 +16,13 @@ for command_name in node npm git; do
 done
 
 NODE_VERSION="$(node -p 'process.versions.node')"
-NODE_MAJOR="${NODE_VERSION%%.*}"
-if [[ ! "$NODE_MAJOR" =~ ^[0-9]+$ ]] || (( NODE_MAJOR < 20 )); then
-  echo "BLOCKED: Node.js 20 or newer is required; found ${NODE_VERSION:-unknown}." >&2
+SUPPORTED_NODE_VERSION="$(tr -d '[:space:]' < "$SCRIPT_ROOT/.nvmrc")"
+if [[ ! "$SUPPORTED_NODE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "BLOCKED: the supported Node.js version is not configured correctly." >&2
+  exit 1
+fi
+if [[ "$NODE_VERSION" != "$SUPPORTED_NODE_VERSION" ]]; then
+  echo "BLOCKED: Node.js $SUPPORTED_NODE_VERSION is required; found ${NODE_VERSION:-unknown}." >&2
   exit 1
 fi
 
