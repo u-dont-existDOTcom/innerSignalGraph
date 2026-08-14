@@ -1,0 +1,16 @@
+# Default owner
+* @u-dont-existDOTcom
+
+# High-consequence instructions, safety/model evaluation, automation, and release paths
+/.github/ @u-dont-existDOTcom
+/AGENTS.md @u-dont-existDOTcom
+/AUTOPILOT.md @u-dont-existDOTcom
+/state/ @u-dont-existDOTcom
+/src/ @u-dont-existDOTcom
+/tests/ @u-dont-existDOTcom
+/prompts/ @u-dont-existDOTcom
+/config/ @u-dont-existDOTcom
+/package.json @u-dont-existDOTcom
+/package-lock.json @u-dont-existDOTcom
+/INSTALL* @u-dont-existDOTcom
+/RUN* @u-dont-existDOTcom
