@@ -2,290 +2,200 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { isMap, isScalar, isSeq, LineCounter, parseDocument } from "yaml";
 
 const FULL_SHA = /^[0-9a-fA-F]{40}$/;
-const BLOCK_SCALAR = /^[>|](?:(?:[+-][1-9]?)|(?:[1-9][+-]?))?\s*(?:#.*)?$/;
 
-function physicalKey(line) {
-  const match = /^( *)(?:-\s+)?(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_-]+))\s*:\s*(.*?)\s*$/.exec(line);
-  if (!match) return null;
-  return {
-    indent: match[1].length,
-    key: match[2] ?? match[3] ?? match[4],
-    value: match[5]
-  };
+function isObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function scalarValue(value) {
-  const withoutComment = value.replace(/\s+#.*$/, "").trim();
-  if (
-    withoutComment.length >= 2 &&
-    ((withoutComment.startsWith('"') && withoutComment.endsWith('"')) ||
-      (withoutComment.startsWith("'") && withoutComment.endsWith("'")))
-  ) {
-    return withoutComment.slice(1, -1);
-  }
-  return withoutComment;
+function mapPair(node, key) {
+  if (!isMap(node)) return null;
+  return node.items.find((pair) => isScalar(pair.key) && String(pair.key.value) === key) ?? null;
 }
 
-function eventScalarIncludes(value, eventName) {
-  const scalar = scalarValue(value);
-  if (scalar.startsWith("{") && scalar.endsWith("}")) {
-    const keys = [];
-    let depth = 0;
-    let quote = null;
-    let escaped = false;
-    let entryStart = 1;
-    let expectingKey = true;
-    for (let index = 0; index < scalar.length; index += 1) {
-      const character = scalar[index];
-      if (quote) {
-        if (escaped) escaped = false;
-        else if (character === "\\") escaped = true;
-        else if (character === quote) quote = null;
-        continue;
-      }
-      if (character === '"' || character === "'") {
-        quote = character;
-        continue;
-      }
-      if (character === "{" || character === "[") depth += 1;
-      else if (character === "}" || character === "]") depth -= 1;
-      else if (character === ":" && depth === 1 && expectingKey) {
-        keys.push(scalarValue(scalar.slice(entryStart, index)));
-        expectingKey = false;
-      } else if (character === "," && depth === 1) {
-        entryStart = index + 1;
-        expectingKey = true;
-      }
-    }
-    return keys.includes(eventName);
-  }
-  const normalized = scalar.replace(/^\[|\]$/g, "");
-  return normalized
-    .split(",")
-    .map((item) => scalarValue(item))
-    .some((item) => item === eventName);
+function mapValueNode(node, key) {
+  return mapPair(node, key)?.value ?? null;
 }
 
-function actionReference(line) {
-  const match = /^\s*(?:-\s*)?uses\s*:\s*(.*?)\s*$/.exec(line);
-  if (!match) return null;
-  return scalarValue(match[1]);
+function sourceLine(node, lineCounter, fallback = 1) {
+  const offset = Array.isArray(node?.range) ? node.range[0] : null;
+  return Number.isInteger(offset) ? lineCounter.linePos(offset).line : fallback;
 }
 
-function flowActionReferences(line) {
-  const references = [];
-  const boundaries = new Set(["{", "[", ","]);
-  let enclosingQuote = null;
-  let escaped = false;
-  for (let index = 0; index < line.length; index += 1) {
-    if (enclosingQuote) {
-      if (escaped) escaped = false;
-      else if (line[index] === "\\") escaped = true;
-      else if (line[index] === enclosingQuote) enclosingQuote = null;
-      continue;
-    }
-    if (line[index] === '"' || line[index] === "'") {
-      enclosingQuote = line[index];
-      continue;
-    }
-    if (!boundaries.has(line[index])) continue;
-    let cursor = index + 1;
-    while (/\s/.test(line[cursor] ?? "")) cursor += 1;
-
-    let key = "";
-    if (line[cursor] === '"' || line[cursor] === "'") {
-      const quote = line[cursor];
-      cursor += 1;
-      while (cursor < line.length && line[cursor] !== quote) {
-        if (line[cursor] === "\\" && cursor + 1 < line.length) cursor += 1;
-        key += line[cursor];
-        cursor += 1;
-      }
-      if (line[cursor] !== quote) continue;
-      cursor += 1;
-    } else {
-      const match = /^[A-Za-z0-9_-]+/.exec(line.slice(cursor));
-      if (!match) continue;
-      key = match[0];
-      cursor += key.length;
-    }
-
-    while (/\s/.test(line[cursor] ?? "")) cursor += 1;
-    if (key !== "uses" || line[cursor] !== ":") continue;
-    cursor += 1;
-    while (/\s/.test(line[cursor] ?? "")) cursor += 1;
-
-    let value = "";
-    if (line[cursor] === '"' || line[cursor] === "'") {
-      const quote = line[cursor];
-      cursor += 1;
-      while (cursor < line.length && line[cursor] !== quote) {
-        if (line[cursor] === "\\" && cursor + 1 < line.length) cursor += 1;
-        value += line[cursor];
-        cursor += 1;
-      }
-    } else {
-      while (cursor < line.length && !",}]".includes(line[cursor])) {
-        value += line[cursor];
-        cursor += 1;
-      }
-    }
-    if (value.trim()) references.push(value.trim());
-  }
-  return references;
+function eventIncludes(value, eventName) {
+  if (typeof value === "string") return value === eventName;
+  if (Array.isArray(value)) return value.some((event) => event === eventName);
+  return isObject(value) && Object.hasOwn(value, eventName);
 }
 
-function actionReferences(line) {
-  const standalone = actionReference(line);
-  return [...new Set([...(standalone ? [standalone] : []), ...flowActionReferences(line)])];
+function flowFinding(code, relativePath, line, message) {
+  return { code, path: relativePath, line, message };
+}
+
+function structureFinding(relativePath, line, message) {
+  return { code: "workflow-structure-invalid", path: relativePath, line, message };
 }
 
 export function auditWorkflowText(text, relativePath) {
   const findings = [];
-  let blockIndent = null;
-  let onIndent = null;
-  let jobsIndent = null;
-  let jobIndent = null;
-  let jobPropertyIndent = null;
-  let stepsIndent = null;
-  let hasTopLevelPermissions = false;
-  let hasPullRequestTarget = false;
-  let hasCheckout = false;
+  const lineCounter = new LineCounter();
+  const document = parseDocument(text, {
+    lineCounter,
+    strict: true,
+    uniqueKeys: true
+  });
 
-  for (const [index, line] of text.split(/\r?\n/).entries()) {
-    const indent = line.match(/^ */)[0].length;
-    const trimmed = line.trim();
-    if (blockIndent !== null) {
-      if (trimmed === "" || indent > blockIndent) continue;
-      blockIndent = null;
-    }
-    if (trimmed === "" || trimmed.startsWith("#")) continue;
-
-    const parsed = physicalKey(line);
-    if (stepsIndent !== null && indent <= stepsIndent) stepsIndent = null;
-
-    const isTopLevelJobs = parsed?.indent === 0 && parsed.key === "jobs";
-    if (jobsIndent !== null && indent <= jobsIndent && !isTopLevelJobs) {
-      jobsIndent = null;
-      jobIndent = null;
-      jobPropertyIndent = null;
-      stepsIndent = null;
-    }
-    if (isTopLevelJobs) {
-      const jobsValue = scalarValue(parsed.value);
-      if (/^[\[{]/.test(jobsValue)) {
-        findings.push({
-          code: "flow-jobs-unsupported",
-          path: relativePath,
-          line: index + 1,
-          message: "workflow jobs must use block mapping syntax so Action references can be audited"
-        });
-        jobsIndent = null;
-      } else if (jobsValue === "") {
-        jobsIndent = parsed.indent;
-        jobIndent = null;
-        jobPropertyIndent = null;
-      }
-    } else if (jobsIndent !== null && indent > jobsIndent) {
-      if (jobIndent === null && /^[\[{]/.test(trimmed)) {
-        findings.push({
-          code: "flow-jobs-unsupported",
-          path: relativePath,
-          line: index + 1,
-          message: "workflow jobs must use block mapping syntax so Action references can be audited"
-        });
-      } else if (parsed && (jobIndent === null || parsed.indent <= jobIndent)) {
-        jobIndent = parsed.indent;
-        jobPropertyIndent = null;
-        stepsIndent = null;
-      } else if (parsed && jobPropertyIndent === null && parsed.indent > jobIndent) {
-        jobPropertyIndent = parsed.indent;
-      }
-    }
-
-    const isJobSteps =
-      parsed?.key === "steps" &&
-      jobsIndent !== null &&
-      jobIndent !== null &&
-      jobPropertyIndent !== null &&
-      parsed.indent === jobPropertyIndent;
-    if (isJobSteps) {
-      if (/^[\[{]/.test(scalarValue(parsed.value))) {
-        findings.push({
-          code: "flow-steps-unsupported",
-          path: relativePath,
-          line: index + 1,
-          message: "workflow steps must use block sequence syntax so Action references can be audited"
-        });
-      } else if (scalarValue(parsed.value) === "") {
-        stepsIndent = parsed.indent;
-      }
-    } else if (stepsIndent !== null && indent > stepsIndent && /^(?:-\s*)?[\[{]/.test(trimmed)) {
+  if (document.errors.length > 0) {
+    for (const error of document.errors) {
+      const offset = Array.isArray(error.pos) ? error.pos[0] : 0;
       findings.push({
-        code: "flow-steps-unsupported",
+        code: "yaml-invalid",
         path: relativePath,
-        line: index + 1,
-        message: "workflow steps must use block mapping syntax so Action references can be audited"
+        line: lineCounter.linePos(offset).line || 1,
+        message: error.message.split("\n", 1)[0]
       });
     }
-    if (onIndent !== null && indent <= onIndent && !(parsed?.indent === 0 && parsed.key === "on")) {
-      onIndent = null;
-    }
-
-    if (parsed?.indent === 0 && parsed.key === "permissions") {
-      hasTopLevelPermissions = true;
-    }
-    if (parsed?.key === "permissions" && scalarValue(parsed.value) === "write-all") {
-      findings.push({
-        code: "permissions-write-all",
-        path: relativePath,
-        line: index + 1,
-        message: "permissions: write-all is forbidden"
-      });
-    }
-
-    if (parsed?.indent === 0 && parsed.key === "on") {
-      if (scalarValue(parsed.value) === "") onIndent = 0;
-      else if (eventScalarIncludes(parsed.value, "pull_request_target")) hasPullRequestTarget = true;
-    } else if (onIndent !== null && parsed && parsed.indent > onIndent && parsed.key === "pull_request_target") {
-      hasPullRequestTarget = true;
-    }
-
-    for (const reference of actionReferences(line)) {
-      if (reference.startsWith("actions/checkout@")) hasCheckout = true;
-      if (!reference.startsWith("./") && !reference.startsWith("docker://")) {
-        const separator = reference.lastIndexOf("@");
-        const action = separator > 0 ? reference.slice(0, separator) : reference;
-        const ref = separator > 0 ? reference.slice(separator + 1) : "";
-        if (!FULL_SHA.test(ref)) {
-          findings.push({
-            code: "action-ref-unpinned",
-            path: relativePath,
-            line: index + 1,
-            message: `remote dependency ${action} is not pinned to a full commit SHA`
-          });
-        }
-      }
-    }
-
-    if (parsed && BLOCK_SCALAR.test(parsed.value)) blockIndent = parsed.indent;
+    return findings;
   }
 
-  if (!hasTopLevelPermissions) {
+  let workflow;
+  try {
+    workflow = document.toJS({ maxAliasCount: 100 });
+  } catch (error) {
+    return [{ code: "yaml-invalid", path: relativePath, line: 1, message: error.message }];
+  }
+  if (!isObject(workflow) || !isMap(document.contents)) {
+    return [structureFinding(relativePath, 1, "workflow root must be a mapping")];
+  }
+
+  const rootNode = document.contents;
+  const permissionsNode = mapValueNode(rootNode, "permissions");
+  if (!Object.hasOwn(workflow, "permissions")) {
     findings.push({
       code: "permissions-missing",
       path: relativePath,
       line: 1,
       message: "workflow is missing explicit top-level permissions"
     });
+  } else if (workflow.permissions === "write-all") {
+    findings.push({
+      code: "permissions-write-all",
+      path: relativePath,
+      line: sourceLine(permissionsNode, lineCounter),
+      message: "permissions: write-all is forbidden"
+    });
   }
+
+  const hasPullRequestTarget = eventIncludes(workflow.on, "pull_request_target");
+  const jobs = workflow.jobs;
+  const jobsNode = mapValueNode(rootNode, "jobs");
+  let hasCheckout = false;
+
+  if (!isObject(jobs)) {
+    findings.push(structureFinding(relativePath, sourceLine(jobsNode, lineCounter), "workflow jobs must be a mapping"));
+    return findings;
+  }
+  if (isMap(jobsNode) && jobsNode.flow) {
+    findings.push(flowFinding(
+      "flow-jobs-unsupported",
+      relativePath,
+      sourceLine(jobsNode, lineCounter),
+      "workflow jobs must use block mapping syntax so Action references can be audited"
+    ));
+  }
+
+  function auditReference(rawReference, line) {
+    if (typeof rawReference !== "string" || rawReference.trim() === "") {
+      findings.push({
+        code: "action-reference-invalid",
+        path: relativePath,
+        line,
+        message: "Action and reusable-workflow uses values must resolve to a non-empty string"
+      });
+      return;
+    }
+    const reference = rawReference.trim();
+    if (reference.startsWith("actions/checkout@")) hasCheckout = true;
+    if (reference.startsWith("./") || reference.startsWith("docker://")) return;
+    const separator = reference.lastIndexOf("@");
+    const action = separator > 0 ? reference.slice(0, separator) : reference;
+    const ref = separator > 0 ? reference.slice(separator + 1) : "";
+    if (!FULL_SHA.test(ref)) {
+      findings.push({
+        code: "action-ref-unpinned",
+        path: relativePath,
+        line,
+        message: `remote dependency ${action} is not pinned to a full commit SHA`
+      });
+    }
+  }
+
+  for (const [jobId, job] of Object.entries(jobs)) {
+    const jobNode = mapValueNode(jobsNode, jobId);
+    const jobLine = sourceLine(jobNode, lineCounter);
+    if (!isObject(job)) {
+      findings.push(structureFinding(relativePath, jobLine, `job ${jobId} must be a mapping`));
+      continue;
+    }
+    if (isMap(jobNode) && jobNode.flow) {
+      findings.push(flowFinding(
+        "flow-jobs-unsupported",
+        relativePath,
+        jobLine,
+        "individual jobs must use block mapping syntax so Action references can be audited"
+      ));
+    }
+    if (job.permissions === "write-all") {
+      findings.push({
+        code: "permissions-write-all",
+        path: relativePath,
+        line: sourceLine(mapValueNode(jobNode, "permissions"), lineCounter, jobLine),
+        message: "permissions: write-all is forbidden"
+      });
+    }
+
+    if (Object.hasOwn(job, "uses")) {
+      auditReference(job.uses, sourceLine(mapValueNode(jobNode, "uses"), lineCounter, jobLine));
+    }
+    if (!Object.hasOwn(job, "steps")) continue;
+
+    const stepsNode = mapValueNode(jobNode, "steps");
+    if (!Array.isArray(job.steps)) {
+      findings.push(structureFinding(relativePath, sourceLine(stepsNode, lineCounter, jobLine), `job ${jobId} steps must be a sequence`));
+      continue;
+    }
+    if (isSeq(stepsNode)) {
+      const flowNode = stepsNode.flow ? stepsNode : stepsNode.items.find((item) => item?.flow);
+      if (flowNode) {
+        findings.push(flowFinding(
+          "flow-steps-unsupported",
+          relativePath,
+          sourceLine(flowNode, lineCounter, jobLine),
+          "workflow steps must use block sequence and mapping syntax so Action references can be audited"
+        ));
+      }
+    }
+
+    for (const [stepIndex, step] of job.steps.entries()) {
+      const stepNode = isSeq(stepsNode) ? stepsNode.items[stepIndex] : null;
+      const stepLine = sourceLine(stepNode, lineCounter, jobLine);
+      if (!isObject(step)) {
+        findings.push(structureFinding(relativePath, stepLine, `job ${jobId} step ${stepIndex + 1} must be a mapping`));
+        continue;
+      }
+      if (Object.hasOwn(step, "uses")) {
+        auditReference(step.uses, sourceLine(mapValueNode(stepNode, "uses"), lineCounter, stepLine));
+      }
+    }
+  }
+
   if (hasPullRequestTarget && hasCheckout) {
     findings.push({
       code: "pull-request-target-checkout",
       path: relativePath,
-      line: 1,
+      line: sourceLine(mapValueNode(rootNode, "on"), lineCounter),
       message: "pull_request_target must not check out or execute untrusted pull-request code"
     });
   }

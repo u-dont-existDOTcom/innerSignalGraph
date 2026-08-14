@@ -41,5 +41,8 @@
     "guide-packet:verify": "node src/cli/guide-packet.mjs verify guide-packets/fixtures/r02-candidate/inner-signal-guide-packet-r02-candidate.zip",
     "guide-packet:verify:r01": "node src/cli/guide-packet.mjs verify guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip",
     "guide-packet:status": "node --env-file=.env src/cli/guide-packet.mjs status"
+  },
+  "dependencies": {
+    "yaml": "2.9.0"
   }
 }

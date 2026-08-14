@@ -3,13 +3,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { auditWorkflows } from "../scripts/audit-workflows.mjs";
 
-const execFileAsync = promisify(execFile);
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const auditScript = path.join(projectRoot, "scripts", "audit-workflows.mjs");
 const pinnedCheckout = "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683";
 
 async function fixture(t, workflow) {
@@ -22,18 +19,8 @@ async function fixture(t, workflow) {
 }
 
 async function runAudit(root) {
-  try {
-    const result = await execFileAsync(process.execPath, [auditScript, "--root", root], {
-      cwd: projectRoot
-    });
-    return { code: 0, stdout: result.stdout, stderr: result.stderr };
-  } catch (error) {
-    return {
-      code: Number(error.code),
-      stdout: String(error.stdout ?? ""),
-      stderr: String(error.stderr ?? "")
-    };
-  }
+  const result = auditWorkflows(root);
+  return { code: result.ok ? 0 : 1, stdout: `${JSON.stringify(result, null, 2)}\n`, stderr: "" };
 }
 
 function parseResult(result) {
@@ -131,6 +118,43 @@ jobs:
   const result = await runAudit(root);
   assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
   assert.ok(parseResult(result).findings.some(({ code }) => code === "flow-steps-unsupported"));
+});
+
+test("an indentationless flow-style step item fails closed", async (t) => {
+  const root = await fixture(t, `name: Unsafe indentationless flow step
+on: pull_request_target
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+    - {uses:
+        actions/checkout@v4}
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  const codes = new Set(parseResult(result).findings.map(({ code }) => code));
+  assert.ok(codes.has("flow-steps-unsupported"));
+  assert.ok(codes.has("action-ref-unpinned"));
+  assert.ok(codes.has("pull-request-target-checkout"));
+});
+
+test("a flow-style individual job value fails closed", async (t) => {
+  const root = await fixture(t, `name: Unsafe flow job value
+on: pull_request_target
+permissions:
+  contents: read
+jobs:
+  audit:
+    {runs-on: ubuntu-latest, steps:
+      [{uses: actions/checkout@v4}]}
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  assert.ok(parseResult(result).findings.some(({ code }) => code === "flow-jobs-unsupported"));
 });
 
 test("multiline flow-style steps fail closed before an Action can hide", async (t) => {
@@ -237,6 +261,93 @@ jobs:
   assert.ok(parseResult(result).findings.some(({ code }) => code === "flow-steps-unsupported"));
 });
 
+test("quoted and multiline uses keys retain Action and privileged-checkout semantics", async (t) => {
+  for (const [name, uses] of [
+    ["quoted", `      - "uses": actions/checkout@v4`],
+    ["multiline", `      - uses:\n          actions/checkout@v4`]
+  ]) {
+    const root = await fixture(t, `name: Unsafe ${name} uses
+on: pull_request_target
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+${uses}
+`);
+    const result = await runAudit(root);
+    assert.equal(result.code, 1, `${name}\n${result.stdout}\n${result.stderr}`);
+    const codes = new Set(parseResult(result).findings.map(({ code }) => code));
+    assert.ok(codes.has("action-ref-unpinned"), name);
+    assert.ok(codes.has("pull-request-target-checkout"), name);
+  }
+});
+
+test("split scalar, block sequence, and split flow on values retain privileged-event semantics", async (t) => {
+  for (const [name, event] of [
+    ["scalar", `on:\n  pull_request_target`],
+    ["block sequence", `on:\n  - pull_request_target`],
+    ["flow sequence", `on:\n  [pull_request_target]`]
+  ]) {
+    const root = await fixture(t, `name: Unsafe ${name} event
+${event}
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ${pinnedCheckout}
+`);
+    const result = await runAudit(root);
+    assert.equal(result.code, 1, `${name}\n${result.stdout}\n${result.stderr}`);
+    assert.ok(parseResult(result).findings.some(({ code }) => code === "pull-request-target-checkout"), name);
+  }
+});
+
+test("uses-shaped data outside actual jobs and steps remains valid", async (t) => {
+  const root = await fixture(t, `name: Valid uses-shaped data
+on: push
+permissions:
+  contents: read
+env:
+  uses: literal-value
+jobs:
+  audit:
+    strategy:
+      matrix:
+        include: [{uses: literal-data}]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ok
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 0, `${result.stdout}\n${result.stderr}`);
+  assert.deepEqual(parseResult(result).findings, []);
+});
+
+test("folded Action values and multiline quoted commands are parsed semantically", async (t) => {
+  const root = await fixture(t, `name: Valid multiline scalars
+on: push
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: >-
+          ${pinnedCheckout}
+      - run: "echo
+          [literal text]"
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 0, `${result.stdout}\n${result.stderr}`);
+  assert.deepEqual(parseResult(result).findings, []);
+});
+
 test("unpinned remote Actions and write-all permissions are rejected", async (t) => {
   const root = await fixture(t, `name: Unsafe
 on: [push]
@@ -255,6 +366,36 @@ jobs:
   const codes = new Set(parseResult(result).findings.map(({ code }) => code));
   assert.ok(codes.has("permissions-write-all"));
   assert.ok(codes.has("action-ref-unpinned"));
+});
+
+test("unpinned remote reusable workflows are rejected at the job boundary", async (t) => {
+  const root = await fixture(t, `name: Unsafe reusable workflow
+on: push
+permissions:
+  contents: read
+jobs:
+  reuse:
+    uses: example/repository/.github/workflows/reusable.yml@main
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  assert.ok(parseResult(result).findings.some(({ code }) => code === "action-ref-unpinned"));
+});
+
+test("malformed or duplicate-key YAML fails closed", async (t) => {
+  const root = await fixture(t, `name: Duplicate key
+on: push
+permissions:
+  contents: read
+permissions:
+  contents: write
+jobs: {}
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  assert.ok(parseResult(result).findings.some(({ code }) => code === "yaml-invalid"));
 });
 
 test("missing top-level permissions are rejected", async (t) => {
