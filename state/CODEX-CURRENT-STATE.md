@@ -31,8 +31,11 @@ Establish the applicable Codex + GitHub baseline for this private, active, criti
 - Enabled and read back GitHub-owned Actions-only execution, full-SHA Action enforcement, vulnerability/Dependabot alerts, and automated security fixes while retaining read-only workflow tokens.
 - Attempted documented branch, ruleset, secret-protection, code-scanning, and private-reporting APIs; preserved their exact 403/422/404 outcomes in the profile and the single hardening issue `https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4`.
 - Repaired and promoted the transferable audit/recovery lessons through `u-dont-existDOTcom/universal-dev-architecture` PR 6, merged as `81265fd3592ee842bfe30c7d73a5c1f3dc01b2d0` with both hosted checks green.
-- Removed wall-clock metadata from compiled guide-graph artifacts under a causal regression, so the package gate tests byte-stable generated output; the complete real-host verifier now ends in `VERDICT PASS` with 272/272 tests.
-- Completed the focused 52/52 transactional/privacy/readiness/model-role safety matrix, graph 12/12, therapy-lesson 5/5, repository/workflow audits with zero errors, and the repaired universal audit with zero errors.
+- Removed wall-clock metadata from compiled guide-graph artifacts under a causal regression, so the package gate tests byte-stable generated output.
+- Closed independent-review bypasses in the workflow audit with semantic YAML parsing, fail-closed flow-style handling, case-insensitive checkout detection, reusable-workflow rejection under `pull_request_target`, and alias-key/value resolution.
+- Made transactional Git updates install locked dependencies in disposable validation and again in the pristine install tree, scrub npm credential/config variables, and fail safely before the old runtime moves. The real-machine regression proves the installed runtime can import its locked dependency and both bootstrap failure points preserve the old runtime byte-identically.
+- The complete real-host verifier now ends in `VERDICT PASS` with 300/300 tests. The focused compliance matrix passes 45/45; the transactional/privacy/readiness/model-role safety matrix passes 56/56; graph passes 12/12; therapy-lesson verification passes 5/5; and repository/workflow audits report zero errors.
+- The current universal audit at `dacab0268bc01eccac09453ffec8960565bd67e5` reports zero errors and four declared hosted-control warnings; the promoted lesson repair remains merged in its history as `81265fd3592ee842bfe30c7d73a5c1f3dc01b2d0`.
 - The separate r03 Guide Packet branch recorded real Opus compilation as blocked at commit `875b649dd32d5e77e7502a1648b906668781f67f`; Codex was correctly not invoked, installed remains null, and no owner decision or therapy policy advanced.
 
 ## Current checkpoint
@@ -48,19 +51,22 @@ Establish the applicable Codex + GitHub baseline for this private, active, criti
   - `1e4fd3e`: sensitive ownership and least-privilege CI hardening
   - `ea6ee3a`: hosted-control evidence and terminal classification
   - `b55847e`: deterministic guide-graph compilation
-- Current implementation slice: finish independent read-only review and final integrity checks, then publish one PR to `main` and verify its two final-head checks.
+  - `193a25e`, `127e9f6`, `77585ce`, `20e7335`, `2ef96d5`: independent-review workflow-policy hardening rounds
+  - `a011040`: alias-key enforcement and transactional locked-dependency bootstrap/install
+- Current implementation slice: commit this refreshed evidence, repeat final-head local gates, then publish one PR to `main` and verify its two final-head checks.
 - `stable` and `runtime-diagnostics` have not been advanced by this task.
 
 ## Remaining
 
-- Run the independent read-only review and final diff/integrity checks.
-- Commit the final report/checkpoint evidence, open one PR to `main`, verify final-head checks, merge reversibly if permitted, close superseded Dependabot PRs, and reconcile refs.
+- Commit the final report/checkpoint evidence and repeat the final affected/full gates on that exact commit.
+- Open one PR to `main`, verify final-head checks, merge reversibly if permitted, close superseded Dependabot PRs, and reconcile refs.
 
 ## Blockers / unresolved
 
 - GitHub rejects private-repository rulesets and branch protection with HTTP 403 plan limitations; both `main` and `stable` read back `protected=false`. This applicable requirement keeps the terminal status `BLOCKED` even if every executable repository gate passes.
 - Secret scanning and push protection are unavailable (HTTP 422); code scanning is disabled/unavailable for this private repository (HTTP 403). Repository-scoped GitHub App installation permissions remain `UNVERIFIED` because the available OAuth token cannot use the App-JWT-only enumeration endpoint.
 - Private vulnerability reporting returns HTTP 404 and GitHub documents the feature for public repositories; it is not applicable to this private repository, which uses `SECURITY.md` and draft security advisories.
+- The final exact `gpt-5.6-sol` read-only re-review was attempted after `a011040` but rejected before model execution by the execution-policy gate, despite the owner's earlier authorization of non-private repository processing. No approval verdict exists. Earlier exact-model reviews produced the repaired Critical/Important regression set; final deterministic and real-machine gates remain the available evidence.
 - No stable release is authorized by this compliance task. Repository governance may merge to `main`; promotion to `stable` remains separately owner-gated.
 
 ## Evidence / artifacts
@@ -78,7 +84,7 @@ Establish the applicable Codex + GitHub baseline for this private, active, criti
 
 ## Next safe action
 
-Complete independent read-only review and final integrity checks, then publish the single compliance PR to `main`; do not advance `stable`.
+Commit this refreshed evidence, repeat the exact final gates, then publish the single compliance PR to `main`; do not advance `stable`.
 
 ## Recovery rule
 
