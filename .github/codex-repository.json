@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "repository_kind": "software",
+  "active": true,
+  "long_running": true,
+  "visibility": "private",
+  "risk": "critical",
+  "commands": {},
+  "current_state": null,
+  "github_controls": {
+    "default_branch_rules": "unverified",
+    "secret_scanning": "unverified",
+    "push_protection": "unverified",
+    "code_scanning": "unverified"
+  },
+  "audit_note": "This repository requires verified exact bootstrap/test/build commands, a single authoritative project/current-state entry point, and explicit domain-safety/model-evaluation gates. Do not choose among historical reports or model settings from memory."
+}
