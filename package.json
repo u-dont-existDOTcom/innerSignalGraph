@@ -17,7 +17,7 @@
     "check:api": "node --env-file=.env src/cli/check-models.mjs",
     "serve": "node src/cli/serve.mjs",
     "serve:cli": "node --env-file=.env src/cli/serve.mjs",
-    "verify": "./scripts/verify-package.sh",
+    "verify": "bash ./scripts/verify-clean.sh",
     "therapy-lessons:verify": "node scripts/verify-therapy-lessons.mjs",
     "hypnosis:replay": "node src/cli/hypnosis-replay.mjs",
     "hypnosis:replay:cli": "node --env-file=.env src/cli/hypnosis-replay.mjs",
