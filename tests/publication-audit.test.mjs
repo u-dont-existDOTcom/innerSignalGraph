@@ -240,6 +240,194 @@ test("historical commit audit marks oversized and unreadable objects incomplete"
   ]);
 });
 
+test("standalone blank rev-list record fails closed", async () => {
+  const runCommand = async (command, args) => {
+    assert.equal(command, "git");
+    const invocation = args.join(" ");
+    if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+    if (invocation === "rev-list --objects --all") return { stdout: "\n", stderr: "" };
+    throw new Error(`unexpected command: ${invocation}`);
+  };
+
+  const result = await auditGitPublication({ root: "/synthetic/root", runCommand });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings, [
+    { severity: "error", code: "audit-incomplete", surface: "git", identifier: "rev-list:record:1" }
+  ]);
+});
+
+test("internal blank rev-list record fails closed", async () => {
+  const treeId = "3".repeat(40);
+  const runCommand = async (command, args) => {
+    assert.equal(command, "git");
+    const invocation = args.join(" ");
+    if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+    if (invocation === "rev-list --objects --all") return { stdout: `${treeId}\n\n`, stderr: "" };
+    if (invocation === `cat-file -t ${treeId}`) return { stdout: "tree\n", stderr: "" };
+    throw new Error(`unexpected command: ${invocation}`);
+  };
+
+  const result = await auditGitPublication({ root: "/synthetic/root", runCommand });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings, [
+    { severity: "error", code: "audit-incomplete", surface: "git", identifier: "rev-list:record:2" }
+  ]);
+});
+
+test("standalone blank tree record fails closed", async () => {
+  const commitId = "4".repeat(40);
+  const runCommand = async (command, args) => {
+    assert.equal(command, "git");
+    const invocation = args.join(" ");
+    if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+    if (invocation === "rev-list --objects --all") return { stdout: `${commitId}\n`, stderr: "" };
+    if (invocation === `cat-file -t ${commitId}`) return { stdout: "commit\n", stderr: "" };
+    if (invocation === `ls-tree -r -z --full-tree ${commitId}`) return { stdout: "\0", stderr: "" };
+    throw new Error(`unexpected command: ${invocation}`);
+  };
+
+  const result = await auditGitPublication({ root: "/synthetic/root", runCommand });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings, [
+    {
+      severity: "error",
+      code: "audit-incomplete",
+      surface: "git",
+      identifier: `commit:${commitId}:tree-record:1`
+    }
+  ]);
+});
+
+test("internal blank tree record fails closed", async () => {
+  const commitId = "5".repeat(40);
+  const gitlinkId = "6".repeat(40);
+  const runCommand = async (command, args) => {
+    assert.equal(command, "git");
+    const invocation = args.join(" ");
+    if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+    if (invocation === "rev-list --objects --all") return { stdout: `${commitId}\n`, stderr: "" };
+    if (invocation === `cat-file -t ${commitId}`) return { stdout: "commit\n", stderr: "" };
+    if (invocation === `ls-tree -r -z --full-tree ${commitId}`) {
+      return { stdout: `160000 commit ${gitlinkId}\tvendor/example\0\0`, stderr: "" };
+    }
+    throw new Error(`unexpected command: ${invocation}`);
+  };
+
+  const result = await auditGitPublication({ root: "/synthetic/root", runCommand });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings, [
+    {
+      severity: "error",
+      code: "audit-incomplete",
+      surface: "git",
+      identifier: `commit:${commitId}:tree-record:2`
+    }
+  ]);
+});
+
+test("invalid successful object type response fails closed", async () => {
+  const objectId = "7".repeat(40);
+  const runCommand = async (command, args) => {
+    assert.equal(command, "git");
+    const invocation = args.join(" ");
+    if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+    if (invocation === "rev-list --objects --all") return { stdout: `${objectId} fixture.txt\n`, stderr: "" };
+    if (invocation === `cat-file -t ${objectId}`) return { stdout: "unknown\n", stderr: "" };
+    throw new Error(`unexpected command: ${invocation}`);
+  };
+
+  const result = await auditGitPublication({ root: "/synthetic/root", runCommand });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings, [
+    { severity: "error", code: "audit-incomplete", surface: "git", identifier: `object:${objectId}:type` }
+  ]);
+});
+
+test("malformed object size response fails closed", async () => {
+  const objectId = "8".repeat(40);
+  const runCommand = async (command, args) => {
+    assert.equal(command, "git");
+    const invocation = args.join(" ");
+    if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+    if (invocation === "rev-list --objects --all") return { stdout: `${objectId} fixture.txt\n`, stderr: "" };
+    if (invocation === `cat-file -t ${objectId}`) return { stdout: "blob\n", stderr: "" };
+    if (invocation === `cat-file -s ${objectId}`) return { stdout: "1junk\n", stderr: "" };
+    if (invocation === `cat-file blob ${objectId}`) return { stdout: "x", stderr: "" };
+    throw new Error(`unexpected command: ${invocation}`);
+  };
+
+  const result = await auditGitPublication({ root: "/synthetic/root", runCommand });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings, [
+    { severity: "error", code: "audit-incomplete", surface: "git", identifier: `blob:${objectId}:size` }
+  ]);
+});
+
+test("declared blob size must match returned binary bytes", async () => {
+  const objectId = "9".repeat(40);
+  const runCommand = async (command, args) => {
+    assert.equal(command, "git");
+    const invocation = args.join(" ");
+    if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+    if (invocation === "rev-list --objects --all") return { stdout: `${objectId} fixture.txt\n`, stderr: "" };
+    if (invocation === `cat-file -t ${objectId}`) return { stdout: "blob\n", stderr: "" };
+    if (invocation === `cat-file -s ${objectId}`) return { stdout: "1\n", stderr: "" };
+    if (invocation === `cat-file blob ${objectId}`) return { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0) };
+    throw new Error(`unexpected command: ${invocation}`);
+  };
+
+  const result = await auditGitPublication({ root: "/synthetic/root", runCommand });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings, [
+    {
+      severity: "error",
+      code: "audit-incomplete",
+      surface: "git",
+      identifier: `blob:${objectId}:size-mismatch`
+    }
+  ]);
+});
+
+test("completely empty Git outputs and a zero-byte blob remain valid", async () => {
+  const emptyResult = await auditGitPublication({
+    root: "/synthetic/root",
+    runCommand: async (command, args) => {
+      assert.equal(command, "git");
+      const invocation = args.join(" ");
+      if (invocation.startsWith("for-each-ref ")) return { stdout: "", stderr: "" };
+      if (invocation === "rev-list --objects --all") return { stdout: "", stderr: "" };
+      throw new Error(`unexpected command: ${invocation}`);
+    }
+  });
+  assert.equal(emptyResult.ok, true);
+  assert.deepEqual(emptyResult.findings, []);
+
+  const objectId = "a".repeat(40);
+  const zeroByteResult = await auditGitPublication({
+    root: "/synthetic/root",
+    runCommand: async (command, args) => {
+      assert.equal(command, "git");
+      const invocation = args.join(" ");
+      if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+      if (invocation === "rev-list --objects --all") return { stdout: `${objectId} empty.txt\n`, stderr: "" };
+      if (invocation === `cat-file -t ${objectId}`) return { stdout: "blob\n", stderr: "" };
+      if (invocation === `cat-file -s ${objectId}`) return { stdout: "0\n", stderr: "" };
+      if (invocation === `cat-file blob ${objectId}`) return { stdout: Buffer.alloc(0), stderr: Buffer.alloc(0) };
+      throw new Error(`unexpected command: ${invocation}`);
+    }
+  });
+  assert.equal(zeroByteResult.ok, true);
+  assert.equal(zeroByteResult.scannedRecords, 1);
+  assert.deepEqual(zeroByteResult.findings, []);
+});
+
 test("malformed rev-list records and a truncated final record fail closed", async () => {
   const runCommand = async (command, args) => {
     assert.equal(command, "git");

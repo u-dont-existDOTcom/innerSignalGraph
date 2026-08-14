@@ -89,15 +89,15 @@ export function mergePublicationResults(...results) {
   };
 }
 
-async function runGit(runCommand, root, args) {
-  return await runCommand("git", args, { cwd: root });
+async function runGit(runCommand, root, args, options = {}) {
+  return await runCommand("git", args, { cwd: root, ...options });
 }
 
 async function defaultRunCommand(command, args, options = {}) {
   return await execFileAsync(command, args, {
-    ...options,
     encoding: "utf8",
-    maxBuffer: MAX_BLOB_BYTES + 1024 * 1024
+    maxBuffer: MAX_BLOB_BYTES + 1024 * 1024,
+    ...options
   });
 }
 
@@ -109,7 +109,10 @@ function parseObjectListing(output) {
   if (terminated) lines.pop();
 
   for (const [index, line] of lines.entries()) {
-    if (line.length === 0) continue;
+    if (line.length === 0) {
+      malformedRecordNumbers.push(index + 1);
+      continue;
+    }
     if (!terminated && index === lines.length - 1) {
       malformedRecordNumbers.push(index + 1);
       continue;
@@ -132,7 +135,10 @@ function parseTree(output) {
   if (terminated) items.pop();
 
   for (const [index, item] of items.entries()) {
-    if (item.length === 0) continue;
+    if (item.length === 0) {
+      malformedRecordNumbers.push(index + 1);
+      continue;
+    }
     if (!terminated && index === items.length - 1) {
       malformedRecordNumbers.push(index + 1);
       continue;
@@ -181,7 +187,9 @@ export async function auditGitPublication({ root, runCommand = defaultRunCommand
   for (const objectId of objects.keys()) {
     try {
       const typeResult = await runGit(runCommand, repositoryRoot, ["cat-file", "-t", objectId]);
-      objectTypes.set(objectId, typeResult.stdout.trim());
+      const match = /^(blob|tree|commit|tag)\n$/.exec(typeResult.stdout);
+      if (!match) throw new Error("invalid object type response");
+      objectTypes.set(objectId, match[1]);
     } catch {
       incomplete.push(incompleteFinding(`object:${objectId}:type`));
     }
@@ -217,7 +225,9 @@ export async function auditGitPublication({ root, runCommand = defaultRunCommand
     let size;
     try {
       const sizeResult = await runGit(runCommand, repositoryRoot, ["cat-file", "-s", objectId]);
-      size = Number.parseInt(sizeResult.stdout.trim(), 10);
+      const match = /^(0|[1-9][0-9]*)\n$/.exec(sizeResult.stdout);
+      if (!match) throw new Error("invalid blob size response");
+      size = Number(match[1]);
       if (!Number.isSafeInteger(size) || size < 0) throw new Error("invalid blob size");
     } catch {
       incomplete.push(incompleteFinding(`blob:${objectId}:size`));
@@ -228,14 +238,21 @@ export async function auditGitPublication({ root, runCommand = defaultRunCommand
       continue;
     }
 
-    let text;
+    let blobBytes;
     try {
-      const blobResult = await runGit(runCommand, repositoryRoot, ["cat-file", "blob", objectId]);
-      text = blobResult.stdout;
+      const blobResult = await runGit(runCommand, repositoryRoot, ["cat-file", "blob", objectId], { encoding: null });
+      if (Buffer.isBuffer(blobResult.stdout)) blobBytes = blobResult.stdout;
+      else if (typeof blobResult.stdout === "string") blobBytes = Buffer.from(blobResult.stdout, "utf8");
+      else throw new Error("invalid blob response");
     } catch {
       incomplete.push(incompleteFinding(`blob:${objectId}:read`));
       continue;
     }
+    if (blobBytes.length !== size) {
+      incomplete.push(incompleteFinding(`blob:${objectId}:size-mismatch`));
+      continue;
+    }
+    const text = blobBytes.toString("utf8");
 
     const blobOccurrences = occurrences.get(objectId);
     if (blobOccurrences.size === 0) {
