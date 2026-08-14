@@ -20,6 +20,7 @@
     "serve:cli": "node --env-file=.env src/cli/serve.mjs",
     "verify": "bash ./scripts/verify-clean.sh",
     "audit:workflows": "node scripts/audit-workflows.mjs",
+    "audit:repository": "node scripts/audit-repository.mjs",
     "therapy-lessons:verify": "node scripts/verify-therapy-lessons.mjs",
     "hypnosis:replay": "node src/cli/hypnosis-replay.mjs",
     "hypnosis:replay:cli": "node --env-file=.env src/cli/hypnosis-replay.mjs",

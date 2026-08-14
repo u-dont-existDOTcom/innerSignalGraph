@@ -3,15 +3,19 @@
 ## Authority
 
 1. Current owner and task requirements
-2. `README.md` for branch, release, privacy, recovery, and installation contracts
-3. `AUTOPILOT.md` for autonomous development behavior
-4. `docs/INDEX.md` for current specifications, plans, and evidence
-5. Current code, tests, package verifier, and Git history
-6. Relevant current guidance from `u-dont-existDOTcom/universal-dev-architecture`
+2. `.github/codex-repository.json` for repository classification and exact commands
+3. `state/CODEX-CURRENT-STATE.md` for the resumable current checkpoint
+4. `README.md` for branch, release, privacy, recovery, and installation contracts
+5. `AUTOPILOT.md` for autonomous development behavior
+6. `docs/INDEX.md` for current specifications, plans, and evidence
+7. Current code, tests, package verifier, and Git history
+8. Relevant current guidance from `u-dont-existDOTcom/universal-dev-architecture`
 
 ## Validation
 
 - Runtime: Node 24.18.0 (`.nvmrc`)
+- Bootstrap: `npm ci --ignore-scripts`
+- Repository audit: `npm run audit:repository`
 - Targeted tests: `npm test`
 - Complete package gate: `npm run verify`
 - Graph gate when affected: `npm run graph:test`
@@ -21,7 +25,7 @@ Provider checks are explicit opt-in and are not hermetic CI.
 
 ## Workflow
 
-Use an isolated worktree or task branch and a pull request. Keep accepted designs/plans under `docs/superpowers/`. Run targeted and complete gates, inspect the final diff and package artifacts, update recovery/report documentation, and complete lesson closeout.
+Use an isolated worktree or task branch and a pull request. Keep accepted designs/plans under `docs/superpowers/`. Run targeted and complete gates, inspect the final diff and package artifacts, update `state/CODEX-CURRENT-STATE.md`, and complete lesson closeout. Release evidence follows `docs/RELEASE-EVIDENCE.md`.
 
 ## Branch roles
 

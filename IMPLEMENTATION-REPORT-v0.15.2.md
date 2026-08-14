@@ -14,7 +14,8 @@ The root `THERAPY-LESSONS` log now records timestamped, evidence-linked improvem
 
 ## Intake and retained evidence
 
-No `AGENTS.md` exists in this checkout or its searched parent scope. The checkout was initially clean on local `stable` at candidate commit `62418292489cf5c764e767f8b010b98b3e14c71c`; `origin/stable` also pointed there. Local `origin/main` and `origin/runtime-diagnostics` were stale at `b3f82e31003c4669a6136695cd2174c09eda61b6`. Detached candidate worktree registrations under `/tmp/inner-signal-git-update-*` were inspected and left untouched. The installed runtime at `/home/joel/Téléchargements/inner-signal-runtime` was the preserved v0.14.4 runtime.
+Historical intake note (superseded by the current repository agent map):
+No `AGENTS.md` existed in the searched checkout or parent scope at the start of the v0.15.2 incident recovery. The checkout was initially clean on local `stable` at candidate commit `62418292489cf5c764e767f8b010b98b3e14c71c`; `origin/stable` also pointed there. Local `origin/main` and `origin/runtime-diagnostics` were stale at `b3f82e31003c4669a6136695cd2174c09eda61b6`. Detached candidate worktree registrations under `/tmp/inner-signal-git-update-*` were inspected and left untouched. The installed runtime at `/home/joel/Téléchargements/inner-signal-runtime` was the preserved v0.14.4 runtime.
 
 The installed runtime's `git-update-status.json` is the authoritative safe summary for the failed v0.15.1 candidate validation. It records:
 

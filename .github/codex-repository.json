@@ -5,13 +5,34 @@
   "long_running": true,
   "visibility": "private",
   "risk": "critical",
-  "commands": {},
-  "current_state": null,
-  "github_controls": {
-    "default_branch_rules": "unverified",
-    "secret_scanning": "unverified",
-    "push_protection": "unverified",
-    "code_scanning": "unverified"
+  "commands": {
+    "bootstrap": "npm ci --ignore-scripts",
+    "test": "npm test",
+    "graph": "npm run graph:test",
+    "package": "npm run verify",
+    "audit": "npm run audit:repository",
+    "verify": "npm run verify",
+    "current_state": "bash scripts/report-worktree.sh"
   },
-  "audit_note": "This repository requires verified exact bootstrap/test/build commands, a single authoritative project/current-state entry point, and explicit domain-safety/model-evaluation gates. Do not choose among historical reports or model settings from memory."
+  "current_state": "state/CODEX-CURRENT-STATE.md",
+  "github_controls": {
+    "default_branch_rules": "disabled",
+    "stable_branch_rules": "disabled",
+    "secret_scanning": "disabled",
+    "push_protection": "disabled",
+    "code_scanning": "disabled",
+    "actions_default_permissions": "verified",
+    "actions_sha_pinning": "disabled",
+    "vulnerability_alerts": "disabled",
+    "dependabot_alerts": "disabled",
+    "private_vulnerability_reporting": "unverified"
+  },
+  "github_controls_evidence": {
+    "checked_on": "2026-08-14",
+    "source": "GitHub REST API and repository metadata",
+    "branch_rules": "GitHub returned plan-limitation responses and both authority branches reported protected=false.",
+    "security": "Security-and-analysis metadata was null; feature endpoints reported disabled, unavailable, or unverified.",
+    "actions": "Default workflow permissions were read-only; allowed Actions were unrestricted and hosted SHA pinning was false."
+  },
+  "audit_note": "Exact commands are repository-visible and must be rerun on the final commit. Hosted states require GitHub API re-verification; files and CODEOWNERS do not prove enforcement. Stable promotion and therapy/framework policy remain owner-gated."
 }
