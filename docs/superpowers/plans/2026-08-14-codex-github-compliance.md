@@ -337,6 +337,8 @@ Require:
 - explicit owners for `.github/`, packaging/installers, Git update/promotion, diagnostics/progress/recovery export, Guide Packets, prompts, therapy/hypnosis policy, ledgers, and release evidence;
 - both workflows to use top-level `contents: read`, bounded timeouts, stable unique job names, and ref-scoped concurrency;
 - both workflows to cover pull requests plus `main` and `stable` where appropriate;
+- the policy workflow to run weekly and on manual dispatch so repository-visible drift is detected between source changes;
+- every Node-based workflow to install the exact `.nvmrc` runtime before running repository scripts;
 - checkout to set `persist-credentials: false` because no job pushes;
 - ordinary workflows to contain no model-provider secrets or live-model commands;
 - remote Actions to use the reviewed Dependabot full SHAs.
@@ -358,7 +360,7 @@ Use these reviewed Action revisions:
 
 Key concurrency by `${{ github.workflow }}-${{ github.ref }}`. Allow cancellation only for superseded pull-request runs. Keep `main` and `stable` runs non-cancellable. Give every job a stable explicit `name` if needed so the future required check is unique.
 
-Run `npm ci --ignore-scripts`, the repository audit, and `npm run verify`. Keep the final clean-worktree assertion independent from the verifier.
+Add a bounded weekly `schedule` to the repository-policy workflow. Set up Node from `.nvmrc` in both workflows before invoking repository JavaScript. Run `npm ci --ignore-scripts`, the repository audit, and `npm run verify` in the deterministic verification workflow. Keep the final clean-worktree assertion independent from the verifier.
 
 ### Step 3: Run GREEN
 
