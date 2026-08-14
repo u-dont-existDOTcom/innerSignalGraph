@@ -12,7 +12,7 @@
 
 - `../BUILD-VERIFY.txt`: build verification evidence
 - `../GRAPH-REPORT.md`: graph compilation and regression evidence
-- `../IMPLEMENTATION-REPORT-v0.15.0.md`: current implementation report
+- `../IMPLEMENTATION-REPORT-v0.15.2.md`: current implementation report
 
 ## Plans and specifications
 
