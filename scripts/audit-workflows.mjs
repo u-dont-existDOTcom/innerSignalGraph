@@ -7,7 +7,7 @@ const FULL_SHA = /^[0-9a-fA-F]{40}$/;
 const BLOCK_SCALAR = /^[>|](?:(?:[+-][1-9]?)|(?:[1-9][+-]?))?\s*(?:#.*)?$/;
 
 function physicalKey(line) {
-  const match = /^( *)(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_-]+))\s*:\s*(.*?)\s*$/.exec(line);
+  const match = /^( *)(?:-\s+)?(?:"([^"]+)"|'([^']+)'|([A-Za-z0-9_-]+))\s*:\s*(.*?)\s*$/.exec(line);
   if (!match) return null;
   return {
     indent: match[1].length,
@@ -74,6 +74,74 @@ function actionReference(line) {
   return scalarValue(match[1]);
 }
 
+function flowActionReferences(line) {
+  const references = [];
+  const boundaries = new Set(["{", "[", ","]);
+  let enclosingQuote = null;
+  let escaped = false;
+  for (let index = 0; index < line.length; index += 1) {
+    if (enclosingQuote) {
+      if (escaped) escaped = false;
+      else if (line[index] === "\\") escaped = true;
+      else if (line[index] === enclosingQuote) enclosingQuote = null;
+      continue;
+    }
+    if (line[index] === '"' || line[index] === "'") {
+      enclosingQuote = line[index];
+      continue;
+    }
+    if (!boundaries.has(line[index])) continue;
+    let cursor = index + 1;
+    while (/\s/.test(line[cursor] ?? "")) cursor += 1;
+
+    let key = "";
+    if (line[cursor] === '"' || line[cursor] === "'") {
+      const quote = line[cursor];
+      cursor += 1;
+      while (cursor < line.length && line[cursor] !== quote) {
+        if (line[cursor] === "\\" && cursor + 1 < line.length) cursor += 1;
+        key += line[cursor];
+        cursor += 1;
+      }
+      if (line[cursor] !== quote) continue;
+      cursor += 1;
+    } else {
+      const match = /^[A-Za-z0-9_-]+/.exec(line.slice(cursor));
+      if (!match) continue;
+      key = match[0];
+      cursor += key.length;
+    }
+
+    while (/\s/.test(line[cursor] ?? "")) cursor += 1;
+    if (key !== "uses" || line[cursor] !== ":") continue;
+    cursor += 1;
+    while (/\s/.test(line[cursor] ?? "")) cursor += 1;
+
+    let value = "";
+    if (line[cursor] === '"' || line[cursor] === "'") {
+      const quote = line[cursor];
+      cursor += 1;
+      while (cursor < line.length && line[cursor] !== quote) {
+        if (line[cursor] === "\\" && cursor + 1 < line.length) cursor += 1;
+        value += line[cursor];
+        cursor += 1;
+      }
+    } else {
+      while (cursor < line.length && !",}]".includes(line[cursor])) {
+        value += line[cursor];
+        cursor += 1;
+      }
+    }
+    if (value.trim()) references.push(value.trim());
+  }
+  return references;
+}
+
+function actionReferences(line) {
+  const standalone = actionReference(line);
+  return [...new Set([...(standalone ? [standalone] : []), ...flowActionReferences(line)])];
+}
+
 export function auditWorkflowText(text, relativePath) {
   const findings = [];
   let blockIndent = null;
@@ -115,8 +183,7 @@ export function auditWorkflowText(text, relativePath) {
       hasPullRequestTarget = true;
     }
 
-    const reference = actionReference(line);
-    if (reference) {
+    for (const reference of actionReferences(line)) {
       if (reference.startsWith("actions/checkout@")) hasCheckout = true;
       if (!reference.startsWith("./") && !reference.startsWith("docker://")) {
         const separator = reference.lastIndexOf("@");

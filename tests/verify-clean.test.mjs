@@ -22,6 +22,7 @@ async function verifierFixture(t, packageBody) {
   await fs.copyFile(path.join(projectRoot, "scripts", "verify-clean.sh"), path.join(root, "scripts", "verify-clean.sh"));
   await fs.writeFile(path.join(root, "H001-MOCK-RESULT.json"), "h001-original\n");
   await fs.writeFile(path.join(root, "guide-graphs", "compiled", "bundle.json"), "bundle-original\n");
+  await fs.writeFile(path.join(root, "guide-graphs", "compiled", "inner-child-directed-graph.json"), "graph-original\n");
   await executable(path.join(root, "scripts", "verify-package.sh"), packageBody);
   await execFileAsync("git", ["init", "-q"], { cwd: root });
   await execFileAsync("git", ["add", "."], { cwd: root });
@@ -77,6 +78,17 @@ test("an unchanged pre-existing owner file is preserved without a false positive
   assert.equal(result.code, 0, `${result.stdout}\n${result.stderr}`);
   assert.equal(await fs.readFile(path.join(root, "owner-work.txt"), "utf8"), "preserve exactly\n");
   assert.equal((await generated(root)).h001, "h001-original\n");
+});
+
+test("a dirty generated graph retains its exact owner bytes", async (t) => {
+  const relative = path.join("guide-graphs", "compiled", "inner-child-directed-graph.json");
+  const root = await verifierFixture(t, `printf 'package-generated\\n' > ${relative}`);
+  const file = path.join(root, relative);
+  await fs.writeFile(file, "owner-uncommitted-bytes\n");
+
+  const result = await runVerifier(root);
+  assert.equal(result.code, 0, `${result.stdout}\n${result.stderr}`);
+  assert.equal(await fs.readFile(file, "utf8"), "owner-uncommitted-bytes\n");
 });
 
 test("a failing package command retains its status after restoring generated outputs", async (t) => {

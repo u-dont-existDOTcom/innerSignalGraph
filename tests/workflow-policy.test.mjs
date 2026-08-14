@@ -97,6 +97,24 @@ jobs:
   assert.ok(parseResult(result).findings.some(({ code }) => code === "pull-request-target-checkout"));
 });
 
+test("a flow-style steps mapping cannot hide an unpinned privileged checkout", async (t) => {
+  const root = await fixture(t, `name: Unsafe flow steps
+on: {pull_request_target: {}}
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps: [{uses: actions/checkout@v4}]
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  const codes = new Set(parseResult(result).findings.map(({ code }) => code));
+  assert.ok(codes.has("action-ref-unpinned"));
+  assert.ok(codes.has("pull-request-target-checkout"));
+});
+
 test("unpinned remote Actions and write-all permissions are rejected", async (t) => {
   const root = await fixture(t, `name: Unsafe
 on: [push]
@@ -147,4 +165,39 @@ jobs:
   const result = await runAudit(root);
   assert.equal(result.code, 0, `${result.stdout}\n${result.stderr}`);
   assert.equal(parseResult(result).ok, true);
+});
+
+test("key-shaped text inside a list-form run block is not an Action reference", async (t) => {
+  const root = await fixture(t, `name: Harmless block
+on: push
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          uses: example/action@v1
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 0, `${result.stdout}\n${result.stderr}`);
+  assert.deepEqual(parseResult(result).findings, []);
+});
+
+test("key-shaped text inside a quoted inline command is not an Action reference", async (t) => {
+  const root = await fixture(t, `name: Harmless quoted command
+on: push
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - run: "echo '{uses: example/action@v1}'"
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 0, `${result.stdout}\n${result.stderr}`);
+  assert.deepEqual(parseResult(result).findings, []);
 });

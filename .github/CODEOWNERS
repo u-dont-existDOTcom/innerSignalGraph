@@ -33,6 +33,10 @@
 /src/guide-packet/ @u-dont-existDOTcom
 /src/hypnosis/ @u-dont-existDOTcom
 /src/prompts/ @u-dont-existDOTcom
+/src/autopilot/model-policy.mjs @u-dont-existDOTcom
+/src/autopilot/model-resolver.mjs @u-dont-existDOTcom
+/src/core/config.mjs @u-dont-existDOTcom
+/src/providers/ @u-dont-existDOTcom
 /corpus/ @u-dont-existDOTcom
 /THERAPY-LESSONS @u-dont-existDOTcom
 /ledgers/ @u-dont-existDOTcom
