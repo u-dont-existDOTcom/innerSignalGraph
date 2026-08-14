@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { isMap, isScalar, isSeq, LineCounter, parseDocument } from "yaml";
+import { isAlias, isMap, isScalar, isSeq, LineCounter, parseDocument } from "yaml";
 
 const FULL_SHA = /^[0-9a-fA-F]{40}$/;
 
@@ -17,6 +17,17 @@ function mapPair(node, key) {
 
 function mapValueNode(node, key) {
   return mapPair(node, key)?.value ?? null;
+}
+
+function resolveNode(node, document) {
+  let resolved = node;
+  const seen = new Set();
+  while (isAlias(resolved)) {
+    if (seen.has(resolved)) return null;
+    seen.add(resolved);
+    resolved = resolved.resolve(document);
+  }
+  return resolved ?? null;
 }
 
 function sourceLine(node, lineCounter, fallback = 1) {
@@ -91,13 +102,14 @@ export function auditWorkflowText(text, relativePath) {
   const hasPullRequestTarget = eventIncludes(workflow.on, "pull_request_target");
   const jobs = workflow.jobs;
   const jobsNode = mapValueNode(rootNode, "jobs");
+  const resolvedJobsNode = resolveNode(jobsNode, document);
   let hasCheckout = false;
 
   if (!isObject(jobs)) {
     findings.push(structureFinding(relativePath, sourceLine(jobsNode, lineCounter), "workflow jobs must be a mapping"));
     return findings;
   }
-  if (isMap(jobsNode) && jobsNode.flow) {
+  if (isMap(resolvedJobsNode) && resolvedJobsNode.flow) {
     findings.push(flowFinding(
       "flow-jobs-unsupported",
       relativePath,
@@ -117,7 +129,7 @@ export function auditWorkflowText(text, relativePath) {
       return;
     }
     const reference = rawReference.trim();
-    if (reference.startsWith("actions/checkout@")) hasCheckout = true;
+    if (reference.toLowerCase().startsWith("actions/checkout@")) hasCheckout = true;
     if (reference.startsWith("./") || reference.startsWith("docker://")) return;
     const separator = reference.lastIndexOf("@");
     const action = separator > 0 ? reference.slice(0, separator) : reference;
@@ -133,13 +145,14 @@ export function auditWorkflowText(text, relativePath) {
   }
 
   for (const [jobId, job] of Object.entries(jobs)) {
-    const jobNode = mapValueNode(jobsNode, jobId);
+    const jobNode = mapValueNode(resolvedJobsNode, jobId);
+    const resolvedJobNode = resolveNode(jobNode, document);
     const jobLine = sourceLine(jobNode, lineCounter);
     if (!isObject(job)) {
       findings.push(structureFinding(relativePath, jobLine, `job ${jobId} must be a mapping`));
       continue;
     }
-    if (isMap(jobNode) && jobNode.flow) {
+    if (isMap(resolvedJobNode) && resolvedJobNode.flow) {
       findings.push(flowFinding(
         "flow-jobs-unsupported",
         relativePath,
@@ -151,23 +164,35 @@ export function auditWorkflowText(text, relativePath) {
       findings.push({
         code: "permissions-write-all",
         path: relativePath,
-        line: sourceLine(mapValueNode(jobNode, "permissions"), lineCounter, jobLine),
+        line: sourceLine(mapValueNode(resolvedJobNode, "permissions"), lineCounter, jobLine),
         message: "permissions: write-all is forbidden"
       });
     }
 
     if (Object.hasOwn(job, "uses")) {
-      auditReference(job.uses, sourceLine(mapValueNode(jobNode, "uses"), lineCounter, jobLine));
+      const usesLine = sourceLine(mapValueNode(resolvedJobNode, "uses"), lineCounter, jobLine);
+      auditReference(job.uses, usesLine);
+      if (hasPullRequestTarget) {
+        findings.push({
+          code: "pull-request-target-reusable-workflow",
+          path: relativePath,
+          line: usesLine,
+          message: "pull_request_target must not delegate execution to a reusable workflow"
+        });
+      }
     }
     if (!Object.hasOwn(job, "steps")) continue;
 
-    const stepsNode = mapValueNode(jobNode, "steps");
+    const stepsNode = mapValueNode(resolvedJobNode, "steps");
+    const resolvedStepsNode = resolveNode(stepsNode, document);
     if (!Array.isArray(job.steps)) {
       findings.push(structureFinding(relativePath, sourceLine(stepsNode, lineCounter, jobLine), `job ${jobId} steps must be a sequence`));
       continue;
     }
-    if (isSeq(stepsNode)) {
-      const flowNode = stepsNode.flow ? stepsNode : stepsNode.items.find((item) => item?.flow);
+    if (isSeq(resolvedStepsNode)) {
+      const flowNode = resolvedStepsNode.flow
+        ? stepsNode
+        : resolvedStepsNode.items.find((item) => resolveNode(item, document)?.flow);
       if (flowNode) {
         findings.push(flowFinding(
           "flow-steps-unsupported",
@@ -179,14 +204,15 @@ export function auditWorkflowText(text, relativePath) {
     }
 
     for (const [stepIndex, step] of job.steps.entries()) {
-      const stepNode = isSeq(stepsNode) ? stepsNode.items[stepIndex] : null;
+      const stepNode = isSeq(resolvedStepsNode) ? resolvedStepsNode.items[stepIndex] : null;
+      const resolvedStepNode = resolveNode(stepNode, document);
       const stepLine = sourceLine(stepNode, lineCounter, jobLine);
       if (!isObject(step)) {
         findings.push(structureFinding(relativePath, stepLine, `job ${jobId} step ${stepIndex + 1} must be a mapping`));
         continue;
       }
       if (Object.hasOwn(step, "uses")) {
-        auditReference(step.uses, sourceLine(mapValueNode(stepNode, "uses"), lineCounter, stepLine));
+        auditReference(step.uses, sourceLine(mapValueNode(resolvedStepNode, "uses"), lineCounter, stepLine));
       }
     }
   }

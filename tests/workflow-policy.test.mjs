@@ -10,11 +10,17 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const pinnedCheckout = "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683";
 
 async function fixture(t, workflow) {
+  return workflowFixture(t, { "fixture.yml": workflow });
+}
+
+async function workflowFixture(t, workflows) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-workflow-policy-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const directory = path.join(root, ".github", "workflows");
   await fs.mkdir(directory, { recursive: true });
-  await fs.writeFile(path.join(directory, "fixture.yml"), workflow);
+  for (const [name, workflow] of Object.entries(workflows)) {
+    await fs.writeFile(path.join(directory, name), workflow);
+  }
   return root;
 }
 
@@ -67,6 +73,70 @@ jobs:
   assert.ok(parseResult(result).findings.some(({ code }) => code === "pull-request-target-checkout"));
 });
 
+test("case variants cannot disguise checkout in a pull_request_target workflow", async (t) => {
+  const root = await fixture(t, `name: Unsafe case variant
+on: pull_request_target
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: Actions/Checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  assert.ok(parseResult(result).findings.some(({ code }) => code === "pull-request-target-checkout"));
+});
+
+test("pull_request_target cannot delegate execution to local or remote reusable workflows", async (t) => {
+  for (const [name, reference, additionalWorkflows] of [
+    [
+      "local",
+      "./.github/workflows/called.yml",
+      {
+        "called.yml": `name: Called
+on: workflow_call
+permissions:
+  contents: read
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ${pinnedCheckout}
+`
+      }
+    ],
+    [
+      "remote",
+      "owner/repository/.github/workflows/called.yml@0123456789abcdef0123456789abcdef01234567",
+      {}
+    ]
+  ]) {
+    const root = await workflowFixture(t, {
+      "caller.yml": `name: Unsafe ${name} delegation
+on: pull_request_target
+permissions:
+  contents: read
+jobs:
+  delegated:
+    uses: ${reference}
+`,
+      ...additionalWorkflows
+    });
+
+    const result = await runAudit(root);
+    assert.equal(result.code, 1, `${name}\n${result.stdout}\n${result.stderr}`);
+    assert.ok(
+      parseResult(result).findings.some(({ code, path: findingPath }) =>
+        code === "pull-request-target-reusable-workflow" && findingPath.endsWith("caller.yml")
+      ),
+      name
+    );
+  }
+});
+
 test("a flow-mapping pull_request_target workflow that checks out code is rejected", async (t) => {
   const root = await fixture(t, `name: Unsafe flow mapping
 on: {push: {}, pull_request_target: {}}
@@ -113,6 +183,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - {uses: actions/checkout@v4}
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  assert.ok(parseResult(result).findings.some(({ code }) => code === "flow-steps-unsupported"));
+});
+
+test("an alias cannot hide a flow-style mapping used as a workflow step", async (t) => {
+  const root = await fixture(t, `name: Unsafe aliased flow step
+on: push
+permissions:
+  contents: read
+jobs:
+  audit:
+    strategy:
+      matrix:
+        include:
+          - &shared {uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020}
+    runs-on: ubuntu-latest
+    steps:
+      - *shared
 `);
 
   const result = await runAudit(root);
