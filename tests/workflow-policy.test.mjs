@@ -150,6 +150,77 @@ jobs:
   assert.ok(parseResult(result).findings.some(({ code }) => code === "flow-steps-unsupported"));
 });
 
+test("a flow-style steps collection beginning after the key fails closed", async (t) => {
+  const root = await fixture(t, `name: Unsafe split flow steps
+on: {pull_request_target: {}}
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      [{uses:
+          actions/checkout@v4}]
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  assert.ok(parseResult(result).findings.some(({ code }) => code === "flow-steps-unsupported"));
+});
+
+test("a flow-style jobs collection beginning after the key fails closed", async (t) => {
+  const root = await fixture(t, `name: Unsafe split flow jobs
+on: push
+permissions:
+  contents: read
+jobs:
+  {audit: {runs-on: ubuntu-latest, steps:
+    [{uses: actions/checkout@v4}]}}
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  assert.ok(parseResult(result).findings.some(({ code }) => code === "flow-jobs-unsupported"));
+});
+
+test("a non-job steps scalar that resembles a flow collection remains valid", async (t) => {
+  const root = await fixture(t, `name: Valid non-job steps scalar
+on: push
+permissions:
+  contents: read
+env:
+  steps: "[literal text]"
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ok
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 0, `${result.stdout}\n${result.stderr}`);
+  assert.deepEqual(parseResult(result).findings, []);
+});
+
+test("a nested job environment key named steps remains valid", async (t) => {
+  const root = await fixture(t, `name: Valid nested steps scalar
+on: push
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      steps: "[literal text]"
+    steps:
+      - run: echo ok
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 0, `${result.stdout}\n${result.stderr}`);
+  assert.deepEqual(parseResult(result).findings, []);
+});
+
 test("plain-scalar apostrophes cannot hide a later flow-style Action", async (t) => {
   const root = await fixture(t, `name: Unsafe apostrophe flow step
 on: {pull_request_target: {}}

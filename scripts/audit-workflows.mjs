@@ -146,6 +146,9 @@ export function auditWorkflowText(text, relativePath) {
   const findings = [];
   let blockIndent = null;
   let onIndent = null;
+  let jobsIndent = null;
+  let jobIndent = null;
+  let jobPropertyIndent = null;
   let stepsIndent = null;
   let hasTopLevelPermissions = false;
   let hasPullRequestTarget = false;
@@ -162,7 +165,53 @@ export function auditWorkflowText(text, relativePath) {
 
     const parsed = physicalKey(line);
     if (stepsIndent !== null && indent <= stepsIndent) stepsIndent = null;
-    if (parsed?.key === "steps") {
+
+    const isTopLevelJobs = parsed?.indent === 0 && parsed.key === "jobs";
+    if (jobsIndent !== null && indent <= jobsIndent && !isTopLevelJobs) {
+      jobsIndent = null;
+      jobIndent = null;
+      jobPropertyIndent = null;
+      stepsIndent = null;
+    }
+    if (isTopLevelJobs) {
+      const jobsValue = scalarValue(parsed.value);
+      if (/^[\[{]/.test(jobsValue)) {
+        findings.push({
+          code: "flow-jobs-unsupported",
+          path: relativePath,
+          line: index + 1,
+          message: "workflow jobs must use block mapping syntax so Action references can be audited"
+        });
+        jobsIndent = null;
+      } else if (jobsValue === "") {
+        jobsIndent = parsed.indent;
+        jobIndent = null;
+        jobPropertyIndent = null;
+      }
+    } else if (jobsIndent !== null && indent > jobsIndent) {
+      if (jobIndent === null && /^[\[{]/.test(trimmed)) {
+        findings.push({
+          code: "flow-jobs-unsupported",
+          path: relativePath,
+          line: index + 1,
+          message: "workflow jobs must use block mapping syntax so Action references can be audited"
+        });
+      } else if (parsed && (jobIndent === null || parsed.indent <= jobIndent)) {
+        jobIndent = parsed.indent;
+        jobPropertyIndent = null;
+        stepsIndent = null;
+      } else if (parsed && jobPropertyIndent === null && parsed.indent > jobIndent) {
+        jobPropertyIndent = parsed.indent;
+      }
+    }
+
+    const isJobSteps =
+      parsed?.key === "steps" &&
+      jobsIndent !== null &&
+      jobIndent !== null &&
+      jobPropertyIndent !== null &&
+      parsed.indent === jobPropertyIndent;
+    if (isJobSteps) {
       if (/^[\[{]/.test(scalarValue(parsed.value))) {
         findings.push({
           code: "flow-steps-unsupported",
@@ -173,7 +222,7 @@ export function auditWorkflowText(text, relativePath) {
       } else if (scalarValue(parsed.value) === "") {
         stepsIndent = parsed.indent;
       }
-    } else if (stepsIndent !== null && indent > stepsIndent && /^-\s*[\[{]/.test(trimmed)) {
+    } else if (stepsIndent !== null && indent > stepsIndent && /^(?:-\s*)?[\[{]/.test(trimmed)) {
       findings.push({
         code: "flow-steps-unsupported",
         path: relativePath,
