@@ -10,15 +10,6 @@ function isObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function mapPair(node, key) {
-  if (!isMap(node)) return null;
-  return node.items.find((pair) => isScalar(pair.key) && String(pair.key.value) === key) ?? null;
-}
-
-function mapValueNode(node, key) {
-  return mapPair(node, key)?.value ?? null;
-}
-
 function resolveNode(node, document) {
   let resolved = node;
   const seen = new Set();
@@ -28,6 +19,18 @@ function resolveNode(node, document) {
     resolved = resolved.resolve(document);
   }
   return resolved ?? null;
+}
+
+function mapPair(node, key, document) {
+  if (!isMap(node)) return null;
+  return node.items.find((pair) => {
+    const resolvedKey = resolveNode(pair.key, document);
+    return isScalar(resolvedKey) && String(resolvedKey.value) === key;
+  }) ?? null;
+}
+
+function mapValueNode(node, key, document) {
+  return mapPair(node, key, document)?.value ?? null;
 }
 
 function sourceLine(node, lineCounter, fallback = 1) {
@@ -82,7 +85,7 @@ export function auditWorkflowText(text, relativePath) {
   }
 
   const rootNode = document.contents;
-  const permissionsNode = mapValueNode(rootNode, "permissions");
+  const permissionsNode = mapValueNode(rootNode, "permissions", document);
   if (!Object.hasOwn(workflow, "permissions")) {
     findings.push({
       code: "permissions-missing",
@@ -101,7 +104,7 @@ export function auditWorkflowText(text, relativePath) {
 
   const hasPullRequestTarget = eventIncludes(workflow.on, "pull_request_target");
   const jobs = workflow.jobs;
-  const jobsNode = mapValueNode(rootNode, "jobs");
+  const jobsNode = mapValueNode(rootNode, "jobs", document);
   const resolvedJobsNode = resolveNode(jobsNode, document);
   let hasCheckout = false;
 
@@ -145,7 +148,7 @@ export function auditWorkflowText(text, relativePath) {
   }
 
   for (const [jobId, job] of Object.entries(jobs)) {
-    const jobNode = mapValueNode(resolvedJobsNode, jobId);
+    const jobNode = mapValueNode(resolvedJobsNode, jobId, document);
     const resolvedJobNode = resolveNode(jobNode, document);
     const jobLine = sourceLine(jobNode, lineCounter);
     if (!isObject(job)) {
@@ -164,13 +167,13 @@ export function auditWorkflowText(text, relativePath) {
       findings.push({
         code: "permissions-write-all",
         path: relativePath,
-        line: sourceLine(mapValueNode(resolvedJobNode, "permissions"), lineCounter, jobLine),
+        line: sourceLine(mapValueNode(resolvedJobNode, "permissions", document), lineCounter, jobLine),
         message: "permissions: write-all is forbidden"
       });
     }
 
     if (Object.hasOwn(job, "uses")) {
-      const usesLine = sourceLine(mapValueNode(resolvedJobNode, "uses"), lineCounter, jobLine);
+      const usesLine = sourceLine(mapValueNode(resolvedJobNode, "uses", document), lineCounter, jobLine);
       auditReference(job.uses, usesLine);
       if (hasPullRequestTarget) {
         findings.push({
@@ -183,7 +186,7 @@ export function auditWorkflowText(text, relativePath) {
     }
     if (!Object.hasOwn(job, "steps")) continue;
 
-    const stepsNode = mapValueNode(resolvedJobNode, "steps");
+    const stepsNode = mapValueNode(resolvedJobNode, "steps", document);
     const resolvedStepsNode = resolveNode(stepsNode, document);
     if (!Array.isArray(job.steps)) {
       findings.push(structureFinding(relativePath, sourceLine(stepsNode, lineCounter, jobLine), `job ${jobId} steps must be a sequence`));
@@ -212,7 +215,7 @@ export function auditWorkflowText(text, relativePath) {
         continue;
       }
       if (Object.hasOwn(step, "uses")) {
-        auditReference(step.uses, sourceLine(mapValueNode(resolvedStepNode, "uses"), lineCounter, stepLine));
+        auditReference(step.uses, sourceLine(mapValueNode(resolvedStepNode, "uses", document), lineCounter, stepLine));
       }
     }
   }
@@ -221,7 +224,7 @@ export function auditWorkflowText(text, relativePath) {
     findings.push({
       code: "pull-request-target-checkout",
       path: relativePath,
-      line: sourceLine(mapValueNode(rootNode, "on"), lineCounter),
+      line: sourceLine(mapValueNode(rootNode, "on", document), lineCounter),
       message: "pull_request_target must not check out or execute untrusted pull-request code"
     });
   }

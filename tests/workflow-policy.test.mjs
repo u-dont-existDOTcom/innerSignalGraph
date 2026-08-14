@@ -211,6 +211,40 @@ jobs:
   assert.ok(parseResult(result).findings.some(({ code }) => code === "flow-steps-unsupported"));
 });
 
+test("alias keys cannot hide flow-style jobs or steps", async (t) => {
+  for (const [name, workflow, expectedCode] of [
+    [
+      "job key",
+      `name: &job_id audit
+on: push
+permissions:
+  contents: read
+jobs:
+  *job_id : {runs-on: ubuntu-latest, steps: [{run: echo ok}]}
+`,
+      "flow-jobs-unsupported"
+    ],
+    [
+      "steps key",
+      `name: &steps_key steps
+on: push
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    *steps_key : [{run: echo ok}]
+`,
+      "flow-steps-unsupported"
+    ]
+  ]) {
+    const root = await fixture(t, workflow);
+    const result = await runAudit(root);
+    assert.equal(result.code, 1, `${name}\n${result.stdout}\n${result.stderr}`);
+    assert.ok(parseResult(result).findings.some(({ code }) => code === expectedCode), name);
+  }
+});
+
 test("an indentationless flow-style step item fails closed", async (t) => {
   const root = await fixture(t, `name: Unsafe indentationless flow step
 on: pull_request_target

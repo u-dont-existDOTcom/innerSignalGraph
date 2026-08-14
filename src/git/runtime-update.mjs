@@ -19,6 +19,9 @@ const VALIDATION_CREDENTIAL_KEYS = [
   "GH_TOKEN",
   "GITHUB_ENTERPRISE_TOKEN",
   "GITHUB_TOKEN",
+  "NODE_AUTH_TOKEN",
+  "NPM_CONFIG_USERCONFIG",
+  "NPM_TOKEN",
   "OPENAI_API_KEY",
   "OPENAI_ORGANIZATION",
   "OPENAI_PROJECT"
@@ -165,6 +168,35 @@ async function defaultValidateCandidate({ candidateRoot, env, run }) {
   return { ok: true };
 }
 
+async function bootstrapLockedDependencies({ candidateRoot, env, run, stage }) {
+  try {
+    await fs.access(path.join(candidateRoot, "package-lock.json"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return { ok: true };
+    throw error;
+  }
+  const bootstrap = await execute(run, {
+    command: "npm",
+    args: ["ci", "--ignore-scripts"],
+    cwd: candidateRoot,
+    env,
+    label: stage === "dependency-bootstrap" ? "candidate dependency bootstrap" : "installed dependency bootstrap",
+    timeoutMs: 900_000
+  });
+  if (bootstrap.code === 0) return { ok: true };
+  return {
+    ok: false,
+    stage,
+    testSummary: summarizeTestFailure({
+      command: "npm ci --ignore-scripts",
+      exitCode: bootstrap.code,
+      stdout: bootstrap.stdout,
+      stderr: bootstrap.stderr,
+      projectRoot: candidateRoot
+    })
+  };
+}
+
 export function buildCandidateValidationEnvironment({
   parentEnv = process.env,
   validationRoot,
@@ -174,6 +206,9 @@ export function buildCandidateValidationEnvironment({
   const home = path.join(validationRoot, "home");
   const env = { ...parentEnv };
   for (const key of VALIDATION_CREDENTIAL_KEYS) delete env[key];
+  for (const key of Object.keys(env)) {
+    if (/^npm_config_.*(?:auth|token|userconfig)/i.test(key)) delete env[key];
+  }
   return {
     ...env,
     HOME: home,
@@ -458,6 +493,22 @@ export async function runGitUpdate({
       validationState,
       validationGuides
     });
+    const dependencyBootstrap = await bootstrapLockedDependencies({
+      candidateRoot: stagingRoot,
+      env: validationEnv,
+      run,
+      stage: "dependency-bootstrap"
+    });
+    if (!dependencyBootstrap.ok) {
+      return failedSafe({
+        checkedAt,
+        stage: dependencyBootstrap.stage,
+        installedCommit: priorCommit,
+        availableCommit: candidateCommit,
+        candidateCommit,
+        testSummary: dependencyBootstrap.testSummary
+      });
+    }
     let validation;
     try {
       validation = await validateCandidate({ candidateRoot: stagingRoot, env: validationEnv, run });
@@ -480,6 +531,22 @@ export async function runGitUpdate({
     // part of the installed runtime.
     await fs.rm(stagingRoot, { recursive: true, force: true });
     await copyManagedSource(candidateRoot, stagingRoot);
+    const dependencyInstall = await bootstrapLockedDependencies({
+      candidateRoot: stagingRoot,
+      env: validationEnv,
+      run,
+      stage: "dependency-install"
+    });
+    if (!dependencyInstall.ok) {
+      return failedSafe({
+        checkedAt,
+        stage: dependencyInstall.stage,
+        installedCommit: priorCommit,
+        availableCommit: candidateCommit,
+        candidateCommit,
+        testSummary: dependencyInstall.testSummary
+      });
+    }
 
     const beforeStateHash = await preservedHash(installedRoot);
     if (beforeStateTransfer) await beforeStateTransfer({ installedRoot, stateDir });
