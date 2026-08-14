@@ -4,6 +4,8 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const MAX_BLOB_BYTES = 20 * 1024 * 1024;
+const MAX_PROJECTED_METADATA_CHARACTERS = 400;
+const REDACTED = "[REDACTED]";
 
 const CONTENT_RULES = Object.freeze([
   Object.freeze(["credential-pattern", /\bgh[pousr]_[A-Za-z0-9]{36,255}\b/]),
@@ -15,26 +17,50 @@ const CONTENT_RULES = Object.freeze([
 const SECRET_FILE_PATTERN = /(^|\/)\.env$/;
 const PRIVATE_FILE_PATTERN = /(^|\/)(Cookies|Login Data|id_rsa|\.netrc|\.npmrc)$/;
 const PRIVATE_SESSION_PATTERN = /(^|\/)(private-)?therapy-session-transcript\.(txt|json|md)$/i;
+const PRIVATE_METADATA_PATTERN =
+  /(^|[\\/:])(?:\.env|Cookies|Login Data|id_rsa|\.netrc|\.npmrc|(?:private-)?therapy-session-transcript\.(?:txt|json|md))(?=$|[\\/])/gi;
+
+function redactPattern(value, pattern) {
+  const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+  return value.replace(new RegExp(pattern.source, flags), REDACTED);
+}
+
+function sanitizeMetadata(value) {
+  let sanitized = String(value ?? "unknown");
+  for (const [, pattern] of CONTENT_RULES) sanitized = redactPattern(sanitized, pattern);
+  sanitized = sanitized.replace(PRIVATE_METADATA_PATTERN, (match, prefix) => `${prefix}${REDACTED}`);
+  sanitized = sanitized.replace(/[\u0000-\u001f\u007f]/g, "?");
+  if (sanitized.length > MAX_PROJECTED_METADATA_CHARACTERS) {
+    sanitized = `${sanitized.slice(0, MAX_PROJECTED_METADATA_CHARACTERS - 1)}…`;
+  }
+  return sanitized;
+}
+
+function projectFinding({ severity = "error", code, surface, identifier }) {
+  return {
+    severity: sanitizeMetadata(severity),
+    code: sanitizeMetadata(code),
+    surface: sanitizeMetadata(surface),
+    identifier: sanitizeMetadata(identifier)
+  };
+}
 
 export function scanPublicationRecords(records) {
   const findings = [];
 
   for (const record of records) {
+    const codes = new Set();
+    const normalized = (record.path ?? "").replaceAll("\\", "/");
     for (const [code, pattern] of CONTENT_RULES) {
-      if (pattern.test(record.text)) {
-        findings.push({ severity: "error", code, surface: record.surface, identifier: record.identifier });
-      }
+      if (pattern.test(record.text) || pattern.test(normalized)) codes.add(code);
     }
 
-    const normalized = (record.path ?? "").replaceAll("\\", "/");
-    if (SECRET_FILE_PATTERN.test(normalized)) {
-      findings.push({ severity: "error", code: "secret-file", surface: record.surface, identifier: record.identifier });
-    }
-    if (PRIVATE_FILE_PATTERN.test(normalized)) {
-      findings.push({ severity: "error", code: "private-file", surface: record.surface, identifier: record.identifier });
-    }
-    if (PRIVATE_SESSION_PATTERN.test(normalized)) {
-      findings.push({ severity: "error", code: "private-session-material", surface: record.surface, identifier: record.identifier });
+    if (SECRET_FILE_PATTERN.test(normalized)) codes.add("secret-file");
+    if (PRIVATE_FILE_PATTERN.test(normalized)) codes.add("private-file");
+    if (PRIVATE_SESSION_PATTERN.test(normalized)) codes.add("private-session-material");
+
+    for (const code of codes) {
+      findings.push(projectFinding({ code, surface: record.surface, identifier: record.identifier }));
     }
   }
 
@@ -47,7 +73,9 @@ export function scanPublicationRecords(records) {
 
 export function mergePublicationResults(...results) {
   const findings = results.flatMap((result) =>
-    result.findings.map(({ severity, code, surface, identifier }) => ({ severity, code, surface, identifier }))
+    result.findings.map(({ severity, code, surface, identifier }) =>
+      projectFinding({ severity, code, surface, identifier })
+    )
   );
   findings.sort((left, right) =>
     `${left.surface}:${left.identifier}:${left.code}`.localeCompare(`${right.surface}:${right.identifier}:${right.code}`)
@@ -75,28 +103,57 @@ async function defaultRunCommand(command, args, options = {}) {
 
 function parseObjectListing(output) {
   const objects = new Map();
-  for (const line of output.split("\n")) {
+  const malformedRecordNumbers = [];
+  const terminated = output.length === 0 || output.endsWith("\n");
+  const lines = output.split("\n");
+  if (terminated) lines.pop();
+
+  for (const [index, line] of lines.entries()) {
     if (line.length === 0) continue;
-    const separator = line.indexOf(" ");
-    const objectId = separator === -1 ? line : line.slice(0, separator);
-    const objectPath = separator === -1 ? undefined : line.slice(separator + 1);
-    if (/^[0-9a-f]{40,64}$/.test(objectId) && !objects.has(objectId)) objects.set(objectId, objectPath);
+    if (!terminated && index === lines.length - 1) {
+      malformedRecordNumbers.push(index + 1);
+      continue;
+    }
+    const match = /^((?:[0-9a-f]{40}|[0-9a-f]{64}))(?: (.*))?$/.exec(line);
+    if (!match) {
+      malformedRecordNumbers.push(index + 1);
+      continue;
+    }
+    if (!objects.has(match[1])) objects.set(match[1], match[2]);
   }
-  return objects;
+  return { objects, malformedRecordNumbers };
 }
 
 function parseTree(output) {
   const entries = [];
-  for (const item of output.split("\0")) {
+  const malformedRecordNumbers = [];
+  const terminated = output.length === 0 || output.endsWith("\0");
+  const items = output.split("\0");
+  if (terminated) items.pop();
+
+  for (const [index, item] of items.entries()) {
     if (item.length === 0) continue;
-    const match = /^[0-7]+\s+blob\s+([0-9a-f]{40,64})\t([\s\S]+)$/.exec(item);
-    if (match) entries.push({ objectId: match[1], path: match[2] });
+    if (!terminated && index === items.length - 1) {
+      malformedRecordNumbers.push(index + 1);
+      continue;
+    }
+    const match = /^([0-7]{6}) (blob|tree|commit) ((?:[0-9a-f]{40}|[0-9a-f]{64}))\t([\s\S]+)$/.exec(item);
+    const validModeAndType =
+      match &&
+      ((match[2] === "blob" && ["100644", "100755", "120000"].includes(match[1])) ||
+        (match[2] === "tree" && match[1] === "040000") ||
+        (match[2] === "commit" && match[1] === "160000"));
+    if (!validModeAndType) {
+      malformedRecordNumbers.push(index + 1);
+      continue;
+    }
+    if (match[2] === "blob") entries.push({ objectId: match[3], path: match[4] });
   }
-  return entries;
+  return { entries, malformedRecordNumbers };
 }
 
-function safePath(value) {
-  return value.replaceAll("\\", "/").replace(/[\u0000-\u001f\u007f]/g, "?").slice(0, 400);
+function normalizeTrackedPath(value) {
+  return value.replaceAll("\\", "/");
 }
 
 function incompleteFinding(identifier) {
@@ -114,9 +171,12 @@ export async function auditGitPublication({ root, runCommand = defaultRunCommand
   ]);
   const refs = refsResult.stdout.split("\n").filter(Boolean);
   const objectsResult = await runGit(runCommand, repositoryRoot, ["rev-list", "--objects", "--all"]);
-  const objects = parseObjectListing(objectsResult.stdout);
+  const objectListing = parseObjectListing(objectsResult.stdout);
+  const objects = objectListing.objects;
   const objectTypes = new Map();
-  const incomplete = [];
+  const incomplete = objectListing.malformedRecordNumbers.map((recordNumber) =>
+    incompleteFinding(`rev-list:record:${recordNumber}`)
+  );
 
   for (const objectId of objects.keys()) {
     try {
@@ -138,9 +198,13 @@ export async function auditGitPublication({ root, runCommand = defaultRunCommand
   for (const commitId of commitIds) {
     try {
       const treeResult = await runGit(runCommand, repositoryRoot, ["ls-tree", "-r", "-z", "--full-tree", commitId]);
-      for (const entry of parseTree(treeResult.stdout)) {
+      const tree = parseTree(treeResult.stdout);
+      for (const recordNumber of tree.malformedRecordNumbers) {
+        incomplete.push(incompleteFinding(`commit:${commitId}:tree-record:${recordNumber}`));
+      }
+      for (const entry of tree.entries) {
         if (!occurrences.has(entry.objectId)) continue;
-        const repositoryPath = safePath(entry.path);
+        const repositoryPath = normalizeTrackedPath(entry.path);
         occurrences.get(entry.objectId).set(`${commitId}:${repositoryPath}`, repositoryPath);
       }
     } catch {
@@ -175,7 +239,7 @@ export async function auditGitPublication({ root, runCommand = defaultRunCommand
 
     const blobOccurrences = occurrences.get(objectId);
     if (blobOccurrences.size === 0) {
-      const repositoryPath = safePath(objects.get(objectId) ?? "unmapped");
+      const repositoryPath = normalizeTrackedPath(objects.get(objectId) ?? "unmapped");
       records.push({ surface: "git", identifier: `blob:${objectId}:${repositoryPath}`, path: repositoryPath, text });
       continue;
     }

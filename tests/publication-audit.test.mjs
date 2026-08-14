@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -37,6 +37,51 @@ test("publication findings never expose matched values", () => {
   assert.deepEqual(result.findings.map(({ code }) => code), ["credential-pattern"]);
   assert.deepEqual(Object.keys(result.findings[0]), ["severity", "code", "surface", "identifier"]);
   assert.equal(JSON.stringify(result).includes(secret), false, "result must omit matched input");
+});
+
+test("publication metadata redaction removes matched input from every projected field", () => {
+  const sentinel = `ghp_${"m".repeat(36)}`;
+  const result = scanPublicationRecords([
+    {
+      surface: `surface:${sentinel}`,
+      identifier: `identifier:${sentinel}`,
+      path: `archive/${sentinel}.txt`,
+      text: `token=${sentinel}`
+    }
+  ]);
+
+  assert.equal(result.ok, false);
+  assert.equal(JSON.stringify(result).includes(sentinel), false, "result must redact every projected metadata field");
+  assert.equal(result.findings.length, 1);
+  assert.deepEqual(result.findings[0], {
+    severity: "error",
+    code: "credential-pattern",
+    surface: "surface:[REDACTED]",
+    identifier: "identifier:[REDACTED]"
+  });
+});
+
+test("filename-only credential patterns are findings without exposing the filename", () => {
+  const sentinel = `ghp_${"f".repeat(36)}`;
+  const result = scanPublicationRecords([
+    { surface: "git", identifier: `commit:${sentinel}`, path: `archive/${sentinel}`, text: "safe body" }
+  ]);
+
+  assert.equal(result.ok, false);
+  assert.equal(JSON.stringify(result).includes(sentinel), false, "result must omit the matched filename");
+  assert.deepEqual(result.findings, [
+    { severity: "error", code: "credential-pattern", surface: "git", identifier: "commit:[REDACTED]" }
+  ]);
+});
+
+test("overlapping credential patterns yield one finding per record and code", () => {
+  const sentinel = `sk-ant-${"a".repeat(24)}`;
+  const result = scanPublicationRecords([
+    { surface: "git", identifier: "anthropic", path: "fixture.txt", text: `token=${sentinel}` }
+  ]);
+
+  assert.deepEqual(result.findings.map(({ code }) => code), ["credential-pattern"]);
+  assert.equal(JSON.stringify(result).includes(sentinel), false, "result must omit the matched credential");
 });
 
 test("publication path policy rejects private files and accepts safe examples", () => {
@@ -143,6 +188,33 @@ test("safe example history passes the Git publication audit", async (context) =>
   assert.deepEqual(result.counts.commits, 1);
 });
 
+test("long tracked paths retain private basename policy after display truncation", async (context) => {
+  const root = await makeGitRepository();
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  const deepDirectory = Array.from({ length: 55 }, (_, index) => `segment-${String(index).padStart(2, "0")}`).join("/");
+  assert.ok(deepDirectory.length > 440);
+  await mkdir(path.join(root, deepDirectory), { recursive: true });
+
+  await writeFile(path.join(root, deepDirectory, ".env"), "PLACEHOLDER=true\n");
+  await writeFile(path.join(root, deepDirectory, "Cookies"), "synthetic browser fixture\n");
+  await writeFile(
+    path.join(root, deepDirectory, "private-therapy-session-transcript.md"),
+    "synthetic therapy fixture\n"
+  );
+  await git(root, "add", ".");
+  await git(root, "commit", "-m", "add deep private path fixtures");
+
+  const result = await auditGitPublication({ root });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings.map(({ code }) => code), [
+    "private-file",
+    "private-session-material",
+    "secret-file"
+  ]);
+  assert.equal(result.findings.every(({ identifier }) => identifier.length <= 400), true);
+});
+
 test("historical commit audit marks oversized and unreadable objects incomplete", async () => {
   const oversizedObject = "a".repeat(40);
   const unreadableObject = "b".repeat(40);
@@ -166,6 +238,116 @@ test("historical commit audit marks oversized and unreadable objects incomplete"
     { severity: "error", code: "audit-incomplete", surface: "git", identifier: `blob:${oversizedObject}:size-limit` },
     { severity: "error", code: "audit-incomplete", surface: "git", identifier: `object:${unreadableObject}:type` }
   ]);
+});
+
+test("malformed rev-list records and a truncated final record fail closed", async () => {
+  const runCommand = async (command, args) => {
+    assert.equal(command, "git");
+    const invocation = args.join(" ");
+    if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+    if (invocation === "rev-list --objects --all") {
+      return {
+        stdout: `malformed object record\n${"b".repeat(41)} invalid-length.txt\n${"a".repeat(39)} truncated.txt`,
+        stderr: ""
+      };
+    }
+    throw new Error(`unexpected command: ${invocation}`);
+  };
+
+  const result = await auditGitPublication({ root: "/synthetic/root", runCommand });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings, [
+    { severity: "error", code: "audit-incomplete", surface: "git", identifier: "rev-list:record:1" },
+    { severity: "error", code: "audit-incomplete", surface: "git", identifier: "rev-list:record:2" },
+    { severity: "error", code: "audit-incomplete", surface: "git", identifier: "rev-list:record:3" }
+  ]);
+});
+
+test("rev-list accepts a valid object record with an empty advertised path", async () => {
+  const treeId = "e".repeat(40);
+  const runCommand = async (command, args) => {
+    assert.equal(command, "git");
+    const invocation = args.join(" ");
+    if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+    if (invocation === "rev-list --objects --all") return { stdout: `${treeId} \n`, stderr: "" };
+    if (invocation === `cat-file -t ${treeId}`) return { stdout: "tree\n", stderr: "" };
+    throw new Error(`unexpected command: ${invocation}`);
+  };
+
+  const result = await auditGitPublication({ root: "/synthetic/root", runCommand });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.findings, []);
+  assert.equal(result.counts.objects, 1);
+});
+
+test("malformed tree records and a truncated final record fail closed", async () => {
+  const commitId = "c".repeat(40);
+  const unlistedBlobId = "d".repeat(40);
+  const runCommand = async (command, args) => {
+    assert.equal(command, "git");
+    const invocation = args.join(" ");
+    if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+    if (invocation === "rev-list --objects --all") return { stdout: `${commitId}\n`, stderr: "" };
+    if (invocation === `cat-file -t ${commitId}`) return { stdout: "commit\n", stderr: "" };
+    if (invocation === `ls-tree -r -z --full-tree ${commitId}`) {
+      return {
+        stdout:
+          `malformed tree record\0` +
+          `1 blob ${unlistedBlobId}\tinvalid-mode.txt\0` +
+          `100644 blob ${unlistedBlobId}\ttruncated.txt`,
+        stderr: ""
+      };
+    }
+    throw new Error(`unexpected command: ${invocation}`);
+  };
+
+  const result = await auditGitPublication({ root: "/synthetic/root", runCommand });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings, [
+    {
+      severity: "error",
+      code: "audit-incomplete",
+      surface: "git",
+      identifier: `commit:${commitId}:tree-record:1`
+    },
+    {
+      severity: "error",
+      code: "audit-incomplete",
+      surface: "git",
+      identifier: `commit:${commitId}:tree-record:2`
+    },
+    {
+      severity: "error",
+      code: "audit-incomplete",
+      surface: "git",
+      identifier: `commit:${commitId}:tree-record:3`
+    }
+  ]);
+});
+
+test("tree parser accepts a valid non-blob Gitlink record without reading it", async () => {
+  const commitId = "1".repeat(40);
+  const gitlinkId = "2".repeat(40);
+  const runCommand = async (command, args) => {
+    assert.equal(command, "git");
+    const invocation = args.join(" ");
+    if (invocation.startsWith("for-each-ref ")) return { stdout: "refs/heads/main\n", stderr: "" };
+    if (invocation === "rev-list --objects --all") return { stdout: `${commitId}\n`, stderr: "" };
+    if (invocation === `cat-file -t ${commitId}`) return { stdout: "commit\n", stderr: "" };
+    if (invocation === `ls-tree -r -z --full-tree ${commitId}`) {
+      return { stdout: `160000 commit ${gitlinkId}\tvendor/example\0`, stderr: "" };
+    }
+    throw new Error(`unexpected command: ${invocation}`);
+  };
+
+  const result = await auditGitPublication({ root: "/synthetic/root", runCommand });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.findings, []);
+  assert.equal(result.scannedRecords, 0);
 });
 
 test("publication result merging preserves only safe finding projections", () => {
@@ -243,4 +425,23 @@ test("publication audit CLI returns exit 2 for a Git tool failure", async () => 
       return true;
     }
   );
+});
+
+test("filename-only credential is redacted from publication audit CLI JSON", async (context) => {
+  const root = await makeGitRepository();
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  const sentinel = `ghp_${"c".repeat(36)}`;
+
+  await writeFile(path.join(root, sentinel), "safe body\n");
+  await git(root, "add", ".");
+  await git(root, "commit", "-m", "add filename-only fixture");
+
+  await assert.rejects(execFileAsync(process.execPath, ["scripts/audit-publication.mjs", "--root", root]), (error) => {
+    assert.equal(error.code, 1);
+    const result = JSON.parse(error.stdout);
+    assert.deepEqual(result.findings.map(({ code }) => code), ["credential-pattern"]);
+    assert.equal(JSON.stringify(result).includes(sentinel), false, "CLI JSON must omit the matched filename");
+    assert.equal(error.stderr, "");
+    return true;
+  });
 });
