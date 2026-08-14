@@ -20,4 +20,5 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm run verify
+      - run: bash scripts/report-worktree.sh
       - run: test -z "$(git status --porcelain)"
