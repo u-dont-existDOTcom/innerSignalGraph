@@ -19,6 +19,11 @@ test("inner-child and somatic sources compile into a validated directed-graph bu
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "vagal-blitz-source"));
 });
 
+test("compiled guide-graph bundles contain no wall-clock build metadata", async () => {
+  const compiled = await compileGuideGraphs({ write: false });
+  assert.equal(Object.hasOwn(compiled, "compiledAt"), false);
+});
+
 test("all authored branch cases pass the deterministic graph planner", async () => {
   const result = await runGraphRegressionSuite();
   assert.equal(result.ok, true, JSON.stringify(result.results.filter((item) => !item.ok), null, 2));
