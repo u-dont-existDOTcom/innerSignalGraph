@@ -32,6 +32,26 @@ const CHECKPOINT_HEADINGS = [
   "evidence / artifacts",
   "next safe action"
 ];
+const REQUIRED_OWNER_PATHS = [
+  "/.github/",
+  "/packaging/",
+  "/run-autopilot.sh",
+  "/scripts/verify-clean.sh",
+  "/scripts/verify-package.sh",
+  "/src/git/",
+  "/src/cli/git-update.mjs",
+  "/src/diagnostics/",
+  "/src/export/",
+  "/guides/",
+  "/guide-graphs/",
+  "/guide-packets/",
+  "/src/guide-packet/",
+  "/src/hypnosis/",
+  "/src/prompts/",
+  "/THERAPY-LESSONS",
+  "/ledgers/",
+  "/docs/RELEASE-EVIDENCE.md"
+];
 
 function readText(root, relative, findings) {
   try {
@@ -157,6 +177,73 @@ function auditRuntime(root, findings) {
   }
 }
 
+function auditOwnershipAndCi(root, findings) {
+  const codeowners = readText(root, ".github/CODEOWNERS", findings);
+  if (codeowners !== null) {
+    const routed = new Map(
+      codeowners
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line && !line.startsWith("#"))
+        .map((line) => line.split(/\s+/, 2))
+    );
+    for (const ownerPath of REQUIRED_OWNER_PATHS) {
+      if (routed.get(ownerPath) !== "@u-dont-existDOTcom") {
+        findings.push({ severity: "error", code: "codeowners-route", path: ".github/CODEOWNERS", message: `missing explicit owner for ${ownerPath}` });
+      }
+    }
+  }
+
+  const workflowPaths = [
+    ".github/workflows/verify.yml",
+    ".github/workflows/repository-workflow-policy.yml"
+  ];
+  const workflows = workflowPaths.map((relative) => [relative, readText(root, relative, findings)]);
+  for (const [relative, workflow] of workflows) {
+    if (workflow === null) continue;
+    for (const [pattern, message] of [
+      [/^permissions:\n  contents: read$/m, "top-level contents: read is required"],
+      [/group:\s*\$\{\{ github\.workflow \}\}-\$\{\{ github\.ref \}\}/, "concurrency must be scoped by workflow and ref"],
+      [/cancel-in-progress:\s*\$\{\{ github\.event_name == 'pull_request' \}\}/, "only superseded pull-request runs may cancel"],
+      [/branches:\s*\[main, stable\]/, "main and stable triggers are required"],
+      [/node-version-file:\s*\.nvmrc/, "CI must use .nvmrc"],
+      [/actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/, "checkout revision is not the reviewed SHA"],
+      [/actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/, "setup-node revision is not the reviewed SHA"]
+    ]) {
+      requireMatch(workflow, pattern, "ci-contract", relative, message, findings);
+    }
+    const checkouts = workflow.match(/actions\/checkout@/g)?.length ?? 0;
+    const disabledCredentials = workflow.match(/persist-credentials:\s*false/g)?.length ?? 0;
+    if (checkouts !== disabledCredentials) {
+      findings.push({ severity: "error", code: "ci-checkout-credentials", path: relative, message: "every checkout must disable persisted credentials" });
+    }
+    if (/OPENAI_API_KEY|ANTHROPIC_API_KEY|CODEX_COMMAND|CLAUDE_COMMAND/.test(workflow)) {
+      findings.push({ severity: "error", code: "ci-model-credentials", path: relative, message: "ordinary CI must not receive live model configuration" });
+    }
+  }
+  const verify = workflows[0][1];
+  for (const [pattern, message] of [
+    [/name:\s*deterministic-package/, "deterministic package check name is missing"],
+    [/npm ci --ignore-scripts/, "bootstrap command is missing"],
+    [/npm run audit:repository/, "repository audit is missing"],
+    [/npm run verify/, "complete package gate is missing"],
+    [/git status --porcelain/, "independent final cleanliness check is missing"]
+  ]) {
+    requireMatch(verify, pattern, "ci-verify", workflowPaths[0], message, findings);
+  }
+  const policy = workflows[1][1];
+  for (const [pattern, message] of [
+    [/name:\s*workflow-policy/, "workflow policy check name is missing"],
+    [/schedule:/, "scheduled drift detection is missing"],
+    [/cron:/, "scheduled drift cron is missing"],
+    [/workflow_dispatch:/, "manual drift audit is missing"],
+    [/npm ci --ignore-scripts/, "policy bootstrap is missing"],
+    [/npm run audit:repository/, "policy repository audit is missing"]
+  ]) {
+    requireMatch(policy, pattern, "ci-policy", workflowPaths[1], message, findings);
+  }
+}
+
 export function auditRepository(root = process.cwd()) {
   const resolvedRoot = path.resolve(root);
   const findings = [];
@@ -164,6 +251,7 @@ export function auditRepository(root = process.cwd()) {
   auditAuthority(resolvedRoot, findings);
   auditPolicyDocuments(resolvedRoot, findings);
   auditRuntime(resolvedRoot, findings);
+  auditOwnershipAndCi(resolvedRoot, findings);
   for (const finding of auditWorkflows(resolvedRoot).findings) {
     findings.push({ ...finding, severity: "error", code: `workflow-${finding.code}` });
   }

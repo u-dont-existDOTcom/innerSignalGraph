@@ -1,16 +1,41 @@
 # Default owner
 * @u-dont-existDOTcom
 
-# High-consequence instructions, safety/model evaluation, automation, and release paths
+# Repository governance, CI, security, continuity, and release evidence
 /.github/ @u-dont-existDOTcom
 /AGENTS.md @u-dont-existDOTcom
 /AUTOPILOT.md @u-dont-existDOTcom
 /state/ @u-dont-existDOTcom
-/src/ @u-dont-existDOTcom
-/tests/ @u-dont-existDOTcom
-/prompts/ @u-dont-existDOTcom
-/config/ @u-dont-existDOTcom
+/docs/RELEASE-EVIDENCE.md @u-dont-existDOTcom
 /package.json @u-dont-existDOTcom
 /package-lock.json @u-dont-existDOTcom
-/INSTALL* @u-dont-existDOTcom
-/RUN* @u-dont-existDOTcom
+
+# Installation, update, package verification, and stable-promotion machinery
+/packaging/ @u-dont-existDOTcom
+/run-autopilot.sh @u-dont-existDOTcom
+/scripts/verify-clean.sh @u-dont-existDOTcom
+/scripts/verify-package.sh @u-dont-existDOTcom
+/src/git/ @u-dont-existDOTcom
+/src/cli/git-update.mjs @u-dont-existDOTcom
+
+# Diagnostic, progress, recovery-export, and privacy contracts
+/src/diagnostics/ @u-dont-existDOTcom
+/src/export/ @u-dont-existDOTcom
+/src/server/ @u-dont-existDOTcom
+/apps/web/ @u-dont-existDOTcom
+
+# Therapy/hypnosis policy, guides, model prompts, owner decisions, and regressions
+/guides/ @u-dont-existDOTcom
+/guide-graphs/ @u-dont-existDOTcom
+/guide-packets/ @u-dont-existDOTcom
+/src/guide/ @u-dont-existDOTcom
+/src/guide-graph/ @u-dont-existDOTcom
+/src/guide-packet/ @u-dont-existDOTcom
+/src/hypnosis/ @u-dont-existDOTcom
+/src/prompts/ @u-dont-existDOTcom
+/corpus/ @u-dont-existDOTcom
+/THERAPY-LESSONS @u-dont-existDOTcom
+/ledgers/ @u-dont-existDOTcom
+
+# All deterministic coverage is high consequence in this critical-risk repository
+/tests/ @u-dont-existDOTcom

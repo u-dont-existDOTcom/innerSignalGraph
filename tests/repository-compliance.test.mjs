@@ -117,3 +117,66 @@ test("machine-readable repository audit passes repository-visible controls", asy
   assert.equal(audit.errors, 0);
   assert.ok(Array.isArray(audit.findings));
 });
+
+test("CODEOWNERS explicitly routes every high-consequence path", async () => {
+  const codeowners = await read(".github/CODEOWNERS");
+  for (const ownerPath of [
+    "/.github/",
+    "/packaging/",
+    "/run-autopilot.sh",
+    "/scripts/verify-clean.sh",
+    "/scripts/verify-package.sh",
+    "/src/git/",
+    "/src/cli/git-update.mjs",
+    "/src/diagnostics/",
+    "/src/export/",
+    "/guides/",
+    "/guide-graphs/",
+    "/guide-packets/",
+    "/src/guide-packet/",
+    "/src/hypnosis/",
+    "/src/prompts/",
+    "/THERAPY-LESSONS",
+    "/ledgers/",
+    "/docs/RELEASE-EVIDENCE.md"
+  ]) {
+    assert.match(codeowners, new RegExp(`^${ownerPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+@u-dont-existDOTcom$`, "m"), ownerPath);
+  }
+});
+
+test("CI uses immutable least-privilege actions, exact runtime, scoped concurrency, and drift coverage", async () => {
+  const relativeWorkflows = [
+    ".github/workflows/verify.yml",
+    ".github/workflows/repository-workflow-policy.yml"
+  ];
+  const workflows = await Promise.all(relativeWorkflows.map(async (relative) => [relative, await read(relative)]));
+  for (const [relative, workflow] of workflows) {
+    assert.match(workflow, /^permissions:\n  contents: read$/m, relative);
+    assert.match(workflow, /timeout-minutes:\s*[1-9][0-9]*/, relative);
+    assert.match(workflow, /group:\s*\$\{\{ github\.workflow \}\}-\$\{\{ github\.ref \}\}/, relative);
+    assert.match(workflow, /cancel-in-progress:\s*\$\{\{ github\.event_name == 'pull_request' \}\}/, relative);
+    assert.match(workflow, /branches:\s*\[main, stable\]/, relative);
+    assert.match(workflow, /node-version-file:\s*\.nvmrc/, relative);
+    assert.match(workflow, /actions\/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1/, relative);
+    assert.match(workflow, /actions\/setup-node@820762786026740c76f36085b0efc47a31fe5020/, relative);
+    const checkoutCount = (workflow.match(/actions\/checkout@/g) ?? []).length;
+    const noCredentialCount = (workflow.match(/persist-credentials:\s*false/g) ?? []).length;
+    assert.equal(noCredentialCount, checkoutCount, `${relative}: every checkout disables persisted credentials`);
+    assert.doesNotMatch(workflow, /OPENAI_API_KEY|ANTHROPIC_API_KEY|CODEX_COMMAND|CLAUDE_COMMAND/);
+  }
+
+  const verify = workflows[0][1];
+  assert.match(verify, /name:\s*deterministic-package/);
+  assert.match(verify, /npm ci --ignore-scripts/);
+  assert.match(verify, /npm run audit:repository/);
+  assert.match(verify, /npm run verify/);
+  assert.match(verify, /git status --porcelain/);
+
+  const policy = workflows[1][1];
+  assert.match(policy, /name:\s*workflow-policy/);
+  assert.match(policy, /schedule:/);
+  assert.match(policy, /cron:/);
+  assert.match(policy, /workflow_dispatch:/);
+  assert.match(policy, /npm ci --ignore-scripts/);
+  assert.match(policy, /npm run audit:repository/);
+});
