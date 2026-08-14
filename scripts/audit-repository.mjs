@@ -48,6 +48,10 @@ const REQUIRED_OWNER_PATHS = [
   "/src/guide-packet/",
   "/src/hypnosis/",
   "/src/prompts/",
+  "/src/autopilot/model-policy.mjs",
+  "/src/autopilot/model-resolver.mjs",
+  "/src/core/config.mjs",
+  "/src/providers/",
   "/THERAPY-LESSONS",
   "/ledgers/",
   "/docs/RELEASE-EVIDENCE.md"

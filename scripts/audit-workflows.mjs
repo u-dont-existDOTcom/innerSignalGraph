@@ -146,6 +146,7 @@ export function auditWorkflowText(text, relativePath) {
   const findings = [];
   let blockIndent = null;
   let onIndent = null;
+  let stepsIndent = null;
   let hasTopLevelPermissions = false;
   let hasPullRequestTarget = false;
   let hasCheckout = false;
@@ -160,6 +161,26 @@ export function auditWorkflowText(text, relativePath) {
     if (trimmed === "" || trimmed.startsWith("#")) continue;
 
     const parsed = physicalKey(line);
+    if (stepsIndent !== null && indent <= stepsIndent) stepsIndent = null;
+    if (parsed?.key === "steps") {
+      if (/^[\[{]/.test(scalarValue(parsed.value))) {
+        findings.push({
+          code: "flow-steps-unsupported",
+          path: relativePath,
+          line: index + 1,
+          message: "workflow steps must use block sequence syntax so Action references can be audited"
+        });
+      } else if (scalarValue(parsed.value) === "") {
+        stepsIndent = parsed.indent;
+      }
+    } else if (stepsIndent !== null && indent > stepsIndent && /^-\s*[\[{]/.test(trimmed)) {
+      findings.push({
+        code: "flow-steps-unsupported",
+        path: relativePath,
+        line: index + 1,
+        message: "workflow steps must use block mapping syntax so Action references can be audited"
+      });
+    }
     if (onIndent !== null && indent <= onIndent && !(parsed?.indent === 0 && parsed.key === "on")) {
       onIndent = null;
     }

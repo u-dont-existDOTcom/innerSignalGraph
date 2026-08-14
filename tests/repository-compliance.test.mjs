@@ -118,6 +118,38 @@ test("machine-readable repository audit passes repository-visible controls", asy
   assert.ok(Array.isArray(audit.findings));
 });
 
+test("the production repository audit rejects missing model-role ownership routes", async (t) => {
+  const fixture = await fs.mkdtemp(path.join(path.dirname(root), "inner-signal-owner-audit-"));
+  t.after(() => fs.rm(fixture, { recursive: true, force: true }));
+  await fs.cp(root, fixture, {
+    recursive: true,
+    filter: (source) => path.basename(source) !== ".git"
+  });
+  const codeownersPath = path.join(fixture, ".github", "CODEOWNERS");
+  const omitted = new Set([
+    "/src/autopilot/model-policy.mjs",
+    "/src/autopilot/model-resolver.mjs",
+    "/src/core/config.mjs",
+    "/src/providers/"
+  ]);
+  const codeowners = (await fs.readFile(codeownersPath, "utf8"))
+    .split("\n")
+    .filter((line) => ![...omitted].some((ownerPath) => line.startsWith(`${ownerPath} `)))
+    .join("\n");
+  await fs.writeFile(codeownersPath, codeowners);
+
+  const result = await execFileAsync(process.execPath, [path.join(fixture, "scripts", "audit-repository.mjs")], {
+    cwd: fixture
+  }).then(
+    (success) => ({ code: 0, stdout: success.stdout, stderr: success.stderr }),
+    (error) => ({ code: Number(error.code), stdout: String(error.stdout ?? ""), stderr: String(error.stderr ?? "") })
+  );
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  const audit = JSON.parse(result.stdout);
+  const missing = new Set(audit.findings.filter(({ code }) => code === "codeowners-route").map(({ message }) => message));
+  for (const ownerPath of omitted) assert.ok([...missing].some((message) => message.includes(ownerPath)), ownerPath);
+});
+
 test("CODEOWNERS explicitly routes every high-consequence path", async () => {
   const codeowners = await read(".github/CODEOWNERS");
   for (const ownerPath of [

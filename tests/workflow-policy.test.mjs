@@ -111,8 +111,59 @@ jobs:
   const result = await runAudit(root);
   assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
   const codes = new Set(parseResult(result).findings.map(({ code }) => code));
+  assert.ok(codes.has("flow-steps-unsupported"));
   assert.ok(codes.has("action-ref-unpinned"));
   assert.ok(codes.has("pull-request-target-checkout"));
+});
+
+test("a flow-style step item inside a block steps sequence fails closed", async (t) => {
+  const root = await fixture(t, `name: Unsafe flow step item
+on: push
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - {uses: actions/checkout@v4}
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  assert.ok(parseResult(result).findings.some(({ code }) => code === "flow-steps-unsupported"));
+});
+
+test("multiline flow-style steps fail closed before an Action can hide", async (t) => {
+  const root = await fixture(t, `name: Unsafe multiline flow steps
+on: {pull_request_target: {}}
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps: [{uses:
+      actions/checkout@v4}]
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  assert.ok(parseResult(result).findings.some(({ code }) => code === "flow-steps-unsupported"));
+});
+
+test("plain-scalar apostrophes cannot hide a later flow-style Action", async (t) => {
+  const root = await fixture(t, `name: Unsafe apostrophe flow step
+on: {pull_request_target: {}}
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps: [{name: don't pin me, uses: actions/checkout@v4}]
+`);
+
+  const result = await runAudit(root);
+  assert.equal(result.code, 1, `${result.stdout}\n${result.stderr}`);
+  assert.ok(parseResult(result).findings.some(({ code }) => code === "flow-steps-unsupported"));
 });
 
 test("unpinned remote Actions and write-all permissions are rejected", async (t) => {
