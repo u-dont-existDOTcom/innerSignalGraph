@@ -180,3 +180,52 @@ test("CI uses immutable least-privilege actions, exact runtime, scoped concurren
   assert.match(policy, /npm ci --ignore-scripts/);
   assert.match(policy, /npm run audit:repository/);
 });
+
+test("hosted-control evidence records verified improvements and exact unresolved boundaries", async () => {
+  const profile = JSON.parse(await read(".github/codex-repository.json"));
+  assert.deepEqual(
+    {
+      actions_default_permissions: profile.github_controls.actions_default_permissions,
+      actions_allowed_set: profile.github_controls.actions_allowed_set,
+      actions_sha_pinning: profile.github_controls.actions_sha_pinning,
+      vulnerability_alerts: profile.github_controls.vulnerability_alerts,
+      dependabot_alerts: profile.github_controls.dependabot_alerts,
+      automated_security_fixes: profile.github_controls.automated_security_fixes,
+      default_branch_rules: profile.github_controls.default_branch_rules,
+      stable_branch_rules: profile.github_controls.stable_branch_rules,
+      secret_scanning: profile.github_controls.secret_scanning,
+      push_protection: profile.github_controls.push_protection,
+      code_scanning: profile.github_controls.code_scanning,
+      private_vulnerability_reporting: profile.github_controls.private_vulnerability_reporting,
+      github_app_permissions: profile.github_controls.github_app_permissions
+    },
+    {
+      actions_default_permissions: "verified",
+      actions_allowed_set: "enabled",
+      actions_sha_pinning: "enabled",
+      vulnerability_alerts: "enabled",
+      dependabot_alerts: "enabled",
+      automated_security_fixes: "enabled",
+      default_branch_rules: "disabled",
+      stable_branch_rules: "disabled",
+      secret_scanning: "disabled",
+      push_protection: "disabled",
+      code_scanning: "disabled",
+      private_vulnerability_reporting: "not_applicable",
+      github_app_permissions: "unverified"
+    }
+  );
+  assert.equal(
+    profile.github_controls_evidence.hardening_issue,
+    "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4"
+  );
+  assert.match(profile.github_controls_evidence.branch_rules, /HTTP 403/);
+  assert.match(profile.github_controls_evidence.security, /HTTP 422/);
+
+  const report = await read("docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md");
+  assert.match(report, /Terminal status:\s*`BLOCKED`/);
+  assert.match(report, /issues\/4/);
+  assert.match(report, /81265fd3592ee842bfe30c7d73a5c1f3dc01b2d0/);
+  assert.match(report, /GitHub App installation permissions[^\n]*`UNVERIFIED`/i);
+  assert.doesNotMatch(report, /gho_[A-Za-z0-9]/);
+});

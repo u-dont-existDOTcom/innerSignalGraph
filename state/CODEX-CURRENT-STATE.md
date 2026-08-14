@@ -27,32 +27,37 @@ Establish the applicable Codex + GitHub baseline for this private, active, criti
 - Reproduced the workflow-policy false positive and replaced raw substring matching with a structural, machine-readable workflow audit, including privileged-trigger, flow-map, pinning, permission, and embedded-token regressions.
 - Pinned Node 24.18.0 and npm 11.16.0 across `.nvmrc`, package metadata, lockfile, CI setup, installer, and local automation; exact-patch regressions and reproducible `npm ci --ignore-scripts` pass.
 - Made the package verifier restore declared generated outputs and reject any additional tracked or untracked drift relative to its caller’s pre-existing status.
+- Consolidated the repository entry path, exact command profile, release-evidence contract, private security/contribution posture, machine audit, sensitive CODEOWNERS routes, and two least-privilege CI workflows with unique check names and weekly drift detection.
+- Enabled and read back GitHub-owned Actions-only execution, full-SHA Action enforcement, vulnerability/Dependabot alerts, and automated security fixes while retaining read-only workflow tokens.
+- Attempted documented branch, ruleset, secret-protection, code-scanning, and private-reporting APIs; preserved their exact 403/422/404 outcomes in the profile and the single hardening issue `https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4`.
+- Repaired and promoted the transferable audit/recovery lessons through `u-dont-existDOTcom/universal-dev-architecture` PR 6, merged as `81265fd3592ee842bfe30c7d73a5c1f3dc01b2d0` with both hosted checks green.
 - The separate r03 Guide Packet branch recorded real Opus compilation as blocked at commit `875b649dd32d5e77e7502a1648b906668781f67f`; Codex was correctly not invoked, installed remains null, and no owner decision or therapy policy advanced.
 
 ## Current checkpoint
 
 - Worktree: `.worktrees/codex-github-compliance-2026-08-14`
 - Branch: `codex/github-compliance-2026-08-14`
-- Last green implementation commits:
+- Base: `origin/main` at `690244617a1ff08ddc6cbddea461fd9f6f93f8b7`
+- Verified implementation commits:
   - `ae4ee61`: structural workflow policy audit
   - `f3440a0`: exact Node/npm toolchain and bootstrap lockfile
   - `57eb860`: hermetic verifier status comparison
-- Current implementation slice: repository profile, sole authority path, machine audit, security/contribution posture, and release-evidence documentation.
+  - `8631d72`: authority/profile/security/release-evidence consolidation
+  - `1e4fd3e`: sensitive ownership and least-privilege CI hardening
+- Current implementation slice: persist hosted-control evidence and run final complete verification on the exact candidate before one PR to `main`.
 - `stable` and `runtime-diagnostics` have not been advanced by this task.
 
 ## Remaining
 
-- Complete and verify the repository-visible authority/audit documentation slice.
-- Expand CODEOWNERS and harden both workflows with updated full-SHA Actions, stable unique check names, ref-scoped concurrency, exact runtime setup, weekly drift detection, and no checkout credential persistence.
-- Repair and test the Python 3.12 import defect in the universal audit and disposition transferable lessons through the universal repository.
-- Apply/read back supported hosted GitHub controls and create one `Codex + GitHub hardening audit` issue for unavailable controls.
-- Run the complete focused privacy/install/readiness matrix, `npm test`, graph and therapy-lesson gates, `npm run verify`, the repaired universal audit, final diff/integrity checks, and independent read-only review.
+- Commit the hosted-control evidence slice after its focused repository audit passes.
+- Run the complete focused privacy/install/readiness matrix, exact profile command map, `npm test`, graph and therapy-lesson gates, `npm run verify`, the repaired universal audit, final diff/integrity checks, and independent read-only review.
 - Open one PR to `main`, verify final-head checks, merge reversibly if permitted, close superseded Dependabot PRs, and reconcile refs.
 
 ## Blockers / unresolved
 
-- GitHub currently rejects private-repository rulesets and branch protection with a plan limitation; both `main` and `stable` report unprotected. This is an applicable unresolved hosted requirement.
-- Secret scanning, push protection, code scanning, vulnerability/Dependabot alerts, and private reporting were disabled, unavailable, or unverified during recovery and require the planned supported-setting attempts/readback.
+- GitHub rejects private-repository rulesets and branch protection with HTTP 403 plan limitations; both `main` and `stable` read back `protected=false`. This applicable requirement keeps the terminal status `BLOCKED` even if every executable repository gate passes.
+- Secret scanning and push protection are unavailable (HTTP 422); code scanning is disabled/unavailable for this private repository (HTTP 403). Repository-scoped GitHub App installation permissions remain `UNVERIFIED` because the available OAuth token cannot use the App-JWT-only enumeration endpoint.
+- Private vulnerability reporting returns HTTP 404 and GitHub documents the feature for public repositories; it is not applicable to this private repository, which uses `SECURITY.md` and draft security advisories.
 - No stable release is authorized by this compliance task. Repository governance may merge to `main`; promotion to `stable` remains separately owner-gated.
 
 ## Evidence / artifacts
@@ -63,11 +68,14 @@ Establish the applicable Codex + GitHub baseline for this private, active, criti
 - Policy regressions: `tests/workflow-policy.test.mjs`, `tests/runtime-baseline.test.mjs`, `tests/verify-clean.test.mjs`, `tests/repository-compliance.test.mjs`
 - Local audits: `scripts/audit-workflows.mjs`, `scripts/audit-repository.mjs`
 - Production implementation report: `IMPLEMENTATION-REPORT-v0.15.2.md`
+- Compliance report: `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md`
+- Hosted hardening issue: `https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4`
+- Universal lesson PR/merge: `https://github.com/u-dont-existDOTcom/universal-dev-architecture/pull/6`, `81265fd3592ee842bfe30c7d73a5c1f3dc01b2d0`
 - Separate r03 non-pass report: `.worktrees/guide-packet-r03/.superpowers/sdd/2026-08-14-guide-packet-r03-repair/task-3-report.md`
 
 ## Next safe action
 
-Make the repository-compliance regression and local audit green, commit that isolated slice, then add the CODEOWNERS/CI hardening regressions before changing workflow configuration.
+Run the hosted-evidence regression and local audit, commit the slice, then execute every final gate against the exact candidate before publishing its single PR.
 
 ## Recovery rule
 
