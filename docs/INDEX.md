@@ -6,6 +6,7 @@
 - `../AUTOPILOT.md`: autonomous development, diagnosis, repair, and escalation behavior
 - `../scripts/verify-package.sh`: complete deterministic package gate
 - `../package.json`: supported commands
+- `CURRENT-STATE.md`: current recovery checkpoint
 
 ## Current evidence
 
