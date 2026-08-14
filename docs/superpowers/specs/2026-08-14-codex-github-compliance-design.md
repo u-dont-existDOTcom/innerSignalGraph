@@ -1,8 +1,8 @@
 # Codex + GitHub Compliance Design
 
-Date: 2026-08-14  
-Repository: `u-dont-existDOTcom/innerSignalGraph`  
-Target branch: `main`  
+Date: 2026-08-14
+Repository: `u-dont-existDOTcom/innerSignalGraph`
+Target branch: `main`
 Task branch: `codex/github-compliance-2026-08-14`
 
 ## Objective

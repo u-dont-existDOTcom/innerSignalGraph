@@ -2,7 +2,7 @@
 
 Terminal status: `BLOCKED`
 
-The repository-visible implementation is in final verification. The terminal status is already `BLOCKED`, rather than compliant, because applicable hosted protection for `main` and `stable` remains unavailable on the current private-repository plan. This label will not be weakened if local and CI gates pass.
+The repository-visible implementation has passed its complete local verification. The terminal status remains `BLOCKED`, rather than compliant, because applicable hosted protection for `main` and `stable` is unavailable on the current private-repository plan. This label is not weakened by green local or CI gates.
 
 ## Identity and scope
 
@@ -24,6 +24,7 @@ The repository-visible implementation is in final verification. The terminal sta
 - `package.json`, `package-lock.json`, `.nvmrc`, `packaging/install-from-git.sh`, `scripts/auto-cli.sh`: exact Node 24.18.0/npm 11.16.0 bootstrap and runtime preflight.
 - `scripts/audit-workflows.mjs`, `scripts/audit-repository.mjs`, `scripts/verify-clean.sh`: structural workflow policy, machine-readable repository audit, and generated-output-clean package verification.
 - `tests/workflow-policy.test.mjs`, `tests/runtime-baseline.test.mjs`, `tests/verify-clean.test.mjs`, `tests/repository-compliance.test.mjs`, `tests/git-launcher.test.mjs`: deterministic causal coverage for those controls.
+- `src/guide-graph/compiler.mjs`, `tests/guide-graph.test.mjs`, `guide-graphs/compiled/bundle.json`: remove wall-clock metadata from the compiled graph artifact so identical inputs produce the candidate bytes that the package gate tests.
 - `docs/superpowers/specs/2026-08-14-codex-github-compliance-design.md`, `docs/superpowers/plans/2026-08-14-codex-github-compliance.md`: accepted design and execution plan.
 
 ## Hosted GitHub controls
@@ -65,17 +66,19 @@ Focused implementation evidence already obtained:
 - `npm run audit:workflows`: PASS
 - `npm run audit:repository`: PASS with zero errors before hosted readback
 
-Final-candidate evidence will be filled from fresh final-head runs before the PR is opened:
+Final-candidate evidence obtained on the compliance branch:
 
-- exact bootstrap: pending
-- focused privacy/install/readiness matrix: pending
-- complete `npm test`: pending
-- `npm run graph:test`: pending
-- `npm run therapy-lessons:verify`: pending
-- `npm run verify`: pending
-- repaired universal audit: pending
-- independent read-only review: pending
-- final diff, generated-output, secret, ref, and worktree checks: pending
+- `npm ci --ignore-scripts`: PASS; one package audited, zero vulnerabilities.
+- focused transactional install/update, liveness/recovery, privacy diagnostics/progress, model-role, Guide Packet, therapy-routing, and hypnosis matrix: PASS, 52/52.
+- `npm test`: PASS, 272/272.
+- `npm run graph:test`: PASS, 12/12.
+- `npm run therapy-lessons:verify`: PASS, 5/5 tracked and 4 active runtime lessons.
+- `npm run audit:workflows`: PASS, two workflows and zero findings.
+- `npm run audit:repository`: PASS with zero errors and six declared hosted-control warnings.
+- `npm run verify`: PASS on the real host with final `VERDICT PASS`; it includes all 272 tests, immutable r01/r02 checks, mock therapy/hypnosis campaigns, web smoke, fake-CLI autopilot, package hygiene, and generated-output restoration.
+- universal `audit_codex_github.py --root . --format json --fail-on error`: PASS with zero errors and four declared hosted-control warnings.
+- the managed execution sandbox alone exhausts its cumulative process allowance after the verifier's syntax fan-out, causing nested child-CLI tests to return empty output. A fresh sandbox suite and the exact host gate pass; this is recorded as execution-environment evidence, not waived as a repository failure.
+- independent read-only review, final diff/integrity checks, and hosted final-head CI: pending publication closeout.
 
 ## CI and merge evidence
 

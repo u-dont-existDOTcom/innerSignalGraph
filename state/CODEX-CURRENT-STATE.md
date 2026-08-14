@@ -31,6 +31,8 @@ Establish the applicable Codex + GitHub baseline for this private, active, criti
 - Enabled and read back GitHub-owned Actions-only execution, full-SHA Action enforcement, vulnerability/Dependabot alerts, and automated security fixes while retaining read-only workflow tokens.
 - Attempted documented branch, ruleset, secret-protection, code-scanning, and private-reporting APIs; preserved their exact 403/422/404 outcomes in the profile and the single hardening issue `https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4`.
 - Repaired and promoted the transferable audit/recovery lessons through `u-dont-existDOTcom/universal-dev-architecture` PR 6, merged as `81265fd3592ee842bfe30c7d73a5c1f3dc01b2d0` with both hosted checks green.
+- Removed wall-clock metadata from compiled guide-graph artifacts under a causal regression, so the package gate tests byte-stable generated output; the complete real-host verifier now ends in `VERDICT PASS` with 272/272 tests.
+- Completed the focused 52/52 transactional/privacy/readiness/model-role safety matrix, graph 12/12, therapy-lesson 5/5, repository/workflow audits with zero errors, and the repaired universal audit with zero errors.
 - The separate r03 Guide Packet branch recorded real Opus compilation as blocked at commit `875b649dd32d5e77e7502a1648b906668781f67f`; Codex was correctly not invoked, installed remains null, and no owner decision or therapy policy advanced.
 
 ## Current checkpoint
@@ -44,14 +46,15 @@ Establish the applicable Codex + GitHub baseline for this private, active, criti
   - `57eb860`: hermetic verifier status comparison
   - `8631d72`: authority/profile/security/release-evidence consolidation
   - `1e4fd3e`: sensitive ownership and least-privilege CI hardening
-- Current implementation slice: persist hosted-control evidence and run final complete verification on the exact candidate before one PR to `main`.
+  - `ea6ee3a`: hosted-control evidence and terminal classification
+  - `b55847e`: deterministic guide-graph compilation
+- Current implementation slice: finish independent read-only review and final integrity checks, then publish one PR to `main` and verify its two final-head checks.
 - `stable` and `runtime-diagnostics` have not been advanced by this task.
 
 ## Remaining
 
-- Commit the hosted-control evidence slice after its focused repository audit passes.
-- Run the complete focused privacy/install/readiness matrix, exact profile command map, `npm test`, graph and therapy-lesson gates, `npm run verify`, the repaired universal audit, final diff/integrity checks, and independent read-only review.
-- Open one PR to `main`, verify final-head checks, merge reversibly if permitted, close superseded Dependabot PRs, and reconcile refs.
+- Run the independent read-only review and final diff/integrity checks.
+- Commit the final report/checkpoint evidence, open one PR to `main`, verify final-head checks, merge reversibly if permitted, close superseded Dependabot PRs, and reconcile refs.
 
 ## Blockers / unresolved
 
@@ -75,7 +78,7 @@ Establish the applicable Codex + GitHub baseline for this private, active, criti
 
 ## Next safe action
 
-Run the hosted-evidence regression and local audit, commit the slice, then execute every final gate against the exact candidate before publishing its single PR.
+Complete independent read-only review and final integrity checks, then publish the single compliance PR to `main`; do not advance `stable`.
 
 ## Recovery rule
 
