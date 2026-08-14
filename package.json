@@ -22,6 +22,7 @@
     "audit:workflows": "node scripts/audit-workflows.mjs",
     "audit:repository": "node scripts/audit-repository.mjs",
     "audit:publication": "node scripts/audit-publication.mjs",
+    "audit:publication:hosted": "bash scripts/run-publication-audit-hosted.sh --github u-dont-existDOTcom/innerSignalGraph",
     "therapy-lessons:verify": "node scripts/verify-therapy-lessons.mjs",
     "hypnosis:replay": "node src/cli/hypnosis-replay.mjs",
     "hypnosis:replay:cli": "node --env-file=.env src/cli/hypnosis-replay.mjs",

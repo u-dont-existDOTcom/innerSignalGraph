@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -8,7 +8,9 @@ import test from "node:test";
 
 import {
   auditGitPublication,
+  collectHostedPublicationRecords,
   mergePublicationResults,
+  runGitleaks,
   scanPublicationRecords
 } from "../src/compliance/publication-audit.mjs";
 
@@ -24,6 +26,103 @@ async function makeGitRepository() {
   await git(root, "config", "user.email", "publication-test@example.invalid");
   await git(root, "config", "user.name", "Publication Test");
   return root;
+}
+
+async function writeExecutable(filePath, body) {
+  await writeFile(filePath, body, { mode: 0o700 });
+  await chmod(filePath, 0o700);
+}
+
+const EXPECTED_REPOSITORY = "u-dont-existDOTcom/innerSignalGraph";
+
+function hostedApiPages(value) {
+  return `${JSON.stringify(value)}\n`;
+}
+
+function makeHostedRunCommand({ logFailure = false, artifactFailure = false, artifactWriter } = {}) {
+  const sentinel = `ghp_${"z".repeat(36)}`;
+  const endpoints = new Map([
+    [
+      `repos/${EXPECTED_REPOSITORY}`,
+      JSON.stringify({ full_name: EXPECTED_REPOSITORY, visibility: "private", default_branch: "main" })
+    ],
+    [
+      `repos/${EXPECTED_REPOSITORY}/branches?per_page=100`,
+      hostedApiPages([
+        { name: "main", commit: { sha: "1".repeat(40) }, protected: false },
+        { name: "stable", commit: { sha: "2".repeat(40) }, protected: false }
+      ])
+    ],
+    [
+      `repos/${EXPECTED_REPOSITORY}/issues?state=all&per_page=100`,
+      hostedApiPages([
+        { number: 7, title: "Issue", body: "safe issue", state: "open" },
+        { number: 8, title: "PR-shaped issue", body: "safe", pull_request: { url: "synthetic" } }
+      ])
+    ],
+    [
+      `repos/${EXPECTED_REPOSITORY}/issues/comments?per_page=100`,
+      hostedApiPages([{ id: 11, body: "safe issue comment" }])
+    ],
+    [
+      `repos/${EXPECTED_REPOSITORY}/pulls?state=all&per_page=100`,
+      hostedApiPages([{ number: 8, title: "Pull request", body: "safe pull request", state: "closed" }])
+    ],
+    [
+      `repos/${EXPECTED_REPOSITORY}/pulls/comments?per_page=100`,
+      hostedApiPages([{ id: 12, body: "safe review comment" }])
+    ],
+    [
+      `repos/${EXPECTED_REPOSITORY}/pulls/8/reviews?per_page=100`,
+      hostedApiPages([{ id: 13, body: "safe review", state: "APPROVED" }])
+    ],
+    [
+      `repos/${EXPECTED_REPOSITORY}/actions/runs?per_page=100`,
+      hostedApiPages({
+        total_count: 2,
+        workflow_runs: [
+          { id: 101, name: "deterministic-package", status: "completed" },
+          { id: 102, name: "workflow-policy", status: "completed" }
+        ]
+      })
+    ],
+    [
+      `repos/${EXPECTED_REPOSITORY}/actions/artifacts?per_page=100`,
+      hostedApiPages(
+        artifactWriter || artifactFailure
+          ? {
+              total_count: 1,
+              artifacts: [
+                { id: 201, name: "publication-evidence", expired: false, workflow_run: { id: 101 } }
+              ]
+            }
+          : { total_count: 0, artifacts: [] }
+      )
+    ]
+  ]);
+
+  return {
+    sentinel,
+    runCommand: async (command, args) => {
+      assert.equal(command, "gh");
+      if (args[0] === "api") {
+        const endpoint = args.at(-1);
+        if (!endpoints.has(endpoint)) throw new Error("unexpected hosted API fixture");
+        return { stdout: endpoints.get(endpoint), stderr: "" };
+      }
+      if (args[0] === "run" && args[1] === "view") {
+        if (logFailure && args[2] === "102") throw new Error("synthetic log unavailable");
+        return { stdout: args[2] === "101" ? `token=${sentinel}\n` : "safe log\n", stderr: "" };
+      }
+      if (args[0] === "run" && args[1] === "download") {
+        if (artifactFailure) throw new Error("synthetic artifact unavailable");
+        const artifactRoot = args[args.indexOf("--dir") + 1];
+        await artifactWriter(artifactRoot);
+        return { stdout: "", stderr: "" };
+      }
+      throw new Error("unexpected hosted command fixture");
+    }
+  };
 }
 
 test("publication findings never expose matched values", () => {
@@ -538,6 +637,464 @@ test("tree parser accepts a valid non-blob Gitlink record without reading it", a
   assert.equal(result.scannedRecords, 0);
 });
 
+test("hosted coverage enumerates every required surface and safely scans action logs", async (context) => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
+  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  const fixture = makeHostedRunCommand();
+
+  const result = await collectHostedPublicationRecords({
+    repository: EXPECTED_REPOSITORY,
+    runCommand: fixture.runCommand,
+    tempRoot
+  });
+  const scanned = scanPublicationRecords(result.records);
+
+  assert.deepEqual(result.counts, {
+    branches: 2,
+    issues: 1,
+    pullRequests: 1,
+    issueComments: 1,
+    reviewComments: 1,
+    reviews: 1,
+    actionRuns: 2,
+    actionLogs: 2,
+    artifacts: 0
+  });
+  assert.equal(scanned.ok, false);
+  assert.deepEqual(scanned.findings.map(({ code }) => code), ["credential-pattern"]);
+  assert.equal(JSON.stringify(scanned).includes(fixture.sentinel), false, "scan result must omit hosted matched input");
+  assert.equal((await stat(tempRoot)).mode & 0o777, 0o700);
+  const rawNames = (await readdir(tempRoot)).filter((name) => name.endsWith(".raw"));
+  assert.equal(rawNames.length > 0, true);
+  for (const rawName of rawNames) assert.equal((await stat(path.join(tempRoot, rawName))).mode & 0o777, 0o600);
+});
+
+test("hosted pagination consumes every concatenated page for arrays and object collections", async (context) => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
+  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  const fixture = makeHostedRunCommand();
+  const pagedCommand = async (command, args, options) => {
+    const endpoint = args.at(-1);
+    if (endpoint === `repos/${EXPECTED_REPOSITORY}/branches?per_page=100`) {
+      return {
+        stdout:
+          `${JSON.stringify([{ name: "main", commit: { sha: "1".repeat(40) } }])}\n` +
+          `${JSON.stringify([{ name: "stable", commit: { sha: "2".repeat(40) } }])}\n`,
+        stderr: ""
+      };
+    }
+    if (endpoint === `repos/${EXPECTED_REPOSITORY}/issues/comments?per_page=100`) {
+      return {
+        stdout: `${JSON.stringify([{ id: 11, body: "first" }])}\n${JSON.stringify([{ id: 14, body: "second" }])}\n`,
+        stderr: ""
+      };
+    }
+    if (endpoint === `repos/${EXPECTED_REPOSITORY}/pulls/8/reviews?per_page=100`) {
+      return {
+        stdout: `${JSON.stringify([{ id: 13, body: "first" }])}\n${JSON.stringify([{ id: 15, body: "second" }])}\n`,
+        stderr: ""
+      };
+    }
+    if (endpoint === `repos/${EXPECTED_REPOSITORY}/actions/runs?per_page=100`) {
+      return {
+        stdout:
+          `${JSON.stringify({ total_count: 2, workflow_runs: [{ id: 101, name: "first" }] })}\n` +
+          `${JSON.stringify({ total_count: 2, workflow_runs: [{ id: 102, name: "second" }] })}\n`,
+        stderr: ""
+      };
+    }
+    if (endpoint === `repos/${EXPECTED_REPOSITORY}/actions/artifacts?per_page=100`) {
+      return {
+        stdout:
+          `${JSON.stringify({ total_count: 0, artifacts: [] })}\n` +
+          `${JSON.stringify({ total_count: 0, artifacts: [] })}\n`,
+        stderr: ""
+      };
+    }
+    return await fixture.runCommand(command, args, options);
+  };
+
+  const result = await collectHostedPublicationRecords({
+    repository: EXPECTED_REPOSITORY,
+    runCommand: pagedCommand,
+    tempRoot
+  });
+
+  assert.equal(result.counts.branches, 2);
+  assert.equal(result.counts.issueComments, 2);
+  assert.equal(result.counts.reviews, 2);
+  assert.equal(result.counts.actionRuns, 2);
+  assert.equal(result.counts.actionLogs, 2);
+  assert.equal(result.counts.artifacts, 0);
+});
+
+test("missing action log fails hosted coverage closed with a safe identifier", async (context) => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
+  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  const fixture = makeHostedRunCommand({ logFailure: true });
+
+  await assert.rejects(
+    collectHostedPublicationRecords({
+      repository: EXPECTED_REPOSITORY,
+      runCommand: fixture.runCommand,
+      tempRoot
+    }),
+    (error) => {
+      assert.equal(error.code, "audit-incomplete");
+      assert.equal(error.identifier, "actions-run:2:log");
+      assert.equal(JSON.stringify({ code: error.code, identifier: error.identifier }).includes(fixture.sentinel), false);
+      return true;
+    }
+  );
+});
+
+test("artifact coverage scans every regular member without following symlinks", async (context) => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
+  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  const fixture = makeHostedRunCommand({
+    artifactWriter: async (artifactRoot) => {
+      await mkdir(path.join(artifactRoot, "nested"), { recursive: true });
+      await writeFile(path.join(artifactRoot, "nested", ".env"), "PLACEHOLDER=true\n");
+      await writeFile(path.join(artifactRoot, "safe.txt"), "safe member\n");
+    }
+  });
+
+  const result = await collectHostedPublicationRecords({
+    repository: EXPECTED_REPOSITORY,
+    runCommand: fixture.runCommand,
+    tempRoot
+  });
+  const scanned = scanPublicationRecords(result.records);
+
+  assert.equal(result.counts.artifacts, 1);
+  assert.deepEqual(scanned.findings.map(({ code }) => code), ["credential-pattern", "secret-file"]);
+  assert.equal(
+    result.records.filter(({ surface }) => surface === "artifact-member").length,
+    2,
+    "every regular artifact member must become a scan record"
+  );
+
+  const symlinkRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-symlink-test-"));
+  context.after(async () => await rm(symlinkRoot, { recursive: true, force: true }));
+  const symlinkFixture = makeHostedRunCommand({
+    artifactWriter: async (artifactRoot) => {
+      await mkdir(artifactRoot, { recursive: true });
+      await symlink("/tmp", path.join(artifactRoot, "outside"));
+    }
+  });
+  await assert.rejects(
+    collectHostedPublicationRecords({
+      repository: EXPECTED_REPOSITORY,
+      runCommand: symlinkFixture.runCommand,
+      tempRoot: symlinkRoot
+    }),
+    (error) => {
+      assert.equal(error.code, "audit-incomplete");
+      assert.equal(error.identifier, "artifact:1:member:1:type");
+      return true;
+    }
+  );
+});
+
+test("artifact download failure and malformed pagination fail hosted coverage closed", async (context) => {
+  const artifactRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
+  const malformedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
+  context.after(async () => await rm(artifactRoot, { recursive: true, force: true }));
+  context.after(async () => await rm(malformedRoot, { recursive: true, force: true }));
+
+  const artifactFixture = makeHostedRunCommand({ artifactFailure: true });
+  await assert.rejects(
+    collectHostedPublicationRecords({
+      repository: EXPECTED_REPOSITORY,
+      runCommand: artifactFixture.runCommand,
+      tempRoot: artifactRoot
+    }),
+    (error) => {
+      assert.equal(error.code, "audit-incomplete");
+      assert.equal(error.identifier, "artifact:1:download");
+      return true;
+    }
+  );
+
+  const malformedFixture = makeHostedRunCommand();
+  const malformedCommand = async (command, args, options) => {
+    if (args.at(-1) === `repos/${EXPECTED_REPOSITORY}/branches?per_page=100`) {
+      return { stdout: "{", stderr: "" };
+    }
+    return await malformedFixture.runCommand(command, args, options);
+  };
+  await assert.rejects(
+    collectHostedPublicationRecords({
+      repository: EXPECTED_REPOSITORY,
+      runCommand: malformedCommand,
+      tempRoot: malformedRoot
+    }),
+    (error) => {
+      assert.equal(error.code, "audit-incomplete");
+      assert.equal(error.identifier, "branches:pagination");
+      return true;
+    }
+  );
+});
+
+test("repository identity other than the exact publication target fails closed", async (context) => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
+  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+
+  await assert.rejects(
+    collectHostedPublicationRecords({
+      repository: "u-dont-existDOTcom/not-innerSignalGraph",
+      runCommand: makeHostedRunCommand().runCommand,
+      tempRoot
+    }),
+    (error) => {
+      assert.equal(error.code, "audit-incomplete");
+      assert.equal(error.identifier, "repository-identity");
+      return true;
+    }
+  );
+});
+
+test("pinned Gitleaks wrapper downloads and executes only the reviewed Linux x86_64 asset", async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-wrapper-test-"));
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  const fakeBin = path.join(root, "bin");
+  await mkdir(fakeBin);
+  const invocationLog = path.join(root, "invocation.log");
+  const curlLog = path.join(root, "curl.log");
+  const checksumLog = path.join(root, "checksum.log");
+
+  await writeExecutable(
+    path.join(fakeBin, "uname"),
+    "#!/usr/bin/env bash\nif [[ \"$1\" == \"-s\" ]]; then printf 'Linux\\n'; else printf 'x86_64\\n'; fi\n"
+  );
+  await writeExecutable(
+    path.join(fakeBin, "curl"),
+    "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" > \"$FAKE_CURL_LOG\"\nwhile (( $# )); do if [[ \"$1\" == \"--output\" ]]; then shift; : > \"$1\"; exit 0; fi; shift; done\nexit 2\n"
+  );
+  await writeExecutable(
+    path.join(fakeBin, "sha256sum"),
+    "#!/usr/bin/env bash\ninput=$(</dev/stdin)\nprintf '%s\\n' \"$input\" > \"$FAKE_CHECKSUM_LOG\"\n[[ \"$input\" == e4eb209d04e20339d77122a3bdf9cd41351255cfb27ebcb75e85325e04f88924* ]]\n"
+  );
+  await writeExecutable(
+    path.join(fakeBin, "tar"),
+    "#!/usr/bin/env bash\nwhile (( $# )); do if [[ \"$1\" == \"-C\" ]]; then shift; tool_root=\"$1\"; fi; shift; done\nprintf '#!/usr/bin/env bash\\nexit 0\\n' > \"$tool_root/gitleaks\"\nchmod 700 \"$tool_root/gitleaks\"\n"
+  );
+  await writeExecutable(
+    path.join(fakeBin, "node"),
+    "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" > \"$FAKE_INVOCATION_LOG\"\n"
+  );
+
+  await execFileAsync("bash", ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY], {
+    cwd: process.cwd(),
+    env: {
+      ...process.env,
+      PATH: `${fakeBin}:/usr/bin:/bin`,
+      FAKE_INVOCATION_LOG: invocationLog,
+      FAKE_CURL_LOG: curlLog,
+      FAKE_CHECKSUM_LOG: checksumLog
+    }
+  });
+
+  const invocation = (await readFile(invocationLog, "utf8")).trim();
+  const curlInvocation = (await readFile(curlLog, "utf8")).trim();
+  const checksumInvocation = (await readFile(checksumLog, "utf8")).trim();
+  assert.match(
+    curlInvocation,
+    /--fail --location --silent --show-error https:\/\/github\.com\/gitleaks\/gitleaks\/releases\/download\/v8\.29\.1\/gitleaks_8\.29\.1_linux_x64\.tar\.gz --output \/tmp\/inner-signal-gitleaks\./
+  );
+  assert.match(checksumInvocation, /^e4eb209d04e20339d77122a3bdf9cd41351255cfb27ebcb75e85325e04f88924  \/tmp\/inner-signal-gitleaks\./);
+  assert.match(
+    invocation,
+    /^scripts\/audit-publication\.mjs --root .+ --github u-dont-existDOTcom\/innerSignalGraph --gitleaks \/tmp\/inner-signal-gitleaks\.[^/]+\/gitleaks$/
+  );
+  const binaryPath = invocation.split(" ").at(-1);
+  await assert.rejects(access(binaryPath), "the exact wrapper temp root must be removed after execution");
+});
+
+test("wrong Gitleaks digest prevents scanner execution and cleans the private temp root", async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-wrapper-test-"));
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  const fakeBin = path.join(root, "bin");
+  await mkdir(fakeBin);
+  const invocationLog = path.join(root, "invocation.log");
+
+  await writeExecutable(
+    path.join(fakeBin, "uname"),
+    "#!/usr/bin/env bash\nif [[ \"$1\" == \"-s\" ]]; then printf 'Linux\\n'; else printf 'x86_64\\n'; fi\n"
+  );
+  await writeExecutable(
+    path.join(fakeBin, "curl"),
+    "#!/usr/bin/env bash\nwhile (( $# )); do if [[ \"$1\" == \"--output\" ]]; then shift; : > \"$1\"; exit 0; fi; shift; done\nexit 2\n"
+  );
+  await writeExecutable(path.join(fakeBin, "sha256sum"), "#!/usr/bin/env bash\nexit 1\n");
+  await writeExecutable(path.join(fakeBin, "tar"), "#!/usr/bin/env bash\nexit 99\n");
+  await writeExecutable(
+    path.join(fakeBin, "node"),
+    "#!/usr/bin/env bash\nprintf 'executed\\n' > \"$FAKE_INVOCATION_LOG\"\n"
+  );
+
+  await assert.rejects(
+    execFileAsync("bash", ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY], {
+      cwd: process.cwd(),
+      env: { ...process.env, PATH: `${fakeBin}:/usr/bin:/bin`, FAKE_INVOCATION_LOG: invocationLog }
+    }),
+    (error) => {
+      assert.notEqual(error.code, 0);
+      assert.match(error.stderr, /gitleaks-checksum-mismatch/);
+      return true;
+    }
+  );
+  await assert.rejects(access(invocationLog), "checksum failure must prevent scanner execution");
+});
+
+test("unsupported scanner platform exits with a named error before download", async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-wrapper-test-"));
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  const fakeBin = path.join(root, "bin");
+  await mkdir(fakeBin);
+  const invocationLog = path.join(root, "invocation.log");
+
+  await writeExecutable(
+    path.join(fakeBin, "uname"),
+    "#!/usr/bin/env bash\nif [[ \"$1\" == \"-s\" ]]; then printf 'Linux\\n'; else printf 'aarch64\\n'; fi\n"
+  );
+  await writeExecutable(
+    path.join(fakeBin, "curl"),
+    "#!/usr/bin/env bash\nprintf 'downloaded\\n' > \"$FAKE_INVOCATION_LOG\"\n"
+  );
+
+  await assert.rejects(
+    execFileAsync("bash", ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY], {
+      cwd: process.cwd(),
+      env: { ...process.env, PATH: `${fakeBin}:/usr/bin:/bin`, FAKE_INVOCATION_LOG: invocationLog }
+    }),
+    (error) => {
+      assert.notEqual(error.code, 0);
+      assert.match(error.stderr, /unsupported-scanner-platform/);
+      return true;
+    }
+  );
+  await assert.rejects(access(invocationLog), "unsupported platforms must not download or execute the scanner");
+});
+
+test("Gitleaks safe normalization discards secret fields and redacts malicious metadata", async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-adapter-test-"));
+  const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-hosted-test-"));
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  const sentinel = `ghp_${"q".repeat(36)}`;
+  const reportRoots = [];
+
+  const result = await runGitleaks({
+    binary: "/synthetic/gitleaks",
+    root,
+    hostedRoot,
+    runCommand: async (command, args) => {
+      assert.equal(command, "/synthetic/gitleaks");
+      assert.equal(args.includes("--redact=100"), true);
+      assert.equal(args.includes("--no-banner"), true);
+      assert.equal(args.includes("--report-format=json"), true);
+      const reportPath = args.find((argument) => argument.startsWith("--report-path=")).slice("--report-path=".length);
+      reportRoots.push(path.dirname(reportPath));
+      if (args[0] === "git") {
+        await writeFile(
+          reportPath,
+          JSON.stringify([
+            {
+              RuleID: `rule-${sentinel}`,
+              Commit: "a".repeat(40),
+              File: `nested/${sentinel}.txt`,
+              StartLine: 7,
+              Secret: sentinel,
+              Match: `token=${sentinel}`,
+              Entropy: 9.9,
+              Message: sentinel
+            }
+          ])
+        );
+        return { exitCode: 1, stdout: Buffer.from([0, 255]), stderr: Buffer.from([255]) };
+      }
+      await writeFile(reportPath, "[]\n");
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.scannedRecords, 1);
+  assert.deepEqual(result.findings.map(({ code, surface }) => ({ code, surface })), [
+    { code: "credential-pattern", surface: "gitleaks" }
+  ]);
+  assert.deepEqual(result.findings.map(({ identifier }) => identifier), [
+    `git:finding:1:commit:${"a".repeat(40)}:line:7`
+  ]);
+  assert.equal(JSON.stringify(result).includes(sentinel), false, "Gitleaks result must omit secret and malicious metadata");
+  assert.equal(reportRoots.length, 2);
+  for (const reportRoot of reportRoots) {
+    await assert.rejects(access(reportRoot), "raw Gitleaks reports must be removed after normalization");
+  }
+});
+
+test("Gitleaks exit handling treats only zero and one as complete scanner outcomes", async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-adapter-test-"));
+  const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-hosted-test-"));
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+
+  const clear = await runGitleaks({
+    binary: "/synthetic/gitleaks",
+    root,
+    hostedRoot,
+    runCommand: async () => ({ exitCode: 0, stdout: "", stderr: "" })
+  });
+  assert.deepEqual(clear, { schemaVersion: 1, ok: true, scannedRecords: 0, findings: [] });
+
+  const incomplete = await runGitleaks({
+    binary: "/synthetic/gitleaks",
+    root,
+    hostedRoot,
+    runCommand: async (_command, args) => ({ exitCode: args[0] === "git" ? 2 : 0, stdout: "", stderr: "" })
+  });
+  assert.equal(incomplete.ok, false);
+  assert.deepEqual(incomplete.findings, [
+    { severity: "error", code: "audit-incomplete", surface: "gitleaks", identifier: "git:exit:2" }
+  ]);
+});
+
+test("binary Gitleaks report and unsafe reported file path fail closed without raw bytes or paths", async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-adapter-test-"));
+  const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-hosted-test-"));
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+
+  let invocation = 0;
+  const result = await runGitleaks({
+    binary: "/synthetic/gitleaks",
+    root,
+    hostedRoot,
+    runCommand: async (_command, args) => {
+      invocation += 1;
+      const reportPath = args.find((argument) => argument.startsWith("--report-path=")).slice("--report-path=".length);
+      if (invocation === 1) await writeFile(reportPath, Buffer.from([0xff, 0xfe, 0xfd]));
+      else {
+        await writeFile(
+          reportPath,
+          JSON.stringify([{ RuleID: "generic", Commit: "", File: "/home/private-user/secret.txt", StartLine: 1 }])
+        );
+      }
+      return { exitCode: 1, stdout: "", stderr: "" };
+    }
+  });
+
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.findings, [
+    { severity: "error", code: "audit-incomplete", surface: "gitleaks", identifier: "dir:report-metadata:1" },
+    { severity: "error", code: "audit-incomplete", surface: "gitleaks", identifier: "git:report" }
+  ]);
+  assert.equal(JSON.stringify(result).includes("private-user"), false);
+  assert.equal(JSON.stringify(result).includes("secret.txt"), false);
+});
+
 test("publication result merging preserves only safe finding projections", () => {
   const safe = scanPublicationRecords([{ surface: "git", identifier: "safe", text: "redacted" }]);
   const blocked = scanPublicationRecords([
@@ -594,6 +1151,83 @@ test("publication audit CLI returns one JSON result with contractual exit codes"
     assert.equal(error.stderr, "");
     return true;
   });
+});
+
+test("hosted publication audit CLI composes Git, hosted records, and Gitleaks with private cleanup", async (context) => {
+  const root = await makeGitRepository();
+  const fakeBin = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-cli-bin-"));
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await rm(fakeBin, { recursive: true, force: true }));
+  await writeFile(path.join(root, "safe.txt"), "safe repository content\n");
+  await git(root, "add", "safe.txt");
+  await git(root, "commit", "-m", "add safe content");
+
+  await writeExecutable(
+    path.join(fakeBin, "gh"),
+    `#!/usr/bin/env bash
+endpoint="\${!#}"
+case "$endpoint" in
+  "repos/${EXPECTED_REPOSITORY}") printf '%s\\n' '{"full_name":"${EXPECTED_REPOSITORY}","visibility":"private","default_branch":"main"}' ;;
+  "repos/${EXPECTED_REPOSITORY}/branches?per_page=100") printf '%s\\n' '[{"name":"main","commit":{"sha":"1111111111111111111111111111111111111111"}}]' ;;
+  "repos/${EXPECTED_REPOSITORY}/issues?state=all&per_page=100"|"repos/${EXPECTED_REPOSITORY}/issues/comments?per_page=100"|"repos/${EXPECTED_REPOSITORY}/pulls?state=all&per_page=100"|"repos/${EXPECTED_REPOSITORY}/pulls/comments?per_page=100") printf '%s\\n' '[]' ;;
+  "repos/${EXPECTED_REPOSITORY}/actions/runs?per_page=100") printf '%s\\n' '{"total_count":0,"workflow_runs":[]}' ;;
+  "repos/${EXPECTED_REPOSITORY}/actions/artifacts?per_page=100") printf '%s\\n' '{"total_count":0,"artifacts":[]}' ;;
+  *) exit 9 ;;
+esac
+`
+  );
+  const fakeGitleaks = path.join(fakeBin, "gitleaks");
+  const hostedRootLog = path.join(fakeBin, "hosted-root.log");
+  await writeExecutable(
+    fakeGitleaks,
+    "#!/usr/bin/env bash\nif [[ \"$1\" == \"dir\" ]]; then printf '%s\\n' \"$2\" > \"$FAKE_HOSTED_ROOT_LOG\"; fi\nfor argument in \"$@\"; do case \"$argument\" in --report-path=*) report_path=\"${argument#--report-path=}\" ;; esac; done\nprintf '[]\\n' > \"$report_path\"\n"
+  );
+
+  const success = await execFileAsync(
+    process.execPath,
+    [
+      "scripts/audit-publication.mjs",
+      "--root",
+      root,
+      "--github",
+      EXPECTED_REPOSITORY,
+      "--gitleaks",
+      fakeGitleaks
+    ],
+    { env: { ...process.env, PATH: `${fakeBin}:${process.env.PATH}`, FAKE_HOSTED_ROOT_LOG: hostedRootLog } }
+  );
+  const result = JSON.parse(success.stdout);
+  assert.equal(success.stderr, "");
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.findings, []);
+  assert.deepEqual(result.counts, {
+    refs: 1,
+    commits: 1,
+    objects: 3,
+    blobs: 1,
+    branches: 1,
+    issues: 0,
+    pullRequests: 0,
+    issueComments: 0,
+    reviewComments: 0,
+    reviews: 0,
+    actionRuns: 0,
+    actionLogs: 0,
+    artifacts: 0
+  });
+  const cleanedHostedRoot = (await readFile(hostedRootLog, "utf8")).trim();
+  assert.match(cleanedHostedRoot, /^\/tmp\/inner-signal-hosted-publication-/);
+  await assert.rejects(access(cleanedHostedRoot), "hosted raw temp root must be removed after successful orchestration");
+
+  await assert.rejects(
+    execFileAsync(process.execPath, ["scripts/audit-publication.mjs", "--root", root, "--github", EXPECTED_REPOSITORY]),
+    (error) => {
+      assert.equal(error.code, 2);
+      assert.deepEqual(JSON.parse(error.stdout).findings.map(({ code }) => code), ["invalid-arguments"]);
+      assert.equal(error.stderr, "");
+      return true;
+    }
+  );
 });
 
 test("publication audit CLI returns exit 2 for a Git tool failure", async () => {
