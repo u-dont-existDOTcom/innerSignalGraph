@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { access, chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, mkdtemp, open, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -57,7 +57,7 @@ function makeHostedRunCommand({ logFailure = false, artifactFailure = false, art
       `repos/${EXPECTED_REPOSITORY}/issues?state=all&per_page=100`,
       hostedApiPages([
         { number: 7, title: "Issue", body: "safe issue", state: "open" },
-        { number: 8, title: "PR-shaped issue", body: "safe", pull_request: { url: "synthetic" } }
+        { number: 8, title: "PR-shaped issue", body: "safe", state: "closed", pull_request: { url: "synthetic" } }
       ])
     ],
     [
@@ -667,6 +667,20 @@ test("hosted coverage enumerates every required surface and safely scans action 
   const rawNames = (await readdir(tempRoot)).filter((name) => name.endsWith(".raw"));
   assert.equal(rawNames.length > 0, true);
   for (const rawName of rawNames) assert.equal((await stat(path.join(tempRoot, rawName))).mode & 0o777, 0o600);
+  assert.deepEqual([...result.hostedFileIdentifiers.values()], [
+    "repository",
+    "branch:1",
+    "branch:2",
+    "issue:7",
+    "issue-comment:11",
+    "pull:8",
+    "review-comment:12",
+    "review:13",
+    "actions-run:101",
+    "actions-run:102",
+    "actions-log:run:101",
+    "actions-log:run:102"
+  ]);
 });
 
 test("hosted pagination consumes every concatenated page for arrays and object collections", async (context) => {
@@ -678,8 +692,8 @@ test("hosted pagination consumes every concatenated page for arrays and object c
     if (endpoint === `repos/${EXPECTED_REPOSITORY}/branches?per_page=100`) {
       return {
         stdout:
-          `${JSON.stringify([{ name: "main", commit: { sha: "1".repeat(40) } }])}\n` +
-          `${JSON.stringify([{ name: "stable", commit: { sha: "2".repeat(40) } }])}\n`,
+          `${JSON.stringify([{ name: "main", commit: { sha: "1".repeat(40) }, protected: false }])}\n` +
+          `${JSON.stringify([{ name: "stable", commit: { sha: "2".repeat(40) }, protected: false }])}\n`,
         stderr: ""
       };
     }
@@ -691,15 +705,17 @@ test("hosted pagination consumes every concatenated page for arrays and object c
     }
     if (endpoint === `repos/${EXPECTED_REPOSITORY}/pulls/8/reviews?per_page=100`) {
       return {
-        stdout: `${JSON.stringify([{ id: 13, body: "first" }])}\n${JSON.stringify([{ id: 15, body: "second" }])}\n`,
+        stdout:
+          `${JSON.stringify([{ id: 13, body: "first", state: "APPROVED" }])}\n` +
+          `${JSON.stringify([{ id: 15, body: "second", state: "COMMENTED" }])}\n`,
         stderr: ""
       };
     }
     if (endpoint === `repos/${EXPECTED_REPOSITORY}/actions/runs?per_page=100`) {
       return {
         stdout:
-          `${JSON.stringify({ total_count: 2, workflow_runs: [{ id: 101, name: "first" }] })}\n` +
-          `${JSON.stringify({ total_count: 2, workflow_runs: [{ id: 102, name: "second" }] })}\n`,
+          `${JSON.stringify({ total_count: 2, workflow_runs: [{ id: 101, name: "first", status: "completed" }] })}\n` +
+          `${JSON.stringify({ total_count: 2, workflow_runs: [{ id: 102, name: "second", status: "completed" }] })}\n`,
         stderr: ""
       };
     }
@@ -726,6 +742,26 @@ test("hosted pagination consumes every concatenated page for arrays and object c
   assert.equal(result.counts.actionRuns, 2);
   assert.equal(result.counts.actionLogs, 2);
   assert.equal(result.counts.artifacts, 0);
+});
+
+test("hosted pagination frames escaped quotes and structural characters inside strings", async (context) => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-json-framing-test-"));
+  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  const fixture = makeHostedRunCommand();
+  const command = async (tool, args, options) => {
+    if (args.at(-1) === `repos/${EXPECTED_REPOSITORY}/issues/comments?per_page=100`) {
+      return {
+        stdout: hostedApiPages([{ id: 11, body: 'quoted " } ] { " text' }]),
+        stderr: ""
+      };
+    }
+    return await fixture.runCommand(tool, args, options);
+  };
+
+  const result = await collectHostedPublicationRecords({ repository: EXPECTED_REPOSITORY, runCommand: command, tempRoot });
+
+  assert.equal(result.counts.issueComments, 1);
+  assert.equal(result.records.some(({ identifier }) => identifier === "issue-comment:11"), true);
 });
 
 test("missing action log fails hosted coverage closed with a safe identifier", async (context) => {
@@ -773,6 +809,10 @@ test("artifact coverage scans every regular member without following symlinks", 
     2,
     "every regular artifact member must become a scan record"
   );
+  assert.deepEqual(
+    [...result.hostedFileIdentifiers.values()].filter((identifier) => identifier.startsWith("artifact:")),
+    ["artifact:201", "artifact:201:member:1", "artifact:201:member:2"]
+  );
 
   const symlinkRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-symlink-test-"));
   context.after(async () => await rm(symlinkRoot, { recursive: true, force: true }));
@@ -790,7 +830,7 @@ test("artifact coverage scans every regular member without following symlinks", 
     }),
     (error) => {
       assert.equal(error.code, "audit-incomplete");
-      assert.equal(error.identifier, "artifact:1:member:1:type");
+      assert.equal(error.identifier, "artifact:201:member:1:type");
       return true;
     }
   );
@@ -811,7 +851,7 @@ test("artifact download failure and malformed pagination fail hosted coverage cl
     }),
     (error) => {
       assert.equal(error.code, "audit-incomplete");
-      assert.equal(error.identifier, "artifact:1:download");
+      assert.equal(error.identifier, "artifact:201:download");
       return true;
     }
   );
@@ -835,6 +875,170 @@ test("artifact download failure and malformed pagination fail hosted coverage cl
       return true;
     }
   );
+});
+
+test("empty artifact and malformed artifact metadata fail before coverage can pass", async (context) => {
+  const emptyRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-empty-artifact-test-"));
+  const malformedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-malformed-artifact-test-"));
+  context.after(async () => await rm(emptyRoot, { recursive: true, force: true }));
+  context.after(async () => await rm(malformedRoot, { recursive: true, force: true }));
+
+  const emptyFixture = makeHostedRunCommand({ artifactWriter: async () => {} });
+  await assert.rejects(
+    collectHostedPublicationRecords({
+      repository: EXPECTED_REPOSITORY,
+      runCommand: emptyFixture.runCommand,
+      tempRoot: emptyRoot
+    }),
+    (error) => {
+      assert.equal(error.code, "audit-incomplete");
+      assert.equal(error.identifier, "artifact:201:members-empty");
+      return true;
+    }
+  );
+
+  const malformedFixture = makeHostedRunCommand({ artifactWriter: async () => assert.fail("download must not run") });
+  const malformedCommand = async (command, args, options) => {
+    if (args.at(-1) === `repos/${EXPECTED_REPOSITORY}/actions/artifacts?per_page=100`) {
+      return {
+        stdout: hostedApiPages({
+          total_count: 1,
+          artifacts: [{ id: 201, name: "publication-evidence", expired: "false", workflow_run: { id: 101 } }]
+        }),
+        stderr: ""
+      };
+    }
+    return await malformedFixture.runCommand(command, args, options);
+  };
+  await assert.rejects(
+    collectHostedPublicationRecords({
+      repository: EXPECTED_REPOSITORY,
+      runCommand: malformedCommand,
+      tempRoot: malformedRoot
+    }),
+    (error) => {
+      assert.equal(error.code, "audit-incomplete");
+      assert.equal(error.identifier, "artifact:1:metadata");
+      return true;
+    }
+  );
+});
+
+test("artifact member and aggregate byte ceilings fail closed before member reads", async (context) => {
+  const memberRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-member-limit-test-"));
+  const aggregateRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-aggregate-limit-test-"));
+  context.after(async () => await rm(memberRoot, { recursive: true, force: true }));
+  context.after(async () => await rm(aggregateRoot, { recursive: true, force: true }));
+
+  const createSparse = async (filePath, size) => {
+    const handle = await open(filePath, "w", 0o600);
+    try {
+      await handle.truncate(size);
+    } finally {
+      await handle.close();
+    }
+  };
+
+  const memberFixture = makeHostedRunCommand({
+    artifactWriter: async (artifactRoot) => {
+      await createSparse(path.join(artifactRoot, "oversized.bin"), 20 * 1024 * 1024 + 1);
+    }
+  });
+  await assert.rejects(
+    collectHostedPublicationRecords({
+      repository: EXPECTED_REPOSITORY,
+      runCommand: memberFixture.runCommand,
+      tempRoot: memberRoot
+    }),
+    (error) => {
+      assert.equal(error.code, "audit-incomplete");
+      assert.equal(error.identifier, "artifact:201:member:1:size-limit");
+      return true;
+    }
+  );
+
+  const aggregateFixture = makeHostedRunCommand({
+    artifactWriter: async (artifactRoot) => {
+      for (let index = 1; index <= 4; index += 1) {
+        await createSparse(path.join(artifactRoot, `member-${index}.bin`), 17 * 1024 * 1024);
+      }
+    }
+  });
+  await assert.rejects(
+    collectHostedPublicationRecords({
+      repository: EXPECTED_REPOSITORY,
+      runCommand: aggregateFixture.runCommand,
+      tempRoot: aggregateRoot
+    }),
+    (error) => {
+      assert.equal(error.code, "audit-incomplete");
+      assert.equal(error.identifier, "artifact:201:aggregate-size-limit");
+      return true;
+    }
+  );
+});
+
+test("endpoint-specific hosted schemas reject malformed scalar and nested fields", async (context) => {
+  const cases = [
+    {
+      endpoint: `repos/${EXPECTED_REPOSITORY}`,
+      stdout: JSON.stringify({ full_name: EXPECTED_REPOSITORY, visibility: "private", default_branch: [] }),
+      identifier: "repository:metadata"
+    },
+    {
+      endpoint: `repos/${EXPECTED_REPOSITORY}/branches?per_page=100`,
+      stdout: hostedApiPages([{ name: "", commit: { sha: "1".repeat(40) }, protected: false }]),
+      identifier: "branches:pagination"
+    },
+    {
+      endpoint: `repos/${EXPECTED_REPOSITORY}/issues?state=all&per_page=100`,
+      stdout: hostedApiPages([{ number: 0, title: "Issue", body: null, state: "open" }]),
+      identifier: "issues:pagination"
+    },
+    {
+      endpoint: `repos/${EXPECTED_REPOSITORY}/issues/comments?per_page=100`,
+      stdout: hostedApiPages([{ id: 0, body: "comment" }]),
+      identifier: "issue-comments:pagination"
+    },
+    {
+      endpoint: `repos/${EXPECTED_REPOSITORY}/pulls?state=all&per_page=100`,
+      stdout: hostedApiPages([{ number: "8", title: "Pull", body: null, state: "open" }]),
+      identifier: "pull-requests:pagination"
+    },
+    {
+      endpoint: `repos/${EXPECTED_REPOSITORY}/pulls/comments?per_page=100`,
+      stdout: hostedApiPages([{ id: -1, body: "comment" }]),
+      identifier: "review-comments:pagination"
+    },
+    {
+      endpoint: `repos/${EXPECTED_REPOSITORY}/pulls/8/reviews?per_page=100`,
+      stdout: hostedApiPages([{ id: 0, body: "review", state: "APPROVED" }]),
+      identifier: "pull-request:1:reviews:pagination"
+    },
+    {
+      endpoint: `repos/${EXPECTED_REPOSITORY}/actions/runs?per_page=100`,
+      stdout: hostedApiPages({ total_count: 1, workflow_runs: [{ id: 0, name: "run", status: "completed" }] }),
+      identifier: "actions-runs:pagination"
+    }
+  ];
+
+  for (const [index, malformed] of cases.entries()) {
+    const tempRoot = await mkdtemp(path.join(os.tmpdir(), `inner-signal-hosted-schema-${index}-`));
+    context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+    const fixture = makeHostedRunCommand();
+    const command = async (tool, args, options) => {
+      if (args.at(-1) === malformed.endpoint) return { stdout: malformed.stdout, stderr: "" };
+      return await fixture.runCommand(tool, args, options);
+    };
+    await assert.rejects(
+      collectHostedPublicationRecords({ repository: EXPECTED_REPOSITORY, runCommand: command, tempRoot }),
+      (error) => {
+        assert.equal(error.code, "audit-incomplete");
+        assert.equal(error.identifier, malformed.identifier);
+        return true;
+      }
+    );
+  }
 });
 
 test("repository identity other than the exact publication target fails closed", async (context) => {
@@ -1035,6 +1239,120 @@ test("Gitleaks safe normalization discards secret fields and redacts malicious m
   }
 });
 
+test("Gitleaks hosted findings use actionable in-memory locators and unknown files fail closed", async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-map-test-"));
+  const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-map-hosted-test-"));
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  await writeFile(path.join(hostedRoot, "hosted-1.raw"), "private fixture\n", { mode: 0o600 });
+
+  const actionable = await runGitleaks({
+    binary: "/synthetic/gitleaks",
+    root,
+    hostedRoot,
+    hostedFileIdentifiers: new Map([["hosted-1.raw", "actions-log:run:101"]]),
+    runCommand: async (_command, args) => {
+      const reportPath = args.find((argument) => argument.startsWith("--report-path=")).slice("--report-path=".length);
+      await writeFile(
+        reportPath,
+        args[0] === "dir"
+          ? JSON.stringify([{ RuleID: "generic-api-key", Commit: "", File: "hosted-1.raw", StartLine: 4 }])
+          : "[]"
+      );
+      return { exitCode: args[0] === "dir" ? 1 : 0, stdout: "", stderr: "" };
+    }
+  });
+  assert.deepEqual(actionable.findings, [
+    {
+      severity: "error",
+      code: "credential-pattern",
+      surface: "gitleaks",
+      identifier: "actions-log:run:101:line:4"
+    }
+  ]);
+
+  const sentinel = `ghp_${"u".repeat(36)}`;
+  const unknown = await runGitleaks({
+    binary: "/synthetic/gitleaks",
+    root,
+    hostedRoot,
+    hostedFileIdentifiers: new Map([["hosted-1.raw", "actions-log:run:101"]]),
+    runCommand: async (_command, args) => {
+      const reportPath = args.find((argument) => argument.startsWith("--report-path=")).slice("--report-path=".length);
+      await writeFile(
+        reportPath,
+        args[0] === "dir"
+          ? JSON.stringify([{ RuleID: sentinel, Commit: "", File: `unknown-${sentinel}.raw`, StartLine: 1 }])
+          : "[]"
+      );
+      return { exitCode: args[0] === "dir" ? 1 : 0, stdout: "", stderr: "" };
+    }
+  });
+  assert.deepEqual(unknown.findings, [
+    { severity: "error", code: "audit-incomplete", surface: "gitleaks", identifier: "dir:report-metadata:1" }
+  ]);
+  assert.equal(JSON.stringify(unknown).includes(sentinel), false);
+});
+
+test("Gitleaks report files exist as private regular files before scanner writes", async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-mode-test-"));
+  const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-mode-hosted-test-"));
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+
+  const visibleModes = [];
+  const result = await runGitleaks({
+    binary: "/synthetic/gitleaks",
+    root,
+    hostedRoot,
+    hostedFileIdentifiers: new Map(),
+    runCommand: async (_command, args) => {
+      const reportPath = args.find((argument) => argument.startsWith("--report-path=")).slice("--report-path=".length);
+      const before = await stat(reportPath);
+      visibleModes.push(before.mode & 0o777);
+      assert.equal(before.isFile(), true);
+      await writeFile(reportPath, "[]\n");
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }
+  });
+
+  assert.deepEqual(visibleModes, [0o600, 0o600]);
+  assert.equal(result.ok, true);
+});
+
+test("Gitleaks rejects report mode drift and symlink replacement before reading", async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-output-test-"));
+  const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-output-hosted-test-"));
+  const outsideReport = path.join(hostedRoot, "outside-report.json");
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  await writeFile(outsideReport, "[]\n", { mode: 0o600 });
+
+  const result = await runGitleaks({
+    binary: "/synthetic/gitleaks",
+    root,
+    hostedRoot,
+    hostedFileIdentifiers: new Map([["outside-report.json", "repository"]]),
+    runCommand: async (_command, args) => {
+      const reportPath = args.find((argument) => argument.startsWith("--report-path=")).slice("--report-path=".length);
+      if (args[0] === "git") {
+        await writeFile(reportPath, "[]\n");
+        await chmod(reportPath, 0o644);
+      } else {
+        await rm(reportPath);
+        await symlink(outsideReport, reportPath);
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }
+  });
+
+  assert.deepEqual(result.findings, [
+    { severity: "error", code: "audit-incomplete", surface: "gitleaks", identifier: "dir:report" },
+    { severity: "error", code: "audit-incomplete", surface: "gitleaks", identifier: "git:report" }
+  ]);
+  assert.equal(await readFile(outsideReport, "utf8"), "[]\n");
+});
+
 test("Gitleaks exit handling treats only zero and one as complete scanner outcomes", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-adapter-test-"));
   const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-hosted-test-"));
@@ -1168,7 +1486,7 @@ test("hosted publication audit CLI composes Git, hosted records, and Gitleaks wi
 endpoint="\${!#}"
 case "$endpoint" in
   "repos/${EXPECTED_REPOSITORY}") printf '%s\\n' '{"full_name":"${EXPECTED_REPOSITORY}","visibility":"private","default_branch":"main"}' ;;
-  "repos/${EXPECTED_REPOSITORY}/branches?per_page=100") printf '%s\\n' '[{"name":"main","commit":{"sha":"1111111111111111111111111111111111111111"}}]' ;;
+  "repos/${EXPECTED_REPOSITORY}/branches?per_page=100") printf '%s\\n' '[{"name":"main","commit":{"sha":"1111111111111111111111111111111111111111"},"protected":false}]' ;;
   "repos/${EXPECTED_REPOSITORY}/issues?state=all&per_page=100"|"repos/${EXPECTED_REPOSITORY}/issues/comments?per_page=100"|"repos/${EXPECTED_REPOSITORY}/pulls?state=all&per_page=100"|"repos/${EXPECTED_REPOSITORY}/pulls/comments?per_page=100") printf '%s\\n' '[]' ;;
   "repos/${EXPECTED_REPOSITORY}/actions/runs?per_page=100") printf '%s\\n' '{"total_count":0,"workflow_runs":[]}' ;;
   "repos/${EXPECTED_REPOSITORY}/actions/artifacts?per_page=100") printf '%s\\n' '{"total_count":0,"artifacts":[]}' ;;

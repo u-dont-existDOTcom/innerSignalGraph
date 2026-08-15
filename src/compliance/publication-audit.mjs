@@ -6,6 +6,8 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const MAX_BLOB_BYTES = 20 * 1024 * 1024;
+const MAX_ARTIFACT_MEMBER_BYTES = 20 * 1024 * 1024;
+const MAX_ARTIFACT_TOTAL_BYTES = 64 * 1024 * 1024;
 const MAX_PROJECTED_METADATA_CHARACTERS = 400;
 const REDACTED = "[REDACTED]";
 const EXPECTED_REPOSITORY = "u-dont-existDOTcom/innerSignalGraph";
@@ -192,6 +194,16 @@ function requirePositiveInteger(value, identifier) {
   return value;
 }
 
+function requireNonemptyString(value, identifier) {
+  if (typeof value !== "string" || value.length === 0) throw hostedIncomplete(identifier);
+  return value;
+}
+
+function requireNullableString(value, identifier) {
+  if (value !== null && typeof value !== "string") throw hostedIncomplete(identifier);
+  return value;
+}
+
 function parseJson(text, identifier) {
   if (typeof text !== "string") throw hostedIncomplete(identifier);
   try {
@@ -267,35 +279,97 @@ function parseObjectPages(text, property, identifier) {
   return records;
 }
 
-function requireUnique(records, key, identifier) {
+function validateUnique(records, key, identifier, validateRecord) {
   const seen = new Set();
   for (const record of records) {
     requireObject(record, identifier);
+    validateRecord(record, identifier);
     const value = record[key];
-    if ((typeof value !== "string" && !Number.isSafeInteger(value)) || seen.has(value)) {
-      throw hostedIncomplete(identifier);
-    }
+    if (seen.has(value)) throw hostedIncomplete(identifier);
     seen.add(value);
   }
 }
 
-async function writePrivateFile(filePath, bytes) {
-  await writeFile(filePath, bytes, { mode: 0o600 });
-  await chmod(filePath, 0o600);
+function validateRepository(record, identifier) {
+  requireObject(record, identifier);
+  requireNonemptyString(record.full_name, identifier);
+  requireNonemptyString(record.visibility, identifier);
+  requireNonemptyString(record.default_branch, identifier);
 }
 
-async function listArtifactMembers(artifactRoot, artifactIndex) {
+function validateBranch(record, identifier) {
+  requireNonemptyString(record.name, identifier);
+  const commit = requireObject(record.commit, identifier);
+  if (typeof commit.sha !== "string" || !/^(?:[0-9a-f]{40}|[0-9a-f]{64})$/.test(commit.sha)) {
+    throw hostedIncomplete(identifier);
+  }
+  if (typeof record.protected !== "boolean") throw hostedIncomplete(identifier);
+}
+
+function validateIssue(record, identifier) {
+  requirePositiveInteger(record.number, identifier);
+  if (typeof record.title !== "string") throw hostedIncomplete(identifier);
+  requireNullableString(record.body, identifier);
+  requireNonemptyString(record.state, identifier);
+  if (record.pull_request !== undefined) {
+    const pullRequest = requireObject(record.pull_request, identifier);
+    requireNonemptyString(pullRequest.url, identifier);
+  }
+}
+
+function validateComment(record, identifier) {
+  requirePositiveInteger(record.id, identifier);
+  requireNullableString(record.body, identifier);
+}
+
+function validatePullRequest(record, identifier) {
+  requirePositiveInteger(record.number, identifier);
+  if (typeof record.title !== "string") throw hostedIncomplete(identifier);
+  requireNullableString(record.body, identifier);
+  requireNonemptyString(record.state, identifier);
+}
+
+function validateReview(record, identifier) {
+  validateComment(record, identifier);
+  requireNonemptyString(record.state, identifier);
+}
+
+function validateActionRun(record, identifier) {
+  requirePositiveInteger(record.id, identifier);
+  requireNonemptyString(record.name, identifier);
+  requireNonemptyString(record.status, identifier);
+}
+
+function validateArtifact(record, identifier) {
+  requirePositiveInteger(record.id, identifier);
+  requireNonemptyString(record.name, identifier);
+  if (typeof record.expired !== "boolean") throw hostedIncomplete(identifier);
+  const workflowRun = requireObject(record.workflow_run, identifier);
+  requirePositiveInteger(workflowRun.id, identifier);
+}
+
+async function writePrivateFile(filePath, bytes) {
+  await writeFile(filePath, bytes, { mode: 0o600, flag: "wx" });
+  await chmod(filePath, 0o600);
+  const fileStat = await lstat(filePath);
+  if (!fileStat.isFile() || fileStat.isSymbolicLink() || (fileStat.mode & 0o777) !== 0o600) {
+    throw new Error("private-file-invariant");
+  }
+}
+
+async function listArtifactMembers(artifactRoot, artifactId) {
   const root = path.resolve(artifactRoot);
   const rootStat = await lstat(root).catch(() => undefined);
   if (!rootStat?.isDirectory() || rootStat.isSymbolicLink()) {
-    throw hostedIncomplete(`artifact:${artifactIndex}:root`);
+    throw hostedIncomplete(`artifact:${artifactId}:root`);
   }
   await chmod(root, 0o700);
 
   const members = [];
+  let aggregateBytes = 0;
   async function visit(directory) {
     const entries = await readdir(directory, { withFileTypes: true }).catch(() => {
-      throw hostedIncomplete(`artifact:${artifactIndex}:directory`);
+      throw hostedIncomplete(`artifact:${artifactId}:directory`);
     });
     entries.sort((left, right) => left.name.localeCompare(right.name));
     for (const entry of entries) {
@@ -303,21 +377,28 @@ async function listArtifactMembers(artifactRoot, artifactIndex) {
       const absolutePath = path.resolve(directory, entry.name);
       const relativePath = path.relative(root, absolutePath).replaceAll("\\", "/");
       if (relativePath === "" || relativePath === ".." || relativePath.startsWith("../") || path.isAbsolute(relativePath)) {
-        throw hostedIncomplete(`artifact:${artifactIndex}:member:${memberIndex}:path`);
+        throw hostedIncomplete(`artifact:${artifactId}:member:${memberIndex}:path`);
       }
       const memberStat = await lstat(absolutePath).catch(() => undefined);
       if (!memberStat || memberStat.isSymbolicLink()) {
-        throw hostedIncomplete(`artifact:${artifactIndex}:member:${memberIndex}:type`);
+        throw hostedIncomplete(`artifact:${artifactId}:member:${memberIndex}:type`);
       }
       if (memberStat.isDirectory()) {
         await chmod(absolutePath, 0o700);
         await visit(absolutePath);
         continue;
       }
-      if (!memberStat.isFile()) throw hostedIncomplete(`artifact:${artifactIndex}:member:${memberIndex}:type`);
+      if (!memberStat.isFile()) throw hostedIncomplete(`artifact:${artifactId}:member:${memberIndex}:type`);
+      if (memberStat.size > MAX_ARTIFACT_MEMBER_BYTES) {
+        throw hostedIncomplete(`artifact:${artifactId}:member:${memberIndex}:size-limit`);
+      }
+      aggregateBytes += memberStat.size;
+      if (aggregateBytes > MAX_ARTIFACT_TOTAL_BYTES) {
+        throw hostedIncomplete(`artifact:${artifactId}:aggregate-size-limit`);
+      }
       await chmod(absolutePath, 0o600);
       const bytes = await readFile(absolutePath).catch(() => {
-        throw hostedIncomplete(`artifact:${artifactIndex}:member:${memberIndex}:read`);
+        throw hostedIncomplete(`artifact:${artifactId}:member:${memberIndex}:read`);
       });
       members.push({ relativePath, text: bytes.toString("utf8") });
     }
@@ -346,6 +427,8 @@ export async function collectHostedPublicationRecords({
   });
 
   let rawFileNumber = 0;
+  const records = [];
+  const hostedFileIdentifiers = new Map();
   const runHosted = async (args, identifier) => {
     let result;
     try {
@@ -354,70 +437,83 @@ export async function collectHostedPublicationRecords({
       throw hostedIncomplete(identifier);
     }
     if (!result || typeof result.stdout !== "string") throw hostedIncomplete(identifier);
-    rawFileNumber += 1;
-    await writePrivateFile(path.join(privateRoot, `hosted-${rawFileNumber}.raw`), result.stdout).catch(() => {
-      throw hostedIncomplete(identifier);
-    });
     return result.stdout;
+  };
+  const addHostedRecord = async ({ surface, identifier, text, path: recordPath }, safeIdentifier) => {
+    rawFileNumber += 1;
+    const rawName = `hosted-${rawFileNumber}.raw`;
+    await writePrivateFile(path.join(privateRoot, rawName), text).catch(() => {
+      throw hostedIncomplete("temporary-record");
+    });
+    hostedFileIdentifiers.set(rawName, safeIdentifier);
+    records.push({ surface, identifier, ...(recordPath === undefined ? {} : { path: recordPath }), text });
   };
   const api = async (endpoint, identifier) =>
     await runHosted(["api", endpoint], identifier);
   const pagedApi = async (endpoint, identifier) =>
     await runHosted(["api", "--paginate", endpoint], identifier);
 
-  const records = [];
   const repositoryMetadata = requireObject(
     parseJson(await api(`repos/${repository}`, "repository:metadata"), "repository:metadata"),
     "repository:metadata"
   );
+  validateRepository(repositoryMetadata, "repository:metadata");
   if (repositoryMetadata.full_name !== EXPECTED_REPOSITORY) throw hostedIncomplete("repository-identity");
-  records.push({ surface: "repository", identifier: "repository:metadata", text: JSON.stringify(repositoryMetadata) });
+  await addHostedRecord(
+    { surface: "repository", identifier: "repository", text: JSON.stringify(repositoryMetadata) },
+    "repository"
+  );
 
   const branches = parseArrayPages(
     await pagedApi(`repos/${repository}/branches?per_page=100`, "branches:request"),
     "branches:pagination"
   );
-  requireUnique(branches, "name", "branches:pagination");
-  branches.forEach((branch, index) =>
-    records.push({ surface: "branch", identifier: `branch:${index + 1}`, text: JSON.stringify(branch) })
-  );
+  validateUnique(branches, "name", "branches:pagination", validateBranch);
+  for (const [index, branch] of branches.entries()) {
+    const identifier = `branch:${index + 1}`;
+    await addHostedRecord({ surface: "branch", identifier, text: JSON.stringify(branch) }, identifier);
+  }
 
   const issueResponses = parseArrayPages(
     await pagedApi(`repos/${repository}/issues?state=all&per_page=100`, "issues:request"),
     "issues:pagination"
   );
-  requireUnique(issueResponses, "number", "issues:pagination");
+  validateUnique(issueResponses, "number", "issues:pagination", validateIssue);
   const issues = issueResponses.filter((issue) => issue.pull_request === undefined);
-  issues.forEach((issue, index) =>
-    records.push({ surface: "issue", identifier: `issue:${index + 1}`, text: JSON.stringify(issue) })
-  );
+  for (const issue of issues) {
+    const identifier = `issue:${issue.number}`;
+    await addHostedRecord({ surface: "issue", identifier, text: JSON.stringify(issue) }, identifier);
+  }
 
   const issueComments = parseArrayPages(
     await pagedApi(`repos/${repository}/issues/comments?per_page=100`, "issue-comments:request"),
     "issue-comments:pagination"
   );
-  requireUnique(issueComments, "id", "issue-comments:pagination");
-  issueComments.forEach((comment, index) =>
-    records.push({ surface: "issue-comment", identifier: `issue-comment:${index + 1}`, text: JSON.stringify(comment) })
-  );
+  validateUnique(issueComments, "id", "issue-comments:pagination", validateComment);
+  for (const comment of issueComments) {
+    const identifier = `issue-comment:${comment.id}`;
+    await addHostedRecord({ surface: "issue-comment", identifier, text: JSON.stringify(comment) }, identifier);
+  }
 
   const pullRequests = parseArrayPages(
     await pagedApi(`repos/${repository}/pulls?state=all&per_page=100`, "pull-requests:request"),
     "pull-requests:pagination"
   );
-  requireUnique(pullRequests, "number", "pull-requests:pagination");
-  pullRequests.forEach((pullRequest, index) =>
-    records.push({ surface: "pull-request", identifier: `pull-request:${index + 1}`, text: JSON.stringify(pullRequest) })
-  );
+  validateUnique(pullRequests, "number", "pull-requests:pagination", validatePullRequest);
+  for (const pullRequest of pullRequests) {
+    const identifier = `pull:${pullRequest.number}`;
+    await addHostedRecord({ surface: "pull-request", identifier, text: JSON.stringify(pullRequest) }, identifier);
+  }
 
   const reviewComments = parseArrayPages(
     await pagedApi(`repos/${repository}/pulls/comments?per_page=100`, "review-comments:request"),
     "review-comments:pagination"
   );
-  requireUnique(reviewComments, "id", "review-comments:pagination");
-  reviewComments.forEach((comment, index) =>
-    records.push({ surface: "review-comment", identifier: `review-comment:${index + 1}`, text: JSON.stringify(comment) })
-  );
+  validateUnique(reviewComments, "id", "review-comments:pagination", validateComment);
+  for (const comment of reviewComments) {
+    const identifier = `review-comment:${comment.id}`;
+    await addHostedRecord({ surface: "review-comment", identifier, text: JSON.stringify(comment) }, identifier);
+  }
 
   const reviews = [];
   for (const [pullIndex, pullRequest] of pullRequests.entries()) {
@@ -429,10 +525,11 @@ export async function collectHostedPublicationRecords({
       ),
       `pull-request:${pullIndex + 1}:reviews:pagination`
     );
-    requireUnique(pullReviews, "id", `pull-request:${pullIndex + 1}:reviews:pagination`);
+    validateUnique(pullReviews, "id", `pull-request:${pullIndex + 1}:reviews:pagination`, validateReview);
     for (const review of pullReviews) {
       reviews.push(review);
-      records.push({ surface: "review", identifier: `review:${reviews.length}`, text: JSON.stringify(review) });
+      const identifier = `review:${review.id}`;
+      await addHostedRecord({ surface: "review", identifier, text: JSON.stringify(review) }, identifier);
     }
   }
 
@@ -441,10 +538,11 @@ export async function collectHostedPublicationRecords({
     "workflow_runs",
     "actions-runs:pagination"
   );
-  requireUnique(actionRuns, "id", "actions-runs:pagination");
-  actionRuns.forEach((run, index) =>
-    records.push({ surface: "actions-run", identifier: `actions-run:${index + 1}`, text: JSON.stringify(run) })
-  );
+  validateUnique(actionRuns, "id", "actions-runs:pagination", validateActionRun);
+  for (const run of actionRuns) {
+    const identifier = `actions-run:${run.id}`;
+    await addHostedRecord({ surface: "actions-run", identifier, text: JSON.stringify(run) }, identifier);
+  }
 
   let actionLogs = 0;
   for (const [runIndex, run] of actionRuns.entries()) {
@@ -454,7 +552,8 @@ export async function collectHostedPublicationRecords({
       `actions-run:${runIndex + 1}:log`
     );
     actionLogs += 1;
-    records.push({ surface: "actions-log", identifier: `actions-log:${runIndex + 1}`, text: log });
+    const identifier = `actions-log:run:${runId}`;
+    await addHostedRecord({ surface: "actions-log", identifier, text: log }, identifier);
   }
 
   const artifacts = parseObjectPages(
@@ -462,15 +561,23 @@ export async function collectHostedPublicationRecords({
     "artifacts",
     "artifacts:pagination"
   );
-  requireUnique(artifacts, "id", "artifacts:pagination");
+  const artifactIds = new Set();
+  for (const [artifactIndex, artifact] of artifacts.entries()) {
+    requireObject(artifact, "artifacts:pagination");
+    const artifactId = requirePositiveInteger(artifact.id, "artifacts:pagination");
+    if (artifactIds.has(artifactId)) throw hostedIncomplete("artifacts:pagination");
+    artifactIds.add(artifactId);
+    validateArtifact(artifact, `artifact:${artifactIndex + 1}:metadata`);
+  }
   for (const [artifactIndex, artifact] of artifacts.entries()) {
     const artifactNumber = artifactIndex + 1;
-    requirePositiveInteger(artifact.id, "artifacts:pagination");
-    const runId = requirePositiveInteger(artifact.workflow_run?.id, `artifact:${artifactNumber}:metadata`);
-    if (typeof artifact.name !== "string" || artifact.name.length === 0) {
-      throw hostedIncomplete(`artifact:${artifactNumber}:metadata`);
-    }
-    records.push({ surface: "artifact", identifier: `artifact:${artifactNumber}`, text: JSON.stringify(artifact) });
+    const artifactId = artifact.id;
+    const runId = artifact.workflow_run.id;
+    const artifactIdentifier = `artifact:${artifactId}`;
+    await addHostedRecord(
+      { surface: "artifact", identifier: artifactIdentifier, text: JSON.stringify(artifact) },
+      artifactIdentifier
+    );
     const artifactRoot = path.join(privateRoot, `artifact-${artifactNumber}`);
     await mkdir(artifactRoot, { mode: 0o700 });
     try {
@@ -490,21 +597,26 @@ export async function collectHostedPublicationRecords({
         { cwd: privateRoot, encoding: "utf8", maxBuffer: MAX_BLOB_BYTES + 1024 * 1024 }
       );
     } catch {
-      throw hostedIncomplete(`artifact:${artifactNumber}:download`);
+      throw hostedIncomplete(`artifact:${artifactId}:download`);
     }
-    const members = await listArtifactMembers(artifactRoot, artifactNumber);
-    members.forEach((member, memberIndex) =>
+    const members = await listArtifactMembers(artifactRoot, artifactId);
+    if (members.length === 0) throw hostedIncomplete(`artifact:${artifactId}:members-empty`);
+    members.forEach((member, memberIndex) => {
+      const memberIdentifier = `artifact:${artifactId}:member:${memberIndex + 1}`;
+      const relativePrivatePath = path.relative(privateRoot, path.join(artifactRoot, member.relativePath)).replaceAll("\\", "/");
+      hostedFileIdentifiers.set(relativePrivatePath, memberIdentifier);
       records.push({
         surface: "artifact-member",
-        identifier: `artifact:${artifactNumber}:member:${memberIndex + 1}`,
+        identifier: memberIdentifier,
         path: member.relativePath,
         text: member.text
-      })
-    );
+      });
+    });
   }
 
   return {
     records,
+    hostedFileIdentifiers,
     counts: {
       branches: branches.length,
       issues: issues.length,
@@ -544,16 +656,28 @@ function withinRoot(root, candidate) {
   return relative !== "" && relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
 }
 
-async function readGitleaksReport({ reportPath, scanRoot, kind, exitCode }) {
+function isSafeHostedIdentifier(identifier) {
+  return (
+    typeof identifier === "string" &&
+    /^(?:repository|branch:[1-9]\d*|issue:[1-9]\d*|pull:[1-9]\d*|issue-comment:[1-9]\d*|review-comment:[1-9]\d*|review:[1-9]\d*|actions-run:[1-9]\d*|actions-log:run:[1-9]\d*|artifact:[1-9]\d*(?::member:[1-9]\d*)?)$/.test(identifier)
+  );
+}
+
+async function readGitleaksReport({ reportPath, scanRoot, kind, exitCode, hostedFileIdentifiers }) {
   const reportStat = await lstat(reportPath).catch(() => undefined);
-  if (!reportStat) {
+  if (
+    !reportStat ||
+    !reportStat.isFile() ||
+    reportStat.isSymbolicLink() ||
+    (reportStat.mode & 0o777) !== 0o600 ||
+    reportStat.size > MAX_BLOB_BYTES
+  ) {
+    return { findings: [gitleaksIncomplete(`${kind}:report`)], scannedRecords: 0 };
+  }
+  if (reportStat.size === 0) {
     if (exitCode === 0) return { findings: [], scannedRecords: 0 };
     return { findings: [gitleaksIncomplete(`${kind}:report`)], scannedRecords: 0 };
   }
-  if (!reportStat.isFile() || reportStat.isSymbolicLink() || reportStat.size > MAX_BLOB_BYTES) {
-    return { findings: [gitleaksIncomplete(`${kind}:report`)], scannedRecords: 0 };
-  }
-  await chmod(reportPath, 0o600).catch(() => undefined);
 
   let decoded;
   try {
@@ -592,7 +716,7 @@ async function readGitleaksReport({ reportPath, scanRoot, kind, exitCode }) {
       File.length === 0 ||
       !validCommit ||
       !Number.isSafeInteger(StartLine) ||
-      StartLine < 0
+      StartLine <= 0
     ) {
       findings.push(gitleaksIncomplete(metadataIdentifier));
       continue;
@@ -603,22 +727,48 @@ async function readGitleaksReport({ reportPath, scanRoot, kind, exitCode }) {
       findings.push(gitleaksIncomplete(metadataIdentifier));
       continue;
     }
-    const commitPart = Commit === "" ? "" : `:commit:${Commit}`;
+    let identifier;
+    if (kind === "dir") {
+      const relativeFile = path.relative(scanRoot, resolvedFile).replaceAll("\\", "/");
+      const mappedIdentifier = hostedFileIdentifiers.get(relativeFile);
+      if (!isSafeHostedIdentifier(mappedIdentifier)) {
+        findings.push(gitleaksIncomplete(metadataIdentifier));
+        continue;
+      }
+      identifier = `${mappedIdentifier}:line:${StartLine}`;
+    } else {
+      const commitPart = Commit === "" ? "" : `:commit:${Commit}`;
+      identifier = `${kind}:finding:${index + 1}${commitPart}:line:${StartLine}`;
+    }
     findings.push(
       projectFinding({
         severity: "error",
         code: "credential-pattern",
         surface: "gitleaks",
-        identifier: `${kind}:finding:${index + 1}${commitPart}:line:${StartLine}`
+        identifier
       })
     );
   }
   return { findings, scannedRecords: parsed.length };
 }
 
-export async function runGitleaks({ binary, root, hostedRoot, runCommand = defaultRunCommand }) {
+export async function runGitleaks({
+  binary,
+  root,
+  hostedRoot,
+  hostedFileIdentifiers = new Map(),
+  runCommand = defaultRunCommand
+}) {
   const repositoryRoot = path.resolve(root);
   const privateHostedRoot = path.resolve(hostedRoot);
+  if (!(hostedFileIdentifiers instanceof Map)) {
+    return {
+      schemaVersion: 1,
+      ok: false,
+      scannedRecords: 0,
+      findings: [gitleaksIncomplete("dir:file-map")]
+    };
+  }
   const reportRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-reports-"));
   await chmod(reportRoot, 0o700);
 
@@ -630,6 +780,7 @@ export async function runGitleaks({ binary, root, hostedRoot, runCommand = defau
   let scannedRecords = 0;
 
   try {
+    for (const target of targets) await writePrivateFile(target.reportPath, "");
     for (const target of targets) {
       const args =
         target.kind === "git"
@@ -666,7 +817,8 @@ export async function runGitleaks({ binary, root, hostedRoot, runCommand = defau
         reportPath: target.reportPath,
         scanRoot: target.scanRoot,
         kind: target.kind,
-        exitCode
+        exitCode,
+        hostedFileIdentifiers
       });
       findings.push(...normalized.findings);
       scannedRecords += normalized.scannedRecords;

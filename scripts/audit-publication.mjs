@@ -68,7 +68,8 @@ if (!options) {
       const gitleaksResult = await runGitleaks({
         binary: options.gitleaks,
         root: options.root,
-        hostedRoot: privateHostedRoot
+        hostedRoot: privateHostedRoot,
+        hostedFileIdentifiers: hosted.hostedFileIdentifiers
       });
       const result = mergePublicationResults(gitResult, hostedScan, gitleaksResult);
       emit(
