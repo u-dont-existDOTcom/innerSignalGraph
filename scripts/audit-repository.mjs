@@ -48,6 +48,22 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 `;
+const PRIVATE_ENTRY_CLAIMS = {
+  "README.md": "Its GitHub repository remains private while the approved public transition is in `pre_publication_ready`; this is not a claim that hosted visibility is already public.",
+  "AGENTS.md": "The repository remains private until GitHub visibility is changed and read back; `pre_publication_ready` is not public visibility.",
+  "docs/INDEX.md": "The repository is still private while `.github/codex-repository.json` records `pre_publication_ready`. Neither the MIT license nor public-ready documentation proves that GitHub visibility or hosted controls have changed."
+};
+const SECURITY_CONTRACT = {
+  privateReporting: "Use GitHub private vulnerability reporting once it is enabled.",
+  fallback: "Until then, or if that route is unavailable, create a draft security advisory in this repository's **Security → Advisories** area or contact the repository owner through the already established private collaboration channel. If neither fallback is available, open only a metadata-only issue asking for a private contact path; do not include exploit details or sensitive material.",
+  excludedData: "Do not place credentials, tokens, cookies, `.env` values, private keys, browser chat, therapy/hypnosis content, prompts, model output/reasoning, raw sensitive logs, usernames, hostnames, IP addresses, or absolute home paths in an issue, pull request, workflow log, or artifact.",
+  reproduction: "Safe reports should include the affected version or exact commit, bounded reproduction steps using synthetic data, impact, expected behavior, and a suggested private follow-up route. Use redacted or synthetic markers for excluded data."
+};
+const CONTRIBUTION_CONTRACT = {
+  workflow: "Public contributions are welcome through focused task branches and pull requests.",
+  license: "Accepted contributions are licensed under the repository's MIT License.",
+  ownerBoundary: "Contribution does not grant authority over owner-gated therapy/framework policy, owner decision cards, model roles, privacy scope, or stable release approval."
+};
 const CHECKPOINT = "state/CODEX-CURRENT-STATE.md";
 const CONTROL_STATES = new Set(["verified", "enabled", "disabled", "unverified", "not_applicable"]);
 const CHECKPOINT_HEADINGS = [
@@ -109,10 +125,14 @@ function requireMatch(text, pattern, code, relative, message, findings) {
   if (text !== null && !pattern.test(text)) findings.push({ severity: "error", code, path: relative, message });
 }
 
+function requireLiteral(text, expected, code, relative, message, findings) {
+  if (text !== null && !text.includes(expected)) findings.push({ severity: "error", code, path: relative, message });
+}
+
 function auditProfile(root, findings) {
   const relative = ".github/codex-repository.json";
   const profile = readJson(root, relative, findings);
-  if (!profile) return;
+  if (!profile) return null;
   for (const [key, expected] of Object.entries(EXPECTED_CLASSIFICATION)) {
     if (profile[key] !== expected) {
       findings.push({ severity: "error", code: `profile-${key}`, path: relative, message: `${key} must be ${JSON.stringify(expected)}` });
@@ -163,9 +183,10 @@ function auditProfile(root, findings) {
       }
     }
   }
+  return profile;
 }
 
-function auditAuthority(root, findings) {
+function auditAuthority(root, findings, profile) {
   for (const relative of ["AGENTS.md", "README.md", "docs/INDEX.md"]) {
     const entry = readText(root, relative, findings);
     requireMatch(entry, /state\/CODEX-CURRENT-STATE\.md/, "authority-route", relative, `must route to ${CHECKPOINT}`, findings);
@@ -176,6 +197,16 @@ function auditAuthority(root, findings) {
       [/`npm run audit:publication:hosted`/, "hosted publication audit"]
     ]) {
       requireMatch(entry, pattern, "publication-route", relative, `must route to ${route}`, findings);
+    }
+    if (profile?.visibility === "private" && profile.publication_transition?.status === "pre_publication_ready") {
+      requireLiteral(
+        entry,
+        PRIVATE_ENTRY_CLAIMS[relative],
+        "publication-premature-public-claim",
+        relative,
+        "private/pre_publication_ready entry document must retain its bounded truthful hosted-visibility statement",
+        findings
+      );
     }
   }
   const checkpoint = readText(root, CHECKPOINT, findings)?.toLowerCase() ?? null;
@@ -196,52 +227,16 @@ function auditAuthority(root, findings) {
 }
 
 function auditPolicyDocuments(root, findings) {
-  const security = readText(root, "SECURITY.md", findings)?.toLowerCase() ?? null;
-  for (const [pattern, message] of [
-    [/github private vulnerability reporting/, "missing GitHub private vulnerability reporting route"],
-    [/once (?:it is|this is) enabled/, "private vulnerability reporting must remain conditional until hosted enablement"],
-    [/draft security advisor/, "missing draft-advisory fallback"],
-    [/private.*(?:contact|channel)/, "missing private-contact fallback"],
-    [/synthetic/, "missing synthetic reproduction requirement"],
-    [/redacted/, "missing redacted reproduction requirement"]
-  ]) {
-    requireMatch(security, pattern, "security-private-route", "SECURITY.md", message, findings);
-  }
-  for (const excluded of [
-    "credentials",
-    "tokens",
-    "cookies",
-    ".env",
-    "private keys",
-    "browser chat",
-    "therapy/hypnosis content",
-    "prompts",
-    "model output/reasoning",
-    "raw sensitive logs",
-    "usernames",
-    "hostnames",
-    "ip addresses",
-    "absolute home paths"
-  ]) {
-    if (security !== null && !security.includes(excluded)) {
-      findings.push({ severity: "error", code: "security-excluded-data", path: "SECURITY.md", message: `missing excluded-data boundary: ${excluded}` });
-    }
-  }
+  const security = readText(root, "SECURITY.md", findings);
+  requireLiteral(security, SECURITY_CONTRACT.privateReporting, "security-private-route", "SECURITY.md", "missing affirmative private-vulnerability-reporting route", findings);
+  requireLiteral(security, SECURITY_CONTRACT.fallback, "security-private-route", "SECURITY.md", "missing exact draft-advisory/private-contact fallback", findings);
+  requireLiteral(security, SECURITY_CONTRACT.reproduction, "security-reproduction", "SECURITY.md", "missing exact synthetic/redacted reproduction contract", findings);
+  requireLiteral(security, SECURITY_CONTRACT.excludedData, "security-excluded-data", "SECURITY.md", "missing exact excluded-data boundary", findings);
 
-  const contributing = readText(root, "CONTRIBUTING.md", findings)?.toLowerCase() ?? null;
-  for (const [pattern, code, message] of [
-    [/public contribution/, "contribution-public", "public contribution posture missing"],
-    [/focused.*branch/, "contribution-workflow", "focused branch workflow missing"],
-    [/pull request/, "contribution-workflow", "pull-request workflow missing"],
-    [/accepted contribution[^\n]*mit|mit[^\n]*accepted contribution/, "contribution-license", "accepted-contribution MIT grant missing"],
-    [/does not grant authority|do not grant authority/, "contribution-owner-boundary", "contribution authority boundary missing"],
-    [/therapy\/framework policy/, "contribution-owner-boundary", "therapy/framework owner boundary missing"],
-    [/model roles/, "contribution-owner-boundary", "model-role owner boundary missing"],
-    [/privacy scope/, "contribution-owner-boundary", "privacy-scope owner boundary missing"],
-    [/stable`? release/, "contribution-owner-boundary", "stable-release owner boundary missing"]
-  ]) {
-    requireMatch(contributing, pattern, code, "CONTRIBUTING.md", message, findings);
-  }
+  const contributing = readText(root, "CONTRIBUTING.md", findings);
+  requireLiteral(contributing, CONTRIBUTION_CONTRACT.workflow, "contribution-public", "CONTRIBUTING.md", "missing affirmative public contribution workflow", findings);
+  requireLiteral(contributing, CONTRIBUTION_CONTRACT.license, "contribution-license", "CONTRIBUTING.md", "missing accepted-contribution MIT grant", findings);
+  requireLiteral(contributing, CONTRIBUTION_CONTRACT.ownerBoundary, "contribution-owner-boundary", "CONTRIBUTING.md", "missing exact owner-authority boundary", findings);
 
   const license = readText(root, "LICENSE", findings);
   if (license !== null && license !== EXPECTED_MIT_LICENSE) {
@@ -361,8 +356,8 @@ function auditOwnershipAndCi(root, findings) {
 export function auditRepository(root = process.cwd()) {
   const resolvedRoot = path.resolve(root);
   const findings = [];
-  auditProfile(resolvedRoot, findings);
-  auditAuthority(resolvedRoot, findings);
+  const profile = auditProfile(resolvedRoot, findings);
+  auditAuthority(resolvedRoot, findings, profile);
   auditPolicyDocuments(resolvedRoot, findings);
   auditRuntime(resolvedRoot, findings);
   auditOwnershipAndCi(resolvedRoot, findings);

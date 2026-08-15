@@ -270,6 +270,65 @@ test("repository audit rejects license, contribution, and security contract muta
   }
 });
 
+test("private transition audit rejects an affirmative premature public claim in every entry document", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const cases = [
+    [
+      "README.md",
+      "Its GitHub repository remains private while the approved public transition is in `pre_publication_ready`; this is not a claim that hosted visibility is already public."
+    ],
+    [
+      "AGENTS.md",
+      "The repository remains private until GitHub visibility is changed and read back; `pre_publication_ready` is not public visibility."
+    ],
+    [
+      "docs/INDEX.md",
+      "The repository is still private while `.github/codex-repository.json` records `pre_publication_ready`. Neither the MIT license nor public-ready documentation proves that GitHub visibility or hosted controls have changed."
+    ]
+  ];
+  for (const [relative, truthfulClaim] of cases) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    const mutated = original.replace(truthfulClaim, "Hosted GitHub visibility is public.");
+    assert.notEqual(mutated, original, `${relative}: mutation must replace the bounded truthful claim`);
+    await fs.writeFile(absolute, mutated);
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(({ code, path: findingPath }) => code === "publication-premature-public-claim" && findingPath === relative),
+      `${relative}: ${JSON.stringify(result.findings)}`
+    );
+    await fs.writeFile(absolute, original);
+  }
+});
+
+test("repository audit rejects negated public contribution and private reporting contracts", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const cases = [
+    [
+      "SECURITY.md",
+      "Use GitHub private vulnerability reporting once it is enabled.",
+      "Do not use GitHub private vulnerability reporting once it is enabled.",
+      "security-private-route"
+    ],
+    [
+      "CONTRIBUTING.md",
+      "Public contributions are welcome through focused task branches and pull requests.",
+      "Public contributions are forbidden through focused task branches and pull requests.",
+      "contribution-public"
+    ]
+  ];
+  for (const [relative, affirmative, negated, expectedCode] of cases) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    const mutated = original.replace(affirmative, negated);
+    assert.notEqual(mutated, original, `${relative}: mutation must negate the affirmative contract`);
+    await fs.writeFile(absolute, mutated);
+    const result = auditRepository(fixture);
+    assert.ok(result.findings.some(({ code }) => code === expectedCode), `${relative}: ${JSON.stringify(result.findings)}`);
+    await fs.writeFile(absolute, original);
+  }
+});
+
 test("machine-readable repository audit passes repository-visible controls", async () => {
   const script = path.join(root, "scripts", "audit-repository.mjs");
   let result;
