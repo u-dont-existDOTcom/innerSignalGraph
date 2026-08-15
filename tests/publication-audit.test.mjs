@@ -669,8 +669,8 @@ test("hosted coverage enumerates every required surface and safely scans action 
   for (const rawName of rawNames) assert.equal((await stat(path.join(tempRoot, rawName))).mode & 0o777, 0o600);
   assert.deepEqual([...result.hostedFileIdentifiers.values()], [
     "repository",
-    "branch:1",
-    "branch:2",
+    `branch:commit:${"1".repeat(40)}`,
+    `branch:commit:${"2".repeat(40)}`,
     "issue:7",
     "issue-comment:11",
     "pull:8",
@@ -742,6 +742,52 @@ test("hosted pagination consumes every concatenated page for arrays and object c
   assert.equal(result.counts.actionRuns, 2);
   assert.equal(result.counts.actionLogs, 2);
   assert.equal(result.counts.artifacts, 0);
+});
+
+test("branch locators are stable across reordered pages and shared-commit collisions", async (context) => {
+  const firstRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-branch-locator-first-test-"));
+  const secondRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-branch-locator-second-test-"));
+  context.after(async () => await rm(firstRoot, { recursive: true, force: true }));
+  context.after(async () => await rm(secondRoot, { recursive: true, force: true }));
+  const sharedCommit = "1".repeat(40);
+  const distinctCommit = "2".repeat(40);
+  const alpha = { name: "alpha", commit: { sha: sharedCommit }, protected: false };
+  const omega = { name: "omega", commit: { sha: sharedCommit }, protected: false };
+  const stable = { name: "stable", commit: { sha: distinctCommit }, protected: false };
+
+  const collectWithPages = async (tempRoot, pages) => {
+    const fixture = makeHostedRunCommand();
+    const command = async (tool, args, options) => {
+      if (args.at(-1) === `repos/${EXPECTED_REPOSITORY}/branches?per_page=100`) {
+        return { stdout: pages.map((page) => JSON.stringify(page)).join("\n") + "\n", stderr: "" };
+      }
+      return await fixture.runCommand(tool, args, options);
+    };
+    return await collectHostedPublicationRecords({ repository: EXPECTED_REPOSITORY, runCommand: command, tempRoot });
+  };
+  const projectByBranchName = async (tempRoot, result) => {
+    const entries = [];
+    for (const [relativeFile, identifier] of result.hostedFileIdentifiers) {
+      if (!identifier.startsWith("branch:")) continue;
+      const record = JSON.parse(await readFile(path.join(tempRoot, relativeFile), "utf8"));
+      entries.push([record.name, identifier]);
+    }
+    entries.sort(([left], [right]) => left.localeCompare(right));
+    return Object.fromEntries(entries);
+  };
+
+  const first = await collectWithPages(firstRoot, [[omega, stable], [alpha]]);
+  const second = await collectWithPages(secondRoot, [[alpha], [stable, omega]]);
+  const firstLocators = await projectByBranchName(firstRoot, first);
+  const secondLocators = await projectByBranchName(secondRoot, second);
+
+  assert.deepEqual(firstLocators, secondLocators);
+  assert.deepEqual(firstLocators, {
+    alpha: `branch:commit:${sharedCommit}:rank:1`,
+    omega: `branch:commit:${sharedCommit}:rank:2`,
+    stable: `branch:commit:${distinctCommit}`
+  });
+  assert.equal(Object.values(firstLocators).some((identifier) => /alpha|omega|stable/.test(identifier)), false);
 });
 
 test("hosted pagination frames escaped quotes and structural characters inside strings", async (context) => {
@@ -1245,18 +1291,26 @@ test("Gitleaks hosted findings use actionable in-memory locators and unknown fil
   context.after(async () => await rm(root, { recursive: true, force: true }));
   context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
   await writeFile(path.join(hostedRoot, "hosted-1.raw"), "private fixture\n", { mode: 0o600 });
+  await writeFile(path.join(hostedRoot, "hosted-2.raw"), "private branch fixture\n", { mode: 0o600 });
+  const branchCommit = "b".repeat(40);
 
   const actionable = await runGitleaks({
     binary: "/synthetic/gitleaks",
     root,
     hostedRoot,
-    hostedFileIdentifiers: new Map([["hosted-1.raw", "actions-log:run:101"]]),
+    hostedFileIdentifiers: new Map([
+      ["hosted-1.raw", "actions-log:run:101"],
+      ["hosted-2.raw", `branch:commit:${branchCommit}:rank:2`]
+    ]),
     runCommand: async (_command, args) => {
       const reportPath = args.find((argument) => argument.startsWith("--report-path=")).slice("--report-path=".length);
       await writeFile(
         reportPath,
         args[0] === "dir"
-          ? JSON.stringify([{ RuleID: "generic-api-key", Commit: "", File: "hosted-1.raw", StartLine: 4 }])
+          ? JSON.stringify([
+              { RuleID: "generic-api-key", Commit: "", File: "hosted-1.raw", StartLine: 4 },
+              { RuleID: "generic-api-key", Commit: "", File: "hosted-2.raw", StartLine: 2 }
+            ])
           : "[]"
       );
       return { exitCode: args[0] === "dir" ? 1 : 0, stdout: "", stderr: "" };
@@ -1268,6 +1322,12 @@ test("Gitleaks hosted findings use actionable in-memory locators and unknown fil
       code: "credential-pattern",
       surface: "gitleaks",
       identifier: "actions-log:run:101:line:4"
+    },
+    {
+      severity: "error",
+      code: "credential-pattern",
+      surface: "gitleaks",
+      identifier: `branch:commit:${branchCommit}:rank:2:line:2`
     }
   ]);
 

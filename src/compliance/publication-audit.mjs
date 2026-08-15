@@ -306,6 +306,30 @@ function validateBranch(record, identifier) {
   if (typeof record.protected !== "boolean") throw hostedIncomplete(identifier);
 }
 
+function buildBranchIdentifiers(branches) {
+  const byCommit = new Map();
+  for (const branch of branches) {
+    const group = byCommit.get(branch.commit.sha) ?? [];
+    group.push(branch);
+    byCommit.set(branch.commit.sha, group);
+  }
+
+  const identifiers = new Map();
+  for (const [commitSha, group] of byCommit) {
+    if (group.length === 1) {
+      identifiers.set(group[0], `branch:commit:${commitSha}`);
+      continue;
+    }
+    const canonicalGroup = [...group].sort((left, right) =>
+      left.name < right.name ? -1 : left.name > right.name ? 1 : 0
+    );
+    canonicalGroup.forEach((branch, index) => {
+      identifiers.set(branch, `branch:commit:${commitSha}:rank:${index + 1}`);
+    });
+  }
+  return identifiers;
+}
+
 function validateIssue(record, identifier) {
   requirePositiveInteger(record.number, identifier);
   if (typeof record.title !== "string") throw hostedIncomplete(identifier);
@@ -469,8 +493,9 @@ export async function collectHostedPublicationRecords({
     "branches:pagination"
   );
   validateUnique(branches, "name", "branches:pagination", validateBranch);
-  for (const [index, branch] of branches.entries()) {
-    const identifier = `branch:${index + 1}`;
+  const branchIdentifiers = buildBranchIdentifiers(branches);
+  for (const branch of branches) {
+    const identifier = branchIdentifiers.get(branch);
     await addHostedRecord({ surface: "branch", identifier, text: JSON.stringify(branch) }, identifier);
   }
 
@@ -659,7 +684,7 @@ function withinRoot(root, candidate) {
 function isSafeHostedIdentifier(identifier) {
   return (
     typeof identifier === "string" &&
-    /^(?:repository|branch:[1-9]\d*|issue:[1-9]\d*|pull:[1-9]\d*|issue-comment:[1-9]\d*|review-comment:[1-9]\d*|review:[1-9]\d*|actions-run:[1-9]\d*|actions-log:run:[1-9]\d*|artifact:[1-9]\d*(?::member:[1-9]\d*)?)$/.test(identifier)
+    /^(?:repository|branch:commit:(?:[0-9a-f]{40}|[0-9a-f]{64})(?::rank:[1-9]\d*)?|issue:[1-9]\d*|pull:[1-9]\d*|issue-comment:[1-9]\d*|review-comment:[1-9]\d*|review:[1-9]\d*|actions-run:[1-9]\d*|actions-log:run:[1-9]\d*|artifact:[1-9]\d*(?::member:[1-9]\d*)?)$/.test(identifier)
   );
 }
 
