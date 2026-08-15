@@ -211,6 +211,15 @@ function replaceMarkdownSection(source, heading, body) {
   return `${source.slice(0, contentStart)}\n${body.trim()}\n\n${source.slice(end)}`;
 }
 
+function readMarkdownSection(source, heading) {
+  const marker = `## ${heading}`;
+  const start = source.indexOf(marker);
+  assert.notEqual(start, -1, marker);
+  const contentStart = source.indexOf("\n", start) + 1;
+  const next = source.indexOf("\n## ", contentStart);
+  return source.slice(contentStart, next === -1 ? source.length : next + 1).trim();
+}
+
 function withStructuredPublicCloseoutReceipt(source) {
   if (source.includes("<!-- public-closeout-receipt")) return source;
   return `${source.trimEnd()}\n\n<!-- public-closeout-receipt\n${JSON.stringify(structuredPublicCloseoutReceipt, null, 2)}\n-->\n`;
@@ -350,20 +359,80 @@ test("public closeout audit enforces semantic PR 9, merged-main, CodeQL, and iss
     }
     await fs.writeFile(absolute, original);
   }
+
+  const visibleContradictions = [
+    {
+      relative: reportPaths[0],
+      mutate: (source) => source.replace("success on exact merged main", "failure on exact merged main")
+    },
+    {
+      relative: reportPaths[0],
+      mutate: (source) => source.replace("whose tree matches exactly", "whose tree does not match")
+    },
+    {
+      relative: reportPaths[1],
+      mutate: (source) => source.replace(
+        "`deterministic-package`: run `31869941911`, job `94976909523`, success.",
+        "`deterministic-package`: run `31869941911`, job `94976909523`, failure."
+      )
+    }
+  ];
+  for (const { relative, mutate } of visibleContradictions) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    const contradicted = mutate(original);
+    assert.notEqual(contradicted, original, relative);
+    await fs.writeFile(absolute, contradicted);
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(
+        ({ code, path: findingPath }) => code === "public-closeout-receipt" && findingPath === relative
+      ),
+      `${relative}: visible contradiction: ${JSON.stringify(result.findings)}`
+    );
+    await fs.writeFile(absolute, original);
+  }
+
+  const checkpointAbsolute = path.join(fixture, checkpointPath);
+  const checkpoint = await fs.readFile(checkpointAbsolute, "utf8");
+  const current = readMarkdownSection(checkpoint, "Current checkpoint");
+  await fs.writeFile(
+    checkpointAbsolute,
+    replaceMarkdownSection(
+      checkpoint,
+      "Current checkpoint",
+      `${current}\n- Receipt contradiction: PR 9 is unmerged, its candidate tree does not match main, merged-main checks failed, and the analysis has nonzero alerts.`
+    )
+  );
+  const checkpointResult = auditRepository(fixture);
+  assert.ok(
+    checkpointResult.findings.some(
+      ({ code, path: findingPath }) => code === "public-closeout-receipt" && findingPath === checkpointPath
+    ),
+    JSON.stringify(checkpointResult.findings)
+  );
 });
 
 test("public closeout audit scopes stale work to unique authoritative active sections", async (t) => {
   const fixture = await createAuditFixture(t);
   const checkpointAbsolute = path.join(fixture, checkpointPath);
   const original = await fs.readFile(checkpointAbsolute, "utf8");
-  const staleActiveBodies = [
+  const staleActiveLines = [
+    "- Complete the Task 9 security/privacy diff review and freeze the exact containing commit.",
+    "- Obtain independent review before publishing the branch.",
+    "- Open the focused protected pull request and wait for its required checks.",
+    "- Squash-merge only after the exact reviewed tree is green.",
+    "- Update the pull request and issue 4 with the merge SHA and final check IDs.",
     "- Run Task 10's complete exact-main verification after this protected closeout repair is merged.",
     "- Task 10 begins only after this protected repair merges.",
-    "- Finish Task 9, open its protected evidence pull request, and squash-merge it when green."
+    "- Finish Task 9, open its protected evidence pull request, and squash-merge it when green.",
+    "- Exact base: protected public `origin/main=956b17cc008fe68b6d9f5e9c36f002066aa9732a`.",
+    "- Current Task 9 branch: `codex/public-hosted-evidence-2026-08-14`."
   ];
+  const nextAction = readMarkdownSection(original, "Next safe action");
 
-  for (const stale of staleActiveBodies) {
-    await fs.writeFile(checkpointAbsolute, replaceMarkdownSection(original, "Next safe action", stale));
+  for (const stale of staleActiveLines) {
+    await fs.writeFile(checkpointAbsolute, replaceMarkdownSection(original, "Next safe action", `${nextAction}\n${stale}`));
     const result = auditRepository(fixture);
     assert.ok(
       result.findings.some(
@@ -373,17 +442,8 @@ test("public closeout audit scopes stale work to unique authoritative active sec
     );
   }
 
-  const timeless = replaceMarkdownSection(
-    replaceMarkdownSection(
-      original,
-      "Remaining",
-      "- Issue 4 remains open solely because installed GitHub App permissions are `UNVERIFIED` without GitHub App-authorized authentication.\n- All other executable public-transition work is complete."
-    ),
-    "Next safe action",
-    "Obtain GitHub App-authorized authentication, read repository-scoped installed-App permissions, and reconcile issue 4 and terminal status through a protected evidence update. Repeat read-only verification only if hosted evidence drifts."
-  );
   const historical = replaceMarkdownSection(
-    timeless,
+    original,
     "Completed",
     "Historical rejected instruction from the pre-merge plan:\n\nFinish Task 9, open its protected evidence pull request, and merge it when green."
   );

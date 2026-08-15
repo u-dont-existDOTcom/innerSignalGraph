@@ -33,6 +33,7 @@ Maintain the verified public repository baseline without changing therapy/hypnos
 ## Current checkpoint
 
 - All executable Tasks 1-10 are completed through the protected GitHub path; public visibility and every verified control except installed-App permissions were reconciled in the final readback.
+- Visible closeout receipt: pull request 9 is merged; its reviewed candidate tree equals the merged-main tree; every exact-head and merged-main required check succeeded; merged-main CodeQL analysis `1622858177` is associated with the verified baseline and had zero open alerts.
 - The immutable Task 9/10 baseline, matching-tree receipt, exact successful check associations, final-main CodeQL analysis, protected refs, and non-effects are in `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md` and `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md`.
 - Treat current Git refs and hosted settings as live state: fetch and read them when needed rather than treating a tracked checkpoint SHA as permanently current. The tracked reports remain historical evidence for the verified transition baseline.
 - `stable` remains the sole installation/release source and `runtime-diagnostics` remains separate generated data; neither was merged or advanced by the public-transition closeout.

@@ -144,6 +144,26 @@ const EXPECTED_PUBLIC_CLOSEOUT_RECEIPT = {
     soleAction: "read repository-scoped installed GitHub App permissions with GitHub App-authorized authentication"
   }
 };
+const EXPECTED_PUBLIC_CLOSEOUT_CHECKPOINT_SECTIONS = {
+  "Current checkpoint": [
+    "- All executable Tasks 1-10 are completed through the protected GitHub path; public visibility and every verified control except installed-App permissions were reconciled in the final readback.",
+    "- Visible closeout receipt: pull request 9 is merged; its reviewed candidate tree equals the merged-main tree; every exact-head and merged-main required check succeeded; merged-main CodeQL analysis `1622858177` is associated with the verified baseline and had zero open alerts.",
+    "- The immutable Task 9/10 baseline, matching-tree receipt, exact successful check associations, final-main CodeQL analysis, protected refs, and non-effects are in `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md` and `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md`.",
+    "- Treat current Git refs and hosted settings as live state: fetch and read them when needed rather than treating a tracked checkpoint SHA as permanently current. The tracked reports remain historical evidence for the verified transition baseline.",
+    "- `stable` remains the sole installation/release source and `runtime-diagnostics` remains separate generated data; neither was merged or advanced by the public-transition closeout."
+  ].join("\n"),
+  Remaining: [
+    "- Issue 4 remains open solely because installed GitHub App permissions are `UNVERIFIED` without GitHub App-authorized authentication.",
+    "- All other executable public-transition and repository-compliance work is complete.",
+    "- Keep terminal status `BLOCKED` until the installed-App permission readback exists."
+  ].join("\n"),
+  "Next safe action": "Obtain GitHub App-authorized authentication, read repository-scoped installed-App permissions, and reconcile issue 4 and terminal status through a protected evidence update. Repeat read-only verification only if hosted evidence drifts. Preserve `stable`, keep `runtime-diagnostics` separate, and do not change therapy, model-role, privacy, or release policy without the applicable owner decision."
+};
+const PUBLIC_CLOSEOUT_VISIBLE_CONTRADICTIONS = [
+  /(?:31869840311|31869840270|31869840222|31869941911|31869942049|31869941895|94976762584)[^\n]*(?:fail(?:ed|ure)?|error|cancel(?:led)?|skipped)/i,
+  /(?:7bf2b1a706aab6a7d9c36070b15590153c652e2a|4ff2a229a628bf0f9dc1a11abb23a88cd6068e18|0ccb120442292653a11676ad312f18092944b5a1)[^\n]*tree[^\n]*(?:does not match|not equal)/i,
+  /(?:pull request|pr)\s*9[^\n]*(?:unmerged|not merged|failed)/i
+];
 const CONTROL_STATES = new Set(["verified", "enabled", "disabled", "unverified", "not_applicable"]);
 const EXPECTED_PUBLIC_GITHUB_CONTROLS = {
   default_branch_rules: "enabled",
@@ -369,6 +389,37 @@ function readUniquePublicCloseoutReceipt(text, relative, findings) {
   }
 }
 
+function expectedPublicCloseoutVisibleClaims(receipt, relative) {
+  const pr = receipt.pullRequest;
+  const head = receipt.exactHeadChecks;
+  const merged = receipt.mergedMainChecks;
+  const analysis = receipt.mergedMainCodeqlAnalysis;
+  if (relative === PUBLICATION_REPORT) {
+    return [
+      `Pull request [9](${pr.url}) completed the protected evidence path with reviewed head \`${pr.reviewedHead}\`, tree \`${pr.reviewedTree}\`, and squash merge \`${pr.mergeCommit}\` whose tree matches exactly.`,
+      `| \`deterministic-package\` | \`${head["deterministic-package"].run}\` / \`${head["deterministic-package"].job}\` | ${head["deterministic-package"].conclusion} on exact reviewed head |`,
+      `| \`workflow-policy\` | \`${head["workflow-policy"].run}\` / \`${head["workflow-policy"].job}\` | ${head["workflow-policy"].conclusion} on exact reviewed head |`,
+      `| \`codeql-javascript\` | \`${head["codeql-javascript"].run}\` / \`${head["codeql-javascript"].job}\` | ${head["codeql-javascript"].conclusion} on exact reviewed head |`,
+      `| GitHub Advanced Security \`CodeQL\` | check \`${receipt.advancedSecurityCheck.id}\` | ${receipt.advancedSecurityCheck.conclusion} |`,
+      `| \`deterministic-package\` | \`${merged["deterministic-package"].run}\` / \`${merged["deterministic-package"].job}\` | ${merged["deterministic-package"].conclusion} on exact merged main |`,
+      `| \`workflow-policy\` | \`${merged["workflow-policy"].run}\` / \`${merged["workflow-policy"].job}\` | ${merged["workflow-policy"].conclusion} on exact merged main |`,
+      `| \`codeql-javascript\` | \`${merged["codeql-javascript"].run}\` / \`${merged["codeql-javascript"].job}\` | ${merged["codeql-javascript"].conclusion} on exact merged main |`,
+      `Exact merged-main CodeQL analysis \`${analysis.id}\` is associated with \`${analysis.commit}\`; final open-alert readback was zero.`
+    ];
+  }
+  return [
+    `| Public hosted evidence | Pull request [9](${pr.url}), reviewed head \`${pr.reviewedHead}\`, tree \`${pr.reviewedTree}\`, squash merge/final baseline \`${pr.mergeCommit}\`, and [durable self-referential receipt](${pr.receiptUrl}). |`,
+    `- \`deterministic-package\`: run \`${head["deterministic-package"].run}\`, job \`${head["deterministic-package"].job}\`, ${head["deterministic-package"].conclusion}.`,
+    `- \`workflow-policy\`: run \`${head["workflow-policy"].run}\`, job \`${head["workflow-policy"].job}\`, ${head["workflow-policy"].conclusion}.`,
+    `- \`codeql-javascript\`: run \`${head["codeql-javascript"].run}\`, job \`${head["codeql-javascript"].job}\`, ${head["codeql-javascript"].conclusion}.`,
+    `- GitHub Advanced Security \`CodeQL\`: check \`${receipt.advancedSecurityCheck.id}\`, ${receipt.advancedSecurityCheck.conclusion}.`,
+    `- \`deterministic-package\`: run \`${merged["deterministic-package"].run}\`, job \`${merged["deterministic-package"].job}\`, ${merged["deterministic-package"].conclusion}.`,
+    `- \`workflow-policy\`: run \`${merged["workflow-policy"].run}\`, job \`${merged["workflow-policy"].job}\`, ${merged["workflow-policy"].conclusion}.`,
+    `- \`codeql-javascript\`: run \`${merged["codeql-javascript"].run}\`, job \`${merged["codeql-javascript"].job}\`, ${merged["codeql-javascript"].conclusion}.`,
+    `- Exact merged-main CodeQL analysis \`${analysis.id}\` is associated with \`${analysis.commit}\`; final open-alert readback was zero.`
+  ];
+}
+
 function auditPublicPostureIntegrity(root, findings) {
   for (const [relative, expectedDigest] of Object.entries(PUBLIC_POSTURE_SHA256)) {
     let bytes;
@@ -582,42 +633,23 @@ function auditAuthority(root, findings, profile) {
       });
     }
     const [currentSection, remainingSection, nextSection] = checkpointSections;
-    if (
-      currentSection !== null &&
-      !/all executable Tasks 1-10[^\n]*(?:complete|completed)/i.test(currentSection)
-    ) {
-      findings.push({
-        severity: "error",
-        code: "public-closeout-stale-evidence",
-        path: CHECKPOINT,
-        message: "current checkpoint must state that all executable Tasks 1-10 completed"
-      });
+    for (const [index, heading] of ["Current checkpoint", "Remaining", "Next safe action"].entries()) {
+      const section = checkpointSections[index];
+      if (section !== null && section !== EXPECTED_PUBLIC_CLOSEOUT_CHECKPOINT_SECTIONS[heading]) {
+        findings.push({
+          severity: "error",
+          code: "public-closeout-stale-evidence",
+          path: CHECKPOINT,
+          message: `authoritative ## ${heading} must remain the closed, timeless public-closeout projection`
+        });
+      }
     }
-    if (
-      remainingSection !== null &&
-      (!/issue 4[^\n]*(?:remains|is) open[^\n]*sole(?:ly)?/i.test(remainingSection) ||
-        !/installed GitHub App permissions[^\n]*`?UNVERIFIED`?/i.test(remainingSection) ||
-        !/all other executable[^\n]*complete/i.test(remainingSection))
-    ) {
+    if (currentSection !== null && currentSection !== EXPECTED_PUBLIC_CLOSEOUT_CHECKPOINT_SECTIONS["Current checkpoint"]) {
       findings.push({
         severity: "error",
-        code: "public-closeout-stale-evidence",
+        code: "public-closeout-receipt",
         path: CHECKPOINT,
-        message: "remaining section must identify installed-App readback as the sole incomplete control"
-      });
-    }
-    if (
-      nextSection !== null &&
-      (!/GitHub App-authorized/i.test(nextSection) ||
-        !/installed[- ]App permissions/i.test(nextSection) ||
-        !/reconcile issue 4 and terminal status/i.test(nextSection) ||
-        !/only if hosted evidence drifts/i.test(nextSection))
-    ) {
-      findings.push({
-        severity: "error",
-        code: "public-closeout-stale-evidence",
-        path: CHECKPOINT,
-        message: "next action must be the timeless App-permission readback and conditional drift verification"
+        message: "visible checkpoint receipt must agree with merged, matching-tree, successful-check, and zero-alert evidence"
       });
     }
     for (const reportPath of [PUBLICATION_REPORT, COMPLIANCE_REPORT]) {
@@ -654,6 +686,19 @@ function auditAuthority(root, findings, profile) {
           code: "public-closeout-receipt",
           path: relative,
           message: "structured receipt must preserve exact merged PR, successful checks, matching tree, main analysis, and sole open issue semantics"
+        });
+      }
+      const visibleClaims = expectedPublicCloseoutVisibleClaims(EXPECTED_PUBLIC_CLOSEOUT_RECEIPT, relative);
+      if (
+        report !== null &&
+        (visibleClaims.some((claim) => !report.includes(claim)) ||
+          PUBLIC_CLOSEOUT_VISIBLE_CONTRADICTIONS.some((pattern) => pattern.test(report)))
+      ) {
+        findings.push({
+          severity: "error",
+          code: "public-closeout-receipt",
+          path: relative,
+          message: "visible receipt projection must agree with the structured merged, matching-tree, successful-check, and zero-alert evidence"
         });
       }
     }
