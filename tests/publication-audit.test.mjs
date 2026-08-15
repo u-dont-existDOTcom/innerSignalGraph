@@ -82,6 +82,7 @@ async function makeHostedWrapperHarness(context) {
     path.join(fakeBin, "node"),
     `#!/usr/bin/env bash
 if [[ "$1" == "scripts/validate-publication-audit-result.mjs" ]]; then
+  if [[ "\${FAKE_VALIDATOR_NOOP:-0}" == "1" ]]; then exit 0; fi
   exec "$REAL_NODE" "$@"
 fi
 printf '%s\n' "$*" > "$FAKE_INVOCATION_LOG"
@@ -1517,6 +1518,29 @@ test("hosted wrapper rejects absent or invalid audit results and preserves valid
       );
     }
     assert.equal(await readFile(harness.outputModeLog, "utf8"), "600 700\n");
+  }
+});
+
+test("hosted wrapper rejects silent audit and validator processes", async (context) => {
+  const harness = await makeHostedWrapperHarness(context);
+  for (const auditOutput of ["", JSON.stringify(hostedAuditResult())]) {
+    await assert.rejects(
+      execFileAsync("bash", ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY], {
+        cwd: process.cwd(),
+        env: {
+          ...harness.env,
+          FAKE_AUDIT_OUTPUT: auditOutput,
+          FAKE_AUDIT_EXIT: "0",
+          FAKE_VALIDATOR_NOOP: "1"
+        }
+      }),
+      (error) => {
+        assert.equal(error.code, 2);
+        assert.equal(error.stdout, "");
+        assert.match(error.stderr, /invalid-hosted-audit-result/);
+        return true;
+      }
+    );
   }
 });
 

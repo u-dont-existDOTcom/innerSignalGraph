@@ -19,6 +19,7 @@ fi
 
 umask 077
 tool_root="$(mktemp -d /tmp/inner-signal-gitleaks.XXXXXX)"
+chmod 700 "$tool_root"
 cleanup() {
   if [[ -n "$tool_root" && "$tool_root" == /tmp/inner-signal-gitleaks.* && -d "$tool_root" ]]; then
     rm -rf -- "$tool_root"
@@ -37,16 +38,38 @@ tar -xzf "$archive" -C "$tool_root" --no-same-owner --no-same-permissions gitlea
 chmod 700 "$tool_root/gitleaks"
 
 audit_result="$tool_root/publication-audit-result.json"
+validated_result="$tool_root/validated-publication-audit-result.json"
 : > "$audit_result"
+: > "$validated_result"
 chmod 600 "$audit_result"
+chmod 600 "$validated_result"
+
+invalid_result() {
+  printf '%s\n' 'invalid-hosted-audit-result' >&2
+  exit 2
+}
+
+private_result_file() {
+  [[ -f "$1" && ! -L "$1" && -s "$1" && "$(stat -c '%a' "$1")" == "600" ]]
+}
+
+private_result_root() {
+  [[ -d "$tool_root" && ! -L "$tool_root" && "$(stat -c '%a' "$tool_root")" == "700" ]]
+}
 
 set +e
 node scripts/audit-publication.mjs --root "$PWD" --github "$repository" --gitleaks "$tool_root/gitleaks" > "$audit_result"
 audit_status=$?
 set -e
 
-if ! node scripts/validate-publication-audit-result.mjs "$audit_result" "$audit_status"; then
-  printf '%s\n' 'invalid-hosted-audit-result' >&2
-  exit 2
-fi
+private_result_root && private_result_file "$audit_result" || invalid_result
+
+set +e
+node scripts/validate-publication-audit-result.mjs "$audit_result" "$audit_status" > "$validated_result"
+validation_status=$?
+set -e
+
+[[ "$validation_status" == "0" ]] || invalid_result
+private_result_root && private_result_file "$audit_result" && private_result_file "$validated_result" || invalid_result
+cat -- "$validated_result"
 exit "$audit_status"
