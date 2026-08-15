@@ -752,6 +752,109 @@ test("repository fields retain stable safe locators and complete key-context cov
   assert.equal(JSON.stringify(scanned).includes(sentinel), false);
 });
 
+test("exact repository transport credential is discarded while variants and descriptions remain covered", async (context) => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-repository-transport-test-"));
+  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  const sentinel = `ghp_${"t".repeat(36)}`;
+  const fixture = makeHostedRunCommand();
+  const command = async (tool, args, options) => {
+    if (args.at(-1) === `repos/${EXPECTED_REPOSITORY}`) {
+      return {
+        stdout: JSON.stringify({
+          full_name: EXPECTED_REPOSITORY,
+          visibility: "private",
+          default_branch: "main",
+          temp_clone_token: sentinel,
+          temp_clone_token_backup: sentinel,
+          description: `synthetic ${sentinel}`
+        }),
+        stderr: ""
+      };
+    }
+    return await fixture.runCommand(tool, args, options);
+  };
+
+  const result = await collectHostedPublicationRecords({ repository: EXPECTED_REPOSITORY, runCommand: command, tempRoot });
+  const repositoryRecords = result.records.filter(({ surface }) => surface === "repository");
+  assert.equal(repositoryRecords.some(({ identifier }) => identifier === "repository:field:temp_clone_token"), false);
+  assert.equal(
+    [...result.hostedFileIdentifiers.values()].some((identifier) => identifier === "repository:field:temp_clone_token"),
+    false
+  );
+  for (const [relativeFile, identifier] of result.hostedFileIdentifiers) {
+    if (!identifier.startsWith("repository:field:")) continue;
+    const projected = JSON.parse(await readFile(path.join(tempRoot, relativeFile), "utf8"));
+    assert.equal(Object.hasOwn(projected, "temp_clone_token"), false);
+  }
+
+  const scanned = scanPublicationRecords(repositoryRecords);
+  assert.deepEqual(scanned.findings.map(({ identifier }) => identifier), [
+    "repository:field:description",
+    "repository:field:temp_clone_token_backup"
+  ]);
+  assert.equal(JSON.stringify(scanned).includes(sentinel), false);
+});
+
+test("malformed repository transport credential type fails before any persistence", async (context) => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-repository-transport-type-test-"));
+  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  const fixture = makeHostedRunCommand();
+  const command = async (tool, args, options) => {
+    if (args.at(-1) === `repos/${EXPECTED_REPOSITORY}`) {
+      return {
+        stdout: JSON.stringify({
+          full_name: EXPECTED_REPOSITORY,
+          visibility: "private",
+          default_branch: "main",
+          temp_clone_token: { malformed: true }
+        }),
+        stderr: ""
+      };
+    }
+    return await fixture.runCommand(tool, args, options);
+  };
+
+  await assert.rejects(
+    collectHostedPublicationRecords({ repository: EXPECTED_REPOSITORY, runCommand: command, tempRoot }),
+    (error) => {
+      assert.equal(error.code, "audit-incomplete");
+      assert.equal(error.identifier, "repository:metadata:temp-clone-token");
+      return true;
+    }
+  );
+  assert.deepEqual(await readdir(tempRoot), []);
+});
+
+test("null repository transport credential is accepted and discarded", async (context) => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-repository-transport-null-test-"));
+  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  const fixture = makeHostedRunCommand();
+  const command = async (tool, args, options) => {
+    if (args.at(-1) === `repos/${EXPECTED_REPOSITORY}`) {
+      return {
+        stdout: JSON.stringify({
+          full_name: EXPECTED_REPOSITORY,
+          visibility: "private",
+          default_branch: "main",
+          temp_clone_token: null
+        }),
+        stderr: ""
+      };
+    }
+    return await fixture.runCommand(tool, args, options);
+  };
+
+  const result = await collectHostedPublicationRecords({ repository: EXPECTED_REPOSITORY, runCommand: command, tempRoot });
+  assert.equal(
+    result.records.some(({ identifier }) => identifier === "repository:field:temp_clone_token"),
+    false
+  );
+  assert.equal(
+    [...result.hostedFileIdentifiers.values()].some((identifier) => identifier === "repository:field:temp_clone_token"),
+    false
+  );
+});
+
 test("hosted pagination consumes every concatenated page for arrays and object collections", async (context) => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
   context.after(async () => await rm(tempRoot, { recursive: true, force: true }));

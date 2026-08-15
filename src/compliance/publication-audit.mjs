@@ -11,6 +11,10 @@ const MAX_ARTIFACT_TOTAL_BYTES = 64 * 1024 * 1024;
 const MAX_PROJECTED_METADATA_CHARACTERS = 400;
 const REDACTED = "[REDACTED]";
 const EXPECTED_REPOSITORY = "u-dont-existDOTcom/innerSignalGraph";
+// GitHub's authenticated `Get a repository` response documents this temporary clone-access field.
+// It is transport authentication material, not repository publication content:
+// https://docs.github.com/en/rest/repos/repos#get-a-repository
+const GITHUB_REPOSITORY_TRANSPORT_CREDENTIAL_FIELD = "temp_clone_token";
 
 const CONTENT_RULES = Object.freeze([
   Object.freeze(["credential-pattern", /\bgh[pousr]_[A-Za-z0-9]{36,255}\b/]),
@@ -295,6 +299,13 @@ function validateRepository(record, identifier) {
   requireNonemptyString(record.full_name, identifier);
   requireNonemptyString(record.visibility, identifier);
   requireNonemptyString(record.default_branch, identifier);
+  if (
+    Object.hasOwn(record, GITHUB_REPOSITORY_TRANSPORT_CREDENTIAL_FIELD) &&
+    record[GITHUB_REPOSITORY_TRANSPORT_CREDENTIAL_FIELD] !== null &&
+    typeof record[GITHUB_REPOSITORY_TRANSPORT_CREDENTIAL_FIELD] !== "string"
+  ) {
+    throw hostedIncomplete("repository:metadata:temp-clone-token");
+  }
 }
 
 function compareCanonicalStrings(left, right) {
@@ -302,7 +313,9 @@ function compareCanonicalStrings(left, right) {
 }
 
 function buildRepositoryFieldRecords(repositoryMetadata) {
-  const entries = Object.entries(repositoryMetadata).sort(([left], [right]) => compareCanonicalStrings(left, right));
+  const entries = Object.entries(repositoryMetadata)
+    .filter(([key]) => key !== GITHUB_REPOSITORY_TRANSPORT_CREDENTIAL_FIELD)
+    .sort(([left], [right]) => compareCanonicalStrings(left, right));
   const unsafeKeys = entries
     .map(([key]) => key)
     .filter((key) => !/^[a-z][a-z0-9_]{0,63}$/.test(key) || sanitizeMetadata(key) !== key)
@@ -503,6 +516,7 @@ export async function collectHostedPublicationRecords({
   );
   validateRepository(repositoryMetadata, "repository:metadata");
   if (repositoryMetadata.full_name !== EXPECTED_REPOSITORY) throw hostedIncomplete("repository-identity");
+  delete repositoryMetadata[GITHUB_REPOSITORY_TRANSPORT_CREDENTIAL_FIELD];
   for (const field of buildRepositoryFieldRecords(repositoryMetadata)) {
     await addHostedRecord(
       { surface: "repository", identifier: field.identifier, text: field.text },
