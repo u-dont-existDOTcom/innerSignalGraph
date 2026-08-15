@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -63,6 +64,13 @@ const CONTRIBUTION_CONTRACT = {
   workflow: "Public contributions are welcome through focused task branches and pull requests.",
   license: "Accepted contributions are licensed under the repository's MIT License.",
   ownerBoundary: "Contribution does not grant authority over owner-gated therapy/framework policy, owner decision cards, model roles, privacy scope, or stable release approval."
+};
+const PUBLIC_POSTURE_SHA256 = {
+  "README.md": "1982122b74650e4ef36683fab3c68ef721b4e2ed7aab4adf5328cdebb24d79ce",
+  "AGENTS.md": "b4c91596a4abc7e4430eb89cad4689a587b25d58c0eb869d05a27bdc07195e02",
+  "docs/INDEX.md": "b8d3507f7ea00ae8d910d3fb0ffa570414d439d04baa2b17442c28ff7b300f1f",
+  "SECURITY.md": "b6b40e701cddb53fe49a1676c2e01cf15a8a07a28553bf78bde3a91b42e1d72a",
+  "CONTRIBUTING.md": "3e36a03597382a82cb628f0daa1c9595ad86b57ffa339873dcf18be1efdd40c4"
 };
 const PREMATURE_PUBLIC_ASSERTIONS = [
   /\bhosted github visibility is (?:now |already )?public\b/i,
@@ -148,6 +156,26 @@ function requireLiteral(text, expected, code, relative, message, findings) {
 function rejectPatterns(text, patterns, code, relative, message, findings) {
   if (text !== null && patterns.some((pattern) => pattern.test(text))) {
     findings.push({ severity: "error", code, path: relative, message });
+  }
+}
+
+function auditPublicPostureIntegrity(root, findings) {
+  for (const [relative, expectedDigest] of Object.entries(PUBLIC_POSTURE_SHA256)) {
+    let bytes;
+    try {
+      bytes = fs.readFileSync(path.join(root, relative));
+    } catch {
+      continue;
+    }
+    const actualDigest = createHash("sha256").update(bytes).digest("hex");
+    if (actualDigest !== expectedDigest) {
+      findings.push({
+        severity: "error",
+        code: "public-posture-integrity",
+        path: relative,
+        message: "reviewed public-posture bytes changed; update the document and SHA-256 binding in one reviewed change"
+      });
+    }
   }
 }
 
@@ -391,6 +419,7 @@ export function auditRepository(root = process.cwd()) {
   const profile = auditProfile(resolvedRoot, findings);
   auditAuthority(resolvedRoot, findings, profile);
   auditPolicyDocuments(resolvedRoot, findings);
+  auditPublicPostureIntegrity(resolvedRoot, findings);
   auditRuntime(resolvedRoot, findings);
   auditOwnershipAndCi(resolvedRoot, findings);
   for (const finding of auditWorkflows(resolvedRoot).findings) {

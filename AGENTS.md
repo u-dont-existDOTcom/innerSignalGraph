@@ -31,6 +31,8 @@ Provider checks are explicit opt-in and are not hermetic CI.
 
 Use an isolated worktree or task branch and a pull request. Keep accepted designs/plans under `docs/superpowers/`. The repository remains private until GitHub visibility is changed and read back; `pre_publication_ready` is not public visibility. Run targeted and complete gates, inspect the final diff and package artifacts, update `state/CODEX-CURRENT-STATE.md`, and complete lesson closeout. Release evidence follows `docs/RELEASE-EVIDENCE.md`.
 
+Integrity maintenance: any legitimate edit to `README.md`, `AGENTS.md`, `docs/INDEX.md`, `SECURITY.md`, or `CONTRIBUTING.md`—including Task 9 public/completed reconciliation—must update the reviewed SHA-256 bindings in `scripts/audit-repository.mjs` in the same reviewed change.
+
 ## Branch roles
 
 - `main`: development authority

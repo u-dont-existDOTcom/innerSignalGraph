@@ -353,6 +353,48 @@ test("repository audit rejects additive prohibitions of public contribution and 
   assert.ok(auditRepository(fixture).findings.every(({ code }) => code !== "contribution-public"));
 });
 
+test("public-posture integrity rejects unrecognized additive contradictions and arbitrary prose", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const contradictions = [
+    ["README.md", "This repository is publicly visible on GitHub."],
+    ["AGENTS.md", "GitHub exposes this repository to everyone."],
+    ["docs/INDEX.md", "Anyone can view the hosted repository now."],
+    ["SECURITY.md", "Private vulnerability reports are not permitted."],
+    ["CONTRIBUTING.md", "External public contributions will be rejected."],
+    ["CONTRIBUTING.md", "Only private collaborators may contribute."]
+  ];
+  for (const [relative, contradiction] of contradictions) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    await fs.writeFile(absolute, `${original}\n${contradiction}\n`);
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(({ code, path: findingPath }) => code === "public-posture-integrity" && findingPath === relative),
+      `${relative}/${contradiction}: ${JSON.stringify(result.findings)}`
+    );
+    await fs.writeFile(absolute, original);
+  }
+
+  for (const relative of ["README.md", "AGENTS.md", "docs/INDEX.md", "SECURITY.md", "CONTRIBUTING.md"]) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    await fs.writeFile(absolute, `${original}\nEditorial note with no policy keywords.\n`);
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(({ code, path: findingPath }) => code === "public-posture-integrity" && findingPath === relative),
+      `${relative}: arbitrary append must require reviewed digest maintenance`
+    );
+    await fs.writeFile(absolute, original);
+  }
+});
+
+test("public-posture integrity maintenance requires one reviewed content-and-digest change", async () => {
+  assert.match(
+    await read("AGENTS.md"),
+    /any legitimate edit to `README\.md`, `AGENTS\.md`, `docs\/INDEX\.md`, `SECURITY\.md`, or `CONTRIBUTING\.md`[^\n]*Task 9[^\n]*must update the reviewed SHA-256 bindings in `scripts\/audit-repository\.mjs` in the same reviewed change/
+  );
+});
+
 test("machine-readable repository audit passes repository-visible controls", async () => {
   const script = path.join(root, "scripts", "audit-repository.mjs");
   let result;
