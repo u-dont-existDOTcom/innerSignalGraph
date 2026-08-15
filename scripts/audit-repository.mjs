@@ -123,6 +123,30 @@ const EXPECTED_BRANCH_PROTECTION_EVIDENCE = {
   main: EXPECTED_PROTECTED_BRANCH,
   stable: EXPECTED_PROTECTED_BRANCH
 };
+const DEPENDABOT_PATH = ".github/dependabot.yml";
+const EXPECTED_DEPENDABOT = {
+  version: 2,
+  updates: [
+    {
+      "package-ecosystem": "github-actions",
+      directory: "/",
+      schedule: { interval: "monthly" },
+      "open-pull-requests-limit": 5,
+      labels: ["dependencies", "github-actions"],
+      "commit-message": { prefix: "chore(actions)" }
+    },
+    {
+      "package-ecosystem": "npm",
+      directory: "/",
+      schedule: { interval: "monthly" },
+      "open-pull-requests-limit": 5,
+      labels: ["dependencies", "npm"],
+      "commit-message": { prefix: "chore(deps)" }
+    }
+  ]
+};
+const EXPECTED_DEPENDENCY_UPDATE_EVIDENCE =
+  "Repository policy enforces exact bounded monthly root Dependabot schedules for npm and GitHub Actions; this file-backed configuration does not by itself prove hosted execution.";
 const CHECKPOINT_HEADINGS = [
   "goal",
   "authority / baseline",
@@ -324,6 +348,14 @@ function auditProfile(root, findings) {
         code: "profile-branch-protection-evidence",
         path: relative,
         message: "public/completed profile must record exact main/stable protection and required contexts"
+      });
+    }
+    if (evidence?.dependency_updates !== EXPECTED_DEPENDENCY_UPDATE_EVIDENCE) {
+      findings.push({
+        severity: "error",
+        code: "profile-dependency-update-evidence",
+        path: relative,
+        message: "public/completed profile must distinguish enforced Dependabot configuration from hosted execution evidence"
       });
     }
     if (
@@ -545,6 +577,41 @@ function auditCodeqlWorkflow(root, findings) {
   }
 }
 
+function auditDependencyUpdates(root, findings) {
+  const text = readText(root, DEPENDABOT_PATH, findings);
+  if (text === null) return;
+  const document = parseDocument(text, { strict: true, uniqueKeys: true });
+  if (document.errors.length > 0) {
+    findings.push({
+      severity: "error",
+      code: "dependency-updates",
+      path: DEPENDABOT_PATH,
+      message: "Dependabot configuration must parse uniquely and strictly"
+    });
+    return;
+  }
+  let configuration;
+  try {
+    configuration = document.toJS({ maxAliasCount: 0 });
+  } catch {
+    findings.push({
+      severity: "error",
+      code: "dependency-updates",
+      path: DEPENDABOT_PATH,
+      message: "Dependabot configuration aliases are not allowed"
+    });
+    return;
+  }
+  if (!isDeepStrictEqual(configuration, EXPECTED_DEPENDABOT)) {
+    findings.push({
+      severity: "error",
+      code: "dependency-updates",
+      path: DEPENDABOT_PATH,
+      message: "Dependabot must retain the exact bounded monthly root schedules for npm and GitHub Actions"
+    });
+  }
+}
+
 function auditOwnershipAndCi(root, findings) {
   const codeowners = readText(root, ".github/CODEOWNERS", findings);
   if (codeowners !== null) {
@@ -610,6 +677,7 @@ function auditOwnershipAndCi(root, findings) {
   ]) {
     requireMatch(policy, pattern, "ci-policy", workflowPaths[1], message, findings);
   }
+  auditDependencyUpdates(root, findings);
   auditCodeqlWorkflow(root, findings);
 }
 

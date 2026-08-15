@@ -75,6 +75,7 @@
       }
     },
     "security": "Secret scanning, push protection, private vulnerability reporting, vulnerability alerts, Dependabot alerts and security updates, automated security fixes, and CodeQL are enabled. Exact-main CodeQL has zero open alerts.",
+    "dependency_updates": "Repository policy enforces exact bounded monthly root Dependabot schedules for npm and GitHub Actions; this file-backed configuration does not by itself prove hosted execution.",
     "actions": "Enabled with selected GitHub-owned Actions only, reviewed full-SHA enforcement, read-only default workflow permissions, and pull-request approval disabled.",
     "codeql_run": {
       "id": 31865348513,

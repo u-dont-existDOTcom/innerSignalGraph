@@ -5,6 +5,7 @@ import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { parseDocument } from "yaml";
 import { auditRepository } from "../scripts/audit-repository.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -62,6 +63,27 @@ const transitionEntryClaims = {
     public: "The GitHub repository is public and `.github/codex-repository.json` records the completed publication transition.",
     private: "The repository is still private while `.github/codex-repository.json` records `pre_publication_ready`. Neither the MIT license nor public-ready documentation proves that GitHub visibility or hosted controls have changed."
   }
+};
+const expectedDependabot = {
+  version: 2,
+  updates: [
+    {
+      "package-ecosystem": "github-actions",
+      directory: "/",
+      schedule: { interval: "monthly" },
+      "open-pull-requests-limit": 5,
+      labels: ["dependencies", "github-actions"],
+      "commit-message": { prefix: "chore(actions)" }
+    },
+    {
+      "package-ecosystem": "npm",
+      directory: "/",
+      schedule: { interval: "monthly" },
+      "open-pull-requests-limit": 5,
+      labels: ["dependencies", "npm"],
+      "commit-message": { prefix: "chore(deps)" }
+    }
+  ]
 };
 
 async function read(relative) {
@@ -594,6 +616,34 @@ test("CI uses immutable least-privilege actions, exact runtime, scoped concurren
   assert.match(policy, /npm run audit:repository/);
 });
 
+test("Dependabot schedules bounded monthly updates for root npm and GitHub Actions dependencies", async () => {
+  const document = parseDocument(await read(".github/dependabot.yml"), { strict: true, uniqueKeys: true });
+  assert.deepEqual(document.errors, []);
+  assert.deepEqual(document.toJS({ maxAliasCount: 0 }), expectedDependabot);
+});
+
+test("repository audit rejects missing, misdirected, or rescheduled npm dependency updates", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const relative = ".github/dependabot.yml";
+  const absolute = path.join(fixture, relative);
+  const mutations = [
+    (source) => source.replace(/\n  - package-ecosystem: npm[\s\S]*$/, "\n"),
+    (source) => source.replace(/(package-ecosystem: npm\n\s+directory:) \/\n/, "$1 /runtime\n"),
+    (source) => source.replace(/(package-ecosystem: npm[\s\S]*?interval:) monthly/, "$1 weekly")
+  ];
+
+  for (const mutate of mutations) {
+    const original = await fs.readFile(absolute, "utf8");
+    await fs.writeFile(absolute, mutate(original));
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(({ code, path: findingPath }) => code === "dependency-updates" && findingPath === relative),
+      JSON.stringify(result.findings)
+    );
+    await fs.writeFile(absolute, original);
+  }
+});
+
 test("hosted-control evidence records verified improvements and exact unresolved boundaries", async () => {
   const profile = JSON.parse(await read(".github/codex-repository.json"));
   assert.deepEqual(
@@ -630,6 +680,10 @@ test("hosted-control evidence records verified improvements and exact unresolved
   );
   assert.match(profile.github_controls_evidence.checked_at, /^2026-08-15T\d{2}:\d{2}:\d{2}Z$/);
   assert.equal(profile.github_controls_evidence.source, "GitHub REST API readback and verified GitHub Actions results");
+  assert.equal(
+    profile.github_controls_evidence.dependency_updates,
+    "Repository policy enforces exact bounded monthly root Dependabot schedules for npm and GitHub Actions; this file-backed configuration does not by itself prove hosted execution."
+  );
   assert.deepEqual(profile.github_controls_evidence.codeql_run, {
     id: 31865348513,
     job_id: 94965480118,

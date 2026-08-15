@@ -31,7 +31,8 @@ Record the verified public GitHub posture and hosted controls through the second
 - Universal publication-transition guidance was promoted through `u-dont-existDOTcom/universal-dev-architecture` pull request 13 and merged as `996d67ae9f8f44b0865cea6d88d169dbbadbbf41` after all hosted checks passed.
 - Required root/nested instructions, all four latest root therapy-governance ledgers, transition design/plan/evidence, profile, auditor/tests, Git refs, issue 4, pull requests, Actions, security controls, CodeQL, protection, inventory, and universal evidence were recovered before this evidence edit.
 - The unmodified Task 9 base passed `npm ci --ignore-scripts` and the complete `npm test` baseline. The final-profile TDD command failed 0/2 for the exact stale private/control state before the minimal public evidence implementation.
-- The bounded nine-file Task 9 candidate passes the focused final-profile tests 4/4, repository-compliance tests 22/22, combined publication/repository/workflow tests 110/110, complete `npm test` 382/382, graph regressions 12/12, therapy-ledger verification 5/5 with four active-runtime lessons, repository audit with zero errors and the sole App-permission warning, and real-host `npm run verify` ending in `VERDICT PASS`.
+- The initial bounded nine-file Task 9 candidate passed the focused final-profile tests 4/4, repository-compliance tests 22/22, combined publication/repository/workflow tests 110/110, complete `npm test` 382/382, graph regressions 12/12, therapy-ledger verification 5/5 with four active-runtime lessons, repository audit with zero errors and the sole App-permission warning, and real-host `npm run verify` ending in `VERDICT PASS`.
+- Independent review then identified that production npm dependency updates were absent from `.github/dependabot.yml`. The causal policy tests failed 0/2 before the repair and pass 2/2 after adding an exact bounded monthly root npm entry beside the preserved GitHub Actions entry. Task 9 therefore transparently expands to ten files; final containing-commit gates and re-review remain required.
 - After refreshing all hosted refs, the precommit publication audits passed with zero findings: local 49,780 records and hosted 49,999 records. Both covered 26 refs, 138 commits, 1,367 objects, and 686 blobs; hosted coverage additionally included 8 branches, 1 issue, 7 pull requests, 7 issue comments, 1 review comment, 1 review, 49 Actions runs/logs, and zero artifacts.
 
 ## Current checkpoint
@@ -74,7 +75,7 @@ Record the verified public GitHub posture and hosted controls through the second
 
 ## Next safe action
 
-Finish the bounded nine-file Task 9 diff review, freeze and verify its exact commit, obtain independent review, then publish one protected evidence pull request to `main`. Do not advance `stable`, merge diagnostics, start the app/browser/installer, or change therapy, model-role, privacy, or release policy.
+Finish the bounded ten-file Task 9 review repair and exact gates, obtain two independent approvals on the final commit, then publish one protected evidence pull request to `main`. Do not advance `stable`, merge diagnostics, start the app/browser/installer, or change therapy, model-role, privacy, or release policy.
 
 ## Recovery rule
 

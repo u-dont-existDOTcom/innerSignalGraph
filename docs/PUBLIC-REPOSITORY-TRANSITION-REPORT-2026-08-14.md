@@ -120,11 +120,12 @@ At the final precommit ref refresh, `main` and `stable` were unchanged. Generate
 
 ## Public hosted-evidence pull request
 
-Task 9 changes exactly these nine planned paths:
+Task 9 changes exactly these ten paths. The tenth path, `.github/dependabot.yml`, is the bounded executable repair required by independent review after the initial nine-file candidate exposed missing production npm update coverage:
 
 | Path | Purpose |
 |---|---|
 | `.github/codex-repository.json` | Public/completed profile and exact hosted evidence. |
+| `.github/dependabot.yml` | Exact bounded monthly root schedules for npm and GitHub Actions dependencies. |
 | `tests/repository-compliance.test.mjs` | Public-profile, protection, CodeQL, and blocker regressions. |
 | `scripts/audit-repository.mjs` | Fail-closed final-state policy enforcement and reviewed entry-document digests. |
 | `README.md` | Public authority route and unchanged runtime/release boundaries. |
@@ -142,10 +143,11 @@ Task 9 baseline and TDD evidence:
 - Complete unmodified-base `npm test`: PASS 380/380.
 - Initial final-profile command: expected RED, 0/2; exact failures were stale `private` visibility and six stale hosted control values.
 - Expanded causal RED: 1/4 passed and 3/4 failed for stale private entry documents, stale compliance report/universal lesson evidence, and missing machine enforcement of CodeQL/protection evidence.
+- Independent-review dependency-policy RED: the focused tests failed 0/2 because the existing Dependabot file covered only GitHub Actions and the repository audit did not enforce npm coverage. The same tests pass 2/2 after the exact monthly root npm schedule and mutation-sensitive audit were added.
 - Focused final-profile/hosted-evidence GREEN: PASS 4/4. Full repository-compliance suite: PASS 22/22. Combined publication/repository/workflow suite: PASS 110/110.
 - `npm run audit:repository`: PASS with zero errors and one warning solely for the installed-App readback. `npm test`: PASS 382/382. `npm run graph:test`: PASS 12/12. `npm run therapy-lessons:verify`: PASS 5/5 with four active-runtime lessons. Real-host `npm run verify`: final `VERDICT PASS`.
 - After refreshing all hosted refs, `npm run audit:publication`: PASS, 49,780 records and zero findings; refs 26, commits 138, objects 1,367, blobs 686. `npm run audit:publication:hosted`: PASS, 49,999 records and zero findings; the same Git counts plus branches 8, issues 1, pull requests 7, issue comments 7, review comments 1, reviews 1, Actions runs 49, logs 49, and artifacts 0.
-- Exact containing-commit reruns and independent review are recorded in the pull request before publication/merge; no future CI or merge success is inferred here.
+- Exact repaired containing-commit reruns and two independent approvals are recorded in the pull request before publication/merge; no future CI or merge success is inferred here.
 
 ## Policy, privacy, release, and runtime non-effects
 
