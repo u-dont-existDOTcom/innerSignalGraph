@@ -10,6 +10,18 @@
 - `../package.json`: supported commands
 - `RELEASE-EVIDENCE.md`: stable-promotion evidence contract
 
+## Public repository transition
+
+- `docs/superpowers/specs/2026-08-14-public-repository-transition-design.md`: accepted publication and hosted-control design
+- `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md`: exact bounded pre-public audit, gate, hosted-control, non-effect, and recovery evidence
+- `../state/CODEX-CURRENT-STATE.md`: canonical checkpoint and truthful current transition state
+- `npm run audit:publication`: local all-ref/all-object publication audit
+- `npm run audit:publication:hosted`: authenticated hosted-surface publication audit
+
+The repository is still private while `.github/codex-repository.json` records `pre_publication_ready`. Neither the MIT license nor public-ready documentation proves that GitHub visibility or hosted controls have changed.
+
+The transition report names the fully gated source candidate. Its containing evidence commit/tree must be read from Git and the later pull request because a commit cannot embed its own immutable identity without changing it.
+
 ## Current evidence
 
 - `../BUILD-VERIFY.txt`: build verification evidence

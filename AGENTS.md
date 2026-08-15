@@ -8,14 +8,18 @@
 4. `README.md` for branch, release, privacy, recovery, and installation contracts
 5. `AUTOPILOT.md` for autonomous development behavior
 6. `docs/INDEX.md` for current specifications, plans, and evidence
-7. Current code, tests, package verifier, and Git history
-8. Relevant current guidance from `u-dont-existDOTcom/universal-dev-architecture`
+7. `docs/superpowers/specs/2026-08-14-public-repository-transition-design.md` for the accepted visibility-transition contract
+8. `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md` for bounded pre-public and hosted evidence when produced
+9. Current code, tests, package verifier, and Git history
+10. Relevant current guidance from `u-dont-existDOTcom/universal-dev-architecture`
 
 ## Validation
 
 - Runtime: Node 24.18.0 (`.nvmrc`)
 - Bootstrap: `npm ci --ignore-scripts`
 - Repository audit: `npm run audit:repository`
+- Local publication audit: `npm run audit:publication`
+- Authenticated hosted publication audit: `npm run audit:publication:hosted`
 - Targeted tests: `npm test`
 - Complete package gate: `npm run verify`
 - Graph gate when affected: `npm run graph:test`
@@ -25,7 +29,9 @@ Provider checks are explicit opt-in and are not hermetic CI.
 
 ## Workflow
 
-Use an isolated worktree or task branch and a pull request. Keep accepted designs/plans under `docs/superpowers/`. Run targeted and complete gates, inspect the final diff and package artifacts, update `state/CODEX-CURRENT-STATE.md`, and complete lesson closeout. Release evidence follows `docs/RELEASE-EVIDENCE.md`.
+Use an isolated worktree or task branch and a pull request. Keep accepted designs/plans under `docs/superpowers/`. The repository remains private until GitHub visibility is changed and read back; `pre_publication_ready` is not public visibility. Run targeted and complete gates, inspect the final diff and package artifacts, update `state/CODEX-CURRENT-STATE.md`, and complete lesson closeout. Release evidence follows `docs/RELEASE-EVIDENCE.md`.
+
+Integrity maintenance: any legitimate edit to `README.md`, `AGENTS.md`, `docs/INDEX.md`, `SECURITY.md`, or `CONTRIBUTING.md`—including Task 9 public/completed reconciliation—must update the reviewed SHA-256 bindings in `scripts/audit-repository.mjs` in the same reviewed change.
 
 ## Branch roles
 

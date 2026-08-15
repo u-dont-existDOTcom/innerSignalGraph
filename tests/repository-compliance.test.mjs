@@ -5,6 +5,7 @@ import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { auditRepository } from "../scripts/audit-repository.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -15,15 +16,56 @@ const expectedCommands = {
   graph: "npm run graph:test",
   package: "npm run verify",
   audit: "npm run audit:repository",
+  publication: "npm run audit:publication",
   verify: "npm run verify",
   current_state: "bash scripts/report-worktree.sh"
 };
+const expectedPublicationTransition = {
+  target_visibility: "public",
+  license: "MIT",
+  status: "pre_publication_ready",
+  design: "docs/superpowers/specs/2026-08-14-public-repository-transition-design.md",
+  audit_command: "npm run audit:publication:hosted"
+};
+const expectedMitLicense = `MIT License
+
+Copyright (c) 2026 u-dont-existDOTcom
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`;
 
 async function read(relative) {
   return await fs.readFile(path.join(root, relative), "utf8");
 }
 
-test("repository profile declares exact commands and one canonical checkpoint", async () => {
+async function createAuditFixture(t) {
+  const fixture = await fs.mkdtemp(path.join(path.dirname(root), "inner-signal-public-contract-"));
+  t.after(() => fs.rm(fixture, { recursive: true, force: true }));
+  const excluded = new Set([".git", ".superpowers", "node_modules"]);
+  await fs.cp(root, fixture, {
+    recursive: true,
+    filter: (source) => source === root || !excluded.has(path.basename(source))
+  });
+  return fixture;
+}
+
+test("repository profile declares exact commands, publication transition, and one canonical checkpoint", async () => {
   const profile = JSON.parse(await read(".github/codex-repository.json"));
   assert.equal(profile.repository_kind, "software");
   assert.equal(profile.active, true);
@@ -31,6 +73,7 @@ test("repository profile declares exact commands and one canonical checkpoint", 
   assert.equal(profile.visibility, "private");
   assert.equal(profile.risk, "critical");
   assert.deepEqual(profile.commands, expectedCommands);
+  assert.deepEqual(profile.publication_transition, expectedPublicationTransition);
   assert.equal(profile.current_state, checkpointPath);
 
   const checkpoint = (await read(checkpointPath)).toLowerCase();
@@ -60,17 +103,89 @@ test("all entry documents route to the canonical checkpoint and retire the stale
   assert.match(implementation, /historical intake note[^\n]*\n[^\n]*No `AGENTS\.md`/i);
 });
 
-test("private security, contribution, PR, and release evidence contracts are explicit", async () => {
+test("publication transition entry documents route to the design, audits, checkpoint, and report", async () => {
+  for (const relative of ["AGENTS.md", "README.md", "docs/INDEX.md"]) {
+    const entry = await read(relative);
+    assert.match(entry, /docs\/superpowers\/specs\/2026-08-14-public-repository-transition-design\.md/, relative);
+    assert.match(entry, /`npm run audit:publication`/, relative);
+    assert.match(entry, /`npm run audit:publication:hosted`/, relative);
+    assert.match(entry, /state\/CODEX-CURRENT-STATE\.md/, relative);
+    assert.match(entry, /docs\/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14\.md/, relative);
+    assert.doesNotMatch(entry, /repository is (?:now |already )?public/i, relative);
+  }
+});
+
+test("repository audit rejects completed publication-evidence commit steps in the canonical checkpoint", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const reportPath = path.join(fixture, "docs", "PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md");
+  const profile = JSON.parse(await fs.readFile(path.join(fixture, ".github", "codex-repository.json"), "utf8"));
+  const checkpoint = await fs.readFile(path.join(fixture, checkpointPath), "utf8");
+
+  assert.ok((await fs.stat(reportPath)).isFile());
+  assert.match(profile.publication_evidence?.subject_commit ?? "", /^[a-f0-9]{40}$/);
+  assert.equal(profile.publication_evidence?.report, "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md");
+
+  for (const staleStep of [
+    "- Commit the pre-public report/profile/checkpoint/index evidence and repeat the exact affected gates.",
+    "Commit and independently review this refreshed evidence, then publish the single private transition PR."
+  ]) {
+    await fs.writeFile(path.join(fixture, checkpointPath), `${checkpoint}\n${staleStep}\n`);
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(
+        ({ code, path: findingPath }) =>
+          code === "checkpoint-stale-publication-evidence-step" && findingPath === checkpointPath
+      ),
+      `${staleStep}: ${JSON.stringify(result.findings)}`
+    );
+  }
+});
+
+test("the repository carries the unmodified standard MIT license", async () => {
+  assert.equal(await read("LICENSE"), expectedMitLicense);
+});
+
+test("public security reporting preserves private fallbacks and every excluded-data boundary", async () => {
   const security = (await read("SECURITY.md")).toLowerCase();
-  assert.match(security, /draft security advisor|private.*channel/);
-  assert.match(security, /do not.*credential|never.*credential/);
-  assert.match(security, /therapy.*data|therapy.*content/);
+  assert.match(security, /github private vulnerability reporting/);
+  assert.match(security, /once (?:it is|this is) enabled/);
+  assert.match(security, /draft security advisor/);
+  assert.match(security, /private.*(?:contact|channel)/);
+  assert.match(security, /synthetic/);
+  assert.match(security, /redacted/);
+  for (const excluded of [
+    "credentials",
+    "tokens",
+    "cookies",
+    ".env",
+    "private keys",
+    "browser chat",
+    "therapy/hypnosis content",
+    "prompts",
+    "model output/reasoning",
+    "raw sensitive logs",
+    "usernames",
+    "hostnames",
+    "ip addresses",
+    "absolute home paths"
+  ]) {
+    assert.ok(security.includes(excluded), excluded);
+  }
+});
 
+test("public contributions use focused pull requests under MIT without gaining owner authority", async () => {
   const contributing = (await read("CONTRIBUTING.md")).toLowerCase();
-  assert.match(contributing, /private/);
-  assert.match(contributing, /owner-controlled/);
-  assert.match(contributing, /no public license|not grant.*license/);
+  assert.match(contributing, /public contribution/);
+  assert.match(contributing, /focused.*branch/);
+  assert.match(contributing, /pull request/);
+  assert.match(contributing, /accepted contribution[^\n]*mit|mit[^\n]*accepted contribution/);
+  assert.match(contributing, /does not grant authority|do not grant authority/);
+  for (const boundary of ["therapy/framework policy", "model roles", "privacy scope", "stable release"]) {
+    assert.ok(contributing.includes(boundary), boundary);
+  }
+});
 
+test("PR and release evidence contracts remain explicit during the publication transition", async () => {
   const release = `${await read("docs/RELEASE-EVIDENCE.md")}\n${await read(
     ".github/RELEASE-EVIDENCE-TEMPLATE.md"
   )}`.toLowerCase();
@@ -96,6 +211,214 @@ test("private security, contribution, PR, and release evidence contracts are exp
   for (const phrase of ["acceptance", "rollback", "current-state", "residual", "privacy", "stable", "final diff"]) {
     assert.match(pullRequest, new RegExp(phrase), phrase);
   }
+});
+
+test("repository audit accepts only the two valid publication transition state pairs", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const profilePath = path.join(fixture, ".github", "codex-repository.json");
+  const baseProfile = {
+    ...JSON.parse(await fs.readFile(profilePath, "utf8")),
+    commands: expectedCommands,
+    publication_transition: expectedPublicationTransition
+  };
+
+  for (const [visibility, status] of [
+    ["private", "pre_publication_ready"],
+    ["public", "completed"]
+  ]) {
+    const profile = structuredClone(baseProfile);
+    profile.visibility = visibility;
+    profile.publication_transition.status = status;
+    await fs.writeFile(profilePath, `${JSON.stringify(profile, null, 2)}\n`);
+    const result = auditRepository(fixture);
+    assert.equal(result.ok, true, `${visibility}/${status}: ${JSON.stringify(result.findings)}`);
+  }
+
+  for (const [visibility, status] of [
+    ["private", "completed"],
+    ["public", "pre_publication_ready"],
+    ["private", "unknown"],
+    ["public", null]
+  ]) {
+    const profile = structuredClone(baseProfile);
+    profile.visibility = visibility;
+    profile.publication_transition.status = status;
+    await fs.writeFile(profilePath, `${JSON.stringify(profile, null, 2)}\n`);
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(({ code }) => code === "profile-publication-transition-state"),
+      `${visibility}/${status}: ${JSON.stringify(result.findings)}`
+    );
+  }
+});
+
+test("repository audit rejects mutated publication fields and a missing publication command", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const profilePath = path.join(fixture, ".github", "codex-repository.json");
+  const baseProfile = {
+    ...JSON.parse(await fs.readFile(profilePath, "utf8")),
+    commands: expectedCommands,
+    publication_transition: expectedPublicationTransition
+  };
+  for (const [field, value] of [
+    ["target_visibility", "private"],
+    ["license", "Apache-2.0"],
+    ["design", "docs/other-design.md"],
+    ["audit_command", "npm test"]
+  ]) {
+    const profile = structuredClone(baseProfile);
+    profile.publication_transition[field] = value;
+    await fs.writeFile(profilePath, `${JSON.stringify(profile, null, 2)}\n`);
+    const result = auditRepository(fixture);
+    assert.ok(result.findings.some(({ code }) => code === "profile-publication-transition"), field);
+  }
+
+  const withoutPublication = structuredClone(baseProfile);
+  delete withoutPublication.commands.publication;
+  await fs.writeFile(profilePath, `${JSON.stringify(withoutPublication, null, 2)}\n`);
+  assert.ok(auditRepository(fixture).findings.some(({ code }) => code === "profile-commands"));
+});
+
+test("repository audit rejects license, contribution, and security contract mutations", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const cases = [
+    ["LICENSE", /Permission is hereby granted/, "Permission is withheld", "license-contract"],
+    ["CONTRIBUTING.md", /therapy\/framework policy/i, "product policy", "contribution-owner-boundary"],
+    ["SECURITY.md", /absolute home paths/i, "local paths", "security-excluded-data"]
+  ];
+  for (const [relative, pattern, replacement, expectedCode] of cases) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    await fs.writeFile(absolute, original.replace(pattern, replacement));
+    const result = auditRepository(fixture);
+    assert.ok(result.findings.some(({ code }) => code === expectedCode), `${relative}: ${JSON.stringify(result.findings)}`);
+    await fs.writeFile(absolute, original);
+  }
+});
+
+test("private transition audit rejects additive present-tense public claims in every entry document", async (t) => {
+  const fixture = await createAuditFixture(t);
+  for (const relative of ["README.md", "AGENTS.md", "docs/INDEX.md"]) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    await fs.writeFile(absolute, `${original}\nHosted GitHub visibility is public.\n`);
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(({ code, path: findingPath }) => code === "publication-premature-public-claim" && findingPath === relative),
+      `${relative}: ${JSON.stringify(result.findings)}`
+    );
+    await fs.writeFile(absolute, original);
+  }
+
+  const readmePath = path.join(fixture, "README.md");
+  const readme = await fs.readFile(readmePath, "utf8");
+  for (const contradiction of [
+    "The GitHub repository is public.",
+    "Repository visibility is already public.",
+    "Hosted repository visibility is now public.",
+    "The repository is public."
+  ]) {
+    await fs.writeFile(readmePath, `${readme}\n${contradiction}\n`);
+    const result = auditRepository(fixture);
+    assert.ok(result.findings.some(({ code }) => code === "publication-premature-public-claim"), contradiction);
+  }
+
+  await fs.writeFile(
+    readmePath,
+    `${readme}\nThe GitHub repository will become public only after verified readback.\nThe target visibility is public.\nThe public transition design is accepted.\n`
+  );
+  assert.ok(
+    auditRepository(fixture).findings.every(({ code }) => code !== "publication-premature-public-claim"),
+    "future, target, and design language must remain allowed"
+  );
+});
+
+test("repository audit rejects additive prohibitions of public contribution and private reporting", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const cases = [
+    [
+      "SECURITY.md",
+      "security-private-route",
+      [
+        "Do not use GitHub private vulnerability reporting once it is enabled.",
+        "Never use GitHub private vulnerability reporting.",
+        "GitHub private vulnerability reporting is forbidden.",
+        "GitHub private vulnerability reporting must not be used."
+      ]
+    ],
+    [
+      "CONTRIBUTING.md",
+      "contribution-public",
+      [
+        "Public contributions are forbidden through focused task branches and pull requests.",
+        "Public contributions are not accepted.",
+        "Public contributions are prohibited.",
+        "Do not accept public contributions."
+      ]
+    ]
+  ];
+  for (const [relative, expectedCode, prohibitions] of cases) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    for (const prohibition of prohibitions) {
+      await fs.writeFile(absolute, `${original}\n${prohibition}\n`);
+      const result = auditRepository(fixture);
+      assert.ok(result.findings.some(({ code }) => code === expectedCode), `${relative}/${prohibition}: ${JSON.stringify(result.findings)}`);
+    }
+    await fs.writeFile(absolute, original);
+  }
+
+  const securityPath = path.join(fixture, "SECURITY.md");
+  const security = await fs.readFile(securityPath, "utf8");
+  await fs.writeFile(securityPath, `${security}\nGitHub private vulnerability reporting is not enabled yet.\nDo not put excluded data into GitHub private vulnerability reporting.\n`);
+  assert.ok(auditRepository(fixture).findings.every(({ code }) => code !== "security-private-route"));
+
+  const contributingPath = path.join(fixture, "CONTRIBUTING.md");
+  const contributing = await fs.readFile(contributingPath, "utf8");
+  await fs.writeFile(contributingPath, `${contributing}\nPublic contributions do not grant product authority.\nNot every public contribution is accepted.\n`);
+  assert.ok(auditRepository(fixture).findings.every(({ code }) => code !== "contribution-public"));
+});
+
+test("public-posture integrity rejects unrecognized additive contradictions and arbitrary prose", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const contradictions = [
+    ["README.md", "This repository is publicly visible on GitHub."],
+    ["AGENTS.md", "GitHub exposes this repository to everyone."],
+    ["docs/INDEX.md", "Anyone can view the hosted repository now."],
+    ["SECURITY.md", "Private vulnerability reports are not permitted."],
+    ["CONTRIBUTING.md", "External public contributions will be rejected."],
+    ["CONTRIBUTING.md", "Only private collaborators may contribute."]
+  ];
+  for (const [relative, contradiction] of contradictions) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    await fs.writeFile(absolute, `${original}\n${contradiction}\n`);
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(({ code, path: findingPath }) => code === "public-posture-integrity" && findingPath === relative),
+      `${relative}/${contradiction}: ${JSON.stringify(result.findings)}`
+    );
+    await fs.writeFile(absolute, original);
+  }
+
+  for (const relative of ["README.md", "AGENTS.md", "docs/INDEX.md", "SECURITY.md", "CONTRIBUTING.md"]) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    await fs.writeFile(absolute, `${original}\nEditorial note with no policy keywords.\n`);
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(({ code, path: findingPath }) => code === "public-posture-integrity" && findingPath === relative),
+      `${relative}: arbitrary append must require reviewed digest maintenance`
+    );
+    await fs.writeFile(absolute, original);
+  }
+});
+
+test("public-posture integrity maintenance requires one reviewed content-and-digest change", async () => {
+  assert.match(
+    await read("AGENTS.md"),
+    /any legitimate edit to `README\.md`, `AGENTS\.md`, `docs\/INDEX\.md`, `SECURITY\.md`, or `CONTRIBUTING\.md`[^\n]*Task 9[^\n]*must update the reviewed SHA-256 bindings in `scripts\/audit-repository\.mjs` in the same reviewed change/
+  );
 });
 
 test("machine-readable repository audit passes repository-visible controls", async () => {
