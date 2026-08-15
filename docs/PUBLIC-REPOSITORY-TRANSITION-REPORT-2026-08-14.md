@@ -15,11 +15,13 @@ This report is the bounded disclosure and hosted-control evidence for the existi
 - Fail-closed hosted-audit repair pull request: [7](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/7)
 - Pre-disclosure exact `main`: `22179212afd26fc2cc3d89ac9cecdfeedfc8b4e0`, tree `c42df8d7612b9f094b6a27b1c731170522d69400`
 - Public CodeQL repair pull request: [8](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/8)
-- Current protected public `main`: `956b17cc008fe68b6d9f5e9c36f002066aa9732a`, tree `3c309fccfd3a66316fb95b66be654ad4b74b7449`
-- Public hosted-evidence branch: `codex/public-hosted-evidence-2026-08-14`, based exactly on that protected public `main`
+- Public CodeQL repair squash merge: `956b17cc008fe68b6d9f5e9c36f002066aa9732a`, tree `3c309fccfd3a66316fb95b66be654ad4b74b7449`
+- Public hosted-evidence pull request: [9](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9), reviewed head `7bf2b1a706aab6a7d9c36070b15590153c652e2a`, tree `4ff2a229a628bf0f9dc1a11abb23a88cd6068e18`
+- Public hosted-evidence squash merge and Task 10 reconciliation baseline: `0ccb120442292653a11676ad312f18092944b5a1`, exact reviewed tree
+- Durable self-referential merge receipt: [PR 9 comment 5300990615](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615)
 - Canonical recovery checkpoint: `state/CODEX-CURRENT-STATE.md`
 
-The immutable commit/tree containing this report and the future squash-merge identity are recorded by Git, pull request 2, its exact-head checks, and the post-merge PR/issue comment. A commit cannot embed its own identity without changing it.
+The containing Task 9 commit could not embed its own immutable squash-merge identity. Git, pull request 9, its exact-head checks, and the post-merge PR/issue receipts now record that identity without a self-changing source commit.
 
 ## Pre-disclosure gates and publication audits
 
@@ -118,6 +120,8 @@ At Task 9 recovery:
 
 At the final precommit ref refresh, `main` and `stable` were unchanged. Generated `runtime-diagnostics` had independently advanced to `31d0a6140ae18a00884f987326caeb9064d65607`; the task fetched and audited that ref but did not merge it into source.
 
+At the Task 10 reconciliation readback, `main=0ccb120442292653a11676ad312f18092944b5a1` retained the exact reviewed Task 9 tree, `stable=110ee5342e27d8f1bd3d11cc2be4d85926c255b1` remained unchanged, and generated `runtime-diagnostics=0480876c5dffe38f19a00711efd3df89c3cf6419` remained separate and unmerged.
+
 ## Public hosted-evidence pull request
 
 Task 9 changes exactly these ten paths. The tenth path, `.github/dependabot.yml`, is the bounded executable repair required by independent review after the initial nine-file candidate exposed missing production npm update coverage:
@@ -135,7 +139,14 @@ Task 9 changes exactly these ten paths. The tenth path, `.github/dependabot.yml`
 | `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md` | Current compliance evidence and terminal label. |
 | `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md` | This disclosure/hosted-control report. |
 
-The exact pull request URL, final head/tree, final-head `deterministic-package`, `workflow-policy`, and `codeql-javascript` run IDs, merge SHA, final `main`, and issue 4 result are recorded in the pull request body/top-level comment and issue after they exist. The protected pull request may merge only when all three exact contexts are green and conversations are resolved.
+Pull request [9](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9) completed the protected evidence path with reviewed head `7bf2b1a706aab6a7d9c36070b15590153c652e2a`, tree `4ff2a229a628bf0f9dc1a11abb23a88cd6068e18`, and squash merge `0ccb120442292653a11676ad312f18092944b5a1` whose tree matches exactly. The [durable receipt](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615) records protection gating, final refs, hosted readback, and issue 4 disposition.
+
+| Check | Run / job | Result |
+|---|---|---|
+| `deterministic-package` | `31869840311` / `94976658513` | success on exact reviewed head |
+| `workflow-policy` | `31869840270` / `94976658502` | success on exact reviewed head |
+| `codeql-javascript` | `31869840222` / `94976658119` | success on exact reviewed head |
+| GitHub Advanced Security `CodeQL` | check `94976762584` | success |
 
 Task 9 baseline and TDD evidence:
 
@@ -148,7 +159,7 @@ Task 9 baseline and TDD evidence:
 - Focused final-profile/hosted-evidence GREEN: PASS 4/4. Full repository-compliance suite: PASS 22/22. Combined publication/repository/workflow suite: PASS 110/110.
 - `npm run audit:repository`: PASS with zero errors and one warning solely for the installed-App readback. `npm test`: PASS 382/382. `npm run graph:test`: PASS 12/12. `npm run therapy-lessons:verify`: PASS 5/5 with four active-runtime lessons. Real-host `npm run verify`: final `VERDICT PASS`.
 - After refreshing all hosted refs, `npm run audit:publication`: PASS, 49,780 records and zero findings; refs 26, commits 138, objects 1,367, blobs 686. `npm run audit:publication:hosted`: PASS, 49,999 records and zero findings; the same Git counts plus branches 8, issues 1, pull requests 7, issue comments 7, review comments 1, reviews 1, Actions runs 49, logs 49, and artifacts 0.
-- Exact repaired containing-commit reruns and two independent approvals are recorded in the pull request before publication/merge; no future CI or merge success is inferred here.
+- Exact repaired containing-commit reruns passed 113/113 focused tests, 385/385 complete tests, graph 12/12, therapy verification 5/5, both publication audits with zero findings, repository audit with the sole App-permission warning, and real-host `npm run verify` with final `VERDICT PASS`. Two independent reviews approved the frozen head before publication, and the exact protected checks above then succeeded.
 
 ## Policy, privacy, release, and runtime non-effects
 
@@ -168,7 +179,7 @@ Task 9 baseline and TDD evidence:
 
 ## Issue 4 and remaining action
 
-Issue [4](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4) remains open. After the protected Task 9 merge, its durable disposition is reduced to one action:
+Issue 4 [remains open](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4) solely for one action:
 
 > Use a GitHub App-authorized token to enumerate installations accessible to the user, select `u-dont-existDOTcom/innerSignalGraph`, and record only safe repository-scoped installed-App permission names.
 

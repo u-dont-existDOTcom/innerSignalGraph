@@ -101,6 +101,21 @@ const expectedPublicGithubControls = {
   private_vulnerability_reporting: "enabled",
   github_app_permissions: "unverified"
 };
+const publicCloseoutReceipt = {
+  pullRequest: "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9",
+  receipt: "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615",
+  head: "7bf2b1a706aab6a7d9c36070b15590153c652e2a",
+  tree: "4ff2a229a628bf0f9dc1a11abb23a88cd6068e18",
+  merge: "0ccb120442292653a11676ad312f18092944b5a1",
+  deterministicRun: "31869840311",
+  deterministicJob: "94976658513",
+  workflowRun: "31869840270",
+  workflowJob: "94976658502",
+  codeqlRun: "31869840222",
+  codeqlJob: "94976658119",
+  advancedCodeqlCheck: "94976762584",
+  issue: "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4"
+};
 
 async function read(relative) {
   return await fs.readFile(path.join(root, relative), "utf8");
@@ -208,6 +223,83 @@ test("repository audit rejects completed publication-evidence commit steps in th
       ),
       `${staleStep}: ${JSON.stringify(result.findings)}`
     );
+  }
+});
+
+test("public closeout audit rejects active completed Task 9 work and incomplete merge receipts", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const publicReportPath = "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md";
+  const complianceReportPath = "docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md";
+  const mutations = [
+    {
+      relative: checkpointPath,
+      stale: "- Finish the public hosted-evidence review, then freeze the final Task 9 commit."
+    },
+    {
+      relative: checkpointPath,
+      stale: "- Create the protected public hosted-evidence pull request and wait for its required checks."
+    },
+    {
+      relative: checkpointPath,
+      stale: "- Squash-merge PR 9 only after its exact reviewed tree is green."
+    },
+    {
+      relative: checkpointPath,
+      stale: "- Task 10 owns final exact-main verification after the Task 9 merge."
+    },
+    {
+      relative: checkpointPath,
+      stale: "- Current Task 9 branch: `codex/public-hosted-evidence-2026-08-14`; exact base `956b17cc008fe68b6d9f5e9c36f002066aa9732a`."
+    },
+    {
+      relative: publicReportPath,
+      stale: "- Current protected public `main`: `956b17cc008fe68b6d9f5e9c36f002066aa9732a`."
+    },
+    {
+      relative: publicReportPath,
+      stale: "The future squash-merge identity and final checks will be recorded after they exist."
+    },
+    {
+      relative: complianceReportPath,
+      stale: "Every executable task is complete or in the final protected evidence pull-request path."
+    },
+    {
+      relative: complianceReportPath,
+      stale: "The protected evidence pull request may merge only after all three contexts succeed."
+    }
+  ];
+
+  for (const { relative, stale } of mutations) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    await fs.writeFile(absolute, `${original}\n${stale}\n`);
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(
+        ({ code, path: findingPath }) => code === "public-closeout-stale-evidence" && findingPath === relative
+      ),
+      `${relative}: ${stale}: ${JSON.stringify(result.findings)}`
+    );
+    await fs.writeFile(absolute, original);
+  }
+
+  const receiptBlock = Object.values(publicCloseoutReceipt).join("\n");
+  for (const relative of [checkpointPath, publicReportPath, complianceReportPath]) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    await fs.writeFile(absolute, `${original}\n${receiptBlock}\nIssue 4 remains OPEN solely for installed GitHub App permission readback.\n`);
+    const complete = await fs.readFile(absolute, "utf8");
+    for (const required of Object.values(publicCloseoutReceipt)) {
+      await fs.writeFile(absolute, complete.replaceAll(required, "missing-receipt-field"));
+      const result = auditRepository(fixture);
+      assert.ok(
+        result.findings.some(
+          ({ code, path: findingPath }) => code === "public-closeout-receipt" && findingPath === relative
+        ),
+        `${relative}: ${required}: ${JSON.stringify(result.findings)}`
+      );
+    }
+    await fs.writeFile(absolute, original);
   }
 });
 

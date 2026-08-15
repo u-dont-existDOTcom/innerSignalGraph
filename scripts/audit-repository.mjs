@@ -97,6 +97,32 @@ const PUBLIC_CONTRIBUTION_PROHIBITIONS = [
 ];
 const CHECKPOINT = "state/CODEX-CURRENT-STATE.md";
 const PUBLICATION_REPORT = "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md";
+const COMPLIANCE_REPORT = "docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md";
+const PUBLIC_CLOSEOUT_EVIDENCE_PATHS = [CHECKPOINT, PUBLICATION_REPORT, COMPLIANCE_REPORT];
+const PUBLIC_CLOSEOUT_RECEIPT_VALUES = [
+  "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9",
+  "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615",
+  "7bf2b1a706aab6a7d9c36070b15590153c652e2a",
+  "4ff2a229a628bf0f9dc1a11abb23a88cd6068e18",
+  "0ccb120442292653a11676ad312f18092944b5a1",
+  "31869840311",
+  "94976658513",
+  "31869840270",
+  "94976658502",
+  "31869840222",
+  "94976658119",
+  "94976762584",
+  "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4"
+];
+const PUBLIC_CLOSEOUT_STALE_PATTERNS = [
+  /^(?:-\s*)?(?:finish|complete|obtain|open|create|publish|squash-?merge|merge|update)\b[^\n]*(?:\btask 9\b|\bpublic hosted-evidence\b|\bpr 9\b|\bprotected evidence pull request\b)/im,
+  /\btask 10\b[^\n]*(?:owns|will|must)\b[^\n]*(?:after|once|future)\b/i,
+  /\bcurrent task 9 branch\b|\bexact task 9 base\b/i,
+  /\bcurrent protected public\s+`?main`?\b/i,
+  /\bfuture squash-merge\b|\brecorded after they exist\b/i,
+  /\bcomplete or in the final protected evidence pull-request path\b/i,
+  /\bprotected (?:evidence )?pull request may merge only (?:after|when)\b/i
+];
 const CONTROL_STATES = new Set(["verified", "enabled", "disabled", "unverified", "not_applicable"]);
 const EXPECTED_PUBLIC_GITHUB_CONTROLS = {
   default_branch_rules: "enabled",
@@ -471,6 +497,31 @@ function auditAuthority(root, findings, profile) {
       path: CHECKPOINT,
       message: "completed pre-publication evidence commit must not remain an active checkpoint instruction"
     });
+  }
+  if (profile?.visibility === "public" && profile.publication_transition?.status === "completed") {
+    for (const relative of PUBLIC_CLOSEOUT_EVIDENCE_PATHS) {
+      const evidence = relative === CHECKPOINT ? checkpoint : readText(root, relative, findings)?.toLowerCase() ?? null;
+      if (evidence !== null && PUBLIC_CLOSEOUT_STALE_PATTERNS.some((pattern) => pattern.test(evidence))) {
+        findings.push({
+          severity: "error",
+          code: "public-closeout-stale-evidence",
+          path: relative,
+          message: "completed Task 9 work must not remain an active or future current-state instruction"
+        });
+      }
+      if (
+        evidence !== null &&
+        (PUBLIC_CLOSEOUT_RECEIPT_VALUES.some((required) => !evidence.includes(required.toLowerCase())) ||
+          !/issue 4[^\n]*(?:remains|is) open[^\n]*sole(?:ly)?/i.test(evidence))
+      ) {
+        findings.push({
+          severity: "error",
+          code: "public-closeout-receipt",
+          path: relative,
+          message: "public closeout evidence must retain the exact PR 9 merge/check receipt and sole open issue 4 result"
+        });
+      }
+    }
   }
   const retired = readText(root, "docs/CURRENT-STATE.md", findings);
   requireMatch(retired, /superseded/i, "checkpoint-not-superseded", "docs/CURRENT-STATE.md", "competing checkpoint must be marked superseded", findings);
