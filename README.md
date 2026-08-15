@@ -2,24 +2,25 @@
 
 ## Authoritative start path
 
-Inner Signal is private, active, critical-risk software. Start with `AGENTS.md`, then `.github/codex-repository.json` for exact commands, `state/CODEX-CURRENT-STATE.md` for the resumable checkpoint, this README for branch/release/privacy authority, `AUTOPILOT.md` for runtime automation, and `docs/INDEX.md` for current evidence. `IMPLEMENTATION-REPORT-v0.15.2.md` is the current production implementation report; dated reports remain historical evidence rather than current instructions.
+Inner Signal is active, critical-risk software. Its GitHub repository remains private while the approved public transition is in `pre_publication_ready`; this is not a claim that hosted visibility is already public. Start with `AGENTS.md`, then `.github/codex-repository.json` for exact commands and transition state, `state/CODEX-CURRENT-STATE.md` for the resumable checkpoint, this README for branch/release/privacy authority, `AUTOPILOT.md` for runtime automation, and `docs/INDEX.md` for current evidence. The accepted transition design is `docs/superpowers/specs/2026-08-14-public-repository-transition-design.md`; `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md` is the reserved bounded evidence path for the completed pre-public audit and later hosted readback. `IMPLEMENTATION-REPORT-v0.15.2.md` is the current production implementation report; dated reports remain historical evidence rather than current instructions.
 
 The supported development runtime is exactly Node 24.18.0 with npm 11.16.0. The repository-visible path is:
 
 ```bash
 npm ci --ignore-scripts
 npm run audit:repository
+npm run audit:publication
 npm test
 npm run verify
 ```
 
-Provider checks are explicit opt-in live evidence and do not run in ordinary CI. `main` is development authority, `stable` is the sole installation/release source, and `runtime-diagnostics` is generated allowlisted status data that must never merge into source. Release promotion follows `docs/RELEASE-EVIDENCE.md` and remains distinct from merging development work to `main`.
+The local publication gate is `npm run audit:publication`. The authenticated hosted-surface gate is `npm run audit:publication:hosted`; it is required before the visibility transition and is not a hermetic ordinary-CI substitute. Provider checks are explicit opt-in live evidence and do not run in ordinary CI. `main` is development authority, `stable` is the sole installation/release source, and `runtime-diagnostics` is generated allowlisted status data that must never merge into source. Release promotion follows `docs/RELEASE-EVIDENCE.md` and remains distinct from merging development work to `main`.
 
 ## Hermetic Git updates, safe diagnostics, and remote progress
 
 v0.15.2 makes recovery verification deterministic. Promotion-failure tests now hold the recovery restart at an explicit boundary, prove the launcher stays alive during that transition, then synchronize on the public `/health` endpoint before checking development status, guide status, and the recovery ZIP. Test launchers own inert desktop-open commands and complete process-group cleanup, so package validation cannot open browser tabs or leave temporary services behind. The production recovery path and its time limits are unchanged.
 
-Inner Signal installs verified commits from the private `stable` branch and uses the separate `runtime-diagnostics` branch for strictly allowlisted failure records and one current progress heartbeat. `main` remains the development branch; `stable` is the only installation source; `runtime-diagnostics` is never merged into runtime source. Failure incidents remain append-only; `progress/<machineId>/current.json` is intentionally replaced with its existing blob SHA.
+Inner Signal installs verified commits from the `stable` branch and uses the separate `runtime-diagnostics` branch for strictly allowlisted failure records and one current progress heartbeat. `main` remains the development branch; `stable` is the only installation source; `runtime-diagnostics` is never merged into runtime source. Failure incidents remain append-only; `progress/<machineId>/current.json` is intentionally replaced with its existing blob SHA.
 
 One GitHub web login is required during bootstrap. After that, an ordinary launch retries queued incidents, checks `stable`, validates a candidate inside disposable home/config/state roots with GitHub and model credentials removed, preserves every pre-existing private file byte-for-byte, and swaps the runtime only after every deterministic gate passes. A failed ordinary update keeps the prior runtime usable. A failed bootstrap exits nonzero and never presents that older runtime as the requested release.
 

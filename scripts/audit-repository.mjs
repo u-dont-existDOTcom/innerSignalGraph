@@ -8,7 +8,6 @@ const EXPECTED_CLASSIFICATION = {
   repository_kind: "software",
   active: true,
   long_running: true,
-  visibility: "private",
   risk: "critical"
 };
 const EXPECTED_COMMANDS = {
@@ -17,9 +16,38 @@ const EXPECTED_COMMANDS = {
   graph: "npm run graph:test",
   package: "npm run verify",
   audit: "npm run audit:repository",
+  publication: "npm run audit:publication",
   verify: "npm run verify",
   current_state: "bash scripts/report-worktree.sh"
 };
+const EXPECTED_PUBLICATION_TRANSITION = {
+  target_visibility: "public",
+  license: "MIT",
+  design: "docs/superpowers/specs/2026-08-14-public-repository-transition-design.md",
+  audit_command: "npm run audit:publication:hosted"
+};
+const EXPECTED_MIT_LICENSE = `MIT License
+
+Copyright (c) 2026 u-dont-existDOTcom
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`;
 const CHECKPOINT = "state/CODEX-CURRENT-STATE.md";
 const CONTROL_STATES = new Set(["verified", "enabled", "disabled", "unverified", "not_applicable"]);
 const CHECKPOINT_HEADINGS = [
@@ -90,6 +118,34 @@ function auditProfile(root, findings) {
       findings.push({ severity: "error", code: `profile-${key}`, path: relative, message: `${key} must be ${JSON.stringify(expected)}` });
     }
   }
+  const transitionStatus = profile.publication_transition?.status;
+  const validTransitionState =
+    (profile.visibility === "private" && transitionStatus === "pre_publication_ready") ||
+    (profile.visibility === "public" && transitionStatus === "completed");
+  if (!validTransitionState) {
+    findings.push({
+      severity: "error",
+      code: "profile-publication-transition-state",
+      path: relative,
+      message: "visibility/status must be private/pre_publication_ready or public/completed"
+    });
+  }
+  const expectedTransition = { ...EXPECTED_PUBLICATION_TRANSITION, status: transitionStatus };
+  const transition = profile.publication_transition;
+  if (
+    !transition ||
+    typeof transition !== "object" ||
+    Array.isArray(transition) ||
+    Object.keys(transition).length !== Object.keys(expectedTransition).length ||
+    Object.entries(expectedTransition).some(([key, expected]) => transition[key] !== expected)
+  ) {
+    findings.push({
+      severity: "error",
+      code: "profile-publication-transition",
+      path: relative,
+      message: "publication_transition fields must match the exact repository contract"
+    });
+  }
   if (JSON.stringify(profile.commands) !== JSON.stringify(EXPECTED_COMMANDS)) {
     findings.push({ severity: "error", code: "profile-commands", path: relative, message: "exact verified command map is incomplete or changed" });
   }
@@ -111,7 +167,16 @@ function auditProfile(root, findings) {
 
 function auditAuthority(root, findings) {
   for (const relative of ["AGENTS.md", "README.md", "docs/INDEX.md"]) {
-    requireMatch(readText(root, relative, findings), /state\/CODEX-CURRENT-STATE\.md/, "authority-route", relative, `must route to ${CHECKPOINT}`, findings);
+    const entry = readText(root, relative, findings);
+    requireMatch(entry, /state\/CODEX-CURRENT-STATE\.md/, "authority-route", relative, `must route to ${CHECKPOINT}`, findings);
+    for (const [pattern, route] of [
+      [/docs\/superpowers\/specs\/2026-08-14-public-repository-transition-design\.md/, "transition design"],
+      [/docs\/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14\.md/, "transition report"],
+      [/`npm run audit:publication`/, "local publication audit"],
+      [/`npm run audit:publication:hosted`/, "hosted publication audit"]
+    ]) {
+      requireMatch(entry, pattern, "publication-route", relative, `must route to ${route}`, findings);
+    }
   }
   const checkpoint = readText(root, CHECKPOINT, findings)?.toLowerCase() ?? null;
   for (const heading of CHECKPOINT_HEADINGS) {
@@ -132,14 +197,56 @@ function auditAuthority(root, findings) {
 
 function auditPolicyDocuments(root, findings) {
   const security = readText(root, "SECURITY.md", findings)?.toLowerCase() ?? null;
-  requireMatch(security, /draft security advisor|private.*channel/, "security-private-route", "SECURITY.md", "missing private reporting route", findings);
-  requireMatch(security, /credential/, "security-credentials", "SECURITY.md", "missing credential boundary", findings);
-  requireMatch(security, /therapy/, "security-therapy-data", "SECURITY.md", "missing therapy-data boundary", findings);
+  for (const [pattern, message] of [
+    [/github private vulnerability reporting/, "missing GitHub private vulnerability reporting route"],
+    [/once (?:it is|this is) enabled/, "private vulnerability reporting must remain conditional until hosted enablement"],
+    [/draft security advisor/, "missing draft-advisory fallback"],
+    [/private.*(?:contact|channel)/, "missing private-contact fallback"],
+    [/synthetic/, "missing synthetic reproduction requirement"],
+    [/redacted/, "missing redacted reproduction requirement"]
+  ]) {
+    requireMatch(security, pattern, "security-private-route", "SECURITY.md", message, findings);
+  }
+  for (const excluded of [
+    "credentials",
+    "tokens",
+    "cookies",
+    ".env",
+    "private keys",
+    "browser chat",
+    "therapy/hypnosis content",
+    "prompts",
+    "model output/reasoning",
+    "raw sensitive logs",
+    "usernames",
+    "hostnames",
+    "ip addresses",
+    "absolute home paths"
+  ]) {
+    if (security !== null && !security.includes(excluded)) {
+      findings.push({ severity: "error", code: "security-excluded-data", path: "SECURITY.md", message: `missing excluded-data boundary: ${excluded}` });
+    }
+  }
 
   const contributing = readText(root, "CONTRIBUTING.md", findings)?.toLowerCase() ?? null;
-  requireMatch(contributing, /private/, "contribution-private", "CONTRIBUTING.md", "private contribution posture missing", findings);
-  requireMatch(contributing, /owner-controlled/, "contribution-owner", "CONTRIBUTING.md", "owner-controlled posture missing", findings);
-  requireMatch(contributing, /no public license|not grant.*license/, "contribution-license", "CONTRIBUTING.md", "license posture missing", findings);
+  for (const [pattern, code, message] of [
+    [/public contribution/, "contribution-public", "public contribution posture missing"],
+    [/focused.*branch/, "contribution-workflow", "focused branch workflow missing"],
+    [/pull request/, "contribution-workflow", "pull-request workflow missing"],
+    [/accepted contribution[^\n]*mit|mit[^\n]*accepted contribution/, "contribution-license", "accepted-contribution MIT grant missing"],
+    [/does not grant authority|do not grant authority/, "contribution-owner-boundary", "contribution authority boundary missing"],
+    [/therapy\/framework policy/, "contribution-owner-boundary", "therapy/framework owner boundary missing"],
+    [/model roles/, "contribution-owner-boundary", "model-role owner boundary missing"],
+    [/privacy scope/, "contribution-owner-boundary", "privacy-scope owner boundary missing"],
+    [/stable`? release/, "contribution-owner-boundary", "stable-release owner boundary missing"]
+  ]) {
+    requireMatch(contributing, pattern, code, "CONTRIBUTING.md", message, findings);
+  }
+
+  const license = readText(root, "LICENSE", findings);
+  if (license !== null && license !== EXPECTED_MIT_LICENSE) {
+    findings.push({ severity: "error", code: "license-contract", path: "LICENSE", message: "LICENSE must be the unmodified standard MIT text with the approved copyright line" });
+  }
 
   const release = `${readText(root, "docs/RELEASE-EVIDENCE.md", findings) ?? ""}\n${readText(root, ".github/RELEASE-EVIDENCE-TEMPLATE.md", findings) ?? ""}`.toLowerCase();
   for (const phrase of [
@@ -178,6 +285,9 @@ function auditRuntime(root, findings) {
   }
   if (packageJson?.scripts?.["audit:repository"] !== "node scripts/audit-repository.mjs") {
     findings.push({ severity: "error", code: "audit-command", path: "package.json", message: "audit:repository script is missing" });
+  }
+  if (packageJson?.scripts?.["audit:publication"] !== "node scripts/audit-publication.mjs") {
+    findings.push({ severity: "error", code: "publication-command", path: "package.json", message: "audit:publication script is missing" });
   }
 }
 

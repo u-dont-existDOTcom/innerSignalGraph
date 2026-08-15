@@ -11,8 +11,16 @@
     "graph": "npm run graph:test",
     "package": "npm run verify",
     "audit": "npm run audit:repository",
+    "publication": "npm run audit:publication",
     "verify": "npm run verify",
     "current_state": "bash scripts/report-worktree.sh"
+  },
+  "publication_transition": {
+    "target_visibility": "public",
+    "license": "MIT",
+    "status": "pre_publication_ready",
+    "design": "docs/superpowers/specs/2026-08-14-public-repository-transition-design.md",
+    "audit_command": "npm run audit:publication:hosted"
   },
   "current_state": "state/CODEX-CURRENT-STATE.md",
   "github_controls": {
