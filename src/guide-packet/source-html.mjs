@@ -4,14 +4,18 @@ function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+const HTML_ENTITIES = Object.freeze({
+  "&nbsp;": " ",
+  "&amp;": "&",
+  "&quot;": '"',
+  "&#39;": "'",
+  "&apos;": "'",
+  "&lt;": "<",
+  "&gt;": ">"
+});
+
 function decodeEntities(value) {
-  return value
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">");
+  return value.replace(/(?:&(?:nbsp|amp|quot|apos|lt|gt);|&#39;)/gi, (entity) => HTML_ENTITIES[entity.toLowerCase()]);
 }
 
 export function htmlToText(value) {

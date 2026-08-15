@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { access, chmod, mkdir, mkdtemp, open, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, mkdtemp, open, readFile, readdir, rename as fsRename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -13,6 +13,7 @@ import {
   runGitleaks,
   scanPublicationRecords
 } from "../src/compliance/publication-audit.mjs";
+import { withOpenedRegularFile } from "../src/core/opened-regular-file.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -1131,6 +1132,37 @@ test("artifact coverage scans every regular member without following symlinks", 
   );
 });
 
+test("artifact scanning reads the opened member inode after pathname replacement", async (context) => {
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-artifact-race-test-"));
+  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  const replacement = path.join(tempRoot, "replacement.txt");
+  await writeFile(replacement, "replacement member\n");
+  let replaced = false;
+  const fixture = makeHostedRunCommand({
+    artifactWriter: async (artifactRoot) => {
+      await mkdir(artifactRoot, { recursive: true });
+      await writeFile(path.join(artifactRoot, "safe.txt"), "trusted member\n");
+    }
+  });
+
+  const result = await collectHostedPublicationRecords({
+    repository: EXPECTED_REPOSITORY,
+    runCommand: fixture.runCommand,
+    tempRoot,
+    withOpenedFile: async (file, reader) => await withOpenedRegularFile(file, async (handle, openedStat) => {
+      if (!replaced && path.basename(file) === "safe.txt") {
+        await fsRename(file, `${file}.original`);
+        await symlink(replacement, file);
+        replaced = true;
+      }
+      return await reader(handle, openedStat);
+    })
+  });
+
+  assert.equal(replaced, true);
+  assert.equal(result.records.find(({ surface }) => surface === "artifact-member").text, "trusted member\n");
+});
+
 test("artifact download failure and malformed pagination fail hosted coverage closed", async (context) => {
   const artifactRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
   const malformedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
@@ -1802,6 +1834,36 @@ test("Gitleaks rejects report mode drift and symlink replacement before reading"
     { severity: "error", code: "audit-incomplete", surface: "gitleaks", identifier: "git:report" }
   ]);
   assert.equal(await readFile(outsideReport, "utf8"), "[]\n");
+});
+
+test("Gitleaks normalization reads each opened report inode after pathname replacement", async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-race-test-"));
+  const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-race-hosted-test-"));
+  const replacement = path.join(hostedRoot, "replacement.json");
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  await writeFile(replacement, "not-json\n", { mode: 0o600 });
+  let replacements = 0;
+
+  const result = await runGitleaks({
+    binary: "/synthetic/gitleaks",
+    root,
+    hostedRoot,
+    runCommand: async (_command, args) => {
+      const reportPath = args.find((argument) => argument.startsWith("--report-path=")).slice("--report-path=".length);
+      await writeFile(reportPath, "[]\n");
+      return { exitCode: 0, stdout: "", stderr: "" };
+    },
+    withOpenedFile: async (file, reader) => await withOpenedRegularFile(file, async (handle, openedStat) => {
+      await fsRename(file, `${file}.original`);
+      await symlink(replacement, file);
+      replacements += 1;
+      return await reader(handle, openedStat);
+    })
+  });
+
+  assert.equal(replacements, 2);
+  assert.equal(result.ok, true);
 });
 
 test("Gitleaks rejects zero-byte git and directory reports for every scanner exit", async (context) => {

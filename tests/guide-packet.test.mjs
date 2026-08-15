@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { createHash } from 'node:crypto';
 import { createStoredZip, readZipEntries } from '../src/core/zip.mjs';
-import { extractEditorBody, extractHtmlSections } from '../src/guide-packet/source-html.mjs';
+import { extractEditorBody, extractHtmlSections, htmlToText } from '../src/guide-packet/source-html.mjs';
 import { buildGuidePacket } from '../src/guide-packet/builder.mjs';
 import { verifyGuidePacket } from '../src/guide-packet/verifier.mjs';
 import { buildBehavioralDiff, buildDecisionCards } from '../src/guide-packet/diff.mjs';
@@ -52,6 +52,11 @@ test('candidate HTML exact editor-body hashes match the handoff', async () => {
   const sections = extractHtmlSections(innerChild, { guideId: 'inner-child', aliases: { 'When Love Is There but Doesn’t Feel Safe': 'IC.LOVE_UNSAFE' } });
   assert.ok(sections.some((item) => item.id === 'IC.LOVE_UNSAFE'));
   assert.ok(sections.some((item) => /Borrow One Function/.test(item.heading)));
+});
+
+test('HTML-to-text conversion decodes each entity exactly once', () => {
+  assert.equal(htmlToText('<p>&lt;b&gt;&amp;&quot;&#39;&nbsp;</p>'), `<b>&"' `);
+  assert.equal(htmlToText('<p>&amp;lt;script&amp;gt;</p>'), '&lt;script&gt;');
 });
 
 test('valid candidate packet verifies but remains candidate-only', async () => {

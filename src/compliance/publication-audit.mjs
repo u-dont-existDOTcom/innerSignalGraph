@@ -1,8 +1,9 @@
 import { execFile } from "node:child_process";
-import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { chmod, lstat, mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
+import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 
 const execFileAsync = promisify(execFile);
 const MAX_BLOB_BYTES = 20 * 1024 * 1024;
@@ -414,7 +415,7 @@ async function writePrivateFile(filePath, bytes) {
   }
 }
 
-async function listArtifactMembers(artifactRoot, artifactId) {
+async function listArtifactMembers(artifactRoot, artifactId, withOpenedFile) {
   const root = path.resolve(artifactRoot);
   const rootStat = await lstat(root).catch(() => undefined);
   if (!rootStat?.isDirectory() || rootStat.isSymbolicLink()) {
@@ -446,18 +447,25 @@ async function listArtifactMembers(artifactRoot, artifactId) {
         continue;
       }
       if (!memberStat.isFile()) throw hostedIncomplete(`artifact:${artifactId}:member:${memberIndex}:type`);
-      if (memberStat.size > MAX_ARTIFACT_MEMBER_BYTES) {
-        throw hostedIncomplete(`artifact:${artifactId}:member:${memberIndex}:size-limit`);
+      try {
+        await withOpenedFile(absolutePath, async (handle, openedStat) => {
+          if (openedStat.size > MAX_ARTIFACT_MEMBER_BYTES) {
+            throw hostedIncomplete(`artifact:${artifactId}:member:${memberIndex}:size-limit`);
+          }
+          aggregateBytes += openedStat.size;
+          if (aggregateBytes > MAX_ARTIFACT_TOTAL_BYTES) {
+            throw hostedIncomplete(`artifact:${artifactId}:aggregate-size-limit`);
+          }
+          await handle.chmod(0o600);
+          const bytes = await handle.readFile().catch(() => {
+            throw hostedIncomplete(`artifact:${artifactId}:member:${memberIndex}:read`);
+          });
+          members.push({ relativePath, text: bytes.toString("utf8") });
+        });
+      } catch (error) {
+        if (error?.code === "audit-incomplete") throw error;
+        throw hostedIncomplete(`artifact:${artifactId}:member:${memberIndex}:type`);
       }
-      aggregateBytes += memberStat.size;
-      if (aggregateBytes > MAX_ARTIFACT_TOTAL_BYTES) {
-        throw hostedIncomplete(`artifact:${artifactId}:aggregate-size-limit`);
-      }
-      await chmod(absolutePath, 0o600);
-      const bytes = await readFile(absolutePath).catch(() => {
-        throw hostedIncomplete(`artifact:${artifactId}:member:${memberIndex}:read`);
-      });
-      members.push({ relativePath, text: bytes.toString("utf8") });
     }
   }
 
@@ -468,10 +476,12 @@ async function listArtifactMembers(artifactRoot, artifactId) {
 export async function collectHostedPublicationRecords({
   repository,
   runCommand = defaultRunCommand,
-  tempRoot
+  tempRoot,
+  withOpenedFile = withOpenedRegularFile
 }) {
   if (repository !== EXPECTED_REPOSITORY) throw hostedIncomplete("repository-identity");
   if (typeof tempRoot !== "string" || tempRoot.length === 0) throw hostedIncomplete("temporary-root");
+  if (typeof withOpenedFile !== "function") throw hostedIncomplete("temporary-root");
 
   const privateRoot = path.resolve(tempRoot);
   await mkdir(privateRoot, { recursive: true, mode: 0o700 }).catch(() => {
@@ -660,7 +670,7 @@ export async function collectHostedPublicationRecords({
     } catch {
       throw hostedIncomplete(`artifact:${artifactId}:download`);
     }
-    const members = await listArtifactMembers(artifactRoot, artifactId);
+    const members = await listArtifactMembers(artifactRoot, artifactId, withOpenedFile);
     if (members.length === 0) throw hostedIncomplete(`artifact:${artifactId}:members-empty`);
     members.forEach((member, memberIndex) => {
       const memberIdentifier = `artifact:${artifactId}:member:${memberIndex + 1}`;
@@ -724,25 +734,16 @@ function isSafeHostedIdentifier(identifier) {
   );
 }
 
-async function readGitleaksReport({ reportPath, scanRoot, kind, exitCode, hostedFileIdentifiers }) {
-  const reportStat = await lstat(reportPath).catch(() => undefined);
-  if (
-    !reportStat ||
-    !reportStat.isFile() ||
-    reportStat.isSymbolicLink() ||
-    (reportStat.mode & 0o777) !== 0o600 ||
-    reportStat.size > MAX_BLOB_BYTES
-  ) {
-    return { findings: [gitleaksIncomplete(`${kind}:report`)], scannedRecords: 0 };
-  }
-  if (reportStat.size === 0) {
-    return { findings: [gitleaksIncomplete(`${kind}:report`)], scannedRecords: 0 };
-  }
-
+async function readGitleaksReport({ reportPath, scanRoot, kind, exitCode, hostedFileIdentifiers, withOpenedFile }) {
   let decoded;
   try {
-    const bytes = await readFile(reportPath);
-    decoded = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    decoded = await withOpenedFile(reportPath, async (handle, reportStat) => {
+      if ((reportStat.mode & 0o777) !== 0o600 || reportStat.size === 0 || reportStat.size > MAX_BLOB_BYTES) {
+        throw new Error("invalid-report-file");
+      }
+      const bytes = await handle.readFile();
+      return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    });
   } catch {
     return { findings: [gitleaksIncomplete(`${kind}:report`)], scannedRecords: 0 };
   }
@@ -817,7 +818,8 @@ export async function runGitleaks({
   root,
   hostedRoot,
   hostedFileIdentifiers = new Map(),
-  runCommand = defaultRunCommand
+  runCommand = defaultRunCommand,
+  withOpenedFile = withOpenedRegularFile
 }) {
   const repositoryRoot = path.resolve(root);
   const privateHostedRoot = path.resolve(hostedRoot);
@@ -877,7 +879,8 @@ export async function runGitleaks({
         scanRoot: target.scanRoot,
         kind: target.kind,
         exitCode,
-        hostedFileIdentifiers
+        hostedFileIdentifiers,
+        withOpenedFile
       });
       findings.push(...normalized.findings);
       scannedRecords += normalized.scannedRecords;
