@@ -3,7 +3,7 @@
   "repository_kind": "software",
   "active": true,
   "long_running": true,
-  "visibility": "private",
+  "visibility": "public",
   "risk": "critical",
   "commands": {
     "bootstrap": "npm ci --ignore-scripts",
@@ -18,43 +18,93 @@
   "publication_transition": {
     "target_visibility": "public",
     "license": "MIT",
-    "status": "pre_publication_ready",
+    "status": "completed",
     "design": "docs/superpowers/specs/2026-08-14-public-repository-transition-design.md",
     "audit_command": "npm run audit:publication:hosted"
   },
   "current_state": "state/CODEX-CURRENT-STATE.md",
   "github_controls": {
-    "default_branch_rules": "disabled",
-    "stable_branch_rules": "disabled",
-    "secret_scanning": "disabled",
-    "push_protection": "disabled",
-    "code_scanning": "disabled",
+    "default_branch_rules": "enabled",
+    "stable_branch_rules": "enabled",
+    "secret_scanning": "enabled",
+    "push_protection": "enabled",
+    "code_scanning": "enabled",
     "actions_default_permissions": "verified",
     "actions_allowed_set": "enabled",
     "actions_sha_pinning": "enabled",
     "vulnerability_alerts": "enabled",
     "dependabot_alerts": "enabled",
+    "dependabot_security_updates": "enabled",
     "automated_security_fixes": "enabled",
-    "private_vulnerability_reporting": "not_applicable",
+    "private_vulnerability_reporting": "enabled",
     "github_app_permissions": "unverified"
   },
   "github_controls_evidence": {
-    "checked_at": "2026-08-15T02:24:28Z",
-    "source": "GitHub REST API and repository metadata",
-    "branch_rules": "Repository remains private. Rulesets plus main and stable protection reads return HTTP 403 plan limitations; both branches read back protected=false. Heads: main=7d139f1ab4972fceabcae45529021eee71bc0c4f and stable=110ee5342e27d8f1bd3d11cc2be4d85926c255b1.",
-    "security": "Vulnerability-alert read returns HTTP 204, automated-security-fixes read returns HTTP 200, and Dependabot alerts are readable with zero current alerts. Prior secret-scanning and push-protection enable attempts returned HTTP 422 unavailable; code scanning currently returns HTTP 403; private vulnerability reporting returns HTTP 404 while private.",
-    "actions": "Read back enabled=true, allowed_actions=selected, github_owned_allowed=true, verified_allowed=false, patterns_allowed=[], sha_pinning_required=true, default_workflow_permissions=read, can_approve_pull_request_reviews=false.",
-    "access_inventory": "One collaborator; zero deploy keys, webhooks, and environments. Repository-scoped GitHub App installation permissions remain UNVERIFIED because the OAuth token cannot use the App-JWT-only endpoint.",
-    "hardening_issue": "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4"
+    "checked_at": "2026-08-15T05:39:15Z",
+    "source": "GitHub REST API readback and verified GitHub Actions results",
+    "visibility": "public; private=false; default branch main; repository identity unchanged",
+    "hosted_transition": {
+      "write_invoked_at": "2026-08-15T03:51:54.954Z",
+      "public_readback_completed_at": "2026-08-15T03:52:03.707Z",
+      "github_server_mutation_at": "unverified"
+    },
+    "branch_protection": {
+      "required_contexts": [
+        "deterministic-package",
+        "workflow-policy",
+        "codeql-javascript"
+      ],
+      "main": {
+        "protected": true,
+        "strict": true,
+        "enforce_admins": true,
+        "required_approvals": 0,
+        "required_conversation_resolution": true,
+        "required_linear_history": true,
+        "allow_force_pushes": false,
+        "allow_deletions": false
+      },
+      "stable": {
+        "protected": true,
+        "strict": true,
+        "enforce_admins": true,
+        "required_approvals": 0,
+        "required_conversation_resolution": true,
+        "required_linear_history": true,
+        "allow_force_pushes": false,
+        "allow_deletions": false
+      }
+    },
+    "security": "Secret scanning, push protection, private vulnerability reporting, vulnerability alerts, Dependabot alerts and security updates, automated security fixes, and CodeQL are enabled. Exact-main CodeQL has zero open alerts.",
+    "dependency_updates": "Repository policy enforces exact bounded monthly root Dependabot schedules for npm and GitHub Actions; this file-backed configuration does not by itself prove hosted execution.",
+    "actions": "Enabled with selected GitHub-owned Actions only, reviewed full-SHA enforcement, read-only default workflow permissions, and pull-request approval disabled.",
+    "codeql_run": {
+      "id": 31865348513,
+      "job_id": 94965480118,
+      "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/actions/runs/31865348513",
+      "sha": "956b17cc008fe68b6d9f5e9c36f002066aa9732a",
+      "check": "codeql-javascript",
+      "conclusion": "success",
+      "analysis_ids": [
+        1622692668,
+        1622690884
+      ],
+      "open_alerts": 0
+    },
+    "access_inventory": "One collaborator; zero deploy keys, webhooks, and environments. Repository-scoped installed GitHub App permissions remain UNVERIFIED because GET /user/installations returns HTTP 403 for the available OAuth token.",
+    "hardening_issue": "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4",
+    "hardening_issue_state": "open",
+    "hardening_issue_remaining_action": "Use a GitHub App-authorized token to enumerate installations accessible to the user, select this repository, and verify repository-scoped installed-App permissions; record only safe permission names and keep issue 4 open until this is read back.",
+    "terminal_status": "BLOCKED"
   },
   "publication_evidence": {
-    "checked_at": "2026-08-15T02:24:28Z",
-    "subject_commit": "47e6d33078b9ca8bc3ddf2bed1a09a02b111c375",
-    "subject_tree": "c81a7b0f28e07abb7a77e6f89fcfe9522726824d",
-    "local_scanned_records": 43725,
-    "hosted_scanned_records": 43888,
+    "checked_at": "2026-08-15T03:52:03.707Z",
+    "subject_commit": "22179212afd26fc2cc3d89ac9cecdfeedfc8b4e0",
+    "subject_tree": "c42df8d7612b9f094b6a27b1c731170522d69400",
+    "local_scanned_records": 46785,
+    "hosted_scanned_records": 46977,
     "findings": 0,
     "report": "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md"
   },
-  "audit_note": "The repository remains private. Exact commands must be rerun on the final containing commit, whose identity cannot be embedded in its own contents and must be recorded in Git and the pull request. Hosted states require fresh GitHub API readback; files and CODEOWNERS do not prove enforcement. Stable promotion and therapy/framework policy remain owner-gated."
+  "audit_note": "The repository is public and the planned hosted controls are enabled and read back, except repository-scoped installed GitHub App permissions remain UNVERIFIED. Exact commands must be rerun on the final containing commit, whose identity cannot be embedded in its own contents and must be recorded in Git and the pull request. Files and CODEOWNERS do not prove hosted enforcement. Stable promotion and therapy/framework policy remain owner-gated."
 }

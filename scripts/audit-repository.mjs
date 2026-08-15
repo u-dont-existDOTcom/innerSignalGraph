@@ -56,6 +56,11 @@ const PRIVATE_ENTRY_CLAIMS = {
   "AGENTS.md": "The repository remains private until GitHub visibility is changed and read back; `pre_publication_ready` is not public visibility.",
   "docs/INDEX.md": "The repository is still private while `.github/codex-repository.json` records `pre_publication_ready`. Neither the MIT license nor public-ready documentation proves that GitHub visibility or hosted controls have changed."
 };
+const PUBLIC_ENTRY_CLAIMS = {
+  "README.md": "The existing GitHub repository is public, and the publication transition is complete.",
+  "AGENTS.md": "The GitHub repository is public and the publication transition is complete.",
+  "docs/INDEX.md": "The GitHub repository is public and `.github/codex-repository.json` records the completed publication transition."
+};
 const SECURITY_CONTRACT = {
   privateReporting: "Use GitHub private vulnerability reporting once it is enabled.",
   fallback: "Until then, or if that route is unavailable, create a draft security advisory in this repository's **Security → Advisories** area or contact the repository owner through the already established private collaboration channel. If neither fallback is available, open only a metadata-only issue asking for a private contact path; do not include exploit details or sensitive material.",
@@ -68,9 +73,9 @@ const CONTRIBUTION_CONTRACT = {
   ownerBoundary: "Contribution does not grant authority over owner-gated therapy/framework policy, owner decision cards, model roles, privacy scope, or stable release approval."
 };
 const PUBLIC_POSTURE_SHA256 = {
-  "README.md": "1982122b74650e4ef36683fab3c68ef721b4e2ed7aab4adf5328cdebb24d79ce",
-  "AGENTS.md": "b4c91596a4abc7e4430eb89cad4689a587b25d58c0eb869d05a27bdc07195e02",
-  "docs/INDEX.md": "93c2124004ec9a40823df899f270c3971da914b5dc63572f4c744079e4d8c565",
+  "README.md": "cae2b2fc414804044d7a84b17960dc60f3986a8e0862faf4464633e722eaf49d",
+  "AGENTS.md": "1c8b651f371ec3037bfbe62f6938f2dedf94a7cbbebf50c9f022669df6a8c97a",
+  "docs/INDEX.md": "c510a338cd4d594d33f8f73e2f14ac3dccbc9d3319d487c936b58293705cded9",
   "SECURITY.md": "b6b40e701cddb53fe49a1676c2e01cf15a8a07a28553bf78bde3a91b42e1d72a",
   "CONTRIBUTING.md": "3e36a03597382a82cb628f0daa1c9595ad86b57ffa339873dcf18be1efdd40c4"
 };
@@ -93,6 +98,71 @@ const PUBLIC_CONTRIBUTION_PROHIBITIONS = [
 const CHECKPOINT = "state/CODEX-CURRENT-STATE.md";
 const PUBLICATION_REPORT = "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md";
 const CONTROL_STATES = new Set(["verified", "enabled", "disabled", "unverified", "not_applicable"]);
+const EXPECTED_PUBLIC_GITHUB_CONTROLS = {
+  default_branch_rules: "enabled",
+  stable_branch_rules: "enabled",
+  secret_scanning: "enabled",
+  push_protection: "enabled",
+  code_scanning: "enabled",
+  actions_default_permissions: "verified",
+  actions_allowed_set: "enabled",
+  actions_sha_pinning: "enabled",
+  vulnerability_alerts: "enabled",
+  dependabot_alerts: "enabled",
+  dependabot_security_updates: "enabled",
+  automated_security_fixes: "enabled",
+  private_vulnerability_reporting: "enabled",
+  github_app_permissions: "unverified"
+};
+const EXPECTED_CODEQL_EVIDENCE = {
+  id: 31865348513,
+  job_id: 94965480118,
+  url: "https://github.com/u-dont-existDOTcom/innerSignalGraph/actions/runs/31865348513",
+  sha: "956b17cc008fe68b6d9f5e9c36f002066aa9732a",
+  check: "codeql-javascript",
+  conclusion: "success",
+  analysis_ids: [1622692668, 1622690884],
+  open_alerts: 0
+};
+const EXPECTED_PROTECTED_BRANCH = {
+  protected: true,
+  strict: true,
+  enforce_admins: true,
+  required_approvals: 0,
+  required_conversation_resolution: true,
+  required_linear_history: true,
+  allow_force_pushes: false,
+  allow_deletions: false
+};
+const EXPECTED_BRANCH_PROTECTION_EVIDENCE = {
+  required_contexts: ["deterministic-package", "workflow-policy", "codeql-javascript"],
+  main: EXPECTED_PROTECTED_BRANCH,
+  stable: EXPECTED_PROTECTED_BRANCH
+};
+const DEPENDABOT_PATH = ".github/dependabot.yml";
+const EXPECTED_DEPENDABOT = {
+  version: 2,
+  updates: [
+    {
+      "package-ecosystem": "github-actions",
+      directory: "/",
+      schedule: { interval: "monthly" },
+      "open-pull-requests-limit": 5,
+      labels: ["dependencies", "github-actions"],
+      "commit-message": { prefix: "chore(actions)" }
+    },
+    {
+      "package-ecosystem": "npm",
+      directory: "/",
+      schedule: { interval: "monthly" },
+      "open-pull-requests-limit": 5,
+      labels: ["dependencies", "npm"],
+      "commit-message": { prefix: "chore(deps)" }
+    }
+  ]
+};
+const EXPECTED_DEPENDENCY_UPDATE_EVIDENCE =
+  "Repository policy enforces exact bounded monthly root Dependabot schedules for npm and GitHub Actions; this file-backed configuration does not by itself prove hosted execution.";
 const CHECKPOINT_HEADINGS = [
   "goal",
   "authority / baseline",
@@ -278,6 +348,64 @@ function auditProfile(root, findings) {
       }
     }
   }
+  if (profile.visibility === "public" && transitionStatus === "completed") {
+    const evidence = profile.github_controls_evidence;
+    if (!isDeepStrictEqual(profile.github_controls, EXPECTED_PUBLIC_GITHUB_CONTROLS)) {
+      findings.push({
+        severity: "error",
+        code: "profile-public-hosted-controls",
+        path: relative,
+        message: "public/completed profile must retain the exact verified control map and sole unverified installed-App boundary"
+      });
+    }
+    if (!isDeepStrictEqual(evidence?.codeql_run, EXPECTED_CODEQL_EVIDENCE)) {
+      findings.push({
+        severity: "error",
+        code: "profile-codeql-evidence",
+        path: relative,
+        message: "public/completed profile must record the exact successful CodeQL run, SHA, analyses, and open-alert count"
+      });
+    }
+    if (!isDeepStrictEqual(evidence?.branch_protection, EXPECTED_BRANCH_PROTECTION_EVIDENCE)) {
+      findings.push({
+        severity: "error",
+        code: "profile-branch-protection-evidence",
+        path: relative,
+        message: "public/completed profile must record exact main/stable protection and required contexts"
+      });
+    }
+    if (evidence?.dependency_updates !== EXPECTED_DEPENDENCY_UPDATE_EVIDENCE) {
+      findings.push({
+        severity: "error",
+        code: "profile-dependency-update-evidence",
+        path: relative,
+        message: "public/completed profile must distinguish enforced Dependabot configuration from hosted execution evidence"
+      });
+    }
+    if (
+      !/^2026-08-15T\d{2}:\d{2}:\d{2}Z$/.test(evidence?.checked_at ?? "") ||
+      evidence?.source !== "GitHub REST API readback and verified GitHub Actions results"
+    ) {
+      findings.push({
+        severity: "error",
+        code: "profile-hosted-evidence-source",
+        path: relative,
+        message: "public/completed profile must record the bounded UTC readback time and exact hosted evidence source"
+      });
+    }
+    if (
+      evidence?.hardening_issue_state !== "open" ||
+      !/GitHub App-authorized token/.test(evidence?.hardening_issue_remaining_action ?? "") ||
+      !/repository-scoped installed-App permissions/.test(evidence?.hardening_issue_remaining_action ?? "")
+    ) {
+      findings.push({
+        severity: "error",
+        code: "profile-hardening-issue-disposition",
+        path: relative,
+        message: "public/completed profile must keep issue 4 open with the exact installed-App permission action"
+      });
+    }
+  }
   return profile;
 }
 
@@ -310,6 +438,15 @@ function auditAuthority(root, findings, profile) {
         "private/pre_publication_ready entry document contains a present-tense hosted-public assertion",
         findings
       );
+    } else if (profile?.visibility === "public" && profile.publication_transition?.status === "completed") {
+      if (!entry?.includes(PUBLIC_ENTRY_CLAIMS[relative]) || entry.includes(PRIVATE_ENTRY_CLAIMS[relative])) {
+        findings.push({
+          severity: "error",
+          code: "publication-stale-private-claim",
+          path: relative,
+          message: "public/completed entry document must state the verified public posture and retire the private/pre-public claim"
+        });
+      }
     }
   }
   const checkpoint = readText(root, CHECKPOINT, findings)?.toLowerCase() ?? null;
@@ -464,6 +601,41 @@ function auditCodeqlWorkflow(root, findings) {
   }
 }
 
+function auditDependencyUpdates(root, findings) {
+  const text = readText(root, DEPENDABOT_PATH, findings);
+  if (text === null) return;
+  const document = parseDocument(text, { strict: true, uniqueKeys: true });
+  if (document.errors.length > 0) {
+    findings.push({
+      severity: "error",
+      code: "dependency-updates",
+      path: DEPENDABOT_PATH,
+      message: "Dependabot configuration must parse uniquely and strictly"
+    });
+    return;
+  }
+  let configuration;
+  try {
+    configuration = document.toJS({ maxAliasCount: 0 });
+  } catch {
+    findings.push({
+      severity: "error",
+      code: "dependency-updates",
+      path: DEPENDABOT_PATH,
+      message: "Dependabot configuration aliases are not allowed"
+    });
+    return;
+  }
+  if (!isDeepStrictEqual(configuration, EXPECTED_DEPENDABOT)) {
+    findings.push({
+      severity: "error",
+      code: "dependency-updates",
+      path: DEPENDABOT_PATH,
+      message: "Dependabot must retain the exact bounded monthly root schedules for npm and GitHub Actions"
+    });
+  }
+}
+
 function auditOwnershipAndCi(root, findings) {
   const codeowners = readText(root, ".github/CODEOWNERS", findings);
   if (codeowners !== null) {
@@ -529,6 +701,7 @@ function auditOwnershipAndCi(root, findings) {
   ]) {
     requireMatch(policy, pattern, "ci-policy", workflowPaths[1], message, findings);
   }
+  auditDependencyUpdates(root, findings);
   auditCodeqlWorkflow(root, findings);
 }
 

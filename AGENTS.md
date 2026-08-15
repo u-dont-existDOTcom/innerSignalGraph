@@ -29,7 +29,7 @@ Provider checks are explicit opt-in and are not hermetic CI.
 
 ## Workflow
 
-Use an isolated worktree or task branch and a pull request. Keep accepted designs/plans under `docs/superpowers/`. The repository remains private until GitHub visibility is changed and read back; `pre_publication_ready` is not public visibility. Run targeted and complete gates, inspect the final diff and package artifacts, update `state/CODEX-CURRENT-STATE.md`, and complete lesson closeout. Release evidence follows `docs/RELEASE-EVIDENCE.md`.
+Use an isolated worktree or task branch and a pull request. Keep accepted designs/plans under `docs/superpowers/`. The GitHub repository is public and the publication transition is complete. Public visibility does not grant release or product-policy authority; hosted controls remain claims only when supported by current GitHub API/settings evidence. Run targeted and complete gates, inspect the final diff and package artifacts, update `state/CODEX-CURRENT-STATE.md`, and complete lesson closeout. Release evidence follows `docs/RELEASE-EVIDENCE.md`.
 
 Integrity maintenance: any legitimate edit to `README.md`, `AGENTS.md`, `docs/INDEX.md`, `SECURITY.md`, or `CONTRIBUTING.md`—including Task 9 public/completed reconciliation—must update the reviewed SHA-256 bindings in `scripts/audit-repository.mjs` in the same reviewed change.
 

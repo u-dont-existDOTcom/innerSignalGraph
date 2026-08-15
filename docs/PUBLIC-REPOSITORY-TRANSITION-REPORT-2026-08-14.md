@@ -1,138 +1,175 @@
-# Inner Signal pre-public repository transition report — 2026-08-15
+# Inner Signal public repository transition report — 2026-08-15
 
-Publication state: `pre_publication_ready`; GitHub visibility remains `private`.
+Publication state: `completed`; GitHub visibility is `public`.
 
-This report is the bounded evidence for preparing the existing `u-dont-existDOTcom/innerSignalGraph` repository for a public-visibility change. It does not claim that the repository is public, that CodeQL has run, or that hosted branch protection is enabled. The current compliance terminal state remains `BLOCKED` until the applicable public hosted controls are enabled and read back.
+Terminal status: `BLOCKED`.
 
-## Candidate identity and recovery
+This report is the bounded disclosure and hosted-control evidence for the existing `u-dont-existDOTcom/innerSignalGraph` repository. It does not claim that scanners prove the absence of every possible disclosure or that the public transition can retract copies. It does not claim full compliance because repository-scoped installed GitHub App permissions remain `UNVERIFIED`.
 
-- Task branch: `codex/public-repository-transition-2026-08-14`
-- Refreshed base: `origin/main` at `7d139f1ab4972fceabcae45529021eee71bc0c4f`
-- Base tree: `1a993b479e446dee6f59490599a2515a80e2d35f`
-- Fully gated source candidate before this evidence-only commit: `47e6d33078b9ca8bc3ddf2bed1a09a02b111c375`
-- Source candidate tree: `c81a7b0f28e07abb7a77e6f89fcfe9522726824d`
-- Relationship: the source candidate is a 15-commit direct descendant of the refreshed base.
+## Disclosure identity and recovery
+
+- Private preparation branch: `codex/public-repository-transition-2026-08-14`
+- Private readiness pull request: [6](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/6)
+- Approved readiness head/tree: `b1f071ba6093e48ecb2b835cd8c6d54dea11e394` / `f2eb2c011b0b35c1dc21ad7a122fd7af2a582be6`
+- Private readiness squash merge: `855bdfab0b18327d320e703daf82903de65817e3`, exact approved tree
+- Fail-closed hosted-audit repair pull request: [7](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/7)
+- Pre-disclosure exact `main`: `22179212afd26fc2cc3d89ac9cecdfeedfc8b4e0`, tree `c42df8d7612b9f094b6a27b1c731170522d69400`
+- Public CodeQL repair pull request: [8](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/8)
+- Current protected public `main`: `956b17cc008fe68b6d9f5e9c36f002066aa9732a`, tree `3c309fccfd3a66316fb95b66be654ad4b74b7449`
+- Public hosted-evidence branch: `codex/public-hosted-evidence-2026-08-14`, based exactly on that protected public `main`
 - Canonical recovery checkpoint: `state/CODEX-CURRENT-STATE.md`
 
-The immutable identity of the commit containing this report is recorded by Git and must be copied into the pull request after the commit exists. A commit cannot truthfully embed its own commit or recursive-tree hash in its contents because either value would change the commit. The later pull request must identify and verify that final evidence commit/tree exactly.
+The immutable commit/tree containing this report and the future squash-merge identity are recorded by Git, pull request 2, its exact-head checks, and the post-merge PR/issue comment. A commit cannot embed its own identity without changing it.
 
-The exact fetch was:
+## Pre-disclosure gates and publication audits
 
-```text
-git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*' '+refs/pull/*/head:refs/remotes/pull/*'
-```
+The private readiness candidate passed:
 
-The expected generated `runtime-diagnostics` branch advanced independently during verification, so the fetch and both publication audits were repeated. `origin/main` and `origin/stable` did not move.
+- focused publication/repository/workflow policy tests, 100/100 after independent-review repair;
+- real transactional dependency bootstrap, 4/4;
+- `npm test`, 363/363 at the readiness candidate;
+- graph regressions, 12/12;
+- therapy-lesson verification, 5/5 with four active-runtime lessons;
+- workflow and repository audits with zero errors;
+- real-host `npm run verify` ending in `VERDICT PASS`; and
+- local and hosted publication audits with zero findings.
 
-## Complete changed-file list and purpose
+Pull request 6 exact-head CI:
 
-The final evidence commit adds this report and checkpoint updates to the following source-candidate changes relative to `origin/main`:
+| Check | Run / job | Result |
+|---|---|---|
+| `deterministic-package` | `31860419297` / `94952726163` | success |
+| `workflow-policy` | `31860419310` / `94952726069` | success |
+| `codeql-javascript` | `31860419294` / `94952726518` | skipped as required while private |
 
-| Path | Purpose |
-|---|---|
-| `.github/codex-repository.json` | Keep the machine profile private/pre-public and record exact current audit/control evidence. |
-| `.github/workflows/codeql.yml` | Define public-only CodeQL with least privilege, immutable Action pins, timeout, and concurrency. |
-| `.gitleaks.toml` | Provide the bounded Gitleaks audit configuration. |
-| `AGENTS.md` | Route workers through the accepted transition, audits, report, and canonical checkpoint. |
-| `CONTRIBUTING.md` | Establish MIT public-contribution posture without granting owner policy authority. |
-| `LICENSE` | Add the unmodified MIT license selected by the owner. |
-| `README.md` | Explain the public-transition state, exact audits, and private-until-readback boundary. |
-| `SECURITY.md` | Define public vulnerability reporting with private fallbacks and excluded-data rules. |
-| `docs/INDEX.md` | Replace the reserved report route with this exact pre-public evidence route. |
-| `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md` | Preserve this safe pre-public evidence and recovery record. |
-| `docs/superpowers/plans/2026-08-14-public-repository-transition.md` | Preserve the accepted executable transition plan. |
-| `docs/superpowers/specs/2026-08-14-public-repository-transition-design.md` | Preserve the accepted risk and architecture design. |
-| `package.json` | Expose the exact local and hosted publication-audit commands. |
-| `scripts/audit-publication.mjs` | Orchestrate Git, hosted, and Gitleaks audit adapters with bounded JSON output. |
-| `scripts/audit-repository.mjs` | Enforce repository/public-posture contracts and reviewed integrity bindings. |
-| `scripts/run-publication-audit-hosted.sh` | Download and verify the pinned Gitleaks binary in a private disposable root. |
-| `src/compliance/publication-audit.mjs` | Scan every local Git object/ref and all enumerated hosted surfaces without exposing matches. |
-| `state/CODEX-CURRENT-STATE.md` | Make this transition resumable without prior chat. |
-| `tests/publication-audit.test.mjs` | Causally test scanner coverage, privacy, fail-closed parsing, pinning, and cleanup. |
-| `tests/repository-compliance.test.mjs` | Enforce public-transition documents, state pairs, license, and posture integrity. |
-| `tests/workflow-policy.test.mjs` | Enforce the private-skip/public-run CodeQL policy and immutable least-privilege workflow. |
+The fresh detached merged-main preflight exposed a fail-open hosted-result boundary; visibility remained private while the defect received a causal regression, review, and pull request 7. Its exact-head deterministic and workflow checks passed, and CodeQL remained correctly skipped while private. Pull request 7 squash-merged as `22179212afd26fc2cc3d89ac9cecdfeedfc8b4e0` before disclosure.
 
-There are no release/install/runtime behavior changes in the evidence commit.
-
-## Publication audits
-
-After the final ref refresh, both complete audits exited zero with no findings and no incomplete surface:
+Immediately before and after the public readback, the complete audits passed:
 
 | Command | Result | Safe counts |
 |---|---|---|
-| `npm run audit:publication` | PASS | 43,725 records; refs 14; commits 122; objects 1,265; blobs 650; findings 0. |
-| `npm run audit:publication:hosted` | PASS | 43,888 records; the same Git counts plus branches 5; issues 1; pull requests 4; issue comments 6; review comments 0; reviews 0; Actions runs 26; Actions logs 26; artifacts 0; findings 0. |
+| `npm run audit:publication` | PASS | 46,785 records; refs 21; commits 130; objects 1,312; blobs 666; findings 0. |
+| `npm run audit:publication:hosted` | PASS | 46,977 records; same Git counts plus branches 7; issues 1; pull requests 6; issue comments 6; review comments 0; reviews 0; Actions runs 38; logs 38; artifacts 0; findings 0. |
 
-The hosted wrapper used official Gitleaks `8.29.1`, Linux x64 asset `gitleaks_8.29.1_linux_x64.tar.gz`, pinned SHA-256 `e4eb209d04e20339d77122a3bdf9cd41351255cfb27ebcb75e85325e04f88924`. The 99-case focused suite passed the synthetic pin/download/execution detector, wrong-digest non-execution and cleanup, unsupported-platform fail-closed behavior, safe normalization, historical/non-default-ref detection, hosted locator coverage, report-file invariants, and bounded finding projection. No raw match, private hosted body, downloaded archive, scanner report, or owned audit temp root was retained.
+The hosted wrapper used official Gitleaks `8.29.1`, Linux x64 asset `gitleaks_8.29.1_linux_x64.tar.gz`, pinned SHA-256 `e4eb209d04e20339d77122a3bdf9cd41351255cfb27ebcb75e85325e04f88924`. Inputs/reports lived only in private disposable roots; final results retained safe counts and bounded locators, never matches or raw bodies/logs.
 
-## Exact local gates
+Scanner limits remain explicit: automated scanners reduce disclosure risk but cannot prove absence or legal ownership; authenticated hosted enumeration is required for completeness; and external copies are outside repository control.
 
-All commands ran in the transition worktree against the source candidate and exited zero:
+## Visibility boundary
 
-| Command | Result |
+The existing repository—not a mirror, replacement, rename, or rewritten history—was changed to public.
+
+- Visibility write invoked: `2026-08-15T03:51:54.954Z`
+- Successful write plus immediate independent repository/ref readback completed: `2026-08-15T03:52:03.707Z`
+- Exact GitHub server mutation timestamp: `UNVERIFIED`, bounded by the two observed timestamps above
+- Readback: exact repository identity, `visibility=public`, `private=false`, default branch `main`, not archived or disabled
+
+Returning the repository to private visibility would not retract public clones, forks, caches, mirrors, or indexed history and is not described as rollback of disclosure.
+
+## Public security and Actions readback
+
+Only GitHub API/settings results are called enabled:
+
+- secret scanning: enabled;
+- push protection: enabled;
+- private vulnerability reporting: enabled;
+- vulnerability alerts: enabled;
+- Dependabot alerts and security updates: enabled, zero current alerts;
+- automated security fixes: enabled;
+- Actions: enabled with the selected GitHub-owned set, verified creators false, custom patterns empty, reviewed full-SHA enforcement, read-only default token, and PR approval false;
+- access inventory: one collaborator, zero deploy keys, zero webhooks, and zero environments; and
+- repository-scoped installed GitHub App permissions: `UNVERIFIED`, because `GET /user/installations` returns HTTP 403 requiring a GitHub App-authorized token.
+
+No credential was requested, retrieved, printed, or stored to bypass that App endpoint.
+
+## CodeQL, alert, and repair evidence
+
+The first exact-public-main CodeQL dispatch `31863411008`, job `94960484793`, succeeded on `22179212afd26fc2cc3d89ac9cecdfeedfc8b4e0` and created analysis `1622620714` with eleven results. Findings were repaired or explicitly dispositioned through ordinary pull request 8; no test, timeout, query, or suppression was weakened.
+
+Pull request 8 exact reviewed head/tree: `02bbf6d3f46ff15a1950b3ba4af38d7f69c9e8c9` / `3c309fccfd3a66316fb95b66be654ad4b74b7449`.
+
+| Check | Run / job | Result |
+|---|---|---|
+| `deterministic-package` | `31865209059` / `94965049618` | success |
+| `workflow-policy` | `31865209060` / `94965049573` | success |
+| `codeql-javascript` | `31865209098` / `94965049683` | success |
+| GitHub Advanced Security `CodeQL` | check `94965151294` | success, zero new alert |
+
+Pull request 8 squash-merged as `956b17cc008fe68b6d9f5e9c36f002066aa9732a` with the exact reviewed tree. Required merged-main dispatch [31865348513](https://github.com/u-dont-existDOTcom/innerSignalGraph/actions/runs/31865348513), job/check `94965480118`, succeeded on that exact SHA. Analyses `1622692668` and `1622690884` each contain five results. Open alert readback is zero: alerts 1–6 are fixed, 7–10 are dismissed as test-only with bounded evidence, and 11 is dismissed `won't fix` for intentional bounded local static-path persistence.
+
+## Protected branch readback
+
+`main` and `stable` both read `protected=true`. Both have:
+
+- strict required status contexts exactly `deterministic-package`, `workflow-policy`, and `codeql-javascript`;
+- administrators enforced;
+- a pull-request review object with zero required approvals, no stale/code-owner/last-push approval requirement;
+- linear history and conversation resolution enabled;
+- restrictions null; and
+- force pushes and deletions disabled.
+
+The task did not perform a destructive force-push or deletion test. `stable` did not advance and its stricter release authority remains defined by `docs/RELEASE-EVIDENCE.md`, not branch protection alone.
+
+At Task 9 recovery:
+
+- `main=956b17cc008fe68b6d9f5e9c36f002066aa9732a`;
+- `stable=110ee5342e27d8f1bd3d11cc2be4d85926c255b1`; and
+- `runtime-diagnostics=ec11097253ad2fe1596c2e3fe8ca40b78470f64f`, separate and unmerged.
+
+At the final precommit ref refresh, `main` and `stable` were unchanged. Generated `runtime-diagnostics` had independently advanced to `31d0a6140ae18a00884f987326caeb9064d65607`; the task fetched and audited that ref but did not merge it into source.
+
+## Public hosted-evidence pull request
+
+Task 9 changes exactly these ten paths. The tenth path, `.github/dependabot.yml`, is the bounded executable repair required by independent review after the initial nine-file candidate exposed missing production npm update coverage:
+
+| Path | Purpose |
 |---|---|
-| `node --test tests/publication-audit.test.mjs tests/repository-compliance.test.mjs tests/workflow-policy.test.mjs` | PASS, 99/99. |
-| `node --test --test-name-pattern='transactional validation installs locked dependencies\|dependency bootstrap failures leave the installed runtime byte-identical' tests/git-runtime-update.test.mjs` | PASS, 4/4 including both failure points. |
-| `npm ci --ignore-scripts` | PASS from the pinned lockfile. |
-| `npm test` | PASS, 363/363. |
-| `npm run graph:test` | PASS, 12/12. |
-| `npm run therapy-lessons:verify` | PASS, 5/5 tracked and 4 active runtime lessons. |
-| `npm run audit:workflows` | PASS, 3 workflows and 0 findings. |
-| `npm run audit:repository` | PASS, 0 errors and 6 truthful private-hosted warnings. |
-| `npm run verify` | PASS on the real host with all 363 tests and final `VERDICT PASS`. |
-| `bash scripts/report-worktree.sh` | PASS with no reported drift. |
-| `git status --short` | PASS with no tracked or untracked source path before evidence editing. |
+| `.github/codex-repository.json` | Public/completed profile and exact hosted evidence. |
+| `.github/dependabot.yml` | Exact bounded monthly root schedules for npm and GitHub Actions dependencies. |
+| `tests/repository-compliance.test.mjs` | Public-profile, protection, CodeQL, and blocker regressions. |
+| `scripts/audit-repository.mjs` | Fail-closed final-state policy enforcement and reviewed entry-document digests. |
+| `README.md` | Public authority route and unchanged runtime/release boundaries. |
+| `AGENTS.md` | Public workflow route and integrity-maintenance contract. |
+| `docs/INDEX.md` | Completed-transition evidence route. |
+| `state/CODEX-CURRENT-STATE.md` | Resumable Task 9/10 state. |
+| `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md` | Current compliance evidence and terminal label. |
+| `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md` | This disclosure/hosted-control report. |
 
-An initial restricted-runner invocation of the package verifier produced 16 whole-file Node test-runner failures without assertion output. Reproduction showed the restricted boundary corrupting nested test-worker IPC: a child received Node's binary test protocol while its JSON-consuming parent received empty stdout. The same exact verifier passed on the real host, no Node process survived, and no production/default state or port was shared. No test, timeout, concurrency, or production code was changed to obtain the pass.
+The exact pull request URL, final head/tree, final-head `deterministic-package`, `workflow-policy`, and `codeql-javascript` run IDs, merge SHA, final `main`, and issue 4 result are recorded in the pull request body/top-level comment and issue after they exist. The protected pull request may merge only when all three exact contexts are green and conversations are resolved.
 
-The verifier restored every declared generated graph path byte-for-byte and rejected worktree drift. Required `npm ci` created only the ignored `node_modules/`; repeated tests left uniquely named synthetic fixture roots under `/tmp`, which are not production state inputs and were not deleted as part of this evidence task.
+Task 9 baseline and TDD evidence:
 
-## CI contract
+- `npm ci --ignore-scripts`: PASS.
+- Complete unmodified-base `npm test`: PASS 380/380.
+- Initial final-profile command: expected RED, 0/2; exact failures were stale `private` visibility and six stale hosted control values.
+- Expanded causal RED: 1/4 passed and 3/4 failed for stale private entry documents, stale compliance report/universal lesson evidence, and missing machine enforcement of CodeQL/protection evidence.
+- Independent-review dependency-policy RED: the focused tests failed 0/2 because the existing Dependabot file covered only GitHub Actions and the repository audit did not enforce npm coverage. The same tests pass 2/2 after the exact monthly root npm schedule and mutation-sensitive audit were added.
+- Independent-review hosted-control RED: the causal mutation test failed 1/1 because all thirteen then-recorded public control keys could drift without an audit error. After explicitly recording Dependabot security updates, the audit requires the exact fourteen-key public/completed map with only installed-App permissions unverified; focused drift/evidence tests pass 2/2 and private/pre-public warning semantics remain intact.
+- Focused final-profile/hosted-evidence GREEN: PASS 4/4. Full repository-compliance suite: PASS 22/22. Combined publication/repository/workflow suite: PASS 110/110.
+- `npm run audit:repository`: PASS with zero errors and one warning solely for the installed-App readback. `npm test`: PASS 382/382. `npm run graph:test`: PASS 12/12. `npm run therapy-lessons:verify`: PASS 5/5 with four active-runtime lessons. Real-host `npm run verify`: final `VERDICT PASS`.
+- After refreshing all hosted refs, `npm run audit:publication`: PASS, 49,780 records and zero findings; refs 26, commits 138, objects 1,367, blobs 686. `npm run audit:publication:hosted`: PASS, 49,999 records and zero findings; the same Git counts plus branches 8, issues 1, pull requests 7, issue comments 7, review comments 1, reviews 1, Actions runs 49, logs 49, and artifacts 0.
+- Exact repaired containing-commit reruns and two independent approvals are recorded in the pull request before publication/merge; no future CI or merge success is inferred here.
 
-- `deterministic-package`: required private pull-request check; runs the exact package gate.
-- `workflow-policy`: required private pull-request check; verifies repository/workflow drift.
-- `codeql-javascript`: defined now, but its job is intentionally skipped while the repository is private and must run successfully after public visibility is read back.
+## Policy, privacy, release, and runtime non-effects
 
-There is no pull request or CI run ID yet because this Phase A evidence is committed and independently reviewed before any push. Phase B must record the exact PR head/tree and final-head check URLs or IDs.
+- No browser, app, server, installer, live model, provider credential, deployment, or release was started by Task 9.
+- `stable` was neither written nor advanced. No unverified `main` commit became an installation source.
+- `runtime-diagnostics` remained a separate generated-data branch and was never merged into source.
+- Diagnostics/recovery evidence continues to exclude browser chat, therapy/hypnosis content, prompts, model output/reasoning, raw sensitive logs, credentials, environment values, usernames, hostnames, IP addresses, absolute home paths, and hashes derived from excluded content.
+- No therapy/hypnosis/framework policy, guide, graph behavior, prompt contract, safety/evidence policy, privacy scope, model role, owner card, decision receipt, approval projection, or stable-release decision changed.
+- The latest governed therapy state remains unapproved and uninstalled; publication does not supply owner authority.
 
-## Current hosted controls
+## Lesson closeout
 
-Read-only GitHub REST/API evidence was refreshed at `2026-08-15T02:24:28Z`:
+- `promoted`: the transferable public-visibility lesson was merged through [universal-dev-architecture pull request 13](https://github.com/u-dont-existDOTcom/universal-dev-architecture/pull/13) as `996d67ae9f8f44b0865cea6d88d169dbbadbbf41`. Its deterministic repository-audit and CodeQL checks passed.
+- `project-specific`: the exact Inner Signal counts, timestamps, PR/check identities, CodeQL dispositions, protection states, and non-effects remain in this report.
+- `provisional`: installed-App permission enumeration remains dependent on a GitHub App-authorized authentication surface and is not promoted as verified.
+- `no-new-lesson`: Task 9 reconciles existing transition evidence and creates no therapy lesson, suggestion, decision, or approval projection.
 
-| Control | Current safe readback |
-|---|---|
-| Repository | Exact identity; `visibility=private`, `private=true`, default `main`, not archived or disabled. |
-| Branch heads | `main=7d139f1ab4972fceabcae45529021eee71bc0c4f`; `stable=110ee5342e27d8f1bd3d11cc2be4d85926c255b1`; `runtime-diagnostics=3f2e692e283ab95d5ba6c4b961be6192245eb73b`. |
-| Branch enforcement | `main` and `stable` read `protected=false`; rulesets and both protection endpoints return HTTP 403 on the private plan. |
-| Actions | Enabled; selected set; GitHub-owned allowed; verified creators false; custom patterns empty; `sha_pinning_required=true`; default token `read`; PR approval false. |
-| Dependency security | Vulnerability-alert endpoint HTTP 204; automated-security-fixes endpoint HTTP 200; Dependabot alerts readable with 0 current alerts. |
-| Code/secret protection | Code-scanning alerts HTTP 403. Prior enable attempts for private secret scanning/push protection returned HTTP 422; these remain disabled until public enablement/readback. |
-| Vulnerability reporting | Private-vulnerability-reporting endpoint HTTP 404 while private; use the documented private fallback until public enablement. |
-| Access inventory | One collaborator; zero deploy keys, webhooks, environments; repository-scoped GitHub App permissions remain `UNVERIFIED`. |
-| Durable follow-up | Issue [#4, Codex + GitHub hardening audit](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4) remains open. |
+## Issue 4 and remaining action
 
-Hosted files do not prove these controls. The final status must use new API readback after the visibility change and public security/protection tasks.
+Issue [4](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4) remains open. After the protected Task 9 merge, its durable disposition is reduced to one action:
 
-## Owner decisions and irreversible boundary
+> Use a GitHub App-authorized token to enumerate installations accessible to the user, select `u-dont-existDOTcom/innerSignalGraph`, and record only safe repository-scoped installed-App permission names.
 
-The owner explicitly chose the existing repository as the public target, selected the MIT license, and stated there is no sensitive, private, or copyright blocker for this repository. The all-history and hosted-surface audits independently support only the bounded technical conclusion that they found no configured publication finding; they cannot prove legal ownership or prevent later disclosure.
-
-Changing a repository to public is not fully reversible: external clones, forks, caches, mirrors, and indexed history can persist after visibility is changed back. Therefore the visibility mutation must occur only after the exact private PR is merged and a fresh detached-`main` local plus hosted audit passes. Any finding, incomplete surface, unexpected ref/PR, or identity mismatch leaves visibility private.
-
-## Release, diagnostics, privacy, and policy non-effects
-
-- `stable` was not advanced or written; its current hosted head remains `110ee5342e27d8f1bd3d11cc2be4d85926c255b1`.
-- `runtime-diagnostics` was not merged into source or written by this task. Its expected independent advance was fetched and included in the final audits.
-- No application, browser, installer, release, live model, or hosted mutation was started.
-- No therapy/hypnosis/framework policy, guide, graph behavior, prompt contract, safety/evidence policy, model role, privacy scope, owner card, receipt, approval projection, or stable-release decision changed.
-- The latest governed r03 therapy state remains blocked before independent Codex review, with no owner decision receipt and no production policy advancement.
-- Diagnostics/recovery exclusions remain unchanged: no browser chat, therapy/hypnosis content, prompt, model output/reasoning, raw sensitive log, credential, environment value, username, hostname, IP address, absolute home path, or hash derived from excluded content may enter publication or recovery evidence.
-
-## Lesson closeout and next action
-
-- `project-specific`: these exact audit counts, hosted-control readbacks, private/public state boundary, and non-effects are preserved here.
-- `promoted`: previously transferable hermetic verification, transactional update, readiness, privacy-safe diagnostic, and stage-recovery lessons remain merged in `universal-dev-architecture` as `81265fd3592ee842bfe30c7d73a5c1f3dc01b2d0`.
-- `provisional`: the reusable public-visibility transition sequence remains scheduled for the plan's Task 8 after hosted execution supplies complete evidence; this phase does not prematurely promote it.
-- `no-new-lesson`: no new therapy-content lesson, suggestion, decision receipt, or approval projection arose from infrastructure publication work.
-
-Next safe action: independently review this complete `origin/main...HEAD` candidate, then push one private task branch, open one focused pull request to `main`, require exact-head `deterministic-package` and `workflow-policy` success plus the expected private `codeql-javascript` skip, and merge only after verifying the PR head/tree. Keep visibility private throughout that pull request.
+Impact: until that readback exists, the available evidence cannot rule out a malicious or overprivileged installed App. No remaining owner policy decision blocks executable infrastructure work, but this applicable `UNVERIFIED` control requires the exact terminal label `BLOCKED`.
