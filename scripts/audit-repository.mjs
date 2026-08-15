@@ -98,31 +98,52 @@ const PUBLIC_CONTRIBUTION_PROHIBITIONS = [
 const CHECKPOINT = "state/CODEX-CURRENT-STATE.md";
 const PUBLICATION_REPORT = "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md";
 const COMPLIANCE_REPORT = "docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md";
-const PUBLIC_CLOSEOUT_EVIDENCE_PATHS = [CHECKPOINT, PUBLICATION_REPORT, COMPLIANCE_REPORT];
-const PUBLIC_CLOSEOUT_RECEIPT_VALUES = [
-  "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9",
-  "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615",
-  "7bf2b1a706aab6a7d9c36070b15590153c652e2a",
-  "4ff2a229a628bf0f9dc1a11abb23a88cd6068e18",
-  "0ccb120442292653a11676ad312f18092944b5a1",
-  "31869840311",
-  "94976658513",
-  "31869840270",
-  "94976658502",
-  "31869840222",
-  "94976658119",
-  "94976762584",
-  "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4"
-];
-const PUBLIC_CLOSEOUT_STALE_PATTERNS = [
-  /^(?:-\s*)?(?:finish|complete|obtain|open|create|publish|squash-?merge|merge|update)\b[^\n]*(?:\btask 9\b|\bpublic hosted-evidence\b|\bpr 9\b|\bprotected evidence pull request\b)/im,
-  /\btask 10\b[^\n]*(?:owns|will|must)\b[^\n]*(?:after|once|future)\b/i,
-  /\bcurrent task 9 branch\b|\bexact task 9 base\b/i,
-  /\bcurrent protected public\s+`?main`?\b/i,
+const PUBLIC_CLOSEOUT_REPORT_SECTIONS = {
+  [PUBLICATION_REPORT]: "Issue 4 and remaining action",
+  [COMPLIANCE_REPORT]: "Remaining action and residual risk"
+};
+const PUBLIC_CLOSEOUT_ACTIVE_STALE_PATTERNS = [
+  /\b(?:finish|run|begin|start|continue|open|create|publish|squash-?merge|merge|obtain independent review)\b[^\n]*(?:\btask 9\b|\btask 10\b|\bpr 9\b|\bpublic hosted-evidence\b|\bprotected (?:evidence )?pull request\b)/i,
+  /\b(?:task 9|task 10|pr 9|public hosted-evidence|protected (?:evidence )?pull request)\b[^\n]*(?:\b(?:begins?|owns|will|must|needs? to be)\b|\bafter\b[^\n]*\bmerge|\bwhen green\b)/i,
+  /\bcurrent task 9 branch\b|\bexact task 9 base\b|\bcurrent protected public\s+`?main`?\b/i,
   /\bfuture squash-merge\b|\brecorded after they exist\b/i,
   /\bcomplete or in the final protected evidence pull-request path\b/i,
   /\bprotected (?:evidence )?pull request may merge only (?:after|when)\b/i
 ];
+const EXPECTED_PUBLIC_CLOSEOUT_RECEIPT = {
+  schemaVersion: 1,
+  pullRequest: {
+    url: "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9",
+    receiptUrl: "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615",
+    state: "merged",
+    reviewedHead: "7bf2b1a706aab6a7d9c36070b15590153c652e2a",
+    reviewedTree: "4ff2a229a628bf0f9dc1a11abb23a88cd6068e18",
+    mergeCommit: "0ccb120442292653a11676ad312f18092944b5a1",
+    mergeTree: "4ff2a229a628bf0f9dc1a11abb23a88cd6068e18",
+    treeMatch: true
+  },
+  exactHeadChecks: {
+    "deterministic-package": { run: "31869840311", job: "94976658513", conclusion: "success" },
+    "workflow-policy": { run: "31869840270", job: "94976658502", conclusion: "success" },
+    "codeql-javascript": { run: "31869840222", job: "94976658119", conclusion: "success" }
+  },
+  advancedSecurityCheck: { id: "94976762584", conclusion: "success" },
+  mergedMainChecks: {
+    "deterministic-package": { run: "31869941911", job: "94976909523", conclusion: "success" },
+    "workflow-policy": { run: "31869942049", job: "94976909702", conclusion: "success" },
+    "codeql-javascript": { run: "31869941895", job: "94976909307", conclusion: "success" }
+  },
+  mergedMainCodeqlAnalysis: {
+    id: "1622858177",
+    commit: "0ccb120442292653a11676ad312f18092944b5a1",
+    openAlerts: 0
+  },
+  remainingIssue: {
+    url: "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4",
+    state: "open",
+    soleAction: "read repository-scoped installed GitHub App permissions with GitHub App-authorized authentication"
+  }
+};
 const CONTROL_STATES = new Set(["verified", "enabled", "disabled", "unverified", "not_applicable"]);
 const EXPECTED_PUBLIC_GITHUB_CONTROLS = {
   default_branch_rules: "enabled",
@@ -297,6 +318,54 @@ function requireLiteral(text, expected, code, relative, message, findings) {
 function rejectPatterns(text, patterns, code, relative, message, findings) {
   if (text !== null && patterns.some((pattern) => pattern.test(text))) {
     findings.push({ severity: "error", code, path: relative, message });
+  }
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function readUniqueMarkdownSection(text, heading, relative, findings) {
+  if (text === null) return null;
+  const headingPattern = new RegExp(`^## ${escapeRegExp(heading)}\\s*$`, "gm");
+  const matches = [...text.matchAll(headingPattern)];
+  if (matches.length !== 1) {
+    findings.push({
+      severity: "error",
+      code: "public-closeout-section",
+      path: relative,
+      message: `public closeout evidence must contain exactly one authoritative ## ${heading} section`
+    });
+    return null;
+  }
+  const start = matches[0].index + matches[0][0].length;
+  const remainder = text.slice(start);
+  const nextHeading = remainder.search(/^## /m);
+  return (nextHeading === -1 ? remainder : remainder.slice(0, nextHeading)).trim();
+}
+
+function readUniquePublicCloseoutReceipt(text, relative, findings) {
+  if (text === null) return null;
+  const matches = [...text.matchAll(/<!-- public-closeout-receipt\s*\n([\s\S]*?)\n-->/g)];
+  if (matches.length !== 1) {
+    findings.push({
+      severity: "error",
+      code: "public-closeout-receipt",
+      path: relative,
+      message: "public closeout report must contain exactly one structured receipt"
+    });
+    return null;
+  }
+  try {
+    return JSON.parse(matches[0][1]);
+  } catch (error) {
+    findings.push({
+      severity: "error",
+      code: "public-closeout-receipt",
+      path: relative,
+      message: `public closeout receipt is invalid JSON: ${error.message}`
+    });
+    return null;
   }
 }
 
@@ -475,7 +544,8 @@ function auditAuthority(root, findings, profile) {
       }
     }
   }
-  const checkpoint = readText(root, CHECKPOINT, findings)?.toLowerCase() ?? null;
+  const checkpointText = readText(root, CHECKPOINT, findings);
+  const checkpoint = checkpointText?.toLowerCase() ?? null;
   for (const heading of CHECKPOINT_HEADINGS) {
     requireMatch(checkpoint, new RegExp(`^## ${heading.replace("/", "\\/")}$`, "m"), "checkpoint-heading", CHECKPOINT, `missing checkpoint heading: ${heading}`, findings);
   }
@@ -499,26 +569,91 @@ function auditAuthority(root, findings, profile) {
     });
   }
   if (profile?.visibility === "public" && profile.publication_transition?.status === "completed") {
-    for (const relative of PUBLIC_CLOSEOUT_EVIDENCE_PATHS) {
-      const evidence = relative === CHECKPOINT ? checkpoint : readText(root, relative, findings)?.toLowerCase() ?? null;
-      if (evidence !== null && PUBLIC_CLOSEOUT_STALE_PATTERNS.some((pattern) => pattern.test(evidence))) {
+    const checkpointSections = ["Current checkpoint", "Remaining", "Next safe action"].map((heading) =>
+      readUniqueMarkdownSection(checkpointText, heading, CHECKPOINT, findings)
+    );
+    const activeCheckpoint = checkpointSections.filter((section) => section !== null).join("\n");
+    if (PUBLIC_CLOSEOUT_ACTIVE_STALE_PATTERNS.some((pattern) => pattern.test(activeCheckpoint))) {
+      findings.push({
+        severity: "error",
+        code: "public-closeout-stale-evidence",
+        path: CHECKPOINT,
+        message: "completed public-transition work must not remain in authoritative active checkpoint sections"
+      });
+    }
+    const [currentSection, remainingSection, nextSection] = checkpointSections;
+    if (
+      currentSection !== null &&
+      !/all executable Tasks 1-10[^\n]*(?:complete|completed)/i.test(currentSection)
+    ) {
+      findings.push({
+        severity: "error",
+        code: "public-closeout-stale-evidence",
+        path: CHECKPOINT,
+        message: "current checkpoint must state that all executable Tasks 1-10 completed"
+      });
+    }
+    if (
+      remainingSection !== null &&
+      (!/issue 4[^\n]*(?:remains|is) open[^\n]*sole(?:ly)?/i.test(remainingSection) ||
+        !/installed GitHub App permissions[^\n]*`?UNVERIFIED`?/i.test(remainingSection) ||
+        !/all other executable[^\n]*complete/i.test(remainingSection))
+    ) {
+      findings.push({
+        severity: "error",
+        code: "public-closeout-stale-evidence",
+        path: CHECKPOINT,
+        message: "remaining section must identify installed-App readback as the sole incomplete control"
+      });
+    }
+    if (
+      nextSection !== null &&
+      (!/GitHub App-authorized/i.test(nextSection) ||
+        !/installed[- ]App permissions/i.test(nextSection) ||
+        !/reconcile issue 4 and terminal status/i.test(nextSection) ||
+        !/only if hosted evidence drifts/i.test(nextSection))
+    ) {
+      findings.push({
+        severity: "error",
+        code: "public-closeout-stale-evidence",
+        path: CHECKPOINT,
+        message: "next action must be the timeless App-permission readback and conditional drift verification"
+      });
+    }
+    for (const reportPath of [PUBLICATION_REPORT, COMPLIANCE_REPORT]) {
+      requireLiteral(
+        checkpointText,
+        reportPath,
+        "public-closeout-route",
+        CHECKPOINT,
+        `checkpoint must route to ${reportPath}`,
+        findings
+      );
+    }
+    for (const [relative, activeHeading] of Object.entries(PUBLIC_CLOSEOUT_REPORT_SECTIONS)) {
+      const report = readText(root, relative, findings);
+      const activeSection = readUniqueMarkdownSection(report, activeHeading, relative, findings);
+      if (
+        activeSection !== null &&
+        (PUBLIC_CLOSEOUT_ACTIVE_STALE_PATTERNS.some((pattern) => pattern.test(activeSection)) ||
+          !/issue 4[^\n]*(?:remains|is) open[^\n]*sole(?:ly)?/i.test(activeSection) ||
+          !/GitHub App-authorized/i.test(activeSection) ||
+          !/terminal (?:label|status)[^\n]*`?BLOCKED`?/i.test(activeSection))
+      ) {
         findings.push({
           severity: "error",
           code: "public-closeout-stale-evidence",
           path: relative,
-          message: "completed Task 9 work must not remain an active or future current-state instruction"
+          message: "authoritative report action must contain only the installed-App readback blocker"
         });
       }
-      if (
-        evidence !== null &&
-        (PUBLIC_CLOSEOUT_RECEIPT_VALUES.some((required) => !evidence.includes(required.toLowerCase())) ||
-          !/issue 4[^\n]*(?:remains|is) open[^\n]*sole(?:ly)?/i.test(evidence))
-      ) {
+      const receipt = readUniquePublicCloseoutReceipt(report, relative, findings);
+      if (receipt !== null && !isDeepStrictEqual(receipt, EXPECTED_PUBLIC_CLOSEOUT_RECEIPT)) {
         findings.push({
           severity: "error",
           code: "public-closeout-receipt",
           path: relative,
-          message: "public closeout evidence must retain the exact PR 9 merge/check receipt and sole open issue 4 result"
+          message: "structured receipt must preserve exact merged PR, successful checks, matching tree, main analysis, and sole open issue semantics"
         });
       }
     }

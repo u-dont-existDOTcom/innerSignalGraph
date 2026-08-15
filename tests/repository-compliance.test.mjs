@@ -114,7 +114,76 @@ const publicCloseoutReceipt = {
   codeqlRun: "31869840222",
   codeqlJob: "94976658119",
   advancedCodeqlCheck: "94976762584",
+  mergedDeterministicRun: "31869941911",
+  mergedDeterministicJob: "94976909523",
+  mergedWorkflowRun: "31869942049",
+  mergedWorkflowJob: "94976909702",
+  mergedCodeqlRun: "31869941895",
+  mergedCodeqlJob: "94976909307",
+  mergedCodeqlAnalysis: "1622858177",
   issue: "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4"
+};
+
+const structuredPublicCloseoutReceipt = {
+  schemaVersion: 1,
+  pullRequest: {
+    url: publicCloseoutReceipt.pullRequest,
+    receiptUrl: publicCloseoutReceipt.receipt,
+    state: "merged",
+    reviewedHead: publicCloseoutReceipt.head,
+    reviewedTree: publicCloseoutReceipt.tree,
+    mergeCommit: publicCloseoutReceipt.merge,
+    mergeTree: publicCloseoutReceipt.tree,
+    treeMatch: true
+  },
+  exactHeadChecks: {
+    "deterministic-package": {
+      run: publicCloseoutReceipt.deterministicRun,
+      job: publicCloseoutReceipt.deterministicJob,
+      conclusion: "success"
+    },
+    "workflow-policy": {
+      run: publicCloseoutReceipt.workflowRun,
+      job: publicCloseoutReceipt.workflowJob,
+      conclusion: "success"
+    },
+    "codeql-javascript": {
+      run: publicCloseoutReceipt.codeqlRun,
+      job: publicCloseoutReceipt.codeqlJob,
+      conclusion: "success"
+    }
+  },
+  advancedSecurityCheck: {
+    id: publicCloseoutReceipt.advancedCodeqlCheck,
+    conclusion: "success"
+  },
+  mergedMainChecks: {
+    "deterministic-package": {
+      run: publicCloseoutReceipt.mergedDeterministicRun,
+      job: publicCloseoutReceipt.mergedDeterministicJob,
+      conclusion: "success"
+    },
+    "workflow-policy": {
+      run: publicCloseoutReceipt.mergedWorkflowRun,
+      job: publicCloseoutReceipt.mergedWorkflowJob,
+      conclusion: "success"
+    },
+    "codeql-javascript": {
+      run: publicCloseoutReceipt.mergedCodeqlRun,
+      job: publicCloseoutReceipt.mergedCodeqlJob,
+      conclusion: "success"
+    }
+  },
+  mergedMainCodeqlAnalysis: {
+    id: publicCloseoutReceipt.mergedCodeqlAnalysis,
+    commit: publicCloseoutReceipt.merge,
+    openAlerts: 0
+  },
+  remainingIssue: {
+    url: publicCloseoutReceipt.issue,
+    state: "open",
+    soleAction: "read repository-scoped installed GitHub App permissions with GitHub App-authorized authentication"
+  }
 };
 
 async function read(relative) {
@@ -130,6 +199,30 @@ async function createAuditFixture(t) {
     filter: (source) => source === root || !excluded.has(path.basename(source))
   });
   return fixture;
+}
+
+function replaceMarkdownSection(source, heading, body) {
+  const marker = `## ${heading}`;
+  const start = source.indexOf(marker);
+  assert.notEqual(start, -1, marker);
+  const contentStart = source.indexOf("\n", start) + 1;
+  const next = source.indexOf("\n## ", contentStart);
+  const end = next === -1 ? source.length : next + 1;
+  return `${source.slice(0, contentStart)}\n${body.trim()}\n\n${source.slice(end)}`;
+}
+
+function withStructuredPublicCloseoutReceipt(source) {
+  if (source.includes("<!-- public-closeout-receipt")) return source;
+  return `${source.trimEnd()}\n\n<!-- public-closeout-receipt\n${JSON.stringify(structuredPublicCloseoutReceipt, null, 2)}\n-->\n`;
+}
+
+function mutateStructuredPublicCloseoutReceipt(source, mutate) {
+  const withReceipt = withStructuredPublicCloseoutReceipt(source);
+  const match = withReceipt.match(/<!-- public-closeout-receipt\n([\s\S]*?)\n-->/);
+  assert.ok(match);
+  const receipt = JSON.parse(match[1]);
+  mutate(receipt);
+  return withReceipt.replace(match[0], `<!-- public-closeout-receipt\n${JSON.stringify(receipt, null, 2)}\n-->`);
 }
 
 test("public profile declares exact commands, completed publication transition, and one canonical checkpoint", async () => {
@@ -226,80 +319,125 @@ test("repository audit rejects completed publication-evidence commit steps in th
   }
 });
 
-test("public closeout audit rejects active completed Task 9 work and incomplete merge receipts", async (t) => {
+test("public closeout audit enforces semantic PR 9, merged-main, CodeQL, and issue receipts", async (t) => {
   const fixture = await createAuditFixture(t);
-  const publicReportPath = "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md";
-  const complianceReportPath = "docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md";
+  const reportPaths = [
+    "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md",
+    "docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md"
+  ];
   const mutations = [
-    {
-      relative: checkpointPath,
-      stale: "- Finish the public hosted-evidence review, then freeze the final Task 9 commit."
-    },
-    {
-      relative: checkpointPath,
-      stale: "- Create the protected public hosted-evidence pull request and wait for its required checks."
-    },
-    {
-      relative: checkpointPath,
-      stale: "- Squash-merge PR 9 only after its exact reviewed tree is green."
-    },
-    {
-      relative: checkpointPath,
-      stale: "- Task 10 owns final exact-main verification after the Task 9 merge."
-    },
-    {
-      relative: checkpointPath,
-      stale: "- Current Task 9 branch: `codex/public-hosted-evidence-2026-08-14`; exact base `956b17cc008fe68b6d9f5e9c36f002066aa9732a`."
-    },
-    {
-      relative: publicReportPath,
-      stale: "- Current protected public `main`: `956b17cc008fe68b6d9f5e9c36f002066aa9732a`."
-    },
-    {
-      relative: publicReportPath,
-      stale: "The future squash-merge identity and final checks will be recorded after they exist."
-    },
-    {
-      relative: complianceReportPath,
-      stale: "Every executable task is complete or in the final protected evidence pull-request path."
-    },
-    {
-      relative: complianceReportPath,
-      stale: "The protected evidence pull request may merge only after all three contexts succeed."
-    }
+    ["unmerged pull request", (receipt) => (receipt.pullRequest.state = "unmerged")],
+    ["nonmatching reviewed and merge trees", (receipt) => (receipt.pullRequest.treeMatch = false)],
+    ["failed exact-head check", (receipt) => (receipt.exactHeadChecks["deterministic-package"].conclusion = "failure")],
+    ["failed Advanced Security check", (receipt) => (receipt.advancedSecurityCheck.conclusion = "failure")],
+    ["failed merged-main check", (receipt) => (receipt.mergedMainChecks["workflow-policy"].conclusion = "failure")],
+    ["analysis associated with the wrong SHA", (receipt) => (receipt.mergedMainCodeqlAnalysis.commit = publicCloseoutReceipt.head)],
+    ["remaining issue closed without App readback", (receipt) => (receipt.remainingIssue.state = "closed")]
   ];
 
-  for (const { relative, stale } of mutations) {
+  for (const relative of reportPaths) {
     const absolute = path.join(fixture, relative);
     const original = await fs.readFile(absolute, "utf8");
-    await fs.writeFile(absolute, `${original}\n${stale}\n`);
-    const result = auditRepository(fixture);
-    assert.ok(
-      result.findings.some(
-        ({ code, path: findingPath }) => code === "public-closeout-stale-evidence" && findingPath === relative
-      ),
-      `${relative}: ${stale}: ${JSON.stringify(result.findings)}`
-    );
-    await fs.writeFile(absolute, original);
-  }
-
-  const receiptBlock = Object.values(publicCloseoutReceipt).join("\n");
-  for (const relative of [checkpointPath, publicReportPath, complianceReportPath]) {
-    const absolute = path.join(fixture, relative);
-    const original = await fs.readFile(absolute, "utf8");
-    await fs.writeFile(absolute, `${original}\n${receiptBlock}\nIssue 4 remains OPEN solely for installed GitHub App permission readback.\n`);
-    const complete = await fs.readFile(absolute, "utf8");
-    for (const required of Object.values(publicCloseoutReceipt)) {
-      await fs.writeFile(absolute, complete.replaceAll(required, "missing-receipt-field"));
+    for (const [label, mutate] of mutations) {
+      await fs.writeFile(absolute, mutateStructuredPublicCloseoutReceipt(original, mutate));
       const result = auditRepository(fixture);
       assert.ok(
         result.findings.some(
           ({ code, path: findingPath }) => code === "public-closeout-receipt" && findingPath === relative
         ),
-        `${relative}: ${required}: ${JSON.stringify(result.findings)}`
+        `${relative}: ${label}: ${JSON.stringify(result.findings)}`
       );
     }
     await fs.writeFile(absolute, original);
+  }
+});
+
+test("public closeout audit scopes stale work to unique authoritative active sections", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const checkpointAbsolute = path.join(fixture, checkpointPath);
+  const original = await fs.readFile(checkpointAbsolute, "utf8");
+  const staleActiveBodies = [
+    "- Run Task 10's complete exact-main verification after this protected closeout repair is merged.",
+    "- Task 10 begins only after this protected repair merges.",
+    "- Finish Task 9, open its protected evidence pull request, and squash-merge it when green."
+  ];
+
+  for (const stale of staleActiveBodies) {
+    await fs.writeFile(checkpointAbsolute, replaceMarkdownSection(original, "Next safe action", stale));
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(
+        ({ code, path: findingPath }) => code === "public-closeout-stale-evidence" && findingPath === checkpointPath
+      ),
+      `${stale}: ${JSON.stringify(result.findings)}`
+    );
+  }
+
+  const timeless = replaceMarkdownSection(
+    replaceMarkdownSection(
+      original,
+      "Remaining",
+      "- Issue 4 remains open solely because installed GitHub App permissions are `UNVERIFIED` without GitHub App-authorized authentication.\n- All other executable public-transition work is complete."
+    ),
+    "Next safe action",
+    "Obtain GitHub App-authorized authentication, read repository-scoped installed-App permissions, and reconcile issue 4 and terminal status through a protected evidence update. Repeat read-only verification only if hosted evidence drifts."
+  );
+  const historical = replaceMarkdownSection(
+    timeless,
+    "Completed",
+    "Historical rejected instruction from the pre-merge plan:\n\nFinish Task 9, open its protected evidence pull request, and merge it when green."
+  );
+  await fs.writeFile(checkpointAbsolute, historical);
+  const historicalResult = auditRepository(fixture);
+  assert.ok(
+    historicalResult.findings.every(({ code }) => code !== "public-closeout-stale-evidence"),
+    JSON.stringify(historicalResult.findings)
+  );
+
+  const publicReportPath = "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md";
+  const publicReportAbsolute = path.join(fixture, publicReportPath);
+  const publicReport = await fs.readFile(publicReportAbsolute, "utf8");
+  await fs.writeFile(
+    publicReportAbsolute,
+    `${publicReport}\n## Historical rejected plan quotation\n\nTask 10 begins only after this protected repair merges.\n`
+  );
+  const historicalReportResult = auditRepository(fixture);
+  assert.ok(
+    historicalReportResult.findings.every(({ code }) => code !== "public-closeout-stale-evidence"),
+    JSON.stringify(historicalReportResult.findings)
+  );
+  await fs.writeFile(publicReportAbsolute, publicReport);
+
+  const sectionMutations = [
+    {
+      relative: checkpointPath,
+      mutate: (source) => source.replace("## Remaining", "## Retired remaining")
+    },
+    {
+      relative: checkpointPath,
+      mutate: (source) => `${source}\n## Remaining\nDuplicate active state.\n`
+    },
+    {
+      relative: "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md",
+      mutate: (source) => source.replace("## Issue 4 and remaining action", "## Historical issue 4 disposition")
+    },
+    {
+      relative: "docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md",
+      mutate: (source) => `${source}\n## Remaining action and residual risk\nDuplicate active state.\n`
+    }
+  ];
+  for (const { relative, mutate } of sectionMutations) {
+    const absolute = path.join(fixture, relative);
+    const source = await fs.readFile(absolute, "utf8");
+    await fs.writeFile(absolute, mutate(source));
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(
+        ({ code, path: findingPath }) => code === "public-closeout-section" && findingPath === relative
+      ),
+      `${relative}: ${JSON.stringify(result.findings)}`
+    );
+    await fs.writeFile(absolute, source);
   }
 });
 

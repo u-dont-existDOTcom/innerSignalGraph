@@ -2,7 +2,7 @@
 
 Terminal status: `BLOCKED`
 
-Every executable repository-visible and hosted-control task in the public transition has completed its protected evidence path. The terminal label remains `BLOCKED` because GitHub App installation permissions are `UNVERIFIED`: the available OAuth token receives HTTP 403 from `GET /user/installations`, so repository-scoped installed-App permissions cannot be read back. Green local, CodeQL, and branch-protection evidence cannot substitute for that missing readback.
+Every executable repository-visible and hosted-control task in the public transition, Tasks 1-10, has completed its protected evidence path. The terminal label remains `BLOCKED` because GitHub App installation permissions are `UNVERIFIED`: the available OAuth token receives HTTP 403 from `GET /user/installations`, so repository-scoped installed-App permissions cannot be read back. Green local, CodeQL, and branch-protection evidence cannot substitute for that missing readback.
 
 ## Identity and scope
 
@@ -36,7 +36,7 @@ The existing repository became public. The visibility write was invoked at `2026
 | `README.md` | State the public posture without changing branch, release, privacy, model, or therapy authority. |
 | `AGENTS.md` | Route future workers through verified public evidence and preserve integrity maintenance. |
 | `docs/INDEX.md` | Make the completed transition report and checkpoint the obvious evidence route. |
-| `state/CODEX-CURRENT-STATE.md` | Preserve a resumable Task 9/10 checkpoint and exact remaining blocker. |
+| `state/CODEX-CURRENT-STATE.md` | Preserve the completed Tasks 1-10 handoff and exact remaining blocker. |
 | `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md` | Replace stale private-plan evidence with this public hosted-control report. |
 | `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md` | Preserve the full disclosure, audit, CI, protection, lesson, non-effect, and rollback limits. |
 
@@ -101,6 +101,77 @@ Pull request 9 exact-head and merge checks:
 - `codeql-javascript`: run `31869840222`, job `94976658119`, success.
 - GitHub Advanced Security `CodeQL`: check `94976762584`, success.
 
+Protected merged-main checks on `0ccb120442292653a11676ad312f18092944b5a1`:
+
+- `deterministic-package`: run `31869941911`, job `94976909523`, success.
+- `workflow-policy`: run `31869942049`, job `94976909702`, success.
+- `codeql-javascript`: run `31869941895`, job `94976909307`, success.
+- Exact merged-main CodeQL analysis `1622858177` is associated with `0ccb120442292653a11676ad312f18092944b5a1`; final open-alert readback was zero.
+
+<!-- public-closeout-receipt
+{
+  "schemaVersion": 1,
+  "pullRequest": {
+    "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9",
+    "receiptUrl": "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615",
+    "state": "merged",
+    "reviewedHead": "7bf2b1a706aab6a7d9c36070b15590153c652e2a",
+    "reviewedTree": "4ff2a229a628bf0f9dc1a11abb23a88cd6068e18",
+    "mergeCommit": "0ccb120442292653a11676ad312f18092944b5a1",
+    "mergeTree": "4ff2a229a628bf0f9dc1a11abb23a88cd6068e18",
+    "treeMatch": true
+  },
+  "exactHeadChecks": {
+    "deterministic-package": {
+      "run": "31869840311",
+      "job": "94976658513",
+      "conclusion": "success"
+    },
+    "workflow-policy": {
+      "run": "31869840270",
+      "job": "94976658502",
+      "conclusion": "success"
+    },
+    "codeql-javascript": {
+      "run": "31869840222",
+      "job": "94976658119",
+      "conclusion": "success"
+    }
+  },
+  "advancedSecurityCheck": {
+    "id": "94976762584",
+    "conclusion": "success"
+  },
+  "mergedMainChecks": {
+    "deterministic-package": {
+      "run": "31869941911",
+      "job": "94976909523",
+      "conclusion": "success"
+    },
+    "workflow-policy": {
+      "run": "31869942049",
+      "job": "94976909702",
+      "conclusion": "success"
+    },
+    "codeql-javascript": {
+      "run": "31869941895",
+      "job": "94976909307",
+      "conclusion": "success"
+    }
+  },
+  "mergedMainCodeqlAnalysis": {
+    "id": "1622858177",
+    "commit": "0ccb120442292653a11676ad312f18092944b5a1",
+    "openAlerts": 0
+  },
+  "remainingIssue": {
+    "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4",
+    "state": "open",
+    "soleAction": "read repository-scoped installed GitHub App permissions with GitHub App-authorized authentication"
+  }
+}
+-->
+
 The containing Task 9 commit could not embed its own immutable merge identity, so pull request 9's [post-merge receipt](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615) durably binds the exact merge, check, ref, and issue result.
 
 ## Verification evidence
@@ -137,3 +208,5 @@ The current therapy-governance state remains unchanged. No therapy-decision rece
 Issue 4 [remains open](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4) solely for this action: use a GitHub App-authorized token to enumerate accessible installations, select this repository, and record safe repository-scoped installed-App permission names. Until that readback exists, a malicious or overprivileged installed App cannot be ruled out through the available evidence and the exact terminal label remains `BLOCKED`.
 
 No owner decision is required for that executable infrastructure readback. Any therapy/hypnosis/framework, privacy-scope, model-role, owner-card, or stable-release change remains a separate direct owner decision.
+
+All other executable Tasks 1-10 are complete. Repeat read-only hosted verification only if the evidence drifts; obtaining the installed-App permission readback is the sole standing next action.

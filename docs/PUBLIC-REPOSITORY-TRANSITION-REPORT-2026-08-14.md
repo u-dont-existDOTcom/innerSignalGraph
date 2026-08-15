@@ -6,6 +6,8 @@ Terminal status: `BLOCKED`.
 
 This report is the bounded disclosure and hosted-control evidence for the existing `u-dont-existDOTcom/innerSignalGraph` repository. It does not claim that scanners prove the absence of every possible disclosure or that the public transition can retract copies. It does not claim full compliance because repository-scoped installed GitHub App permissions remain `UNVERIFIED`.
 
+All executable Tasks 1-10 completed through their protected paths. This report preserves their immutable transition evidence; it does not direct a future worker to repeat a completed transition task.
+
 ## Disclosure identity and recovery
 
 - Private preparation branch: `codex/public-repository-transition-2026-08-14`
@@ -148,6 +150,80 @@ Pull request [9](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9) 
 | `codeql-javascript` | `31869840222` / `94976658119` | success on exact reviewed head |
 | GitHub Advanced Security `CodeQL` | check `94976762584` | success |
 
+Protected merged-main checks on `0ccb120442292653a11676ad312f18092944b5a1` also succeeded:
+
+| Check | Run / job | Result |
+|---|---|---|
+| `deterministic-package` | `31869941911` / `94976909523` | success on exact merged main |
+| `workflow-policy` | `31869942049` / `94976909702` | success on exact merged main |
+| `codeql-javascript` | `31869941895` / `94976909307` | success on exact merged main |
+
+Exact merged-main CodeQL analysis `1622858177` is associated with `0ccb120442292653a11676ad312f18092944b5a1`; final open-alert readback was zero.
+
+<!-- public-closeout-receipt
+{
+  "schemaVersion": 1,
+  "pullRequest": {
+    "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9",
+    "receiptUrl": "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615",
+    "state": "merged",
+    "reviewedHead": "7bf2b1a706aab6a7d9c36070b15590153c652e2a",
+    "reviewedTree": "4ff2a229a628bf0f9dc1a11abb23a88cd6068e18",
+    "mergeCommit": "0ccb120442292653a11676ad312f18092944b5a1",
+    "mergeTree": "4ff2a229a628bf0f9dc1a11abb23a88cd6068e18",
+    "treeMatch": true
+  },
+  "exactHeadChecks": {
+    "deterministic-package": {
+      "run": "31869840311",
+      "job": "94976658513",
+      "conclusion": "success"
+    },
+    "workflow-policy": {
+      "run": "31869840270",
+      "job": "94976658502",
+      "conclusion": "success"
+    },
+    "codeql-javascript": {
+      "run": "31869840222",
+      "job": "94976658119",
+      "conclusion": "success"
+    }
+  },
+  "advancedSecurityCheck": {
+    "id": "94976762584",
+    "conclusion": "success"
+  },
+  "mergedMainChecks": {
+    "deterministic-package": {
+      "run": "31869941911",
+      "job": "94976909523",
+      "conclusion": "success"
+    },
+    "workflow-policy": {
+      "run": "31869942049",
+      "job": "94976909702",
+      "conclusion": "success"
+    },
+    "codeql-javascript": {
+      "run": "31869941895",
+      "job": "94976909307",
+      "conclusion": "success"
+    }
+  },
+  "mergedMainCodeqlAnalysis": {
+    "id": "1622858177",
+    "commit": "0ccb120442292653a11676ad312f18092944b5a1",
+    "openAlerts": 0
+  },
+  "remainingIssue": {
+    "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4",
+    "state": "open",
+    "soleAction": "read repository-scoped installed GitHub App permissions with GitHub App-authorized authentication"
+  }
+}
+-->
+
 Task 9 baseline and TDD evidence:
 
 - `npm ci --ignore-scripts`: PASS.
@@ -184,3 +260,5 @@ Issue 4 [remains open](https://github.com/u-dont-existDOTcom/innerSignalGraph/is
 > Use a GitHub App-authorized token to enumerate installations accessible to the user, select `u-dont-existDOTcom/innerSignalGraph`, and record only safe repository-scoped installed-App permission names.
 
 Impact: until that readback exists, the available evidence cannot rule out a malicious or overprivileged installed App. No remaining owner policy decision blocks executable infrastructure work, but this applicable `UNVERIFIED` control requires the exact terminal label `BLOCKED`.
+
+All other executable transition and compliance work is complete. Repeat read-only hosted verification only if the evidence drifts; do not rerun completed transition tasks as a standing next step.
