@@ -23,7 +23,7 @@ const expectedCommands = {
 const expectedPublicationTransition = {
   target_visibility: "public",
   license: "MIT",
-  status: "pre_publication_ready",
+  status: "completed",
   design: "docs/superpowers/specs/2026-08-14-public-repository-transition-design.md",
   audit_command: "npm run audit:publication:hosted"
 };
@@ -49,6 +49,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 `;
+const transitionEntryClaims = {
+  "README.md": {
+    public: "The existing GitHub repository is public, and the publication transition is complete.",
+    private: "Its GitHub repository remains private while the approved public transition is in `pre_publication_ready`; this is not a claim that hosted visibility is already public."
+  },
+  "AGENTS.md": {
+    public: "The GitHub repository is public and the publication transition is complete.",
+    private: "The repository remains private until GitHub visibility is changed and read back; `pre_publication_ready` is not public visibility."
+  },
+  "docs/INDEX.md": {
+    public: "The GitHub repository is public and `.github/codex-repository.json` records the completed publication transition.",
+    private: "The repository is still private while `.github/codex-repository.json` records `pre_publication_ready`. Neither the MIT license nor public-ready documentation proves that GitHub visibility or hosted controls have changed."
+  }
+};
 
 async function read(relative) {
   return await fs.readFile(path.join(root, relative), "utf8");
@@ -65,12 +79,12 @@ async function createAuditFixture(t) {
   return fixture;
 }
 
-test("repository profile declares exact commands, publication transition, and one canonical checkpoint", async () => {
+test("public profile declares exact commands, completed publication transition, and one canonical checkpoint", async () => {
   const profile = JSON.parse(await read(".github/codex-repository.json"));
   assert.equal(profile.repository_kind, "software");
   assert.equal(profile.active, true);
   assert.equal(profile.long_running, true);
-  assert.equal(profile.visibility, "private");
+  assert.equal(profile.visibility, "public");
   assert.equal(profile.risk, "critical");
   assert.deepEqual(profile.commands, expectedCommands);
   assert.deepEqual(profile.publication_transition, expectedPublicationTransition);
@@ -111,7 +125,25 @@ test("publication transition entry documents route to the design, audits, checkp
     assert.match(entry, /`npm run audit:publication:hosted`/, relative);
     assert.match(entry, /state\/CODEX-CURRENT-STATE\.md/, relative);
     assert.match(entry, /docs\/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14\.md/, relative);
-    assert.doesNotMatch(entry, /repository is (?:now |already )?public/i, relative);
+    assert.match(entry, /repository is public/i, relative);
+  }
+});
+
+test("public profile rejects stale private transition claims in every entry document", async (t) => {
+  const fixture = await createAuditFixture(t);
+  for (const [relative, { public: publicClaim, private: stalePrivateClaim }] of Object.entries(transitionEntryClaims)) {
+    const absolute = path.join(fixture, relative);
+    const current = await fs.readFile(absolute, "utf8");
+    assert.ok(current.includes(publicClaim), relative);
+    await fs.writeFile(absolute, current.replace(publicClaim, stalePrivateClaim));
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(
+        ({ code, path: findingPath }) => code === "publication-stale-private-claim" && findingPath === relative
+      ),
+      `${relative}: ${JSON.stringify(result.findings)}`
+    );
+    await fs.writeFile(absolute, current);
   }
 });
 
@@ -222,10 +254,7 @@ test("repository audit accepts only the two valid publication transition state p
     publication_transition: expectedPublicationTransition
   };
 
-  for (const [visibility, status] of [
-    ["private", "pre_publication_ready"],
-    ["public", "completed"]
-  ]) {
+  for (const [visibility, status] of [["public", "completed"]]) {
     const profile = structuredClone(baseProfile);
     profile.visibility = visibility;
     profile.publication_transition.status = status;
@@ -233,6 +262,20 @@ test("repository audit accepts only the two valid publication transition state p
     const result = auditRepository(fixture);
     assert.equal(result.ok, true, `${visibility}/${status}: ${JSON.stringify(result.findings)}`);
   }
+
+  const privateProfile = structuredClone(baseProfile);
+  privateProfile.visibility = "private";
+  privateProfile.publication_transition.status = "pre_publication_ready";
+  await fs.writeFile(profilePath, `${JSON.stringify(privateProfile, null, 2)}\n`);
+  const privateResult = auditRepository(fixture);
+  assert.ok(
+    privateResult.findings.every(({ code }) => code !== "profile-publication-transition-state"),
+    JSON.stringify(privateResult.findings)
+  );
+  assert.ok(
+    privateResult.findings.some(({ code }) => code === "publication-premature-public-claim"),
+    "a valid private/pre_publication_ready state pair must still reject final public entry-document bytes"
+  );
 
   for (const [visibility, status] of [
     ["private", "completed"],
@@ -298,10 +341,16 @@ test("repository audit rejects license, contribution, and security contract muta
 
 test("private transition audit rejects additive present-tense public claims in every entry document", async (t) => {
   const fixture = await createAuditFixture(t);
+  const profilePath = path.join(fixture, ".github", "codex-repository.json");
+  const profile = JSON.parse(await fs.readFile(profilePath, "utf8"));
+  profile.visibility = "private";
+  profile.publication_transition.status = "pre_publication_ready";
+  await fs.writeFile(profilePath, `${JSON.stringify(profile, null, 2)}\n`);
   for (const relative of ["README.md", "AGENTS.md", "docs/INDEX.md"]) {
     const absolute = path.join(fixture, relative);
     const original = await fs.readFile(absolute, "utf8");
-    await fs.writeFile(absolute, `${original}\nHosted GitHub visibility is public.\n`);
+    const privateEntry = original.replace(transitionEntryClaims[relative].public, transitionEntryClaims[relative].private);
+    await fs.writeFile(absolute, `${privateEntry}\nHosted GitHub visibility is public.\n`);
     const result = auditRepository(fixture);
     assert.ok(
       result.findings.some(({ code, path: findingPath }) => code === "publication-premature-public-claim" && findingPath === relative),
@@ -310,6 +359,11 @@ test("private transition audit rejects additive present-tense public claims in e
     await fs.writeFile(absolute, original);
   }
 
+  for (const [relative, claims] of Object.entries(transitionEntryClaims)) {
+    const absolute = path.join(fixture, relative);
+    const current = await fs.readFile(absolute, "utf8");
+    await fs.writeFile(absolute, current.replace(claims.public, claims.private));
+  }
   const readmePath = path.join(fixture, "README.md");
   const readme = await fs.readFile(readmePath, "utf8");
   for (const contradiction of [
@@ -565,26 +619,75 @@ test("hosted-control evidence records verified improvements and exact unresolved
       vulnerability_alerts: "enabled",
       dependabot_alerts: "enabled",
       automated_security_fixes: "enabled",
-      default_branch_rules: "disabled",
-      stable_branch_rules: "disabled",
-      secret_scanning: "disabled",
-      push_protection: "disabled",
-      code_scanning: "disabled",
-      private_vulnerability_reporting: "not_applicable",
+      default_branch_rules: "enabled",
+      stable_branch_rules: "enabled",
+      secret_scanning: "enabled",
+      push_protection: "enabled",
+      code_scanning: "enabled",
+      private_vulnerability_reporting: "enabled",
       github_app_permissions: "unverified"
     }
   );
+  assert.match(profile.github_controls_evidence.checked_at, /^2026-08-15T\d{2}:\d{2}:\d{2}Z$/);
+  assert.equal(profile.github_controls_evidence.source, "GitHub REST API readback and verified GitHub Actions results");
+  assert.deepEqual(profile.github_controls_evidence.codeql_run, {
+    id: 31865348513,
+    job_id: 94965480118,
+    url: "https://github.com/u-dont-existDOTcom/innerSignalGraph/actions/runs/31865348513",
+    sha: "956b17cc008fe68b6d9f5e9c36f002066aa9732a",
+    check: "codeql-javascript",
+    conclusion: "success",
+    analysis_ids: [1622692668, 1622690884],
+    open_alerts: 0
+  });
+  assert.deepEqual(profile.github_controls_evidence.branch_protection, {
+    required_contexts: ["deterministic-package", "workflow-policy", "codeql-javascript"],
+    main: {
+      protected: true,
+      strict: true,
+      enforce_admins: true,
+      required_approvals: 0,
+      required_conversation_resolution: true,
+      required_linear_history: true,
+      allow_force_pushes: false,
+      allow_deletions: false
+    },
+    stable: {
+      protected: true,
+      strict: true,
+      enforce_admins: true,
+      required_approvals: 0,
+      required_conversation_resolution: true,
+      required_linear_history: true,
+      allow_force_pushes: false,
+      allow_deletions: false
+    }
+  });
   assert.equal(
     profile.github_controls_evidence.hardening_issue,
     "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4"
   );
-  assert.match(profile.github_controls_evidence.branch_rules, /HTTP 403/);
-  assert.match(profile.github_controls_evidence.security, /HTTP 422/);
+  assert.equal(profile.github_controls_evidence.hardening_issue_state, "open");
+  assert.match(profile.github_controls_evidence.hardening_issue_remaining_action, /GitHub App-authorized token/);
+  assert.match(profile.github_controls_evidence.hardening_issue_remaining_action, /repository-scoped installed-App permissions/);
 
   const report = await read("docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md");
   assert.match(report, /Terminal status:\s*`BLOCKED`/);
   assert.match(report, /issues\/4/);
-  assert.match(report, /81265fd3592ee842bfe30c7d73a5c1f3dc01b2d0/);
+  assert.match(report, /pull\/13/);
+  assert.match(report, /996d67ae9f8f44b0865cea6d88d169dbbadbbf41/);
   assert.match(report, /GitHub App installation permissions[^\n]*`UNVERIFIED`/i);
   assert.doesNotMatch(report, /gho_[A-Za-z0-9]/);
+});
+
+test("hosted-control evidence fails closed without exact CodeQL and branch-protection readback", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const profilePath = path.join(fixture, ".github", "codex-repository.json");
+  const profile = JSON.parse(await fs.readFile(profilePath, "utf8"));
+  delete profile.github_controls_evidence.codeql_run;
+  delete profile.github_controls_evidence.branch_protection;
+  await fs.writeFile(profilePath, `${JSON.stringify(profile, null, 2)}\n`);
+  const result = auditRepository(fixture);
+  assert.ok(result.findings.some(({ code }) => code === "profile-codeql-evidence"));
+  assert.ok(result.findings.some(({ code }) => code === "profile-branch-protection-evidence"));
 });

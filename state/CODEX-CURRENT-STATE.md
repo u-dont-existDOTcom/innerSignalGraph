@@ -4,7 +4,7 @@ Updated: 2026-08-15
 
 ## Goal
 
-Prepare the existing private, active, critical-risk software repository for a verified public-visibility transition without changing therapy/hypnosis policy, model roles, privacy scope, owner decisions, transactional installation, or `stable` release authority. The repository remains private until GitHub visibility is changed and read back in the later hosted task.
+Record the verified public GitHub posture and hosted controls through the second protected evidence pull request without changing therapy/hypnosis policy, model roles, privacy scope, owner decisions, transactional installation, or `stable` release authority. The repository is public; the remaining compliance blocker is installed GitHub App permission readback.
 
 ## Authority / baseline
 
@@ -20,77 +20,62 @@ Prepare the existing private, active, critical-risk software repository for a ve
 
 ## Completed
 
-- Recovered root and nested instructions, Git/worktree/refs, recent commits, open PRs/issues, complete current CI results, hosted GitHub settings, universal guidance, privacy contracts, and transactional installer evidence.
-- Confirmed the prior `codex/github-baseline` tree was already squash-merged into `main`; no valid unfinished tree content needed replay.
-- Created isolated branch `codex/github-compliance-2026-08-14` from `origin/main` without changing the ahead local `stable` checkout or the separate r03 worktree.
-- Committed the accepted compliance design and implementation plan.
-- Reproduced the workflow-policy false positive and replaced raw substring matching with a structural, machine-readable workflow audit, including privileged-trigger, flow-map, pinning, permission, and embedded-token regressions.
-- Pinned Node 24.18.0 and npm 11.16.0 across `.nvmrc`, package metadata, lockfile, CI setup, installer, and local automation; exact-patch regressions and reproducible `npm ci --ignore-scripts` pass.
-- Made the package verifier restore declared generated outputs and reject any additional tracked or untracked drift relative to its caller’s pre-existing status.
-- Consolidated the repository entry path, exact command profile, release-evidence contract, private security/contribution posture, machine audit, sensitive CODEOWNERS routes, and two least-privilege CI workflows with unique check names and weekly drift detection.
-- Enabled and read back GitHub-owned Actions-only execution, full-SHA Action enforcement, vulnerability/Dependabot alerts, and automated security fixes while retaining read-only workflow tokens.
-- Attempted documented branch, ruleset, secret-protection, code-scanning, and private-reporting APIs; preserved their exact 403/422/404 outcomes in the profile and the single hardening issue `https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4`.
-- Repaired and promoted the transferable audit/recovery lessons through `u-dont-existDOTcom/universal-dev-architecture` PR 6, merged as `81265fd3592ee842bfe30c7d73a5c1f3dc01b2d0` with both hosted checks green.
-- Removed wall-clock metadata from compiled guide-graph artifacts under a causal regression, so the package gate tests byte-stable generated output.
-- Closed independent-review bypasses in the workflow audit with semantic YAML parsing, fail-closed flow-style handling, case-insensitive checkout detection, reusable-workflow rejection under `pull_request_target`, and alias-key/value resolution.
-- Made transactional Git updates install locked dependencies in disposable validation and again in the pristine install tree, scrub npm credential/config variables, and fail safely before the old runtime moves. The real-machine regression proves the installed runtime can import its locked dependency and both bootstrap failure points preserve the old runtime byte-identically.
-- The accepted compliance baseline's real-host verifier ended in `VERDICT PASS` with its then-current 300/300 tests. Its focused compliance matrix passed 45/45; the transactional/privacy/readiness/model-role safety matrix passed 56/56; graph passed 12/12; therapy-lesson verification passed 5/5; and repository/workflow audits reported zero errors. The newer transition candidate's current counts are recorded below.
-- The current universal audit at `dacab0268bc01eccac09453ffec8960565bd67e5` reports zero errors and four declared hosted-control warnings; the promoted lesson repair remains merged in its history as `81265fd3592ee842bfe30c7d73a5c1f3dc01b2d0`.
-- The separate r03 Guide Packet branch recorded real Opus compilation as blocked at commit `875b649dd32d5e77e7502a1648b906668781f67f`; Codex was correctly not invoked, installed remains null, and no owner decision or therapy policy advanced.
-- Added a deterministic publication auditor that covers every local Git ref/object plus bounded hosted repository, branch, issue, pull-request, comment, review, Actions-log, and artifact surfaces without retaining or exposing matched private values.
-- Added a pinned Gitleaks 8.29.1 hosted wrapper, SHA-256 verification, private disposable report roots, safe locator normalization, and fail-closed coverage for malformed/incomplete inputs.
-- Added the accepted MIT public contribution/security posture, public-only CodeQL workflow, integrity-bound entry documents, and complete causal publication/repository/workflow regressions while keeping the hosted repository private.
-- Refreshed all branch and pull-request refs twice because generated `runtime-diagnostics` advanced during verification; `origin/main` and `origin/stable` remained fixed.
-- Final refreshed publication audits passed with zero findings: local 43,725 records (14 refs, 122 commits, 1,265 objects, 650 blobs) and hosted 43,888 records (5 branches, 1 issue, 4 pull requests, 6 issue comments, 0 review comments, 0 reviews, 26 Actions runs/logs, 0 artifacts).
-- Focused publication/repository/workflow tests pass 99/99; transactional locked-dependency bootstrap passes 4/4; full tests pass 363/363; graph passes 12/12; therapy lesson governance passes 5/5 with 4 active; all three workflow files audit clean; repository audit has zero errors; the exact real-host package verifier ends in `VERDICT PASS`.
-- Historical, non-blocking compliance-review note: the exact `gpt-5.6-sol` read-only re-review attempted after `a011040` was rejected by the execution-policy gate before model invocation. Earlier exact-model findings were repaired and covered by deterministic gates. This closed historical limitation does not request or require another compliance review; the current Task 5 independent re-review controls the next transition step.
+- Pull request 6 prepared the private repository and was squash-merged as `855bdfab0b18327d320e703daf82903de65817e3` after exact-head `deterministic-package` and `workflow-policy` success and the required private CodeQL skip.
+- The detached merged-main local and hosted preflight passed before disclosure. A later fail-closed hosted-audit repair passed review and pull request 7 was squash-merged as `22179212afd26fc2cc3d89ac9cecdfeedfc8b4e0`.
+- The existing repository—not a mirror or replacement—became public. The write was invoked at `2026-08-15T03:51:54.954Z`; the successful write plus independent `public`/unchanged-ref readback completed at `2026-08-15T03:52:03.707Z`. GitHub's internal mutation instant is `UNVERIFIED` within that bound.
+- Immediate post-public publication audits passed with zero findings: local 46,785 records and hosted 46,977 records. Hosted coverage included 7 branches, 1 issue, 6 pull requests, 6 issue comments, 38 Actions runs/logs, and zero review comments, reviews, or artifacts.
+- Secret scanning, push protection, private vulnerability reporting, vulnerability alerts, Dependabot alerts/security updates, automated security fixes, selected GitHub-owned Actions, full-SHA Action enforcement, and a read-only default workflow token were enabled and read back.
+- Public CodeQL ran on exact `main`. Initial findings were repaired or explicitly dispositioned through pull request 8, whose exact reviewed tree was squash-merged as `956b17cc008fe68b6d9f5e9c36f002066aa9732a`.
+- Exact merged-main CodeQL run `31865348513`, job/check `94965480118`, succeeded on `956b17cc008fe68b6d9f5e9c36f002066aa9732a`; analyses `1622692668` and `1622690884` exist and open-alert readback is zero.
+- `main` and `stable` both read `protected=true` with strict required contexts exactly `deterministic-package`, `workflow-policy`, and `codeql-javascript`; administrators, linear history, pull requests, and conversation resolution are enforced; approvals remain zero; force pushes and deletion are disabled.
+- Universal publication-transition guidance was promoted through `u-dont-existDOTcom/universal-dev-architecture` pull request 13 and merged as `996d67ae9f8f44b0865cea6d88d169dbbadbbf41` after all hosted checks passed.
+- Required root/nested instructions, all four latest root therapy-governance ledgers, transition design/plan/evidence, profile, auditor/tests, Git refs, issue 4, pull requests, Actions, security controls, CodeQL, protection, inventory, and universal evidence were recovered before this evidence edit.
+- The unmodified Task 9 base passed `npm ci --ignore-scripts` and the complete `npm test` baseline. The final-profile TDD command failed 0/2 for the exact stale private/control state before the minimal public evidence implementation.
+- The bounded nine-file Task 9 candidate passes the focused final-profile tests 4/4, repository-compliance tests 22/22, combined publication/repository/workflow tests 110/110, complete `npm test` 382/382, graph regressions 12/12, therapy-ledger verification 5/5 with four active-runtime lessons, repository audit with zero errors and the sole App-permission warning, and real-host `npm run verify` ending in `VERDICT PASS`.
+- After refreshing all hosted refs, the precommit publication audits passed with zero findings: local 49,780 records and hosted 49,999 records. Both covered 26 refs, 138 commits, 1,367 objects, and 686 blobs; hosted coverage additionally included 8 branches, 1 issue, 7 pull requests, 7 issue comments, 1 review comment, 1 review, 49 Actions runs/logs, and zero artifacts.
 
 ## Current checkpoint
 
-- Worktree: `.worktrees/public-repository-transition-2026-08-14`
-- Branch: `codex/public-repository-transition-2026-08-14`
-- Refreshed base: `origin/main` at `7d139f1ab4972fceabcae45529021eee71bc0c4f`, tree `1a993b479e446dee6f59490599a2515a80e2d35f`
-- Fully gated source candidate before the evidence-only commit: `47e6d33078b9ca8bc3ddf2bed1a09a02b111c375`, tree `c81a7b0f28e07abb7a77e6f89fcfe9522726824d`
-- Completed Phase A evidence commit: `c35d8203231cf10f7e8b30cb3017c9a654c7e8c4`, tree `8d1e73ac85ba9989b7f848f38d9df6659f736da0`
-- Exact evidence report: `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md`
-- Current hosted heads at the final audit: `main=7d139f1ab4972fceabcae45529021eee71bc0c4f`, `stable=110ee5342e27d8f1bd3d11cc2be4d85926c255b1`, `runtime-diagnostics=3f2e692e283ab95d5ba6c4b961be6192245eb73b`
-- The immutable identity of the subsequent review-repair commit must be read from Git and recorded in the private pull request; a commit cannot embed its own identity without changing it.
-- `stable` was not advanced and `runtime-diagnostics` was not merged or written by this task.
+- Worktree: `.worktrees/public-hosted-evidence-2026-08-14`
+- Branch: `codex/public-hosted-evidence-2026-08-14`
+- Exact base: protected public `origin/main=956b17cc008fe68b6d9f5e9c36f002066aa9732a`, tree `3c309fccfd3a66316fb95b66be654ad4b74b7449`
+- Current source heads at recovery: `stable=110ee5342e27d8f1bd3d11cc2be4d85926c255b1`; `runtime-diagnostics=ec11097253ad2fe1596c2e3fe8ca40b78470f64f`. The final precommit readback kept `main` and `stable` unchanged while generated `runtime-diagnostics` independently advanced to `31d0a6140ae18a00884f987326caeb9064d65607`; it remains separate and unmerged.
+- No open pull request existed at branch creation. Pull request 2 URL, final head/tree, exact checks, merge identity, and issue comment are recorded through GitHub after publication because they cannot be embedded self-referentially in their own containing commit.
+- Exact report: `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md`
 
 ## Remaining
 
-- Complete independent re-review of the repaired `origin/main...HEAD` candidate.
-- Push one task branch and open one focused private pull request to `main`; require exact-head `deterministic-package` and `workflow-policy` success plus the expected private `codeql-javascript` skip before a reversible merge.
-- After that private merge, run the plan's fresh detached-main preflight before any visibility mutation. Public security enablement, CodeQL execution, and branch protection remain later hosted tasks.
+- Complete the Task 9 security/privacy diff review and freeze the exact containing commit.
+- Obtain independent review before publishing the branch.
+- Open the focused protected pull request `Record verified public repository controls`, require exact-head `deterministic-package`, `workflow-policy`, and `codeql-javascript` success, and prove merge readiness is gated by those contexts.
+- Squash-merge only after the exact reviewed tree is green; verify merged `main` has the candidate tree, `stable` is unchanged, and diagnostics remains separate.
+- Update the pull request and issue 4 with the merge SHA, final check IDs, final main/ref readback, and the sole remaining App-permission action. Keep issue 4 open and retain terminal `BLOCKED`.
+- Task 10 owns the final exact-main verification and final handoff; do not claim it from this checkpoint.
 
 ## Blockers / unresolved
 
-- GitHub rejects private-repository rulesets and branch protection with HTTP 403 plan limitations; both `main` and `stable` read back `protected=false`. This applicable requirement keeps the terminal status `BLOCKED` even if every executable repository gate passes.
-- Secret scanning and push protection are unavailable (HTTP 422); code scanning is disabled/unavailable for this private repository (HTTP 403). Repository-scoped GitHub App installation permissions remain `UNVERIFIED` because the available OAuth token cannot use the App-JWT-only enumeration endpoint.
-- Private vulnerability reporting returns HTTP 404 and GitHub documents the feature for public repositories; it is not applicable to this private repository, which uses `SECURITY.md` and draft security advisories.
-- No stable release is authorized by this compliance task. Repository governance may merge to `main`; promotion to `stable` remains separately owner-gated.
-- No publication-audit finding or incomplete surface currently blocks the private pull request. Public visibility is intentionally still unperformed and is not authorized by green local evidence alone.
+- `GET /user/installations` returns HTTP 403 because the available OAuth token is not authorized to a GitHub App. Repository-scoped installed GitHub App permissions remain `UNVERIFIED`.
+- Exact remaining action: use a GitHub App-authorized token to enumerate installations accessible to the user, select this repository, record only safe repository-scoped permission names, and then update issue 4 through the protected path.
+- Issue [4](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4) remains open solely for that action after Task 9 reconciliation. This applicable unverified control keeps the terminal label `BLOCKED`.
+- No owner decision is required for the remaining executable infrastructure work. No stable release is requested or authorized.
 
 ## Evidence / artifacts
 
-- Accepted design: `docs/superpowers/specs/2026-08-14-codex-github-compliance-design.md`
-- Implementation plan: `docs/superpowers/plans/2026-08-14-codex-github-compliance.md`
-- Exact runtime/profile: `.nvmrc`, `package.json`, `package-lock.json`, `.github/codex-repository.json`
-- Policy regressions: `tests/workflow-policy.test.mjs`, `tests/runtime-baseline.test.mjs`, `tests/verify-clean.test.mjs`, `tests/repository-compliance.test.mjs`
-- Local audits: `scripts/audit-workflows.mjs`, `scripts/audit-repository.mjs`
-- Production implementation report: `IMPLEMENTATION-REPORT-v0.15.2.md`
+- Exact machine profile: `.github/codex-repository.json`
+- Accepted design and plan: `docs/superpowers/specs/2026-08-14-public-repository-transition-design.md`, `docs/superpowers/plans/2026-08-14-public-repository-transition.md`
+- Transition report: `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md`
 - Compliance report: `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md`
-- Public transition design: `docs/superpowers/specs/2026-08-14-public-repository-transition-design.md`
-- Public transition plan: `docs/superpowers/plans/2026-08-14-public-repository-transition.md`
-- Pre-public transition report: `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md`
+- Private preparation: pull request 6 / merge `855bdfab0b18327d320e703daf82903de65817e3`
+- Fail-closed publication repair: pull request 7 / merge `22179212afd26fc2cc3d89ac9cecdfeedfc8b4e0`
+- CodeQL repair and protection prerequisite: pull request 8 / merge `956b17cc008fe68b6d9f5e9c36f002066aa9732a`
+- Exact merged-main CodeQL: run `31865348513`, job `94965480118`, analyses `1622692668` and `1622690884`, zero open alerts
+- Universal lesson: pull request 13 / merge `996d67ae9f8f44b0865cea6d88d169dbbadbbf41`
 - Hosted hardening issue: `https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4`
-- Universal lesson PR/merge: `https://github.com/u-dont-existDOTcom/universal-dev-architecture/pull/6`, `81265fd3592ee842bfe30c7d73a5c1f3dc01b2d0`
-- Separate r03 non-pass report: `.worktrees/guide-packet-r03/.superpowers/sdd/2026-08-14-guide-packet-r03-repair/task-3-report.md`
 
 ## Next safe action
 
-Obtain independent re-review of the repaired candidate, then publish the single private transition PR to `main` and verify its exact-head checks. Keep visibility private and do not advance `stable`.
+Finish the bounded nine-file Task 9 diff review, freeze and verify its exact commit, obtain independent review, then publish one protected evidence pull request to `main`. Do not advance `stable`, merge diagnostics, start the app/browser/installer, or change therapy, model-role, privacy, or release policy.
 
 ## Recovery rule
 
-After interruption, inspect actual Git state, this checkpoint, `.github/codex-repository.json`, newer owner instructions, current PR/check/API state, and the final commits in each worktree. Never infer completion from chat or replay completed changes. Do not copy r03 therapy changes into the compliance branch.
+After interruption, inspect actual Git state, this checkpoint, `.github/codex-repository.json`, newer owner instructions, current PR/check/API state, and the final commits in each worktree. Never infer completion from chat or replay completed changes. Do not copy r03 therapy changes into this branch.

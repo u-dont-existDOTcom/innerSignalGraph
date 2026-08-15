@@ -18,9 +18,9 @@
 - `npm run audit:publication`: local all-ref/all-object publication audit
 - `npm run audit:publication:hosted`: authenticated hosted-surface publication audit
 
-The repository is still private while `.github/codex-repository.json` records `pre_publication_ready`. Neither the MIT license nor public-ready documentation proves that GitHub visibility or hosted controls have changed.
+The GitHub repository is public and `.github/codex-repository.json` records the completed publication transition. Public visibility and every enabled hosted control are supported by GitHub API or Actions evidence in the transition report; repository files alone are not proof. Repository-scoped installed GitHub App permissions remain `UNVERIFIED`, issue 4 remains open, and the terminal label is `BLOCKED`.
 
-The transition report names the fully gated source candidate. Its containing evidence commit/tree must be read from Git and the later pull request because a commit cannot embed its own immutable identity without changing it.
+The transition report names the fully gated private candidate, the public visibility boundary, protected-branch and CodeQL evidence, prior pull requests, and the universal lesson. The containing evidence commit/tree and self-referential pull-request merge identity must be read from Git and the pull request because a commit cannot embed its own immutable identity without changing it.
 
 ## Current evidence
 
