@@ -43,6 +43,7 @@ Prepare the existing private, active, critical-risk software repository for a ve
 - Refreshed all branch and pull-request refs twice because generated `runtime-diagnostics` advanced during verification; `origin/main` and `origin/stable` remained fixed.
 - Final refreshed publication audits passed with zero findings: local 43,725 records (14 refs, 122 commits, 1,265 objects, 650 blobs) and hosted 43,888 records (5 branches, 1 issue, 4 pull requests, 6 issue comments, 0 review comments, 0 reviews, 26 Actions runs/logs, 0 artifacts).
 - Focused publication/repository/workflow tests pass 99/99; transactional locked-dependency bootstrap passes 4/4; full tests pass 363/363; graph passes 12/12; therapy lesson governance passes 5/5 with 4 active; all three workflow files audit clean; repository audit has zero errors; the exact real-host package verifier ends in `VERDICT PASS`.
+- Historical, non-blocking compliance-review note: the exact `gpt-5.6-sol` read-only re-review attempted after `a011040` was rejected by the execution-policy gate before model invocation. Earlier exact-model findings were repaired and covered by deterministic gates. This closed historical limitation does not request or require another compliance review; the current Task 5 independent re-review controls the next transition step.
 
 ## Current checkpoint
 
@@ -50,15 +51,15 @@ Prepare the existing private, active, critical-risk software repository for a ve
 - Branch: `codex/public-repository-transition-2026-08-14`
 - Refreshed base: `origin/main` at `7d139f1ab4972fceabcae45529021eee71bc0c4f`, tree `1a993b479e446dee6f59490599a2515a80e2d35f`
 - Fully gated source candidate before the evidence-only commit: `47e6d33078b9ca8bc3ddf2bed1a09a02b111c375`, tree `c81a7b0f28e07abb7a77e6f89fcfe9522726824d`
+- Completed Phase A evidence commit: `c35d8203231cf10f7e8b30cb3017c9a654c7e8c4`, tree `8d1e73ac85ba9989b7f848f38d9df6659f736da0`
 - Exact evidence report: `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md`
 - Current hosted heads at the final audit: `main=7d139f1ab4972fceabcae45529021eee71bc0c4f`, `stable=110ee5342e27d8f1bd3d11cc2be4d85926c255b1`, `runtime-diagnostics=3f2e692e283ab95d5ba6c4b961be6192245eb73b`
-- The immutable commit/tree containing this checkpoint must be read from Git after the evidence commit; a commit cannot embed its own identity without changing it.
+- The immutable identity of the subsequent review-repair commit must be read from Git and recorded in the private pull request; a commit cannot embed its own identity without changing it.
 - `stable` was not advanced and `runtime-diagnostics` was not merged or written by this task.
 
 ## Remaining
 
-- Commit the pre-public report/profile/checkpoint/index evidence and repeat the exact affected gates, publication/repository audits, diff check, and clean status.
-- Obtain independent review of the complete `origin/main...HEAD` candidate.
+- Complete independent re-review of the repaired `origin/main...HEAD` candidate.
 - Push one task branch and open one focused private pull request to `main`; require exact-head `deterministic-package` and `workflow-policy` success plus the expected private `codeql-javascript` skip before a reversible merge.
 - After that private merge, run the plan's fresh detached-main preflight before any visibility mutation. Public security enablement, CodeQL execution, and branch protection remain later hosted tasks.
 
@@ -67,7 +68,6 @@ Prepare the existing private, active, critical-risk software repository for a ve
 - GitHub rejects private-repository rulesets and branch protection with HTTP 403 plan limitations; both `main` and `stable` read back `protected=false`. This applicable requirement keeps the terminal status `BLOCKED` even if every executable repository gate passes.
 - Secret scanning and push protection are unavailable (HTTP 422); code scanning is disabled/unavailable for this private repository (HTTP 403). Repository-scoped GitHub App installation permissions remain `UNVERIFIED` because the available OAuth token cannot use the App-JWT-only enumeration endpoint.
 - Private vulnerability reporting returns HTTP 404 and GitHub documents the feature for public repositories; it is not applicable to this private repository, which uses `SECURITY.md` and draft security advisories.
-- The final exact `gpt-5.6-sol` read-only re-review was attempted after `a011040` but rejected before model execution by the execution-policy gate, despite the owner's earlier authorization of non-private repository processing. No approval verdict exists. Earlier exact-model reviews produced the repaired Critical/Important regression set; final deterministic and real-machine gates remain the available evidence.
 - No stable release is authorized by this compliance task. Repository governance may merge to `main`; promotion to `stable` remains separately owner-gated.
 - No publication-audit finding or incomplete surface currently blocks the private pull request. Public visibility is intentionally still unperformed and is not authorized by green local evidence alone.
 
@@ -89,7 +89,7 @@ Prepare the existing private, active, critical-risk software repository for a ve
 
 ## Next safe action
 
-Commit and independently review this refreshed evidence, then publish the single private transition PR to `main` and verify its exact-head checks. Keep visibility private and do not advance `stable`.
+Obtain independent re-review of the repaired candidate, then publish the single private transition PR to `main` and verify its exact-head checks. Keep visibility private and do not advance `stable`.
 
 ## Recovery rule
 

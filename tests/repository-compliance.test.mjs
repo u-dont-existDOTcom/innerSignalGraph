@@ -115,6 +115,32 @@ test("publication transition entry documents route to the design, audits, checkp
   }
 });
 
+test("repository audit rejects completed publication-evidence commit steps in the canonical checkpoint", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const reportPath = path.join(fixture, "docs", "PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md");
+  const profile = JSON.parse(await fs.readFile(path.join(fixture, ".github", "codex-repository.json"), "utf8"));
+  const checkpoint = await fs.readFile(path.join(fixture, checkpointPath), "utf8");
+
+  assert.ok((await fs.stat(reportPath)).isFile());
+  assert.match(profile.publication_evidence?.subject_commit ?? "", /^[a-f0-9]{40}$/);
+  assert.equal(profile.publication_evidence?.report, "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md");
+
+  for (const staleStep of [
+    "- Commit the pre-public report/profile/checkpoint/index evidence and repeat the exact affected gates.",
+    "Commit and independently review this refreshed evidence, then publish the single private transition PR."
+  ]) {
+    await fs.writeFile(path.join(fixture, checkpointPath), `${checkpoint}\n${staleStep}\n`);
+    const result = auditRepository(fixture);
+    assert.ok(
+      result.findings.some(
+        ({ code, path: findingPath }) =>
+          code === "checkpoint-stale-publication-evidence-step" && findingPath === checkpointPath
+      ),
+      `${staleStep}: ${JSON.stringify(result.findings)}`
+    );
+  }
+});
+
 test("the repository carries the unmodified standard MIT license", async () => {
   assert.equal(await read("LICENSE"), expectedMitLicense);
 });

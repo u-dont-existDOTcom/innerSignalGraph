@@ -91,6 +91,7 @@ const PUBLIC_CONTRIBUTION_PROHIBITIONS = [
   /\b(?:do not|never) accept public contributions?\b/i
 ];
 const CHECKPOINT = "state/CODEX-CURRENT-STATE.md";
+const PUBLICATION_REPORT = "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md";
 const CONTROL_STATES = new Set(["verified", "enabled", "disabled", "unverified", "not_applicable"]);
 const CHECKPOINT_HEADINGS = [
   "goal",
@@ -314,6 +315,25 @@ function auditAuthority(root, findings, profile) {
   const checkpoint = readText(root, CHECKPOINT, findings)?.toLowerCase() ?? null;
   for (const heading of CHECKPOINT_HEADINGS) {
     requireMatch(checkpoint, new RegExp(`^## ${heading.replace("/", "\\/")}$`, "m"), "checkpoint-heading", CHECKPOINT, `missing checkpoint heading: ${heading}`, findings);
+  }
+  const publicationEvidence = profile?.publication_evidence;
+  const exactPublicationEvidenceRecorded =
+    /^[a-f0-9]{40}$/.test(publicationEvidence?.subject_commit ?? "") &&
+    /^[a-f0-9]{40}$/.test(publicationEvidence?.subject_tree ?? "") &&
+    publicationEvidence?.report === PUBLICATION_REPORT &&
+    fs.existsSync(path.join(root, PUBLICATION_REPORT));
+  if (
+    exactPublicationEvidenceRecorded &&
+    /^(?:-\s+)?commit\b[^\n]*(?:\bpre-public\b[^\n]*\bevidence\b|\brefreshed evidence\b|\bthe evidence\b)/im.test(
+      checkpoint ?? ""
+    )
+  ) {
+    findings.push({
+      severity: "error",
+      code: "checkpoint-stale-publication-evidence-step",
+      path: CHECKPOINT,
+      message: "completed pre-publication evidence commit must not remain an active checkpoint instruction"
+    });
   }
   const retired = readText(root, "docs/CURRENT-STATE.md", findings);
   requireMatch(retired, /superseded/i, "checkpoint-not-superseded", "docs/CURRENT-STATE.md", "competing checkpoint must be marked superseded", findings);
