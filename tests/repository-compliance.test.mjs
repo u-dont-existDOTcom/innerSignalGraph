@@ -270,28 +270,12 @@ test("repository audit rejects license, contribution, and security contract muta
   }
 });
 
-test("private transition audit rejects an affirmative premature public claim in every entry document", async (t) => {
+test("private transition audit rejects additive present-tense public claims in every entry document", async (t) => {
   const fixture = await createAuditFixture(t);
-  const cases = [
-    [
-      "README.md",
-      "Its GitHub repository remains private while the approved public transition is in `pre_publication_ready`; this is not a claim that hosted visibility is already public."
-    ],
-    [
-      "AGENTS.md",
-      "The repository remains private until GitHub visibility is changed and read back; `pre_publication_ready` is not public visibility."
-    ],
-    [
-      "docs/INDEX.md",
-      "The repository is still private while `.github/codex-repository.json` records `pre_publication_ready`. Neither the MIT license nor public-ready documentation proves that GitHub visibility or hosted controls have changed."
-    ]
-  ];
-  for (const [relative, truthfulClaim] of cases) {
+  for (const relative of ["README.md", "AGENTS.md", "docs/INDEX.md"]) {
     const absolute = path.join(fixture, relative);
     const original = await fs.readFile(absolute, "utf8");
-    const mutated = original.replace(truthfulClaim, "Hosted GitHub visibility is public.");
-    assert.notEqual(mutated, original, `${relative}: mutation must replace the bounded truthful claim`);
-    await fs.writeFile(absolute, mutated);
+    await fs.writeFile(absolute, `${original}\nHosted GitHub visibility is public.\n`);
     const result = auditRepository(fixture);
     assert.ok(
       result.findings.some(({ code, path: findingPath }) => code === "publication-premature-public-claim" && findingPath === relative),
@@ -299,34 +283,74 @@ test("private transition audit rejects an affirmative premature public claim in 
     );
     await fs.writeFile(absolute, original);
   }
+
+  const readmePath = path.join(fixture, "README.md");
+  const readme = await fs.readFile(readmePath, "utf8");
+  for (const contradiction of [
+    "The GitHub repository is public.",
+    "Repository visibility is already public.",
+    "Hosted repository visibility is now public.",
+    "The repository is public."
+  ]) {
+    await fs.writeFile(readmePath, `${readme}\n${contradiction}\n`);
+    const result = auditRepository(fixture);
+    assert.ok(result.findings.some(({ code }) => code === "publication-premature-public-claim"), contradiction);
+  }
+
+  await fs.writeFile(
+    readmePath,
+    `${readme}\nThe GitHub repository will become public only after verified readback.\nThe target visibility is public.\nThe public transition design is accepted.\n`
+  );
+  assert.ok(
+    auditRepository(fixture).findings.every(({ code }) => code !== "publication-premature-public-claim"),
+    "future, target, and design language must remain allowed"
+  );
 });
 
-test("repository audit rejects negated public contribution and private reporting contracts", async (t) => {
+test("repository audit rejects additive prohibitions of public contribution and private reporting", async (t) => {
   const fixture = await createAuditFixture(t);
   const cases = [
     [
       "SECURITY.md",
-      "Use GitHub private vulnerability reporting once it is enabled.",
-      "Do not use GitHub private vulnerability reporting once it is enabled.",
-      "security-private-route"
+      "security-private-route",
+      [
+        "Do not use GitHub private vulnerability reporting once it is enabled.",
+        "Never use GitHub private vulnerability reporting.",
+        "GitHub private vulnerability reporting is forbidden.",
+        "GitHub private vulnerability reporting must not be used."
+      ]
     ],
     [
       "CONTRIBUTING.md",
-      "Public contributions are welcome through focused task branches and pull requests.",
-      "Public contributions are forbidden through focused task branches and pull requests.",
-      "contribution-public"
+      "contribution-public",
+      [
+        "Public contributions are forbidden through focused task branches and pull requests.",
+        "Public contributions are not accepted.",
+        "Public contributions are prohibited.",
+        "Do not accept public contributions."
+      ]
     ]
   ];
-  for (const [relative, affirmative, negated, expectedCode] of cases) {
+  for (const [relative, expectedCode, prohibitions] of cases) {
     const absolute = path.join(fixture, relative);
     const original = await fs.readFile(absolute, "utf8");
-    const mutated = original.replace(affirmative, negated);
-    assert.notEqual(mutated, original, `${relative}: mutation must negate the affirmative contract`);
-    await fs.writeFile(absolute, mutated);
-    const result = auditRepository(fixture);
-    assert.ok(result.findings.some(({ code }) => code === expectedCode), `${relative}: ${JSON.stringify(result.findings)}`);
+    for (const prohibition of prohibitions) {
+      await fs.writeFile(absolute, `${original}\n${prohibition}\n`);
+      const result = auditRepository(fixture);
+      assert.ok(result.findings.some(({ code }) => code === expectedCode), `${relative}/${prohibition}: ${JSON.stringify(result.findings)}`);
+    }
     await fs.writeFile(absolute, original);
   }
+
+  const securityPath = path.join(fixture, "SECURITY.md");
+  const security = await fs.readFile(securityPath, "utf8");
+  await fs.writeFile(securityPath, `${security}\nGitHub private vulnerability reporting is not enabled yet.\nDo not put excluded data into GitHub private vulnerability reporting.\n`);
+  assert.ok(auditRepository(fixture).findings.every(({ code }) => code !== "security-private-route"));
+
+  const contributingPath = path.join(fixture, "CONTRIBUTING.md");
+  const contributing = await fs.readFile(contributingPath, "utf8");
+  await fs.writeFile(contributingPath, `${contributing}\nPublic contributions do not grant product authority.\nNot every public contribution is accepted.\n`);
+  assert.ok(auditRepository(fixture).findings.every(({ code }) => code !== "contribution-public"));
 });
 
 test("machine-readable repository audit passes repository-visible controls", async () => {

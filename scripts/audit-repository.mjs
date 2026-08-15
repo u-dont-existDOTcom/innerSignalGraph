@@ -64,6 +64,22 @@ const CONTRIBUTION_CONTRACT = {
   license: "Accepted contributions are licensed under the repository's MIT License.",
   ownerBoundary: "Contribution does not grant authority over owner-gated therapy/framework policy, owner decision cards, model roles, privacy scope, or stable release approval."
 };
+const PREMATURE_PUBLIC_ASSERTIONS = [
+  /\bhosted github visibility is (?:now |already )?public\b/i,
+  /\b(?:the )?github repository is (?:now |already )?public\b/i,
+  /\brepository visibility is (?:now |already )?public\b/i,
+  /\bhosted repository visibility is (?:now |already )?public\b/i,
+  /\bthe repository is (?:now |already )?public\b/i
+];
+const PRIVATE_REPORTING_PROHIBITIONS = [
+  /\b(?:do not|never) use github private vulnerability reporting\b/i,
+  /\bgithub private vulnerability reporting (?:is (?:forbidden|prohibited|disallowed)|(?:must|should) not be used)\b/i
+];
+const PUBLIC_CONTRIBUTION_PROHIBITIONS = [
+  /\bpublic contributions? are (?:forbidden|prohibited|disallowed)\b/i,
+  /\bpublic contributions? are not (?:accepted|allowed|welcome)\b/i,
+  /\b(?:do not|never) accept public contributions?\b/i
+];
 const CHECKPOINT = "state/CODEX-CURRENT-STATE.md";
 const CONTROL_STATES = new Set(["verified", "enabled", "disabled", "unverified", "not_applicable"]);
 const CHECKPOINT_HEADINGS = [
@@ -127,6 +143,12 @@ function requireMatch(text, pattern, code, relative, message, findings) {
 
 function requireLiteral(text, expected, code, relative, message, findings) {
   if (text !== null && !text.includes(expected)) findings.push({ severity: "error", code, path: relative, message });
+}
+
+function rejectPatterns(text, patterns, code, relative, message, findings) {
+  if (text !== null && patterns.some((pattern) => pattern.test(text))) {
+    findings.push({ severity: "error", code, path: relative, message });
+  }
 }
 
 function auditProfile(root, findings) {
@@ -207,6 +229,14 @@ function auditAuthority(root, findings, profile) {
         "private/pre_publication_ready entry document must retain its bounded truthful hosted-visibility statement",
         findings
       );
+      rejectPatterns(
+        entry,
+        PREMATURE_PUBLIC_ASSERTIONS,
+        "publication-premature-public-claim",
+        relative,
+        "private/pre_publication_ready entry document contains a present-tense hosted-public assertion",
+        findings
+      );
     }
   }
   const checkpoint = readText(root, CHECKPOINT, findings)?.toLowerCase() ?? null;
@@ -232,11 +262,13 @@ function auditPolicyDocuments(root, findings) {
   requireLiteral(security, SECURITY_CONTRACT.fallback, "security-private-route", "SECURITY.md", "missing exact draft-advisory/private-contact fallback", findings);
   requireLiteral(security, SECURITY_CONTRACT.reproduction, "security-reproduction", "SECURITY.md", "missing exact synthetic/redacted reproduction contract", findings);
   requireLiteral(security, SECURITY_CONTRACT.excludedData, "security-excluded-data", "SECURITY.md", "missing exact excluded-data boundary", findings);
+  rejectPatterns(security, PRIVATE_REPORTING_PROHIBITIONS, "security-private-route", "SECURITY.md", "private vulnerability reporting is explicitly prohibited", findings);
 
   const contributing = readText(root, "CONTRIBUTING.md", findings);
   requireLiteral(contributing, CONTRIBUTION_CONTRACT.workflow, "contribution-public", "CONTRIBUTING.md", "missing affirmative public contribution workflow", findings);
   requireLiteral(contributing, CONTRIBUTION_CONTRACT.license, "contribution-license", "CONTRIBUTING.md", "missing accepted-contribution MIT grant", findings);
   requireLiteral(contributing, CONTRIBUTION_CONTRACT.ownerBoundary, "contribution-owner-boundary", "CONTRIBUTING.md", "missing exact owner-authority boundary", findings);
+  rejectPatterns(contributing, PUBLIC_CONTRIBUTION_PROHIBITIONS, "contribution-public", "CONTRIBUTING.md", "public contributions are explicitly prohibited or rejected", findings);
 
   const license = readText(root, "LICENSE", findings);
   if (license !== null && license !== EXPECTED_MIT_LICENSE) {
