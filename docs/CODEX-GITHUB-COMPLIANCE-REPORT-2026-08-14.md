@@ -2,14 +2,14 @@
 
 Terminal status: `BLOCKED`
 
-Every executable repository-visible and hosted-control task in the public transition is complete or in the final protected evidence pull-request path. The terminal label remains `BLOCKED` because GitHub App installation permissions are `UNVERIFIED`: the available OAuth token receives HTTP 403 from `GET /user/installations`, so repository-scoped installed-App permissions cannot be read back. Green local, CodeQL, and branch-protection evidence cannot substitute for that missing readback.
+Every executable repository-visible and hosted-control task in the public transition, Tasks 1-10, has completed its protected evidence path. The terminal label remains `BLOCKED` because GitHub App installation permissions are `UNVERIFIED`: the available OAuth token receives HTTP 403 from `GET /user/installations`, so repository-scoped installed-App permissions cannot be read back. Green local, CodeQL, and branch-protection evidence cannot substitute for that missing readback.
 
 ## Identity and scope
 
 - Repository: `u-dont-existDOTcom/innerSignalGraph`
 - Classification: public, active, critical-risk software
-- Current Task 9 branch: `codex/public-hosted-evidence-2026-08-14`
-- Exact Task 9 base: protected `main=956b17cc008fe68b6d9f5e9c36f002066aa9732a`, tree `3c309fccfd3a66316fb95b66be654ad4b74b7449`
+- Task 10 reconciliation baseline: protected `main=0ccb120442292653a11676ad312f18092944b5a1`, tree `4ff2a229a628bf0f9dc1a11abb23a88cd6068e18`
+- Completed public hosted-evidence head: `7bf2b1a706aab6a7d9c36070b15590153c652e2a`, whose reviewed tree exactly matches the squash-merge tree
 - Canonical checkpoint: `state/CODEX-CURRENT-STATE.md`
 - Branch authority preserved: `main` is development; `stable` is the sole installation/release source; `runtime-diagnostics` is generated allowlisted status and never merges into source.
 - Non-effects: no therapy/hypnosis/framework policy, guide, graph, prompt, safety/evidence policy, owner decision, privacy scope, model role, installer/runtime, or stable release changed.
@@ -21,7 +21,7 @@ Every executable repository-visible and hosted-control task in the public transi
 | Private readiness | Pull request [6](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/6), head `b1f071ba6093e48ecb2b835cd8c6d54dea11e394`, squash merge `855bdfab0b18327d320e703daf82903de65817e3`. |
 | Fail-closed hosted audit repair | Pull request [7](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/7), head `ce2658570964329a3f95f2a919c2c55f8e91dc59`, squash merge `22179212afd26fc2cc3d89ac9cecdfeedfc8b4e0`. |
 | Public CodeQL repair | Pull request [8](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/8), head `02bbf6d3f46ff15a1950b3ba4af38d7f69c9e8c9`, squash merge `956b17cc008fe68b6d9f5e9c36f002066aa9732a`. |
-| Public hosted evidence | Branch `codex/public-hosted-evidence-2026-08-14`; pull-request URL, final head/tree, check IDs, merge SHA, and final `main` are recorded in the pull request and issue 4 after they exist. A containing commit cannot embed its own immutable identity. |
+| Public hosted evidence | Pull request [9](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9), reviewed head `7bf2b1a706aab6a7d9c36070b15590153c652e2a`, tree `4ff2a229a628bf0f9dc1a11abb23a88cd6068e18`, squash merge/final baseline `0ccb120442292653a11676ad312f18092944b5a1`, and [durable self-referential receipt](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615). |
 
 The existing repository became public. The visibility write was invoked at `2026-08-15T03:51:54.954Z`; the successful write plus independent `visibility=public`, `private=false`, unchanged-identity, and unchanged-ref readback completed at `2026-08-15T03:52:03.707Z`. GitHub's internal mutation instant is `UNVERIFIED` within that observed bound. A later private switch could not retract public clones, forks, caches, or mirrors.
 
@@ -36,7 +36,7 @@ The existing repository became public. The visibility write was invoked at `2026
 | `README.md` | State the public posture without changing branch, release, privacy, model, or therapy authority. |
 | `AGENTS.md` | Route future workers through verified public evidence and preserve integrity maintenance. |
 | `docs/INDEX.md` | Make the completed transition report and checkpoint the obvious evidence route. |
-| `state/CODEX-CURRENT-STATE.md` | Preserve a resumable Task 9/10 checkpoint and exact remaining blocker. |
+| `state/CODEX-CURRENT-STATE.md` | Preserve the completed Tasks 1-10 handoff and exact remaining blocker. |
 | `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md` | Replace stale private-plan evidence with this public hosted-control report. |
 | `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md` | Preserve the full disclosure, audit, CI, protection, lesson, non-effect, and rollback limits. |
 
@@ -94,7 +94,89 @@ Pull request 8 exact-head checks:
 - `codeql-javascript`: run `31865209098`, job `94965049683`, success.
 - GitHub Advanced Security `CodeQL`: check `94965151294`, success with zero new alert.
 
-Task 9's protected pull-request URL and exact-head check/run IDs are recorded in that pull request and its post-merge comment because they do not exist before the containing evidence branch is published.
+## Verified closeout receipt
+
+Pull request 9 is merged: reviewed candidate tree `4ff2a229a628bf0f9dc1a11abb23a88cd6068e18` equals merged-main tree `4ff2a229a628bf0f9dc1a11abb23a88cd6068e18` at `0ccb120442292653a11676ad312f18092944b5a1`.
+
+Pull request 9 exact-head and merge checks:
+
+- `deterministic-package`: run `31869840311`, job `94976658513`, success.
+- `workflow-policy`: run `31869840270`, job `94976658502`, success.
+- `codeql-javascript`: run `31869840222`, job `94976658119`, success.
+- GitHub Advanced Security `CodeQL`: check `94976762584`, success.
+
+Protected merged-main checks on `0ccb120442292653a11676ad312f18092944b5a1`:
+
+- `deterministic-package`: run `31869941911`, job `94976909523`, success.
+- `workflow-policy`: run `31869942049`, job `94976909702`, success.
+- `codeql-javascript`: run `31869941895`, job `94976909307`, success.
+- Exact merged-main CodeQL analysis `1622858177` is associated with `0ccb120442292653a11676ad312f18092944b5a1`; final open-alert readback was zero.
+
+<!-- public-closeout-receipt
+{
+  "schemaVersion": 1,
+  "pullRequest": {
+    "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9",
+    "receiptUrl": "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615",
+    "state": "merged",
+    "reviewedHead": "7bf2b1a706aab6a7d9c36070b15590153c652e2a",
+    "reviewedTree": "4ff2a229a628bf0f9dc1a11abb23a88cd6068e18",
+    "mergeCommit": "0ccb120442292653a11676ad312f18092944b5a1",
+    "mergeTree": "4ff2a229a628bf0f9dc1a11abb23a88cd6068e18",
+    "treeMatch": true
+  },
+  "exactHeadChecks": {
+    "deterministic-package": {
+      "run": "31869840311",
+      "job": "94976658513",
+      "conclusion": "success"
+    },
+    "workflow-policy": {
+      "run": "31869840270",
+      "job": "94976658502",
+      "conclusion": "success"
+    },
+    "codeql-javascript": {
+      "run": "31869840222",
+      "job": "94976658119",
+      "conclusion": "success"
+    }
+  },
+  "advancedSecurityCheck": {
+    "id": "94976762584",
+    "conclusion": "success"
+  },
+  "mergedMainChecks": {
+    "deterministic-package": {
+      "run": "31869941911",
+      "job": "94976909523",
+      "conclusion": "success"
+    },
+    "workflow-policy": {
+      "run": "31869942049",
+      "job": "94976909702",
+      "conclusion": "success"
+    },
+    "codeql-javascript": {
+      "run": "31869941895",
+      "job": "94976909307",
+      "conclusion": "success"
+    }
+  },
+  "mergedMainCodeqlAnalysis": {
+    "id": "1622858177",
+    "commit": "0ccb120442292653a11676ad312f18092944b5a1",
+    "openAlerts": 0
+  },
+  "remainingIssue": {
+    "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4",
+    "state": "open",
+    "soleAction": "read repository-scoped installed GitHub App permissions with GitHub App-authorized authentication"
+  }
+}
+-->
+
+The containing Task 9 commit could not embed its own immutable merge identity, so pull request 9's [post-merge receipt](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615) durably binds the exact merge, check, ref, and issue result.
 
 ## Verification evidence
 
@@ -108,7 +190,7 @@ Task 9's protected pull-request URL and exact-head check/run IDs are recorded in
 - Independent-review hosted-control RED: the causal mutation test failed 1/1 because all thirteen then-recorded public control keys could drift without an audit error. The repaired profile records Dependabot security updates explicitly, and the machine audit now requires the exact fourteen-key public/completed map with only installed-App permissions unverified; the focused drift/evidence tests pass 2/2 while private/pre-public states retain warning semantics.
 - Task 9 precommit candidate: `npm run audit:repository` PASS with zero errors and one warning solely for the installed-App readback; `npm test` PASS 382/382; `npm run graph:test` PASS 12/12; `npm run therapy-lessons:verify` PASS 5/5 with four active-runtime lessons; real-host `npm run verify` ended in `VERDICT PASS`.
 - After all hosted refs were refreshed, Task 9 publication audits passed with zero findings: local 49,780 records and hosted 49,999 records. Both covered 26 refs, 138 commits, 1,367 objects, and 686 blobs; hosted coverage added 8 branches, 1 issue, 7 pull requests, 7 issue comments, 1 review comment, 1 review, 49 Actions runs/logs, and zero artifacts.
-- The exact repaired containing-commit rerun, two independent approvals, and hosted CI are recorded in the protected pull request before merge; the containing commit and CI, rather than self-referential prose, establish its immutable identity.
+- The exact repaired containing-commit rerun passed the focused 113/113, complete 385/385, graph 12/12, therapy 5/5, repository, local/hosted publication, and real-host package gates. Two independent approvals preceded publication, and the exact protected checks above succeeded before the squash merge.
 
 ## Release, privacy, and policy boundaries
 
@@ -127,6 +209,8 @@ The current therapy-governance state remains unchanged. No therapy-decision rece
 
 ## Remaining action and residual risk
 
-Issue [4](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4) remains open. After Task 9 merge, it must contain only this action: use a GitHub App-authorized token to enumerate accessible installations, select this repository, and record safe repository-scoped installed-App permission names. Until that readback exists, a malicious or overprivileged installed App cannot be ruled out through the available evidence and the exact terminal label remains `BLOCKED`.
+Issue 4 [remains open](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4) solely for this action: use a GitHub App-authorized token to enumerate accessible installations, select this repository, and record safe repository-scoped installed-App permission names. Until that readback exists, a malicious or overprivileged installed App cannot be ruled out through the available evidence and the exact terminal label remains `BLOCKED`.
 
 No owner decision is required for that executable infrastructure readback. Any therapy/hypnosis/framework, privacy-scope, model-role, owner-card, or stable-release change remains a separate direct owner decision.
+
+All other executable Tasks 1-10 are complete. Repeat read-only hosted verification only if the evidence drifts; obtaining the installed-App permission readback is the sole standing next action.
