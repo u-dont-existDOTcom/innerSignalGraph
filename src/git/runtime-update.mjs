@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import { runSubprocess } from "../core/subprocess.mjs";
 import { summarizeTestFailure } from "../diagnostics/test-failure-summary.mjs";
 import { validateGitAutomationRoots } from "./automation-config.mjs";
+import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 
 const GIT_SHA = /^[a-f0-9]{40}$/i;
 const BRANCH = /^[A-Za-z0-9._/-]+$/;
@@ -282,7 +283,7 @@ async function movePreservedState(fromRoot, toRoot) {
   return moved;
 }
 
-async function hashEntry(hash, root, current, relative) {
+async function hashEntry(hash, root, current, relative, withOpenedFile) {
   const stat = await fs.lstat(current);
   if (stat.isSymbolicLink()) {
     hash.update(`l:${relative}:${stat.mode & 0o777}\0${await fs.readlink(current)}\0`);
@@ -293,22 +294,24 @@ async function hashEntry(hash, root, current, relative) {
     const entries = (await fs.readdir(current)).sort();
     for (const name of entries) {
       const childRelative = relative ? `${relative}/${name}` : name;
-      await hashEntry(hash, root, path.join(current, name), childRelative);
+      await hashEntry(hash, root, path.join(current, name), childRelative, withOpenedFile);
     }
     return;
   }
   if (!stat.isFile()) throw new Error(`Unsupported preserved state entry: ${relative}`);
-  hash.update(`f:${relative}:${stat.mode & 0o777}:${stat.size}\0`);
-  hash.update(await fs.readFile(current));
-  hash.update("\0");
+  await withOpenedFile(current, async (handle, openedStat) => {
+    hash.update(`f:${relative}:${openedStat.mode & 0o777}:${openedStat.size}\0`);
+    hash.update(await handle.readFile());
+    hash.update("\0");
+  });
 }
 
-async function preservedHash(root) {
+async function preservedHash(root, withOpenedFile) {
   const hash = createHash("sha256");
   for (const name of PRESERVED) {
     const target = path.join(root, name);
     try {
-      await hashEntry(hash, root, target, name);
+      await hashEntry(hash, root, target, name, withOpenedFile);
     } catch (error) {
       if (error?.code === "ENOENT") hash.update(`missing:${name}\0`);
       else throw error;
@@ -367,6 +370,7 @@ export async function runGitUpdate({
   run = runSubprocess,
   validateCandidate = defaultValidateCandidate,
   beforeStateTransfer = null,
+  withOpenedFile = withOpenedRegularFile,
   activateRuntime = fs.rename,
   fetchTimeoutMs = 15_000,
   now = () => new Date()
@@ -380,6 +384,7 @@ export async function runGitUpdate({
   if (beforeStateTransfer !== null && typeof beforeStateTransfer !== "function") {
     throw new TypeError("beforeStateTransfer must be a function");
   }
+  if (typeof withOpenedFile !== "function") throw new TypeError("withOpenedFile must be a function");
   if (typeof activateRuntime !== "function") throw new TypeError("activateRuntime must be a function");
   if (!Number.isSafeInteger(fetchTimeoutMs) || fetchTimeoutMs < 1 || fetchTimeoutMs > 15_000) {
     throw new TypeError("fetchTimeoutMs must be an integer from 1 through 15000");
@@ -548,7 +553,7 @@ export async function runGitUpdate({
       });
     }
 
-    const beforeStateHash = await preservedHash(installedRoot);
+    const beforeStateHash = await preservedHash(installedRoot, withOpenedFile);
     if (beforeStateTransfer) await beforeStateTransfer({ installedRoot, stateDir });
     const integrity = {
       runtimeTreeSha256: await managedTreeHash(stagingRoot),
@@ -577,7 +582,7 @@ export async function runGitUpdate({
         if (error?.code !== "ENOENT") throw error;
       }
       if (oldRuntimeMoved) movedState = await movePreservedState(rollbackRoot, stagingRoot);
-      const stagedStateHash = await preservedHash(stagingRoot);
+      const stagedStateHash = await preservedHash(stagingRoot, withOpenedFile);
       if (stagedStateHash !== beforeStateHash) {
         if (oldRuntimeMoved) {
           await restorePreservedState(stagingRoot, rollbackRoot, movedState);

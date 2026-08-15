@@ -9,6 +9,7 @@ import { promisify } from "node:util";
 import { loadGitAutomationConfig } from "../src/git/automation-config.mjs";
 import { runGitUpdate } from "../src/git/runtime-update.mjs";
 import { runSubprocess } from "../src/core/subprocess.mjs";
+import { withOpenedRegularFile } from "../src/core/opened-regular-file.mjs";
 
 const execFileAsync = promisify(execFile);
 const repository = "u-dont-existDOTcom/innerSignalGraph";
@@ -626,6 +627,40 @@ test("a private-state write during transfer aborts the swap without losing the w
   assert.equal(result.stage, "state-overlay");
   assert.equal(await fs.readFile(path.join(context.installedRoot, "src/managed.txt"), "utf8"), "managed-v1\n");
   assert.equal(await fs.readFile(lateState, "utf8"), "{\"late\":true}\n");
+});
+
+test("a preserved file pathname replacement during hashing fails safe without losing either inode", async (t) => {
+  const context = await createRepository(t);
+  await context.advance({ version: "1.1.0", marker: "managed-v2" });
+  const envPath = path.join(context.installedRoot, ".env");
+  const replacement = path.join(context.root, "replacement.env");
+  await fs.writeFile(replacement, "PRIVATE_ENV_SENTINEL=replacement\n", { mode: 0o600 });
+  let replaced = false;
+
+  const result = await runGitUpdate({
+    repository,
+    sourceRoot: context.sourceRoot,
+    installedRoot: context.installedRoot,
+    stableBranch: "stable",
+    stateDir: context.stateDir,
+    validateCandidate: async () => ({ ok: true }),
+    withOpenedFile: async (file, reader) => await withOpenedRegularFile(file, async (handle, openedStat) => {
+      if (!replaced && file === envPath) {
+        await fs.rename(file, `${file}.original`);
+        await fs.symlink(replacement, file);
+        replaced = true;
+      }
+      return await reader(handle, openedStat);
+    }),
+    now: () => new Date("2026-08-12T06:22:30.000Z")
+  });
+
+  assert.equal(replaced, true);
+  assert.equal(result.status, "FAILED_SAFE");
+  assert.equal(result.stage, "state-overlay");
+  assert.equal(await fs.readFile(path.join(context.installedRoot, "src/managed.txt"), "utf8"), "managed-v1\n");
+  assert.equal(await fs.readFile(`${envPath}.original`, "utf8"), context.sentinels[".env"]);
+  assert.equal(await fs.readlink(envPath), replacement);
 });
 
 test("activation failure restores both the old runtime and its old installed-commit marker", async (t) => {

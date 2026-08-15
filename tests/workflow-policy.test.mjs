@@ -67,6 +67,21 @@ async function workflowFixture(t, workflows) {
   return root;
 }
 
+async function safeWorkflowFile(root, name = "safe.yml") {
+  const file = path.join(root, name);
+  await fs.writeFile(file, `name: Safe
+on: pull_request
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - run: true
+`);
+  return file;
+}
+
 async function repositoryFixture(t) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-codeql-policy-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
@@ -107,6 +122,55 @@ jobs:
   const result = await runAudit(root);
   assert.equal(result.code, 0, `${result.stdout}\n${result.stderr}`);
   assert.deepEqual(parseResult(result).findings, []);
+});
+
+test("workflow audit rejects a workflow file symlink that escapes the checkout", async (t) => {
+  const root = await workflowFixture(t, {});
+  const outsideRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-workflow-outside-"));
+  t.after(() => fs.rm(outsideRoot, { recursive: true, force: true }));
+  const outside = await safeWorkflowFile(outsideRoot);
+  await fs.symlink(outside, path.join(root, ".github", "workflows", "escape.yml"));
+
+  const result = auditWorkflows(root);
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.checked, []);
+  assert.deepEqual(result.findings.map(({ code, path: findingPath }) => ({ code, path: findingPath })), [
+    { code: "workflow-file-unsafe", path: ".github/workflows/escape.yml" }
+  ]);
+});
+
+test("workflow audit rejects a workflow-directory symlink that escapes the checkout", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-workflow-root-link-"));
+  const outsideRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-workflow-root-outside-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  t.after(() => fs.rm(outsideRoot, { recursive: true, force: true }));
+  await fs.mkdir(path.join(root, ".github"), { recursive: true });
+  await safeWorkflowFile(outsideRoot);
+  await fs.symlink(outsideRoot, path.join(root, ".github", "workflows"));
+
+  const result = auditWorkflows(root);
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.checked, []);
+  assert.deepEqual(result.findings.map(({ code, path: findingPath }) => ({ code, path: findingPath })), [
+    { code: "workflow-directory-unsafe", path: ".github/workflows" }
+  ]);
+});
+
+test("workflow audit rejects a .github ancestor symlink that escapes the checkout", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-workflow-ancestor-link-"));
+  const outsideRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-workflow-ancestor-outside-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  t.after(() => fs.rm(outsideRoot, { recursive: true, force: true }));
+  await fs.mkdir(path.join(outsideRoot, "workflows"));
+  await safeWorkflowFile(path.join(outsideRoot, "workflows"));
+  await fs.symlink(outsideRoot, path.join(root, ".github"));
+
+  const result = auditWorkflows(root);
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.checked, []);
+  assert.deepEqual(result.findings.map(({ code, path: findingPath }) => ({ code, path: findingPath })), [
+    { code: "workflow-directory-unsafe", path: ".github/workflows" }
+  ]);
 });
 
 test("a real pull_request_target workflow that checks out code is rejected", async (t) => {

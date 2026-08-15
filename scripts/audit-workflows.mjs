@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { isAlias, isMap, isScalar, isSeq, LineCounter, parseDocument } from "yaml";
+import { withOpenedRegularFileSync } from "../src/core/opened-regular-file.mjs";
 
 const FULL_SHA = /^[0-9a-fA-F]{40}$/;
 
@@ -233,7 +234,8 @@ export function auditWorkflowText(text, relativePath) {
 
 export function auditWorkflows(root = process.cwd()) {
   const resolvedRoot = path.resolve(root);
-  const workflowRoot = path.join(resolvedRoot, ".github", "workflows");
+  const metadataRoot = path.join(resolvedRoot, ".github");
+  const workflowRoot = path.join(metadataRoot, "workflows");
   const checked = [];
   const findings = [];
   if (!fs.existsSync(workflowRoot)) {
@@ -244,12 +246,39 @@ export function auditWorkflows(root = process.cwd()) {
       message: "workflow directory is missing"
     });
   } else {
-    for (const name of fs.readdirSync(workflowRoot).filter((item) => /\.ya?ml$/i.test(item)).sort()) {
-      const absolute = path.join(workflowRoot, name);
-      if (!fs.statSync(absolute).isFile()) continue;
-      const relative = path.relative(resolvedRoot, absolute).split(path.sep).join("/");
-      checked.push(relative);
-      findings.push(...auditWorkflowText(fs.readFileSync(absolute, "utf8"), relative));
+    const metadataRootStat = fs.lstatSync(metadataRoot);
+    const workflowRootStat = fs.lstatSync(workflowRoot);
+    if (
+      !metadataRootStat.isDirectory()
+      || metadataRootStat.isSymbolicLink()
+      || !workflowRootStat.isDirectory()
+      || workflowRootStat.isSymbolicLink()
+    ) {
+      findings.push({
+        code: "workflow-directory-unsafe",
+        path: ".github/workflows",
+        line: 1,
+        message: "workflow directory must be a real directory inside the repository"
+      });
+    } else {
+      for (const name of fs.readdirSync(workflowRoot).filter((item) => /\.ya?ml$/i.test(item)).sort()) {
+        const absolute = path.join(workflowRoot, name);
+        const relative = path.relative(resolvedRoot, absolute).split(path.sep).join("/");
+        let source;
+        try {
+          source = withOpenedRegularFileSync(absolute, (descriptor) => fs.readFileSync(descriptor, "utf8"));
+        } catch {
+          findings.push({
+            code: "workflow-file-unsafe",
+            path: relative,
+            line: 1,
+            message: "workflow entry must be a readable regular file inside the workflow directory"
+          });
+          continue;
+        }
+        checked.push(relative);
+        findings.push(...auditWorkflowText(source, relative));
+      }
     }
   }
   findings.sort((left, right) =>
