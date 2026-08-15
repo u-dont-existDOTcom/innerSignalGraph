@@ -2,7 +2,9 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { pathToFileURL } from "node:url";
+import { parseDocument } from "yaml";
 import { auditWorkflows } from "./audit-workflows.mjs";
 
 const EXPECTED_CLASSIFICATION = {
@@ -124,6 +126,48 @@ const REQUIRED_OWNER_PATHS = [
   "/ledgers/",
   "/docs/RELEASE-EVIDENCE.md"
 ];
+const CODEQL_WORKFLOW_PATH = ".github/workflows/codeql.yml";
+const CODEQL_ACTION_SHA = "ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd";
+const EXPECTED_CODEQL_WORKFLOW = {
+  name: "CodeQL",
+  on: {
+    pull_request: null,
+    push: { branches: ["main", "stable"] },
+    schedule: [{ cron: "23 5 * * 3" }],
+    workflow_dispatch: null
+  },
+  permissions: { contents: "read" },
+  concurrency: {
+    group: "${{ github.workflow }}-${{ github.ref }}",
+    "cancel-in-progress": "${{ github.event_name == 'pull_request' }}"
+  },
+  jobs: {
+    analyze: {
+      if: "github.event.repository.private == false",
+      name: "codeql-javascript",
+      "runs-on": "ubuntu-latest",
+      "timeout-minutes": 30,
+      permissions: { contents: "read", "security-events": "write" },
+      steps: [
+        {
+          name: "Check out repository",
+          uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+          with: { "persist-credentials": false }
+        },
+        {
+          name: "Initialize CodeQL",
+          uses: `github/codeql-action/init@${CODEQL_ACTION_SHA}`,
+          with: { languages: "javascript-typescript", queries: "security-extended" }
+        },
+        {
+          name: "Analyze",
+          uses: `github/codeql-action/analyze@${CODEQL_ACTION_SHA}`
+        }
+      ]
+    }
+  }
+};
+const FORBIDDEN_CODEQL_REFERENCES = /pull_request_target|write-all|packages:\s*read|OPENAI|ANTHROPIC|CLAUDE|FABLE|secrets\./i;
 
 function readText(root, relative, findings) {
   try {
@@ -346,6 +390,60 @@ function auditRuntime(root, findings) {
   }
 }
 
+function auditCodeqlWorkflow(root, findings) {
+  const text = readText(root, CODEQL_WORKFLOW_PATH, findings);
+  if (text === null) {
+    findings.push({
+      severity: "error",
+      code: "ci-codeql",
+      path: CODEQL_WORKFLOW_PATH,
+      message: "the exact visibility-gated CodeQL workflow is required"
+    });
+    return;
+  }
+
+  const document = parseDocument(text, { strict: true, uniqueKeys: true });
+  if (document.errors.length > 0) {
+    findings.push({
+      severity: "error",
+      code: "ci-codeql",
+      path: CODEQL_WORKFLOW_PATH,
+      message: "CodeQL workflow YAML must parse uniquely and strictly"
+    });
+    return;
+  }
+
+  let workflow;
+  try {
+    workflow = document.toJS({ maxAliasCount: 0 });
+  } catch {
+    findings.push({
+      severity: "error",
+      code: "ci-codeql",
+      path: CODEQL_WORKFLOW_PATH,
+      message: "CodeQL workflow aliases are not allowed"
+    });
+    return;
+  }
+
+  if (!isDeepStrictEqual(workflow, EXPECTED_CODEQL_WORKFLOW)) {
+    findings.push({
+      severity: "error",
+      code: "ci-codeql",
+      path: CODEQL_WORKFLOW_PATH,
+      message: "CodeQL workflow must match the exact reviewed triggers, guard, permissions, concurrency, timeout, steps, pins, language, and query suite"
+    });
+  }
+  if (FORBIDDEN_CODEQL_REFERENCES.test(text)) {
+    findings.push({
+      severity: "error",
+      code: "ci-codeql",
+      path: CODEQL_WORKFLOW_PATH,
+      message: "CodeQL workflow must not use privileged PR execution, broad permissions, packages access, live-model providers, or secrets"
+    });
+  }
+}
+
 function auditOwnershipAndCi(root, findings) {
   const codeowners = readText(root, ".github/CODEOWNERS", findings);
   if (codeowners !== null) {
@@ -411,6 +509,7 @@ function auditOwnershipAndCi(root, findings) {
   ]) {
     requireMatch(policy, pattern, "ci-policy", workflowPaths[1], message, findings);
   }
+  auditCodeqlWorkflow(root, findings);
 }
 
 export function auditRepository(root = process.cwd()) {

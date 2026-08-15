@@ -4,10 +4,53 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseDocument } from "yaml";
+import { auditRepository } from "../scripts/audit-repository.mjs";
 import { auditWorkflows } from "../scripts/audit-workflows.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const pinnedCheckout = "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683";
+const codeqlCheckout = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1";
+const codeqlAction = "ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd";
+const exactCodeqlWorkflow = `name: CodeQL
+
+on:
+  pull_request:
+  push:
+    branches: [main, stable]
+  schedule:
+    - cron: "23 5 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: \${{ github.workflow }}-\${{ github.ref }}
+  cancel-in-progress: \${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    if: github.event.repository.private == false
+    name: codeql-javascript
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Check out repository
+        uses: ${codeqlCheckout}
+        with:
+          persist-credentials: false
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@${codeqlAction}
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - name: Analyze
+        uses: github/codeql-action/analyze@${codeqlAction}
+`;
 
 async function fixture(t, workflow) {
   return workflowFixture(t, { "fixture.yml": workflow });
@@ -21,6 +64,17 @@ async function workflowFixture(t, workflows) {
   for (const [name, workflow] of Object.entries(workflows)) {
     await fs.writeFile(path.join(directory, name), workflow);
   }
+  return root;
+}
+
+async function repositoryFixture(t) {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-codeql-policy-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const excluded = new Set([".git", ".superpowers", "node_modules"]);
+  await fs.cp(projectRoot, root, {
+    recursive: true,
+    filter: (source) => source === projectRoot || !excluded.has(path.basename(source))
+  });
   return root;
 }
 
@@ -588,4 +642,127 @@ jobs:
   const result = await runAudit(root);
   assert.equal(result.code, 0, `${result.stdout}\n${result.stderr}`);
   assert.deepEqual(parseResult(result).findings, []);
+});
+
+test("CodeQL workflow is visibility-gated, immutable, least-privilege, and complete", async () => {
+  const relative = ".github/workflows/codeql.yml";
+  const text = await fs.readFile(path.join(projectRoot, relative), "utf8");
+  const document = parseDocument(text, { strict: true, uniqueKeys: true });
+  assert.deepEqual(document.errors.map(({ message }) => message), [], relative);
+  const workflow = document.toJS({ maxAliasCount: 0 });
+
+  assert.deepEqual(Object.keys(workflow).sort(), ["concurrency", "jobs", "name", "on", "permissions"].sort());
+  assert.equal(workflow.name, "CodeQL");
+  assert.deepEqual(workflow.on, {
+    pull_request: null,
+    push: { branches: ["main", "stable"] },
+    schedule: [{ cron: "23 5 * * 3" }],
+    workflow_dispatch: null
+  });
+  assert.deepEqual(workflow.permissions, { contents: "read" });
+  assert.deepEqual(workflow.concurrency, {
+    group: "${{ github.workflow }}-${{ github.ref }}",
+    "cancel-in-progress": "${{ github.event_name == 'pull_request' }}"
+  });
+  assert.deepEqual(Object.keys(workflow.jobs), ["analyze"]);
+
+  const analyze = workflow.jobs.analyze;
+  assert.deepEqual(
+    Object.keys(analyze).sort(),
+    ["if", "name", "permissions", "runs-on", "steps", "timeout-minutes"].sort()
+  );
+  assert.equal(analyze.if, "github.event.repository.private == false");
+  assert.equal(analyze.name, "codeql-javascript");
+  assert.equal(analyze["runs-on"], "ubuntu-latest");
+  assert.equal(analyze["timeout-minutes"], 30);
+  assert.deepEqual(analyze.permissions, { contents: "read", "security-events": "write" });
+  assert.deepEqual(analyze.steps, [
+    {
+      name: "Check out repository",
+      uses: codeqlCheckout,
+      with: { "persist-credentials": false }
+    },
+    {
+      name: "Initialize CodeQL",
+      uses: `github/codeql-action/init@${codeqlAction}`,
+      with: { languages: "javascript-typescript", queries: "security-extended" }
+    },
+    {
+      name: "Analyze",
+      uses: `github/codeql-action/analyze@${codeqlAction}`
+    }
+  ]);
+  assert.doesNotMatch(
+    text,
+    /pull_request_target|write-all|packages:\s*read|OPENAI|ANTHROPIC|CLAUDE|FABLE|secrets\./i
+  );
+  assert.deepEqual(auditWorkflows(projectRoot).findings, []);
+});
+
+test("repository CodeQL audit rejects guard pin permission trigger and credential mutations", async (t) => {
+  const root = await repositoryFixture(t);
+  const relative = path.join(root, ".github", "workflows", "codeql.yml");
+  await fs.writeFile(relative, exactCodeqlWorkflow);
+  assert.equal(
+    auditRepository(root).findings.some(({ code }) => code === "ci-codeql"),
+    false,
+    "the exact workflow must satisfy the repository CodeQL contract"
+  );
+
+  const mutations = [
+    ["missing private guard", (text) => text.replace("    if: github.event.repository.private == false\n", "")],
+    ["inverted private guard", (text) => text.replace("private == false", "private == true")],
+    ["checkout tag", (text) => text.replace(codeqlCheckout, "actions/checkout@v7")],
+    [
+      "wrong checkout full SHA",
+      (text) => text.replace(codeqlCheckout, "actions/checkout@0000000000000000000000000000000000000000")
+    ],
+    [
+      "CodeQL tag",
+      (text) => text.replace(`github/codeql-action/init@${codeqlAction}`, "github/codeql-action/init@v4")
+    ],
+    ["wrong CodeQL full SHA", (text) => text.replaceAll(codeqlAction, "0000000000000000000000000000000000000000")],
+    ["top-level write", (text) => text.replace("permissions:\n  contents: read", "permissions:\n  contents: write")],
+    [
+      "job permission broadening",
+      (text) => text.replace("      security-events: write", "      security-events: write\n      packages: read")
+    ],
+    ["missing pull request", (text) => text.replace("  pull_request:\n", "")],
+    ["missing stable push", (text) => text.replace("branches: [main, stable]", "branches: [main]")],
+    ["missing weekly schedule", (text) => text.replace("  schedule:\n    - cron: \"23 5 * * 3\"\n", "")],
+    ["missing manual dispatch", (text) => text.replace("  workflow_dispatch:\n", "")],
+    ["privileged PR trigger", (text) => text.replace("  pull_request:\n", "  pull_request_target:\n")],
+    ["missing timeout", (text) => text.replace("    timeout-minutes: 30\n", "")],
+    ["unbounded timeout", (text) => text.replace("timeout-minutes: 30", "timeout-minutes: 60")],
+    [
+      "wrong concurrency group",
+      (text) => text.replace("group: ${{ github.workflow }}-${{ github.ref }}", "group: codeql")
+    ],
+    [
+      "broad cancellation",
+      (text) => text.replace("cancel-in-progress: ${{ github.event_name == 'pull_request' }}", "cancel-in-progress: true")
+    ],
+    ["persisted credentials", (text) => text.replace("persist-credentials: false", "persist-credentials: true")],
+    ["wrong language", (text) => text.replace("languages: javascript-typescript", "languages: javascript")],
+    ["weaker query suite", (text) => text.replace("queries: security-extended", "queries: security-and-quality")],
+    ["wrong check name", (text) => text.replace("name: codeql-javascript", "name: CodeQL")],
+    [
+      "live provider secret",
+      (text) => text.replace(
+        "permissions:\n  contents: read\n",
+        "permissions:\n  contents: read\nenv:\n  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}\n"
+      )
+    ]
+  ];
+
+  for (const [name, mutate] of mutations) {
+    const mutated = mutate(exactCodeqlWorkflow);
+    assert.notEqual(mutated, exactCodeqlWorkflow, name);
+    await fs.writeFile(relative, mutated);
+    const result = auditRepository(root);
+    assert.ok(
+      result.findings.some(({ code, path: findingPath }) => code === "ci-codeql" && findingPath === ".github/workflows/codeql.yml"),
+      `${name}: ${JSON.stringify(result.findings)}`
+    );
+  }
 });
