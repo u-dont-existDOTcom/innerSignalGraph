@@ -668,7 +668,9 @@ test("hosted coverage enumerates every required surface and safely scans action 
   assert.equal(rawNames.length > 0, true);
   for (const rawName of rawNames) assert.equal((await stat(path.join(tempRoot, rawName))).mode & 0o777, 0o600);
   assert.deepEqual([...result.hostedFileIdentifiers.values()], [
-    "repository",
+    "repository:field:default_branch",
+    "repository:field:full_name",
+    "repository:field:visibility",
     `branch:commit:${"1".repeat(40)}`,
     `branch:commit:${"2".repeat(40)}`,
     "issue:7",
@@ -681,6 +683,73 @@ test("hosted coverage enumerates every required surface and safely scans action 
     "actions-log:run:101",
     "actions-log:run:102"
   ]);
+});
+
+test("repository fields retain stable safe locators and complete key-context coverage", async (context) => {
+  const firstRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-repository-fields-first-test-"));
+  const secondRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-repository-fields-second-test-"));
+  context.after(async () => await rm(firstRoot, { recursive: true, force: true }));
+  context.after(async () => await rm(secondRoot, { recursive: true, force: true }));
+  const sentinel = `ghp_${"v".repeat(36)}`;
+  const entries = [
+    ["full_name", EXPECTED_REPOSITORY],
+    ["visibility", "private"],
+    ["default_branch", "main"],
+    ["description", `synthetic ${sentinel}`],
+    ["homepage", "https://example.invalid"],
+    ["node_id", "R_synthetic"],
+    [".env", "unsafe metadata key"],
+    [sentinel, "token-bearing metadata key"]
+  ];
+
+  const collectWithMetadata = async (tempRoot, orderedEntries) => {
+    const fixture = makeHostedRunCommand();
+    const command = async (tool, args, options) => {
+      if (args.at(-1) === `repos/${EXPECTED_REPOSITORY}`) {
+        return { stdout: JSON.stringify(Object.fromEntries(orderedEntries)), stderr: "" };
+      }
+      return await fixture.runCommand(tool, args, options);
+    };
+    return await collectHostedPublicationRecords({ repository: EXPECTED_REPOSITORY, runCommand: command, tempRoot });
+  };
+  const identifierByKey = async (tempRoot, result) => {
+    const identifiers = new Map();
+    const repositoryRecords = result.records.filter(({ surface }) => surface === "repository");
+    assert.equal(repositoryRecords.length, entries.length);
+    for (const [relativeFile, identifier] of result.hostedFileIdentifiers) {
+      if (!identifier.startsWith("repository:field:")) continue;
+      const projected = JSON.parse(await readFile(path.join(tempRoot, relativeFile), "utf8"));
+      const keys = Object.keys(projected);
+      assert.equal(keys.length, 1);
+      const [key] = keys;
+      assert.equal(Object.is(projected[key], Object.fromEntries(entries)[key]), true);
+      assert.equal(identifiers.has(key), false);
+      identifiers.set(key, identifier);
+    }
+    assert.equal(identifiers.size, entries.length);
+    return identifiers;
+  };
+
+  const first = await collectWithMetadata(firstRoot, entries);
+  const second = await collectWithMetadata(secondRoot, [...entries].reverse());
+  const firstIdentifiers = await identifierByKey(firstRoot, first);
+  const secondIdentifiers = await identifierByKey(secondRoot, second);
+  for (const [key, identifier] of firstIdentifiers) assert.equal(secondIdentifiers.get(key) === identifier, true);
+
+  assert.equal(firstIdentifiers.get("description"), "repository:field:description");
+  assert.equal(firstIdentifiers.get("homepage"), "repository:field:homepage");
+  assert.equal(firstIdentifiers.get("node_id"), "repository:field:node_id");
+  assert.equal(firstIdentifiers.get(".env"), "repository:field:other:rank:1");
+  assert.equal(firstIdentifiers.get(sentinel), "repository:field:other:rank:2");
+  assert.equal(JSON.stringify([...firstIdentifiers.values()]).includes(sentinel), false);
+  assert.equal(JSON.stringify([...firstIdentifiers.values()]).includes(".env"), false);
+
+  const scanned = scanPublicationRecords(first.records.filter(({ surface }) => surface === "repository"));
+  assert.deepEqual(scanned.findings.map(({ identifier }) => identifier), [
+    "repository:field:description",
+    "repository:field:other:rank:2"
+  ]);
+  assert.equal(JSON.stringify(scanned).includes(sentinel), false);
 });
 
 test("hosted pagination consumes every concatenated page for arrays and object collections", async (context) => {
@@ -1292,6 +1361,7 @@ test("Gitleaks hosted findings use actionable in-memory locators and unknown fil
   context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
   await writeFile(path.join(hostedRoot, "hosted-1.raw"), "private fixture\n", { mode: 0o600 });
   await writeFile(path.join(hostedRoot, "hosted-2.raw"), "private branch fixture\n", { mode: 0o600 });
+  await writeFile(path.join(hostedRoot, "hosted-3.raw"), "private repository fixture\n", { mode: 0o600 });
   const branchCommit = "b".repeat(40);
 
   const actionable = await runGitleaks({
@@ -1300,7 +1370,8 @@ test("Gitleaks hosted findings use actionable in-memory locators and unknown fil
     hostedRoot,
     hostedFileIdentifiers: new Map([
       ["hosted-1.raw", "actions-log:run:101"],
-      ["hosted-2.raw", `branch:commit:${branchCommit}:rank:2`]
+      ["hosted-2.raw", `branch:commit:${branchCommit}:rank:2`],
+      ["hosted-3.raw", "repository:field:description"]
     ]),
     runCommand: async (_command, args) => {
       const reportPath = args.find((argument) => argument.startsWith("--report-path=")).slice("--report-path=".length);
@@ -1309,7 +1380,8 @@ test("Gitleaks hosted findings use actionable in-memory locators and unknown fil
         args[0] === "dir"
           ? JSON.stringify([
               { RuleID: "generic-api-key", Commit: "", File: "hosted-1.raw", StartLine: 4 },
-              { RuleID: "generic-api-key", Commit: "", File: "hosted-2.raw", StartLine: 2 }
+              { RuleID: "generic-api-key", Commit: "", File: "hosted-2.raw", StartLine: 2 },
+              { RuleID: "generic-api-key", Commit: "", File: "hosted-3.raw", StartLine: 1 }
             ])
           : "[]"
       );
@@ -1328,6 +1400,12 @@ test("Gitleaks hosted findings use actionable in-memory locators and unknown fil
       code: "credential-pattern",
       surface: "gitleaks",
       identifier: `branch:commit:${branchCommit}:rank:2:line:2`
+    },
+    {
+      severity: "error",
+      code: "credential-pattern",
+      surface: "gitleaks",
+      identifier: "repository:field:description:line:1"
     }
   ]);
 

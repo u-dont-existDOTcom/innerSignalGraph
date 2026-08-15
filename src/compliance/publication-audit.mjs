@@ -297,6 +297,26 @@ function validateRepository(record, identifier) {
   requireNonemptyString(record.default_branch, identifier);
 }
 
+function compareCanonicalStrings(left, right) {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function buildRepositoryFieldRecords(repositoryMetadata) {
+  const entries = Object.entries(repositoryMetadata).sort(([left], [right]) => compareCanonicalStrings(left, right));
+  const unsafeKeys = entries
+    .map(([key]) => key)
+    .filter((key) => !/^[a-z][a-z0-9_]{0,63}$/.test(key) || sanitizeMetadata(key) !== key)
+    .sort(compareCanonicalStrings);
+  const unsafeRanks = new Map(unsafeKeys.map((key, index) => [key, index + 1]));
+
+  return entries.map(([key, value]) => ({
+    identifier: unsafeRanks.has(key)
+      ? `repository:field:other:rank:${unsafeRanks.get(key)}`
+      : `repository:field:${key}`,
+    text: JSON.stringify({ [key]: value })
+  }));
+}
+
 function validateBranch(record, identifier) {
   requireNonemptyString(record.name, identifier);
   const commit = requireObject(record.commit, identifier);
@@ -483,10 +503,12 @@ export async function collectHostedPublicationRecords({
   );
   validateRepository(repositoryMetadata, "repository:metadata");
   if (repositoryMetadata.full_name !== EXPECTED_REPOSITORY) throw hostedIncomplete("repository-identity");
-  await addHostedRecord(
-    { surface: "repository", identifier: "repository", text: JSON.stringify(repositoryMetadata) },
-    "repository"
-  );
+  for (const field of buildRepositoryFieldRecords(repositoryMetadata)) {
+    await addHostedRecord(
+      { surface: "repository", identifier: field.identifier, text: field.text },
+      field.identifier
+    );
+  }
 
   const branches = parseArrayPages(
     await pagedApi(`repos/${repository}/branches?per_page=100`, "branches:request"),
@@ -684,7 +706,7 @@ function withinRoot(root, candidate) {
 function isSafeHostedIdentifier(identifier) {
   return (
     typeof identifier === "string" &&
-    /^(?:repository|branch:commit:(?:[0-9a-f]{40}|[0-9a-f]{64})(?::rank:[1-9]\d*)?|issue:[1-9]\d*|pull:[1-9]\d*|issue-comment:[1-9]\d*|review-comment:[1-9]\d*|review:[1-9]\d*|actions-run:[1-9]\d*|actions-log:run:[1-9]\d*|artifact:[1-9]\d*(?::member:[1-9]\d*)?)$/.test(identifier)
+    /^(?:repository:field:(?:[a-z][a-z0-9_]{0,63}|other:rank:[1-9]\d*)|branch:commit:(?:[0-9a-f]{40}|[0-9a-f]{64})(?::rank:[1-9]\d*)?|issue:[1-9]\d*|pull:[1-9]\d*|issue-comment:[1-9]\d*|review-comment:[1-9]\d*|review:[1-9]\d*|actions-run:[1-9]\d*|actions-log:run:[1-9]\d*|artifact:[1-9]\d*(?::member:[1-9]\d*)?)$/.test(identifier)
   );
 }
 
