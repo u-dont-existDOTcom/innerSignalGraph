@@ -34,6 +34,7 @@
     "actions_sha_pinning": "enabled",
     "vulnerability_alerts": "enabled",
     "dependabot_alerts": "enabled",
+    "dependabot_security_updates": "enabled",
     "automated_security_fixes": "enabled",
     "private_vulnerability_reporting": "enabled",
     "github_app_permissions": "unverified"

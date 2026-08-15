@@ -85,6 +85,22 @@ const expectedDependabot = {
     }
   ]
 };
+const expectedPublicGithubControls = {
+  default_branch_rules: "enabled",
+  stable_branch_rules: "enabled",
+  secret_scanning: "enabled",
+  push_protection: "enabled",
+  code_scanning: "enabled",
+  actions_default_permissions: "verified",
+  actions_allowed_set: "enabled",
+  actions_sha_pinning: "enabled",
+  vulnerability_alerts: "enabled",
+  dependabot_alerts: "enabled",
+  dependabot_security_updates: "enabled",
+  automated_security_fixes: "enabled",
+  private_vulnerability_reporting: "enabled",
+  github_app_permissions: "unverified"
+};
 
 async function read(relative) {
   return await fs.readFile(path.join(root, relative), "utf8");
@@ -653,6 +669,7 @@ test("hosted-control evidence records verified improvements and exact unresolved
       actions_sha_pinning: profile.github_controls.actions_sha_pinning,
       vulnerability_alerts: profile.github_controls.vulnerability_alerts,
       dependabot_alerts: profile.github_controls.dependabot_alerts,
+      dependabot_security_updates: profile.github_controls.dependabot_security_updates,
       automated_security_fixes: profile.github_controls.automated_security_fixes,
       default_branch_rules: profile.github_controls.default_branch_rules,
       stable_branch_rules: profile.github_controls.stable_branch_rules,
@@ -668,6 +685,7 @@ test("hosted-control evidence records verified improvements and exact unresolved
       actions_sha_pinning: "enabled",
       vulnerability_alerts: "enabled",
       dependabot_alerts: "enabled",
+      dependabot_security_updates: "enabled",
       automated_security_fixes: "enabled",
       default_branch_rules: "enabled",
       stable_branch_rules: "enabled",
@@ -732,6 +750,33 @@ test("hosted-control evidence records verified improvements and exact unresolved
   assert.match(report, /996d67ae9f8f44b0865cea6d88d169dbbadbbf41/);
   assert.match(report, /GitHub App installation permissions[^\n]*`UNVERIFIED`/i);
   assert.doesNotMatch(report, /gho_[A-Za-z0-9]/);
+});
+
+test("public profile audit fails closed on every hosted-control drift while private preparation retains warnings", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const profilePath = path.join(fixture, ".github", "codex-repository.json");
+  const original = JSON.parse(await fs.readFile(profilePath, "utf8"));
+  const undetected = [];
+
+  for (const [name, expected] of Object.entries(expectedPublicGithubControls)) {
+    const profile = structuredClone(original);
+    profile.github_controls[name] = expected === "enabled" ? "disabled" : expected === "verified" ? "unverified" : "enabled";
+    await fs.writeFile(profilePath, `${JSON.stringify(profile, null, 2)}\n`);
+    const result = auditRepository(fixture);
+    if (!result.findings.some(({ code }) => code === "profile-public-hosted-controls")) undetected.push(name);
+  }
+  assert.deepEqual(undetected, [], `public hosted-control drift passed: ${undetected.join(", ")}`);
+
+  const privateProfile = structuredClone(original);
+  privateProfile.visibility = "private";
+  privateProfile.publication_transition.status = "pre_publication_ready";
+  for (const [name, expected] of Object.entries(expectedPublicGithubControls)) {
+    privateProfile.github_controls[name] = expected === "enabled" ? "disabled" : "unverified";
+  }
+  await fs.writeFile(profilePath, `${JSON.stringify(privateProfile, null, 2)}\n`);
+  const privateResult = auditRepository(fixture);
+  assert.ok(privateResult.findings.some(({ severity }) => severity === "warning"));
+  assert.ok(privateResult.findings.every(({ code }) => code !== "profile-public-hosted-controls"));
 });
 
 test("hosted-control evidence fails closed without exact CodeQL and branch-protection readback", async (t) => {

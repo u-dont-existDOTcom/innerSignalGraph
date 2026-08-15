@@ -98,6 +98,22 @@ const PUBLIC_CONTRIBUTION_PROHIBITIONS = [
 const CHECKPOINT = "state/CODEX-CURRENT-STATE.md";
 const PUBLICATION_REPORT = "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md";
 const CONTROL_STATES = new Set(["verified", "enabled", "disabled", "unverified", "not_applicable"]);
+const EXPECTED_PUBLIC_GITHUB_CONTROLS = {
+  default_branch_rules: "enabled",
+  stable_branch_rules: "enabled",
+  secret_scanning: "enabled",
+  push_protection: "enabled",
+  code_scanning: "enabled",
+  actions_default_permissions: "verified",
+  actions_allowed_set: "enabled",
+  actions_sha_pinning: "enabled",
+  vulnerability_alerts: "enabled",
+  dependabot_alerts: "enabled",
+  dependabot_security_updates: "enabled",
+  automated_security_fixes: "enabled",
+  private_vulnerability_reporting: "enabled",
+  github_app_permissions: "unverified"
+};
 const EXPECTED_CODEQL_EVIDENCE = {
   id: 31865348513,
   job_id: 94965480118,
@@ -334,6 +350,14 @@ function auditProfile(root, findings) {
   }
   if (profile.visibility === "public" && transitionStatus === "completed") {
     const evidence = profile.github_controls_evidence;
+    if (!isDeepStrictEqual(profile.github_controls, EXPECTED_PUBLIC_GITHUB_CONTROLS)) {
+      findings.push({
+        severity: "error",
+        code: "profile-public-hosted-controls",
+        path: relative,
+        message: "public/completed profile must retain the exact verified control map and sole unverified installed-App boundary"
+      });
+    }
     if (!isDeepStrictEqual(evidence?.codeql_run, EXPECTED_CODEQL_EVIDENCE)) {
       findings.push({
         severity: "error",
