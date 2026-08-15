@@ -361,13 +361,14 @@ function readUniqueMarkdownSection(text, heading, relative, findings) {
 
 function readUniquePublicCloseoutReceipt(text, relative, findings) {
   if (text === null) return null;
+  const openingMarkers = [...text.matchAll(/<!-- public-closeout-receipt\b/g)];
   const matches = [...text.matchAll(/<!-- public-closeout-receipt\s*\n([\s\S]*?)\n-->/g)];
-  if (matches.length !== 1) {
+  if (openingMarkers.length !== 1 || matches.length !== 1) {
     findings.push({
       severity: "error",
       code: "public-closeout-receipt",
       path: relative,
-      message: "public closeout report must contain exactly one structured receipt"
+      message: "public closeout report must contain exactly one complete structured receipt globally"
     });
     return null;
   }
@@ -697,7 +698,7 @@ function auditAuthority(root, findings, profile) {
         });
       }
       const receiptSection = readUniqueMarkdownSection(report, "Verified closeout receipt", relative, findings);
-      const receipt = readUniquePublicCloseoutReceipt(receiptSection, relative, findings);
+      const receipt = readUniquePublicCloseoutReceipt(report, relative, findings);
       if (receipt !== null && !isDeepStrictEqual(receipt, EXPECTED_PUBLIC_CLOSEOUT_RECEIPT)) {
         findings.push({
           severity: "error",

@@ -364,6 +364,54 @@ test("public closeout audit enforces semantic PR 9, merged-main, CodeQL, and iss
       );
     }
     await fs.writeFile(absolute, original);
+
+    const structuredReceipt = original.match(/<!-- public-closeout-receipt\n[\s\S]*?\n-->/)?.[0];
+    assert.ok(structuredReceipt, relative);
+    await fs.writeFile(
+      absolute,
+      `${original.trimEnd()}\n\n## Historical machine receipt copy\n\n${structuredReceipt}\n`
+    );
+    const duplicateGlobalReceiptResult = auditRepository(fixture);
+    assert.ok(
+      duplicateGlobalReceiptResult.findings.some(
+        ({ code, path: findingPath }) => code === "public-closeout-receipt" && findingPath === relative
+      ),
+      `${relative}: duplicate global receipt: ${JSON.stringify(duplicateGlobalReceiptResult.findings)}`
+    );
+
+    await fs.writeFile(absolute, original.replace(structuredReceipt, ""));
+    const missingGlobalReceiptResult = auditRepository(fixture);
+    assert.ok(
+      missingGlobalReceiptResult.findings.some(
+        ({ code, path: findingPath }) => code === "public-closeout-receipt" && findingPath === relative
+      ),
+      `${relative}: missing global receipt: ${JSON.stringify(missingGlobalReceiptResult.findings)}`
+    );
+
+    await fs.writeFile(
+      absolute,
+      original.replace(structuredReceipt, '<!-- public-closeout-receipt\n{"schemaVersion":\n-->')
+    );
+    const malformedGlobalReceiptResult = auditRepository(fixture);
+    assert.ok(
+      malformedGlobalReceiptResult.findings.some(
+        ({ code, path: findingPath }) => code === "public-closeout-receipt" && findingPath === relative
+      ),
+      `${relative}: malformed global receipt: ${JSON.stringify(malformedGlobalReceiptResult.findings)}`
+    );
+
+    await fs.writeFile(
+      absolute,
+      `${original.trimEnd()}\n\n## Historical malformed receipt copy\n\n<!-- public-closeout-receipt\n{"schemaVersion":1}\n`
+    );
+    const unterminatedGlobalReceiptResult = auditRepository(fixture);
+    assert.ok(
+      unterminatedGlobalReceiptResult.findings.some(
+        ({ code, path: findingPath }) => code === "public-closeout-receipt" && findingPath === relative
+      ),
+      `${relative}: unterminated global receipt: ${JSON.stringify(unterminatedGlobalReceiptResult.findings)}`
+    );
+    await fs.writeFile(absolute, original);
   }
 
   const visibleContradictions = [
