@@ -20,7 +20,7 @@ function requireRegularFile(openedStat) {
 
 export async function withOpenedRegularFile(filePath, reader) {
   if (typeof reader !== "function") throw new TypeError("reader must be a function");
-  const handle = await open(filePath, noFollowFlags());
+  const handle = await open(filePath, noFollowFlags(), 0o600);
   try {
     const openedStat = await handle.stat();
     requireRegularFile(openedStat);
@@ -32,7 +32,7 @@ export async function withOpenedRegularFile(filePath, reader) {
 
 export function withOpenedRegularFileSync(filePath, reader) {
   if (typeof reader !== "function") throw new TypeError("reader must be a function");
-  const descriptor = fs.openSync(filePath, noFollowFlags());
+  const descriptor = fs.openSync(filePath, noFollowFlags(), 0o600);
   try {
     const openedStat = fs.fstatSync(descriptor);
     requireRegularFile(openedStat);

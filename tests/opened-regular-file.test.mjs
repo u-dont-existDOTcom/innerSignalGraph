@@ -20,6 +20,17 @@ async function fixture(context) {
   return { root, subject, outside };
 }
 
+test("regular-file openers declare a private creation mode", () => {
+  assert.match(
+    withOpenedRegularFile.toString(),
+    /open\(filePath,\s*noFollowFlags\(\),\s*0o600\)/
+  );
+  assert.match(
+    withOpenedRegularFileSync.toString(),
+    /openSync\(filePath,\s*noFollowFlags\(\),\s*0o600\)/
+  );
+});
+
 test("async regular-file reads stay bound to the opened inode after pathname replacement", async (context) => {
   const { subject, outside } = await fixture(context);
 
