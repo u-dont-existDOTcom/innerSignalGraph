@@ -35,4 +35,18 @@ fi
 
 tar -xzf "$archive" -C "$tool_root" --no-same-owner --no-same-permissions gitleaks
 chmod 700 "$tool_root/gitleaks"
-node scripts/audit-publication.mjs --root "$PWD" --github "$repository" --gitleaks "$tool_root/gitleaks"
+
+audit_result="$tool_root/publication-audit-result.json"
+: > "$audit_result"
+chmod 600 "$audit_result"
+
+set +e
+node scripts/audit-publication.mjs --root "$PWD" --github "$repository" --gitleaks "$tool_root/gitleaks" > "$audit_result"
+audit_status=$?
+set -e
+
+if ! node scripts/validate-publication-audit-result.mjs "$audit_result" "$audit_status"; then
+  printf '%s\n' 'invalid-hosted-audit-result' >&2
+  exit 2
+fi
+exit "$audit_status"

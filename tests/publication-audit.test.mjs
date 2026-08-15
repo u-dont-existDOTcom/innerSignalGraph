@@ -33,6 +33,82 @@ async function writeExecutable(filePath, body) {
   await chmod(filePath, 0o700);
 }
 
+function hostedAuditResult({ ok = true, findings = [] } = {}) {
+  return {
+    schemaVersion: 1,
+    ok,
+    scannedRecords: 8,
+    findings,
+    counts: {
+      refs: 1,
+      commits: 1,
+      objects: 3,
+      blobs: 1,
+      branches: 1,
+      issues: 0,
+      pullRequests: 0,
+      issueComments: 0,
+      reviewComments: 0,
+      reviews: 0,
+      actionRuns: 0,
+      actionLogs: 0,
+      artifacts: 0
+    }
+  };
+}
+
+async function makeHostedWrapperHarness(context) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-wrapper-contract-test-"));
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  const fakeBin = path.join(root, "bin");
+  await mkdir(fakeBin);
+  const invocationLog = path.join(root, "invocation.log");
+  const outputModeLog = path.join(root, "output-mode.log");
+
+  await writeExecutable(
+    path.join(fakeBin, "uname"),
+    "#!/usr/bin/env bash\nif [[ \"$1\" == \"-s\" ]]; then printf 'Linux\\n'; else printf 'x86_64\\n'; fi\n"
+  );
+  await writeExecutable(
+    path.join(fakeBin, "curl"),
+    "#!/usr/bin/env bash\nwhile (( $# )); do if [[ \"$1\" == \"--output\" ]]; then shift; : > \"$1\"; exit 0; fi; shift; done\nexit 2\n"
+  );
+  await writeExecutable(path.join(fakeBin, "sha256sum"), "#!/usr/bin/env bash\nexit 0\n");
+  await writeExecutable(
+    path.join(fakeBin, "tar"),
+    "#!/usr/bin/env bash\nwhile (( $# )); do if [[ \"$1\" == \"-C\" ]]; then shift; tool_root=\"$1\"; fi; shift; done\nprintf '#!/usr/bin/env bash\\nexit 0\\n' > \"$tool_root/gitleaks\"\nchmod 700 \"$tool_root/gitleaks\"\n"
+  );
+  await writeExecutable(
+    path.join(fakeBin, "node"),
+    `#!/usr/bin/env bash
+if [[ "$1" == "scripts/validate-publication-audit-result.mjs" ]]; then
+  exec "$REAL_NODE" "$@"
+fi
+printf '%s\n' "$*" > "$FAKE_INVOCATION_LOG"
+output_target="$(readlink "/proc/$$/fd/1")"
+if [[ "$output_target" == /* ]]; then
+  printf '%s %s\n' "$(stat -c '%a' "$output_target")" "$(stat -c '%a' "$(dirname "$output_target")")" > "$FAKE_OUTPUT_MODE_LOG"
+else
+  printf '%s\n' "$output_target" > "$FAKE_OUTPUT_MODE_LOG"
+fi
+printf '%s' "$FAKE_AUDIT_OUTPUT"
+exit "$FAKE_AUDIT_EXIT"
+`
+  );
+
+  return {
+    invocationLog,
+    outputModeLog,
+    env: {
+      ...process.env,
+      PATH: `${fakeBin}:/usr/bin:/bin`,
+      REAL_NODE: process.execPath,
+      FAKE_INVOCATION_LOG: invocationLog,
+      FAKE_OUTPUT_MODE_LOG: outputModeLog
+    }
+  };
+}
+
 const EXPECTED_REPOSITORY = "u-dont-existDOTcom/innerSignalGraph";
 
 function hostedApiPages(value) {
@@ -1304,19 +1380,28 @@ test("pinned Gitleaks wrapper downloads and executes only the reviewed Linux x86
   );
   await writeExecutable(
     path.join(fakeBin, "node"),
-    "#!/usr/bin/env bash\nprintf '%s\\n' \"$*\" > \"$FAKE_INVOCATION_LOG\"\n"
+    `#!/usr/bin/env bash
+if [[ "$1" == "scripts/validate-publication-audit-result.mjs" ]]; then
+  exec "$REAL_NODE" "$@"
+fi
+printf '%s\n' "$*" > "$FAKE_INVOCATION_LOG"
+printf '%s\n' '${JSON.stringify(hostedAuditResult())}'
+`
   );
 
-  await execFileAsync("bash", ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY], {
+  const execution = await execFileAsync("bash", ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY], {
     cwd: process.cwd(),
     env: {
       ...process.env,
       PATH: `${fakeBin}:/usr/bin:/bin`,
+      REAL_NODE: process.execPath,
       FAKE_INVOCATION_LOG: invocationLog,
       FAKE_CURL_LOG: curlLog,
       FAKE_CHECKSUM_LOG: checksumLog
     }
   });
+  assert.deepEqual(JSON.parse(execution.stdout), hostedAuditResult());
+  assert.equal(execution.stderr, "");
 
   const invocation = (await readFile(invocationLog, "utf8")).trim();
   const curlInvocation = (await readFile(curlLog, "utf8")).trim();
@@ -1332,6 +1417,107 @@ test("pinned Gitleaks wrapper downloads and executes only the reviewed Linux x86
   );
   const binaryPath = invocation.split(" ").at(-1);
   await assert.rejects(access(binaryPath), "the exact wrapper temp root must be removed after execution");
+});
+
+test("hosted wrapper rejects absent or invalid audit results and preserves valid exit semantics", async (context) => {
+  const harness = await makeHostedWrapperHarness(context);
+  const finding = {
+    severity: "error",
+    code: "audit-incomplete",
+    surface: "hosted",
+    identifier: "synthetic"
+  };
+  const invalidCases = [
+    { name: "absent", output: "", exitCode: 0 },
+    { name: "whitespace", output: " \n", exitCode: 0 },
+    { name: "malformed", output: "{", exitCode: 0 },
+    { name: "multiple", output: "{}\n{}\n", exitCode: 0 },
+    { name: "missing counts", output: JSON.stringify({ ...hostedAuditResult(), counts: undefined }), exitCode: 0 },
+    { name: "success with findings", output: JSON.stringify(hostedAuditResult({ findings: [finding] })), exitCode: 0 },
+    { name: "failure marked ok", output: JSON.stringify(hostedAuditResult()), exitCode: 1 },
+    { name: "tool failure marked ok", output: JSON.stringify(hostedAuditResult()), exitCode: 2 },
+    { name: "unsupported child exit", output: JSON.stringify(hostedAuditResult({ ok: false, findings: [finding] })), exitCode: 3 }
+  ];
+
+  for (const fixture of invalidCases) {
+    await assert.rejects(
+      execFileAsync("bash", ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY], {
+        cwd: process.cwd(),
+        env: {
+          ...harness.env,
+          FAKE_AUDIT_OUTPUT: fixture.output,
+          FAKE_AUDIT_EXIT: String(fixture.exitCode)
+        }
+      }),
+      (error) => {
+        assert.equal(error.code, 2, fixture.name);
+        assert.equal(error.stdout, "", fixture.name);
+        assert.match(error.stderr, /invalid-hosted-audit-result/, fixture.name);
+        return true;
+      }
+    );
+  }
+
+  const validCases = [
+    { exitCode: 0, result: hostedAuditResult() },
+    { exitCode: 1, result: hostedAuditResult({ ok: false, findings: [finding] }) },
+    { exitCode: 2, result: hostedAuditResult({ ok: false, findings: [finding] }) },
+    {
+      exitCode: 1,
+      result: {
+        schemaVersion: 1,
+        ok: false,
+        scannedRecords: 0,
+        findings: [finding]
+      }
+    },
+    {
+      exitCode: 2,
+      result: {
+        schemaVersion: 1,
+        ok: false,
+        scannedRecords: 0,
+        findings: [finding]
+      }
+    }
+  ];
+  for (const fixture of validCases) {
+    const expected = `${JSON.stringify(fixture.result)}\n`;
+    if (fixture.exitCode === 0) {
+      const execution = await execFileAsync(
+        "bash",
+        ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY],
+        {
+          cwd: process.cwd(),
+          env: {
+            ...harness.env,
+            FAKE_AUDIT_OUTPUT: JSON.stringify(fixture.result),
+            FAKE_AUDIT_EXIT: "0"
+          }
+        }
+      );
+      assert.equal(execution.stdout, expected);
+      assert.equal(execution.stderr, "");
+    } else {
+      await assert.rejects(
+        execFileAsync("bash", ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY], {
+          cwd: process.cwd(),
+          env: {
+            ...harness.env,
+            FAKE_AUDIT_OUTPUT: JSON.stringify(fixture.result),
+            FAKE_AUDIT_EXIT: String(fixture.exitCode)
+          }
+        }),
+        (error) => {
+          assert.equal(error.code, fixture.exitCode);
+          assert.equal(error.stdout, expected);
+          assert.equal(error.stderr, "");
+          return true;
+        }
+      );
+    }
+    assert.equal(await readFile(harness.outputModeLog, "utf8"), "600 700\n");
+  }
 });
 
 test("wrong Gitleaks digest prevents scanner execution and cleans the private temp root", async (context) => {
@@ -1594,6 +1780,33 @@ test("Gitleaks rejects report mode drift and symlink replacement before reading"
   assert.equal(await readFile(outsideReport, "utf8"), "[]\n");
 });
 
+test("Gitleaks rejects zero-byte git and directory reports for every scanner exit", async (context) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-empty-report-test-"));
+  const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-empty-report-hosted-test-"));
+  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+
+  for (const exitCode of [0, 1, 2]) {
+    const result = await runGitleaks({
+      binary: "/synthetic/gitleaks",
+      root,
+      hostedRoot,
+      runCommand: async () => ({ exitCode, stdout: "", stderr: "" })
+    });
+    assert.equal(result.ok, false, `exit ${exitCode}`);
+    assert.equal(
+      result.findings.some(({ identifier }) => identifier === "git:report"),
+      true,
+      `exit ${exitCode} git report`
+    );
+    assert.equal(
+      result.findings.some(({ identifier }) => identifier === "dir:report"),
+      true,
+      `exit ${exitCode} directory report`
+    );
+  }
+});
+
 test("Gitleaks exit handling treats only zero and one as complete scanner outcomes", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-adapter-test-"));
   const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-hosted-test-"));
@@ -1604,7 +1817,11 @@ test("Gitleaks exit handling treats only zero and one as complete scanner outcom
     binary: "/synthetic/gitleaks",
     root,
     hostedRoot,
-    runCommand: async () => ({ exitCode: 0, stdout: "", stderr: "" })
+    runCommand: async (_command, args) => {
+      const reportPath = args.find((argument) => argument.startsWith("--report-path=")).slice("--report-path=".length);
+      await writeFile(reportPath, "[]\n");
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }
   });
   assert.deepEqual(clear, { schemaVersion: 1, ok: true, scannedRecords: 0, findings: [] });
 
@@ -1612,7 +1829,11 @@ test("Gitleaks exit handling treats only zero and one as complete scanner outcom
     binary: "/synthetic/gitleaks",
     root,
     hostedRoot,
-    runCommand: async (_command, args) => ({ exitCode: args[0] === "git" ? 2 : 0, stdout: "", stderr: "" })
+    runCommand: async (_command, args) => {
+      const reportPath = args.find((argument) => argument.startsWith("--report-path=")).slice("--report-path=".length);
+      await writeFile(reportPath, "[]\n");
+      return { exitCode: args[0] === "git" ? 2 : 0, stdout: "", stderr: "" };
+    }
   });
   assert.equal(incomplete.ok, false);
   assert.deepEqual(incomplete.findings, [

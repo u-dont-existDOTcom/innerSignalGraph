@@ -736,7 +736,6 @@ async function readGitleaksReport({ reportPath, scanRoot, kind, exitCode, hosted
     return { findings: [gitleaksIncomplete(`${kind}:report`)], scannedRecords: 0 };
   }
   if (reportStat.size === 0) {
-    if (exitCode === 0) return { findings: [], scannedRecords: 0 };
     return { findings: [gitleaksIncomplete(`${kind}:report`)], scannedRecords: 0 };
   }
 
@@ -872,7 +871,6 @@ export async function runGitleaks({
       const exitCode = commandResult.exitCode;
       if (exitCode !== 0 && exitCode !== 1) {
         findings.push(gitleaksIncomplete(`${target.kind}:exit:${exitCode}`));
-        continue;
       }
       const normalized = await readGitleaksReport({
         reportPath: target.reportPath,
