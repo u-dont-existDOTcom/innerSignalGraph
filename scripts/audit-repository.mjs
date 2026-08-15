@@ -159,11 +159,6 @@ const EXPECTED_PUBLIC_CLOSEOUT_CHECKPOINT_SECTIONS = {
   ].join("\n"),
   "Next safe action": "Obtain GitHub App-authorized authentication, read repository-scoped installed-App permissions, and reconcile issue 4 and terminal status through a protected evidence update. Repeat read-only verification only if hosted evidence drifts. Preserve `stable`, keep `runtime-diagnostics` separate, and do not change therapy, model-role, privacy, or release policy without the applicable owner decision."
 };
-const PUBLIC_CLOSEOUT_VISIBLE_CONTRADICTIONS = [
-  /(?:31869840311|31869840270|31869840222|31869941911|31869942049|31869941895|94976762584)[^\n]*(?:fail(?:ed|ure)?|error|cancel(?:led)?|skipped)/i,
-  /(?:7bf2b1a706aab6a7d9c36070b15590153c652e2a|4ff2a229a628bf0f9dc1a11abb23a88cd6068e18|0ccb120442292653a11676ad312f18092944b5a1)[^\n]*tree[^\n]*(?:does not match|not equal)/i,
-  /(?:pull request|pr)\s*9[^\n]*(?:unmerged|not merged|failed)/i
-];
 const CONTROL_STATES = new Set(["verified", "enabled", "disabled", "unverified", "not_applicable"]);
 const EXPECTED_PUBLIC_GITHUB_CONTROLS = {
   default_branch_rules: "enabled",
@@ -389,35 +384,57 @@ function readUniquePublicCloseoutReceipt(text, relative, findings) {
   }
 }
 
-function expectedPublicCloseoutVisibleClaims(receipt, relative) {
+function renderPublicCloseoutReceiptSection(receipt, relative) {
   const pr = receipt.pullRequest;
   const head = receipt.exactHeadChecks;
   const merged = receipt.mergedMainChecks;
   const analysis = receipt.mergedMainCodeqlAnalysis;
+  const structured = `<!-- public-closeout-receipt\n${JSON.stringify(receipt, null, 2)}\n-->`;
   if (relative === PUBLICATION_REPORT) {
     return [
-      `Pull request [9](${pr.url}) completed the protected evidence path with reviewed head \`${pr.reviewedHead}\`, tree \`${pr.reviewedTree}\`, and squash merge \`${pr.mergeCommit}\` whose tree matches exactly.`,
+      `Pull request [9](${pr.url}) completed the protected evidence path with reviewed head \`${pr.reviewedHead}\`, tree \`${pr.reviewedTree}\`, and squash merge \`${pr.mergeCommit}\` whose tree matches exactly. The [durable receipt](${pr.receiptUrl}) records protection gating, final refs, hosted readback, and issue 4 disposition.`,
+      "",
+      "| Check | Run / job | Result |",
+      "|---|---|---|",
       `| \`deterministic-package\` | \`${head["deterministic-package"].run}\` / \`${head["deterministic-package"].job}\` | ${head["deterministic-package"].conclusion} on exact reviewed head |`,
       `| \`workflow-policy\` | \`${head["workflow-policy"].run}\` / \`${head["workflow-policy"].job}\` | ${head["workflow-policy"].conclusion} on exact reviewed head |`,
       `| \`codeql-javascript\` | \`${head["codeql-javascript"].run}\` / \`${head["codeql-javascript"].job}\` | ${head["codeql-javascript"].conclusion} on exact reviewed head |`,
       `| GitHub Advanced Security \`CodeQL\` | check \`${receipt.advancedSecurityCheck.id}\` | ${receipt.advancedSecurityCheck.conclusion} |`,
+      "",
+      `Protected merged-main checks on \`${pr.mergeCommit}\` also succeeded:`,
+      "",
+      "| Check | Run / job | Result |",
+      "|---|---|---|",
       `| \`deterministic-package\` | \`${merged["deterministic-package"].run}\` / \`${merged["deterministic-package"].job}\` | ${merged["deterministic-package"].conclusion} on exact merged main |`,
       `| \`workflow-policy\` | \`${merged["workflow-policy"].run}\` / \`${merged["workflow-policy"].job}\` | ${merged["workflow-policy"].conclusion} on exact merged main |`,
       `| \`codeql-javascript\` | \`${merged["codeql-javascript"].run}\` / \`${merged["codeql-javascript"].job}\` | ${merged["codeql-javascript"].conclusion} on exact merged main |`,
-      `Exact merged-main CodeQL analysis \`${analysis.id}\` is associated with \`${analysis.commit}\`; final open-alert readback was zero.`
-    ];
+      "",
+      `Exact merged-main CodeQL analysis \`${analysis.id}\` is associated with \`${analysis.commit}\`; final open-alert readback was zero.`,
+      "",
+      structured
+    ].join("\n");
   }
   return [
-    `| Public hosted evidence | Pull request [9](${pr.url}), reviewed head \`${pr.reviewedHead}\`, tree \`${pr.reviewedTree}\`, squash merge/final baseline \`${pr.mergeCommit}\`, and [durable self-referential receipt](${pr.receiptUrl}). |`,
+    `Pull request 9 is ${pr.state}: reviewed candidate tree \`${pr.reviewedTree}\` equals merged-main tree \`${pr.mergeTree}\` at \`${pr.mergeCommit}\`.`,
+    "",
+    "Pull request 9 exact-head and merge checks:",
+    "",
     `- \`deterministic-package\`: run \`${head["deterministic-package"].run}\`, job \`${head["deterministic-package"].job}\`, ${head["deterministic-package"].conclusion}.`,
     `- \`workflow-policy\`: run \`${head["workflow-policy"].run}\`, job \`${head["workflow-policy"].job}\`, ${head["workflow-policy"].conclusion}.`,
     `- \`codeql-javascript\`: run \`${head["codeql-javascript"].run}\`, job \`${head["codeql-javascript"].job}\`, ${head["codeql-javascript"].conclusion}.`,
     `- GitHub Advanced Security \`CodeQL\`: check \`${receipt.advancedSecurityCheck.id}\`, ${receipt.advancedSecurityCheck.conclusion}.`,
+    "",
+    `Protected merged-main checks on \`${pr.mergeCommit}\`:`,
+    "",
     `- \`deterministic-package\`: run \`${merged["deterministic-package"].run}\`, job \`${merged["deterministic-package"].job}\`, ${merged["deterministic-package"].conclusion}.`,
     `- \`workflow-policy\`: run \`${merged["workflow-policy"].run}\`, job \`${merged["workflow-policy"].job}\`, ${merged["workflow-policy"].conclusion}.`,
     `- \`codeql-javascript\`: run \`${merged["codeql-javascript"].run}\`, job \`${merged["codeql-javascript"].job}\`, ${merged["codeql-javascript"].conclusion}.`,
-    `- Exact merged-main CodeQL analysis \`${analysis.id}\` is associated with \`${analysis.commit}\`; final open-alert readback was zero.`
-  ];
+    `- Exact merged-main CodeQL analysis \`${analysis.id}\` is associated with \`${analysis.commit}\`; final open-alert readback was zero.`,
+    "",
+    structured,
+    "",
+    `The containing Task 9 commit could not embed its own immutable merge identity, so pull request 9's [post-merge receipt](${pr.receiptUrl}) durably binds the exact merge, check, ref, and issue result.`
+  ].join("\n");
 }
 
 function auditPublicPostureIntegrity(root, findings) {
@@ -679,7 +696,8 @@ function auditAuthority(root, findings, profile) {
           message: "authoritative report action must contain only the installed-App readback blocker"
         });
       }
-      const receipt = readUniquePublicCloseoutReceipt(report, relative, findings);
+      const receiptSection = readUniqueMarkdownSection(report, "Verified closeout receipt", relative, findings);
+      const receipt = readUniquePublicCloseoutReceipt(receiptSection, relative, findings);
       if (receipt !== null && !isDeepStrictEqual(receipt, EXPECTED_PUBLIC_CLOSEOUT_RECEIPT)) {
         findings.push({
           severity: "error",
@@ -688,17 +706,15 @@ function auditAuthority(root, findings, profile) {
           message: "structured receipt must preserve exact merged PR, successful checks, matching tree, main analysis, and sole open issue semantics"
         });
       }
-      const visibleClaims = expectedPublicCloseoutVisibleClaims(EXPECTED_PUBLIC_CLOSEOUT_RECEIPT, relative);
       if (
-        report !== null &&
-        (visibleClaims.some((claim) => !report.includes(claim)) ||
-          PUBLIC_CLOSEOUT_VISIBLE_CONTRADICTIONS.some((pattern) => pattern.test(report)))
+        receiptSection !== null &&
+        receiptSection !== renderPublicCloseoutReceiptSection(EXPECTED_PUBLIC_CLOSEOUT_RECEIPT, relative)
       ) {
         findings.push({
           severity: "error",
           code: "public-closeout-receipt",
           path: relative,
-          message: "visible receipt projection must agree with the structured merged, matching-tree, successful-check, and zero-alert evidence"
+          message: "the unique visible receipt section must exactly render the structured merged, matching-tree, successful-check, and zero-alert evidence"
         });
       }
     }

@@ -141,6 +141,8 @@ Task 9 changes exactly these ten paths. The tenth path, `.github/dependabot.yml`
 | `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md` | Current compliance evidence and terminal label. |
 | `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md` | This disclosure/hosted-control report. |
 
+## Verified closeout receipt
+
 Pull request [9](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9) completed the protected evidence path with reviewed head `7bf2b1a706aab6a7d9c36070b15590153c652e2a`, tree `4ff2a229a628bf0f9dc1a11abb23a88cd6068e18`, and squash merge `0ccb120442292653a11676ad312f18092944b5a1` whose tree matches exactly. The [durable receipt](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615) records protection gating, final refs, hosted readback, and issue 4 disposition.
 
 | Check | Run / job | Result |
@@ -223,6 +225,8 @@ Exact merged-main CodeQL analysis `1622858177` is associated with `0ccb120442292
   }
 }
 -->
+
+## Task 9 verification history
 
 Task 9 baseline and TDD evidence:
 

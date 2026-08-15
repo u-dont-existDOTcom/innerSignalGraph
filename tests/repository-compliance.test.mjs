@@ -234,6 +234,12 @@ function mutateStructuredPublicCloseoutReceipt(source, mutate) {
   return withReceipt.replace(match[0], `<!-- public-closeout-receipt\n${JSON.stringify(receipt, null, 2)}\n-->`);
 }
 
+function appendToVerifiedCloseoutReceipt(source, line) {
+  if (!source.includes("## Verified closeout receipt")) return `${source.trimEnd()}\n\n${line}\n`;
+  const body = readMarkdownSection(source, "Verified closeout receipt");
+  return replaceMarkdownSection(source, "Verified closeout receipt", `${body}\n${line}`);
+}
+
 test("public profile declares exact commands, completed publication transition, and one canonical checkpoint", async () => {
   const profile = JSON.parse(await read(".github/codex-repository.json"));
   assert.equal(profile.repository_kind, "software");
@@ -393,6 +399,45 @@ test("public closeout audit enforces semantic PR 9, merged-main, CodeQL, and iss
     await fs.writeFile(absolute, original);
   }
 
+  const additiveVisibleContradictions = [
+    "The reviewed candidate tree does not equal the merged-main tree.",
+    "The exact-head and merged-main required checks failed.",
+    "Merged-main CodeQL analysis 1622858177 had five open alerts.",
+    "The merged-main CodeQL analysis belongs to a different commit.",
+    "Run 31869941911 did not succeed."
+  ];
+  for (const relative of reportPaths) {
+    const absolute = path.join(fixture, relative);
+    const original = await fs.readFile(absolute, "utf8");
+    for (const contradiction of additiveVisibleContradictions) {
+      await fs.writeFile(absolute, appendToVerifiedCloseoutReceipt(original, contradiction));
+      const result = auditRepository(fixture);
+      assert.ok(
+        result.findings.some(
+          ({ code, path: findingPath }) => code === "public-closeout-receipt" && findingPath === relative
+        ),
+        `${relative}: ${contradiction}: ${JSON.stringify(result.findings)}`
+      );
+    }
+    await fs.writeFile(absolute, original);
+  }
+
+  const historicalReportAbsolute = path.join(fixture, reportPaths[0]);
+  const historicalReport = await fs.readFile(historicalReportAbsolute, "utf8");
+  await fs.writeFile(
+    historicalReportAbsolute,
+    `${historicalReport.trimEnd()}\n\n## Historical pre-merge receipt state\n\nPR 9 was unmerged while its required checks were pending.\n`
+  );
+  const historicalReceiptResult = auditRepository(fixture);
+  assert.ok(
+    historicalReceiptResult.findings.every(
+      ({ code, path: findingPath }) =>
+        findingPath !== reportPaths[0] || !["public-closeout-receipt", "public-closeout-stale-evidence"].includes(code)
+    ),
+    JSON.stringify(historicalReceiptResult.findings)
+  );
+  await fs.writeFile(historicalReportAbsolute, historicalReport);
+
   const checkpointAbsolute = path.join(fixture, checkpointPath);
   const checkpoint = await fs.readFile(checkpointAbsolute, "utf8");
   const current = readMarkdownSection(checkpoint, "Current checkpoint");
@@ -484,16 +529,26 @@ test("public closeout audit scopes stale work to unique authoritative active sec
     {
       relative: "docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md",
       mutate: (source) => `${source}\n## Remaining action and residual risk\nDuplicate active state.\n`
+    },
+    {
+      relative: "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md",
+      mutate: (source) => source.replace("## Verified closeout receipt", "## Historical closeout receipt"),
+      code: "public-closeout-section"
+    },
+    {
+      relative: "docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md",
+      mutate: (source) => `${source}\n## Verified closeout receipt\nDuplicate receipt.\n`,
+      code: "public-closeout-section"
     }
   ];
-  for (const { relative, mutate } of sectionMutations) {
+  for (const { relative, mutate, code = "public-closeout-section" } of sectionMutations) {
     const absolute = path.join(fixture, relative);
     const source = await fs.readFile(absolute, "utf8");
     await fs.writeFile(absolute, mutate(source));
     const result = auditRepository(fixture);
     assert.ok(
       result.findings.some(
-        ({ code, path: findingPath }) => code === "public-closeout-section" && findingPath === relative
+        ({ code: findingCode, path: findingPath }) => findingCode === code && findingPath === relative
       ),
       `${relative}: ${JSON.stringify(result.findings)}`
     );

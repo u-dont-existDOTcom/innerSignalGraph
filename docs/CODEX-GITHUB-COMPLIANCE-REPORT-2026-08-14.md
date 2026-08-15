@@ -94,6 +94,10 @@ Pull request 8 exact-head checks:
 - `codeql-javascript`: run `31865209098`, job `94965049683`, success.
 - GitHub Advanced Security `CodeQL`: check `94965151294`, success with zero new alert.
 
+## Verified closeout receipt
+
+Pull request 9 is merged: reviewed candidate tree `4ff2a229a628bf0f9dc1a11abb23a88cd6068e18` equals merged-main tree `4ff2a229a628bf0f9dc1a11abb23a88cd6068e18` at `0ccb120442292653a11676ad312f18092944b5a1`.
+
 Pull request 9 exact-head and merge checks:
 
 - `deterministic-package`: run `31869840311`, job `94976658513`, success.
