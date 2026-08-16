@@ -1,0 +1,61 @@
+{
+  "format": "inner-signal-remote-diagnostic-v1",
+  "incidentId": "597d858b133e084c10b25dc9bfc0e985a8d20a9b4089319509df05456cf7abda",
+  "machineId": "c6322e84-1691-4175-8822-87add9c1cfb1",
+  "createdAt": "2026-08-16T04:16:24.259Z",
+  "runtime": {
+    "version": "0.15.2",
+    "installedCommit": null,
+    "nodeVersion": "v24.18.0"
+  },
+  "update": {
+    "status": "validation-failed",
+    "candidateCommit": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1"
+  },
+  "failure": {
+    "stage": "package-tests",
+    "classification": "UPDATE_TEST_FAILURE",
+    "actionCode": "KEEP_CURRENT_RUNTIME",
+    "retryable": false,
+    "exitCode": 1
+  },
+  "tests": {
+    "format": "inner-signal-test-failure-v1",
+    "command": "npm test",
+    "exitCode": 1,
+    "counts": {
+      "tests": 250,
+      "suites": 0,
+      "pass": 249,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "failures": [
+      {
+        "name": "standalone CLI defaults to Opus with Fable escalation and Codex review"
+      },
+      {
+        "name": "standalone CLI defaults to Opus with Fable escalation and Codex review",
+        "location": {
+          "file": "tests/config.test.mjs",
+          "line": 61,
+          "column": 1
+        },
+        "errorCode": "ERR_ASSERTION"
+      }
+    ]
+  },
+  "integrity": {
+    "runtimeTreeSha256": null,
+    "graphBundleSha256": null
+  },
+  "privacy": {
+    "identity": "random-local-uuid",
+    "includesChatContent": false,
+    "includesCredentials": false,
+    "includesModelOutput": false,
+    "includesRawLogs": false
+  }
+}
