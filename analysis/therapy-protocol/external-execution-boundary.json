@@ -29,6 +29,12 @@
     ]
   },
   "resumeCondition": "Joel explicitly authorizes the described therapy-content egress to both providers for the full 49-case, 27-turn, and evaluator campaigns.",
+  "authorization": {
+    "status": "explicitly_authorized",
+    "authorizedAt": "2026-08-18T10:38:48Z",
+    "ownerReply": "yes always authorize this type of thing",
+    "scope": "Standing authorization for this bounded public/privacy-reduced or synthetic therapy-fixture workflow, its generated answers, and separate grading criteria sent to the named authenticated Claude and Codex CLI providers under the recorded retention, quota, and tracked-evidence limits."
+  },
   "stableObservedSha": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1",
   "stableChanged": false,
   "articleProseChanged": false
