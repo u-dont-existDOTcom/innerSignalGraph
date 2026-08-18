@@ -1,4 +1,9 @@
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
+import {
+  PROTOCOL_PROFILE_ENUMS,
+  PROTOCOL_PROFILE_FIELDS,
+  PROTOCOL_TEXT_FIELDS
+} from "../therapy-protocol/contract.mjs";
 
 const observationSchema = {
   type: "object",
@@ -15,6 +20,19 @@ const variableProperties = Object.fromEntries(
   Object.entries(CASE_VARIABLE_ENUMS).map(([field, values]) => [field, { type: "string", enum: values }])
 );
 
+const protocolProperties = {
+  ...Object.fromEntries(
+    Object.entries(PROTOCOL_PROFILE_ENUMS).map(([field, values]) => [field, { type: "string", enum: values }])
+  ),
+  ...Object.fromEntries(PROTOCOL_TEXT_FIELDS.map((field) => [field, { type: "string" }]))
+};
+
+const protocolProfileSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: protocolProperties
+};
+
 export const caseSnapshotSchema = {
   type: "object",
   additionalProperties: false,
@@ -28,6 +46,7 @@ export const caseSnapshotSchema = {
       properties: variableProperties,
       required: CASE_VARIABLE_FIELDS
     },
+    protocol_profile: protocolProfileSchema,
     hypotheses: {
       type: "array",
       items: {
@@ -73,6 +92,19 @@ export const caseAuditSchema = {
         additionalProperties: false,
         properties: {
           field: { type: "string", enum: CASE_VARIABLE_FIELDS },
+          value: { type: "string" },
+          reason: { type: "string" }
+        },
+        required: ["field", "value", "reason"]
+      }
+    },
+    protocol_profile_corrections: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          field: { type: "string", enum: [...PROTOCOL_PROFILE_FIELDS, ...PROTOCOL_TEXT_FIELDS] },
           value: { type: "string" },
           reason: { type: "string" }
         },
