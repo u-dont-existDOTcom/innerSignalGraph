@@ -23,7 +23,7 @@ A resumed Codex conversation must not infer the active objective from conversati
 
 Complete and falsify the Creative Tail inner-child/reparenting protocol integration in the existing InnerSignalGraph runtime. Import all 49 real, unprimed fixtures; enforce query/grader separation; run deterministic, actual-model, and adversarial multi-turn campaigns; execute genuine Map 15 and Map 16 ablations; simplify when the smaller competitor is equivalent; preserve A001/H001 and all current safety/repository boundaries; merge through protected `main`; leave `stable` unchanged.
 
-PR #11 now contains the strict 49-case import, deterministic production routing, genuine Map 15/16 comparisons, mechanical query/grader separation, hardened acceptance gate, longitudinal runtime integration, adversarial trajectory fixtures, and the real production-candidate campaign harness. This remains incomplete until the non-mock campaigns, final verification, protected merge, and immutable receipt finish.
+PR #11 now contains the strict 49-case import, deterministic production routing, genuine Map 15/16 comparisons, mechanical query/grader separation, hardened acceptance gate, longitudinal runtime integration, adversarial trajectory fixtures, and the real production-candidate campaign harness. The first authenticated smoke was denied before process creation by the sensitive-egress approval boundary. The task is `BLOCKED` until Joel explicitly authorizes the exact provider/content boundary recorded in `analysis/therapy-protocol/external-execution-boundary.json`.
 
 Still required:
 
@@ -82,6 +82,7 @@ Complete the exclusive `inner-child-protocol-comparison-v1` task on PR #11 while
 
 - For the exclusive PR #11 task, missing corpus/comparison/live/multi-turn artifacts are incomplete work, not an external blocker.
 - If actual provider execution is genuinely unavailable, record task status `blocked` and durable evidence; do not claim completion.
+- Current active blocker: external execution requires explicit authorization to send the 49 public/privacy-reduced therapy queries, 27 synthetic therapy turns, and generated answers/grading criteria to authenticated Anthropic Claude and OpenAI Codex CLI providers. No query was sent during the denied smoke.
 - The public-transition GitHub App permission blocker remains valid but suspended for this task.
 - `GET /user/installations` returns HTTP 403 because the available OAuth token is not authorized to a GitHub App. `GET /installation/repositories` also returns HTTP 403 because the token is not an installation token. Repository-scoped installed GitHub App permissions remain `UNVERIFIED`.
 - Issue 4 [remains OPEN](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4) solely for installed GitHub App permission readback.

@@ -41,6 +41,7 @@ const REQUIRED_VERIFICATION_COMMANDS = [
   "npm run task:preflight"
 ];
 const ARTICLE_SOURCE_SHA256 = "2d81a6d01fc5b31f96ca9ca3a54a3109d4b80d56114089d1acb4471110631fe4";
+const BLOCKER_RECEIPT = "analysis/therapy-protocol/external-execution-boundary.json";
 const SHA40 = /^[a-f0-9]{40}$/;
 const SHA64 = /^[a-f0-9]{64}$/;
 
@@ -360,6 +361,23 @@ function validateVerification(root, rel, live, multi, findings) {
   }
 }
 
+function validateBlockedEvidence(root, task, findings) {
+  if (task.status !== "blocked") return;
+  const data = readArtifact(root, BLOCKER_RECEIPT, "BLOCKER_RECEIPT", findings);
+  if (!data) return;
+  const valid = data.schemaVersion === 1
+    && data.taskId === REQUIRED_TASK.taskId
+    && SHA40.test(data.executionHeadSha ?? "")
+    && SHA40.test(data.executionTreeSha ?? "")
+    && data.boundaryCode === "SENSITIVE_EGRESS_EXPLICIT_APPROVAL_REQUIRED"
+    && data.externalEgressOccurred === false
+    && data.modelExecutionOccurred === false
+    && Array.isArray(data.requestedAuthorization?.payload)
+    && Array.isArray(data.requestedAuthorization?.destinations)
+    && typeof data.resumeCondition === "string";
+  if (!valid) findings.push(finding("BLOCKER_RECEIPT_INVALID", "Blocked status requires durable, sanitized evidence of the genuine external boundary and resume condition.", BLOCKER_RECEIPT));
+}
+
 export function verifyAcceptance({ root = process.cwd(), env = process.env, branch = undefined } = {}) {
   const preflight = verifyPreflight({ root, env, branch });
   const findings = [...preflight.findings];
@@ -376,6 +394,7 @@ export function verifyAcceptance({ root = process.cwd(), env = process.env, bran
     const multi = validateMultiTurn(root, task.acceptance.paths.multiTurnResults, findings);
     validateDocs(root, task, findings);
     validateVerification(root, task.acceptance.paths.verificationReceipt, live, multi, findings);
+    validateBlockedEvidence(root, task, findings);
   }
   const ok = findings.length === 0;
   return {

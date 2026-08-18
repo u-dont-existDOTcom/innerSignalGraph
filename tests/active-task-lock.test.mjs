@@ -79,6 +79,8 @@ function baseFixture(t) {
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   copy(root, "tasks/ACTIVE-TASK.json");
   const task = JSON.parse(fs.readFileSync(path.join(root, "tasks/ACTIVE-TASK.json"), "utf8"));
+  task.status = "active";
+  writeJson(root, "tasks/ACTIVE-TASK.json", task);
   writeText(root, "state/CODEX-CURRENT-STATE.md", `${task.taskId}\n${task.requiredBranch}\n${task.completionCommand}\n`);
   return { root, task };
 }
@@ -281,6 +283,17 @@ test("49 safely-blocked provider results cannot pass and a durable blocked task 
   const active = JSON.parse(fs.readFileSync(path.join(root, "tasks/ACTIVE-TASK.json"), "utf8"));
   active.status = "blocked";
   writeJson(root, "tasks/ACTIVE-TASK.json", active);
+  writeJson(root, "analysis/therapy-protocol/external-execution-boundary.json", {
+    schemaVersion: 1,
+    taskId: task.taskId,
+    executionHeadSha: "a".repeat(40),
+    executionTreeSha: "b".repeat(40),
+    boundaryCode: "SENSITIVE_EGRESS_EXPLICIT_APPROVAL_REQUIRED",
+    externalEgressOccurred: false,
+    modelExecutionOccurred: false,
+    requestedAuthorization: { payload: ["public therapy fixtures"], destinations: ["Claude and Codex CLI"] },
+    resumeCondition: "Explicit authorization"
+  });
   const result = verifyAcceptance({ root, branch: task.requiredBranch });
   assert.equal(result.ok, false);
   assert.equal(result.completionState, "BLOCKED");
