@@ -128,5 +128,14 @@ export const caseAuditSchema = {
     verdict: { type: "string", enum: ["accept", "revise", "reject"] },
     summary: { type: "string" }
   },
-  required: ["remove_observation_ids", "remove_hypothesis_ids", "variable_corrections", "add_unknowns", "safety_flags", "verdict", "summary"]
+  required: [
+    "remove_observation_ids",
+    "remove_hypothesis_ids",
+    "variable_corrections",
+    "protocol_profile_corrections",
+    "add_unknowns",
+    "safety_flags",
+    "verdict",
+    "summary"
+  ]
 };
