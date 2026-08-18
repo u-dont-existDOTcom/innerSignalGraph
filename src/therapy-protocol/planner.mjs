@@ -49,7 +49,7 @@ function protocolOnlyPlan({ variables, route, graphBundleVersion }) {
   const node = route.protocolJob;
   const questionSource = questionField ? { type: "protocol-material-unknown", variable: questionField } : null;
   return {
-    contractVersion: "case-plan-v5",
+    contractVersion: "case-plan-v4",
     graphBundleVersion,
     variables,
     primaryJob: { id: node.id, title: node.title, tier: node.tier },
@@ -91,7 +91,7 @@ function restrictGraphPlan(base, route, graphs) {
   const secondary = selected.slice(1, 5);
   return {
     ...base,
-    contractVersion: "case-plan-v5",
+    contractVersion: "case-plan-v4",
     primaryJob: { id: primary.id, title: primary.title, tier: primary.tier },
     secondaryJobs: secondary.map((node) => ({ id: node.id, title: node.title, tier: node.tier })),
     selectedNodes: selected,
