@@ -1,13 +1,46 @@
 # Inner Signal Codex current state
 
-Updated: 2026-08-15
+Updated: 2026-08-18
+
+## Exclusive active task
+
+- Task ID: `inner-child-protocol-comparison-v1`
+- Required branch: `agent/merge-inner-child-protocol-20260818`
+- Pull request: `#11`
+- Machine authority: `tasks/ACTIVE-TASK.json`
+- First command after any fresh start, resume, context compaction, or model switch: `npm run task:preflight`
+- Task-specific completion command: `npm run therapy-protocol:acceptance`
+
+This owner-authorized task supersedes the earlier branch-local instruction not to change therapy policy. The publication-transition checkpoint retained below is still valid compliance evidence, but its GitHub App action is suspended for this exclusive task and must not be selected as the worker's next objective.
+
+### Scope lock
+
+Do not select work from S001 handoffs, Guide Packet r03/r04 worktrees, autonomous-roadmap next-task selection, GitHub App issue 4, unrelated `handoff.md` files, or `stable` release queues. Those sources remain valid in their own branches and worktrees but are suspended here.
+
+A resumed Codex conversation must not infer the active objective from conversational memory. It must verify the exact branch and task lock from Git. A branch mismatch is a hard preflight failure, not permission to choose another repository task.
+
+### Active objective and progress
+
+Complete and falsify the Creative Tail inner-child/reparenting protocol integration in the existing InnerSignalGraph runtime. Import all 49 real, unprimed fixtures; enforce query/grader separation; run deterministic, actual-model, and adversarial multi-turn campaigns; execute genuine Map 15 and Map 16 ablations; simplify when the smaller competitor is equivalent; preserve A001/H001 and all current safety/repository boundaries; merge through protected `main`; leave `stable` unchanged.
+
+PR #11 now contains the strict 49-case import, deterministic production routing, genuine Map 15/16 comparisons, mechanical query/grader separation, hardened acceptance gate, longitudinal runtime integration, adversarial trajectory fixtures, and the real production-candidate campaign harness. The first authenticated smoke was denied before process creation by the sensitive-egress approval boundary; Joel explicitly authorized the recorded provider/content boundary on 2026-08-18, so the task is active and genuine execution may resume.
+
+Still required:
+
+- actual non-mock model results for all 49 or an explicit `BLOCKED` terminal state;
+- actual non-mock execution and grading of all 13 required multi-turn trajectories;
+- exact-head verification receipt;
+- protected-main merge and immutable post-merge receipt.
+
+`npm test`, `npm run verify`, green CI, and focused synthetic tests are prerequisites. They do not mean the owner task is complete. `READY_FOR_PROTECTED_MERGE` requires the acceptance command to exit zero. `COMPLETE` additionally requires protected merge and an immutable receipt.
 
 ## Goal
 
-Maintain the verified public repository baseline without changing therapy/hypnosis policy, model roles, privacy scope, owner decisions, transactional installation, or `stable` release authority. The publication transition and its executable closeout work are complete; the only compliance blocker is installed GitHub App permission readback.
+Complete the exclusive `inner-child-protocol-comparison-v1` task on PR #11 while preserving the verified public-repository baseline, privacy scope, owner decisions outside this task, transactional installation, and `stable` release authority.
 
 ## Authority / baseline
 
+- Current owner requirements and `tasks/ACTIVE-TASK.json` control this branch.
 - Repository: `u-dont-existDOTcom/innerSignalGraph`
 - Development authority: `main`
 - Sole installation/release source: `stable`
@@ -28,7 +61,8 @@ Maintain the verified public repository baseline without changing therapy/hypnos
 - Universal publication-transition guidance was promoted through `u-dont-existDOTcom/universal-dev-architecture` pull request 13 and merged as `996d67ae9f8f44b0865cea6d88d169dbbadbbf41` after its deterministic audit and CodeQL checks passed.
 - Public hosted evidence passed TDD, all final repository gates, two independent reviews, and the protected pull-request path through pull request [9](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9).
 - The immutable PR 9 merge/check/ref evidence is recorded in the two reports routed below and in [PR 9 comment 5300990615](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615), which supplies the self-referential post-merge receipt that tracked source cannot embed.
-- All executable Tasks 1-10 completed through their protected paths. No transition task remains to be opened, reviewed, verified, or merged.
+- All executable public-transition Tasks 1-10 completed through their protected paths.
+- PR #11 hermetic implementation is complete at the current working checkpoint: all 49 deterministic routes pass, Map 15 is `RETAIN_FULL`, Map 16 is `HYBRID`, and the full package suite passes 426 tests. Genuine provider execution is the next unmet acceptance condition.
 
 ## Current checkpoint
 
@@ -46,20 +80,25 @@ Maintain the verified public repository baseline without changing therapy/hypnos
 
 ## Blockers / unresolved
 
+- For the exclusive PR #11 task, missing corpus/comparison/live/multi-turn artifacts are incomplete work, not an external blocker.
+- If actual provider execution is genuinely unavailable, record task status `blocked` and durable evidence; do not claim completion.
+- Resolved execution boundary: Joel explicitly authorized sending the 49 public/privacy-reduced therapy queries, 27 synthetic therapy turns, and generated answers/grading criteria to authenticated Anthropic Claude and OpenAI Codex CLI providers under the recorded retention/quota limits. No query was sent during the denied smoke.
+- The public-transition GitHub App permission blocker remains valid but suspended for this task.
 - `GET /user/installations` returns HTTP 403 because the available OAuth token is not authorized to a GitHub App. `GET /installation/repositories` also returns HTTP 403 because the token is not an installation token. Repository-scoped installed GitHub App permissions remain `UNVERIFIED`.
-- Exact remaining action: use a GitHub App-authorized token to enumerate installations accessible to the user, select this repository, record only safe repository-scoped permission names, and update the evidence through the protected path.
 - Issue 4 [remains OPEN](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4) solely for installed GitHub App permission readback.
-- No owner decision is required for that infrastructure readback. No stable release is requested or authorized.
 
 ## Evidence / artifacts
 
+- Active task lock: `tasks/ACTIVE-TASK.json`
+- Task verifier: `scripts/verify-active-task.mjs`
+- Active design and plan: `docs/superpowers/specs/2026-08-18-inner-child-protocol-merge-design.md`, `docs/superpowers/plans/2026-08-18-inner-child-protocol-merge.md`
 - Exact machine profile: `.github/codex-repository.json`
-- Accepted design and plan: `docs/superpowers/specs/2026-08-14-public-repository-transition-design.md`, `docs/superpowers/plans/2026-08-14-public-repository-transition.md`
 - Transition report: `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md`
 - Compliance report: `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md`
 - Public hosted evidence: pull request [9](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9) and its [durable receipt](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615)
-- Universal lesson: pull request 13 / merge `996d67ae9f8f44b0865cea6d88d169dbbadbbf41`
 - Hosted hardening issue: [4](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4)
+
+The following section is the exact retained public-transition compliance action required by the repository audit. It is subordinate to the exclusive active-task lock above while PR #11 is active.
 
 ## Next safe action
 
@@ -67,4 +106,4 @@ Obtain GitHub App-authorized authentication, read repository-scoped installed-Ap
 
 ## Recovery rule
 
-After interruption, inspect actual Git state, this checkpoint, `.github/codex-repository.json`, newer owner instructions, current PR/check/API state, and the final commits in each worktree. Never infer completion from chat or replay completed changes. Do not copy r03 therapy changes into this branch.
+After interruption, run `npm run task:preflight` before reading roadmaps or old handoffs. Then inspect `tasks/ACTIVE-TASK.json`, this file, PR #11, the exact branch head, and the last acceptance output. Continue with the next unmet acceptance condition. Do not ask “what is the repository's next task?” while this exclusive task lock exists.

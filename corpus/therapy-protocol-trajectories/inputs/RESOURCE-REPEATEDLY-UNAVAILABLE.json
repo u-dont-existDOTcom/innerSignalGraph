@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "RESOURCE-REPEATEDLY-UNAVAILABLE",
+  "source": "owner-authorized synthetic adversarial trajectory",
+  "turns": [
+    {
+      "index": 1,
+      "message": "The specialist I was referred to is unaffordable. What can I do while I appeal?"
+    },
+    {
+      "index": 2,
+      "message": "You suggested the same specialist again, but it is still unaffordable and nobody has responded to my appeal."
+    }
+  ]
+}

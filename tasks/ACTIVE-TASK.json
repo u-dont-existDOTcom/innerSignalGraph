@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "taskId": "inner-child-protocol-comparison-v1",
+  "title": "Complete and falsify the Creative Tail therapy-protocol runtime merge",
+  "status": "active",
+  "exclusive": true,
+  "repository": "u-dont-existDOTcom/innerSignalGraph",
+  "requiredBranch": "agent/merge-inner-child-protocol-20260818",
+  "pullRequest": 11,
+  "ownerAuthorized": true,
+  "source": {
+    "repository": "u-dont-existDOTcom/creativeTailSampling",
+    "mainSha": "af36a51e44a65067a3d7703a78a004fdb8ad7693",
+    "oneParentSemanticCheckpoint": "db591713a3feb0a1576943408ae356685c0034ec",
+    "fixtureCount": 49
+  },
+  "preflightCommand": "npm run task:preflight",
+  "completionCommand": "npm run therapy-protocol:acceptance",
+  "completionClaimRule": "Ordinary package tests, synthetic unit tests, or a green CI run are prerequisites only. The worker may not claim this task complete unless the completion command exits zero, the protected PR is merged, and an immutable post-merge receipt is recorded.",
+  "suspendedTaskSources": [
+    "S001 forensic benchmark handoffs",
+    "Guide Packet r03/r04 worktrees and review queues",
+    "autonomous roadmap next-task selection",
+    "GitHub App permission issue 4",
+    "unrelated local handoff.md files",
+    "stable release or promotion work"
+  ],
+  "acceptance": {
+    "requiredCaseCount": 49,
+    "requiredBatchCounts": {
+      "006": 16,
+      "007": 12,
+      "008": 11,
+      "009": 10
+    },
+    "requiredTrajectoryIds": [
+      "SAFETY-DISAPPEARS",
+      "RESOURCE-REPEATEDLY-UNAVAILABLE",
+      "COPING-IMPROVES-NEED-REMAINS",
+      "FRAME-REJECTED",
+      "NOT-NOW-SUBJECT-CHANGE",
+      "SUPPORTER-OVERRESPONSIBILITY",
+      "MEMORY-CONFIDENCE-DRIFT",
+      "BOT-AUTHORITY-CONCENTRATION",
+      "BROKEN-TRUST-CHECKING-LOOP",
+      "CAPACITY-FLUCTUATION",
+      "RELIEF-WITHOUT-FULL-CHANGE",
+      "MISSED-PROMISE-ARREARS",
+      "DEPTH-BEFORE-INTEGRATION"
+    ],
+    "paths": {
+      "corpusManifest": "corpus/real-therapy-queries/manifest.json",
+      "deterministicResults": "analysis/therapy-protocol/deterministic-results.json",
+      "liveResults": "analysis/therapy-protocol/live-results.json",
+      "map15PerCase": "analysis/therapy-protocol/ablation/map15-per-case.json",
+      "map16PerCase": "analysis/therapy-protocol/ablation/map16-per-case.json",
+      "ablationSummary": "analysis/therapy-protocol/ablation/summary.json",
+      "multiTurnResults": "analysis/therapy-protocol/multi-turn-results.json",
+      "verificationReceipt": "analysis/therapy-protocol/verification-receipt.json"
+    },
+    "requiredDocumentation": [
+      "docs/therapy-protocol/SOURCE-PROVENANCE.md",
+      "docs/therapy-protocol/RUNTIME-CROSSWALK.md",
+      "docs/therapy-protocol/REAL-QUERY-CORPUS.md",
+      "docs/therapy-protocol/MAP-15-16-COMPARISON.md"
+    ]
+  }
+}

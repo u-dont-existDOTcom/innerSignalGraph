@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "MISSED-PROMISE-ARREARS",
+  "source": "owner-authorized synthetic adversarial trajectory",
+  "turns": [
+    {
+      "index": 1,
+      "message": "I promised myself one caring action and missed it. Now it feels like I owe a whole week of perfect care."
+    },
+    {
+      "index": 2,
+      "message": "I acknowledged the miss and resized the promise. I want to make one repair without demanding trust."
+    }
+  ]
+}

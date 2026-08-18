@@ -6,6 +6,7 @@ import { loadConfig, projectRoot } from "../src/core/config.mjs";
 import { buildContext } from "../src/orchestrator/context-builder.mjs";
 import { createProviders } from "../src/providers/factory.mjs";
 import { runCaseFormulation, applyCaseAudit } from "../src/case-formulation/run.mjs";
+import { caseAuditSchema } from "../src/case-formulation/schemas.mjs";
 import { runFormulatedPipeline } from "../src/orchestrator/run-formulated-pipeline.mjs";
 import { blankCaseVariables } from "../src/guide-graph/contract.mjs";
 
@@ -16,6 +17,13 @@ async function a001Setup() {
   const providers = createProviders(config, { fixturePath: path.join(projectRoot, definition.mockFixture) });
   return { definition, config, context, providers };
 }
+
+test("case audit output schema is strict-provider compatible", () => {
+  assert.deepEqual(
+    new Set(caseAuditSchema.required),
+    new Set(Object.keys(caseAuditSchema.properties))
+  );
+});
 
 test("audited A001 case formulation routes credibility repair before generic relaxation", async () => {
   const { context, providers } = await a001Setup();
