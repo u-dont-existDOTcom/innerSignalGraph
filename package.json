@@ -10,6 +10,8 @@
   },
   "scripts": {
     "test": "node --test",
+    "task:preflight": "node scripts/verify-active-task.mjs --preflight",
+    "therapy-protocol:acceptance": "node scripts/verify-active-task.mjs --acceptance",
     "replay": "node src/cli/replay.mjs",
     "replay:cli": "node --env-file=.env src/cli/replay.mjs",
     "respond": "node src/cli/respond.mjs",
