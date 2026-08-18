@@ -23,16 +23,12 @@ A resumed Codex conversation must not infer the active objective from conversati
 
 Complete and falsify the Creative Tail inner-child/reparenting protocol integration in the existing InnerSignalGraph runtime. Import all 49 real, unprimed fixtures; enforce query/grader separation; run deterministic, actual-model, and adversarial multi-turn campaigns; execute genuine Map 15 and Map 16 ablations; simplify when the smaller competitor is equivalent; preserve A001/H001 and all current safety/repository boundaries; merge through protected `main`; leave `stable` unchanged.
 
-PR #11 currently contains a preliminary deterministic protocol router, schema integration, and synthetic unit tests. That is useful partial implementation, not completion.
+PR #11 now contains the strict 49-case import, deterministic production routing, genuine Map 15/16 comparisons, mechanical query/grader separation, hardened acceptance gate, longitudinal runtime integration, adversarial trajectory fixtures, and the real production-candidate campaign harness. This remains incomplete until the non-mock campaigns, final verification, protected merge, and immutable receipt finish.
 
 Still required:
 
-- import and verify 49/49 real-query fixtures;
-- deterministic full-corpus results;
 - actual non-mock model results for all 49 or an explicit `BLOCKED` terminal state;
-- per-case and aggregate Map 15/16 comparisons;
-- multi-turn longitudinal safety campaign;
-- provenance and runtime crosswalk documentation;
+- actual non-mock execution and grading of all 13 required multi-turn trajectories;
 - exact-head verification receipt;
 - protected-main merge and immutable post-merge receipt.
 
@@ -66,7 +62,7 @@ Complete the exclusive `inner-child-protocol-comparison-v1` task on PR #11 while
 - Public hosted evidence passed TDD, all final repository gates, two independent reviews, and the protected pull-request path through pull request [9](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9).
 - The immutable PR 9 merge/check/ref evidence is recorded in the two reports routed below and in [PR 9 comment 5300990615](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615), which supplies the self-referential post-merge receipt that tracked source cannot embed.
 - All executable public-transition Tasks 1-10 completed through their protected paths.
-- PR #11 preliminary protocol-router implementation and its synthetic tests are complete; the 49-case comparison and validation campaign is not.
+- PR #11 hermetic implementation is complete at the current working checkpoint: all 49 deterministic routes pass, Map 15 is `RETAIN_FULL`, Map 16 is `HYBRID`, and the full package suite passes 426 tests. Genuine provider execution is the next unmet acceptance condition.
 
 ## Current checkpoint
 

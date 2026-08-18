@@ -29,6 +29,16 @@ The transition report names the fully gated private candidate, the public visibi
 - `../IMPLEMENTATION-REPORT-v0.15.2.md`: current implementation report
 - `CURRENT-STATE.md`: superseded checkpoint retained only for audit history
 
+## Active therapy protocol comparison
+
+- `therapy-protocol/SOURCE-PROVENANCE.md`: pinned Creative Tail commit, source hashes, evidence classes, and limitations
+- `therapy-protocol/RUNTIME-CROSSWALK.md`: production pipeline, permission precedence, model roles, and longitudinal state
+- `therapy-protocol/REAL-QUERY-CORPUS.md`: 49-case physical input/grader split and genuine model execution protocol
+- `therapy-protocol/MAP-15-16-COMPARISON.md`: per-case full-versus-simple decisions and burden/safety limits
+- `../analysis/therapy-protocol/`: deterministic, ablation, actual-model, trajectory, and verification receipts for PR 11
+
+The active protocol evidence is bound to Creative Tail `af36a51e44a65067a3d7703a78a004fdb8ad7693`. Its public anecdotal/privacy-reduced cases and model judgments are software-regression evidence, not independent clinical validation.
+
 ## Plans and specifications
 
 - `superpowers/plans/`: implementation plans

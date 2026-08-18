@@ -50,11 +50,18 @@ export function applyCaseAudit(snapshot, audit) {
   };
 }
 
-async function planSnapshot(snapshot) {
+function previousProtocolState(context = {}) {
+  return context.priorInterventionContract?.therapyProtocol?.longitudinalState
+    ?? context.priorInterventionContract?.therapyProtocol
+    ?? (context.priorCaseSnapshot?.protocol_profile ? { profile: context.priorCaseSnapshot.protocol_profile } : null);
+}
+
+async function planSnapshot(snapshot, { previousState = null } = {}) {
   const bundle = await loadCompiledGuideGraphBundle();
   const plan = planTherapyFromGraphs({
     variables: snapshot.variables,
     protocolProfile: snapshot.protocol_profile ?? null,
+    previousProtocolState: previousState,
     unknowns: snapshot.unknowns,
     graphs: bundle.graphs
   });
@@ -137,8 +144,8 @@ export async function runCaseAuditWithRecovery({ context, snapshot, provider, on
   throw new Error("Unreachable A001 audit retry state.");
 }
 
-export async function planCaseSnapshot(snapshot) {
-  return await planSnapshot(snapshot);
+export async function planCaseSnapshot(snapshot, options = {}) {
+  return await planSnapshot(snapshot, options);
 }
 
 export async function runUnauditedCaseFormulation({ context, provider, onProgress, recovery }) {
@@ -153,7 +160,7 @@ export async function runUnauditedCaseFormulation({ context, provider, onProgres
       protocol_profile_corrections: []
     }
   };
-  const { plan, graphBundleVersion } = await planSnapshot(snapshot);
+  const { plan, graphBundleVersion } = await planSnapshot(snapshot, { previousState: previousProtocolState(context) });
   return {
     snapshot,
     plan,
@@ -169,7 +176,7 @@ export async function runAuditedCaseFormulation({ context, extractorProvider, au
   const extraction = await resolveCaseExtraction({ context, provider: extractorProvider, onProgress, recovery });
   const audit = await runCaseAuditWithRecovery({ context, snapshot: extraction.value, provider: auditorProvider, onProgress, recovery });
   const snapshot = applyCaseAudit(extraction.value, audit.value);
-  const { plan, graphBundleVersion } = await planSnapshot(snapshot);
+  const { plan, graphBundleVersion } = await planSnapshot(snapshot, { previousState: previousProtocolState(context) });
   return {
     snapshot,
     plan,

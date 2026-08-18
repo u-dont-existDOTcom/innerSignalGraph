@@ -125,7 +125,13 @@ test("depth requires known sober stopping and integration prerequisites", () => 
 
 test("safe depth becomes available without equating it to integration", () => {
   const route = routeTherapyProtocol({
-    protocolProfile: profile({ requested_operation: OPERATION_CLASSES.DEPTH_ACCESS, integration_load: "low", source_class: "felt_sense", factual_confidence: "medium" }),
+    protocolProfile: profile({
+      requested_operation: OPERATION_CLASSES.DEPTH_ACCESS,
+      integration_load: "low",
+      source_class: "felt_sense",
+      factual_confidence: "medium",
+      historical_provenance_stable: "yes"
+    }),
     variables: variables()
   });
   assert.equal(route.primaryOperation, OPERATION_CLASSES.DEPTH_ACCESS);
@@ -172,7 +178,7 @@ test("treatment ambivalence remains separate from incapacity", () => {
     }),
     variables: variables()
   });
-  assert.equal(route.primaryOperation, OPERATION_CLASSES.HIGH_IMPACT_DECISION);
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
   assert.ok(route.forbiddenOverclaims.some((line) => /ambivalence with incapacity/i.test(line)));
   assert.equal(simpleSupportedChoiceRoute(route.profile), OPERATION_CLASSES.CURRENT_REALITY);
 });

@@ -178,8 +178,16 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
 
   const audit = await runCaseAuditWithRecovery({ context, snapshot: initial.snapshot, provider: providers.openai, onProgress, recovery: caseRecovery });
   const auditedSnapshot = applyCaseAudit(initial.snapshot, audit.value);
+  const auditedRouting = mergeProtocolTier(routing, protocolRequiresReviewedTier(auditedSnapshot));
+  if (auditedRouting.tier !== routing.tier || auditedRouting.reason !== routing.reason) {
+    onProgress?.({ stage: "therapy-routing:audit", status: "completed", detail: `${auditedRouting.tier}: ${auditedRouting.reason}` });
+  }
   const planningStarted = Date.now();
-  const planned = await planCaseSnapshot(auditedSnapshot);
+  const planned = await planCaseSnapshot(auditedSnapshot, {
+    previousState: context.priorInterventionContract?.therapyProtocol?.longitudinalState
+      ?? context.priorInterventionContract?.therapyProtocol
+      ?? (context.priorCaseSnapshot?.protocol_profile ? { profile: context.priorCaseSnapshot.protocol_profile } : null)
+  });
   const planningMs = Date.now() - planningStarted;
   const formulation = {
     snapshot: auditedSnapshot,
@@ -191,9 +199,9 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
     }
   };
 
-  if (routing.tier === "reviewed") {
+  if (auditedRouting.tier === "reviewed") {
     return await simpleResult({
-      context, formulation, routing, extractor, tier: "reviewed", config, startedAt, caseAudit: audit, onProgress,
+      context, formulation, routing: auditedRouting, extractor, tier: "reviewed", config, startedAt, caseAudit: audit, onProgress,
       stageTimings: {
         caseExtractionMs: initial.providerMetadata?.extractor?.durationMs ?? null,
         caseAuditMs: audit.durationMs ?? null,
@@ -209,14 +217,14 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
     graphBundleVersion: formulation.graphBundleVersion
   };
 
-  if (routing.tier === "deep") {
+  if (auditedRouting.tier === "deep") {
     const deep = await runCompactAdversarialPipeline({ context: enrichedContext, providers, config, onProgress });
     return {
       ...deep,
       mode: "deep",
       processingTier: "deep",
-      routingReason: routing.reason,
-      routingDeltaCount: routing.deltaCount,
+      routingReason: auditedRouting.reason,
+      routingDeltaCount: auditedRouting.deltaCount,
       graphBundleVersion: formulation.graphBundleVersion,
       guidePacketVersion: context.guidePacketVersion ?? null,
       caseFormulation: formulation.snapshot,
@@ -238,8 +246,8 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
     ...forensic,
     mode: "forensic",
     processingTier: "forensic",
-    routingReason: routing.reason,
-    routingDeltaCount: routing.deltaCount,
+    routingReason: auditedRouting.reason,
+    routingDeltaCount: auditedRouting.deltaCount,
     graphBundleVersion: formulation.graphBundleVersion,
     guidePacketVersion: context.guidePacketVersion ?? null,
     caseFormulation: formulation.snapshot,

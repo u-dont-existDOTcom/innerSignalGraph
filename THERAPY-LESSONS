@@ -83,3 +83,19 @@ Candidate lesson: interest in an intense or advanced release practice is not suf
 Status: awaiting owner approval; not active runtime policy.
 
 Evidence: r02 decision 5, `G-SOM-DELAYED`, `G-SOM-ADVANCED-BLOCK`, and attached author-provided Vagal Blitz page-5 safety evidence. The packet explicitly does not claim independent empirical validation of that source.
+
+## 2026-08-18T12:00:00.000Z — Decide the permitted operation before selecting a technique
+
+<!-- therapy-lesson {"lessonId":"active-protocol-permission-before-technique","learnedAt":"2026-08-18T12:00:00.000Z","activation":"active-runtime"} -->
+
+The owner-authorized PR 11 protocol places immediate safety, actor and beneficiary, current external reality, operation-specific consent, bodily and third-party rights, decision authority, provenance, capacity concern, resource access, and integration load before ordinary guide-node selection. Missing instruction is not a missing Guide; scaffold loss is not failed internalization; treatment ambivalence is not incapacity; coping does not close an unresolved external need. Longitudinal failure patterns change the contributing operation instead of merely optimizing wording.
+
+Evidence: `tasks/ACTIVE-TASK.json`, Creative Tail source `af36a51e44a65067a3d7703a78a004fdb8ad7693`, `src/therapy-protocol/`, the exact 49-case deterministic results, and the 13 synthetic adversarial trajectory contract. Evidence limitations: source cases are public anecdotal/privacy-reduced material and conceptual graders, not independent clinical validation; actual-model results remain execution evidence rather than clinical outcome evidence.
+
+## 2026-08-18T12:00:00.000Z — Complexity must survive a per-case safety ablation
+
+<!-- therapy-lesson {"lessonId":"active-protocol-ablation-map15-map16","learnedAt":"2026-08-18T12:00:00.000Z","activation":"active-runtime"} -->
+
+The 49-case full-versus-simple comparison retained the full Map 15 functional selector because the small default produced a severe inward-routing error on `RQ8-08`. It selected a Map 16 hybrid because the smaller supported-choice operation selector removed an unnecessary high-impact escalation on `RQ8-01` without adding a severe route error, while the complete goals, consent, authority, safety, and least-restrictive safeguards remain required.
+
+Evidence: `analysis/therapy-protocol/ablation/` and `docs/therapy-protocol/MAP-15-16-COMPARISON.md`. Evidence limitations: Map 15's executable simple competitor is an InnerSignalGraph implementation translation because the source provides no exact algorithm; Map 16's selector is coarser than the source checklist; neither ablation is an independent clinical study.

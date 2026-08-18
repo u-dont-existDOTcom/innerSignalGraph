@@ -21,6 +21,7 @@ const graphs = [{
     {
       id: "IC.LIGHT_CONTACT",
       title: "Light present child contact",
+      operationClass: OPERATION_CLASSES.LIGHT_REPARENTING,
       tier: 1,
       priority: 90,
       activation: { any: [{ field: "coherent_child_state", op: "eq", value: "present" }] },
@@ -97,7 +98,8 @@ test("material protocol unknown becomes the canonical next question", () => {
       action_authority: "unknown",
       lawful_decision_maker_status: "unknown",
       decision_capacity_status: "unknown"
-    })
+    }),
+    ablationVariant: "full"
   });
   assert.equal(plan.primaryJob.id, "PROTO.O9_HIGH_IMPACT_DECISION");
   assert.equal(plan.nextQuestionSource.type, "protocol-material-unknown");

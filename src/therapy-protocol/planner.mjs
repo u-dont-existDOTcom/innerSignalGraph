@@ -1,6 +1,6 @@
 import { planFromGraphs } from "../guide-graph/planner.mjs";
 import { OPERATION_CLASSES, ROUTE_DISPOSITIONS } from "./contract.mjs";
-import { routeTherapyProtocol } from "./router.mjs";
+import { routeTherapyProtocolLongitudinal } from "./longitudinal.mjs";
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
@@ -30,6 +30,8 @@ function unknownQuestion(field) {
 function serializableRoute(route) {
   return {
     contractVersion: route.contractVersion,
+    routerVersion: route.routerVersion,
+    ablationVariant: route.ablationVariant,
     ontology: route.ontology,
     compatibilityMode: route.compatibilityMode,
     disposition: route.disposition,
@@ -39,6 +41,7 @@ function serializableRoute(route) {
     blockedOperations: route.blockedOperations,
     materialUnknowns: route.materialUnknowns,
     resourceState: route.resourceState,
+    longitudinalState: route.longitudinalState,
     profile: route.profile
   };
 }
@@ -106,8 +109,8 @@ function restrictGraphPlan(base, route, graphs) {
   };
 }
 
-export function planTherapyFromGraphs({ variables, unknowns = [], graphs, protocolProfile = null }) {
-  const route = routeTherapyProtocol({ protocolProfile, variables, unknowns });
+export function planTherapyFromGraphs({ variables, unknowns = [], graphs, protocolProfile = null, previousProtocolState = null, ablationVariant = "production" }) {
+  const route = routeTherapyProtocolLongitudinal({ previousState: previousProtocolState, protocolProfile, variables, unknowns, ablationVariant });
   const graphBundleVersion = graphs[0]?.bundleVersion ?? null;
   if (!route.runGuideGraph) {
     return protocolOnlyPlan({ variables, route, graphBundleVersion });
@@ -132,6 +135,11 @@ export function protocolRequiresReviewedTier(snapshot = {}) {
     "refusal_capacity_ambivalence"
   ].includes(p.primary_problem_class)) {
     return { tier: "reviewed", reason: "protocol authority, epistemic, or condition-specific review", forced: false };
+  }
+  if (["high_impact_third_party", "hard_to_reverse"].includes(p.decision_impact)
+      || p.capacity_concern === "present"
+      || p.lawful_decision_maker_status === "disputed") {
+    return { tier: "reviewed", reason: "protocol high-impact decision, capacity, or authority review", forced: false };
   }
   if (["unknown", "mixed"].includes(p.primary_problem_class)) {
     return { tier: "reviewed", reason: "protocol problem class remains materially unresolved", forced: false };

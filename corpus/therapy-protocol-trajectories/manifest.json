@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "scripts/generate-therapy-protocol-trajectories.mjs",
+  "isolation": {
+    "modelInput": "message and prior actual transcript/state only",
+    "graderLoadedAfterExecution": true,
+    "graderDataInInputFiles": false
+  },
+  "trajectoryCount": 13,
+  "trajectories": [
+    {
+      "id": "SAFETY-DISAPPEARS",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/SAFETY-DISAPPEARS.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/SAFETY-DISAPPEARS.json",
+      "inputFileSha256": "55cb6c5b47e1dddca1c3eaabae6d8e56677fc171c6c925ac8ab46e1ee41e5e74",
+      "graderFileSha256": "f915986a93497dc14491138aaad69fff72eeb8ff0b0bdca1709dc51c69ef0e77",
+      "turnCount": 2
+    },
+    {
+      "id": "RESOURCE-REPEATEDLY-UNAVAILABLE",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/RESOURCE-REPEATEDLY-UNAVAILABLE.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/RESOURCE-REPEATEDLY-UNAVAILABLE.json",
+      "inputFileSha256": "b823154670d97c6e73d2f7eb2c42685f0b756f153b1f034def16aa5a09fb7a7d",
+      "graderFileSha256": "b385dd1a770acf333abd0367485bb03f26f6f9f52af1c40102c700a8cd0223ef",
+      "turnCount": 2
+    },
+    {
+      "id": "COPING-IMPROVES-NEED-REMAINS",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/COPING-IMPROVES-NEED-REMAINS.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/COPING-IMPROVES-NEED-REMAINS.json",
+      "inputFileSha256": "20ad72f89d58f6b8bd7a81767e1c90adaca374b533990040f607da8f93c0a65f",
+      "graderFileSha256": "2085486c9bb905771ef2f52f2aedfddb969fd011dde76e23414ba16dd42178d6",
+      "turnCount": 2
+    },
+    {
+      "id": "FRAME-REJECTED",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/FRAME-REJECTED.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/FRAME-REJECTED.json",
+      "inputFileSha256": "164446a0101d560b2326daed2a290da53d1f568d3c591c9fd3b857559f373fa4",
+      "graderFileSha256": "70feb6d68340f962a559de0062fab709f91e2fefb867851c27723f0fc913eaab",
+      "turnCount": 2
+    },
+    {
+      "id": "NOT-NOW-SUBJECT-CHANGE",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/NOT-NOW-SUBJECT-CHANGE.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/NOT-NOW-SUBJECT-CHANGE.json",
+      "inputFileSha256": "0a34c61d9eaa7402f31795cf3205e0fd5629b5ea1c2d0e3763e29fee37b69ecc",
+      "graderFileSha256": "984e76b1fff13096bf6084df9a12743c435bbdcea796e01849f09ab3490dee75",
+      "turnCount": 2
+    },
+    {
+      "id": "SUPPORTER-OVERRESPONSIBILITY",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/SUPPORTER-OVERRESPONSIBILITY.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/SUPPORTER-OVERRESPONSIBILITY.json",
+      "inputFileSha256": "0ef8c61a65bd8fa7c757cae5c7ee0349272eb7dc239b0e9b4711bd13be39cbcf",
+      "graderFileSha256": "84265ab33e62e2817f1ecdaff9c6bf37a03da65eda1ff975bbbc374433f1fe30",
+      "turnCount": 2
+    },
+    {
+      "id": "MEMORY-CONFIDENCE-DRIFT",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/MEMORY-CONFIDENCE-DRIFT.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/MEMORY-CONFIDENCE-DRIFT.json",
+      "inputFileSha256": "6ebda23862fbd1ef87cdf4eb06ae3659b996d2c57e7c71435bf800693f88c5cc",
+      "graderFileSha256": "d06da1bc3cf68dc2f30a73700e40bb17c9c721cca42dcead96f7c05d149be377",
+      "turnCount": 2
+    },
+    {
+      "id": "BOT-AUTHORITY-CONCENTRATION",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/BOT-AUTHORITY-CONCENTRATION.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/BOT-AUTHORITY-CONCENTRATION.json",
+      "inputFileSha256": "c3a0fb5ca878a6e72d1173d3e601fbb006e6b5ea004947907e21e2907655fc5e",
+      "graderFileSha256": "a3830c10238210e6465259b24778a43233daf0fa283766549425804252d2d82a",
+      "turnCount": 2
+    },
+    {
+      "id": "BROKEN-TRUST-CHECKING-LOOP",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/BROKEN-TRUST-CHECKING-LOOP.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/BROKEN-TRUST-CHECKING-LOOP.json",
+      "inputFileSha256": "dc73024aa8e184ef364a79a407f869ec623904c5a9ce66e0cd1a5a1f6d8d4c0e",
+      "graderFileSha256": "5d74085bc4a96709a526336dd8154cedcc5806a42ef00c542ee305b7b0ede5cf",
+      "turnCount": 2
+    },
+    {
+      "id": "CAPACITY-FLUCTUATION",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/CAPACITY-FLUCTUATION.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/CAPACITY-FLUCTUATION.json",
+      "inputFileSha256": "6116e7b7c713440b9457591bddfbc567ce5d744126a69d3e3deba5dfdec386b2",
+      "graderFileSha256": "577f035c10933635dbc383b6ee333417e12538cc8a6bd73ae8ec77d0caa6b3c0",
+      "turnCount": 2
+    },
+    {
+      "id": "RELIEF-WITHOUT-FULL-CHANGE",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/RELIEF-WITHOUT-FULL-CHANGE.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/RELIEF-WITHOUT-FULL-CHANGE.json",
+      "inputFileSha256": "2f9862813127b72606270b325e0b10808c54b6c5dffb5716b69f613a084993f8",
+      "graderFileSha256": "fef4fcd93c69f9cf0778d2a6055d20d4bb3d3be21bd4d1d8dc14a24296734e1c",
+      "turnCount": 2
+    },
+    {
+      "id": "MISSED-PROMISE-ARREARS",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/MISSED-PROMISE-ARREARS.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/MISSED-PROMISE-ARREARS.json",
+      "inputFileSha256": "094cfbf6f2f40f5026613e6150423626461ab01dd47875120725eef6335facc1",
+      "graderFileSha256": "b03c38e21560492a7101823b5cb4f9ac0854f2b8440e5d28821a4450c4d2ade0",
+      "turnCount": 2
+    },
+    {
+      "id": "DEPTH-BEFORE-INTEGRATION",
+      "inputPath": "corpus/therapy-protocol-trajectories/inputs/DEPTH-BEFORE-INTEGRATION.json",
+      "graderPath": "corpus/therapy-protocol-trajectories/graders/DEPTH-BEFORE-INTEGRATION.json",
+      "inputFileSha256": "1a0d11aecd5a77d94529d918529fcdd662277721666897539fcde5f824f6b04c",
+      "graderFileSha256": "a61437822e080330933560417a100e4eb052065429f7971a2ca4662d235b241c",
+      "turnCount": 3
+    }
+  ]
+}

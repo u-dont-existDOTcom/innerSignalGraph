@@ -10,6 +10,44 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v2";
+
+export const GRAPH_NODE_OPERATIONS = Object.freeze({
+  "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
+  "IC.NEUTRAL_WITNESS": OPERATION_CLASSES.BORROWED_CAPACITY,
+  "IC.SOLAR_PLEXUS_RELAXATION": OPERATION_CLASSES.REGULATION,
+  "IC.BORROW_LOVE": OPERATION_CLASSES.BORROWED_CAPACITY,
+  "IC.BEST_FRIEND_PERSPECTIVE": OPERATION_CLASSES.BORROWED_CAPACITY,
+  "IC.BORROW_ONE_FUNCTION": OPERATION_CLASSES.BORROWED_CAPACITY,
+  "IC.ADULT_APPRENTICE": OPERATION_CLASSES.BORROWED_CAPACITY,
+  "IC.MEET_GUARD": OPERATION_CLASSES.LIGHT_REPARENTING,
+  "IC.CREDIBILITY_REPAIR": OPERATION_CLASSES.TRUST_BEHAVIOR,
+  "IC.AGE_RESPONSIBILITY_CLARIFICATION": OPERATION_CLASSES.CURRENT_REALITY,
+  "IC.PROTECTOR_ACTION": OPERATION_CLASSES.TRUST_BEHAVIOR,
+  "IC.GENTLE_SELF_HYPNOSIS": OPERATION_CLASSES.DEPTH_ACCESS,
+  "IC.DEEP_CHILD_DIALOGUE": OPERATION_CLASSES.DEPTH_ACCESS,
+  "IC.IDENTITY_FORMATION": OPERATION_CLASSES.IDENTITY_DIFFERENTIATION,
+  "IC.DIFFERENTIATION": OPERATION_CLASSES.IDENTITY_DIFFERENTIATION,
+  "IC.GUIDE_LATER": OPERATION_CLASSES.BORROWED_CAPACITY,
+  "IC.PHOTO_EPISTEMIC_CAUTION": OPERATION_CLASSES.DEPTH_ACCESS,
+  "IC.ALTERED_STATE_GATE": OPERATION_CLASSES.DEPTH_ACCESS,
+  "IC.FORGIVENESS_LATER": OPERATION_CLASSES.TRUST_BEHAVIOR,
+  "SOM.SAFETY_STABILIZATION": OPERATION_CLASSES.REGULATION,
+  "SOM.GENTLE_REGULATION": OPERATION_CLASSES.REGULATION,
+  "SOM.EFT_PORTABLE": OPERATION_CLASSES.REGULATION,
+  "SOM.GENTLE_SHAKING": OPERATION_CLASSES.REGULATION,
+  "SOM.DISCHARGE_SETTLE_STACK": OPERATION_CLASSES.REGULATION,
+  "SOM.RESOURCE_BRAINSPOTTING": OPERATION_CLASSES.DEPTH_ACCESS,
+  "SOM.DEEP_BRAINSPOTTING": OPERATION_CLASSES.DEPTH_ACCESS,
+  "SOM.EMDR_DISCRETE": OPERATION_CLASSES.DEPTH_ACCESS,
+  "SOM.EMDR_DEVELOPMENTAL": OPERATION_CLASSES.DEPTH_ACCESS,
+  "SOM.EMDR_DEVELOPMENTAL_DEFER": OPERATION_CLASSES.DEPTH_ACCESS,
+  "SOM.ADVANCED_RELEASE_BLOCK": OPERATION_CLASSES.DEPTH_ACCESS,
+  "SOM.ADVANCED_RELEASE_OPTIONAL": OPERATION_CLASSES.DEPTH_ACCESS,
+  "SOM.BYPASS_AUDIT": OPERATION_CLASSES.REGULATION,
+  "SOM.MEANING_INTEGRATION": OPERATION_CLASSES.TRUST_BEHAVIOR
+});
+
 const ALL_OPERATIONS = OPERATION_CLASS_VALUES;
 const HARD_SAFETY_ALLOWED = new Set([
   OPERATION_CLASSES.SUPPORT_ORIENT,
@@ -200,21 +238,38 @@ function depthPrerequisiteUnknowns(profile, variables) {
   return checks.filter(([, value]) => value === "unknown").map(([field]) => field);
 }
 
-function routeForProblemClass(profile) {
+function routeForProblemClass(profile, ablationVariant = "full") {
   switch (profile.primary_problem_class) {
     case "internal_developmental":
       return { disposition: ROUTE_DISPOSITIONS.INNER_CHILD_PRIMARY, operation: profile.requested_operation === "unknown" ? OPERATION_CLASSES.LIGHT_REPARENTING : profile.requested_operation, runGuideGraph: true };
     case "external_relational_practical":
-      return { disposition: profile.external_action_required === "no" ? ROUTE_DISPOSITIONS.INNER_CHILD_ADJUNCTIVE : ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT, operation: profile.decision_impact === "high_impact_third_party" || profile.decision_impact === "hard_to_reverse" ? OPERATION_CLASSES.HIGH_IMPACT_DECISION : OPERATION_CLASSES.CURRENT_REALITY, runGuideGraph: profile.external_action_required === "no" };
+      return {
+        disposition: profile.external_action_required === "no" ? ROUTE_DISPOSITIONS.INNER_CHILD_ADJUNCTIVE : ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT,
+        operation: profile.resource_required === "yes"
+          ? OPERATION_CLASSES.EXTERNAL_HANDOFF
+          : (profile.decision_impact === "high_impact_third_party" || profile.decision_impact === "hard_to_reverse" ? OPERATION_CLASSES.HIGH_IMPACT_DECISION : OPERATION_CLASSES.CURRENT_REALITY),
+        runGuideGraph: profile.external_action_required === "no" && profile.resource_required !== "yes"
+      };
     case "medical_condition":
       return { disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED, operation: profile.resource_required === "yes" ? OPERATION_CLASSES.EXTERNAL_HANDOFF : OPERATION_CLASSES.CURRENT_REALITY, runGuideGraph: false };
+    case "capability_skill_scaffold": {
+      const operation = ablationVariant === "map15-simple" ? simpleCapabilityRoute(profile) : OPERATION_CLASSES.CURRENT_REALITY;
+      const inner = operation === OPERATION_CLASSES.LIGHT_REPARENTING;
+      return {
+        disposition: inner ? ROUTE_DISPOSITIONS.INNER_CHILD_PRIMARY : ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT,
+        operation,
+        runGuideGraph: inner
+      };
+    }
+    case "refusal_capacity_ambivalence": {
+      const operation = ["production", "map16-simple"].includes(ablationVariant) ? simpleSupportedChoiceRoute(profile) : OPERATION_CLASSES.HIGH_IMPACT_DECISION;
+      return { disposition: ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT, operation, runGuideGraph: false };
+    }
     case "grief_transition":
     case "certainty_reality_uncertainty":
     case "actual_or_potential_harm":
-    case "capability_skill_scaffold":
-    case "refusal_capacity_ambivalence":
     case "large_portfolio":
-      return { disposition: ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT, operation: profile.primary_problem_class === "refusal_capacity_ambivalence" ? OPERATION_CLASSES.HIGH_IMPACT_DECISION : OPERATION_CLASSES.CURRENT_REALITY, runGuideGraph: false };
+      return { disposition: ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT, operation: OPERATION_CLASSES.CURRENT_REALITY, runGuideGraph: false };
     case "danger_basic_needs":
       return { disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED, operation: OPERATION_CLASSES.PRACTICAL_SAFETY, runGuideGraph: false };
     case "mixed":
@@ -225,13 +280,12 @@ function routeForProblemClass(profile) {
 }
 
 function graphNodeOperation(node = {}) {
-  const haystack = `${node.id ?? ""} ${node.title ?? ""}`.toUpperCase();
-  if (/DEEP|HYPNO|EMDR|BRAINSPOTT|ADVANCED_RELEASE|MEMORY|PHOTO/.test(haystack)) return OPERATION_CLASSES.DEPTH_ACCESS;
-  if (/IDENTITY|DIFFERENT/.test(haystack)) return OPERATION_CLASSES.IDENTITY_DIFFERENTIATION;
-  if (/TRUST|CREDIBIL|PROMISE|REPAIR|TRACK_RECORD/.test(haystack)) return OPERATION_CLASSES.TRUST_BEHAVIOR;
-  if (/BORROW|WITNESS|LOVE/.test(haystack)) return OPERATION_CLASSES.BORROWED_CAPACITY;
-  if (/REGULAT|GROUND|BREATH|DISCHARGE|TENSION|SOMATIC/.test(haystack)) return OPERATION_CLASSES.REGULATION;
-  return OPERATION_CLASSES.LIGHT_REPARENTING;
+  const operation = node.operationClass ?? GRAPH_NODE_OPERATIONS[node.id];
+  if (node.operationClass && !OPERATION_CLASS_VALUES.includes(node.operationClass)) {
+    throw new Error(`Graph node ${node.id ?? "<missing>"} declares invalid operationClass ${node.operationClass}.`);
+  }
+  if (!operation) throw new Error(`No explicit therapy-protocol operation mapping exists for graph node ${node.id ?? "<missing>"}.`);
+  return operation;
 }
 
 function blockedOperationRecords(allowed, reasons = {}) {
@@ -299,14 +353,24 @@ function routeNuance(profile, resourceIsUnavailable) {
   if (profile.adverse_trajectory !== "none" && profile.adverse_trajectory !== "unknown") {
     nuance.push(`A longitudinal vulnerability-amplifying pattern is active: ${profile.adverse_trajectory}. Change the contributing operation rather than optimizing its wording.`);
   }
+  if (profile.adverse_trajectory === "failure_debt_loop") {
+    nuance.push("A missed promise creates a repair and resizing obligation, not punitive care arrears or proof that care must be withheld.");
+    forbidden.push("Do not accumulate missed nurturing acts as debt, demand repayment, or erase external restitution owed to another person.");
+  }
+  if (profile.adverse_trajectory === "dependency_loop") {
+    nuance.push("Reduce concentration of authority in the bot or helper; preserve alternatives, disagreement, human relationships, and deliberate handback.");
+  }
   return { nuance: unique(nuance), forbidden: unique(forbidden) };
 }
 
-export function routeTherapyProtocol({ protocolProfile = null, variables = {}, unknowns = [] } = {}) {
+export function routeTherapyProtocol({ protocolProfile = null, variables = {}, unknowns = [], ablationVariant = "production" } = {}) {
+  if (!["production", "full", "map15-simple", "map16-simple"].includes(ablationVariant)) {
+    throw new Error(`Unknown therapy-protocol ablation variant ${ablationVariant}.`);
+  }
   const { profile, explicit } = deriveProtocolProfile({ protocolProfile, variables });
   const hardSafety = hardSafetyState(profile, variables);
   const unavailable = resourceUnavailable(profile);
-  let route = routeForProblemClass(profile);
+  let route = routeForProblemClass(profile, ablationVariant);
   let allowed = new Set(route.runGuideGraph ? INNER_BASE_ALLOWED : OUTER_ALLOWED);
   const reasons = {};
   let requestedDepthUnknowns = [];
@@ -340,7 +404,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
     allowed = new Set(HARD_SAFETY_ALLOWED);
   }
 
-  if (profile.consent_scope === "all_engagement" && ["no", "not_now"].includes(profile.operation_consent)) {
+  if (!hardSafety && !unavailable && profile.consent_scope === "all_engagement" && ["no", "not_now"].includes(profile.operation_consent)) {
     route = { disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED, operation: OPERATION_CLASSES.SUPPORT_ORIENT, runGuideGraph: false };
     allowed = new Set([OPERATION_CLASSES.SUPPORT_ORIENT, OPERATION_CLASSES.PRACTICAL_SAFETY, OPERATION_CLASSES.EXTERNAL_HANDOFF]);
   } else if (innerConsentBlocked(profile)) {
@@ -361,6 +425,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
       || variables.ability_to_return !== "yes"
       || profile.current_sobriety !== "sober"
       || profile.integration_load === "high"
+      || profile.historical_provenance_stable !== "yes"
       || profile.operation_consent !== "yes";
     if (missingDepth.length || depthUnsafe) {
       allowed.delete(OPERATION_CLASSES.DEPTH_ACCESS);
@@ -376,6 +441,34 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
       }
     } else {
       allowed.add(OPERATION_CLASSES.DEPTH_ACCESS);
+    }
+  }
+
+  if (!hardSafety && !unavailable && profile.user_rejects_current_frame === "yes") {
+    route = { disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED, operation: OPERATION_CLASSES.SUPPORT_ORIENT, runGuideGraph: false };
+    allowed = new Set([OPERATION_CLASSES.SUPPORT_ORIENT, OPERATION_CLASSES.PRACTICAL_SAFETY, OPERATION_CLASSES.CURRENT_REALITY, OPERATION_CLASSES.EXTERNAL_HANDOFF]);
+  }
+
+  if (!hardSafety && !unavailable) {
+    const redirect = {
+      reassurance_loop: OPERATION_CLASSES.CURRENT_REALITY,
+      dependency_loop: OPERATION_CLASSES.CURRENT_REALITY,
+      memory_certainty_loop: OPERATION_CLASSES.CURRENT_REALITY,
+      parts_reification_loop: OPERATION_CLASSES.SUPPORT_ORIENT,
+      coercive_growth_loop: OPERATION_CLASSES.SUPPORT_ORIENT,
+      intensity_chasing_loop: OPERATION_CLASSES.REGULATION,
+      model_sealing_loop: OPERATION_CLASSES.SUPPORT_ORIENT,
+      repeated_unavailable_referral: OPERATION_CLASSES.EXTERNAL_HANDOFF,
+      failure_debt_loop: OPERATION_CLASSES.TRUST_BEHAVIOR
+    }[profile.adverse_trajectory];
+    if (redirect) {
+      const inner = redirect === OPERATION_CLASSES.TRUST_BEHAVIOR;
+      route = {
+        disposition: inner ? ROUTE_DISPOSITIONS.INNER_CHILD_ADJUNCTIVE : ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT,
+        operation: redirect,
+        runGuideGraph: inner
+      };
+      allowed = new Set(inner ? INNER_BASE_ALLOWED : OUTER_ALLOWED);
     }
   }
 
@@ -415,6 +508,8 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
 
   return {
     contractVersion: THERAPY_PROTOCOL_VERSION,
+    routerVersion: THERAPY_PROTOCOL_ROUTER_VERSION,
+    ablationVariant,
     ontology: INNER_PARENT_ONTOLOGY,
     compatibilityMode: !explicit,
     profile,
