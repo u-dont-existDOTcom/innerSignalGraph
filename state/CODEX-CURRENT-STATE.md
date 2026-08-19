@@ -23,11 +23,11 @@ A resumed Codex conversation must not infer the active objective from conversati
 
 Complete and falsify the Creative Tail inner-child/reparenting protocol integration in the existing InnerSignalGraph runtime. Import all 49 real, unprimed fixtures; enforce query/grader separation; run deterministic, actual-model, and adversarial multi-turn campaigns; execute genuine Map 15 and Map 16 ablations; simplify when the smaller competitor is equivalent; preserve A001/H001 and all current safety/repository boundaries; merge through protected `main`; leave `stable` unchanged.
 
-PR #11 now contains the strict 49-case import, deterministic production routing, genuine Map 15/16 comparisons, mechanical query/grader separation, hardened acceptance gate, longitudinal runtime integration, adversarial trajectory fixtures, and the real production-candidate campaign harness. Joel explicitly authorized the recorded provider/content boundary on 2026-08-18. The provider incident recovered on 2026-08-19, and the live campaign completed 49/49 exact-head executions with complete telemetry and mechanically separated grading. The current candidate produced 16 passes, 33 documented failures, and 13 severe results. Twelve severe results are owner-grader route mismatches; two contain evaluator-detected suicide-risk-check omissions, with one overlap. The task is `BLOCKED` on decision `live-remediation-contract-v1`; no prompt, router, safety, or grader policy has been changed from this evidence.
+PR #11 now contains the strict 49-case import, deterministic production routing, genuine Map 15/16 comparisons, mechanical query/grader separation, hardened acceptance gate, longitudinal runtime integration, adversarial trajectory fixtures, and the real production-candidate campaign harness. Joel explicitly authorized the recorded provider/content boundary on 2026-08-18. The provider incident recovered on 2026-08-19, and the live campaign completed 49/49 exact-head executions with complete telemetry and mechanically separated grading. The current candidate produced 16 passes, 33 documented failures, and 13 severe results. Twelve severe results are owner-grader route mismatches; two contain evaluator-detected suicide-risk-check omissions, with one overlap. Joel explicitly selected option `1` on 2026-08-19, approving only `live-remediation-contract-v1`. The approval is recorded as `approved-not-implemented`; the task is active, and no runtime prompt, router, safety, or grader behavior has yet changed from the approval.
 
 Still required:
 
-- owner disposition of the 13-severe live falsification, followed by any authorized repair and fresh exact-head live evidence required by that disposition;
+- implementation of the approved `live-remediation-contract-v1`, followed by a fresh 49-case exact-head live campaign with zero unresolved severe results;
 - actual non-mock execution and grading of all 13 required multi-turn trajectories;
 - exact-head verification receipt;
 - protected-main merge and immutable post-merge receipt.
@@ -82,9 +82,9 @@ Complete the exclusive `inner-child-protocol-comparison-v1` task on PR #11 while
 
 - For the exclusive PR #11 task, missing corpus/comparison/live/multi-turn artifacts are incomplete work, not an external blocker.
 - If actual provider execution is genuinely unavailable, record task status `blocked` and durable evidence; do not claim completion.
-- Current owner-decision blocker: the complete 49-case live campaign has 13 severe results. The dominant conflict is conservative `unknown`/`mixed` formulation versus owner-authored O1/O9/O10 routes; two answers also failed to ask a required direct suicide-risk question. Evidence: `analysis/therapy-protocol/live-falsification-2026-08-19.json`. No answer leaves the current prompt, router, safety, and grader policies unchanged and the task blocked.
+- Resolved owner-decision blocker: Joel explicitly selected option `1`, approving the exact bounded `live-remediation-contract-v1`. The receipt is `decision-live-remediation-contract-v1-20260819`; the approval remains `approved-not-implemented` until the scoped repair and all bound regressions pass.
 - Resolved external blocker: Anthropic's Aug 18 multi-model degraded-performance incident affected Claude Opus 5 and Claude Code while `RQ8-01` and `RQ8-02` failed closed and a content-free Opus check timed out. On Aug 19 the official incident state was resolved/all-operational and the same content-free structured Opus 5 check passed. Evidence: `analysis/therapy-protocol/provider-availability-blocker-2026-08-18.json`.
-- Resume command: `node scripts/run-therapy-protocol-live.mjs --execute-live --retry-blocked` on the artifact's captured execution head `6d2036a2c670aaccdc7682bd55d6b5ccab814aea`; the harness must replace only safely blocked records and continue from the next missing case.
+- Do not resume the old live artifact after implementation. Preserve its falsification evidence at commit `da94528e4955ab7b3980f090bab68366f3dac07f`, then start a new 49-case campaign on the clean repair head before running the multi-turn campaign.
 - Resolved execution boundary: Joel explicitly authorized sending the 49 public/privacy-reduced therapy queries, 27 synthetic therapy turns, and generated answers/grading criteria to authenticated Anthropic Claude and OpenAI Codex CLI providers under the recorded retention/quota limits. No query was sent during the denied smoke.
 - The public-transition GitHub App permission blocker remains valid but suspended for this task.
 - `GET /user/installations` returns HTTP 403 because the available OAuth token is not authorized to a GitHub App. `GET /installation/repositories` also returns HTTP 403 because the token is not an installation token. Repository-scoped installed GitHub App permissions remain `UNVERIFIED`.
@@ -95,6 +95,9 @@ Complete the exclusive `inner-child-protocol-comparison-v1` task on PR #11 while
 - Active task lock: `tasks/ACTIVE-TASK.json`
 - Task verifier: `scripts/verify-active-task.mjs`
 - Provider-availability blocker: `analysis/therapy-protocol/provider-availability-blocker-2026-08-18.json`
+- Approved decision package: `docs/therapy-policy/decision-packages/live-remediation-contract-v1.json`
+- Passed owner-gate review: `docs/diagnostics/therapy-governance/live-remediation-review-20260819.json`
+- Owner receipt and approval projection: `THERAPY-DECISIONS`, `APPROVED-THERAPY-LESSONS`
 - Active design and plan: `docs/superpowers/specs/2026-08-18-inner-child-protocol-merge-design.md`, `docs/superpowers/plans/2026-08-18-inner-child-protocol-merge.md`
 - Exact machine profile: `.github/codex-repository.json`
 - Transition report: `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md`

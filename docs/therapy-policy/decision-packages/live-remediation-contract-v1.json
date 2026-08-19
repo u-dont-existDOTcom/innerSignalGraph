@@ -1,0 +1,165 @@
+{
+  "contractVersion": "therapy-policy-decision-package-v1",
+  "packetId": "therapy-protocol-live-remediation-2026.08.19-v1",
+  "packetRevision": 1,
+  "createdAt": "2026-08-19T06:52:26.000Z",
+  "identifierCatalog": {
+    "guideIds": [
+      "inner-child",
+      "somatic"
+    ],
+    "graphNodeIds": [
+      "PROTO.O0_SUPPORT_ORIENT",
+      "PROTO.O1_PRACTICAL_SAFETY",
+      "PROTO.O3_CURRENT_REALITY",
+      "PROTO.O9_HIGH_IMPACT_DECISION",
+      "PROTO.O10_EXTERNAL_HANDOFF"
+    ],
+    "promptContractIds": [
+      "case-formulation-v2",
+      "case-plan-v4",
+      "response-realization-v5"
+    ],
+    "policySafetyGateIds": [
+      "THERAPY.PROTOCOL.DIRECT_RISK_CHECK",
+      "THERAPY.PROTOCOL.OUTER_ROUTE_PRIORITY",
+      "THERAPY.PROTOCOL.HIGH_IMPACT_DECISION_AUTHORITY",
+      "THERAPY.PROTOCOL.EXTERNAL_HANDOFF"
+    ],
+    "regressionIds": [
+      "RQ6-13",
+      "RQ7-01",
+      "RQ7-04",
+      "RQ7-09",
+      "RQ7-11",
+      "RQ7-12",
+      "RQ8-01",
+      "RQ8-04",
+      "RQ8-11",
+      "RQ9-01",
+      "RQ9-02",
+      "RQ9-04",
+      "RQ9-06",
+      "SAFETY-DISAPPEARS",
+      "RESOURCE-REPEATEDLY-UNAVAILABLE",
+      "COPING-IMPROVES-NEED-REMAINS",
+      "FRAME-REJECTED",
+      "NOT-NOW-SUBJECT-CHANGE",
+      "SUPPORTER-OVERRESPONSIBILITY",
+      "MEMORY-CONFIDENCE-DRIFT",
+      "BOT-AUTHORITY-CONCENTRATION",
+      "BROKEN-TRUST-CHECKING-LOOP",
+      "CAPACITY-FLUCTUATION",
+      "RELIEF-WITHOUT-FULL-CHANGE",
+      "MISSED-PROMISE-ARREARS",
+      "DEPTH-BEFORE-INTEGRATION"
+    ]
+  },
+  "cards": [
+    {
+      "id": "live-remediation-contract-v1",
+      "classification": "substantive",
+      "requiresHumanDecision": true,
+      "title": "Approve the scoped live-remediation contract for decisive outer evidence",
+      "behavioralEffect": "Changes pre-guide formulation, outer-route precedence, and canonical-question selection while leaving owner-authored grader authority and guide-graph definitions unchanged.",
+      "provenance": "owner-authored-route-graders-plus-current-live-black-box-and-model-evaluation-evidence",
+      "current": "Conservative unknown or mixed audit values and an absent beneficiary can demote explicit outer evidence to O0 or O3, while the planner can select a non-safety unknown before an explicit safety question.",
+      "candidate": "Explicit suicide or harm evidence prioritizes O1 and a direct risk question; consequential bodily, dependent, financial, or legal decisions retain O9 despite unresolved capacity details; explicit professional-support needs retain O10; an absent beneficiary cannot demote valid outer O1, O9, or O10; RQ8-04 keeps O9 primary while requiring urgent medical reassessment content; then all 49 live cases and all required multi-turn trajectories are rerun on a clean exact head.",
+      "worstPlausibleFailure": "The broadened evidence-preservation rules could over-route an ambiguous case to safety, high-impact review, or external handoff, causing unnecessary escalation or displacing useful ordinary support.",
+      "affectedRegressions": [
+        "RQ6-13",
+        "RQ7-01",
+        "RQ7-04",
+        "RQ7-09",
+        "RQ7-11",
+        "RQ7-12",
+        "RQ8-01",
+        "RQ8-04",
+        "RQ8-11",
+        "RQ9-01",
+        "RQ9-02",
+        "RQ9-04",
+        "RQ9-06",
+        "SAFETY-DISAPPEARS",
+        "RESOURCE-REPEATEDLY-UNAVAILABLE",
+        "COPING-IMPROVES-NEED-REMAINS",
+        "FRAME-REJECTED",
+        "NOT-NOW-SUBJECT-CHANGE",
+        "SUPPORTER-OVERRESPONSIBILITY",
+        "MEMORY-CONFIDENCE-DRIFT",
+        "BOT-AUTHORITY-CONCENTRATION",
+        "BROKEN-TRUST-CHECKING-LOOP",
+        "CAPACITY-FLUCTUATION",
+        "RELIEF-WITHOUT-FULL-CHANGE",
+        "MISSED-PROMISE-ARREARS",
+        "DEPTH-BEFORE-INTEGRATION"
+      ],
+      "affectedIds": {
+        "guideIds": [
+          "inner-child",
+          "somatic"
+        ],
+        "graphNodeIds": [
+          "PROTO.O0_SUPPORT_ORIENT",
+          "PROTO.O1_PRACTICAL_SAFETY",
+          "PROTO.O3_CURRENT_REALITY",
+          "PROTO.O9_HIGH_IMPACT_DECISION",
+          "PROTO.O10_EXTERNAL_HANDOFF"
+        ],
+        "promptContractIds": [
+          "case-formulation-v2",
+          "case-plan-v4",
+          "response-realization-v5"
+        ],
+        "policySafetyGateIds": [
+          "THERAPY.PROTOCOL.DIRECT_RISK_CHECK",
+          "THERAPY.PROTOCOL.OUTER_ROUTE_PRIORITY",
+          "THERAPY.PROTOCOL.HIGH_IMPACT_DECISION_AUTHORITY",
+          "THERAPY.PROTOCOL.EXTERNAL_HANDOFF"
+        ],
+        "regressionIds": [
+          "RQ6-13",
+          "RQ7-01",
+          "RQ7-04",
+          "RQ7-09",
+          "RQ7-11",
+          "RQ7-12",
+          "RQ8-01",
+          "RQ8-04",
+          "RQ8-11",
+          "RQ9-01",
+          "RQ9-02",
+          "RQ9-04",
+          "RQ9-06",
+          "SAFETY-DISAPPEARS",
+          "RESOURCE-REPEATEDLY-UNAVAILABLE",
+          "COPING-IMPROVES-NEED-REMAINS",
+          "FRAME-REJECTED",
+          "NOT-NOW-SUBJECT-CHANGE",
+          "SUPPORTER-OVERRESPONSIBILITY",
+          "MEMORY-CONFIDENCE-DRIFT",
+          "BOT-AUTHORITY-CONCENTRATION",
+          "BROKEN-TRUST-CHECKING-LOOP",
+          "CAPACITY-FLUCTUATION",
+          "RELIEF-WITHOUT-FULL-CHANGE",
+          "MISSED-PROMISE-ARREARS",
+          "DEPTH-BEFORE-INTEGRATION"
+        ]
+      },
+      "options": {
+        "A": "Approve only the bounded candidate behavior in this card.",
+        "B": "Retain the current prompt, router, safety-question, and handoff behavior unchanged."
+      },
+      "noAnswerEffect": "Current policy remains unchanged and the live-remediation task remains blocked.",
+      "verificationRequirement": "After implementation, rerun all 49 live cases on one clean exact head, then run and grade every required multi-turn trajectory; zero unresolved severe findings are required."
+    }
+  ],
+  "evidenceBindings": [
+    {
+      "path": "analysis/therapy-protocol/live-falsification-2026-08-19.json",
+      "sha256": "d67177c29423c4b9aa5982617df45b48700f2b293a473ddcebb3b8dada76dc13",
+      "sourceCommit": "da94528e4955ab7b3980f090bab68366f3dac07f",
+      "authority": "current-live-falsification-summary"
+    }
+  ]
+}

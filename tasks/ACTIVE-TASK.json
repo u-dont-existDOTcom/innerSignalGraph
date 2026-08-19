@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "taskId": "inner-child-protocol-comparison-v1",
   "title": "Complete and falsify the Creative Tail therapy-protocol runtime merge",
-  "status": "blocked",
+  "status": "active",
   "exclusive": true,
   "repository": "u-dont-existDOTcom/innerSignalGraph",
   "requiredBranch": "agent/merge-inner-child-protocol-20260818",

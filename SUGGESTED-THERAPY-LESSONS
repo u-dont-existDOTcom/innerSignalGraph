@@ -323,3 +323,67 @@ Worst plausible failure: Softer caution could leave an unsafe advanced option av
 
 Recommendation: Complete deterministic r03 safety encoding, certainty propagation, affected regressions, and independent review first, then ask Joel for the exact scope; do not imply an answer.
 Reasoning: Safety mechanics can be repaired before owner judgment, but only Joel can authorize the final product-policy language, and unvalidated evidence must remain visibly limited.
+
+## Preserve decisive outer evidence and direct safety questions
+
+<!-- therapy-suggestion {"suggestionId":"suggestion-live-remediation-contract-v1","createdAt":"2026-08-19T06:52:26.000Z","packetId":"therapy-protocol-live-remediation-2026.08.19-v1","packetDigest":"7dda12de7a1ad7f90beca14cc93e21861edf850dfe2ff3aee20d1310f984ef8e","decisionId":"live-remediation-contract-v1","decisionCardDigest":"e51fdb7a610d0ff739265c0175d501ed49ebd98e3ce45ec60e35df6b506201b5","status":"approved","reviewFindingIds":["LIVE-REMEDIATION-SCOPE-001"],"ownerDecisionRequired":true,"guideIds":["inner-child","somatic"],"graphNodeIds":["PROTO.O0_SUPPORT_ORIENT","PROTO.O1_PRACTICAL_SAFETY","PROTO.O3_CURRENT_REALITY","PROTO.O9_HIGH_IMPACT_DECISION","PROTO.O10_EXTERNAL_HANDOFF"],"promptContractIds":["case-formulation-v2","case-plan-v4","response-realization-v5"],"policySafetyGateIds":["THERAPY.PROTOCOL.DIRECT_RISK_CHECK","THERAPY.PROTOCOL.OUTER_ROUTE_PRIORITY","THERAPY.PROTOCOL.HIGH_IMPACT_DECISION_AUTHORITY","THERAPY.PROTOCOL.EXTERNAL_HANDOFF"],"regressionIds":["RQ6-13","RQ7-01","RQ7-04","RQ7-09","RQ7-11","RQ7-12","RQ8-01","RQ8-04","RQ8-11","RQ9-01","RQ9-02","RQ9-04","RQ9-06","SAFETY-DISAPPEARS","RESOURCE-REPEATEDLY-UNAVAILABLE","COPING-IMPROVES-NEED-REMAINS","FRAME-REJECTED","NOT-NOW-SUBJECT-CHANGE","SUPPORTER-OVERRESPONSIBILITY","MEMORY-CONFIDENCE-DRIFT","BOT-AUTHORITY-CONCENTRATION","BROKEN-TRUST-CHECKING-LOOP","CAPACITY-FLUCTUATION","RELIEF-WITHOUT-FULL-CHANGE","MISSED-PROMISE-ARREARS","DEPTH-BEFORE-INTEGRATION"]} -->
+
+### Proposal
+
+Preserve explicit decisive outer evidence through conservative formulation and question selection, without treating missing detail as permission to demote the operation.
+
+Decision-card title: Approve the scoped live-remediation contract for decisive outer evidence
+Behavioral effect: Changes pre-guide formulation, outer-route precedence, and canonical-question selection while leaving owner-authored grader authority and guide-graph definitions unchanged.
+Provenance: owner-authored-route-graders-plus-current-live-black-box-and-model-evaluation-evidence
+Current behavior: Conservative unknown or mixed audit values and an absent beneficiary can demote explicit outer evidence to O0 or O3, while the planner can select a non-safety unknown before an explicit safety question.
+Candidate behavior: Explicit suicide or harm evidence prioritizes O1 and a direct risk question; consequential bodily, dependent, financial, or legal decisions retain O9 despite unresolved capacity details; explicit professional-support needs retain O10; an absent beneficiary cannot demote valid outer O1, O9, or O10; RQ8-04 keeps O9 primary while requiring urgent medical reassessment content; then all 49 live cases and all required multi-turn trajectories are rerun on a clean exact head.
+
+### Guide impact
+
+The pre-guide protocol may continue to bypass both `inner-child` and `somatic` graph selection for valid O1, O9, and O10 cases. No guide-graph definition or owner-authored grader route is changed. O0 and O3 remain valid only where stronger outer evidence is absent.
+
+Safety/policy gates: `THERAPY.PROTOCOL.DIRECT_RISK_CHECK` makes an explicit suicide or harm indication and its direct risk question higher priority than unrelated unknowns. `THERAPY.PROTOCOL.OUTER_ROUTE_PRIORITY`, `THERAPY.PROTOCOL.HIGH_IMPACT_DECISION_AUTHORITY`, and `THERAPY.PROTOCOL.EXTERNAL_HANDOFF` preserve bounded O1/O9/O10 evidence without inferring legal incapacity, surrogate authority, service availability, or clinical efficacy.
+
+Regression evidence: the 13 severe live cases and all 13 required multi-turn trajectories are affected regression identities. All 49 live cases remain mandatory fresh exact-head controls.
+
+Materially unchanged: Owner-authored graders, Guide Packet graphs, model-role assignments, provider/privacy authorization, evidence limitations, release authority, and `stable` remain unchanged.
+
+No-answer effect: No answer from Joel would have left the current prompt, router, safety-question, and handoff behavior unchanged and the task blocked.
+
+### Evidence and uncertainty
+
+Source status: The route targets come from canonical owner-authorized design and grader translations. The observed failures come from a complete actual-model campaign and mechanically separated model grading. The decision itself comes only from Joel's direct answer.
+Limitation: The route translations are not independent clinical validation; the live campaign is one stochastic provider-specific sample; the grader is one model rather than a clinician or human panel; implementation still requires fresh exact-head falsification.
+
+### Review result
+
+`review-live-remediation-contract-v1-20260819` passed the owner gate because the decision package preserved exact scope, evidence provenance, limitations, controls, and worst plausible failure. Review readiness did not itself approve the policy.
+
+### Why not active
+
+Joel approved this scope, but the runtime implementation and required exact-head regression evidence do not yet exist. The approval is therefore `approved-not-implemented`.
+
+### Technical next action
+
+Implement only the six bounded candidate behaviors, add mutation-sensitive deterministic regressions, then rerun all 49 live cases on one clean head followed by all required multi-turn trajectories. Do not mark implemented until every affected regression is recorded as PASS and no severe result remains unresolved.
+
+### Decision needed
+
+Joel was asked whether to approve the exact scoped remediation contract or retain current policy. Joel explicitly selected option 1, approval.
+
+### Options and trade-offs
+
+Option A — approve the bounded remediation contract.
+Benefits: Explicit safety, high-impact-decision, and professional-support evidence survives conservative unknowns; direct risk questions are less likely to be displaced; the disputed RQ8-04 route is resolved without losing urgent medical content.
+Costs: Prompt and router logic become more explicit and require a complete fresh live and longitudinal campaign.
+Worst plausible failure: The broadened evidence-preservation rules could over-route an ambiguous case to safety, high-impact review, or external handoff, causing unnecessary escalation or displacing useful ordinary support.
+
+Option B — retain current policy.
+Benefits: Avoids changing routing from one stochastic campaign and preserves the existing conservative unknown handling.
+Costs: The 13 severe findings remain unresolved, including direct suicide-risk-question omissions and demotion of owner-authored outer routes.
+Worst plausible failure: A future response could ask a lower-priority question or turn inward while explicit safety, consequential-decision, or professional-support evidence requires an outer operation.
+
+### Recommendation and reasoning
+
+Recommendation: Approve option A only in the exact bounded scope above, then require fresh exact-head falsification before implementation status changes.
+Reasoning: The errors cluster around a coherent precedence defect, eight severe route mismatches still passed every behavioral criterion, and the proposed repair preserves uncertainty while preventing unknown detail from erasing explicit consequential evidence. The required full rerun directly tests the principal over-routing risk.

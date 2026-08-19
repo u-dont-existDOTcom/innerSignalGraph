@@ -432,6 +432,22 @@ export async function loadPolicyDecisionPackages({ rootDir = root } = {}) {
     if (!Array.isArray(document.cards) || document.cards.length === 0) {
       throw new Error(`${document.packetId} must contain at least one decision card.`);
     }
+    if (!Array.isArray(document.evidenceBindings) || document.evidenceBindings.length === 0) {
+      throw new Error(`${document.packetId} must contain at least one evidence binding.`);
+    }
+    for (const binding of document.evidenceBindings) {
+      const evidencePath = normalizedId(binding?.path);
+      if (!evidencePath || path.isAbsolute(evidencePath) || evidencePath.split(/[\\/]/).includes("..")) {
+        throw new Error(`${document.packetId} has an invalid evidence path.`);
+      }
+      if (!SHA256_PATTERN.test(binding.sha256)) throw new Error(`${document.packetId} has an invalid evidence digest.`);
+      if (!normalizedId(binding.authority)) throw new Error(`${document.packetId} has an invalid evidence authority.`);
+      if (Object.hasOwn(binding, "sourceCommit") && !/^[0-9a-f]{40}$/.test(binding.sourceCommit)) {
+        throw new Error(`${document.packetId} has an invalid evidence sourceCommit.`);
+      }
+      const evidenceSource = await readRequiredFile(rootDir, evidencePath);
+      if (sha256(evidenceSource) !== binding.sha256) throw new Error(`${document.packetId} evidence checksum mismatch for ${evidencePath}.`);
+    }
     const cardIds = [];
     for (const card of document.cards) {
       assertScalarId(card, "id", document.packetId);
@@ -472,6 +488,7 @@ export async function loadPolicyDecisionPackages({ rootDir = root } = {}) {
       candidateRoot: packagesRoot,
       packetDigest: sha256(source),
       authority: document.identifierCatalog,
+      evidenceBindings: document.evidenceBindings,
       sourcePath: relativePath
     });
   }
@@ -482,6 +499,21 @@ export async function loadPolicyDecisionPackages({ rootDir = root } = {}) {
   const duplicateRevision = revisions.find((revision, index) => revisions.indexOf(revision) !== index);
   if (duplicateRevision) throw new Error(`Multiple policy-decision packages use revision ${duplicateRevision}.`);
   return packages.sort((left, right) => right.manifest.packetRevision - left.manifest.packetRevision);
+}
+
+async function validatePolicyDecisionEvidence({ rootDir, policyDecisionPackages }) {
+  for (const policyPackage of policyDecisionPackages) {
+    for (const binding of policyPackage.evidenceBindings.filter((item) => item.sourceCommit)) {
+      try {
+        await execFileAsync("git", ["cat-file", "-e", `${binding.sourceCommit}^{commit}`], { cwd: rootDir });
+        await execFileAsync("git", ["merge-base", "--is-ancestor", binding.sourceCommit, "HEAD"], { cwd: rootDir });
+        const { stdout } = await execFileAsync("git", ["show", `${binding.sourceCommit}:${binding.path}`], { cwd: rootDir });
+        if (sha256(stdout) !== binding.sha256) throw new Error("checksum mismatch");
+      } catch {
+        throw new Error(`${policyPackage.manifest.packetId} evidence ${binding.path} is not bound to reachable commit ${binding.sourceCommit}.`);
+      }
+    }
+  }
 }
 
 async function loadReviewArtifact({ rootDir, reviewEvent, packet }) {
@@ -1060,6 +1092,7 @@ export async function verifyTherapyGovernance({ rootDir = root } = {}) {
   const governance = await loadTherapyGovernance({ rootDir });
   const guidePackets = await loadCandidatePackets(rootDir);
   const policyDecisionPackages = await loadPolicyDecisionPackages({ rootDir });
+  await validatePolicyDecisionEvidence({ rootDir, policyDecisionPackages });
   const packets = [...guidePackets, ...policyDecisionPackages];
   const packetsById = new Map(packets.map((packet) => [packet.manifest.packetId, packet]));
   if (packetsById.size !== packets.length) throw new Error("Guide and policy-decision packages must use distinct packet IDs.");
@@ -1112,6 +1145,16 @@ export async function verifyTherapyGovernance({ rootDir = root } = {}) {
     }
     if (review.event.metadata.outcome === "passed-owner-gate" && blocked.has(suggestion.metadata.status)) {
       throw new Error(`${suggestion.metadata.suggestionId} has invalid status for a passed packet: ${suggestion.metadata.status}`);
+    }
+  }
+  for (const policyPackage of policyDecisionPackages) {
+    for (const card of policyPackage.cards) {
+      const matches = governance.suggestions.filter(({ metadata }) =>
+        metadata.packetId === policyPackage.manifest.packetId && metadata.decisionId === card.id
+      );
+      if (matches.length !== 1) {
+        throw new Error(`Expected exactly one suggestion for policy decision ${card.id}; found ${matches.length}.`);
+      }
     }
   }
   validateCandidateHistory(governance);

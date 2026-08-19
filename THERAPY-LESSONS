@@ -137,3 +137,43 @@ The rejection does not mean that all five candidate lessons were judged false. D
 ### Next phase
 
 Build a deterministically repaired r03, review it independently, and ask Joel one substantive decision at a time only if r03 reaches the owner gate. Record only Joel's explicit decisions, then implement and verify only the approved scope.
+
+## 2026-08-19T06:52:26.000Z — Preserve decisive outer evidence before resolving less consequential unknowns
+
+<!-- therapy-lesson {"lessonId":"candidate-live-remediation-contract-v1","decisionId":"live-remediation-contract-v1","packetId":"therapy-protocol-live-remediation-2026.08.19-v1","learnedAt":"2026-08-19T06:52:26.000Z","activation":"candidate-awaiting-owner"} -->
+
+Candidate lesson: explicit suicide or harm evidence, materially consequential decisions, and explicit professional-support needs must retain their respective outer operations even when the formulation still contains unknown or mixed detail. An absent beneficiary must not demote a valid outer route, and direct safety questions must outrank less consequential unknowns. `RQ8-04` specifically retains O9 while requiring urgent medical-reassessment content.
+
+Status at discovery: awaiting owner disposition; not active runtime policy.
+
+Evidence: `analysis/therapy-protocol/live-falsification-2026-08-19.json`, exact-head 49-case live results preserved at commit `da94528e4955ab7b3980f090bab68366f3dac07f`, and decision package `therapy-protocol-live-remediation-2026.08.19-v1`. Evidence limitations: the corpus routes are owner-authored implementation authority rather than independent clinical validation; the campaign is one stochastic provider-specific run; model grading is not a clinician or human panel.
+
+## 2026-08-19T06:55:00.000Z — live-remediation contract passed the owner-decision gate
+
+<!-- therapy-review-event {"eventId":"review-live-remediation-contract-v1-20260819","occurredAt":"2026-08-19T06:55:00.000Z","packetId":"therapy-protocol-live-remediation-2026.08.19-v1","outcome":"passed-owner-gate","findingIds":["LIVE-REMEDIATION-SCOPE-001"],"suggestionFindings":{"live-remediation-contract-v1":["LIVE-REMEDIATION-SCOPE-001"]},"packetLevelFindingIds":[],"reviewArtifactPath":"docs/diagnostics/therapy-governance/live-remediation-review-20260819.json","reviewArtifactSha256":"3a3879ce6f4ee9558ba5e5a5d5747a5b76f83bcdea204bda9943dea3d3b2e343","nextPhase":"owner-decisions"} -->
+
+### Review outcome
+
+Outcome: passed-owner-gate
+
+The complete 49-case exact-head campaign and bounded remediation package supplied enough reproducible evidence to ask one owner decision without changing runtime policy first.
+
+### Finding dispositions
+
+`LIVE-REMEDIATION-SCOPE-001` is positive and verified: the decision package binds the exact current behavior, candidate behavior, affected identifiers, campaign controls, evidence classes, and limitations.
+
+### What this does not mean
+
+Passing this gate did not approve remediation, establish clinical efficacy, or make the model grader authoritative. It only made the bounded owner choice ready to ask.
+
+### Finding-to-suggestion mapping
+
+- `live-remediation-contract-v1`: `LIVE-REMEDIATION-SCOPE-001`.
+
+### Packet-level findings
+
+There are no packet-level findings. The observed runtime failures remain implementation evidence to remediate only if Joel explicitly approves the linked suggestion.
+
+### Next phase
+
+Ask Joel whether to approve the exact scoped remediation contract or retain current policy, then record only the explicit answer.

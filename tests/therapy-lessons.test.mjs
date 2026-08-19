@@ -828,8 +828,8 @@ test("therapy lesson log covers every substantive decision in the latest uploade
   assert.match(result.stdout, /^PASS 5\/5 substantive therapy suggestions tracked for /);
   assert.match(result.stdout, /6 active runtime lessons/);
   assert.match(result.stdout, /5 blocked suggestions/);
-  assert.match(result.stdout, /0 explicit owner decision receipts/);
-  assert.match(result.stdout, /0 explicit owner approvals/);
+  assert.match(result.stdout, /1 explicit owner decision receipts/);
+  assert.match(result.stdout, /1 explicit owner approvals/);
   assert.match(result.stdout, /0 implementations/);
   assert.match(result.stdout, /r02 rejection explained/);
 });
@@ -839,6 +839,10 @@ test("therapy governance loads an immutable non-Guide policy-decision package", 
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const packageDir = path.join(rootDir, "docs", "therapy-policy", "decision-packages");
   await fs.mkdir(packageDir, { recursive: true });
+  const evidencePath = path.join(rootDir, "analysis", "fixture-evidence.json");
+  const evidenceSource = '{"status":"reviewed"}\n';
+  await fs.mkdir(path.dirname(evidencePath), { recursive: true });
+  await fs.writeFile(evidencePath, evidenceSource);
   const affectedIds = {
     guideIds: ["inner-child"],
     graphNodeIds: ["PROTO.O1_PRACTICAL_SAFETY"],
@@ -851,6 +855,11 @@ test("therapy governance loads an immutable non-Guide policy-decision package", 
     packetId: "fixture-live-remediation-v1",
     packetRevision: 1,
     createdAt: "2026-08-19T07:00:00.000Z",
+    evidenceBindings: [{
+      path: "analysis/fixture-evidence.json",
+      sha256: sha256(evidenceSource),
+      authority: "fixture-review"
+    }],
     identifierCatalog: affectedIds,
     cards: [{
       id: "live-remediation-contract-v1",
@@ -880,6 +889,10 @@ test("therapy governance rejects policy-decision scope outside its immutable cat
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   const packageDir = path.join(rootDir, "docs", "therapy-policy", "decision-packages");
   await fs.mkdir(packageDir, { recursive: true });
+  const evidencePath = path.join(rootDir, "analysis", "fixture-evidence.json");
+  const evidenceSource = '{"status":"reviewed"}\n';
+  await fs.mkdir(path.dirname(evidencePath), { recursive: true });
+  await fs.writeFile(evidencePath, evidenceSource);
   const emptyScope = {
     guideIds: [],
     graphNodeIds: [],
@@ -892,6 +905,11 @@ test("therapy governance rejects policy-decision scope outside its immutable cat
     packetId: "fixture-invalid-live-remediation-v1",
     packetRevision: 1,
     createdAt: "2026-08-19T07:00:00.000Z",
+    evidenceBindings: [{
+      path: "analysis/fixture-evidence.json",
+      sha256: sha256(evidenceSource),
+      authority: "fixture-review"
+    }],
     identifierCatalog: emptyScope,
     cards: [{
       id: "live-remediation-contract-v1",
@@ -916,7 +934,9 @@ test("therapy governance rejects policy-decision scope outside its immutable cat
 
 test("production therapy governance preserves the exact r02 mapping", async () => {
   const governance = await loadTherapyGovernance({ rootDir: root });
-  const actualSuggestions = Object.fromEntries(governance.suggestions.map(({ metadata }) => [metadata.decisionId, {
+  const actualSuggestions = Object.fromEntries(governance.suggestions
+    .filter(({ metadata }) => metadata.packetId === "inner-signal-guides-2026.08.12-r02-candidate")
+    .map(({ metadata }) => [metadata.decisionId, {
     guideIds: metadata.guideIds,
     graphNodeIds: metadata.graphNodeIds,
     promptContractIds: metadata.promptContractIds,
@@ -970,6 +990,22 @@ test("production therapy governance preserves the exact r02 mapping", async () =
   assert.deepEqual(governance.reviewEvents[0].metadata.packetLevelFindingIds, [
     "CROSS-GUIDE-001", "OWNER-POLICY-001", "COVERAGE-001", "CERTAINTY-LAYER-001"
   ]);
+});
+
+test("production therapy governance binds Joel's explicit option-1 approval exactly once", async () => {
+  const governance = await verifyTherapyGovernance({ rootDir: root });
+  const suggestion = governance.suggestions.filter(({ metadata }) => metadata.suggestionId === "suggestion-live-remediation-contract-v1");
+  const decisions = governance.decisions.filter(({ metadata }) => metadata.suggestionId === "suggestion-live-remediation-contract-v1");
+  const approvals = governance.approvals.filter(({ metadata }) => metadata.suggestionId === "suggestion-live-remediation-contract-v1");
+  assert.equal(governance.policyDecisionPackages.length, 1);
+  assert.equal(suggestion.length, 1);
+  assert.equal(suggestion[0].metadata.status, "approved");
+  assert.equal(decisions.length, 1);
+  assert.equal(decisions[0].metadata.choice, "approve");
+  assert.equal(decisions[0].metadata.decisionSource, "direct-user-conversation");
+  assert.equal(approvals.length, 1);
+  assert.equal(approvals[0].metadata.decisionReceiptId, decisions[0].metadata.receiptId);
+  assert.equal(approvals[0].metadata.implementationStatus, "approved-not-implemented");
 });
 
 for (const { name, historyTransform, error } of [

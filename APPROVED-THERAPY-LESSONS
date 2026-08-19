@@ -3,3 +3,31 @@
 This ledger is the approval-only implementation view for guide-impacting therapy-policy decisions. Every entry must link to exactly one `THERAPY-DECISIONS` receipt whose explicit choice is `approve`; the receipt, not this projection, is the durable record of Joel's direct-conversation choice. This file records concise approved scope and implementation evidence, never declines, inferred consent, model verdicts, technical supersessions, or private therapy transcripts.
 
 No therapy-policy suggestions are approved as of 2026-08-13T14:31:28.000Z. The governance design approval does not approve any r02 lesson. The first `therapy-approval` entry may be added only after a specific suggestion has a passed review and exactly one linked `therapy-decision` receipt recording Joel's explicit `approve` choice from the active conversation.
+
+## Preserve decisive outer evidence and direct safety questions
+
+<!-- therapy-approval {"approvalId":"approval-live-remediation-contract-v1-20260819","suggestionId":"suggestion-live-remediation-contract-v1","decisionReceiptId":"decision-live-remediation-contract-v1-20260819","decidedAt":"2026-08-19T09:58:30.000Z","implementationStatus":"approved-not-implemented","guideIds":["inner-child","somatic"],"graphNodeIds":["PROTO.O0_SUPPORT_ORIENT","PROTO.O1_PRACTICAL_SAFETY","PROTO.O3_CURRENT_REALITY","PROTO.O9_HIGH_IMPACT_DECISION","PROTO.O10_EXTERNAL_HANDOFF"],"promptContractIds":["case-formulation-v2","case-plan-v4","response-realization-v5"],"policySafetyGateIds":["THERAPY.PROTOCOL.DIRECT_RISK_CHECK","THERAPY.PROTOCOL.OUTER_ROUTE_PRIORITY","THERAPY.PROTOCOL.HIGH_IMPACT_DECISION_AUTHORITY","THERAPY.PROTOCOL.EXTERNAL_HANDOFF"],"regressionIds":["RQ6-13","RQ7-01","RQ7-04","RQ7-09","RQ7-11","RQ7-12","RQ8-01","RQ8-04","RQ8-11","RQ9-01","RQ9-02","RQ9-04","RQ9-06","SAFETY-DISAPPEARS","RESOURCE-REPEATEDLY-UNAVAILABLE","COPING-IMPROVES-NEED-REMAINS","FRAME-REJECTED","NOT-NOW-SUBJECT-CHANGE","SUPPORTER-OVERRESPONSIBILITY","MEMORY-CONFIDENCE-DRIFT","BOT-AUTHORITY-CONCENTRATION","BROKEN-TRUST-CHECKING-LOOP","CAPACITY-FLUCTUATION","RELIEF-WITHOUT-FULL-CHANGE","MISSED-PROMISE-ARREARS","DEPTH-BEFORE-INTEGRATION"]} -->
+
+### Exact decision
+
+Approve only this bounded behavior: explicit suicide or harm evidence prioritizes O1 and a direct risk question; consequential bodily, dependent, financial, or legal decisions retain O9 despite unresolved capacity details; explicit professional-support needs retain O10; an absent beneficiary cannot demote valid outer O1, O9, or O10; `RQ8-04` retains O9 while urgent medical reassessment remains required content; implementation must then pass a fresh exact-head 49-case live campaign and every required multi-turn trajectory.
+
+### Owner reasoning or stated preference
+
+Joel explicitly selected option `1`. He supplied no additional rationale, so none is inferred or recorded.
+
+### Scope and constraints
+
+The approval changes only the linked formulation, outer-route precedence, canonical safety-question, O9 authority, and O10 handoff scope. It does not approve grader edits, legal-capacity conclusions, surrogate authority, claimed service availability, clinical-efficacy claims, unrelated Guide Packet proposals, or stable release.
+
+### Guide impact
+
+Both installed therapy guides remain behind the pre-guide protocol. The listed O0/O3 fallback and O1/O9/O10 outer nodes, three prompt contracts, four policy/safety gates, 13 severe live regressions, and 13 multi-turn regressions are the complete approved affected scope. Guide-graph definitions remain unchanged.
+
+### Implementation status
+
+Approved but not implemented. Runtime policy must not be described as repaired until a later implementation commit and exact structured PASS evidence satisfy the governance verifier.
+
+### Verification evidence
+
+The approval receipt is bound to decision package SHA-256 `7dda12de7a1ad7f90beca14cc93e21861edf850dfe2ff3aee20d1310f984ef8e`, decision-card SHA-256 `e51fdb7a610d0ff739265c0175d501ed49ebd98e3ce45ec60e35df6b506201b5`, and passed-review artifact SHA-256 `3a3879ce6f4ee9558ba5e5a5d5747a5b76f83bcdea204bda9943dea3d3b2e343`. No implementation evidence is claimed yet.
