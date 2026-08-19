@@ -80,6 +80,110 @@ test("current external danger bypasses ordinary inner work", () => {
   assert.ok(route.blockedOperations.some((item) => item.operation === OPERATION_CLASSES.DEPTH_ACCESS));
 });
 
+test("explicit suicide or self-harm evidence keeps O1 ahead of resource uncertainty", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "mixed",
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      unmet_external_need: "present"
+    }),
+    variables: variables({ present_safety: "unknown" }),
+    unknowns: [
+      { variable: "resource_access_status", question: "Can support be reached?", importance: 5 },
+      { variable: "immediate_self_harm_or_suicide_risk", question: "Are there suicidal thoughts or an inability to remain safe right now?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.PRACTICAL_SAFETY);
+  assert.equal(route.runGuideGraph, false);
+});
+
+test("an absent beneficiary cannot demote valid O1 O9 or O10 outer routes", () => {
+  const safety = routeTherapyProtocol({
+    protocolProfile: profile({
+      request_actor: "caregiver",
+      beneficiary_present: "no",
+      primary_problem_class: "actual_or_potential_harm",
+      requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY,
+      current_external_danger: "unknown"
+    }),
+    variables: variables({ present_safety: "unknown" })
+  });
+  const decision = routeTherapyProtocol({
+    protocolProfile: profile({
+      request_actor: "supporter",
+      beneficiary_present: "no",
+      primary_problem_class: "refusal_capacity_ambivalence",
+      requested_operation: OPERATION_CLASSES.HIGH_IMPACT_DECISION,
+      decision_impact: "hard_to_reverse",
+      third_party_rights_or_consent: "present",
+      bodily_decision_owner: "other",
+      lawful_decision_maker_status: "unknown"
+    }),
+    variables: variables()
+  });
+  const handoff = routeTherapyProtocol({
+    protocolProfile: profile({
+      request_actor: "supporter",
+      beneficiary_present: "no",
+      primary_problem_class: "mixed",
+      requested_operation: OPERATION_CLASSES.EXTERNAL_HANDOFF,
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      handoff_state: "suggested",
+      unmet_external_need: "present"
+    }),
+    variables: variables()
+  });
+  assert.equal(safety.primaryOperation, OPERATION_CLASSES.PRACTICAL_SAFETY);
+  assert.equal(decision.primaryOperation, OPERATION_CLASSES.HIGH_IMPACT_DECISION);
+  assert.equal(handoff.primaryOperation, OPERATION_CLASSES.EXTERNAL_HANDOFF);
+});
+
+test("a consequential authority decision remains O9 while urgent medical reassessment stays required", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      request_actor: "caregiver",
+      beneficiary_present: "no",
+      primary_problem_class: "mixed",
+      current_external_danger: "present",
+      condition_instability: "present",
+      requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY,
+      external_action_required: "yes",
+      decision_impact: "high_impact_third_party",
+      third_party_rights_or_consent: "present",
+      bodily_decision_owner: "other",
+      action_authority: "unknown",
+      decision_capacity_status: "disputed",
+      capacity_concern: "present",
+      lawful_decision_maker_status: "unknown",
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      handoff_state: "suggested",
+      unmet_external_need: "present"
+    }),
+    variables: variables({ present_safety: "unsafe" })
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.HIGH_IMPACT_DECISION);
+  assert.ok(route.requiredNuance.some((line) => /urgent medical reassessment/i.test(line)));
+  assert.ok(route.forbiddenOverclaims.some((line) => /replace urgent medical reassessment/i.test(line)));
+});
+
+test("an explicit unresolved professional-support need keeps O10 despite a mixed problem class", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "mixed",
+      requested_operation: OPERATION_CLASSES.EXTERNAL_HANDOFF,
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      handoff_state: "suggested",
+      unmet_external_need: "present"
+    }),
+    variables: variables()
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.EXTERNAL_HANDOFF);
+});
+
 test("supporter query cannot formulate an absent adult as the therapy subject", () => {
   const route = routeTherapyProtocol({
     protocolProfile: profile({ request_actor: "supporter", beneficiary_present: "no", primary_problem_class: "internal_developmental" }),

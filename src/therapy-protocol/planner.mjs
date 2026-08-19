@@ -27,6 +27,27 @@ function unknownQuestion(field) {
   return questions[field] ?? `What information about ${String(field).replaceAll("_", " ")} would change the next safe operation?`;
 }
 
+function questionPriority(variable) {
+  const value = String(variable ?? "");
+  if (/(?:suicid|self[_\s-]?harm)/i.test(value)) return 300;
+  if (/(?:safety|danger|injury|acute|crisis|recurrence[_\s-]?risk|safe[_\s-]?supervision)/i.test(value)) return 200;
+  return 0;
+}
+
+function selectProtocolQuestion(route, unknowns = []) {
+  const material = new Set(route.materialUnknowns);
+  const candidates = unknowns
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => material.has(item?.variable) && typeof item?.question === "string" && item.question.trim())
+    .sort((a, b) => questionPriority(b.item.variable) - questionPriority(a.item.variable) || a.index - b.index);
+  const selected = candidates[0]?.item ?? null;
+  const variable = selected?.variable ?? route.materialUnknowns[0] ?? null;
+  return {
+    variable,
+    question: selected?.question?.trim() || (variable ? unknownQuestion(variable) : "")
+  };
+}
+
 function serializableRoute(route) {
   return {
     contractVersion: route.contractVersion,
@@ -46,9 +67,10 @@ function serializableRoute(route) {
   };
 }
 
-function protocolOnlyPlan({ variables, route, graphBundleVersion }) {
-  const questionField = route.materialUnknowns[0] ?? null;
-  const nextQuestion = questionField ? unknownQuestion(questionField) : "";
+function protocolOnlyPlan({ variables, unknowns = [], route, graphBundleVersion }) {
+  const selectedQuestion = selectProtocolQuestion(route, unknowns);
+  const questionField = selectedQuestion.variable;
+  const nextQuestion = selectedQuestion.question;
   const node = route.protocolJob;
   const questionSource = questionField ? { type: "protocol-material-unknown", variable: questionField } : null;
   return {
@@ -80,14 +102,14 @@ function protocolOnlyPlan({ variables, route, graphBundleVersion }) {
   };
 }
 
-function restrictGraphPlan(base, route, graphs) {
+function restrictGraphPlan(base, route, graphs, unknowns) {
   const nodesById = new Map(graphs.flatMap((graph) => graph.nodes ?? []).map((node) => [node.id, node]));
   const selected = (base.selectedNodes ?? []).filter((node) => {
     const full = nodesById.get(node.id);
     return full ? route.graphNodeAllowed(full) : true;
   });
   if (!selected.length) {
-    return protocolOnlyPlan({ variables: base.variables, route, graphBundleVersion: base.graphBundleVersion });
+    return protocolOnlyPlan({ variables: base.variables, unknowns, route, graphBundleVersion: base.graphBundleVersion });
   }
   const selectedIds = new Set(selected.map((node) => node.id));
   const primary = selected[0];
@@ -113,10 +135,10 @@ export function planTherapyFromGraphs({ variables, unknowns = [], graphs, protoc
   const route = routeTherapyProtocolLongitudinal({ previousState: previousProtocolState, protocolProfile, variables, unknowns, ablationVariant });
   const graphBundleVersion = graphs[0]?.bundleVersion ?? null;
   if (!route.runGuideGraph) {
-    return protocolOnlyPlan({ variables, route, graphBundleVersion });
+    return protocolOnlyPlan({ variables, unknowns, route, graphBundleVersion });
   }
   const base = planFromGraphs({ variables, unknowns, graphs });
-  return restrictGraphPlan(base, route, graphs);
+  return restrictGraphPlan(base, route, graphs, unknowns);
 }
 
 export function protocolRequiresReviewedTier(snapshot = {}) {

@@ -9,6 +9,8 @@ import { runCaseFormulation, applyCaseAudit } from "../src/case-formulation/run.
 import { caseAuditSchema } from "../src/case-formulation/schemas.mjs";
 import { runFormulatedPipeline } from "../src/orchestrator/run-formulated-pipeline.mjs";
 import { blankCaseVariables } from "../src/guide-graph/contract.mjs";
+import { caseExtractionPrompt } from "../src/prompts/case-extract.mjs";
+import { caseAuditPrompt } from "../src/prompts/case-audit.mjs";
 
 async function a001Setup() {
   const definition = JSON.parse(await fs.readFile(path.join(projectRoot, "corpus/difficult-cases/A001-inner-child-credibility/case.json"), "utf8"));
@@ -23,6 +25,28 @@ test("case audit output schema is strict-provider compatible", () => {
     new Set(caseAuditSchema.required),
     new Set(Object.keys(caseAuditSchema.properties))
   );
+});
+
+test("formulation prompts preserve the approved decisive-outer evidence contract", () => {
+  const context = {
+    guideManifest: { version: "test" },
+    guideExcerpts: "none",
+    priorCaseSnapshot: null,
+    priorInterventionContract: null,
+    recentTranscript: "",
+    userMessage: "test",
+    userFacts: []
+  };
+  const extraction = caseExtractionPrompt(context).system;
+  const audit = caseAuditPrompt(context, { variables: {}, unknowns: [] }).system;
+  for (const prompt of [extraction, audit]) {
+    assert.match(prompt, /explicit suicide or harm evidence/i);
+    assert.match(prompt, /bodily, dependent, financial, or legal/i);
+    assert.match(prompt, /professional support/i);
+    assert.match(prompt, /absent beneficiary/i);
+    assert.match(prompt, /urgent medical reassessment/i);
+  }
+  assert.match(audit, /direct safety unknowns before less consequential unknowns/i);
 });
 
 test("audited A001 case formulation routes credibility repair before generic relaxation", async () => {

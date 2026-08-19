@@ -153,15 +153,23 @@ function verifyExecutionTelemetry(calls) {
     && !call.error);
 }
 
-function pipelineRecord(id, querySha256, result, telemetry) {
+export function pipelineRecord(id, querySha256, result, telemetry) {
   const protocol = result.interventionContract?.therapyProtocol;
+  const telemetryComplete = verifyExecutionTelemetry(telemetry);
   return {
     id,
     querySha256,
-    executionStatus: "executed",
+    executionStatus: telemetryComplete ? "executed" : "safely_blocked",
     executedAt: now(),
-    telemetryComplete: verifyExecutionTelemetry(telemetry),
+    telemetryComplete,
     telemetry,
+    ...(telemetryComplete ? {} : {
+      error: {
+        name: "TelemetryIntegrityError",
+        code: "INCOMPLETE_EXECUTION_TELEMETRY",
+        message: "Provider execution telemetry is incomplete; this result cannot be treated as executed evidence."
+      }
+    }),
     processingTier: result.processingTier,
     mode: result.mode,
     routingReason: result.routingReason,
@@ -251,8 +259,13 @@ export async function executeLiveCases({ root = process.cwd(), outputFile, limit
     try {
       const context = await buildContext({ userMessage: input.query, recentTranscript: "", userFacts: [] }, config);
       const result = await runTieredTherapyPipeline({ context, providers, config, processingMode: "auto" });
-      artifact.results.push(pipelineRecord(input.id, input.querySha256, result, telemetry));
-      process.stdout.write(`[live] ${input.id} executed (${result.processingTier}, ${telemetry.length} calls)\n`);
+      const record = pipelineRecord(input.id, input.querySha256, result, telemetry);
+      artifact.results.push(record);
+      if (record.executionStatus === "executed") {
+        process.stdout.write(`[live] ${input.id} executed (${result.processingTier}, ${telemetry.length} calls)\n`);
+      } else {
+        process.stdout.write(`[live] ${input.id} safely blocked: incomplete provider telemetry\n`);
+      }
     } catch (error) {
       artifact.results.push(errorRecord(input.id, input.querySha256, error, telemetry));
       process.stdout.write(`[live] ${input.id} safely blocked: ${String(error?.message ?? error).slice(0, 300)}\n`);
@@ -399,9 +412,14 @@ export async function executeMultiTurn({ root = process.cwd(), outputFile, limit
     }
     for (const turn of trajectory.turns) {
       const existing = record.turns.find((item) => item.index === turn.index);
-      if (existing && (existing.executionStatus === "executed" || (!retryBlocked && existing.executionStatus === "safely_blocked"))) continue;
+      if (existing?.executionStatus === "executed") continue;
+      if (existing?.executionStatus === "safely_blocked" && !retryBlocked) {
+        record.executionStatus = "safely_blocked";
+        break;
+      }
       record.turns = record.turns.filter((item) => item.index !== turn.index);
       const telemetry = [];
+      let telemetryBlocked = false;
       active.sink = telemetry;
       process.stdout.write(`[multi] ${trajectory.id}/${turn.index} started\n`);
       try {
@@ -426,11 +444,17 @@ export async function executeMultiTurn({ root = process.cwd(), outputFile, limit
           ...pipelineRecord(`${trajectory.id}/${turn.index}`, sha256(turn.message), result, telemetry)
         };
         record.turns.push(item);
-        recentTranscript = transcriptWith(recentTranscript, turn.message, item.answer);
-        priorCaseSnapshot = item.caseFormulation;
-        priorInterventionContract = item.interventionContract;
-        priorProcessingTier = item.processingTier;
-        process.stdout.write(`[multi] ${trajectory.id}/${turn.index} executed (${item.processingTier}, ${telemetry.length} calls)\n`);
+        if (item.executionStatus === "executed") {
+          recentTranscript = transcriptWith(recentTranscript, turn.message, item.answer);
+          priorCaseSnapshot = item.caseFormulation;
+          priorInterventionContract = item.interventionContract;
+          priorProcessingTier = item.processingTier;
+          process.stdout.write(`[multi] ${trajectory.id}/${turn.index} executed (${item.processingTier}, ${telemetry.length} calls)\n`);
+        } else {
+          telemetryBlocked = true;
+          record.executionStatus = "safely_blocked";
+          process.stdout.write(`[multi] ${trajectory.id}/${turn.index} safely blocked: incomplete provider telemetry\n`);
+        }
       } catch (error) {
         record.turns.push({ index: turn.index, message: turn.message, ...errorRecord(`${trajectory.id}/${turn.index}`, sha256(turn.message), error, telemetry) });
         record.executionStatus = "safely_blocked";
@@ -439,6 +463,7 @@ export async function executeMultiTurn({ root = process.cwd(), outputFile, limit
       }
       record.turns.sort((a, b) => a.index - b.index);
       atomicJson(file, artifact);
+      if (telemetryBlocked) break;
     }
     if (record.turns.length === trajectory.turns.length && record.turns.every((item) => item.executionStatus === "executed")) record.executionStatus = "executed";
     atomicJson(file, artifact);

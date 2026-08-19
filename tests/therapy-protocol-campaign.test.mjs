@@ -10,6 +10,7 @@ import { expectedCorpusIds, loadCompleteCorpus, loadGraders, loadModelInputs } f
 import { routeTherapyProtocolLongitudinal, transitionProtocolProfile } from "../src/therapy-protocol/longitudinal.mjs";
 import { GRAPH_NODE_OPERATIONS, routeTherapyProtocol } from "../src/therapy-protocol/router.mjs";
 import { REQUIRED_TRAJECTORY_IDS, loadTrajectoryGraders, loadTrajectoryInputs } from "../src/therapy-protocol/trajectory-corpus.mjs";
+import { pipelineRecord } from "../src/therapy-protocol/live-campaign.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -128,4 +129,23 @@ test("all required adversarial trajectory inputs are grader-free, hash-bound, an
   const runner = fs.readFileSync(path.join(root, "scripts/run-therapy-protocol-live.mjs"), "utf8");
   assert.match(runner, /--execute-live/);
   assert.match(runner, /--grade-live/);
+});
+
+test("incomplete provider telemetry is safely blocked rather than labeled executed", () => {
+  const record = pipelineRecord("RQ8-04", "a".repeat(64), {
+    interventionContract: { therapyProtocol: { primaryOperation: OPERATION_CLASSES.HIGH_IMPACT_DECISION, disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED, materialUnknowns: [], profile: {} } },
+    processingTier: "forensic",
+    mode: "adversarial",
+    routingReason: "test",
+    answer: "test",
+    next_question: "",
+    safety_flags: [],
+    responseContract: {},
+    caseFormulation: {},
+    realizationContractVersion: "response-realization-v5",
+    rendererModel: "claude-sonnet-4-6"
+  }, [{ provider: "anthropic", model: "claude-opus-5", transport: "cli", requestId: null, responseId: null }]);
+  assert.equal(record.executionStatus, "safely_blocked");
+  assert.equal(record.telemetryComplete, false);
+  assert.equal(record.error.code, "INCOMPLETE_EXECUTION_TELEMETRY");
 });

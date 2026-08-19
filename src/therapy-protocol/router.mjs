@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v2";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v3";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -225,6 +225,38 @@ function innerConsentBlocked(profile) {
     && ["no", "not_now"].includes(profile.operation_consent);
 }
 
+function explicitSuicideOrSelfHarmUnknown(unknowns = []) {
+  return unknowns.some((item) => Number(item?.importance ?? 0) >= 5
+    && /(?:suicid|self[_\s-]?harm)/i.test(String(item?.variable ?? "")));
+}
+
+function urgentAuthorityDecision(profile) {
+  return profile.bodily_decision_owner === "other"
+    && ["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact)
+    && profile.third_party_rights_or_consent === "present"
+    && (profile.capacity_concern === "present"
+      || ["unknown", "disputed"].includes(profile.decision_capacity_status)
+      || ["unknown", "disputed"].includes(profile.lawful_decision_maker_status)
+      || profile.action_authority === "unknown");
+}
+
+function decisiveOuterOperation(profile, unknowns) {
+  if (explicitSuicideOrSelfHarmUnknown(unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
+  if (urgentAuthorityDecision(profile)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
+  if (profile.requested_operation === OPERATION_CLASSES.PRACTICAL_SAFETY) {
+    return OPERATION_CLASSES.PRACTICAL_SAFETY;
+  }
+  if (profile.requested_operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
+      || ["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact)) {
+    return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
+  }
+  if (profile.requested_operation === OPERATION_CLASSES.EXTERNAL_HANDOFF
+      || (profile.resource_required === "yes" && profile.unmet_external_need === "present")) {
+    return OPERATION_CLASSES.EXTERNAL_HANDOFF;
+  }
+  return null;
+}
+
 function depthPrerequisiteUnknowns(profile, variables) {
   const checks = [
     ["present_safety", variables.present_safety],
@@ -309,7 +341,7 @@ function materialUnknowns(profile, explicit, route) {
   return unique(unknowns);
 }
 
-function routeNuance(profile, resourceIsUnavailable) {
+function routeNuance(profile, resourceIsUnavailable, operation) {
   const nuance = [
     "Nurturing, protecting, and guiding are qualities of one inner parent, not three autonomous internal people.",
     "Current external reality, rights, consent, medical facts, and material constraints cannot be settled by an inner-state vote."
@@ -346,6 +378,11 @@ function routeNuance(profile, resourceIsUnavailable) {
     nuance.push("The ideal resource is not currently reachable; use a constraint-aware fallback while preserving the unresolved external need and retry trigger.");
     forbidden.push("Do not repeat the same inaccessible referral, call a weaker substitute equivalent, or close the unmet need because coping improved.");
   }
+  if (operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
+      && (profile.current_external_danger === "present" || profile.condition_instability === "present")) {
+    nuance.push("Keep urgent medical reassessment and immediate condition-specific safety action in the response while decision authority, consent, and capacity are reviewed.");
+    forbidden.push("Do not let decision-authority review replace urgent medical reassessment or delay immediate condition-specific safety action.");
+  }
   if (profile.user_rejects_current_frame === "yes") {
     nuance.push("The user rejected the current formulation; withdraw or revise it and reopen ordinary alternatives.");
     forbidden.push("Do not treat frame rejection as confirmation of a Protector or resistance hypothesis.");
@@ -370,12 +407,14 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   const { profile, explicit } = deriveProtocolProfile({ protocolProfile, variables });
   const hardSafety = hardSafetyState(profile, variables);
   const unavailable = resourceUnavailable(profile);
+  const outerOperation = decisiveOuterOperation(profile, unknowns);
+  const authorityDecision = urgentAuthorityDecision(profile);
   let route = routeForProblemClass(profile, ablationVariant);
   let allowed = new Set(route.runGuideGraph ? INNER_BASE_ALLOWED : OUTER_ALLOWED);
   const reasons = {};
   let requestedDepthUnknowns = [];
 
-  if (profile.request_actor !== "self" && profile.beneficiary_present !== "yes") {
+  if (profile.request_actor !== "self" && profile.beneficiary_present !== "yes" && !outerOperation) {
     route = {
       disposition: ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT,
       operation: profile.resource_required === "yes" ? OPERATION_CLASSES.EXTERNAL_HANDOFF : OPERATION_CLASSES.CURRENT_REALITY,
@@ -385,17 +424,35 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
     for (const operation of INNER_WORK_OPERATIONS) reasons[operation] = "The person whose internal state would be treated is not the participating user.";
   }
 
+  if (outerOperation) {
+    route = {
+      disposition: outerOperation === OPERATION_CLASSES.PRACTICAL_SAFETY
+        ? ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED
+        : ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT,
+      operation: outerOperation,
+      runGuideGraph: false
+    };
+    allowed = new Set(outerOperation === OPERATION_CLASSES.PRACTICAL_SAFETY ? HARD_SAFETY_ALLOWED : OUTER_ALLOWED);
+    if (profile.request_actor !== "self" && profile.beneficiary_present !== "yes") {
+      for (const operation of INNER_WORK_OPERATIONS) reasons[operation] = "The person whose internal state would be treated is not the participating user.";
+    }
+  }
+
   if (hardSafety) {
     route = {
       disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED,
-      operation: profile.resource_required === "yes" ? OPERATION_CLASSES.EXTERNAL_HANDOFF : OPERATION_CLASSES.PRACTICAL_SAFETY,
+      operation: authorityDecision
+        ? OPERATION_CLASSES.HIGH_IMPACT_DECISION
+        : (outerOperation === OPERATION_CLASSES.PRACTICAL_SAFETY || profile.resource_required !== "yes"
+          ? OPERATION_CLASSES.PRACTICAL_SAFETY
+          : OPERATION_CLASSES.EXTERNAL_HANDOFF),
       runGuideGraph: false
     };
-    allowed = new Set(HARD_SAFETY_ALLOWED);
+    allowed = new Set(route.operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION ? OUTER_ALLOWED : HARD_SAFETY_ALLOWED);
     for (const operation of INNER_WORK_OPERATIONS) reasons[operation] = "Immediate safety, basic needs, condition-specific instability, or dependent danger outranks ordinary inner work.";
   }
 
-  if (unavailable) {
+  if (unavailable && !authorityDecision && outerOperation !== OPERATION_CLASSES.PRACTICAL_SAFETY) {
     route = {
       disposition: hardSafety ? ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED : ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT,
       operation: OPERATION_CLASSES.EXTERNAL_HANDOFF,
@@ -404,7 +461,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
     allowed = new Set(HARD_SAFETY_ALLOWED);
   }
 
-  if (!hardSafety && !unavailable && profile.consent_scope === "all_engagement" && ["no", "not_now"].includes(profile.operation_consent)) {
+  if (!hardSafety && !unavailable && !outerOperation && profile.consent_scope === "all_engagement" && ["no", "not_now"].includes(profile.operation_consent)) {
     route = { disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED, operation: OPERATION_CLASSES.SUPPORT_ORIENT, runGuideGraph: false };
     allowed = new Set([OPERATION_CLASSES.SUPPORT_ORIENT, OPERATION_CLASSES.PRACTICAL_SAFETY, OPERATION_CLASSES.EXTERNAL_HANDOFF]);
   } else if (innerConsentBlocked(profile)) {
@@ -444,12 +501,12 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
     }
   }
 
-  if (!hardSafety && !unavailable && profile.user_rejects_current_frame === "yes") {
+  if (!hardSafety && !unavailable && !outerOperation && profile.user_rejects_current_frame === "yes") {
     route = { disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED, operation: OPERATION_CLASSES.SUPPORT_ORIENT, runGuideGraph: false };
     allowed = new Set([OPERATION_CLASSES.SUPPORT_ORIENT, OPERATION_CLASSES.PRACTICAL_SAFETY, OPERATION_CLASSES.CURRENT_REALITY, OPERATION_CLASSES.EXTERNAL_HANDOFF]);
   }
 
-  if (!hardSafety && !unavailable) {
+  if (!hardSafety && !unavailable && !outerOperation) {
     const redirect = {
       reassurance_loop: OPERATION_CLASSES.CURRENT_REALITY,
       dependency_loop: OPERATION_CLASSES.CURRENT_REALITY,
@@ -489,7 +546,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   allowed.add(OPERATION_CLASSES.SUPPORT_ORIENT);
   allowed.add(route.operation);
 
-  const { nuance, forbidden } = routeNuance(profile, unavailable);
+  const { nuance, forbidden } = routeNuance(profile, unavailable, route.operation);
   const job = JOBS[route.operation] ?? JOBS[OPERATION_CLASSES.SUPPORT_ORIENT];
   const resourceState = {
     required: profile.resource_required,
@@ -541,9 +598,9 @@ export function simpleSupportedChoiceRoute(profile = {}) {
   if (profile.current_external_danger === "present" || profile.condition_instability === "present" || profile.dependent_danger === "present") {
     return OPERATION_CLASSES.PRACTICAL_SAFETY;
   }
-  if (profile.request_actor !== "self") return OPERATION_CLASSES.CURRENT_REALITY;
   if (profile.capacity_concern === "present" || profile.decision_impact === "high_impact_third_party" || profile.decision_impact === "hard_to_reverse") {
     return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   }
+  if (profile.request_actor !== "self") return OPERATION_CLASSES.CURRENT_REALITY;
   return OPERATION_CLASSES.CURRENT_REALITY;
 }

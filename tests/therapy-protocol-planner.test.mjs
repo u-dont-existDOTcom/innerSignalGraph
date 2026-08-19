@@ -106,6 +106,40 @@ test("material protocol unknown becomes the canonical next question", () => {
   assert.ok(plan.therapyProtocol.materialUnknowns.length >= 1);
 });
 
+test("a direct suicide-risk question outranks resource and formulation unknowns", () => {
+  const question = "Beyond having no current plan, is there any current intent, preparation, access to means, or uncertainty about remaining safe?";
+  const plan = planTherapyFromGraphs({
+    variables: { ...variables, present_safety: "unknown" },
+    graphs,
+    protocolProfile: profile({
+      primary_problem_class: "mixed",
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      unmet_external_need: "present"
+    }),
+    unknowns: [
+      { variable: "resource_access_status", question: "Can support be reached?", importance: 5 },
+      { variable: "current_self_harm_risk", question, importance: 5 },
+      { variable: "conditions_making_life_unbearable", question: "What conditions feel unbearable?", importance: 5 }
+    ]
+  });
+  assert.equal(plan.primaryJob.id, "PROTO.O1_PRACTICAL_SAFETY");
+  assert.equal(plan.nextQuestion, question);
+  assert.equal(plan.nextQuestionSource.variable, "current_self_harm_risk");
+});
+
+test("a safety question is preserved verbatim without falsely changing a medical O3 route to O1", () => {
+  const question = "Does this include thoughts of self-harm, restricting to a medically dangerous level, or another immediate safety concern?";
+  const plan = planTherapyFromGraphs({
+    variables,
+    graphs,
+    protocolProfile: profile({ primary_problem_class: "medical_condition", resource_required: "unknown" }),
+    unknowns: [{ variable: "safety_and_crisis_status", question, importance: 5 }]
+  });
+  assert.equal(plan.primaryJob.id, "PROTO.O3_CURRENT_REALITY");
+  assert.equal(plan.nextQuestion, question);
+});
+
 test("resource state is carried in the intervention contract", () => {
   const plan = planTherapyFromGraphs({
     variables,
