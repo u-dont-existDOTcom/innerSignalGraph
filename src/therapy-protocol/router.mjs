@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v5";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v6";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -206,8 +206,9 @@ function acuteSafetyUnknown(unknowns = []) {
 
 function rightsContainmentWithoutAcuteDanger(profile, unknowns = []) {
   return profile.primary_problem_class === "actual_or_potential_harm"
-    && profile.current_external_danger === "present"
     && profile.third_party_rights_or_consent === "present"
+    && profile.bodily_decision_owner === "not_applicable"
+    && ["reversible_only", "bounded"].includes(profile.action_authority)
     && profile.basic_needs_failure !== "present"
     && profile.condition_instability !== "present"
     && profile.dependent_danger !== "present"
@@ -277,9 +278,9 @@ function decisiveOuterOperation(profile, unknowns) {
       || (profile.resource_required === "yes" && profile.unmet_external_need === "present")) {
     return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   }
-  if (profile.requested_operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
-      || (["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact)
-        && !rightsContainmentWithoutAcuteDanger(profile, unknowns))) {
+  if ((profile.requested_operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
+      || ["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact))
+      && !rightsContainmentWithoutAcuteDanger(profile, unknowns)) {
     return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   }
   return null;

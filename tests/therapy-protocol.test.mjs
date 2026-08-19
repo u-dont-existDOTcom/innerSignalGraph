@@ -105,6 +105,7 @@ test("non-bodily privacy containment stays O3 while preserving urgent external a
       current_external_danger: "present",
       requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY,
       third_party_rights_or_consent: "present",
+      bodily_decision_owner: "not_applicable",
       action_authority: "bounded",
       condition_instability: "unknown",
       dependent_danger: "unknown",
@@ -116,6 +117,30 @@ test("non-bodily privacy containment stays O3 while preserving urgent external a
     unknowns: [
       { variable: "immediate_camera_exposure", question: "Could anyone else still be recorded?", importance: 5 },
       { variable: "imminent_recording_or_file_misuse", question: "Could the file be viewed or shared again?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+});
+
+test("non-bodily rights containment stays O3 when a model requests O9", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "actual_or_potential_harm",
+      current_external_danger: "unknown",
+      requested_operation: OPERATION_CLASSES.HIGH_IMPACT_DECISION,
+      decision_impact: "hard_to_reverse",
+      third_party_rights_or_consent: "present",
+      bodily_decision_owner: "not_applicable",
+      action_authority: "reversible_only",
+      basic_needs_failure: "unknown",
+      condition_instability: "unknown",
+      dependent_danger: "unknown"
+    }),
+    variables: variables(),
+    unknowns: [
+      { variable: "immediate_third_party_recording_risk", question: "Could anyone still be recorded?", importance: 5 },
+      { variable: "authority_for_irreversible_handling", question: "What lawful handling is available?", importance: 5 }
     ]
   });
   assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
