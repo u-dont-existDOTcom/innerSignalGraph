@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v3";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v4";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -199,8 +199,24 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
-function hardSafetyState(profile, variables) {
-  return profile.current_external_danger === "present"
+function acuteSafetyUnknown(unknowns = []) {
+  return unknowns.some((item) => Number(item?.importance ?? 0) >= 5
+    && /(?:suicid|self[_\s-]?harm|physical[_\s-]?(?:injury|danger|safety)|medical[_\s-]?(?:danger|crisis)|withdrawal|overdose|violence|weapon|(?:child|toddler|dependent)[_\s-].*safety|safe[_\s-]?supervision|ability.*remain.*safe)/i.test(String(item?.variable ?? "")));
+}
+
+function rightsContainmentWithoutAcuteDanger(profile, unknowns = []) {
+  return profile.primary_problem_class === "actual_or_potential_harm"
+    && profile.current_external_danger === "present"
+    && profile.third_party_rights_or_consent === "present"
+    && profile.basic_needs_failure === "absent"
+    && profile.condition_instability === "absent"
+    && profile.dependent_danger === "absent"
+    && !["intoxicated", "withdrawal_possible", "altered"].includes(profile.current_sobriety)
+    && !acuteSafetyUnknown(unknowns);
+}
+
+function hardSafetyState(profile, variables, unknowns = []) {
+  return (profile.current_external_danger === "present" && !rightsContainmentWithoutAcuteDanger(profile, unknowns))
     || profile.basic_needs_failure === "present"
     || profile.condition_instability === "present"
     || profile.dependent_danger === "present"
@@ -234,16 +250,27 @@ function urgentAuthorityDecision(profile) {
   return profile.bodily_decision_owner === "other"
     && ["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact)
     && profile.third_party_rights_or_consent === "present"
-    && (profile.capacity_concern === "present"
+    && (profile.requested_operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
       || ["unknown", "disputed"].includes(profile.decision_capacity_status)
-      || ["unknown", "disputed"].includes(profile.lawful_decision_maker_status)
+      || profile.lawful_decision_maker_status === "disputed"
       || profile.action_authority === "unknown");
 }
 
+function supporterSafetyHandoff(profile) {
+  return profile.request_actor !== "self"
+    && profile.beneficiary_present !== "yes"
+    && profile.supporter_role_boundary === "at_risk"
+    && profile.resource_required === "yes"
+    && profile.unmet_external_need === "present"
+    && (profile.current_external_danger === "present" || profile.condition_instability === "present");
+}
+
 function decisiveOuterOperation(profile, unknowns) {
+  if (supporterSafetyHandoff(profile)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (explicitSuicideOrSelfHarmUnknown(unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
   if (urgentAuthorityDecision(profile)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
-  if (profile.requested_operation === OPERATION_CLASSES.PRACTICAL_SAFETY) {
+  if (profile.requested_operation === OPERATION_CLASSES.PRACTICAL_SAFETY
+      && !rightsContainmentWithoutAcuteDanger(profile, unknowns)) {
     return OPERATION_CLASSES.PRACTICAL_SAFETY;
   }
   if (profile.requested_operation === OPERATION_CLASSES.EXTERNAL_HANDOFF
@@ -251,7 +278,8 @@ function decisiveOuterOperation(profile, unknowns) {
     return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   }
   if (profile.requested_operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
-      || ["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact)) {
+      || (["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact)
+        && !rightsContainmentWithoutAcuteDanger(profile, unknowns))) {
     return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   }
   return null;
@@ -397,6 +425,11 @@ function routeNuance(profile, resourceIsUnavailable, operation) {
   if (profile.adverse_trajectory === "dependency_loop") {
     nuance.push("Reduce concentration of authority in the bot or helper; preserve alternatives, disagreement, human relationships, and deliberate handback.");
   }
+  if (profile.supporter_role_boundary === "at_risk"
+      && profile.dependent_danger === "unknown"
+      && profile.physical_cost === "high") {
+    nuance.push("Directly check both the caregiver's immediate safety and whether exhaustion is compromising the dependent person's essential care; do not infer either risk from exhaustion alone.");
+  }
   return { nuance: unique(nuance), forbidden: unique(forbidden) };
 }
 
@@ -405,7 +438,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
     throw new Error(`Unknown therapy-protocol ablation variant ${ablationVariant}.`);
   }
   const { profile, explicit } = deriveProtocolProfile({ protocolProfile, variables });
-  const hardSafety = hardSafetyState(profile, variables);
+  const hardSafety = hardSafetyState(profile, variables, unknowns);
   const unavailable = resourceUnavailable(profile);
   const outerOperation = decisiveOuterOperation(profile, unknowns);
   const authorityDecision = urgentAuthorityDecision(profile);

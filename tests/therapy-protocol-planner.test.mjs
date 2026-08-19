@@ -140,6 +140,29 @@ test("a safety question is preserved verbatim without falsely changing a medical
   assert.equal(plan.nextQuestion, question);
 });
 
+test("caregiver depletion pairs caregiver and dependent essential-care safety checks", () => {
+  const caregiverQuestion = "Are you currently thinking about suicide or self-harm, or worried that you may not be able to keep yourself safe?";
+  const dependentQuestion = "Is exhaustion currently affecting the dependent person's safety or essential care?";
+  const plan = planTherapyFromGraphs({
+    variables,
+    graphs,
+    protocolProfile: profile({
+      primary_problem_class: "external_relational_practical",
+      external_action_required: "unknown",
+      supporter_role_boundary: "at_risk",
+      dependent_danger: "unknown",
+      physical_cost: "high"
+    }),
+    unknowns: [
+      { variable: "current_personal_safety", question: caregiverQuestion, importance: 5 },
+      { variable: "dependent_essential_care_safety", question: dependentQuestion, importance: 5 }
+    ]
+  });
+  assert.equal(plan.primaryJob.id, "PROTO.O3_CURRENT_REALITY");
+  assert.equal(plan.nextQuestion, `${caregiverQuestion} ${dependentQuestion}`);
+  assert.match(plan.requiredNuance.join("\n"), /both the caregiver's immediate safety.*dependent person's essential care/i);
+});
+
 test("resource state is carried in the intervention contract", () => {
   const plan = planTherapyFromGraphs({
     variables,

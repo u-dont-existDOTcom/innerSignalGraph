@@ -98,6 +98,60 @@ test("explicit suicide or self-harm evidence keeps O1 ahead of resource uncertai
   assert.equal(route.runGuideGraph, false);
 });
 
+test("non-bodily privacy containment stays O3 while preserving urgent external action", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "actual_or_potential_harm",
+      current_external_danger: "present",
+      requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY,
+      third_party_rights_or_consent: "present",
+      action_authority: "bounded",
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      unmet_external_need: "unknown"
+    }),
+    variables: variables(),
+    unknowns: [
+      { variable: "immediate_camera_exposure", question: "Could anyone else still be recorded?", importance: 5 },
+      { variable: "imminent_recording_or_file_misuse", question: "Could the file be viewed or shared again?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+});
+
+test("an absent person's suicide crisis routes an at-risk supporter to actionable O10", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      request_actor: "mixed",
+      beneficiary_present: "no",
+      primary_problem_class: "actual_or_potential_harm",
+      current_external_danger: "present",
+      condition_instability: "present",
+      requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY,
+      decision_impact: "hard_to_reverse",
+      third_party_rights_or_consent: "present",
+      bodily_decision_owner: "other",
+      action_authority: "bounded",
+      decision_capacity_status: "presumed",
+      capacity_concern: "present",
+      lawful_decision_maker_status: "unknown",
+      supporter_role_boundary: "at_risk",
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      unmet_external_need: "present"
+    }),
+    variables: variables({ present_safety: "unknown" }),
+    unknowns: [{
+      variable: "immediate_suicide_danger",
+      question: "Is there immediate suicide danger?",
+      importance: 5
+    }]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.EXTERNAL_HANDOFF);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED);
+});
+
 test("an absent beneficiary cannot demote valid O1 O9 or O10 outer routes", () => {
   const safety = routeTherapyProtocol({
     protocolProfile: profile({

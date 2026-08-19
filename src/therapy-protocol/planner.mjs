@@ -34,12 +34,28 @@ function questionPriority(variable) {
   return 0;
 }
 
+function questionText(candidate) {
+  return `${String(candidate?.item?.variable ?? "")} ${String(candidate?.item?.question ?? "")}`;
+}
+
+function pairedCareSafetyQuestion(candidates) {
+  const caregiver = candidates.find((candidate) => /(?:personal|caregiver|self).*(?:safety|suicid|self[_\s-]?harm)|(?:suicid|self[_\s-]?harm).*(?:personal|caregiver|self)/i.test(questionText(candidate)));
+  const dependent = candidates.find((candidate) => /(?:dependent|care[_\s-]?recipient|child|toddler).*(?:safety|essential[_\s-]?care)|(?:safety|essential[_\s-]?care).*(?:dependent|care[_\s-]?recipient|child|toddler)/i.test(questionText(candidate)));
+  if (!caregiver || !dependent || caregiver === dependent) return null;
+  return {
+    variable: caregiver.item.variable,
+    question: `${caregiver.item.question.trim()} ${dependent.item.question.trim()}`
+  };
+}
+
 function selectProtocolQuestion(route, unknowns = []) {
   const material = new Set(route.materialUnknowns);
   const candidates = unknowns
     .map((item, index) => ({ item, index }))
     .filter(({ item }) => material.has(item?.variable) && typeof item?.question === "string" && item.question.trim())
     .sort((a, b) => questionPriority(b.item.variable) - questionPriority(a.item.variable) || a.index - b.index);
+  const pairedSafety = pairedCareSafetyQuestion(candidates);
+  if (pairedSafety) return pairedSafety;
   const selected = candidates[0]?.item ?? null;
   const variable = selected?.variable ?? route.materialUnknowns[0] ?? null;
   return {
