@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v6";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v7";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -222,7 +222,7 @@ function hardSafetyState(profile, variables, unknowns = []) {
     || profile.condition_instability === "present"
     || profile.dependent_danger === "present"
     || ["intoxicated", "withdrawal_possible", "altered"].includes(profile.current_sobriety)
-    || variables.present_safety === "unsafe"
+    || (variables.present_safety === "unsafe" && !rightsContainmentWithoutAcuteDanger(profile, unknowns))
     || variables.orientation === "disoriented"
     || variables.ability_to_stop === "no"
     || variables.ability_to_return === "no"

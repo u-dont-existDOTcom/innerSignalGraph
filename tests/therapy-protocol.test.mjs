@@ -113,7 +113,7 @@ test("non-bodily privacy containment stays O3 while preserving urgent external a
       resource_access_status: "unknown",
       unmet_external_need: "unknown"
     }),
-    variables: variables(),
+    variables: variables({ present_safety: "unsafe" }),
     unknowns: [
       { variable: "immediate_camera_exposure", question: "Could anyone else still be recorded?", importance: 5 },
       { variable: "imminent_recording_or_file_misuse", question: "Could the file be viewed or shared again?", importance: 5 }
