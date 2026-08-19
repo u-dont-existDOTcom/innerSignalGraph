@@ -1,0 +1,5 @@
+# Approved Therapy Lessons
+
+This ledger is the approval-only implementation view for guide-impacting therapy-policy decisions. Every entry must link to exactly one `THERAPY-DECISIONS` receipt whose explicit choice is `approve`; the receipt, not this projection, is the durable record of Joel's direct-conversation choice. This file records concise approved scope and implementation evidence, never declines, inferred consent, model verdicts, technical supersessions, or private therapy transcripts.
+
+No therapy-policy suggestions are approved as of 2026-08-13T14:31:28.000Z. The governance design approval does not approve any r02 lesson. The first `therapy-approval` entry may be added only after a specific suggestion has a passed review and exactly one linked `therapy-decision` receipt recording Joel's explicit `approve` choice from the active conversation.

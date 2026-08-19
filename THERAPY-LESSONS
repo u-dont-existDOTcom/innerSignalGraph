@@ -1,6 +1,8 @@
 # Therapy Prompt Lessons
 
-This root log records concrete lessons about how Inner Signal handles therapy prompts better. Timestamps are UTC. `active-runtime` means the behavior is in the current installed guide/prompt contract. `candidate-awaiting-owner` means the lesson was found in the newest uploaded Guide Packet but is not active until its substantive owner decision is approved and installed.
+This root log is the chronological audit history of what Inner Signal learned and what happened during therapy-prompt and Guide Packet review. It is not the source of approval state. Timestamps are UTC. `active-runtime` means the behavior is in the current installed guide/prompt contract. `candidate-awaiting-owner` records a lesson found in a candidate Guide Packet; it does not make that lesson active or approved.
+
+Metadata timestamps—not display order or preserved historical `Status` prose—define chronology. Preserved historical status prose is immutable audit evidence and may be stale; `SUGGESTED-THERAPY-LESSONS` is authoritative for current suggestion state.
 
 ## 2026-08-12T03:29:10.000Z — Preserve the user's distinctions before choosing an intervention
 
@@ -99,3 +101,39 @@ Evidence: `tasks/ACTIVE-TASK.json`, Creative Tail source `af36a51e44a65067a3d770
 The 49-case full-versus-simple comparison retained the full Map 15 functional selector because the small default produced a severe inward-routing error on `RQ8-08`. It selected a Map 16 hybrid because the smaller supported-choice operation selector removed an unnecessary high-impact escalation on `RQ8-01` without adding a severe route error, while the complete goals, consent, authority, safety, and least-restrictive safeguards remain required.
 
 Evidence: `analysis/therapy-protocol/ablation/` and `docs/therapy-protocol/MAP-15-16-COMPARISON.md`. Evidence limitations: Map 15's executable simple competitor is an InnerSignalGraph implementation translation because the source provides no exact algorithm; Map 16's selector is coarser than the source checklist; neither ablation is an independent clinical study.
+
+## 2026-08-13T14:31:28.000Z — r02 live review rejected the packet before owner approval
+
+<!-- therapy-review-event {"eventId":"review-r02-live-rejection-20260813","occurredAt":"2026-08-13T14:31:28.000Z","packetId":"inner-signal-guides-2026.08.12-r02-candidate","outcome":"rejected-before-owner-gate","findingIds":["SRC-CITE-001","PRIORITY-TIE-001","REG-EVIDENCE-001","SAFETY-ENCODE-001","EXT-VALID-001","CROSS-GUIDE-001","OWNER-POLICY-001","COVERAGE-001","CERTAINTY-LAYER-001"],"suggestionFindings":{"decision-1":[],"decision-2":["SRC-CITE-001"],"decision-3":["PRIORITY-TIE-001"],"decision-4":["REG-EVIDENCE-001"],"decision-5":["SAFETY-ENCODE-001","EXT-VALID-001"]},"packetLevelFindingIds":["CROSS-GUIDE-001","OWNER-POLICY-001","COVERAGE-001","CERTAINTY-LAYER-001"],"reviewArtifactPath":"docs/diagnostics/therapy-governance/r02-live-review-diagnostic.json","reviewArtifactSha256":"9874c90efdd1b4cfed5b245ff9acbd8aa932984ad4d1cd984a7774b4ada9b3ee","nextPhase":"repair-r03"} -->
+
+### Review outcome
+
+Outcome: rejected-before-owner-gate
+
+The live r02 review rejected `inner-signal-guides-2026.08.12-r02-candidate` as an activatable packet before it reached the owner-decision gate. It remains rejected and uninstalled.
+
+### Finding dispositions
+
+The bound diagnostic artifact is `docs/diagnostics/therapy-governance/r02-live-review-diagnostic.json` at raw SHA-256 `9874c90efdd1b4cfed5b245ff9acbd8aa932984ad4d1cd984a7774b4ada9b3ee`. It is authoritative for the finding severities, required actions, dispositions, mappings, and affected identifiers reconstructed for this review event.
+
+`SAFETY-ENCODE-001` is blocking and unresolved. `SRC-CITE-001`, `PRIORITY-TIE-001`, `REG-EVIDENCE-001`, `EXT-VALID-001`, `CROSS-GUIDE-001`, and `OWNER-POLICY-001` require review and remain unresolved. `COVERAGE-001` is informational and deferred; `CERTAINTY-LAYER-001` is positive and verified. Before r03 can be reviewed, deterministic work must repair the unresolved findings without treating the deferred or verified findings as rejection reasons.
+
+### What this does not mean
+
+The rejection does not mean that all five candidate lessons were judged false. Decision 1 received no lesson-specific finding and is blocked only by the packet rejection. The other lesson-specific findings identify repairs or uncertainty that must be resolved before any later owner choice; none is an inferred decision by Joel.
+
+### Finding-to-suggestion mapping
+
+- `decision-1`: no lesson-specific finding.
+- `decision-2`: `SRC-CITE-001`.
+- `decision-3`: `PRIORITY-TIE-001`.
+- `decision-4`: `REG-EVIDENCE-001`.
+- `decision-5`: `SAFETY-ENCODE-001` and `EXT-VALID-001`.
+
+### Packet-level findings
+
+`CROSS-GUIDE-001` and `OWNER-POLICY-001` require packet repair and explicit provenance. `COVERAGE-001` records useful future coverage information rather than a rejection reason. `CERTAINTY-LAYER-001` records positive evidence that source-certainty distinctions were preserved; it is not a blocker.
+
+### Next phase
+
+Build a deterministically repaired r03, review it independently, and ask Joel one substantive decision at a time only if r03 reaches the owner gate. Record only Joel's explicit decisions, then implement and verify only the approved scope.

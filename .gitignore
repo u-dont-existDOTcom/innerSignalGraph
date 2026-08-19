@@ -1,5 +1,6 @@
 .env
 node_modules/
+.worktrees/
 .inner-signal-autopilot/
 .inner-signal-dev/
 data/
