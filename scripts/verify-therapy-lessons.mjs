@@ -18,6 +18,8 @@ const LEDGER_FILES = {
   decisions: "THERAPY-DECISIONS",
   approvals: "APPROVED-THERAPY-LESSONS"
 };
+const POLICY_DECISION_PACKAGE_DIR = path.join("docs", "therapy-policy", "decision-packages");
+const POLICY_DECISION_PACKAGE_CONTRACT = "therapy-policy-decision-package-v1";
 const SUGGESTION_STATUSES = new Set([
   "blocked-by-packet-review", "needs-technical-repair", "ready-for-owner",
   "approved", "implemented", "declined", "superseded"
@@ -399,6 +401,89 @@ async function loadCandidatePackets(rootDir) {
   return packets;
 }
 
+export async function loadPolicyDecisionPackages({ rootDir = root } = {}) {
+  const packagesRoot = path.join(rootDir, POLICY_DECISION_PACKAGE_DIR);
+  let names;
+  try {
+    names = (await fs.readdir(packagesRoot)).filter((name) => name.endsWith(".json")).sort();
+  } catch (error) {
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  }
+  const packages = [];
+  for (const name of names) {
+    const relativePath = path.posix.join(POLICY_DECISION_PACKAGE_DIR, name);
+    const source = await fs.readFile(path.join(packagesRoot, name), "utf8");
+    let document;
+    try {
+      document = JSON.parse(source);
+    } catch (error) {
+      throw new Error(`${relativePath} has malformed JSON: ${error.message}`);
+    }
+    if (document.contractVersion !== POLICY_DECISION_PACKAGE_CONTRACT) {
+      throw new Error(`${relativePath} has an unsupported policy-decision package contract.`);
+    }
+    assertScalarId(document, "packetId", relativePath);
+    if (!Number.isSafeInteger(document.packetRevision) || document.packetRevision < 1) {
+      throw new Error(`${document.packetId} has an invalid packetRevision.`);
+    }
+    if (!validInstant(document.createdAt)) throw new Error(`${document.packetId} has an invalid UTC createdAt.`);
+    assertAffectedScope({ scope: document.identifierCatalog, id: `${document.packetId} identifierCatalog` });
+    if (!Array.isArray(document.cards) || document.cards.length === 0) {
+      throw new Error(`${document.packetId} must contain at least one decision card.`);
+    }
+    const cardIds = [];
+    for (const card of document.cards) {
+      assertScalarId(card, "id", document.packetId);
+      cardIds.push(card.id);
+      if (card.classification !== "substantive" || card.requiresHumanDecision !== true) {
+        throw new Error(`${document.packetId} decision ${card.id} must be a substantive human decision.`);
+      }
+      for (const field of ["title", "behavioralEffect", "provenance", "current", "candidate", "worstPlausibleFailure"]) {
+        assertScalarId(card, field, `${document.packetId} decision ${card.id}`);
+      }
+      assertAffectedScope({ scope: card.affectedIds, id: `${document.packetId} decision ${card.id}` });
+      if (!scopeIsSubset(card.affectedIds, document.identifierCatalog)) {
+        throw new Error(`${document.packetId} decision ${card.id} affected IDs exceed its identifierCatalog.`);
+      }
+      if (!sameStringSet(card.affectedRegressions ?? [], card.affectedIds.regressionIds)) {
+        throw new Error(`${document.packetId} decision ${card.id} affectedRegressions must match its affected IDs.`);
+      }
+    }
+    const duplicateCardId = cardIds.find((id, index) => cardIds.indexOf(id) !== index);
+    if (duplicateCardId) throw new Error(`${document.packetId} has duplicate decision card ${duplicateCardId}.`);
+    const manifest = {
+      status: "candidate",
+      packetRevision: document.packetRevision,
+      packetId: document.packetId,
+      createdAt: document.createdAt,
+      paths: { ownerDecisions: relativePath }
+    };
+    const decisionCardsSource = canonicalJson({ cards: document.cards });
+    const manifestSource = canonicalJson(manifest);
+    packages.push({
+      kind: "policy-decision-package",
+      manifest,
+      manifestSha256: sha256(manifestSource),
+      decisionCardsSha256: sha256(decisionCardsSource),
+      cards: document.cards,
+      cardsById: new Map(document.cards.map((card) => [card.id, card])),
+      entries: new Map(),
+      candidateRoot: packagesRoot,
+      packetDigest: sha256(source),
+      authority: document.identifierCatalog,
+      sourcePath: relativePath
+    });
+  }
+  const packetIds = packages.map(({ manifest }) => manifest.packetId);
+  const duplicatePacketId = packetIds.find((id, index) => packetIds.indexOf(id) !== index);
+  if (duplicatePacketId) throw new Error(`Multiple policy-decision packages use packet ID ${duplicatePacketId}.`);
+  const revisions = packages.map(({ manifest }) => manifest.packetRevision);
+  const duplicateRevision = revisions.find((revision, index) => revisions.indexOf(revision) !== index);
+  if (duplicateRevision) throw new Error(`Multiple policy-decision packages use revision ${duplicateRevision}.`);
+  return packages.sort((left, right) => right.manifest.packetRevision - left.manifest.packetRevision);
+}
+
 async function loadReviewArtifact({ rootDir, reviewEvent, packet }) {
   const metadata = reviewEvent.metadata;
   const artifactPath = normalizedId(metadata.reviewArtifactPath);
@@ -763,6 +848,15 @@ function allGraphNodeIds(graph) {
 }
 
 async function authoritativeIdentifiers({ rootDir, packet }) {
+  if (packet.kind === "policy-decision-package") {
+    return {
+      guides: new Set(packet.authority.guideIds),
+      graphNodes: new Set(packet.authority.graphNodeIds),
+      promptContractIds: new Set(packet.authority.promptContractIds),
+      policySafetyGateIds: new Set(packet.authority.policySafetyGateIds),
+      regressionIds: new Set(packet.authority.regressionIds)
+    };
+  }
   const guides = new Set(packet.manifest.guides?.map(({ id }) => id) ?? []);
   const graphNodes = new Set();
   for (const guide of packet.manifest.guides ?? []) {
@@ -964,8 +1058,11 @@ export function validateLatestPacket({ manifest, cards, reviewEvents, suggestion
 
 export async function verifyTherapyGovernance({ rootDir = root } = {}) {
   const governance = await loadTherapyGovernance({ rootDir });
-  const packets = await loadCandidatePackets(rootDir);
+  const guidePackets = await loadCandidatePackets(rootDir);
+  const policyDecisionPackages = await loadPolicyDecisionPackages({ rootDir });
+  const packets = [...guidePackets, ...policyDecisionPackages];
   const packetsById = new Map(packets.map((packet) => [packet.manifest.packetId, packet]));
+  if (packetsById.size !== packets.length) throw new Error("Guide and policy-decision packages must use distinct packet IDs.");
   const reviewsByPacket = new Map();
   for (const suggestion of governance.suggestions) {
     const packet = packetsById.get(suggestion.metadata.packetId);
@@ -975,6 +1072,9 @@ export async function verifyTherapyGovernance({ rootDir = root } = {}) {
     if (suggestion.metadata.packetDigest !== packet.packetDigest) throw new Error(`${suggestion.metadata.suggestionId} packet digest does not match its immutable archive.`);
     if (suggestion.metadata.decisionCardDigest !== sha256(canonicalJson(card))) throw new Error(`${suggestion.metadata.suggestionId} decision-card digest does not match ${card.id}.`);
     assertDecisionCardFidelity({ suggestion, card });
+    if (packet.kind === "policy-decision-package" && !scopeMatches(suggestion.metadata, card.affectedIds)) {
+      throw new Error(`${suggestion.metadata.suggestionId} affected IDs do not match ${card.id}.`);
+    }
     await validateAffectedIdentifiers({ rootDir, packet, suggestion });
     let review = reviewsByPacket.get(packet.manifest.packetId);
     if (!review) {
@@ -1015,7 +1115,7 @@ export async function verifyTherapyGovernance({ rootDir = root } = {}) {
     }
   }
   validateCandidateHistory(governance);
-  const latest = packets[0];
+  const latest = guidePackets[0];
   const latestPacket = validateLatestPacket({
     manifest: latest.manifest,
     cards: latest.cards,
@@ -1042,7 +1142,7 @@ export async function verifyTherapyGovernance({ rootDir = root } = {}) {
     reviewEvents: governance.reviewEvents
   });
   await validateImplementationEvidence({ rootDir, ...governance });
-  return { packetId: latest.manifest.packetId, tracked: latest.cards.length, packets, reviewsByPacket, ...governance, ...latestPacket };
+  return { packetId: latest.manifest.packetId, tracked: latest.cards.length, packets, policyDecisionPackages, reviewsByPacket, ...governance, ...latestPacket };
 }
 
 function parseEntries(source) {

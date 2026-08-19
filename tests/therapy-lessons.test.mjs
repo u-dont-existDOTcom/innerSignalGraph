@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 import { createStoredZip, readZipEntries } from "../src/core/zip.mjs";
 import * as therapyGovernance from "../scripts/verify-therapy-lessons.mjs";
 
-const { loadTherapyGovernance, verifyTherapyGovernance, verifyTherapyLessons } = therapyGovernance;
+const { loadPolicyDecisionPackages, loadTherapyGovernance, verifyTherapyGovernance, verifyTherapyLessons } = therapyGovernance;
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -832,6 +832,86 @@ test("therapy lesson log covers every substantive decision in the latest uploade
   assert.match(result.stdout, /0 explicit owner approvals/);
   assert.match(result.stdout, /0 implementations/);
   assert.match(result.stdout, /r02 rejection explained/);
+});
+
+test("therapy governance loads an immutable non-Guide policy-decision package", async (t) => {
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-policy-decision-package-"));
+  t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
+  const packageDir = path.join(rootDir, "docs", "therapy-policy", "decision-packages");
+  await fs.mkdir(packageDir, { recursive: true });
+  const affectedIds = {
+    guideIds: ["inner-child"],
+    graphNodeIds: ["PROTO.O1_PRACTICAL_SAFETY"],
+    promptContractIds: ["case-formulation-v2"],
+    policySafetyGateIds: ["THERAPY.PROTOCOL.DIRECT_RISK_CHECK"],
+    regressionIds: ["RQ8-01"]
+  };
+  const decisionPackage = {
+    contractVersion: "therapy-policy-decision-package-v1",
+    packetId: "fixture-live-remediation-v1",
+    packetRevision: 1,
+    createdAt: "2026-08-19T07:00:00.000Z",
+    identifierCatalog: affectedIds,
+    cards: [{
+      id: "live-remediation-contract-v1",
+      classification: "substantive",
+      requiresHumanDecision: true,
+      title: "Approve bounded live remediation",
+      behavioralEffect: "Preserve decisive outer routes under conservative formulation.",
+      provenance: "owner-authored-graders-plus-live-evaluation",
+      current: "Material unknowns can demote decisive outer evidence.",
+      candidate: "Decisive outer evidence retains O1, O9, or O10 precedence.",
+      worstPlausibleFailure: "An outer route can activate too broadly.",
+      affectedRegressions: ["RQ8-01"],
+      affectedIds
+    }]
+  };
+  await fs.writeFile(path.join(packageDir, "fixture.json"), `${JSON.stringify(decisionPackage, null, 2)}\n`);
+
+  const packages = await loadPolicyDecisionPackages({ rootDir });
+  assert.equal(packages.length, 1);
+  assert.equal(packages[0].manifest.packetId, decisionPackage.packetId);
+  assert.equal(packages[0].cardsById.get("live-remediation-contract-v1").candidate, decisionPackage.cards[0].candidate);
+  assert.equal(packages[0].packetDigest, sha256(`${JSON.stringify(decisionPackage, null, 2)}\n`));
+});
+
+test("therapy governance rejects policy-decision scope outside its immutable catalog", async (t) => {
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-policy-decision-scope-"));
+  t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
+  const packageDir = path.join(rootDir, "docs", "therapy-policy", "decision-packages");
+  await fs.mkdir(packageDir, { recursive: true });
+  const emptyScope = {
+    guideIds: [],
+    graphNodeIds: [],
+    promptContractIds: [],
+    policySafetyGateIds: [],
+    regressionIds: []
+  };
+  await fs.writeFile(path.join(packageDir, "fixture.json"), `${JSON.stringify({
+    contractVersion: "therapy-policy-decision-package-v1",
+    packetId: "fixture-invalid-live-remediation-v1",
+    packetRevision: 1,
+    createdAt: "2026-08-19T07:00:00.000Z",
+    identifierCatalog: emptyScope,
+    cards: [{
+      id: "live-remediation-contract-v1",
+      classification: "substantive",
+      requiresHumanDecision: true,
+      title: "Approve bounded live remediation",
+      behavioralEffect: "Preserve decisive outer routes under conservative formulation.",
+      provenance: "owner-authored-graders-plus-live-evaluation",
+      current: "Material unknowns can demote decisive outer evidence.",
+      candidate: "Decisive outer evidence retains O1, O9, or O10 precedence.",
+      worstPlausibleFailure: "An outer route can activate too broadly.",
+      affectedRegressions: ["RQ8-01"],
+      affectedIds: { ...emptyScope, regressionIds: ["RQ8-01"] }
+    }]
+  }, null, 2)}\n`);
+
+  await assert.rejects(
+    loadPolicyDecisionPackages({ rootDir }),
+    /affected IDs exceed its identifierCatalog/
+  );
 });
 
 test("production therapy governance preserves the exact r02 mapping", async () => {
