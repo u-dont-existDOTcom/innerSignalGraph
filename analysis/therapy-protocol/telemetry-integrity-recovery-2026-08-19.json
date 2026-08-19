@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "taskId": "inner-child-protocol-comparison-v1",
+  "recordedAt": "2026-08-19T06:18:26Z",
+  "status": "resolved",
+  "boundaryCode": "EXECUTED_RECORD_WITH_INCOMPLETE_TELEMETRY",
+  "executionIdentity": {
+    "headSha": "6d2036a2c670aaccdc7682bd55d6b5ccab814aea",
+    "treeSha": "ddfb3a535e7e3dff17ad2c1f10c87b91240084b2",
+    "branch": "agent/merge-inner-child-protocol-20260818",
+    "dirtyAtCampaignStart": false
+  },
+  "preRepairEvidence": {
+    "artifactPath": "analysis/therapy-protocol/live-results.json",
+    "artifactSha256": "fcf97e15c8223edcc96e4883651262c85e1311c1e0c21186cc6c8e73fdd1f29d",
+    "recordId": "RQ8-04",
+    "recordSha256": "d7e7e40a8d3b75ef4e642200ebe704987c9cb9c356a82226d3fad32b829a051c",
+    "querySha256": "e6c54b1b666920e7946ad97af80a9827f9e458602e0b903fb386d296bdf5a681",
+    "executionStatus": "executed",
+    "telemetryComplete": false,
+    "telemetryCount": 9,
+    "failedCall": {
+      "role": "openai",
+      "stage": "candidate",
+      "provider": "openai",
+      "model": "gpt-5.6-sol",
+      "startedAt": "2026-08-19T02:52:00.487Z",
+      "completedAt": "2026-08-19T02:58:53.039Z",
+      "durationMs": 412552,
+      "errorCode": "PROVIDER_ERROR",
+      "errorMessage": "Codex CLI reported a failed turn."
+    }
+  },
+  "interpretation": "The pipeline's internal stage retry later produced an answer, but the retained failed call makes verifyExecutionTelemetry and the task acceptance verifier reject this record. This is an evidence-integrity defect, not a therapy-case verdict or therapy-policy decision.",
+  "repair": {
+    "action": "Reclassify only RQ8-04 as safely_blocked, set the artifact overallStatus to blocked, and invoke the existing --retry-blocked exact-head path so the harness atomically replaces the record.",
+    "manualAnswerOrVerdictChange": false,
+    "therapyPolicyDecisionMade": false,
+    "retryCommand": "node scripts/run-therapy-protocol-live.mjs --execute-live --retry-blocked"
+  },
+  "postRepairEvidence": {
+    "verifiedAt": "2026-08-19T06:31:51Z",
+    "artifactSha256": "51b2c9f1c85f1cf017db5323cadcad0fa3aae1f7a0f7dbac6b91311af36c6522",
+    "recordId": "RQ8-04",
+    "recordSha256": "26fa0a91a4ce89f1f2efd942e305f5bb5b35036bd7102d9eb333ef0193091197",
+    "executedAt": "2026-08-19T06:31:32.233Z",
+    "executionStatus": "executed",
+    "telemetryComplete": true,
+    "telemetryCount": 8,
+    "failedTelemetryCallCount": 0,
+    "campaignResultCount": 49,
+    "campaignExecutedCount": 49,
+    "campaignInvalidTelemetryCount": 0,
+    "campaignPhase": "executed",
+    "campaignOverallStatus": "executed"
+  }
+}
