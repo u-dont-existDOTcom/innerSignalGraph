@@ -174,6 +174,8 @@ test("an explicit unresolved professional-support need keeps O10 despite a mixed
     protocolProfile: profile({
       primary_problem_class: "mixed",
       requested_operation: OPERATION_CLASSES.EXTERNAL_HANDOFF,
+      decision_impact: "hard_to_reverse",
+      third_party_rights_or_consent: "present",
       resource_required: "yes",
       resource_access_status: "unknown",
       handoff_state: "suggested",

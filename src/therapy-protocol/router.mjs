@@ -246,13 +246,13 @@ function decisiveOuterOperation(profile, unknowns) {
   if (profile.requested_operation === OPERATION_CLASSES.PRACTICAL_SAFETY) {
     return OPERATION_CLASSES.PRACTICAL_SAFETY;
   }
-  if (profile.requested_operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
-      || ["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact)) {
-    return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
-  }
   if (profile.requested_operation === OPERATION_CLASSES.EXTERNAL_HANDOFF
       || (profile.resource_required === "yes" && profile.unmet_external_need === "present")) {
     return OPERATION_CLASSES.EXTERNAL_HANDOFF;
+  }
+  if (profile.requested_operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
+      || ["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact)) {
+    return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   }
   return null;
 }
