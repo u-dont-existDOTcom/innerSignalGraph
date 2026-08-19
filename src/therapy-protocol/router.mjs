@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v4";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v5";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -208,9 +208,9 @@ function rightsContainmentWithoutAcuteDanger(profile, unknowns = []) {
   return profile.primary_problem_class === "actual_or_potential_harm"
     && profile.current_external_danger === "present"
     && profile.third_party_rights_or_consent === "present"
-    && profile.basic_needs_failure === "absent"
-    && profile.condition_instability === "absent"
-    && profile.dependent_danger === "absent"
+    && profile.basic_needs_failure !== "present"
+    && profile.condition_instability !== "present"
+    && profile.dependent_danger !== "present"
     && !["intoxicated", "withdrawal_possible", "altered"].includes(profile.current_sobriety)
     && !acuteSafetyUnknown(unknowns);
 }

@@ -5,7 +5,7 @@
   "executed": true,
   "sourceCommit": "af36a51e44a65067a3d7703a78a004fdb8ad7693",
   "corpusManifestSha256": "f8f73cb023e94e14c4724a670151215bf825f67616678e97e3d733a04a28857d",
-  "routerVersion": "creative-tail-inner-child-router-v4",
+  "routerVersion": "creative-tail-inner-child-router-v5",
   "fullVariant": "full",
   "simpleVariant": "map16-simple",
   "competitorProvenance": "Coarse operation selector implementing the pinned source's supported-choice checklist boundary; semantic safeguards remain separately required.",
@@ -97,12 +97,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -161,12 +161,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -225,12 +225,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -289,12 +289,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -353,12 +353,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -417,12 +417,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -481,12 +481,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -545,12 +545,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -609,12 +609,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -673,12 +673,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -737,12 +737,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -801,12 +801,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -865,12 +865,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O9_HIGH_IMPACT_DECISION",
         "materialUnknowns": []
@@ -929,12 +929,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -993,12 +993,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1057,12 +1057,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -1121,12 +1121,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -1185,12 +1185,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1249,12 +1249,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1313,12 +1313,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1377,12 +1377,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1441,12 +1441,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1505,12 +1505,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1569,12 +1569,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1633,12 +1633,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O9_HIGH_IMPACT_DECISION",
         "materialUnknowns": []
@@ -1697,12 +1697,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1761,12 +1761,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -1825,12 +1825,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -1918,12 +1918,12 @@
       "questionCountFull": 9,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1982,12 +1982,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -2046,12 +2046,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -2139,12 +2139,12 @@
       "questionCountFull": 9,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O9_HIGH_IMPACT_DECISION",
         "materialUnknowns": []
@@ -2203,12 +2203,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -2267,12 +2267,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -2331,12 +2331,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -2395,12 +2395,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -2459,12 +2459,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -2523,12 +2523,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -2587,12 +2587,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -2651,12 +2651,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -2746,7 +2746,7 @@
       "questionCountFull": 11,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": [
           "lawful_decision_maker_status",
@@ -2754,7 +2754,7 @@
         ]
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O9_HIGH_IMPACT_DECISION",
         "materialUnknowns": [
@@ -2816,12 +2816,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -2880,12 +2880,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -2944,12 +2944,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -3008,12 +3008,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O9_HIGH_IMPACT_DECISION",
         "materialUnknowns": []
@@ -3072,12 +3072,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -3136,12 +3136,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -3200,12 +3200,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []
@@ -3264,12 +3264,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v4",
+        "routerVersion": "creative-tail-inner-child-router-v5",
         "variant": "map16-simple",
         "selectorOperation": "O1_PRACTICAL_SAFETY",
         "materialUnknowns": []

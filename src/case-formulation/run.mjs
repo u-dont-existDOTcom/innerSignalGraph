@@ -33,19 +33,30 @@ export function applyCaseAudit(snapshot, audit) {
   const protocolProfile = protocolCorrections.length
     ? applyProtocolProfileCorrections(snapshot.protocol_profile, protocolCorrections)
     : snapshot.protocol_profile ?? null;
+  const auditEvidence = [audit.summary, ...(audit.safety_flags ?? [])].join("\n");
+  const disclaimsSuicideOrSelfHarmEvidence = /(?:no|without|absent|unsupported)\s+(?:direct\s+|explicit\s+)?(?:suicid(?:e|al|ality)?|self[-_\s]?harm)(?:\s+or\s+(?:suicid(?:e|al|ality)?|self[-_\s]?harm))?\s+evidence/i.test(auditEvidence)
+    || /(?:suicid(?:e|al|ality)?|self[-_\s]?harm).*unsupported/i.test(auditEvidence);
+  const combinedUnknowns = [...snapshot.unknowns, ...audit.add_unknowns];
+  const unknowns = disclaimsSuicideOrSelfHarmEvidence
+    ? combinedUnknowns.filter((item) => !/(?:suicid|self[-_\s]?harm)/i.test(`${item.variable} ${item.question}`))
+    : combinedUnknowns;
+  const removedUnsupportedUnknowns = combinedUnknowns
+    .filter((item) => !unknowns.includes(item))
+    .map((item) => item.variable);
   return {
     ...snapshot,
     direct_observations: snapshot.direct_observations.filter((item) => !removeObservations.has(item.id)),
     hypotheses: snapshot.hypotheses.filter((item) => !removeHypotheses.has(item.id)),
     variables: validateCaseVariables(variables),
     protocol_profile: protocolProfile,
-    unknowns: [...snapshot.unknowns, ...audit.add_unknowns],
+    unknowns,
     audit: {
       verdict: audit.verdict,
       summary: audit.summary,
       safety_flags: audit.safety_flags,
       variable_corrections: audit.variable_corrections,
-      protocol_profile_corrections: protocolCorrections
+      protocol_profile_corrections: protocolCorrections,
+      removed_unsupported_unknowns: removedUnsupportedUnknowns
     }
   };
 }

@@ -88,6 +88,31 @@ test("case audit corrections are applied without converting hypotheses into obse
   assert.equal(audited.unknowns[0].importance, 5);
 });
 
+test("case audit removes an unsupported suicide unknown before deterministic routing", () => {
+  const snapshot = {
+    user_goal: "Contain a non-bodily third-party rights violation",
+    current_issue: "Privacy harm and retained material",
+    direct_observations: [],
+    variables: blankCaseVariables(),
+    hypotheses: [],
+    unknowns: [
+      { variable: "recording_exposure", question: "Could anyone else still be recorded?", importance: 5 },
+      { variable: "presence_of_suicidal_ideation_or_self_harm", question: "Are there thoughts of suicide or self-harm?", importance: 5 }
+    ]
+  };
+  const audited = applyCaseAudit(snapshot, {
+    remove_observation_ids: [],
+    remove_hypothesis_ids: [],
+    variable_corrections: [],
+    add_unknowns: [],
+    safety_flags: ["No explicit suicide or self-harm evidence; do not use that unknown to select O1."],
+    verdict: "revise",
+    summary: "Keep the direct third-party containment question first."
+  });
+  assert.deepEqual(audited.unknowns.map((item) => item.variable), ["recording_exposure"]);
+  assert.deepEqual(audited.audit.removed_unsupported_unknowns, ["presence_of_suicidal_ideation_or_self_harm"]);
+});
+
 test("full formulated pipeline preserves the deterministic plan in the final result", async () => {
   const { definition, config, context, providers } = await a001Setup();
   const result = await runFormulatedPipeline({ context, providers, config, caseId: definition.id });

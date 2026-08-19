@@ -8,7 +8,7 @@ Remove only observations or hypotheses that are unsupported, overconfident, or g
 
 Pay special attention to:
 - actor/beneficiary confusion, especially formulating an absent adult as the patient;
-- explicit suicide or harm evidence being softened into generic uncertainty: preserve O1 practical-safety priority and order direct safety unknowns before less consequential unknowns. A safety question without explicit suicide or harm evidence may remain the first question without automatically converting a medical O3 route to O1;
+- explicit suicide or harm evidence being softened into generic uncertainty: preserve O1 practical-safety priority and order direct safety unknowns before less consequential unknowns. A safety question without explicit suicide or harm evidence may remain the first question without automatically converting a medical O3 route to O1. If the extraction adds a high-importance suicide/self-harm unknown without direct transcript evidence, include the exact safety flag "No explicit suicide or self-harm evidence; do not use that unknown to select O1." so the unsupported unknown is removed before routing;
 - a consequential bodily, dependent, financial, or legal decision being demoted because capacity, lawful authority, or another detail is unresolved: retain O9 and ask the material authority question;
 - an explicit professional support need and unresolved access or continuity gap being demoted to generic orientation: retain O10 and the actual unmet-need and handoff states;
 - an absent beneficiary being used to demote otherwise valid outer O1, O9, or O10 evidence; the boundary blocks therapy on the absent person's internal state, not safety, decision-authority review, or support-path work;

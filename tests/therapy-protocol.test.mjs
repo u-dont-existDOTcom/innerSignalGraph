@@ -106,6 +106,8 @@ test("non-bodily privacy containment stays O3 while preserving urgent external a
       requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY,
       third_party_rights_or_consent: "present",
       action_authority: "bounded",
+      condition_instability: "unknown",
+      dependent_danger: "unknown",
       resource_required: "yes",
       resource_access_status: "unknown",
       unmet_external_need: "unknown"
