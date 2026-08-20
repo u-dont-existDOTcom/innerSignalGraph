@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v11";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v12";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -278,9 +278,30 @@ function supporterSafetyHandoff(profile) {
     && (profile.current_external_danger === "present" || profile.condition_instability === "present");
 }
 
+function professionalContinuityHandoff(profile, unknowns = []) {
+  const context = [
+    profile.original_concern,
+    profile.provider_or_setting_condition,
+    profile.decision_subject,
+    profile.required_external_resource,
+    profile.unmet_external_need_detail
+  ].map((value) => String(value ?? "")).join(" ");
+  const explicitProfessionalCare = /(?:therap(?:y|ist)|counsell?or|psychiatr|psycholog|clinician|professional[_\s-]?(?:care|support))/i.test(context);
+  const explicitTransition = /(?:end(?:ing)?|terminat|discontinu|stop(?:ping)?|transition|continuity|referr|replacement|handoff|gap)/i.test(context);
+  const routingUnknown = unknowns.some((item) => Number(item?.importance ?? 0) >= 5
+    && /(?:(?:therap|provider|professional).*(?:terminat|continuity|transition|handoff|avail)|(?:terminat|continuity|transition|handoff).*(?:therap|provider|professional))/i.test(String(item?.variable ?? "")));
+  return explicitProfessionalCare
+    && explicitTransition
+    && (routingUnknown
+      || profile.unmet_external_need === "present"
+      || profile.resource_required === "yes"
+      || ["unknown", "suggested", "unavailable", "failed"].includes(profile.handoff_state));
+}
+
 function decisiveOuterOperation(profile, unknowns) {
   if (supporterSafetyHandoff(profile)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (explicitSuicideOrSelfHarmUnknown(unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
+  if (professionalContinuityHandoff(profile, unknowns)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (urgentAuthorityDecision(profile, unknowns)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   if (unresolvedConsequentialDecision(profile, unknowns)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   if (profile.requested_operation === OPERATION_CLASSES.PRACTICAL_SAFETY
@@ -455,6 +476,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   const hardSafety = hardSafetyState(profile, variables, unknowns);
   const unavailable = resourceUnavailable(profile);
   const supporterHandoff = supporterSafetyHandoff(profile);
+  const continuityHandoff = professionalContinuityHandoff(profile, unknowns);
   const outerOperation = decisiveOuterOperation(profile, unknowns);
   const authorityDecision = urgentAuthorityDecision(profile, unknowns);
   const rightsContainment = rightsContainmentWithoutAcuteDanger(profile, unknowns);
@@ -620,7 +642,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
     unmetNeed: profile.unmet_external_need,
     unmetNeedDetail: profile.unmet_external_need_detail,
     retryOrAdvocacyTrigger: profile.retry_or_advocacy_trigger,
-    unresolved: profile.unmet_external_need === "present" || unavailable
+    unresolved: profile.unmet_external_need === "present" || unavailable || continuityHandoff
   };
 
   return {

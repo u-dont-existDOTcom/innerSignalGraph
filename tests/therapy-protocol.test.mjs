@@ -366,6 +366,39 @@ test("an explicit unresolved professional-support need keeps O10 despite a mixed
   assert.equal(route.primaryOperation, OPERATION_CLASSES.EXTERNAL_HANDOFF);
 });
 
+test("a proposed therapy ending retains O10 when live extraction leaves resource enums unknown", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "mixed",
+      current_external_danger: "unknown",
+      requested_operation: OPERATION_CLASSES.HIGH_IMPACT_DECISION,
+      external_action_required: "yes",
+      decision_impact: "hard_to_reverse",
+      third_party_rights_or_consent: "present",
+      action_authority: "bounded",
+      resource_required: "unknown",
+      resource_access_status: "unknown",
+      handoff_state: "unknown",
+      unmet_external_need: "unknown",
+      original_concern: "My therapist suggested that we might need to consider ending therapy.",
+      provider_or_setting_condition: "The therapist raised a possible ending of the existing therapeutic relationship.",
+      decision_subject: "Whether and how therapy will continue or end.",
+      unmet_external_need_detail: "Whether continuity planning, referral, or replacement professional support will be available is unknown."
+    }),
+    variables: variables({ present_safety: "unknown" }),
+    unknowns: [
+      { variable: "harm_ideation", question: "Is there any immediate harm risk?", importance: 5 },
+      { variable: "therapy_termination_status", question: "Is termination decided or still open?", importance: 5 },
+      { variable: "termination_reason_and_decision_authority", question: "Why was ending raised?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.EXTERNAL_HANDOFF);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+  assert.equal(route.resourceState.required, "unknown");
+  assert.equal(route.resourceState.handoffState, "unknown");
+  assert.equal(route.resourceState.unresolved, true);
+});
+
 test("supporter query cannot formulate an absent adult as the therapy subject", () => {
   const route = routeTherapyProtocol({
     protocolProfile: profile({ request_actor: "supporter", beneficiary_present: "no", primary_problem_class: "internal_developmental" }),
