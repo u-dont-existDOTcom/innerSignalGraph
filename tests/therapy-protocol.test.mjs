@@ -278,6 +278,27 @@ test("a consequential authority decision remains O9 while urgent medical reasses
   assert.ok(route.forbiddenOverclaims.some((line) => /replace urgent medical reassessment/i.test(line)));
 });
 
+test("material financial and basic-needs decision unknowns retain O9 when the exact action is unresolved", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "mixed",
+      requested_operation: OPERATION_CLASSES.CURRENT_REALITY,
+      decision_impact: "unknown",
+      bodily_decision_owner: "not_applicable",
+      action_authority: "unknown",
+      capacity_concern: "present",
+      decision_subject: "How to respond to a consequential relationship and financial decision whose exact action is not yet named."
+    }),
+    variables: variables(),
+    unknowns: [
+      { variable: "immediate_basic_needs_exposure", question: "Are basic needs exposed?", importance: 5 },
+      { variable: "decision_impact_and_timing", question: "What is the impact and timing?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.HIGH_IMPACT_DECISION);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+});
+
 test("an explicit unresolved professional-support need keeps O10 despite a mixed problem class", () => {
   const route = routeTherapyProtocol({
     protocolProfile: profile({

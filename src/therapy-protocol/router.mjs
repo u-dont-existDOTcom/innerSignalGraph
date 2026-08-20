@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v8";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v9";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -247,6 +247,12 @@ function explicitSuicideOrSelfHarmUnknown(unknowns = []) {
     && /(?:suicid|self[_\s-]?harm)/i.test(String(item?.variable ?? "")));
 }
 
+function unresolvedConsequentialDecision(profile, unknowns = []) {
+  if (profile.capacity_concern !== "present" || !String(profile.decision_subject ?? "").trim()) return false;
+  return unknowns.some((item) => Number(item?.importance ?? 0) >= 5
+    && /(?:decision.*(?:impact|consequence|authority|capacity|timing)|(?:financial|legal|basic[_\s-]?needs|dependent).*(?:exposure|impact|risk|decision|authority))/i.test(String(item?.variable ?? "")));
+}
+
 function urgentAuthorityDecision(profile) {
   return profile.bodily_decision_owner === "other"
     && ["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact)
@@ -268,6 +274,7 @@ function decisiveOuterOperation(profile, unknowns) {
   if (supporterSafetyHandoff(profile)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (explicitSuicideOrSelfHarmUnknown(unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
   if (urgentAuthorityDecision(profile)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
+  if (unresolvedConsequentialDecision(profile, unknowns)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   if (profile.requested_operation === OPERATION_CLASSES.PRACTICAL_SAFETY
       && !rightsContainmentWithoutAcuteDanger(profile, unknowns)) {
     return OPERATION_CLASSES.PRACTICAL_SAFETY;
@@ -476,7 +483,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
       disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED,
       operation: supporterHandoff
         ? OPERATION_CLASSES.EXTERNAL_HANDOFF
-        : (authorityDecision
+        : (authorityDecision || outerOperation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
           ? OPERATION_CLASSES.HIGH_IMPACT_DECISION
           : (outerOperation === OPERATION_CLASSES.PRACTICAL_SAFETY || profile.resource_required !== "yes"
           ? OPERATION_CLASSES.PRACTICAL_SAFETY
