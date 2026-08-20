@@ -148,6 +148,31 @@ test("recording and evidence containment stays O3 when an audit labels the right
   assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
 });
 
+test("privacy containment cannot be re-promoted to O9 by an external-relational base route", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "external_relational_practical",
+      current_external_danger: "unknown",
+      requested_operation: OPERATION_CLASSES.CURRENT_REALITY,
+      external_action_required: "yes",
+      decision_impact: "hard_to_reverse",
+      third_party_rights_or_consent: "present",
+      bodily_decision_owner: "not_applicable",
+      action_authority: "bounded",
+      basic_needs_failure: "absent",
+      condition_instability: "unknown",
+      dependent_danger: "absent"
+    }),
+    variables: variables(),
+    unknowns: [
+      { variable: "recording_distribution", question: "Was the recording distributed?", importance: 5 },
+      { variable: "current_recording_risk", question: "Is there current recording risk?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+});
+
 test("non-bodily rights containment stays O3 when a model requests O9", () => {
   const route = routeTherapyProtocol({
     protocolProfile: profile({

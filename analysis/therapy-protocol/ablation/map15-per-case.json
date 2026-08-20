@@ -5,7 +5,7 @@
   "executed": true,
   "sourceCommit": "af36a51e44a65067a3d7703a78a004fdb8ad7693",
   "corpusManifestSha256": "f8f73cb023e94e14c4724a670151215bf825f67616678e97e3d733a04a28857d",
-  "routerVersion": "creative-tail-inner-child-router-v10",
+  "routerVersion": "creative-tail-inner-child-router-v11",
   "fullVariant": "full",
   "simpleVariant": "map15-simple",
   "competitorProvenance": "InnerSignalGraph implementation translation of the source's ordinary-functional-analysis falsifier; the pinned source does not specify an executable competitor.",
@@ -97,12 +97,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -161,12 +161,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -225,12 +225,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -289,12 +289,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -353,12 +353,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -417,12 +417,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -481,12 +481,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -545,12 +545,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -609,12 +609,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -673,12 +673,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -737,12 +737,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -801,12 +801,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -865,12 +865,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -929,12 +929,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -993,12 +993,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -1057,12 +1057,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -1121,12 +1121,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1185,12 +1185,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -1280,12 +1280,12 @@
       "questionCountFull": 8,
       "questionCountSimple": 2,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1344,12 +1344,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -1408,12 +1408,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -1472,12 +1472,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -1569,12 +1569,12 @@
       "questionCountFull": 9,
       "questionCountSimple": 3,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -1633,12 +1633,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -1697,12 +1697,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -1761,12 +1761,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -1825,12 +1825,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -1889,12 +1889,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -1953,12 +1953,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2017,12 +2017,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2081,12 +2081,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2145,12 +2145,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2209,12 +2209,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2273,12 +2273,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2337,12 +2337,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2434,12 +2434,12 @@
       "questionCountFull": 9,
       "questionCountSimple": 3,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2498,12 +2498,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -2562,12 +2562,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2626,12 +2626,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2690,12 +2690,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2754,7 +2754,7 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": [
           "lawful_decision_maker_status",
@@ -2762,7 +2762,7 @@
         ]
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": [
@@ -2824,12 +2824,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -2888,12 +2888,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O3_CURRENT_REALITY",
         "materialUnknowns": []
@@ -2952,12 +2952,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -3016,12 +3016,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -3080,12 +3080,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -3144,12 +3144,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -3208,12 +3208,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []
@@ -3272,12 +3272,12 @@
       "questionCountFull": 0,
       "questionCountSimple": 0,
       "fullTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "full",
         "materialUnknowns": []
       },
       "simpleTrace": {
-        "routerVersion": "creative-tail-inner-child-router-v10",
+        "routerVersion": "creative-tail-inner-child-router-v11",
         "variant": "map15-simple",
         "selectorOperation": "O5_LIGHT_REPARENTING",
         "materialUnknowns": []

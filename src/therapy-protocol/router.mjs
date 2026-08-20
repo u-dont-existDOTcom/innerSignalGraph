@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v10";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v11";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -210,9 +210,11 @@ function privacyOrEvidenceContainmentUnknown(unknowns = []) {
 }
 
 function rightsContainmentWithoutAcuteDanger(profile, unknowns = []) {
-  return profile.primary_problem_class === "actual_or_potential_harm"
+  const privacyOrEvidence = privacyOrEvidenceContainmentUnknown(unknowns);
+  return (profile.primary_problem_class === "actual_or_potential_harm"
+      || (profile.primary_problem_class === "external_relational_practical" && privacyOrEvidence))
     && profile.third_party_rights_or_consent === "present"
-    && (profile.bodily_decision_owner === "not_applicable" || privacyOrEvidenceContainmentUnknown(unknowns))
+    && (profile.bodily_decision_owner === "not_applicable" || privacyOrEvidence)
     && ["reversible_only", "bounded"].includes(profile.action_authority)
     && profile.basic_needs_failure !== "present"
     && profile.condition_instability !== "present"
@@ -455,10 +457,20 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   const supporterHandoff = supporterSafetyHandoff(profile);
   const outerOperation = decisiveOuterOperation(profile, unknowns);
   const authorityDecision = urgentAuthorityDecision(profile, unknowns);
+  const rightsContainment = rightsContainmentWithoutAcuteDanger(profile, unknowns);
   let route = routeForProblemClass(profile, ablationVariant);
   let allowed = new Set(route.runGuideGraph ? INNER_BASE_ALLOWED : OUTER_ALLOWED);
   const reasons = {};
   let requestedDepthUnknowns = [];
+
+  if (rightsContainment) {
+    route = {
+      disposition: ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT,
+      operation: OPERATION_CLASSES.CURRENT_REALITY,
+      runGuideGraph: false
+    };
+    allowed = new Set(OUTER_ALLOWED);
+  }
 
   if (profile.request_actor !== "self" && profile.beneficiary_present !== "yes" && !outerOperation) {
     route = {
