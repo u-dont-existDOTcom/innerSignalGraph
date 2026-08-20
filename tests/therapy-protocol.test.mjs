@@ -121,6 +121,8 @@ test("non-bodily privacy containment stays O3 while preserving urgent external a
   });
   assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
   assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+  assert.equal(route.resourceState.unmetNeed, "unknown");
+  assert.equal(route.resourceState.unresolved, false);
 });
 
 test("recording and evidence containment stays O3 when an audit labels the rights owner as other", () => {
@@ -397,6 +399,65 @@ test("a proposed therapy ending retains O10 when live extraction leaves resource
   assert.equal(route.resourceState.required, "unknown");
   assert.equal(route.resourceState.handoffState, "unknown");
   assert.equal(route.resourceState.unresolved, true);
+});
+
+test("unconfirmed medical monitoring and provider status stays O3 instead of inventing an O10 gap", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "medical_condition",
+      current_external_danger: "unknown",
+      basic_needs_failure: "unknown",
+      condition_instability: "present",
+      requested_operation: OPERATION_CLASSES.EXTERNAL_HANDOFF,
+      external_action_required: "yes",
+      decision_impact: "consequential_reversible",
+      third_party_rights_or_consent: "absent",
+      bodily_decision_owner: "self",
+      action_authority: "unknown",
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      handoff_state: "unknown",
+      unmet_external_need: "present",
+      original_concern: "Physical fullness, intense hunger, bloating, and uncertainty about continuing recovery.",
+      required_external_resource: "Medical or eating-disorder professional assessment and recovery support.",
+      access_barrier: "Unknown — no current treatment team or contact status confirmed",
+      unmet_external_need_detail: "It is unknown whether a treatment team currently exists or knows about the symptoms."
+    }),
+    variables: variables({ present_safety: "unknown" }),
+    unknowns: [
+      { variable: "current_treatment_team", question: "Is there a current treatment team?", importance: 5 },
+      { variable: "medical_monitoring_status", question: "Are these symptoms medically monitored?", importance: 5 },
+      { variable: "immediate_medical_danger", question: "Are there acute warning signs?", importance: 5 },
+      { variable: "active_recovery_interruption_intent", question: "Is there an active plan to stop recovery?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+});
+
+test("explicit acute medical danger keeps O1 ahead of a required professional resource", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "medical_condition",
+      current_external_danger: "present",
+      condition_instability: "present",
+      requested_operation: OPERATION_CLASSES.EXTERNAL_HANDOFF,
+      external_action_required: "yes",
+      third_party_rights_or_consent: "absent",
+      bodily_decision_owner: "self",
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      handoff_state: "unknown",
+      unmet_external_need: "present",
+      original_concern: "I am fainting and having chest pain during recovery.",
+      required_external_resource: "Urgent medical assessment",
+      access_barrier: "unknown"
+    }),
+    variables: variables({ present_safety: "unsafe" }),
+    unknowns: [{ variable: "immediate_medical_danger", question: "Can urgent medical care be reached now?", importance: 5 }]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.PRACTICAL_SAFETY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED);
 });
 
 test("supporter query cannot formulate an absent adult as the therapy subject", () => {

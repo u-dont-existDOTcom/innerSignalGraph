@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v12";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v13";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -298,9 +298,32 @@ function professionalContinuityHandoff(profile, unknowns = []) {
       || ["unknown", "suggested", "unavailable", "failed"].includes(profile.handoff_state));
 }
 
+function explicitAcuteMedicalEvidence(profile) {
+  return /(?:faint(?:ed|ing)?|chest[_\s-]?pain|palpitation|confusion|severe[_\s-]?(?:weakness|restriction|purging|abdominal[_\s-]?pain)|cannot[_\s-]?(?:keep|hold)[_\s-]?(?:food|fluids?)[_\s-]?down|unable[_\s-]?to[_\s-]?(?:keep|hold)[_\s-]?(?:food|fluids?)[_\s-]?down|electrolyte[_\s-]?(?:imbalance|crisis)|refeeding[_\s-]?(?:syndrome|complication)|cardiac[_\s-]?(?:symptom|event))/i.test(String(profile.original_concern ?? ""));
+}
+
+function unconfirmedMedicalSupportGap(profile, unknowns = []) {
+  const medicalStatusUnknown = unknowns.some((item) => Number(item?.importance ?? 0) >= 5
+    && /(?:medical[_\s-]?(?:monitoring|danger|risk|status)|treatment[_\s-]?team|recovery[_\s-]?(?:interruption|status|intent))/i.test(String(item?.variable ?? "")));
+  const accessBarrierUnconfirmed = !String(profile.access_barrier ?? "").trim()
+    || /^(?:unknown|not[_\s-]?(?:stated|confirmed|established)|none[_\s-]?(?:stated|confirmed))\b/i.test(String(profile.access_barrier ?? "").trim());
+  return profile.primary_problem_class === "medical_condition"
+    && profile.current_external_danger !== "present"
+    && profile.basic_needs_failure !== "present"
+    && profile.dependent_danger !== "present"
+    && profile.third_party_rights_or_consent !== "present"
+    && profile.bodily_decision_owner === "self"
+    && profile.resource_access_status === "unknown"
+    && profile.handoff_state === "unknown"
+    && accessBarrierUnconfirmed
+    && medicalStatusUnknown
+    && !explicitAcuteMedicalEvidence(profile);
+}
+
 function decisiveOuterOperation(profile, unknowns) {
   if (supporterSafetyHandoff(profile)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (explicitSuicideOrSelfHarmUnknown(unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
+  if (unconfirmedMedicalSupportGap(profile, unknowns)) return OPERATION_CLASSES.CURRENT_REALITY;
   if (professionalContinuityHandoff(profile, unknowns)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (urgentAuthorityDecision(profile, unknowns)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   if (unresolvedConsequentialDecision(profile, unknowns)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
@@ -473,7 +496,9 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
     throw new Error(`Unknown therapy-protocol ablation variant ${ablationVariant}.`);
   }
   const { profile, explicit } = deriveProtocolProfile({ protocolProfile, variables });
-  const hardSafety = hardSafetyState(profile, variables, unknowns);
+  const medicalSupportUnconfirmed = unconfirmedMedicalSupportGap(profile, unknowns);
+  const acuteMedicalEvidence = explicitAcuteMedicalEvidence(profile);
+  const hardSafety = hardSafetyState(profile, variables, unknowns) && !medicalSupportUnconfirmed;
   const unavailable = resourceUnavailable(profile);
   const supporterHandoff = supporterSafetyHandoff(profile);
   const continuityHandoff = professionalContinuityHandoff(profile, unknowns);
@@ -525,16 +550,16 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
         ? OPERATION_CLASSES.EXTERNAL_HANDOFF
         : (authorityDecision || outerOperation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
           ? OPERATION_CLASSES.HIGH_IMPACT_DECISION
-          : (outerOperation === OPERATION_CLASSES.PRACTICAL_SAFETY || profile.resource_required !== "yes"
-          ? OPERATION_CLASSES.PRACTICAL_SAFETY
-          : OPERATION_CLASSES.EXTERNAL_HANDOFF)),
+          : (acuteMedicalEvidence || outerOperation === OPERATION_CLASSES.PRACTICAL_SAFETY || profile.resource_required !== "yes"
+            ? OPERATION_CLASSES.PRACTICAL_SAFETY
+            : OPERATION_CLASSES.EXTERNAL_HANDOFF)),
       runGuideGraph: false
     };
     allowed = new Set(route.operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION ? OUTER_ALLOWED : HARD_SAFETY_ALLOWED);
     for (const operation of INNER_WORK_OPERATIONS) reasons[operation] = "Immediate safety, basic needs, condition-specific instability, or dependent danger outranks ordinary inner work.";
   }
 
-  if (unavailable && !authorityDecision && outerOperation !== OPERATION_CLASSES.PRACTICAL_SAFETY) {
+  if (unavailable && !acuteMedicalEvidence && !authorityDecision && outerOperation !== OPERATION_CLASSES.PRACTICAL_SAFETY) {
     route = {
       disposition: hardSafety ? ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED : ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT,
       operation: OPERATION_CLASSES.EXTERNAL_HANDOFF,
@@ -639,10 +664,10 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
     fallbackAvailable: profile.fallback_available,
     fallbackAction: profile.fallback_action,
     fallbackLimit: profile.fallback_limit,
-    unmetNeed: profile.unmet_external_need,
+    unmetNeed: medicalSupportUnconfirmed ? "unknown" : profile.unmet_external_need,
     unmetNeedDetail: profile.unmet_external_need_detail,
     retryOrAdvocacyTrigger: profile.retry_or_advocacy_trigger,
-    unresolved: profile.unmet_external_need === "present" || unavailable || continuityHandoff
+    unresolved: !medicalSupportUnconfirmed && (profile.unmet_external_need === "present" || unavailable || continuityHandoff)
   };
 
   return {
