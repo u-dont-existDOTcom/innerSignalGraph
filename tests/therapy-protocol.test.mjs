@@ -439,6 +439,36 @@ test("a proposed therapy ending retains O10 when live extraction leaves resource
   assert.equal(route.resourceState.unresolved, true);
 });
 
+test("a negated continuity gap and unknown handling authority cannot promote privacy containment above O3", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "actual_or_potential_harm",
+      current_external_danger: "unknown",
+      requested_operation: OPERATION_CLASSES.CURRENT_REALITY,
+      external_action_required: "yes",
+      decision_impact: "hard_to_reverse",
+      third_party_rights_or_consent: "present",
+      bodily_decision_owner: "not_applicable",
+      action_authority: "unknown",
+      resource_required: "unknown",
+      resource_access_status: "unknown",
+      handoff_state: "unknown",
+      unmet_external_need: "unknown",
+      original_concern: "The person fears that therapy or disclosure about a continuing privacy violation will ruin their life.",
+      provider_or_setting_condition: "No provider or setting has been identified.",
+      required_external_resource: "No required provider or legal service is established.",
+      unmet_external_need_detail: "No unmet professional-resource need or continuity gap is established."
+    }),
+    variables: variables({ present_safety: "unknown" }),
+    unknowns: [
+      { variable: "active_recording_status", question: "Is recording continuing?", importance: 5 },
+      { variable: "recording_distribution_scope", question: "Were copies shared?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+});
+
 test("unconfirmed medical monitoring and provider status stays O3 instead of inventing an O10 gap", () => {
   const route = routeTherapyProtocol({
     protocolProfile: profile({

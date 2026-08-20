@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v14";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v15";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -215,7 +215,8 @@ function rightsContainmentWithoutAcuteDanger(profile, unknowns = []) {
       || (profile.primary_problem_class === "external_relational_practical" && privacyOrEvidence))
     && profile.third_party_rights_or_consent === "present"
     && (profile.bodily_decision_owner === "not_applicable" || privacyOrEvidence)
-    && ["reversible_only", "bounded"].includes(profile.action_authority)
+    && (["reversible_only", "bounded"].includes(profile.action_authority)
+      || (privacyOrEvidence && profile.action_authority === "unknown"))
     && profile.basic_needs_failure !== "present"
     && profile.condition_instability !== "present"
     && profile.dependent_danger !== "present"
@@ -279,15 +280,18 @@ function supporterSafetyHandoff(profile) {
 }
 
 function professionalContinuityHandoff(profile, unknowns = []) {
-  const context = [
+  const careContext = [
     profile.original_concern,
     profile.provider_or_setting_condition,
-    profile.decision_subject,
-    profile.required_external_resource,
-    profile.unmet_external_need_detail
+    profile.decision_subject
   ].map((value) => String(value ?? "")).join(" ");
-  const explicitProfessionalCare = /(?:therap(?:y|ist)|counsell?or|psychiatr|psycholog|clinician|professional[_\s-]?(?:care|support))/i.test(context);
-  const explicitTransition = /(?:end(?:ing)?|terminat|discontinu|stop(?:ping)?|transition|continuity|referr|replacement|handoff|gap)/i.test(context);
+  const professionalCare = "(?:therap(?:y|ist)|treatment|counsell?or|psychiatr|psycholog|clinician|provider|professional[_\\s-]?(?:care|support))";
+  const careTransition = "(?:end(?:ing)?|terminat|discontinu|transition|continuity|referr|replacement|handoff)";
+  const explicitProfessionalCare = new RegExp(professionalCare, "i").test(careContext);
+  const explicitTransition = new RegExp(
+    `(?:${professionalCare}).{0,80}(?:${careTransition})|(?:${careTransition}).{0,80}(?:${professionalCare})|stop(?:ping)?\\s+(?:${professionalCare})`,
+    "i"
+  ).test(careContext);
   const routingUnknown = unknowns.some((item) => Number(item?.importance ?? 0) >= 5
     && /(?:(?:therap|provider|professional).*(?:terminat|continuity|transition|handoff|avail)|(?:terminat|continuity|transition|handoff).*(?:therap|provider|professional))/i.test(String(item?.variable ?? "")));
   return explicitProfessionalCare
