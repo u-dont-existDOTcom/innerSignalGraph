@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v9";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v10";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -204,10 +204,15 @@ function acuteSafetyUnknown(unknowns = []) {
     && /(?:suicid|self[_\s-]?harm|physical[_\s-]?(?:injury|danger|safety)|medical[_\s-]?(?:danger|crisis)|withdrawal|overdose|violence|weapon|(?:child|toddler|dependent)[_\s-].*safety|safe[_\s-]?supervision|ability.*remain.*safe)/i.test(String(item?.variable ?? "")));
 }
 
+function privacyOrEvidenceContainmentUnknown(unknowns = []) {
+  return unknowns.some((item) => Number(item?.importance ?? 0) >= 5
+    && /(?:record(?:ing|ed)|camera|file.*(?:misuse|distribution)|evidence[_\s-]?handling|privacy)/i.test(String(item?.variable ?? "")));
+}
+
 function rightsContainmentWithoutAcuteDanger(profile, unknowns = []) {
   return profile.primary_problem_class === "actual_or_potential_harm"
     && profile.third_party_rights_or_consent === "present"
-    && profile.bodily_decision_owner === "not_applicable"
+    && (profile.bodily_decision_owner === "not_applicable" || privacyOrEvidenceContainmentUnknown(unknowns))
     && ["reversible_only", "bounded"].includes(profile.action_authority)
     && profile.basic_needs_failure !== "present"
     && profile.condition_instability !== "present"
@@ -253,10 +258,11 @@ function unresolvedConsequentialDecision(profile, unknowns = []) {
     && /(?:decision.*(?:impact|consequence|authority|capacity|timing)|(?:financial|legal|basic[_\s-]?needs|dependent).*(?:exposure|impact|risk|decision|authority))/i.test(String(item?.variable ?? "")));
 }
 
-function urgentAuthorityDecision(profile) {
+function urgentAuthorityDecision(profile, unknowns = []) {
   return profile.bodily_decision_owner === "other"
     && ["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact)
     && profile.third_party_rights_or_consent === "present"
+    && !rightsContainmentWithoutAcuteDanger(profile, unknowns)
     && (profile.requested_operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
       || ["unknown", "disputed"].includes(profile.decision_capacity_status)
       || profile.lawful_decision_maker_status === "disputed"
@@ -273,7 +279,7 @@ function supporterSafetyHandoff(profile) {
 function decisiveOuterOperation(profile, unknowns) {
   if (supporterSafetyHandoff(profile)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (explicitSuicideOrSelfHarmUnknown(unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
-  if (urgentAuthorityDecision(profile)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
+  if (urgentAuthorityDecision(profile, unknowns)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   if (unresolvedConsequentialDecision(profile, unknowns)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   if (profile.requested_operation === OPERATION_CLASSES.PRACTICAL_SAFETY
       && !rightsContainmentWithoutAcuteDanger(profile, unknowns)) {
@@ -448,7 +454,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   const unavailable = resourceUnavailable(profile);
   const supporterHandoff = supporterSafetyHandoff(profile);
   const outerOperation = decisiveOuterOperation(profile, unknowns);
-  const authorityDecision = urgentAuthorityDecision(profile);
+  const authorityDecision = urgentAuthorityDecision(profile, unknowns);
   let route = routeForProblemClass(profile, ablationVariant);
   let allowed = new Set(route.runGuideGraph ? INNER_BASE_ALLOWED : OUTER_ALLOWED);
   const reasons = {};

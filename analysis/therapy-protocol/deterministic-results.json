@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "campaignVersion": "therapy-protocol-deterministic-v2",
-  "routerVersion": "creative-tail-inner-child-router-v9",
+  "routerVersion": "creative-tail-inner-child-router-v10",
   "productionVariant": "map15-full-map16-supported-choice-hybrid",
   "sourceCommit": "af36a51e44a65067a3d7703a78a004fdb8ad7693",
   "corpusManifestSha256": "f8f73cb023e94e14c4724a670151215bf825f67616678e97e3d733a04a28857d",

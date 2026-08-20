@@ -123,6 +123,31 @@ test("non-bodily privacy containment stays O3 while preserving urgent external a
   assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
 });
 
+test("recording and evidence containment stays O3 when an audit labels the rights owner as other", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "actual_or_potential_harm",
+      current_external_danger: "present",
+      requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY,
+      decision_impact: "hard_to_reverse",
+      third_party_rights_or_consent: "present",
+      bodily_decision_owner: "other",
+      action_authority: "bounded",
+      basic_needs_failure: "absent",
+      condition_instability: "unknown",
+      dependent_danger: "unknown"
+    }),
+    variables: variables({ present_safety: "unknown" }),
+    unknowns: [
+      { variable: "cameras_still_active", question: "Could anyone still be recorded?", importance: 5 },
+      { variable: "recording_distribution", question: "Was the recording distributed?", importance: 5 },
+      { variable: "lawful_evidence_handling_authority", question: "What lawful handling is available?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+});
+
 test("non-bodily rights containment stays O3 when a model requests O9", () => {
   const route = routeTherapyProtocol({
     protocolProfile: profile({

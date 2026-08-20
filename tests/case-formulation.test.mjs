@@ -47,6 +47,8 @@ test("formulation prompts preserve the approved decisive-outer evidence contract
     assert.match(prompt, /urgent medical reassessment/i);
   }
   assert.match(audit, /direct safety unknowns before less consequential unknowns/i);
+  assert.match(extraction, /non-bodily privacy, recording, evidence-handling.*remains O3/i);
+  assert.match(audit, /non-bodily privacy, recording, evidence-handling.*remains O3/i);
   assert.match(extraction, /financial dependence or possible basic-needs exposure keeps the decision consequential/i);
   assert.match(audit, /financial dependence or possible basic-needs exposure keeps the decision consequential/i);
 });
