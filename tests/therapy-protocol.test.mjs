@@ -330,6 +330,44 @@ test("a consequential authority decision remains O9 while urgent medical reasses
   assert.ok(route.forbiddenOverclaims.some((line) => /replace urgent medical reassessment/i.test(line)));
 });
 
+test("an audited O9 capacity decision outranks an inferred supporter handoff while retaining urgent medical action", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      request_actor: "supporter",
+      beneficiary_present: "no",
+      primary_problem_class: "mixed",
+      current_external_danger: "present",
+      basic_needs_failure: "present",
+      condition_instability: "unknown",
+      dependent_danger: "unknown",
+      requested_operation: OPERATION_CLASSES.HIGH_IMPACT_DECISION,
+      external_action_required: "yes",
+      decision_impact: "high_impact_third_party",
+      third_party_rights_or_consent: "present",
+      bodily_decision_owner: "other",
+      action_authority: "unknown",
+      decision_capacity_status: "disputed",
+      capacity_concern: "present",
+      lawful_decision_maker_status: "unknown",
+      supporter_role_boundary: "at_risk",
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      handoff_state: "unknown",
+      unmet_external_need: "present",
+      decision_subject: "Whether and through what lawful clinical process caregivers can act on a disputed treatment refusal."
+    }),
+    variables: variables({ present_safety: "unsafe" }),
+    unknowns: [
+      { variable: "current_acute_neurological_or_metabolic_symptoms", question: "Is there an acute medical change?", importance: 5 },
+      { variable: "existing_legal_authority", question: "Who has lawful authority?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.HIGH_IMPACT_DECISION);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED);
+  assert.ok(route.requiredNuance.some((line) => /urgent medical reassessment/i.test(line)));
+  assert.ok(route.forbiddenOverclaims.some((line) => /replace urgent medical reassessment/i.test(line)));
+});
+
 test("material financial and basic-needs decision unknowns retain O9 when the exact action is unresolved", () => {
   const route = routeTherapyProtocol({
     protocolProfile: profile({

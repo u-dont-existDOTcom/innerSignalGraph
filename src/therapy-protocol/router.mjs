@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v13";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v14";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -321,10 +321,14 @@ function unconfirmedMedicalSupportGap(profile, unknowns = []) {
 }
 
 function decisiveOuterOperation(profile, unknowns) {
-  if (supporterSafetyHandoff(profile)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (explicitSuicideOrSelfHarmUnknown(unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
   if (unconfirmedMedicalSupportGap(profile, unknowns)) return OPERATION_CLASSES.CURRENT_REALITY;
   if (professionalContinuityHandoff(profile, unknowns)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
+  if (profile.requested_operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
+      && urgentAuthorityDecision(profile, unknowns)) {
+    return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
+  }
+  if (supporterSafetyHandoff(profile)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (urgentAuthorityDecision(profile, unknowns)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   if (unresolvedConsequentialDecision(profile, unknowns)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   if (profile.requested_operation === OPERATION_CLASSES.PRACTICAL_SAFETY
@@ -546,13 +550,15 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   if (hardSafety) {
     route = {
       disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED,
-      operation: supporterHandoff
-        ? OPERATION_CLASSES.EXTERNAL_HANDOFF
-        : (authorityDecision || outerOperation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
+      operation: outerOperation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
+        ? OPERATION_CLASSES.HIGH_IMPACT_DECISION
+        : (supporterHandoff
+          ? OPERATION_CLASSES.EXTERNAL_HANDOFF
+          : (authorityDecision
           ? OPERATION_CLASSES.HIGH_IMPACT_DECISION
           : (acuteMedicalEvidence || outerOperation === OPERATION_CLASSES.PRACTICAL_SAFETY || profile.resource_required !== "yes"
             ? OPERATION_CLASSES.PRACTICAL_SAFETY
-            : OPERATION_CLASSES.EXTERNAL_HANDOFF)),
+            : OPERATION_CLASSES.EXTERNAL_HANDOFF))),
       runGuideGraph: false
     };
     allowed = new Set(route.operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION ? OUTER_ALLOWED : HARD_SAFETY_ALLOWED);
