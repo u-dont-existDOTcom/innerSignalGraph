@@ -179,6 +179,34 @@ test("an absent person's suicide crisis routes an at-risk supporter to actionabl
   assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED);
 });
 
+test("an at-risk supporter's required crisis handoff outranks ambiguous beneficiary and authority labels", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      request_actor: "self",
+      beneficiary_present: "yes",
+      primary_problem_class: "mixed",
+      current_external_danger: "present",
+      condition_instability: "present",
+      requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY,
+      external_action_required: "yes",
+      decision_impact: "high_impact_third_party",
+      third_party_rights_or_consent: "present",
+      bodily_decision_owner: "other",
+      action_authority: "bounded",
+      decision_capacity_status: "unknown",
+      lawful_decision_maker_status: "unknown",
+      supporter_role_boundary: "at_risk",
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      handoff_state: "unknown",
+      unmet_external_need: "present"
+    }),
+    variables: variables({ present_safety: "unsafe" })
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.EXTERNAL_HANDOFF);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED);
+});
+
 test("an absent beneficiary cannot demote valid O1 O9 or O10 outer routes", () => {
   const safety = routeTherapyProtocol({
     protocolProfile: profile({

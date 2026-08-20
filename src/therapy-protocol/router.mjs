@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v7";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v8";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -258,9 +258,7 @@ function urgentAuthorityDecision(profile) {
 }
 
 function supporterSafetyHandoff(profile) {
-  return profile.request_actor !== "self"
-    && profile.beneficiary_present !== "yes"
-    && profile.supporter_role_boundary === "at_risk"
+  return profile.supporter_role_boundary === "at_risk"
     && profile.resource_required === "yes"
     && profile.unmet_external_need === "present"
     && (profile.current_external_danger === "present" || profile.condition_instability === "present");
@@ -441,6 +439,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   const { profile, explicit } = deriveProtocolProfile({ protocolProfile, variables });
   const hardSafety = hardSafetyState(profile, variables, unknowns);
   const unavailable = resourceUnavailable(profile);
+  const supporterHandoff = supporterSafetyHandoff(profile);
   const outerOperation = decisiveOuterOperation(profile, unknowns);
   const authorityDecision = urgentAuthorityDecision(profile);
   let route = routeForProblemClass(profile, ablationVariant);
@@ -475,11 +474,13 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   if (hardSafety) {
     route = {
       disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED,
-      operation: authorityDecision
-        ? OPERATION_CLASSES.HIGH_IMPACT_DECISION
-        : (outerOperation === OPERATION_CLASSES.PRACTICAL_SAFETY || profile.resource_required !== "yes"
+      operation: supporterHandoff
+        ? OPERATION_CLASSES.EXTERNAL_HANDOFF
+        : (authorityDecision
+          ? OPERATION_CLASSES.HIGH_IMPACT_DECISION
+          : (outerOperation === OPERATION_CLASSES.PRACTICAL_SAFETY || profile.resource_required !== "yes"
           ? OPERATION_CLASSES.PRACTICAL_SAFETY
-          : OPERATION_CLASSES.EXTERNAL_HANDOFF),
+          : OPERATION_CLASSES.EXTERNAL_HANDOFF)),
       runGuideGraph: false
     };
     allowed = new Set(route.operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION ? OUTER_ALLOWED : HARD_SAFETY_ALLOWED);
