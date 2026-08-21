@@ -124,6 +124,32 @@ test("indirect end-of-rope language preserves an O3 personal-safety check withou
   assert.ok(route.requiredNuance.some((line) => /current suicide, self-harm, or inability-to-stay-safe risk/i.test(line)));
 });
 
+test("self-requested medical triage stays O3 when bodily decision ownership is not applicable", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "medical_condition",
+      current_external_danger: "unknown",
+      condition_instability: "unknown",
+      requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY,
+      resource_required: "unknown",
+      resource_access_status: "unknown",
+      handoff_state: "unknown",
+      bodily_decision_owner: "not_applicable",
+      original_concern: "Daily heart-rhythm symptoms have worsened, feel like constant mental torture, and I feel out of options.",
+      access_barrier: "Unknown"
+    }),
+    variables: variables({ present_safety: "unknown" }),
+    unknowns: [
+      { variable: "condition_instability / acute cardiac risk", question: "Is there an acute or urgently dangerous cardiac component?", importance: 5 },
+      { variable: "acute_cardiorespiratory_warning_signs", question: "Are there fainting, chest pain, or breathing warning signs?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED);
+  assert.ok(route.requiredNuance.some((line) => /triage current medical status.*heart-rhythm symptoms.*urgent or emergency medical evaluation/i.test(line)));
+  assert.ok(route.forbiddenOverclaims.some((line) => /chronicity.*unsuccessful treatment.*medically safe/i.test(line)));
+});
+
 test("violent loss of control retains O1 before explanation even when immediate danger is unresolved", () => {
   const route = routeTherapyProtocol({
     protocolProfile: profile({

@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v16";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v17";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -330,17 +330,24 @@ function explicitAcuteMedicalEvidence(profile) {
   return /(?:faint(?:ed|ing)?|chest[_\s-]?pain|palpitation|confusion|severe[_\s-]?(?:weakness|restriction|purging|abdominal[_\s-]?pain)|cannot[_\s-]?(?:keep|hold)[_\s-]?(?:food|fluids?)[_\s-]?down|unable[_\s-]?to[_\s-]?(?:keep|hold)[_\s-]?(?:food|fluids?)[_\s-]?down|electrolyte[_\s-]?(?:imbalance|crisis)|refeeding[_\s-]?(?:syndrome|complication)|cardiac[_\s-]?(?:symptom|event))/i.test(String(profile.original_concern ?? ""));
 }
 
+function urgentMedicalTriageUnknown(profile, unknowns = []) {
+  if (profile.primary_problem_class !== "medical_condition") return false;
+  return unknowns.some((item) => Number(item?.importance ?? 0) >= 5
+    && /(?:acute|urgent|warning|red[_\s-]?flag|faint|near[_\s-]?faint|chest[_\s-]?pain|shortness[_\s-]?of[_\s-]?breath|cardiac|heart[_\s-]?rhythm|medical.*(?:danger|risk|status)|condition.*instability)/i.test(`${String(item?.variable ?? "")} ${String(item?.question ?? "")}`));
+}
+
 function unconfirmedMedicalSupportGap(profile, unknowns = []) {
   const medicalStatusUnknown = unknowns.some((item) => Number(item?.importance ?? 0) >= 5
     && /(?:medical[_\s-]?(?:care[_\s-]?)?(?:monitoring|danger|risk|status)|cardiac[_\s-]?(?:danger|risk|status|warning)|treatment[_\s-]?team|recovery[_\s-]?(?:interruption|status|intent))/i.test(String(item?.variable ?? "")));
   const accessBarrierUnconfirmed = !String(profile.access_barrier ?? "").trim()
     || /^(?:unknown|not[_\s-]?(?:stated|confirmed|established)|none[_\s-]?(?:stated|confirmed))\b/i.test(String(profile.access_barrier ?? "").trim());
   return profile.primary_problem_class === "medical_condition"
+    && profile.request_actor === "self"
     && profile.current_external_danger !== "present"
     && profile.basic_needs_failure !== "present"
     && profile.dependent_danger !== "present"
     && profile.third_party_rights_or_consent !== "present"
-    && profile.bodily_decision_owner === "self"
+    && ["self", "not_applicable"].includes(profile.bodily_decision_owner)
     && profile.resource_access_status === "unknown"
     && profile.handoff_state === "unknown"
     && accessBarrierUnconfirmed
@@ -461,7 +468,7 @@ function materialUnknowns(profile, explicit, route) {
   return unique(unknowns);
 }
 
-function routeNuance(profile, resourceIsUnavailable, operation) {
+function routeNuance(profile, resourceIsUnavailable, operation, unknowns = []) {
   const nuance = [
     "Nurturing, protecting, and guiding are qualities of one inner parent, not three autonomous internal people.",
     "Current external reality, rights, consent, medical facts, and material constraints cannot be settled by an inner-state vote."
@@ -528,6 +535,10 @@ function routeNuance(profile, resourceIsUnavailable, operation) {
   }
   if (indirectPersonalSafetyCheck(profile)) {
     nuance.push("Ask directly about current suicide, self-harm, or inability-to-stay-safe risk while preserving the distinction between indirect hopelessness language and explicit acute-harm evidence.");
+  }
+  if (urgentMedicalTriageUnknown(profile, unknowns)) {
+    nuance.push("Briefly triage current medical status and urgent change before coping content: check for new or suddenly worse symptoms and condition-relevant urgent warning signs; for heart-rhythm symptoms, explicitly include fainting or near-fainting, chest pain, severe shortness of breath, or another major change. If an urgent warning sign is present, direct urgent or emergency medical evaluation appropriate to local availability.");
+    forbidden.push("Do not treat chronicity, prior evaluation, or unsuccessful treatment as evidence that worsening symptoms are medically safe.");
   }
   return { nuance: unique(nuance), forbidden: unique(forbidden) };
 }
@@ -701,7 +712,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   allowed.add(OPERATION_CLASSES.SUPPORT_ORIENT);
   allowed.add(route.operation);
 
-  const { nuance, forbidden } = routeNuance(profile, unavailable, route.operation);
+  const { nuance, forbidden } = routeNuance(profile, unavailable, route.operation, unknowns);
   const job = JOBS[route.operation] ?? JOBS[OPERATION_CLASSES.SUPPORT_ORIENT];
   const resourceState = {
     required: profile.resource_required,

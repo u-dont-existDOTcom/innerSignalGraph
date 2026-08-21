@@ -156,6 +156,35 @@ test("combined indirect hopelessness receives the canonical direct safety questi
   assert.match(plan.nextQuestion, /thoughts of suicide or self-harm/i);
 });
 
+test("cardiac burden pairs direct personal safety with acute medical triage", () => {
+  const plan = planTherapyFromGraphs({
+    variables: { ...variables, present_safety: "unknown" },
+    graphs,
+    protocolProfile: profile({
+      primary_problem_class: "medical_condition",
+      current_external_danger: "unknown",
+      condition_instability: "unknown",
+      requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY,
+      resource_required: "unknown",
+      resource_access_status: "unknown",
+      handoff_state: "unknown",
+      bodily_decision_owner: "not_applicable",
+      original_concern: "Daily heart-rhythm symptoms have worsened, feel like constant mental torture, and I feel out of options.",
+      access_barrier: "Unknown"
+    }),
+    unknowns: [
+      { variable: "condition_instability / acute cardiac risk", question: "Is there an acute or urgently dangerous cardiac component?", importance: 5 },
+      { variable: "acute_cardiorespiratory_warning_signs", question: "Are there fainting, chest pain, or breathing warning signs?", importance: 5 }
+    ]
+  });
+  assert.equal(plan.primaryJob.id, "PROTO.O3_CURRENT_REALITY");
+  assert.equal(plan.nextQuestionSource.variable, "current_personal_safety");
+  assert.match(plan.nextQuestion, /thoughts of suicide or self-harm/i);
+  assert.match(plan.nextQuestion, /heart-rhythm symptoms new or suddenly worse/i);
+  assert.match(plan.nextQuestion, /fainting or near-fainting, chest pain, severe shortness of breath/i);
+  assert.match(plan.requiredNuance.join("\n"), /triage current medical status.*urgent or emergency medical evaluation/i);
+});
+
 test("caregiver depletion pairs caregiver and dependent essential-care safety checks", () => {
   const caregiverQuestion = "Are you currently thinking about suicide or self-harm, or worried that you may not be able to keep yourself safe?";
   const dependentQuestion = "Is exhaustion currently affecting the dependent person's safety or essential care?";
