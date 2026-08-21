@@ -140,6 +140,22 @@ test("a safety question is preserved verbatim without falsely changing a medical
   assert.equal(plan.nextQuestion, question);
 });
 
+test("combined indirect hopelessness receives the canonical direct safety question while retaining medical O3", () => {
+  const plan = planTherapyFromGraphs({
+    variables: { ...variables, present_safety: "unknown" },
+    graphs,
+    protocolProfile: profile({
+      primary_problem_class: "medical_condition",
+      current_external_danger: "unknown",
+      resource_required: "unknown",
+      original_concern: "The symptoms are constant mental torture and I feel out of options."
+    })
+  });
+  assert.equal(plan.primaryJob.id, "PROTO.O3_CURRENT_REALITY");
+  assert.equal(plan.nextQuestionSource.variable, "current_personal_safety");
+  assert.match(plan.nextQuestion, /thoughts of suicide or self-harm/i);
+});
+
 test("caregiver depletion pairs caregiver and dependent essential-care safety checks", () => {
   const caregiverQuestion = "Are you currently thinking about suicide or self-harm, or worried that you may not be able to keep yourself safe?";
   const dependentQuestion = "Is exhaustion currently affecting the dependent person's safety or essential care?";

@@ -98,6 +98,67 @@ test("explicit suicide or self-harm evidence keeps O1 ahead of resource uncertai
   assert.equal(route.runGuideGraph, false);
 });
 
+test("indirect end-of-rope language preserves an O3 personal-safety check without fabricating explicit suicide evidence", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "medical_condition",
+      current_external_danger: "unknown",
+      condition_instability: "present",
+      resource_required: "unknown",
+      resource_access_status: "unknown",
+      handoff_state: "unknown",
+      bodily_decision_owner: "self",
+      physical_cost: "high",
+      original_concern: "Daily heart-rhythm symptoms feel like constant mental torture, treatments have not resolved them, and I feel out of options.",
+      access_barrier: "Unknown"
+    }),
+    variables: variables({ present_safety: "unknown" }),
+    unknowns: [
+      { variable: "Current medical care status", question: "Is current medical care in place?", importance: 5 },
+      { variable: "Current acute cardiac warning signs", question: "Are acute cardiac warning signs present?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED);
+  assert.ok(route.materialUnknowns.includes("current_personal_safety"));
+  assert.ok(route.requiredNuance.some((line) => /current suicide, self-harm, or inability-to-stay-safe risk/i.test(line)));
+});
+
+test("violent loss of control retains O1 before explanation even when immediate danger is unresolved", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "actual_or_potential_harm",
+      current_external_danger: "unknown",
+      requested_operation: OPERATION_CLASSES.SUPPORT_ORIENT,
+      insight_present: "yes",
+      behavioral_control: "partial",
+      original_concern: "Explosive episodes include throwing objects and destroying property; clear thinking is unavailable once one starts."
+    }),
+    variables: variables({ present_safety: "unknown" }),
+    unknowns: [{ variable: "harm_to_people_risk", question: "Is anyone at risk now?", importance: 5 }]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.PRACTICAL_SAFETY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED);
+  assert.ok(route.requiredNuance.some((line) => /environmental controls.*practiced exit.*repair/i.test(line)));
+});
+
+test("a completed high-impact bodily decision remains O9 during retrospective authority and conduct review", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "mixed",
+      requested_operation: OPERATION_CLASSES.CURRENT_REALITY,
+      decision_impact: "unknown",
+      third_party_rights_or_consent: "present",
+      bodily_decision_owner: "self",
+      action_authority: "not_applicable",
+      decision_subject: "The bodily decision is already made; the pending review separates authority, grief, disclosure, and each person's conduct."
+    }),
+    variables: variables()
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.HIGH_IMPACT_DECISION);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+});
+
 test("non-bodily privacy containment stays O3 while preserving urgent external action", () => {
   const route = routeTherapyProtocol({
     protocolProfile: profile({

@@ -17,6 +17,7 @@ function unknownQuestion(field) {
     lawful_decision_maker_status: "Who actually has decision authority here, and is that authority established or disputed?",
     decision_capacity_status: "Has capacity for this specific decision and time been assessed by someone qualified, or is it still presumed or unknown?",
     integration_load: "Has ordinary functioning and recovery returned enough that more depth would not add unresolved integration load?",
+    current_personal_safety: "Are you having thoughts of suicide or self-harm, or are you worried that you may not be able to keep yourself safe right now?",
     present_safety: "Are you presently safe enough for this kind of exercise?",
     orientation: "Are you oriented to the present and able to track what is happening?",
     ability_to_stop: "Can you stop the proposed exercise when you choose?",
@@ -56,6 +57,13 @@ function selectProtocolQuestion(route, unknowns = []) {
     .sort((a, b) => questionPriority(b.item.variable) - questionPriority(a.item.variable) || a.index - b.index);
   const pairedSafety = pairedCareSafetyQuestion(candidates);
   if (pairedSafety) return pairedSafety;
+  if (route.materialUnknowns.includes("current_personal_safety")
+      && !candidates.some(({ item }) => item.variable === "current_personal_safety")) {
+    return {
+      variable: "current_personal_safety",
+      question: unknownQuestion("current_personal_safety")
+    };
+  }
   const selected = candidates[0]?.item ?? null;
   const variable = selected?.variable ?? route.materialUnknowns[0] ?? null;
   return {

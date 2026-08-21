@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v15";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v16";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -255,6 +255,30 @@ function explicitSuicideOrSelfHarmUnknown(unknowns = []) {
     && /(?:suicid|self[_\s-]?harm)/i.test(String(item?.variable ?? "")));
 }
 
+function indirectPersonalSafetyCheck(profile) {
+  const concern = String(profile.original_concern ?? "");
+  const severeBurden = /(?:mental[_\s-]?torture|can(?:not|'t)[_\s-]?(?:take|stand)(?:[_\s-]?(?:this|it|anymore|much[_\s-]?more))?|end[_\s-]?of[_\s-]?(?:my[_\s-]?)?(?:rope|tether))/i.test(concern);
+  const noPerceivedOptions = /(?:out[_\s-]?of[_\s-]?(?:options|things[_\s-]?to[_\s-]?try)|no[_\s-]?(?:way[_\s-]?out|options?[_\s-]?left)|hopeless)/i.test(concern);
+  return severeBurden && noPerceivedOptions;
+}
+
+function violentLossOfControl(profile, unknowns = []) {
+  if (profile.primary_problem_class !== "actual_or_potential_harm"
+      || !["absent", "partial"].includes(profile.behavioral_control)) return false;
+  const concern = String(profile.original_concern ?? "");
+  const directBehavior = /(?:throw(?:ing|s|n)?[_\s-](?:objects?|things?)|destroy(?:ing|s|ed)?[_\s-](?:property|things?)|violent[_\s-](?:temper|episode|outburst)|physical(?:ly)?[_\s-](?:aggress|violent))/i.test(concern);
+  const directRiskUnknown = unknowns.some((item) => Number(item?.importance ?? 0) >= 5
+    && /(?:(?:harm|risk|danger).*(?:people|person|animal|bodily)|(?:people|person|animal|bodily).*(?:harm|risk|danger)|episode.*(?:harm|risk|danger)|violence|weapon|thrown[_\s-]?object)/i.test(String(item?.variable ?? "")));
+  return directBehavior || directRiskUnknown;
+}
+
+function retrospectiveBodilyDecisionReview(profile) {
+  if (profile.bodily_decision_owner !== "self"
+      || profile.third_party_rights_or_consent !== "present") return false;
+  const subject = String(profile.decision_subject ?? "");
+  return /(?:decision|choice).{0,80}(?:already|previously|has[_\s-]?been|was).{0,30}(?:made|completed|carried[_\s-]?out)|(?:already|previously).{0,30}(?:made|completed).{0,80}(?:decision|choice)/i.test(subject);
+}
+
 function unresolvedConsequentialDecision(profile, unknowns = []) {
   if (profile.capacity_concern !== "present" || !String(profile.decision_subject ?? "").trim()) return false;
   return unknowns.some((item) => Number(item?.importance ?? 0) >= 5
@@ -308,7 +332,7 @@ function explicitAcuteMedicalEvidence(profile) {
 
 function unconfirmedMedicalSupportGap(profile, unknowns = []) {
   const medicalStatusUnknown = unknowns.some((item) => Number(item?.importance ?? 0) >= 5
-    && /(?:medical[_\s-]?(?:monitoring|danger|risk|status)|treatment[_\s-]?team|recovery[_\s-]?(?:interruption|status|intent))/i.test(String(item?.variable ?? "")));
+    && /(?:medical[_\s-]?(?:care[_\s-]?)?(?:monitoring|danger|risk|status)|cardiac[_\s-]?(?:danger|risk|status|warning)|treatment[_\s-]?team|recovery[_\s-]?(?:interruption|status|intent))/i.test(String(item?.variable ?? "")));
   const accessBarrierUnconfirmed = !String(profile.access_barrier ?? "").trim()
     || /^(?:unknown|not[_\s-]?(?:stated|confirmed|established)|none[_\s-]?(?:stated|confirmed))\b/i.test(String(profile.access_barrier ?? "").trim());
   return profile.primary_problem_class === "medical_condition"
@@ -328,6 +352,8 @@ function decisiveOuterOperation(profile, unknowns) {
   if (explicitSuicideOrSelfHarmUnknown(unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
   if (unconfirmedMedicalSupportGap(profile, unknowns)) return OPERATION_CLASSES.CURRENT_REALITY;
   if (professionalContinuityHandoff(profile, unknowns)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
+  if (violentLossOfControl(profile, unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
+  if (retrospectiveBodilyDecisionReview(profile)) return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   if (profile.requested_operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
       && urgentAuthorityDecision(profile, unknowns)) {
     return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
@@ -496,6 +522,13 @@ function routeNuance(profile, resourceIsUnavailable, operation) {
       && profile.physical_cost === "high") {
     nuance.push("Directly check both the caregiver's immediate safety and whether exhaustion is compromising the dependent person's essential care; do not infer either risk from exhaustion alone.");
   }
+  if (violentLossOfControl(profile)) {
+    nuance.push("Before explanatory or childhood exploration, directly check immediate risk to people and use recurrence prevention: environmental controls, a practiced exit or alternative, accountability, and concrete repair after harm.");
+    forbidden.push("Do not treat remorse, after-the-fact insight, or calm periods as adequate behavioral control.");
+  }
+  if (indirectPersonalSafetyCheck(profile)) {
+    nuance.push("Ask directly about current suicide, self-harm, or inability-to-stay-safe risk while preserving the distinction between indirect hopelessness language and explicit acute-harm evidence.");
+  }
   return { nuance: unique(nuance), forbidden: unique(forbidden) };
 }
 
@@ -541,7 +574,11 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
     route = {
       disposition: outerOperation === OPERATION_CLASSES.PRACTICAL_SAFETY
         ? ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED
-        : ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT,
+        : (outerOperation === OPERATION_CLASSES.CURRENT_REALITY
+            && profile.primary_problem_class === "medical_condition"
+            && profile.resource_required !== "yes"
+          ? ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED
+          : ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT),
       operation: outerOperation,
       runGuideGraph: false
     };
@@ -647,6 +684,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   }
 
   const routeUnknowns = unique([
+    ...(indirectPersonalSafetyCheck(profile) ? ["current_personal_safety"] : []),
     ...materialUnknowns(profile, explicit, route),
     ...requestedDepthUnknowns,
     ...unknowns.filter((item) => Number(item?.importance ?? 0) >= 5).map((item) => item.variable).filter(Boolean)

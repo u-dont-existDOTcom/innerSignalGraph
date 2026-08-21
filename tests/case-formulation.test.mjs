@@ -51,6 +51,12 @@ test("formulation prompts preserve the approved decisive-outer evidence contract
   assert.match(audit, /non-bodily privacy, recording, evidence-handling.*remains O3/i);
   assert.match(extraction, /financial dependence or possible basic-needs exposure keeps the decision consequential/i);
   assert.match(audit, /financial dependence or possible basic-needs exposure keeps the decision consequential/i);
+  assert.match(extraction, /recurrent violent loss of control.*throwing objects or destroying property/i);
+  assert.match(audit, /remorse, after-the-fact awareness, or calm periods as control/i);
+  assert.match(extraction, /retrospective review of a completed high-impact bodily decision remains O9/i);
+  assert.match(audit, /completion does not demote that authority review to generic O0 or O3/i);
+  assert.match(extraction, /combined hopelessness or end-of-rope language/i);
+  assert.match(audit, /preserve that question first/i);
 });
 
 test("audited A001 case formulation routes credibility repair before generic relaxation", async () => {
