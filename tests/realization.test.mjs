@@ -36,6 +36,8 @@ test("realization contract separates conservative reasoning from natural prose",
   assert.match(prompt.system, /Primary versus supporting jobs are not mutually exclusive/i);
   assert.match(prompt.system, /Treat competing internal positions symmetrically/i);
   assert.match(prompt.system, /Plan-realization fidelity is mandatory/i);
+  assert.match(prompt.system, /Every requiredNuance entry is mandatory/i);
+  assert.match(prompt.system, /Every forbiddenOverclaims and rejected_claims entry is binding/i);
   assert.match(prompt.user, /big fuckity whoopty doo/i);
   assert.match(prompt.user, /Which age or version/i);
 });

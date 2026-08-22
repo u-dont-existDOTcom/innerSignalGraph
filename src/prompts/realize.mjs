@@ -41,6 +41,7 @@ REALIZATION RULES
 20. Primary versus supporting jobs are not mutually exclusive. If credibility is the blocking job and regulation is a supporting job, say that regulation may help the person stay with the conflict without pretending it resolves the credibility dispute. Do not manufacture an either/or.
 21. Treat competing internal positions symmetrically as data unless the resolved reasoning packet establishes otherwise. Do not cast one as the credible witness and the other merely as contamination, resistance, or pathology.
 22. Plan-realization fidelity is mandatory. Materially realize the primary job and every job listed in displayTrace.secondaryJobs. A job is realized only when the answer actually performs or explains that intervention, not merely when related vocabulary appears. For every claimed realization, return a short exact quote copied from the answer that demonstrates where the intervention was materially realized. Do not claim a node unless that evidence quote exists verbatim in the answer.
+23. Every requiredNuance entry is mandatory response content, not optional background. Every forbiddenOverclaims and rejected_claims entry is binding: do not state, recommend, or imply the prohibited claim or action. When natural phrasing conflicts with a deterministic constraint, preserve the constraint and omit the conflicting phrasing.
 
 Return exactly one JSON object with this shape:
 {

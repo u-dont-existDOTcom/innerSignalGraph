@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v18";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v19";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -207,6 +207,14 @@ function acuteSafetyUnknown(unknowns = []) {
 function privacyOrEvidenceContainmentUnknown(unknowns = []) {
   return unknowns.some((item) => Number(item?.importance ?? 0) >= 5
     && /(?:record(?:ing|ed)|camera|file.*(?:misuse|distribution)|evidence[_\s-]?handling|privacy)/i.test(String(item?.variable ?? "")));
+}
+
+function postpartumInfantUncertainty(unknowns = []) {
+  const text = unknowns
+    .map((item) => `${String(item?.variable ?? "")} ${String(item?.question ?? "")}`)
+    .join(" ");
+  return /(?:postpartum|perinatal|maternal[_\s-]?(?:mood|anxiety|function))/i.test(text)
+    && /(?:infant|baby|newborn|pediatric)/i.test(text);
 }
 
 function rightsContainmentWithoutAcuteDanger(profile, unknowns = []) {
@@ -552,6 +560,14 @@ function routeNuance(profile, resourceIsUnavailable, operation, unknowns = []) {
   if (profile.insight_present === "yes" && ["absent", "partial", "unknown"].includes(profile.behavioral_control)) {
     nuance.push("The person may understand the pattern while lacking inhibitory control, a rehearsed alternative, or contextual generalization; repeating the explanation is not the intervention.");
     forbidden.push("Do not treat insight or witness capacity as proof of behavioral control.");
+  }
+  if (privacyOrEvidenceContainmentUnknown(unknowns)) {
+    nuance.push("Stop ongoing recording, viewing, copying, sharing, or access with reversible access controls while preserving potentially relevant material; obtain qualified local legal advice before deletion, destruction, alteration, disclosure, direct contact, or another irreversible evidence-handling step, and route therapist-confidentiality questions to a qualified local clinician or lawyer.");
+    forbidden.push("Do not recommend deleting, destroying, altering, sharing, or disclosing potentially relevant material, contacting the affected person for guilt relief, or asserting jurisdiction-specific legality, reporting, or confidentiality rules without qualified local consultation.");
+  }
+  if (postpartumInfantUncertainty(unknowns)) {
+    nuance.push("Treat differential infant crying, NICU separation, and bonding interpretations as unresolved hypotheses; preserve safe family help, directly check parent and infant safety and functioning, and route postpartum, feeding, development, or infant-health concerns to qualified postpartum and pediatric care.");
+    forbidden.push("Do not certify a damaged or secure attachment bond, identify any person as the baby's attachment center from the post, or treat differential crying as proof of attachment quality.");
   }
   if (profile.skill_or_instruction_deficit === "present") {
     nuance.push("Missing instruction, education, practice, or accessibility support is not a missing Guide quality.");

@@ -231,6 +231,34 @@ test("caregiver depletion pairs caregiver and dependent essential-care safety ch
   assert.match(plan.requiredNuance.join("\n"), /both the caregiver's immediate safety.*dependent person's essential care/i);
 });
 
+test("postpartum bonding uncertainty pairs parent functioning and infant warning-sign checks", () => {
+  const plan = planTherapyFromGraphs({
+    variables,
+    graphs,
+    protocolProfile: profile({
+      primary_problem_class: "certainty_reality_uncertainty",
+      requested_operation: OPERATION_CLASSES.CURRENT_REALITY,
+      parent_quality_context: "receiving_care",
+      current_external_danger: "absent",
+      basic_needs_failure: "unknown",
+      condition_instability: "unknown",
+      dependent_danger: "unknown",
+      source_class: "direct_memory",
+      factual_confidence: "medium",
+      original_concern: "My newborn cries more with me after a NICU stay and I fear our bond is damaged."
+    }),
+    unknowns: [
+      { variable: "postpartum_mood_status", question: "Are there postpartum mood or anxiety symptoms?", importance: 5 },
+      { variable: "infant_medical_warning_signs", question: "Does the baby have acute warning signs?", importance: 5 }
+    ]
+  });
+  assert.equal(plan.primaryJob.id, "PROTO.O3_CURRENT_REALITY");
+  assert.equal(plan.nextQuestionSource.variable, "postpartum_mood_status");
+  assert.match(plan.nextQuestion, /thoughts of harming yourself or the baby/i);
+  assert.match(plan.nextQuestion, /unable to manage basic care/i);
+  assert.match(plan.nextQuestion, /poor feeding.*fewer wet diapers.*unusually inconsolable/i);
+});
+
 test("resource state is carried in the intervention contract", () => {
   const plan = planTherapyFromGraphs({
     variables,

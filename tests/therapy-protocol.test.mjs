@@ -235,6 +235,33 @@ test("recording and evidence containment stays O3 when an audit labels the right
   });
   assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
   assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+  assert.ok(route.requiredNuance.some((line) => /reversible access controls.*qualified local legal advice/i.test(line)));
+  assert.ok(route.forbiddenOverclaims.some((line) => /deleting, destroying, altering.*jurisdiction-specific/i.test(line)));
+});
+
+test("postpartum infant uncertainty forbids attachment certification and requires safety-functioning checks", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "certainty_reality_uncertainty",
+      requested_operation: OPERATION_CLASSES.CURRENT_REALITY,
+      parent_quality_context: "receiving_care",
+      current_external_danger: "absent",
+      basic_needs_failure: "unknown",
+      condition_instability: "unknown",
+      dependent_danger: "unknown",
+      source_class: "direct_memory",
+      factual_confidence: "medium",
+      original_concern: "My newborn cries more with me after a NICU stay and I fear our bond is damaged."
+    }),
+    variables: variables(),
+    unknowns: [
+      { variable: "postpartum_mood_status", question: "Are there postpartum mood or anxiety symptoms?", importance: 5 },
+      { variable: "infant_medical_warning_signs", question: "Does the baby have acute warning signs?", importance: 5 }
+    ]
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.ok(route.requiredNuance.some((line) => /parent and infant safety and functioning.*qualified postpartum and pediatric care/i.test(line)));
+  assert.ok(route.forbiddenOverclaims.some((line) => /damaged or secure attachment bond.*attachment center/i.test(line)));
 });
 
 test("privacy containment cannot be re-promoted to O9 by an external-relational base route", () => {

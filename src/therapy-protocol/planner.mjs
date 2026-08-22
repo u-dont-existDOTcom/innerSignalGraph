@@ -65,6 +65,17 @@ function pairedPersonalMedicalSafetyQuestion(candidates, route) {
   };
 }
 
+function pairedPostpartumInfantSafetyQuestion(candidates) {
+  const postpartum = candidates.find((candidate) => /(?:postpartum|perinatal|maternal[_\s-]?(?:mood|anxiety|function))/i.test(questionText(candidate)));
+  const infant = candidates.find((candidate) => candidate !== postpartum
+    && /(?:infant|baby|newborn|pediatric).*(?:warning|medical|safety|feeding|hydration)|(?:warning|medical|safety|feeding|hydration).*(?:infant|baby|newborn|pediatric)/i.test(questionText(candidate)));
+  if (!postpartum || !infant) return null;
+  return {
+    variable: postpartum.item.variable,
+    question: "Are there immediate parent-safety or functioning concerns—thoughts of harming yourself or the baby, feeling unable to keep either of you safe, severe confusion, or being unable to manage basic care—and does the baby have warning signs such as fever, breathing difficulty, poor feeding, unusual lethargy, repeated vomiting, markedly fewer wet diapers, or being unusually inconsolable?"
+  };
+}
+
 function selectProtocolQuestion(route, unknowns = []) {
   const material = new Set(route.materialUnknowns);
   const candidates = unknowns
@@ -85,6 +96,8 @@ function selectProtocolQuestion(route, unknowns = []) {
   if (pairedSafety) return pairedSafety;
   const pairedMedicalSafety = pairedPersonalMedicalSafetyQuestion(candidates, route);
   if (pairedMedicalSafety) return pairedMedicalSafety;
+  const pairedPostpartumInfant = pairedPostpartumInfantSafetyQuestion(candidates);
+  if (pairedPostpartumInfant) return pairedPostpartumInfant;
   const selected = candidates[0]?.item ?? null;
   const variable = selected?.variable ?? route.materialUnknowns[0] ?? null;
   return {
