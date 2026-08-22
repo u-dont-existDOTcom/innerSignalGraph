@@ -185,6 +185,29 @@ test("cardiac burden pairs direct personal safety with acute medical triage", ()
   assert.match(plan.requiredNuance.join("\n"), /triage current medical status.*urgent or emergency medical evaluation/i);
 });
 
+test("mixed eating-disorder ambivalence pairs personal and acute medical safety checks", () => {
+  const personalQuestion = "Is there any current thinking about self-harm, suicide, or deliberate relapse to restriction that would represent an immediate safety risk?";
+  const medicalQuestion = "Are there current urgent physical warning signs such as fainting, chest pain, palpitations, confusion, severe weakness, persistent vomiting, or inability to keep down food or fluids?";
+  const plan = planTherapyFromGraphs({
+    variables: { ...variables, present_safety: "unknown" },
+    graphs,
+    protocolProfile: profile({
+      primary_problem_class: "mixed",
+      current_external_danger: "unknown",
+      condition_instability: "unknown",
+      decision_impact: "hard_to_reverse",
+      requested_operation: OPERATION_CLASSES.HIGH_IMPACT_DECISION,
+      original_concern: "Anorexia recovery feels unbearable because of simultaneous fullness, intense hunger, bloating, and depression."
+    }),
+    unknowns: [
+      { variable: "personal_safety_scope", question: personalQuestion, importance: 5 },
+      { variable: "acute_medical_danger", question: medicalQuestion, importance: 5 }
+    ]
+  });
+  assert.equal(plan.nextQuestionSource.variable, "personal_safety_scope");
+  assert.equal(plan.nextQuestion, `${personalQuestion} ${medicalQuestion}`);
+});
+
 test("caregiver depletion pairs caregiver and dependent essential-care safety checks", () => {
   const caregiverQuestion = "Are you currently thinking about suicide or self-harm, or worried that you may not be able to keep yourself safe?";
   const dependentQuestion = "Is exhaustion currently affecting the dependent person's safety or essential care?";

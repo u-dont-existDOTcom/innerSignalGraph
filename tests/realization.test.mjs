@@ -80,6 +80,27 @@ test("response contract does not duplicate a renderer that already used the cano
   assert.equal(realized.responseContract.rendererQuestionMatched, true);
 });
 
+test("response contract places a direct personal-safety question before reassurance", () => {
+  const safetyQuestion = "Are you having thoughts of suicide or self-harm, and are there urgent physical warning signs right now?";
+  const plan = {
+    ...context.interventionContract,
+    nextQuestion: safetyQuestion,
+    nextQuestionSource: { type: "protocol-material-unknown", variable: "personal_safety_scope" },
+    questionContract: {
+      mode: "canonical",
+      question: safetyQuestion,
+      source: { type: "protocol-material-unknown", variable: "personal_safety_scope" }
+    }
+  };
+  const realized = enforceResponseContract({
+    answer: "Conflicting hunger and fullness signals can be deeply distressing.",
+    next_question: safetyQuestion,
+    realized_nodes: []
+  }, { plan, adjudication });
+  assert.match(realized.answer, /^Are you having thoughts of suicide or self-harm/);
+  assert.equal(realized.responseContract.canonicalQuestionPlacement, "before-answer");
+});
+
 
 test("response contract records missing selected interventions for automatic realization repair", () => {
   const plan = {

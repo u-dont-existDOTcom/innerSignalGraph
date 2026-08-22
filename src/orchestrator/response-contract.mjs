@@ -50,8 +50,17 @@ export function canonicalQuestion({ plan, adjudication } = {}) {
     || text(adjudication?.next_question);
 }
 
+function canonicalQuestionPlacement(plan = {}) {
+  const variable = text(plan?.questionContract?.source?.variable)
+    || text(plan?.nextQuestionSource?.variable);
+  return /(?:suicid|self[_\s-]?harm|personal.*safety|safety.*personal|acute.*(?:danger|risk)|medical.*(?:danger|risk)|current.*safety)/i.test(variable)
+    ? "before-answer"
+    : "after-answer";
+}
+
 export function enforceResponseContract(realization, { plan, adjudication } = {}) {
   const question = canonicalQuestion({ plan, adjudication });
+  const questionPlacement = canonicalQuestionPlacement(plan);
   const paragraphs = splitParagraphs(realization?.answer);
   let strippedQuestion = "";
 
@@ -66,7 +75,10 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   }
 
   const answerBody = paragraphs.join("\n\n").trim();
-  const userFacingAnswer = [answerBody, question].filter(Boolean).join("\n\n");
+  const answerParts = questionPlacement === "before-answer"
+    ? [question, answerBody]
+    : [answerBody, question];
+  const userFacingAnswer = answerParts.filter(Boolean).join("\n\n");
   const rendererQuestion = text(realization?.next_question);
   const requiredNodeIds = requiredRealizationNodeIds(plan);
   const normalizedAnswer = answerBody.replace(/\s+/g, " ").trim();
@@ -92,6 +104,7 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
     responseContract: {
       version: "response-question-contract-v3",
       canonicalQuestion: question,
+      canonicalQuestionPlacement: questionPlacement,
       rendererQuestion,
       rendererQuestionMatched: normalizeQuestion(rendererQuestion) === normalizeQuestion(question),
       strippedUnauthorizedFinalQuestion: strippedQuestion || "",

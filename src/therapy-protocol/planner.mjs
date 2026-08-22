@@ -50,12 +50,12 @@ function pairedCareSafetyQuestion(candidates) {
 }
 
 function pairedPersonalMedicalSafetyQuestion(candidates, route) {
-  const personal = candidates.find((candidate) => candidate.item.variable === "current_personal_safety");
-  if (!personal || route.profile?.primary_problem_class !== "medical_condition") return null;
+  const personal = candidates.find((candidate) => /(?:personal|self).*(?:safety|suicid|self[_\s-]?harm)|(?:suicid|self[_\s-]?harm).*(?:personal|self)/i.test(questionText(candidate)));
+  if (!personal) return null;
   const medical = candidates.find((candidate) => candidate !== personal
     && /(?:acute|urgent|warning|red[_\s-]?flag|faint|near[_\s-]?faint|chest[_\s-]?pain|shortness[_\s-]?of[_\s-]?breath|cardiac|heart[_\s-]?rhythm|medical.*(?:danger|risk|status)|condition.*instability)/i.test(questionText(candidate)));
   if (!medical) return null;
-  const cardiac = /(?:cardiac|heart[_\s-]?rhythm|palpitation)/i.test(`${String(route.profile?.original_concern ?? "")} ${questionText(medical)}`);
+  const cardiac = /(?:cardiac|heart[_\s-]?rhythm|palpitation)/i.test(String(route.profile?.original_concern ?? ""));
   const medicalQuestion = cardiac
     ? "Are the heart-rhythm symptoms new or suddenly worse right now, or accompanied by fainting or near-fainting, chest pain, severe shortness of breath, or another major change—and if so, can you seek urgent medical evaluation now?"
     : medical.item.question.trim();
