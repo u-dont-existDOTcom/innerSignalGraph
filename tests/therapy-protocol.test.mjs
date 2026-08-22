@@ -675,6 +675,142 @@ test("safe depth becomes available without equating it to integration", () => {
   assert.ok(route.protocolJob.recommendations.some((line) => /depth, and integration separately/i.test(line)));
 });
 
+test("explicit current-turn safety resolution and practical topic shifts release stale routes to O3", () => {
+  const safetyResolved = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "actual_or_potential_harm",
+      current_external_danger: "unknown",
+      requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY
+    }),
+    variables: variables({ present_safety: "unknown" }),
+    unknowns: [{ variable: "immediate_recurrence_or_return_risk", question: "Can the danger return?", importance: 5 }],
+    currentMessage: "I am physically safe now. Please help me sort the practical situation that led up to it."
+  });
+  assert.equal(safetyResolved.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(safetyResolved.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+
+  const changedSubject = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "external_relational_practical",
+      requested_operation: OPERATION_CLASSES.CURRENT_REALITY,
+      user_rejects_current_frame: "yes",
+      external_action_required: "yes"
+    }),
+    variables: variables(),
+    currentMessage: "Instead, help me prepare the three facts I need for a meeting about my workload."
+  });
+  assert.equal(changedSubject.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(changedSubject.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+});
+
+test("a current no-threat boundary request does not inherit a permanent supporter safety route", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      request_actor: "caregiver",
+      beneficiary_present: "no",
+      primary_problem_class: "actual_or_potential_harm",
+      requested_operation: OPERATION_CLASSES.PRACTICAL_SAFETY,
+      supporter_role_boundary: "at_risk",
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      handoff_state: "unknown",
+      unmet_external_need: "present"
+    }),
+    variables: variables({ present_safety: "unknown" }),
+    unknowns: [{ variable: "current_direct_self_harm_indicators", question: "Is there suicidal intent now?", importance: 5 }],
+    currentMessage: "There is no immediate threat this minute, but I am exhausted and need a boundary and backup plan."
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+});
+
+test("model-requested O9 alone does not escalate a self-owned consequential reversible choice", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "refusal_capacity_ambivalence",
+      requested_operation: OPERATION_CLASSES.HIGH_IMPACT_DECISION,
+      decision_impact: "consequential_reversible",
+      third_party_rights_or_consent: "absent",
+      bodily_decision_owner: "self",
+      capacity_concern: "absent",
+      decision_capacity_status: "presumed",
+      change_target_endorsement: "mixed"
+    }),
+    variables: variables()
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.CURRENT_REALITY);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+});
+
+test("acute unstable medical change requiring care outranks third-party authority review", () => {
+  const route = routeTherapyProtocol({
+    protocolProfile: profile({
+      request_actor: "supporter",
+      beneficiary_present: "no",
+      primary_problem_class: "medical_condition",
+      current_external_danger: "present",
+      condition_instability: "present",
+      requested_operation: OPERATION_CLASSES.HIGH_IMPACT_DECISION,
+      decision_impact: "high_impact_third_party",
+      third_party_rights_or_consent: "present",
+      bodily_decision_owner: "other",
+      capacity_concern: "present",
+      decision_capacity_status: "unknown",
+      resource_required: "yes",
+      resource_access_status: "unknown",
+      handoff_state: "unknown",
+      original_concern: "After a stroke she is suddenly confused and cannot follow the conversation."
+    }),
+    variables: variables({ present_safety: "unknown" })
+  });
+  assert.equal(route.primaryOperation, OPERATION_CLASSES.EXTERNAL_HANDOFF);
+  assert.equal(route.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED);
+});
+
+test("depth follows integration state across overload, persistent impairment, and restored readiness", () => {
+  const overloaded = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "mixed",
+      requested_operation: OPERATION_CLASSES.DEPTH_ACCESS,
+      integration_load: "high",
+      historical_provenance_stable: "unknown"
+    }),
+    variables: variables({ present_safety: "unknown", orientation: "unknown", ability_to_stop: "unknown", ability_to_return: "unknown", altered_state: "unknown" }),
+    currentMessage: "A deep memory exercise left me unable to function for days, but I want to go deeper tonight."
+  });
+  assert.equal(overloaded.primaryOperation, OPERATION_CLASSES.REGULATION);
+  assert.equal(overloaded.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT);
+
+  const impaired = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "mixed",
+      condition_instability: "present",
+      requested_operation: OPERATION_CLASSES.DEPTH_ACCESS,
+      integration_load: "high"
+    }),
+    variables: variables({ present_safety: "unknown", orientation: "unknown", ability_to_stop: "unknown", ability_to_return: "unknown", altered_state: "unknown" }),
+    currentMessage: "I am calmer today but still cannot work or sleep normally. Can we do the depth exercise now?"
+  });
+  assert.equal(impaired.primaryOperation, OPERATION_CLASSES.REGULATION);
+  assert.equal(impaired.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED);
+
+  const restored = routeTherapyProtocol({
+    protocolProfile: profile({
+      primary_problem_class: "mixed",
+      condition_instability: "unknown",
+      requested_operation: OPERATION_CLASSES.DEPTH_ACCESS,
+      consent_scope: "multiple",
+      integration_load: "high",
+      historical_provenance_stable: "unknown"
+    }),
+    variables: variables({ present_safety: "unknown", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes", altered_state: "sober" }),
+    unknowns: [{ variable: "recovery_stability_and_recurrence_controls", question: "How long has recovery held?", importance: 5 }],
+    currentMessage: "My ordinary functioning has returned, I am sober and oriented, I can stop and return, and I consent to this specific depth exercise."
+  });
+  assert.equal(restored.primaryOperation, OPERATION_CLASSES.DEPTH_ACCESS);
+  assert.equal(restored.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_PRIMARY);
+});
+
 test("awareness does not become behavioral control", () => {
   const route = routeTherapyProtocol({
     protocolProfile: profile({ primary_problem_class: "capability_skill_scaffold", insight_present: "yes", behavioral_control: "absent" }),

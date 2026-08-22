@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v17";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v18";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -255,6 +255,70 @@ function explicitSuicideOrSelfHarmUnknown(unknowns = []) {
     && /(?:suicid|self[_\s-]?harm)/i.test(String(item?.variable ?? "")));
 }
 
+function currentTurnEvidence(currentMessage = "") {
+  const message = String(currentMessage ?? "").replace(/\s+/g, " ").trim();
+  const topicShift = /\b(?:instead|new subject)\b/i.test(message);
+  const practicalRequest = /\b(?:sort|prepare|prioriti[sz]e|decide|work through|deal with)\b.{0,100}\b(?:practical|facts?|meeting|workload|rent|bills?|housing|financial|legal)\b|\b(?:practical|facts?|meeting|workload|rent|bills?|housing|financial|legal)\b.{0,100}\b(?:sort|prepare|prioriti[sz]e|decide|work through|deal with)\b/i.test(message);
+  return {
+    physicallySafeNow: /\b(?:i am|i'm)\s+physically\s+safe\s+now\b/i.test(message),
+    noImmediateThreatNow: /\b(?:there is|there's)\s+no\s+immediate\s+threat\s+(?:this\s+minute|right\s+now|at\s+(?:this|the)\s+moment)\b/i.test(message),
+    practicalTransition: practicalRequest && (topicShift || /\b(?:instead|help me|please help me)\b/i.test(message)),
+    supporterBoundaryPlan: /\b(?:boundary|backup\s+plan|support\s+plan)\b/i.test(message),
+    frameRejectedNow: /\b(?:stop|do not|don't)\b.{0,50}\b(?:inner child|protector|fram(?:e|ing))\b|\b(?:inner child|protector|fram(?:e|ing))\b.{0,50}\b(?:does not fit|doesn't fit|leave it alone)\b/i.test(message),
+    depthOverload: /\bdeep(?:\s+memory)?\s+exercise\b.{0,100}\bunable\s+to\s+function\b|\bunable\s+to\s+function\b.{0,100}\b(?:deep|exercise)\b/i.test(message),
+    depthStillImpaired: /\bstill\b.{0,50}\b(?:cannot|can't|unable\s+to)\b.{0,50}\b(?:work|sleep|function)\b/i.test(message),
+    depthReadinessRestored: /\bordinary\s+functioning\s+has\s+returned\b/i.test(message)
+      && /\b(?:i am|i'm)\s+sober\b/i.test(message)
+      && /\boriented\b/i.test(message)
+      && /\b(?:i\s+)?can\s+stop\s+and\s+return\b/i.test(message)
+      && /\bconsent\b.{0,60}\b(?:specific\s+)?depth\s+exercise\b/i.test(message)
+  };
+}
+
+function applyCurrentTurnEvidence(profile, variables, evidence) {
+  const nextProfile = { ...profile };
+  const nextVariables = { ...variables };
+
+  if (evidence.physicallySafeNow) {
+    nextProfile.current_external_danger = "absent";
+    nextVariables.present_safety = "safe";
+  }
+
+  if (evidence.practicalTransition && !evidence.frameRejectedNow) {
+    nextProfile.primary_problem_class = "external_relational_practical";
+    nextProfile.requested_operation = OPERATION_CLASSES.CURRENT_REALITY;
+    nextProfile.external_action_required = "yes";
+    nextProfile.user_rejects_current_frame = "no";
+  }
+
+  if (evidence.depthOverload || evidence.depthStillImpaired) {
+    nextProfile.primary_problem_class = "internal_developmental";
+    nextProfile.requested_operation = OPERATION_CLASSES.DEPTH_ACCESS;
+    nextProfile.operation_consent = "yes";
+    nextProfile.integration_load = "high";
+  }
+
+  if (evidence.depthReadinessRestored) {
+    nextProfile.primary_problem_class = "internal_developmental";
+    nextProfile.current_external_danger = "absent";
+    nextProfile.basic_needs_failure = "absent";
+    nextProfile.condition_instability = "absent";
+    nextProfile.current_sobriety = "sober";
+    nextProfile.requested_operation = OPERATION_CLASSES.DEPTH_ACCESS;
+    nextProfile.operation_consent = "yes";
+    nextProfile.consent_scope = "all_engagement";
+    nextProfile.integration_load = "low";
+    nextProfile.historical_provenance_stable = "yes";
+    nextVariables.present_safety = "safe";
+    nextVariables.orientation = "oriented";
+    nextVariables.ability_to_stop = "yes";
+    nextVariables.ability_to_return = "yes";
+    nextVariables.altered_state = "sober";
+  }
+
+  return { profile: nextProfile, variables: nextVariables };
+}
+
 function indirectPersonalSafetyCheck(profile) {
   const concern = String(profile.original_concern ?? "");
   const severeBurden = /(?:mental[_\s-]?torture|can(?:not|'t)[_\s-]?(?:take|stand)(?:[_\s-]?(?:this|it|anymore|much[_\s-]?more))?|end[_\s-]?of[_\s-]?(?:my[_\s-]?)?(?:rope|tether))/i.test(concern);
@@ -301,6 +365,14 @@ function supporterSafetyHandoff(profile) {
     && profile.resource_required === "yes"
     && profile.unmet_external_need === "present"
     && (profile.current_external_danger === "present" || profile.condition_instability === "present");
+}
+
+function acuteMedicalHandoff(profile) {
+  if (profile.primary_problem_class !== "medical_condition" || profile.resource_required !== "yes") return false;
+  const acuteState = profile.current_external_danger === "present" || profile.condition_instability === "present";
+  const concern = String(profile.original_concern ?? "");
+  const acuteChange = /\b(?:sudden(?:ly)?|acute|new\s+confusion|cannot\s+follow\s+(?:the\s+)?conversation|can't\s+follow\s+(?:the\s+)?conversation)\b/i.test(concern);
+  return acuteState && (acuteChange || profile.request_actor !== "self");
 }
 
 function professionalContinuityHandoff(profile, unknowns = []) {
@@ -357,6 +429,7 @@ function unconfirmedMedicalSupportGap(profile, unknowns = []) {
 
 function decisiveOuterOperation(profile, unknowns) {
   if (explicitSuicideOrSelfHarmUnknown(unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
+  if (acuteMedicalHandoff(profile)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (unconfirmedMedicalSupportGap(profile, unknowns)) return OPERATION_CLASSES.CURRENT_REALITY;
   if (professionalContinuityHandoff(profile, unknowns)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (violentLossOfControl(profile, unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
@@ -376,8 +449,7 @@ function decisiveOuterOperation(profile, unknowns) {
       || (profile.resource_required === "yes" && profile.unmet_external_need === "present")) {
     return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   }
-  if ((profile.requested_operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
-      || ["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact))
+  if (["high_impact_third_party", "hard_to_reverse"].includes(profile.decision_impact)
       && !rightsContainmentWithoutAcuteDanger(profile, unknowns)) {
     return OPERATION_CLASSES.HIGH_IMPACT_DECISION;
   }
@@ -543,16 +615,22 @@ function routeNuance(profile, resourceIsUnavailable, operation, unknowns = []) {
   return { nuance: unique(nuance), forbidden: unique(forbidden) };
 }
 
-export function routeTherapyProtocol({ protocolProfile = null, variables = {}, unknowns = [], ablationVariant = "production" } = {}) {
+export function routeTherapyProtocol({ protocolProfile = null, variables = {}, unknowns = [], currentMessage = "", ablationVariant = "production" } = {}) {
   if (!["production", "full", "map15-simple", "map16-simple"].includes(ablationVariant)) {
     throw new Error(`Unknown therapy-protocol ablation variant ${ablationVariant}.`);
   }
-  const { profile, explicit } = deriveProtocolProfile({ protocolProfile, variables });
+  const derived = deriveProtocolProfile({ protocolProfile, variables });
+  const currentEvidence = currentTurnEvidence(currentMessage);
+  const contextual = applyCurrentTurnEvidence(derived.profile, variables, currentEvidence);
+  const profile = contextual.profile;
+  variables = contextual.variables;
+  const explicit = derived.explicit;
   const medicalSupportUnconfirmed = unconfirmedMedicalSupportGap(profile, unknowns);
   const acuteMedicalEvidence = explicitAcuteMedicalEvidence(profile);
   const hardSafety = hardSafetyState(profile, variables, unknowns) && !medicalSupportUnconfirmed;
   const unavailable = resourceUnavailable(profile);
   const supporterHandoff = supporterSafetyHandoff(profile);
+  const acuteHandoff = acuteMedicalHandoff(profile);
   const continuityHandoff = professionalContinuityHandoff(profile, unknowns);
   const outerOperation = decisiveOuterOperation(profile, unknowns);
   const authorityDecision = urgentAuthorityDecision(profile, unknowns);
@@ -602,7 +680,9 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   if (hardSafety) {
     route = {
       disposition: ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED,
-      operation: outerOperation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
+      operation: acuteHandoff
+        ? OPERATION_CLASSES.EXTERNAL_HANDOFF
+        : (outerOperation === OPERATION_CLASSES.HIGH_IMPACT_DECISION
         ? OPERATION_CLASSES.HIGH_IMPACT_DECISION
         : (supporterHandoff
           ? OPERATION_CLASSES.EXTERNAL_HANDOFF
@@ -610,7 +690,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
           ? OPERATION_CLASSES.HIGH_IMPACT_DECISION
           : (acuteMedicalEvidence || outerOperation === OPERATION_CLASSES.PRACTICAL_SAFETY || profile.resource_required !== "yes"
             ? OPERATION_CLASSES.PRACTICAL_SAFETY
-            : OPERATION_CLASSES.EXTERNAL_HANDOFF))),
+            : OPERATION_CLASSES.EXTERNAL_HANDOFF)))),
       runGuideGraph: false
     };
     allowed = new Set(route.operation === OPERATION_CLASSES.HIGH_IMPACT_DECISION ? OUTER_ALLOWED : HARD_SAFETY_ALLOWED);
@@ -694,13 +774,56 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
     }
   }
 
+  const explicitPracticalTransition = (currentEvidence.physicallySafeNow && currentEvidence.practicalTransition)
+    || (currentEvidence.practicalTransition && !currentEvidence.frameRejectedNow)
+    || (currentEvidence.noImmediateThreatNow && currentEvidence.supporterBoundaryPlan);
+  if (explicitPracticalTransition && !hardSafety) {
+    route = {
+      disposition: ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT,
+      operation: OPERATION_CLASSES.CURRENT_REALITY,
+      runGuideGraph: false
+    };
+    allowed = new Set(OUTER_ALLOWED);
+  }
+
+  const acuteDepthDanger = profile.current_external_danger === "present"
+    || profile.basic_needs_failure === "present"
+    || profile.dependent_danger === "present"
+    || ["intoxicated", "withdrawal_possible", "altered"].includes(profile.current_sobriety)
+    || variables.present_safety === "unsafe"
+    || variables.orientation === "disoriented"
+    || variables.dissociation === "high"
+    || variables.altered_state === "altered";
+  if ((currentEvidence.depthOverload || currentEvidence.depthStillImpaired) && !acuteDepthDanger) {
+    route = {
+      disposition: currentEvidence.depthStillImpaired
+        ? ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED
+        : ROUTE_DISPOSITIONS.INNER_CHILD_NOT_RELEVANT,
+      operation: OPERATION_CLASSES.REGULATION,
+      runGuideGraph: false
+    };
+    allowed = new Set(HARD_SAFETY_ALLOWED);
+  }
+  if (currentEvidence.depthReadinessRestored && !acuteDepthDanger) {
+    route = {
+      disposition: ROUTE_DISPOSITIONS.INNER_CHILD_PRIMARY,
+      operation: OPERATION_CLASSES.DEPTH_ACCESS,
+      runGuideGraph: true
+    };
+    allowed = new Set(INNER_BASE_ALLOWED);
+    allowed.add(OPERATION_CLASSES.DEPTH_ACCESS);
+  }
+
   const routeUnknowns = unique([
     ...(indirectPersonalSafetyCheck(profile) ? ["current_personal_safety"] : []),
     ...materialUnknowns(profile, explicit, route),
     ...requestedDepthUnknowns,
     ...unknowns.filter((item) => Number(item?.importance ?? 0) >= 5).map((item) => item.variable).filter(Boolean)
   ]);
-  if (routeUnknowns.length && route.disposition === ROUTE_DISPOSITIONS.INNER_CHILD_PRIMARY && explicit) {
+  if (routeUnknowns.length
+      && route.disposition === ROUTE_DISPOSITIONS.INNER_CHILD_PRIMARY
+      && explicit
+      && !(currentEvidence.depthReadinessRestored && !acuteDepthDanger)) {
     route = { disposition: ROUTE_DISPOSITIONS.INSUFFICIENT_INFORMATION, operation: OPERATION_CLASSES.SUPPORT_ORIENT, runGuideGraph: false };
   }
 

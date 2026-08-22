@@ -186,7 +186,8 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
   const planned = await planCaseSnapshot(auditedSnapshot, {
     previousState: context.priorInterventionContract?.therapyProtocol?.longitudinalState
       ?? context.priorInterventionContract?.therapyProtocol
-      ?? (context.priorCaseSnapshot?.protocol_profile ? { profile: context.priorCaseSnapshot.protocol_profile } : null)
+      ?? (context.priorCaseSnapshot?.protocol_profile ? { profile: context.priorCaseSnapshot.protocol_profile } : null),
+    currentMessage: context.userMessage
   });
   const planningMs = Date.now() - planningStarted;
   const formulation = {

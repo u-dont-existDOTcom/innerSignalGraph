@@ -67,13 +67,14 @@ function previousProtocolState(context = {}) {
     ?? (context.priorCaseSnapshot?.protocol_profile ? { profile: context.priorCaseSnapshot.protocol_profile } : null);
 }
 
-async function planSnapshot(snapshot, { previousState = null } = {}) {
+async function planSnapshot(snapshot, { previousState = null, currentMessage = "" } = {}) {
   const bundle = await loadCompiledGuideGraphBundle();
   const plan = planTherapyFromGraphs({
     variables: snapshot.variables,
     protocolProfile: snapshot.protocol_profile ?? null,
     previousProtocolState: previousState,
     unknowns: snapshot.unknowns,
+    currentMessage,
     graphs: bundle.graphs
   });
   return { plan, graphBundleVersion: bundle.version };
@@ -171,7 +172,10 @@ export async function runUnauditedCaseFormulation({ context, provider, onProgres
       protocol_profile_corrections: []
     }
   };
-  const { plan, graphBundleVersion } = await planSnapshot(snapshot, { previousState: previousProtocolState(context) });
+  const { plan, graphBundleVersion } = await planSnapshot(snapshot, {
+    previousState: previousProtocolState(context),
+    currentMessage: context.userMessage
+  });
   return {
     snapshot,
     plan,
@@ -187,7 +191,10 @@ export async function runAuditedCaseFormulation({ context, extractorProvider, au
   const extraction = await resolveCaseExtraction({ context, provider: extractorProvider, onProgress, recovery });
   const audit = await runCaseAuditWithRecovery({ context, snapshot: extraction.value, provider: auditorProvider, onProgress, recovery });
   const snapshot = applyCaseAudit(extraction.value, audit.value);
-  const { plan, graphBundleVersion } = await planSnapshot(snapshot, { previousState: previousProtocolState(context) });
+  const { plan, graphBundleVersion } = await planSnapshot(snapshot, {
+    previousState: previousProtocolState(context),
+    currentMessage: context.userMessage
+  });
   return {
     snapshot,
     plan,

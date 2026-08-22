@@ -176,8 +176,8 @@ function restrictGraphPlan(base, route, graphs, unknowns) {
   };
 }
 
-export function planTherapyFromGraphs({ variables, unknowns = [], graphs, protocolProfile = null, previousProtocolState = null, ablationVariant = "production" }) {
-  const route = routeTherapyProtocolLongitudinal({ previousState: previousProtocolState, protocolProfile, variables, unknowns, ablationVariant });
+export function planTherapyFromGraphs({ variables, unknowns = [], graphs, protocolProfile = null, previousProtocolState = null, currentMessage = "", ablationVariant = "production" }) {
+  const route = routeTherapyProtocolLongitudinal({ previousState: previousProtocolState, protocolProfile, variables, unknowns, currentMessage, ablationVariant });
   const graphBundleVersion = graphs[0]?.bundleVersion ?? null;
   if (!route.runGuideGraph) {
     return protocolOnlyPlan({ variables, unknowns, route, graphBundleVersion });

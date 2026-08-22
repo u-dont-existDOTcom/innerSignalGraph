@@ -95,12 +95,13 @@ export function transitionProtocolProfile({ previousState = null, protocolProfil
   };
 }
 
-export function routeTherapyProtocolLongitudinal({ previousState = null, protocolProfile = null, variables = {}, unknowns = [], ablationVariant = "production" } = {}) {
+export function routeTherapyProtocolLongitudinal({ previousState = null, protocolProfile = null, variables = {}, unknowns = [], currentMessage = "", ablationVariant = "production" } = {}) {
   const transitioned = transitionProtocolProfile({ previousState, protocolProfile });
   const route = routeTherapyProtocol({
     protocolProfile: transitioned.explicit ? transitioned.profile : null,
     variables,
     unknowns,
+    currentMessage,
     ablationVariant
   });
   return {
