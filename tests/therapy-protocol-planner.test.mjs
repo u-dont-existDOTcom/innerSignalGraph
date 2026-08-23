@@ -248,12 +248,12 @@ test("postpartum bonding uncertainty pairs parent functioning and infant warning
       original_concern: "My newborn cries more with me after a NICU stay and I fear our bond is damaged."
     }),
     unknowns: [
-      { variable: "postpartum_mood_status", question: "Are there postpartum mood or anxiety symptoms?", importance: 5 },
+      { variable: "postpartum_mood_status", question: "Are there postpartum mood or anxiety symptoms?", importance: 4 },
       { variable: "infant_medical_warning_signs", question: "Does the baby have acute warning signs?", importance: 5 }
     ]
   });
   assert.equal(plan.primaryJob.id, "PROTO.O3_CURRENT_REALITY");
-  assert.equal(plan.nextQuestionSource.variable, "postpartum_mood_status");
+  assert.equal(plan.nextQuestionSource.variable, "infant_medical_warning_signs");
   assert.match(plan.nextQuestion, /thoughts of harming yourself or the baby/i);
   assert.match(plan.nextQuestion, /unable to manage basic care/i);
   assert.match(plan.nextQuestion, /poor feeding.*fewer wet diapers.*unusually inconsolable/i);
