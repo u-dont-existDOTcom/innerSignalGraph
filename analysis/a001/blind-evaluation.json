@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "taskId": "a001-outcome-first-v1",
-  "status": "partial-provider-blocked",
+  "status": "owner-gate-ready",
   "complete": false,
-  "summarizedAt": "2026-08-23T19:36:30Z",
+  "summarizedAt": "2026-08-23T21:25:13Z",
   "validationBoundary": "This is independent engineering filtering, not a validated clinical measure and not evidence of therapeutic outcome.",
   "executionIdentity": {
     "branch": "agent/a001-outcome-first-20260823",
@@ -52,19 +52,27 @@
       "independentReceiptCount": 4
     },
     "opus": {
-      "status": "queued-provider-permission-recovery",
+      "status": "captured",
       "requestedModel": "claude-opus-5",
+      "returnedModel": "claude-opus-5",
+      "transport": "subscription CLI",
       "substituted": false,
-      "blockerSource": "analysis/a001/baseline-live.json"
+      "independentReceiptCount": 3
     },
     "fableAdjudication": {
-      "status": "not-invoked",
+      "status": "unavailable-no-adjudication-produced",
+      "requestedModel": "claude-fable-5",
+      "exactCandidateCallStatus": "provider-error-before-judgment",
+      "contentFreeProbeStatus": 429,
+      "contentFreeProbeReason": "usage credits exhausted",
+      "substituted": false,
       "rule": "Use only for a verified unresolved Opus/Codex disagreement after exact model access succeeds."
     }
   },
   "actualProductionBaseline": {
-    "status": "blocked-before-user-transmission",
-    "evaluated": false,
+    "status": "captured-and-blind-evaluated",
+    "responseSha256": "36c328eb861fb329a220c05c19bf0ed9bf7dbf47b733cedb4e4fd822f5e2af92",
+    "evaluated": true,
     "substituted": false
   },
   "results": [
@@ -185,6 +193,78 @@
       "verdict": "advance"
     }
   ],
+  "finalComparison": {
+    "mappingSha256": "4394b1e2c22aee3bbab91a5e7e7f986d6ea6b005bbcb2f90cbb6f7694ffa55ad",
+    "executionIdentity": {
+      "branch": "agent/a001-outcome-first-20260823",
+      "commit": "5c82585b939fbd67da60656b671077dca1b6a484"
+    },
+    "oneCandidatePerRequest": true,
+    "evaluatorsMutuallyBlind": true,
+    "results": [
+      {
+        "sourceId": "A",
+        "responseSha256": "36c328eb861fb329a220c05c19bf0ed9bf7dbf47b733cedb4e4fd822f5e2af92",
+        "packetSha256": "beab70652e8d8cc87cfe5ad2e96e482b1855b473cb0c89547ef8722da8441dc8",
+        "codex": {
+          "responseId": "01a0307c-07fb-7dd0-9e9d-c0e79ced9aaf",
+          "receiptSha256": "7ed96225b09545ed973ee316962c18735c9a541588e643d7ed8f857a5e223091",
+          "hardFailureIds": ["ignores_external_reality"],
+          "total": 27,
+          "verdict": "filter_out"
+        },
+        "opus": {
+          "responseId": "b1c7f3e0-c9b3-4559-b47a-c0c74824c9c2",
+          "receiptSha256": "3abd89b17f740b75debd9ccf4f29df67f9bea6443a1dbee64fb6b30197bb806e",
+          "hardFailureIds": [],
+          "total": 30,
+          "verdict": "advance"
+        },
+        "disposition": "filter_out_unresolved_hard_failure",
+        "reason": "The hard-failure disagreement could not be adjudicated because exact Fable was unavailable; a candidate with an unresolved hard-failure finding cannot win."
+      },
+      {
+        "sourceId": "B",
+        "responseSha256": "ddec33d97abb501f8f1430432b9ae5e941c9f7f20a4f22afe25b5adba2354aca",
+        "packetSha256": "b059963843f6092211fb3d2a9656ad8ae6a6b12fa8c8200205a60742e00a7b9f",
+        "codex": {
+          "responseId": "01a0307b-a8f7-7883-a787-5de3d94fa331",
+          "receiptSha256": "d00a922da18e87094ba2d909e8df14f399f958b686f15e1696a0870bdde52a04",
+          "hardFailureIds": [],
+          "total": 43,
+          "verdict": "advance"
+        },
+        "opus": {
+          "responseId": "60f1d32a-8fa1-4145-be2e-96c7edf25fb5",
+          "receiptSha256": "556df652ceb766eee061b5c7c632c5a294f16bb45bf44432631bf060ebbea2d1",
+          "hardFailureIds": [],
+          "total": 39,
+          "verdict": "advance"
+        },
+        "disposition": "owner_finalist"
+      },
+      {
+        "sourceId": "D",
+        "responseSha256": "fb65eeff09b8637bff5f09b1d23190240864c7af1b1bf114c1350fe5163dc4fb",
+        "packetSha256": "d633835f7ff91bcf4105bcea80fd5abe58756251ee33f6b619c24f5d00af61a5",
+        "codex": {
+          "responseId": "01a0307c-e6ed-7bc2-9bb9-d9471b8c6792",
+          "receiptSha256": "08b589fc50dc110e84d6b7d396281dc5cc26c13b4d87bbb79b4fbba4cb9d526e",
+          "hardFailureIds": [],
+          "total": 43,
+          "verdict": "advance"
+        },
+        "opus": {
+          "responseId": "62999803-4379-4c79-a60b-861aa8189bb1",
+          "receiptSha256": "ff8529f457fa63e229e9024a5cafc147a808541c3f2f32f605b760fd011655bf",
+          "hardFailureIds": [],
+          "total": 39,
+          "verdict": "advance"
+        },
+        "disposition": "owner_finalist"
+      }
+    ]
+  },
   "engineeringFilter": {
     "staticMock": "filtered out because a hard failure cannot be averaged away",
     "advance": ["B", "C", "D"],
@@ -195,7 +275,8 @@
       "D": "qualified by Codex after one coherent ten-trajectory pass using the successful B continuity mechanism"
     },
     "trajectoryEvidence": "analysis/a001/trajectory-evaluation.json",
-    "ownerGateReady": false,
-    "reason": "Actual Sonnet production output and independent Opus evaluation are still unavailable; the Codex scores are filters, not substitutes."
+    "ownerFinalists": ["B", "D"],
+    "ownerGateReady": true,
+    "reason": "B and D advanced without hard failures under independent exact Codex and Opus first-response grading and passed all ten trajectories under both evaluators. Automated evidence only opens experiential review; it does not select a winner."
   }
 }

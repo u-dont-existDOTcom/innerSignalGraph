@@ -25,24 +25,24 @@
 
 ## Phase 4 — real baseline
 
-- [ ] Inspect current production path, model roles, config, and A001 fixture/test.
-- [ ] Verify every exact model identifier with a live call.
-- [ ] Capture current static mock and actual production answers separately.
-- [ ] Save exact sanitized execution provenance to `analysis/a001/baseline-live.json`.
+- [x] Inspect current production path, model roles, config, and A001 fixture/test.
+- [x] Verify every exact model identifier with a live call.
+- [x] Capture current static mock and actual production answers separately.
+- [x] Save exact sanitized execution provenance to `analysis/a001/baseline-live.json`.
 
 ## Phase 5–7 — candidates and A001-only trajectories
 
-- [ ] Produce the four required materially different intervention arms.
-- [ ] Reject hard-failing candidates before scoring.
-- [ ] Run only the ten specified A001 longitudinal follow-ups.
-- [ ] Verify continuity without interpreting calm, task completion, or insight as repair.
+- [x] Produce the four required materially different intervention arms.
+- [x] Reject hard-failing candidates before scoring.
+- [x] Run only the ten specified A001 longitudinal follow-ups.
+- [x] Verify continuity without interpreting calm, task completion, or insight as repair.
 
 ## Phase 8 — blind independent evaluation
 
-- [ ] Freeze physically separated model and evaluator inputs.
-- [ ] Run independent verified Opus and strongest-Codex grading.
-- [ ] Escalate only unresolved verified disagreements to Fable if available.
-- [ ] Save candidates, `blind-evaluation.json`, and `adjudication.md` with exact provenance.
+- [x] Freeze physically separated model and evaluator inputs.
+- [x] Run independent verified Opus and strongest-Codex grading.
+- [x] Escalate only unresolved verified disagreements to Fable if available.
+- [x] Save candidates, `blind-evaluation.json`, and `adjudication.md` with exact provenance.
 
 ## Phase 9 — owner outcome check
 

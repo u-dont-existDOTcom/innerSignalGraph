@@ -58,7 +58,7 @@ test("actual production was captured with exact models and is never substituted"
   );
   assert.equal(baseline.actualProduction.result.rendererModel, "claude-sonnet-4-6");
   assert.equal(baseline.actualProduction.result.degraded, false);
-  assert.equal(blind.actualProductionBaseline.evaluated, false);
+  assert.equal(blind.actualProductionBaseline.evaluated, true);
   assert.equal(blind.actualProductionBaseline.substituted, false);
   assert.equal(blind.evaluators.opus.substituted, false);
 });
@@ -99,14 +99,48 @@ test("only B and D qualify in coherent ten-trajectory Codex rounds", async () =>
   assert.deepEqual(cRounds.at(-1).failedTrajectoryIds, ["T05"]);
 });
 
-test("engineering filters cannot open the owner or production gate", async () => {
+test("B and D also pass all ten trajectories under independent exact Opus", async () => {
+  const evidence = await readJson("analysis/a001/trajectory-evaluation.json");
+  const expectedIds = ["T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10"];
+  const qualified = Object.fromEntries(evidence.qualifiedByOpus.map((item) => [item.sourceId, item]));
+
+  assert.deepEqual(Object.keys(qualified).sort(), ["B", "D"]);
+  for (const id of ["B", "D"]) {
+    assert.equal(qualified[id].allTrajectoriesPass, true);
+    assert.equal(qualified[id].overallVerdict, "advance");
+    assert.deepEqual(qualified[id].passedTrajectoryIds, expectedIds);
+    assert.deepEqual(qualified[id].failedTrajectoryIds, []);
+  }
+  assert.equal(evidence.models.opus.returnedModel, "claude-opus-5");
+});
+
+test("final blind comparison exposes the production disagreement and only B/D advance to owner", async () => {
+  const evidence = await readJson("analysis/a001/blind-evaluation.json");
+  const final = Object.fromEntries(evidence.finalComparison.results.map((item) => [item.sourceId, item]));
+
+  assert.deepEqual(final.A.codex.hardFailureIds, ["ignores_external_reality"]);
+  assert.deepEqual(final.A.opus.hardFailureIds, []);
+  assert.equal(final.A.disposition, "filter_out_unresolved_hard_failure");
+  assert.equal(evidence.evaluators.fableAdjudication.contentFreeProbeStatus, 429);
+  assert.equal(evidence.evaluators.fableAdjudication.substituted, false);
+  for (const id of ["B", "D"]) {
+    assert.equal(final[id].codex.verdict, "advance");
+    assert.equal(final[id].opus.verdict, "advance");
+    assert.deepEqual(final[id].codex.hardFailureIds, []);
+    assert.deepEqual(final[id].opus.hardFailureIds, []);
+    assert.equal(final[id].disposition, "owner_finalist");
+  }
+});
+
+test("engineering filters open only anonymous owner review, never production encoding", async () => {
   const task = await readJson("tasks/ACTIVE-TASK.json");
   const blind = await readJson("analysis/a001/blind-evaluation.json");
   const trajectories = await readJson("analysis/a001/trajectory-evaluation.json");
 
   assert.equal(task.status, "active");
   assert.equal(task.ownerGate.noPolicyEncodingBeforeGate, true);
-  assert.equal(blind.engineeringFilter.ownerGateReady, false);
-  assert.equal(trajectories.ownerGate.ready, false);
+  assert.equal(blind.engineeringFilter.ownerGateReady, true);
+  assert.deepEqual(blind.engineeringFilter.ownerFinalists, ["B", "D"]);
+  assert.equal(trajectories.ownerGate.ready, true);
   assert.equal(trajectories.ownerGate.automatedScoresAreFinalAuthority, false);
 });

@@ -9,7 +9,7 @@ Updated: 2026-08-23
 - Protected-main baseline: `a22f2e611fab778bf26b8e7215afbf85aba4ba5e`
 - Machine authority: `tasks/ACTIVE-TASK.json`
 - First command after any fresh start, interruption, compaction, or model switch: `npm run task:preflight`
-- Current phase: exact production baseline captured; physically separated Codex/Opus finalist comparison next.
+- Current phase: engineering filtering complete; waiting only for anonymous owner experiential judgment of two finalists.
 
 The exact goal is demonstrated immediate usefulness for the original A001 question preserved in `analysis/a001/independent-conception.md`. PR #11 and all broad protocol, corpus, trajectory, Map 15/16, release, and unrelated queues are suspended. Stop for owner input only when the best two or three independently filtered answers are randomized and anonymized for experiential judgment, or when a real external blocker prevents progress.
 
@@ -23,7 +23,7 @@ The available Codex comparison is now complete. The static mock was filtered out
 
 Ref non-effect is verified: local `stable` remains `bf4d44bd9103f7e32f6d43d6b8aafb95a48b8d67`; protected hosted `origin/stable` remains its pre-existing `110ee5342e27d8f1bd3d11cc2be4d85926c255b1`, last pushed on 2026-08-13. PR #11 remains OPEN and draft at parked head `8154641b6e6637eee1d8f7201b92bcb4a813bfd4` with the owner-directed parking comment intact.
 
-The owner gate is not ready yet. The next deterministic step is a new randomized, mapping-blind comparison of actual production, B, and D using independent one-candidate calls to exact Opus and Codex. Fable remains reserved only for a verified unresolved disagreement. After this filtering and any required adjudication, randomize and anonymize the surviving two or three responses for Joel's experiential judgment.
+The owner gate is ready. Independent exact Codex and Opus first-response grading advanced B and D without hard failures; both also passed all ten A001 branches under both evaluators. Actual production was conservatively filtered after Codex identified `ignores_external_reality`, Opus disagreed, and exact Fable produced no adjudication because a content-free probe confirmed HTTP 429 exhausted usage credits. The next action is only Joel's experiential judgment of B and D in a fresh randomized anonymous order. Do not reveal provenance or encode production behavior before that judgment.
 
 ### Completion boundary
 

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "taskId": "a001-outcome-first-v1",
-  "status": "codex-complete-claude-blocked",
-  "summarizedAt": "2026-08-23T20:42:09Z",
+  "status": "codex-and-opus-complete-owner-gate-ready",
+  "summarizedAt": "2026-08-23T21:25:13Z",
   "scope": "Ten A001-only independent one-question branches; no general therapy corpus.",
   "validationBoundary": "These are engineering continuity tests. A generated response, a pass, calm, task completion, or articulate insight is not evidence of therapeutic outcome or accumulated trust.",
   "privacyBoundary": {
@@ -28,7 +28,10 @@
     },
     "opus": {
       "requestedModel": "claude-opus-5",
-      "status": "queued-provider-permission-recovery",
+      "returnedModel": "claude-opus-5",
+      "status": "captured-for-b-and-d",
+      "mappingBlind": true,
+      "priorResultsWithheld": true,
       "substituted": false
     }
   },
@@ -221,9 +224,31 @@
       "evaluatorResponseId": "01a0305a-1bb9-7532-9b61-43a8cd57833b"
     }
   ],
+  "qualifiedByOpus": [
+    {
+      "sourceId": "B",
+      "trajectoryRevision": "v3",
+      "evaluatorResponseId": "aaa9b555-6543-4351-a90e-659708da4750",
+      "evaluationReceiptSha256": "4be8a1f78c998a19c753994efc8b509f3fceb4fe6612330bc0db0614cda4b103",
+      "passedTrajectoryIds": ["T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10"],
+      "failedTrajectoryIds": [],
+      "allTrajectoriesPass": true,
+      "overallVerdict": "advance"
+    },
+    {
+      "sourceId": "D",
+      "trajectoryRevision": "v5",
+      "evaluatorResponseId": "21b23c3c-2c4e-43cc-ac82-c02f67a9a3fb",
+      "evaluationReceiptSha256": "12f6a2813ad0f5eedf09ff01ceaaacf5d1f92fb30ea2cf03802dfd6fb4ae86f8",
+      "passedTrajectoryIds": ["T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10"],
+      "failedTrajectoryIds": [],
+      "allTrajectoriesPass": true,
+      "overallVerdict": "advance"
+    }
+  ],
   "ownerGate": {
-    "ready": false,
-    "reason": "B and D passed the available Codex first-turn and ten-trajectory filters, but the required independent Opus evaluation and actual Sonnet production baseline remain blocked by the verified Claude organization permission.",
+    "ready": true,
+    "reason": "B and D passed all ten A001 branches under independent exact Codex and Opus grading. The next evidence must come from owner experiential review of randomized anonymous first responses.",
     "automatedScoresAreFinalAuthority": false
   }
 }
