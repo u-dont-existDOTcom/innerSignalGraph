@@ -1,6 +1,12 @@
-# Start here — PR #11 protocol comparison
+# Start here — parked PR #11 protocol comparison
 
 This file is the human-readable entry point for the exclusive task in `tasks/ACTIVE-TASK.json`.
+
+## Parked by owner directive
+
+This task was parked on 2026-08-23 for an owner-directed outcome-first pivot to the original A001 question. Preserve this branch and PR as research, but do not resume the 49-query campaign, general trajectories, Map 15/16 work, PR completion, merge, or release work unless Joel makes a later explicit owner decision to resume it.
+
+The last exact-head implementation checkpoint is commit `c6fc41e480215e24943b5d518b4777a4b3a53161`. The interrupted live campaign reached an `executed/blocked` temporary checkpoint but was not graded, accepted, or promoted into tracked evidence. The approved `live-remediation-contract-v1` therefore remains `approved-not-implemented`.
 
 ## Do not resume task selection from an old Codex conversation
 
@@ -28,7 +34,7 @@ Pull request:
 
 Use `git worktree list` to locate an existing worktree for that branch. If none exists, fetch the branch and create an isolated worktree. Do not continue from S001, `guide-packet-r03`, `stable`, `runtime-diagnostics`, or the root checkout merely because one of them is already open.
 
-## First commands
+## Historical first commands — do not run while parked
 
 From the exact PR #11 worktree:
 

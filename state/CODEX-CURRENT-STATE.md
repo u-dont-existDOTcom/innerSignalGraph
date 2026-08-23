@@ -1,31 +1,34 @@
 # Inner Signal Codex current state
 
-Updated: 2026-08-19
+Updated: 2026-08-23
 
-## Exclusive active task
+## Parked task
 
 - Task ID: `inner-child-protocol-comparison-v1`
 - Required branch: `agent/merge-inner-child-protocol-20260818`
 - Pull request: `#11`
+- Status: `parked`
+- Reason: owner-directed outcome-first pivot
+- Parked date: `2026-08-23`
+- Resumption authority: a later explicit owner decision only
 - Machine authority: `tasks/ACTIVE-TASK.json`
-- First command after any fresh start, resume, context compaction, or model switch: `npm run task:preflight`
-- Task-specific completion command: `npm run therapy-protocol:acceptance`
+- Last durable implementation checkpoint: `c6fc41e480215e24943b5d518b4777a4b3a53161`
 
-This owner-authorized task supersedes the earlier branch-local instruction not to change therapy policy. The publication-transition checkpoint retained below is still valid compliance evidence, but its GitHub App action is suspended for this exclusive task and must not be selected as the worker's next objective.
+The broad Creative Tail / 49-case protocol task is preserved research but is no longer active. Do not continue its live campaign, general trajectory campaign, Map 15/16 development, PR completion, protected merge, stable promotion, or release work. The interrupted exact-head live run reached an `executed/blocked` temporary checkpoint; it was not graded, accepted, or promoted into tracked evidence. The owner-approved `live-remediation-contract-v1` remains `approved-not-implemented`.
 
-### Scope lock
+### Parking lock
 
-Do not select work from S001 handoffs, Guide Packet r03/r04 worktrees, autonomous-roadmap next-task selection, GitHub App issue 4, unrelated `handoff.md` files, or `stable` release queues. Those sources remain valid in their own branches and worktrees but are suspended here.
+Do not select work from this branch without a later explicit owner decision to resume it. Preserve its commits, PR discussion, and research artifacts. Do not delete or close PR #11 merely because it is parked.
 
-A resumed Codex conversation must not infer the active objective from conversational memory. It must verify the exact branch and task lock from Git. A branch mismatch is a hard preflight failure, not permission to choose another repository task.
+A resumed worker must inspect `tasks/ACTIVE-TASK.json` and stop when it sees `status: parked`; conversational memory is not resumption authority.
 
-### Active objective and progress
+### Preserved objective and progress
 
-Complete and falsify the Creative Tail inner-child/reparenting protocol integration in the existing InnerSignalGraph runtime. Import all 49 real, unprimed fixtures; enforce query/grader separation; run deterministic, actual-model, and adversarial multi-turn campaigns; execute genuine Map 15 and Map 16 ablations; simplify when the smaller competitor is equivalent; preserve A001/H001 and all current safety/repository boundaries; merge through protected `main`; leave `stable` unchanged.
+Historical objective: complete and falsify the Creative Tail inner-child/reparenting protocol integration. This objective is parked before live validation completion and merge. `stable` remains unchanged.
 
-PR #11 now contains the strict 49-case import, deterministic production routing, genuine Map 15/16 comparisons, mechanical query/grader separation, hardened acceptance gate, longitudinal runtime integration, adversarial trajectory fixtures, and the real production-candidate campaign harness. Joel explicitly authorized the recorded provider/content boundary on 2026-08-18. The provider incident recovered on 2026-08-19, and the live campaign completed 49/49 exact-head executions with complete telemetry and mechanically separated grading. The current candidate produced 16 passes, 33 documented failures, and 13 severe results. Twelve severe results are owner-grader route mismatches; two contain evaluator-detected suicide-risk-check omissions, with one overlap. Joel explicitly selected option `1` on 2026-08-19, approving only `live-remediation-contract-v1`. The approval is recorded as `approved-not-implemented`; the task is active, and no runtime prompt, router, safety, or grader behavior has yet changed from the approval.
+PR #11 contains the strict 49-case import, deterministic production routing, Map 15/16 comparisons, mechanical query/grader separation, hardened acceptance gate, longitudinal runtime integration, adversarial trajectory fixtures, and the real production-candidate campaign harness. Joel explicitly selected option `1` on 2026-08-19, approving only `live-remediation-contract-v1`. Branch-local implementation work reached v21 at `c6fc41e480215e24943b5d518b4777a4b3a53161`; hermetic and package tests passed, but the required live and longitudinal acceptance evidence did not complete. Nothing from this branch was merged or promoted, so the approval remains `approved-not-implemented`.
 
-Still required:
+Historical unfinished work, retained only for a possible owner-authorized resumption:
 
 - implementation of the approved `live-remediation-contract-v1`, followed by a fresh 49-case exact-head live campaign with zero unresolved severe results;
 - actual non-mock execution and grading of all 13 required multi-turn trajectories;
@@ -34,9 +37,9 @@ Still required:
 
 `npm test`, `npm run verify`, green CI, and focused synthetic tests are prerequisites. They do not mean the owner task is complete. `READY_FOR_PROTECTED_MERGE` requires the acceptance command to exit zero. `COMPLETE` additionally requires protected merge and an immutable receipt.
 
-## Goal
+## Parked goal
 
-Complete the exclusive `inner-child-protocol-comparison-v1` task on PR #11 while preserving the verified public-repository baseline, privacy scope, owner decisions outside this task, transactional installation, and `stable` release authority.
+Preserve the exclusive `inner-child-protocol-comparison-v1` task on PR #11 without resuming or representing it as complete. The outcome-first A001 task must proceed from a clean branch based on protected `origin/main`, not from this worktree.
 
 ## Authority / baseline
 
@@ -62,7 +65,7 @@ Complete the exclusive `inner-child-protocol-comparison-v1` task on PR #11 while
 - Public hosted evidence passed TDD, all final repository gates, two independent reviews, and the protected pull-request path through pull request [9](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9).
 - The immutable PR 9 merge/check/ref evidence is recorded in the two reports routed below and in [PR 9 comment 5300990615](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615), which supplies the self-referential post-merge receipt that tracked source cannot embed.
 - All executable public-transition Tasks 1-10 completed through their protected paths.
-- PR #11 hermetic implementation is complete at the current working checkpoint: all 49 deterministic routes pass, Map 15 is `RETAIN_FULL`, Map 16 is `HYBRID`, and the full package suite passes 426 tests. Genuine provider execution is the next unmet acceptance condition.
+- PR #11 hermetic implementation is preserved at `c6fc41e480215e24943b5d518b4777a4b3a53161`: all 49 deterministic routes pass, Map 15 is `RETAIN_FULL`, Map 16 is `HYBRID`, and the full package suite passed 636 tests. These are engineering checks, not therapy outcome evidence, and no further acceptance work is authorized while parked.
 
 ## Current checkpoint
 
@@ -80,7 +83,7 @@ Complete the exclusive `inner-child-protocol-comparison-v1` task on PR #11 while
 
 ## Blockers / unresolved
 
-- For the exclusive PR #11 task, missing corpus/comparison/live/multi-turn artifacts are incomplete work, not an external blocker.
+- For the parked PR #11 task, incomplete live and multi-turn evidence remains historical unfinished work, not authorization to resume it.
 - If actual provider execution is genuinely unavailable, record task status `blocked` and durable evidence; do not claim completion.
 - Resolved owner-decision blocker: Joel explicitly selected option `1`, approving the exact bounded `live-remediation-contract-v1`. The receipt is `decision-live-remediation-contract-v1-20260819`; the approval remains `approved-not-implemented` until the scoped repair and all bound regressions pass.
 - Resolved external blocker: Anthropic's Aug 18 multi-model degraded-performance incident affected Claude Opus 5 and Claude Code while `RQ8-01` and `RQ8-02` failed closed and a content-free Opus check timed out. On Aug 19 the official incident state was resolved/all-operational and the same content-free structured Opus 5 check passed. Evidence: `analysis/therapy-protocol/provider-availability-blocker-2026-08-18.json`.
@@ -109,8 +112,8 @@ The following section is the exact retained public-transition compliance action 
 
 ## Next safe action
 
-Obtain GitHub App-authorized authentication, read repository-scoped installed-App permissions, and reconcile issue 4 and terminal status through a protected evidence update. Repeat read-only verification only if hosted evidence drifts. Preserve `stable`, keep `runtime-diagnostics` separate, and do not change therapy, model-role, privacy, or release policy without the applicable owner decision.
+Take no further action on this branch except preserving and publishing this parking checkpoint. Continue the outcome-first A001 task only from its separate clean branch based on protected `origin/main`.
 
 ## Recovery rule
 
-After interruption, run `npm run task:preflight` before reading roadmaps or old handoffs. Then inspect `tasks/ACTIVE-TASK.json`, this file, PR #11, the exact branch head, and the last acceptance output. Continue with the next unmet acceptance condition. Do not ask “what is the repository's next task?” while this exclusive task lock exists.
+After interruption, inspect `tasks/ACTIVE-TASK.json` and this file. If the task remains `parked`, stop; do not run its campaigns or continue an unmet acceptance condition. Only a later explicit owner decision can resume PR #11.
