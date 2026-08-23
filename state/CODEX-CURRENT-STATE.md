@@ -21,6 +21,8 @@ The exact access gate on 2026-08-23 verified `gpt-5.6-sol` by live structured ca
 
 The available Codex comparison is now complete. The static mock was filtered out on a hard failure. B and D each advanced in the blind first-response filter and then passed all ten A001 trajectories in coherent runs; C was rejected after successive coherent generations moved its remaining failure from T04 to T05. The full prose-free engineering history is in `analysis/a001/blind-evaluation.json`, `analysis/a001/trajectory-evaluation.json`, and `analysis/a001/adjudication.md`. Candidate and evaluator prose remains owner-only in the non-Git sibling packet. No production prompt, graph, guide, policy, or therapy ledger was changed.
 
+Ref non-effect is verified: local `stable` remains `bf4d44bd9103f7e32f6d43d6b8aafb95a48b8d67`; protected hosted `origin/stable` remains its pre-existing `110ee5342e27d8f1bd3d11cc2be4d85926c255b1`, last pushed on 2026-08-13. PR #11 remains OPEN and draft at parked head `8154641b6e6637eee1d8f7201b92bcb4a813bfd4` with the owner-directed parking comment intact.
+
 The owner gate is not ready. Exact actual Sonnet production output and independent Opus evaluation remain mandatory and unavailable at the verified external permission boundary. Next after the external state changes: re-probe exact Opus and Sonnet, capture the actual tiered production response, run Opus blind evaluation of production/B/D, use Fable only for a verified unresolved disagreement, then randomize and anonymize the best surviving two or three responses for Joel. Do not substitute another model while labeling it production or Opus evidence.
 
 ### Completion boundary

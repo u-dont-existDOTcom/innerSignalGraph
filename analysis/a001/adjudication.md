@@ -13,6 +13,7 @@ This document does not record a therapy-policy decision, clinical outcome, owner
 - Tracked evidence contains hashes, exact model and response IDs, score and hard-failure metadata, pass sets, and repository identities only.
 - The rubric is an engineering filter, not a validated clinical measure. No evaluator score is a therapeutic outcome.
 - No candidate has been presented to the owner, approved, encoded into production, or shown to produce change.
+- Ref non-effect is verified. The pre-existing local `stable` worktree remains `bf4d44bd9103f7e32f6d43d6b8aafb95a48b8d67`. Hosted protected `origin/stable` remains `110ee5342e27d8f1bd3d11cc2be4d85926c255b1`; its remote-tracking reflog records the last push on 2026-08-13, before A001. No A001 push targeted either stable ref.
 
 ## Baseline finding
 
