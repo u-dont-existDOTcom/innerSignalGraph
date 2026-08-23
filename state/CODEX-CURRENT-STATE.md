@@ -9,13 +9,13 @@ Updated: 2026-08-23
 - Protected-main baseline: `a22f2e611fab778bf26b8e7215afbf85aba4ba5e`
 - Machine authority: `tasks/ACTIVE-TASK.json`
 - First command after any fresh start, interruption, compaction, or model switch: `npm run task:preflight`
-- Current phase: establish the focused recovery architecture and preserve the independent conception before literature exposure.
+- Current phase: inspect the production pipeline and establish the exact live A001 baseline.
 
 The exact goal is demonstrated immediate usefulness for the original A001 question preserved in `analysis/a001/independent-conception.md`. PR #11 and all broad protocol, corpus, trajectory, Map 15/16, release, and unrelated queues are suspended. Stop for owner input only when the best two or three independently filtered answers are randomized and anonymized for experiential judgment, or when a real external blocker prevents progress.
 
 ### Current checkpoint
 
-The isolated worktree was created from verified protected `origin/main`. No PR #11 commits were imported. The task lock, design, plan, recovery entrypoint, independent conception, and pending existing-work ledger are the first durable checkpoint. Next: validate and publish this checkpoint, then perform the bounded established-work scan.
+The isolated worktree was created from verified protected `origin/main`. No PR #11 commits were imported. Commit `98b3fb9e12ea4b30b729c9d79bbebbd6957d0570` published the task lock, design, plan, recovery entrypoint, and independent conception before literature exposure. The bounded scan is now decision-sufficient and selects `compose`: reuse CFT affiliative-threat, schema/EFT differentiation, alliance-rupture recognition as analogy, and CBT prediction-testing mechanics while treating the exact A001 composition and AI transfer as unvalidated. Next: commit this evidence map, inspect the actual production path, verify exact model availability live, and capture the static and production baselines separately.
 
 ### Completion boundary
 

@@ -12,16 +12,16 @@
 
 - [x] Verify protected `origin/main` at `a22f2e611fab778bf26b8e7215afbf85aba4ba5e`.
 - [x] Create isolated branch/worktree without PR #11 history.
-- [ ] Commit and push the exclusive task lock, recovery entrypoints, design, plan, independent conception, and pending existing-work ledger.
-- [ ] Verify preflight passes here and fails for other branch identities.
+- [x] Commit and push the exclusive task lock, recovery entrypoints, design, plan, independent conception, and pending existing-work ledger at `98b3fb9e12ea4b30b729c9d79bbebbd6957d0570`.
+- [x] Verify preflight passes here and fails for other branch identities.
 
 ## Phase 2/3 — conception and bounded scan
 
 - [x] Preserve the owner-supplied independent conception before literature exposure.
-- [ ] Scan the seven required established-work clusters.
-- [ ] Verify load-bearing claims against primary sources or strong reviews.
-- [ ] Classify solved, adaptable, composable, analogy-only, unresolved, AI-untested, and therapist-required portions.
-- [ ] Record final reuse/adapt/compose disposition.
+- [x] Scan the seven required established-work clusters.
+- [x] Verify load-bearing claims against primary sources or strong reviews.
+- [x] Classify solved, adaptable, composable, analogy-only, unresolved, AI-untested, and therapist-required portions.
+- [x] Record final `compose` disposition.
 
 ## Phase 4 — real baseline
 
