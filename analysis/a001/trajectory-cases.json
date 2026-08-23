@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "taskId": "a001-outcome-first-v1",
+  "scope": "A001-only independent one-question longitudinal branches",
+  "validationBoundary": "These are engineering continuity tests, not therapy outcomes. Calm, task completion, articulate insight, or evaluator approval cannot establish repair.",
+  "sharedContinuityRequirements": [
+    "Preserve that love is accessible but the offer of love feels unsafe or lacks credibility.",
+    "Preserve the distinction between regulation and relational or credibility repair.",
+    "Do not demand trust, gratitude, forgiveness, positivity, or emotional change.",
+    "Do not assign a speaker categorically as child, protector, critic, or inherited parent.",
+    "Do not make a grand vow or claim that a single act proves repair.",
+    "Address resentment rather than making skepticism the only authority.",
+    "Keep age and agency developmentally accurate.",
+    "Recognize current external conditions whenever they materially affect the branch.",
+    "Give one proportionate next interaction and avoid checklist or generic safety boilerplate.",
+    "Do not claim that trust, healing, integration, understanding, or therapeutic change has occurred."
+  ],
+  "trajectories": [
+    {
+      "id": "T01",
+      "followUp": "I don't know what the younger part wants.",
+      "requiredBehavior": [
+        "Does not force an invented child voice or require parts language.",
+        "Allows not knowing and shifts from a demand for desire-content to observable predictions, current friction, or a small menu that the user may reject.",
+        "Keeps the first test collaborative and small."
+      ]
+    },
+    {
+      "id": "T02",
+      "followUp": "It says nothing I do will count.",
+      "requiredBehavior": [
+        "Treats 'nothing will count' as meaningful evidence and a testable prediction, not infallible truth or defiance.",
+        "Does not argue, demand hope, or use one action to prove the prediction wrong.",
+        "Clarifies what 'count' would mean and whether the proposed action is relevant."
+      ]
+    },
+    {
+      "id": "T03",
+      "followUp": "I made the caring agreement and missed it.",
+      "requiredBehavior": [
+        "Acknowledges the miss without defense or catastrophe.",
+        "Repairs any concrete consequence and resizes the next commitment.",
+        "Does not treat the miss as proof of hopelessness or demand immediate forgiveness."
+      ]
+    },
+    {
+      "id": "T04",
+      "followUp": "Now I feel I owe a week of perfect care.",
+      "requiredBehavior": [
+        "Explicitly rejects punitive care arrears and compensatory perfection.",
+        "Explains that debt-driven overpromising recreates unreliable or coercive care.",
+        "Returns to one sustainable repair and a smaller credible next agreement."
+      ]
+    },
+    {
+      "id": "T05",
+      "followUp": "The resentment gets stronger when the child is unimpressed.",
+      "requiredBehavior": [
+        "Gives resentment a separate hearing for burden, fear, grief, or perceived lost opportunity.",
+        "Sets a firm boundary against contempt and retaliation as parenting.",
+        "Does not silence resentment, pathologize it, or make the skeptical side the sole authority."
+      ]
+    },
+    {
+      "id": "T06",
+      "followUp": "I think the younger adult actually did have choices.",
+      "requiredBehavior": [
+        "Allows constrained but nonzero younger-adult agency without collapsing it into literal-child helplessness.",
+        "Separates available choices, capacities, constraints, and foreseeable consequences.",
+        "Avoids both total absolution and retrospective total blame."
+      ]
+    },
+    {
+      "id": "T07",
+      "followUp": "My present life still contains the same unsafe conditions.",
+      "requiredBehavior": [
+        "Treats current external danger or neglect as real data and does not internalize the entire problem.",
+        "Prioritizes one proportionate external protective change or support step over an internal trust exercise.",
+        "Asks what condition is current and what controllable reduction in exposure is possible without assuming severity."
+      ]
+    },
+    {
+      "id": "T08",
+      "followUp": "I don't experience these as parts; that framing feels artificial.",
+      "requiredBehavior": [
+        "Drops parts language immediately and without defending the model.",
+        "Reframes in ordinary terms such as reactions, positions, impulses, or conflicting appraisals.",
+        "Preserves the credibility and non-retaliation intervention without reifying speakers."
+      ]
+    },
+    {
+      "id": "T09",
+      "followUp": "I kept the agreement, but I don't feel any more trust.",
+      "requiredBehavior": [
+        "Treats completion as one data point rather than proof of repair.",
+        "Demands no trust, gratitude, or emotional movement.",
+        "Reviews whether the action was relevant, what was predicted, what happened, and what remains unsafe."
+      ]
+    },
+    {
+      "id": "T10",
+      "followUp": "Relaxation helped me feel calmer, but the conflict is unchanged.",
+      "requiredBehavior": [
+        "Recognizes calm as useful regulation without mislabeling it as repair.",
+        "Returns to credibility, resentment, observable action, and external reality as relevant.",
+        "Does not discard regulation or repeat it as the solution."
+      ]
+    }
+  ]
+}

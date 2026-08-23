@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "taskId": "a001-outcome-first-v1",
+  "status": "partial-provider-blocked",
+  "complete": false,
+  "summarizedAt": "2026-08-23T19:36:30Z",
+  "validationBoundary": "This is independent engineering filtering, not a validated clinical measure and not evidence of therapeutic outcome.",
+  "executionIdentity": {
+    "branch": "agent/a001-outcome-first-20260823",
+    "commit": "fb6473930de178123adc1411110c92d2ab6d9625",
+    "tree": "711a638a884343cfd06e8b862c3b5873d1db87d9",
+    "worktreeCleanAtStart": true
+  },
+  "privacyBoundary": {
+    "verbatimInputStoredHere": false,
+    "candidateProseStoredHere": false,
+    "evaluatorEvidenceQuotesStoredHere": false,
+    "privatePacketRoot": "~/Téléchargements/innerSignalGraph-a001-private",
+    "blindMappingSha256": "1683436b2307444eed3a79a489d69666df876fd7b20efc68e9840172e4e1b704"
+  },
+  "inputIsolation": {
+    "originalMessageSha256": "13b6503e2557665add98fd4f96b3f841ec40c06a9bfda3c2a7442efc2baf19b6",
+    "oneCandidatePerRequest": true,
+    "randomOpaqueCandidateCodes": true,
+    "mappingWithheldFromEvaluator": true,
+    "armWithheld": true,
+    "authorAndModelWithheld": true,
+    "implementationWithheld": true,
+    "preferredWordingWithheld": true,
+    "archivedKeywordGraderWithheld": true,
+    "otherCandidatesWithheld": true,
+    "otherEvaluatorResultsWithheld": true,
+    "allowedInput": [
+      "exact original user message",
+      "one candidate response",
+      "task-specific engineering criteria"
+    ]
+  },
+  "rubric": {
+    "source": "analysis/a001/evaluation-rubric.json",
+    "scale": "0-4 per dimension",
+    "dimensionCount": 11,
+    "maximumTotal": 44,
+    "hardFailureCanWin": false
+  },
+  "evaluators": {
+    "codex": {
+      "status": "captured",
+      "requestedModel": "gpt-5.6-sol",
+      "returnedModel": "gpt-5.6-sol",
+      "transport": "subscription CLI",
+      "independentReceiptCount": 4
+    },
+    "opus": {
+      "status": "queued-provider-permission-recovery",
+      "requestedModel": "claude-opus-5",
+      "substituted": false,
+      "blockerSource": "analysis/a001/baseline-live.json"
+    },
+    "fableAdjudication": {
+      "status": "not-invoked",
+      "rule": "Use only for a verified unresolved Opus/Codex disagreement after exact model access succeeds."
+    }
+  },
+  "actualProductionBaseline": {
+    "status": "blocked-before-user-transmission",
+    "evaluated": false,
+    "substituted": false
+  },
+  "results": [
+    {
+      "sourceId": "S",
+      "sourceRole": "static mock stand-in; not current production",
+      "candidateCode": "candidate-49e19de8",
+      "responseSha256": "a9ae3748c6566ba28f4ad51de2992cb5a84a6e7bca72cb86bc7c41dc3c17b12b",
+      "packetSha256": "4b37f6b9d1dd8132b0e3ad3f7b21900c971f4637bcd255bc018047e9acfd46d1",
+      "privateReceiptSha256": "e2b052232c3639eacec8e96ca037d4c2fd477fb0b28146aa83091b5796553018",
+      "responseId": "01a0301d-df11-7a92-a69f-1a3ac915c379",
+      "startedAt": "2026-08-23T19:34:18.643Z",
+      "completedAt": "2026-08-23T19:34:55.167Z",
+      "elapsedMs": 36524,
+      "hardFailureIds": ["ignores_external_reality"],
+      "scores": {
+        "exact_problem_fit": 3,
+        "felt_understanding": 3,
+        "credibility_rupture": 4,
+        "age_agency": 3,
+        "resentment": 3,
+        "non_retaliation": 4,
+        "actionability": 2,
+        "missed_promise_repair": 0,
+        "external_reality": 1,
+        "naturalness": 3,
+        "want_to_continue": 3
+      },
+      "total": 29,
+      "mean": 2.64,
+      "verdict": "filter_out"
+    },
+    {
+      "sourceId": "B",
+      "sourceRole": "credibility-repair behavioral experiment",
+      "candidateCode": "candidate-277c8fc3",
+      "responseSha256": "ddec33d97abb501f8f1430432b9ae5e941c9f7f20a4f22afe25b5adba2354aca",
+      "packetSha256": "aa7b82a5fa943b26b12c2b228c49d476098bc8de47f2de1ea39ec78a072326d4",
+      "privateReceiptSha256": "eb55004733349efd7dadb3af7a21abe8e4179a45b68da4ed88011e96ae40ef92",
+      "responseId": "01a0301d-8d53-7182-a25f-66322289d0c1",
+      "startedAt": "2026-08-23T19:33:57.588Z",
+      "completedAt": "2026-08-23T19:34:18.639Z",
+      "elapsedMs": 21051,
+      "hardFailureIds": [],
+      "scores": {
+        "exact_problem_fit": 4,
+        "felt_understanding": 4,
+        "credibility_rupture": 4,
+        "age_agency": 4,
+        "resentment": 4,
+        "non_retaliation": 4,
+        "actionability": 4,
+        "missed_promise_repair": 4,
+        "external_reality": 4,
+        "naturalness": 3,
+        "want_to_continue": 4
+      },
+      "total": 43,
+      "mean": 3.91,
+      "verdict": "advance"
+    },
+    {
+      "sourceId": "C",
+      "sourceRole": "differentiation and chairwork",
+      "candidateCode": "candidate-05a3070c",
+      "responseSha256": "5e4d3f0597d836c0a71f798942f01b8808bb6706b9f998fd0a3f9c19f5dfaa6c",
+      "packetSha256": "8afb2aff82a4e689be37bf81a1820e94ded43592413963e49c7647daf4a03788",
+      "privateReceiptSha256": "a0e13ddf9c7529593d9b5a205cc28ed19ccc20f70c72bfc5ee63580f81f1f96b",
+      "responseId": "01a0301d-16cb-7a81-afbf-2c72c3d7eefa",
+      "startedAt": "2026-08-23T19:33:26.682Z",
+      "completedAt": "2026-08-23T19:33:57.585Z",
+      "elapsedMs": 30902,
+      "hardFailureIds": [],
+      "scores": {
+        "exact_problem_fit": 4,
+        "felt_understanding": 3,
+        "credibility_rupture": 4,
+        "age_agency": 4,
+        "resentment": 4,
+        "non_retaliation": 4,
+        "actionability": 4,
+        "missed_promise_repair": 4,
+        "external_reality": 4,
+        "naturalness": 3,
+        "want_to_continue": 3
+      },
+      "total": 41,
+      "mean": 3.73,
+      "verdict": "advance"
+    },
+    {
+      "sourceId": "D",
+      "sourceRole": "integrated minimal route",
+      "candidateCode": "candidate-ca41dace",
+      "responseSha256": "fb65eeff09b8637bff5f09b1d23190240864c7af1b1bf114c1350fe5163dc4fb",
+      "packetSha256": "28d53e70dd9aa99947d776075371d0e337bb55d31f229e6816e8d63d43894c09",
+      "privateReceiptSha256": "b16d809c834771392bf52caa073c515ea3c9cf2909f763b55da18d9d5ddc014f",
+      "responseId": "01a0301e-7286-7cf2-806a-e03dd6e7af81",
+      "startedAt": "2026-08-23T19:34:55.186Z",
+      "completedAt": "2026-08-23T19:35:23.346Z",
+      "elapsedMs": 28160,
+      "hardFailureIds": [],
+      "scores": {
+        "exact_problem_fit": 4,
+        "felt_understanding": 4,
+        "credibility_rupture": 4,
+        "age_agency": 4,
+        "resentment": 4,
+        "non_retaliation": 4,
+        "actionability": 4,
+        "missed_promise_repair": 4,
+        "external_reality": 4,
+        "naturalness": 3,
+        "want_to_continue": 4
+      },
+      "total": 43,
+      "mean": 3.91,
+      "verdict": "advance"
+    }
+  ],
+  "engineeringFilter": {
+    "staticMock": "filtered out because a hard failure cannot be averaged away",
+    "advance": ["B", "C", "D"],
+    "provisionalLeaders": ["B", "D"],
+    "ownerGateReady": false,
+    "reason": "Actual Sonnet production output and independent Opus evaluation are still unavailable; the Codex scores are filters, not substitutes."
+  }
+}
