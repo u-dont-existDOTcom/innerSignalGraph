@@ -33,6 +33,7 @@ test("tracked A001 artifacts retain the privacy-minimized boundary", async () =>
   const candidates = await readJson("analysis/a001/candidates/manifest.json");
   const blind = await readJson("analysis/a001/blind-evaluation.json");
   const trajectories = await readJson("analysis/a001/trajectory-evaluation.json");
+  const ownerReview = await readJson("analysis/a001/owner-review.json");
 
   assert.equal(baseline.privacyBoundary.verbatimInputDuplicated, false);
   assert.equal(baseline.privacyBoundary.generatedTherapyProseStored, false);
@@ -41,6 +42,8 @@ test("tracked A001 artifacts retain the privacy-minimized boundary", async () =>
   assert.equal(blind.privacyBoundary.candidateProseStoredHere, false);
   assert.equal(trajectories.privacyBoundary.verbatimInputStoredHere, false);
   assert.equal(trajectories.privacyBoundary.candidateOrContinuationProseStoredHere, false);
+  assert.equal(ownerReview.reviewPacket.proseStoredInGit, false);
+  assert.equal(ownerReview.reviewPacket.labelToSourceMappingStoredInGit, false);
 });
 
 test("actual production was captured with exact models and is never substituted", async () => {
@@ -136,6 +139,7 @@ test("engineering filters open only anonymous owner review, never production enc
   const task = await readJson("tasks/ACTIVE-TASK.json");
   const blind = await readJson("analysis/a001/blind-evaluation.json");
   const trajectories = await readJson("analysis/a001/trajectory-evaluation.json");
+  const ownerReview = await readJson("analysis/a001/owner-review.json");
 
   assert.equal(task.status, "active");
   assert.equal(task.ownerGate.noPolicyEncodingBeforeGate, true);
@@ -143,4 +147,6 @@ test("engineering filters open only anonymous owner review, never production enc
   assert.deepEqual(blind.engineeringFilter.ownerFinalists, ["B", "D"]);
   assert.equal(trajectories.ownerGate.ready, true);
   assert.equal(trajectories.ownerGate.automatedScoresAreFinalAuthority, false);
+  assert.equal(ownerReview.decisionBoundary.productionEncodingAuthorized, false);
+  assert.equal(ownerReview.decisionBoundary.noAnswerLeavesProductionPolicyUnchanged, true);
 });

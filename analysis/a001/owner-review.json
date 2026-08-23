@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "taskId": "a001-outcome-first-v1",
+  "status": "awaiting-owner-experiential-judgment",
+  "createdAt": "2026-08-23T21:30:54.332Z",
+  "executionIdentity": {
+    "branch": "agent/a001-outcome-first-20260823",
+    "commit": "254eb1fa0c2accb4ca6e7221f1b531a7f34779c7"
+  },
+  "reviewPacket": {
+    "responseCount": 2,
+    "labels": ["Response 1", "Response 2"],
+    "reviewSha256": "6be934a8c86fae11ad011d4d4c3f9fca92f8ae7d573f4b93046e51077ecf4214",
+    "mappingSha256": "17d9239c37c270065c88255abc63f0cc96fbce01bc52e892e52c94a364568b82",
+    "proseStoredInGit": false,
+    "labelToSourceMappingStoredInGit": false,
+    "modelArmAndArchitectureWithheld": true,
+    "privateFileMode": "0600"
+  },
+  "decisionBoundary": {
+    "ownerExperientialJudgmentRequired": true,
+    "automatedScoresAreFinalAuthority": false,
+    "noAnswerLeavesProductionPolicyUnchanged": true,
+    "productionEncodingAuthorized": false,
+    "therapyOutcomeClaimed": false,
+    "permittedClaimAfterPositiveRating": "demonstrated immediate usefulness"
+  }
+}

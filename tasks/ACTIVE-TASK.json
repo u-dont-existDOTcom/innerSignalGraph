@@ -42,7 +42,8 @@
       "analysis/a001/existing-work-scan.md",
       "analysis/a001/baseline-live.json",
       "analysis/a001/blind-evaluation.json",
-      "analysis/a001/adjudication.md"
+      "analysis/a001/adjudication.md",
+      "analysis/a001/owner-review.json"
     ],
     "requiredCandidateDirectory": "analysis/a001/candidates",
     "requiredTrajectoryCount": 10,

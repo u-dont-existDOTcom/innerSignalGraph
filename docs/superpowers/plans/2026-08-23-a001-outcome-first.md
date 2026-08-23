@@ -46,7 +46,7 @@
 
 ## Phase 9 — owner outcome check
 
-- [ ] Randomize and anonymize the best two or three responses.
+- [x] Randomize and anonymize the best two or three responses.
 - [ ] Stop and request owner experiential judgment without revealing provenance.
 
 ## Phase 10/11 — winning implementation and verification
