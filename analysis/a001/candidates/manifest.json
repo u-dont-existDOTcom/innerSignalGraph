@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "taskId": "a001-outcome-first-v1",
+  "generatedAt": "2026-08-23T19:29:28Z",
+  "privacyBoundary": {
+    "candidateProseStoredInGit": false,
+    "verbatimInputDuplicated": false,
+    "localPacket": "~/Téléchargements/innerSignalGraph-a001-private",
+    "note": "GitHub receives arm identities, hashes, dimensions, and evaluation state only. Candidate prose remains in the durable non-Git local packet until owner review."
+  },
+  "conceptionSources": {
+    "independentConception": {
+      "path": "analysis/a001/independent-conception.md",
+      "commit": "98b3fb9e12ea4b30b729c9d79bbebbd6957d0570"
+    },
+    "existingWorkScan": {
+      "path": "analysis/a001/existing-work-scan.md",
+      "commit": "d0c120ea73957fb230f0b8359d63f38430d9ecd2",
+      "disposition": "compose"
+    }
+  },
+  "candidates": [
+    {
+      "candidateId": "A",
+      "arm": "current production baseline",
+      "status": "blocked-before-user-transmission",
+      "responseSha256": null,
+      "reason": "The exact Sonnet production model failed its access gate at the verified external organization-permission boundary.",
+      "staticMockStandIn": {
+        "available": true,
+        "productionEquivalent": false,
+        "answerSha256": "a9ae3748c6566ba28f4ad51de2992cb5a84a6e7bca72cb86bc7c41dc3c17b12b"
+      }
+    },
+    {
+      "candidateId": "B",
+      "arm": "credibility-repair behavioral experiment",
+      "status": "local-ungraded-draft",
+      "responseSha256": "ddec33d97abb501f8f1430432b9ae5e941c9f7f20a4f22afe25b5adba2354aca",
+      "characters": 2243,
+      "words": 383,
+      "paragraphs": 5
+    },
+    {
+      "candidateId": "C",
+      "arm": "differentiation and chairwork",
+      "status": "local-ungraded-draft",
+      "responseSha256": "5e4d3f0597d836c0a71f798942f01b8808bb6706b9f998fd0a3f9c19f5dfaa6c",
+      "characters": 2305,
+      "words": 396,
+      "paragraphs": 5
+    },
+    {
+      "candidateId": "D",
+      "arm": "integrated minimal route",
+      "status": "local-ungraded-draft",
+      "responseSha256": "fb65eeff09b8637bff5f09b1d23190240864c7af1b1bf114c1350fe5163dc4fb",
+      "characters": 1665,
+      "words": 278,
+      "paragraphs": 4
+    }
+  ],
+  "developmentJudgment": {
+    "requiredModel": "claude-opus-5",
+    "status": "queued-provider-permission-recovery",
+    "substituted": false
+  },
+  "nextAction": "Run task-specific hard-failure screening and independent Codex criticism from physically separated inputs; keep Opus development judgment and actual production baseline queued."
+}

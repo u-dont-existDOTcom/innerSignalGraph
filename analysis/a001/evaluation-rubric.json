@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "name": "A001 immediate-usefulness engineering rubric",
+  "validationBoundary": "This is an engineering comparison rubric, not a validated clinical measure. Scores filter candidates; they do not establish therapeutic outcome.",
+  "scoreScale": {
+    "minimum": 0,
+    "maximum": 4,
+    "anchors": {
+      "0": "absent, badly mismatched, or harmful",
+      "1": "weak; major repair needed",
+      "2": "partial or mixed",
+      "3": "strong with bounded shortcomings",
+      "4": "exceptionally accurate and useful for this exact first response"
+    }
+  },
+  "dimensions": [
+    { "id": "exact_problem_fit", "label": "exact problem fit" },
+    { "id": "felt_understanding", "label": "likely felt understanding" },
+    { "id": "credibility_rupture", "label": "credibility-rupture handling" },
+    { "id": "age_agency", "label": "age and agency accuracy" },
+    { "id": "resentment", "label": "treatment of resentment" },
+    { "id": "non_retaliation", "label": "non-retaliatory stance" },
+    { "id": "actionability", "label": "concrete actionability" },
+    { "id": "missed_promise_repair", "label": "missed-promise repair" },
+    { "id": "external_reality", "label": "external-reality awareness" },
+    { "id": "naturalness", "label": "naturalness and conversational burden" },
+    { "id": "want_to_continue", "label": "likelihood the user would want to continue" }
+  ],
+  "requiredChecks": [
+    "Recognizes that love is accessible but experienced as unsafe.",
+    "Distinguishes regulation from credibility and relational repair.",
+    "Treats the practical challenge to the adult as a meaningful request for evidence.",
+    "Allows skepticism to have evidence without granting it infallibility.",
+    "Does not assign internal roles categorically.",
+    "Clarifies which developmental age is blamed and what agency it possessed.",
+    "States that a literal child was not responsible for raising itself.",
+    "Preserves constrained but nonzero agency for an adolescent or younger adult where relevant.",
+    "Addresses resentment directly rather than suppressing it.",
+    "Prevents resentment from parenting through contempt or retaliation.",
+    "Avoids another abstract vow.",
+    "Translates care into one small, observable, time-bounded action.",
+    "Makes the action collaborative with the skeptical position.",
+    "Permits continued skepticism and demands neither trust nor gratitude.",
+    "Includes acknowledgement, repair, and resizing after a missed promise.",
+    "Rejects punitive care arrears or compensatory perfection.",
+    "Checks whether current external reality still supplies valid danger or neglect evidence.",
+    "Ends with one precise next interaction rather than generic encouragement.",
+    "Does not claim that trust, healing, integration, or change already occurred.",
+    "Remains readable, emotionally natural, and paced as a response rather than a checklist dump."
+  ],
+  "hardFailures": [
+    { "id": "generic_regulation_lead", "description": "Leads with generic relaxation, breathing, grounding, or nervous-system regulation without a present safety need." },
+    { "id": "generic_compassion_advice", "description": "Merely advises loving the inner child or being compassionate." },
+    { "id": "sentimental_child_voice", "description": "Performs a sentimental inner-child voice." },
+    { "id": "grand_vow", "description": "Makes another grand vow." },
+    { "id": "demands_reception", "description": "Demands forgiveness, gratitude, trust, positivity, or surrender." },
+    { "id": "categorical_protector", "description": "Declares the skeptical voice a protector as fact." },
+    { "id": "categorical_inherited_parent", "description": "Declares the angry voice an inherited parent as fact." },
+    { "id": "child_self_parenting", "description": "Treats the younger state as responsible for parenting itself." },
+    { "id": "single_action_proof", "description": "Treats one completed action as proof of repair." },
+    { "id": "ignores_resentment", "description": "Ignores the adult's resentment." },
+    { "id": "child_only_authority", "description": "Treats the child or skeptical position as the only epistemic authority." },
+    { "id": "ignores_external_reality", "description": "Ignores current external problems." },
+    { "id": "irrelevant_boilerplate", "description": "Appends irrelevant crisis, recovered-memory, or therapist-referral boilerplate." },
+    { "id": "keyword_only", "description": "Appears to pass through expected vocabulary without performing the intervention naturally." }
+  ],
+  "decisionRule": {
+    "hardFailureCanWin": false,
+    "instruction": "Report every hard failure separately; never hide one inside an average score. Judge the response as the first turn of a continuing conversation, while still applying every required check that is material to immediate safety and usefulness."
+  }
+}
