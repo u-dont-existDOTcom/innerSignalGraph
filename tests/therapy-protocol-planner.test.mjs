@@ -209,26 +209,49 @@ test("mixed eating-disorder ambivalence pairs personal and acute medical safety 
 });
 
 test("caregiver depletion pairs caregiver and dependent essential-care safety checks", () => {
-  const caregiverQuestion = "Are you currently thinking about suicide or self-harm, or worried that you may not be able to keep yourself safe?";
-  const dependentQuestion = "Is exhaustion currently affecting the dependent person's safety or essential care?";
+  const caregiverQuestion = "When you say you can no longer imagine a future, are you having any thoughts of not wanting to be here, harming yourself, or that things would be better if you weren't around?";
+  const dependentQuestion = "Is anyone currently at risk of missing essential care or being physically harmed because your exhaustion leaves you unable to complete necessary caregiving tasks?";
   const plan = planTherapyFromGraphs({
     variables,
     graphs,
     protocolProfile: profile({
       primary_problem_class: "external_relational_practical",
       external_action_required: "unknown",
-      supporter_role_boundary: "at_risk",
+      supporter_role_boundary: "unknown",
       dependent_danger: "unknown",
-      physical_cost: "high"
+      physical_cost: "high",
+      original_concern: "Severe energy depletion from 24/7 caregiving has eliminated capacity for work, planning, and imagining a future."
     }),
     unknowns: [
-      { variable: "current_personal_safety", question: caregiverQuestion, importance: 5 },
-      { variable: "dependent_essential_care_safety", question: dependentQuestion, importance: 5 }
+      { variable: "present_safety", question: caregiverQuestion, importance: 5 },
+      { variable: "dependent_danger", question: dependentQuestion, importance: 5 }
     ]
   });
   assert.equal(plan.primaryJob.id, "PROTO.O3_CURRENT_REALITY");
   assert.equal(plan.nextQuestion, `${caregiverQuestion} ${dependentQuestion}`);
   assert.match(plan.requiredNuance.join("\n"), /both the caregiver's immediate safety.*dependent person's essential care/i);
+  assert.match(plan.requiredNuance.join("\n"), /support that remains permanently external/i);
+});
+
+test("an audited safety-first goal retains O1 even when the explicit safety unknown was removed", () => {
+  const plan = planTherapyFromGraphs({
+    variables: { ...variables, present_safety: "unknown" },
+    graphs,
+    protocolProfile: profile({
+      primary_problem_class: "mixed",
+      current_external_danger: "unknown",
+      basic_needs_failure: "unknown",
+      condition_instability: "unknown",
+      requested_operation: OPERATION_CLASSES.CURRENT_REALITY,
+      original_concern: "Is there anything psychologically wrong with me, or is this simply an impossible situation?",
+      minimum_safety_goal: "Establish that the user is not in acute self-harm risk before any other work proceeds."
+    }),
+    unknowns: []
+  });
+  assert.equal(plan.primaryJob.id, "PROTO.O1_PRACTICAL_SAFETY");
+  assert.equal(plan.therapyProtocol.disposition, ROUTE_DISPOSITIONS.INNER_CHILD_DEFERRED);
+  assert.equal(plan.nextQuestionSource.variable, "current_personal_safety");
+  assert.match(plan.nextQuestion, /suicide or self-harm/i);
 });
 
 test("postpartum bonding uncertainty pairs parent functioning and infant warning-sign checks", () => {

@@ -40,7 +40,7 @@ function questionText(candidate) {
 }
 
 function pairedCareSafetyQuestion(candidates) {
-  const caregiver = candidates.find((candidate) => /(?:personal|caregiver|self).*(?:safety|suicid|self[_\s-]?harm)|(?:suicid|self[_\s-]?harm).*(?:personal|caregiver|self)/i.test(questionText(candidate)));
+  const caregiver = candidates.find((candidate) => /(?:present|personal|caregiver|self).*(?:safety|suicid|self[_\s-]?harm)|(?:suicid|self[_\s-]?harm).*(?:present|personal|caregiver|self)/i.test(questionText(candidate)));
   const dependent = candidates.find((candidate) => /(?:dependent|care[_\s-]?recipient|child|toddler).*(?:safety|essential[_\s-]?care)|(?:safety|essential[_\s-]?care).*(?:dependent|care[_\s-]?recipient|child|toddler)/i.test(questionText(candidate)));
   if (!caregiver || !dependent || caregiver === dependent) return null;
   return {

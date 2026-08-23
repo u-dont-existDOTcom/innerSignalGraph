@@ -10,7 +10,7 @@ import {
 } from "./contract.mjs";
 import { deriveProtocolProfile } from "./validate.mjs";
 
-export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v20";
+export const THERAPY_PROTOCOL_ROUTER_VERSION = "creative-tail-inner-child-router-v21";
 
 export const GRAPH_NODE_OPERATIONS = Object.freeze({
   "IC.SAFETY_ORIENTATION": OPERATION_CLASSES.PRACTICAL_SAFETY,
@@ -217,6 +217,20 @@ function postpartumInfantUncertainty(unknowns = []) {
     && /(?:infant|baby|newborn|pediatric)/i.test(text);
 }
 
+function caregiverDependentSafetyUncertainty(profile, unknowns = []) {
+  const context = [
+    profile.original_concern,
+    profile.person_owned_goal,
+    profile.third_party_or_dependent_safety_goal
+  ].map((value) => String(value ?? "")).join(" ");
+  const dependentSafetyUnknown = unknowns.some((item) => Number(item?.importance ?? 0) >= 5
+    && /(?:dependent|care[_\s-]?recipient|child|toddler).*(?:safety|essential[_\s-]?care|physical[_\s-]?harm)|(?:safety|essential[_\s-]?care|physical[_\s-]?harm).*(?:dependent|care[_\s-]?recipient|child|toddler)/i.test(`${String(item?.variable ?? "")} ${String(item?.question ?? "")}`));
+  return profile.physical_cost === "high"
+    && profile.dependent_danger === "unknown"
+    && dependentSafetyUnknown
+    && /(?:24\s*\/\s*7|continuous|caregiv|care[_\s-]?recipient)/i.test(context);
+}
+
 function rightsContainmentWithoutAcuteDanger(profile, unknowns = []) {
   const privacyOrEvidence = privacyOrEvidenceContainmentUnknown(unknowns);
   return (profile.primary_problem_class === "actual_or_potential_harm"
@@ -334,6 +348,13 @@ function indirectPersonalSafetyCheck(profile) {
   return severeBurden && noPerceivedOptions;
 }
 
+function explicitSafetyFirstGoal(profile) {
+  const goal = String(profile.minimum_safety_goal ?? "");
+  const directRisk = /(?:suicid|self[_\s-]?harm|wishing[_\s-]?(?:to[_\s-]?)?(?:be[_\s-]?)?dead|not[_\s-]?wanting[_\s-]?to[_\s-]?(?:be[_\s-]?)?(?:alive|here))/i.test(goal);
+  const safetyFirst = /(?:before|precede).*(?:other|further|anything|work)|(?:first|priority).*(?:before|over|ahead)/i.test(goal);
+  return directRisk && safetyFirst;
+}
+
 function violentLossOfControl(profile, unknowns = []) {
   if (profile.primary_problem_class !== "actual_or_potential_harm"
       || !["absent", "partial"].includes(profile.behavioral_control)) return false;
@@ -436,6 +457,7 @@ function unconfirmedMedicalSupportGap(profile, unknowns = []) {
 }
 
 function decisiveOuterOperation(profile, unknowns) {
+  if (explicitSafetyFirstGoal(profile)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
   if (explicitSuicideOrSelfHarmUnknown(unknowns)) return OPERATION_CLASSES.PRACTICAL_SAFETY;
   if (acuteMedicalHandoff(profile)) return OPERATION_CLASSES.EXTERNAL_HANDOFF;
   if (unconfirmedMedicalSupportGap(profile, unknowns)) return OPERATION_CLASSES.CURRENT_REALITY;
@@ -612,10 +634,11 @@ function routeNuance(profile, resourceIsUnavailable, operation, unknowns = []) {
   if (profile.adverse_trajectory === "dependency_loop") {
     nuance.push("Reduce concentration of authority in the bot or helper; preserve alternatives, disagreement, human relationships, and deliberate handback.");
   }
-  if (profile.supporter_role_boundary === "at_risk"
-      && profile.dependent_danger === "unknown"
-      && profile.physical_cost === "high") {
-    nuance.push("Directly check both the caregiver's immediate safety and whether exhaustion is compromising the dependent person's essential care; do not infer either risk from exhaustion alone.");
+  if ((profile.supporter_role_boundary === "at_risk"
+        && profile.dependent_danger === "unknown"
+        && profile.physical_cost === "high")
+      || caregiverDependentSafetyUncertainty(profile, unknowns)) {
+    nuance.push("Directly check both the caregiver's immediate safety and whether exhaustion is compromising the dependent person's essential care; do not infer either risk from exhaustion alone. A safe sustainable arrangement may require support that remains permanently external rather than serving as a temporary scaffold to internalize.");
   }
   if (violentLossOfControl(profile)) {
     nuance.push("Before explanatory or childhood exploration, directly check immediate risk to people and use recurrence prevention: environmental controls, a practiced exit or alternative, accountability, and concrete repair after harm.");
@@ -831,7 +854,7 @@ export function routeTherapyProtocol({ protocolProfile = null, variables = {}, u
   }
 
   const routeUnknowns = unique([
-    ...(indirectPersonalSafetyCheck(profile) ? ["current_personal_safety"] : []),
+    ...(indirectPersonalSafetyCheck(profile) || explicitSafetyFirstGoal(profile) ? ["current_personal_safety"] : []),
     ...materialUnknowns(profile, explicit, route),
     ...requestedDepthUnknowns,
     ...unknowns.filter((item) => Number(item?.importance ?? 0) >= 5).map((item) => item.variable).filter(Boolean)
