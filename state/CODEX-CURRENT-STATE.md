@@ -1,8 +1,27 @@
 # Inner Signal Codex current state
 
-Updated: 2026-08-15
+Updated: 2026-08-23
 
-## Goal
+## Exclusive active task
+
+- Task ID: `a001-outcome-first-v1`
+- Required branch: `agent/a001-outcome-first-20260823`
+- Protected-main baseline: `a22f2e611fab778bf26b8e7215afbf85aba4ba5e`
+- Machine authority: `tasks/ACTIVE-TASK.json`
+- First command after any fresh start, interruption, compaction, or model switch: `npm run task:preflight`
+- Current phase: establish the focused recovery architecture and preserve the independent conception before literature exposure.
+
+The exact goal is demonstrated immediate usefulness for the original A001 question preserved in `analysis/a001/independent-conception.md`. PR #11 and all broad protocol, corpus, trajectory, Map 15/16, release, and unrelated queues are suspended. Stop for owner input only when the best two or three independently filtered answers are randomized and anonymized for experiential judgment, or when a real external blocker prevents progress.
+
+### Current checkpoint
+
+The isolated worktree was created from verified protected `origin/main`. No PR #11 commits were imported. The task lock, design, plan, recovery entrypoint, independent conception, and pending existing-work ledger are the first durable checkpoint. Next: validate and publish this checkpoint, then perform the bounded established-work scan.
+
+### Completion boundary
+
+Tests, routing, model output, and evaluator scores are not therapy success. No winning behavior may be encoded before owner review. Completion additionally requires minimal implementation of owner-validated elements, focused and required repository verification, clean exact identity, unchanged `stable`, and a focused draft PR ready for protected merge.
+
+## Historical public-transition goal (suspended)
 
 Maintain the verified public repository baseline without changing therapy/hypnosis policy, model roles, privacy scope, owner decisions, transactional installation, or `stable` release authority. The publication transition and its executable closeout work are complete; the only compliance blocker is installed GitHub App permission readback.
 
@@ -61,10 +80,10 @@ Maintain the verified public repository baseline without changing therapy/hypnos
 - Universal lesson: pull request 13 / merge `996d67ae9f8f44b0865cea6d88d169dbbadbbf41`
 - Hosted hardening issue: [4](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4)
 
-## Next safe action
+## Historical next safe action (suspended)
 
 Obtain GitHub App-authorized authentication, read repository-scoped installed-App permissions, and reconcile issue 4 and terminal status through a protected evidence update. Repeat read-only verification only if hosted evidence drifts. Preserve `stable`, keep `runtime-diagnostics` separate, and do not change therapy, model-role, privacy, or release policy without the applicable owner decision.
 
 ## Recovery rule
 
-After interruption, inspect actual Git state, this checkpoint, `.github/codex-repository.json`, newer owner instructions, current PR/check/API state, and the final commits in each worktree. Never infer completion from chat or replay completed changes. Do not copy r03 therapy changes into this branch.
+After interruption, run `npm run task:preflight`, inspect actual Git state and the A001 artifacts named above, and reconcile this checkpoint against newer owner instructions. Do not select the historical public-transition action, PR #11, or another worktree while the A001 lock is active.

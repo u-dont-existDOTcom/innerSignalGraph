@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "taskId": "a001-outcome-first-v1",
+  "title": "Demonstrate immediate usefulness for the original A001 inner-child credibility question",
+  "status": "active",
+  "exclusive": true,
+  "repository": "u-dont-existDOTcom/innerSignalGraph",
+  "requiredBranch": "agent/a001-outcome-first-20260823",
+  "pullRequest": null,
+  "ownerAuthorized": true,
+  "source": {
+    "repository": "u-dont-existDOTcom/innerSignalGraph",
+    "protectedMainSha": "a22f2e611fab778bf26b8e7215afbf85aba4ba5e"
+  },
+  "preflightCommand": "npm run task:preflight",
+  "completionCommand": "npm run a001:acceptance",
+  "completionClaimRule": "Tests and evaluator scores are engineering evidence only. This task cannot be complete until the owner identifies an actual generated response as useful enough to continue with, the winning behavior is minimally implemented, focused and required repository gates pass, and a focused draft PR is ready for protected merge.",
+  "researchBeforeReinvention": {
+    "applicability": "required",
+    "independentConception": "analysis/a001/independent-conception.md",
+    "existingWorkScan": "analysis/a001/existing-work-scan.md",
+    "expectedDisposition": "compose"
+  },
+  "suspendedTaskSources": [
+    "PR #11 and agent/merge-inner-child-protocol-20260818",
+    "the 49-query Creative Tail campaign",
+    "the 13 general therapy-protocol trajectories",
+    "Map 15/16 development and ablation",
+    "broad protocol taxonomy or ontology work",
+    "stable promotion and release queues",
+    "unrelated security, repository, article, guide-packet, and infrastructure work",
+    "historical current-state next actions"
+  ],
+  "ownerGate": {
+    "stopCondition": "two or three independently filtered answers are ready for randomized anonymized experiential review",
+    "authority": "owner experiential judgment is final for A001",
+    "noPolicyEncodingBeforeGate": true
+  },
+  "acceptance": {
+    "requiredArtifacts": [
+      "analysis/a001/independent-conception.md",
+      "analysis/a001/existing-work-scan.md",
+      "analysis/a001/baseline-live.json",
+      "analysis/a001/blind-evaluation.json",
+      "analysis/a001/adjudication.md"
+    ],
+    "requiredCandidateDirectory": "analysis/a001/candidates",
+    "requiredTrajectoryCount": 10,
+    "requiredOwnerReview": true,
+    "requiredDocumentation": [
+      "docs/superpowers/specs/2026-08-23-a001-outcome-first-design.md",
+      "docs/superpowers/plans/2026-08-23-a001-outcome-first.md"
+    ],
+    "stableMustRemainUnchanged": true
+  }
+}
