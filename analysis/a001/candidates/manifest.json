@@ -40,7 +40,7 @@
       "characters": 2243,
       "words": 383,
       "paragraphs": 5,
-      "experimentalContinuationContractSha256": "b69b02b6c273f7b909b47ec7767bb68635fc42dd474e1d2901846732824da364"
+      "experimentalContinuationContractSha256": "d9aac87827278a705ef9f8ff5ee71e658f2988d27ce294f9b3729c28ea67e17d"
     },
     {
       "candidateId": "C",
@@ -50,7 +50,7 @@
       "characters": 2305,
       "words": 396,
       "paragraphs": 5,
-      "experimentalContinuationContractSha256": "7b679daa618e376aa50440e90ced5829b230e3a0a5161ed7e7026675d9662d1c"
+      "experimentalContinuationContractSha256": "04ca27356194bcc00ff0a767960c7071f13a3bcafa38a73196a23ba98b8f131b"
     },
     {
       "candidateId": "D",

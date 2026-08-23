@@ -15,7 +15,7 @@ function argumentValue(name, fallback) {
 }
 
 const revision = argumentValue("--revision", "v1");
-if (!/^v[1-9][0-9]*$/.test(revision)) throw new Error("--revision must look like v1 or v2.");
+if (!/^v[1-9][0-9]*$/.test(revision)) throw new Error("--revision must look like v1, v2, or another positive revision.");
 const inputRoot = path.join(privateRoot, `trajectory-evaluation-inputs${revision === "v1" ? "" : `-${revision}`}`);
 const outputRoot = path.join(privateRoot, `trajectory-evaluation-outputs/${revision === "v1" ? "codex" : `codex-${revision}`}`);
 
@@ -80,7 +80,9 @@ async function main() {
     isolateConfig: true
   });
   const inputFiles = (await fs.readdir(inputRoot)).filter((name) => name.endsWith(".json")).sort();
-  if (inputFiles.length !== 3) throw new Error(`Expected 3 trajectory evaluation packets, found ${inputFiles.length}.`);
+  if (inputFiles.length < 1 || inputFiles.length > 3) {
+    throw new Error(`Expected from 1 to 3 trajectory evaluation packets, found ${inputFiles.length}.`);
+  }
   const receipts = [];
 
   for (const inputFile of inputFiles) {

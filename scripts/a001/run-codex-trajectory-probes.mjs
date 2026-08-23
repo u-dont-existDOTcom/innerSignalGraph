@@ -16,7 +16,11 @@ function argumentValue(name, fallback) {
 }
 
 const revision = argumentValue("--revision", "v1");
-if (!/^v[1-9][0-9]*$/.test(revision)) throw new Error("--revision must look like v1 or v2.");
+if (!/^v[1-9][0-9]*$/.test(revision)) throw new Error("--revision must look like v1, v2, or another positive revision.");
+const candidateIds = argumentValue("--candidate-ids", "B,C,D").split(",").map((item) => item.trim()).filter(Boolean);
+if (candidateIds.length === 0 || candidateIds.some((item) => !["B", "C", "D"].includes(item)) || new Set(candidateIds).size !== candidateIds.length) {
+  throw new Error("--candidate-ids must be a unique comma-separated subset of B,C,D.");
+}
 const outputRoot = path.join(privateRoot, `trajectory-outputs/${revision === "v1" ? "codex" : `codex-${revision}`}`);
 
 const continuationSchema = {
@@ -55,7 +59,7 @@ async function main() {
   await fs.mkdir(outputRoot, { recursive: true });
   const receipts = [];
 
-  for (const candidateId of ["B", "C", "D"]) {
+  for (const candidateId of candidateIds) {
     const candidate = JSON.parse(await fs.readFile(path.join(privateRoot, `candidates/${candidateId}.json`), "utf8"));
     const continuationContractText = revision === "v1"
       ? ""
@@ -133,7 +137,7 @@ async function main() {
     }
   }
 
-  process.stdout.write(`${JSON.stringify({ revision, model: provider.model, captured: receipts.filter((item) => item.status === "captured").length, failed: receipts.filter((item) => item.status === "failed").length })}\n`);
+  process.stdout.write(`${JSON.stringify({ revision, candidateIds, model: provider.model, captured: receipts.filter((item) => item.status === "captured").length, failed: receipts.filter((item) => item.status === "failed").length })}\n`);
   if (receipts.some((item) => item.status !== "captured")) process.exitCode = 1;
 }
 

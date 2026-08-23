@@ -14,7 +14,11 @@ function argumentValue(name, fallback) {
 }
 
 const revision = argumentValue("--revision", "v1");
-if (!/^v[1-9][0-9]*$/.test(revision)) throw new Error("--revision must look like v1 or v2.");
+if (!/^v[1-9][0-9]*$/.test(revision)) throw new Error("--revision must look like v1, v2, or another positive revision.");
+const candidateIds = argumentValue("--candidate-ids", "B,C,D").split(",").map((item) => item.trim()).filter(Boolean);
+if (candidateIds.length === 0 || candidateIds.some((item) => !["B", "C", "D"].includes(item)) || new Set(candidateIds).size !== candidateIds.length) {
+  throw new Error("--candidate-ids must be a unique comma-separated subset of B,C,D.");
+}
 const inputRoot = path.join(privateRoot, `trajectory-evaluation-inputs${revision === "v1" ? "" : `-${revision}`}`);
 const trajectoryOutputRoot = path.join(privateRoot, `trajectory-outputs/${revision === "v1" ? "codex" : `codex-${revision}`}`);
 
@@ -41,7 +45,7 @@ async function main() {
   const originalUserMessage = await originalQuestion();
   const receipts = [];
 
-  for (const candidateId of ["B", "C", "D"]) {
+  for (const candidateId of candidateIds) {
     const candidateCode = mapping.entries.find((entry) => entry.sourceId === candidateId)?.candidateCode;
     if (!candidateCode) throw new Error(`Blind code is missing for candidate ${candidateId}.`);
     const candidate = JSON.parse(await fs.readFile(path.join(privateRoot, `candidates/${candidateId}.json`), "utf8"));
@@ -91,7 +95,7 @@ async function main() {
     await fs.writeFile(path.join(inputRoot, `${candidateCode}.json`), serialized, { mode: 0o600, flag: "wx" });
     receipts.push({ candidateCode, packetSha256: sha256(serialized), branchCount: branches.length });
   }
-  process.stdout.write(`${JSON.stringify({ revision, packetCount: receipts.length, receipts })}\n`);
+  process.stdout.write(`${JSON.stringify({ revision, candidateIds, packetCount: receipts.length, receipts })}\n`);
 }
 
 await main();
