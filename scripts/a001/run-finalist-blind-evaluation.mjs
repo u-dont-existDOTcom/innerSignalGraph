@@ -18,8 +18,15 @@ function argumentValue(name) {
 }
 
 const evaluatorName = argumentValue("--evaluator");
-if (!new Set(["codex", "opus"]).has(evaluatorName)) {
-  throw new Error("--evaluator must be exactly codex or opus.");
+if (!new Set(["codex", "opus", "fable"]).has(evaluatorName)) {
+  throw new Error("--evaluator must be exactly codex, opus, or fable.");
+}
+const candidateCode = argumentValue("--candidate-code");
+if (candidateCode && !/^answer-[0-9a-f]{10}$/.test(candidateCode)) {
+  throw new Error("--candidate-code must be an opaque finalist answer code.");
+}
+if (evaluatorName === "fable" && !candidateCode) {
+  throw new Error("Fable is adjudication-only and requires one explicit opaque --candidate-code.");
 }
 const outputRoot = path.join(evaluationRoot, "outputs", evaluatorName);
 
@@ -94,7 +101,7 @@ function createEvaluator() {
     });
   }
   return new ClaudeCliProvider({
-    model: "claude-opus-5",
+    model: evaluatorName === "fable" ? "claude-fable-5" : "claude-opus-5",
     effort: "high",
     timeoutMs: 900000,
     cwd: projectRoot,
@@ -107,8 +114,12 @@ async function main() {
   if (!preflight.ok) throw new Error(`A001 task preflight failed: ${preflight.findings.join(", ")}`);
   await fs.mkdir(outputRoot, { recursive: true, mode: 0o700 });
   const provider = createEvaluator();
-  const inputFiles = (await fs.readdir(inputRoot)).filter((name) => name.endsWith(".json")).sort();
-  if (inputFiles.length !== 3) throw new Error(`Expected exactly three finalist packets; found ${inputFiles.length}.`);
+  const allInputFiles = (await fs.readdir(inputRoot)).filter((name) => name.endsWith(".json")).sort();
+  if (allInputFiles.length !== 3) throw new Error(`Expected exactly three finalist packets; found ${allInputFiles.length}.`);
+  const inputFiles = candidateCode ? allInputFiles.filter((name) => name === `${candidateCode}.json`) : allInputFiles;
+  if (inputFiles.length !== (candidateCode ? 1 : 3)) {
+    throw new Error(candidateCode ? `Opaque finalist packet not found: ${candidateCode}.` : "Finalist packet selection failed.");
+  }
   const receipts = [];
 
   for (const inputFile of inputFiles) {
