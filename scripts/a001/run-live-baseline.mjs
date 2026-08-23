@@ -287,9 +287,10 @@ async function main() {
     exactInput: {
       source: "analysis/a001/independent-conception.md",
       sha256: sha256(question),
-      userMessage: question,
-      recentTranscript: "",
-      userFacts: []
+      canonicalTextStoredHere: false,
+      privacyNote: "The verbatim text is not duplicated in this generated artifact. Resolve the committed source and verify this hash before execution.",
+      recentTranscriptPresent: false,
+      userFactsPresent: false
     },
     productionPath: {
       endpoint: "POST /v1/therapy/respond",

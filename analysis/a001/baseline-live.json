@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 1,
+  "taskId": "a001-outcome-first-v1",
+  "artifactRole": "production-baseline-metadata",
+  "generatedAt": "2026-08-23T19:17:21.773Z",
+  "completedAt": "2026-08-23T19:17:44.553Z",
+  "interpretationBoundary": "This captures system behavior and reproducibility evidence. It is not evidence of therapeutic outcome or model understanding.",
+  "privacyBoundary": {
+    "verbatimInputDuplicated": false,
+    "generatedTherapyProseStored": false,
+    "rawProviderDiagnosticsStored": false,
+    "note": "Sensitive and derived therapy text is not duplicated in this publishable checkpoint. Canonical repository sources plus hashes preserve identity."
+  },
+  "repository": {
+    "branch": "agent/a001-outcome-first-20260823",
+    "commit": "e85c1d9bd4dfa32b81d194a588c12dc5262c877c",
+    "tree": "09bacfaea7208f7f556a72089ed97db14879f86f",
+    "worktreeCleanBeforeRun": true,
+    "statusBeforeRun": ""
+  },
+  "exactInput": {
+    "source": "analysis/a001/independent-conception.md",
+    "sha256": "13b6503e2557665add98fd4f96b3f841ec40c06a9bfda3c2a7442efc2baf19b6",
+    "canonicalTextStoredHere": false,
+    "recentTranscriptPresent": false,
+    "userFactsPresent": false
+  },
+  "productionPath": {
+    "endpoint": "POST /v1/therapy/respond",
+    "serverSource": "src/server/create-server.mjs",
+    "pipeline": "runTieredTherapyPipeline",
+    "processingMode": "auto",
+    "transport": "subscription CLI"
+  },
+  "configuration": {
+    "mode": "cli",
+    "openaiModel": "gpt-5.6-sol",
+    "anthropicModel": "claude-opus-5",
+    "responseRendererModel": "claude-sonnet-4-6",
+    "codexReasoningEffort": "high",
+    "claudeEffort": "high",
+    "ledgerMode": "off",
+    "devAutomationEnabled": false,
+    "allowClaudeFableUsage": false,
+    "claudeFableStatus": "not invoked; reserved only for verified unresolved adjudication"
+  },
+  "staticMock": {
+    "status": "captured-locally-not-duplicated",
+    "fixture": {
+      "path": "fixtures/mock-responses/A001.json",
+      "sha256": "55ccb5faa18f496a04228bf39cec92d9457fe7d4028a83037695057926cd842a"
+    },
+    "archivedCase": {
+      "path": "corpus/difficult-cases/A001-inner-child-credibility/case.json",
+      "sha256": "53733f6700564a720ab859f1d5e19e7da566492c918a06ed56cee44aeb55388d",
+      "acceptanceVersion": "A001-plan-response-realization-v6"
+    },
+    "exactInputRun": {
+      "processingTier": "reviewed",
+      "resultSha256": "4f74ae836f71b20ce6be0c7214d3f7db047d021f740b234dc0735b682e13416e",
+      "answerSha256": "a9ae3748c6566ba28f4ad51de2992cb5a84a6e7bca72cb86bc7c41dc3c17b12b",
+      "answerLength": 1525
+    },
+    "caveat": "The archived case uses a summarized transcript and keyword/plan acceptance. The mock is a deterministic regression fixture, not outcome evidence."
+  },
+  "actualProduction": {
+    "status": "blocked-before-user-transmission",
+    "modelAccess": [
+      {
+        "label": "codex_independent_critic",
+        "ok": true,
+        "provider": "openai",
+        "requestedModel": "gpt-5.6-sol",
+        "returnedModel": "gpt-5.6-sol",
+        "requestId": "01a0300e-6158-7b12-b9ec-9b47c741a857",
+        "responseId": "01a0300e-6158-7b12-b9ec-9b47c741a857",
+        "transport": "cli",
+        "startedAt": "2026-08-23T19:17:21.871Z",
+        "completedAt": "2026-08-23T19:17:35.140Z",
+        "elapsedMs": 13269
+      },
+      {
+        "label": "opus_development_judgment",
+        "ok": false,
+        "provider": "anthropic",
+        "requestedModel": "claude-opus-5",
+        "startedAt": "2026-08-23T19:17:35.140Z",
+        "completedAt": "2026-08-23T19:17:39.797Z",
+        "elapsedMs": 4657,
+        "failure": {
+          "name": "ProviderError",
+          "code": "PROVIDER_ERROR",
+          "message": "Claude CLI exited with status 1."
+        }
+      },
+      {
+        "label": "sonnet_production_renderer",
+        "ok": false,
+        "provider": "anthropic",
+        "requestedModel": "claude-sonnet-4-6",
+        "startedAt": "2026-08-23T19:17:39.797Z",
+        "completedAt": "2026-08-23T19:17:44.553Z",
+        "elapsedMs": 4756,
+        "failure": {
+          "name": "ProviderError",
+          "code": "PROVIDER_ERROR",
+          "message": "Claude CLI exited with status 1."
+        }
+      }
+    ],
+    "failure": {
+      "code": "A001_MODEL_ACCESS_FAILED",
+      "message": "Live model access verification failed for claude-opus-5 and claude-sonnet-4-6."
+    },
+    "executionBoundaryDiagnosis": {
+      "diagnosedAt": "2026-08-23T19:21:36Z",
+      "claudeCliVersion": "2.1.240",
+      "authenticationStatus": {
+        "loggedIn": true,
+        "authMethod": "claude.ai",
+        "apiProvider": "firstParty"
+      },
+      "contentFreeProbe": {
+        "httpStatus": 403,
+        "terminalReason": "api_error",
+        "reason": "The authenticated organization has disabled Claude subscription access for Claude Code."
+      },
+      "apiFallback": {
+        "openaiApiKeyPresent": false,
+        "anthropicApiKeyPresent": false,
+        "providerRetentionAcknowledged": false
+      },
+      "classification": "external provider organization-permission boundary; not a route-contract, model-selector, login-state, or repository failure",
+      "questionTransmission": "The exact A001 question was not sent because the model-access gate failed first."
+    }
+  },
+  "graderExpectations": {
+    "source": "corpus/difficult-cases/A001-inner-child-credibility/case.json",
+    "role": "regression guard only; keyword/plan matching is not outcome evidence",
+    "contentDuplicatedHere": false
+  },
+  "independentEvaluations": {
+    "status": "pending-candidate-stage",
+    "note": "Blind Opus and Codex evaluations remain separate from candidate generation and archived grader expectations."
+  }
+}

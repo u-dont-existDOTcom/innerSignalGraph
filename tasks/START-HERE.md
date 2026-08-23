@@ -24,4 +24,6 @@ Do not call tests, routing, model fluency, or evaluator scores a therapy outcome
 
 ## Current checkpoint
 
-The branch is a clean fork of protected `origin/main`. The independent conception and focused architecture are being established before literature exposure. Reconcile this file with `state/CODEX-CURRENT-STATE.md`, recent commits, and actual artifacts after any interruption.
+The branch remains a clean fork of protected `origin/main`; no PR #11 work was imported. The independent conception and bounded scan are published. The live-baseline runner is committed at `e85c1d9bd4dfa32b81d194a588c12dc5262c877c`.
+
+`gpt-5.6-sol` passed its exact live structured probe. Claude CLI is logged in, but the authenticated organization returns HTTP 403 because Claude subscription access for Claude Code is disabled; both exact Opus and Sonnet probes failed before the original A001 question was sent, and no authorized API fallback is configured. Preserve `analysis/a001/baseline-live.json` as the sanitized blocked checkpoint. Continue candidate construction, Codex criticism, and other A001-only work that does not misrepresent substitute output as Sonnet production or Opus evaluation. Resume the exact production/Opus checkpoints only after the provider permission boundary changes.
