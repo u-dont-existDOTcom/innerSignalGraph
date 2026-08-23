@@ -9,7 +9,15 @@ import { CodexCliProvider } from "../../src/providers/codex-cli.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const privateRoot = path.resolve(projectRoot, "../innerSignalGraph-a001-private");
-const outputRoot = path.join(privateRoot, "trajectory-outputs/codex");
+
+function argumentValue(name, fallback) {
+  const index = process.argv.indexOf(name);
+  return index === -1 ? fallback : process.argv[index + 1];
+}
+
+const revision = argumentValue("--revision", "v1");
+if (!/^v[1-9][0-9]*$/.test(revision)) throw new Error("--revision must look like v1 or v2.");
+const outputRoot = path.join(privateRoot, `trajectory-outputs/${revision === "v1" ? "codex" : `codex-${revision}`}`);
 
 const continuationSchema = {
   type: "object",
@@ -49,6 +57,10 @@ async function main() {
 
   for (const candidateId of ["B", "C", "D"]) {
     const candidate = JSON.parse(await fs.readFile(path.join(privateRoot, `candidates/${candidateId}.json`), "utf8"));
+    const continuationContractText = revision === "v1"
+      ? ""
+      : await fs.readFile(path.join(privateRoot, `candidates/${candidateId}-continuation-contract.json`), "utf8");
+    const continuationContract = continuationContractText ? JSON.parse(continuationContractText) : null;
     const candidateRoot = path.join(outputRoot, candidateId);
     await fs.mkdir(candidateRoot, { recursive: true });
     for (const trajectory of trajectoryFile.trajectories) {
@@ -62,14 +74,15 @@ async function main() {
       const generationInput = {
         originalUserMessage,
         priorAssistantResponse: candidate.response,
-        nextUserMessage: trajectory.followUp
+        nextUserMessage: trajectory.followUp,
+        candidateContinuationContract: continuationContract
       };
       const startedAt = new Date().toISOString();
       const started = Date.now();
       process.stderr.write(`[a001-trajectory] ${candidateId}/${trajectory.id} started\n`);
       try {
         const response = await provider.generate({
-          system: "Continue exactly one branch of the A001 conversation. Reply directly to the new user message while preserving the original concern and the prior response's intervention structure. Use natural conversational prose, one main next move, and one precise next question. Do not mention testing, models, rubrics, architecture, therapy outcomes, or unseen branches. Do not diagnose, make a grand vow, demand trust or gratitude, or append generic safety boilerplate without a present trigger. Return only the required JSON object.",
+          system: "Continue exactly one branch of the A001 conversation. Reply directly to the new user message while preserving the original concern, the prior response's intervention structure, and any supplied experimental candidate-continuation contract. Use natural conversational prose, one main next move, and one precise next question. Do not mention testing, models, rubrics, architecture, therapy outcomes, or unseen branches. Do not diagnose, make a grand vow, demand trust or gratitude, or append generic safety boilerplate without a present trigger. Return only the required JSON object.",
           user: JSON.stringify(generationInput, null, 2),
           outputSchema: continuationSchema,
           metadata: { stage: "a001_trajectory_probe" }
@@ -77,6 +90,7 @@ async function main() {
         const continuation = parseModelJson(response.text, `${candidateId}/${trajectory.id} trajectory response`);
         const receipt = {
           schemaVersion: 1,
+          revision,
           candidateId,
           trajectoryId: trajectory.id,
           inputIdentity: {
@@ -84,6 +98,7 @@ async function main() {
             priorResponseSha256: sha256(candidate.response),
             followUpSha256: sha256(trajectory.followUp)
           },
+          continuationContractSha256: continuationContractText ? sha256(continuationContractText) : null,
           evaluatorVisibility: "generation only; requiredBehavior was not supplied",
           generator: {
             provider: response.provider,
@@ -118,7 +133,7 @@ async function main() {
     }
   }
 
-  process.stdout.write(`${JSON.stringify({ model: provider.model, captured: receipts.filter((item) => item.status === "captured").length, failed: receipts.filter((item) => item.status === "failed").length })}\n`);
+  process.stdout.write(`${JSON.stringify({ revision, model: provider.model, captured: receipts.filter((item) => item.status === "captured").length, failed: receipts.filter((item) => item.status === "failed").length })}\n`);
   if (receipts.some((item) => item.status !== "captured")) process.exitCode = 1;
 }
 

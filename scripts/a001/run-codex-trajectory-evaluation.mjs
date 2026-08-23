@@ -8,8 +8,16 @@ import { CodexCliProvider } from "../../src/providers/codex-cli.mjs";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const privateRoot = path.resolve(projectRoot, "../innerSignalGraph-a001-private");
-const inputRoot = path.join(privateRoot, "trajectory-evaluation-inputs");
-const outputRoot = path.join(privateRoot, "trajectory-evaluation-outputs/codex");
+
+function argumentValue(name, fallback) {
+  const index = process.argv.indexOf(name);
+  return index === -1 ? fallback : process.argv[index + 1];
+}
+
+const revision = argumentValue("--revision", "v1");
+if (!/^v[1-9][0-9]*$/.test(revision)) throw new Error("--revision must look like v1 or v2.");
+const inputRoot = path.join(privateRoot, `trajectory-evaluation-inputs${revision === "v1" ? "" : `-${revision}`}`);
+const outputRoot = path.join(privateRoot, `trajectory-evaluation-outputs/${revision === "v1" ? "codex" : `codex-${revision}`}`);
 
 const scoreIds = ["original_problem_continuity", "branch_fit", "epistemic_accuracy", "repair_quality", "naturalness"];
 const scoreProperties = Object.fromEntries(scoreIds.map((id) => [id, { type: "integer", minimum: 0, maximum: 4 }]));
@@ -103,6 +111,7 @@ async function main() {
       }));
       const receipt = {
         schemaVersion: 1,
+        revision,
         candidateCode: packet.candidateCode,
         evaluator: {
           provider: response.provider,
@@ -140,7 +149,7 @@ async function main() {
     }
   }
 
-  process.stdout.write(`${JSON.stringify({ model: provider.model, receipts })}\n`);
+  process.stdout.write(`${JSON.stringify({ revision, model: provider.model, receipts })}\n`);
   if (receipts.some((item) => item.status !== "captured")) process.exitCode = 1;
 }
 

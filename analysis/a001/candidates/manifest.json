@@ -39,7 +39,8 @@
       "responseSha256": "ddec33d97abb501f8f1430432b9ae5e941c9f7f20a4f22afe25b5adba2354aca",
       "characters": 2243,
       "words": 383,
-      "paragraphs": 5
+      "paragraphs": 5,
+      "experimentalContinuationContractSha256": "b69b02b6c273f7b909b47ec7767bb68635fc42dd474e1d2901846732824da364"
     },
     {
       "candidateId": "C",
@@ -48,7 +49,8 @@
       "responseSha256": "5e4d3f0597d836c0a71f798942f01b8808bb6706b9f998fd0a3f9c19f5dfaa6c",
       "characters": 2305,
       "words": 396,
-      "paragraphs": 5
+      "paragraphs": 5,
+      "experimentalContinuationContractSha256": "7b679daa618e376aa50440e90ced5829b230e3a0a5161ed7e7026675d9662d1c"
     },
     {
       "candidateId": "D",
@@ -57,13 +59,19 @@
       "responseSha256": "fb65eeff09b8637bff5f09b1d23190240864c7af1b1bf114c1350fe5163dc4fb",
       "characters": 1665,
       "words": 278,
-      "paragraphs": 4
+      "paragraphs": 4,
+      "experimentalContinuationContractSha256": "6daec7c2ab83b4618b639b8267d19ac60890ffe8120df613b6960ec8ceadc7e7"
     }
   ],
   "developmentJudgment": {
     "requiredModel": "claude-opus-5",
     "status": "queued-provider-permission-recovery",
     "substituted": false
+  },
+  "continuationContractStatus": {
+    "status": "local-experimental-owner-unreviewed",
+    "productionEncoded": false,
+    "purpose": "Test whether a minimal continuity state repairs v1 trajectory omissions without altering first-response prose."
   },
   "nextAction": "Run task-specific hard-failure screening and independent Codex criticism from physically separated inputs; keep Opus development judgment and actual production baseline queued."
 }
