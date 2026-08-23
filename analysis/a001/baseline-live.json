@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "taskId": "a001-outcome-first-v1",
   "artifactRole": "production-baseline-metadata",
-  "generatedAt": "2026-08-23T19:17:21.773Z",
-  "completedAt": "2026-08-23T19:17:44.553Z",
+  "generatedAt": "2026-08-23T21:06:27.863Z",
+  "completedAt": "2026-08-23T21:12:07.739Z",
   "interpretationBoundary": "This captures system behavior and reproducibility evidence. It is not evidence of therapeutic outcome or model understanding.",
   "privacyBoundary": {
     "verbatimInputDuplicated": false,
@@ -13,8 +13,8 @@
   },
   "repository": {
     "branch": "agent/a001-outcome-first-20260823",
-    "commit": "e85c1d9bd4dfa32b81d194a588c12dc5262c877c",
-    "tree": "09bacfaea7208f7f556a72089ed97db14879f86f",
+    "commit": "ce39955da11b7348b7fe7548c6cb5c15af2fedd1",
+    "tree": "f5392d8f56835bb9feb0f0a68bf1e37365edc00f",
     "worktreeCleanBeforeRun": true,
     "statusBeforeRun": ""
   },
@@ -64,7 +64,7 @@
     "caveat": "The archived case uses a summarized transcript and keyword/plan acceptance. The mock is a deterministic regression fixture, not outcome evidence."
   },
   "actualProduction": {
-    "status": "blocked-before-user-transmission",
+    "status": "captured",
     "modelAccess": [
       {
         "label": "codex_independent_critic",
@@ -72,66 +72,89 @@
         "provider": "openai",
         "requestedModel": "gpt-5.6-sol",
         "returnedModel": "gpt-5.6-sol",
-        "requestId": "01a0300e-6158-7b12-b9ec-9b47c741a857",
-        "responseId": "01a0300e-6158-7b12-b9ec-9b47c741a857",
+        "requestId": "01a03072-3e3f-7860-bf83-3a242848e892",
+        "responseId": "01a03072-3e3f-7860-bf83-3a242848e892",
         "transport": "cli",
-        "startedAt": "2026-08-23T19:17:21.871Z",
-        "completedAt": "2026-08-23T19:17:35.140Z",
-        "elapsedMs": 13269
+        "startedAt": "2026-08-23T21:06:27.969Z",
+        "completedAt": "2026-08-23T21:06:34.978Z",
+        "elapsedMs": 7009
       },
       {
         "label": "opus_development_judgment",
-        "ok": false,
+        "ok": true,
         "provider": "anthropic",
         "requestedModel": "claude-opus-5",
-        "startedAt": "2026-08-23T19:17:35.140Z",
-        "completedAt": "2026-08-23T19:17:39.797Z",
-        "elapsedMs": 4657,
-        "failure": {
-          "name": "ProviderError",
-          "code": "PROVIDER_ERROR",
-          "message": "Claude CLI exited with status 1."
-        }
+        "returnedModel": "claude-opus-5",
+        "requestId": "09973dfd-7b64-494c-8cb2-c4e35df0e251",
+        "responseId": "09973dfd-7b64-494c-8cb2-c4e35df0e251",
+        "transport": "cli",
+        "startedAt": "2026-08-23T21:06:34.978Z",
+        "completedAt": "2026-08-23T21:06:42.950Z",
+        "elapsedMs": 7972
       },
       {
         "label": "sonnet_production_renderer",
-        "ok": false,
+        "ok": true,
         "provider": "anthropic",
         "requestedModel": "claude-sonnet-4-6",
-        "startedAt": "2026-08-23T19:17:39.797Z",
-        "completedAt": "2026-08-23T19:17:44.553Z",
-        "elapsedMs": 4756,
-        "failure": {
-          "name": "ProviderError",
-          "code": "PROVIDER_ERROR",
-          "message": "Claude CLI exited with status 1."
-        }
+        "returnedModel": "claude-sonnet-4-6",
+        "requestId": "4d1a1435-3b6e-420c-a5eb-0f882aed0b16",
+        "responseId": "4d1a1435-3b6e-420c-a5eb-0f882aed0b16",
+        "transport": "cli",
+        "startedAt": "2026-08-23T21:06:42.950Z",
+        "completedAt": "2026-08-23T21:06:48.680Z",
+        "elapsedMs": 5730
       }
     ],
-    "failure": {
-      "code": "A001_MODEL_ACCESS_FAILED",
-      "message": "Live model access verification failed for claude-opus-5 and claude-sonnet-4-6."
+    "providerCalls": [
+      {
+        "stage": "case_extraction",
+        "requestedModel": "claude-sonnet-4-6",
+        "returnedModel": "claude-sonnet-4-6",
+        "responseId": "a03c76b6-e4d7-497f-8dcc-e9769b2ec7aa",
+        "startedAt": "2026-08-23T21:06:48.701Z",
+        "completedAt": "2026-08-23T21:08:51.013Z",
+        "elapsedMs": 122312
+      },
+      {
+        "stage": "case_audit",
+        "requestedModel": "gpt-5.6-sol",
+        "returnedModel": "gpt-5.6-sol",
+        "responseId": "01a03074-6dbb-7da3-8aa4-0d4ee17c6971",
+        "startedAt": "2026-08-23T21:08:51.018Z",
+        "completedAt": "2026-08-23T21:10:25.356Z",
+        "elapsedMs": 94338
+      },
+      {
+        "stage": "realization",
+        "requestedModel": "claude-sonnet-4-6",
+        "returnedModel": "claude-sonnet-4-6",
+        "responseId": "9496335e-877d-4a90-80b8-13e3357bb569",
+        "startedAt": "2026-08-23T21:10:25.359Z",
+        "completedAt": "2026-08-23T21:12:07.738Z",
+        "elapsedMs": 102379
+      }
+    ],
+    "result": {
+      "sha256": "c09d3e47e5ded8382b49abdfcc2ae6cdd9ed19758605ed3d5274d6c0ad64c17d",
+      "answerSha256": "36c328eb861fb329a220c05c19bf0ed9bf7dbf47b733cedb4e4fd822f5e2af92",
+      "answerLength": 3443,
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "nextQuestionLength": 135,
+      "mode": "reviewed-graph",
+      "processingTier": "reviewed",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "degraded": false,
+      "rendererProvider": "anthropic",
+      "rendererModel": "claude-sonnet-4-6",
+      "realizationContractVersion": "response-realization-v5",
+      "processingMs": 319039,
+      "safetyFlagCount": 2
     },
-    "executionBoundaryDiagnosis": {
-      "diagnosedAt": "2026-08-23T19:21:36Z",
-      "claudeCliVersion": "2.1.240",
-      "authenticationStatus": {
-        "loggedIn": true,
-        "authMethod": "claude.ai",
-        "apiProvider": "firstParty"
-      },
-      "contentFreeProbe": {
-        "httpStatus": 403,
-        "terminalReason": "api_error",
-        "reason": "The authenticated organization has disabled Claude subscription access for Claude Code."
-      },
-      "apiFallback": {
-        "openaiApiKeyPresent": false,
-        "anthropicApiKeyPresent": false,
-        "providerRetentionAcknowledged": false
-      },
-      "classification": "external provider organization-permission boundary; not a route-contract, model-selector, login-state, or repository failure",
-      "questionTransmission": "The exact A001 question was not sent because the model-access gate failed first."
+    "resolvedExecutionBoundary": {
+      "previousClassification": "external provider organization-permission boundary; not a route-contract, model-selector, login-state, or repository failure",
+      "resolvedAt": "2026-08-23T21:06:48.680Z",
+      "evidence": "Content-free entitlement calls returned the exact configured Codex, Opus, and Sonnet identifiers before A001 transmission."
     }
   },
   "graderExpectations": {
@@ -140,7 +163,7 @@
     "contentDuplicatedHere": false
   },
   "independentEvaluations": {
-    "status": "pending-candidate-stage",
-    "note": "Blind Opus and Codex evaluations remain separate from candidate generation and archived grader expectations."
+    "status": "production-baseline-captured-pending-blind-filter",
+    "note": "The actual production answer remains local and is being placed into evaluator-isolated packets alongside surviving candidates."
   }
 }

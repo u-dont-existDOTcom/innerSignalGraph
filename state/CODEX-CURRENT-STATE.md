@@ -9,7 +9,7 @@ Updated: 2026-08-23
 - Protected-main baseline: `a22f2e611fab778bf26b8e7215afbf85aba4ba5e`
 - Machine authority: `tasks/ACTIVE-TASK.json`
 - First command after any fresh start, interruption, compaction, or model switch: `npm run task:preflight`
-- Current phase: Claude-blocked pre-owner gate after completing all available Codex first-response and A001-only longitudinal filtering.
+- Current phase: exact production baseline captured; physically separated Codex/Opus finalist comparison next.
 
 The exact goal is demonstrated immediate usefulness for the original A001 question preserved in `analysis/a001/independent-conception.md`. PR #11 and all broad protocol, corpus, trajectory, Map 15/16, release, and unrelated queues are suspended. Stop for owner input only when the best two or three independently filtered answers are randomized and anonymized for experiential judgment, or when a real external blocker prevents progress.
 
@@ -17,13 +17,13 @@ The exact goal is demonstrated immediate usefulness for the original A001 questi
 
 The isolated worktree was created from verified protected `origin/main`; no PR #11 commits were imported. The independent conception and bounded established-work scan are published, with disposition `compose`. Commit `e85c1d9bd4dfa32b81d194a588c12dc5262c877c` is the clean execution identity for the live-baseline harness.
 
-The exact access gate on 2026-08-23 verified `gpt-5.6-sol` by live structured call and response ID. Both `claude-opus-5` and `claude-sonnet-4-6` failed before the A001 question was transmitted. A separate content-free diagnostic established that Claude CLI `2.1.240` is logged in through `claude.ai`, but the authenticated organization returns HTTP 403 because Claude subscription access for Claude Code is disabled. No preconfigured Anthropic API key or retention acknowledgement is available. This is an external organization-permission boundary, not a route-contract, model-selector, stale-login, or repository defect. The static mock, exact model checks, execution identity, and sanitized diagnosis are in `analysis/a001/baseline-live.json`.
+The provider permission boundary was resolved on 2026-08-23. Content-free structured calls empirically returned the exact configured `gpt-5.6-sol`, `claude-opus-5`, and `claude-sonnet-4-6` identifiers. The exact original A001 question then traversed the real reviewed production path: Sonnet case extraction, Codex case audit, and Sonnet realization, with no fallback or degradation. The full output remains in the owner-only sibling packet; the Git-safe route, response IDs, timestamps, execution identity, and hashes are in `analysis/a001/baseline-live.json`.
 
 The available Codex comparison is now complete. The static mock was filtered out on a hard failure. B and D each advanced in the blind first-response filter and then passed all ten A001 trajectories in coherent runs; C was rejected after successive coherent generations moved its remaining failure from T04 to T05. The full prose-free engineering history is in `analysis/a001/blind-evaluation.json`, `analysis/a001/trajectory-evaluation.json`, and `analysis/a001/adjudication.md`. Candidate and evaluator prose remains owner-only in the non-Git sibling packet. No production prompt, graph, guide, policy, or therapy ledger was changed.
 
 Ref non-effect is verified: local `stable` remains `bf4d44bd9103f7e32f6d43d6b8aafb95a48b8d67`; protected hosted `origin/stable` remains its pre-existing `110ee5342e27d8f1bd3d11cc2be4d85926c255b1`, last pushed on 2026-08-13. PR #11 remains OPEN and draft at parked head `8154641b6e6637eee1d8f7201b92bcb4a813bfd4` with the owner-directed parking comment intact.
 
-The owner gate is not ready. Exact actual Sonnet production output and independent Opus evaluation remain mandatory and unavailable at the verified external permission boundary. Next after the external state changes: re-probe exact Opus and Sonnet, capture the actual tiered production response, run Opus blind evaluation of production/B/D, use Fable only for a verified unresolved disagreement, then randomize and anonymize the best surviving two or three responses for Joel. Do not substitute another model while labeling it production or Opus evidence.
+The owner gate is not ready yet. The next deterministic step is a new randomized, mapping-blind comparison of actual production, B, and D using independent one-candidate calls to exact Opus and Codex. Fable remains reserved only for a verified unresolved disagreement. After this filtering and any required adjudication, randomize and anonymize the surviving two or three responses for Joel's experiential judgment.
 
 ### Completion boundary
 

@@ -43,16 +43,21 @@ test("tracked A001 artifacts retain the privacy-minimized boundary", async () =>
   assert.equal(trajectories.privacyBoundary.candidateOrContinuationProseStoredHere, false);
 });
 
-test("actual production remains blocked before A001 transmission and is never substituted", async () => {
+test("actual production was captured with exact models and is never substituted", async () => {
   const baseline = await readJson("analysis/a001/baseline-live.json");
   const blind = await readJson("analysis/a001/blind-evaluation.json");
   const access = Object.fromEntries(baseline.actualProduction.modelAccess.map((item) => [item.requestedModel, item.ok]));
 
-  assert.equal(baseline.actualProduction.status, "blocked-before-user-transmission");
+  assert.equal(baseline.actualProduction.status, "captured");
   assert.equal(access["gpt-5.6-sol"], true);
-  assert.equal(access["claude-opus-5"], false);
-  assert.equal(access["claude-sonnet-4-6"], false);
-  assert.match(baseline.actualProduction.executionBoundaryDiagnosis.questionTransmission, /was not sent/);
+  assert.equal(access["claude-opus-5"], true);
+  assert.equal(access["claude-sonnet-4-6"], true);
+  assert.deepEqual(
+    baseline.actualProduction.providerCalls.map((item) => item.stage),
+    ["case_extraction", "case_audit", "realization"]
+  );
+  assert.equal(baseline.actualProduction.result.rendererModel, "claude-sonnet-4-6");
+  assert.equal(baseline.actualProduction.result.degraded, false);
   assert.equal(blind.actualProductionBaseline.evaluated, false);
   assert.equal(blind.actualProductionBaseline.substituted, false);
   assert.equal(blind.evaluators.opus.substituted, false);

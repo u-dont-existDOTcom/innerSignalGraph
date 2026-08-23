@@ -23,9 +23,10 @@
     {
       "candidateId": "A",
       "arm": "current production baseline",
-      "status": "blocked-before-user-transmission",
-      "responseSha256": null,
-      "reason": "The exact Sonnet production model failed its access gate at the verified external organization-permission boundary.",
+      "status": "captured-pending-blind-evaluation",
+      "responseSha256": "36c328eb861fb329a220c05c19bf0ed9bf7dbf47b733cedb4e4fd822f5e2af92",
+      "characters": 3443,
+      "productionReceipt": "analysis/a001/baseline-live.json",
       "staticMockStandIn": {
         "available": true,
         "productionEquivalent": false,
@@ -35,7 +36,7 @@
     {
       "candidateId": "B",
       "arm": "credibility-repair behavioral experiment",
-      "status": "codex-qualified-pending-opus-and-production-baseline",
+      "status": "codex-qualified-pending-final-opus-comparison",
       "responseSha256": "ddec33d97abb501f8f1430432b9ae5e941c9f7f20a4f22afe25b5adba2354aca",
       "characters": 2243,
       "words": 383,
@@ -55,7 +56,7 @@
     {
       "candidateId": "D",
       "arm": "integrated minimal route",
-      "status": "codex-qualified-pending-opus-and-production-baseline",
+      "status": "codex-qualified-pending-final-opus-comparison",
       "responseSha256": "fb65eeff09b8637bff5f09b1d23190240864c7af1b1bf114c1350fe5163dc4fb",
       "characters": 1665,
       "words": 278,
@@ -65,7 +66,7 @@
   ],
   "developmentJudgment": {
     "requiredModel": "claude-opus-5",
-    "status": "queued-provider-permission-recovery",
+    "status": "access-verified-final-blind-comparison-next",
     "substituted": false
   },
   "continuationContractStatus": {
@@ -75,5 +76,5 @@
     "codexQualifiedCandidateIds": ["B", "D"],
     "rejectedCandidateIds": ["C"]
   },
-  "nextAction": "After Claude organization permission recovery, capture the actual Sonnet production baseline and run independent Opus blind evaluation of production, B, and D before the owner gate."
+  "nextAction": "Run physically separated Codex and Opus blind evaluation of production, B, and D; adjudicate only material disagreement, then prepare randomized anonymous owner finalists."
 }
