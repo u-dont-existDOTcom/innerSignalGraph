@@ -10,6 +10,7 @@
   },
   "scripts": {
     "test": "node --test",
+    "test:a001:evidence": "node --test tests/a001-task-preflight.test.mjs tests/a001-evidence.test.mjs",
     "task:preflight": "node scripts/verify-active-task.mjs",
     "replay": "node src/cli/replay.mjs",
     "replay:cli": "node --env-file=.env src/cli/replay.mjs",

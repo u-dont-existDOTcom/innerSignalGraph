@@ -35,7 +35,7 @@
     {
       "candidateId": "B",
       "arm": "credibility-repair behavioral experiment",
-      "status": "local-ungraded-draft",
+      "status": "codex-qualified-pending-opus-and-production-baseline",
       "responseSha256": "ddec33d97abb501f8f1430432b9ae5e941c9f7f20a4f22afe25b5adba2354aca",
       "characters": 2243,
       "words": 383,
@@ -45,7 +45,7 @@
     {
       "candidateId": "C",
       "arm": "differentiation and chairwork",
-      "status": "local-ungraded-draft",
+      "status": "rejected-nonrobust-trajectories",
       "responseSha256": "5e4d3f0597d836c0a71f798942f01b8808bb6706b9f998fd0a3f9c19f5dfaa6c",
       "characters": 2305,
       "words": 396,
@@ -55,7 +55,7 @@
     {
       "candidateId": "D",
       "arm": "integrated minimal route",
-      "status": "local-ungraded-draft",
+      "status": "codex-qualified-pending-opus-and-production-baseline",
       "responseSha256": "fb65eeff09b8637bff5f09b1d23190240864c7af1b1bf114c1350fe5163dc4fb",
       "characters": 1665,
       "words": 278,
@@ -71,7 +71,9 @@
   "continuationContractStatus": {
     "status": "local-experimental-owner-unreviewed",
     "productionEncoded": false,
-    "purpose": "Test whether a minimal continuity state repairs v1 trajectory omissions without altering first-response prose."
+    "purpose": "Test whether a minimal continuity state repairs v1 trajectory omissions without altering first-response prose.",
+    "codexQualifiedCandidateIds": ["B", "D"],
+    "rejectedCandidateIds": ["C"]
   },
-  "nextAction": "Run task-specific hard-failure screening and independent Codex criticism from physically separated inputs; keep Opus development judgment and actual production baseline queued."
+  "nextAction": "After Claude organization permission recovery, capture the actual Sonnet production baseline and run independent Opus blind evaluation of production, B, and D before the owner gate."
 }

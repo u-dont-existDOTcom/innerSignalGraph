@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 1,
+  "taskId": "a001-outcome-first-v1",
+  "status": "codex-complete-claude-blocked",
+  "summarizedAt": "2026-08-23T20:42:09Z",
+  "scope": "Ten A001-only independent one-question branches; no general therapy corpus.",
+  "validationBoundary": "These are engineering continuity tests. A generated response, a pass, calm, task completion, or articulate insight is not evidence of therapeutic outcome or accumulated trust.",
+  "privacyBoundary": {
+    "verbatimInputStoredHere": false,
+    "candidateOrContinuationProseStoredHere": false,
+    "evaluatorNarrativeStoredHere": false,
+    "privateReceiptRoot": "~/Téléchargements/innerSignalGraph-a001-private",
+    "trackedEvidence": "Hashes, opaque codes, response IDs, pass sets, and exact repository identities only."
+  },
+  "models": {
+    "generator": {
+      "requestedModel": "gpt-5.6-sol",
+      "returnedModel": "gpt-5.6-sol",
+      "transport": "subscription CLI"
+    },
+    "independentEvaluator": {
+      "requestedModel": "gpt-5.6-sol",
+      "returnedModel": "gpt-5.6-sol",
+      "transport": "subscription CLI",
+      "mappingBlind": true,
+      "oneCandidatePerEvaluation": true,
+      "priorResultsWithheld": true
+    },
+    "opus": {
+      "requestedModel": "claude-opus-5",
+      "status": "queued-provider-permission-recovery",
+      "substituted": false
+    }
+  },
+  "rounds": [
+    {
+      "revision": "v1",
+      "mechanism": "Prior first-response prose only; no explicit continuity state.",
+      "generationIdentity": {
+        "commit": "a1af9edbe1da742ca5c37fa67d114f2bfd154a64",
+        "tree": "f8a770b9a3a7c1fd7c2b11049f2ff604665cf850"
+      },
+      "evaluationIdentity": {
+        "commit": "813ea21ee59251f9c05fd207015464eb6eeaa321",
+        "tree": "f0037db230bd3b07aa335c6105fa3b3171d66716"
+      },
+      "results": [
+        {
+          "sourceId": "B",
+          "generationReceiptSetSha256": "7e9afa36b2bdce29573f0a147dc622e3ce929833f22144365c1e5f7d7178c61f",
+          "packetSha256": "298b8caa044cced5362f466feca96433cb9c0169c741a8db85def1c50e4dfd8b",
+          "evaluationReceiptSha256": "d9272b803cfd3c2a533bfc19ad061969efd175ec73e413c6801920414d59197f",
+          "evaluatorResponseId": "01a0302e-db05-73a3-a449-7d1df3d2ae74",
+          "passedTrajectoryIds": ["T01", "T03", "T06"],
+          "failedTrajectoryIds": ["T02", "T04", "T05", "T07", "T08", "T09", "T10"]
+        },
+        {
+          "sourceId": "C",
+          "generationReceiptSetSha256": "bc8cd35be8475fcaa5db1c26ffe0cb988f17557c75d296c266084aa0387b639b",
+          "packetSha256": "ac75581cd8e891a595e8101546804e18ae2513421cca58ae88f53cdd76fceaf9",
+          "evaluationReceiptSha256": "664ce9ec29f621e64bf24c1ede4a43ff0ed1b3319ba57dc72635d7c59285633a",
+          "evaluatorResponseId": "01a0302d-73f3-75e0-b784-05e9e35b42b0",
+          "passedTrajectoryIds": ["T01", "T03", "T04", "T06", "T08"],
+          "failedTrajectoryIds": ["T02", "T05", "T07", "T09", "T10"]
+        },
+        {
+          "sourceId": "D",
+          "generationReceiptSetSha256": "7d025c0dafe44f2626d4825ea8e59152e7025f54deb285bc6faa7b514eb38125",
+          "packetSha256": "e2f57ce18cf5e8b189a97ac7d06ec34548ae0519da7b0482579e26520e295822",
+          "evaluationReceiptSha256": "c4b3d2bf2248adb8aaadbc269ca1b1f0cd077b58ba8c9883bf52c20fec6076e6",
+          "evaluatorResponseId": "01a03031-9b16-7a72-8cae-189f279ed202",
+          "passedTrajectoryIds": ["T01", "T03", "T06", "T07", "T08", "T09", "T10"],
+          "failedTrajectoryIds": ["T02", "T04", "T05"]
+        }
+      ]
+    },
+    {
+      "revision": "v2",
+      "mechanism": "Candidate-local experimental continuity state; first-response prose unchanged.",
+      "executionIdentity": {
+        "commit": "3b85e027a40281b93ec7d42fd80a20b584825f5c",
+        "tree": "b2378bd740525aabf21bb24076f45e0883495d14"
+      },
+      "results": [
+        {
+          "sourceId": "B",
+          "generationReceiptSetSha256": "596fc1db7a6c791c3b663b8375bdbf77ba07480663c2f36857814764e7d51bdb",
+          "packetSha256": "c69072b73d13dff90a5e61e90a9aa6d057260e152f356804f5338cf61d8f43e6",
+          "evaluationReceiptSha256": "0467e31270cc0b22f2327afbaa8fc4a922572e0b43fc23168596049a6c946728",
+          "evaluatorResponseId": "01a0303f-dfb9-7bb0-8388-c0789abf5b3d",
+          "passedTrajectoryIds": ["T01", "T02", "T03", "T05", "T06", "T07", "T08", "T09"],
+          "failedTrajectoryIds": ["T04", "T10"]
+        },
+        {
+          "sourceId": "C",
+          "generationReceiptSetSha256": "dec84749ae893b7bd695f1998334479a1abd8fbc5a23c3a712e4ba79c98dfdef",
+          "packetSha256": "07dbff8cb4cdb544289c242f6682ded2c6c3258e10c96268d6b47d84e93d8f87",
+          "evaluationReceiptSha256": "9a5b92f66f6502a47c2fa8ab8dc727d9a55e6a2afc80db01a9d164a158becbee",
+          "evaluatorResponseId": "01a0303e-e0d7-7272-b90b-127ed3ad6e69",
+          "passedTrajectoryIds": ["T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08", "T09"],
+          "failedTrajectoryIds": ["T10"]
+        },
+        {
+          "sourceId": "D",
+          "generationReceiptSetSha256": "ca00630be63b8178d2e4271cc94577858d737e88a1b5ee95a186454f6b3cb82b",
+          "packetSha256": "9a51bb6871612e35128ee7733d6b61e6b7e4fcaa5cd7b5a2ae1c579b47f80b4c",
+          "evaluationReceiptSha256": "41a77f8395e7cdbf53d272be8075db3436424f54e30eb3501c933b3e8771d260",
+          "evaluatorResponseId": "01a03041-2717-7992-aa8f-41bc430bba84",
+          "passedTrajectoryIds": ["T01", "T03", "T04", "T05", "T06", "T07", "T09"],
+          "failedTrajectoryIds": ["T02", "T08", "T10"]
+        }
+      ]
+    },
+    {
+      "revision": "v3",
+      "mechanism": "Narrowed general continuity repairs; B and C only.",
+      "executionIdentity": {
+        "commit": "91dea0d5528f14baf9d85ec501fba54c0a953dcd",
+        "tree": "de49ae7bd7b0ae161186c029a9fd28c0f0d43826"
+      },
+      "results": [
+        {
+          "sourceId": "B",
+          "generationReceiptSetSha256": "461314e823c212b637b52022cd02afe05e1a009a0a79046a5ffbabed4c833899",
+          "packetSha256": "f5ba9be2b9cca1119d248968f482d55a989e93bbacc40af0a9b807d5b8527175",
+          "evaluationReceiptSha256": "d08369020ca7a5f2a42db2812b8a754f8928ae47ecccd8bee936e107ce35f67c",
+          "evaluatorResponseId": "01a0304c-e734-7fc0-be32-18fa6399be4a",
+          "passedTrajectoryIds": ["T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10"],
+          "failedTrajectoryIds": [],
+          "allTrajectoriesPass": true
+        },
+        {
+          "sourceId": "C",
+          "generationReceiptSetSha256": "40c1a264d39fa9602bb7cc9771d80d52c3e3d6753cda4b1165c315543c73d749",
+          "packetSha256": "283e45f0e7f3264cfca23c1040a82c924ff59424cc72eb454c8b95e9112c212c",
+          "evaluationReceiptSha256": "85265875e5377e1b8fb60c72193bf601fe2060c9547d66c6c64996560dc4082e",
+          "evaluatorResponseId": "01a0304b-e3bd-7b70-973d-9c76f34f9f48",
+          "passedTrajectoryIds": ["T01", "T02", "T03", "T05", "T06", "T07", "T08", "T09", "T10"],
+          "failedTrajectoryIds": ["T04"]
+        }
+      ]
+    },
+    {
+      "revision": "v4",
+      "mechanism": "C two-step missed-promise repair clarification; first-response prose unchanged.",
+      "executionIdentity": {
+        "commit": "d909e913b0dc681c2d1dcc90de4a61a1c4db7c80",
+        "tree": "a9284c2870bb6ca77dc0190a7098fd2dc782ec25"
+      },
+      "results": [
+        {
+          "sourceId": "C",
+          "generationReceiptSetSha256": "2e6854f29438849919407a15760fd258eb1d06cb9785c011a530574cf6398139",
+          "packetSha256": "e024183f96e59cc9fbcfbb381c9af7a2fcbf4dfd9174302eb47f57d77a7e13e1",
+          "evaluationReceiptSha256": "02a9cf3b4f93013155b2c82008f88efa0e35b0ad06cd8632e7c7f1d4d8736988",
+          "evaluatorResponseId": "01a03052-f04b-79a2-bc96-85c7979e2cd2",
+          "passedTrajectoryIds": ["T01", "T02", "T03", "T04", "T06", "T07", "T08", "T09", "T10"],
+          "failedTrajectoryIds": ["T05"],
+          "rejectionReason": "A new branch failure appeared after coherent regeneration; the chairwork arm was not robust enough and was not tuned further."
+        }
+      ]
+    },
+    {
+      "revision": "v5",
+      "mechanism": "D concise first response with the already-passing B continuity mechanism.",
+      "executionIdentity": {
+        "commit": "c6d9ed2481e3139a0f80bf6223767d66d3e81c69",
+        "tree": "8c4f20cdb3c9c90b32bca6cea9d844e5a245836e"
+      },
+      "results": [
+        {
+          "sourceId": "D",
+          "generationReceiptSetSha256": "3bbebe11ce35a8f6c0b3adc3dfa55e31c416451b246b48efe20236c5f2cb284a",
+          "packetSha256": "6d11910bc678c2e92206c054a804b64d886a16268752cf2ee8ebe46631e4e80b",
+          "evaluationReceiptSha256": "709c114a9d33a244cb56bd0e252f96d5c0ec6e7b919d1af31ccc0b373d0279db",
+          "evaluatorResponseId": "01a0305a-1bb9-7532-9b61-43a8cd57833b",
+          "passedTrajectoryIds": ["T01", "T02", "T03", "T04", "T05", "T06", "T07", "T08", "T09", "T10"],
+          "failedTrajectoryIds": [],
+          "allTrajectoriesPass": true
+        }
+      ]
+    }
+  ],
+  "qualifiedByCodex": [
+    {
+      "sourceId": "B",
+      "firstResponseSha256": "ddec33d97abb501f8f1430432b9ae5e941c9f7f20a4f22afe25b5adba2354aca",
+      "continuityContractSha256": "d9aac87827278a705ef9f8ff5ee71e658f2988d27ce294f9b3729c28ea67e17d",
+      "trajectoryRevision": "v3",
+      "generatorResponseIds": [
+        "01a03044-ba82-7bf3-bf29-1c54c87d8f43",
+        "01a03045-03e0-7492-8dde-b51b4bf2f0df",
+        "01a03045-4d23-76e2-bdb4-d410bdaa6616",
+        "01a03045-88bf-7d90-a69b-7c8734dfb5c1",
+        "01a03045-c707-73d2-a767-d7c3a86e92cd",
+        "01a03046-1d12-77f3-9973-fc8d915d2b22",
+        "01a03046-68e5-75b1-966e-2a0c3bc237fb",
+        "01a03046-b9c4-7af0-a4d3-dd30b1bfdbea",
+        "01a03047-0b61-70c0-9d3f-c356f8c72204",
+        "01a03047-4e08-70b3-9c1f-13582cdf2724"
+      ],
+      "evaluatorResponseId": "01a0304c-e734-7fc0-be32-18fa6399be4a"
+    },
+    {
+      "sourceId": "D",
+      "firstResponseSha256": "fb65eeff09b8637bff5f09b1d23190240864c7af1b1bf114c1350fe5163dc4fb",
+      "continuityContractSha256": "86716f21cd300e9f0bf61a8311de8f970a1756e9c4d28877751cc5e9881006e1",
+      "trajectoryRevision": "v5",
+      "generatorResponseIds": [
+        "01a03055-fdd2-7411-bccc-090a2f33a15e",
+        "01a03056-7905-74b3-9ce1-24b8d2b6cfde",
+        "01a03056-fe1d-7340-9e22-b9868630529e",
+        "01a03057-47af-7951-8df0-5bb9c87ed027",
+        "01a03057-b4a2-7f31-9557-09336918e93a",
+        "01a03058-3f4e-73f0-a426-41b16d2877f9",
+        "01a03058-9dfc-7d13-bd08-2f479bbfe5cb",
+        "01a03058-dcdd-76b3-9763-127bf4027bd4",
+        "01a03059-1c6b-7ce0-912e-4e39627753ee",
+        "01a03059-64ea-72e2-9181-d1c47fdc1cf4"
+      ],
+      "evaluatorResponseId": "01a0305a-1bb9-7532-9b61-43a8cd57833b"
+    }
+  ],
+  "ownerGate": {
+    "ready": false,
+    "reason": "B and D passed the available Codex first-turn and ten-trajectory filters, but the required independent Opus evaluation and actual Sonnet production baseline remain blocked by the verified Claude organization permission.",
+    "automatedScoresAreFinalAuthority": false
+  }
+}

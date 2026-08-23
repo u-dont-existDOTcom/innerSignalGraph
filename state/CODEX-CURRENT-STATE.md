@@ -9,7 +9,7 @@ Updated: 2026-08-23
 - Protected-main baseline: `a22f2e611fab778bf26b8e7215afbf85aba4ba5e`
 - Machine authority: `tasks/ACTIVE-TASK.json`
 - First command after any fresh start, interruption, compaction, or model switch: `npm run task:preflight`
-- Current phase: preserve the blocked production baseline, then advance all A001 candidate and evaluation work that does not depend on the unavailable Claude boundary.
+- Current phase: Claude-blocked pre-owner gate after completing all available Codex first-response and A001-only longitudinal filtering.
 
 The exact goal is demonstrated immediate usefulness for the original A001 question preserved in `analysis/a001/independent-conception.md`. PR #11 and all broad protocol, corpus, trajectory, Map 15/16, release, and unrelated queues are suspended. Stop for owner input only when the best two or three independently filtered answers are randomized and anonymized for experiential judgment, or when a real external blocker prevents progress.
 
@@ -19,7 +19,9 @@ The isolated worktree was created from verified protected `origin/main`; no PR #
 
 The exact access gate on 2026-08-23 verified `gpt-5.6-sol` by live structured call and response ID. Both `claude-opus-5` and `claude-sonnet-4-6` failed before the A001 question was transmitted. A separate content-free diagnostic established that Claude CLI `2.1.240` is logged in through `claude.ai`, but the authenticated organization returns HTTP 403 because Claude subscription access for Claude Code is disabled. No preconfigured Anthropic API key or retention acknowledgement is available. This is an external organization-permission boundary, not a route-contract, model-selector, stale-login, or repository defect. The static mock, exact model checks, execution identity, and sanitized diagnosis are in `analysis/a001/baseline-live.json`.
 
-Next: commit and publish this evidence, develop the materially different A001 candidates, run the available Codex criticism and A001-only trajectory work, and keep the actual Sonnet production run plus Opus grading queued for targeted resumption once Claude access changes. Do not substitute a different model while labeling it production or Opus evidence.
+The available Codex comparison is now complete. The static mock was filtered out on a hard failure. B and D each advanced in the blind first-response filter and then passed all ten A001 trajectories in coherent runs; C was rejected after successive coherent generations moved its remaining failure from T04 to T05. The full prose-free engineering history is in `analysis/a001/blind-evaluation.json`, `analysis/a001/trajectory-evaluation.json`, and `analysis/a001/adjudication.md`. Candidate and evaluator prose remains owner-only in the non-Git sibling packet. No production prompt, graph, guide, policy, or therapy ledger was changed.
+
+The owner gate is not ready. Exact actual Sonnet production output and independent Opus evaluation remain mandatory and unavailable at the verified external permission boundary. Next after the external state changes: re-probe exact Opus and Sonnet, capture the actual tiered production response, run Opus blind evaluation of production/B/D, use Fable only for a verified unresolved disagreement, then randomize and anonymize the best surviving two or three responses for Joel. Do not substitute another model while labeling it production or Opus evidence.
 
 ### Completion boundary
 

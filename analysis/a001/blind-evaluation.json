@@ -189,6 +189,12 @@
     "staticMock": "filtered out because a hard failure cannot be averaged away",
     "advance": ["B", "C", "D"],
     "provisionalLeaders": ["B", "D"],
+    "longitudinalDisposition": {
+      "B": "qualified by Codex after one coherent ten-trajectory pass",
+      "C": "rejected after non-robust coherent regenerations moved the remaining failure from T04 to T05",
+      "D": "qualified by Codex after one coherent ten-trajectory pass using the successful B continuity mechanism"
+    },
+    "trajectoryEvidence": "analysis/a001/trajectory-evaluation.json",
     "ownerGateReady": false,
     "reason": "Actual Sonnet production output and independent Opus evaluation are still unavailable; the Codex scores are filters, not substitutes."
   }
