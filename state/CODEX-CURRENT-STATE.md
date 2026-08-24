@@ -1,57 +1,70 @@
 # Inner Signal Codex current state
 
-Updated: 2026-08-24
+Updated: 2026-08-15
 
-## Exclusive goal
+## Goal
 
-Run the owner-directed A001 scaffold ablation and diagnose model capability versus planner-first/hard-realization suppression. This is diagnostic only. Stop after the experimental branch, harness, raw evidence, sanitized results, and report are published.
+Maintain the verified public repository baseline without changing therapy/hypnosis policy, model roles, privacy scope, owner decisions, transactional installation, or `stable` release authority. The publication transition and its executable closeout work are complete; the only compliance blocker is installed GitHub App permission readback.
 
-## Exact boundary
+## Authority / baseline
 
-- Branch: `exp/a001-scaffold-ablation-20260824`
-- Protected-main baseline: `a22f2e611fab778bf26b8e7215afbf85aba4ba5e`
-- Protected-stable and installed-runtime baseline: `110ee5342e27d8f1bd3d11cc2be4d85926c255b1`
-- Installed runtime: `0.15.2`, read-only for this task
-- Active task: `tasks/ACTIVE-TASK.json`
-- Rerun command: `npm run experiment:a001-scaffold`
-
-Do not change production prompts, therapy/guide/graph policy, `main`, `stable`, the installed runtime, or release state. The branch may contain only experiment harness code, tests, documentation, and sanitized evidence.
-
-## Evidence classifications
-
-- Deterministic repository checks prove harness and contract behavior only.
-- Live model calls prove exact requested-selector execution and retain provider metadata; they do not prove therapy outcomes.
-- Blinded pairwise preference is the primary engineering quality result, not a validated clinical measure.
-- The ten prior A001 trajectories are owner-authored counterfactual engineering fixtures, not observed follow-up transcripts.
-- No owner approval or therapy-policy transition is created by this experiment.
+- Repository: `u-dont-existDOTcom/innerSignalGraph`
+- Development authority: `main`
+- Sole installation/release source: `stable`
+- Generated privacy-safe status branch: `runtime-diagnostics`; never merge it into source
+- Exact repository commands and hosted-control states: `.github/codex-repository.json`
+- Runtime automation: `AUTOPILOT.md`
+- Documentation/evidence map: `docs/INDEX.md`
+- Stable-promotion evidence: `docs/RELEASE-EVIDENCE.md`
+- Current owner requirements and verified source/tests outrank checkpoints and historical reports.
 
 ## Completed
 
-- Read all four current therapy-governance ledgers before therapy work. The protected-main baseline predates three of those files; current owner/project instructions and the ledgers read from the controlling source worktree remain authoritative.
-- Consulted current universal recovery, exclusive-task, evaluation-separation, reproducibility, and plugin-activation guidance.
-- Recorded protected refs, installed receipt, configured model roles, CLI versions/capabilities, and effective guide/graph state.
-- Confirmed the marked r02 packet is blocked/rejected and not installed; the installed runtime falls back to the committed r5 guide and graph.
-- Preserved the independent conception before experiment changes.
-- Created this isolated branch/worktree from protected `origin/main`.
-- Added fail-closed branch/runtime preflight, private-evidence guard, atomic input-hashed stage resumption, A–F condition runner, blind order-reversed judges, trace analysis, deterministic contract checks, and sanitized report generation.
-- `npm run experiment:a001-scaffold:preflight` passes on this exact branch and baseline.
-- `npm run experiment:a001-scaffold:test` passes.
+- Pull request [6](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/6) prepared the private repository and squash-merged as `855bdfab0b18327d320e703daf82903de65817e3` after exact-head deterministic/workflow success and the required private CodeQL skip.
+- Pull request [7](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/7) repaired the fail-open hosted-audit boundary and squash-merged as `22179212afd26fc2cc3d89ac9cecdfeedfc8b4e0` before disclosure.
+- The existing repository—not a mirror or replacement—became public. The write was invoked at `2026-08-15T03:51:54.954Z`; successful write plus independent public/unchanged-ref readback completed at `2026-08-15T03:52:03.707Z`. GitHub's internal mutation instant remains `UNVERIFIED` within that bound.
+- Pull request [8](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/8) repaired the initial public CodeQL findings and squash-merged as `956b17cc008fe68b6d9f5e9c36f002066aa9732a`; the required merged-main CodeQL dispatch succeeded and open-alert readback was zero.
+- `main` and `stable` are protected with strict contexts exactly `deterministic-package`, `workflow-policy`, and `codeql-javascript`; administrators, linear history, pull requests, and conversation resolution are enforced; approvals remain zero; force pushes and deletion are disabled.
+- Universal publication-transition guidance was promoted through `u-dont-existDOTcom/universal-dev-architecture` pull request 13 and merged as `996d67ae9f8f44b0865cea6d88d169dbbadbbf41` after its deterministic audit and CodeQL checks passed.
+- Public hosted evidence passed TDD, all final repository gates, two independent reviews, and the protected pull-request path through pull request [9](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9).
+- The immutable PR 9 merge/check/ref evidence is recorded in the two reports routed below and in [PR 9 comment 5300990615](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615), which supplies the self-referential post-merge receipt that tracked source cannot embed.
+- All executable Tasks 1-10 completed through their protected paths. No transition task remains to be opened, reviewed, verified, or merged.
 
 ## Current checkpoint
 
-The reusable harness and private run `a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431` are active. Exact Sonnet 4.6, Opus 5, and GPT-5.6 Sol probes succeeded before the outage. Producer samples A1–A3, B1–B2, C1–C3, D1–D3, and E1–E2 are complete. B3 and E3 have no accepted sample because their exact-Opus calls returned HTTP 529. F1/F2 are complete; native `developer_instructions` is live-supported, and both critiques reported high plan deference. Twenty-eight Sol pairwise presentations and two Sol trace evaluations are durable.
-
-Anthropic's official 2026-08-24 incident reports elevated errors for Opus 5 and other models. The remaining exact-Opus producer and judge work is queued without fallback. Raw evidence is owner-only outside Git; `analysis/a001-scaffold-ablation/partial-checkpoint.json` is metadata-only and explicitly not a result.
+- All executable Tasks 1-10 are completed through the protected GitHub path; public visibility and every verified control except installed-App permissions were reconciled in the final readback.
+- Visible closeout receipt: pull request 9 is merged; its reviewed candidate tree equals the merged-main tree; every exact-head and merged-main required check succeeded; merged-main CodeQL analysis `1622858177` is associated with the verified baseline and had zero open alerts.
+- The immutable Task 9/10 baseline, matching-tree receipt, exact successful check associations, final-main CodeQL analysis, protected refs, and non-effects are in `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md` and `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md`.
+- Treat current Git refs and hosted settings as live state: fetch and read them when needed rather than treating a tracked checkpoint SHA as permanently current. The tracked reports remain historical evidence for the verified transition baseline.
+- `stable` remains the sole installation/release source and `runtime-diagnostics` remains separate generated data; neither was merged or advanced by the public-transition closeout.
 
 ## Remaining
 
-1. Monitor the official Anthropic incident; do not issue more Opus calls while it is identified/active.
-2. After recovery, resume with `A001_ABLATION_RESUME_RUN_IDENTITY=a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431 npm run experiment:a001-scaffold`.
-3. Complete B3, E3, all Opus judgments, remaining Sol comparisons, and all trace evaluations.
-4. Generate the final sanitized report and deterministic contract results.
-5. Analyze, verify, commit, and push final evidence.
-6. Confirm production refs/runtime unchanged and stop before production changes.
+- Issue 4 remains open solely because installed GitHub App permissions are `UNVERIFIED` without GitHub App-authorized authentication.
+- All other executable public-transition and repository-compliance work is complete.
+- Keep terminal status `BLOCKED` until the installed-App permission readback exists.
+
+## Blockers / unresolved
+
+- `GET /user/installations` returns HTTP 403 because the available OAuth token is not authorized to a GitHub App. `GET /installation/repositories` also returns HTTP 403 because the token is not an installation token. Repository-scoped installed GitHub App permissions remain `UNVERIFIED`.
+- Exact remaining action: use a GitHub App-authorized token to enumerate installations accessible to the user, select this repository, record only safe repository-scoped permission names, and update the evidence through the protected path.
+- Issue 4 [remains OPEN](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4) solely for installed GitHub App permission readback.
+- No owner decision is required for that infrastructure readback. No stable release is requested or authorized.
+
+## Evidence / artifacts
+
+- Exact machine profile: `.github/codex-repository.json`
+- Accepted design and plan: `docs/superpowers/specs/2026-08-14-public-repository-transition-design.md`, `docs/superpowers/plans/2026-08-14-public-repository-transition.md`
+- Transition report: `docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md`
+- Compliance report: `docs/CODEX-GITHUB-COMPLIANCE-REPORT-2026-08-14.md`
+- Public hosted evidence: pull request [9](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9) and its [durable receipt](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/9#issuecomment-5300990615)
+- Universal lesson: pull request 13 / merge `996d67ae9f8f44b0865cea6d88d169dbbadbbf41`
+- Hosted hardening issue: [4](https://github.com/u-dont-existDOTcom/innerSignalGraph/issues/4)
+
+## Next safe action
+
+Obtain GitHub App-authorized authentication, read repository-scoped installed-App permissions, and reconcile issue 4 and terminal status through a protected evidence update. Repeat read-only verification only if hosted evidence drifts. Preserve `stable`, keep `runtime-diagnostics` separate, and do not change therapy, model-role, privacy, or release policy without the applicable owner decision.
 
 ## Recovery rule
 
-After interruption, run preflight, inspect `analysis/a001-scaffold-ablation/run-status.json`, and rerun the single experiment command. Matching complete stages are reused. Never copy raw private evidence into Git and never infer a therapy-policy decision from the diagnostic result.
+After interruption, inspect actual Git state, this checkpoint, `.github/codex-repository.json`, newer owner instructions, current PR/check/API state, and the final commits in each worktree. Never infer completion from chat or replay completed changes. Do not copy r03 therapy changes into this branch.

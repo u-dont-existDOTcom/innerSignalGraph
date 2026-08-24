@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "capturedAt": "2026-08-24T01:23:09.468Z",
+  "capturedAt": "2026-08-24T06:51:58.702Z",
   "experimentVersion": "a001-scaffold-ablation-v1",
   "sourceRefs": {
-    "HEAD": "4eb3334bd5f3a52ef45b2c8a65285680b683de31",
+    "HEAD": "3e79465aa205fd492d0e05e2916ce0a34754df50",
     "main": "10a779a3a56e0ac9d84925342727b00cac09cb0e",
     "stable": "bf4d44bd9103f7e32f6d43d6b8aafb95a48b8d67",
     "origin/main": "a22f2e611fab778bf26b8e7215afbf85aba4ba5e",

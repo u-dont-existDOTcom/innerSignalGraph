@@ -865,10 +865,11 @@ async function main() {
   await atomicWriteJson(path.join(analysisRoot, "results.json"), resultSummary, 0o644);
 
   const trackedFiles = ["environment.json", "contract-results.json", "codex-transport-results.json", "preference-results.json", "trace-results.json", "results.json"];
+  const privateRunLocator = `<owner-private-root>/runs/${runIdentity.slice(0, 16)}`;
   const evidenceIndex = {
     schemaVersion: 1,
     runIdentity,
-    privateRunRoot: runRoot,
+    privateRunLocator,
     privateManifestSha256: sha256(await fs.readFile(path.join(runRoot, "manifest.json"))),
     rawEvidenceTrackedInGit: false,
     tracked: Object.fromEntries(await Promise.all(trackedFiles.map(async (file) => [file, sha256(await fs.readFile(path.join(analysisRoot, file)))]))),
@@ -879,7 +880,7 @@ async function main() {
     }]))
   };
   await atomicWriteJson(path.join(analysisRoot, "evidence-index.json"), evidenceIndex, 0o644);
-  const report = reportMarkdown({ publicEnv, pairwise: pairwiseTable, contracts, traceSummary, transport: publicTransport, inference, runRoot });
+  const report = reportMarkdown({ publicEnv, pairwise: pairwiseTable, contracts, traceSummary, transport: publicTransport, inference, runRoot: privateRunLocator });
   await atomicWriteText(path.join(analysisRoot, "REPORT.md"), report, 0o644);
   await atomicWriteJson(path.join(analysisRoot, "run-status.json"), {
     schemaVersion: 1,
