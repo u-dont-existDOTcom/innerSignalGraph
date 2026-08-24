@@ -440,10 +440,17 @@ function publicProbe(value) {
   return { requestedModel: value.requestedModel, returnedModel: value.returnedModel, responseId: value.responseId, usage: value.usage, transport: value.transport, probedAt: value.probedAt ?? null, reused: value.reused === true, reusedFromRun: value.reusedFromRun ?? null };
 }
 
-function probeCapabilityFingerprint(environment, providerKey) {
-  return sha256(providerKey === "openai"
+export function probeCapabilityFingerprint(environment, providerKey) {
+  const source = providerKey === "openai"
     ? { version: environment.capabilities.codexVersion, help: environment.capabilities.codexHelp }
-    : { version: environment.capabilities.claudeVersion, help: environment.capabilities.claudeHelp });
+    : { version: environment.capabilities.claudeVersion, help: environment.capabilities.claudeHelp };
+  const stableCapability = Object.fromEntries(Object.entries(source).map(([key, value]) => [key, {
+    exitCode: value.exitCode,
+    stdoutSha256: value.stdoutSha256,
+    stderrSha256: value.stderrSha256,
+    firstLine: value.firstLine
+  }]));
+  return sha256(stableCapability);
 }
 
 async function reusableProbeReceipt(privateRoot, { providerKey, requestedModel, capabilityFingerprint, maxAgeMs = 24 * 60 * 60 * 1000 }) {
@@ -926,7 +933,12 @@ export async function runTherapyScaffoldBenchmark({ runtimeRoot, privateRoot, ex
     const stage = await store.run(`probe-${providerKey}`, { requestedModel, capabilityFingerprint, config: publicConfig(judgeConfig), reuseReceiptSha256: reusable ? sha256(reusable) : null }, async () => {
       if (reusable) return validateExactModelProbe(reusable, requestedModel);
       const provider = createBenchmarkProviders(candidateModules, judgeConfig)[providerKey];
-      return { ...await liveProbe(provider, requestedModel), probedAt: new Date().toISOString(), reused: false, reusedFromRun: null };
+      try {
+        return { ...await liveProbe(provider, requestedModel), probedAt: new Date().toISOString(), reused: false, reusedFromRun: null };
+      } catch (error) {
+        error.benchmarkContext = { phase: "exact-model-probe", providerKey, requestedModel };
+        throw error;
+      }
     });
     probes[providerKey] = stage.value;
   }

@@ -6,7 +6,7 @@ import path from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
 
-import { aggregatePairwise, selectArchitecture, validateExactModelProbe } from "../scripts/experiments/therapy-scaffold-benchmark.mjs";
+import { aggregatePairwise, probeCapabilityFingerprint, selectArchitecture, validateExactModelProbe } from "../scripts/experiments/therapy-scaffold-benchmark.mjs";
 import { pairwisePrompt } from "../scripts/experiments/therapy-scaffold-evaluation.mjs";
 import { ResumableTraceProvider, StageStore, assertPrivateTextAbsentFromGit, mapWithConcurrency, runCommand } from "../scripts/experiments/therapy-scaffold-lib.mjs";
 import { runSemanticFormulation } from "../src/orchestrator/model-first-scaffold.mjs";
@@ -72,6 +72,14 @@ test("exact-model probes fail closed on an absent or mismatched returned selecto
   assert.throws(() => validateExactModelProbe({ ok: true, returnedModel: null }, "claude-opus-5"), /no model selector/);
   assert.throws(() => validateExactModelProbe({ ok: true, returnedModel: "claude-sonnet-4-6" }, "claude-opus-5"), /requested claude-opus-5, returned claude-sonnet-4-6/);
   assert.equal(validateExactModelProbe({ ok: true, returnedModel: "claude-opus-5" }, "claude-opus-5").returnedModel, "claude-opus-5");
+});
+
+test("valid exact-model probes remain reusable when only capability-probe duration changes", () => {
+  const environment = (durationMs) => ({ capabilities: {
+    claudeVersion: { exitCode: 0, durationMs, stdoutSha256: "version-out", stderrSha256: "empty", firstLine: "2.1.241 (Claude Code)" },
+    claudeHelp: { exitCode: 0, durationMs: durationMs + 1, stdoutSha256: "help-out", stderrSha256: "empty", firstLine: "Usage: claude" }
+  } });
+  assert.equal(probeCapabilityFingerprint(environment(10), "renderer"), probeCapabilityFingerprint(environment(10_000), "renderer"));
 });
 
 test("structured-output failures invalidate the provider cache and rerun the failed exact stage", async () => {
