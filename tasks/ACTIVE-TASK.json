@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "taskId": "therapy-scaffold-authority-repair-20260824",
+  "title": "Compare advisory and model-first therapy scaffolds and prepare the evidence-supported production candidate",
+  "status": "active",
+  "exclusive": true,
+  "repository": "u-dont-existDOTcom/innerSignalGraph",
+  "requiredBranch": "agent/therapy-scaffold-authority-repair-20260824",
+  "pullRequest": null,
+  "ownerAuthorized": true,
+  "source": {
+    "protectedMainSha": "a22f2e611fab778bf26b8e7215afbf85aba4ba5e",
+    "protectedStableSha": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1",
+    "experimentBranch": "exp/a001-scaffold-ablation-20260824",
+    "experimentSha": "92377a2461ebd44a28d1a6a44d0348ef849d5d20"
+  },
+  "preflightCommand": "npm run task:preflight",
+  "operationCommand": "node --env-file=.env scripts/experiments/therapy-scaffold-authority-repair.mjs",
+  "completionClaimRule": "The branch may contain a reviewed production candidate and evidence, but it may not change main, stable, the installed runtime, active Guide Packet state, or production therapy policy. Completion means a draft PR is ready; promotion remains owner-gated.",
+  "researchDisposition": "adapt-and-test",
+  "suspendedEffects": [
+    "origin/main mutation",
+    "origin/stable mutation",
+    "installed runtime mutation",
+    "active Guide Packet mutation",
+    "therapy default activation",
+    "graph-content changes",
+    "hypnosis behavior changes",
+    "safety-routing changes",
+    "canonical-question policy changes during the primary comparison",
+    "Codex transport changes during the primary comparison"
+  ],
+  "selectionRule": {
+    "presumptiveCandidate": "advisory",
+    "tieResult": "advisory",
+    "modelFirstRequiresCrossFamilyIncrementalAdvantage": true,
+    "noReliableGeneralizationResult": "no-change"
+  },
+  "privacy": {
+    "rawPrivateTranscriptsInGit": false,
+    "rawPrivateModelResponsesInGit": false,
+    "committedEvidence": "sanitized aggregates, hashes, case identifiers, provenance classes, and non-sensitive summaries only"
+  }
+}

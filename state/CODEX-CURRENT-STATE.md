@@ -1,6 +1,33 @@
 # Inner Signal Codex current state
 
-Updated: 2026-08-15
+Updated: 2026-08-24
+
+## Exclusive active task
+
+- Task ID: `therapy-scaffold-authority-repair-20260824`
+- Required branch: `agent/therapy-scaffold-authority-repair-20260824`
+- Protected-main baseline: `a22f2e611fab778bf26b8e7215afbf85aba4ba5e`
+- Protected-stable baseline: `110ee5342e27d8f1bd3d11cc2be4d85926c255b1`
+- Completed ablation evidence: `exp/a001-scaffold-ablation-20260824` at `92377a2461ebd44a28d1a6a44d0348ef849d5d20`
+- Machine authority: `tasks/ACTIVE-TASK.json`
+- Recovery entrypoint: `tasks/START-HERE.md`
+- First command after any interruption: `npm run task:preflight`
+
+The current objective is the controlled A/C/D broader-case comparison and isolated production-candidate implementation. No merge, promotion, installation, active Guide Packet change, graph-content change, hypnosis change, safety-routing change, canonical-question policy change during the primary comparison, or production-default activation is authorized.
+
+### Durable checkpoint
+
+The isolated worktree was created directly from current protected `origin/main`. The owner-supplied independent conception and selection rule are preserved before implementation. Test-efficiency telemetry started under the worktree Git metadata. No model calls, substantive tests, runtime edits, or production effects have occurred on this branch yet.
+
+### Next safe action
+
+Run task preflight, resolve the installed-runtime/guide/model identities, establish fresh deterministic baseline gates, inventory case provenance and A001 contract requirements, then implement the resumable experimental harness. Raw private transcripts and raw private model responses stay in an owner-only sibling directory outside Git.
+
+### Recovery rule
+
+Inspect exact Git state and protected refs, run task preflight, read this section plus `tasks/START-HERE.md`, and resume only the first missing or stale stage. Do not select the historical public-transition queue below while this exclusive task is active.
+
+## Historical repository-maintenance goal (suspended)
 
 ## Goal
 
