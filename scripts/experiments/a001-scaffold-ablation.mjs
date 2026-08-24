@@ -89,7 +89,35 @@ function planAdjudication(snapshot, plan) {
     ],
     rejected_claims: [...(plan.forbiddenOverclaims ?? []), ...(plan.avoid ?? [])],
     safety_flags: snapshot.audit?.safety_flags ?? [],
-    decision_summary: `Follow the deterministic primary job ${plan.primaryJob?.title ?? "none"}; expose only uncertainty that changes the next move.`
+    decision_summary: `Follow the deterministic primary job ${plan.primaryJob?.title ?? "none"}; expose only the uncertainty that changes the next move.`
+  };
+}
+
+export function hardPipelineTraceArtifacts(value) {
+  const calls = Object.values(value.providerTraces ?? {}).flat();
+  const callAt = (stage) => calls.find((item) => item.request?.metadata?.stage === stage) ?? null;
+  const snapshot = value.result.caseFormulation;
+  const plan = value.result.interventionContract;
+  return {
+    rawCaseExtraction: callAt("case_extraction"),
+    rawCaseAudit: callAt("case_audit"),
+    auditedCaseExtraction: snapshot,
+    variables: snapshot.variables,
+    matchedGraphNodes: {
+      primaryJob: plan.primaryJob,
+      secondaryJobs: plan.secondaryJobs,
+      selectedNodes: plan.selectedNodes,
+      graphTrace: plan.graphTrace,
+      trace: plan.trace
+    },
+    interventionContract: plan,
+    reasoningAdjudicationPacket: planAdjudication(snapshot, plan),
+    finalRealization: callAt("realization"),
+    finalUserVisibleResponse: {
+      answer: value.result.answer,
+      nextQuestion: value.result.next_question,
+      userVisibleText: answerText(value.result)
+    }
   };
 }
 
@@ -709,6 +737,13 @@ async function main() {
     throw error;
   }
 
+  for (const replicate of REPLICATES) {
+    await store.run(`11-control-trace-A-r${replicate}`, {
+      conditionArtifactSha256: sha256(outputs.A[replicate]),
+      traceProjectionVersion: 1
+    }, async () => hardPipelineTraceArtifacts(outputs.A[replicate]));
+  }
+
   const contracts = [];
   for (const condition of CONDITIONS) {
     for (const replicate of REPLICATES) {
@@ -736,8 +771,18 @@ async function main() {
     f1CritiqueSha256: sha256(transport.f1.result),
     f2CritiqueSha256: transport.f2?.supported ? sha256(transport.f2.result) : null,
     sameCritiqueHash: transport.f2?.supported ? sha256(transport.f1.result) === sha256(transport.f2.result) : null,
+    f1ImportantRelationalIssueSha256: sha256(transport.f1.result.important_relational_issue),
+    f2ImportantRelationalIssueSha256: transport.f2?.supported ? sha256(transport.f2.result.important_relational_issue) : null,
+    f1ContractViolationCount: transport.f1.result.contract_violations.length,
+    f2ContractViolationCount: transport.f2?.supported ? transport.f2.result.contract_violations.length : null,
+    f1UnsupportedAssignmentCount: transport.f1.result.unsupported_assignments.length,
+    f2UnsupportedAssignmentCount: transport.f2?.supported ? transport.f2.result.unsupported_assignments.length : null,
+    f1MissedInsightCount: transport.f1.result.missed_insight.length,
+    f2MissedInsightCount: transport.f2?.supported ? transport.f2.result.missed_insight.length : null,
     f1PlanDeference: transport.f1.result.plan_deference,
     f2PlanDeference: transport.f2?.result?.plan_deference ?? null,
+    f1Verdict: transport.f1.result.verdict,
+    f2Verdict: transport.f2?.result?.verdict ?? null,
     probeResponseId: transport.probe.response?.responseId ?? transport.probe.response?.requestId ?? null
   };
   await atomicWriteJson(path.join(analysisRoot, "codex-transport-results.json"), publicTransport, 0o644);

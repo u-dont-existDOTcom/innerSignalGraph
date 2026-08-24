@@ -16,6 +16,7 @@ import {
   pairwisePrompt
 } from "../scripts/experiments/a001-scaffold-prompts.mjs";
 import { verifyPreflightState } from "../scripts/experiments/a001-scaffold-preflight.mjs";
+import { hardPipelineTraceArtifacts } from "../scripts/experiments/a001-scaffold-ablation.mjs";
 
 const task = {
   schemaVersion: 1,
@@ -107,4 +108,23 @@ test("pairwise aggregation preserves order disagreement instead of averaging it 
   assert.equal(result.wins.D, 3);
   assert.equal(result.wins.A, 1);
   assert.equal(sha256(result).length, 64);
+});
+
+test("control trace projection separates every required A-stage artifact", () => {
+  const snapshot = { direct_observations: [{ statement: "observed" }], hypotheses: [], unknowns: [], variables: { credibility_conflict: "present" }, audit: { safety_flags: [] } };
+  const plan = { primaryJob: { id: "p", title: "Primary" }, secondaryJobs: [], selectedNodes: [{ id: "n" }], graphTrace: { matchedEdges: [] }, trace: [], requiredNuance: [], forbiddenOverclaims: [], avoid: [], nextQuestion: "What next?" };
+  const call = (stage, text) => ({ request: { metadata: { stage } }, response: { text } });
+  const artifacts = hardPipelineTraceArtifacts({
+    result: { caseFormulation: snapshot, interventionContract: plan, answer: "Answer", next_question: "Question?" },
+    providerTraces: { renderer: [call("case_extraction", "raw extraction"), call("realization", "raw realization")], openai: [call("case_audit", "raw audit")] }
+  });
+  assert.equal(artifacts.rawCaseExtraction.response.text, "raw extraction");
+  assert.equal(artifacts.rawCaseAudit.response.text, "raw audit");
+  assert.equal(artifacts.auditedCaseExtraction, snapshot);
+  assert.equal(artifacts.variables, snapshot.variables);
+  assert.equal(artifacts.matchedGraphNodes.selectedNodes, plan.selectedNodes);
+  assert.equal(artifacts.interventionContract, plan);
+  assert.match(artifacts.reasoningAdjudicationPacket.decision_summary, /Primary/);
+  assert.equal(artifacts.finalRealization.response.text, "raw realization");
+  assert.equal(artifacts.finalUserVisibleResponse.userVisibleText, "Answer");
 });
