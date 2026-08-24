@@ -394,7 +394,7 @@ async function exactRef(root, ref = "HEAD") {
 }
 
 async function environmentSnapshot({ runtimeRoot, experimentSha }) {
-  const markerPath = path.join(runtimeRoot, ".inner-signal-runtime.json");
+  const markerPath = path.join(runtimeRoot, ".inner-signal-autopilot/git-install.json");
   let installedMarker = null;
   try { installedMarker = await readJson(markerPath); } catch (error) { if (error.code !== "ENOENT") throw error; }
   const packageDocument = await readJson(path.join(runtimeRoot, "package.json"));
@@ -404,7 +404,7 @@ async function environmentSnapshot({ runtimeRoot, experimentSha }) {
     candidateTree: await exactRef(repositoryRoot, "HEAD^{tree}"),
     sourceOriginMain: await exactRef(repositoryRoot, "origin/main"),
     protectedOriginStable: await exactRef(repositoryRoot, "origin/stable"),
-    installedHead: await exactRef(runtimeRoot),
+    installedHead: installedMarker?.commit ?? null,
     installedPackageVersion: packageDocument.version,
     installedMarker,
     referenceExperimentSha: experimentSha,
