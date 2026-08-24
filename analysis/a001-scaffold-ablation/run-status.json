@@ -2,12 +2,14 @@
   "schemaVersion": 1,
   "taskId": "a001-scaffold-ablation-v1",
   "runIdentity": "a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431",
-  "status": "experiment-complete-stop-before-production",
+  "status": "experiment-complete-published-stop-before-production",
   "branch": "exp/a001-scaffold-ablation-20260824",
   "sourceSha": "f381c08e6892e0cd7f2ba5a8f8fba8447354fef9",
+  "evidenceCheckpointSha": "c9cd6866f343a52c54610d73cd4025678c462f31",
+  "publishedAt": "2026-08-24T11:50:26Z",
   "installedRuntimeSha": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1",
   "productionChanged": false,
-  "lastCompletedStage": "analysis-and-report",
+  "lastCompletedStage": "branch-publication",
   "currentUncertainty": "Pairwise preference margins are descriptive engineering evidence, not a validated clinical measure or causal effect size.",
-  "nextAction": "Verify, commit, push the experimental evidence branch, then stop before production changes."
+  "nextAction": "Stop. Production therapy behavior remains unchanged; any implementation requires a later explicit owner decision."
 }
