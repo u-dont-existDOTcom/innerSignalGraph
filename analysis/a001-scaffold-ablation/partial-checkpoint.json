@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "taskId": "a001-scaffold-ablation-v1",
+  "capturedAt": "2026-08-24T06:50:56.000Z",
+  "runIdentity": "a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431",
+  "classification": "incomplete diagnostic checkpoint; not a result",
+  "producerSamples": {
+    "A": 3,
+    "B": 2,
+    "C": 3,
+    "D": 3,
+    "E": 2
+  },
+  "codexTransport": {
+    "f1Complete": true,
+    "f2NativeDeveloperInstructionsSupported": true,
+    "f1PlanDeference": "high",
+    "f2PlanDeference": "high",
+    "superiorityConclusionAllowed": false
+  },
+  "blindEvaluation": {
+    "codexPairwiseCallsComplete": 28,
+    "opusPairwiseCallsComplete": 0,
+    "codexTraceCallsComplete": 2,
+    "opusTraceCallsComplete": 0,
+    "primaryResultAvailable": false
+  },
+  "blocker": {
+    "provider": "Anthropic",
+    "failure": "HTTP 529 api_error",
+    "affectedRequiredStages": [
+      "B3 exact-Opus hard-scaffold extraction",
+      "E3 exact-Opus model-first condition",
+      "Opus blind pairwise judging",
+      "Opus information-flow trace judging"
+    ],
+    "officialIncident": "https://status.claude.com/",
+    "officialStateAtCapture": "identified; partial outage; elevated errors for Claude Opus 5 and other models",
+    "failedCallsCountAsSamples": false
+  },
+  "productionChanged": false,
+  "stopBeforeProductionChange": true
+}

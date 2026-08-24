@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-24T01:23:09.468Z",
+  "experimentVersion": "a001-scaffold-ablation-v1",
+  "sourceRefs": {
+    "HEAD": "4eb3334bd5f3a52ef45b2c8a65285680b683de31",
+    "main": "10a779a3a56e0ac9d84925342727b00cac09cb0e",
+    "stable": "bf4d44bd9103f7e32f6d43d6b8aafb95a48b8d67",
+    "origin/main": "a22f2e611fab778bf26b8e7215afbf85aba4ba5e",
+    "origin/stable": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1"
+  },
+  "installedRuntime": {
+    "packageVersion": "0.15.2",
+    "installedBranch": "stable",
+    "installedCommit": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1",
+    "installedAt": "2026-08-13T04:37:30.782Z",
+    "runtimeTreeHash": "2df71520e287f0efe362aa57843ffcf8342d1f06b2cd9ba61efbadfdf4d85ea9",
+    "graphBundleHash": "d038262b0c6abec43c99c52195ee2a4a3a52f5f3a26216c808054c5978789fc4"
+  },
+  "configuredModels": {
+    "mode": "cli",
+    "openaiModel": "gpt-5.6-sol",
+    "anthropicModel": "claude-opus-5",
+    "responseRendererModel": "claude-sonnet-4-6",
+    "codexReasoningEffort": "high",
+    "claudeEffort": "high",
+    "therapyProcessingMode": "auto",
+    "cliIsolateConfig": true,
+    "ledgerMode": "off"
+  },
+  "cli": {
+    "codex": {
+      "exitCode": 0,
+      "stdoutSha256": "26247c5af0a85b5e7bd1d7064e175fa566b8c14624b9a6e08ab85fa0edd41f2d",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "firstLine": "codex-cli 0.149.0"
+    },
+    "codexExecHelp": {
+      "exitCode": 0,
+      "stdoutSha256": "23e8b383723998a8ae8427c449ebe77a88ac82b04b4f8a18aad62925b9d3d0ee",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "firstLine": "Run Codex non-interactively"
+    },
+    "claude": {
+      "exitCode": 0,
+      "stdoutSha256": "b53e97cd9ccd2c3777025fe4884a8ebcc3314bc98912d42a63945eab8ef52ad8",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "firstLine": "2.1.241 (Claude Code)"
+    },
+    "claudeHelp": {
+      "exitCode": 0,
+      "stdoutSha256": "71ad650f59e08ae40ede14c534db4f49d8590ee5a4f92f6da2882d3a5560fea6",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "firstLine": "Usage: claude [options] [command] [prompt]"
+    }
+  },
+  "guide": {
+    "markerPacketId": "inner-signal-guides-2026.08.12-r02-candidate",
+    "markerLifecycle": "blocked",
+    "markerOverall": "BLOCKED_AUTO_RECOVERY",
+    "markerStage": "independent-review-rejected",
+    "installedCurrentPresent": false,
+    "effectiveGuideVersion": "inner-child-somatic-pilot-2026-08-09-r5",
+    "effectiveGuidePacketVersion": null,
+    "effectiveGraphVersion": "inner-child-somatic-pilot-2026-08-09-r5"
+  },
+  "frozenInput": {
+    "caseFile": "corpus/difficult-cases/A001-inner-child-credibility/case.json",
+    "caseInputSha256": "fc1e179633d6c81dcb65d20d83a68f87a6e7b7486f497aa2f8685402e2680ed7",
+    "guideExcerptsSha256": "f5b591175ceb2b47c6aaf5f1f39d0e12286f297115f690a85adc8096c2dfda95",
+    "guideExcerptChars": 17881
+  },
+  "existingA001Evidence": {
+    "originalMessageSha256": "13b6503e2557665add98fd4f96b3f841ec40c06a9bfda3c2a7442efc2baf19b6",
+    "trajectoryFixtureClassification": "owner-authored-counterfactual-engineering-trajectories; not observed follow-up transcripts",
+    "trajectoryFixtureCount": 10,
+    "priorGeneratedTrajectoryOutputCount": 100,
+    "observedFollowUpTranscriptCount": 0,
+    "boundary": "No artifact was found that establishes these counterfactual prompts as observed owner follow-up turns. They are inventoried but not relabeled or rerun as real transcripts."
+  }
+}

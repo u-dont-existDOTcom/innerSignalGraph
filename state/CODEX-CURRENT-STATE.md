@@ -39,17 +39,18 @@ Do not change production prompts, therapy/guide/graph policy, `main`, `stable`, 
 
 ## Current checkpoint
 
-The reusable harness exists locally and has passed focused deterministic tests. No live experiment condition has been accepted as complete yet. Raw evidence will be written to an owner-only sibling `-private` directory; Git will retain only hashes, exact request/model identifiers, aggregate results, and conclusions.
+The reusable harness and private run `a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431` are active. Exact Sonnet 4.6, Opus 5, and GPT-5.6 Sol probes succeeded before the outage. Producer samples A1–A3, B1–B2, C1–C3, D1–D3, and E1–E2 are complete. B3 and E3 have no accepted sample because their exact-Opus calls returned HTTP 529. F1/F2 are complete; native `developer_instructions` is live-supported, and both critiques reported high plan deference. Twenty-eight Sol pairwise presentations and two Sol trace evaluations are durable.
+
+Anthropic's official 2026-08-24 incident reports elevated errors for Opus 5 and other models. The remaining exact-Opus producer and judge work is queued without fallback. Raw evidence is owner-only outside Git; `analysis/a001-scaffold-ablation/partial-checkpoint.json` is metadata-only and explicitly not a result.
 
 ## Remaining
 
-1. Commit and push the harness checkpoint.
-2. Run live exact-model probes for Sonnet 4.6, Opus 5, and GPT-5.6 Sol.
-3. Run three replicates of A–E and F1/F2.
-4. Run blinded pairwise judging with both exact judges in both orders.
-5. Run information-flow trace classification and deterministic A001 acceptance separately.
-6. Analyze, verify, commit, and push final evidence.
-7. Confirm production refs/runtime unchanged and stop before production changes.
+1. Monitor the official Anthropic incident; do not issue more Opus calls while it is identified/active.
+2. After recovery, resume with `A001_ABLATION_RESUME_RUN_IDENTITY=a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431 npm run experiment:a001-scaffold`.
+3. Complete B3, E3, all Opus judgments, remaining Sol comparisons, and all trace evaluations.
+4. Generate the final sanitized report and deterministic contract results.
+5. Analyze, verify, commit, and push final evidence.
+6. Confirm production refs/runtime unchanged and stop before production changes.
 
 ## Recovery rule
 

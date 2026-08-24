@@ -124,12 +124,30 @@ export class StageStore {
       await this.#persistManifest();
       return { value, reused: false, file };
     } catch (error) {
+      const failureRecord = {
+        schemaVersion: 1,
+        status: "failed",
+        id,
+        inputHash,
+        startedAt,
+        failedAt: new Date().toISOString(),
+        error: {
+          name: error.name,
+          code: error.code ?? null,
+          message: error.message,
+          details: error.details ?? null,
+          providerTraces: error.experimentProviderTraces ?? null
+        }
+      };
+      const failureFile = path.join(this.root, "failures", `${safeName(id)}-${failureRecord.failedAt.replace(/[:.]/g, "-")}.json`);
+      await atomicWriteJson(failureFile, failureRecord);
       const failed = {
         status: "failed",
         inputHash,
         startedAt,
-        failedAt: new Date().toISOString(),
-        error: { name: error.name, code: error.code ?? null, message: error.message }
+        failedAt: failureRecord.failedAt,
+        error: { name: error.name, code: error.code ?? null, message: error.message },
+        failureFile
       };
       this.manifest.stages[id] = { ...failed, file };
       await this.#persistManifest();

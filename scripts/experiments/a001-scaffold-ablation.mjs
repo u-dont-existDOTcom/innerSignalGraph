@@ -168,8 +168,13 @@ function baseConfig(modules, productionRoot, privateRoot, overrides = {}) {
 async function runHardPipeline({ modules, productionRoot, privateRoot, context, rendererModel }) {
   const config = baseConfig(modules, productionRoot, privateRoot, { responseRendererModel: rendererModel });
   const providers = tracedProviders(modules.createProviders(config));
-  const result = await modules.runTieredTherapyPipeline({ context, providers, config, processingMode: "auto", onProgress: progress });
-  return { result, providerTraces: providerTraces(providers), config: publicConfig(config) };
+  try {
+    const result = await modules.runTieredTherapyPipeline({ context, providers, config, processingMode: "auto", onProgress: progress });
+    return { result, providerTraces: providerTraces(providers), config: publicConfig(config) };
+  } catch (error) {
+    error.experimentProviderTraces = providerTraces(providers);
+    throw error;
+  }
 }
 
 function publicConfig(config) {
@@ -509,7 +514,7 @@ async function main() {
   const config = baseConfig(modules, productionRoot, privateRoot);
   const context = await modules.buildContext(caseDocument.input, config);
   const sourceSha = await git(["rev-parse", "HEAD"]);
-  const runIdentity = sha256({
+  const computedRunIdentity = sha256({
     experimentVersion: EXPERIMENT_VERSION,
     promptVersion: PROMPT_VERSION,
     sourceSha,
@@ -518,6 +523,11 @@ async function main() {
     guideExcerpts: context.guideExcerpts,
     models: publicConfig(config)
   });
+  const requestedResumeIdentity = String(process.env.A001_ABLATION_RESUME_RUN_IDENTITY ?? "").trim();
+  if (requestedResumeIdentity && !/^[a-f0-9]{64}$/.test(requestedResumeIdentity)) {
+    throw new Error("A001_ABLATION_RESUME_RUN_IDENTITY must be a full 64-character SHA-256 run identity.");
+  }
+  const runIdentity = requestedResumeIdentity || computedRunIdentity;
   const runRoot = path.join(privateRoot, "runs", runIdentity.slice(0, 16));
   const store = new StageStore(runRoot, runIdentity);
   await store.initialize();
@@ -539,18 +549,142 @@ async function main() {
     probes[id] = stage.value;
   }
 
+  if (process.env.A001_ABLATION_PHASE === "codex-transport") {
+    const d1Record = await readJson(store.stagePath("10-condition-D-r1"));
+    if (d1Record.status !== "complete") throw new Error("Condition D1 must be complete before the Codex transport phase.");
+    const transport = await runTransportExperiment({
+      modules,
+      config,
+      productionRoot,
+      fixedCandidate: answerText(d1Record.value.result),
+      originalMessage: existing.originalMessage,
+      productionInput: caseDocument.input,
+      plan: d1Record.value.result.interventionContract,
+      store
+    });
+    console.log(JSON.stringify({
+      ok: true,
+      phase: "codex-transport",
+      f2Supported: Boolean(transport.f2?.supported),
+      f1PlanDeference: transport.f1.result.plan_deference,
+      f2PlanDeference: transport.f2?.result?.plan_deference ?? null,
+      privateArtifactSha256: sha256(transport)
+    }, null, 2));
+    return;
+  }
+
+  if (["codex-pairwise-complete", "opus-pairwise-complete"].includes(process.env.A001_ABLATION_PHASE)) {
+    const phaseJudgeName = process.env.A001_ABLATION_PHASE.startsWith("opus") ? "opus" : "codex";
+    const phaseOutputs = {};
+    for (const condition of CONDITIONS) {
+      phaseOutputs[condition] = {};
+      for (const replicate of REPLICATES) {
+        try {
+          const record = await readJson(store.stagePath(`10-condition-${condition}-r${replicate}`));
+          if (record.status === "complete") phaseOutputs[condition][replicate] = record.value;
+        } catch (error) {
+          if (error.code !== "ENOENT") throw error;
+        }
+      }
+    }
+    const phaseJudge = phaseJudgeName === "codex"
+      ? new NativeDeveloperCodexProvider({
+          command: config.codexCommand,
+          model: config.openaiModel,
+          reasoningEffort: config.codexReasoningEffort,
+          cwd: productionRoot,
+          timeoutMs: config.requestTimeoutMs
+        })
+      : modules.createProviders(config).anthropic;
+    let completedCalls = 0;
+    for (const replicate of REPLICATES) {
+      const mapStage = await store.run(`20-blind-map-r${replicate}`, { conditions: CONDITIONS, replicate }, async () => {
+        const entries = CONDITIONS.map((condition) => [condition, randomBlindLabel()]);
+        return { replicate, mapping: Object.fromEntries(entries), randomizedConditionOrder: entries.map(([condition]) => condition).sort(() => Math.random() - 0.5) };
+      });
+      for (const [first, second] of CONTRASTS) {
+        if (!phaseOutputs[first][replicate] || !phaseOutputs[second][replicate]) continue;
+        for (const [orderName, order] of [["forward", [first, second]], ["reverse", [second, first]]]) {
+          const prompt = pairwisePrompt({
+            originalMessage: existing.originalMessage,
+            leftLabel: mapStage.value.mapping[order[0]],
+            leftResponse: answerText(phaseOutputs[order[0]][replicate].result),
+            rightLabel: mapStage.value.mapping[order[1]],
+            rightResponse: answerText(phaseOutputs[order[1]][replicate].result)
+          });
+          await store.run(`30-judge-r${replicate}-${first}${second}-${phaseJudgeName}-${orderName}`, {
+            promptVersion: PROMPT_VERSION,
+            replicate,
+            contrast: `${first}-${second}`,
+            judge: phaseJudgeName,
+            orderName,
+            leftSha256: sha256(answerText(phaseOutputs[order[0]][replicate].result)),
+            rightSha256: sha256(answerText(phaseOutputs[order[1]][replicate].result))
+          }, async () => {
+            const generated = await call(phaseJudge, prompt, pairwiseJudgeSchema, "a001_blind_pairwise_judge");
+            return { judgment: generated.value, response: generated.raw, prompt };
+          });
+          completedCalls += 1;
+        }
+      }
+    }
+    console.log(JSON.stringify({ ok: true, phase: `${phaseJudgeName}-pairwise-complete`, completedCalls }, null, 2));
+    return;
+  }
+
+  if (process.env.A001_ABLATION_PHASE === "codex-trace-complete") {
+    const nativeJudge = new NativeDeveloperCodexProvider({
+      command: config.codexCommand,
+      model: config.openaiModel,
+      reasoningEffort: config.codexReasoningEffort,
+      cwd: productionRoot,
+      timeoutMs: config.requestTimeoutMs
+    });
+    let completedCalls = 0;
+    for (const replicate of [1, 2]) {
+      const phaseOutputs = {};
+      for (const condition of CONDITIONS) {
+        const record = await readJson(store.stagePath(`10-condition-${condition}-r${replicate}`));
+        if (record.status !== "complete") throw new Error(`${condition}${replicate} must be complete before trace evaluation.`);
+        phaseOutputs[condition] = record.value;
+      }
+      const stages = CONDITIONS.flatMap((condition) => traceStages(condition, phaseOutputs[condition], phaseOutputs.A, context));
+      const prompt = tracePrompt({ originalMessage: existing.originalMessage, stages });
+      await store.run(`40-trace-r${replicate}-codex`, {
+        promptVersion: PROMPT_VERSION,
+        replicate,
+        judge: "codex",
+        stagesSha256: sha256(stages)
+      }, async () => {
+        const generated = await call(nativeJudge, prompt, traceJudgeSchema, "a001_information_flow_trace");
+        return { judgment: generated.value, response: generated.raw, prompt };
+      });
+      completedCalls += 1;
+    }
+    console.log(JSON.stringify({ ok: true, phase: "codex-trace-complete", completedCalls }, null, 2));
+    return;
+  }
+
   const outputs = {};
   for (const condition of CONDITIONS) outputs[condition] = {};
+  const incompleteProducerStages = [];
   for (const replicate of REPLICATES) {
     const a = await store.run(`10-condition-A-r${replicate}`, { condition: "A", replicate, promptVersion: "production-exact" }, async () => {
       return await runHardPipeline({ modules, productionRoot, privateRoot: runRoot, context, rendererModel: "claude-sonnet-4-6" });
     });
     outputs.A[replicate] = a.value;
 
-    const b = await store.run(`10-condition-B-r${replicate}`, { condition: "B", replicate, promptVersion: "production-exact", rendererModel: "claude-opus-5" }, async () => {
-      return await runHardPipeline({ modules, productionRoot, privateRoot: runRoot, context, rendererModel: "claude-opus-5" });
-    });
-    outputs.B[replicate] = b.value;
+    const bStageId = `10-condition-B-r${replicate}`;
+    const deferOverloadedB = process.env.A001_ABLATION_DEFER_OVERLOADED_B === "true" && store.manifest.stages[bStageId]?.status === "failed";
+    try {
+      if (deferOverloadedB) throw Object.assign(new Error("Deferred after repeated provider overload so independent producer stages can continue."), { code: "DEFERRED_PROVIDER_OVERLOAD" });
+      const b = await store.run(bStageId, { condition: "B", replicate, promptVersion: "production-exact", rendererModel: "claude-opus-5" }, async () => {
+        return await runHardPipeline({ modules, productionRoot, privateRoot: runRoot, context, rendererModel: "claude-opus-5" });
+      });
+      outputs.B[replicate] = b.value;
+    } catch (error) {
+      incompleteProducerStages.push({ condition: "B", replicate, code: error.code ?? null, message: error.message });
+    }
 
     const c = await store.run(`10-condition-C-r${replicate}`, { condition: "C", replicate, promptVersion: PROMPT_VERSION, pairedA: sha256(a.value) }, async () => {
       return await runAdvisory({ modules, productionRoot, privateRoot: runRoot, context, base: a.value });
@@ -566,6 +700,13 @@ async function main() {
       return await runModelFirst({ modules, productionRoot, privateRoot: runRoot, context, base: a.value, model: "claude-opus-5" });
     });
     outputs.E[replicate] = e.value;
+  }
+
+  if (incompleteProducerStages.length) {
+    const error = new Error(`Producer stages remain incomplete: ${incompleteProducerStages.map((item) => `${item.condition}${item.replicate}`).join(", ")}. Rerun after the provider recovers; completed independent stages will be reused.`);
+    error.code = "EXPERIMENT_PRODUCERS_INCOMPLETE";
+    error.details = incompleteProducerStages;
+    throw error;
   }
 
   const contracts = [];

@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "taskId": "a001-scaffold-ablation-v1",
-  "status": "harness-construction",
+  "status": "external-provider-outage-recovery-queued",
   "branch": "exp/a001-scaffold-ablation-20260824",
   "sourceSha": "a22f2e611fab778bf26b8e7215afbf85aba4ba5e",
   "installedRuntimeSha": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1",
   "productionChanged": false,
-  "lastCompletedStage": "environment-audit",
-  "currentUncertainty": "Live model entitlement and Codex developer-instruction behavior still require controlled probes.",
-  "nextAction": "Implement and unit-test the resumable A–F harness, then execute live probes and all experiment stages."
+  "lastCompletedStage": "partial-blind-evaluation",
+  "currentUncertainty": "Anthropic's active 2026-08-24 partial outage is returning HTTP 529 for exact Opus producer and judge calls. Failed calls are not samples.",
+  "nextAction": "When the official Anthropic incident is monitoring or resolved, resume private run a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431; complete B3, E3, Opus judging, remaining Sol pairs, trace evaluation, and final report."
 }

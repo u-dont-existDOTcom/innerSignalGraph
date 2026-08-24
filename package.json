@@ -9,7 +9,7 @@
     "node": "24.18.0"
   },
   "scripts": {
-    "experiment:a001-scaffold": "node --env-file-if-exists=../inner-signal-runtime/.env scripts/experiments/a001-scaffold-ablation.mjs",
+    "experiment:a001-scaffold": "REQUEST_TIMEOUT_MS=900000 node --env-file-if-exists=../inner-signal-runtime/.env scripts/experiments/a001-scaffold-ablation.mjs",
     "experiment:a001-scaffold:preflight": "node scripts/experiments/a001-scaffold-preflight.mjs",
     "experiment:a001-scaffold:test": "node --test tests/a001-scaffold-experiment.test.mjs",
     "test": "node --test",
