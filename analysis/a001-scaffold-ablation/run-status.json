@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "taskId": "a001-scaffold-ablation-v1",
+  "status": "harness-construction",
+  "branch": "exp/a001-scaffold-ablation-20260824",
+  "sourceSha": "a22f2e611fab778bf26b8e7215afbf85aba4ba5e",
+  "installedRuntimeSha": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1",
+  "productionChanged": false,
+  "lastCompletedStage": "environment-audit",
+  "currentUncertainty": "Live model entitlement and Codex developer-instruction behavior still require controlled probes.",
+  "nextAction": "Implement and unit-test the resumable A–F harness, then execute live probes and all experiment stages."
+}

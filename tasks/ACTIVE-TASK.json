@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "taskId": "a001-scaffold-ablation-v1",
+  "title": "Diagnose A001 model capability versus planner-first scaffold suppression",
+  "status": "active",
+  "exclusive": true,
+  "diagnosticOnly": true,
+  "repository": "u-dont-existDOTcom/innerSignalGraph",
+  "requiredBranch": "exp/a001-scaffold-ablation-20260824",
+  "ownerAuthorized": true,
+  "source": {
+    "protectedMainSha": "a22f2e611fab778bf26b8e7215afbf85aba4ba5e",
+    "installedRuntimeSha": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1"
+  },
+  "preflightCommand": "npm run experiment:a001-scaffold:preflight",
+  "rerunCommand": "npm run experiment:a001-scaffold",
+  "productionMutationAllowed": false,
+  "publication": {
+    "branchOnly": true,
+    "pullRequestRequired": false,
+    "stableMustRemainUnchanged": true,
+    "mainMustRemainUnchanged": true,
+    "installedRuntimeMustRemainUnchanged": true
+  },
+  "privacy": {
+    "trackedEvidence": "metadata, hashes, aggregate judgments, and diagnostic conclusions only",
+    "privateEvidence": "raw prompts, case snapshots, plans, responses, critiques, judge outputs, and blind mappings",
+    "privateEvidenceMustBeOutsideGit": true
+  },
+  "stopRule": "After the experiment report and branch evidence are published, stop before changing production therapy behavior."
+}
