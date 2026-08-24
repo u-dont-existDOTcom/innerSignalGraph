@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-24T17:01:53+00:00",
+  "candidateSha": "d16b446f3fa76d56964ba34cad7e8a82d180f675",
+  "dependencyBootstrap": {
+    "command": "npm ci --ignore-scripts",
+    "status": "pass",
+    "addedPackages": 1,
+    "auditVulnerabilities": 0
+  },
+  "gates": {
+    "focusedScaffoldAndRecovery": {
+      "command": "node --test tests/therapy-scaffold-experiment.test.mjs tests/therapy-scaffold-authority.test.mjs",
+      "status": "pass",
+      "passed": 21,
+      "total": 21
+    },
+    "graphRegressions": {
+      "command": "npm run graph:test",
+      "status": "pass",
+      "passed": 12,
+      "total": 12
+    },
+    "repositoryComplianceAffected": {
+      "command": "node --test tests/repository-compliance.test.mjs",
+      "status": "pass",
+      "passed": 27,
+      "total": 27
+    },
+    "publicationSecretAudit": {
+      "command": "npm run audit:publication",
+      "status": "pass",
+      "scannedRecords": 142682,
+      "findings": 0,
+      "refs": 49,
+      "commits": 356,
+      "objects": 3698,
+      "blobs": 1707
+    },
+    "webRuntimeSmoke": {
+      "command": "npm run web:smoke",
+      "status": "pass",
+      "boundary": "Required host execution only because the filesystem sandbox denies loopback bind with EPERM."
+    },
+    "fullPackage": {
+      "command": "npm test",
+      "status": "superseded-partial-failure",
+      "passed": 409,
+      "total": 410,
+      "failure": "A duplicated Next safe action heading in the new recovery checkpoint violated the existing public-closeout scope contract.",
+      "repair": "Renamed the new task heading; the exact affected 27-test repository-compliance suite then passed.",
+      "remaining": "A fresh complete npm test is still required after architecture selection and final review."
+    }
+  },
+  "interpretation": "These are deterministic engineering gates, not therapy quality or outcome evidence. Architecture selection remains blocked on the incomplete live blinded comparison."
+}
