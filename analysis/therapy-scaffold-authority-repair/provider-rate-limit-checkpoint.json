@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "firstObservedAt": "2026-08-24T16:43:37.963Z",
+  "confirmedAgainAt": "2026-08-24T16:45:37.443Z",
+  "provider": "anthropic",
+  "requestedModel": "claude-sonnet-4-6",
+  "stage": "case_extraction",
+  "condition": "C",
+  "caseId": "A001-observed-original",
+  "replicate": 3,
+  "classification": "provider usage rate limit",
+  "apiStatus": 429,
+  "terminalReason": "api_error",
+  "resetHint": {
+    "localTime": "20:40",
+    "timezone": "Africa/Nouakchott",
+    "date": "2026-08-24"
+  },
+  "excludedCauses": [
+    "authentication failure",
+    "model entitlement failure",
+    "structured-output failure",
+    "repository failure",
+    "routing failure"
+  ],
+  "rawProviderMessageSha256": "011f046714072ead392cb8e57a53ff2a540c98abb560e62fc5eab8ed3d7af8be",
+  "rawEvidence": "owner-private provider-cache failure records outside Git",
+  "recovery": "Rerun the idempotent experiment command after the provider reset. Completed model stages are restored by exact prompt/model fingerprints; the failed extraction is retried.",
+  "nonEffect": "No model substitution, prompt relaxation, production change, protected-ref movement, runtime installation, or Guide Packet change was used to bypass the limit."
+}

@@ -21,9 +21,11 @@ The isolated worktree was created directly from current protected `origin/main`.
 
 The A/C/D switch, non-destructive semantic/case-audit trace, hard/advisory authority split, safety-gated model-first integration, advisory renderer authority, exact current compatibility mode, resumable private evidence store, blinded order-swapped evaluation, case provenance inventory, one-command runner, interruption cleanup, and targeted regressions are implemented locally. Focused scaffold/recovery tests pass. Raw owner material and model outputs are routed to the owner-only sibling private root and are not tracked.
 
+The live bakeoff passed exact-model probes and completed two full A001 A/C/D replicates plus A replicate 3. Control replicate 2 exercised its existing mandatory-node retry; no advisory retry occurred. A third C extraction then received two identical Claude API 429 envelopes. This is a provider usage limit, not auth or entitlement; the envelope reports a 2026-08-24 20:40 local reset. All completed calls remain in the exact-prompt private provider cache. Serialized Sonnet production and mixed-provider judge concurrency are now separately enforced, and a failed concurrent worker cannot orphan its active peer.
+
 ### Next safe action
 
-Commit and push the implementation checkpoint, then run `npm run experiment:therapy-scaffold -- --benchmark-only` to resume the live exact-model A/C/D bakeoff. Select C, D, or no change only from the complete blinded evidence; then freeze the supported candidate, run independent diff-and-evidence reviews and every final gate, and open a draft PR without merging it.
+After the recorded Claude reset, run `npm run experiment:therapy-scaffold -- --benchmark-only --concurrency=2`. It will recreate completed response artifacts from exact cached provider stages and resume at A001 C replicate 3. Select C, D, or no change only from complete blinded evidence; then freeze the supported candidate, run independent diff-and-evidence reviews and every final gate, and open a draft PR without merging it.
 
 ### Recovery rule
 
