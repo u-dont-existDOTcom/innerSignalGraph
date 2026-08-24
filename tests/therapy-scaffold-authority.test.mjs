@@ -16,6 +16,7 @@ import { semanticFormulationPrompt } from "../src/prompts/semantic-formulation.m
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const fixturePath = path.join(root, "fixtures/mock-responses/A001.json");
+const advancedReleaseCasePath = path.join(root, "corpus/graph-cases/G007.json");
 const plan = {
   variables: { present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes", dissociation: "none", altered_state: "sober", memory_source_risk: "absent" },
   primaryJob: { id: "IC.CREDIBILITY_REPAIR", title: "Credibility repair" },
@@ -25,6 +26,56 @@ const plan = {
 };
 const adjudication = { next_question: "Canonical question?" };
 const promptContext = (therapyScaffoldMode) => ({ userMessage: "Exact user wording", recentTranscript: "Exact recent transcript", userFacts: [], interventionContract: plan, therapyScaffoldMode });
+
+class RecordingFixtureProvider {
+  constructor({ id, model, fixture, calls, extractionVariables = null, unsafeIntegration = false }) {
+    this.id = id;
+    this.model = model;
+    this.fixture = fixture;
+    this.calls = calls;
+    this.extractionVariables = extractionVariables;
+    this.unsafeIntegration = unsafeIntegration;
+  }
+
+  async generate({ metadata = {}, system = "" }) {
+    const fixtureKey = metadata.fixtureKey ?? metadata.stage;
+    this.calls.push({ provider: this.id, model: this.model, stage: metadata.stage, fixtureKey });
+    let value = this.fixture[this.id][fixtureKey];
+    if (fixtureKey === "case_extraction" && this.extractionVariables) {
+      value = { ...value, variables: { ...this.extractionVariables } };
+    }
+    const unrestrictedIntegration = fixtureKey === "model_first_integration"
+      || (fixtureKey === "realization" && /evidence, not infallible conclusions/i.test(system));
+    if (unrestrictedIntegration && this.unsafeIntegration) {
+      value = {
+        answer: "Use the blocked advanced-release intervention now.",
+        next_question: "",
+        realized_nodes: []
+      };
+    }
+    assert.ok(value, `missing fixture ${this.id}:${fixtureKey}`);
+    return {
+      provider: this.id,
+      model: this.model,
+      text: JSON.stringify(value),
+      requestId: `${this.id}-${metadata.stage}`,
+      responseId: `${this.id}-${metadata.stage}`
+    };
+  }
+}
+
+async function modelFirstProviders(options = {}) {
+  const fixture = JSON.parse(await fs.readFile(fixturePath, "utf8"));
+  const calls = [];
+  return {
+    calls,
+    providers: {
+      renderer: new RecordingFixtureProvider({ id: "anthropic", model: "claude-sonnet-4-6", fixture, calls, ...options }),
+      anthropic: new RecordingFixtureProvider({ id: "anthropic", model: "claude-opus-5", fixture, calls, ...options }),
+      openai: new RecordingFixtureProvider({ id: "openai", model: "gpt-5.6-sol", fixture, calls, ...options })
+    }
+  };
+}
 
 test("scaffold mode defaults to current and rejects unknown values", () => {
   assert.equal(loadConfig({ mode: "mock" }).therapyScaffoldMode, "current");
@@ -74,6 +125,74 @@ test("a final integrator cannot claim a deterministically blocked intervention",
   const enforced = enforceResponseContract({ answer: "Use the blocked intervention now.", next_question: "", realized_nodes: [{ id: "SOM.ADVANCED_RELEASE_OPTIONAL", evidence_quote: "blocked intervention now" }] }, { plan: blockedPlan, adjudication, authorityMode: "model-first", authority });
   assert.equal(enforced.responseContract.hardAuthorityPassed, false);
   assert.throws(() => assertHardAuthorityPreserved(enforced.responseContract, authority), (error) => error.code === "SCAFFOLD_HARD_AUTHORITY_VIOLATION");
+});
+
+test("model-first deep tier retains the established Opus reasoning and Codex critique roles", async () => {
+  const { providers, calls } = await modelFirstProviders();
+  const config = loadConfig({ mode: "mock", ledgerMode: "off", therapyProcessingMode: "deep", therapyScaffoldMode: "model-first" });
+  const context = await buildContext({ userMessage: "Use deep review for this unresolved conflict.", recentTranscript: "", userFacts: [] }, config);
+  const result = await runTieredTherapyPipeline({ context, providers, config, processingMode: "deep" });
+
+  assert.equal(result.processingTier, "deep");
+  assert.ok(calls.some((call) => call.stage === "semantic_formulation" && call.model === "claude-sonnet-4-6"));
+  assert.ok(calls.some((call) => call.stage === "deep_analysis" && call.model === "claude-opus-5"));
+  assert.ok(calls.some((call) => call.stage === "deep_critique" && call.model === "gpt-5.6-sol"));
+  assert.ok(calls.some((call) => call.stage === "graph_audit" && call.model === "gpt-5.6-sol"));
+  assert.ok(calls.some((call) => call.stage === "model_first_integration" && call.model === "claude-sonnet-4-6"));
+  const stages = calls.map((call) => call.stage);
+  assert.equal(stages[0], "semantic_formulation");
+  assert.ok(stages.indexOf("deep_critique") < stages.indexOf("graph_audit"));
+  assert.ok(stages.indexOf("graph_audit") < stages.indexOf("model_first_integration"));
+  assert.deepEqual(
+    result.scaffoldTrace.tierReasoning.providerStages.map(({ stage, provider, model }) => ({ stage, provider, model })),
+    [
+      { stage: "deep_analysis", provider: "anthropic", model: "claude-opus-5" },
+      { stage: "deep_critique", provider: "openai", model: "gpt-5.6-sol" }
+    ]
+  );
+});
+
+test("model-first forensic tier retains the established adversarial council and adjudication roles", async () => {
+  const { providers, calls } = await modelFirstProviders();
+  const config = loadConfig({ mode: "mock", ledgerMode: "off", therapyProcessingMode: "forensic", therapyScaffoldMode: "model-first" });
+  const context = await buildContext({ userMessage: "Use the full forensic council for this safety-sensitive ambiguity.", recentTranscript: "", userFacts: [] }, config);
+  const result = await runTieredTherapyPipeline({ context, providers, config, processingMode: "forensic" });
+
+  assert.equal(result.processingTier, "forensic");
+  assert.equal(calls.filter((call) => call.stage === "candidate").length, 2);
+  assert.ok(calls.some((call) => call.stage === "candidate" && call.model === "claude-opus-5"));
+  assert.ok(calls.some((call) => call.stage === "candidate" && call.model === "gpt-5.6-sol"));
+  assert.equal(calls.filter((call) => call.stage === "critique").length, 2);
+  assert.ok(calls.some((call) => call.stage === "adjudication"));
+  assert.ok(calls.some((call) => call.stage === "graph_audit" && call.model === "gpt-5.6-sol"));
+  assert.ok(calls.some((call) => call.stage === "model_first_integration" && call.model === "claude-sonnet-4-6"));
+  const stages = calls.map((call) => call.stage);
+  assert.equal(stages[0], "semantic_formulation");
+  assert.ok(stages.indexOf("adjudication") < stages.indexOf("graph_audit"));
+  assert.ok(stages.indexOf("graph_audit") < stages.indexOf("model_first_integration"));
+  assert.deepEqual(
+    new Set(result.scaffoldTrace.tierReasoning.providerStages.map((item) => item.stage)),
+    new Set(["candidate_openai", "candidate_anthropic", "critique_openai", "critique_anthropic", "adjudication"])
+  );
+});
+
+test("real graph blocked nodes bypass advisory and model-first integration even when prose omits realized_nodes", async () => {
+  const graphCase = JSON.parse(await fs.readFile(advancedReleaseCasePath, "utf8"));
+  for (const therapyScaffoldMode of ["advisory", "model-first"]) {
+    const { providers, calls } = await modelFirstProviders({ extractionVariables: graphCase.variables, unsafeIntegration: true });
+    const config = loadConfig({ mode: "mock", ledgerMode: "off", therapyProcessingMode: "auto", therapyScaffoldMode });
+    const context = await buildContext({ userMessage: "I want the advanced release even though there is a physical risk.", recentTranscript: "", userFacts: [] }, config);
+    const result = await runTieredTherapyPipeline({ context, providers, config, processingMode: "auto" });
+
+    assert.equal(result.interventionContract.primaryJob.id, "SOM.ADVANCED_RELEASE_BLOCK");
+    assert.ok(result.interventionContract.blockedNodes.some((item) => item.id === "SOM.ADVANCED_RELEASE_OPTIONAL"));
+    assert.equal(result.scaffoldTrace.authority.HARD.safety.length, 0);
+    assert.ok(result.scaffoldTrace.finalIntegrationTrace.hardGateReasons.includes("blocked:SOM.ADVANCED_RELEASE_OPTIONAL"));
+    assert.equal(calls.some((call) => call.stage === "model_first_integration"), false);
+    assert.doesNotMatch(result.answer, /use the blocked advanced-release intervention now/i);
+    assert.equal(result.scaffoldTrace.finalIntegrationTrace.deterministicSafetyGateActive, true);
+    assert.equal("authorityMode" in result.responseContract, false);
+  }
 });
 
 test("producer semantic prompt contains no benchmark insight wording", () => {

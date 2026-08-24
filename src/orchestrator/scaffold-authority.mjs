@@ -64,6 +64,17 @@ export function classifyInterventionAuthority({ snapshot = {}, plan = {} } = {})
   });
 }
 
+export function hardDeterministicGateReasons(authority = {}) {
+  return [
+    ...(authority.HARD?.safety ?? []).map((item) => item.id),
+    ...(authority.HARD?.blockedNodes ?? []).map((item) => `blocked:${item.id}`)
+  ];
+}
+
+export function hardDeterministicGateActive(authority = {}) {
+  return hardDeterministicGateReasons(authority).length > 0;
+}
+
 export function assertHardAuthorityPreserved(responseContract = {}, authority = {}) {
   const blocked = responseContract.blockedRealizationClaims ?? [];
   if (blocked.length) {

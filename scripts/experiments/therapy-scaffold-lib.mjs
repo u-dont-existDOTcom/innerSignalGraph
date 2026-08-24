@@ -102,6 +102,7 @@ export class StageStore {
 export class TraceProvider {
   constructor(provider) { this.provider = provider; this.id = provider.id; this.model = provider.model; this.calls = []; }
   async capabilities() { return typeof this.provider.capabilities === "function" ? await this.provider.capabilities() : null; }
+  async recordConsumerFailure() { /* only resumable benchmark providers persist consumer-stage failures */ }
   async generate(request) {
     const startedAt = new Date().toISOString();
     const started = Date.now();
@@ -122,6 +123,37 @@ export class ResumableTraceProvider extends TraceProvider {
     this.cacheRoot = path.resolve(cacheRoot);
     this.lane = safeName(lane);
   }
+  async priorFailures(stage, inputHash) {
+    const root = path.join(this.cacheRoot, this.lane, "failures");
+    let names = [];
+    try { names = await fs.readdir(root); } catch (error) { if (error.code === "ENOENT") return []; throw error; }
+    const records = [];
+    for (const name of names.filter((item) => item.startsWith(`${stage}-${inputHash}-`) && item.endsWith(".json"))) {
+      const failure = await readJson(path.join(root, name));
+      records.push({ code: failure.error?.code ?? null, name: failure.error?.name ?? null, failedAt: failure.failedAt ?? null });
+    }
+    return records;
+  }
+  async recordConsumerFailure({ request, error }) {
+    const inputHash = sha256({ provider: this.provider.id, model: this.provider.model, request });
+    const stage = safeName(request.metadata?.stage ?? request.metadata?.fixtureKey ?? "generation");
+    const file = path.join(this.cacheRoot, this.lane, `${stage}-${inputHash}.json`);
+    const failedAt = new Date().toISOString();
+    const failureFile = path.join(this.cacheRoot, this.lane, "failures", `${stage}-${inputHash}-${failedAt.replace(/[:.]/g, "-")}.json`);
+    await atomicWriteJson(failureFile, {
+      schemaVersion: 1,
+      status: "failed",
+      inputHash,
+      failedAt,
+      error: { name: error?.name ?? "Error", code: "STRUCTURED_OUTPUT_INVALID" }
+    });
+    await fs.rm(file, { force: true });
+    const last = [...this.calls].reverse().find((call) => call.request === request || sha256({ provider: this.provider.id, model: this.provider.model, request: call.request }) === inputHash);
+    if (last) {
+      last.consumerFailureCode = "STRUCTURED_OUTPUT_INVALID";
+      last.consumerFailureFile = failureFile;
+    }
+  }
   async generate(request) {
     const inputHash = sha256({ provider: this.provider.id, model: this.provider.model, request });
     const stage = safeName(request.metadata?.stage ?? request.metadata?.fixtureKey ?? "generation");
@@ -129,7 +161,8 @@ export class ResumableTraceProvider extends TraceProvider {
     try {
       const prior = await readJson(file);
       if (prior.status === "complete" && prior.inputHash === inputHash && prior.response) {
-        this.calls.push({ status: "reused", startedAt: prior.startedAt, completedAt: prior.completedAt, durationMs: prior.durationMs, request, response: prior.response, cacheFile: file });
+        const priorFailures = await this.priorFailures(stage, inputHash);
+        this.calls.push({ status: "reused", startedAt: prior.startedAt, completedAt: prior.completedAt, durationMs: prior.durationMs, request, response: prior.response, cacheFile: file, priorFailureCount: priorFailures.length, priorFailures });
         return prior.response;
       }
     } catch (error) { if (error.code !== "ENOENT") throw error; }
@@ -139,7 +172,8 @@ export class ResumableTraceProvider extends TraceProvider {
       const response = await this.provider.generate(request);
       const record = { schemaVersion: 1, status: "complete", inputHash, startedAt, completedAt: new Date().toISOString(), durationMs: Date.now() - started, request, response };
       await atomicWriteJson(file, record);
-      this.calls.push({ status: "complete", ...record, cacheFile: file });
+      const priorFailures = await this.priorFailures(stage, inputHash);
+      this.calls.push({ status: "complete", ...record, cacheFile: file, priorFailureCount: priorFailures.length, priorFailures });
       return response;
     } catch (error) {
       const failedAt = new Date().toISOString();
@@ -166,33 +200,51 @@ export function assertPrivateRoot(repositoryRoot, privateRoot) {
 }
 
 function canonicalPrivateText(value) { return String(value ?? "").replace(/\s+/g, " ").trim(); }
+function privateTextWindows(canonical, wordCount = 16) {
+  const words = canonical.split(" ").filter(Boolean);
+  if (words.length <= wordCount) return [canonical];
+  const windows = [];
+  for (let index = 0; index <= words.length - wordCount; index += Math.max(1, Math.floor(wordCount / 2))) {
+    const window = words.slice(index, index + wordCount).join(" ");
+    if (window.length >= 64) windows.push(window);
+  }
+  const tail = words.slice(-wordCount).join(" ");
+  if (tail.length >= 64) windows.push(tail);
+  return [...new Set(windows)];
+}
 
 export async function assertPrivateTextAbsentFromGit(repositoryRoot, privateTexts) {
-  const protectedValues = privateTexts.map(canonicalPrivateText).filter((value) => value.length >= 80);
+  const protectedRecords = privateTexts
+    .map((value) => ({ raw: String(value ?? ""), canonical: canonicalPrivateText(value) }))
+    .filter((value) => value.canonical.length >= 32)
+    .map((value) => ({ ...value, windows: privateTextWindows(value.canonical) }));
   const listed = await runCommand("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z"], { cwd: repositoryRoot, timeoutMs: 60_000 });
   if (listed.code !== 0) throw new Error("Could not enumerate the candidate Git surface for private-text scanning.");
   for (const relative of listed.stdout.split("\0").filter(Boolean)) {
     const file = path.join(repositoryRoot, relative);
     let data;
     try { data = await fs.readFile(file); } catch (error) { if (["EISDIR", "ENOENT"].includes(error.code)) continue; throw error; }
-    if (data.includes(0)) continue;
     const canonical = canonicalPrivateText(data.toString("utf8"));
-    for (const value of protectedValues) {
-      if (canonical.includes(value)) {
+    for (const value of protectedRecords) {
+      const matched = data.includes(Buffer.from(value.raw, "utf8"))
+        ? value.canonical
+        : [value.canonical, ...value.windows].find((candidate) => canonical.includes(candidate));
+      if (matched) {
         const error = new Error(`Private transcript material was detected in the Git candidate surface at ${relative}.`);
         error.code = "PRIVATE_TRANSCRIPT_IN_GIT_SURFACE";
-        error.details = { path: relative, privateTextSha256: sha256(value) };
+        error.details = { path: relative, privateTextSha256: sha256(value.canonical), matchedSegmentSha256: sha256(matched) };
         throw error;
       }
     }
   }
-  return { checkedFiles: listed.stdout.split("\0").filter(Boolean).length, protectedTextHashes: protectedValues.map(sha256) };
+  return { checkedFiles: listed.stdout.split("\0").filter(Boolean).length, protectedTextHashes: protectedRecords.map((value) => sha256(value.canonical)) };
 }
 
 export async function runCommand(command, args, { cwd, timeoutMs = 1_200_000, stdin = "", env = process.env } = {}) {
   return await new Promise((resolve, reject) => {
     const started = Date.now();
     let settled = false;
+    let shuttingDown = false;
     let timer;
     const child = spawn(command, args, { cwd, env, shell: false, stdio: ["pipe", "pipe", "pipe"], detached: process.platform !== "win32" });
     let stdout = "";
@@ -210,30 +262,77 @@ export async function runCommand(command, args, { cwd, timeoutMs = 1_200_000, st
       process.removeListener("SIGINT", onInterrupt);
       process.removeListener("SIGTERM", onTerminate);
     }
-    function interrupt(signal) {
-      if (settled) return;
-      settled = true;
-      terminateTree("SIGTERM");
+    function groupExists() {
+      try {
+        if (process.platform === "win32") process.kill(child.pid, 0);
+        else process.kill(-child.pid, 0);
+        return true;
+      } catch (error) {
+        if (error.code === "ESRCH") return false;
+        throw error;
+      }
+    }
+    async function waitForExtinction(waitMs) {
+      const deadline = Date.now() + waitMs;
+      while (groupExists() && Date.now() < deadline) await new Promise((done) => setTimeout(done, 25));
+      return !groupExists();
+    }
+    async function terminateAndReject(error) {
+      if (settled || shuttingDown) return;
+      shuttingDown = true;
       cleanup();
-      const error = new Error(`${command} interrupted by ${signal}`);
-      error.code = "SUBPROCESS_INTERRUPTED";
+      terminateTree("SIGTERM");
+      if (!await waitForExtinction(750)) {
+        terminateTree("SIGKILL");
+        if (!await waitForExtinction(2_000)) {
+          error.message += `; process group ${child.pid} survived TERM and KILL`;
+          error.code = "SUBPROCESS_GROUP_SURVIVED";
+        }
+      }
+      settled = true;
       reject(error);
     }
-    const onInterrupt = () => interrupt("SIGINT");
-    const onTerminate = () => interrupt("SIGTERM");
+    const onInterrupt = () => {
+      const error = new Error(`${command} interrupted by SIGINT`);
+      error.code = "SUBPROCESS_INTERRUPTED";
+      void terminateAndReject(error);
+    };
+    const onTerminate = () => {
+      const error = new Error(`${command} interrupted by SIGTERM`);
+      error.code = "SUBPROCESS_INTERRUPTED";
+      void terminateAndReject(error);
+    };
     process.once("SIGINT", onInterrupt);
     process.once("SIGTERM", onTerminate);
     timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      terminateTree("SIGKILL");
-      cleanup();
-      reject(new Error(`${command} timed out after ${timeoutMs}ms`));
+      const error = new Error(`${command} timed out after ${timeoutMs}ms`);
+      error.code = "SUBPROCESS_TIMEOUT";
+      void terminateAndReject(error);
     }, timeoutMs);
     child.stdout.on("data", (chunk) => { stdout += chunk.toString("utf8"); });
     child.stderr.on("data", (chunk) => { stderr += chunk.toString("utf8"); });
-    child.on("error", (error) => { if (settled) return; settled = true; cleanup(); reject(error); });
-    child.on("close", (code, signal) => { if (settled) return; settled = true; cleanup(); resolve({ code, signal, stdout, stderr, durationMs: Date.now() - started }); });
+    child.on("error", (error) => { if (settled || shuttingDown) return; settled = true; cleanup(); reject(error); });
+    child.on("close", (code, signal) => {
+      if (settled || shuttingDown) return;
+      void (async () => {
+        cleanup();
+        if (groupExists()) {
+          terminateTree("SIGTERM");
+          if (!await waitForExtinction(750)) {
+            terminateTree("SIGKILL");
+            if (!await waitForExtinction(2_000)) {
+              settled = true;
+              const error = new Error(`${command} left a surviving descendant process group`);
+              error.code = "SUBPROCESS_GROUP_SURVIVED";
+              reject(error);
+              return;
+            }
+          }
+        }
+        settled = true;
+        resolve({ code, signal, stdout, stderr, durationMs: Date.now() - started });
+      })();
+    });
     child.stdin.on("error", (error) => { if (error.code !== "EPIPE") reject(error); });
     child.stdin.end(stdin);
   });
@@ -270,6 +369,6 @@ export function responseReceipt(value) {
     processingTier: value.result?.processingTier ?? null,
     routingReason: value.result?.routingReason ?? null,
     rendererModel: value.result?.rendererModel ?? null,
-    calls: calls.map((call) => ({ stage: call.request?.metadata?.stage ?? null, provider: call.response?.provider ?? null, model: call.response?.model ?? null, requestId: call.response?.requestId ?? null, responseId: call.response?.responseId ?? null, durationMs: call.durationMs ?? null, usage: call.response?.usage ?? null, status: call.status }))
+    calls: calls.map((call) => ({ stage: call.request?.metadata?.stage ?? null, provider: call.response?.provider ?? null, model: call.response?.model ?? null, requestId: call.response?.requestId ?? null, responseId: call.response?.responseId ?? null, durationMs: call.durationMs ?? null, usage: call.response?.usage ?? null, status: call.status, priorFailureCount: call.priorFailureCount ?? 0, priorFailureCodes: [...new Set((call.priorFailures ?? []).map((item) => item.code).filter(Boolean))] }))
   };
 }

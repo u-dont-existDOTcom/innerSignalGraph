@@ -11,14 +11,17 @@ import { asCaseStageError, safeCaseStageFailure } from "./stage-failure.mjs";
 async function structuredCall(provider, prompt, metadata, validator, outputSchema, onProgress) {
   const started = Date.now();
   onProgress?.({ stage: metadata.stage, status: "started", detail: `${provider.id}/${provider.model}` });
+  const request = { ...prompt, metadata, outputSchema };
+  let raw;
   try {
-    const raw = await provider.generate({ ...prompt, metadata, outputSchema });
+    raw = await provider.generate(request);
     const parsed = parseModelJson(raw.text, `${provider.id} ${metadata.stage}`);
     const value = validator(parsed);
     const durationMs = Date.now() - started;
     onProgress?.({ stage: metadata.stage, status: "completed", detail: `${(durationMs / 1000).toFixed(1)}s` });
     return { value, raw, durationMs };
   } catch (error) {
+    if (raw) await provider.recordConsumerFailure?.({ request, error });
     throw asCaseStageError(error, { stage: metadata.stage, provider });
   }
 }

@@ -46,8 +46,16 @@ function deepFreeze(value) {
 async function structuredCall({ provider, prompt, stage, fixtureKey, schema, validator, onProgress }) {
   const started = Date.now();
   onProgress?.({ stage, status: "started", detail: `${provider.id}/${provider.model}` });
-  const raw = await provider.generate({ ...prompt, metadata: { stage, fixtureKey }, outputSchema: schema });
-  const value = validator(parseModelJson(raw.text, `${provider.id} ${stage}`));
+  const request = { ...prompt, metadata: { stage, fixtureKey }, outputSchema: schema };
+  let raw;
+  let value;
+  try {
+    raw = await provider.generate(request);
+    value = validator(parseModelJson(raw.text, `${provider.id} ${stage}`));
+  } catch (error) {
+    if (raw) await provider.recordConsumerFailure?.({ request, error });
+    throw error;
+  }
   const durationMs = Date.now() - started;
   onProgress?.({ stage, status: "completed", detail: `${(durationMs / 1000).toFixed(1)}s` });
   return { value, raw, durationMs };
@@ -66,10 +74,10 @@ export async function runSemanticFormulation({ context, provider, onProgress }) 
   return { ...result, value: deepFreeze(result.value) };
 }
 
-export async function runBoundedGraphAudit({ context, semanticFormulation, rawCaseExtraction, caseAuditDelta, auditedSnapshot, plan, authority, provider, onProgress }) {
+export async function runBoundedGraphAudit({ context, semanticFormulation, rawCaseExtraction, caseAuditDelta, auditedSnapshot, plan, authority, tierReasoning = null, provider, onProgress }) {
   return await structuredCall({
     provider,
-    prompt: boundedGraphAuditPrompt({ context, semanticFormulation, rawCaseExtraction, caseAuditDelta, auditedSnapshot, plan, authority }),
+    prompt: boundedGraphAuditPrompt({ context, semanticFormulation, rawCaseExtraction, caseAuditDelta, auditedSnapshot, plan, authority, tierReasoning }),
     stage: "graph_audit",
     fixtureKey: "graph_audit",
     schema: graphAuditSchema,
@@ -78,10 +86,10 @@ export async function runBoundedGraphAudit({ context, semanticFormulation, rawCa
   });
 }
 
-export async function runModelFirstIntegration({ context, semanticFormulation, rawCaseExtraction, caseAuditDelta, auditedSnapshot, plan, graphAudit, authority, provider, onProgress }) {
+export async function runModelFirstIntegration({ context, semanticFormulation, rawCaseExtraction, caseAuditDelta, auditedSnapshot, plan, graphAudit, authority, tierReasoning = null, provider, onProgress }) {
   return await structuredCall({
     provider,
-    prompt: modelFirstIntegrationPrompt({ context, semanticFormulation, rawCaseExtraction, caseAuditDelta, auditedSnapshot, plan, graphAudit, authority, rendererName: provider.id === "anthropic" ? "Claude" : "OpenAI" }),
+    prompt: modelFirstIntegrationPrompt({ context, semanticFormulation, rawCaseExtraction, caseAuditDelta, auditedSnapshot, plan, graphAudit, authority, tierReasoning, rendererName: provider.id === "anthropic" ? "Claude" : "OpenAI" }),
     stage: "model_first_integration",
     fixtureKey: "model_first_integration",
     schema: realizationSchema,

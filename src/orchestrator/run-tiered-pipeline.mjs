@@ -1,10 +1,18 @@
 import { runUnauditedCaseFormulation, runCaseAuditWithRecovery, applyCaseAudit, planCaseSnapshot } from "../case-formulation/run.mjs";
-import { runAdversarialPipeline, runCompactAdversarialPipeline, realizeAdjudication } from "./run-pipeline.mjs";
+import {
+  realizeAdjudication,
+  runAdversarialPipeline,
+  runAdversarialReasoning,
+  runCompactAdversarialPipeline,
+  runCompactAdversarialReasoning
+} from "./run-pipeline.mjs";
 import { writeLedger } from "./ledger.mjs";
 import { enforceResponseContract } from "./response-contract.mjs";
 import {
   assertHardAuthorityPreserved,
   classifyInterventionAuthority,
+  hardDeterministicGateActive,
+  hardDeterministicGateReasons,
   normalizeTherapyScaffoldMode
 } from "./scaffold-authority.mjs";
 import {
@@ -101,7 +109,7 @@ function planAdjudication(snapshot, plan, safetyFlags = []) {
 
 async function realizePlan({ context, formulation, provider, onProgress, scaffoldMode = "current" }) {
   const authority = formulation.authority ?? classifyInterventionAuthority({ snapshot: formulation.snapshot, plan: formulation.plan });
-  const effectiveScaffoldMode = scaffoldMode === "advisory" && authority.HARD.safety.length ? "current" : scaffoldMode;
+  const effectiveScaffoldMode = scaffoldMode === "advisory" && hardDeterministicGateActive(authority) ? "current" : scaffoldMode;
   const enriched = {
     ...context,
     caseFormulation: formulation.snapshot,
@@ -121,7 +129,15 @@ async function realizePlan({ context, formulation, provider, onProgress, scaffol
     onProgress,
     fixtureKey: "realization"
   });
-  return { enriched, adjudication, realization, authority, deterministicSafetyGateActive: effectiveScaffoldMode !== scaffoldMode };
+  const deterministicSafetyGateActive = effectiveScaffoldMode !== scaffoldMode;
+  return {
+    enriched,
+    adjudication,
+    realization,
+    authority,
+    deterministicSafetyGateActive,
+    hardGateReasons: deterministicSafetyGateActive ? hardDeterministicGateReasons(authority) : []
+  };
 }
 
 function caseAuditNotRun(reason) {
@@ -136,10 +152,11 @@ function caseAuditNotRun(reason) {
   });
 }
 
-function nonDestructiveTrace({ formulation, authority, rawSemanticFormulation = null, graphAudit = null, finalIntegrationTrace = null }) {
+function nonDestructiveTrace({ formulation, authority, rawSemanticFormulation = null, tierReasoning = null, graphAudit = null, finalIntegrationTrace = null }) {
   return {
     version: "therapy-scaffold-trace-v1",
     rawSemanticFormulation,
+    tierReasoning,
     rawCaseExtraction: formulation.rawSnapshot,
     caseAuditDelta: formulation.caseAuditDelta ?? caseAuditNotRun("The current fast route did not run case audit."),
     auditedVariables: formulation.snapshot.variables,
@@ -153,7 +170,7 @@ function nonDestructiveTrace({ formulation, authority, rawSemanticFormulation = 
 async function simpleResult({ context, formulation, routing, extractor, tier, config, startedAt, caseAudit = null, stageTimings = {}, onProgress }) {
   const realizationStarted = Date.now();
   const scaffoldMode = normalizeTherapyScaffoldMode(config.therapyScaffoldMode);
-  const { enriched, adjudication, realization, authority, deterministicSafetyGateActive } = await realizePlan({ context, formulation, provider: extractor, onProgress, scaffoldMode });
+  const { enriched, adjudication, realization, authority, deterministicSafetyGateActive, hardGateReasons } = await realizePlan({ context, formulation, provider: extractor, onProgress, scaffoldMode });
   const realizationMs = realization.timing?.totalMs ?? (Date.now() - realizationStarted);
   const result = {
     answer: realization.value.answer,
@@ -185,6 +202,7 @@ async function simpleResult({ context, formulation, routing, extractor, tier, co
         model: extractor.model,
         requestId: realization.raw.requestId ?? realization.raw.responseId ?? null,
         deterministicSafetyGateActive,
+        hardGateReasons,
         responseContract: realization.value.responseContract
       }
     });
@@ -247,25 +265,49 @@ async function runModelFirstTiered({ context, providers, config, processingMode,
     planningMs = audited.planningMs;
   }
   const authority = classifyInterventionAuthority({ snapshot: formulation.snapshot, plan: formulation.plan });
-  const graphAudit = await runBoundedGraphAudit({
-    context,
-    semanticFormulation: semantic.value,
-    rawCaseExtraction: formulation.rawSnapshot,
-    caseAuditDelta: formulation.caseAuditDelta ?? caseAuditNotRun("The current fast route did not run case audit."),
-    auditedSnapshot: formulation.snapshot,
-    plan: formulation.plan,
-    authority,
-    provider: providers.openai,
-    onProgress
-  });
-  const deterministicSafetyGateActive = authority.HARD.safety.length > 0;
-  const integration = deterministicSafetyGateActive
+  const hardGateReasons = hardDeterministicGateReasons(authority);
+  const deterministicSafetyGateActive = hardDeterministicGateActive(authority);
+  const currentContext = {
+    ...context,
+    caseFormulation: formulation.snapshot,
+    interventionContract: formulation.plan,
+    graphBundleVersion: formulation.graphBundleVersion
+  };
+  const councilContext = deterministicSafetyGateActive
+    ? currentContext
+    : { ...currentContext, rawSemanticFormulation: semantic.value };
+  let tierReasoning = null;
+  if (routing.tier === "deep") {
+    tierReasoning = await runCompactAdversarialReasoning({ context: councilContext, providers, onProgress });
+  } else if (routing.tier === "forensic") {
+    tierReasoning = await runAdversarialReasoning({ context: councilContext, providers, config, onProgress });
+  }
+
+  const rawCaseAuditDelta = formulation.caseAuditDelta ?? caseAuditNotRun("The current fast route did not run case audit.");
+  const graphAudit = deterministicSafetyGateActive
     ? null
+    : await runBoundedGraphAudit({
+        context,
+        semanticFormulation: semantic.value,
+        tierReasoning: tierReasoning?.adjudication ?? null,
+        rawCaseExtraction: formulation.rawSnapshot,
+        caseAuditDelta: rawCaseAuditDelta,
+        auditedSnapshot: formulation.snapshot,
+        plan: formulation.plan,
+        authority,
+        provider: providers.openai,
+        onProgress
+      });
+  const currentAdjudication = tierReasoning?.adjudication
+    ?? planAdjudication(formulation.snapshot, formulation.plan, formulation.snapshot.audit?.safety_flags ?? []);
+  const integration = deterministicSafetyGateActive
+    ? await realizeAdjudication({ context: currentContext, adjudication: currentAdjudication, provider: extractor, onProgress })
     : await runModelFirstIntegration({
         context,
         semanticFormulation: semantic.value,
+        tierReasoning: tierReasoning?.adjudication ?? null,
         rawCaseExtraction: formulation.rawSnapshot,
-        caseAuditDelta: formulation.caseAuditDelta ?? caseAuditNotRun("The current fast route did not run case audit."),
+        caseAuditDelta: rawCaseAuditDelta,
         auditedSnapshot: formulation.snapshot,
         plan: formulation.plan,
         graphAudit: graphAudit.value,
@@ -273,23 +315,27 @@ async function runModelFirstTiered({ context, providers, config, processingMode,
         provider: extractor,
         onProgress
       });
-  const safetyRealization = deterministicSafetyGateActive
-    ? await realizePlan({ context, formulation: { ...formulation, authority }, provider: extractor, onProgress, scaffoldMode: "current" })
-    : null;
-  const integrationValue = safetyRealization?.realization.value ?? integration.value;
-  const integrationRaw = safetyRealization?.realization.raw ?? integration.raw;
-  const integrationDurationMs = safetyRealization?.realization.timing?.totalMs ?? integration.durationMs;
-  const enforced = enforceResponseContract(integrationValue, {
-    plan: formulation.plan,
-    adjudication: planAdjudication(formulation.snapshot, formulation.plan, formulation.snapshot.audit?.safety_flags ?? []),
-    authorityMode: "model-first",
-    authority
-  });
-  assertHardAuthorityPreserved(enforced.responseContract, authority);
+  const integrationValue = integration.value;
+  const integrationRaw = integration.raw;
+  const integrationDurationMs = integration.timing?.totalMs ?? integration.durationMs;
+  const enforced = deterministicSafetyGateActive
+    ? {
+        answer: integrationValue.answer,
+        answer_body: integrationValue.answer_body,
+        next_question: integrationValue.next_question,
+        responseContract: integrationValue.responseContract
+      }
+    : enforceResponseContract(integrationValue, {
+        plan: formulation.plan,
+        adjudication: currentAdjudication,
+        authorityMode: "model-first",
+        authority
+      });
+  if (!deterministicSafetyGateActive) assertHardAuthorityPreserved(enforced.responseContract, authority);
   const completedAt = new Date().toISOString();
   const result = {
     answer: enforced.answer,
-    mode: `${routing.tier}-model-first-graph-audit`,
+    mode: deterministicSafetyGateActive ? `${routing.tier}-model-first-hard-gate-current` : `${routing.tier}-model-first-graph-audit`,
     processingTier: routing.tier,
     routingReason: routing.reason,
     routingDeltaCount: routing.deltaCount,
@@ -303,18 +349,24 @@ async function runModelFirstTiered({ context, providers, config, processingMode,
     safety_flags: formulation.snapshot.audit?.safety_flags ?? [],
     rendererProvider: extractor.id,
     rendererModel: extractor.model,
-    realizationContractVersion: "response-realization-v6-model-first",
+    realizationContractVersion: deterministicSafetyGateActive ? "response-realization-v5" : "response-realization-v6-model-first",
     responseContract: enforced.responseContract,
     scaffoldTrace: nonDestructiveTrace({
       formulation,
       authority,
       rawSemanticFormulation: semantic.value,
-      graphAudit: graphAudit.value,
+      tierReasoning: tierReasoning ? {
+        tier: routing.tier,
+        adjudication: tierReasoning.adjudication,
+        providerStages: tierReasoning.providerStages
+      } : null,
+      graphAudit: graphAudit?.value ?? null,
       finalIntegrationTrace: {
         provider: extractor.id,
         model: extractor.model,
         requestId: integrationRaw.requestId ?? integrationRaw.responseId ?? null,
         deterministicSafetyGateActive,
+        hardGateReasons,
         responseContract: enforced.responseContract
       }
     }),
@@ -322,7 +374,8 @@ async function runModelFirstTiered({ context, providers, config, processingMode,
       semantic: { provider: extractor.id, model: extractor.model, requestId: semantic.raw.requestId ?? semantic.raw.responseId ?? null },
       extractor: formulation.providerMetadata.extractor,
       auditor: formulation.providerMetadata.auditor,
-      graphAuditor: { provider: providers.openai.id, model: providers.openai.model, requestId: graphAudit.raw.requestId ?? graphAudit.raw.responseId ?? null },
+      tierReasoning: tierReasoning?.providerMetadata ?? null,
+      graphAuditor: graphAudit ? { provider: providers.openai.id, model: providers.openai.model, requestId: graphAudit.raw.requestId ?? graphAudit.raw.responseId ?? null } : null,
       integrator: { provider: extractor.id, model: extractor.model, requestId: integrationRaw.requestId ?? integrationRaw.responseId ?? null, deterministicSafetyGateActive }
     },
     performance: {
@@ -330,7 +383,8 @@ async function runModelFirstTiered({ context, providers, config, processingMode,
       caseExtractionMs: initial.providerMetadata?.extractor?.durationMs ?? null,
       caseAuditMs: caseAudit?.durationMs ?? 0,
       planningMs,
-      graphAuditMs: graphAudit.durationMs,
+      ...(tierReasoning?.performance ?? {}),
+      graphAuditMs: graphAudit?.durationMs ?? 0,
       finalIntegrationMs: integrationDurationMs,
       totalMs: Date.now() - Date.parse(startedAt)
     },
@@ -353,9 +407,11 @@ async function runModelFirstTiered({ context, providers, config, processingMode,
       rawSemanticFormulation: semantic.value,
       rawCaseExtraction: formulation.rawSnapshot,
       caseAuditDelta: formulation.caseAuditDelta ?? null,
-      graphAudit: graphAudit.value,
+      tierReasoning: tierReasoning ? { adjudication: tierReasoning.adjudication, evidence: tierReasoning.evidence, providerMetadata: tierReasoning.providerMetadata } : null,
+      graphAudit: graphAudit?.value ?? null,
       finalIntegration: integrationValue,
-      deterministicSafetyGateActive
+      deterministicSafetyGateActive,
+      hardGateReasons
     },
     result
   });
@@ -398,7 +454,8 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
   }
 
   const authority = classifyInterventionAuthority({ snapshot: formulation.snapshot, plan: formulation.plan });
-  const deterministicSafetyGateActive = scaffoldMode === "advisory" && authority.HARD.safety.length > 0;
+  const deterministicSafetyGateActive = scaffoldMode === "advisory" && hardDeterministicGateActive(authority);
+  const hardGateReasons = deterministicSafetyGateActive ? hardDeterministicGateReasons(authority) : [];
   const effectiveScaffoldMode = deterministicSafetyGateActive ? "current" : scaffoldMode;
   const enrichedContext = {
     ...context,
@@ -435,7 +492,7 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
       result.scaffoldTrace = nonDestructiveTrace({
         formulation,
         authority,
-        finalIntegrationTrace: { responseContract: deep.responseContract, model: deep.rendererModel, deterministicSafetyGateActive }
+        finalIntegrationTrace: { responseContract: deep.responseContract, model: deep.rendererModel, deterministicSafetyGateActive, hardGateReasons }
       });
     }
     return result;
@@ -467,7 +524,7 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
     result.scaffoldTrace = nonDestructiveTrace({
       formulation,
       authority,
-      finalIntegrationTrace: { responseContract: forensic.responseContract, model: forensic.rendererModel, deterministicSafetyGateActive }
+      finalIntegrationTrace: { responseContract: forensic.responseContract, model: forensic.rendererModel, deterministicSafetyGateActive, hardGateReasons }
     });
   }
   return result;

@@ -33,7 +33,10 @@ AUDITED CASE FORMULATION:
 ${context.caseFormulation ? JSON.stringify(context.caseFormulation, null, 2) : "(not supplied)"}
 
 DETERMINISTIC INTERVENTION CONTRACT:
-${context.interventionContract ? JSON.stringify(context.interventionContract, null, 2) : "(not supplied)"}
+${context.interventionContract ? JSON.stringify(context.interventionContract, null, 2) : "(not supplied)"}${context.rawSemanticFormulation ? `
+
+RAW-LANGUAGE SEMANTIC FORMULATION (early evidence rather than authority):
+${JSON.stringify(context.rawSemanticFormulation, null, 2)}` : ""}
 
 CANDIDATE TO REVIEW:
 ${JSON.stringify(candidate, null, 2)}`;

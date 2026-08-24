@@ -13,9 +13,17 @@ import { assertHardAuthorityPreserved } from "./scaffold-authority.mjs";
 async function structuredCall(provider, prompt, metadata, validator, outputSchema, onProgress) {
   const started = Date.now();
   onProgress?.({ stage: `${metadata.stage}:${provider.id}`, status: "started", detail: provider.model });
-  const raw = await provider.generate({ ...prompt, metadata, outputSchema });
-  const parsed = parseModelJson(raw.text, `${provider.id} ${metadata.stage}`);
-  const value = validator(parsed);
+  const request = { ...prompt, metadata, outputSchema };
+  let raw;
+  let value;
+  try {
+    raw = await provider.generate(request);
+    const parsed = parseModelJson(raw.text, `${provider.id} ${metadata.stage}`);
+    value = validator(parsed);
+  } catch (error) {
+    if (raw) await provider.recordConsumerFailure?.({ request, error });
+    throw error;
+  }
   const durationMs = Date.now() - started;
   onProgress?.({ stage: `${metadata.stage}:${provider.id}`, status: "completed", detail: `${(durationMs / 1000).toFixed(1)}s` });
   return { value, raw, durationMs };
@@ -138,8 +146,7 @@ function compactAdjudicationPacket(context, candidate, critique) {
   };
 }
 
-export async function runCompactAdversarialPipeline({ context, providers, config, caseId = null, onProgress }) {
-  const startedAt = new Date().toISOString();
+export async function runCompactAdversarialReasoning({ context, providers, onProgress }) {
   const thinker = providers.anthropic;
   const critic = providers.openai;
   const candidate = await structuredCall(
@@ -159,6 +166,25 @@ export async function runCompactAdversarialPipeline({ context, providers, config
     onProgress
   );
   const adjudication = compactAdjudicationPacket(context, candidate.value, critique.value);
+  return {
+    adjudication,
+    evidence: { anthropicDeepAnalysis: candidate.value, openaiCritique: critique.value },
+    providerMetadata: {
+      thinker: { provider: thinker.id, model: thinker.model, requestId: candidate.raw.requestId },
+      critic: { provider: critic.id, model: critic.model, requestId: critique.raw.requestId }
+    },
+    providerStages: [
+      { stage: "deep_analysis", provider: thinker.id, model: thinker.model, requestId: candidate.raw.requestId ?? null, durationMs: candidate.durationMs },
+      { stage: "deep_critique", provider: critic.id, model: critic.model, requestId: critique.raw.requestId ?? null, durationMs: critique.durationMs }
+    ],
+    performance: { deepAnalysisMs: candidate.durationMs, deepCritiqueMs: critique.durationMs }
+  };
+}
+
+export async function runCompactAdversarialPipeline({ context, providers, config, caseId = null, onProgress }) {
+  const startedAt = new Date().toISOString();
+  const reasoning = await runCompactAdversarialReasoning({ context, providers, onProgress });
+  const adjudication = reasoning.adjudication;
   const renderer = providers.renderer ?? providers.anthropic;
   const realization = await realizeAdjudication({ context, adjudication, provider: renderer, onProgress });
 
@@ -188,13 +214,11 @@ export async function runCompactAdversarialPipeline({ context, providers, config
     completedAt: new Date().toISOString(),
     context,
     evidence: {
-      anthropicDeepAnalysis: candidate.value,
-      openaiCritique: critique.value,
+      ...reasoning.evidence,
       adjudication,
       realization: realization.value,
       providerMetadata: {
-        thinker: { provider: thinker.id, model: thinker.model, requestId: candidate.raw.requestId },
-        critic: { provider: critic.id, model: critic.model, requestId: critique.raw.requestId },
+        ...reasoning.providerMetadata,
         renderer: { provider: renderer.id, model: renderer.model, requestId: realization.raw.requestId }
       }
     },
@@ -204,8 +228,7 @@ export async function runCompactAdversarialPipeline({ context, providers, config
   return { ...result, adjudicationPacket: adjudication, decisionLedgerId: ledger.id, decisionLedgerPath: ledger.path };
 }
 
-export async function runAdversarialPipeline({ context, providers, config, caseId = null, onProgress }) {
-  const startedAt = new Date().toISOString();
+export async function runAdversarialReasoning({ context, providers, config, onProgress }) {
   const openaiCandidatePrompt = candidatePrompt(context, "OpenAI");
   const anthropicCandidatePrompt = candidatePrompt(context, "Anthropic");
 
@@ -260,18 +283,6 @@ export async function runAdversarialPipeline({ context, providers, config, caseI
     onProgress
   );
 
-  // The renderer deliberately receives the completed reasoning packet rather than
-  // being asked to rediscover the case. By default the active Anthropic model
-  // realizes the response; a later benchmark can safely substitute a cheaper
-  // renderer without changing formulation or planning.
-  const renderer = providers.renderer ?? providers.anthropic;
-  const realization = await realizeAdjudication({
-    context,
-    adjudication: adjudication.value,
-    provider: renderer,
-    onProgress
-  });
-
   const providerMetadata = {
     openai: {
       model: providers.openai.model,
@@ -287,7 +298,48 @@ export async function runAdversarialPipeline({ context, providers, config, caseI
       provider: config.adjudicatorProvider,
       model: adjudicator.model,
       requestId: adjudication.raw.requestId
-    },
+    }
+  };
+
+  return {
+    adjudication: adjudication.value,
+    evidence,
+    providerMetadata,
+    providerStages: [
+      { stage: "candidate_openai", provider: providers.openai.id, model: providers.openai.model, requestId: openaiCandidate.raw.requestId ?? null, durationMs: openaiCandidate.durationMs },
+      { stage: "candidate_anthropic", provider: providers.anthropic.id, model: providers.anthropic.model, requestId: anthropicCandidate.raw.requestId ?? null, durationMs: anthropicCandidate.durationMs },
+      { stage: "critique_openai", provider: providers.openai.id, model: providers.openai.model, requestId: openaiCritique.raw.requestId ?? null, durationMs: openaiCritique.durationMs },
+      { stage: "critique_anthropic", provider: providers.anthropic.id, model: providers.anthropic.model, requestId: anthropicCritique.raw.requestId ?? null, durationMs: anthropicCritique.durationMs },
+      { stage: "adjudication", provider: adjudicator.id, model: adjudicator.model, requestId: adjudication.raw.requestId ?? null, durationMs: adjudication.durationMs }
+    ],
+    performance: {
+      openaiCandidateMs: openaiCandidate.durationMs,
+      anthropicCandidateMs: anthropicCandidate.durationMs,
+      openaiCritiqueMs: openaiCritique.durationMs,
+      anthropicCritiqueMs: anthropicCritique.durationMs,
+      adjudicationMs: adjudication.durationMs
+    }
+  };
+}
+
+export async function runAdversarialPipeline({ context, providers, config, caseId = null, onProgress }) {
+  const startedAt = new Date().toISOString();
+  const reasoning = await runAdversarialReasoning({ context, providers, config, onProgress });
+
+  // The renderer deliberately receives the completed reasoning packet rather than
+  // being asked to rediscover the case. By default the active Anthropic model
+  // realizes the response; a later benchmark can safely substitute a cheaper
+  // renderer without changing formulation or planning.
+  const renderer = providers.renderer ?? providers.anthropic;
+  const realization = await realizeAdjudication({
+    context,
+    adjudication: reasoning.adjudication,
+    provider: renderer,
+    onProgress
+  });
+
+  const providerMetadata = {
+    ...reasoning.providerMetadata,
     renderer: {
       provider: renderer.id,
       model: renderer.model,
@@ -307,13 +359,13 @@ export async function runAdversarialPipeline({ context, providers, config, caseI
     rendererModel: renderer.model,
     realizationContractVersion: "response-realization-v5",
     responseContract: realization.value.responseContract,
-    what_is_clear: adjudication.value.what_is_clear,
-    uncertainties: adjudication.value.uncertainties,
-    next_question: realization.value.next_question || adjudication.value.next_question,
-    accepted_insights: adjudication.value.accepted_insights,
-    rejected_claims: adjudication.value.rejected_claims,
-    safety_flags: adjudication.value.safety_flags,
-    decision_summary: adjudication.value.decision_summary
+    what_is_clear: reasoning.adjudication.what_is_clear,
+    uncertainties: reasoning.adjudication.uncertainties,
+    next_question: realization.value.next_question || reasoning.adjudication.next_question,
+    accepted_insights: reasoning.adjudication.accepted_insights,
+    rejected_claims: reasoning.adjudication.rejected_claims,
+    safety_flags: reasoning.adjudication.safety_flags,
+    decision_summary: reasoning.adjudication.decision_summary
   };
 
   const ledger = await writeLedger(config, {
@@ -322,8 +374,8 @@ export async function runAdversarialPipeline({ context, providers, config, caseI
     completedAt: new Date().toISOString(),
     context,
     evidence: {
-      ...evidence,
-      adjudication: adjudication.value,
+      ...reasoning.evidence,
+      adjudication: reasoning.adjudication,
       realization: realization.value,
       providerMetadata
     },
@@ -332,7 +384,7 @@ export async function runAdversarialPipeline({ context, providers, config, caseI
 
   return {
     ...result,
-    adjudicationPacket: adjudication.value,
+    adjudicationPacket: reasoning.adjudication,
     decisionLedgerId: ledger.id,
     decisionLedgerPath: ledger.path
   };
