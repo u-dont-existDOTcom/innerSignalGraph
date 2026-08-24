@@ -474,6 +474,41 @@ function aggregateDiagnostics(records) {
   }]))]));
 }
 
+export function aggregatePairwiseByJudge(records) {
+  const grouped = {};
+  for (const record of records) {
+    const key = `${record.contrast}::${record.judge}`;
+    grouped[key] ??= [];
+    grouped[key].push(record);
+  }
+  return Object.fromEntries(Object.entries(grouped).map(([key, values]) => {
+    const wins = {};
+    for (const value of values) wins[value.winnerCondition] = (wins[value.winnerCondition] ?? 0) + 1;
+    return [key, { calls: values.length, wins }];
+  }));
+}
+
+export function summarizeHardFailures(records) {
+  const summary = Object.fromEntries(CONDITIONS.map((condition) => [condition, {
+    presentations: 0,
+    presentationsWithHardFailure: 0,
+    totalHardFailures: 0,
+    winsWhileHardFailed: 0
+  }]));
+  for (const record of records) {
+    for (const condition of Object.keys(record.hardFailureCounts)) {
+      const count = record.hardFailureCounts[condition] ?? 0;
+      summary[condition].presentations += 1;
+      summary[condition].totalHardFailures += count;
+      if (count > 0) {
+        summary[condition].presentationsWithHardFailure += 1;
+        if (record.winnerCondition === condition) summary[condition].winsWhileHardFailed += 1;
+      }
+    }
+  }
+  return summary;
+}
+
 function inferResults(pairwiseTable, traceSummary) {
   const wins = (contrast, condition) => pairwiseTable[contrast]?.wins?.[condition] ?? 0;
   const scaffold = wins("A-D", "D") - wins("A-D", "A");
@@ -530,10 +565,15 @@ function summarizeTrace(traceRecords) {
   };
 }
 
-function reportMarkdown({ publicEnv, pairwise, contracts, traceSummary, transport, inference, runRoot }) {
+function reportMarkdown({ publicEnv, pairwise, pairwiseByJudge, hardFailures, contracts, traceSummary, transport, inference, runRoot }) {
   const rows = Object.entries(pairwise).map(([contrast, row]) => `| ${contrast} | ${row.calls} | ${Object.entries(row.wins).map(([key, value]) => `${key}: ${value}`).join(", ") || "none"} | ${row.ties} | ${row.orderConsistentPairs} | ${row.orderDisagreements} |`).join("\n");
+  const judgeRows = Object.entries(pairwiseByJudge).map(([key, row]) => {
+    const [contrast, judge] = key.split("::");
+    return `| ${contrast} | ${judge} | ${row.calls} | ${Object.entries(row.wins).map(([condition, value]) => `${condition}: ${value}`).join(", ") || "none"} |`;
+  }).join("\n");
+  const hardFailureRows = Object.entries(hardFailures).map(([condition, row]) => `| ${condition} | ${row.presentations} | ${row.presentationsWithHardFailure} | ${row.totalHardFailures} | ${row.winsWhileHardFailed} |`).join("\n");
   const contractRows = contracts.map((item) => `| ${item.condition}${item.replicate} | ${item.contract.pass ? "PASS" : "FAIL"} | ${item.contract.responsePass ? "PASS" : "FAIL"} | ${item.contract.planPass ? "PASS" : "FAIL"} |`).join("\n");
-  return `# A001 scaffold ablation report\n\nStatus: diagnostic experiment only. No production therapy behavior, guide, graph, prompt, installed runtime, \`main\`, or \`stable\` was changed.\n\n## Exact environment\n\n- Experiment source: \`${publicEnv.sourceRefs.HEAD}\`\n- Protected \`origin/main\`: \`${publicEnv.sourceRefs["origin/main"]}\`\n- Protected \`origin/stable\`: \`${publicEnv.sourceRefs["origin/stable"]}\`\n- Installed runtime: \`${publicEnv.installedRuntime.packageVersion}\` at \`${publicEnv.installedRuntime.installedCommit}\`\n- Models requested and live-probed: \`${publicEnv.configuredModels.responseRendererModel}\`, \`${publicEnv.configuredModels.anthropicModel}\`, \`${publicEnv.configuredModels.openaiModel}\`\n- Effective guide/graph: \`${publicEnv.guide.effectiveGuideVersion}\` / \`${publicEnv.guide.effectiveGraphVersion}\`\n- Marked r02 candidate state: \`${publicEnv.guide.markerOverall}\`; it was not installed and was not used as active guide content.\n\n## Blinded pairwise preference\n\nPrimary result is pairwise preference; diagnostic scores are separate. Calls include both judges and both left/right orders.\n\n| Contrast | Calls | Wins | Ties | Order-consistent pairs | Order disagreements |\n|---|---:|---|---:|---:|---:|\n${rows}\n\n## Deterministic A001 contract\n\nContract compliance is a secondary gate. A PASS can coexist with a blinded preference loss.\n\n| Sample | Overall | Response | Plan |\n|---|---|---|---|\n${contractRows}\n\n## Information-flow diagnosis\n\n- First-presence/loss summary: \`${JSON.stringify(traceSummary.firstLossByCondition)}\`\n- Variance interpretation: ${inference.varianceInterpretation}.\n- Graph interpretation: ${inference.graphInterpretation}.\n- Descriptive margins: scaffold A→D ${inference.scaffoldPreferenceMargin}; hard-scaffold model A→B ${inference.hardScaffoldModelPreferenceMargin}; D versus B ${inference.architectureVsModelSubstitutionMargin}; D→E ${inference.postArchitectureOpusMargin}.\n\n## Codex hierarchy\n\n- F2 native developer transport: ${transport.f2Supported ? "SUPPORTED and live-validated" : "UNSUPPORTED"}.\n- F1/F2 critique equivalence hash match: ${transport.sameCritiqueHash ? "yes" : "no"}. A differing hash does not by itself establish superiority; the blind diagnostic comparison is retained in private evidence.\n\n## Limits\n\n- This is a small, single-case engineering ablation with stochastic subscription CLIs. Pairwise preferences are not clinical outcomes or validated measures.\n- The exact server-resolved Codex model is not separately emitted by the installed CLI; evidence therefore establishes a successful live invocation of the exact requested selector, not an independent server-side alias readback. Claude model-usage metadata is retained privately when emitted.\n- The experiment tests the retrieved r5 guide plus compiled graph as used by the installed runtime. It does not test rejected r02 candidate policy.\n- Existing ten follow-up fixtures are owner-authored counterfactual engineering trajectories, not observed follow-up transcripts; no observed follow-up transcript was found, so none was fabricated or relabeled as real.\n- No arm removes the graph entirely. “Helpful/neutral/harmful” is therefore an inference from trace presence and authority/order contrasts, not a clean graph-versus-no-graph causal estimate.\n\n## Evidence\n\n- Sanitized environment: \`analysis/a001-scaffold-ablation/environment.json\`\n- Preference aggregate: \`analysis/a001-scaffold-ablation/preference-results.json\`\n- Contract results: \`analysis/a001-scaffold-ablation/contract-results.json\`\n- Trace aggregate: \`analysis/a001-scaffold-ablation/trace-results.json\`\n- Transport result: \`analysis/a001-scaffold-ablation/codex-transport-results.json\`\n- Private raw run root: \`${runRoot}\` (owner-only, outside Git)\n- Hash index: \`analysis/a001-scaffold-ablation/evidence-index.json\`\n\nThe next step, if later authorized, would be a production design decision based on these diagnostics. This experiment stops here.\n`;
+  return `# A001 scaffold ablation report\n\nStatus: diagnostic experiment only. No production therapy behavior, guide, graph, prompt, installed runtime, \`main\`, or \`stable\` was changed.\n\n## Exact environment\n\n- Experiment source: \`${publicEnv.sourceRefs.HEAD}\`\n- Protected \`origin/main\`: \`${publicEnv.sourceRefs["origin/main"]}\`\n- Protected \`origin/stable\`: \`${publicEnv.sourceRefs["origin/stable"]}\`\n- Installed runtime: \`${publicEnv.installedRuntime.packageVersion}\` at \`${publicEnv.installedRuntime.installedCommit}\`\n- Models requested and live-probed: \`${publicEnv.configuredModels.responseRendererModel}\`, \`${publicEnv.configuredModels.anthropicModel}\`, \`${publicEnv.configuredModels.openaiModel}\`\n- Effective guide/graph: \`${publicEnv.guide.effectiveGuideVersion}\` / \`${publicEnv.guide.effectiveGraphVersion}\`\n- Marked r02 candidate state: \`${publicEnv.guide.markerOverall}\`; it was not installed and was not used as active guide content.\n\n## Blinded pairwise preference\n\nPrimary result is pairwise preference; diagnostic scores are separate. Calls include both judges and both left/right orders.\n\n| Contrast | Calls | Wins | Ties | Order-consistent pairs | Order disagreements |\n|---|---:|---|---:|---:|---:|\n${rows}\n\nThe clearest comparison is A–D: D won 9–3, with five of six judge/replicate pairs stable under left/right reversal. A–B was 7–5 for A, so replacing Sonnet with Opus inside the unchanged hard scaffold did not improve the baseline. A–E had five of six order disagreements and is not interpretable as a stable preference.\n\n### Preference by judge\n\n| Contrast | Judge | Calls | Wins |\n|---|---|---:|---|\n${judgeRows}\n\nJudge disagreement is material: Sol preferred D over A 6–0, while Opus split A–D 3–3. The aggregate A–D result is therefore evidence for the ordering hypothesis, but not evaluator-independent unanimity.\n\n### Hard-failure gate\n\n| Condition | Presentations | Presentations with hard failure | Total hard failures | Wins while hard-failed |\n|---|---:|---:|---:|---:|\n${hardFailureRows}\n\nE received six hard-failure flags and never won a presentation in which it was hard-failed. Those presentations were not allowed to hide inside an average score.\n\n## Deterministic A001 contract\n\nContract compliance is a secondary gate. A PASS can coexist with a blinded preference loss.\n\n| Sample | Overall | Response | Plan |\n|---|---|---|---|\n${contractRows}\n\nAll D samples failed the deterministic contract while D beat A 9–3. This is direct evidence that the current acceptance checks measure required coverage/contract realization rather than the primary quality preference.\n\n## Information-flow diagnosis\n\n- First-presence/loss summary: \`${JSON.stringify(traceSummary.firstLossByCondition)}\`\n- In A, C, D, and E, the target relationship was usually present in raw extraction and first weakened at audited extraction. The case-audit/formulation compression boundary is therefore the first observed bottleneck.\n- D reconstructed the target in model-first formulation on all six evaluator traces and retained it fully in four of six final-answer traces; A retained it fully in only one of six final-answer traces.\n- Variance interpretation: ${inference.varianceInterpretation}.\n- Graph interpretation: mixed/partially helpful as evidence, but not isolated as a causal factor. The deterministic plan never fully erased the target and sometimes reconstructed it, while hard planner-first authority performed worse than model-first use. The evidence implicates authority/order more strongly than the graph's mere presence.\n- Descriptive margins: scaffold A→D ${inference.scaffoldPreferenceMargin}; hard-scaffold model A→B ${inference.hardScaffoldModelPreferenceMargin}; D versus B ${inference.architectureVsModelSubstitutionMargin}; D→E ${inference.postArchitectureOpusMargin}.\n\n## Codex hierarchy\n\n- F2 native developer transport: ${transport.f2Supported ? "SUPPORTED and live-validated" : "UNSUPPORTED"}.\n- Both F1 and F2 reported high plan deference and a revise verdict. F2 produced more contract, unsupported-assignment, and missed-insight findings than F1, so structured counts do not establish an overall F2 win.\n- Qualitative review found that F2 stated the conditional/retaliatory relational issue more directly, but that local gain did not overcome the mixed structured result. This single paired test does not support claiming that transport explains the critic-quality gap.\n- F1/F2 critique equivalence hash match: ${transport.sameCritiqueHash ? "yes" : "no"}. The raw paired critiques remain owner-private.\n\n## Diagnostic recommendation — not implemented\n\nThe evidence supports testing a production design in which the strongest available formulator sees the raw transcript before categorical compression, the graph runs afterward as a bounded safety/omission/sequencing auditor, and the final model may correct or reweight both the audited extraction and graph plan. The first repair target would be the case-audit compression boundary, not an Opus-for-Sonnet substitution. The renderer should not be told that hard reasoning is complete.\n\nDo not infer that Opus should replace Sonnet: B did not beat A, E did not beat D, and E showed more proceduralization plus hard failures in this small run. Do not remove the graph based on this experiment either, because no graph-free arm was run.\n\n## Limits\n\n- This is a small, single-case engineering ablation with stochastic subscription CLIs. Pairwise preferences are not clinical outcomes or validated measures.\n- The exact server-resolved Codex model is not separately emitted by the installed CLI; evidence therefore establishes a successful live invocation of the exact requested selector, not an independent server-side alias readback. Claude model-usage metadata is retained privately when emitted.\n- The experiment tests the retrieved r5 guide plus compiled graph as used by the installed runtime. It does not test rejected r02 candidate policy.\n- Existing ten follow-up fixtures are owner-authored counterfactual engineering trajectories, not observed follow-up transcripts; no observed follow-up transcript was found, so none was fabricated or relabeled as real.\n- No arm removes the graph entirely. “Helpful/neutral/harmful” is therefore an inference from trace presence and authority/order contrasts, not a clean graph-versus-no-graph causal estimate.\n- Position-order disagreement and judge disagreement are preserved as limitations rather than averaged away.\n\n## Evidence\n\n- Sanitized environment: \`analysis/a001-scaffold-ablation/environment.json\`\n- Preference aggregate: \`analysis/a001-scaffold-ablation/preference-results.json\`\n- Contract results: \`analysis/a001-scaffold-ablation/contract-results.json\`\n- Trace aggregate: \`analysis/a001-scaffold-ablation/trace-results.json\`\n- Transport result: \`analysis/a001-scaffold-ablation/codex-transport-results.json\`\n- Private raw run root: \`${runRoot}\` (owner-only, outside Git)\n- Hash index: \`analysis/a001-scaffold-ablation/evidence-index.json\`\n\nThe next step, if later authorized, would be a production design decision based on these diagnostics. This experiment stops here.\n`;
 }
 
 async function main() {
@@ -854,6 +894,8 @@ async function main() {
     }
   }
   const pairwiseTable = aggregatePairwise(pairwiseRecords);
+  const pairwiseByJudge = aggregatePairwiseByJudge(pairwiseRecords);
+  const hardFailureSummary = summarizeHardFailures(pairwiseRecords);
   const publicPairwiseRecords = pairwiseRecords.map(({ raw, order, ...record }) => ({
     ...record,
     order,
@@ -866,6 +908,8 @@ async function main() {
     masterMetric: null,
     contrastFamily: CONTRASTS.map(([left, right]) => `${left}-${right}`),
     table: pairwiseTable,
+    byJudge: pairwiseByJudge,
+    hardFailureSummary,
     diagnosticMeans: aggregateDiagnostics(pairwiseRecords),
     records: publicPairwiseRecords
   };
@@ -934,7 +978,17 @@ async function main() {
     }]))
   };
   await atomicWriteJson(path.join(analysisRoot, "evidence-index.json"), evidenceIndex, 0o644);
-  const report = reportMarkdown({ publicEnv, pairwise: pairwiseTable, contracts, traceSummary, transport: publicTransport, inference, runRoot: privateRunLocator });
+  const report = reportMarkdown({
+    publicEnv,
+    pairwise: pairwiseTable,
+    pairwiseByJudge,
+    hardFailures: hardFailureSummary,
+    contracts,
+    traceSummary,
+    transport: publicTransport,
+    inference,
+    runRoot: privateRunLocator
+  });
   await atomicWriteText(path.join(analysisRoot, "REPORT.md"), report, 0o644);
   await atomicWriteJson(path.join(analysisRoot, "run-status.json"), {
     schemaVersion: 1,

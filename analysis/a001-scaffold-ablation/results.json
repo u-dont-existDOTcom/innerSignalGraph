@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "completedAt": "2026-08-24T11:40:42.892Z",
+  "experimentVersion": "a001-scaffold-ablation-v1",
+  "conditionReplicates": 3,
+  "conditions": {
+    "A": "current production pipeline control",
+    "B": "Opus substituted under unchanged hard scaffold",
+    "C": "Sonnet with advisory formulation/plan at realization",
+    "D": "Sonnet model-first, graph-audit-second",
+    "E": "Opus model-first, graph-audit-second"
+  },
+  "pairwise": {
+    "A-B": {
+      "calls": 12,
+      "orderConsistentPairs": 3,
+      "orderDisagreements": 3,
+      "ties": 0,
+      "wins": {
+        "A": 7,
+        "B": 5
+      }
+    },
+    "A-C": {
+      "calls": 12,
+      "orderConsistentPairs": 4,
+      "orderDisagreements": 2,
+      "ties": 0,
+      "wins": {
+        "C": 8,
+        "A": 4
+      }
+    },
+    "A-D": {
+      "calls": 12,
+      "orderConsistentPairs": 5,
+      "orderDisagreements": 1,
+      "ties": 0,
+      "wins": {
+        "D": 9,
+        "A": 3
+      }
+    },
+    "B-D": {
+      "calls": 12,
+      "orderConsistentPairs": 4,
+      "orderDisagreements": 2,
+      "ties": 0,
+      "wins": {
+        "D": 6,
+        "B": 6
+      }
+    },
+    "D-E": {
+      "calls": 12,
+      "orderConsistentPairs": 4,
+      "orderDisagreements": 2,
+      "ties": 0,
+      "wins": {
+        "D": 8,
+        "E": 4
+      }
+    },
+    "A-E": {
+      "calls": 12,
+      "orderConsistentPairs": 1,
+      "orderDisagreements": 5,
+      "ties": 0,
+      "wins": {
+        "A": 7,
+        "E": 5
+      }
+    }
+  },
+  "inference": {
+    "scaffoldPreferenceMargin": 6,
+    "hardScaffoldModelPreferenceMargin": -2,
+    "architectureVsModelSubstitutionMargin": 0,
+    "postArchitectureOpusMargin": -4,
+    "varianceInterpretation": "scaffold ordering explains more preference variance than hard-scaffold model substitution",
+    "graphInterpretation": "not isolated",
+    "limitation": "Pairwise preference margins are descriptive engineering evidence, not a validated clinical measure or causal effect size."
+  },
+  "productionChanged": false,
+  "followUpEvidence": {
+    "originalMessageSha256": "13b6503e2557665add98fd4f96b3f841ec40c06a9bfda3c2a7442efc2baf19b6",
+    "trajectoryFixtureClassification": "owner-authored-counterfactual-engineering-trajectories; not observed follow-up transcripts",
+    "trajectoryFixtureCount": 10,
+    "priorGeneratedTrajectoryOutputCount": 100,
+    "observedFollowUpTranscriptCount": 0,
+    "boundary": "No artifact was found that establishes these counterfactual prompts as observed owner follow-up turns. They are inventoried but not relabeled or rerun as real transcripts."
+  },
+  "stopBeforeProductionChange": true
+}

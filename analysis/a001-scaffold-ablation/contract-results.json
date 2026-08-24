@@ -1,0 +1,317 @@
+{
+  "schemaVersion": 1,
+  "acceptanceVersion": "A001-plan-response-realization-v6",
+  "primaryOutcome": false,
+  "results": [
+    {
+      "condition": "A",
+      "replicate": 1,
+      "artifactSha256": "208df4c162367f16565531d307250aa8de4a4339d304e36665204228d3555aa1",
+      "answerSha256": "9565920d33a644b1fafe1ed06c5ce1a977c8178971b56792335d2c5c0e6350fa",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "reviewed",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-sonnet-4-6",
+      "contract": {
+        "pass": true,
+        "responsePass": true,
+        "planPass": true,
+        "missingResponse": [],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    },
+    {
+      "condition": "A",
+      "replicate": 2,
+      "artifactSha256": "0dcd2450ebb9833ab80413f391c3a351224ad8d74e92b5d2f9a31186ed25bd66",
+      "answerSha256": "50346238dc6f3202e2aa6a2bb9be96ba82d3ed4ecceee9c666628a8ac255b54e",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "reviewed",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-sonnet-4-6",
+      "contract": {
+        "pass": true,
+        "responsePass": true,
+        "planPass": true,
+        "missingResponse": [],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    },
+    {
+      "condition": "A",
+      "replicate": 3,
+      "artifactSha256": "414c095e035c6f087a8510db8bdcb05865176bf91f8b28b66b027291df0ea0b3",
+      "answerSha256": "50e829f51f18b47502d3402cc918a8d305102cbbe3bf164b41f25ccaa9067a68",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "reviewed",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-sonnet-4-6",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": true,
+        "missingResponse": [
+          "relaxation_not_sufficient",
+          "repeated_follow_through_without_demanding_trust"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    },
+    {
+      "condition": "B",
+      "replicate": 1,
+      "artifactSha256": "1fba2950c466fc40cb124efbe76691415a1aeac5512670b7eadede0712ac11da",
+      "answerSha256": "d1296484e9b858c91635908ea5a6116dcc42213687384ecb284d4dc3720c0b9c",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "reviewed",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-opus-5",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": true,
+        "missingResponse": [
+          "relaxation_not_sufficient"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    },
+    {
+      "condition": "B",
+      "replicate": 2,
+      "artifactSha256": "ac1a979c26716eef5485084e4579001697a5e0439957b897ebe6c70f021f9161",
+      "answerSha256": "6dc24dd9d460a6b164ab0bd0e84e8cca5a8b4b7e5d6fbe686fb20ec3849f86d0",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "reviewed",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-opus-5",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": true,
+        "missingResponse": [
+          "relaxation_not_sufficient"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    },
+    {
+      "condition": "B",
+      "replicate": 3,
+      "artifactSha256": "4fc7760a23f06bef8bbfdfe03b21abb2f37350b9cc02a30ec1404a289612ab9a",
+      "answerSha256": "51d604e258f123c87ebe267b3bd7cbe021cb1ebd76390656dd6ce70ab99dc861",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "reviewed",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-opus-5",
+      "contract": {
+        "pass": true,
+        "responsePass": true,
+        "planPass": true,
+        "missingResponse": [],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    },
+    {
+      "condition": "C",
+      "replicate": 1,
+      "artifactSha256": "8a0e9e56c43d574197d76cfebff6c3029743f7e7c9c9a4bdb5cc1b45905794b6",
+      "answerSha256": "7048a43799863284a958d5f8261b4b77a5b34300b1cdd0dd17db616398302550",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "experimental-advisory-realization",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-sonnet-4-6",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": true,
+        "missingResponse": [
+          "relaxation_not_sufficient",
+          "repeated_follow_through_without_demanding_trust"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    },
+    {
+      "condition": "C",
+      "replicate": 2,
+      "artifactSha256": "08b0fd22dd8593d716cca537719dea78e9920af3ff449b3cc7d96a665efe53a4",
+      "answerSha256": "18f9a54ecd8a3fd5745d264ec1309547897e7b1470fe4c0777efbf393d699cf0",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "experimental-advisory-realization",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-sonnet-4-6",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": true,
+        "missingResponse": [
+          "relaxation_not_sufficient"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    },
+    {
+      "condition": "C",
+      "replicate": 3,
+      "artifactSha256": "9551b1cbaca129536bb20b8f259240e4e56e16b4ecd21d85bbb894bcda0aed75",
+      "answerSha256": "0340b75541a7335d21f9c370d97116349165b0396d82cfd04f6c79045f915105",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "experimental-advisory-realization",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-sonnet-4-6",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": true,
+        "missingResponse": [
+          "relaxation_not_sufficient",
+          "repeated_follow_through_without_demanding_trust"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    },
+    {
+      "condition": "D",
+      "replicate": 1,
+      "artifactSha256": "817fd8298e18d35006555dad1e649ccda142cd63b1d47ea294df67fe4d7a8f6e",
+      "answerSha256": "f37dcf8e8baf23dca5b01ea1d985d657bad803b85fcaa1d461cefcbcf6c69309",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "experimental-model-first-graph-audit-second",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-sonnet-4-6",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": true,
+        "missingResponse": [
+          "relaxation_not_sufficient",
+          "repeated_follow_through_without_demanding_trust"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    },
+    {
+      "condition": "D",
+      "replicate": 2,
+      "artifactSha256": "0a220135edf1940e6b0c7d911552c66e59effcca71011794b4807d1105bb20a7",
+      "answerSha256": "c260381ba1bff322627dab3a1fd45bcc162fa5a7c71e56e25f3d71e316154153",
+      "nextQuestionSha256": "810e0e88b82b7e38b18463f7ad9ae3e946c6100c0e732ac53ba71b7ed251e84e",
+      "processingTier": "experimental-model-first-graph-audit-second",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-sonnet-4-6",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": false,
+        "missingResponse": [
+          "relaxation_not_sufficient",
+          "repeated_follow_through_without_demanding_trust"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": [
+          "next-question"
+        ]
+      }
+    },
+    {
+      "condition": "D",
+      "replicate": 3,
+      "artifactSha256": "bf1adaf3c4e7c2b86ebce4b400153cc977697b2b30b9fdb3d2ba643ca59e034a",
+      "answerSha256": "40059db1db1c73f1a477a746e014895307fce53dd0b53784ef8202e3abd5b185",
+      "nextQuestionSha256": "48fab095e9f73e103eeaae38c6e4200064ba287805b47f8a63a6ba48bea38709",
+      "processingTier": "experimental-model-first-graph-audit-second",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-sonnet-4-6",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": false,
+        "missingResponse": [
+          "repeated_follow_through_without_demanding_trust"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": [
+          "next-question"
+        ]
+      }
+    },
+    {
+      "condition": "E",
+      "replicate": 1,
+      "artifactSha256": "5c5aac82b36d789cb96d96836c1f88f566853aa7b3e06fe2aefd51824193254f",
+      "answerSha256": "a8a365fde1a44c69ff33c72083fb233ce3b3c7ffc9c39855df7316616a56debe",
+      "nextQuestionSha256": "4bb0ee94773fff96d3adf7844a51ae1e4c8a5603dfa37bc4fb1e2f3513d76176",
+      "processingTier": "experimental-model-first-graph-audit-second",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-opus-5",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": false,
+        "missingResponse": [
+          "credibility_conflict",
+          "relaxation_not_sufficient",
+          "repeated_follow_through_without_demanding_trust"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": [
+          "next-question"
+        ]
+      }
+    },
+    {
+      "condition": "E",
+      "replicate": 2,
+      "artifactSha256": "d5f95c1115d85f7c73a15be641eb1696f8d4bfd30f290900cbe677af882bfaeb",
+      "answerSha256": "498ed825780abc4da095c38ef5f34de44a715d1064de0360478cfb54ff0b16c9",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "experimental-model-first-graph-audit-second",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-opus-5",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": true,
+        "missingResponse": [
+          "credibility_conflict",
+          "relaxation_not_sufficient",
+          "repeated_follow_through_without_demanding_trust"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    },
+    {
+      "condition": "E",
+      "replicate": 3,
+      "artifactSha256": "30821ea1adc14bd89efb1a189b886550e0ef891f15f2aa9ec7d8ce99ed944793",
+      "answerSha256": "8bf64612393087eb0b21e8c215384c050f19324be8f71a4ea1e9adb062688551",
+      "nextQuestionSha256": "168a4dc0eb6051cace4a22a8f269e1c816e85a8d7bfc1b9edd242c74a3dc01ec",
+      "processingTier": "experimental-model-first-graph-audit-second",
+      "routingReason": "graph-structured responsibility and speaker ambiguity",
+      "rendererModel": "claude-opus-5",
+      "contract": {
+        "pass": false,
+        "responsePass": false,
+        "planPass": true,
+        "missingResponse": [
+          "relaxation_not_sufficient",
+          "repeated_follow_through_without_demanding_trust"
+        ],
+        "forbiddenResponse": [],
+        "missingPlan": []
+      }
+    }
+  ]
+}

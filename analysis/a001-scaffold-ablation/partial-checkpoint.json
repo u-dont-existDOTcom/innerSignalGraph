@@ -2,6 +2,9 @@
   "schemaVersion": 1,
   "taskId": "a001-scaffold-ablation-v1",
   "capturedAt": "2026-08-24T07:34:00.000Z",
+  "disposition": "superseded-by-complete-run",
+  "supersededAt": "2026-08-24T11:34:39.536Z",
+  "supersededBy": "analysis/a001-scaffold-ablation/run-status.json",
   "runIdentity": "a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431",
   "classification": "incomplete diagnostic checkpoint; not a result",
   "producerSamples": {

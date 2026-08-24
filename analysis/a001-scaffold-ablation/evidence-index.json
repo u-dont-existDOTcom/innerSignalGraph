@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "runIdentity": "a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431",
+  "privateRunLocator": "<owner-private-root>/runs/a372ce46fdb1bfd6",
+  "privateManifestSha256": "b3d0756a39d74877721e650e39b962c6de9b8b0bd3e4236d0d29c9c709b62753",
+  "rawEvidenceTrackedInGit": false,
+  "tracked": {
+    "environment.json": "209dbed52de5421b2d9b1a3720067c3fa5d1fe44ae92f49cc2235229b2e14ffd",
+    "contract-results.json": "5709d9664249ad72c0be2b2ed5796106d2cf27a83a423e1968f034bb7bbc4716",
+    "codex-transport-results.json": "694519da448dae8bc62d4539bfecb007ace3a9aff0d290fd89611e643e90319b",
+    "preference-results.json": "0f96d06d1463d27e7872c92ec444b05134ab3a12dfba5a0e73f60c845ab404e6",
+    "trace-results.json": "a220074a7f8f2869acd4bc86f80e8f95075524f3bd85586c491be5915338f6df",
+    "results.json": "c48507219564115574db750518239d8d465944328d269836fb372b74a73714de"
+  },
+  "modelProbes": {
+    "sonnet": {
+      "requestedModel": "claude-sonnet-4-6",
+      "responseId": "2a0f7abf-2e2c-426c-961f-85c59d8ac1a7",
+      "artifactSha256": "160e8ed063755309c8d6430d60d3c2f5f676c36cb5c5fb02f72d8f61bc524358"
+    },
+    "opus": {
+      "requestedModel": "claude-opus-5",
+      "responseId": "3b7d09ea-b543-4112-b259-ea8eda0f5a08",
+      "artifactSha256": "a35db8456621e0a12d883e7160611fb9e43c1b13e10002d9e2872311abb07c8a"
+    },
+    "codex": {
+      "requestedModel": "gpt-5.6-sol",
+      "responseId": "01a0315d-a93b-7c90-96c0-483f1f445ca8",
+      "artifactSha256": "77f917ee0b0338f201bcf99a9cdd19eec310568e29b89e12e28087294a996ed0"
+    }
+  }
+}

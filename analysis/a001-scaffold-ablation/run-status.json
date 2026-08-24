@@ -2,12 +2,12 @@
   "schemaVersion": 1,
   "taskId": "a001-scaffold-ablation-v1",
   "runIdentity": "a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431",
-  "status": "external-provider-outage-recovery-queued",
+  "status": "experiment-complete-stop-before-production",
   "branch": "exp/a001-scaffold-ablation-20260824",
-  "sourceSha": "a22f2e611fab778bf26b8e7215afbf85aba4ba5e",
+  "sourceSha": "f381c08e6892e0cd7f2ba5a8f8fba8447354fef9",
   "installedRuntimeSha": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1",
   "productionChanged": false,
-  "lastCompletedStage": "partial-blind-evaluation",
-  "currentUncertainty": "Anthropic's active 2026-08-24 partial outage returned HTTP 529 for exact Opus producer/judge calls and a later content-free exact-Opus probe timed out after 180000 ms. Failed calls are not samples.",
-  "nextAction": "When the official Anthropic incident is monitoring or resolved, run npm run experiment:a001-scaffold; it automatically resumes the recorded private run and completes B3, E3, Opus judging, remaining Sol pairs, trace evaluation, and the final report."
+  "lastCompletedStage": "analysis-and-report",
+  "currentUncertainty": "Pairwise preference margins are descriptive engineering evidence, not a validated clinical measure or causal effect size.",
+  "nextAction": "Verify, commit, push the experimental evidence branch, then stop before production changes."
 }

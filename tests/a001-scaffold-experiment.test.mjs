@@ -16,7 +16,12 @@ import {
   pairwisePrompt
 } from "../scripts/experiments/a001-scaffold-prompts.mjs";
 import { verifyPreflightState } from "../scripts/experiments/a001-scaffold-preflight.mjs";
-import { hardPipelineTraceArtifacts, selectRunIdentity } from "../scripts/experiments/a001-scaffold-ablation.mjs";
+import {
+  aggregatePairwiseByJudge,
+  hardPipelineTraceArtifacts,
+  selectRunIdentity,
+  summarizeHardFailures
+} from "../scripts/experiments/a001-scaffold-ablation.mjs";
 
 const task = {
   schemaVersion: 1,
@@ -108,6 +113,24 @@ test("pairwise aggregation preserves order disagreement instead of averaging it 
   assert.equal(result.wins.D, 3);
   assert.equal(result.wins.A, 1);
   assert.equal(sha256(result).length, 64);
+});
+
+test("diagnostic aggregation separates judges and makes hard-failure disqualification visible", () => {
+  const records = [
+    { contrast: "A-E", replicate: 1, judge: "codex", winnerCondition: "A", hardFailureCounts: { A: 0, E: 1 } },
+    { contrast: "A-E", replicate: 1, judge: "opus", winnerCondition: "E", hardFailureCounts: { A: 0, E: 0 } }
+  ];
+  assert.deepEqual(aggregatePairwiseByJudge(records), {
+    "A-E::codex": { calls: 1, wins: { A: 1 } },
+    "A-E::opus": { calls: 1, wins: { E: 1 } }
+  });
+  const hardFailures = summarizeHardFailures(records);
+  assert.deepEqual(hardFailures.E, {
+    presentations: 2,
+    presentationsWithHardFailure: 1,
+    totalHardFailures: 1,
+    winsWhileHardFailed: 0
+  });
 });
 
 test("control trace projection separates every required A-stage artifact", () => {

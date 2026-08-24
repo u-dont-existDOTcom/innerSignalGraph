@@ -1,0 +1,258 @@
+{
+  "schemaVersion": 1,
+  "diagnosticTargetStoredInProducerPrompts": false,
+  "stageVotes": {
+    "A::guide": {
+      "absent": 3,
+      "partial": 3,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "A::raw_extraction": {
+      "absent": 0,
+      "partial": 1,
+      "present": 5,
+      "not_applicable": 0
+    },
+    "A::audited_extraction": {
+      "absent": 1,
+      "partial": 5,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "A::deterministic_plan": {
+      "absent": 0,
+      "partial": 4,
+      "present": 2,
+      "not_applicable": 0
+    },
+    "A::final_answer": {
+      "absent": 0,
+      "partial": 5,
+      "present": 1,
+      "not_applicable": 0
+    },
+    "B::guide": {
+      "absent": 3,
+      "partial": 3,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "B::raw_extraction": {
+      "absent": 1,
+      "partial": 5,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "B::audited_extraction": {
+      "absent": 1,
+      "partial": 5,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "B::deterministic_plan": {
+      "absent": 0,
+      "partial": 4,
+      "present": 2,
+      "not_applicable": 0
+    },
+    "B::final_answer": {
+      "absent": 0,
+      "partial": 4,
+      "present": 2,
+      "not_applicable": 0
+    },
+    "C::guide": {
+      "absent": 3,
+      "partial": 3,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "C::raw_extraction": {
+      "absent": 0,
+      "partial": 1,
+      "present": 5,
+      "not_applicable": 0
+    },
+    "C::audited_extraction": {
+      "absent": 1,
+      "partial": 5,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "C::deterministic_plan": {
+      "absent": 0,
+      "partial": 4,
+      "present": 2,
+      "not_applicable": 0
+    },
+    "C::reasoning_or_graph_audit": {
+      "absent": 0,
+      "partial": 4,
+      "present": 2,
+      "not_applicable": 0
+    },
+    "C::final_answer": {
+      "absent": 1,
+      "partial": 5,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "D::guide": {
+      "absent": 3,
+      "partial": 3,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "D::raw_extraction": {
+      "absent": 0,
+      "partial": 1,
+      "present": 5,
+      "not_applicable": 0
+    },
+    "D::audited_extraction": {
+      "absent": 1,
+      "partial": 5,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "D::deterministic_plan": {
+      "absent": 0,
+      "partial": 3,
+      "present": 2,
+      "not_applicable": 0
+    },
+    "D::model_first_formulation": {
+      "absent": 0,
+      "partial": 0,
+      "present": 6,
+      "not_applicable": 0
+    },
+    "D::reasoning_or_graph_audit": {
+      "absent": 0,
+      "partial": 5,
+      "present": 1,
+      "not_applicable": 0
+    },
+    "D::pre_realization": {
+      "absent": 0,
+      "partial": 4,
+      "present": 2,
+      "not_applicable": 0
+    },
+    "D::final_answer": {
+      "absent": 0,
+      "partial": 2,
+      "present": 4,
+      "not_applicable": 0
+    },
+    "E::guide": {
+      "absent": 3,
+      "partial": 3,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "E::raw_extraction": {
+      "absent": 0,
+      "partial": 1,
+      "present": 5,
+      "not_applicable": 0
+    },
+    "E::audited_extraction": {
+      "absent": 1,
+      "partial": 5,
+      "present": 0,
+      "not_applicable": 0
+    },
+    "E::deterministic_plan": {
+      "absent": 0,
+      "partial": 4,
+      "present": 2,
+      "not_applicable": 0
+    },
+    "E::model_first_formulation": {
+      "absent": 0,
+      "partial": 1,
+      "present": 5,
+      "not_applicable": 0
+    },
+    "E::reasoning_or_graph_audit": {
+      "absent": 0,
+      "partial": 5,
+      "present": 1,
+      "not_applicable": 0
+    },
+    "E::pre_realization": {
+      "absent": 0,
+      "partial": 4,
+      "present": 2,
+      "not_applicable": 0
+    },
+    "E::final_answer": {
+      "absent": 0,
+      "partial": 2,
+      "present": 4,
+      "not_applicable": 0
+    }
+  },
+  "firstLossByCondition": {
+    "A": {
+      "firstPresent": "raw_extraction",
+      "firstLoss": "audited_extraction"
+    },
+    "B": {
+      "firstPresent": "deterministic_plan",
+      "firstLoss": null
+    },
+    "C": {
+      "firstPresent": "raw_extraction",
+      "firstLoss": "audited_extraction"
+    },
+    "D": {
+      "firstPresent": "raw_extraction",
+      "firstLoss": "audited_extraction"
+    },
+    "E": {
+      "firstPresent": "raw_extraction",
+      "firstLoss": "audited_extraction"
+    }
+  },
+  "evaluatorRecords": [
+    {
+      "replicate": 1,
+      "judge": "codex",
+      "responseId": "01a03274-6618-7a91-b180-4bf957cda954",
+      "judgmentSha256": "0cbcf8130e5a28c68287389725a3fb086ecf353292301108fc6d8036fc7d239f"
+    },
+    {
+      "replicate": 1,
+      "judge": "opus",
+      "responseId": "b01fd0b9-c84f-43bd-86df-0f860f88b728",
+      "judgmentSha256": "c416a63cdbf4c037cba73dd108c2b2f741eca73aa1f175990cae69074f2eaf12"
+    },
+    {
+      "replicate": 2,
+      "judge": "codex",
+      "responseId": "01a03275-d79f-70b3-93a7-308c9bcfc9fd",
+      "judgmentSha256": "ab0e261bcfd4d04575b4d582128e72830738be1a51c761c7891c75546f98824a"
+    },
+    {
+      "replicate": 2,
+      "judge": "opus",
+      "responseId": "b16d607b-ae8b-43a7-80a0-4768c562f53a",
+      "judgmentSha256": "5230084e77e836ffe3fa6078266eb3686b3bf0dafbca750d0ac7d1a5a0ac7314"
+    },
+    {
+      "replicate": 3,
+      "judge": "codex",
+      "responseId": "01a03387-aa88-78f2-b9da-14f633a2fbc3",
+      "judgmentSha256": "fbdbbf87342987b6b7b50f66e30d87d3f26b754d91d0d55b605a404b5185ed5d"
+    },
+    {
+      "replicate": 3,
+      "judge": "opus",
+      "responseId": "9f11df53-7929-443b-9d6c-175575af95e5",
+      "judgmentSha256": "3cb7123ff414ea84561fac463bfefb19ad8e0cfa0c5836d2d9288cbdfdff582f"
+    }
+  ]
+}

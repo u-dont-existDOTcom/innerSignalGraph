@@ -25,4 +25,8 @@ Raw prompts, user material, model prose, intermediate snapshots, graph plans, bl
 
 `npm run experiment:a001-scaffold` is the one idempotent rerun command. It resolves the active task's recorded run identity automatically. Each stage has an input hash and an atomic completion record. A valid completed stage is reused; an interrupted or mismatched stage reruns. Inspect `analysis/a001-scaffold-ablation/run-status.json`, then the owner-private stage manifest. The final `evidence-index.json` supplies its redacted locator and integrity hash without publishing an absolute owner-local path.
 
-The terminal action is to publish the experimental branch and stop before any production behavior change.
+## Completed diagnostic
+
+Run `a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431` completed all A–F conditions, three A–E samples, balanced blind pairwise judging, contract checks, and information-flow traces. The primary same-model result was D over A, 9–3, with five of six left/right pairs order-consistent. The first observed loss boundary was audited case extraction. See `analysis/a001-scaffold-ablation/REPORT.md` for the qualified result and limitations.
+
+The branch is now a preserved diagnostic record. Stop before any production behavior change; a later production design decision requires fresh owner authorization under the therapy-governance protocol.

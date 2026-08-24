@@ -1,0 +1,1642 @@
+{
+  "schemaVersion": 1,
+  "primaryResult": "blinded pairwise preference",
+  "masterMetric": null,
+  "contrastFamily": [
+    "A-B",
+    "A-C",
+    "A-D",
+    "B-D",
+    "D-E",
+    "A-E"
+  ],
+  "table": {
+    "A-B": {
+      "calls": 12,
+      "orderConsistentPairs": 3,
+      "orderDisagreements": 3,
+      "ties": 0,
+      "wins": {
+        "A": 7,
+        "B": 5
+      }
+    },
+    "A-C": {
+      "calls": 12,
+      "orderConsistentPairs": 4,
+      "orderDisagreements": 2,
+      "ties": 0,
+      "wins": {
+        "C": 8,
+        "A": 4
+      }
+    },
+    "A-D": {
+      "calls": 12,
+      "orderConsistentPairs": 5,
+      "orderDisagreements": 1,
+      "ties": 0,
+      "wins": {
+        "D": 9,
+        "A": 3
+      }
+    },
+    "B-D": {
+      "calls": 12,
+      "orderConsistentPairs": 4,
+      "orderDisagreements": 2,
+      "ties": 0,
+      "wins": {
+        "D": 6,
+        "B": 6
+      }
+    },
+    "D-E": {
+      "calls": 12,
+      "orderConsistentPairs": 4,
+      "orderDisagreements": 2,
+      "ties": 0,
+      "wins": {
+        "D": 8,
+        "E": 4
+      }
+    },
+    "A-E": {
+      "calls": 12,
+      "orderConsistentPairs": 1,
+      "orderDisagreements": 5,
+      "ties": 0,
+      "wins": {
+        "A": 7,
+        "E": 5
+      }
+    }
+  },
+  "byJudge": {
+    "A-B::codex": {
+      "calls": 6,
+      "wins": {
+        "A": 5,
+        "B": 1
+      }
+    },
+    "A-B::opus": {
+      "calls": 6,
+      "wins": {
+        "A": 2,
+        "B": 4
+      }
+    },
+    "A-C::codex": {
+      "calls": 6,
+      "wins": {
+        "C": 5,
+        "A": 1
+      }
+    },
+    "A-C::opus": {
+      "calls": 6,
+      "wins": {
+        "A": 3,
+        "C": 3
+      }
+    },
+    "A-D::codex": {
+      "calls": 6,
+      "wins": {
+        "D": 6
+      }
+    },
+    "A-D::opus": {
+      "calls": 6,
+      "wins": {
+        "D": 3,
+        "A": 3
+      }
+    },
+    "B-D::codex": {
+      "calls": 6,
+      "wins": {
+        "D": 4,
+        "B": 2
+      }
+    },
+    "B-D::opus": {
+      "calls": 6,
+      "wins": {
+        "D": 2,
+        "B": 4
+      }
+    },
+    "D-E::codex": {
+      "calls": 6,
+      "wins": {
+        "D": 5,
+        "E": 1
+      }
+    },
+    "D-E::opus": {
+      "calls": 6,
+      "wins": {
+        "D": 3,
+        "E": 3
+      }
+    },
+    "A-E::codex": {
+      "calls": 6,
+      "wins": {
+        "A": 3,
+        "E": 3
+      }
+    },
+    "A-E::opus": {
+      "calls": 6,
+      "wins": {
+        "A": 4,
+        "E": 2
+      }
+    }
+  },
+  "hardFailureSummary": {
+    "A": {
+      "presentations": 48,
+      "presentationsWithHardFailure": 0,
+      "totalHardFailures": 0,
+      "winsWhileHardFailed": 0
+    },
+    "B": {
+      "presentations": 24,
+      "presentationsWithHardFailure": 0,
+      "totalHardFailures": 0,
+      "winsWhileHardFailed": 0
+    },
+    "C": {
+      "presentations": 12,
+      "presentationsWithHardFailure": 0,
+      "totalHardFailures": 0,
+      "winsWhileHardFailed": 0
+    },
+    "D": {
+      "presentations": 36,
+      "presentationsWithHardFailure": 0,
+      "totalHardFailures": 0,
+      "winsWhileHardFailed": 0
+    },
+    "E": {
+      "presentations": 24,
+      "presentationsWithHardFailure": 6,
+      "totalHardFailures": 6,
+      "winsWhileHardFailed": 0
+    }
+  },
+  "diagnosticMeans": {
+    "A": {
+      "insight_beyond_paraphrase": {
+        "n": 48,
+        "mean": 4.31
+      },
+      "relational_mechanistic_understanding": {
+        "n": 48,
+        "mean": 4.44
+      },
+      "fidelity_to_unusual_wording": {
+        "n": 48,
+        "mean": 4.44
+      },
+      "usefulness_of_next_move": {
+        "n": 48,
+        "mean": 4.1
+      },
+      "premature_proceduralization": {
+        "n": 48,
+        "mean": 2.48
+      },
+      "generic_therapy_language": {
+        "n": 48,
+        "mean": 1.83
+      },
+      "unsupported_inference": {
+        "n": 48,
+        "mean": 2.06
+      }
+    },
+    "B": {
+      "insight_beyond_paraphrase": {
+        "n": 24,
+        "mean": 4.42
+      },
+      "relational_mechanistic_understanding": {
+        "n": 24,
+        "mean": 4.5
+      },
+      "fidelity_to_unusual_wording": {
+        "n": 24,
+        "mean": 4.58
+      },
+      "usefulness_of_next_move": {
+        "n": 24,
+        "mean": 4.08
+      },
+      "premature_proceduralization": {
+        "n": 24,
+        "mean": 3.04
+      },
+      "generic_therapy_language": {
+        "n": 24,
+        "mean": 2
+      },
+      "unsupported_inference": {
+        "n": 24,
+        "mean": 2.08
+      }
+    },
+    "C": {
+      "insight_beyond_paraphrase": {
+        "n": 12,
+        "mean": 4.42
+      },
+      "relational_mechanistic_understanding": {
+        "n": 12,
+        "mean": 4.58
+      },
+      "fidelity_to_unusual_wording": {
+        "n": 12,
+        "mean": 4.42
+      },
+      "usefulness_of_next_move": {
+        "n": 12,
+        "mean": 4.33
+      },
+      "premature_proceduralization": {
+        "n": 12,
+        "mean": 1.67
+      },
+      "generic_therapy_language": {
+        "n": 12,
+        "mean": 1.42
+      },
+      "unsupported_inference": {
+        "n": 12,
+        "mean": 1.5
+      }
+    },
+    "D": {
+      "insight_beyond_paraphrase": {
+        "n": 36,
+        "mean": 4.47
+      },
+      "relational_mechanistic_understanding": {
+        "n": 36,
+        "mean": 4.56
+      },
+      "fidelity_to_unusual_wording": {
+        "n": 36,
+        "mean": 4.19
+      },
+      "usefulness_of_next_move": {
+        "n": 36,
+        "mean": 4.06
+      },
+      "premature_proceduralization": {
+        "n": 36,
+        "mean": 1.31
+      },
+      "generic_therapy_language": {
+        "n": 36,
+        "mean": 1.58
+      },
+      "unsupported_inference": {
+        "n": 36,
+        "mean": 1.75
+      }
+    },
+    "E": {
+      "insight_beyond_paraphrase": {
+        "n": 24,
+        "mean": 4.33
+      },
+      "relational_mechanistic_understanding": {
+        "n": 24,
+        "mean": 4.5
+      },
+      "fidelity_to_unusual_wording": {
+        "n": 24,
+        "mean": 4.29
+      },
+      "usefulness_of_next_move": {
+        "n": 24,
+        "mean": 3.71
+      },
+      "premature_proceduralization": {
+        "n": 24,
+        "mean": 3.04
+      },
+      "generic_therapy_language": {
+        "n": 24,
+        "mean": 2.08
+      },
+      "unsupported_inference": {
+        "n": 24,
+        "mean": 2.04
+      }
+    }
+  },
+  "records": [
+    {
+      "contrast": "A-B",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "A": 0,
+        "B": 0
+      },
+      "responseId": "01a0325f-c094-72b1-912a-c30b1f203e71",
+      "order": [
+        "A",
+        "B"
+      ],
+      "diagnosticScoresSha256": "bcaa0698578c24eb286c3f18409e97bcd0fc21e332d19712577c5861660e7648",
+      "judgmentSha256": "62f7a0ce16db2240b1f54abb13322b6e2b15c9426160cd12a35c7818e00f1604"
+    },
+    {
+      "contrast": "A-B",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "B",
+      "hardFailureCounts": {
+        "B": 0,
+        "A": 0
+      },
+      "responseId": "01a03260-6dfa-76d3-b453-74ab0e77106e",
+      "order": [
+        "B",
+        "A"
+      ],
+      "diagnosticScoresSha256": "09b76405ca9576bd33ab8186b8ee1670f588d0c6f44415a13a79326a0ce2ece8",
+      "judgmentSha256": "d7b9ba0dd4b3ac5cb8d715e816c466d916c58e06edfb414b4841ec7de5301119"
+    },
+    {
+      "contrast": "A-B",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "A": 0,
+        "B": 0
+      },
+      "responseId": "bf2609f8-f3f1-4e04-9fd2-126824651c77",
+      "order": [
+        "A",
+        "B"
+      ],
+      "diagnosticScoresSha256": "88f4dd5de88ca3f464a1f9d3bf85292ee9a2271bc7d1cf46407dd17f4dd38d51",
+      "judgmentSha256": "f98c40ed2efcc66da8499b53029fb2c79a519ded31aa7e36a5e2c74e9e8a76d4"
+    },
+    {
+      "contrast": "A-B",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "B",
+      "hardFailureCounts": {
+        "B": 0,
+        "A": 0
+      },
+      "responseId": "bb5dc4f5-1a09-4643-b126-9ce5c36d7969",
+      "order": [
+        "B",
+        "A"
+      ],
+      "diagnosticScoresSha256": "d05920d5e1b7be7f28e3393438d5d0475b542b75425aa0f0dd47e9dc6829ec19",
+      "judgmentSha256": "03d835c27ad4be099f81e4c8333ecc85577a861e001bb1415d0703acb4f1f7a6"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "C",
+      "hardFailureCounts": {
+        "A": 0,
+        "C": 0
+      },
+      "responseId": "01a03260-e33b-7743-818a-31919af1e6c2",
+      "order": [
+        "A",
+        "C"
+      ],
+      "diagnosticScoresSha256": "eff613840076ddb7d0e989ff130ca7aa14a5fa701c6a2fff2c0d729b39163e0d",
+      "judgmentSha256": "27ce2d4474aa48fcbce3539d1e3d2ed0094cdd7d298792df956895d7773f983a"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "C",
+      "hardFailureCounts": {
+        "C": 0,
+        "A": 0
+      },
+      "responseId": "01a03261-4c85-7b82-ba60-3b736e0b4e82",
+      "order": [
+        "C",
+        "A"
+      ],
+      "diagnosticScoresSha256": "8a75d8d596915c22e6a46041c112d148783a20add53e924a70bca604c84ab4a4",
+      "judgmentSha256": "d794afbb7b53f049ac5ac567514819934c454dd6225c8ecf7f3621482cff58f6"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "A": 0,
+        "C": 0
+      },
+      "responseId": "e89aa438-abb6-4d1e-b985-2f1e3ef35dbb",
+      "order": [
+        "A",
+        "C"
+      ],
+      "diagnosticScoresSha256": "f553785fb10d2ccb2e352bcb1462a2799dd37486ecc938565882dc2a2708046a",
+      "judgmentSha256": "2fd53214570c93829806f51bc9184dc61348bf57c753d508eb7270fccbc92232"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "C": 0,
+        "A": 0
+      },
+      "responseId": "3e0ee173-6638-4b8f-8cfb-7d6de6242331",
+      "order": [
+        "C",
+        "A"
+      ],
+      "diagnosticScoresSha256": "92d8b813e2e28dc8afe26bc616f88a126d2019c2109c654587c2bc7be49b4134",
+      "judgmentSha256": "8e52334b57c85a59ff820bfeaeaa0172e6189127ae34637406abbed5014c25b8"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "A": 0,
+        "D": 0
+      },
+      "responseId": "01a03261-ecdc-7323-b117-40841432e43f",
+      "order": [
+        "A",
+        "D"
+      ],
+      "diagnosticScoresSha256": "739864ccd0ee9deaa3ee37faad1324e3fc9fe726d7af345f0f7096effcc4279b",
+      "judgmentSha256": "558f04ac2ddaad31c1f1d2dfe3ec47e55f7db384b3d18316818763c7fc84f0f1"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "D": 0,
+        "A": 0
+      },
+      "responseId": "01a03262-647f-7e73-ba82-ddf55d582678",
+      "order": [
+        "D",
+        "A"
+      ],
+      "diagnosticScoresSha256": "ca7a79351d639312feff3a49f6c4037bbc26ef9f25b61aacc3eb71635decca3a",
+      "judgmentSha256": "f8b4e5ad7e7032653f489226ec90c533f7212fa09abc66f77d50484f12ae2fe0"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "A": 0,
+        "D": 0
+      },
+      "responseId": "a1717ffb-d871-46b7-abef-6d6ac53d11c0",
+      "order": [
+        "A",
+        "D"
+      ],
+      "diagnosticScoresSha256": "1d3cebeef80fc4c0609525804f3b50ec242084e47b20ec36c3c17fab90e7a9f3",
+      "judgmentSha256": "15bb325663cf99e2f9ffe2f251148ffd3f754d789ca8df21274d899e834b829b"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "D": 0,
+        "A": 0
+      },
+      "responseId": "7a0add20-5fe1-48b6-9dc6-1f38020351fe",
+      "order": [
+        "D",
+        "A"
+      ],
+      "diagnosticScoresSha256": "c231a463a09f8c00e56cbee16d5c968abc034fc657d0f6e40dadee5e6d6488d2",
+      "judgmentSha256": "2b783097c48b0bed7020eb438f783554800825884ffd8120f09fe916f7f96366"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "B": 0,
+        "D": 0
+      },
+      "responseId": "01a03262-cf17-7f92-819e-cb05449600c7",
+      "order": [
+        "B",
+        "D"
+      ],
+      "diagnosticScoresSha256": "ccf1aa0e8aaf183a48637bde1dd1cb6a94b8dc516c51dd1b1ea29c5aba173841",
+      "judgmentSha256": "a739171bf04d92f95a6f2a028758442c1bfa5779c2f047a162e01ffa205b829e"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "B",
+      "hardFailureCounts": {
+        "D": 0,
+        "B": 0
+      },
+      "responseId": "01a03263-25ab-7382-b9b1-dd07a1abb591",
+      "order": [
+        "D",
+        "B"
+      ],
+      "diagnosticScoresSha256": "7f37e7f53b700992420f9b706fa7fd28049b7418dc1a9656a53c329aba10ce48",
+      "judgmentSha256": "38640259771714ce2e9436ff588a8bbf221f93490ad9c98be0035764ace8946e"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "B": 0,
+        "D": 0
+      },
+      "responseId": "d6bfbf04-bda9-4e2a-a5a8-cdea2fddebfa",
+      "order": [
+        "B",
+        "D"
+      ],
+      "diagnosticScoresSha256": "0c912520d1aec21c7d843e973dea96ecdfbf1540338d9d76ec7fad57a5d4a095",
+      "judgmentSha256": "2e203ce9a329dda9d7500c85c3c91521553d46514385592ca38be376828d63eb"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "D": 0,
+        "B": 0
+      },
+      "responseId": "0ca7f04f-31b7-4acc-931d-b42cf6dd5aba",
+      "order": [
+        "D",
+        "B"
+      ],
+      "diagnosticScoresSha256": "4e6f472b164659330964da8265bce5f7a69be4ba9c5a81aa7a277ece4d0b6a55",
+      "judgmentSha256": "d072a6e7be3d72dfa2bffc75dcac3cc509dbebc14723b6740e1c3a1d7ff4c4cf"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "D": 0,
+        "E": 0
+      },
+      "responseId": "01a03263-a40b-7f10-9d2b-6b4016f62d54",
+      "order": [
+        "D",
+        "E"
+      ],
+      "diagnosticScoresSha256": "49351808ea875fa8f85046db4145426af15e493a3aceabee47350396bb0a5d99",
+      "judgmentSha256": "309c5eb8067178be81f060b9ad6fa47dacd8804c11ce84f3088e9c48db08a732"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "E": 1,
+        "D": 0
+      },
+      "responseId": "01a03264-0ec8-76b0-9bef-97d751637242",
+      "order": [
+        "E",
+        "D"
+      ],
+      "diagnosticScoresSha256": "2b220dc23cfa7a9d3cc7ad687a80a73995393810e9f7e3717bf4f010ad3fa0b6",
+      "judgmentSha256": "09da6ea727cb6a04444fb9215c1c54aebf47d29e544a4a3a71cf59a5e364770d"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "D": 0,
+        "E": 0
+      },
+      "responseId": "59ffb087-2c2c-487c-ac0f-743fefe3b0a4",
+      "order": [
+        "D",
+        "E"
+      ],
+      "diagnosticScoresSha256": "61135b26b428db23965aba54d2c6225ec553cd182a04928091fa18baa4c0afb4",
+      "judgmentSha256": "83807487592523bc22b9cc43ba7e230221d383a63fed6126fffcecd74e23ab86"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "E": 0,
+        "D": 0
+      },
+      "responseId": "179dd87c-3b77-4b46-a615-bddfcaba590c",
+      "order": [
+        "E",
+        "D"
+      ],
+      "diagnosticScoresSha256": "d9170b86aa2529e6f67f9efa3cd46290317d8f20b5449900645a5a66bed328b9",
+      "judgmentSha256": "16f5bb148b2b4b812602276ca26c09651269ed5c4acf89e19f66453d46248d4a"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "A": 0,
+        "E": 1
+      },
+      "responseId": "01a03264-910d-7761-abe3-c1ff3cd67482",
+      "order": [
+        "A",
+        "E"
+      ],
+      "diagnosticScoresSha256": "41c2a98ebd83f86af7f00a0e9be3c23fd96a23ad04aa942d3f491de5479f2cbc",
+      "judgmentSha256": "6231d63251d208ef1eb8054828812848cfe7a71e603373d593aafb742595baa5"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 1,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "E",
+      "hardFailureCounts": {
+        "E": 0,
+        "A": 0
+      },
+      "responseId": "01a03265-037b-72f3-ada3-43ebd1d57bd7",
+      "order": [
+        "E",
+        "A"
+      ],
+      "diagnosticScoresSha256": "6daca29bea9a3593935118f9477aa5002c50744d18d6a3b652d6ee650370d995",
+      "judgmentSha256": "92d0deb10b0dd708c666a57667f1bd1245c98526621cb3ae960456cdf5c384e6"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "A": 0,
+        "E": 0
+      },
+      "responseId": "c87d64c5-71e0-47bb-a62d-319772b2ae8b",
+      "order": [
+        "A",
+        "E"
+      ],
+      "diagnosticScoresSha256": "068fc8142534e0e6056e715b402721a708cd3e4832b2f848ec7dfd30c89ecfd5",
+      "judgmentSha256": "b6fddc7368e1fa16a53070c7d15d05e3206eb38dcf5b330d234b918d181ccaa9"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 1,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "E": 0,
+        "A": 0
+      },
+      "responseId": "8a34fc0f-359f-41e9-9562-9397fb213ca4",
+      "order": [
+        "E",
+        "A"
+      ],
+      "diagnosticScoresSha256": "5fddd54a4a20b1bb294c415e0377ec42d27f12a54bf26e3cf55c5c5fec457408",
+      "judgmentSha256": "2d408ad3600cbc62855086075285d39b2efe456351777917eef34017248fb542"
+    },
+    {
+      "contrast": "A-B",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "A": 0,
+        "B": 0
+      },
+      "responseId": "01a03265-7ed9-75a2-98d5-854e0bdefbf0",
+      "order": [
+        "A",
+        "B"
+      ],
+      "diagnosticScoresSha256": "bcaa0698578c24eb286c3f18409e97bcd0fc21e332d19712577c5861660e7648",
+      "judgmentSha256": "c1cf645860074ceb4961b2de6df67db6460acc609605ddc01ca0e34c4eec03fa"
+    },
+    {
+      "contrast": "A-B",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "B": 0,
+        "A": 0
+      },
+      "responseId": "01a03265-ffec-7a00-bc05-dd0ce224bf75",
+      "order": [
+        "B",
+        "A"
+      ],
+      "diagnosticScoresSha256": "65eba3db9aba7e3c607069bd5e5494a1f9904c1248f3b4154c5fb07e5de98aca",
+      "judgmentSha256": "4090bdd23155329b7c0856c0776ec24601b0a886ac213f961cb59968a4533411"
+    },
+    {
+      "contrast": "A-B",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "B",
+      "hardFailureCounts": {
+        "A": 0,
+        "B": 0
+      },
+      "responseId": "6565ed94-a27a-4294-94dc-a93e3fac5eb9",
+      "order": [
+        "A",
+        "B"
+      ],
+      "diagnosticScoresSha256": "5af1fc0e4fb227976f94237c678a5dbee01845c00bd0f58b32c8dd2cd71ff26a",
+      "judgmentSha256": "c3b26506b71be1ebc7792b6fdf8da5cda1929ae43a6c78ddabf8c7458d62d2fc"
+    },
+    {
+      "contrast": "A-B",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "B",
+      "hardFailureCounts": {
+        "B": 0,
+        "A": 0
+      },
+      "responseId": "d65139f9-1557-444e-9037-bd8eaf93352c",
+      "order": [
+        "B",
+        "A"
+      ],
+      "diagnosticScoresSha256": "10f182f910ae0cbe827c6f1732551948166e7c970030db48c3a14338dd83e196",
+      "judgmentSha256": "3fd09127fbf7040baf8172ba5492e7d9fe61a0601524a1a91d938b36ac9d7af7"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "A": 0,
+        "C": 0
+      },
+      "responseId": "01a03266-8982-7db3-bfe7-8ae657273daf",
+      "order": [
+        "A",
+        "C"
+      ],
+      "diagnosticScoresSha256": "67fcbc0ee8819a2fb5275efdc24ebb7a1af386f99c15e06bc6cc4a921f7448fc",
+      "judgmentSha256": "dbbd7de892601abbcc65de741e2071550787a090cfce217a16c5da85ce2a2b32"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "C",
+      "hardFailureCounts": {
+        "C": 0,
+        "A": 0
+      },
+      "responseId": "01a03267-791b-7b52-acdd-66dbff4c6b7f",
+      "order": [
+        "C",
+        "A"
+      ],
+      "diagnosticScoresSha256": "8a75d8d596915c22e6a46041c112d148783a20add53e924a70bca604c84ab4a4",
+      "judgmentSha256": "7fd11152acaf25ba717cd970a9c00c6e60d9de6997aff9f7958658f639f59e63"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "C",
+      "hardFailureCounts": {
+        "A": 0,
+        "C": 0
+      },
+      "responseId": "1744abfd-3a87-4df7-9d83-a3b1a64b2e87",
+      "order": [
+        "A",
+        "C"
+      ],
+      "diagnosticScoresSha256": "c21b094a9b8b974b892d65a783458b958537450d0a9977c048c38a26631b2ee1",
+      "judgmentSha256": "13083b1cc49f6c30d75a0aee3b717fb9b760383c76f1c1b9b105e835afa17e84"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "C": 0,
+        "A": 0
+      },
+      "responseId": "ecc00566-02d3-4aac-a554-c1c319964805",
+      "order": [
+        "C",
+        "A"
+      ],
+      "diagnosticScoresSha256": "cd2e7242bf170acd8e2ab85a50e5177b4694ebb93966a842eaf63787a48fb6b6",
+      "judgmentSha256": "0e729614b39a5ccb292d228d98e646ac7df4ca29e4acd64cc48c76df75cff70d"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "A": 0,
+        "D": 0
+      },
+      "responseId": "01a03267-f479-7c51-b1a2-b1f70f65d135",
+      "order": [
+        "A",
+        "D"
+      ],
+      "diagnosticScoresSha256": "928aa5b9affa14fcef5553dfd18bbc45afec5dc91140a53ed20fad4ee57218c7",
+      "judgmentSha256": "4e8ffd52155893976c1ffcf44c42fea0256bef6c4d1a1342b68da8162f823b2d"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "D": 0,
+        "A": 0
+      },
+      "responseId": "01a03268-7de7-7d92-a51f-77b97c62817e",
+      "order": [
+        "D",
+        "A"
+      ],
+      "diagnosticScoresSha256": "859e984cbe2b7e0ecde644b692d473866b622bf1607f9b509b7ed7a91f21f7fe",
+      "judgmentSha256": "036b5024752fe70fbcd94414e6a487a575b61114edd8392e4d065ae607df1dfb"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "A": 0,
+        "D": 0
+      },
+      "responseId": "47a0ebaa-b3e9-4955-8ebd-f33db1840738",
+      "order": [
+        "A",
+        "D"
+      ],
+      "diagnosticScoresSha256": "d9557d1c9f6b71da5aabea7b596b509ecd86c6a751fc80dae6a323a30e1ea700",
+      "judgmentSha256": "6e07e0333eebcaa82f524ebdbba7ef4bc47d16a7033c047fe89e61a8d14675af"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "D": 0,
+        "A": 0
+      },
+      "responseId": "a6c6652c-8343-4fd0-b458-7c3f88589cba",
+      "order": [
+        "D",
+        "A"
+      ],
+      "diagnosticScoresSha256": "7e081e02d53306b64394c8183f4ddda8656b38ce993e52b8d8f9519b41d537a9",
+      "judgmentSha256": "522265ea38a726e7a5b8de09b30d342266273e9c1f9ad40d56853de1995ff0b0"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "B": 0,
+        "D": 0
+      },
+      "responseId": "01a03268-fd06-7f50-9ccc-8682a56e7d99",
+      "order": [
+        "B",
+        "D"
+      ],
+      "diagnosticScoresSha256": "5f65645b3153a1aca8c890270cd03f0692baaa04030e820a64923d0ffa0296aa",
+      "judgmentSha256": "ee8c18edb1dda31e3ffebf1e01e4602a5e5f8acacf8f5eb6e12b3533202c260e"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "D": 0,
+        "B": 0
+      },
+      "responseId": "01a0326a-202d-75e0-a496-db260546a348",
+      "order": [
+        "D",
+        "B"
+      ],
+      "diagnosticScoresSha256": "4eaed396b1f7baf1cbed466772fdd5b722e7e7652393bf447461d4635386332e",
+      "judgmentSha256": "567e5687387acc884d8e02c761dd66b38bc7543bdf07e64ee673919a4f3662e6"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "B",
+      "hardFailureCounts": {
+        "B": 0,
+        "D": 0
+      },
+      "responseId": "2c42c742-e13f-44e6-b19a-bd8c3e2221d6",
+      "order": [
+        "B",
+        "D"
+      ],
+      "diagnosticScoresSha256": "78d90d5fdbfa6c9f0a195d2cb4e7731ec2212024c1e68afe250d54460729454d",
+      "judgmentSha256": "41201d348684d565af4090b632d60339a953168962d406c98864e5a1c21717f0"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "B",
+      "hardFailureCounts": {
+        "D": 0,
+        "B": 0
+      },
+      "responseId": "9f0401f8-dead-47c9-87d0-506373b7905f",
+      "order": [
+        "D",
+        "B"
+      ],
+      "diagnosticScoresSha256": "852d00af96f3457efc53a91ea3a51f19a0a31e0b4926ac95ead1cd343b98a69b",
+      "judgmentSha256": "852f361f3bea1a991ab4444d8e26e7aecefc836cb079219b1b29c498348c3397"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "D": 0,
+        "E": 1
+      },
+      "responseId": "01a0326a-9f1c-7133-8a92-34ea47d7f50b",
+      "order": [
+        "D",
+        "E"
+      ],
+      "diagnosticScoresSha256": "81e38deaa7b8f9ef1c1a4851c1a884d842b3acbb5019c509ef3958d2c8c0a0d4",
+      "judgmentSha256": "e6bd9f0733596cc2b9c8873de2a127d8b642ee80b6ce3a6efe481cc81a222f8e"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "E": 1,
+        "D": 0
+      },
+      "responseId": "01a0326b-20c1-7cc1-a34a-09bde533b5dd",
+      "order": [
+        "E",
+        "D"
+      ],
+      "diagnosticScoresSha256": "db62357b18dfece6d662c9a1976ab895d79949b7f91affe1dd6ba4b630e84763",
+      "judgmentSha256": "93092651cb45a88137b3511733fd5d942e80ac61ba6c141ec8a8869e5191e4bd"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "E",
+      "hardFailureCounts": {
+        "D": 0,
+        "E": 0
+      },
+      "responseId": "6932f243-5ed6-44da-a949-20daf10c14d2",
+      "order": [
+        "D",
+        "E"
+      ],
+      "diagnosticScoresSha256": "6b37258aaa69024950d726c3af68a1ce674667a53291fe935050652a5daab5a0",
+      "judgmentSha256": "301b3a926005fddeebb2d4f3ad37f479c96099994518b8ef701722162564d91c"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "E",
+      "hardFailureCounts": {
+        "E": 0,
+        "D": 0
+      },
+      "responseId": "259a6009-7c2a-469a-bb1b-0b38b78503bd",
+      "order": [
+        "E",
+        "D"
+      ],
+      "diagnosticScoresSha256": "a3bccb01a5e77f35233ff5e8965b5d06a436d952046d6020d08afcd006377f3a",
+      "judgmentSha256": "6e85e800d03fac799f0c9d0a75e6e1b67c64169a56ba89a4c907cb5e7221f11a"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "A": 0,
+        "E": 1
+      },
+      "responseId": "01a0326b-92c1-75c0-9eea-0c47850cae80",
+      "order": [
+        "A",
+        "E"
+      ],
+      "diagnosticScoresSha256": "64b5f5848e5629964867699b54cd8cd448dce5971082e6d36e556521ad91a957",
+      "judgmentSha256": "0086bdce835d75c2b69f649fe0424a52dc3d3af1d394e379ef3e87ff34b528c4"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 2,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "E",
+      "hardFailureCounts": {
+        "E": 0,
+        "A": 0
+      },
+      "responseId": "01a0326c-015e-7000-8949-1fc59eab0bda",
+      "order": [
+        "E",
+        "A"
+      ],
+      "diagnosticScoresSha256": "7ff32ad034ecae5657c1482a79ad03343278367c47d4a7e364c764301c0ba96d",
+      "judgmentSha256": "6c1e0dc633c48a2a6ed834321b65d028be65a84ca99f8be3570445d85327f42c"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "E",
+      "hardFailureCounts": {
+        "A": 0,
+        "E": 0
+      },
+      "responseId": "48ef36c7-a2aa-4326-9996-5eefcffe327d",
+      "order": [
+        "A",
+        "E"
+      ],
+      "diagnosticScoresSha256": "e8915f21b9de79b36c5b81a1f45a76effd52d505fac56752d833d8bbda079d57",
+      "judgmentSha256": "a2fca7183d968ca200d264b0de067c941addb83416ae7a28b5d0eb968a6bae84"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 2,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "E": 0,
+        "A": 0
+      },
+      "responseId": "091cf639-a929-4823-8430-2f1024b74d99",
+      "order": [
+        "E",
+        "A"
+      ],
+      "diagnosticScoresSha256": "40ff9f82c7fcf96f133835f1c7626f67a25c53bd816bd54b1ca4c224a1e5880d",
+      "judgmentSha256": "3a41090a3e82fc50703c8c0bd87d16a5803ab9a009e11c8a3e40c41ea0d66fcc"
+    },
+    {
+      "contrast": "A-B",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "A": 0,
+        "B": 0
+      },
+      "responseId": "01a03377-4dfc-7ac3-94fc-07578d40829d",
+      "order": [
+        "A",
+        "B"
+      ],
+      "diagnosticScoresSha256": "fe33cfafde3d0a558d54da7ea5ccc7d0b07f55eb2217ac950358fbbae52f06a0",
+      "judgmentSha256": "77fb0aac7758cde5cd217ace3f6811364da41d75de6a45f83f9aa2a783e8e0f2"
+    },
+    {
+      "contrast": "A-B",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "B": 0,
+        "A": 0
+      },
+      "responseId": "01a03377-cac7-7eb2-a95f-6733d38a00aa",
+      "order": [
+        "B",
+        "A"
+      ],
+      "diagnosticScoresSha256": "0f4d39a472764a07108e934794489e5ca7566a3025d7ca7a4bbec829c58f5fc8",
+      "judgmentSha256": "151f57580cf066d5fed26d9f6d3d155cc76625ebbd3ca61b78f47e0ce91af646"
+    },
+    {
+      "contrast": "A-B",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "B",
+      "hardFailureCounts": {
+        "A": 0,
+        "B": 0
+      },
+      "responseId": "b88beabd-d264-4488-90db-273654cea1ed",
+      "order": [
+        "A",
+        "B"
+      ],
+      "diagnosticScoresSha256": "c3622ff7c8787fd1c6319a15c785ee7980fa9672ca3fb92377a17b89375c3247",
+      "judgmentSha256": "f8fc54e57be2aa370339cf67254b6b94e16e75b03acae1712a40a4d90f2a0dbe"
+    },
+    {
+      "contrast": "A-B",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "B": 0,
+        "A": 0
+      },
+      "responseId": "8d96ea23-6681-45fb-b330-95748d0bf8ac",
+      "order": [
+        "B",
+        "A"
+      ],
+      "diagnosticScoresSha256": "d5d3f5cad9c9e047a0fcfb6917104ce13bb8cfe930d6036a3ec0639393a7de77",
+      "judgmentSha256": "defb8ae1f1297a43fc5c9f385d83f078526c3d5bc148a37b3df04c5905164fc3"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "C",
+      "hardFailureCounts": {
+        "A": 0,
+        "C": 0
+      },
+      "responseId": "01a03271-4ce7-76d0-ae85-4b8b1d154b89",
+      "order": [
+        "A",
+        "C"
+      ],
+      "diagnosticScoresSha256": "f5358229ddaf3e80285d5fe373ef04232bca13ff32981a1c38cc252bf4d499a0",
+      "judgmentSha256": "f99c2a55d84e7daeb2ebd77ee03d36d815cc1ec0580ad63370fb3accd66d9716"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "C",
+      "hardFailureCounts": {
+        "C": 0,
+        "A": 0
+      },
+      "responseId": "01a03271-be0c-7240-8cb1-619775c65bc4",
+      "order": [
+        "C",
+        "A"
+      ],
+      "diagnosticScoresSha256": "1e1a4f9baf638e4f99d9b53a56041d41bb11f582a506d76032a22ebf85aa5611",
+      "judgmentSha256": "b0aa74fd3955421204fcf02087c338128dbbd6cf797d2e8261e0eaf7229a230a"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "C",
+      "hardFailureCounts": {
+        "A": 0,
+        "C": 0
+      },
+      "responseId": "a17babcb-2e2f-4166-a59d-7f1787b7a420",
+      "order": [
+        "A",
+        "C"
+      ],
+      "diagnosticScoresSha256": "a9e2d3669542a5955695d22979ce998db37c97a041446a68285acf5848d119d7",
+      "judgmentSha256": "7e8a19722cec4635b89dbcde7b0738ba81794ba5b2f78992fbcc0ab126ad2808"
+    },
+    {
+      "contrast": "A-C",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "C",
+      "hardFailureCounts": {
+        "C": 0,
+        "A": 0
+      },
+      "responseId": "ae887a36-2666-4fa3-ab87-ce6c8fb7b4c8",
+      "order": [
+        "C",
+        "A"
+      ],
+      "diagnosticScoresSha256": "c2b03f5bac69ba12b857da16de4963b8576631c97e33a6b32228a2977e138efd",
+      "judgmentSha256": "ee68c390c3ce7ac85e6f435c8631e5ca54916ea68b6075eaa8ec8a34f1465c57"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "A": 0,
+        "D": 0
+      },
+      "responseId": "01a03272-31af-7af2-a7f4-d2c69c7e227f",
+      "order": [
+        "A",
+        "D"
+      ],
+      "diagnosticScoresSha256": "6d0b934515b5202eb7e09bc361d0a8286a7edf048e3915b3cb18380d93c6b81d",
+      "judgmentSha256": "4eefdd947862c6f574074acef3ecabeda29d6fc8420e02f5a72324af77352041"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "D": 0,
+        "A": 0
+      },
+      "responseId": "01a03272-aec6-7c02-93a7-fb96de005bdc",
+      "order": [
+        "D",
+        "A"
+      ],
+      "diagnosticScoresSha256": "132a457b7fa6091efb8df14d702b5305fdee2f2e3b18f81dffee9aceb39d4f46",
+      "judgmentSha256": "90a6dff2caf25b0c79ebdda27217e4f7caa5133863d5faf1b9f3c9858a644bdd"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "A": 0,
+        "D": 0
+      },
+      "responseId": "c4ef153c-726a-48b1-9c6d-0398e409e113",
+      "order": [
+        "A",
+        "D"
+      ],
+      "diagnosticScoresSha256": "4e71e693f71bb20b27691873969eff6235178025203fd80b8288101d1fe2840f",
+      "judgmentSha256": "1120432a1aa1fc72abc8b8b652c2ae6366524a57e15b818162069701f712145d"
+    },
+    {
+      "contrast": "A-D",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "D": 0,
+        "A": 0
+      },
+      "responseId": "09585946-0528-4de4-b647-f4c09276e664",
+      "order": [
+        "D",
+        "A"
+      ],
+      "diagnosticScoresSha256": "93e6e110380a18c50dd79e1dfc39341fe085238d99d0616d851cdc90cb01dd91",
+      "judgmentSha256": "2092536cdd875a72e5829819b24009498b9717a3b70874961bc3af33d59ef9e7"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "B": 0,
+        "D": 0
+      },
+      "responseId": "01a0337b-ff8f-7fb0-955d-ea892ce569c0",
+      "order": [
+        "B",
+        "D"
+      ],
+      "diagnosticScoresSha256": "7a3f9be24761cebb2f900e2c6140e10233738f6d3ee06543576078ad953c9356",
+      "judgmentSha256": "bf59e2c32400f7de694d2180972f25d02faa83e7875238c1ce8668a053cef20a"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "B",
+      "hardFailureCounts": {
+        "D": 0,
+        "B": 0
+      },
+      "responseId": "01a0337c-4ecc-7a91-93d8-2272c96ef046",
+      "order": [
+        "D",
+        "B"
+      ],
+      "diagnosticScoresSha256": "802847d2c4895a26c6720ef7f19d592c219b6fc9c8c336a5851775db3e873f2d",
+      "judgmentSha256": "0968d3925e2333b883df785bc3748517dc65aa002c9cdf8f45a8d8651530647f"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "B",
+      "hardFailureCounts": {
+        "B": 0,
+        "D": 0
+      },
+      "responseId": "695a8279-9e61-4ea3-a62e-a2266a6ac18b",
+      "order": [
+        "B",
+        "D"
+      ],
+      "diagnosticScoresSha256": "431e75064b5453a720c5159994bf24f2d55f4761f252e5e22f434b7fd1490ff7",
+      "judgmentSha256": "298bc65f0921efc4b1f6d270f9b2dc60f3ec8bfe5ed2579e1f979ac75043fa0c"
+    },
+    {
+      "contrast": "B-D",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "B",
+      "hardFailureCounts": {
+        "D": 0,
+        "B": 0
+      },
+      "responseId": "ba39f502-81ca-4bb7-9275-3ff0eb97d96e",
+      "order": [
+        "D",
+        "B"
+      ],
+      "diagnosticScoresSha256": "0a5639859443a40f6c5ad763c57537de9acb8dea2d91bb574ea99c68a40a9e67",
+      "judgmentSha256": "aa6fa4c3049f985b9f9a49beb322e1aba612c966cd41672a65521934f53fe939"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "D": 0,
+        "E": 0
+      },
+      "responseId": "01a0337e-5346-7102-a20b-99efab9bea9a",
+      "order": [
+        "D",
+        "E"
+      ],
+      "diagnosticScoresSha256": "7e1abe6a393f58ca1a97ffb9cecd02b400c95a67feca480e0e7ac01850307de1",
+      "judgmentSha256": "0dc4575fc86142e00a1973429ff47add898aabcb9693584358fe57bef607f187"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "E",
+      "hardFailureCounts": {
+        "E": 0,
+        "D": 0
+      },
+      "responseId": "01a0337e-d6f2-7842-b58b-897a1ba57bfc",
+      "order": [
+        "E",
+        "D"
+      ],
+      "diagnosticScoresSha256": "a311ebb310916b3e687361a4060e4750199525168be7907c5e645369ab171974",
+      "judgmentSha256": "27e443a6472caf911279392a78e9d1a58b2ab31ce6a2a9e7643b7bccd2d8df14"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "E",
+      "hardFailureCounts": {
+        "D": 0,
+        "E": 0
+      },
+      "responseId": "be0a177c-0f34-4bd9-bb89-56b6c2687af3",
+      "order": [
+        "D",
+        "E"
+      ],
+      "diagnosticScoresSha256": "3269b7c5946fb532940e5266cd3ed16a6171b7c36b626248689b62a3373526b2",
+      "judgmentSha256": "03fbb9b86902576292bee96b8f1cc9d6a89ddd49760c4da7e2aa10b0d1d6694e"
+    },
+    {
+      "contrast": "D-E",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "D",
+      "hardFailureCounts": {
+        "E": 0,
+        "D": 0
+      },
+      "responseId": "837841cf-6fe6-42cd-8da6-90d3a41efb06",
+      "order": [
+        "E",
+        "D"
+      ],
+      "diagnosticScoresSha256": "d881de51192016e65e23eea6f1fb12e974de303e79ab865145659267f0923b36",
+      "judgmentSha256": "9a6ff23d209c2e468e81927e4151c7343b1ca70b7e9a217060ba236b1d980dbe"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "forward",
+      "winnerCondition": "E",
+      "hardFailureCounts": {
+        "A": 0,
+        "E": 0
+      },
+      "responseId": "01a03380-c2ba-7102-a52c-3512a5e8d4b9",
+      "order": [
+        "A",
+        "E"
+      ],
+      "diagnosticScoresSha256": "8c5052d366fc644a5c4b10dd9589bc3e02f888be54fbbe2137b28b30161d2251",
+      "judgmentSha256": "c2033787638b85e421fb29c17ff65bc1dafb99bce5e152e40387792d6e7a5b6e"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 3,
+      "judge": "codex",
+      "orderName": "reverse",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "E": 1,
+        "A": 0
+      },
+      "responseId": "01a03381-66bc-7662-b53f-b8b2efbdc9a9",
+      "order": [
+        "E",
+        "A"
+      ],
+      "diagnosticScoresSha256": "8cfa7c0a84b60fd843d193e1b1ddc94ac7961405ba0041d8fc2c92360d3c3609",
+      "judgmentSha256": "ede53555e6eec21c3d18e07e60b22066b0443b45e910629e442e6817dedbef04"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "forward",
+      "winnerCondition": "E",
+      "hardFailureCounts": {
+        "A": 0,
+        "E": 0
+      },
+      "responseId": "ef51cde5-54a4-4243-bc7f-eef7967e6cd0",
+      "order": [
+        "A",
+        "E"
+      ],
+      "diagnosticScoresSha256": "627d5d58f3edb288572371ef60b9fa6392db9053d1d579a13fb72adb39542482",
+      "judgmentSha256": "3cf51a072a653b43703a8a189b9d65882a988174c82f1aa0a2272a41a7f684f0"
+    },
+    {
+      "contrast": "A-E",
+      "replicate": 3,
+      "judge": "opus",
+      "orderName": "reverse",
+      "winnerCondition": "A",
+      "hardFailureCounts": {
+        "E": 0,
+        "A": 0
+      },
+      "responseId": "c19747c1-88e5-43bf-82be-303b2ac9f271",
+      "order": [
+        "E",
+        "A"
+      ],
+      "diagnosticScoresSha256": "ff670e9e1efa7cb94a6ca2866f8975509591eb528660a239c15daf6fcdddecd4",
+      "judgmentSha256": "faff0641d1c221133d4c0e09c168f135602b8050e73564978e22a998ee7af82b"
+    }
+  ]
+}

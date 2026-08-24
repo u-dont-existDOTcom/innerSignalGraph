@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "f1Transport": "current stdin SYSTEM INSTRUCTIONS wrapper",
+  "f2Supported": true,
+  "f2Transport": "Codex developer_instructions config override with --strict-config",
+  "f1CritiqueSha256": "b48cbec816784deac3cf1e3e1731edbc0a5ff8e706096927e6b578a51eacd7ff",
+  "f2CritiqueSha256": "13ed2261821e20dff15cf2e3a6e15bdeb875dbfa3375b5bb0aeb0d268d0e9748",
+  "sameCritiqueHash": false,
+  "f1ImportantRelationalIssueSha256": "5a9d244adf8c12b47e13d6a1a7cea8487cc45c67d2f66d645f5f04859e793f79",
+  "f2ImportantRelationalIssueSha256": "6717c3673f76eaa08a618092a149399f67ff4fc7c868b0e5d835643299a0cb48",
+  "f1ContractViolationCount": 0,
+  "f2ContractViolationCount": 3,
+  "f1UnsupportedAssignmentCount": 2,
+  "f2UnsupportedAssignmentCount": 3,
+  "f1MissedInsightCount": 3,
+  "f2MissedInsightCount": 4,
+  "f1PlanDeference": "high",
+  "f2PlanDeference": "high",
+  "f1Verdict": "revise",
+  "f2Verdict": "revise",
+  "probeResponseId": "01a0325e-3592-70f2-9758-13c991a77201"
+}
