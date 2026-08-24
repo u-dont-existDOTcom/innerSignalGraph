@@ -638,42 +638,42 @@ export async function runTherapyScaffoldBenchmark({ runtimeRoot, privateRoot, ex
   }
 
   const producerTasks = cases.private.primaryCases.flatMap((caseDefinition) => REPLICATES.flatMap((replicate) => CONDITIONS.map((condition) => ({ caseDefinition, replicate, condition }))));
-  const primaryOutputs = await mapWithConcurrency(producerTasks, concurrency, async ({ caseDefinition, replicate, condition }) => {
+  const primaryOutputs = await mapWithConcurrency(producerTasks, 1, async ({ caseDefinition, replicate, condition }) => {
     const frozenInput = frozenInputs[caseDefinition.id];
-    const stage = await store.run(`produce-${caseDefinition.id}-r${replicate}-${condition}`, { condition, mode: modeForCondition(condition), caseId: caseDefinition.id, replicate, frozenInputHash: sha256(frozenInput), config: publicConfig(baseConfig(modulesForCondition(condition, installedModules, candidateModules), { runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot, scaffoldMode: modeForCondition(condition) })) }, async () => await runCondition({ condition, caseDefinition, replicate, frozenInput, installedModules, candidateModules, runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot, providerCacheRoot: path.join(privateRunRoot, "provider-cache") }));
+    const stage = await store.run(`produce-${caseDefinition.id}-r${replicate}-${condition}`, { condition, mode: modeForCondition(condition), caseId: caseDefinition.id, replicate, frozenInputHash: sha256(frozenInput), config: publicConfig(baseConfig(modulesForCondition(condition, installedModules, candidateModules), { runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot, scaffoldMode: modeForCondition(condition) })) }, async () => await runCondition({ condition, caseDefinition, replicate, frozenInput, installedModules, candidateModules, runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot, providerCacheRoot: path.join(resolvedPrivateRoot, "provider-cache") }));
     return { caseId: caseDefinition.id, family: caseDefinition.family, replicate, condition, output: stage.value, reused: stage.reused };
   });
   const primaryByKey = outputLookup(primaryOutputs);
 
   const a001Case = cases.private.primaryCases.find((item) => item.id === "A001-observed-original");
   const trajectoryTasks = cases.private.trajectoryCases.flatMap((branch) => REPLICATES.flatMap((replicate) => CONDITIONS.map((condition) => ({ branch, replicate, condition }))));
-  const trajectoryOutputs = await mapWithConcurrency(trajectoryTasks, concurrency, async ({ branch, replicate, condition }) => {
+  const trajectoryOutputs = await mapWithConcurrency(trajectoryTasks, 1, async ({ branch, replicate, condition }) => {
     const baseOutput = primaryByKey.get(`${a001Case.id}:${replicate}:${condition}`);
-    const stage = await store.run(`trajectory-${branch.id}-r${replicate}-${condition}`, { condition, branchId: branch.id, replicate, baseAnswerSha256: sha256(baseOutput.result.answer), followUpSha256: sha256(branch.followUp), guideExcerptsSha256: sha256(frozenInputs[a001Case.id].guideExcerpts) }, async () => await runTrajectoryBranch({ condition, replicate, baseOutput, branch, originalMessage: a001Case.input.userMessage, guideExcerpts: frozenInputs[a001Case.id].guideExcerpts, installedModules, candidateModules, runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot, providerCacheRoot: path.join(privateRunRoot, "provider-cache") }));
+    const stage = await store.run(`trajectory-${branch.id}-r${replicate}-${condition}`, { condition, branchId: branch.id, replicate, baseAnswerSha256: sha256(baseOutput.result.answer), followUpSha256: sha256(branch.followUp), guideExcerptsSha256: sha256(frozenInputs[a001Case.id].guideExcerpts) }, async () => await runTrajectoryBranch({ condition, replicate, baseOutput, branch, originalMessage: a001Case.input.userMessage, guideExcerpts: frozenInputs[a001Case.id].guideExcerpts, installedModules, candidateModules, runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot, providerCacheRoot: path.join(resolvedPrivateRoot, "provider-cache") }));
     return { trajectoryId: branch.id, replicate, condition, output: stage.value, reused: stage.reused };
   });
   const trajectoryByKey = trajectoryLookup(trajectoryOutputs);
 
   const pairwiseTasks = [];
   for (const caseDefinition of cases.private.primaryCases) {
-    for (const replicate of REPLICATES) for (const [first, second] of CONTRASTS) for (const judge of ["gpt-5.6-sol", "claude-opus-5"]) for (const orderName of ["forward", "reverse"]) {
+    for (const replicate of REPLICATES) for (const [first, second] of CONTRASTS) for (const orderName of ["forward", "reverse"]) for (const judge of ["gpt-5.6-sol", "claude-opus-5"]) {
       const [leftCondition, rightCondition] = orderedContrast(first, second, orderName);
       pairwiseTasks.push({ family: caseDefinition.family, caseId: caseDefinition.id, replicate, contrast: `${first}-${second}`, judge, orderName, caseText: caseDefinition.input.userMessage, casePurpose: caseDefinition.purpose, hardFailureFocus: caseDefinition.hardFailureFocus, leftCondition, rightCondition, leftResponse: primaryByKey.get(`${caseDefinition.id}:${replicate}:${leftCondition}`).result.answer, rightResponse: primaryByKey.get(`${caseDefinition.id}:${replicate}:${rightCondition}`).result.answer, trajectory: false });
     }
   }
-  for (const replicate of REPLICATES) for (const [first, second] of CONTRASTS) for (const judge of ["gpt-5.6-sol", "claude-opus-5"]) for (const orderName of ["forward", "reverse"]) {
+  for (const replicate of REPLICATES) for (const [first, second] of CONTRASTS) for (const orderName of ["forward", "reverse"]) for (const judge of ["gpt-5.6-sol", "claude-opus-5"]) {
     const [leftCondition, rightCondition] = orderedContrast(first, second, orderName);
     const leftItems = cases.private.trajectoryCases.map((branch) => trajectoryByKey.get(`${branch.id}:${replicate}:${leftCondition}`));
     const rightItems = cases.private.trajectoryCases.map((branch) => trajectoryByKey.get(`${branch.id}:${replicate}:${rightCondition}`));
     pairwiseTasks.push({ family: "A001-counterfactual-multi-turn-branches", caseId: "A001-counterfactual-bundle", replicate, contrast: `${first}-${second}`, judge, orderName, caseText: `${a001Case.input.userMessage}\n\nCOUNTERFACTUAL FOLLOW-UPS:\n${cases.private.trajectoryCases.map((item) => `- ${item.followUp}`).join("\n")}`, casePurpose: "Continuity across the ten owner-authored counterfactual engineering trajectories; these are not observed conversations.", hardFailureFocus: ["temporary calm or one completed action treated as full repair", "punitive care arrears", "lost continuity with the original concern"], leftCondition, rightCondition, leftResponse: answerBundle(leftItems), rightResponse: answerBundle(rightItems), trajectory: true });
   }
-  const pairwiseRecords = await mapWithConcurrency(pairwiseTasks, concurrency, async (task) => await runPairwiseJudgment({ store, candidateModules, judgeConfig, ...task }));
+  const pairwiseRecords = await mapWithConcurrency(pairwiseTasks, Math.min(2, concurrency), async (task) => await runPairwiseJudgment({ store, candidateModules, judgeConfig, ...task }));
 
-  const traceRecords = [];
-  for (const replicate of REPLICATES) {
+  const traceTasks = REPLICATES.flatMap((replicate) => ["gpt-5.6-sol", "claude-opus-5"].map((judge) => ({ replicate, judge })));
+  const traceRecords = await mapWithConcurrency(traceTasks, Math.min(2, concurrency), async ({ replicate, judge }) => {
     const outputs = Object.fromEntries(CONDITIONS.map((condition) => [condition, primaryByKey.get(`${a001Case.id}:${replicate}:${condition}`)]));
-    for (const judge of ["gpt-5.6-sol", "claude-opus-5"]) traceRecords.push(await runTraceJudgment({ store, candidateModules, judgeConfig, judge, replicate, originalMessage: a001Case.input.userMessage, outputs }));
-  }
+    return await runTraceJudgment({ store, candidateModules, judgeConfig, judge, replicate, originalMessage: a001Case.input.userMessage, outputs });
+  });
 
   const a001Fixture = await readJson(path.join(repositoryRoot, "corpus/difficult-cases/A001-inner-child-credibility/case.json"));
   const legacyEvaluations = [];

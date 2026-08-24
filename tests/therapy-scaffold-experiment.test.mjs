@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url";
 
 import { aggregatePairwise, selectArchitecture } from "../scripts/experiments/therapy-scaffold-benchmark.mjs";
 import { pairwisePrompt } from "../scripts/experiments/therapy-scaffold-evaluation.mjs";
-import { ResumableTraceProvider, StageStore, assertPrivateTextAbsentFromGit, runCommand } from "../scripts/experiments/therapy-scaffold-lib.mjs";
+import { ResumableTraceProvider, StageStore, assertPrivateTextAbsentFromGit, mapWithConcurrency, runCommand } from "../scripts/experiments/therapy-scaffold-lib.mjs";
 
 function record({ family, contrast, winnerCondition, orderName = "forward", judge = "gpt-5.6-sol", replicate = 1 }) {
   const conditions = contrast.split("-");
@@ -63,6 +63,19 @@ test("completed provider stages resume by exact prompt and model fingerprint", a
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
+});
+
+test("a concurrent-stage failure waits for active peers and starts no new work", async () => {
+  const started = [];
+  const beganAt = Date.now();
+  await assert.rejects(mapWithConcurrency(["fail", "active-peer", "must-not-start"], 2, async (value) => {
+    started.push(value);
+    if (value === "fail") { await new Promise((resolve) => setTimeout(resolve, 10)); throw new Error("expected failure"); }
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    return value;
+  }));
+  assert.ok(Date.now() - beganAt >= 50);
+  assert.deepEqual(started.sort(), ["active-peer", "fail"]);
 });
 
 test("interrupting a harness command terminates its detached subprocess", { timeout: 10_000 }, async () => {

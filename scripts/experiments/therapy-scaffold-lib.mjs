@@ -242,14 +242,22 @@ export async function runCommand(command, args, { cwd, timeoutMs = 1_200_000, st
 export async function mapWithConcurrency(items, limit, operation) {
   const results = new Array(items.length);
   let cursor = 0;
+  let failure = null;
   async function worker() {
     for (;;) {
+      if (failure) return;
       const index = cursor++;
       if (index >= items.length) return;
-      results[index] = await operation(items[index], index);
+      try {
+        results[index] = await operation(items[index], index);
+      } catch (error) {
+        failure ??= error;
+        return;
+      }
     }
   }
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, () => worker()));
+  if (failure) throw failure;
   return results;
 }
 
