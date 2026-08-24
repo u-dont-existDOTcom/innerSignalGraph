@@ -30,6 +30,18 @@ export async function atomicWriteText(file, value, mode = 0o600) {
 }
 function safeName(value) { return String(value).replace(/[^a-zA-Z0-9._-]+/g, "-"); }
 
+function serializeError(error, depth = 0) {
+  if (!error || depth > 4) return null;
+  return {
+    name: error.name ?? "Error",
+    code: error.code ?? null,
+    message: error.message ?? String(error),
+    details: error.details ?? null,
+    cause: serializeError(error.cause, depth + 1),
+    benchmarkProviderTraces: error.benchmarkProviderTraces ?? null
+  };
+}
+
 export class StageStore {
   constructor(root, runIdentity) {
     this.root = path.resolve(root);
@@ -79,7 +91,7 @@ export class StageStore {
     } catch (error) {
       const failedAt = new Date().toISOString();
       const failureFile = path.join(this.root, "failures", `${safeName(id)}-${failedAt.replace(/[:.]/g, "-")}.json`);
-      await atomicWriteJson(failureFile, { schemaVersion: 1, status: "failed", id, inputHash, startedAt, failedAt, error: { name: error.name, code: error.code ?? null, message: error.message, details: error.details ?? null } });
+      await atomicWriteJson(failureFile, { schemaVersion: 1, status: "failed", id, inputHash, startedAt, failedAt, error: serializeError(error) });
       this.manifest.stages[id] = { status: "failed", inputHash, startedAt, failedAt, failureFile, file };
       await this.persist();
       throw error;
@@ -103,7 +115,45 @@ export class TraceProvider {
     }
   }
 }
-export function traceProviders(providers) { return Object.fromEntries(Object.entries(providers).map(([key, provider]) => [key, new TraceProvider(provider)])); }
+
+export class ResumableTraceProvider extends TraceProvider {
+  constructor(provider, { cacheRoot, lane }) {
+    super(provider);
+    this.cacheRoot = path.resolve(cacheRoot);
+    this.lane = safeName(lane);
+  }
+  async generate(request) {
+    const inputHash = sha256({ provider: this.provider.id, model: this.provider.model, request });
+    const stage = safeName(request.metadata?.stage ?? request.metadata?.fixtureKey ?? "generation");
+    const file = path.join(this.cacheRoot, this.lane, `${stage}-${inputHash}.json`);
+    try {
+      const prior = await readJson(file);
+      if (prior.status === "complete" && prior.inputHash === inputHash && prior.response) {
+        this.calls.push({ status: "reused", startedAt: prior.startedAt, completedAt: prior.completedAt, durationMs: prior.durationMs, request, response: prior.response, cacheFile: file });
+        return prior.response;
+      }
+    } catch (error) { if (error.code !== "ENOENT") throw error; }
+    const startedAt = new Date().toISOString();
+    const started = Date.now();
+    try {
+      const response = await this.provider.generate(request);
+      const record = { schemaVersion: 1, status: "complete", inputHash, startedAt, completedAt: new Date().toISOString(), durationMs: Date.now() - started, request, response };
+      await atomicWriteJson(file, record);
+      this.calls.push({ status: "complete", ...record, cacheFile: file });
+      return response;
+    } catch (error) {
+      const failedAt = new Date().toISOString();
+      const failureFile = path.join(this.cacheRoot, this.lane, "failures", `${stage}-${inputHash}-${failedAt.replace(/[:.]/g, "-")}.json`);
+      await atomicWriteJson(failureFile, { schemaVersion: 1, status: "failed", inputHash, startedAt, failedAt, durationMs: Date.now() - started, request, error: serializeError(error) });
+      this.calls.push({ status: "failed", startedAt, failedAt, durationMs: Date.now() - started, request, error: serializeError(error), failureFile });
+      throw error;
+    }
+  }
+}
+
+export function traceProviders(providers, options = null) {
+  return Object.fromEntries(Object.entries(providers).map(([key, provider]) => [key, options?.cacheRoot ? new ResumableTraceProvider(provider, { ...options, lane: `${options.lane}-${key}` }) : new TraceProvider(provider)]));
+}
 export function providerTraces(providers) { return Object.fromEntries(Object.entries(providers).map(([key, provider]) => [key, provider.calls])); }
 
 export function assertPrivateRoot(repositoryRoot, privateRoot) {

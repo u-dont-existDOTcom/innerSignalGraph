@@ -8,7 +8,7 @@ import { pathToFileURL } from "node:url";
 
 import { aggregatePairwise, selectArchitecture } from "../scripts/experiments/therapy-scaffold-benchmark.mjs";
 import { pairwisePrompt } from "../scripts/experiments/therapy-scaffold-evaluation.mjs";
-import { StageStore, assertPrivateTextAbsentFromGit, runCommand } from "../scripts/experiments/therapy-scaffold-lib.mjs";
+import { ResumableTraceProvider, StageStore, assertPrivateTextAbsentFromGit, runCommand } from "../scripts/experiments/therapy-scaffold-lib.mjs";
 
 function record({ family, contrast, winnerCondition, orderName = "forward", judge = "gpt-5.6-sol", replicate = 1 }) {
   const conditions = contrast.split("-");
@@ -44,6 +44,22 @@ test("completed experiment stages resume while failed stages rerun", async () =>
     assert.equal(completedCalls, 1);
     assert.equal(recovered.reused, false);
     assert.equal(failedCalls, 2);
+  } finally {
+    await fs.rm(root, { recursive: true, force: true });
+  }
+});
+
+test("completed provider stages resume by exact prompt and model fingerprint", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "therapy-scaffold-provider-cache-"));
+  let calls = 0;
+  const provider = { id: "anthropic", model: "claude-sonnet-4-6", async generate() { calls += 1; return { provider: "anthropic", model: "claude-sonnet-4-6", text: '{"ok":true}', responseId: "response-1" }; } };
+  const request = { system: "system", user: "same private input", outputSchema: { type: "object" }, metadata: { stage: "case_extraction" } };
+  try {
+    const first = new ResumableTraceProvider(provider, { cacheRoot: root, lane: "case-r1-C" });
+    const second = new ResumableTraceProvider(provider, { cacheRoot: root, lane: "case-r1-C" });
+    assert.deepEqual(await first.generate(request), await second.generate(request));
+    assert.equal(calls, 1);
+    assert.equal(second.calls[0].status, "reused");
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }

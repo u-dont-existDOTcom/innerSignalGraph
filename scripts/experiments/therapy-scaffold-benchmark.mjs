@@ -100,12 +100,12 @@ function modulesForCondition(condition, installedModules, candidateModules) {
 }
 function modeForCondition(condition) { return condition === "A" ? "current" : condition === "C" ? "advisory" : "model-first"; }
 
-async function runCondition({ condition, caseDefinition, frozenInput, installedModules, candidateModules, runtimeRoot, privateRoot }) {
+async function runCondition({ condition, caseDefinition, replicate, frozenInput, installedModules, candidateModules, runtimeRoot, privateRoot, providerCacheRoot }) {
   const modules = modulesForCondition(condition, installedModules, candidateModules);
   const scaffoldMode = modeForCondition(condition);
   const config = baseConfig(modules, { runtimeRoot, privateRoot, scaffoldMode });
   const context = await modules.buildContext(frozenInput, config);
-  const providers = traceProviders(modules.createProviders(config));
+  const providers = traceProviders(modules.createProviders(config), { cacheRoot: providerCacheRoot, lane: `primary-${caseDefinition.id}-r${replicate}-${condition}` });
   try {
     const result = await modules.runTieredTherapyPipeline({
       context,
@@ -121,7 +121,7 @@ async function runCondition({ condition, caseDefinition, frozenInput, installedM
   }
 }
 
-async function runTrajectoryBranch({ condition, baseOutput, branch, originalMessage, guideExcerpts, installedModules, candidateModules, runtimeRoot, privateRoot }) {
+async function runTrajectoryBranch({ condition, replicate, baseOutput, branch, originalMessage, guideExcerpts, installedModules, candidateModules, runtimeRoot, privateRoot, providerCacheRoot }) {
   const modules = modulesForCondition(condition, installedModules, candidateModules);
   const config = baseConfig(modules, { runtimeRoot, privateRoot, scaffoldMode: modeForCondition(condition) });
   const input = {
@@ -134,7 +134,7 @@ async function runTrajectoryBranch({ condition, baseOutput, branch, originalMess
     priorProcessingTier: baseOutput.result.processingTier
   };
   const context = await modules.buildContext(input, config);
-  const providers = traceProviders(modules.createProviders(config));
+  const providers = traceProviders(modules.createProviders(config), { cacheRoot: providerCacheRoot, lane: `trajectory-${branch.id}-r${replicate}-${condition}` });
   const result = await modules.runTieredTherapyPipeline({ context, providers, config, processingMode: "auto", onProgress: (event) => progress(`${branch.id}/${condition}`, event) });
   return { condition, trajectoryId: branch.id, sourceUserTurnFingerprint: sha256({ originalMessage, followUp: branch.followUp, guideExcerpts }), context, result, providerTraces: providerTraces(providers), config: publicConfig(config) };
 }
@@ -206,6 +206,7 @@ function latencySummary(receipts) {
   for (const condition of CONDITIONS) {
     const items = receipts.filter((item) => item.condition === condition);
     const totals = items.map((item) => item.totalMs).filter(Number.isFinite).sort((a, b) => a - b);
+    const observedWalls = items.map((item) => item.observedWallClockMs).filter(Number.isFinite);
     const calls = items.reduce((sum, item) => sum + item.calls, 0);
     const stageCells = {};
     const usageTotals = {};
@@ -224,6 +225,8 @@ function latencySummary(receipts) {
       callsPerResponse: items.length ? calls / items.length : null,
       medianTotalMs: totals.length ? totals[Math.floor(totals.length / 2)] : null,
       meanTotalMs: totals.length ? Math.round(totals.reduce((sum, value) => sum + value, 0) / totals.length) : null,
+      meanObservedWallClockMs: observedWalls.length ? Math.round(observedWalls.reduce((sum, value) => sum + value, 0) / observedWalls.length) : null,
+      resumedProviderStages: items.reduce((sum, item) => sum + item.resumedProviderStages, 0),
       retries: items.reduce((sum, item) => sum + item.retries, 0),
       structuredOutputFailures: 0,
       usageTotals,
@@ -332,11 +335,15 @@ function publicPairwiseRecord(record) {
 function modelCallReceipt(output, condition, caseId, replicate) {
   const receipt = responseReceipt(output);
   const calls = receipt.calls.length;
+  const durations = receipt.calls.map((call) => ({ stage: call.stage, durationMs: Number.isFinite(call.durationMs) ? call.durationMs : 0 }));
+  const modelStageEstimateMs = durations.reduce((sum, call) => sum + call.durationMs, 0);
   return {
     condition,
     caseId,
     replicate,
-    totalMs: output.result?.performance?.totalMs ?? output.result?.processingMs ?? null,
+    totalMs: modelStageEstimateMs || output.result?.performance?.totalMs || output.result?.processingMs || null,
+    observedWallClockMs: output.result?.performance?.totalMs ?? output.result?.processingMs ?? null,
+    resumedProviderStages: receipt.calls.filter((call) => call.status === "reused").length,
     calls,
     retries: receipt.calls.filter((call) => call.stage === "realization_retry").length,
     receipt
@@ -633,7 +640,7 @@ export async function runTherapyScaffoldBenchmark({ runtimeRoot, privateRoot, ex
   const producerTasks = cases.private.primaryCases.flatMap((caseDefinition) => REPLICATES.flatMap((replicate) => CONDITIONS.map((condition) => ({ caseDefinition, replicate, condition }))));
   const primaryOutputs = await mapWithConcurrency(producerTasks, concurrency, async ({ caseDefinition, replicate, condition }) => {
     const frozenInput = frozenInputs[caseDefinition.id];
-    const stage = await store.run(`produce-${caseDefinition.id}-r${replicate}-${condition}`, { condition, mode: modeForCondition(condition), caseId: caseDefinition.id, replicate, frozenInputHash: sha256(frozenInput), config: publicConfig(baseConfig(modulesForCondition(condition, installedModules, candidateModules), { runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot, scaffoldMode: modeForCondition(condition) })) }, async () => await runCondition({ condition, caseDefinition, frozenInput, installedModules, candidateModules, runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot }));
+    const stage = await store.run(`produce-${caseDefinition.id}-r${replicate}-${condition}`, { condition, mode: modeForCondition(condition), caseId: caseDefinition.id, replicate, frozenInputHash: sha256(frozenInput), config: publicConfig(baseConfig(modulesForCondition(condition, installedModules, candidateModules), { runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot, scaffoldMode: modeForCondition(condition) })) }, async () => await runCondition({ condition, caseDefinition, replicate, frozenInput, installedModules, candidateModules, runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot, providerCacheRoot: path.join(privateRunRoot, "provider-cache") }));
     return { caseId: caseDefinition.id, family: caseDefinition.family, replicate, condition, output: stage.value, reused: stage.reused };
   });
   const primaryByKey = outputLookup(primaryOutputs);
@@ -642,7 +649,7 @@ export async function runTherapyScaffoldBenchmark({ runtimeRoot, privateRoot, ex
   const trajectoryTasks = cases.private.trajectoryCases.flatMap((branch) => REPLICATES.flatMap((replicate) => CONDITIONS.map((condition) => ({ branch, replicate, condition }))));
   const trajectoryOutputs = await mapWithConcurrency(trajectoryTasks, concurrency, async ({ branch, replicate, condition }) => {
     const baseOutput = primaryByKey.get(`${a001Case.id}:${replicate}:${condition}`);
-    const stage = await store.run(`trajectory-${branch.id}-r${replicate}-${condition}`, { condition, branchId: branch.id, replicate, baseAnswerSha256: sha256(baseOutput.result.answer), followUpSha256: sha256(branch.followUp), guideExcerptsSha256: sha256(frozenInputs[a001Case.id].guideExcerpts) }, async () => await runTrajectoryBranch({ condition, baseOutput, branch, originalMessage: a001Case.input.userMessage, guideExcerpts: frozenInputs[a001Case.id].guideExcerpts, installedModules, candidateModules, runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot }));
+    const stage = await store.run(`trajectory-${branch.id}-r${replicate}-${condition}`, { condition, branchId: branch.id, replicate, baseAnswerSha256: sha256(baseOutput.result.answer), followUpSha256: sha256(branch.followUp), guideExcerptsSha256: sha256(frozenInputs[a001Case.id].guideExcerpts) }, async () => await runTrajectoryBranch({ condition, replicate, baseOutput, branch, originalMessage: a001Case.input.userMessage, guideExcerpts: frozenInputs[a001Case.id].guideExcerpts, installedModules, candidateModules, runtimeRoot: resolvedRuntimeRoot, privateRoot: resolvedPrivateRoot, providerCacheRoot: path.join(privateRunRoot, "provider-cache") }));
     return { trajectoryId: branch.id, replicate, condition, output: stage.value, reused: stage.reused };
   });
   const trajectoryByKey = trajectoryLookup(trajectoryOutputs);

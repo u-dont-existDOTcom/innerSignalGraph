@@ -225,10 +225,12 @@ async function auditedFormulation({ context, initial, providers, onProgress, cas
 async function runModelFirstTiered({ context, providers, config, processingMode, onProgress, caseRecovery }) {
   const startedAt = new Date().toISOString();
   const extractor = providers.renderer ?? providers.anthropic;
-  const [semantic, initial] = await Promise.all([
-    runSemanticFormulation({ context, provider: extractor, onProgress }),
-    runUnauditedCaseFormulation({ context, provider: extractor, onProgress, recovery: caseRecovery })
-  ]);
+  // The semantic stage runs first so it cannot be shaped by categorical routing.
+  // Parallel Sonnet CLI calls proved unreliable under the live subscription
+  // transport; serialized calls preserve the intended authority ordering and
+  // make the measured latency cost explicit.
+  const semantic = await runSemanticFormulation({ context, provider: extractor, onProgress });
+  const initial = await runUnauditedCaseFormulation({ context, provider: extractor, onProgress, recovery: caseRecovery });
   const routing = classifyTherapyTier(initial.snapshot, processingMode, {
     priorCaseSnapshot: context.priorCaseSnapshot,
     priorProcessingTier: context.priorProcessingTier

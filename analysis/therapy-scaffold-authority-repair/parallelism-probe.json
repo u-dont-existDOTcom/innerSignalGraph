@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-08-24T15:49:22.260Z",
+  "endedAt": "2026-08-24T15:51:33.931Z",
+  "concurrency": 2,
+  "transport": "Claude CLI subscription transport",
+  "requestedModel": "claude-sonnet-4-6",
+  "conditions": {
+    "A": {
+      "caseExtraction": "completed",
+      "durationMs": 121800,
+      "nextStage": "case_audit_started_before_peer_failure_terminated_run"
+    },
+    "C": {
+      "caseExtraction": "failed",
+      "durationMs": 131670,
+      "normalizedFailure": {
+        "code": "PROVIDER_ERROR",
+        "stage": "case_extraction",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-6",
+        "exitStatus": 1
+      }
+    }
+  },
+  "decision": "Producer concurrency is reduced to one and the two Sonnet stages in D are serialized. Semantic formulation still precedes categorical extraction, preserving model-first authority ordering. Provider responses are now cached atomically by exact prompt/model fingerprint so successful stages survive later interruption.",
+  "limitation": "A single failed parallel pair does not prove all parallel Claude CLI use is unsafe; it is sufficient to reject concurrency=2 for this long, expensive controlled run."
+}
