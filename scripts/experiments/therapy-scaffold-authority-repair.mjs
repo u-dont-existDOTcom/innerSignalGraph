@@ -32,14 +32,14 @@ export function classifyProviderRateLimit(error) {
   if (!/(?:\b429\b|rate.?limit|usage.?limit|too many requests)/i.test(text)) return null;
   const calls = Object.values(error.benchmarkProviderTraces ?? {}).flat();
   const failed = [...calls].reverse().find((call) => call.status === "failed") ?? calls.at(-1) ?? null;
-  const rawReset = text.match(/(?:reset(?:s|_at)?[^\d]{0,30})((?:20\d\d-[01]\d-[0-3]\d[T ][0-2]\d:[0-5]\d(?::[0-5]\d)?(?:Z|[+-][0-2]\d:?[0-5]\d)?)|(?:[0-2]?\d:[0-5]\d))/i)?.[1] ?? null;
+  const rawReset = text.match(/(?:reset(?:s|_at)?[^\d]{0,30})((?:20\d\d-[01]\d-[0-3]\d[T ][0-2]\d:[0-5]\d(?::[0-5]\d)?(?:Z|[+-][0-2]\d:?[0-5]\d)?)|(?:[0-2]?\d:[0-5]\d(?: ?[ap]m)?))/i)?.[1] ?? null;
   return {
     provider: failed?.response?.provider ?? failed?.request?.metadata?.provider ?? error.benchmarkContext?.providerKey ?? (failed?.error?.details?.model ? "anthropic" : null),
     requestedModel: failed?.response?.model ?? failed?.error?.details?.model ?? error.benchmarkContext?.requestedModel ?? null,
     stage: failed?.request?.metadata?.stage ?? error.benchmarkContext?.phase ?? null,
     context: error.benchmarkContext ?? null,
     apiStatus: 429,
-    resetHint: rawReset,
+    resetHint: rawReset ? { providerText: rawReset, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone } : null,
     rawProviderMessageSha256: sha256(text)
   };
 }
