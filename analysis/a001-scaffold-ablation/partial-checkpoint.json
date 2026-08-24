@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "taskId": "a001-scaffold-ablation-v1",
-  "capturedAt": "2026-08-24T06:50:56.000Z",
+  "capturedAt": "2026-08-24T07:34:00.000Z",
   "runIdentity": "a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431",
   "classification": "incomplete diagnostic checkpoint; not a result",
   "producerSamples": {
@@ -36,7 +36,15 @@
     ],
     "officialIncident": "https://status.claude.com/",
     "officialStateAtCapture": "identified; partial outage; elevated errors for Claude Opus 5 and other models",
+    "recoveryProbe": "exact claude-opus-5 content-free probe timed out after 180000 ms at 2026-08-24T07:34Z; no response was accepted",
     "failedCallsCountAsSamples": false
+  },
+  "verification": {
+    "focusedHarness": "PASS",
+    "cleanTreeVerifier": "PASS; 395/395 tests plus graph, packet, syntax, smoke, hygiene, and final verdict",
+    "graphRegressions": "PASS 12/12",
+    "repositoryAudit": "PASS with one pre-existing unverified GitHub App permission warning",
+    "publicationAudit": "PASS; 137759 records; zero findings"
   },
   "productionChanged": false,
   "stopBeforeProductionChange": true

@@ -16,7 +16,7 @@ import {
   pairwisePrompt
 } from "../scripts/experiments/a001-scaffold-prompts.mjs";
 import { verifyPreflightState } from "../scripts/experiments/a001-scaffold-preflight.mjs";
-import { hardPipelineTraceArtifacts } from "../scripts/experiments/a001-scaffold-ablation.mjs";
+import { hardPipelineTraceArtifacts, selectRunIdentity } from "../scripts/experiments/a001-scaffold-ablation.mjs";
 
 const task = {
   schemaVersion: 1,
@@ -127,4 +127,13 @@ test("control trace projection separates every required A-stage artifact", () =>
   assert.match(artifacts.reasoningAdjudicationPacket.decision_summary, /Primary/);
   assert.equal(artifacts.finalRealization.response.text, "raw realization");
   assert.equal(artifacts.finalUserVisibleResponse.userVisibleText, "Answer");
+});
+
+test("the plain rerun command reuses the task-recorded run identity", () => {
+  const recorded = "a".repeat(64);
+  const override = "b".repeat(64);
+  assert.equal(selectRunIdentity({ recorded, computed: "c".repeat(64) }), recorded);
+  assert.equal(selectRunIdentity({ override, recorded, computed: "c".repeat(64) }), override);
+  assert.equal(selectRunIdentity({ computed: "c".repeat(64) }), "c".repeat(64));
+  assert.throws(() => selectRunIdentity({ recorded: "short", computed: "c".repeat(64) }), /64-character/);
 });

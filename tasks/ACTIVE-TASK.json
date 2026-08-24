@@ -14,6 +14,7 @@
   },
   "preflightCommand": "npm run experiment:a001-scaffold:preflight",
   "rerunCommand": "npm run experiment:a001-scaffold",
+  "resumeRunIdentity": "a372ce46fdb1bfd6f71768af991509a5ceaacfa8262aa77ba4dd65b368168431",
   "productionMutationAllowed": false,
   "publication": {
     "branchOnly": true,

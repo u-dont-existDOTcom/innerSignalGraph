@@ -23,6 +23,6 @@ Raw prompts, user material, model prose, intermediate snapshots, graph plans, bl
 
 ## Recovery
 
-`npm run experiment:a001-scaffold` is idempotent. Each stage has an input hash and an atomic completion record. A valid completed stage is reused; an interrupted or mismatched stage reruns. Inspect `analysis/a001-scaffold-ablation/run-status.json`, then the private stage manifest named by `analysis/a001-scaffold-ablation/evidence-index.json`.
+`npm run experiment:a001-scaffold` is the one idempotent rerun command. It resolves the active task's recorded run identity automatically. Each stage has an input hash and an atomic completion record. A valid completed stage is reused; an interrupted or mismatched stage reruns. Inspect `analysis/a001-scaffold-ablation/run-status.json`, then the owner-private stage manifest. The final `evidence-index.json` supplies its redacted locator and integrity hash without publishing an absolute owner-local path.
 
 The terminal action is to publish the experimental branch and stop before any production behavior change.

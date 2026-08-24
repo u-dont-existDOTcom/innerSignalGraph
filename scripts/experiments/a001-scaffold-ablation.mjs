@@ -45,6 +45,14 @@ const REPLICATES = [1, 2, 3];
 const CONTRASTS = [["A", "B"], ["A", "C"], ["A", "D"], ["B", "D"], ["D", "E"], ["A", "E"]];
 const analysisRoot = path.join(repositoryRoot, "analysis/a001-scaffold-ablation");
 
+export function selectRunIdentity({ override, recorded, computed }) {
+  const requested = String(override ?? recorded ?? "").trim();
+  if (requested && !/^[a-f0-9]{64}$/.test(requested)) {
+    throw new Error("A001 ablation resume run identity must be a full 64-character SHA-256 value.");
+  }
+  return requested || computed;
+}
+
 function moduleUrl(root, relative) {
   return pathToFileURL(path.join(root, relative)).href;
 }
@@ -551,11 +559,12 @@ async function main() {
     guideExcerpts: context.guideExcerpts,
     models: publicConfig(config)
   });
-  const requestedResumeIdentity = String(process.env.A001_ABLATION_RESUME_RUN_IDENTITY ?? "").trim();
-  if (requestedResumeIdentity && !/^[a-f0-9]{64}$/.test(requestedResumeIdentity)) {
-    throw new Error("A001_ABLATION_RESUME_RUN_IDENTITY must be a full 64-character SHA-256 run identity.");
-  }
-  const runIdentity = requestedResumeIdentity || computedRunIdentity;
+  const activeTask = await readJson(path.join(repositoryRoot, "tasks/ACTIVE-TASK.json"));
+  const runIdentity = selectRunIdentity({
+    override: process.env.A001_ABLATION_RESUME_RUN_IDENTITY,
+    recorded: activeTask.resumeRunIdentity,
+    computed: computedRunIdentity
+  });
   const runRoot = path.join(privateRoot, "runs", runIdentity.slice(0, 16));
   const store = new StageStore(runRoot, runIdentity);
   await store.initialize();
@@ -930,6 +939,7 @@ async function main() {
   await atomicWriteJson(path.join(analysisRoot, "run-status.json"), {
     schemaVersion: 1,
     taskId: EXPERIMENT_VERSION,
+    runIdentity,
     status: "experiment-complete-stop-before-production",
     branch: "exp/a001-scaffold-ablation-20260824",
     sourceSha,
