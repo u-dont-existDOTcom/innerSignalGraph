@@ -17,11 +17,13 @@ The current objective is the controlled A/C/D broader-case comparison and isolat
 
 ### Durable checkpoint
 
-The isolated worktree was created directly from current protected `origin/main`. The owner-supplied independent conception and selection rule are preserved before implementation. Test-efficiency telemetry started under the worktree Git metadata. No model calls, substantive tests, runtime edits, or production effects have occurred on this branch yet.
+The isolated worktree was created directly from current protected `origin/main`. The owner-supplied independent conception and selection rule are preserved. The untouched-main baseline was remeasured after exact dependency bootstrap: 387/387 tests, 12/12 graph regressions, and `npm run verify` passed. The historical 397 count belonged to the ablation branch and is not relabeled as the main baseline.
+
+The A/C/D switch, non-destructive semantic/case-audit trace, hard/advisory authority split, safety-gated model-first integration, advisory renderer authority, exact current compatibility mode, resumable private evidence store, blinded order-swapped evaluation, case provenance inventory, one-command runner, interruption cleanup, and targeted regressions are implemented locally. Focused scaffold/recovery tests pass. Raw owner material and model outputs are routed to the owner-only sibling private root and are not tracked.
 
 ### Next safe action
 
-Run task preflight, resolve the installed-runtime/guide/model identities, establish fresh deterministic baseline gates, inventory case provenance and A001 contract requirements, then implement the resumable experimental harness. Raw private transcripts and raw private model responses stay in an owner-only sibling directory outside Git.
+Commit and push the implementation checkpoint, then run `npm run experiment:therapy-scaffold -- --benchmark-only` to resume the live exact-model A/C/D bakeoff. Select C, D, or no change only from the complete blinded evidence; then freeze the supported candidate, run independent diff-and-evidence reviews and every final gate, and open a draft PR without merging it.
 
 ### Recovery rule
 

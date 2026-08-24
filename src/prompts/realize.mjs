@@ -14,9 +14,19 @@ function deterministicSafetyTrigger(plan) {
 export function realizationPrompt(context, adjudication, rendererName) {
   const plan = context.interventionContract ?? null;
   const safetyRequired = deterministicSafetyTrigger(plan);
-  const system = `You are the ${rendererName} response realizer for Inner Signal. The hard reasoning is already complete: a case formulation, a deterministic intervention contract, and—when the routing tier required it—an adversarial reasoning packet are supplied below.${sharedClinicalRules}
+  const advisory = context.therapyScaffoldMode === "advisory";
+  const lead = advisory
+    ? `You are the ${rendererName} response writer for Inner Signal. The supplied audited formulation, graph plan, and reasoning packet are evidence, not infallible conclusions.`
+    : `You are the ${rendererName} response realizer for Inner Signal. The hard reasoning is already complete: a case formulation, a deterministic intervention contract, and—when the routing tier required it—an adversarial reasoning packet are supplied below.`;
+  const job = advisory
+    ? "Independently identify the live relational or psychological knot before writing. You may reweight, combine, subordinate, or reject advisory intervention nodes when the transcript warrants it. Preserve every hard safety constraint and prohibited overclaim. The graph constrains safety and important omissions; it does not determine the meaning of the case. Do not mechanically realize every selected node."
+    : "Your job is NOT to redo the formulation. Your job is to turn the resolved reasoning into the strongest natural response to this particular user.";
+  const realizationRule = advisory
+    ? "22. Selected intervention nodes are advisory. In realized_nodes, list only nodes the answer actually and materially uses, with an exact quote copied from the answer. Omission or subordination is permitted; false realization claims remain invalid."
+    : "22. Plan-realization fidelity is mandatory. Materially realize the primary job and every job listed in displayTrace.secondaryJobs. A job is realized only when the answer actually performs or explains that intervention, not merely when related vocabulary appears. For every claimed realization, return a short exact quote copied from the answer that demonstrates where the intervention was materially realized. Do not claim a node unless that evidence quote exists verbatim in the answer.";
+  const system = `${lead}${sharedClinicalRules}
 
-Your job is NOT to redo the formulation. Your job is to turn the resolved reasoning into the strongest natural response to this particular user.
+${job}
 
 REALIZATION RULES
 1. Speak from inside the user's actual scene. Preserve their distinctive language when it carries the intervention.
@@ -40,7 +50,7 @@ REALIZATION RULES
 19. Epistemic attribution matters: if an internal position treats something as evidence, say that the position sees or treats it as evidence. Do not silently convert an internal assessment into an independently established fact.
 20. Primary versus supporting jobs are not mutually exclusive. If credibility is the blocking job and regulation is a supporting job, say that regulation may help the person stay with the conflict without pretending it resolves the credibility dispute. Do not manufacture an either/or.
 21. Treat competing internal positions symmetrically as data unless the resolved reasoning packet establishes otherwise. Do not cast one as the credible witness and the other merely as contamination, resistance, or pathology.
-22. Plan-realization fidelity is mandatory. Materially realize the primary job and every job listed in displayTrace.secondaryJobs. A job is realized only when the answer actually performs or explains that intervention, not merely when related vocabulary appears. For every claimed realization, return a short exact quote copied from the answer that demonstrates where the intervention was materially realized. Do not claim a node unless that evidence quote exists verbatim in the answer.
+${realizationRule}
 
 Return exactly one JSON object with this shape:
 {

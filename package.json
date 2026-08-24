@@ -11,6 +11,7 @@
   "scripts": {
     "test": "node --test",
     "task:preflight": "node scripts/verify-active-task.mjs",
+    "experiment:therapy-scaffold": "node scripts/experiments/therapy-scaffold-authority-repair.mjs",
     "replay": "node src/cli/replay.mjs",
     "replay:cli": "node --env-file=.env src/cli/replay.mjs",
     "respond": "node src/cli/respond.mjs",

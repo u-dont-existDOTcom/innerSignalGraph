@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError } from "./errors.mjs";
+import { normalizeTherapyScaffoldMode } from "../orchestrator/scaffold-authority.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(here, "../..");
@@ -75,6 +76,7 @@ export function loadConfig(overrides = {}) {
     autopilotEscalateToFable: booleanEnv("AUTOPILOT_ESCALATE_TO_FABLE", true),
     autopilotUseStructuredRenderer: booleanEnv("AUTOPILOT_USE_STRUCTURED_RENDERER", true),
     therapyProcessingMode: process.env.THERAPY_PROCESSING_MODE ?? "auto",
+    therapyScaffoldMode: normalizeTherapyScaffoldMode(process.env.THERAPY_SCAFFOLD_MODE ?? "current"),
     autopilotRunA001: booleanEnv("AUTOPILOT_RUN_A001", true),
     autopilotRunRuntimeSmoke: booleanEnv("AUTOPILOT_RUN_RUNTIME_SMOKE", true),
     autopilotRunWebSmoke: booleanEnv("AUTOPILOT_RUN_WEB_SMOKE", true),
@@ -115,6 +117,7 @@ export function loadConfig(overrides = {}) {
   }
 
   if (config.therapyProcessingMode === "adversarial") config.therapyProcessingMode = "deep";
+  config.therapyScaffoldMode = normalizeTherapyScaffoldMode(config.therapyScaffoldMode);
   if (config.guidePacketStaleMs <= config.guidePacketHeartbeatMs) {
     throw new RuntimeError("GUIDE_PACKET_STALE_MS must be greater than GUIDE_PACKET_HEARTBEAT_MS.", { code: "BAD_CONFIG" });
   }

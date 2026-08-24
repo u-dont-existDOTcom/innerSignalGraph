@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-24T15:43:54+00:00",
+  "source": {
+    "ref": "origin/main",
+    "commit": "a22f2e611fab778bf26b8e7215afbf85aba4ba5e",
+    "measurementWorktree": "/tmp/inner-signal-main-baseline-20260824",
+    "dependencyBootstrap": "npm ci --ignore-scripts"
+  },
+  "protectedStable": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1",
+  "results": {
+    "npmTest": {
+      "status": "pass",
+      "passed": 387,
+      "total": 387
+    },
+    "graphRegressions": {
+      "status": "pass",
+      "passed": 12,
+      "total": 12
+    },
+    "npmRunVerify": {
+      "status": "pass"
+    }
+  },
+  "setupCorrection": "The first unbootstrapped attempt lacked the locked yaml dependency and was a setup failure, not a repository baseline failure. The exact locked bootstrap was then applied in the disposable worktree and every baseline gate passed.",
+  "historicalCountBoundary": "The previously reported 397-test count belonged to the completed ablation branch, which contained experiment-specific tests. It is not the untouched origin/main baseline."
+}

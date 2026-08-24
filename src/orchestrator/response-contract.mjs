@@ -50,7 +50,7 @@ export function canonicalQuestion({ plan, adjudication } = {}) {
     || text(adjudication?.next_question);
 }
 
-export function enforceResponseContract(realization, { plan, adjudication } = {}) {
+export function enforceResponseContract(realization, { plan, adjudication, authorityMode = "current", authority = null } = {}) {
   const question = canonicalQuestion({ plan, adjudication });
   const paragraphs = splitParagraphs(realization?.answer);
   let strippedQuestion = "";
@@ -68,7 +68,8 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const answerBody = paragraphs.join("\n\n").trim();
   const userFacingAnswer = [answerBody, question].filter(Boolean).join("\n\n");
   const rendererQuestion = text(realization?.next_question);
-  const requiredNodeIds = requiredRealizationNodeIds(plan);
+  const diagnosticNodeIds = requiredRealizationNodeIds(plan);
+  const requiredNodeIds = authorityMode === "current" ? diagnosticNodeIds : [];
   const normalizedAnswer = answerBody.replace(/\s+/g, " ").trim();
   const reportedRealizations = Array.isArray(realization?.realized_nodes) ? realization.realized_nodes : [];
   const verifiedRealizations = [];
@@ -84,23 +85,36 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   }
   const realizedNodeIds = [...new Set(verifiedRealizations.map((item) => item.id))];
   const missingNodeIds = requiredNodeIds.filter((id) => !realizedNodeIds.includes(id));
+  const missingDiagnosticNodeIds = diagnosticNodeIds.filter((id) => !realizedNodeIds.includes(id));
+  const blockedIds = new Set((authority?.HARD?.blockedNodes ?? []).map((item) => item.id));
+  const blockedRealizationClaims = [...new Set(reportedRealizations.map((item) => text(item?.id)).filter((id) => blockedIds.has(id)))];
+  const responseContract = {
+    version: "response-question-contract-v3",
+    canonicalQuestion: question,
+    rendererQuestion,
+    rendererQuestionMatched: normalizeQuestion(rendererQuestion) === normalizeQuestion(question),
+    strippedUnauthorizedFinalQuestion: strippedQuestion || "",
+    requiredRealizationNodeIds: requiredNodeIds,
+    realizedNodeIds,
+    verifiedRealizations,
+    rejectedRealizations,
+    missingRealizationNodeIds: missingNodeIds,
+    realizationCoveragePassed: missingNodeIds.length === 0
+  };
+  if (authorityMode !== "current") Object.assign(responseContract, {
+    authorityMode,
+    diagnosticCoverageNodeIds: diagnosticNodeIds,
+    missingDiagnosticNodeIds,
+    diagnosticCoveragePassed: missingDiagnosticNodeIds.length === 0,
+    blockedRealizationClaims,
+    hardAuthorityPassed: blockedRealizationClaims.length === 0,
+    realizationCoveragePassed: missingNodeIds.length === 0 && blockedRealizationClaims.length === 0
+  });
 
   return {
     answer: userFacingAnswer,
     answer_body: answerBody,
     next_question: question,
-    responseContract: {
-      version: "response-question-contract-v3",
-      canonicalQuestion: question,
-      rendererQuestion,
-      rendererQuestionMatched: normalizeQuestion(rendererQuestion) === normalizeQuestion(question),
-      strippedUnauthorizedFinalQuestion: strippedQuestion || "",
-      requiredRealizationNodeIds: requiredNodeIds,
-      realizedNodeIds,
-      verifiedRealizations,
-      rejectedRealizations,
-      missingRealizationNodeIds: missingNodeIds,
-      realizationCoveragePassed: missingNodeIds.length === 0
-    }
+    responseContract
   };
 }

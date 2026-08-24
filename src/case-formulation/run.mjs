@@ -146,6 +146,7 @@ export async function runUnauditedCaseFormulation({ context, provider, onProgres
   };
   const { plan, graphBundleVersion } = await planSnapshot(snapshot);
   return {
+    rawSnapshot: extraction.value,
     snapshot,
     plan,
     graphBundleVersion,
@@ -162,6 +163,8 @@ export async function runAuditedCaseFormulation({ context, extractorProvider, au
   const snapshot = applyCaseAudit(extraction.value, audit.value);
   const { plan, graphBundleVersion } = await planSnapshot(snapshot);
   return {
+    rawSnapshot: extraction.value,
+    caseAuditDelta: audit.value,
     snapshot,
     plan,
     graphBundleVersion,

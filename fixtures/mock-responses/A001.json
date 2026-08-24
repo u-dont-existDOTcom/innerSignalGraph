@@ -1,5 +1,26 @@
 {
   "openai": {
+    "graph_audit": {
+      "hard_safety_constraints": [],
+      "epistemic_prohibitions": [
+        "Do not assign either inner voice categorically or treat a hypothesis as fact."
+      ],
+      "prerequisites": [],
+      "important_omitted_branches": [
+        "Check whether current external conditions still provide evidence that reliance is unsafe."
+      ],
+      "sequencing_concerns": [
+        "Clarify the age and agency being blamed before settling responsibility."
+      ],
+      "relevant_techniques": [
+        "Use one observable credibility test without demanding trust."
+      ],
+      "formulation_graph_conflicts": [],
+      "advisory_opportunities": [
+        "Address resentment without letting it retaliate through contempt."
+      ],
+      "audit_summary": "The semantic formulation fits the graph when safety and epistemic limits remain hard and intervention coverage remains advisory."
+    },
     "candidate": {
       "direct_observations": [
         "The user can access love, but the younger state distrusts the person offering it.",
@@ -100,6 +121,41 @@
     }
   },
   "anthropic": {
+    "semantic_formulation": {
+      "direct_observations": [
+        "Love is available but accepting it feels unsafe.",
+        "The skeptical position evaluates the adult outcome and dismisses a new promise.",
+        "Resentment appears when the skeptical position remains unimpressed."
+      ],
+      "central_live_knot": "The attempted adult care lacks credibility and becomes less safe when skepticism is answered with blame.",
+      "important_relationships": [
+        "Care appears conditional on the skeptical position accepting it; retaliation can reinforce the distrust it is trying to repair."
+      ],
+      "potentially_useful_implications": [
+        "The skeptical response may be asking for observable non-retaliatory evidence rather than more reassurance."
+      ],
+      "unresolved_alternatives": [
+        "The blamed version may be a literal child, adolescent, younger adult, or present child-state with different agency."
+      ],
+      "uncertainty": [
+        "The transcript does not establish fixed identities for the internal positions."
+      ],
+      "proportionate_next_move": "Clarify the age being blamed and choose one small protective act while allowing skepticism to remain."
+    },
+    "model_first_integration": {
+      "answer": "The knot may be that the care is available only while the skeptical position receives it correctly. When it says ‘big whoop,’ resentment answers with blame, and that response can become more evidence that depending on the adult is unsafe. So the first useful move is not another vow or a demand that skepticism soften. Clarify whether the accusation is aimed at a literal child, an adolescent, or a younger adult, because those versions had different agency. Then choose one small protective action the skeptical side can actually observe, while letting it remain unimpressed and keeping the resentful position from parenting through contempt.",
+      "next_question": "Should this be replaced?",
+      "realized_nodes": [
+        {
+          "id": "IC.CREDIBILITY_REPAIR",
+          "evidence_quote": "choose one small protective action the skeptical side can actually observe"
+        },
+        {
+          "id": "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+          "evidence_quote": "Clarify whether the accusation is aimed at a literal child, an adolescent, or a younger adult"
+        }
+      ]
+    },
     "candidate": {
       "direct_observations": [
         "The younger state is unimpressed by a vow because the adult life is counterevidence.",

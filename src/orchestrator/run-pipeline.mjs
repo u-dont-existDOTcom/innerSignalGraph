@@ -8,6 +8,7 @@ import { candidateSchema, critiqueSchema, adjudicationSchema, realizationSchema 
 import { writeLedger } from "./ledger.mjs";
 import { RuntimeError } from "../core/errors.mjs";
 import { enforceResponseContract } from "./response-contract.mjs";
+import { assertHardAuthorityPreserved } from "./scaffold-authority.mjs";
 
 async function structuredCall(provider, prompt, metadata, validator, outputSchema, onProgress) {
   const started = Date.now();
@@ -21,6 +22,7 @@ async function structuredCall(provider, prompt, metadata, validator, outputSchem
 }
 
 export async function realizeAdjudication({ context, adjudication, provider, onProgress, fixtureKey = "realization" }) {
+  const authorityMode = context.therapyScaffoldMode === "advisory" ? "advisory" : "current";
   const attempts = [];
   let rawResult = await structuredCall(
     provider,
@@ -33,14 +35,17 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
   attempts.push({ stage: "realization", durationMs: rawResult.durationMs, provider: provider.id, model: provider.model });
   let enforced = enforceResponseContract(rawResult.value, {
     plan: context.interventionContract,
-    adjudication
+    adjudication,
+    authorityMode,
+    authority: context.interventionAuthority
   });
+  assertHardAuthorityPreserved(enforced.responseContract, context.interventionAuthority);
 
   // A selected intervention that disappears during prose realization is a
   // model-contract miss, not a reason to silently misrepresent the route.
   // Retry the renderer once with the exact missing node IDs. This adds no
   // latency when the first realization faithfully covers the plan.
-  if (!enforced.responseContract.realizationCoveragePassed && !String(provider.model || "").startsWith("mock-")) {
+  if (authorityMode === "current" && !enforced.responseContract.realizationCoveragePassed && !String(provider.model || "").startsWith("mock-")) {
     const retryContext = {
       ...context,
       autopilotFeedback: {
@@ -60,8 +65,11 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
     attempts.push({ stage: "realization_retry", durationMs: rawResult.durationMs, provider: provider.id, model: provider.model });
     enforced = enforceResponseContract(rawResult.value, {
       plan: context.interventionContract,
-      adjudication
+      adjudication,
+      authorityMode,
+      authority: context.interventionAuthority
     });
+    assertHardAuthorityPreserved(enforced.responseContract, context.interventionAuthority);
   }
 
   return {

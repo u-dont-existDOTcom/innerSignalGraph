@@ -1,6 +1,17 @@
 import { runUnauditedCaseFormulation, runCaseAuditWithRecovery, applyCaseAudit, planCaseSnapshot } from "../case-formulation/run.mjs";
 import { runAdversarialPipeline, runCompactAdversarialPipeline, realizeAdjudication } from "./run-pipeline.mjs";
 import { writeLedger } from "./ledger.mjs";
+import { enforceResponseContract } from "./response-contract.mjs";
+import {
+  assertHardAuthorityPreserved,
+  classifyInterventionAuthority,
+  normalizeTherapyScaffoldMode
+} from "./scaffold-authority.mjs";
+import {
+  runBoundedGraphAudit,
+  runModelFirstIntegration,
+  runSemanticFormulation
+} from "./model-first-scaffold.mjs";
 
 const HARD_INTENTS = new Set(["deep_dialogue", "hypnosis", "memory_processing", "photo_work", "altered_state", "advanced_release"]);
 const CRITICAL_DELTA_FIELDS = [
@@ -88,12 +99,15 @@ function planAdjudication(snapshot, plan, safetyFlags = []) {
   };
 }
 
-async function realizePlan({ context, formulation, provider, onProgress }) {
+async function realizePlan({ context, formulation, provider, onProgress, scaffoldMode = "current" }) {
+  const authority = formulation.authority ?? classifyInterventionAuthority({ snapshot: formulation.snapshot, plan: formulation.plan });
+  const effectiveScaffoldMode = scaffoldMode === "advisory" && authority.HARD.safety.length ? "current" : scaffoldMode;
   const enriched = {
     ...context,
     caseFormulation: formulation.snapshot,
     interventionContract: formulation.plan,
-    graphBundleVersion: formulation.graphBundleVersion
+    graphBundleVersion: formulation.graphBundleVersion,
+    ...(effectiveScaffoldMode === "current" ? {} : { therapyScaffoldMode: effectiveScaffoldMode, interventionAuthority: authority })
   };
   const adjudication = planAdjudication(
     formulation.snapshot,
@@ -107,12 +121,39 @@ async function realizePlan({ context, formulation, provider, onProgress }) {
     onProgress,
     fixtureKey: "realization"
   });
-  return { enriched, adjudication, realization };
+  return { enriched, adjudication, realization, authority, deterministicSafetyGateActive: effectiveScaffoldMode !== scaffoldMode };
+}
+
+function caseAuditNotRun(reason) {
+  return Object.freeze({
+    remove_observation_ids: [],
+    remove_hypothesis_ids: [],
+    variable_corrections: [],
+    add_unknowns: [],
+    safety_flags: [],
+    verdict: "not-run",
+    summary: reason
+  });
+}
+
+function nonDestructiveTrace({ formulation, authority, rawSemanticFormulation = null, graphAudit = null, finalIntegrationTrace = null }) {
+  return {
+    version: "therapy-scaffold-trace-v1",
+    rawSemanticFormulation,
+    rawCaseExtraction: formulation.rawSnapshot,
+    caseAuditDelta: formulation.caseAuditDelta ?? caseAuditNotRun("The current fast route did not run case audit."),
+    auditedVariables: formulation.snapshot.variables,
+    interventionPlan: formulation.plan,
+    graphAudit,
+    authority,
+    finalIntegrationTrace
+  };
 }
 
 async function simpleResult({ context, formulation, routing, extractor, tier, config, startedAt, caseAudit = null, stageTimings = {}, onProgress }) {
   const realizationStarted = Date.now();
-  const { enriched, adjudication, realization } = await realizePlan({ context, formulation, provider: extractor, onProgress });
+  const scaffoldMode = normalizeTherapyScaffoldMode(config.therapyScaffoldMode);
+  const { enriched, adjudication, realization, authority, deterministicSafetyGateActive } = await realizePlan({ context, formulation, provider: extractor, onProgress, scaffoldMode });
   const realizationMs = realization.timing?.totalMs ?? (Date.now() - realizationStarted);
   const result = {
     answer: realization.value.answer,
@@ -134,6 +175,20 @@ async function simpleResult({ context, formulation, routing, extractor, tier, co
     performance: { ...stageTimings, realizationMs, totalMs: Date.now() - Date.parse(startedAt) },
     processingMs: Date.now() - Date.parse(startedAt)
   };
+  if (scaffoldMode !== "current") {
+    result.therapyScaffoldMode = scaffoldMode;
+    result.scaffoldTrace = nonDestructiveTrace({
+      formulation,
+      authority,
+      finalIntegrationTrace: {
+        provider: extractor.id,
+        model: extractor.model,
+        requestId: realization.raw.requestId ?? realization.raw.responseId ?? null,
+        deterministicSafetyGateActive,
+        responseContract: realization.value.responseContract
+      }
+    });
+  }
   const ledger = await writeLedger(config, {
     caseId: null,
     startedAt,
@@ -145,7 +200,171 @@ async function simpleResult({ context, formulation, routing, extractor, tier, co
   return { ...result, decisionLedgerId: ledger.id, decisionLedgerPath: ledger.path };
 }
 
+async function auditedFormulation({ context, initial, providers, onProgress, caseRecovery }) {
+  const audit = await runCaseAuditWithRecovery({ context, snapshot: initial.snapshot, provider: providers.openai, onProgress, recovery: caseRecovery });
+  const auditedSnapshot = applyCaseAudit(initial.snapshot, audit.value);
+  const planningStarted = Date.now();
+  const planned = await planCaseSnapshot(auditedSnapshot);
+  return {
+    formulation: {
+      rawSnapshot: initial.rawSnapshot,
+      caseAuditDelta: audit.value,
+      snapshot: auditedSnapshot,
+      plan: planned.plan,
+      graphBundleVersion: planned.graphBundleVersion,
+      providerMetadata: {
+        extractor: initial.providerMetadata.extractor,
+        auditor: { provider: providers.openai.id, model: providers.openai.model, requestId: audit.raw.requestId, durationMs: audit.durationMs }
+      }
+    },
+    audit,
+    planningMs: Date.now() - planningStarted
+  };
+}
+
+async function runModelFirstTiered({ context, providers, config, processingMode, onProgress, caseRecovery }) {
+  const startedAt = new Date().toISOString();
+  const extractor = providers.renderer ?? providers.anthropic;
+  const [semantic, initial] = await Promise.all([
+    runSemanticFormulation({ context, provider: extractor, onProgress }),
+    runUnauditedCaseFormulation({ context, provider: extractor, onProgress, recovery: caseRecovery })
+  ]);
+  const routing = classifyTherapyTier(initial.snapshot, processingMode, {
+    priorCaseSnapshot: context.priorCaseSnapshot,
+    priorProcessingTier: context.priorProcessingTier
+  });
+  onProgress?.({ stage: "therapy-routing", status: "completed", detail: `${routing.tier}: ${routing.reason}` });
+
+  let formulation = initial;
+  let caseAudit = null;
+  let planningMs = null;
+  if (routing.tier !== "fast") {
+    const audited = await auditedFormulation({ context, initial, providers, onProgress, caseRecovery });
+    formulation = audited.formulation;
+    caseAudit = audited.audit;
+    planningMs = audited.planningMs;
+  }
+  const authority = classifyInterventionAuthority({ snapshot: formulation.snapshot, plan: formulation.plan });
+  const graphAudit = await runBoundedGraphAudit({
+    context,
+    semanticFormulation: semantic.value,
+    rawCaseExtraction: formulation.rawSnapshot,
+    caseAuditDelta: formulation.caseAuditDelta ?? caseAuditNotRun("The current fast route did not run case audit."),
+    auditedSnapshot: formulation.snapshot,
+    plan: formulation.plan,
+    authority,
+    provider: providers.openai,
+    onProgress
+  });
+  const deterministicSafetyGateActive = authority.HARD.safety.length > 0;
+  const integration = deterministicSafetyGateActive
+    ? null
+    : await runModelFirstIntegration({
+        context,
+        semanticFormulation: semantic.value,
+        rawCaseExtraction: formulation.rawSnapshot,
+        caseAuditDelta: formulation.caseAuditDelta ?? caseAuditNotRun("The current fast route did not run case audit."),
+        auditedSnapshot: formulation.snapshot,
+        plan: formulation.plan,
+        graphAudit: graphAudit.value,
+        authority,
+        provider: extractor,
+        onProgress
+      });
+  const safetyRealization = deterministicSafetyGateActive
+    ? await realizePlan({ context, formulation: { ...formulation, authority }, provider: extractor, onProgress, scaffoldMode: "current" })
+    : null;
+  const integrationValue = safetyRealization?.realization.value ?? integration.value;
+  const integrationRaw = safetyRealization?.realization.raw ?? integration.raw;
+  const integrationDurationMs = safetyRealization?.realization.timing?.totalMs ?? integration.durationMs;
+  const enforced = enforceResponseContract(integrationValue, {
+    plan: formulation.plan,
+    adjudication: planAdjudication(formulation.snapshot, formulation.plan, formulation.snapshot.audit?.safety_flags ?? []),
+    authorityMode: "model-first",
+    authority
+  });
+  assertHardAuthorityPreserved(enforced.responseContract, authority);
+  const completedAt = new Date().toISOString();
+  const result = {
+    answer: enforced.answer,
+    mode: `${routing.tier}-model-first-graph-audit`,
+    processingTier: routing.tier,
+    routingReason: routing.reason,
+    routingDeltaCount: routing.deltaCount,
+    therapyScaffoldMode: "model-first",
+    degraded: false,
+    graphBundleVersion: formulation.graphBundleVersion,
+    guidePacketVersion: context.guidePacketVersion ?? null,
+    caseFormulation: formulation.snapshot,
+    interventionContract: formulation.plan,
+    next_question: enforced.next_question,
+    safety_flags: formulation.snapshot.audit?.safety_flags ?? [],
+    rendererProvider: extractor.id,
+    rendererModel: extractor.model,
+    realizationContractVersion: "response-realization-v6-model-first",
+    responseContract: enforced.responseContract,
+    scaffoldTrace: nonDestructiveTrace({
+      formulation,
+      authority,
+      rawSemanticFormulation: semantic.value,
+      graphAudit: graphAudit.value,
+      finalIntegrationTrace: {
+        provider: extractor.id,
+        model: extractor.model,
+        requestId: integrationRaw.requestId ?? integrationRaw.responseId ?? null,
+        deterministicSafetyGateActive,
+        responseContract: enforced.responseContract
+      }
+    }),
+    formulationProviders: {
+      semantic: { provider: extractor.id, model: extractor.model, requestId: semantic.raw.requestId ?? semantic.raw.responseId ?? null },
+      extractor: formulation.providerMetadata.extractor,
+      auditor: formulation.providerMetadata.auditor,
+      graphAuditor: { provider: providers.openai.id, model: providers.openai.model, requestId: graphAudit.raw.requestId ?? graphAudit.raw.responseId ?? null },
+      integrator: { provider: extractor.id, model: extractor.model, requestId: integrationRaw.requestId ?? integrationRaw.responseId ?? null, deterministicSafetyGateActive }
+    },
+    performance: {
+      semanticFormulationMs: semantic.durationMs,
+      caseExtractionMs: initial.providerMetadata?.extractor?.durationMs ?? null,
+      caseAuditMs: caseAudit?.durationMs ?? 0,
+      planningMs,
+      graphAuditMs: graphAudit.durationMs,
+      finalIntegrationMs: integrationDurationMs,
+      totalMs: Date.now() - Date.parse(startedAt)
+    },
+    processingMs: Date.now() - Date.parse(startedAt)
+  };
+  const ledgerContext = {
+    ...context,
+    caseFormulation: formulation.snapshot,
+    interventionContract: formulation.plan,
+    graphBundleVersion: formulation.graphBundleVersion,
+    therapyScaffoldMode: "model-first",
+    interventionAuthority: authority
+  };
+  const ledger = await writeLedger(config, {
+    caseId: null,
+    startedAt,
+    completedAt,
+    context: ledgerContext,
+    evidence: {
+      rawSemanticFormulation: semantic.value,
+      rawCaseExtraction: formulation.rawSnapshot,
+      caseAuditDelta: formulation.caseAuditDelta ?? null,
+      graphAudit: graphAudit.value,
+      finalIntegration: integrationValue,
+      deterministicSafetyGateActive
+    },
+    result
+  });
+  return { ...result, decisionLedgerId: ledger.id, decisionLedgerPath: ledger.path };
+}
+
 export async function runTieredTherapyPipeline({ context, providers, config, processingMode = "auto", onProgress, caseRecovery }) {
+  const scaffoldMode = normalizeTherapyScaffoldMode(config.therapyScaffoldMode ?? "current");
+  if (scaffoldMode === "model-first") {
+    return await runModelFirstTiered({ context, providers, config, processingMode, onProgress, caseRecovery });
+  }
   const startedAt = new Date().toISOString();
   const extractor = providers.renderer ?? providers.anthropic;
   const initial = await runUnauditedCaseFormulation({ context, provider: extractor, onProgress, recovery: caseRecovery });
@@ -162,20 +381,8 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
     });
   }
 
-  const audit = await runCaseAuditWithRecovery({ context, snapshot: initial.snapshot, provider: providers.openai, onProgress, recovery: caseRecovery });
-  const auditedSnapshot = applyCaseAudit(initial.snapshot, audit.value);
-  const planningStarted = Date.now();
-  const planned = await planCaseSnapshot(auditedSnapshot);
-  const planningMs = Date.now() - planningStarted;
-  const formulation = {
-    snapshot: auditedSnapshot,
-    plan: planned.plan,
-    graphBundleVersion: planned.graphBundleVersion,
-    providerMetadata: {
-      extractor: initial.providerMetadata.extractor,
-      auditor: { provider: providers.openai.id, model: providers.openai.model, requestId: audit.raw.requestId, durationMs: audit.durationMs }
-    }
-  };
+  const audited = await auditedFormulation({ context, initial, providers, onProgress, caseRecovery });
+  const { formulation, audit, planningMs } = audited;
 
   if (routing.tier === "reviewed") {
     return await simpleResult({
@@ -188,16 +395,20 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
     });
   }
 
+  const authority = classifyInterventionAuthority({ snapshot: formulation.snapshot, plan: formulation.plan });
+  const deterministicSafetyGateActive = scaffoldMode === "advisory" && authority.HARD.safety.length > 0;
+  const effectiveScaffoldMode = deterministicSafetyGateActive ? "current" : scaffoldMode;
   const enrichedContext = {
     ...context,
     caseFormulation: formulation.snapshot,
     interventionContract: formulation.plan,
-    graphBundleVersion: formulation.graphBundleVersion
+    graphBundleVersion: formulation.graphBundleVersion,
+    ...(effectiveScaffoldMode === "current" ? {} : { therapyScaffoldMode: effectiveScaffoldMode, interventionAuthority: authority })
   };
 
   if (routing.tier === "deep") {
     const deep = await runCompactAdversarialPipeline({ context: enrichedContext, providers, config, onProgress });
-    return {
+    const result = {
       ...deep,
       mode: "deep",
       processingTier: "deep",
@@ -217,10 +428,19 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
       },
       processingMs: Date.now() - Date.parse(startedAt)
     };
+    if (scaffoldMode !== "current") {
+      result.therapyScaffoldMode = scaffoldMode;
+      result.scaffoldTrace = nonDestructiveTrace({
+        formulation,
+        authority,
+        finalIntegrationTrace: { responseContract: deep.responseContract, model: deep.rendererModel, deterministicSafetyGateActive }
+      });
+    }
+    return result;
   }
 
   const forensic = await runAdversarialPipeline({ context: enrichedContext, providers, config, onProgress });
-  return {
+  const result = {
     ...forensic,
     mode: "forensic",
     processingTier: "forensic",
@@ -240,4 +460,13 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
     },
     processingMs: Date.now() - Date.parse(startedAt)
   };
+  if (scaffoldMode !== "current") {
+    result.therapyScaffoldMode = scaffoldMode;
+    result.scaffoldTrace = nonDestructiveTrace({
+      formulation,
+      authority,
+      finalIntegrationTrace: { responseContract: forensic.responseContract, model: forensic.rendererModel, deterministicSafetyGateActive }
+    });
+  }
+  return result;
 }

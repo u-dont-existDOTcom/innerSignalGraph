@@ -25,6 +25,7 @@ export async function runSubprocess({
     let stderr = "";
     let settled = false;
     let captureError = null;
+    let timer;
 
     const child = spawn(command, args, {
       cwd,
@@ -34,15 +35,42 @@ export async function runSubprocess({
       detached: process.platform !== "win32"
     });
 
-    const timer = setTimeout(() => {
-      if (settled) return;
+    function terminateTree(signal = "SIGKILL") {
       try {
-        if (process.platform === "win32") child.kill("SIGKILL");
-        else process.kill(-child.pid, "SIGKILL");
+        if (process.platform === "win32") child.kill(signal);
+        else process.kill(-child.pid, signal);
       } catch {
-        child.kill("SIGKILL");
+        try { child.kill(signal); } catch { /* already gone */ }
       }
+    }
+
+    function cleanup() {
+      if (timer) clearTimeout(timer);
+      process.removeListener("SIGINT", onInterrupt);
+      process.removeListener("SIGTERM", onTerminate);
+    }
+
+    function interrupt(signal) {
+      if (settled) return;
+      terminateTree("SIGTERM");
       settled = true;
+      cleanup();
+      reject(new ProviderError(`${label} interrupted by ${signal}.`, {
+        code: "SUBPROCESS_INTERRUPTED",
+        details: { command, args, signal }
+      }));
+    }
+
+    const onInterrupt = () => interrupt("SIGINT");
+    const onTerminate = () => interrupt("SIGTERM");
+    process.once("SIGINT", onInterrupt);
+    process.once("SIGTERM", onTerminate);
+
+    timer = setTimeout(() => {
+      if (settled) return;
+      terminateTree("SIGKILL");
+      settled = true;
+      cleanup();
       reject(new ProviderError(`${label} timed out after ${timeoutMs} ms.`, {
         details: { command, args }
       }));
@@ -51,7 +79,7 @@ export async function runSubprocess({
     child.on("error", (cause) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      cleanup();
       reject(new ProviderError(`Could not start ${label}.`, {
         cause,
         details: { command, args }
@@ -81,7 +109,7 @@ export async function runSubprocess({
     child.on("close", (code, signal) => {
       if (settled) return;
       settled = true;
-      clearTimeout(timer);
+      cleanup();
       if (captureError) return reject(captureError);
       resolve({ code, signal, stdout, stderr });
     });
