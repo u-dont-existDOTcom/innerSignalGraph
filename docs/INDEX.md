@@ -29,6 +29,14 @@ The transition report names the fully gated private candidate, the public visibi
 - `../IMPLEMENTATION-REPORT-v0.15.2.md`: current implementation report
 - `CURRENT-STATE.md`: superseded checkpoint retained only for audit history
 
+## Therapy architecture
+
+- `INNER-CHILD-THERAPY-MAP.md`: living Mermaid control surface for the inner-child guide and its routing architecture; distinguishes current executable graph behavior from owner-approved refinements that still require runtime reconciliation
+- `../guides/inner-child-guide.txt`: current guide body
+- `../guides/owner-amendments.json`: installed owner-approved amendment source
+- `../guide-graphs/source-maps/inner-child-guide.json`: current inner-child guide source map
+- `../guide-graphs/compiled/inner-child-directed-graph.json`: compiler-produced executable inner-child graph; the Mermaid map does not replace it
+
 ## Plans and specifications
 
 - `superpowers/plans/`: implementation plans
