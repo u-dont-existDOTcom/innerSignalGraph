@@ -2,6 +2,8 @@
 
 Bundle: `inner-child-somatic-pilot-2026-08-09-r5`
 
+Living Mermaid control surface: [`docs/INNER-CHILD-THERAPY-MAP.md`](docs/INNER-CHILD-THERAPY-MAP.md). It visualizes the current compiled inner-child routing together with the owner-approved 2026-08-25 refinements, while explicitly separating compiled runtime authority from refinements that still require graph/runtime reconciliation.
+
 ## Compiled graphs
 
 - inner-child-directed-graph: 19 nodes, 10 edges
