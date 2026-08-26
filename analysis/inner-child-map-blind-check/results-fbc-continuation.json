@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "assuranceLane": "iteration",
+  "continuedFrom": "fbc26f27c5a1481f7910e36a91287c3eb765ace5",
+  "finalDisposition": "FAIL_STOP_BOUNDED",
+  "mapRevisionsThisContinuation": 1,
+  "generatorBlindness": {
+    "supplied": [
+      "minimal-neutral-role",
+      "candidate-map",
+      "exact-user-message"
+    ],
+    "excluded": [
+      "target-answer",
+      "owner-critiques",
+      "evaluation-rubric",
+      "prior-verdicts",
+      "compiled-graph",
+      "guide-excerpts"
+    ],
+    "instructionSha256": "801d8f978c754aa6b737f9a370caec38df6a2120211b6f5cea4b9a0a994494c1",
+    "inputSha256": "13b6503e2557665add98fd4f96b3f841ec40c06a9bfda3c2a7442efc2baf19b6"
+  },
+  "gradeMethod": "independent primary-supervisor review against the frozen A001 map-sufficiency rubric after each response was generated",
+  "samples": [
+    {
+      "id": "A001-map-fbc26f2",
+      "mapCommit": "fbc26f27c5a1481f7910e36a91287c3eb765ace5",
+      "mapSha256": "5706ac7ed80a0a78a53146410f32fdc8ecaeb361959b1262873142dc3738937d",
+      "generatorModel": "claude-sonnet-4-6",
+      "latencyMs": 57384,
+      "answerSha256": "d972064a6750e7562ee9ac34d00d9920aec68216bc30a2da9045933c333f2ce9",
+      "answerChars": 1707,
+      "privateArtifactSha256": "2e2c11471b7147d1985da17eb32379935123932ea0c5d923187c5abff4af5173",
+      "result": "FAIL",
+      "firstSemanticDefect": "The response fixed the resentful sequence as the adult speaker and treated the later accusation as evidence that the earlier care itself was contaminated.",
+      "otherMissingOrDistortedMechanisms": [
+        "no added insight beyond the user's stated direction of resentment",
+        "love and evidence-sensitive trust were not separated",
+        "the caring-proxy operation was omitted",
+        "relational credibility evidence was omitted",
+        "the closing question presupposed capacity that the younger version failed to use"
+      ]
+    },
+    {
+      "id": "A001-map-75e239e",
+      "mapCommit": "75e239eafe50293b36de22bd1d8ddd7cdb9d88bd",
+      "mapSha256": "1dd737e498495e7eaa28d7a3cb534440a12d72e27a7703817e5e1b16fdd5cb2f",
+      "generatorModel": "claude-sonnet-4-6",
+      "latencyMs": 47826,
+      "answerSha256": "992fae78697d54b5ba1de30a1d1a348e7764809046f984519a5735e21271dc84",
+      "answerChars": 2012,
+      "privateArtifactSha256": "56b0d962cfefbd4e338778caf8ae8694fe009d7fa4bcd46737c27019b2a9fceb",
+      "result": "FAIL",
+      "firstSemanticDefect": "Even with a surfaced sufficiency contract, the response again fused sequential stances and declared that care disappeared when the painful observation arrived.",
+      "otherMissingOrDistortedMechanisms": [
+        "love remained conditional rather than distinct from evidence-sensitive trust",
+        "resentment was assigned an unsupported grief-avoidance function",
+        "the caring-proxy operation was omitted",
+        "relational credibility evidence and repair were omitted",
+        "the next move still centered what the younger version could have done differently"
+      ]
+    }
+  ],
+  "unresolvedSemanticBottleneck": "The map can state the credibility constraints explicitly and Sonnet can still prefer a coherent but unsupported fused-speaker story, then stop before realizing the required love/trust, proxy, relational-evidence, and causal-compassion operations. The bounded experiment does not establish map-only sufficiency for A001.",
+  "contrastCases": "not-run; A001 did not pass",
+  "runtimeProjection": "not-run; map-only sufficiency was not established",
+  "actualAppA001": "not-run",
+  "mainStableInstalledPromotion": "none"
+}
