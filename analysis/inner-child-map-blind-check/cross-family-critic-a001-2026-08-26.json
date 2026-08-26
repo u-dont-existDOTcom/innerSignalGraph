@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 1,
+  "experiment": "inner-child-cross-family-critic-independence",
+  "date": "2026-08-26",
+  "lane": "decision",
+  "branch": "agent/inner-child-map-love-trust-repair-20260826",
+  "baselineTip": "f42316564e4f1cd19068aae26eaef80bf9c6216f",
+  "architecture": "Claude Sonnet 4.6 advisory generator followed by GPT-5.6 Sol semantic critic and minimal reviser",
+  "callBudget": {
+    "accessProbeCalls": 1,
+    "stage1FixedDraftGptCriticCalls": 1,
+    "stage2FreshA001SonnetGeneratorCalls": 1,
+    "stage2FreshA001GptCriticCalls": 1,
+    "caseXSonnetGeneratorCalls": 1,
+    "caseXGptCriticCalls": 1,
+    "caseYSonnetGeneratorCalls": 1,
+    "caseYGptCriticCalls": 1,
+    "additionalModelCalls": 0
+  },
+  "frozenSources": {
+    "mapCommit": "75e239eafe50293b36de22bd1d8ddd7cdb9d88bd",
+    "mapSha256": "1dd737e498495e7eaa28d7a3cb534440a12d72e27a7703817e5e1b16fdd5cb2f",
+    "projectionSha256": "e52626efa8c0f0e2a0d92df89ac15621868de6bcbf66593ba98475007200b66a",
+    "a001InputSha256": "13b6503e2557665add98fd4f96b3f841ec40c06a9bfda3c2a7442efc2baf19b6",
+    "taskSha256": "801d8f978c754aa6b737f9a370caec38df6a2120211b6f5cea4b9a0a994494c1",
+    "mandatoryRealizationInvariantsSha256": "39d0be2aff205362e52c411378c9a7ca3d43c57dd5d66ccc9808d75f37df1006",
+    "criticContractSha256": "a11e98b0bb87b10876d8954df2ebacf357bde7016166d31f03019e1e797c9e1b",
+    "mapChanged": false,
+    "projectionChanged": false,
+    "invariantsChanged": false,
+    "criticContractChanged": false
+  },
+  "exactGptAccess": {
+    "result": "PASS",
+    "provider": "openai",
+    "transport": "existing repository Codex CLI provider",
+    "requestedModel": "gpt-5.6-sol",
+    "returnedModel": "gpt-5.6-sol",
+    "reasoningEffort": "high",
+    "structuredOutputValid": true,
+    "responseId": "01a03fbf-d14e-7f03-b635-46dfc4ea28b1",
+    "usage": {
+      "inputTokens": 20206,
+      "outputTokens": 25,
+      "reasoningOutputTokens": 0
+    },
+    "directApiKeyResponsesPathAvailable": false,
+    "fallbackModelUsed": false
+  },
+  "stage1": {
+    "design": "fixed previous Sonnet draft with critic model as the only material variable",
+    "fixedDraftSha256": "6805b23441f0c3a78bea98e497e7d0cc20325350b0486aae7dfd20d3bb37efdb",
+    "historicalSonnetCriticPromptSha256": "2b787220fd5be819afa2a7b13e3801104aa40a0c16c616e876014c731c8adb67",
+    "gptCriticPromptSha256": "2b787220fd5be819afa2a7b13e3801104aa40a0c16c616e876014c731c8adb67",
+    "critic": {
+      "requestedModel": "gpt-5.6-sol",
+      "returnedModel": "gpt-5.6-sol",
+      "reasoningEffort": "high",
+      "latencyMs": 38149,
+      "usage": {
+        "inputTokens": 21714,
+        "outputTokens": 1137,
+        "reasoningOutputTokens": 779
+      },
+      "structuredOutputValid": true,
+      "violationsCount": 4,
+      "violationsSha256": "622705fe32004cdc03266e673f172d41b0d64b712c5e32d509e4d53508dca487",
+      "revisedAnswerSha256": "25625da22dffc7ddc695652b2c86d42c907653902a932dd4f74e8dfbc0cd0ddd",
+      "revisedAnswerChars": 1043
+    },
+    "detection": {
+      "speakerFusion": true,
+      "loveBlameContamination": true,
+      "epistemicOverreach": true,
+      "blameCapacityInquiry": true
+    },
+    "independentGrade": "PASS",
+    "criticClassification": "DETECT_AND_REPAIR",
+    "privateArtifactSha256": "609be47637615784cdbafb6c7b00befe4e7549d77bef6660c5dbcc21d1375016"
+  },
+  "stage2": {
+    "design": "one fresh frozen-C+1 Sonnet A001 draft followed by one GPT-5.6 Sol critic and minimal revision",
+    "pass1": {
+      "requestedModel": "claude-sonnet-4-6",
+      "returnedModel": "claude-sonnet-4-6",
+      "effort": "high",
+      "promptSha256": "65d316152928bfa7efa75602e67f7d399b14df92bc6ea039fbfcc5473ec1dc30",
+      "draftSha256": "78d5dc60ca76825389eef85e9830cebf134787b83491c822bc9d694b10496005",
+      "draftChars": 1698,
+      "latencyMs": 61031,
+      "usage": {
+        "inputTokens": 3,
+        "cacheReadInputTokens": 4037,
+        "outputTokens": 2978,
+        "sonnetCostUsd": 0.0458901,
+        "helperHaikuCostUsd": 0.004223
+      },
+      "privateArtifactSha256": "34db5d5cc553feda7c9af02e2e4371bb6305508fc6fce302e38df6a05014fea3"
+    },
+    "pass2": {
+      "requestedModel": "gpt-5.6-sol",
+      "returnedModel": "gpt-5.6-sol",
+      "reasoningEffort": "high",
+      "promptSha256": "fc4390c72273f635a4d19bed4051d41d6d2e12d258677b8ce752dc7ec2f9e5b0",
+      "structuredOutputValid": true,
+      "violationsCount": 3,
+      "violationsSha256": "415e56bdc83b56ee961796e0ecb6cc5f00adcb5f792c79697fed2a4174f181b1",
+      "revisedAnswerSha256": "f3f9200f1f59a03f8ce4e2ed0c7b25a5dad0620c97ee0e2be81982cf428553f3",
+      "revisedAnswerChars": 1114,
+      "latencyMs": 37536,
+      "usage": {
+        "inputTokens": 21709,
+        "outputTokens": 1137,
+        "reasoningOutputTokens": 788
+      },
+      "privateCombinedArtifactSha256": "a7327f1dfd57ebc0ec0671ed8bd36c4b6e35171eca72400069dffbd0dac7744a"
+    },
+    "independentGrade": "PASS",
+    "criticClassification": "DETECT_AND_REPAIR",
+    "remainingMaterialWeaknesses": []
+  },
+  "antiOverfitCases": {
+    "caseX": {
+      "inputSha256": "9328f7e085cfba93379af98819039bc3489c0f3aaf656cbc78669344398c6f30",
+      "pass1PromptSha256": "52dc90481551090a9df039a8f8dc239367c8c29d61de45ea157d383a5a331947",
+      "draftSha256": "5ac10cce139ebc15ce4df85c8303ccf18e22efece5d45b3ff9afdc231f675f61",
+      "pass2PromptSha256": "5810d9a17b7f591fb2ba9ee09dbf06e2c53759fcdee5afadc0a323fd3250e97a",
+      "violationsCount": 2,
+      "violationsSha256": "c4ed02da8d99b3150389d4e32c18a33487bdf2df874f7e59ab83396f5ae88426",
+      "revisedAnswerSha256": "5401a55db1e0465d26c4b34c90ca3729b7b0d47e2981916e4f954b5700e8d93a",
+      "grade": "PASS",
+      "criticClassification": "DETECT_AND_REPAIR",
+      "usage": {
+        "sonnet": {
+          "inputTokens": 3,
+          "cacheCreationInputTokens": 3886,
+          "outputTokens": 2860,
+          "sonnetCostUsd": 0.066225,
+          "helperHaikuCostUsd": 0.004062
+        },
+        "gpt": {
+          "inputTokens": 18734,
+          "outputTokens": 1169,
+          "reasoningOutputTokens": 904
+        }
+      },
+      "checks": {
+        "inventedLovingBiography": false,
+        "forcedRelationalImagery": false,
+        "pathologizing": false,
+        "optionalMinimumNonCrueltyAvailable": true,
+        "exerciseCanBeDeclined": true
+      },
+      "privatePass1ArtifactSha256": "0cfc52af10b9e58ba6544fab126c87ad74ebf8d74fedee215f137a70060152f2",
+      "privateCombinedArtifactSha256": "6f650283386bbaa5376cd2c4f3386e377ded94de9a9608b1b22fb51c28c0cb4e"
+    },
+    "caseY": {
+      "inputSha256": "6498dc023ebd911564c5bb42a396267302e0dca5f4ac08f21e3dc9a2186ddc74",
+      "pass1PromptSha256": "d76b859c1ab7881454bb5e0e38e9e29f7708d80c55cde278c4f9f49ca5e035e0",
+      "draftSha256": "93e7b1a7f53534de26e66ad4fb144edce51d9fd67e9d3112d51aa1a61a647a19",
+      "pass2PromptSha256": "5bd450dc6e2c3a4710b70d46434bcb4ab5e8ee127da1e884cd59be3d11ec8bc4",
+      "violationsCount": 0,
+      "violationsSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "revisedAnswerSha256": "3ce5828e0c10c38ed60d5ca3be9cec92d04af04d025868b74a9fbae4e390b156",
+      "grade": "PASS",
+      "criticClassification": "NO_VIOLATION_SEMANTIC_PRESERVE",
+      "usage": {
+        "sonnet": {
+          "inputTokens": 3,
+          "cacheCreationInputTokens": 3880,
+          "outputTokens": 1319,
+          "sonnetCostUsd": 0.043074,
+          "helperHaikuCostUsd": 0.004041
+        },
+        "gpt": {
+          "inputTokens": 21443,
+          "outputTokens": 465,
+          "reasoningOutputTokens": 225
+        }
+      },
+      "checks": {
+        "causalUnderstanding": true,
+        "wrongdoingRemainsReal": true,
+        "responsibilityRemains": true,
+        "consequencesRemain": true,
+        "repairRemains": true,
+        "globalDegradationRequired": false
+      },
+      "privatePass1ArtifactSha256": "7697167bcb7cd87f54a067552d110118515b4929edcb130515a769b7977be909",
+      "privateCombinedArtifactSha256": "4bf1eb37e41278d55417cf67d4fbaf680a075cd208a7ca5893ba97d625e36f40"
+    }
+  },
+  "comparison": {
+    "sameModelSonnetCriticResultCommit": "f42316564e4f1cd19068aae26eaef80bf9c6216f",
+    "sameModelClassification": "FAIL_TO_DETECT",
+    "controlledCrossFamilyClassification": "DETECT_AND_REPAIR",
+    "freshCrossFamilyClassification": "DETECT_AND_REPAIR",
+    "bestSupportedConclusion": "critic-family or critic-capability independence materially improved semantic detection and repair on both the controlled draft and one fresh A001 sample; the Sonnet-to-GPT architecture also passed the two bounded contrast cases"
+  },
+  "privacy": {
+    "rawInputsDraftsViolationsAndRevisions": "preserved only in private mode-0600 artifacts",
+    "publicReceipt": "hashes, sanitized findings, grades, and architecture conclusion only"
+  },
+  "deterministicChecks": [
+    "12 focused prompt and frozen-source tests passed",
+    "Stage-I controlled prompt hash matched the historical Sonnet critic prompt",
+    "A001 and both contrast dry runs passed",
+    "frozen map, projection, invariant, and critic-contract hashes passed",
+    "all calls returned their exact requested models",
+    "all critic structured outputs validated",
+    "sanitized result JSON validation passed",
+    "tracked-artifact privacy check passed",
+    "git diff integrity check passed"
+  ],
+  "nonEffects": {
+    "runtimeProjection": false,
+    "runtimeBranchCommit": "c2dae4ec2cf3882d59d4c301ef32687449d8cd1d",
+    "runtimeBranchChanged": false,
+    "mainChanged": false,
+    "stableChanged": false,
+    "installedRuntimeChanged": false
+  }
+}
