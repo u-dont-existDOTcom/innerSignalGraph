@@ -46,8 +46,10 @@ flowchart TD
         PROT --> CANHOLD
         GUIDE --> CANHOLD
         MIX --> CANHOLD{"Can the needed function be held directly?"}
-        CANHOLD -- "yes" --> APP["Use it as part of one integrated adult"]
-        CANHOLD -- "no" --> SOURCE{"What caring proxy is actually available?"}
+        CANHOLD -- "no" --> SOURCE
+        CANHOLD -- "yes" --> SELFCHECK{"Is direct self-application still distorted<br/>by shame, resentment, self-attack,<br/>or inability to know what to say?"}
+        SELFCHECK -- "no" --> APP["Use it as part of one integrated adult"]
+        SELFCHECK -- "yes" --> SOURCE{"What caring proxy is actually available?"}
         SOURCE --> REAL["Real person you love / who cared well,<br/>if authentically available"]
         SOURCE --> IMAG["Imagined or ideal caring adult:<br/>someone who genuinely wants<br/>to take good care of you"]
         SOURCE --> OTHER["Remembered / fictional / spiritual figure,<br/>future self, written value, or safe plan"]
@@ -74,11 +76,14 @@ flowchart TD
 
         CRED -- "yes" --> LOVE["LOVE INVARIANT:<br/>care does not need the younger position's<br/>trust, gratitude, agreement, or reciprocal love"]
         LOVE --> LOVETEST["Non-retaliation is evidence of love,<br/>not a substitute for love:<br/>anger/distrust may remain while care remains"]
-        LOVETEST --> SPLIT["Differentiate only the positions actually present;<br/>keep speaker identity provisional;<br/>do not force a fixed trio"]
+        LOVETEST --> PROXYQ{"Would a caring-proxy perspective help reveal<br/>what the adult would say without self-prosecution?"}
+        PROXYQ -- "yes" --> PROXY["Use the borrowed-care source ladder;<br/>borrow one sane caring response;<br/>reality-check it and test it under rejection"]
+        PROXYQ -- "no" --> SPLIT
+        PROXY --> SPLIT["Differentiate only the positions actually present;<br/>keep speaker identity provisional;<br/>do not force a fixed trio"]
         SPLIT --> TURNS["If one position is prosecuting another while hooked,<br/>give separate turns rather than a cross-examination;<br/>no position is exiled"]
         TURNS --> KERNEL["Hear the concrete complaint;<br/>separate actionable truth from heat,<br/>global condemnation, and uncertain inference"]
         KERNEL --> CAUSE["Causal compassion, not a blame trial:<br/>what did that version know, fear, have access to,<br/>and believe was possible then?"]
-        CAUSE --> LEARN["Name consequences and learn now;<br/>do not require a past self to have been<br/>a different person in order to deserve care"]
+        CAUSE --> LEARN["Compassionate default:<br/>past versions acted from the model and capacities<br/>available to them; learn from consequences now<br/>instead of identifying a guilty age"]
         LEARN --> TRUST["TRUST BRANCH:<br/>trust is evidence-sensitive even when love is not;<br/>ask what would count as credible evidence"]
         TRUST --> VOW["Promise only substantially controllable behavior:<br/>truth, protection, repair, noticing sooner,<br/>and no retaliation for distrust"]
         VOW --> EVIDENCE{"What evidence fits the live complaint?"}
@@ -128,12 +133,13 @@ The map is a routing architecture, not a linear checklist. **The smallest suffic
 - **Hook before story is conditional and re-entrant.** Pause only when activation is narrowing meaningful choice. The pause creates room; it does not decide what the feeling means or suppress a valid grievance. Return to the unresolved question afterward.
 - **Use the least elaborate internal model that helps.** A coherent repeating child/protector position may benefit from dialogue. A passing thought, practical problem, or ordinary grievance may not need a new `part` at all.
 - **One inner adult, multiple functions.** Nurturing, protecting, and guiding are qualities/functions of one integrated adult, not three independent inner people.
+- **Borrowed adulthood is both bootstrap and de-centering.** Use it when a function is missing, but also when the function exists toward others and becomes distorted during self-application by shame, resentment, or self-attack.
 - **Borrowed adulthood must not require a fortunate biography.** If no authentically loved or loving person is available as a proxy, use an imagined or ideal caring adult, a remembered/fictional/spiritual figure, future self, value, or safe plan. Never imply that a real loving relationship existed when it did not.
 - **Borrowed care gets a reality check.** Keep only what is compassionate, sane, feasible, and compatible with current facts. An idealized proxy is not automatically wise.
 - **Love and trust are different variables.** Love/care need not wait until the younger position believes, reciprocates, forgives, or trusts. Trust remains evidence-sensitive and may reasonably stay low after a bad track record.
 - **Non-retaliation operationalizes love under rejection; it does not replace love.** Warmth or love can still be explicit when authentic. The key test is whether anger, hatred, sarcasm, distrust, or nonreciprocity causes care to disappear or turn punitive.
 - **Do not use love to erase anger.** `I love you` can coexist with `I hate you`; the point is not that one proposition defeats the other.
-- **Causal compassion replaces prosecution.** Past versions are understood through what they knew, feared, could access, and believed possible at the time. Consequences and learning remain real; the goal is not to identify the guilty age.
+- **Causal compassion replaces prosecution.** Work from the compassionate default that each past version acted from the model, conditioning, capacities, and perceived options available to it then. Consequences and learning remain real; the therapeutic goal is not to identify the guilty age.
 - **Care does not require pretending harmful choices had no consequences.** Learn, repair, protect, and choose differently now without making self-hatred the mechanism of accountability.
 - **Criticism gets decomposed, not swallowed or fought.** Take concrete truth seriously; distinguish it from heat, contempt, global condemnation, and uncertain inference. Do not seed accusations stronger than the person supplied.
 - **Credibility is relational and practical evidence.** Listening without retaliation, retaining care, truthful acknowledgment, repair, boundaries, and repeated ordinary action can all count. Do not reduce repair to task completion.
@@ -159,7 +165,7 @@ These constraints exist because correct graph coverage can still produce a dry, 
 
 ## Borrowed-care source ladder
 
-When self-directed care is inaccessible, unsafe, unbelievable, or contaminated, choose the least artificial proxy that is genuinely usable:
+When self-directed care is inaccessible, unsafe, unbelievable, contaminated, or distorted by self-prosecution, choose the least artificial proxy that is genuinely usable:
 
 1. **Real relationship, if available:** someone the person loves, someone who has cared well for them, or someone they naturally know how to care for.
 2. **Known exemplar:** a teacher, therapist, relative, fictional character, spiritual figure, older sibling archetype, or other figure whose relevant function is understood.
@@ -167,7 +173,7 @@ When self-directed care is inaccessible, unsafe, unbelievable, or contaminated, 
 4. **Future self / explicit values / written plan:** a narrow source for guidance or protection when relational imagery is a poor fit.
 5. **Minimum non-cruelty:** if warmth itself triggers threat, begin with `I will not attack you` or the smallest believable caring function rather than forcing affection.
 
-For every rung: borrow **one bounded function**, reality-check it, and return authority to the person.
+For every rung: borrow **one bounded function**, reality-check it, test whether it survives rejection/nonreciprocity, and return authority to the person.
 
 ## Credibility route — canonical sequence
 
@@ -177,6 +183,7 @@ For cases where love is accessible but feels unsafe, distrust is explicit, and s
 notice whether a hook is narrowing choice
 → preserve love/care without requiring belief
 → distinguish love from trust
+→ use a caring-proxy perspective if self-application is distorted
 → differentiate only the positions actually present
 → stop cross-examination; give separate turns
 → hear the concrete complaint / kernel of truth
@@ -215,8 +222,9 @@ The refinements below are captured in this living map but are **not yet claimed 
 | Refinement | Closest current executable support | Runtime reconciliation still needed |
 | --- | --- | --- |
 | Conditional hook-before-story interrupt | `IC.SAFETY_ORIENTATION`, `IC.MEET_GUARD` | Preserve as a re-entrant process safeguard rather than a mandatory therapy job. |
+| Borrowed care as de-centering even when love exists | `IC.BEST_FRIEND_PERSPECTIVE`, `IC.BORROW_ONE_FUNCTION` | Permit proxy use when self-application is distorted, not only when the adult function is absent. |
 | Borrowed-care source ladder, including imagined caring adult fallback | `IC.BEST_FRIEND_PERSPECTIVE`, `IC.BORROW_ONE_FUNCTION` | Extend beyond the real-best-friend assumption; do not imply a loving biography. |
-| Best-friend / caring-proxy realism + rejection test | `IC.BEST_FRIEND_PERSPECTIVE` | Reality-check advice and test whether the caring function survives nonreciprocity. |
+| Caring-proxy realism + rejection test | `IC.BEST_FRIEND_PERSPECTIVE` | Reality-check advice and test whether the caring function survives nonreciprocity. |
 | Love invariant distinct from evidence-sensitive trust | `IC.CREDIBILITY_REPAIR`, Nurturer semantics | Make love/non-cruel care available under distrust while allowing trust to remain low. |
 | Non-retaliation as evidence of love, not substitute for love | `IC.CREDIBILITY_REPAIR` | Preserve warmth/love when authentic; do not reduce care to procedural non-abandonment. |
 | Critique decomposition / kernel-of-truth response | `IC.CREDIBILITY_REPAIR`, `IC.MEET_GUARD` | Distinguish actionable complaint from heat/global condemnation/uncertain inference. |
