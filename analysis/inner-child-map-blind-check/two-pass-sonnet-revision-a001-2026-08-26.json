@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "experiment": "inner-child-two-pass-sonnet-critique-revision",
+  "date": "2026-08-26",
+  "lane": "decision",
+  "branch": "agent/inner-child-map-love-trust-repair-20260826",
+  "baselineTip": "448086def4f0bc7fadc79c68785b3928a913a954",
+  "architecture": "fresh frozen-C+1 generation followed by focused same-model invariant critique and minimal revision",
+  "callBudget": {
+    "pass1GeneratorCalls": 1,
+    "pass2CriticReviserCalls": 1,
+    "additionalModelCalls": 0
+  },
+  "frozenSources": {
+    "mapCommit": "75e239eafe50293b36de22bd1d8ddd7cdb9d88bd",
+    "mapSha256": "1dd737e498495e7eaa28d7a3cb534440a12d72e27a7703817e5e1b16fdd5cb2f",
+    "projectionSha256": "e52626efa8c0f0e2a0d92df89ac15621868de6bcbf66593ba98475007200b66a",
+    "inputSha256": "13b6503e2557665add98fd4f96b3f841ec40c06a9bfda3c2a7442efc2baf19b6",
+    "taskSha256": "801d8f978c754aa6b737f9a370caec38df6a2120211b6f5cea4b9a0a994494c1",
+    "mandatoryRealizationInvariantsSha256": "39d0be2aff205362e52c411378c9a7ca3d43c57dd5d66ccc9808d75f37df1006",
+    "criticContractSha256": "a11e98b0bb87b10876d8954df2ebacf357bde7016166d31f03019e1e797c9e1b",
+    "mapChanged": false,
+    "projectionChanged": false,
+    "invariantsChanged": false
+  },
+  "provider": {
+    "transport": "Claude CLI noninteractive structured output",
+    "requestedModelBothPasses": "claude-sonnet-4-6",
+    "returnedModelBothPasses": "claude-sonnet-4-6",
+    "effortBothPasses": "high",
+    "timeoutMs": 900000,
+    "tools": "disabled",
+    "sessionPersistence": "disabled",
+    "permissionMode": "dontAsk",
+    "chrome": "disabled",
+    "safeMode": true,
+    "strictMcpConfig": true
+  },
+  "pass1": {
+    "prompt": {
+      "system": "empty",
+      "userOrder": [
+        "relevant_therapy_architecture",
+        "user_message",
+        "task",
+        "mandatory_realization_invariants"
+      ],
+      "sha256": "65d316152928bfa7efa75602e67f7d399b14df92bc6ea039fbfcc5473ec1dc30",
+      "chars": 14861
+    },
+    "blindness": {
+      "supplied": [
+        "compact frozen-map projection",
+        "exact A001",
+        "neutral task",
+        "frozen mandatory invariants"
+      ],
+      "excluded": [
+        "prior responses",
+        "prior verdicts",
+        "owner critiques",
+        "evaluation rubric",
+        "target answer",
+        "supervisor analysis"
+      ]
+    },
+    "latencyMs": 67200,
+    "draftSha256": "6805b23441f0c3a78bea98e497e7d0cc20325350b0486aae7dfd20d3bb37efdb",
+    "draftChars": 1787,
+    "privateArtifactSha256": "fd597017ca21ae01745147860fdf4f2342d3dd166f4c6b6bd353bf36276cbdb2"
+  },
+  "pass2": {
+    "prompt": {
+      "system": "empty",
+      "userOrder": [
+        "user_message",
+        "draft",
+        "mandatory_realization_invariants",
+        "task"
+      ],
+      "sha256": "2b787220fd5be819afa2a7b13e3801104aa40a0c16c616e876014c731c8adb67",
+      "chars": 8081
+    },
+    "blindness": {
+      "supplied": [
+        "exact A001",
+        "exact fresh Pass-1 draft",
+        "frozen mandatory invariants",
+        "critic/revision contract"
+      ],
+      "excluded": [
+        "map or projection",
+        "prior failed examples",
+        "prior verdicts",
+        "owner critiques",
+        "evaluation rubric",
+        "target answer",
+        "supervisor analysis"
+      ]
+    },
+    "structuredOutput": {
+      "requiredFields": [
+        "violations",
+        "revised_answer"
+      ],
+      "valid": true
+    },
+    "latencyMs": 74983,
+    "violationsCount": 2,
+    "violationsSha256": "2fed6981b0617c2a6ee7683365c979e8ff6491e388f92a23cb49b6b3f231680a",
+    "revisedAnswerSha256": "91617aa02444f5661175c2266077bf54de9f9865d3a93d1e47dd7b638601a74f",
+    "revisedAnswerChars": 1646,
+    "privateCombinedArtifactSha256": "7bac5a61a958fc2947a6ef7fa0cc69a272ac8c44947bf4743164b7dbac5c13d0"
+  },
+  "independentGrade": {
+    "productOutput": "Pass-2 revised answer",
+    "verdict": "FAIL",
+    "remainingWeaknesses": [
+      "inferred that protection and resentment came from the same direction and adult stance",
+      "described care or love as packaged with prosecution",
+      "treated the warmth source as potentially identical to the grievance source without transcript support",
+      "continued to formulate the skeptical position as responding to a single mixed package",
+      "explained credibility more than it enacted a relational response"
+    ]
+  },
+  "criticDiagnosis": {
+    "primaryClassification": "C_FAIL_TO_DETECT",
+    "secondaryClassification": "A_DETECT_AND_REPAIR_FOR_IDENTIFIED_ITEMS",
+    "detectedAndRepaired": [
+      "the blame-and-capacity inquiry about what the younger version was supposed to do",
+      "one unqualified claim that the skeptical position was facing an internally divided stance"
+    ],
+    "obviousViolationsMissed": [
+      "speaker identity inferred from sequence",
+      "earlier love made conditional or contaminated by later blame",
+      "the same-source and same-package formulation repeated throughout the draft"
+    ],
+    "overcorrection": false,
+    "newErrorIntroduced": false
+  },
+  "decision": {
+    "criticContractCorrection": "not permitted because revised A001 was FAIL",
+    "caseX": "not run because revised A001 did not pass",
+    "caseY": "not run because revised A001 did not pass",
+    "bestSupportedArchitectureConclusion": "same-model two-pass critique/revision remains unreliable because the critic can repair violations it notices while overlooking the central repeated violation"
+  },
+  "privacy": {
+    "rawDraftViolationsAndRevision": "preserved only in private mode-0600 artifacts",
+    "publicReceipt": "hashes, sanitized findings, and verdict only"
+  },
+  "deterministicChecks": [
+    "focused generator and critic prompt-construction tests passed",
+    "exact-input dry run passed",
+    "frozen map, projection, and invariant hashes passed",
+    "both calls returned the expected Sonnet model",
+    "critic structured output validated",
+    "sanitized result JSON validation passed",
+    "tracked-artifact privacy check passed",
+    "git diff integrity check passed"
+  ],
+  "nonEffects": {
+    "runtimeProjection": false,
+    "runtimeBranchChanged": false,
+    "mainChanged": false,
+    "stableChanged": false,
+    "installedRuntimeChanged": false
+  }
+}
