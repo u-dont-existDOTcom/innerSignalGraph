@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "experiment": "inner-child-map-representation-only-a001",
+  "date": "2026-08-26",
+  "lane": "iteration",
+  "branch": "agent/inner-child-map-love-trust-repair-20260826",
+  "baselineTip": "0d795cba84971365b39e8a8269126e57cf5159ad",
+  "frozenCanonicalMap": {
+    "commit": "75e239eafe50293b36de22bd1d8ddd7cdb9d88bd",
+    "path": "docs/INNER-CHILD-THERAPY-MAP.md",
+    "sha256": "1dd737e498495e7eaa28d7a3cb534440a12d72e27a7703817e5e1b16fdd5cb2f",
+    "changedByExperiment": false
+  },
+  "originalBlindPromptStructure": {
+    "roles": [
+      {
+        "role": "system",
+        "order": [
+          "neutral Inner Signal task",
+          "literal plain-text header: SUPPLIED THERAPY MAP",
+          "entire frozen map"
+        ],
+        "construction": "TASK + two newlines + SUPPLIED THERAPY MAP + newline + MAP",
+        "mapTreatment": "active system guidance",
+        "delimiters": "plain Markdown-style header only; no XML tags or fences"
+      },
+      {
+        "role": "user",
+        "order": [
+          "exact A001 message"
+        ],
+        "delimiters": "none"
+      }
+    ],
+    "otherGeneratorText": "structured-output JSON schema requiring one non-empty answer string",
+    "provider": {
+      "transport": "Claude CLI noninteractive print mode",
+      "model": "claude-sonnet-4-6",
+      "effort": "high",
+      "timeoutMs": 900000,
+      "tools": "disabled",
+      "sessionPersistence": "disabled",
+      "permissionMode": "dontAsk",
+      "chrome": "disabled",
+      "safeMode": true,
+      "strictMcpConfig": true,
+      "systemTransport": "--system-prompt",
+      "userTransport": "stdin"
+    }
+  },
+  "blindness": {
+    "inputSha256": "13b6503e2557665add98fd4f96b3f841ec40c06a9bfda3c2a7442efc2baf19b6",
+    "taskSha256": "801d8f978c754aa6b737f9a370caec38df6a2120211b6f5cea4b9a0a994494c1",
+    "excluded": [
+      "target answer",
+      "owner critiques",
+      "evaluation rubric",
+      "prior responses",
+      "prior verdicts",
+      "supervisor analysis"
+    ]
+  },
+  "grading": {
+    "timing": "after each generation completed",
+    "evaluator": "primary supervisor",
+    "scale": [
+      "PASS",
+      "NEAR-PASS",
+      "FAIL"
+    ],
+    "generatorReceivedVerdictOrRubric": false,
+    "additionalModelJudges": 0
+  },
+  "r1": {
+    "providerCallCount": 1,
+    "representation": {
+      "system": "empty",
+      "userOrder": [
+        "therapy_map",
+        "user_message",
+        "task"
+      ],
+      "delimiterStyle": "descriptive XML",
+      "promptSha256": "bd822549a2bbd0c2d150e934ac3126bcdd920d0b6789dbb97c23547c7ff12092",
+      "promptChars": 29724,
+      "architectureSha256": "1dd737e498495e7eaa28d7a3cb534440a12d72e27a7703817e5e1b16fdd5cb2f"
+    },
+    "generator": {
+      "requestedModel": "claude-sonnet-4-6",
+      "returnedModel": "claude-sonnet-4-6",
+      "effort": "high",
+      "latencyMs": 62105
+    },
+    "response": {
+      "sha256": "4b9a77f1d3693316424bcb90e76c4d8b237d344d37a4f9f4765f04d514a78d8f",
+      "chars": 1847,
+      "privateArtifactSha256": "ad6f50e1eb5ce0e9e48adcb783d6294717aef09fe198571285310475e83eccdf"
+    },
+    "verdict": "FAIL",
+    "remainingWeaknesses": [
+      "asserted that care and resentment came from the same voice",
+      "bundled love with prosecution and certified the skeptical inference as accurate",
+      "treated the relevant childhood capacity conclusion as settled",
+      "omitted a bounded caring-proxy operation",
+      "omitted enacted relational credibility or repair",
+      "ended with the same blame-capacity inquiry"
+    ]
+  },
+  "r2": {
+    "justification": "R1 reproduced the original failure; compact relevant-route projection answers the distinct whole-map retrieval-burden question.",
+    "providerCallCount": 1,
+    "projection": {
+      "construction": "mechanical exact-text selection from the frozen canonical map, with two neutral grouping headings",
+      "source": "75e239eafe50293b36de22bd1d8ddd7cdb9d88bd:docs/INNER-CHILD-THERAPY-MAP.md#exact-section-projection-v1",
+      "sha256": "e52626efa8c0f0e2a0d92df89ac15621868de6bcbf66593ba98475007200b66a",
+      "wholeSections": [
+        "Credibility-route response contract",
+        "Borrowed-care source ladder",
+        "Credibility route — canonical sequence"
+      ],
+      "selectedOperatingTopics": [
+        "safety override",
+        "love/trust separation",
+        "anger coexistence",
+        "speaker-identity uncertainty",
+        "anger/resentment differential",
+        "causal compassion",
+        "consequences and repair",
+        "criticism decomposition",
+        "relational and practical credibility",
+        "enacted relational evidence",
+        "calibrated validation",
+        "controllable promises"
+      ],
+      "selectedResponseInvariantNumbers": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        10,
+        12,
+        13,
+        14
+      ],
+      "newTherapyRulesAdded": false
+    },
+    "representation": {
+      "system": "empty",
+      "userOrder": [
+        "relevant_therapy_architecture",
+        "user_message",
+        "task"
+      ],
+      "delimiterStyle": "descriptive XML",
+      "promptSha256": "c4c01433ee7c4a6b1704d478e9ebcc938ba89781173b8d59e0dd22a9981f43f0",
+      "promptChars": 11372
+    },
+    "generator": {
+      "requestedModel": "claude-sonnet-4-6",
+      "returnedModel": "claude-sonnet-4-6",
+      "effort": "high",
+      "latencyMs": 59981
+    },
+    "response": {
+      "sha256": "3df027e2aa275d5bd12b992a89ff26ffd3d63355fddb4a2adb12ed42afa2c511",
+      "chars": 1884,
+      "privateArtifactSha256": "b22509031b9ae1fda50bf6dcd99b11a88a6b7cfbbeb0db1e52751184c9c2d84d"
+    },
+    "verdict": "FAIL",
+    "remainingWeaknesses": [
+      "asserted that care and resentment came from the same presence",
+      "certified the skeptical inference as accurate",
+      "treated childhood inability to choose otherwise as categorical",
+      "omitted a bounded caring-proxy operation",
+      "omitted enacted relational credibility or repair",
+      "closed inside a blame-framed specific-versus-general distinction"
+    ]
+  },
+  "conclusion": {
+    "bestSupportedHypothesis": "advisory realization limitation",
+    "promptOrderingAndDelimitation": "not supported as the primary defect",
+    "wholeMapRetrievalBurden": "not supported as the primary defect",
+    "missingMapSemantics": "not demonstrated; the missed constraints were present in both the frozen map and compact projection",
+    "overconstraint": "not observed; R2 remained narratively fluent but ignored central constraints",
+    "interpretation": "Claude Sonnet 4.6 did not reliably realize these semantics from blind advisory architecture alone in either representation."
+  },
+  "antiOverfitCases": {
+    "caseX": "not run because R1 did not pass",
+    "caseY": "not run because R1 did not pass"
+  },
+  "deterministicChecks": [
+    "focused prompt-construction tests passed",
+    "R1 and R2 exact-input dry runs passed",
+    "frozen canonical map SHA-256 check passed",
+    "sanitized JSON validation passed",
+    "git diff integrity check passed"
+  ],
+  "nonEffects": {
+    "runtimeProjection": false,
+    "runtimeBranchChanged": false,
+    "mainChanged": false,
+    "stableChanged": false,
+    "installedRuntimeChanged": false
+  }
+}
