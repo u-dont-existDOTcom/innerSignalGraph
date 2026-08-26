@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import test from "node:test";
 
 import {
+  MANDATORY_REALIZATION_INVARIANTS,
   MAP_SHA256,
   TASK,
   buildRelevantRouteProjection,
@@ -35,6 +36,21 @@ test("R2 changes only the architecture wrapper", () => {
   assert.match(prompt.user, /^<relevant_therapy_architecture>/);
   assert.doesNotMatch(prompt.user, /<therapy_map>/);
   assert.ok(prompt.user.endsWith(`\n${TASK}\n</task>`));
+});
+
+test("C+1 appends general mandatory invariants and a silent self-check after the neutral task", () => {
+  const architecture = "EXISTING R2 PROJECTION";
+  const userMessage = "EXACT A001 BYTES";
+  const prompt = buildRepresentationPrompt({ architecture, userMessage, mode: "c1" });
+
+  assert.equal(prompt.system, "");
+  assert.ok(prompt.user.indexOf(architecture) < prompt.user.indexOf(userMessage));
+  assert.ok(prompt.user.indexOf(userMessage) < prompt.user.indexOf(TASK));
+  assert.ok(prompt.user.indexOf(TASK) < prompt.user.indexOf(MANDATORY_REALIZATION_INVARIANTS));
+  assert.ok(prompt.user.endsWith(`\n${MANDATORY_REALIZATION_INVARIANTS}\n</mandatory_realization_invariants>`));
+  assert.match(MANDATORY_REALIZATION_INVARIANTS, /silently check the draft/);
+  assert.match(MANDATORY_REALIZATION_INVARIANTS, /they do not prescribe its formulation/);
+  assert.doesNotMatch(MANDATORY_REALIZATION_INVARIANTS, /target answer|prior response|evaluation rubric/i);
 });
 
 test("R2 projection is selected from the frozen map and excludes whole-map topology", async () => {

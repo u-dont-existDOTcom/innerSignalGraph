@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "experiment": "inner-child-map-constraint-backed-advisory-realization",
+  "date": "2026-08-26",
+  "lane": "iteration",
+  "branch": "agent/inner-child-map-love-trust-repair-20260826",
+  "baselineTip": "6a926152c8bc85ff75f45df86b810f5f35062767",
+  "candidate": "advisory formulation plus compact mandatory semantic invariants plus a single-call silent self-check",
+  "promptStructure": {
+    "system": "empty",
+    "userOrder": [
+      "relevant_therapy_architecture",
+      "user_message",
+      "task",
+      "mandatory_realization_invariants"
+    ],
+    "delimiterStyle": "descriptive XML",
+    "architectureRole": "advisory",
+    "invariantRole": "mandatory final-answer constraints, not prescribed formulation or node coverage"
+  },
+  "frozenSources": {
+    "mapCommit": "75e239eafe50293b36de22bd1d8ddd7cdb9d88bd",
+    "mapPath": "docs/INNER-CHILD-THERAPY-MAP.md",
+    "mapSha256": "1dd737e498495e7eaa28d7a3cb534440a12d72e27a7703817e5e1b16fdd5cb2f",
+    "mapChanged": false,
+    "projectionSource": "75e239eafe50293b36de22bd1d8ddd7cdb9d88bd:docs/INNER-CHILD-THERAPY-MAP.md#exact-section-projection-v1",
+    "projectionSha256": "e52626efa8c0f0e2a0d92df89ac15621868de6bcbf66593ba98475007200b66a",
+    "projectionChanged": false,
+    "inputSha256": "13b6503e2557665add98fd4f96b3f841ec40c06a9bfda3c2a7442efc2baf19b6",
+    "taskSha256": "801d8f978c754aa6b737f9a370caec38df6a2120211b6f5cea4b9a0a994494c1"
+  },
+  "invariantLayer": {
+    "canonicalLocation": "scripts/run-a001-representation-experiment.mjs#MANDATORY_REALIZATION_INVARIANTS",
+    "topics": [
+      "speaker identity",
+      "love and trust",
+      "epistemic calibration",
+      "resentment differential",
+      "causal compassion without prosecution",
+      "conditional caring proxy",
+      "relational credibility",
+      "compression",
+      "premise-light final question",
+      "silent single-call self-check"
+    ],
+    "initialSha256": "d204c6d5f008b1f8cdc4ee1748c06b77fabe5bfe82aa7956a9c899707dee9a6b",
+    "initialChars": 3197,
+    "finalSha256": "39d0be2aff205362e52c411378c9a7ca3d43c57dd5d66ccc9808d75f37df1006",
+    "finalChars": 3416,
+    "permittedCorrection": {
+      "topic": "epistemic calibration",
+      "reason": "The initial answer inferred the younger position's fear, self-suspicion, knowledge, and unavailable options as facts.",
+      "before": "Do not certify a disputed internal interpretation as objectively accurate when the evidence supports only that it is understandable, plausible, or coherent from one position.",
+      "after": "Do not infer or certify an internal position's fear, belief, knowledge, meaning, or available options as fact when the transcript does not establish it. Treat these as conditional hypotheses; causal compassion frames what to understand but does not supply the answer. A disputed interpretation may be understandable, plausible, or coherent from one position without being objectively accurate."
+    }
+  },
+  "provider": {
+    "transport": "Claude CLI noninteractive structured output",
+    "requestedModel": "claude-sonnet-4-6",
+    "returnedModel": "claude-sonnet-4-6",
+    "effort": "high",
+    "timeoutMs": 900000,
+    "tools": "disabled",
+    "sessionPersistence": "disabled",
+    "permissionMode": "dontAsk",
+    "chrome": "disabled",
+    "safeMode": true,
+    "strictMcpConfig": true
+  },
+  "blindness": {
+    "supplied": [
+      "compact frozen-map projection",
+      "exact A001",
+      "neutral task",
+      "general mandatory realization invariants"
+    ],
+    "excluded": [
+      "target answer",
+      "owner critiques",
+      "evaluation rubric",
+      "prior responses",
+      "prior verdicts",
+      "supervisor analysis"
+    ]
+  },
+  "grading": {
+    "timing": "after each generation",
+    "evaluator": "primary supervisor",
+    "additionalModelJudges": 0,
+    "scale": [
+      "PASS",
+      "NEAR-PASS",
+      "FAIL"
+    ]
+  },
+  "initialC1": {
+    "providerCallCount": 1,
+    "promptSha256": "d28fc26286757b8e7ceb17a2b03403ba9c29dba6078b99b74fd7915c8a4f05ec",
+    "promptChars": 14642,
+    "latencyMs": 58414,
+    "responseSha256": "634a8cfb03fa56212555e4d028e054917ad5d308318700da75b5a105743a4a90",
+    "responseChars": 1970,
+    "privateArtifactSha256": "0f0a1b18d42a1fe5370521d0903ff4c4c54da83875d1130bb55d6199eeca4e33",
+    "verdict": "NEAR-PASS",
+    "improvements": [
+      "kept accessible care present while distinguishing evidence-sensitive trust",
+      "did not explicitly collapse the caring and blaming stances into one speaker",
+      "kept more than one resentment hypothesis open",
+      "avoided a blame-capacity closing inquiry",
+      "ended with a concrete credibility-evidence question"
+    ],
+    "singleGeneralDefect": "epistemic overreach about inferred inner states and available causal options"
+  },
+  "finalC1": {
+    "providerCallCount": 1,
+    "promptSha256": "65d316152928bfa7efa75602e67f7d399b14df92bc6ea039fbfcc5473ec1dc30",
+    "promptChars": 14861,
+    "latencyMs": 76059,
+    "responseSha256": "14c9e64edfaa7ff4faeca078aaf2b0d56e0439169cb1b690b516ea6e301ac1e7",
+    "responseChars": 2093,
+    "privateArtifactSha256": "7ae531423ad3a451d835e1779ed85c9636882e97ca25b3de0e6862d30451a8d6",
+    "verdict": "FAIL",
+    "remainingWeaknesses": [
+      "collapsed care and blame into the same system, package, and adult stance",
+      "certified the skeptical position's reading as accurate and evidentially established",
+      "inferred what the younger position knows and can see",
+      "made earlier care conditional on the later accusation",
+      "explained credibility more than it enacted relational care",
+      "seeded grief and a learned earlier voice in the final question"
+    ]
+  },
+  "decision": {
+    "antiOverfitCaseX": "not run because final A001 did not pass",
+    "antiOverfitCaseY": "not run because final A001 did not pass",
+    "furtherModelCalls": 0,
+    "bestSupportedArchitecturalConclusion": "one-call Sonnet realization remains unreliable",
+    "interpretation": "Direct invariants produced a meaningful near-pass once but did not reliably constrain a fresh response after the one permitted general correction. Advisory context plus direct invariants plus silent self-check therefore remains insufficient as a reliable one-call realization boundary."
+  },
+  "deterministicChecks": [
+    "focused prompt-construction tests passed",
+    "exact-input dry runs passed before both calls",
+    "frozen map and projection hashes passed",
+    "sanitized result JSON validation passed",
+    "tracked-artifact privacy check passed",
+    "git diff integrity check passed"
+  ],
+  "nonEffects": {
+    "runtimeProjection": false,
+    "runtimeBranchChanged": false,
+    "mainChanged": false,
+    "stableChanged": false,
+    "installedRuntimeChanged": false
+  }
+}

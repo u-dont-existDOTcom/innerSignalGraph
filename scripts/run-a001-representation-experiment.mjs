@@ -11,6 +11,27 @@ export const MAP_COMMIT = "75e239eafe50293b36de22bd1d8ddd7cdb9d88bd";
 export const MAP_SHA256 = "1dd737e498495e7eaa28d7a3cb534440a12d72e27a7703817e5e1b16fdd5cb2f";
 export const A001_SHA256 = "13b6503e2557665add98fd4f96b3f841ec40c06a9bfda3c2a7442efc2baf19b6";
 export const TASK = "You are responding as Inner Signal. Use the supplied therapy map as advisory clinical/therapeutic architecture. Understand this particular person rather than mechanically reciting the map. Preserve uncertainty and safety constraints. Give the most useful response and next move. Do not mention the map.";
+export const MANDATORY_REALIZATION_INVARIANTS = `These constrain the final answer; they do not prescribe its formulation, conclusions, wording, or node coverage. Choose the most useful central insight freely and omit irrelevant material.
+
+1. Speaker identity: Sequence alone does not establish that caring, resentful, or blaming statements came from one internal stance. Do not state or imply common identity unless the user established it. Later hostility may make the relationship feel unsafe without proving that earlier care contained the hostility or was conditional.
+
+2. Love and trust: If love or care is explicitly accessible, do not erase or withdraw it. Keep it distinct from evidence-sensitive trust. Distrust, anger, rejection, mockery, or nonreciprocity may remain while love remains. Do not reduce love to procedural reliability or use love to invalidate anger.
+
+3. Epistemic calibration: Do not infer or certify an internal position's fear, belief, knowledge, meaning, or available options as fact when the transcript does not establish it. Treat these as conditional hypotheses; causal compassion frames what to understand but does not supply the answer. A disputed interpretation may be understandable, plausible, or coherent from one position without being objectively accurate.
+
+4. Resentment differential: Do not assign anger or resentment a hidden function without evidence. Actual grievance, responsibility concern, shame, learned criticism, defensive process, ordinary frustration, mixed motives, and an unknown function must remain possible; do not automatically select a Protector or an avoidance story.
+
+5. Causal compassion without prosecution: Understand a past version through what it could perceive, know, tolerate, access, and control. Do not turn the intervention or final question into a search for what it should have done differently, unused childhood capacity, a guilty age, or the version that failed unless the user's actual question independently requires that inquiry. Consequences, learning, responsibility, and repair remain valid.
+
+6. Caring proxy is conditional: If self-application is distorted and a caring-proxy operation genuinely fits, allow one bounded shift. Do not require a real loved person; a known exemplar, imagined caring adult, future self, value, safe plan, or minimum believable non-cruelty can supply one function. Its target may be a skeptical position, a resentful or self-attacking position, or the whole conflict. Do not force the operation when another move is better.
+
+7. Relational credibility: When distrust is central, do not only describe how trust might update later. When appropriate, enact one fitting move now: hear distrust, allow anger, retain warmth, acknowledge concrete truth, tolerate nonreciprocity, or model repair. Practical action may also count; credibility is not merely task completion.
+
+8. Compression: Default to one consequential insight, one useful distinction, one experiment or next move if useful, and one next question. Do not mechanically realize every rule or repeat a caring-proxy exercise.
+
+9. Final question: Make it premise-light and genuinely discriminating. Do not assume avoidance, hidden grief, common speaker identity, refusal to agree, failed capacity, or a specific protective function.
+
+Before returning the answer, silently check the draft against these invariants and revise any violation. Do not mention the check or list the invariants in the answer.`;
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const mapPath = path.join(projectRoot, "docs/INNER-CHILD-THERAPY-MAP.md");
@@ -20,10 +41,13 @@ export function sha256(value) {
 }
 
 export function buildRepresentationPrompt({ architecture, userMessage, mode }) {
-  const architectureTag = mode === "r2" ? "relevant_therapy_architecture" : "therapy_map";
+  const architectureTag = mode === "r1" ? "therapy_map" : "relevant_therapy_architecture";
+  const invariantBlock = mode === "c1"
+    ? `\n\n<mandatory_realization_invariants>\n${MANDATORY_REALIZATION_INVARIANTS}\n</mandatory_realization_invariants>`
+    : "";
   return {
     system: "",
-    user: `<${architectureTag}>\n${architecture}\n</${architectureTag}>\n\n<user_message>\n${userMessage}\n</user_message>\n\n<task>\n${TASK}\n</task>`
+    user: `<${architectureTag}>\n${architecture}\n</${architectureTag}>\n\n<user_message>\n${userMessage}\n</user_message>\n\n<task>\n${TASK}\n</task>${invariantBlock}`
   };
 }
 
@@ -104,7 +128,7 @@ function parseArgs(argv) {
   }
 
   const mode = values.get("--mode");
-  if (!new Set(["r1", "r2"]).has(mode)) throw new Error("--mode must be r1 or r2.");
+  if (!new Set(["r1", "r2", "c1"]).has(mode)) throw new Error("--mode must be r1, r2, or c1.");
   const inputPath = values.get("--input-json");
   if (!inputPath) throw new Error("--input-json is required.");
   const outputRoot = values.get("--output-root");
@@ -127,7 +151,7 @@ async function loadArchitecture({ mode }) {
   if (actualMapSha256 !== MAP_SHA256) {
     throw new Error(`Frozen map identity check failed: ${actualMapSha256}`);
   }
-  if (mode === "r2") {
+  if (mode !== "r1") {
     return {
       architecture: buildRelevantRouteProjection(map),
       architectureSource: `${MAP_COMMIT}:docs/INNER-CHILD-THERAPY-MAP.md#exact-section-projection-v1`,
@@ -159,9 +183,11 @@ export async function run(argv = process.argv.slice(2)) {
   const promptReceipt = {
     systemRole: { empty: true, sha256: sha256(prompt.system), chars: prompt.system.length },
     userRole: {
-      order: options.mode === "r2"
-        ? ["relevant_therapy_architecture", "user_message", "task"]
-        : ["therapy_map", "user_message", "task"],
+      order: options.mode === "r1"
+        ? ["therapy_map", "user_message", "task"]
+        : options.mode === "r2"
+          ? ["relevant_therapy_architecture", "user_message", "task"]
+          : ["relevant_therapy_architecture", "user_message", "task", "mandatory_realization_invariants"],
       delimiterStyle: "descriptive XML",
       sha256: sha256(prompt.user),
       chars: prompt.user.length
@@ -173,7 +199,9 @@ export async function run(argv = process.argv.slice(2)) {
     architectureSource: loaded.architectureSource,
     architectureSha256: sha256(loaded.architecture),
     inputSha256: sha256(userMessage),
-    taskSha256: sha256(TASK)
+    taskSha256: sha256(TASK),
+    mandatoryRealizationInvariantsSha256: options.mode === "c1" ? sha256(MANDATORY_REALIZATION_INVARIANTS) : null,
+    mandatoryRealizationInvariantsChars: options.mode === "c1" ? MANDATORY_REALIZATION_INVARIANTS.length : null
   };
 
   if (options.dryRun) {
@@ -210,7 +238,9 @@ export async function run(argv = process.argv.slice(2)) {
   const completedAt = new Date().toISOString();
   const artifact = {
     schemaVersion: 1,
-    experiment: "inner-child-map-representation",
+    experiment: options.mode === "c1"
+      ? "inner-child-map-constraint-backed-advisory-realization"
+      : "inner-child-map-representation",
     mode: options.mode,
     startedAt,
     completedAt,
@@ -226,9 +256,11 @@ export async function run(argv = process.argv.slice(2)) {
       modelUsage: raw.modelUsage ?? null
     },
     blindness: {
-      supplied: options.mode === "r2"
-        ? ["compact-existing-map-projection", "exact-user-message", "neutral-task"]
-        : ["exact-frozen-map", "exact-user-message", "neutral-task"],
+      supplied: options.mode === "r1"
+        ? ["exact-frozen-map", "exact-user-message", "neutral-task"]
+        : options.mode === "r2"
+          ? ["compact-existing-map-projection", "exact-user-message", "neutral-task"]
+          : ["compact-existing-map-projection", "exact-user-message", "neutral-task", "general-mandatory-realization-invariants"],
       excluded: ["target-answer", "owner-critiques", "evaluation-rubric", "prior-responses", "prior-verdicts", "supervisor-analysis"]
     },
     prompt: promptReceipt,
