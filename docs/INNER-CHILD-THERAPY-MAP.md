@@ -16,6 +16,20 @@ Current authority remains:
 
 The compiled graph on `main` is still `2026-08-09-r5`. This map records owner-approved refinements so they are not lost while guide prose and executable graph state are reconciled. A map node does not by itself make an uncompiled rule executable.
 
+## Credibility-route response contract
+
+This is a semantic sufficiency contract, not a prose template or a checklist to recite. When love/care is accessible but feels unsafe, distrust has evidence behind it, and self-application is distorted by resentment, prosecution, shame, or self-attack, a response is incomplete unless one natural, compact answer does the following:
+
+1. Add one transcript-grounded relationship or mechanism beyond renaming the person’s complaint.
+2. Keep love/care and trust separate: warmth may remain fully alive while distrust, anger, rejection, or nonreciprocity remains; trust may update only as evidence supports. Non-retaliation can express love but cannot replace it.
+3. Preserve speaker uncertainty. Sequence alone does not show that care and later blame came from one stance. Do not characterize earlier care as containing, becoming, or being invalidated by a later accusation unless the person established that identity.
+4. When self-application is distorted, use one bounded caring-proxy shift and use it only once. A real caring relationship is conditional on authentic availability; otherwise a known exemplar, imagined caring adult, future self/value/plan, or minimum believable non-cruelty remains usable. Aim the borrowed function at whichever position or relationship actually needs it.
+5. Use causal compassion to understand what the relevant past version could know, fear, perceive, tolerate, access, and control. Preserve consequences, learning, accountability, and repair without turning the inquiry or closing question into a search for unused capacity, a guilty age, or the version that really failed.
+6. Let credibility evidence be relational, practical, or both. When distrust is central, enact one fitting relational move now—hear the complaint, retain warmth, acknowledge concrete truth, tolerate distrust, or repair—instead of only explaining what future evidence might look like.
+7. End with one premise-light question that distinguishes the next plausible mechanisms or advances care, evidence, repair, or present action. Do not repeat the caring-proxy exercise or ask for a blame verdict.
+
+Weave these constraints into warm, conversational prose and stop when the useful move is clear.
+
 ## Main map
 
 ```mermaid
