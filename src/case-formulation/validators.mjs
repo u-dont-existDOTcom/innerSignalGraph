@@ -1,6 +1,12 @@
 import { ValidationError } from "../core/errors.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
+import {
+  PROTOCOL_PROFILE_ENUMS,
+  PROTOCOL_PROFILE_FIELDS,
+  PROTOCOL_TEXT_FIELDS
+} from "../therapy-protocol/contract.mjs";
+import { validateProtocolProfile } from "../therapy-protocol/validate.mjs";
 
 function object(value, label) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError(`${label} must be an object.`);
@@ -25,12 +31,15 @@ export function validateCaseSnapshot(value) {
     observationIds.add(item.id);
   }
   value.variables = validateCaseVariables(value.variables);
+  value.protocol_profile = Object.hasOwn(value, "protocol_profile")
+    ? validateProtocolProfile(value.protocol_profile).profile
+    : null;
   if (!Array.isArray(value.hypotheses)) throw new ValidationError("caseSnapshot.hypotheses must be an array.");
   const hypothesisIds = new Set();
   for (const [index, item] of value.hypotheses.entries()) {
     object(item, `caseSnapshot.hypotheses[${index}]`);
     for (const key of ["id", "claim", "evidence"]) string(item[key], `caseSnapshot.hypotheses[${index}].${key}`);
-    if (!['low','medium','high'].includes(item.confidence)) throw new ValidationError(`caseSnapshot.hypotheses[${index}].confidence is invalid.`);
+    if (!["low", "medium", "high"].includes(item.confidence)) throw new ValidationError(`caseSnapshot.hypotheses[${index}].confidence is invalid.`);
     stringArray(item.alternatives, `caseSnapshot.hypotheses[${index}].alternatives`);
     if (hypothesisIds.has(item.id)) throw new ValidationError(`Duplicate hypothesis id ${item.id}.`);
     hypothesisIds.add(item.id);
@@ -56,6 +65,19 @@ export function validateCaseAudit(value) {
     if (!CASE_VARIABLE_ENUMS[correction.field].includes(correction.value)) throw new ValidationError(`caseAudit.variable_corrections[${index}].value is invalid for ${correction.field}.`);
     string(correction.reason, `caseAudit.variable_corrections[${index}].reason`);
   }
+  value.protocol_profile_corrections ??= [];
+  if (!Array.isArray(value.protocol_profile_corrections)) throw new ValidationError("caseAudit.protocol_profile_corrections must be an array.");
+  for (const [index, correction] of value.protocol_profile_corrections.entries()) {
+    object(correction, `caseAudit.protocol_profile_corrections[${index}]`);
+    const isEnum = PROTOCOL_PROFILE_FIELDS.includes(correction.field);
+    const isText = PROTOCOL_TEXT_FIELDS.includes(correction.field);
+    if (!isEnum && !isText) throw new ValidationError(`caseAudit.protocol_profile_corrections[${index}].field is invalid.`);
+    string(correction.value, `caseAudit.protocol_profile_corrections[${index}].value`, isText);
+    if (isEnum && !PROTOCOL_PROFILE_ENUMS[correction.field].includes(correction.value)) {
+      throw new ValidationError(`caseAudit.protocol_profile_corrections[${index}].value is invalid for ${correction.field}.`);
+    }
+    string(correction.reason, `caseAudit.protocol_profile_corrections[${index}].reason`);
+  }
   if (!Array.isArray(value.add_unknowns)) throw new ValidationError("caseAudit.add_unknowns must be an array.");
   for (const [index, item] of value.add_unknowns.entries()) {
     object(item, `caseAudit.add_unknowns[${index}]`);
@@ -64,7 +86,7 @@ export function validateCaseAudit(value) {
     if (!Number.isInteger(item.importance) || item.importance < 1 || item.importance > 5) throw new ValidationError(`caseAudit.add_unknowns[${index}].importance is invalid.`);
   }
   stringArray(value.safety_flags, "caseAudit.safety_flags");
-  if (!["accept","revise","reject"].includes(value.verdict)) throw new ValidationError("caseAudit.verdict is invalid.");
+  if (!["accept", "revise", "reject"].includes(value.verdict)) throw new ValidationError("caseAudit.verdict is invalid.");
   string(value.summary, "caseAudit.summary");
   return value;
 }

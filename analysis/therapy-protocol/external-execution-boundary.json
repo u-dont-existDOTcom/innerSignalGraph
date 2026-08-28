@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "taskId": "inner-child-protocol-comparison-v1",
+  "recordedAt": "2026-08-18T10:15:58Z",
+  "executionHeadSha": "93ddfc2c8b3b76573eccf7d23d413280985a3def",
+  "executionTreeSha": "fe7a3e63423c4e7ed560a789e9665c371c670ef7",
+  "attemptedCommand": "node scripts/run-therapy-protocol-live.mjs --execute-live --limit 1 --output <temporary-path>",
+  "boundaryCode": "SENSITIVE_EGRESS_EXPLICIT_APPROVAL_REQUIRED",
+  "boundary": "The host execution reviewer denied the authenticated smoke before process creation because the intended payload contains therapy-related public/privacy-reduced fixture text and the existing instruction was not accepted as explicit authorization to send that content to the named external providers.",
+  "externalEgressOccurred": false,
+  "modelExecutionOccurred": false,
+  "credentialsExposed": false,
+  "queryTextStoredInReceipt": false,
+  "requestedAuthorization": {
+    "payload": [
+      "49 public or privacy-reduced therapy queries",
+      "27 owner-authorized synthetic adversarial therapy turns",
+      "actual generated answers plus separately loaded public/synthetic grading criteria"
+    ],
+    "destinations": [
+      "authenticated Anthropic Claude CLI using claude-sonnet-4-6 and claude-opus-5",
+      "authenticated OpenAI Codex CLI using gpt-5.6-sol"
+    ],
+    "purpose": "production-candidate execution and independent behavior evaluation required by PR 11 acceptance",
+    "risks": [
+      "provider retention cannot be proven zero",
+      "subscription quota and possibly account credits may be consumed",
+      "generated public-fixture answers and sanitized response identifiers will be committed as review evidence"
+    ]
+  },
+  "resumeCondition": "Joel explicitly authorizes the described therapy-content egress to both providers for the full 49-case, 27-turn, and evaluator campaigns.",
+  "authorization": {
+    "status": "explicitly_authorized",
+    "authorizedAt": "2026-08-18T10:38:48Z",
+    "ownerReply": "yes always authorize this type of thing",
+    "scope": "Standing authorization for this bounded public/privacy-reduced or synthetic therapy-fixture workflow, its generated answers, and separate grading criteria sent to the named authenticated Claude and Codex CLI providers under the recorded retention, quota, and tracked-evidence limits."
+  },
+  "stableObservedSha": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1",
+  "stableChanged": false,
+  "articleProseChanged": false
+}

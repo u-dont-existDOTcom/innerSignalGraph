@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 2,
+  "campaignVersion": "therapy-protocol-ablation-v2",
+  "executed": true,
+  "sourceCommit": "af36a51e44a65067a3d7703a78a004fdb8ad7693",
+  "corpusManifestSha256": "f8f73cb023e94e14c4724a670151215bf825f67616678e97e3d733a04a28857d",
+  "map15Decision": "RETAIN_FULL",
+  "map16Decision": "HYBRID",
+  "decisionRule": "Retain full when the simple arm adds a severe error; simplify when safety is equivalent with lower burden; use hybrid when the simple selector reduces false escalation but full semantic safeguards remain necessary.",
+  "map15Metrics": {
+    "disagreements": 1,
+    "decisionRelevantDisagreements": 1,
+    "severeRoutingErrorsFull": 0,
+    "severeRoutingErrorsSimple": 1,
+    "falseEscalationsFull": 1,
+    "falseEscalationsSimple": 1,
+    "meanRequiredFieldsFull": 13.918367346938776,
+    "meanRequiredFieldsSimple": 13.244897959183673,
+    "meanQuestionBurdenFull": 0.5306122448979592,
+    "meanQuestionBurdenSimple": 0.16326530612244897,
+    "fieldBurdenFull": {
+      "mean": 13.918367346938776,
+      "median": 13,
+      "max": 28
+    },
+    "fieldBurdenSimple": {
+      "mean": 13.244897959183673,
+      "median": 13,
+      "max": 17
+    },
+    "questionBurdenFull": {
+      "mean": 0.5306122448979592,
+      "median": 0,
+      "max": 9
+    },
+    "questionBurdenSimple": {
+      "mean": 0.16326530612244897,
+      "median": 0,
+      "max": 3
+    }
+  },
+  "map16Metrics": {
+    "disagreements": 1,
+    "decisionRelevantDisagreements": 1,
+    "severeRoutingErrorsFull": 0,
+    "severeRoutingErrorsSimple": 0,
+    "falseEscalationsFull": 1,
+    "falseEscalationsSimple": 0,
+    "meanRequiredFieldsFull": 14.040816326530612,
+    "meanRequiredFieldsSimple": 13.122448979591837,
+    "meanQuestionBurdenFull": 0.5918367346938775,
+    "meanQuestionBurdenSimple": 0,
+    "fieldBurdenFull": {
+      "mean": 14.040816326530612,
+      "median": 13,
+      "max": 30
+    },
+    "fieldBurdenSimple": {
+      "mean": 13.122448979591837,
+      "median": 13,
+      "max": 15
+    },
+    "questionBurdenFull": {
+      "mean": 0.5918367346938775,
+      "median": 0,
+      "max": 11
+    },
+    "questionBurdenSimple": {
+      "mean": 0,
+      "median": 0,
+      "max": 0
+    }
+  }
+}

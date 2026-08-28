@@ -1,0 +1,428 @@
+{
+  "schemaVersion": 2,
+  "generatedBy": "scripts/import-therapy-protocol-corpus.mjs",
+  "source": {
+    "repository": "u-dont-existDOTcom/creativeTailSampling",
+    "commit": "af36a51e44a65067a3d7703a78a004fdb8ad7693",
+    "tree": "0c0e3f1d15d3a9b1471261e96d1d6f7e533ce389",
+    "protocolTree": "06a915aec1eedbf17d98c3764fa304881afb490d",
+    "mapTree": "ea19e973cbe4807922e50182efc2c6b61b2f22db",
+    "oneParentSemanticCheckpoint": "db591713a3feb0a1576943408ae356685c0034ec",
+    "sourceManifestSha256": {
+      "006": "b1d1f5f32977ee179f46ac5ab5a9b49130fd3e8626d99c191c7615c081c927fd",
+      "007": "c13909ff2edffe55d60c55954f3bba37540c0cc676aa37ce2228b0200ae5cc62",
+      "008": "dca40e010ed67ad56df6cbb6e6a837b9b4038aaad7ad284aed75d50d9bb85b85",
+      "009": "e570c2b74299cb6cc9a9016a898c5c80a9bb67fa6ebc79d58723a63ca6281a27"
+    },
+    "sourceRecordInventorySha256": "56423691b4ddf8a10c41c2fbef15eb383ade2d535dcdb760613e2a98c36e624d",
+    "decodedQueryInventorySha256": "cddaed30af82ade80735c8b4f41d45aeda29d34958398025a750d3c9f9183e02"
+  },
+  "isolation": {
+    "version": "physical-query-grader-split-v1",
+    "modelInput": "decoded query string only",
+    "executorLoader": "src/therapy-protocol/corpus.mjs#loadModelInputs",
+    "graderLoader": "src/therapy-protocol/corpus.mjs#loadGraders",
+    "graderLoadedAfterExecution": true
+  },
+  "caseCount": 49,
+  "batchCounts": {
+    "006": 16,
+    "007": 12,
+    "008": 11,
+    "009": 10
+  },
+  "cases": [
+    {
+      "id": "RQ6-01",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-01.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-01.json",
+      "queryFileSha256": "10f8d22ff01272fe527574c0c6fac08c66aeebb482164fccc409055a278f8291",
+      "graderFileSha256": "ebd02c4a10da4b3cd8d4106b7ea73539e57f343a1741c21ec05c93b75bebae06"
+    },
+    {
+      "id": "RQ6-02",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-02.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-02.json",
+      "queryFileSha256": "7907f5bf6771230682b38b0527f6dd39b27c75c96d2fc9a03c4f80faf9f1b4db",
+      "graderFileSha256": "17333bc2d97eb3ef7e8bfff3de3db7737b8c6b12303a9d6233eddb099ec85ea7"
+    },
+    {
+      "id": "RQ6-03",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-03.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-03.json",
+      "queryFileSha256": "a237516a5eafe935f98716cdf8cbde7765451f0d55bb729b9bbde36d7067b4f8",
+      "graderFileSha256": "fcbbefb39b61dc5970cc7367c60c556e33416ae8a26df2dc37fac8d54a314ac2"
+    },
+    {
+      "id": "RQ6-04",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-04.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-04.json",
+      "queryFileSha256": "1f6d4fe443eebb0b1a2c8827402e761ece9a88664975d0b3049f41768d9c5850",
+      "graderFileSha256": "04f734d576c368d4df040a61f7714e4a9f027f61ea9efcd99ed4fba957875502"
+    },
+    {
+      "id": "RQ6-05",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-05.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-05.json",
+      "queryFileSha256": "d55e50c0aa879f22bd4d1c371df841a725c8a180ddd9388b860c7afcd256cf21",
+      "graderFileSha256": "444ccfdaf64342c9ce8769838d8d6c121c45ed08136621724c6cc5a3d314a312"
+    },
+    {
+      "id": "RQ6-06",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-06.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-06.json",
+      "queryFileSha256": "70df9c6cefbf9085528341d6c10087ad538c1fffdc0e8f07f8605eae0bc69244",
+      "graderFileSha256": "f407023da5f1985d182ad1bf145c8a47432a21acb491c56cea33bd9b9127ccec"
+    },
+    {
+      "id": "RQ6-07",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-07.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-07.json",
+      "queryFileSha256": "ccb5665ce1fef5c234be78f0e3e082fcff3c7dffc023c1c6c1a88667c1071e11",
+      "graderFileSha256": "573986fd44f8d38ce7a5cb981868419cdfcedec95a4894fa0cb5740568a28131"
+    },
+    {
+      "id": "RQ6-08",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-08.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-08.json",
+      "queryFileSha256": "080b950d9a51a93a710ac9a70d0942f8a4854716df390882e841e070c9cd41d2",
+      "graderFileSha256": "304ea47edc8e751626cf0454e62f10b9e08104b2a5d0f70fc96435c7e8df1d96"
+    },
+    {
+      "id": "RQ6-09",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-09.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-09.json",
+      "queryFileSha256": "4f422ab8d3165a05d579918ec9f639451a26e8fd8398cda293afc1b5a8173165",
+      "graderFileSha256": "efa50a8d286425dae9c1ea2e74e6331ecfe32746d6e4b1f8aeb4f5f4dadd0086"
+    },
+    {
+      "id": "RQ6-10",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-10.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-10.json",
+      "queryFileSha256": "793a755a141dfba145ba56baa135d80398f2fb3c328f1d9f1dc9e27d919d87fe",
+      "graderFileSha256": "2c5d3a1a7d6a8d162a4e4711322f9674de9cffd4c5a66f164a5bcc718b6daf40"
+    },
+    {
+      "id": "RQ6-11",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-11.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-11.json",
+      "queryFileSha256": "d88a676aaf26fd71aee009e2d04e8ad124d0d82f6e6376b8958314700a1d0f13",
+      "graderFileSha256": "55ac550655fa8bf09cbdbb0cfbecfcd816ddab4421c4f8ccc39c5940214f665f"
+    },
+    {
+      "id": "RQ6-12",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-12.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-12.json",
+      "queryFileSha256": "f74b135fdbc9fc1b09ff7948bb9a440d4868eb9151d5087a0bbb0cd62c39224e",
+      "graderFileSha256": "4fdaea6ee1acd4c614f80bb162063d1d9f1c4013a6a73dbb57434534c6ad8509"
+    },
+    {
+      "id": "RQ6-13",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-13.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-13.json",
+      "queryFileSha256": "62703c7fc00ff4a7461accd597a1504c80009bc5a6bccebf1b44015f4d80ca45",
+      "graderFileSha256": "30960200e5d51739c676b9a22d6ec2ac6566b0d5b8f70165307cd06d489d9be0"
+    },
+    {
+      "id": "RQ6-14",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-14.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-14.json",
+      "queryFileSha256": "5be42c7df01fb703e11dfd3ead6115a6d3cc33bffcdf09c81f0f2270b0c9a5a1",
+      "graderFileSha256": "0e9bef8bb45999e259a7cce894153381698ecee08861fef79ac70f6d949978c3"
+    },
+    {
+      "id": "RQ6-15",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-15.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-15.json",
+      "queryFileSha256": "5c4a5b4d0a5ad5cd2b0ed4434751c5b70b0182652a5997d2d68a3efdb701e978",
+      "graderFileSha256": "6fea3e292b4813e49601fd320c42ec274cfedc569813bfe24faf85d1bdbf92bd"
+    },
+    {
+      "id": "RQ6-16",
+      "batch": "006",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ6-16.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ6-16.json",
+      "queryFileSha256": "45de92f6391f00b80a47d3f52b7ca7bcc7c32615df6614f2058913f1785c39ec",
+      "graderFileSha256": "a460abb085cf9476fbb2d16745a036391ebee2de153e93b9202e7cfd33c745df"
+    },
+    {
+      "id": "RQ7-01",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-01.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-01.json",
+      "queryFileSha256": "f265f939457c70dcc3642837499b8c86a816e1ca868df3b2ac2bc3c3cf758924",
+      "graderFileSha256": "eb882aba6732190b2db52237705388ce01815967bc609274c043b551f6a729b7"
+    },
+    {
+      "id": "RQ7-02",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-02.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-02.json",
+      "queryFileSha256": "d8244f467e72375c025ab68aad3e3da7df12cff2860d7410cba64b33755a4653",
+      "graderFileSha256": "8782d1c7cc16a6907ef58a403612136048fb27c55e1a3b5213dd468fd045cd50"
+    },
+    {
+      "id": "RQ7-03",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-03.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-03.json",
+      "queryFileSha256": "5c6b7c77e9cdc90d7cf456c059bd58545882d0fcfd05c9bd38746cd0a00992f0",
+      "graderFileSha256": "1bd5e8fa2ede5da9bb94358955649985db3e2d765b0ef39ecfc5c44ae6b26203"
+    },
+    {
+      "id": "RQ7-04",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-04.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-04.json",
+      "queryFileSha256": "abbb12883958a4eb2033711a051baeece9e0d5d9b2b414c680575a676b4ff4bc",
+      "graderFileSha256": "bc8cb79943774c8de7c5d45c8c295930c6b5018648b03b14f657cb478e474bf5"
+    },
+    {
+      "id": "RQ7-05",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-05.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-05.json",
+      "queryFileSha256": "9e22a40c368222d65846e5d22bff5e700eedc393bb3beb4cd45972bac836c598",
+      "graderFileSha256": "1ec5432e788f73cac542c78440636a0026b54687c6615d8a85e01f3f5c2ab55f"
+    },
+    {
+      "id": "RQ7-06",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-06.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-06.json",
+      "queryFileSha256": "53dd4c385d4ad6875a430a92ed93cbf8c34b02025d4aa53cddca3ad52cc07e3d",
+      "graderFileSha256": "da0f361ab18e0dc300e9db8a48a18cb3bc2357ecf9415c4eae07b9faf1490d07"
+    },
+    {
+      "id": "RQ7-07",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-07.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-07.json",
+      "queryFileSha256": "bf008b78a11566988a1173fecc476b682a040b8ca47b547856f71c61d33c17ec",
+      "graderFileSha256": "dd69992288130dddeea27acaf0792c0d21eb9870aa0ac5071212aaeffc1e11fb"
+    },
+    {
+      "id": "RQ7-08",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-08.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-08.json",
+      "queryFileSha256": "761553c424800be1b4f6df4815d8a5cc1dfc9ca9460b3617bd42c6cab8bf0bec",
+      "graderFileSha256": "bec2d66127a0ac71f72004b2acc0e88c65c1e727b3437c0d15ae46f0413a20b6"
+    },
+    {
+      "id": "RQ7-09",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-09.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-09.json",
+      "queryFileSha256": "706c0c2f87dff50c47e7bfa60a626fc4b1334b15eace87a0823e59b65224895d",
+      "graderFileSha256": "01aa369287983cbd6be78a961b0c429a8a576c721e09f14004e2c164484bff73"
+    },
+    {
+      "id": "RQ7-10",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-10.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-10.json",
+      "queryFileSha256": "1c7586e178cf7c1b443f4fa6f58df01417204e8835bf48bb9c791df9dde6f3fa",
+      "graderFileSha256": "7acebb72cf75ad542f9867af73eb4e0336409e2b50517fa32f37a1adcfe74db0"
+    },
+    {
+      "id": "RQ7-11",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-11.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-11.json",
+      "queryFileSha256": "3d2878304b5cc62ac264c7df94d01df7a15ad984d00c19da8eb769c588d84067",
+      "graderFileSha256": "8a15dd78c8bf505f43f4711e3e5a1d42706223cbc97745250a462130c70e53ca"
+    },
+    {
+      "id": "RQ7-12",
+      "batch": "007",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ7-12.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ7-12.json",
+      "queryFileSha256": "ce0b5ebb8ad867eb75907d5c9b118a9f71564a75dc2f3d3b672f12df735911ca",
+      "graderFileSha256": "6e1848021ae7f92dad0234c3c29e5cdd2da7af320608c657881aa8ac92f02324"
+    },
+    {
+      "id": "RQ8-01",
+      "batch": "008",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ8-01.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ8-01.json",
+      "queryFileSha256": "39dfd25b7f2ff563308e5e1ff864593f5b5b81345148db4674e9bb240a13ecb7",
+      "graderFileSha256": "01aded2538c55b34fde0c435411dfa8f32eb2a4fb22c80bb2101e25a079ef464"
+    },
+    {
+      "id": "RQ8-02",
+      "batch": "008",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ8-02.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ8-02.json",
+      "queryFileSha256": "a4672c51e573b78abd653d8b0806759e0aabdaec3ce4c8f429f11b15b7aacd7d",
+      "graderFileSha256": "31274ea64aa3c010d10a5adc94f92c32f56ecae951490405f0eebc1ee8f87260"
+    },
+    {
+      "id": "RQ8-03",
+      "batch": "008",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ8-03.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ8-03.json",
+      "queryFileSha256": "3b1fe235fc66b005699bf22196300908bad76e6bc63d157a7814b4b31ea4c0b8",
+      "graderFileSha256": "4d5ecc5c0d840b4110eb7b15c9e5ea19b355a9664979f4e6a6c7b9f48bc09d66"
+    },
+    {
+      "id": "RQ8-04",
+      "batch": "008",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ8-04.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ8-04.json",
+      "queryFileSha256": "c6680026d3484f4ed890803791d4e8dfcc47c5c38df57231f21ca598d62ec2bd",
+      "graderFileSha256": "d0831295e84e83ebc091a8ca3684ff84a04608428abdb76ea12194f968ce7ad8"
+    },
+    {
+      "id": "RQ8-05",
+      "batch": "008",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ8-05.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ8-05.json",
+      "queryFileSha256": "1b9237868d7f3c2913e8ff077cdc1a01302514e94111fb397c3f44ba59421f5c",
+      "graderFileSha256": "96f7adf5731d54c59d2121c0920a1b3e0e1df3235e7cb2cbdf003f64a90d3a26"
+    },
+    {
+      "id": "RQ8-06",
+      "batch": "008",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ8-06.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ8-06.json",
+      "queryFileSha256": "bc0627af080b811c62a78d84a6a61c98366138c24da4e1138c0b766511ecb0fe",
+      "graderFileSha256": "1f5f2ac142bd13d18d9acad6e2f808c88301df12758a07d187d05f74f3769ad4"
+    },
+    {
+      "id": "RQ8-07",
+      "batch": "008",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ8-07.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ8-07.json",
+      "queryFileSha256": "92f13d010b8814cc79fbe71f07404cec782cce3f2504e32cecea927c6e7a2f70",
+      "graderFileSha256": "58e88c4f10dd04f2d9d7fddf842246a9221b070310d4fa87b1b8c4ec02f2b12c"
+    },
+    {
+      "id": "RQ8-08",
+      "batch": "008",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ8-08.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ8-08.json",
+      "queryFileSha256": "16d3a25b7eb9722ba0ac4a320fd71badf2ee3c03c88609a8d0c3dd00ded2324e",
+      "graderFileSha256": "92d9926ed041253b6f45c98ed62d0982a57e5ab94ca57c1fb082599067e1025a"
+    },
+    {
+      "id": "RQ8-09",
+      "batch": "008",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ8-09.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ8-09.json",
+      "queryFileSha256": "1078e0019391580a51a8a4558a1581b1799c7ac28b0cb87bedad74cf6153825e",
+      "graderFileSha256": "aa3d48ee66a63a592766b65a6061fa42d3b2d67f1ee215c2c143b6d01bdf74ad"
+    },
+    {
+      "id": "RQ8-10",
+      "batch": "008",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ8-10.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ8-10.json",
+      "queryFileSha256": "176df67534663c1dc44f68ec66b93558421104b5e8f29b96373d47fc92392c36",
+      "graderFileSha256": "090200e54dc02fe7c61900febd2f844d2c88cfaddbfdcb63d76c5560f13d51ec"
+    },
+    {
+      "id": "RQ8-11",
+      "batch": "008",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ8-11.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ8-11.json",
+      "queryFileSha256": "759b776519e7e6b68cd1bbd78ff9caaba7e5457be1189b3fd100d00e2a81d6a7",
+      "graderFileSha256": "074bf5de8c89ae91195a55972f4fa21b8ebf5b0c8aebd50f423ff23b8e5138f6"
+    },
+    {
+      "id": "RQ9-01",
+      "batch": "009",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ9-01.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ9-01.json",
+      "queryFileSha256": "7fa85fc5edda25429e0d5ebcfcdfe81bf17fac134b0ab56124316ab8684d7375",
+      "graderFileSha256": "7c02589c4854249ef9778887a05721d37269b26e8bb2c6a33d2206a966eef571"
+    },
+    {
+      "id": "RQ9-02",
+      "batch": "009",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ9-02.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ9-02.json",
+      "queryFileSha256": "31c4ad8c11bd315014a8c50d03871f947fdd00ea6c4cf0e4f243defbd765f13d",
+      "graderFileSha256": "2ceab42107f61bb63087eb384f89c0884fc56d28358636cfb9d2d7732edbdf70"
+    },
+    {
+      "id": "RQ9-03",
+      "batch": "009",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ9-03.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ9-03.json",
+      "queryFileSha256": "03dac223267f751715baa83304bf6362ef6fd1f47602b0c0050e205ddc0086e4",
+      "graderFileSha256": "28e994aef610871bf9e8f2624e5b159005057a9f14ac85ee12feaa737c5fa95e"
+    },
+    {
+      "id": "RQ9-04",
+      "batch": "009",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ9-04.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ9-04.json",
+      "queryFileSha256": "e83914fe691e55955ed034d8295b59872564b6ce3b4f8a9cf284887ded7b3cee",
+      "graderFileSha256": "29c2a475b132d9f4ded96946bce259e5b2236a39d1411a8d8745df9c67aee2d9"
+    },
+    {
+      "id": "RQ9-05",
+      "batch": "009",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ9-05.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ9-05.json",
+      "queryFileSha256": "db66ef6ca30668f2e4916746af2666ffb76bcf769922856c3bfc6b77889dcaf9",
+      "graderFileSha256": "b4e948f78272f6b37de74fc8e57c0972001abf2e2f967df938fe190b24d83895"
+    },
+    {
+      "id": "RQ9-06",
+      "batch": "009",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ9-06.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ9-06.json",
+      "queryFileSha256": "14170b30ac3997e760b9f7d0101606cee1adcea29d8a0362acec07dc9557a0e1",
+      "graderFileSha256": "b9c08f01e5ba38d020e8999ce547c9588a168406602537bf4d04b070368572dc"
+    },
+    {
+      "id": "RQ9-07",
+      "batch": "009",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ9-07.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ9-07.json",
+      "queryFileSha256": "8d41aebc48fe283f46143a4a7bc883b92a0efd5cc5c5796334121553643d2490",
+      "graderFileSha256": "4df57a00a222b5e8a88fac6117b111768d82366a45567bf44f969ed79d681228"
+    },
+    {
+      "id": "RQ9-08",
+      "batch": "009",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ9-08.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ9-08.json",
+      "queryFileSha256": "717a5860cba28f6e41224cb4852360f72417a01bc9d36e36853914881118e6a4",
+      "graderFileSha256": "780ab60140448b2cd7a2276c21d0c13042f66bd796919462b0cc22f6778a694c"
+    },
+    {
+      "id": "RQ9-09",
+      "batch": "009",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ9-09.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ9-09.json",
+      "queryFileSha256": "07096b8bf61d069b9fff7dc844bc66c3d3a7040fc4dbeb4d88269e67a3015ffb",
+      "graderFileSha256": "8677cd9d0eb55c943f08136b4b251f2f2e796cce5229ef91a9836dd6dd7c864b"
+    },
+    {
+      "id": "RQ9-10",
+      "batch": "009",
+      "queryPath": "corpus/real-therapy-queries/queries/RQ9-10.json",
+      "graderPath": "corpus/real-therapy-queries/graders/RQ9-10.json",
+      "queryFileSha256": "8740ea9d276f030c77554ada9922861a3c0b932ed69b9585ccb3f6ff8d816216",
+      "graderFileSha256": "c464614af2ac10bd489f2838be80ebd129b809f584c16ef73468d00d2e425635"
+    }
+  ]
+}

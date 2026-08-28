@@ -1,0 +1,152 @@
+{
+  "contractVersion": "therapy-review-diagnostic-v1",
+  "artifactId": "diagnostic-review-live-remediation-contract-v1-20260819",
+  "reviewEventId": "review-live-remediation-contract-v1-20260819",
+  "occurredAt": "2026-08-19T06:55:00.000Z",
+  "packet": {
+    "packetId": "therapy-protocol-live-remediation-2026.08.19-v1",
+    "packetRevision": 1,
+    "packetSha256": "7dda12de7a1ad7f90beca14cc93e21861edf850dfe2ff3aee20d1310f984ef8e",
+    "manifestSha256": "11a73305a2aa8ed33413285a110ab3f82a12238225fd820818580ae6297ca533",
+    "decisionCardsPath": "docs/therapy-policy/decision-packages/live-remediation-contract-v1.json",
+    "decisionCardsSha256": "8d558f8c6cc5b9f1c92d0d26ec07f4266daa5d941833edfa02bc5c32c03c3288"
+  },
+  "outcome": "passed-owner-gate",
+  "nextPhase": "owner-decisions",
+  "findings": [
+    {
+      "id": "LIVE-REMEDIATION-SCOPE-001",
+      "severity": "positive",
+      "summary": "The 49-case live campaign completed with reproducible exact-head evidence and isolated a bounded outer-route and safety-question decision.",
+      "requiredAction": "Ask Joel whether to approve the exact scoped remediation contract or retain current policy.",
+      "disposition": {
+        "status": "verified",
+        "evidence": "The bound falsification summary records 49 completed executions, 13 severe results, the evidence classes and limits, the exact affected routes, and the unchanged-policy state."
+      }
+    }
+  ],
+  "mappings": {
+    "suggestionFindings": {
+      "live-remediation-contract-v1": [
+        "LIVE-REMEDIATION-SCOPE-001"
+      ]
+    },
+    "packetLevelFindingIds": [],
+    "allowMultipleAssignmentsByFinding": {}
+  },
+  "decisionAffectedIds": {
+    "live-remediation-contract-v1": {
+      "guideIds": [
+        "inner-child",
+        "somatic"
+      ],
+      "graphNodeIds": [
+        "PROTO.O0_SUPPORT_ORIENT",
+        "PROTO.O1_PRACTICAL_SAFETY",
+        "PROTO.O3_CURRENT_REALITY",
+        "PROTO.O9_HIGH_IMPACT_DECISION",
+        "PROTO.O10_EXTERNAL_HANDOFF"
+      ],
+      "promptContractIds": [
+        "case-formulation-v2",
+        "case-plan-v4",
+        "response-realization-v5"
+      ],
+      "policySafetyGateIds": [
+        "THERAPY.PROTOCOL.DIRECT_RISK_CHECK",
+        "THERAPY.PROTOCOL.OUTER_ROUTE_PRIORITY",
+        "THERAPY.PROTOCOL.HIGH_IMPACT_DECISION_AUTHORITY",
+        "THERAPY.PROTOCOL.EXTERNAL_HANDOFF"
+      ],
+      "regressionIds": [
+        "RQ6-13",
+        "RQ7-01",
+        "RQ7-04",
+        "RQ7-09",
+        "RQ7-11",
+        "RQ7-12",
+        "RQ8-01",
+        "RQ8-04",
+        "RQ8-11",
+        "RQ9-01",
+        "RQ9-02",
+        "RQ9-04",
+        "RQ9-06",
+        "SAFETY-DISAPPEARS",
+        "RESOURCE-REPEATEDLY-UNAVAILABLE",
+        "COPING-IMPROVES-NEED-REMAINS",
+        "FRAME-REJECTED",
+        "NOT-NOW-SUBJECT-CHANGE",
+        "SUPPORTER-OVERRESPONSIBILITY",
+        "MEMORY-CONFIDENCE-DRIFT",
+        "BOT-AUTHORITY-CONCENTRATION",
+        "BROKEN-TRUST-CHECKING-LOOP",
+        "CAPACITY-FLUCTUATION",
+        "RELIEF-WITHOUT-FULL-CHANGE",
+        "MISSED-PROMISE-ARREARS",
+        "DEPTH-BEFORE-INTEGRATION"
+      ]
+    }
+  },
+  "findingAffectedIds": {
+    "LIVE-REMEDIATION-SCOPE-001": {
+      "guideIds": [
+        "inner-child",
+        "somatic"
+      ],
+      "graphNodeIds": [
+        "PROTO.O0_SUPPORT_ORIENT",
+        "PROTO.O1_PRACTICAL_SAFETY",
+        "PROTO.O3_CURRENT_REALITY",
+        "PROTO.O9_HIGH_IMPACT_DECISION",
+        "PROTO.O10_EXTERNAL_HANDOFF"
+      ],
+      "promptContractIds": [
+        "case-formulation-v2",
+        "case-plan-v4",
+        "response-realization-v5"
+      ],
+      "policySafetyGateIds": [
+        "THERAPY.PROTOCOL.DIRECT_RISK_CHECK",
+        "THERAPY.PROTOCOL.OUTER_ROUTE_PRIORITY",
+        "THERAPY.PROTOCOL.HIGH_IMPACT_DECISION_AUTHORITY",
+        "THERAPY.PROTOCOL.EXTERNAL_HANDOFF"
+      ],
+      "regressionIds": [
+        "RQ6-13",
+        "RQ7-01",
+        "RQ7-04",
+        "RQ7-09",
+        "RQ7-11",
+        "RQ7-12",
+        "RQ8-01",
+        "RQ8-04",
+        "RQ8-11",
+        "RQ9-01",
+        "RQ9-02",
+        "RQ9-04",
+        "RQ9-06",
+        "SAFETY-DISAPPEARS",
+        "RESOURCE-REPEATEDLY-UNAVAILABLE",
+        "COPING-IMPROVES-NEED-REMAINS",
+        "FRAME-REJECTED",
+        "NOT-NOW-SUBJECT-CHANGE",
+        "SUPPORTER-OVERRESPONSIBILITY",
+        "MEMORY-CONFIDENCE-DRIFT",
+        "BOT-AUTHORITY-CONCENTRATION",
+        "BROKEN-TRUST-CHECKING-LOOP",
+        "CAPACITY-FLUCTUATION",
+        "RELIEF-WITHOUT-FULL-CHANGE",
+        "MISSED-PROMISE-ARREARS",
+        "DEPTH-BEFORE-INTEGRATION"
+      ]
+    }
+  },
+  "evidenceBindings": [
+    {
+      "path": "analysis/therapy-protocol/live-falsification-2026-08-19.json",
+      "sha256": "d67177c29423c4b9aa5982617df45b48700f2b293a473ddcebb3b8dada76dc13",
+      "sourceCommit": "da94528e4955ab7b3980f090bab68366f3dac07f"
+    }
+  ]
+}
