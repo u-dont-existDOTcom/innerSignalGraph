@@ -62,7 +62,7 @@ flowchart TD
         MIX --> CANHOLD{"Can the needed function be held directly?"}
         CANHOLD -- "no" --> SOURCE
         CANHOLD -- "yes" --> SELFCHECK{"Is direct self-application still distorted<br/>by shame, resentment, self-attack,<br/>or inability to know what to say?"}
-        SELFCHECK -- "no" --> APP["Use it as part of one integrated adult"]
+        SELFCHECK -- "no" --> APP["Use the function without inferring that<br/>every adult-sounding statement has one speaker"]
         SELFCHECK -- "yes" --> SOURCE{"What caring proxy is actually available?"}
         SOURCE --> REAL["Real person you love / who cared well,<br/>if authentically available"]
         SOURCE --> IMAG["Imagined or ideal caring adult:<br/>someone who genuinely wants<br/>to take good care of you"]
@@ -146,7 +146,7 @@ The map is a routing architecture, not a linear checklist. **The smallest suffic
 - **Safety can override introspection.** Present danger calls for present-day protection, not a more sophisticated interpretation of childhood material.
 - **Hook before story is conditional and re-entrant.** Pause only when activation is narrowing meaningful choice. The pause creates room; it does not decide what the feeling means or suppress a valid grievance. Return to the unresolved question afterward.
 - **Use the least elaborate internal model that helps.** A coherent repeating child/protector position may benefit from dialogue. A passing thought, practical problem, or ordinary grievance may not need a new `part` at all.
-- **One inner adult, multiple functions.** Nurturing, protecting, and guiding are qualities/functions of one integrated adult, not three independent inner people.
+- **Integration is an aim, not a speaker-identification rule.** Nurturing, protecting, and guiding can become qualities/functions of an integrated adult; that does not establish that every adult-sounding, caring, blaming, or resentful statement already comes from one position. Borrowing or naming an adult function never resolves speaker identity by itself.
 - **Borrowed adulthood is both bootstrap and de-centering.** Use it when a function is missing, but also when the function exists toward others and becomes distorted during self-application by shame, resentment, or self-attack.
 - **Borrowed adulthood must not require a fortunate biography.** If no authentically loved or loving person is available as a proxy, use an imagined or ideal caring adult, a remembered/fictional/spiritual figure, future self, value, or safe plan. Never imply that a real loving relationship existed when it did not.
 - **Borrowed care gets a reality check.** Keep only what is compassionate, sane, feasible, and compatible with current facts. An idealized proxy is not automatically wise.
