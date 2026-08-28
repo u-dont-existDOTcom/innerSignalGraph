@@ -1,0 +1,20 @@
+{
+  "name": "personal",
+  "interface": {
+    "displayName": "Personal"
+  },
+  "plugins": [
+    {
+      "name": "inner-signal-therapy",
+      "source": {
+        "source": "local",
+        "path": "./plugins/inner-signal-therapy"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Wellness"
+    }
+  ]
+}
