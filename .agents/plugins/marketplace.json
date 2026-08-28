@@ -1,7 +1,7 @@
 {
-  "name": "personal",
+  "name": "inner-signal-experimental",
   "interface": {
-    "displayName": "Personal"
+    "displayName": "Inner Signal Experimental"
   },
   "plugins": [
     {
