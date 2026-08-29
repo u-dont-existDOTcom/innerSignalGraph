@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "inner-signal-authoring-node-current.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["authoring_contract", "entity_type", "projection_mode", "generated", "graph_id", "node_id", "title", "kind", "tier", "priority", "authority", "graph_tags", "source_refs", "base_record_sha256", "base_graph_sha256", "projection_input_sha256"],
+  "properties": {
+    "authoring_contract": { "const": "inner-signal-authoring-node-current-v1" },
+    "entity_type": { "const": "graph-node" },
+    "projection_mode": { "const": "current" },
+    "generated": { "const": true },
+    "graph_id": { "$ref": "#/$defs/id" },
+    "node_id": { "$ref": "#/$defs/id" },
+    "title": { "type": "string", "minLength": 1 },
+    "kind": { "type": "string", "minLength": 1 },
+    "tier": { "type": "integer", "minimum": 1, "maximum": 9 },
+    "priority": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "authority": { "type": "string", "minLength": 1 },
+    "graph_tags": { "$ref": "#/$defs/strings" },
+    "source_refs": { "$ref": "#/$defs/strings" },
+    "regression_refs": { "$ref": "#/$defs/strings" },
+    "base_record_sha256": { "$ref": "#/$defs/hash" },
+    "base_graph_sha256": { "$ref": "#/$defs/hash" },
+    "projection_input_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 180 },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "strings": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+  }
+}

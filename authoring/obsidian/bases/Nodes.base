@@ -1,0 +1,28 @@
+filters:
+  and:
+    - file.inFolder("current/nodes") || file.inFolder("proposals")
+views:
+  - type: table
+    name: All current nodes
+    filters: projection_mode == "current"
+    order: [node_id, title, graph_id, tier, priority, authority, source_refs, graph_tags, regression_refs, projection_mode, proposal_id, operation]
+  - type: table
+    name: Proposed nodes
+    filters: entity_type == "graph-node-proposal"
+    order: [proposal_id, operation, node_id, title, graph_id, tier, priority]
+  - type: table
+    name: Safety and gating nodes
+    filters: graph_tags.contains("safety") || graph_tags.contains("gate")
+    order: [node_id, title, graph_id, tier, priority]
+  - type: table
+    name: Nodes lacking regression references
+    filters: regression_refs.isEmpty()
+    order: [node_id, title, graph_id, tier, priority]
+  - type: table
+    name: Nodes by authority
+    groupBy: authority
+    order: [authority, node_id, title, graph_id]
+  - type: table
+    name: Nodes by graph and tier
+    groupBy: graph_id
+    order: [graph_id, tier, priority, node_id]

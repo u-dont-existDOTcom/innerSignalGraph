@@ -2,6 +2,8 @@ function nodeMap(bundle) {
   return new Map((bundle?.graphs ?? []).flatMap((graph) => (graph.nodes ?? []).map((node) => [node.id, { ...node, graphId: graph.graphId }])));
 }
 
+export { buildCompleteSemanticDiff as buildBehavioralDiffV2, buildCompleteDecisionCards as buildDecisionCardsV2 } from "../guide-graph/semantic-diff.mjs";
+
 function edgeKey(edge) {
   return `${edge.from}→${edge.to}::${edge.relation ?? ""}`;
 }

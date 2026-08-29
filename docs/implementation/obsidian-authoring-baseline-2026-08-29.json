@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "taskId": "obsidian-authoring-architecture-v1",
+  "baseline": {
+    "branch": "origin/main",
+    "commit": "82b12b20c4a401b5e60999f981292c36fbaa8a53",
+    "tree": "8a25d56d91b84946762418d0aead0c8d7670588e",
+    "node": "v24.18.0",
+    "npm": "11.16.0"
+  },
+  "hashes": {
+    "corpus/graph-cases/G001.json": "25d9a4533b9f43f42c47a73ce7cef67af0d00c6272e6c091da07e6467b1515a4",
+    "corpus/graph-cases/G002.json": "aab88cd64b9fdf00c295dcab62a48374660d98843b72428fd2e43e0654c98e93",
+    "corpus/graph-cases/G003.json": "f5533f8a573ce00bafe6ae3ab1de865dde7565c60b8849007cc5c1cd46e7ac3d",
+    "corpus/graph-cases/G004.json": "0f4c223359c2491d4f0f6e661ee921bbd2aa8011e065fc5c0b784f49f751e376",
+    "corpus/graph-cases/G005.json": "b43b9e5caa0a7e451dcf6a51001a82ce7a989d370ff652b6a34612cc0c1ff827",
+    "corpus/graph-cases/G006.json": "564ff52aeafbaf1b8e0759954089a9ec92967e758d51de0c4be678e973526987",
+    "corpus/graph-cases/G007.json": "2400e4090add73c6812d99412f7971fba65281d183c41d5b373dc8bab9418e2b",
+    "corpus/graph-cases/G008.json": "312bf76a4307d2d0eebd94f1e63028e4676c6654a4ebc133ae36e8423603a5fa",
+    "corpus/graph-cases/G009.json": "8a0d8e0e96e2a13a267d73c218720718701aecf381a248cf2044de214906770a",
+    "corpus/graph-cases/G010.json": "abbefde82bd342e59cba4ac1978ea568411a48aaa54fe796bfe4cbaed0be572a",
+    "corpus/graph-cases/G011.json": "1a9e67cda377bfce23a23c6fbc77ffd8f8c1df0a048c2a40b7c7d9994cbbfd13",
+    "corpus/graph-cases/G012.json": "1c260ed2fd7be7bdcbf769898ffb61ed9a1a208af5e07f93e98ac68784ec8d82",
+    "guide-graphs/candidates/cross-guide.graph.json": "0eb4eb7ac805775a8283da4c8ea50fa0d4985644fad836cbfee37e48996b5151",
+    "guide-graphs/candidates/inner-child.graph.json": "4cffe0bcadbf49cc3e27dc5274221f51ec252a0226e944b4f5541dda47c6d1d6",
+    "guide-graphs/candidates/somatic.graph.json": "f7acff85e9d11d38c1fd47830f4fad4998cc1fb1580f641223a6d92538e30140",
+    "guide-graphs/compiled/bundle.json": "c8a88497711596af5fc7157ff0c5028607df0be6ec797d832598980b5cf06400",
+    "guide-graphs/compiled/inner-child-directed-graph.json": "658eb09c5be1f7274e5a2341d63a129f31f9ee9e24246577fd6bb17be0066342",
+    "guide-graphs/compiled/inner-child-somatic-cross-guide.json": "ad7c963a5aebaaeec3199e24892701faa585a247b011f80070883c9fcff1cb06",
+    "guide-graphs/compiled/somatic-directed-graph.json": "acc599947fc3b777fc09bfc0d907fa3be185c9276325d10db309d0e7c137d649",
+    "guide-graphs/source-maps/inner-child-guide.json": "a1d7b97d03284dec42080589f56af0d6a6ed07e966e81a123c57aa711b875d06",
+    "guide-graphs/source-maps/owner-amendments.json": "64f7c78381027a4e5d519b1471bf82a78061cb0c3943cead9fdfae462360e6d9",
+    "guide-graphs/source-maps/somatic-sequencing-guide.json": "0c19782d2d7716cca19d74718a01f3d9e8142405be6db64c09197863fd54d3d9",
+    "guide-graphs/source-maps/vagal-blitz-source.json": "a651c7b6ccff742f3bc3d293c62f6512c8db4971533b7b642ecd025ab0c3c31d",
+    "guide-packets/source-input/inner-child-guide-r01-candidate.html": "6f7dd70c9776083ef3eb7f3ba33f766765ba266236dab4117e4b6a616f6bfab0",
+    "guide-packets/source-input/somatic-guide-r01-candidate.html": "2a2bda527da5d85d576e5746554d06ca7eb3be80124bdcee34872d33adf3d701",
+    "guide-packets/source-input/vagal-blitz-safety-p5.txt": "f95e06d1af7d631c3c7414cb44ee88af1d21064f8d9a86320dcb14fc5a29a792",
+    "guides/inner-child-guide.txt": "a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3",
+    "guides/manifest.json": "455702be5e8fc3af9b0f045c1d751edb7cd2b75592f4e1f87f175a8a03cbbd7a",
+    "guides/owner-amendments.json": "4363bf4f3721a9e3a8a4859ce34e7a530d8d48f6135fd7021b577bf8e3a05f56",
+    "guides/somatic-sequencing-guide.txt": "f865c8d93221cccd8e49f49adbf0961051f0c0775603e785420ee89509acb419",
+    "guides/source-layout.json": "0b2701c8b48569e57c71ffda468ba9f66c92a398832f4eafe9f1b693744a0299",
+    "guides/vagal-blitz-source.pdf": "79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c",
+    "docs/INNER-CHILD-THERAPY-MAP.md": "4a349e8bea59d4be01282a50750b36a8838643fd24c4068345db300587777369"
+  },
+  "verification": {
+    "repositoryAudit": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 1,
+      "warning": "pre-existing hosted GitHub App permission readback remains unverified"
+    },
+    "publicationAudit": {
+      "ok": true,
+      "scannedRecords": 147838,
+      "findings": 0
+    },
+    "graphRegressions": {
+      "passed": 12,
+      "count": 12
+    },
+    "automatedTests": {
+      "passed": 387,
+      "count": 387
+    },
+    "packageVerify": "PASS"
+  }
+}

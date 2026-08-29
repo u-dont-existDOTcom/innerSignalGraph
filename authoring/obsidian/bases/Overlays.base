@@ -1,0 +1,7 @@
+filters:
+  and:
+    - file.inFolder("current/governance/overlays")
+views:
+  - type: table
+    name: Overlays
+    order: [overlay_id, status, authority, anchors, reconciled_nodes]

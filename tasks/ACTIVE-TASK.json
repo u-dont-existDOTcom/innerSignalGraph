@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "taskId": "obsidian-authoring-architecture-v1",
+  "title": "Implement the graph-authoritative Obsidian authoring and mapping architecture",
+  "status": "active",
+  "exclusive": true,
+  "repository": "u-dont-existDOTcom/innerSignalGraph",
+  "requiredBranch": "codex/obsidian-authoring-architecture-20260829",
+  "pullRequest": null,
+  "ownerAuthorized": true,
+  "source": {
+    "repository": "u-dont-existDOTcom/innerSignalGraph",
+    "mainSha": "82b12b20c4a401b5e60999f981292c36fbaa8a53",
+    "evidenceCommit": "060a9e17d7a7094ffad96741e3c37e8ca2866cd7"
+  },
+  "statePath": "tasks/obsidian-authoring-architecture-v1/CURRENT-STATE.md",
+  "preflightCommand": "npm run authoring:task:preflight",
+  "completionCommand": "npm run authoring:task:acceptance",
+  "completionClaimRule": "Ordinary tests and green CI are prerequisites only. Readiness requires the task-specific acceptance command; completion additionally requires protected integration and an immutable receipt.",
+  "suspendedTaskSources": [
+    "the installed-GitHub-App permission readback in the repository-wide checkpoint",
+    "old conversation objectives and handoffs",
+    "unrelated worktree tasks",
+    "autonomous roadmap selection",
+    "Guide Packet r03 and therapy-policy queues",
+    "stable release and installation queues"
+  ],
+  "acceptance": {
+    "requiredArtifacts": [
+      "authoring/obsidian/current/manifest.json",
+      "authoring/obsidian/current/maps/development-graph.canvas",
+      "docs/INNER-CHILD-THERAPY-MAP.md",
+      "docs/OBSIDIAN-AUTHORING-IMPLEMENTATION-REPORT-2026-08-29.md"
+    ],
+    "requiredDocumentation": [
+      "docs/superpowers/specs/2026-08-29-obsidian-authoring-architecture.md",
+      "docs/superpowers/plans/2026-08-29-obsidian-authoring-architecture.md",
+      "docs/AUTHORING-ARCHITECTURE.md",
+      "authoring/README.md",
+      "authoring/obsidian/HOME.md",
+      "authoring/obsidian/VAULT-SETUP.md"
+    ],
+    "requiredCommands": [
+      "npm run authoring:validate",
+      "npm run authoring:check",
+      "npm run authoring:maps:check",
+      "npm run graph:compile",
+      "npm run graph:test",
+      "npm test",
+      "npm run verify"
+    ]
+  }
+}

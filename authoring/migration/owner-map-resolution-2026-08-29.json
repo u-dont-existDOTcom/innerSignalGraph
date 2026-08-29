@@ -1,0 +1,83 @@
+{
+  "contractVersion": "inner-signal-map-owner-resolution-v1",
+  "decisionSetId": "OWNER.MAP.RESOLUTION.2026-08-29",
+  "decisions": [
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D01",
+      "status": "approved-qualified",
+      "statement": "When activation is high, pause and orient before deciding what it means. No fixed breath count is required."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D02",
+      "status": "approved-qualified",
+      "statement": "Tentative conclusions may be formed during activation when doing so creates no safety issue, and those conclusions must be re-evaluated when calm."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D03",
+      "status": "approved-qualified",
+      "statement": "Treat best-friend advice as a draft and retain only what is compassionate, feasible, value-consistent, and compatible with the person's own judgment."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D04",
+      "status": "approved-qualified",
+      "statement": "The Protector may pause an immediately unsafe impulse and seek support while the underlying feeling remains permitted."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D05",
+      "status": "approved-qualified",
+      "statement": "Do not create parts unless that model is useful. Do not over-separate or over-integrate internal positions because of a map or model. The useful model is dynamic and may change from one moment to the next."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D06",
+      "status": "approved-qualified",
+      "statement": "Prefer truthful, bounded promises of protection and repair. After a lapse, return and repair rather than promising invulnerability."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D07",
+      "status": "approved",
+      "statement": "Worth is intrinsic, while adult capacities can be developed through practice."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D08",
+      "status": "approved-qualified",
+      "statement": "When possible, close inner work deliberately by reorienting, noticing the body, and naming the next ordinary action; do not impose a fixed ritual."
+    },
+    {
+      "futureGuideProposalRequired": true,
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D09",
+      "status": "approved-qualified",
+      "statement": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into a trial. No mandatory morning/evening cadence is established."
+    },
+    {
+      "futureGuideProposalRequired": true,
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D10",
+      "status": "approved-qualified",
+      "statement": "Common-humanity guidance is not optional: the person is not alone in suffering, and connection with others who are healing can support mutual peer healing. This must not minimize the person's particular trauma."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D11",
+      "status": "approved",
+      "statement": "During a meaningful transition or ending, name what ended, what remains unknown, and how adult and child remain together through the gap."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D12",
+      "status": "retired-with-clarification",
+      "statement": "Retire 'forgiveness only when useful.' Preserve the existing distinction that forgiveness does not erase harm or weaken accountability, boundaries, consequences, distance, or no-contact."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D13",
+      "status": "approved-qualified",
+      "statement": "Some people whose identity is underdeveloped may need preference and selfhood development before no-self or surrender practices are useful; this is not a universal prerequisite."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D14",
+      "status": "retired-and-replaced",
+      "statement": "Retire the universal 'every session ends' wording and use the flexible, qualified closure guidance in D08."
+    },
+    {
+      "id": "OWNER.MAP.RESOLUTION.2026-08-29.D15",
+      "status": "approved-retirement",
+      "statement": "Retire all 57 manual Mermaid arrows as executable topology. Preserve them in the migration ledger and generate only exact compiled edges and explicit documentation-overlay relationships."
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+filters:
+  and:
+    - file.inFolder("proposals")
+views:
+  - type: table
+    name: Proposals
+    order: [proposal_id, status, target_graph_ids, declared_regression_ids, contains_therapy_semantic_change, contains_documentation_overlay_change]

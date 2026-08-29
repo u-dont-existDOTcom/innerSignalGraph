@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "inner-signal-authoring-projection-index-note.schema.json",
+  "oneOf": [
+    { "$ref": "#/$defs/source" },
+    { "$ref": "#/$defs/amendment" },
+    { "$ref": "#/$defs/decision" },
+    { "$ref": "#/$defs/overlay" },
+    { "$ref": "#/$defs/regression" }
+  ],
+  "$defs": {
+    "common": {
+      "type": "object",
+      "properties": {
+        "projection_mode": { "const": "current" },
+        "generated": { "const": true },
+        "projection_input_sha256": { "$ref": "#/$defs/hash" }
+      },
+      "required": ["projection_mode", "generated", "projection_input_sha256"]
+    },
+    "source": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authoring_contract", "entity_type", "projection_mode", "generated", "source_id", "guide_id", "heading", "source_role", "source_hash", "section_hash", "locator_kind", "cited_by_node_ids", "projection_input_sha256"],
+          "properties": {
+            "authoring_contract": { "const": "inner-signal-authoring-projection-v1" },
+            "entity_type": { "const": "source-section" },
+            "projection_mode": { "const": "current" },
+            "generated": { "const": true },
+            "source_id": { "$ref": "#/$defs/text" },
+            "guide_id": { "$ref": "#/$defs/text" },
+            "heading": { "$ref": "#/$defs/text" },
+            "source_role": { "$ref": "#/$defs/text" },
+            "source_hash": { "$ref": "#/$defs/hash" },
+            "section_hash": { "$ref": "#/$defs/hash" },
+            "locator_kind": { "enum": ["text-lines", "pdf-pages", "amendment-record"] },
+            "cited_by_node_ids": { "$ref": "#/$defs/strings" },
+            "projection_input_sha256": { "$ref": "#/$defs/hash" }
+          }
+        }
+      ]
+    },
+    "amendment": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authoring_contract", "entity_type", "projection_mode", "generated", "amendment_id", "status", "domain", "base_record_sha256", "source_file_sha256", "projection_input_sha256"],
+          "properties": {
+            "authoring_contract": { "const": "inner-signal-authoring-projection-v1" },
+            "entity_type": { "const": "owner-amendment" },
+            "projection_mode": { "const": "current" },
+            "generated": { "const": true },
+            "amendment_id": { "$ref": "#/$defs/text" },
+            "status": { "$ref": "#/$defs/text" },
+            "domain": { "$ref": "#/$defs/text" },
+            "base_record_sha256": { "$ref": "#/$defs/hash" },
+            "source_file_sha256": { "$ref": "#/$defs/hash" },
+            "projection_input_sha256": { "$ref": "#/$defs/hash" }
+          }
+        }
+      ]
+    },
+    "decision": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authoring_contract", "entity_type", "projection_mode", "generated", "decision_id", "status", "future_guide_proposal_required", "base_record_sha256", "projection_input_sha256"],
+          "properties": {
+            "authoring_contract": { "const": "inner-signal-authoring-projection-v1" },
+            "entity_type": { "const": "map-owner-decision" },
+            "projection_mode": { "const": "current" },
+            "generated": { "const": true },
+            "decision_id": { "$ref": "#/$defs/text" },
+            "status": { "$ref": "#/$defs/text" },
+            "future_guide_proposal_required": { "type": "boolean" },
+            "base_record_sha256": { "$ref": "#/$defs/hash" },
+            "projection_input_sha256": { "$ref": "#/$defs/hash" }
+          }
+        }
+      ]
+    },
+    "overlay": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authoring_contract", "entity_type", "projection_mode", "generated", "overlay_id", "map_id", "status", "authority", "anchors", "reconciled_nodes", "base_record_sha256", "projection_input_sha256"],
+          "properties": {
+            "authoring_contract": { "const": "inner-signal-map-overlay-v1" },
+            "entity_type": { "const": "documentation-overlay" },
+            "projection_mode": { "const": "current" },
+            "generated": { "const": true },
+            "overlay_id": { "$ref": "#/$defs/text" },
+            "map_id": { "$ref": "#/$defs/text" },
+            "status": { "$ref": "#/$defs/text" },
+            "authority": { "$ref": "#/$defs/text" },
+            "anchors": { "$ref": "#/$defs/strings" },
+            "reconciled_nodes": { "$ref": "#/$defs/strings" },
+            "base_record_sha256": { "$ref": "#/$defs/hash" },
+            "projection_input_sha256": { "$ref": "#/$defs/hash" }
+          }
+        }
+      ]
+    },
+    "regression": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authoring_contract", "entity_type", "projection_mode", "generated", "case_id", "affected_node_ids", "expected_primary", "expected_question", "safety_relevance", "passed", "base_record_sha256", "projection_input_sha256"],
+          "properties": {
+            "authoring_contract": { "const": "inner-signal-authoring-projection-v1" },
+            "entity_type": { "const": "graph-regression" },
+            "projection_mode": { "const": "current" },
+            "generated": { "const": true },
+            "case_id": { "$ref": "#/$defs/text" },
+            "affected_node_ids": { "$ref": "#/$defs/strings" },
+            "expected_primary": { "type": ["string", "null"] },
+            "expected_question": { "type": ["string", "null"] },
+            "safety_relevance": { "type": "boolean" },
+            "passed": { "type": "boolean" },
+            "base_record_sha256": { "$ref": "#/$defs/hash" },
+            "projection_input_sha256": { "$ref": "#/$defs/hash" }
+          }
+        }
+      ]
+    },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "text": { "type": "string", "minLength": 1 },
+    "strings": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }
+  }
+}

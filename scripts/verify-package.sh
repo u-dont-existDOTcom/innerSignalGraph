@@ -28,6 +28,12 @@ NODE
 rm -f "$graph_file"
 
 echo
+echo "=== OBSIDIAN AUTHORING PROJECTION ==="
+npm run authoring:validate
+npm run authoring:check
+npm run authoring:maps:check
+
+echo
 echo "=== GUIDE PACKET FIXTURES ==="
 packet_tmp="$(mktemp -d)"
 node src/cli/guide-packet.mjs build-fixture --output "$packet_tmp/r01" > "$packet_tmp/r01-build.json"

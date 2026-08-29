@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "inner-signal-authoring-receipt.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "proposalId", "baseProjectionInputSha256", "proposalEvidenceSha256", "candidateBundleSha256", "candidateGraphHashes", "semanticDiffSha256", "regressionImpactSha256", "provenanceImpactSha256", "mapSha256", "canvasSha256", "regressionStatus", "ownerDecisionRequired"],
+  "properties": {
+    "contractVersion": { "const": "inner-signal-authoring-receipt-v1" },
+    "proposalId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$" },
+    "baseProjectionInputSha256": { "$ref": "#/$defs/hash" },
+    "proposalEvidenceSha256": { "$ref": "#/$defs/hash" },
+    "candidateBundleSha256": { "$ref": "#/$defs/hash" },
+    "candidateGraphHashes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["graphId", "path", "sha256"],
+        "properties": {
+          "graphId": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "$ref": "#/$defs/hash" }
+        }
+      }
+    },
+    "semanticDiffSha256": { "$ref": "#/$defs/hash" },
+    "regressionImpactSha256": { "$ref": "#/$defs/hash" },
+    "provenanceImpactSha256": { "$ref": "#/$defs/hash" },
+    "mapSha256": { "$ref": "#/$defs/hash" },
+    "canvasSha256": { "$ref": "#/$defs/hash" },
+    "packetSha256": { "$ref": "#/$defs/hash" },
+    "regressionStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "count", "passed"],
+      "properties": {
+        "ok": { "type": "boolean" },
+        "count": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "ownerDecisionRequired": { "type": "boolean" }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }
+}

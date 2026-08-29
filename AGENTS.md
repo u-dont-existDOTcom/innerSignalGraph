@@ -24,12 +24,15 @@
 - Complete package gate: `npm run verify`
 - Graph gate when affected: `npm run graph:test`
 - Lesson gate when affected: `npm run therapy-lessons:verify`
+- Authoring gates when graph/Obsidian projection or maps are affected: `npm run authoring:validate`, `npm run authoring:check`, and `npm run authoring:maps:check`
 
 Provider checks are explicit opt-in and are not hermetic CI.
 
 ## Workflow
 
 Use an isolated worktree or task branch and a pull request. Keep accepted designs/plans under `docs/superpowers/`. The GitHub repository is public and the publication transition is complete. Public visibility does not grant release or product-policy authority; hosted controls remain claims only when supported by current GitHub API/settings evidence. Run targeted and complete gates, inspect the final diff and package artifacts, update `state/CODEX-CURRENT-STATE.md`, and complete lesson closeout. Release evidence follows `docs/RELEASE-EVIDENCE.md`.
+
+For Obsidian authoring, `guide-graphs/candidates/*.graph.json` and the current guide/source family remain authority. `authoring/obsidian/current/`, Bases, Canvas, Mermaid, links, and proposal previews are non-authoritative. Semantic approval remains in the Guide Packet owner-decision artifact. Reconciliation requires an exact approved packet and hash on a task branch and never installs or writes to `stable`.
 
 Integrity maintenance: any legitimate edit to `README.md`, `AGENTS.md`, `docs/INDEX.md`, `SECURITY.md`, or `CONTRIBUTING.md`—including Task 9 public/completed reconciliation—must update the reviewed SHA-256 bindings in `scripts/audit-repository.mjs` in the same reviewed change.
 

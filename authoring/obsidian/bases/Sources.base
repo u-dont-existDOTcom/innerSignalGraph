@@ -1,0 +1,7 @@
+filters:
+  and:
+    - file.inFolder("current/sources")
+views:
+  - type: table
+    name: Sources
+    order: [source_id, guide_id, heading, source_role, source_hash, section_hash, cited_by_node_ids]

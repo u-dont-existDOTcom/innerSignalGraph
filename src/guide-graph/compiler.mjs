@@ -87,7 +87,7 @@ function graphReport(bundle, amendments) {
     `- Advanced-release nodes never coach syncope, substance potentiation, or standing lightheadedness.\n`;
 }
 
-export async function compileGuideGraphs({ root = projectRoot, write = true } = {}) {
+export async function compileGuideGraphs({ root = projectRoot, write = true, candidateGraphs = null } = {}) {
   const guidesDir = path.join(root, "guides");
   const graphRoot = path.join(root, "guide-graphs");
   const manifest = await readJson(path.join(guidesDir, "manifest.json"));
@@ -110,7 +110,14 @@ export async function compileGuideGraphs({ root = projectRoot, write = true } = 
   const sourceIndex = new Set(sourceMaps.flatMap((map) => map.sections.map((section) => section.id)));
 
   const graphFiles = ["inner-child.graph.json", "somatic.graph.json", "cross-guide.graph.json"];
-  const graphs = await Promise.all(graphFiles.map((file) => readJson(path.join(graphRoot, "candidates", file))));
+  const graphs = candidateGraphs === null
+    ? await Promise.all(graphFiles.map((file) => readJson(path.join(graphRoot, "candidates", file))))
+    : structuredClone(candidateGraphs);
+  if (!Array.isArray(graphs)) throw new ValidationError("Candidate graph override must be an array.");
+  const expectedGraphIds = new Set(["inner-child-directed-graph", "somatic-directed-graph", "inner-child-somatic-cross-guide"]);
+  if (candidateGraphs !== null && (graphs.length !== expectedGraphIds.size || graphs.some((graph) => !expectedGraphIds.has(graph.graphId)))) {
+    throw new ValidationError("Candidate graph override must contain exactly the three canonical graph ids.");
+  }
   const allNodeIds = new Set(graphs.flatMap((graph) => graph.nodes.map((node) => node.id)));
   graphs.forEach((graph) => validateGraph(graph, { knownSourceRefs: sourceIndex, knownNodeIds: allNodeIds }));
   const duplicateNodeIds = graphs.flatMap((graph) => graph.nodes.map((node) => node.id));
@@ -133,6 +140,7 @@ export async function compileGuideGraphs({ root = projectRoot, write = true } = 
   };
 
   if (write) {
+    if (candidateGraphs !== null) throw new ValidationError("Candidate graph overrides may only be compiled with write:false.");
     for (const map of sourceMaps) await atomicWrite(path.join(graphRoot, "source-maps", `${map.guideId}.json`), map);
     for (const graph of compiledGraphs) await atomicWrite(path.join(graphRoot, "compiled", `${graph.graphId}.json`), graph);
     await atomicWrite(path.join(graphRoot, "compiled", "bundle.json"), bundle);

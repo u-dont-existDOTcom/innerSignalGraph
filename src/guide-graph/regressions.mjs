@@ -17,14 +17,18 @@ function includesPatterns(actual, expected = []) {
   return expected.every((pattern) => text.includes(String(pattern).toLowerCase()));
 }
 
-export async function runGraphRegressionSuite({ root = projectRoot } = {}) {
+export async function runGraphRegressionSuite({ root = projectRoot, bundle = null, cases = null } = {}) {
   const corpusDir = path.join(root, "corpus", "graph-cases");
-  const files = (await fs.readdir(corpusDir)).filter((file) => file.endsWith(".json")).sort();
-  const bundle = await loadCompiledGuideGraphBundle({ root });
+  let definitions = cases === null ? null : structuredClone(cases);
+  if (definitions === null) {
+    const files = (await fs.readdir(corpusDir)).filter((file) => file.endsWith(".json")).sort();
+    definitions = await Promise.all(files.map(async (file) => JSON.parse(await fs.readFile(path.join(corpusDir, file), "utf8"))));
+  }
+  if (!Array.isArray(definitions)) throw new TypeError("Graph regression cases must be an array.");
+  const selectedBundle = bundle === null ? await loadCompiledGuideGraphBundle({ root }) : structuredClone(bundle);
   const results = [];
-  for (const file of files) {
-    const definition = JSON.parse(await fs.readFile(path.join(corpusDir, file), "utf8"));
-    const plan = planFromGraphs({ variables: definition.variables, unknowns: definition.unknowns, graphs: bundle.graphs });
+  for (const definition of definitions) {
+    const plan = planFromGraphs({ variables: definition.variables, unknowns: definition.unknowns, graphs: selectedBundle.graphs });
     const selected = plan.selectedNodes.map((node) => node.id);
     const matched = plan.trace.filter((item) => item.matched).map((item) => item.id);
     const deferred = plan.deferredNodes.map((node) => node.id);
