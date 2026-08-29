@@ -63,7 +63,7 @@ base_projection_input_sha256: e4e31e4dded7f0ec1f824717e405289f76163ca88db84795b2
   },
   "avoid": [
     "Do not create permanent authority dependency.",
-    "Do not turn review into prosecution, grading, a trial, or a mandatory morning/evening ritual."
+    "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -71,17 +71,17 @@ base_projection_input_sha256: e4e31e4dded7f0ec1f824717e405289f76163ca88db84795b2
     "deferNodes": [],
     "forbiddenOverclaims": [],
     "requiredNuance": [
-      "Review distinguishes accountability and learning from punishment or a verdict on intrinsic worth."
+      "Review distinguishes accountability and learning from punishment or judgments about worth. Accountability may still include consequences, firmer boundaries, and an honest assessment of present capacity."
     ]
   },
   "recommendations": [
     "Name what the helper did, choose five percent to do personally, and test one action in ordinary life.",
     "Gradually hand the role back to the user.",
-    "After an ordinary-life attempt, review what was recognized, what was repaired, which promises were kept or missed, and one thing to change next."
+    "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
   ],
   "successSignals": [
     "One protective or nurturing act occurs without the helper present.",
-    "The review yields one specific repair or next adjustment without escalating self-attack."
+    "The review yields clearer understanding and either one bounded repair or adjustment, or a clear conclusion that no change is needed, without materially escalating self-attack."
   ]
 }
 ```
@@ -89,8 +89,8 @@ base_projection_input_sha256: e4e31e4dded7f0ec1f824717e405289f76163ca88db84795b2
 
 ## Proposal rationale
 
-D09 makes review critical without authorizing a new route or ritual. This node already owns learning from supported action and is therefore the narrowest place to add a post-attempt review that notices both kept and missed promises and ends in one adjustment. The main risk is turning accountability into punishment or a verdict on worth.
+D09 makes review critical without authorizing a new route or ritual. This node already owns learning from supported action and is therefore the narrowest place to add proportionate review after attempting improved care, protection, or guidance. Review is not required after every attempt, may conclude that nothing needs changing, and must not turn noticing into compulsory journaling, tracking, measurement, or self-surveillance. Voluntary tracking remains available when it genuinely supports learning.
 
 ## Regression intent
 
-G013 must select this node, preserve witness capacity, carry the new accountability-versus-punishment nuance, and retain kept promises, repair, and one next adjustment without activating unrelated routes.
+G013 must select this node, preserve witness capacity, carry the exact user-facing recommendation plus the backend accountability, capacity, non-compulsion, and no-change-needed distinctions, and avoid activating unrelated routes.

@@ -49,7 +49,7 @@ base_projection_input_sha256: e4e31e4dded7f0ec1f824717e405289f76163ca88db84795b2
   },
   "avoid": [
     "Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed.",
-    "Do not use review to stage an internal trial or turn one lapse into a final verdict about worth or future capacity."
+    "Do not turn a lapse or repeated pattern into a verdict about intrinsic worth. Review may still conclude that a particular commitment currently exceeds capacity or requires stronger limits, support, or a different plan."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -64,7 +64,7 @@ base_projection_input_sha256: e4e31e4dded7f0ec1f824717e405289f76163ca88db84795b2
       "Relaxation may reduce nervous-system charge, but it does not by itself repair a credibility conflict or change a contradictory track record.",
       "The sarcastic question can be both contempt and a legitimate literal request for evidence; answer it concretely rather than arguing with it.",
       "A pre-existing adverse track record is different from having no track record yet.",
-      "Missed promises are evidence to address through acknowledgement, repair, and changed behavior; kept promises and successful repairs are evidence too."
+      "A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse."
     ]
   },
   "recommendations": [
@@ -73,11 +73,10 @@ base_projection_input_sha256: e4e31e4dded7f0ec1f824717e405289f76163ca88db84795b2
     "Distinguish no track record from an adverse track record. If the younger state is already pointing to how adult life turned out, credibility repair means building counterevidence against an existing negative assessment rather than acting as though evidence starts at zero.",
     "Make one ordinary protective act visible and do not demand gratitude, trust, or emotional change.",
     "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently.",
-    "When a promise was missed, name it, repair what can be repaired, and make the next promise more credible rather than demanding acquittal or issuing a global verdict."
+    "When an effort at improvement doesn’t go as hoped, name what happened, repair what can be repaired, and make the next promise more credible."
   ],
   "successSignals": [
-    "Promises and actions begin to align; an adverse track record starts accumulating credible counterevidence without demanding immediate trust.",
-    "Review tracks kept promises and completed repairs as evidence alongside lapses."
+    "Promises and actions begin to align; an adverse track record starts accumulating credible counterevidence without demanding immediate trust."
   ]
 }
 ```
@@ -85,8 +84,8 @@ base_projection_input_sha256: e4e31e4dded7f0ec1f824717e405289f76163ca88db84795b2
 
 ## Proposal rationale
 
-D09 belongs here because this node already owns promises, counterevidence, repair, and repeated follow-through. The candidate adds balanced review of lapses, kept promises, and completed repairs without asking for acquittal or converting one miss into a verdict about worth or future capacity.
+D09 belongs here because this node already owns commitments, counterevidence, repair, and repeated follow-through. The candidate treats an effort that did not go as hoped without assuming every intention was a promise or requiring another promise. Credibility review considers what was actually agreed, capacity and circumstances, acknowledgement, repair, and kept commitments without letting positive evidence cancel a serious lapse.
 
 ## Regression intent
 
-Proposal-local replacements for G001 and G012 must preserve every existing credibility, age, speaker, adverse-record, and witness assertion while requiring acknowledgement, repair, changed behavior, and kept-promise/successful-repair evidence.
+Proposal-local replacements for G001 and G012 must preserve every existing credibility, age, speaker, adverse-record, and witness assertion while carrying the exact user-facing recommendation and the backend worth, current-capacity, limits, support, actual-agreement, repair, and non-cancellation distinctions.

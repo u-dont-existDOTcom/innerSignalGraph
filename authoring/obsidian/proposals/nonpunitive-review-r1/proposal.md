@@ -18,7 +18,7 @@ contains_documentation_overlay_change: false
 
 ## Intent
 
-Implement D09 as a bounded candidate for non-punitive review after ordinary-life action. The candidate should help a person notice recognition, repair, missed and kept promises, and one next adjustment while preserving accountability without turning review into a trial.
+Implement D09 as a bounded candidate for proportionate, useful review after attempting improved care, protection, or guidance for the inner child. The candidate should support learning and repair without harsh judgment, compulsory review, self-surveillance, or verdicts about intrinsic worth.
 
 ## Non-goals
 
@@ -26,8 +26,8 @@ Do not change routing, activation, graph topology, tiers, priorities, default qu
 
 ## Worst plausible failure
 
-Review could become disguised self-prosecution or a repetitive grading ritual that escalates self-attack, minimizes real misses, turns one lapse into a verdict on intrinsic worth or future capacity, or crowds out the one-main-next-move response rule.
+Review could become compulsory self-surveillance, minimize a serious lapse, treat every unsuccessful intention as a promise, demand commitments beyond present capacity, turn a lapse or repeated pattern into a verdict on intrinsic worth, or crowd out the one-main-next-move response rule.
 
 ## Acceptance distinctions
 
-G013 must select `IC.ADULT_APPRENTICE` with witness capacity already present and carry kept promises, repair, accountability-versus-punishment, and one concrete next adjustment. G001 and G012 must preserve all existing credibility, age, speaker, adverse-record, and witness distinctions while adding acknowledgement, repair, changed behavior, and balanced evidence from lapses, kept promises, and successful repairs. All canonical graph cases must remain green, and no case may gain a fixed daily ritual or global worth verdict.
+G013 must select `IC.ADULT_APPRENTICE` with witness capacity already present and carry the exact approved user-facing recommendation while keeping review voluntary, proportionate, and permitted to conclude that no change is needed. G001 and G012 must preserve all existing credibility, age, speaker, adverse-record, and witness distinctions while carrying the exact approved user-facing recommendation and the backend distinctions concerning actual agreement, capacity, circumstances, limits, support, repair, kept commitments, and serious lapses. Backend constraints must shape realization without routinely being recited verbatim. All canonical graph cases must remain green, and no case may gain compulsory tracking or a verdict about intrinsic worth.

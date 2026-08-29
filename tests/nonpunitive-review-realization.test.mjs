@@ -34,8 +34,7 @@ test("the candidate changes only the five authorized fields on the two D09 nodes
     "IC.CREDIBILITY_REPAIR.avoid",
     "IC.CREDIBILITY_REPAIR.effects.requiredNuance",
     "IC.CREDIBILITY_REPAIR.recommendations",
-    "IC.CREDIBILITY_REPAIR.sourceRefs",
-    "IC.CREDIBILITY_REPAIR.successSignals"
+    "IC.CREDIBILITY_REPAIR.sourceRefs"
   ].sort();
 
   assert.deepEqual(built.diff.changedNodeIds, ["IC.ADULT_APPRENTICE", "IC.CREDIBILITY_REPAIR"]);
@@ -43,7 +42,7 @@ test("the candidate changes only the five authorized fields on the two D09 nodes
   assert.equal(JSON.stringify(built.candidateGraphs).includes("COMMON_HUMANITY"), false);
 });
 
-test("G013 carries non-punitive review through the deterministic intervention contract", () => {
+test("G013 carries the exact user-facing wording and backend distinctions through the intervention contract", () => {
   const definition = proposedCase("G013");
   const plan = planFromGraphs({ variables: definition.variables, unknowns: definition.unknowns, graphs: built.candidateBundle.graphs });
   const apprentice = node("IC.ADULT_APPRENTICE");
@@ -52,26 +51,26 @@ test("G013 carries non-punitive review through the deterministic intervention co
   assert(plan.selectedNodes.some((item) => item.id === "IC.ADULT_APPRENTICE"));
   assert.equal(plan.selectedNodes.some((item) => item.id === "IC.NEUTRAL_WITNESS"), false);
   assert.equal(plan.selectedNodes.some((item) => item.id === "IC.BORROW_LOVE"), false);
-  assert(plan.requiredNuance.includes("Review distinguishes accountability and learning from punishment or a verdict on intrinsic worth."));
-  assert(plan.avoid.includes("Do not turn review into prosecution, grading, a trial, or a mandatory morning/evening ritual."));
-  assert(apprentice.recommendations.includes("After an ordinary-life attempt, review what was recognized, what was repaired, which promises were kept or missed, and one thing to change next."));
-  assert(apprentice.successSignals.includes("The review yields one specific repair or next adjustment without escalating self-attack."));
+  assert(plan.requiredNuance.includes("Review distinguishes accountability and learning from punishment or judgments about worth. Accountability may still include consequences, firmer boundaries, and an honest assessment of present capacity."));
+  assert(plan.avoid.includes("Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."));
+  assert(apprentice.recommendations.includes("After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."));
+  assert(apprentice.successSignals.includes("The review yields clearer understanding and either one bounded repair or adjustment, or a clear conclusion that no change is needed, without materially escalating self-attack."));
 });
 
-test("credibility cases preserve misses, repair, kept promises, and successful repair as balanced evidence", () => {
+test("credibility cases preserve actual agreement, capacity, repair, kept commitments, and serious lapses", () => {
   for (const id of ["G001", "G012"]) {
     const definition = proposedCase(id);
     const plan = planFromGraphs({ variables: definition.variables, unknowns: definition.unknowns, graphs: built.candidateBundle.graphs });
     assert.equal(plan.primaryJob.id, "IC.CREDIBILITY_REPAIR");
-    assert(plan.requiredNuance.includes("Missed promises are evidence to address through acknowledgement, repair, and changed behavior; kept promises and successful repairs are evidence too."));
-    assert(plan.avoid.includes("Do not use review to stage an internal trial or turn one lapse into a final verdict about worth or future capacity."));
+    assert(plan.requiredNuance.includes("A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse."));
+    assert(plan.avoid.includes("Do not turn a lapse or repeated pattern into a verdict about intrinsic worth. Review may still conclude that a particular commitment currently exceeds capacity or requires stronger limits, support, or a different plan."));
   }
   const credibility = node("IC.CREDIBILITY_REPAIR");
-  assert(credibility.recommendations.includes("When a promise was missed, name it, repair what can be repaired, and make the next promise more credible rather than demanding acquittal or issuing a global verdict."));
-  assert(credibility.successSignals.includes("Review tracks kept promises and completed repairs as evidence alongside lapses."));
+  assert(credibility.recommendations.includes("When an effort at improvement doesn’t go as hoped, name what happened, repair what can be repaired, and make the next promise more credible."));
+  assert.deepEqual(credibility.successSignals, ["Promises and actions begin to align; an adverse track record starts accumulating credible counterevidence without demanding immediate trust."]);
 });
 
-test("the realization contract rejects trial, worth-verdict, and fixed-cadence framing while preserving one main next move", () => {
+test("backend constraints remain distinct from exact user-facing recommendations and preserve one main next move", () => {
   const definition = proposedCase("G013");
   const plan = planFromGraphs({ variables: definition.variables, unknowns: definition.unknowns, graphs: built.candidateBundle.graphs });
   const adjudication = {
@@ -90,10 +89,10 @@ test("the realization contract rejects trial, worth-verdict, and fixed-cadence f
   const prompt = realizationPrompt({ userMessage: "I want to review how I did.", recentTranscript: "", interventionContract: plan }, adjudication, "Claude");
 
   assert.match(prompt.system, /Give one main next move/);
-  assert.match(prompt.user, /Do not turn review into prosecution, grading, a trial, or a mandatory morning\/evening ritual\./);
-  assert.match(prompt.user, /punishment or a verdict on intrinsic worth/);
+  assert.match(prompt.user, /Do not make review punitive, compulsive, or mandatory\./);
+  assert.match(prompt.user, /consequences, firmer boundaries, and an honest assessment of present capacity/);
 
-  const answer = "Notice one kept promise, name one miss without making it a verdict on your worth, repair what can be repaired, and choose one adjustment for the next attempt.";
+  const answer = "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time.";
   const realized = enforceResponseContract({
     answer,
     next_question: "What should I review every morning and evening?",
@@ -103,5 +102,20 @@ test("the realization contract rejects trial, worth-verdict, and fixed-cadence f
   }, { plan, adjudication });
   assert.equal(realized.answer, answer);
   assert.equal(realized.next_question, "");
-  assert.equal(realized.answer.includes("morning and evening"), false);
+  assert.equal(realized.answer.includes("tracking"), false);
+  assert.equal(realized.answer.includes("intrinsic worth"), false);
+});
+
+test("superseded and rejected D09 wording is absent from the candidate", () => {
+  const serialized = JSON.stringify(built.candidateGraphs);
+  for (const wording of [
+    "After an ordinary-life attempt, review what was recognized",
+    "When a promise was missed, name it",
+    "Do not use review to stage an internal trial",
+    "Do not turn review into prosecution, grading, a trial",
+    "Review distinguishes accountability and learning from punishment or a verdict on intrinsic worth",
+    "The review yields one specific repair or next adjustment",
+    "Review tracks kept promises and completed repairs as evidence alongside lapses",
+    "Missed promises are evidence to address through acknowledgement"
+  ]) assert.equal(serialized.includes(wording), false, wording);
 });
