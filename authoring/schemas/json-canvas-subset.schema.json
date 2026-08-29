@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "inner-signal-json-canvas-subset.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["nodes", "edges"],
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "type", "file", "x", "y", "width", "height"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "type": { "const": "file" },
+              "file": { "$ref": "#/$defs/path" },
+              "x": { "type": "integer" },
+              "y": { "type": "integer" },
+              "width": { "type": "integer", "minimum": 1 },
+              "height": { "type": "integer", "minimum": 1 },
+              "color": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "type", "text", "x", "y", "width", "height"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "type": { "const": "text" },
+              "text": { "type": "string", "minLength": 1 },
+              "x": { "type": "integer" },
+              "y": { "type": "integer" },
+              "width": { "type": "integer", "minimum": 1 },
+              "height": { "type": "integer", "minimum": 1 },
+              "color": { "type": "string" }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "type", "label", "x", "y", "width", "height"],
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "type": { "const": "group" },
+              "label": { "type": "string", "minLength": 1 },
+              "x": { "type": "integer" },
+              "y": { "type": "integer" },
+              "width": { "type": "integer", "minimum": 1 },
+              "height": { "type": "integer", "minimum": 1 },
+              "color": { "type": "string" }
+            }
+          }
+        ]
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "fromNode", "toNode", "label"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "fromNode": { "$ref": "#/$defs/id" },
+          "toNode": { "$ref": "#/$defs/id" },
+          "label": { "type": "string" },
+          "fromSide": { "enum": ["top", "right", "bottom", "left"] },
+          "toSide": { "enum": ["top", "right", "bottom", "left"] },
+          "color": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$" }
+  }
+}

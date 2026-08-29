@@ -1,0 +1,6 @@
+.build/
+obsidian/scratch/*
+!obsidian/scratch/.gitkeep
+**/.obsidian/
+*.svg
+*.png

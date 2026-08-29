@@ -1,0 +1,7 @@
+filters:
+  and:
+    - file.inFolder("current/edges") || file.inFolder("proposals")
+views:
+  - type: table
+    name: Edges
+    order: [edge_id, graph_id, from_node_id, relation, to_node_id, projection_mode, proposal_id, operation]

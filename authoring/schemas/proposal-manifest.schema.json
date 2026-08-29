@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "inner-signal-authoring-proposal.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["authoring_contract", "entity_type", "proposal_id", "status", "base_projection_input_sha256", "target_graph_ids", "declared_regression_ids", "owner_decision_required", "contains_therapy_semantic_change", "contains_documentation_overlay_change"],
+  "properties": {
+    "authoring_contract": { "const": "inner-signal-authoring-proposal-v1" },
+    "entity_type": { "const": "proposal" },
+    "proposal_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$" },
+    "status": { "enum": ["draft", "built", "awaiting-owner", "approved", "rejected", "reconciled", "superseded"] },
+    "base_projection_input_sha256": { "$ref": "#/$defs/hash" },
+    "target_graph_ids": { "$ref": "#/$defs/strings" },
+    "declared_regression_ids": { "$ref": "#/$defs/strings" },
+    "owner_decision_required": { "type": "boolean" },
+    "contains_therapy_semantic_change": { "type": "boolean" },
+    "contains_documentation_overlay_change": { "type": "boolean" }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "strings": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+  }
+}

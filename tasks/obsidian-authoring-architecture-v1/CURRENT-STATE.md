@@ -34,24 +34,21 @@ Implement the owner-supplied hybrid Obsidian architecture without changing thera
 
 ## Current checkpoint
 
-The accepted design, branch-bound task lock, recovery state, and implementation plan are being committed before implementation code. Ordinary repository queues named in `tasks/ACTIVE-TASK.json` are suspended for this task only.
+The accepted design, branch-bound task lock, recovery state, and implementation plan are committed. The strict authoring contracts, deterministic read-only projection, overlay registry and owner-resolution record, complete legacy-map classification, generated Mermaid, generated JSON Canvas, and six Bases are implemented. Projection and map drift checks pass with projection input `4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e`. Ordinary repository queues named in `tasks/ACTIVE-TASK.json` are suspended for this task only.
 
 ## Remaining
 
-- Strict contracts, schemas, restricted frontmatter parser, and canonical JSON.
-- Deterministic current-state projection, manifest, Bases, source/regression/governance notes, and drift checks.
-- Living-map classification, overlay registry, generated Mermaid, and deterministic JSON Canvas.
 - Proposal creation/build/check workflow, stale-base enforcement, semantic diff completeness, coverage/provenance receipts.
 - Narrow Guide Packet candidate-bundle adapter and branch-only reconciliation path.
 - Documentation, acceptance audit, independent review, final hash comparison, protected PR, and CI readback.
 
 ## Blockers and stop conditions
 
-No current blocker. Stop rather than guess if canonical source bytes must change, old map authority cannot be proven, a graph field is unclassified, proposal provenance or regression coverage is missing, owner approval would have to be inferred, runtime imports authoring code, or any step would touch `stable` or install a release.
+No current blocker. The owner resolved the Stage 3 map authority boundary in decisions `OWNER.MAP.RESOLUTION.2026-08-29.D01` through `D15`. Review and common-humanity guidance are approved documentation overlays and future guide-proposal candidates; this architecture migration does not rewrite guide prose. The usefulness-only forgiveness phrase and the universal every-session-ends claim are retired. All 57 manual arrows are retired as executable topology.
 
 ## Next safe action
 
-Run `npm run authoring:task:preflight`, then implement schema/parser tests and the read-only projection stage.
+Commit the validated projection/map checkpoint, then implement hash-bound proposal creation, materialization, semantic diff, coverage/provenance receipts, Guide Packet adapter, and branch-only reconciliation.
 
 ## Recovery rule
 

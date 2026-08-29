@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "inner-signal-authoring-node-proposal.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["authoring_contract", "entity_type", "proposal_id", "operation", "graph_id", "node_id", "title", "kind", "tier", "priority", "authority", "graph_tags", "source_refs", "base_graph_sha256", "base_projection_input_sha256"],
+  "properties": {
+    "authoring_contract": { "const": "inner-signal-authoring-node-proposal-v1" },
+    "entity_type": { "const": "graph-node-proposal" },
+    "proposal_id": { "$ref": "#/$defs/proposalId" },
+    "operation": { "enum": ["add", "replace", "remove"] },
+    "graph_id": { "$ref": "#/$defs/id" },
+    "node_id": { "$ref": "#/$defs/id" },
+    "title": { "type": "string", "minLength": 1 },
+    "kind": { "type": "string", "minLength": 1 },
+    "tier": { "type": "integer", "minimum": 1, "maximum": 9 },
+    "priority": { "type": "integer", "minimum": 0, "maximum": 100 },
+    "authority": { "type": "string", "minLength": 1 },
+    "graph_tags": { "$ref": "#/$defs/strings" },
+    "source_refs": { "$ref": "#/$defs/strings" },
+    "base_record_sha256": { "$ref": "#/$defs/hash" },
+    "base_graph_sha256": { "$ref": "#/$defs/hash" },
+    "base_projection_input_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "operation": { "enum": ["replace", "remove"] } }, "required": ["operation"] },
+      "then": {
+        "properties": { "base_record_sha256": { "$ref": "#/$defs/hash" } },
+        "required": ["base_record_sha256"]
+      }
+    },
+    {
+      "if": { "properties": { "operation": { "const": "add" } }, "required": ["operation"] },
+      "then": { "not": { "required": ["base_record_sha256"] } }
+    }
+  ],
+  "$defs": {
+    "id": { "type": "string", "minLength": 1, "maxLength": 180 },
+    "proposalId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$" },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "strings": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+  }
+}

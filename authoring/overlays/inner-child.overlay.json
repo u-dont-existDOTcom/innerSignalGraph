@@ -1,0 +1,193 @@
+{
+  "contractVersion": "inner-signal-map-overlay-v1",
+  "mapId": "inner-child",
+  "items": [
+    {
+      "id": "OVERLAY.IC.PAUSE_ORIENT_BEFORE_INTERPRETATION",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D01",
+      "title": "Pause and orient before interpretation",
+      "description": "When activation is high, pause and orient before deciding what it means. Use a proportionate pause rather than a fixed breath count.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D01", "IC.BEFORE_DEEP", "IC.REGULATION_BEFORE_DIALOGUE", "IC.ESCAPE_URGE"],
+      "anchorNodeIds": ["IC.SAFETY_ORIENTATION", "IC.MEET_GUARD"],
+      "relation": "qualifies-before-interpretation",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.TENTATIVE_CONCLUSIONS_REEVALUATE",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D02",
+      "title": "Re-evaluate tentative activated conclusions when calm",
+      "description": "Tentative conclusions are allowed during activation when they create no safety issue, and must be re-evaluated when calm.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D02", "IC.PHOTOS", "IC.ALTERED_STATES", "IC.BOTTOM_UP_SEQUENCE"],
+      "anchorNodeIds": ["IC.SAFETY_ORIENTATION", "IC.MEET_GUARD", "IC.PHOTO_EPISTEMIC_CAUTION", "IC.ALTERED_STATE_GATE"],
+      "relation": "qualifies-conclusions-during-activation",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.BEST_FRIEND_REALITY_CHECK",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D03",
+      "title": "Reality-check borrowed best-friend advice",
+      "description": "Treat best-friend advice as a draft and retain only what is compassionate, feasible, value-consistent, and compatible with the person's own judgment.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D03", "AMEND.IC.BEST_FRIEND_PROMPT", "IC.BORROW_ONE_FUNCTION"],
+      "anchorNodeIds": ["IC.BEST_FRIEND_PERSPECTIVE", "IC.BORROW_ONE_FUNCTION"],
+      "relation": "extends-reality-check",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.UNSAFE_IMPULSE_PAUSE",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D04",
+      "title": "Pause an immediately unsafe impulse",
+      "description": "The Protector may pause an immediately unsafe impulse and seek support while the underlying feeling remains permitted.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D04", "IC.ESCAPE_URGE", "IC.PROTECTOR_VISIBLE"],
+      "anchorNodeIds": ["IC.SAFETY_ORIENTATION", "IC.MEET_GUARD", "IC.PROTECTOR_ACTION"],
+      "relation": "qualifies-protective-response",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.DYNAMIC_PARTS_MODEL",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D05",
+      "title": "Use parts modeling dynamically and only while useful",
+      "description": "Do not create parts unless that model is useful. Do not over-separate or over-integrate internal positions because a map depicts them that way. The useful model may change from one moment to the next.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D05", "IC.START_WHATEVER", "IC.GUARDS", "IC.IFS"],
+      "anchorNodeIds": ["IC.NEUTRAL_WITNESS", "IC.MEET_GUARD", "IC.CREDIBILITY_REPAIR", "IC.AGE_RESPONSIBILITY_CLARIFICATION"],
+      "relation": "qualifies-parts-model",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.BOUNDED_TRUTHFUL_VOW",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D06",
+      "title": "Make a bounded truthful protection-and-repair promise",
+      "description": "Prefer truthful, bounded promises of protection and repair. After a lapse, return and repair rather than promising invulnerability.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D06", "IC.VOW", "IC.PROTECTOR_VISIBLE"],
+      "anchorNodeIds": ["IC.CREDIBILITY_REPAIR", "IC.PROTECTOR_ACTION"],
+      "relation": "qualifies-credibility-vow",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.WORTH_CAPACITY_DISTINCTION",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D07",
+      "title": "Separate intrinsic worth from developed adult capacity",
+      "description": "Worth is intrinsic. Adult capacities such as pausing, protecting, choosing, repairing, differentiating, and acting consistently develop through practice.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D07", "IC.THREE_FUNCTIONS", "IC.DIFFERENTIATION", "IC.CHILD_BAD_THINGS"],
+      "anchorNodeIds": ["IC.IDENTITY_FORMATION", "IC.DIFFERENTIATION", "IC.GUIDE_LATER"],
+      "relation": "distinguishes-worth-from-capacity",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.FLEXIBLE_DELIBERATE_CLOSURE",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D08",
+      "title": "Close inner work deliberately and flexibly",
+      "description": "When possible, close inner work deliberately by reorienting, noticing the body, and naming the next ordinary action; do not impose a fixed ritual.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D08", "IC.REGULATION_BEFORE_DIALOGUE", "IC.PHOTOS"],
+      "anchorNodeIds": ["IC.SAFETY_ORIENTATION", "IC.DEEP_CHILD_DIALOGUE", "IC.ALTERED_STATE_GATE"],
+      "relation": "adds-flexible-closure",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.NONPUNITIVE_REVIEW",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D09",
+      "title": "Review without holding a trial",
+      "description": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into prosecution, grading, or a trial.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D09", "IC.ADULT_APPRENTICE", "IC.PROTECTOR_VISIBLE", "IC.VOW"],
+      "anchorNodeIds": ["IC.ADULT_APPRENTICE", "IC.CREDIBILITY_REPAIR", "IC.PROTECTOR_ACTION"],
+      "relation": "adds-nonpunitive-review",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.COMMON_HUMANITY_MUTUAL_HEALING",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D10",
+      "title": "Connect common humanity with mutual peer healing",
+      "description": "Common-humanity guidance is not optional: the person is not alone in suffering, and connection with others who are healing can support mutual peer healing. This must not minimize the person's particular trauma.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D10", "IC.RELATIONSHIP"],
+      "anchorNodeIds": ["IC.BORROW_ONE_FUNCTION", "IC.ADULT_APPRENTICE"],
+      "relation": "adds-common-humanity-guidance",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.TRANSITIONS_AND_ENDINGS",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D11",
+      "title": "Name transitions, endings, and the uncertain gap",
+      "description": "During a meaningful transition or ending, name what ended, what remains unknown, and how adult and child remain together through the gap without forcing premature certainty.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D11", "IC.RELATIONSHIP", "IC.DIFFERENTIATION"],
+      "anchorNodeIds": ["IC.ADULT_APPRENTICE", "IC.IDENTITY_FORMATION", "IC.DIFFERENTIATION", "IC.GUIDE_LATER"],
+      "relation": "adds-transition-practice",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.IDENTITY_BEFORE_DECONSTRUCTION",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D13",
+      "title": "Develop enough identity before deconstructive practice when needed",
+      "description": "Some people whose identity is underdeveloped may need preference and selfhood development before no-self or surrender practices are useful. This is not a universal prerequisite.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D13", "IC.NO_CLEAR_CHILD", "IC.IDENTITY_PLAY", "IC.DIFFERENTIATION", "IC.GUIDE_LATER"],
+      "anchorNodeIds": ["IC.IDENTITY_FORMATION", "IC.DIFFERENTIATION", "IC.GUIDE_LATER"],
+      "relation": "qualifies-identity-before-deconstruction",
+      "reconciledNodeIds": []
+    },
+    {
+      "id": "OVERLAY.IC.LOVE_SURVIVES_REJECTION",
+      "status": "reconciled",
+      "authority": "compiled-bundle-inner-child-somatic-pilot-2026-08-09-r5",
+      "title": "Care does not retaliate under rejection",
+      "description": "Hear hostility and distrust without retaliation, demanding gratitude, or treating rejection as proof that care is unwanted.",
+      "sourceRefs": ["IC.BORROW_ONE_FUNCTION", "IC.PROTECTOR_VISIBLE", "IC.VOW", "IC.BOTTOM_UP_SEQUENCE"],
+      "anchorNodeIds": ["IC.BORROW_ONE_FUNCTION", "IC.CREDIBILITY_REPAIR"],
+      "relation": "realized-by-compiled-node",
+      "reconciledNodeIds": ["IC.BORROW_ONE_FUNCTION", "IC.CREDIBILITY_REPAIR"]
+    },
+    {
+      "id": "OVERLAY.IC.KERNEL_OF_TRUTH_RESPONSE",
+      "status": "reconciled",
+      "authority": "compiled-bundle-inner-child-somatic-pilot-2026-08-09-r5",
+      "title": "Answer serious content inside contempt or bluster",
+      "description": "Treat skeptical or contemptuous questions as data and, where appropriate, literal requests for evidence.",
+      "sourceRefs": ["IC.PROTECTOR_VISIBLE", "IC.VOW", "IC.BOTTOM_UP_SEQUENCE", "IC.INHERITED_PARENT"],
+      "anchorNodeIds": ["IC.CREDIBILITY_REPAIR", "IC.AGE_RESPONSIBILITY_CLARIFICATION"],
+      "relation": "realized-by-compiled-node",
+      "reconciledNodeIds": ["IC.CREDIBILITY_REPAIR", "IC.AGE_RESPONSIBILITY_CLARIFICATION"]
+    },
+    {
+      "id": "OVERLAY.IC.AUTHORITY_RETURN_BOUNDARY",
+      "status": "reconciled",
+      "authority": "compiled-bundle-inner-child-somatic-pilot-2026-08-09-r5",
+      "title": "Borrow capacity without surrendering judgment",
+      "description": "A helper may lend one bounded function but does not become authority over memory, conscience, medicine, relationships, spiritual life, or the future.",
+      "sourceRefs": ["IC.BORROW_ONE_FUNCTION", "IC.ADULT_APPRENTICE", "IC.RELATIONSHIP"],
+      "anchorNodeIds": ["IC.BORROW_ONE_FUNCTION", "IC.ADULT_APPRENTICE"],
+      "relation": "realized-by-compiled-node",
+      "reconciledNodeIds": ["IC.BORROW_ONE_FUNCTION", "IC.ADULT_APPRENTICE"]
+    },
+    {
+      "id": "OVERLAY.IC.POSITIVE_HOOK_AUDIT",
+      "status": "reconciled",
+      "authority": "compiled-bundle-inner-child-somatic-pilot-2026-08-09-r5",
+      "title": "Do not treat positive intensity as proof",
+      "description": "Bliss, revelation, love, or intensity does not prove literal truth, readiness, completed healing, or successful integration.",
+      "sourceRefs": ["IC.ALTERED_STATES", "IC.ESCAPE_URGE", "SOM.JUDGE_HELP", "AMEND.SOM.ADVANCED_RELEASE_BYPASS"],
+      "anchorNodeIds": ["IC.ALTERED_STATE_GATE", "SOM.BYPASS_AUDIT"],
+      "relation": "realized-by-compiled-node",
+      "reconciledNodeIds": ["IC.ALTERED_STATE_GATE", "SOM.BYPASS_AUDIT"]
+    },
+    {
+      "id": "OVERLAY.IC.FORGIVENESS_PRESERVES_BOUNDARIES",
+      "status": "reconciled",
+      "authority": "compiled-bundle-inner-child-somatic-pilot-2026-08-09-r5",
+      "title": "Forgiveness does not weaken accountability or boundaries",
+      "description": "Forgiveness or release does not erase harm or weaken accountability, judgment, consequences, distance, boundaries, or permanent no-contact.",
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D12", "IC.FORGIVENESS"],
+      "anchorNodeIds": ["IC.FORGIVENESS_LATER"],
+      "relation": "realized-by-compiled-node",
+      "reconciledNodeIds": ["IC.FORGIVENESS_LATER"]
+    }
+  ]
+}

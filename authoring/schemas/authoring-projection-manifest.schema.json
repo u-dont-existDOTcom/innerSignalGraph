@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "inner-signal-authoring-projection-manifest.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contractVersion", "graphContractVersion", "projectionInputSha256", "sourceGraphs", "compiledBundle", "authoritativeInputs", "sourceLayout", "ownerAmendments", "regressionInputs", "overlays", "generatedFiles"],
+  "properties": {
+    "contractVersion": { "const": "inner-signal-authoring-projection-v1" },
+    "graphContractVersion": { "const": "guide-graph-v1" },
+    "projectionInputSha256": { "$ref": "#/$defs/hash" },
+    "sourceGraphs": { "type": "array", "items": { "$ref": "#/$defs/fileHash" } },
+    "compiledBundle": {
+      "allOf": [
+        { "$ref": "#/$defs/fileHash" },
+        { "type": "object", "required": ["version"], "properties": { "version": { "type": "string", "minLength": 1 } } }
+      ]
+    },
+    "authoritativeInputs": { "type": "array", "items": { "$ref": "#/$defs/fileHash" } },
+    "sourceLayout": { "$ref": "#/$defs/fileHash" },
+    "ownerAmendments": { "$ref": "#/$defs/fileHash" },
+    "regressionInputs": { "type": "array", "items": { "$ref": "#/$defs/fileHash" } },
+    "overlays": { "type": "array", "items": { "$ref": "#/$defs/fileHash" } },
+    "generatedFiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "entityType", "entityId", "sha256"],
+        "properties": {
+          "path": { "$ref": "#/$defs/path" },
+          "entityType": { "type": "string", "minLength": 1 },
+          "entityId": { "type": "string", "minLength": 1 },
+          "sha256": { "$ref": "#/$defs/hash" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "path": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$" },
+    "fileHash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "sha256": { "$ref": "#/$defs/hash" },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

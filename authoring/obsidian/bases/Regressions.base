@@ -1,0 +1,7 @@
+filters:
+  and:
+    - file.inFolder("current/regressions")
+views:
+  - type: table
+    name: Regressions
+    order: [case_id, affected_node_ids, expected_primary, expected_question, safety_relevance, passed]

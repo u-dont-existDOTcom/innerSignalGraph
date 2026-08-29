@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "inner-signal-authoring-edge-current.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["authoring_contract", "entity_type", "projection_mode", "generated", "edge_id", "edge_sha256", "graph_id", "from_node_id", "to_node_id", "relation", "base_graph_sha256", "projection_input_sha256"],
+  "properties": {
+    "authoring_contract": { "const": "inner-signal-authoring-edge-current-v1" },
+    "entity_type": { "const": "graph-edge" },
+    "projection_mode": { "const": "current" },
+    "generated": { "const": true },
+    "edge_id": { "type": "string", "pattern": "^edge-[a-f0-9]{16}$" },
+    "edge_sha256": { "$ref": "#/$defs/hash" },
+    "graph_id": { "type": "string", "minLength": 1 },
+    "from_node_id": { "type": "string", "minLength": 1 },
+    "to_node_id": { "type": "string", "minLength": 1 },
+    "relation": { "type": "string", "minLength": 1 },
+    "base_graph_sha256": { "$ref": "#/$defs/hash" },
+    "projection_input_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }
+}

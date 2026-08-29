@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "inner-signal-authoring-edge-proposal.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["authoring_contract", "entity_type", "proposal_id", "operation", "edge_id", "edge_sha256", "graph_id", "from_node_id", "to_node_id", "relation", "base_graph_sha256", "base_projection_input_sha256"],
+  "properties": {
+    "authoring_contract": { "const": "inner-signal-authoring-edge-proposal-v1" },
+    "entity_type": { "const": "graph-edge-proposal" },
+    "proposal_id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$" },
+    "operation": { "enum": ["add", "remove"] },
+    "edge_id": { "type": "string", "pattern": "^edge-[a-f0-9]{16}$" },
+    "edge_sha256": { "$ref": "#/$defs/hash" },
+    "graph_id": { "type": "string", "minLength": 1 },
+    "from_node_id": { "type": "string", "minLength": 1 },
+    "to_node_id": { "type": "string", "minLength": 1 },
+    "relation": { "type": "string", "minLength": 1 },
+    "base_graph_sha256": { "$ref": "#/$defs/hash" },
+    "base_projection_input_sha256": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": { "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" } }
+}

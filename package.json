@@ -11,6 +11,14 @@
   "scripts": {
     "authoring:task:preflight": "node scripts/authoring-task-preflight.mjs",
     "authoring:task:acceptance": "node scripts/authoring-task-acceptance.mjs",
+    "authoring:project": "node src/cli/authoring.mjs project",
+    "authoring:check": "node src/cli/authoring.mjs check",
+    "authoring:validate": "node src/cli/authoring.mjs validate",
+    "authoring:proposal:new": "node src/cli/authoring.mjs proposal-new",
+    "authoring:proposal:build": "node src/cli/authoring.mjs proposal-build",
+    "authoring:proposal:check": "node src/cli/authoring.mjs proposal-check",
+    "authoring:maps": "node src/cli/authoring.mjs maps",
+    "authoring:maps:check": "node src/cli/authoring.mjs maps-check",
     "test": "node --test",
     "replay": "node src/cli/replay.mjs",
     "replay:cli": "node --env-file=.env src/cli/replay.mjs",
@@ -48,5 +56,8 @@
   },
   "dependencies": {
     "yaml": "2.9.0"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0"
   }
 }
