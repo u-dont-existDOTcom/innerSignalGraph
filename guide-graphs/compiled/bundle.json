@@ -442,6 +442,16 @@
           "domain": "inner-child"
         },
         {
+          "id": "AMEND.IC.NONPUNITIVE_REVIEW",
+          "heading": "AMEND.IC.NONPUNITIVE_REVIEW",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "2a708af135ab8b1520201c3d367f8a59782897d5764a72db63ab79e48b04c3fc",
+          "excerpt": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into a trial. No mandatory morning/evening cadence is established.",
+          "status": "owner-approved",
+          "domain": "inner-child"
+        },
+        {
           "id": "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
           "heading": "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
           "lineStart": null,
@@ -2774,7 +2784,7 @@
     "graphCount": 3,
     "nodeCount": 33,
     "edgeCount": 28,
-    "sourceSectionCount": 62,
-    "ownerAmendmentCount": 9
+    "sourceSectionCount": 63,
+    "ownerAmendmentCount": 10
   }
 }

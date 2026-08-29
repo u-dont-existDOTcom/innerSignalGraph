@@ -12,7 +12,7 @@ section_hash: 5f8e3499bc1c0ba7656420088e553951026ee9a669bfd27a26dfb22731a22d83
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.MEET_GUARD
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+projection_input_sha256: e4e31e4dded7f0ec1f824717e405289f76163ca88db84795b2b1ceda149c7378
 ---
 
 # The Two Common Guards
