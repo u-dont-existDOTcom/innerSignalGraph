@@ -3,11 +3,12 @@
   "$id": "inner-signal-authoring-receipt.schema.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["contractVersion", "proposalId", "baseProjectionInputSha256", "candidateBundleSha256", "candidateGraphHashes", "semanticDiffSha256", "regressionImpactSha256", "provenanceImpactSha256", "mapSha256", "canvasSha256", "regressionStatus", "ownerDecisionRequired"],
+  "required": ["contractVersion", "proposalId", "baseProjectionInputSha256", "proposalEvidenceSha256", "candidateBundleSha256", "candidateGraphHashes", "semanticDiffSha256", "regressionImpactSha256", "provenanceImpactSha256", "mapSha256", "canvasSha256", "regressionStatus", "ownerDecisionRequired"],
   "properties": {
     "contractVersion": { "const": "inner-signal-authoring-receipt-v1" },
     "proposalId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$" },
     "baseProjectionInputSha256": { "$ref": "#/$defs/hash" },
+    "proposalEvidenceSha256": { "$ref": "#/$defs/hash" },
     "candidateBundleSha256": { "$ref": "#/$defs/hash" },
     "candidateGraphHashes": {
       "type": "array",

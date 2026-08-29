@@ -17,6 +17,7 @@
     "authoring:proposal:new": "node src/cli/authoring.mjs proposal-new",
     "authoring:proposal:build": "node src/cli/authoring.mjs proposal-build",
     "authoring:proposal:check": "node src/cli/authoring.mjs proposal-check",
+    "authoring:proposal:reconcile": "node src/cli/authoring.mjs proposal-reconcile",
     "authoring:maps": "node src/cli/authoring.mjs maps",
     "authoring:maps:check": "node src/cli/authoring.mjs maps-check",
     "test": "node --test",

@@ -10,7 +10,7 @@ import { parseFrontmatter } from "./frontmatter.mjs";
 import { parseAuthoringNote } from "./note-parser.mjs";
 import { renderFrontmatterNote, renderNodeNote } from "./note-renderer.mjs";
 import { loadOverlayRegistries } from "./overlay.mjs";
-import { assertPublicAuthoringText } from "./private-data-boundary.mjs";
+import { assertNoSymlinkAncestors, assertPublicAuthoringText } from "./private-data-boundary.mjs";
 
 const GRAPH_FILES = [
   "guide-graphs/candidates/cross-guide.graph.json",
@@ -36,6 +36,7 @@ function compareText(left, right) {
 }
 
 async function readRegular(root, relative) {
+  assertNoSymlinkAncestors(root, relative, { allowMissingLeaf: false });
   const absolute = path.join(root, relative);
   return withOpenedRegularFile(absolute, (handle) => handle.readFile());
 }
@@ -49,8 +50,13 @@ async function fileHashRecord(root, relative) {
 }
 
 async function listJsonFiles(root, relative) {
-  return (await fs.readdir(path.join(root, relative)))
-    .filter((file) => file.endsWith(".json"))
+  assertNoSymlinkAncestors(root, relative, { allowMissingLeaf: false });
+  const entries = await fs.readdir(path.join(root, relative), { withFileTypes: true });
+  const invalid = entries.filter((entry) => entry.isSymbolicLink() || entry.name.endsWith(".json") && !entry.isFile());
+  if (invalid.length) throw Object.assign(new Error(`${relative} contains non-regular JSON inputs: ${invalid.map((entry) => entry.name).join(", ")}`), { code: "AUTHORING_SYMLINK_FORBIDDEN" });
+  return entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+    .map((entry) => entry.name)
     .sort()
     .map((file) => `${relative}/${file}`);
 }
@@ -132,18 +138,19 @@ function renderStructuredNote({ frontmatter, heading, warning, value, prose = ""
 }
 
 export async function loadCurrentAuthority({ root }) {
-  const bundle = await compileGuideGraphs({ root, write: false });
-  await verifyCommittedCompilation(root, bundle);
   const manifest = await readJson(root, "guides/manifest.json");
   const layout = await readJson(root, "guides/source-layout.json");
   const amendments = await readJson(root, "guides/owner-amendments.json");
   const ownerResolution = await readJson(root, RESOLUTION_PATH);
+  const sourceFiles = manifest.sources.filter((source) => source.file).map((source) => `guides/${source.file}`);
+  await Promise.all([...GRAPH_FILES, ...sourceFiles, ...SEMANTIC_CODE_INPUTS].map((relative) => readRegular(root, relative)));
+  const bundle = await compileGuideGraphs({ root, write: false });
+  await verifyCommittedCompilation(root, bundle);
   const regressionPaths = await listJsonFiles(root, "corpus/graph-cases");
   const regressionCases = await Promise.all(regressionPaths.map((relative) => readJson(root, relative)));
   const regressionResults = await runGraphRegressionSuite({ root, bundle, cases: regressionCases });
   if (!regressionResults.ok) throw Object.assign(new Error("Current graph regressions fail; projection stopped."), { code: "AUTHORING_BASE_REGRESSION_FAILURE" });
 
-  const sourceFiles = manifest.sources.filter((source) => source.file).map((source) => `guides/${source.file}`);
   const overlayPaths = (await listJsonFiles(root, "authoring/overlays")).filter((file) => file.endsWith(".overlay.json"));
   const compiledPaths = ["guide-graphs/compiled/bundle.json", ...bundle.graphs.map((graph) => `guide-graphs/compiled/${graph.graphId}.json`)];
   const inputPaths = [...new Set([

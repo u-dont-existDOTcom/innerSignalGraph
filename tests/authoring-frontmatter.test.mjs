@@ -60,6 +60,13 @@ test("frontmatter rejects duplicate keys, anchors, aliases, tags, merge keys, mu
   for (const [code, source] of invalid) assert.throws(() => parseFrontmatter(source), { code });
 });
 
+test("frontmatter rejects YAML spellings that silently coerce ambiguous scalars", () => {
+  for (const source of ["01", "0x10", "~", ".inf", "000000"]) {
+    assert.throws(() => parseFrontmatter(`---\nvalue: ${source}\n---\n`), { code: "YAML_IMPLICIT_SCALAR_FORBIDDEN" });
+  }
+  assert.deepEqual(parseFrontmatter("---\ninteger: 10\nflag: true\nempty: null\n---\n").data, { integer: 10, flag: true, empty: null });
+});
+
 test("schema validation rejects unknown keys and invalid types without mutating input", () => {
   const unknown = { ...currentFrontmatter, typo_priority: 5 };
   const snapshot = structuredClone(unknown);

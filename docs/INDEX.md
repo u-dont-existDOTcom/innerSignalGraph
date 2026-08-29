@@ -34,6 +34,14 @@ The transition report names the fully gated private candidate, the public visibi
 - `superpowers/plans/`: implementation plans
 - `superpowers/specs/`: accepted design specifications
 
+## Obsidian graph authoring
+
+- `AUTHORING-ARCHITECTURE.md`: authoritative development workflow, source boundaries, exact proposal/decision gates, Guide Packet adapter, and task-branch reconciliation
+- `OBSIDIAN-AUTHORING-IMPLEMENTATION-REPORT-2026-08-29.md`: implementation and non-effect evidence
+- `INNER-CHILD-THERAPY-MAP.md`: generated compiled-plus-overlay audit view; never graph authority
+- `../authoring/README.md`: workbench commands and operator boundary
+- `../authoring/migration/owner-map-resolution-2026-08-29.json`: exact owner resolution of the 15 migrated map decisions
+
 ## Branch authority
 
 `main` is development. `stable` is the only installation/release source. `runtime-diagnostics` is generated status data and is never merged into runtime source.

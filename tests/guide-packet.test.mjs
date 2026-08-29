@@ -153,3 +153,31 @@ test('derived source maps and section inventories must exactly match canonical s
   const staleMap = rezipWithChecksums(mapEntries);
   assert.match(verifyGuidePacket(staleMap).errors.join('\n'), /source map.*stale|derived.*source/i);
 });
+
+test('packet verifier rejects bundle/member divergence even with valid checksums', async () => {
+  const zip = await fs.readFile(path.join(fixtureRoot, 'inner-signal-guide-packet-r01-candidate.zip'));
+  const entries = readZipEntries(zip);
+  const graph = JSON.parse(entries.get('graphs/inner-child.graph.json').toString('utf8'));
+  graph.description += ' altered standalone member';
+  const graphData = Buffer.from(JSON.stringify(graph, null, 2) + '\n');
+  entries.set('graphs/inner-child.graph.json', graphData);
+  const manifest = JSON.parse(entries.get('manifest.json').toString('utf8'));
+  manifest.guides.find((item) => item.id === 'inner-child').graphSha256 = createHash('sha256').update(graphData).digest('hex');
+  entries.set('manifest.json', Buffer.from(JSON.stringify(manifest, null, 2) + '\n'));
+  const result = verifyGuidePacket(rezipWithChecksums(entries));
+  assert.match(result.errors.join('\n'), /differs from its standalone packet member/i);
+});
+
+test('manifest approval alone cannot make a packet approved or installable', async () => {
+  const zip = await fs.readFile(path.join(fixtureRoot, 'inner-signal-guide-packet-r01-candidate.zip'));
+  const entries = readZipEntries(zip);
+  const manifest = JSON.parse(entries.get('manifest.json').toString('utf8'));
+  manifest.status = 'approved';
+  manifest.candidateOnly = false;
+  manifest.approvalRequired = false;
+  entries.set('manifest.json', Buffer.from(JSON.stringify(manifest, null, 2) + '\n'));
+  const result = verifyGuidePacket(rezipWithChecksums(entries), { installedRevision: 0, mode: 'install' });
+  assert.equal(result.approved, false);
+  assert.equal(result.installable, false);
+  assert.match(result.errors.join('\n'), /approval claims are incomplete|not owner-approved/i);
+});

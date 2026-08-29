@@ -18,7 +18,8 @@
 1. Run `npm run authoring:check` before authoring.
 2. Create a proposal with `npm run authoring:proposal:new -- ...`.
 3. Edit only the new proposal directory.
-4. Build and check it. Build output remains under ignored `.build/`.
-5. Use the existing owner-decision and protected branch process for approval and reconciliation.
+4. Build and check it. Build output remains under ignored `.build/` and includes exact before/after decisions, approval pros/cons, affected tests, provenance, a candidate map/Canvas, and a verified candidate Guide Packet.
+5. Review and record decisions through the existing Guide Packet owner-decision process. Proposal status alone is never approval.
+6. Reconcile only the exact approved packet and SHA-256 on a task branch. Reconciliation never installs or changes `stable`.
 
 Never put transcripts, personal case material, prompts, model output, credentials, environment data, or local-machine information in this public workbench.

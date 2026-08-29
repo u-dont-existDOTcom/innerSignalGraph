@@ -15,6 +15,11 @@ function assertAllowedYamlNode(node) {
   if (node.tag && !String(node.tag).startsWith("tag:yaml.org,2002:")) {
     fail("YAML_CUSTOM_TAG_FORBIDDEN", `YAML custom tag is forbidden: ${node.tag}`);
   }
+  if (isScalar(node) && node.type === "PLAIN") {
+    if (typeof node.value === "number" && !/^(?:0|[1-9][0-9]*)$/.test(node.source ?? "")) fail("YAML_IMPLICIT_SCALAR_FORBIDDEN", `Non-canonical implicit number is forbidden: ${node.source}`);
+    if (typeof node.value === "boolean" && !/^(?:true|false)$/.test(node.source ?? "")) fail("YAML_IMPLICIT_SCALAR_FORBIDDEN", `Non-canonical implicit boolean is forbidden: ${node.source}`);
+    if (node.value === null && node.source !== "null") fail("YAML_IMPLICIT_SCALAR_FORBIDDEN", `Non-canonical implicit null is forbidden: ${node.source}`);
+  }
   if (isMap(node)) {
     const seen = new Set();
     for (const pair of node.items) {

@@ -18,8 +18,17 @@ npm run authoring:project
 npm run authoring:validate
 npm run authoring:check
 npm run authoring:maps:check
+npm run authoring:proposal:new -- --id <id> --node <node-id> --regression <case-id>
+npm run authoring:proposal:build -- --id <id>
+npm run authoring:proposal:check -- --id <id>
 ```
 
-Proposal commands are documented in `docs/AUTHORING-ARCHITECTURE.md`. No authoring command installs a Guide Packet, calls a model, or writes to `stable`.
+Approved reconciliation additionally requires the exact approved packet path and SHA-256. It is task-branch-only, runs compilation/regression/projection/map gates, and never installs or writes to `stable`:
+
+```bash
+npm run authoring:proposal:reconcile -- --id <id> --packet-id <exact-packet-id> --packet authoring/.build/<id>/packet/approved.zip --sha256 <sha256>
+```
+
+Proposal and decision details are documented in `docs/AUTHORING-ARCHITECTURE.md`. Every substantive decision shows exact before/after values plus explicit pros and cons of approving the new value. Approval remains in the existing Guide Packet owner-decision lifecycle; Obsidian and proposal status cannot approve anything. No authoring command calls a model.
 
 Canonical guide HTML/text is never round-tripped through Markdown. Source notes contain bounded read-only excerpts for navigation.

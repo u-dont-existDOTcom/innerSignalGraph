@@ -31,24 +31,33 @@ Implement the owner-supplied hybrid Obsidian architecture without changing thera
 - Baseline automated tests passed 387/387.
 - Baseline complete package gate passed.
 - Started test-efficiency telemetry under Git metadata.
+- Implemented strict schemas, restricted frontmatter/payload parsing, exact identities, privacy/path/symlink guards, and deterministic canonicalization.
+- Implemented the 178-file read-only current projection, six Bases, complete map migration ledger, owner resolution, overlay registries, generated Mermaid, and generated Canvas.
+- Implemented full-record proposal creation/build/check, complete semantic classification, per-new-change decision pros/cons, coverage/provenance reports, deterministic receipts, and stale-base failure with exact changed paths/hashes.
+- Implemented the repository-source Guide Packet adapter, exact source/source-map/candidate/bundle bindings, complete owner-approval proof, and task-branch-only atomic reconciliation with rollback and full package verification.
+- Preserved all 15 qualified owner decisions, including dynamic usefulness-led parts modeling, safe tentative conclusions with calm re-evaluation, critical review, central common humanity/peer healing, and the forgiveness/boundary distinction.
+- Added architecture/operator documentation, repository routing, integrity bindings, package gates, and task-specific acceptance.
+- Final focused authoring tests passed 52/52; complete tests passed 441/441; graph regressions passed 12/12; full package verification ended `VERDICT PASS`.
+- Final candidate graph, compiled graph/bundle, source-map, guide/source, owner-amendment, and regression paths have zero diff from baseline; compiled bundle hash remains `c8a88497711596af5fc7157ff0c5028607df0be6ec797d832598980b5cf06400`.
+- Repository audit passes with only the pre-existing installed-App readback warning; task acceptance reports `READY_FOR_PROTECTED_MERGE` with zero findings.
 
 ## Current checkpoint
 
-The accepted design, branch-bound task lock, recovery state, and implementation plan are committed. The strict authoring contracts, deterministic read-only projection, overlay registry and owner-resolution record, complete legacy-map classification, generated Mermaid, generated JSON Canvas, and six Bases are implemented. Projection and map drift checks pass with projection input `4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e`. Ordinary repository queues named in `tasks/ACTIVE-TASK.json` are suspended for this task only.
+The architecture and all local implementation stages are complete and verified. Projection and map drift checks pass with projection input `4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e`. The branch is ready to commit/push and enter the protected pull-request path. Ordinary repository queues named in `tasks/ACTIVE-TASK.json` remain suspended for this task only.
 
 ## Remaining
 
-- Proposal creation/build/check workflow, stale-base enforcement, semantic diff completeness, coverage/provenance receipts.
-- Narrow Guide Packet candidate-bundle adapter and branch-only reconciliation path.
-- Documentation, acceptance audit, independent review, final hash comparison, protected PR, and CI readback.
+- Commit the final verified implementation and push only the task branch.
+- Open the protected pull request to `main`.
+- Obtain independent review and exact-head required-check readback. Do not merge in this task.
 
 ## Blockers and stop conditions
 
-No current blocker. The owner resolved the Stage 3 map authority boundary in decisions `OWNER.MAP.RESOLUTION.2026-08-29.D01` through `D15`. Review and common-humanity guidance are approved documentation overlays and future guide-proposal candidates; this architecture migration does not rewrite guide prose. The usefulness-only forgiveness phrase and the universal every-session-ends claim are retired. All 57 manual arrows are retired as executable topology.
+No current implementation blocker. The owner resolved the Stage 3 map authority boundary in decisions `OWNER.MAP.RESOLUTION.2026-08-29.D01` through `D15`. Review and common-humanity guidance are required future guide proposals; this architecture migration does not rewrite guide prose. The usefulness-only forgiveness phrase and the universal every-session-ends claim are retired. All 57 manual arrows are retired as executable topology. Independent review and hosted checks remain PR-path conditions, not local implementation blockers.
 
 ## Next safe action
 
-Commit the validated projection/map checkpoint, then implement hash-bound proposal creation, materialization, semantic diff, coverage/provenance receipts, Guide Packet adapter, and branch-only reconciliation.
+Commit the final verified tree, push `codex/obsidian-authoring-architecture-20260829`, open the protected pull request, and wait for review/checks. Do not merge, install, promote, or touch `stable`.
 
 ## Recovery rule
 

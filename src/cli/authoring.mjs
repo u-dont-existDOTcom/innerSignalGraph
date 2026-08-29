@@ -6,6 +6,9 @@ import { validateBases } from "../authoring/bases.mjs";
 import { buildMapFiles, checkMapFiles, writeMapFiles } from "../authoring/map-files.mjs";
 import { createCurrentProjection } from "../authoring/projection.mjs";
 import { assertProjectionCurrent, writeProjectionAtomically } from "../authoring/projection-check.mjs";
+import { createProposal } from "../authoring/proposal.mjs";
+import { buildProposal, checkProposal } from "../authoring/proposal-builder.mjs";
+import { reconcileApprovedProposal } from "../authoring/reconcile.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -34,7 +37,7 @@ async function buildAll() {
 }
 
 async function main() {
-  const [command] = process.argv.slice(2);
+  const [command, ...args] = process.argv.slice(2);
   if (command === "project") {
     const built = await buildAll();
     await validateBases({ root });
@@ -71,7 +74,46 @@ async function main() {
     print({ ok: true, command, maps: built.maps.size, canvas: true });
     return;
   }
+  if (command === "proposal-new") {
+    const options = parseOptions(args, { repeatable: new Set(["node", "edge", "regression"]) });
+    if (!options.id) throw Object.assign(new Error("proposal-new requires --id."), { code: "PROPOSAL_ID_REQUIRED" });
+    print({ ok: true, command, ...(await createProposal({ root, id: options.id, nodeIds: options.node ?? [], edgeIds: options.edge ?? [], regressionIds: options.regression ?? [] })) });
+    return;
+  }
+  if (command === "proposal-build") {
+    const options = parseOptions(args);
+    if (!options.id) throw Object.assign(new Error("proposal-build requires --id."), { code: "PROPOSAL_ID_REQUIRED" });
+    print({ ok: true, command, ...(await buildProposal({ root, id: options.id })) });
+    return;
+  }
+  if (command === "proposal-check") {
+    const options = parseOptions(args);
+    if (!options.id) throw Object.assign(new Error("proposal-check requires --id."), { code: "PROPOSAL_ID_REQUIRED" });
+    print({ ok: true, command, ...(await checkProposal({ root, id: options.id })) });
+    return;
+  }
+  if (command === "proposal-reconcile") {
+    const options = parseOptions(args);
+    if (!options.id || !options["packet-id"] || !options.packet || !options.sha256) throw Object.assign(new Error("proposal-reconcile requires --id, --packet-id, --packet, and --sha256."), { code: "AUTHORING_ARGUMENT_INVALID" });
+    print({ ok: true, command, ...(await reconcileApprovedProposal({ root, id: options.id, packetId: options["packet-id"], packetPath: options.packet, packetSha256: options.sha256 })) });
+    return;
+  }
   throw new Error(`Unknown authoring command: ${command ?? "(missing)"}`);
+}
+
+function parseOptions(args, { repeatable = new Set() } = {}) {
+  const options = {};
+  for (let index = 0; index < args.length; index += 2) {
+    const flag = args[index];
+    const value = args[index + 1];
+    if (!flag?.startsWith("--") || value === undefined || value.startsWith("--")) throw Object.assign(new Error(`Invalid option sequence near ${flag ?? "(end)"}.`), { code: "AUTHORING_ARGUMENT_INVALID" });
+    const name = flag.slice(2);
+    if (!/^[a-z][a-z-]*$/.test(name)) throw Object.assign(new Error(`Invalid option name: ${flag}.`), { code: "AUTHORING_ARGUMENT_INVALID" });
+    if (repeatable.has(name)) options[name] = [...(options[name] ?? []), value];
+    else if (Object.hasOwn(options, name)) throw Object.assign(new Error(`Duplicate option: ${flag}.`), { code: "AUTHORING_ARGUMENT_INVALID" });
+    else options[name] = value;
+  }
+  return options;
 }
 
 main().catch((error) => {
