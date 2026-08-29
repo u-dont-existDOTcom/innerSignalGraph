@@ -9,6 +9,8 @@
     "node": "24.18.0"
   },
   "scripts": {
+    "authoring:task:preflight": "node scripts/authoring-task-preflight.mjs",
+    "authoring:task:acceptance": "node scripts/authoring-task-acceptance.mjs",
     "test": "node --test",
     "replay": "node src/cli/replay.mjs",
     "replay:cli": "node --env-file=.env src/cli/replay.mjs",
