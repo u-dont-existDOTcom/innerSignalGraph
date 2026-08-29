@@ -14,7 +14,7 @@ cited_by_node_ids:
   - IC.BEST_FRIEND_PERSPECTIVE
   - IC.BORROW_ONE_FUNCTION
   - SOM.EMDR_DEVELOPMENTAL_DEFER
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+projection_input_sha256: e4e31e4dded7f0ec1f824717e405289f76163ca88db84795b2b1ceda149c7378
 ---
 
 # Borrow One Function at a Time

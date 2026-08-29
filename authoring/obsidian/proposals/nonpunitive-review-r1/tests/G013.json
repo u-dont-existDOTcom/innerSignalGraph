@@ -1,0 +1,70 @@
+{
+  "id": "G013",
+  "description": "Supported adult apprenticeship reviews an ordinary-life attempt without turning accountability into punishment.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "partial",
+    "witness_capacity": "present",
+    "parent_imagery": "not_used",
+    "love_access": "absent",
+    "self_directed_love": "safe",
+    "solar_plexus_tension": "absent",
+    "protective_response": "absent",
+    "urge_to_escape": "absent",
+    "credibility_conflict": "absent",
+    "credibility_evidence_state": "none",
+    "internal_speaker_relation": "distinct",
+    "age_agency_ambiguity": "absent",
+    "resentment_toward_younger_self": "absent",
+    "coherent_child_state": "present",
+    "identity_blur": "absent",
+    "belonging_pressure": "absent",
+    "self_criticism": "absent",
+    "current_intent": "gentle_practice",
+    "memory_source_risk": "absent",
+    "forgiveness_interest": "absent",
+    "support_available": "present",
+    "body_capacity": "adequate",
+    "target_type": "none",
+    "trigger_loop": "absent",
+    "freeze_pattern": "absent",
+    "discharge_used": "no",
+    "emdr_interest": "absent",
+    "advanced_release_interest": "absent",
+    "advanced_release_physical_risk": "absent",
+    "panic_instability": "absent",
+    "bypass_risk": "absent",
+    "guide_readiness": "absent",
+    "deep_work_readiness": "unknown",
+    "basic_reparenting_capacity": "unknown",
+    "stable_for_advanced_release": "unknown"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.BORROW_ONE_FUNCTION",
+    "selectedIncludes": [
+      "IC.ADULT_APPRENTICE"
+    ],
+    "matchedIncludes": [
+      "IC.ADULT_APPRENTICE"
+    ],
+    "selectedExcludes": [
+      "IC.NEUTRAL_WITNESS",
+      "IC.BORROW_LOVE",
+      "IC.CREDIBILITY_REPAIR",
+      "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+      "IC.FORGIVENESS_LATER"
+    ],
+    "requiredNuancePatterns": [
+      "accountability and learning",
+      "consequences, firmer boundaries",
+      "honest assessment of present capacity"
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "version": "2026-08-06-r1",
+  "version": "2026-08-29-r2",
   "approvedAt": "2026-08-06",
   "items": [
     {
@@ -19,6 +19,12 @@
       "domain": "inner-child",
       "status": "owner-approved",
       "text": "Ask: 'What would I tell my best friend in this exact situation?' Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action for the self."
+    },
+    {
+      "id": "AMEND.IC.NONPUNITIVE_REVIEW",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into a trial. No mandatory morning/evening cadence is established."
     },
     {
       "id": "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
