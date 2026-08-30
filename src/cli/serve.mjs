@@ -27,7 +27,7 @@ const listener = await listenInnerSignalLoopback({ config, providers });
 console.log(`Inner Signal runtime listening on ${listener.url}`);
 console.log(`IPv4 fallback: ${listener.ipv4Url}${listener.ipv6Available ? " · IPv6 localhost enabled" : ""}`);
 
-if (booleanEnv("COMMUNITY_ENABLED", true)) {
+if (booleanEnv("COMMUNITY_ENABLED", config.mode !== "mock")) {
   try {
     const communityPort = integerEnv("COMMUNITY_PORT", 8790);
     const communityRoot = path.join(config.autopilotStateDir, "community-learning");
