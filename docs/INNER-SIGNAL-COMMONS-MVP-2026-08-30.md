@@ -27,9 +27,9 @@ The branch contains a separate executable Commons service and browser client wit
 - Proposal exports cannot activate or write runtime behavior.
 - No new therapy lesson, graph node, prompt, Guide Packet decision, or release authority is created.
 
-## Local verification completed
+## Verification completed
 
-The bounded local suite passed 11/11 contract, store, HTTP, moderation, privacy, withdrawal, proposal, launcher-integration, and UI tests available without repository dependencies. The repository CI/package environment remains responsible for running AJV schema verification and the full existing InnerSignal suite.
+The bounded local suite passed 11/11 contract, store, HTTP, moderation, privacy, withdrawal, proposal, launcher-integration, and UI tests available without repository dependencies. GitHub then passed repository workflow policy, AJV schema/example verification, the complete test and deterministic package gate, clean-worktree enforcement, and CodeQL JavaScript analysis for executable commit `6c983eb93c1c0392c2f19fdc2c4ac3593a762f0f`.
 
 ## Deployment status
 

@@ -43,12 +43,15 @@ Covered:
 - proposal non-activation;
 - UI privacy and consent boundaries.
 
-Pending after push:
+Repository verification at executable commit `6c983eb93c1c0392c2f19fdc2c4ac3593a762f0f`:
 
-- AJV schema/example verification under repository dependencies;
-- complete `npm test`;
-- complete `npm run verify`;
-- GitHub Actions status and independent code review.
+- repository workflow policy: **PASS**;
+- AJV schema/example verification: **PASS**;
+- complete test suite and deterministic package gate: **PASS**;
+- clean final worktree gate: **PASS**;
+- CodeQL JavaScript analysis: **PASS**.
+
+Independent privacy/security/therapy-boundary review remains the next non-CI gate.
 
 ## Product-policy state
 
@@ -56,8 +59,8 @@ No community-derived therapy behavior is active. No automatic AI extraction is a
 
 ## Next executable slice
 
-1. Review CI and repair implementation defects only.
-2. Run an independent privacy/security/therapy-boundary review.
+1. Run an independent privacy/security/therapy-boundary review.
+2. Exercise the local interface with synthetic participants and record usability defects.
 3. Build the production composition around self-hosted Discourse + SSO + PostgreSQL rather than scaling the prototype forum store.
 4. Add a graphical moderator console, participant challenge/correction flow, and signed contributor-verification receipts.
 5. Complete legal/privacy and research-boundary review before inviting real participants over a network.
