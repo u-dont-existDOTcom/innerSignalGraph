@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innersignal.local/schemas/proposal-export.schema.json",
+  "title": "Non-activating InnerSignal community proposal export",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "proposalId",
+    "candidateOnly",
+    "activation",
+    "runtimeWritable",
+    "sourceCardId",
+    "sourceCardSha256",
+    "consentSnapshotSha256",
+    "generatedAt",
+    "generatedByParticipantId",
+    "card",
+    "unresolvedLimitations",
+    "requiredNextGate",
+    "prohibitedTransitions",
+    "integrity"
+  ],
+  "properties": {
+    "format": { "const": "inner-signal-community-proposal-v1" },
+    "proposalId": { "type": "string", "format": "uuid" },
+    "candidateOnly": { "const": true },
+    "activation": { "const": "proposal-only" },
+    "runtimeWritable": { "const": false },
+    "sourceCardId": { "type": "string" },
+    "sourceCardSha256": { "$ref": "#/$defs/sha256" },
+    "consentSnapshotSha256": { "$ref": "#/$defs/sha256" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "generatedByParticipantId": { "type": "string", "format": "uuid" },
+    "card": { "$ref": "learning-card.schema.json" },
+    "unresolvedLimitations": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "requiredNextGate": { "enum": ["replace-synthetic-evidence", "human-learning-review"] },
+    "prohibitedTransitions": { "type": "array", "items": { "type": "string" }, "minItems": 3, "uniqueItems": true },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "sha256"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

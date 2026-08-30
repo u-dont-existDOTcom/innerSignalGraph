@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innersignal.local/schemas/contribution-receipt.schema.json",
+  "title": "InnerSignal Commons contribution receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "receiptId",
+    "participantId",
+    "contributionId",
+    "contributionType",
+    "consentGrantId",
+    "consentTextVersion",
+    "activeScopes",
+    "withdrawnScopes",
+    "usageRefs",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "format": { "const": "inner-signal-contribution-receipt-v1" },
+    "receiptId": { "type": "string", "format": "uuid" },
+    "participantId": { "type": "string", "format": "uuid" },
+    "contributionId": { "type": "string", "format": "uuid" },
+    "contributionType": { "const": "field-note" },
+    "consentGrantId": { "type": "string", "format": "uuid" },
+    "consentTextVersion": { "const": "innersignal-community-consent-2026-08-30-v1" },
+    "activeScopes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "withdrawnScopes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "withdrawalReason": { "type": "string" },
+    "usageRefs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cardIds", "proposalIds"],
+      "properties": {
+        "cardIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "proposalIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "uniqueItems": true }
+      }
+    },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innersignal.local/schemas/learning-card.schema.json",
+  "title": "InnerSignal Community Learning Card",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "cardId",
+    "sourceKind",
+    "status",
+    "reviewStatus",
+    "runtimeAuthority",
+    "practiceOrFeature",
+    "observation",
+    "independentContributorCount",
+    "sourceCount",
+    "outcomeCounts",
+    "timeCoverage",
+    "contexts",
+    "confounders",
+    "adverseSignals",
+    "unknowns",
+    "externalEvidence",
+    "evidenceProfile",
+    "productProposalEligible",
+    "createdAt",
+    "updatedAt",
+    "nextReviewAt"
+  ],
+  "properties": {
+    "format": { "const": "inner-signal-community-learning-card-v1" },
+    "cardId": { "type": "string", "minLength": 4, "maxLength": 100 },
+    "sourceKind": { "enum": ["synthetic", "community-field-notes"] },
+    "status": {
+      "enum": [
+        "SINGLE_STORY",
+        "REPEATED_PERSONAL_PATTERN",
+        "COMMUNITY_PATTERN_CANDIDATE",
+        "CONTESTED_PATTERN",
+        "SAFETY_SIGNAL",
+        "BOUNDED_EXPERIMENT_FINDING",
+        "EXTERNAL_EVIDENCE_ALIGNED",
+        "PRODUCT_PROPOSAL",
+        "THERAPY_POLICY_CANDIDATE_AWAITING_OWNER",
+        "REJECTED_FOR_RUNTIME",
+        "RETIRED_OR_SUPERSEDED"
+      ]
+    },
+    "reviewStatus": { "enum": ["unreviewed", "synthetic-example", "human-reviewed", "challenged", "retired"] },
+    "runtimeAuthority": { "const": "none" },
+    "practiceOrFeature": { "type": "string", "minLength": 2, "maxLength": 160 },
+    "observation": { "type": "string", "minLength": 10, "maxLength": 3000 },
+    "independentContributorCount": { "type": "integer", "minimum": 0 },
+    "sourceCount": { "type": "integer", "minimum": 0 },
+    "outcomeCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["benefit", "no-change", "mixed", "worsening", "unclear"],
+      "properties": {
+        "benefit": { "type": "integer", "minimum": 0 },
+        "no-change": { "type": "integer", "minimum": 0 },
+        "mixed": { "type": "integer", "minimum": 0 },
+        "worsening": { "type": "integer", "minimum": 0 },
+        "unclear": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "timeCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["immediate", "laterSameDay", "nextMorning", "followingTwoToThreeDays", "longerFollowUp"],
+      "properties": {
+        "immediate": { "type": "integer", "minimum": 0 },
+        "laterSameDay": { "type": "integer", "minimum": 0 },
+        "nextMorning": { "type": "integer", "minimum": 0 },
+        "followingTwoToThreeDays": { "type": "integer", "minimum": 0 },
+        "longerFollowUp": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "contexts": { "type": "array", "items": { "type": "string" }, "maxItems": 10 },
+    "confounders": { "type": "array", "items": { "type": "string" }, "maxItems": 10 },
+    "adverseSignals": { "type": "array", "items": { "type": "string" }, "maxItems": 20 },
+    "unknowns": { "type": "array", "items": { "type": "string" }, "minItems": 1, "maxItems": 30 },
+    "externalEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "references"],
+      "properties": {
+        "status": { "enum": ["not-checked", "aligned", "mixed", "contradicted", "not-comparable"] },
+        "references": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "evidenceProfile": { "type": "object" },
+    "productProposalEligible": { "type": "boolean" },
+    "sourceFieldNoteIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "uniqueItems": true },
+    "sourceConsentGrantIds": { "type": "array", "items": { "type": "string", "format": "uuid" }, "uniqueItems": true },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "nextReviewAt": { "type": "string", "format": "date-time" }
+  }
+}
