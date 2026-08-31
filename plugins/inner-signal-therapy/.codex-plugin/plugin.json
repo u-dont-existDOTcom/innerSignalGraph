@@ -5,6 +5,8 @@
   "author": {
     "name": "u-dont-existDOTcom"
   },
+  "repository": "https://github.com/u-dont-existDOTcom/innerSignalGraph",
+  "keywords": ["therapy", "inner-child", "self-relationship", "wellness"],
   "skills": "./skills/",
   "interface": {
     "displayName": "Inner Signal Therapy",
@@ -13,6 +15,10 @@
     "developerName": "u-dont-existDOTcom",
     "category": "Wellness",
     "capabilities": ["Advisory"],
-    "defaultPrompt": ["Help me work with an inner-child conflict."]
+    "defaultPrompt": [
+      "Help me work with an inner-child conflict.",
+      "Help me understand why care for a younger part of me feels unsafe.",
+      "Help me find one grounded next step in a self-relationship conflict."
+    ]
   }
 }
