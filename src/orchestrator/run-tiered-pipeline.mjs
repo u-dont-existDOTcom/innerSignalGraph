@@ -1,4 +1,10 @@
-import { runUnauditedCaseSnapshot, runCaseAuditWithRecovery, applyCaseAudit, planCaseSnapshot } from "../case-formulation/run.mjs";
+import {
+  runUnauditedCaseSnapshot,
+  runCaseAuditWithRecovery,
+  applyCaseAudit,
+  planCaseSnapshot,
+  preflightGraphPlanningAvailability
+} from "../case-formulation/run.mjs";
 import { runAdversarialPipeline, runCompactAdversarialPipeline, realizeAdjudication } from "./run-pipeline.mjs";
 import { writeLedger } from "./ledger.mjs";
 
@@ -153,6 +159,10 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
     priorCaseSnapshot: context.priorCaseSnapshot,
     priorProcessingTier: context.priorProcessingTier
   });
+
+  if (routing.tier !== "fast") {
+    await preflightGraphPlanningAvailability({ loadGraphBundle: instrumentation.loadGraphBundle });
+  }
   onProgress?.({ stage: "therapy-routing", status: "completed", detail: `${routing.tier}: ${routing.reason}` });
 
   if (routing.tier === "fast") {

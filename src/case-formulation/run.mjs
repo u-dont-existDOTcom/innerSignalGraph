@@ -54,6 +54,11 @@ async function planSnapshot(snapshot, { onPlanningPass } = {}) {
   return { plan, graphBundleVersion: bundle.version };
 }
 
+export async function preflightGraphPlanningAvailability({ loadGraphBundle = loadCompiledGuideGraphBundle } = {}) {
+  const bundle = await loadGraphBundle();
+  return { graphBundleVersion: bundle.version };
+}
+
 export async function runCaseExtraction({ context, provider, onProgress }) {
   const extraction = await structuredCall(
     provider,
