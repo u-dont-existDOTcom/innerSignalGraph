@@ -179,7 +179,7 @@ function eligibleFieldNotes(state) {
   return state.fieldNotes.filter((note) => {
     if (note.learningStatus === "withdrawn") return false;
     const scopes = activeConsentScopes(fieldNoteGrant(state, note));
-    return scopes.includes("community-aggregate") || scopes.includes("product-improvement");
+    return scopes.includes("community-aggregate");
   });
 }
 
@@ -200,7 +200,9 @@ export function buildCommunityLearningCards(state, seedCards = [], clock = () =>
     const nonzeroOutcomes = Object.values(counts).filter((count) => count > 0).length;
     const status = notes.length === 1
       ? "SINGLE_STORY"
-      : nonzeroOutcomes > 1 ? "CONTESTED_PATTERN" : "COMMUNITY_PATTERN_CANDIDATE";
+      : contributors.size === 1
+        ? "REPEATED_PERSONAL_PATTERN"
+        : nonzeroOutcomes > 1 ? "CONTESTED_PATTERN" : "COMMUNITY_PATTERN_CANDIDATE";
     const grants = notes.map((note) => fieldNoteGrant(state, note));
     const productProposalEligible = contributors.size >= MIN_PUBLIC_CARD_CONTRIBUTORS
       && notes.length >= MIN_PUBLIC_CARD_CONTRIBUTORS
@@ -282,7 +284,8 @@ function refreshReceiptUsage(state, seedCards, clock) {
   const cardById = new Map(cards.map((card) => [card.cardId, card]));
   for (const proposal of state.proposalExports) {
     const current = cardById.get(proposal.sourceCardId);
-    if (!current || (current.sourceKind !== "synthetic" && !current.productProposalEligible)) {
+    if (!current || (current.sourceKind !== "synthetic"
+      && (!current.productProposalEligible || current.reviewStatus !== "human-reviewed"))) {
       proposal.status = "stale-consent-change";
       proposal.staleAt ??= nowIso(clock);
     }
@@ -611,6 +614,7 @@ export class CommunityStore {
       if (!note) throw new ValidationError("Field Note not found.");
       const grant = fieldNoteGrant(state, note);
       const receipt = state.receipts.find((item) => item.contributionId === fieldNoteId);
+      const affectedProposalIds = new Set(receipt.usageRefs.proposalIds);
       const revoked = new Set(grant.revokedScopes);
       for (const scope of input.scopes) {
         if (grant.scopes.includes(scope)) revoked.add(scope);
@@ -625,6 +629,11 @@ export class CommunityStore {
       receipt.withdrawalReason = input.reason;
       receipt.updatedAt = grant.updatedAt;
       refreshReceiptUsage(state, this.seedCards, this.clock);
+      for (const proposal of state.proposalExports) {
+        if (!affectedProposalIds.has(proposal.proposalId)) continue;
+        proposal.status = "stale-consent-change";
+        proposal.staleAt ??= grant.updatedAt;
+      }
       return { fieldNote: note, receipt };
     });
   }
@@ -692,7 +701,8 @@ export class CommunityStore {
       ],
       posts: state.posts.map((post) => publicPost(post, participant.participantId)).filter(Boolean).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
       learningCards: cards
-        .filter((card) => card.sourceKind === "synthetic" || card.independentContributorCount >= MIN_PUBLIC_CARD_CONTRIBUTORS)
+        .filter((card) => card.sourceKind === "synthetic"
+          || (card.independentContributorCount >= MIN_PUBLIC_CARD_CONTRIBUTORS && card.reviewStatus === "human-reviewed"))
         .map(publicCard),
       myFieldNotes: state.fieldNotes.filter((note) => note.participantId === participant.participantId),
       myReceipts: state.receipts.filter((receipt) => receipt.participantId === participant.participantId),
@@ -721,6 +731,9 @@ export class CommunityStore {
       if (!card) throw new ValidationError("Learning Card not found.");
       if (card.sourceKind !== "synthetic" && !card.productProposalEligible) {
         throw new ValidationError(`This card requires at least ${MIN_PUBLIC_CARD_CONTRIBUTORS} independent, product-improvement-consented contributors.`);
+      }
+      if (card.sourceKind !== "synthetic" && card.reviewStatus !== "human-reviewed") {
+        throw new ValidationError("This community Learning Card requires human review before proposal export.");
       }
       const generatedAt = nowIso(this.clock);
       const proposalId = crypto.randomUUID();

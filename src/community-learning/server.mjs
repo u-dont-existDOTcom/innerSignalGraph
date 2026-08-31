@@ -82,20 +82,41 @@ async function readJson(req, maxBytes = 2_000_000) {
   }
 }
 
-function parseCookies(req) {
-  const output = {};
+function sessionCookieValue(req) {
   for (const part of String(req.headers.cookie ?? "").split(";")) {
-    const [rawName, ...rawValue] = part.trim().split("=");
-    if (!rawName) continue;
-    try { output[rawName] = decodeURIComponent(rawValue.join("=")); } catch {}
+    const separator = part.indexOf("=");
+    if (separator < 0 || part.slice(0, separator).trim() !== SESSION_COOKIE) continue;
+    try { return decodeURIComponent(part.slice(separator + 1)); } catch { return ""; }
   }
-  return output;
+  return "";
 }
 
-function requestToken(req) {
+export function requestToken(req) {
   const authorization = String(req.headers.authorization ?? "");
-  const bearer = authorization.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
-  return bearer || parseCookies(req)[SESSION_COOKIE] || "";
+  const bearer = authorization.slice(0, 6).toLowerCase() === "bearer"
+    && [0x09, 0x20].includes(authorization.charCodeAt(6))
+    ? authorization.slice(7).trim()
+    : "";
+  return bearer || sessionCookieValue(req);
+}
+
+export function formatHttpError(error) {
+  const status = error.code === "AUTH_REQUIRED" ? 401
+    : error.code === "CSRF_FAILED" || error.code === "MODERATOR_REQUIRED" ? 403
+      : error.code === "RATE_LIMITED" ? 429
+        : error instanceof ValidationError || error.code === "VALIDATION_ERROR" ? 400
+          : 500;
+  if (status === 500) {
+    return { status, payload: { error: "Unexpected server error.", code: "UNEXPECTED_ERROR" } };
+  }
+  return {
+    status,
+    payload: {
+      error: error.message,
+      code: error.code,
+      ...(error.details === undefined ? {} : { details: error.details })
+    }
+  };
 }
 
 function constantTimeEqual(left, right) {
@@ -340,16 +361,8 @@ export function createInnerSignalCommunityServer({
 
       return sendJson(res, 404, { error: "Not found.", code: "NOT_FOUND" });
     } catch (error) {
-      const status = error.code === "AUTH_REQUIRED" ? 401
-        : error.code === "CSRF_FAILED" || error.code === "MODERATOR_REQUIRED" ? 403
-          : error.code === "RATE_LIMITED" ? 429
-          : error instanceof ValidationError || error.code === "VALIDATION_ERROR" ? 400
-            : 500;
-      return sendJson(res, status, {
-        error: error.message,
-        code: error.code ?? "UNEXPECTED_ERROR",
-        details: error.details
-      });
+      const response = formatHttpError(error);
+      return sendJson(res, response.status, response.payload);
     }
   });
 }

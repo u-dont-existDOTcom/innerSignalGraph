@@ -3,12 +3,12 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { CommunityStore } from "../src/community-learning/store.mjs";
+import { buildCommunityLearningCards, CommunityStore } from "../src/community-learning/store.mjs";
 import { validateFieldNoteInput, validatePostInput, validateReplyInput } from "../src/community-learning/contracts.mjs";
 
-function noteInput(outcome, consentScopes = ["community-aggregate", "product-improvement"]) {
+function noteInput(outcome, consentScopes = ["community-aggregate", "product-improvement"], practiceOrFeature = "Brief pre-sleep self-hypnosis") {
   return validateFieldNoteInput({
-    practiceOrFeature: "Brief pre-sleep self-hypnosis",
+    practiceOrFeature,
     goal: "Fall asleep more easily",
     whatTried: "A short inward session immediately before bed.",
     context: "PRIVATE-CONTEXT-PHRASE home ordinary evening",
@@ -73,8 +73,8 @@ test("store keeps conversation, consent, moderation, recomputation, and proposal
   assert.equal(belowThreshold.learningCards.some((item) => item.practiceOrFeature === "Brief pre-sleep self-hypnosis"), false);
 
   const three = await store.createFieldNote(third.participant, noteInput("mixed"));
-  const bootstrap = await store.buildBootstrap(first.participant);
-  const card = bootstrap.learningCards.find((item) => item.practiceOrFeature === "Brief pre-sleep self-hypnosis");
+  const internalCards = buildCommunityLearningCards(await store.readState(), []);
+  const card = internalCards.find((item) => item.practiceOrFeature === "Brief pre-sleep self-hypnosis");
   assert.equal(card.status, "CONTESTED_PATTERN");
   assert.equal(card.independentContributorCount, 3);
   assert.equal(card.outcomeCounts.benefit, 1);
@@ -83,17 +83,14 @@ test("store keeps conversation, consent, moderation, recomputation, and proposal
   assert.equal(card.productProposalEligible, true);
   assert.equal(one.receipt.usageRefs.cardIds.length, 1);
   assert.doesNotMatch(JSON.stringify(card), /PRIVATE-(?:CONTEXT|ADVERSE|CONFOUNDER)-PHRASE/);
-
-  const proposal = await store.exportProposal(first.participant, card.cardId);
-  assert.equal(proposal.proposal.candidateOnly, true);
-  assert.equal(proposal.proposal.activation, "proposal-only");
-  assert.equal(proposal.proposal.runtimeWritable, false);
-  assert.equal(proposal.proposal.card.runtimeAuthority, "none");
+  const bootstrap = await store.buildBootstrap(first.participant);
+  assert.equal(bootstrap.learningCards.some((item) => item.cardId === card.cardId), false, "unreviewed community cards stay participant-hidden");
+  await assert.rejects(() => store.exportProposal(first.participant, card.cardId), /human review/);
 
   const beforeWithdrawal = await store.buildBootstrap(first.participant);
   const receiptBefore = beforeWithdrawal.myReceipts.find((item) => item.contributionId === one.fieldNote.fieldNoteId);
   assert.ok(receiptBefore.usageRefs.cardIds.includes(card.cardId));
-  assert.ok(receiptBefore.usageRefs.proposalIds.includes(proposal.proposalId));
+  assert.deepEqual(receiptBefore.usageRefs.proposalIds, []);
 
   await store.withdrawFieldNote(first.participant, one.fieldNote.fieldNoteId, {
     scopes: ["community-aggregate", "product-improvement"],
@@ -108,6 +105,59 @@ test("store keeps conversation, consent, moderation, recomputation, and proposal
   const exported = await store.exportParticipantData(first.participant);
   assert.doesNotMatch(JSON.stringify(exported), /tokenHash|recoveryCodeHash|csrfToken/);
   assert.equal(exported.participant.pseudonym, "Quiet River");
-  assert.equal(exported.proposalExports[0].status, "stale-consent-change");
   assert.equal(three.fieldNote.learningStatus, "product-improvement");
+});
+
+test("product-only consent never feeds Commons cards and repeated reports from one contributor stay personal", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "innersignal-community-consent-"));
+  const store = await new CommunityStore({ rootDir: root, seedCards: [] }).initialize();
+  const member = await store.createSession({ pseudonym: "One Observer" });
+
+  await store.createFieldNote(member.participant, noteInput("benefit", ["community-aggregate"], "Repeated personal scan"));
+  await store.createFieldNote(member.participant, noteInput("benefit", ["community-aggregate"], "Repeated personal scan"));
+  await store.createFieldNote(member.participant, noteInput("benefit", ["product-improvement"], "Product-only private signal"));
+
+  const cards = buildCommunityLearningCards(await store.readState(), []);
+  assert.equal(cards.find((card) => card.practiceOrFeature === "Repeated personal scan")?.status, "REPEATED_PERSONAL_PATTERN");
+  assert.equal(cards.some((card) => card.practiceOrFeature === "Product-only private signal"), false);
+  const bootstrap = await store.buildBootstrap(member.participant);
+  assert.equal(bootstrap.learningCards.some((card) => card.sourceKind === "community-field-notes"), false);
+});
+
+test("withdrawing a linked contribution stales its proposal while the recomputed card remains eligible", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "innersignal-community-stale-proposal-"));
+  const store = await new CommunityStore({ rootDir: root, seedCards: [] }).initialize();
+  const members = await Promise.all(["One", "Two", "Three", "Four"].map((pseudonym) => store.createSession({ pseudonym })));
+  const notes = [];
+  for (const member of members) {
+    notes.push(await store.createFieldNote(member.participant, noteInput("benefit")));
+  }
+
+  const state = await store.readState();
+  const card = buildCommunityLearningCards(state, [])[0];
+  const proposalId = "00000000-0000-4000-8000-000000000001";
+  state.proposalExports.push({
+    proposalId,
+    sourceCardId: card.cardId,
+    generatedByParticipantId: members[1].participant.participantId,
+    generatedAt: state.updatedAt,
+    sha256: "legacy-proposal",
+    candidateOnly: true,
+    runtimeWritable: false,
+    status: "current",
+    staleAt: null
+  });
+  state.receipts.find((receipt) => receipt.contributionId === notes[0].fieldNote.fieldNoteId).usageRefs.proposalIds.push(proposalId);
+  await fs.writeFile(store.stateFile, `${JSON.stringify(state, null, 2)}\n`);
+
+  await store.withdrawFieldNote(members[0].participant, notes[0].fieldNote.fieldNoteId, {
+    scopes: ["community-aggregate"],
+    reason: "Stop community aggregation."
+  });
+
+  const updated = await store.readState();
+  const recomputed = buildCommunityLearningCards(updated, []).find((item) => item.cardId === card.cardId);
+  assert.equal(recomputed.independentContributorCount, 3);
+  assert.equal(recomputed.productProposalEligible, true);
+  assert.equal(updated.proposalExports.find((proposal) => proposal.proposalId === proposalId).status, "stale-consent-change");
 });

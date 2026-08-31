@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createInnerSignalCommunityServer } from "../src/community-learning/server.mjs";
+import { createInnerSignalCommunityServer, formatHttpError, requestToken } from "../src/community-learning/server.mjs";
 
 const seedCard = {
   format: "inner-signal-community-learning-card-v1",
@@ -73,7 +73,7 @@ test("community server enforces invitation, cookie session, CSRF, conversation-o
     assert.ok(cookie.includes("inner_signal_commons="));
     assert.ok(session.recoveryCode);
 
-    const bootstrapResponse = await fetch(`${base}/v1/bootstrap`, { headers: { cookie } });
+    const bootstrapResponse = await fetch(`${base}/v1/bootstrap`, { headers: { cookie: `__proto__=polluted; ${cookie}` } });
     const bootstrap = await bootstrapResponse.json();
     assert.equal(bootstrapResponse.status, 200);
     assert.equal(bootstrap.policy.postsConversationOnlyByDefault, true);
@@ -189,4 +189,18 @@ test("community server enforces invitation, cookie session, CSRF, conversation-o
 test("network-accessible construction fails closed without invitation and moderation secrets", () => {
   assert.throws(() => createInnerSignalCommunityServer({ rootDir: "/tmp/unused", requireInviteCode: true, inviteCode: "" }), /invitation code/i);
   assert.throws(() => createInnerSignalCommunityServer({ rootDir: "/tmp/unused", requireInviteCode: true, inviteCode: "invite" }), /moderator key/i);
+});
+
+test("request authentication parsing and unexpected errors fail safely", () => {
+  assert.equal(requestToken({ headers: { cookie: "__proto__=polluted; inner_signal_commons=valid%20token" } }), "valid token");
+  assert.equal(Object.prototype.polluted, undefined);
+  assert.equal(requestToken({ headers: { authorization: `Bearer${" ".repeat(250_000)}bounded-token` } }), "bounded-token");
+  assert.equal(requestToken({ headers: { authorization: "Basic ignored", cookie: "inner_signal_commons=fallback" } }), "fallback");
+
+  const unexpected = formatHttpError(new Error("PRIVATE INTERNAL EXCEPTION DETAIL"));
+  assert.deepEqual(unexpected, {
+    status: 500,
+    payload: { error: "Unexpected server error.", code: "UNEXPECTED_ERROR" }
+  });
+  assert.doesNotMatch(JSON.stringify(unexpected), /PRIVATE INTERNAL EXCEPTION DETAIL/);
 });

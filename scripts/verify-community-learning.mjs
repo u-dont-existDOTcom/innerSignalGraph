@@ -91,6 +91,9 @@ if (!/raw prose is not republished|verbatim details remain reviewer-restricted/.
 if (!/stale-consent-change/.test(storeSource) || !/stale-data-deletion/.test(storeSource)) {
   throw new Error("Proposal records are not invalidated after consent withdrawal or data deletion.");
 }
+if (!/reviewStatus === "human-reviewed"/.test(storeSource)) {
+  throw new Error("Community-derived Learning Cards no longer fail closed on human review.");
+}
 for (const forbidden of ["THERAPY-LESSONS", "guide-packets/", "guide-graphs/", "refs/heads/stable"]) {
   if (runtimeSource.includes(forbidden)) throw new Error(`Community runtime contains prohibited authority path: ${forbidden}`);
 }
@@ -101,7 +104,8 @@ for (const requiredText of [
   "No box is preselected",
   "Support reactions and evidence follow-ups are counted separately",
   "No card can activate InnerSignal runtime behavior",
-  "Delete my Commons account and data",
+  "Remove my current Commons content and deactivate account",
+  "append-only event ledger may retain pseudonymous",
   "I confirm that I am at least 18 years old"
 ]) {
   if (!html.includes(requiredText)) throw new Error(`Community UI is missing required boundary text: ${requiredText}`);

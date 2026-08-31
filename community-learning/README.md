@@ -18,7 +18,7 @@ This directory contains the first executable slice of the opt-in InnerSignal com
 - withdrawal with Learning Card recomputation;
 - contradiction-aware deterministic Learning Cards;
 - non-activating proposal exports with hashes and an explicit next gate;
-- participant data export and account/data deletion;
+- participant data export, current-content removal, and account deactivation with explicit prototype audit-ledger disclosure;
 - a separate local data boundary from private therapy and hypnosis state.
 
 ## Authority boundary
@@ -55,7 +55,7 @@ See `.env.example`. Runtime data defaults to:
 .inner-signal-autopilot/community-learning/
 ```
 
-The state snapshot is accompanied by an append-only bounded event ledger. Session tokens and recovery codes are stored only as SHA-256 hashes. The raw token and new recovery code are returned only at creation. Shared Learning Cards suppress community-derived groups below three independent contributors and do not republish raw Field Note context, confounders, or adverse-event prose.
+The state snapshot is accompanied by an append-only event ledger. Current-content removal deletes the participant's Commons posts, replies, reactions, Field Notes, receipts, reports, and active sessions and deactivates the participant record. The prototype ledger may retain pseudonymous event, participant, and subject identifiers, event types, and timestamps until a production retention and deletion policy is approved. Session tokens and recovery codes are stored only as SHA-256 hashes. The raw token and new recovery code are returned only at creation. Community-derived Learning Cards remain internal and unreviewed: they are excluded from participant bootstrap and proposal export until a separately authorized human-review mechanism marks them human-reviewed. Product-improvement-only consent never contributes to participant-facing community aggregation.
 
 ### Human moderation API
 

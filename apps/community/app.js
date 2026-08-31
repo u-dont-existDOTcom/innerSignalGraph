@@ -604,7 +604,7 @@ $("#logout").addEventListener("click", async () => {
 
 $("#export-my-data").addEventListener("click", () => downloadRequest("/v1/me/export", { fallbackName: "innersignal-community-data.json" }).catch((error) => alert(error.message)));
 $("#delete-my-data").addEventListener("click", async () => {
-  const confirmation = prompt("This removes your Commons posts, replies, reactions, Field Notes, receipts, reports, and active sessions. Type DELETE to continue.");
+  const confirmation = prompt("This removes your current Commons posts, replies, reactions, Field Notes, receipts, reports, and active sessions, and deactivates your account. The prototype append-only event ledger may retain pseudonymous event, participant, and subject identifiers, event types, and timestamps until a production retention and deletion policy is approved. Type DELETE to continue.");
   if (confirmation !== "DELETE") return;
   const button = $("#delete-my-data");
   setBusy(button, true, "Deleting…");
@@ -612,7 +612,7 @@ $("#delete-my-data").addEventListener("click", async () => {
     await requestJson("/v1/me", { method: "DELETE", csrf: true, body: { confirmation } });
     model = null;
     csrfToken = "";
-    showLogin("Your Commons account and current stored contributions were deleted.");
+    showLogin("Your current Commons content was removed and your account was deactivated. Prototype append-only audit metadata may remain under the disclosed retention boundary.");
   } catch (error) {
     alert(error.message);
     setBusy(button, false);

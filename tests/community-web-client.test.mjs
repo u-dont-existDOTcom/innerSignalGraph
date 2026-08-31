@@ -10,6 +10,7 @@ test("Commons UI makes privacy, response contracts, consent, delayed outcomes, a
   const html = await fs.readFile(path.join(root, "apps/community/index.html"), "utf8");
   const js = await fs.readFile(path.join(root, "apps/community/app.js"), "utf8");
   const css = await fs.readFile(path.join(root, "apps/community/styles.css"), "utf8");
+  const readme = await fs.readFile(path.join(root, "community-learning/README.md"), "utf8");
 
   assert.match(html, /Your private InnerSignal sessions are not imported/);
   assert.match(html, /login-adult/);
@@ -21,7 +22,9 @@ test("Commons UI makes privacy, response contracts, consent, delayed outcomes, a
   assert.match(html, /Following 2–3 days/);
   assert.match(html, /No box is preselected/);
   assert.match(html, /delete-my-data/);
-  assert.match(html, /Delete my Commons account and data/);
+  assert.match(html, /Remove my current Commons content and deactivate account/);
+  assert.match(html, /append-only event ledger may retain pseudonymous/i);
+  assert.doesNotMatch(html, /Delete my Commons account and data/);
   assert.match(html, /No card can activate InnerSignal runtime behavior/);
   assert.match(html, /no direct messages/i);
   assert.match(js, /SOCIAL_LABELS/);
@@ -30,6 +33,9 @@ test("Commons UI makes privacy, response contracts, consent, delayed outcomes, a
   assert.match(js, /\/v1\/field-notes/);
   assert.match(js, /\/v1\/proposals\/export/);
   assert.match(js, /learning cannot activate runtime/);
+  assert.match(js, /append-only event ledger may retain pseudonymous/i);
+  assert.doesNotMatch(readme, /append-only bounded event ledger/i);
+  assert.match(readme, /until a production retention and deletion policy is approved/i);
   assert.match(css, /\.adverse-list/);
   assert.match(css, /\.consent-scopes/);
 });
