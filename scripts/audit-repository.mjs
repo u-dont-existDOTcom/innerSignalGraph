@@ -778,14 +778,18 @@ function auditPolicyDocuments(root, findings) {
 }
 
 function auditRuntime(root, findings) {
+  const recommendedNode = "24.18.0";
+  const supportedNodeRange = ">=24 <25";
   const nvmrc = readText(root, ".nvmrc", findings)?.trim();
   const packageJson = readJson(root, "package.json", findings);
   const lock = readJson(root, "package-lock.json", findings);
-  if (nvmrc !== "24.18.0" || packageJson?.engines?.node !== nvmrc || packageJson?.packageManager !== "npm@11.16.0") {
-    findings.push({ severity: "error", code: "runtime-pin", path: "package.json", message: "Node/npm toolchain does not match .nvmrc" });
+  if (nvmrc !== recommendedNode
+      || packageJson?.engines?.node !== supportedNodeRange
+      || packageJson?.packageManager !== "npm@11.16.0") {
+    findings.push({ severity: "error", code: "runtime-pin", path: "package.json", message: "Node recommendation, compatibility range, or npm pin is invalid" });
   }
-  if (lock?.lockfileVersion !== 3 || lock?.packages?.[""]?.engines?.node !== nvmrc) {
-    findings.push({ severity: "error", code: "runtime-lock", path: "package-lock.json", message: "lockfile does not preserve the exact Node engine" });
+  if (lock?.lockfileVersion !== 3 || lock?.packages?.[""]?.engines?.node !== supportedNodeRange) {
+    findings.push({ severity: "error", code: "runtime-lock", path: "package-lock.json", message: "lockfile does not preserve the approved Node compatibility range" });
   }
   if (packageJson?.scripts?.["audit:repository"] !== "node scripts/audit-repository.mjs") {
     findings.push({ severity: "error", code: "audit-command", path: "package.json", message: "audit:repository script is missing" });

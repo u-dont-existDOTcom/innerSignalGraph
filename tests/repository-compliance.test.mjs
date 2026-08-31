@@ -753,6 +753,50 @@ test("repository audit rejects mutated publication fields and a missing publicat
   assert.ok(auditRepository(fixture).findings.some(({ code }) => code === "profile-commands"));
 });
 
+test("repository audit preserves the exact Node recommendation and approved Node-24 compatibility range", async (t) => {
+  const fixture = await createAuditFixture(t);
+  const nvmrcPath = path.join(fixture, ".nvmrc");
+  const packagePath = path.join(fixture, "package.json");
+  const lockPath = path.join(fixture, "package-lock.json");
+  const originalNvmrc = await fs.readFile(nvmrcPath, "utf8");
+  const originalPackage = JSON.parse(await fs.readFile(packagePath, "utf8"));
+  const originalLock = JSON.parse(await fs.readFile(lockPath, "utf8"));
+
+  const runtimeCodes = () => auditRepository(fixture).findings
+    .filter(({ code }) => code === "runtime-pin" || code === "runtime-lock")
+    .map(({ code }) => code);
+  const restore = async () => {
+    await fs.writeFile(nvmrcPath, originalNvmrc);
+    await fs.writeFile(packagePath, `${JSON.stringify(originalPackage, null, 2)}\n`);
+    await fs.writeFile(lockPath, `${JSON.stringify(originalLock, null, 2)}\n`);
+  };
+
+  assert.deepEqual(runtimeCodes(), []);
+
+  await fs.writeFile(nvmrcPath, "24.18.1\n");
+  assert.ok(runtimeCodes().includes("runtime-pin"));
+  await restore();
+
+  for (const engine of [">=25 <26", ">=24.18 <25"]) {
+    const mutated = structuredClone(originalPackage);
+    mutated.engines.node = engine;
+    await fs.writeFile(packagePath, `${JSON.stringify(mutated, null, 2)}\n`);
+    assert.ok(runtimeCodes().includes("runtime-pin"), engine);
+    await restore();
+  }
+
+  const mismatchedLock = structuredClone(originalLock);
+  mismatchedLock.packages[""].engines.node = "24.18.0";
+  await fs.writeFile(lockPath, `${JSON.stringify(mismatchedLock, null, 2)}\n`);
+  assert.ok(runtimeCodes().includes("runtime-lock"));
+  await restore();
+
+  const wrongNpm = structuredClone(originalPackage);
+  wrongNpm.packageManager = "npm@11.15.0";
+  await fs.writeFile(packagePath, `${JSON.stringify(wrongNpm, null, 2)}\n`);
+  assert.ok(runtimeCodes().includes("runtime-pin"));
+});
+
 test("repository audit rejects license, contribution, and security contract mutations", async (t) => {
   const fixture = await createAuditFixture(t);
   const cases = [

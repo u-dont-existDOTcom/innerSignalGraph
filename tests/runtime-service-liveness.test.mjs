@@ -166,6 +166,7 @@ function startWrapper(root, bin, args = [], extraEnv = {}, inheritedEnv = proces
       INNER_SIGNAL_GIT_SOURCE: path.join(path.dirname(root), `${path.basename(root)}-source-unavailable`),
       INNER_SIGNAL_GIT_AUTO_UPDATE: "false",
       INNER_SIGNAL_GIT_AUTO_DIAGNOSTICS: "false",
+      INNER_SIGNAL_BROWSER_EXECUTABLE: "xdg-open",
       INNER_SIGNAL_VALIDATION_SANDBOX: "0"
     },
     detached: true,

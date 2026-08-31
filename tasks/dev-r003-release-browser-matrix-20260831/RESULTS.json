@@ -1,0 +1,87 @@
+{
+  "format": "inner-signal-local-release-matrix-v1",
+  "node": {
+    "ok": true,
+    "current": {
+      "ok": true,
+      "code": "SUPPORTED_NODE_MAJOR",
+      "detected": "24.18.0",
+      "version": {
+        "major": 24,
+        "minor": 18,
+        "patch": 0,
+        "normalized": "24.18.0"
+      },
+      "supportedRange": ">=24 <25",
+      "recommendedVersion": "24.18.0",
+      "recommendedMatch": true
+    },
+    "recommendedVersion": "24.18.0",
+    "supportedRange": ">=24 <25",
+    "compatibility": {
+      "node24Patch": true,
+      "node23Rejected": true,
+      "node25Rejected": true
+    }
+  },
+  "browser": {
+    "ok": true,
+    "source": "environment",
+    "candidate": "configured-fake-browser",
+    "structuredDiscovery": true,
+    "shell": false,
+    "argumentCount": 1
+  },
+  "cleanInstall": {
+    "ok": true,
+    "status": "UPDATED",
+    "stage": "installed",
+    "installedCommit": "32bd409b8f3c40a98b36fdcc9d0e4089ad11e5b4",
+    "sourceKind": "isolated-local-bare-git",
+    "dependencyNetworkUsed": false
+  },
+  "rollback": {
+    "ok": true,
+    "priorRuntimeCommit": "212c14ad87796094bba90395875a94bff2bfab88",
+    "rejectedCandidateCommit": "db194f0f096e7ad85e42d72ac230cada1d12297e",
+    "activationFailure": {
+      "status": "FAILED_SAFE",
+      "stage": "atomic-swap",
+      "priorRuntimeRestored": true
+    },
+    "installRecordFailure": {
+      "status": "FAILED_SAFE",
+      "stage": "install-record",
+      "priorRuntimeRestored": true
+    },
+    "privateStateByteHashesPreserved": true
+  },
+  "loopback": {
+    "ok": true,
+    "binding": "ephemeral-loopback-only",
+    "healthStatus": 200,
+    "ipv6Optional": true,
+    "closedDeterministically": true
+  },
+  "browserOpen": {
+    "ok": true,
+    "readyLoopbackUrl": "http://localhost:<ephemeral-port>",
+    "receivedArguments": [
+      "http://localhost:<ephemeral-port>"
+    ],
+    "exactReadyUrlReceived": true,
+    "realBrowserLaunched": false
+  },
+  "acceptance": {
+    "nodeMajorCompatibility": true,
+    "browserArgumentSafety": true,
+    "cleanInstall": true,
+    "privateStatePreservation": true,
+    "rollbackRestoration": true,
+    "loopbackHealthAndClose": true,
+    "exactReadyUrl": true,
+    "externalNetworkUsed": false,
+    "realInstallOrBrowserUsed": false
+  },
+  "ok": true
+}
