@@ -73,7 +73,7 @@ const CONTRIBUTION_CONTRACT = {
   ownerBoundary: "Contribution does not grant authority over owner-gated therapy/framework policy, owner decision cards, model roles, privacy scope, or stable release approval."
 };
 const PUBLIC_POSTURE_SHA256 = {
-  "README.md": "009b78cb06f2a57b737c0af2185fa0364eb5c38df03dbefbdbd4ffb233ef2fcb",
+  "README.md": "961a3faac73760c018b917e3afcc0f82e31b0d66c1a7505857eba436602ecb46",
   "AGENTS.md": "218ab3da2ea98b58b9889c56d0319c1d3741db632dc33804d06a1a582a566d7f",
   "docs/INDEX.md": "4f908a68c3dd5d4b88d08f28203e568261567f7d2b47027cef090ee33da32fe9",
   "SECURITY.md": "b6b40e701cddb53fe49a1676c2e01cf15a8a07a28553bf78bde3a91b42e1d72a",
