@@ -138,3 +138,27 @@ runtime adoption. Commons behavior and its explicit contribution flow remain unc
 Public/network operation, research use, community-derived therapy behavior, and therapy
 policy approval remain unauthorized. Final package and exact-head hosted verification are
 recorded in the post-execution review packet rather than inferred from this task state.
+
+## Offline AskRigor-like learning groundwork
+
+Directive `ctc-innersignal-learning-offline-groundwork-20260831-001` authorizes one
+offline-only enablement slice for the clarified parent outcome that InnerSignal itself should
+eventually learn from user feedback. The slice defines strict feedback-evidence,
+personalization-memory, generalized-candidate, review-card, queue-status, and external
+owner-decision-reference contracts. It also provides deterministic privacy screens,
+canonical fingerprints, candidate-scoped occurrence and revocation tokens,
+contradiction-preserving aggregation, a pure in-memory mock queue, a static synthetic review
+preview, and a fail-closed promotion predicate.
+
+This groundwork has zero app, server, orchestrator, prompt, graph, guide, or therapy-runtime
+consumer. It has no network client, endpoint, real queue, GitHub App, issue write, credential,
+or live transmission authority. Personalization remains an inspectable schema and pure
+precedence resolver with `runtimeConsumerPresent: false`; current policy remains
+`local-only`, and participant outcome reports retain the explicit
+`participant-report-only-no-causal-inference` boundary. No therapy ledger is created or
+changed.
+
+This is `SUBTASK_ENABLEMENT_ONLY`, pending post-execution Extra High reasoning acceptance.
+The parent owner outcome remains open. Operational adequacy is limited to the mechanically
+verified offline/no-network/no-runtime boundary; scientific adequacy is not assessed and
+release is not authorized.

@@ -1,0 +1,20 @@
+{
+  "format": "inner-signal-feedback-evidence-v1",
+  "feedbackId": "ISF-SYN-OUTCOME-WORSENING-001",
+  "feedbackClass": "case-outcome-observation",
+  "validationStatus": "participant-report",
+  "evidenceClass": "participant-reported",
+  "generalizedSignal": "A participant reports feeling worse after a paced reflection exercise.",
+  "expectedBehavior": "Preserve the worsening report and its noncausal boundary even when benefit reports are more numerous.",
+  "failureReason": "Suppressing a minority worsening direction would hide material outcome evidence.",
+  "syntheticRegressionExample": "One synthetic worsening occurrence remains visible beside three benefit occurrences.",
+  "policySurface": "outcome",
+  "subjectKey": "paced-reflection-outcome",
+  "outcomeDirection": "worsening",
+  "causalBoundary": "participant-report-only-no-causal-inference",
+  "evidenceBasis": ["fabricated participant outcome report"],
+  "versionContext": { "appVersion": "synthetic-0", "contractVersion": "offline-groundwork-v1" },
+  "runtimeAuthority": "none",
+  "therapyPolicyAuthority": "none",
+  "transmissionAuthority": "none"
+}

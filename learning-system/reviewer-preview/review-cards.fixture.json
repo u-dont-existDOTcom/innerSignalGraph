@@ -1,0 +1,36 @@
+[
+  {
+    "format": "inner-signal-learning-review-card-v1",
+    "candidateReceipt": "ISL-MOCK-1111111111111111",
+    "status": "needs-review",
+    "candidateKind": "participant-outcome",
+    "evidenceClass": "participant-reported",
+    "causalBoundary": "participant-report-only-no-causal-inference",
+    "subjectKey": "paced-reflection-outcome",
+    "generalizedObservation": "Fabricated reports include both benefit and worsening directions.",
+    "proposedInvariant": "Keep contradictory participant-reported directions visible without causal inference.",
+    "proposedRegression": "A worsening minority remains visible beside a benefit majority.",
+    "occurrenceCount": 4,
+    "contradictionCounts": { "benefit": 3, "no-change": 0, "mixed": 0, "worsening": 1, "unclear": 0 },
+    "runtimeAuthority": "none",
+    "therapyPolicyAuthority": "none",
+    "availableReviewActions": ["reject", "insufficient-evidence", "duplicate", "personalization-process-only", "needs-external-evidence", "prepare-therapy-policy-decision"]
+  },
+  {
+    "format": "inner-signal-learning-review-card-v1",
+    "candidateReceipt": "ISL-MOCK-2222222222222222",
+    "status": "needs-review",
+    "candidateKind": "style-process",
+    "evidenceClass": "self-authenticating-preference",
+    "causalBoundary": "not-applicable",
+    "subjectKey": "presentation-length",
+    "generalizedObservation": "A fabricated participant prefers shorter explanations.",
+    "proposedInvariant": "Represent the preference only within the participant's scope.",
+    "proposedRegression": "Safety policy and current instructions remain above soft preference memory.",
+    "occurrenceCount": 1,
+    "contradictionCounts": { "benefit": 0, "no-change": 0, "mixed": 0, "worsening": 0, "unclear": 0 },
+    "runtimeAuthority": "none",
+    "therapyPolicyAuthority": "none",
+    "availableReviewActions": ["reject", "insufficient-evidence", "duplicate", "personalization-process-only", "needs-external-evidence", "prepare-therapy-policy-decision"]
+  }
+]

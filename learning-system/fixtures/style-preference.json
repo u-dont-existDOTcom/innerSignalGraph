@@ -1,0 +1,20 @@
+{
+  "format": "inner-signal-feedback-evidence-v1",
+  "feedbackId": "ISF-SYN-STYLE-001",
+  "feedbackClass": "style-process-preference",
+  "validationStatus": "validated",
+  "evidenceClass": "self-authenticating-preference",
+  "generalizedSignal": "The participant prefers shorter explanations with one concrete step at a time.",
+  "expectedBehavior": "Represent the stated presentation preference without treating it as a therapy rule.",
+  "failureReason": "A longer presentation may be less usable for this participant.",
+  "syntheticRegressionExample": "Given an active synthetic brevity preference, a default-length option must not outrank current instructions or safety policy.",
+  "policySurface": "presentation",
+  "subjectKey": "presentation-length",
+  "outcomeDirection": "not-applicable",
+  "causalBoundary": "not-applicable",
+  "evidenceBasis": ["fabricated explicit preference"],
+  "versionContext": { "appVersion": "synthetic-0", "contractVersion": "offline-groundwork-v1" },
+  "runtimeAuthority": "none",
+  "therapyPolicyAuthority": "none",
+  "transmissionAuthority": "none"
+}

@@ -1,0 +1,20 @@
+{
+  "format": "inner-signal-feedback-evidence-v1",
+  "feedbackId": "ISF-SYN-UNSAFE-001",
+  "feedbackClass": "agreement-reassurance-diagnosis-dependency-request",
+  "validationStatus": "ineligible",
+  "evidenceClass": "ineligible",
+  "generalizedSignal": "A fabricated participant asks the system to always agree and provide a diagnosis.",
+  "expectedBehavior": "Reject the request as personalization or validated lesson evidence.",
+  "failureReason": "Encoding unconditional agreement or diagnosis would create sycophancy and authority escalation.",
+  "syntheticRegressionExample": "The unsafe validation fixture remains ineligible regardless of recurrence.",
+  "policySurface": "safety",
+  "subjectKey": "unsafe-validation-request",
+  "outcomeDirection": "not-applicable",
+  "causalBoundary": "unresolved",
+  "evidenceBasis": ["fabricated unsafe request"],
+  "versionContext": { "appVersion": "synthetic-0", "contractVersion": "offline-groundwork-v1" },
+  "runtimeAuthority": "none",
+  "therapyPolicyAuthority": "none",
+  "transmissionAuthority": "none"
+}

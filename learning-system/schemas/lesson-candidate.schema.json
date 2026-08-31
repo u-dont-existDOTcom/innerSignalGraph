@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innerself.love/schemas/lesson-candidate.schema.json",
+  "title": "InnerSignal generalized offline lesson candidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "candidateKind", "subjectKey", "generalizedSignal", "proposedInvariant", "expectedBehavior", "failureReason", "syntheticRegressionExample", "evidenceClass", "validationBasis", "policySurface", "outcomeDirection", "causalBoundary", "contextTags", "versionIdentifiers", "runtimeAuthority", "therapyPolicyAuthority", "transmissionAuthority"],
+  "properties": {
+    "format": { "const": "inner-signal-generalized-lesson-candidate-v1" },
+    "candidateKind": { "enum": ["validated-defect", "participant-outcome", "therapy-policy-signal", "safety-signal", "style-process"] },
+    "subjectKey": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,79}$" },
+    "generalizedSignal": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "proposedInvariant": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "expectedBehavior": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "failureReason": { "type": "string", "maxLength": 500 },
+    "syntheticRegressionExample": { "type": "string", "minLength": 1, "maxLength": 500 },
+    "evidenceClass": { "enum": ["self-authenticating-preference", "participant-reported", "independently-verified-fact", "existing-contract-violation", "therapy-policy-signal-unverified", "safety-signal-unverified", "unsupported-disagreement", "ineligible"] },
+    "validationBasis": { "type": "array", "maxItems": 8, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 160 } },
+    "policySurface": { "enum": ["presentation", "process", "factual", "outcome", "therapy-policy", "safety"] },
+    "outcomeDirection": { "enum": ["benefit", "no-change", "mixed", "worsening", "unclear", "not-applicable"] },
+    "causalBoundary": { "enum": ["not-applicable", "participant-report-only-no-causal-inference", "independently-verified-fact", "existing-contract-violation", "unresolved"] },
+    "contextTags": { "type": "array", "maxItems": 12, "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,39}$" } },
+    "versionIdentifiers": { "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 80 } },
+    "runtimeAuthority": { "const": "none" },
+    "therapyPolicyAuthority": { "const": "none" },
+    "transmissionAuthority": { "const": "none" }
+  }
+}

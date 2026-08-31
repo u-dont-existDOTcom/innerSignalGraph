@@ -1,0 +1,20 @@
+{
+  "format": "inner-signal-feedback-evidence-v1",
+  "feedbackId": "ISF-SYN-OUTCOME-BENEFIT-001",
+  "feedbackClass": "case-outcome-observation",
+  "validationStatus": "participant-report",
+  "evidenceClass": "participant-reported",
+  "generalizedSignal": "A participant reports benefit after a paced reflection exercise.",
+  "expectedBehavior": "Preserve the reported direction without inferring that the exercise caused it.",
+  "failureReason": "Collapsing the report into causal evidence would overstate what is known.",
+  "syntheticRegressionExample": "A synthetic benefit report retains participant-report-only-no-causal-inference after recurrence changes.",
+  "policySurface": "outcome",
+  "subjectKey": "paced-reflection-outcome",
+  "outcomeDirection": "benefit",
+  "causalBoundary": "participant-report-only-no-causal-inference",
+  "evidenceBasis": ["fabricated participant outcome report"],
+  "versionContext": { "appVersion": "synthetic-0", "contractVersion": "offline-groundwork-v1" },
+  "runtimeAuthority": "none",
+  "therapyPolicyAuthority": "none",
+  "transmissionAuthority": "none"
+}

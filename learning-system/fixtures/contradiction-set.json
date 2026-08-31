@@ -1,0 +1,52 @@
+{
+  "format": "inner-signal-synthetic-contradiction-set-v1",
+  "subjectKey": "paced-reflection-outcome",
+  "occurrences": [
+    {
+      "occurrenceToken": "1111111111111111111111111111111111111111111111111111111111111111",
+      "candidate": {
+        "format": "inner-signal-generalized-lesson-candidate-v1",
+        "candidateKind": "participant-outcome",
+        "subjectKey": "paced-reflection-outcome",
+        "generalizedSignal": "Some participants report benefit after a paced reflection exercise.",
+        "proposedInvariant": "Retain participant-reported benefit without causal inference.",
+        "expectedBehavior": "Keep benefit occurrence metadata separate from other outcome directions.",
+        "failureReason": "A single aggregate verdict would hide disagreement.",
+        "syntheticRegressionExample": "Benefit and worsening counts remain separate.",
+        "evidenceClass": "participant-reported",
+        "validationBasis": ["fabricated generalized outcome"],
+        "policySurface": "outcome",
+        "outcomeDirection": "benefit",
+        "causalBoundary": "participant-report-only-no-causal-inference",
+        "contextTags": ["synthetic", "paced-reflection"],
+        "versionIdentifiers": ["offline-groundwork-v1"],
+        "runtimeAuthority": "none",
+        "therapyPolicyAuthority": "none",
+        "transmissionAuthority": "none"
+      }
+    },
+    {
+      "occurrenceToken": "2222222222222222222222222222222222222222222222222222222222222222",
+      "candidate": {
+        "format": "inner-signal-generalized-lesson-candidate-v1",
+        "candidateKind": "participant-outcome",
+        "subjectKey": "paced-reflection-outcome",
+        "generalizedSignal": "Some participants report worsening after a paced reflection exercise.",
+        "proposedInvariant": "Retain participant-reported worsening without causal inference.",
+        "expectedBehavior": "Keep worsening visible even when benefit reports are more numerous.",
+        "failureReason": "A majority verdict would hide a safety-relevant minority direction.",
+        "syntheticRegressionExample": "One worsening count remains visible beside benefit counts.",
+        "evidenceClass": "participant-reported",
+        "validationBasis": ["fabricated generalized outcome"],
+        "policySurface": "outcome",
+        "outcomeDirection": "worsening",
+        "causalBoundary": "participant-report-only-no-causal-inference",
+        "contextTags": ["synthetic", "paced-reflection"],
+        "versionIdentifiers": ["offline-groundwork-v1"],
+        "runtimeAuthority": "none",
+        "therapyPolicyAuthority": "none",
+        "transmissionAuthority": "none"
+      }
+    }
+  ]
+}
