@@ -80,6 +80,29 @@ Exact-head hosted readback for `e4bb5d1d11ad2a1ee92525f1e5945a899d4adb10` is com
 
 No community-derived therapy behavior is active. No automatic AI extraction is active. No research use is authorized. No public or network pilot is authorized by this implementation alone.
 
+## Owner-authorized correction-preservation checkpoint
+
+Directive `EH-INNERSIGNAL-CORRECTION-PRESERVATION-SLICE-20260831-001` implements only a
+private preservation primitive for an explicit user correction or rejection:
+
+- capture requires the deliberate action **Save this correction as a potential lesson**;
+- representative correction phrases in ordinary text trigger nothing automatically;
+- the service does not read or import a private chat, assistant answer, message/session
+  identifier, hidden context, embedding, therapy state, or generated summary;
+- the saved draft contains only a manually selected category and optional user-written
+  summary, with a required privacy/redaction acknowledgement for free text;
+- community sharing and product-improvement use remain `false`, runtime authority remains
+  `none`, and the draft cannot enter Learning Cards or proposal exports;
+- account deletion removes the current private drafts under the same disclosed append-only
+  audit-metadata retention boundary as other Commons content.
+
+Bounded verification is green: `npm run community:test` **PASS 17/17**,
+`npm run community:verify` **PASS**, `npm test` **PASS 458/458**, and
+`npm run audit:repository` **PASS** with the known unrelated installed-GitHub-App-permission
+warning. Overall Commons status remains `CHECKPOINT`; this does not approve therapy policy,
+restore missing therapy ledgers, activate learning, or establish a usable active-account
+plugin.
+
 ## Next executable slice
 
 No further Commons implementation is currently authorized. The remaining work is recorded as `COMMUNITY-R001` through `COMMUNITY-R010` in `roadmap/autonomous-development.json`, every item has `autoStart: false`, and every item is gated on completion of the core InnerSignal app plus the applicable later reasoning/owner authority. Queue persistence is not execution authority, and this worker must not decide that the core-app-complete gate has been reached.

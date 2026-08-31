@@ -31,6 +31,13 @@ const EVIDENCE_LABELS = {
   "context-important": "Context mattered",
   confounded: "Cannot tell"
 };
+const POTENTIAL_LESSON_LABELS = {
+  "did-not-work": "That did not work",
+  "did-not-make-sense": "That did not make sense",
+  disagreement: "I disagreed",
+  correction: "I corrected InnerSignal",
+  other: "Other correction or rejection"
+};
 
 function text(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -375,10 +382,26 @@ function receiptForNote(note) {
 }
 
 function renderContributions() {
+  const potentialLessonsRoot = $("#my-potential-lessons");
   const notesRoot = $("#my-notes");
   const receiptsRoot = $("#my-receipts");
+  potentialLessonsRoot.replaceChildren();
   notesRoot.replaceChildren();
   receiptsRoot.replaceChildren();
+
+  const potentialLessons = model.myPotentialLessons ?? [];
+  if (!potentialLessons.length) potentialLessonsRoot.append(element("p", "empty", "No private potential-lesson drafts yet."));
+  for (const lesson of potentialLessons) {
+    const card = element("article", "contribution-card");
+    card.append(element("h4", "", POTENTIAL_LESSON_LABELS[lesson.category] || lesson.category));
+    appendLabeledText(card, "Status", lesson.status);
+    appendLabeledText(card, "Optional summary", lesson.summary);
+    appendLabeledText(card, "Community sharing", lesson.communitySharing ? "On" : "Off");
+    appendLabeledText(card, "Product improvement", lesson.productImprovement ? "On" : "Off");
+    appendLabeledText(card, "Runtime authority", lesson.runtimeAuthority);
+    appendLabeledText(card, "Created", new Date(lesson.createdAt).toLocaleString());
+    potentialLessonsRoot.append(card);
+  }
 
   if (!model.myFieldNotes.length) notesRoot.append(element("p", "empty", "No Field Notes yet."));
   for (const note of model.myFieldNotes) {
@@ -588,6 +611,31 @@ $("#field-note-form").addEventListener("submit", async (event) => {
   }
 });
 
+$("#potential-lesson-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = $("#potential-lesson-submit");
+  setBusy(button, true, "Saving private draft…");
+  try {
+    const response = await requestJson("/v1/potential-lessons", {
+      method: "POST",
+      csrf: true,
+      body: {
+        category: $("#potential-lesson-category").value,
+        summary: $("#potential-lesson-summary").value,
+        privacyAcknowledged: $("#potential-lesson-privacy").checked
+      }
+    });
+    $("#potential-lesson-result").textContent = `Saved as ${response.potentialLesson.status}. No chat content was imported and no sharing or runtime authority was granted.`;
+    $("#potential-lesson-form").reset();
+    await refreshBootstrap();
+    activateView("contributions");
+  } catch (error) {
+    $("#potential-lesson-result").textContent = error.message;
+  } finally {
+    setBusy(button, false);
+  }
+});
+
 $("#pause-community").addEventListener("click", () => {
   communityPaused = !communityPaused;
   localStorage.setItem("innersignal-commons-paused", String(communityPaused));
@@ -604,7 +652,7 @@ $("#logout").addEventListener("click", async () => {
 
 $("#export-my-data").addEventListener("click", () => downloadRequest("/v1/me/export", { fallbackName: "innersignal-community-data.json" }).catch((error) => alert(error.message)));
 $("#delete-my-data").addEventListener("click", async () => {
-  const confirmation = prompt("This removes your current Commons posts, replies, reactions, Field Notes, receipts, reports, and active sessions, and deactivates your account. The prototype append-only event ledger may retain pseudonymous event, participant, and subject identifiers, event types, and timestamps until a production retention and deletion policy is approved. Type DELETE to continue.");
+  const confirmation = prompt("This removes your current Commons posts, replies, reactions, Field Notes, private potential-lesson drafts, receipts, reports, and active sessions, and deactivates your account. The prototype append-only event ledger may retain pseudonymous event, participant, and subject identifiers, event types, and timestamps until a production retention and deletion policy is approved. Type DELETE to continue.");
   if (confirmation !== "DELETE") return;
   const button = $("#delete-my-data");
   setBusy(button, true, "Deleting…");

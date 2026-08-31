@@ -85,6 +85,7 @@
         <button class="tab active" data-view="commons" type="button">Commons</button>
         <button class="tab" data-view="new-post" type="button">New post</button>
         <button class="tab" data-view="field-note" type="button">Field Note</button>
+        <button class="tab" data-view="potential-lesson" type="button">Correction draft</button>
         <button class="tab" data-view="learning" type="button">Learning Cards</button>
         <button class="tab" data-view="contributions" type="button">My contributions</button>
       </nav>
@@ -214,6 +215,30 @@
         <p id="field-result" class="result" role="status"></p>
       </section>
 
+      <section id="view-potential-lesson" class="view panel" hidden>
+        <p class="eyebrow">PRIVATE, PRESERVATION-ONLY</p>
+        <h2>Save a correction as a potential lesson</h2>
+        <p class="notice"><strong>Nothing from a private chat is copied automatically.</strong> This form does not read a conversation, detect phrases, or decide what a correction means. It saves only the category and optional summary you deliberately enter.</p>
+        <form id="potential-lesson-form" class="form-grid">
+          <label>What kind of correction do you want to remember?
+            <select id="potential-lesson-category" required>
+              <option value="did-not-work">That did not work</option>
+              <option value="did-not-make-sense">That did not make sense</option>
+              <option value="disagreement">I disagreed</option>
+              <option value="correction">I corrected InnerSignal</option>
+              <option value="other">Other correction or rejection</option>
+            </select>
+          </label>
+          <label>Optional summary written by me
+            <textarea id="potential-lesson-summary" rows="5" maxlength="1000" placeholder="Describe only the minimum non-private point you want to inspect later. Do not paste a therapy transcript."></textarea>
+          </label>
+          <label><input id="potential-lesson-privacy" type="checkbox"> If I entered a summary, I reviewed it and removed names, transcript excerpts, exact places, and details about other people.</label>
+          <p class="small">This stays a private, unapproved draft. Community sharing and product-improvement use are off. It cannot change therapy behavior, prompts, guides, maps, safety gates, Learning Cards, or proposals.</p>
+          <button id="potential-lesson-submit" type="submit">Save this correction as a potential lesson</button>
+        </form>
+        <p id="potential-lesson-result" class="result" role="status"></p>
+      </section>
+
       <section id="view-learning" class="view panel" hidden>
         <p class="eyebrow">INSPECTABLE, NON-AUTHORITATIVE</p>
         <h2>Community Learning Cards</h2>
@@ -229,7 +254,9 @@
             <button id="delete-my-data" class="danger" type="button">Remove my current Commons content and deactivate account</button>
           </div>
         </div>
-        <p class="notice">Removal deletes current Commons posts, replies, reactions, Field Notes, receipts, reports, and active sessions, and deactivates the account. The prototype append-only event ledger may retain pseudonymous event, participant, and subject identifiers, event types, and timestamps until a production retention and deletion policy is approved.</p>
+        <p class="notice">Removal deletes current Commons posts, replies, reactions, Field Notes, private potential-lesson drafts, receipts, reports, and active sessions, and deactivates the account. The prototype append-only event ledger may retain pseudonymous event, participant, and subject identifiers, event types, and timestamps until a production retention and deletion policy is approved.</p>
+        <h3>Private potential lessons</h3>
+        <div id="my-potential-lessons" class="contribution-list"></div>
         <h3>Field Notes</h3>
         <div id="my-notes" class="contribution-list"></div>
         <h3>Contribution receipts</h3>

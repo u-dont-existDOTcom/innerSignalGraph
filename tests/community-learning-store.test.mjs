@@ -4,7 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { buildCommunityLearningCards, CommunityStore } from "../src/community-learning/store.mjs";
-import { validateFieldNoteInput, validatePostInput, validateReplyInput } from "../src/community-learning/contracts.mjs";
+import { validateFieldNoteInput, validatePostInput, validatePotentialLessonInput, validateReplyInput } from "../src/community-learning/contracts.mjs";
 
 function noteInput(outcome, consentScopes = ["community-aggregate", "product-improvement"], practiceOrFeature = "Brief pre-sleep self-hypnosis") {
   return validateFieldNoteInput({
@@ -106,6 +106,67 @@ test("store keeps conversation, consent, moderation, recomputation, and proposal
   assert.doesNotMatch(JSON.stringify(exported), /tokenHash|recoveryCodeHash|csrfToken/);
   assert.equal(exported.participant.pseudonym, "Quiet River");
   assert.equal(three.fieldNote.learningStatus, "product-improvement");
+});
+
+test("explicit correction drafts stay private, transcript-free, and outside cards", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "innersignal-potential-lesson-"));
+  const store = await new CommunityStore({ rootDir: root, seedCards: [] }).initialize();
+  const member = await store.createSession({ pseudonym: "Careful Observer" });
+
+  for (const [index, phrase] of [
+    "That didn't work for me.",
+    "That doesn't make sense to me.",
+    "I disagree and want to correct InnerSignal."
+  ].entries()) {
+    await store.createPost(member.participant, validatePostInput({
+      room: "using-innersignal",
+      title: `Correction phrase remains conversation only ${index + 1}`,
+      body: `${phrase} This ordinary post must not trigger lesson capture.`,
+      responseContract: "listen-only",
+      contentNote: ""
+    }));
+  }
+
+  const before = await store.readState();
+  assert.deepEqual(before.potentialLessons, []);
+  assert.equal(buildCommunityLearningCards(before, []).length, 0);
+
+  const saved = await store.createPotentialLesson(member.participant, validatePotentialLessonInput({
+    category: "correction",
+    summary: "The response relied on an assumption I had rejected.",
+    privacyAcknowledged: true
+  }));
+  assert.deepEqual(saved, {
+    format: "inner-signal-potential-lesson-v1",
+    potentialLessonId: saved.potentialLessonId,
+    participantId: member.participant.participantId,
+    source: "user-initiated-correction",
+    status: "potential-private-draft",
+    category: "correction",
+    summary: "The response relied on an assumption I had rejected.",
+    privacyAcknowledged: true,
+    communitySharing: false,
+    productImprovement: false,
+    runtimeAuthority: "none",
+    automaticExtraction: false,
+    conversationImported: false,
+    createdAt: saved.createdAt,
+    updatedAt: saved.updatedAt
+  });
+  for (const prohibited of ["postId", "messageId", "sessionId", "transcript", "assistantResponse", "embedding", "therapyState"]) {
+    assert.equal(Object.hasOwn(saved, prohibited), false, `${prohibited} must not enter a potential lesson`);
+  }
+
+  const after = await store.readState();
+  assert.equal(buildCommunityLearningCards(after, []).length, 0);
+  const bootstrap = await store.buildBootstrap(member.participant);
+  assert.equal(bootstrap.myPotentialLessons.length, 1);
+  assert.equal(bootstrap.stats.eligibleFieldNotes, 0);
+  assert.equal(bootstrap.policy.automaticCorrectionExtractionEnabled, false);
+  assert.equal(bootstrap.policy.potentialLessonRuntimeAuthority, "none");
+  const exported = await store.exportParticipantData(member.participant);
+  assert.equal(exported.potentialLessons.length, 1);
+  assert.equal(exported.proposalExports.length, 0);
 });
 
 test("product-only consent never feeds Commons cards and repeated reports from one contributor stay personal", async () => {

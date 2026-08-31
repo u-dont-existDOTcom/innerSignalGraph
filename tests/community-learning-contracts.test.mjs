@@ -5,6 +5,7 @@ import {
   validateAccountDeletionInput,
   validateFieldNoteInput,
   validatePostInput,
+  validatePotentialLessonInput,
   validateReplyInput,
   validateSessionRequest
 } from "../src/community-learning/contracts.mjs";
@@ -61,6 +62,39 @@ test("Field Note consent refuses external sharing without a defined research pro
   const valid = validateFieldNoteInput(base);
   assert.equal(valid.outcomes.followingTwoToThreeDays, "");
   assert.throws(() => validateFieldNoteInput({ ...base, consentScopes: ["external-researcher-sharing"] }), /research-protocol/);
+});
+
+test("potential lessons require explicit bounded input and privacy acknowledgement for free text", () => {
+  assert.deepEqual(validatePotentialLessonInput({
+    category: "did-not-work",
+    summary: "",
+    privacyAcknowledged: false
+  }), {
+    category: "did-not-work",
+    summary: "",
+    privacyAcknowledged: false
+  });
+  assert.deepEqual(validatePotentialLessonInput({
+    category: "correction",
+    summary: "The response used an assumption I had already rejected.",
+    privacyAcknowledged: true
+  }), {
+    category: "correction",
+    summary: "The response used an assumption I had already rejected.",
+    privacyAcknowledged: true
+  });
+  assert.throws(() => validatePotentialLessonInput({
+    category: "did-not-make-sense",
+    summary: "A manually written summary.",
+    privacyAcknowledged: false
+  }), /privacy and redaction acknowledgement/i);
+  assert.throws(() => validatePotentialLessonInput({
+    category: "disagreement",
+    summary: "",
+    privacyAcknowledged: false,
+    messageId: "private-message-id",
+    transcript: "private transcript"
+  }), /unsupported fields/i);
 });
 
 test("deterministic moderation flags hold rather than adjudicate sensitive content", () => {

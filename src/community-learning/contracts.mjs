@@ -53,6 +53,13 @@ export const CONSENT_SCOPES = Object.freeze([
 
 export const OUTCOMES = Object.freeze(["benefit", "no-change", "mixed", "worsening", "unclear"]);
 export const WOULD_REPEAT = Object.freeze(["yes", "no", "unsure"]);
+export const POTENTIAL_LESSON_CATEGORIES = Object.freeze([
+  "did-not-work",
+  "did-not-make-sense",
+  "disagreement",
+  "correction",
+  "other"
+]);
 
 const RESPONSE_REPLY_POLICY = Object.freeze({
   "listen-only": new Set(["witness"]),
@@ -68,6 +75,11 @@ function object(value, label) {
     throw new ValidationError(`${label} must be an object.`);
   }
   return value;
+}
+
+function exactKeys(value, label, allowed) {
+  const unexpected = Object.keys(value).filter((key) => !allowed.includes(key));
+  if (unexpected.length) throw new ValidationError(`${label} contains unsupported fields.`);
 }
 
 function string(value, label, { min = 1, max = 10_000, allowEmpty = false } = {}) {
@@ -182,6 +194,24 @@ export function validateFieldNoteInput(value) {
     wouldRepeat: enumValue(value.wouldRepeat, "fieldNote.wouldRepeat", WOULD_REPEAT),
     causalConfidence: integer(value.causalConfidence, "fieldNote.causalConfidence", { min: 0, max: 100 }),
     consentScopes
+  };
+}
+
+export function validatePotentialLessonInput(value) {
+  object(value, "potential lesson");
+  exactKeys(value, "potential lesson", ["category", "summary", "privacyAcknowledged"]);
+  const summary = optionalString(value.summary, "potentialLesson.summary", { max: 1_000 });
+  const privacyAcknowledged = value.privacyAcknowledged === true;
+  if (value.privacyAcknowledged !== undefined && typeof value.privacyAcknowledged !== "boolean") {
+    throw new ValidationError("potentialLesson.privacyAcknowledged must be a boolean.");
+  }
+  if (summary && !privacyAcknowledged) {
+    throw new ValidationError("A privacy and redaction acknowledgement is required before saving a correction summary.");
+  }
+  return {
+    category: enumValue(value.category, "potentialLesson.category", POTENTIAL_LESSON_CATEGORIES),
+    summary,
+    privacyAcknowledged
   };
 }
 

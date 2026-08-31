@@ -54,6 +54,7 @@ function initialState(at) {
     posts: [],
     consentGrants: [],
     fieldNotes: [],
+    potentialLessons: [],
     receipts: [],
     reports: [],
     proposalExports: []
@@ -608,6 +609,33 @@ export class CommunityStore {
     });
   }
 
+  async createPotentialLesson(participant, input) {
+    const potentialLessonId = crypto.randomUUID();
+    return this.mutate("potential-lesson-created", participant.participantId, potentialLessonId, (state) => {
+      const at = nowIso(this.clock);
+      const potentialLesson = {
+        format: "inner-signal-potential-lesson-v1",
+        potentialLessonId,
+        participantId: participant.participantId,
+        source: "user-initiated-correction",
+        status: "potential-private-draft",
+        category: input.category,
+        summary: input.summary,
+        privacyAcknowledged: input.privacyAcknowledged,
+        communitySharing: false,
+        productImprovement: false,
+        runtimeAuthority: "none",
+        automaticExtraction: false,
+        conversationImported: false,
+        createdAt: at,
+        updatedAt: at
+      };
+      state.potentialLessons ??= [];
+      state.potentialLessons.push(potentialLesson);
+      return potentialLesson;
+    });
+  }
+
   async withdrawFieldNote(participant, fieldNoteId, input) {
     return this.mutate("field-note-consent-withdrawn", participant.participantId, fieldNoteId, (state) => {
       const note = state.fieldNotes.find((item) => item.fieldNoteId === fieldNoteId && item.participantId === participant.participantId);
@@ -648,6 +676,7 @@ export class CommunityStore {
         posts: removedPostIds.size,
         replies: state.posts.reduce((sum, post) => sum + post.replies.filter((reply) => reply.participantId === participant.participantId).length, 0),
         fieldNotes: state.fieldNotes.filter((note) => note.participantId === participant.participantId).length,
+        potentialLessons: (state.potentialLessons ?? []).filter((lesson) => lesson.participantId === participant.participantId).length,
         receipts: removedReceipts.length
       };
 
@@ -659,6 +688,7 @@ export class CommunityStore {
           reactions: post.reactions.filter((reaction) => reaction.participantId !== participant.participantId)
         }));
       state.fieldNotes = state.fieldNotes.filter((note) => note.participantId !== participant.participantId);
+      state.potentialLessons = (state.potentialLessons ?? []).filter((lesson) => lesson.participantId !== participant.participantId);
       state.consentGrants = state.consentGrants.filter((grant) => grant.participantId !== participant.participantId);
       state.receipts = state.receipts.filter((receipt) => receipt.participantId !== participant.participantId);
       state.reports = state.reports.filter((report) => report.reporterParticipantId !== participant.participantId && !removedPostIds.has(report.postId));
@@ -705,6 +735,7 @@ export class CommunityStore {
           || (card.independentContributorCount >= MIN_PUBLIC_CARD_CONTRIBUTORS && card.reviewStatus === "human-reviewed"))
         .map(publicCard),
       myFieldNotes: state.fieldNotes.filter((note) => note.participantId === participant.participantId),
+      myPotentialLessons: (state.potentialLessons ?? []).filter((lesson) => lesson.participantId === participant.participantId),
       myReceipts: state.receipts.filter((receipt) => receipt.participantId === participant.participantId),
       stats: {
         participants: state.participants.filter((item) => item.status === "active").length,
@@ -717,6 +748,8 @@ export class CommunityStore {
         postsConversationOnlyByDefault: true,
         directMessagesEnabled: false,
         rawPostModelTrainingEnabled: false,
+        automaticCorrectionExtractionEnabled: false,
+        potentialLessonRuntimeAuthority: "none",
         runtimeActivationEnabled: false,
         consentTextVersion: CONSENT_TEXT_VERSION
       }
@@ -789,6 +822,7 @@ export class CommunityStore {
       posts: state.posts.filter((post) => post.participantId === participant.participantId).map((post) => ({ ...post, reactions: post.reactions.filter((item) => item.participantId === participant.participantId) })),
       replies: state.posts.flatMap((post) => post.replies.filter((reply) => reply.participantId === participant.participantId).map((reply) => ({ postId: post.postId, ...reply }))),
       fieldNotes: state.fieldNotes.filter((note) => note.participantId === participant.participantId),
+      potentialLessons: (state.potentialLessons ?? []).filter((lesson) => lesson.participantId === participant.participantId),
       consentGrants: state.consentGrants.filter((grant) => grant.participantId === participant.participantId),
       receipts: state.receipts.filter((receipt) => receipt.participantId === participant.participantId),
       reports: state.reports.filter((report) => report.reporterParticipantId === participant.participantId),

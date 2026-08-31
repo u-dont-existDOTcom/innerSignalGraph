@@ -29,6 +29,7 @@ for (const required of [
   "consent-grant.schema.json",
   "post.schema.json",
   "field-note.schema.json",
+  "potential-lesson.schema.json",
   "contribution-receipt.schema.json",
   "learning-card.schema.json",
   "proposal-export.schema.json"
@@ -74,6 +75,15 @@ if (schemas.get("post.schema.json").properties.conversationOnly.const !== true) 
 if (schemas.get("learning-card.schema.json").properties.runtimeAuthority.const !== "none") {
   throw new Error("Learning Cards are no longer structurally non-authoritative.");
 }
+const potentialLessonSchema = schemas.get("potential-lesson.schema.json");
+if (potentialLessonSchema.properties.status.const !== "potential-private-draft"
+    || potentialLessonSchema.properties.communitySharing.const !== false
+    || potentialLessonSchema.properties.productImprovement.const !== false
+    || potentialLessonSchema.properties.runtimeAuthority.const !== "none"
+    || potentialLessonSchema.properties.automaticExtraction.const !== false
+    || potentialLessonSchema.properties.conversationImported.const !== false) {
+  throw new Error("Potential lessons no longer fail closed as private, transcript-free, non-authoritative drafts.");
+}
 
 const runtimeSources = await Promise.all([
   "src/community-learning/contracts.mjs",
@@ -102,6 +112,8 @@ const html = await fs.readFile(path.join(root, "apps/community/index.html"), "ut
 for (const requiredText of [
   "Your private InnerSignal sessions are not imported",
   "No box is preselected",
+  "Save this correction as a potential lesson",
+  "Nothing from a private chat is copied automatically",
   "Support reactions and evidence follow-ups are counted separately",
   "No card can activate InnerSignal runtime behavior",
   "Remove my current Commons content and deactivate account",

@@ -11,6 +11,7 @@ import {
   validateFieldNoteInput,
   validateModerationDecisionInput,
   validatePostInput,
+  validatePotentialLessonInput,
   validateProposalExportInput,
   validateReactionInput,
   validateReplyInput,
@@ -316,6 +317,16 @@ export function createInnerSignalCommunityServer({
         requireCsrf(authenticated, req);
         const created = await store.createFieldNote(authenticated.participant, validateFieldNoteInput(await readJson(req)));
         return sendJson(res, 201, { ok: true, ...created });
+      }
+
+      if (req.method === "POST" && url.pathname === "/v1/potential-lessons") {
+        const authenticated = await requireSession(store, req);
+        requireCsrf(authenticated, req);
+        const potentialLesson = await store.createPotentialLesson(
+          authenticated.participant,
+          validatePotentialLessonInput(await readJson(req))
+        );
+        return sendJson(res, 201, { ok: true, potentialLesson });
       }
 
       const withdrawalMatch = url.pathname.match(/^\/v1\/field-notes\/([0-9a-f-]{36})\/withdraw$/i);

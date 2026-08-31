@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innersignal.local/schemas/potential-lesson.schema.json",
+  "title": "Private InnerSignal correction-preservation draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "potentialLessonId",
+    "participantId",
+    "source",
+    "status",
+    "category",
+    "summary",
+    "privacyAcknowledged",
+    "communitySharing",
+    "productImprovement",
+    "runtimeAuthority",
+    "automaticExtraction",
+    "conversationImported",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "format": { "const": "inner-signal-potential-lesson-v1" },
+    "potentialLessonId": { "type": "string", "format": "uuid" },
+    "participantId": { "type": "string", "format": "uuid" },
+    "source": { "const": "user-initiated-correction" },
+    "status": { "const": "potential-private-draft" },
+    "category": {
+      "enum": ["did-not-work", "did-not-make-sense", "disagreement", "correction", "other"]
+    },
+    "summary": { "type": "string", "maxLength": 1000 },
+    "privacyAcknowledged": { "type": "boolean" },
+    "communitySharing": { "const": false },
+    "productImprovement": { "const": false },
+    "runtimeAuthority": { "const": "none" },
+    "automaticExtraction": { "const": false },
+    "conversationImported": { "const": false },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "summary": { "minLength": 1 } }, "required": ["summary"] },
+      "then": { "properties": { "privacyAcknowledged": { "const": true } } }
+    }
+  ]
+}

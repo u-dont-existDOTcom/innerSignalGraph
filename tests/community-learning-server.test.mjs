@@ -99,7 +99,7 @@ test("community server enforces invitation, cookie session, CSRF, conversation-o
       body: JSON.stringify({
         room: "sleep",
         title: "A bounded sleep observation",
-        body: "A short body scan felt calming immediately, but I was unsure the next morning.",
+        body: "That doesn't make sense to me. A short body scan felt calming immediately, but I was unsure the next morning.",
         responseContract: "questions-welcome",
         contentNote: "sleep"
       })
@@ -107,6 +107,9 @@ test("community server enforces invitation, cookie session, CSRF, conversation-o
     const post = await postResponse.json();
     assert.equal(postResponse.status, 201);
     assert.equal(post.post.responseContract, "questions-welcome");
+    const afterPhraseOnly = await fetch(`${base}/v1/bootstrap`, { headers: { cookie } }).then((response) => response.json());
+    assert.deepEqual(afterPhraseOnly.myPotentialLessons, [], "chat-like correction text alone must not trigger capture");
+    assert.equal(afterPhraseOnly.policy.automaticCorrectionExtractionEnabled, false);
 
     const heldResponse = await fetch(`${base}/v1/posts`, {
       method: "POST",
@@ -158,6 +161,53 @@ test("community server enforces invitation, cookie session, CSRF, conversation-o
     assert.equal(field.fieldNote.learningStatus, "private-draft");
     assert.deepEqual(field.receipt.activeScopes, []);
 
+    const missingPrivacy = await fetch(`${base}/v1/potential-lessons`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json", "x-innersignal-csrf": csrf },
+      body: JSON.stringify({
+        category: "did-not-work",
+        summary: "A manually written summary.",
+        privacyAcknowledged: false
+      })
+    });
+    assert.equal(missingPrivacy.status, 400);
+
+    const injectedPrivateState = await fetch(`${base}/v1/potential-lessons`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json", "x-innersignal-csrf": csrf },
+      body: JSON.stringify({
+        category: "correction",
+        summary: "",
+        privacyAcknowledged: false,
+        messageId: "private-message-id",
+        sessionId: "private-session-id",
+        transcript: "PRIVATE TRANSCRIPT",
+        assistantResponse: "PRIVATE ASSISTANT RESPONSE"
+      })
+    });
+    assert.equal(injectedPrivateState.status, 400);
+
+    const potentialResponse = await fetch(`${base}/v1/potential-lessons`, {
+      method: "POST",
+      headers: { cookie, "content-type": "application/json", "x-innersignal-csrf": csrf },
+      body: JSON.stringify({ category: "did-not-make-sense", summary: "", privacyAcknowledged: false })
+    });
+    const potential = await potentialResponse.json();
+    assert.equal(potentialResponse.status, 201);
+    assert.equal(potential.potentialLesson.status, "potential-private-draft");
+    assert.equal(potential.potentialLesson.communitySharing, false);
+    assert.equal(potential.potentialLesson.productImprovement, false);
+    assert.equal(potential.potentialLesson.runtimeAuthority, "none");
+    assert.equal(potential.potentialLesson.automaticExtraction, false);
+    assert.equal(potential.potentialLesson.conversationImported, false);
+    for (const prohibited of ["postId", "messageId", "sessionId", "transcript", "assistantResponse", "embedding", "therapyState"]) {
+      assert.equal(Object.hasOwn(potential.potentialLesson, prohibited), false);
+    }
+
+    const afterPotential = await fetch(`${base}/v1/bootstrap`, { headers: { cookie } }).then((response) => response.json());
+    assert.equal(afterPotential.myPotentialLessons.length, 1);
+    assert.deepEqual(afterPotential.myPotentialLessons[0], potential.potentialLesson);
+
     const proposalResponse = await fetch(`${base}/v1/proposals/export`, {
       method: "POST",
       headers: { cookie, "content-type": "application/json", "x-innersignal-csrf": csrf },
@@ -179,6 +229,7 @@ test("community server enforces invitation, cookie session, CSRF, conversation-o
     const deletion = await deletionResponse.json();
     assert.equal(deletionResponse.status, 200);
     assert.equal(deletion.removedCounts.posts, 2);
+    assert.equal(deletion.removedCounts.potentialLessons, 1);
     const afterDeletion = await fetch(`${base}/v1/bootstrap`, { headers: { cookie } });
     assert.equal(afterDeletion.status, 401);
   } finally {
