@@ -32,6 +32,8 @@ Extra High independently reviewed PR #15 at `e70ea3648f40163ce41ba8933f9d0f670b3
 - removes the cookie property-injection and Authorization polynomial-regex paths and stops reflecting unexpected exception detail;
 - replaces overstated deletion/bounded-ledger claims with the factual current-content, account-deactivation, and retained pseudonymous audit-metadata boundary.
 
+The repair was committed and pushed as `e4bb5d1d11ad2a1ee92525f1e5945a899d4adb10`. Extra High accepted that repair and its execution receipt under directive `ctc-innersignal-pr15-closeout-queue-20260831-002` after independently confirming the exact PR head and hosted evidence.
+
 ## Verification
 
 Local bounded suite: **PASS 11/11** for all tests runnable without repository-installed AJV.
@@ -62,7 +64,7 @@ Repository verification at executable commit `6c983eb93c1c0392c2f19fdc2c4ac3593a
 - clean final worktree gate: **PASS**;
 - CodeQL JavaScript analysis: **PASS**.
 
-Independent privacy/security/therapy-boundary review remains the next non-CI gate.
+The independent privacy/security/product review is complete. Therapy-semantic Pro escalation was not required because the repair remained a structural fail-closed authority change and did not decide therapy semantics.
 
 Post-repair local verification on 2026-08-31:
 
@@ -72,7 +74,7 @@ Post-repair local verification on 2026-08-31:
 - `npm run audit:repository`: **PASS** with the known repository-global installed-GitHub-App-permission warning, which belongs to the older hardening task and does not block this task;
 - `npm run verify`: **PASS**.
 
-Exact-head hosted workflow and separate GitHub Advanced Security CodeQL readback remain required after this repair is pushed. The earlier required workflow jobs were green at `e70ea3648f40163ce41ba8933f9d0f670b36a769`, but the separate GHAS CodeQL check reported three new alerts; this repair does not claim those alerts cleared until the new exact-head readback proves it.
+Exact-head hosted readback for `e4bb5d1d11ad2a1ee92525f1e5945a899d4adb10` is complete: `workflow-policy` (`99479551622`), `deterministic-package` (`99479550970`), `codeql-javascript` (`99479550876`), and the separate GHAS `CodeQL` check (`99479816523`) all succeeded. The separate check had zero annotations and reported no new alerts; analysis `1697837333` reported zero results.
 
 ## Product-policy state
 
@@ -80,7 +82,6 @@ No community-derived therapy behavior is active. No automatic AI extraction is a
 
 ## Next executable slice
 
-1. Push the bounded repair, read the exact-head required workflow and separate GHAS CodeQL conclusions, and return the execution receipt to Extra High.
-2. Exercise the local interface with synthetic participants and record usability defects only under the next authorized directive.
-3. Keep production Discourse + SSO + PostgreSQL composition, a graphical moderator console, participant challenge/correction, and signed contributor-verification receipts deferred.
-4. Complete legal/privacy and research-boundary review before inviting real participants over a network.
+No further Commons implementation is currently authorized. The remaining work is recorded as `COMMUNITY-R001` through `COMMUNITY-R010` in `roadmap/autonomous-development.json`, every item has `autoStart: false`, and every item is gated on completion of the core InnerSignal app plus the applicable later reasoning/owner authority. Queue persistence is not execution authority, and this worker must not decide that the core-app-complete gate has been reached.
+
+PR #15 remains draft and unmerged. Preserve `stable`, keep public/network launch, research use, and community-derived therapy behavior inactive, and wait for a later authorized reasoning directive to activate a specific deferred task.

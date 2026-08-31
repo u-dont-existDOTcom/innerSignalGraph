@@ -12,7 +12,7 @@ Read in order:
 6. `community-learning/README.md`
 7. current PR diff and CI
 
-Mission: verify and finish the bounded MVP without expanding community anecdotes into therapy authority. Preserve these invariants:
+Mission status: the bounded MVP repair at `e4bb5d1d11ad2a1ee92525f1e5945a899d4adb10`, its exact-head hosted readback, and Extra High acceptance are complete. Do not repeat the push, hosted check readback, or independent repair review. Preserve these invariants:
 
 - posts are conversation-only;
 - private sessions are never imported;
@@ -29,6 +29,6 @@ Mission: verify and finish the bounded MVP without expanding community anecdotes
 - linked proposals stale whenever a contributing Field Note withdraws an applicable scope;
 - current-content removal and account deactivation do not claim erasure of the append-only pseudonymous event metadata.
 
-Run targeted community tests, then `npm test`, then `npm run verify`. Repair implementation defects autonomously. Stop only for a substantive therapy, consent, research, launch, or product-policy decision.
+No further Commons implementation is currently authorized. The remaining production and launch work is queued as `COMMUNITY-R001` through `COMMUNITY-R010` in `roadmap/autonomous-development.json`; every entry has `autoStart: false`. A fresh worker must not start any of those tasks until the owner-defined core InnerSignal app-completion gate is satisfied and a later authorized reasoning directive activates one bounded task. Do not infer that the app is complete and do not treat queue presence as execution authority.
 
-The 2026-08-31 bounded repair directive is `ctc-innersignal-pr15-repair-20260831-001`, reviewed against starting head `e70ea3648f40163ce41ba8933f9d0f670b36a769`. Local post-repair evidence is `community:test` 15/15, `community:verify` PASS, `npm test` 456/456, repository audit PASS with the unrelated historical installed-App warning, and package verification PASS. Do not treat those local results as exact-head hosted evidence: required workflows and the separate GHAS CodeQL check must be read back after push, then the execution receipt returns to the assigned Extra High chat.
+The 2026-08-31 bounded repair directive is `ctc-innersignal-pr15-repair-20260831-001`, reviewed against starting head `e70ea3648f40163ce41ba8933f9d0f670b36a769`. Local post-repair evidence is `community:test` 15/15, `community:verify` PASS, `npm test` 456/456, repository audit PASS with the unrelated historical installed-App warning, and package verification PASS. Exact-head hosted evidence at `e4bb5d1d11ad2a1ee92525f1e5945a899d4adb10` is also complete: all three workflow jobs and the separate GHAS CodeQL check succeeded, with zero GHAS annotations/new alerts and zero analysis results. Extra High accepted the repair and authorized only the durable closeout/queue persistence cycle in `ctc-innersignal-pr15-closeout-queue-20260831-002`; it did not authorize merge, release, launch, research, therapy activation, or additional product implementation.
