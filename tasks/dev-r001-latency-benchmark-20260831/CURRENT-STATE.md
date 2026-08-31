@@ -2,7 +2,14 @@
 
 Task ID: `DEV-R001`
 
-Status: `REVIEW_HANDOFF_BOUNDARY`
+Status: `REASONING_ACCEPTED_COMPLETE`
+
+## Terminal acceptance
+
+- Extra High review `rr-innersignal-dev-r001-latency-repair-20260831-002` accepted DEV-R001 as complete at exact repaired head `1c4487c212a511822dd3836f5015b98ab7987af9`.
+- Worker-to-contract alignment was `GREEN`; contract-to-owner alignment was `MATCH`; operational alignment was `ADEQUATE`.
+- Scientific adequacy was not assessed and remained unchanged. Release adequacy was not authorized.
+- Draft PR #17 remains the unmerged evidence boundary. Its description was reconciled mechanically to the accepted head and repair verification without changing its title, base, draft state, open state, or head.
 
 ## Goal
 
@@ -48,4 +55,4 @@ The benchmark command and focused affected tests must be green before the final 
 
 ## Recovery rule
 
-Inspect the task branch, this checkpoint, `BENCHMARK-RESULTS.json`, and the latest exact-head review receipt. If the branch is not yet committed, resume the first missing deterministic gate. If it is committed and pushed, do not repeat the optimization or full package gate; wait for the bounded Extra High review. Stop rather than changing therapy semantics, tier policy, provider calls, graph behavior, prompts, safety, release state, or `stable`.
+DEV-R001 is terminally accepted at `1c4487c212a511822dd3836f5015b98ab7987af9`. Do not repeat the optimization, repair, benchmark, or package gate. Read the exact review receipt before using this branch as the base for later stacked work. No merge, release, or `stable` promotion is implied.
