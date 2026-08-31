@@ -1,4 +1,4 @@
-import { runUnauditedCaseFormulation, runCaseAuditWithRecovery, applyCaseAudit, planCaseSnapshot } from "../case-formulation/run.mjs";
+import { runUnauditedCaseSnapshot, runCaseAuditWithRecovery, applyCaseAudit, planCaseSnapshot } from "../case-formulation/run.mjs";
 import { runAdversarialPipeline, runCompactAdversarialPipeline, realizeAdjudication } from "./run-pipeline.mjs";
 import { writeLedger } from "./ledger.mjs";
 
@@ -145,10 +145,10 @@ async function simpleResult({ context, formulation, routing, extractor, tier, co
   return { ...result, decisionLedgerId: ledger.id, decisionLedgerPath: ledger.path };
 }
 
-export async function runTieredTherapyPipeline({ context, providers, config, processingMode = "auto", onProgress, caseRecovery }) {
+export async function runTieredTherapyPipeline({ context, providers, config, processingMode = "auto", onProgress, caseRecovery, instrumentation = {} }) {
   const startedAt = new Date().toISOString();
   const extractor = providers.renderer ?? providers.anthropic;
-  const initial = await runUnauditedCaseFormulation({ context, provider: extractor, onProgress, recovery: caseRecovery });
+  const initial = await runUnauditedCaseSnapshot({ context, provider: extractor, onProgress, recovery: caseRecovery });
   const routing = classifyTherapyTier(initial.snapshot, processingMode, {
     priorCaseSnapshot: context.priorCaseSnapshot,
     priorProcessingTier: context.priorProcessingTier
@@ -156,16 +156,24 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
   onProgress?.({ stage: "therapy-routing", status: "completed", detail: `${routing.tier}: ${routing.reason}` });
 
   if (routing.tier === "fast") {
+    const planningStarted = Date.now();
+    const planned = await planCaseSnapshot(initial.snapshot, { onPlanningPass: instrumentation.onPlanningPass });
+    const planningMs = Date.now() - planningStarted;
+    const formulation = {
+      ...initial,
+      plan: planned.plan,
+      graphBundleVersion: planned.graphBundleVersion
+    };
     return await simpleResult({
-      context, formulation: initial, routing, extractor, tier: "fast", config, startedAt, onProgress,
-      stageTimings: { caseExtractionMs: initial.providerMetadata?.extractor?.durationMs ?? null, caseAuditMs: 0, planningMs: null }
+      context, formulation, routing, extractor, tier: "fast", config, startedAt, onProgress,
+      stageTimings: { caseExtractionMs: initial.providerMetadata?.extractor?.durationMs ?? null, caseAuditMs: 0, planningMs }
     });
   }
 
   const audit = await runCaseAuditWithRecovery({ context, snapshot: initial.snapshot, provider: providers.openai, onProgress, recovery: caseRecovery });
   const auditedSnapshot = applyCaseAudit(initial.snapshot, audit.value);
   const planningStarted = Date.now();
-  const planned = await planCaseSnapshot(auditedSnapshot);
+  const planned = await planCaseSnapshot(auditedSnapshot, { onPlanningPass: instrumentation.onPlanningPass });
   const planningMs = Date.now() - planningStarted;
   const formulation = {
     snapshot: auditedSnapshot,

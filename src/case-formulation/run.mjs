@@ -43,7 +43,8 @@ export function applyCaseAudit(snapshot, audit) {
   };
 }
 
-async function planSnapshot(snapshot) {
+async function planSnapshot(snapshot, { onPlanningPass } = {}) {
+  onPlanningPass?.();
   const bundle = await loadCompiledGuideGraphBundle();
   const plan = planFromGraphs({
     variables: snapshot.variables,
@@ -129,11 +130,11 @@ export async function runCaseAuditWithRecovery({ context, snapshot, provider, on
   throw new Error("Unreachable A001 audit retry state.");
 }
 
-export async function planCaseSnapshot(snapshot) {
-  return await planSnapshot(snapshot);
+export async function planCaseSnapshot(snapshot, instrumentation = {}) {
+  return await planSnapshot(snapshot, instrumentation);
 }
 
-export async function runUnauditedCaseFormulation({ context, provider, onProgress, recovery }) {
+export async function runUnauditedCaseSnapshot({ context, provider, onProgress, recovery }) {
   const extraction = await resolveCaseExtraction({ context, provider, onProgress, recovery });
   const snapshot = {
     ...extraction.value,
@@ -144,16 +145,19 @@ export async function runUnauditedCaseFormulation({ context, provider, onProgres
       variable_corrections: []
     }
   };
-  const { plan, graphBundleVersion } = await planSnapshot(snapshot);
   return {
     snapshot,
-    plan,
-    graphBundleVersion,
     providerMetadata: {
       extractor: { provider: provider.id, model: provider.model, requestId: extraction.raw.requestId, durationMs: extraction.durationMs, resumed: Boolean(extraction.resumed) },
       auditor: null
     }
   };
+}
+
+export async function runUnauditedCaseFormulation({ context, provider, onProgress, recovery, onPlanningPass }) {
+  const initial = await runUnauditedCaseSnapshot({ context, provider, onProgress, recovery });
+  const { plan, graphBundleVersion } = await planSnapshot(initial.snapshot, { onPlanningPass });
+  return { ...initial, plan, graphBundleVersion };
 }
 
 export async function runAuditedCaseFormulation({ context, extractorProvider, auditorProvider, onProgress, recovery }) {
