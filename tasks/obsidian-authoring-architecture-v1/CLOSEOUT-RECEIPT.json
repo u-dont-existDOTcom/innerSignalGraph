@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "obsidian-authoring-architecture-v1-closeout-20260831",
+  "taskId": "obsidian-authoring-architecture-v1",
+  "status": "COMPLETE",
+  "pullRequest": 13,
+  "reviewedHead": "534a7f71cae35ee3df77ac88782879d02fcc3376",
+  "squashMergeCommit": "20c2387e0c200893a20d9b4d562fed96d7c39920",
+  "sourceTree": "7b2be66cc001264dbcc2564e3163d2eba418b4aa",
+  "mergedTree": "7b2be66cc001264dbcc2564e3163d2eba418b4aa",
+  "treeMatch": true,
+  "mergedAt": "2026-08-29T16:33:53Z",
+  "closeoutRecordedAt": "2026-08-31T15:39:17Z",
+  "requiredChecks": [
+    {
+      "workflow": "CodeQL",
+      "name": "codeql-javascript",
+      "conclusion": "SUCCESS",
+      "completedAt": "2026-08-29T16:22:43Z"
+    },
+    {
+      "workflow": "Repository workflow policy",
+      "name": "workflow-policy",
+      "conclusion": "SUCCESS",
+      "completedAt": "2026-08-29T16:21:39Z"
+    },
+    {
+      "workflow": "Verify",
+      "name": "deterministic-package",
+      "conclusion": "SUCCESS",
+      "completedAt": "2026-08-29T16:22:11Z"
+    },
+    {
+      "workflow": "CodeQL",
+      "name": "CodeQL",
+      "conclusion": "SUCCESS",
+      "completedAt": "2026-08-29T16:22:36Z"
+    }
+  ],
+  "stable": {
+    "remoteRefBeforeCloseout": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1",
+    "remoteRefAfterCloseout": "110ee5342e27d8f1bd3d11cc2be4d85926c255b1",
+    "changed": false
+  },
+  "roadmapSelectionRestored": true,
+  "rootLockPath": "tasks/ACTIVE-TASK.json",
+  "checkpointPath": "tasks/obsidian-authoring-architecture-v1/CURRENT-STATE.md"
+}

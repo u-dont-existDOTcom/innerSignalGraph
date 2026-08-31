@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "feedbackId": "SDF-20260831-INNERSIGNAL-POSTMERGE-ACTIVE-LOCK-001",
+  "type": "DEFECT",
+  "category": "TASK_CLOSEOUT_AND_QUEUE_RESTORATION",
+  "severity": "MATERIAL",
+  "repository": "u-dont-existDOTcom/innerSignalGraph",
+  "taskId": "obsidian-authoring-architecture-v1",
+  "observedAt": "2026-08-31T15:39:17Z",
+  "evidence": {
+    "pullRequest": 13,
+    "reviewedHead": "534a7f71cae35ee3df77ac88782879d02fcc3376",
+    "mergeCommit": "20c2387e0c200893a20d9b4d562fed96d7c39920",
+    "tree": "7b2be66cc001264dbcc2564e3163d2eba418b4aa",
+    "treeMatch": true,
+    "staleLockStatus": "active",
+    "staleLockExclusive": true
+  },
+  "impact": "The merged task continued to suspend autonomous roadmap selection because its exclusive active lock and pre-merge checkpoint were carried into main.",
+  "projectLocalDisposition": "Retire the lock as a non-exclusive terminal historical record and bind the merge evidence in a closeout receipt.",
+  "blocksCurrentBoundary": false,
+  "sharedDesignRecommendation": "Mechanically require exclusive-lock retirement during or immediately after protected integration, before roadmap selection resumes.",
+  "sharedDesignLane": "supervision-architecture/20260831",
+  "universalArchitectureModified": false
+}
