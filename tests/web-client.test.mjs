@@ -31,6 +31,36 @@ test("browser route renderer places the app-owned waking return last", async () 
   assert.doesNotMatch(functionText, /aftercare/);
 });
 
+test("browser voice controls expose accessible deterministic playback and interruption recovery", async () => {
+  const html = await fs.readFile(path.join(root, "apps/web/index.html"), "utf8");
+  const app = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");
+  const controller = await fs.readFile(path.join(root, "apps/web/speech-playback.js"), "utf8");
+
+  assert.match(html, /id="speak-session"[^>]*>Read selected route aloud<\/button>/);
+  assert.match(html, /id="pause-speaking"[^>]*>Pause voice<\/button>/);
+  assert.match(html, /id="resume-speaking"[^>]*>Resume voice<\/button>/);
+  assert.match(html, /id="stop-speaking"[^>]*>Stop voice<\/button>/);
+  assert.match(html, /id="speech-playback-status"[^>]*role="status"/);
+  assert.match(app, /createSpeechPlaybackController/);
+  assert.match(app, /speechPlayback\.handleVisibilityChange\(document\.visibilityState\)/);
+  assert.match(app, /window\.addEventListener\("pagehide", \(\) => speechPlayback\.stop\(\)\)/);
+  assert.match(controller, /utterance\.rate = 0\.88/);
+
+  const showPlanStart = app.indexOf("function showPlan");
+  const showPlanEnd = app.indexOf("\n}\n\nfunction selectRoute", showPlanStart);
+  const showPlan = app.slice(showPlanStart, showPlanEnd);
+  assert.ok(showPlan.indexOf("speechPlayback.stop()") < showPlan.indexOf("currentPlan = plan"));
+
+  const selectRouteStart = app.indexOf("function selectRoute");
+  const selectRouteEnd = app.indexOf("\n}\n\nfunction guideTextList", selectRouteStart);
+  const selectRoute = app.slice(selectRouteStart, selectRouteEnd);
+  assert.ok(selectRoute.indexOf("speechPlayback.stop()") < selectRoute.indexOf("selectedRouteText = renderHypnosisRoute"));
+
+  const activateTabStart = app.indexOf("function activateTab");
+  const activateTabEnd = app.indexOf("\n}\n\nasync function checkHealth", activateTabStart);
+  assert.match(app.slice(activateTabStart, activateTabEnd), /id !== "hypnosis".*speechPlayback\.stop\(\)/s);
+});
+
 test("roadmap policy advances routine phases without asking for logs", async () => {
   const roadmap = JSON.parse(await fs.readFile(path.join(root, "roadmap/roadmap.json"), "utf8"));
   assert.equal(roadmap.policy.advanceWithoutAsking, true);
