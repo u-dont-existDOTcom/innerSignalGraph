@@ -108,6 +108,16 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
   font-size: 0.78rem;
   opacity: 0.75;
 }
+.potential-lesson-notice { margin-bottom: .6rem; }
+.potential-lessons-section { margin-top: 1.25rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+.potential-lessons-list { display: grid; gap: .8rem; }
+.potential-lesson-card { display: grid; gap: .7rem; border: 1px solid var(--line); border-radius: .85rem; padding: 1rem; background: var(--bg); }
+.potential-lesson-card > label { display: grid; gap: .35rem; font-weight: 700; }
+.potential-lesson-heading { display: flex; justify-content: space-between; gap: .75rem; align-items: center; flex-wrap: wrap; }
+.authority-none { border: 1px solid var(--line); border-radius: 999px; padding: .25rem .55rem; color: var(--muted); font-size: .76rem; font-weight: 800; }
+.potential-lesson-privacy { display: flex !important; grid-template-columns: auto 1fr; align-items: flex-start; font-weight: 500 !important; }
+.potential-lesson-privacy input { width: auto; margin-top: .2rem; }
+.potential-lesson-actions { justify-content: flex-start; }
 
 .dev-automation { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid var(--line, #ccc); border-radius: .75rem; display:flex; gap:1rem; justify-content:space-between; align-items:center; flex-wrap:wrap; }
 .dev-automation strong { margin-right:.6rem; }

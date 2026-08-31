@@ -58,6 +58,27 @@ test("assistant messages can capture lightweight human development feedback into
   assert.match(js, /\/v1\/debug\/feedback/);
 });
 
+test("private correction learning is category-only, reviewable, and isolated from runtime authority", async () => {
+  const html = await fs.readFile(path.join(root, "apps/web/index.html"), "utf8");
+  const js = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");
+  const learning = await fs.readFile(path.join(root, "apps/web/correction-learning.js"), "utf8");
+  const css = await fs.readFile(path.join(root, "apps/web/styles.css"), "utf8");
+  assert.match(html, /Potential lessons/);
+  assert.match(html, /No triggering chat text or assistant answer is copied/i);
+  assert.match(html, /runtime and therapy-policy authority remain none/i);
+  assert.match(js, /createAutomaticPotentialLesson\(message\)/);
+  assert.match(js, /state\.potentialLessons\.push\(potentialLesson\)/);
+  assert.match(js, /Save as potential lesson/);
+  assert.match(js, /restorePotentialLessons\(parsed\.state\.potentialLessons\)/);
+  assert.match(js, /state\.potentialLessons = \[\]/);
+  assert.match(js, /Queue for governance review/);
+  assert.match(learning, /automaticTextExtraction: false/);
+  assert.match(learning, /runtimeAuthority: "none"/);
+  assert.match(learning, /therapyPolicyAuthority: "none"/);
+  assert.doesNotMatch(learning, /fetch\s*\(|XMLHttpRequest|WebSocket|https?:\/\//);
+  assert.match(css, /\.potential-lesson-card/);
+});
+
 test("web client exposes autonomous development status and only asks humans for policy decisions", async () => {
   const html = await fs.readFile(path.join(root, "apps/web/index.html"), "utf8");
   const js = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");

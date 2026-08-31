@@ -64,6 +64,7 @@
         </div>
       </div>
       <p class="notice">This is a reflective companion, not emergency care. Ordinary low-ambiguity turns use a fast Sonnet + decision-graph path. The runtime automatically adds Codex review or the full Opus + GPT adversarial pipeline when ambiguity, depth, or safety makes that worthwhile.</p>
+      <p id="potential-lesson-capture-notice" class="notice potential-lesson-notice" aria-live="polite" hidden></p>
       <div id="therapy-transcript" class="transcript" aria-live="polite"></div>
       <form id="therapy-form" class="composer">
         <label for="therapy-message">What is happening?</label>
@@ -189,6 +190,11 @@
         <button id="erase-data" class="danger" type="button">Erase local data</button>
       </div>
       <pre id="data-summary" class="data-summary"></pre>
+      <section class="potential-lessons-section" aria-labelledby="potential-lessons-heading">
+        <h3 id="potential-lessons-heading">Potential lessons</h3>
+        <p class="small">Explicit correction signals can create category-only candidates in this browser. No triggering chat text or assistant answer is copied into a candidate. Reviewing or queuing one does not teach the therapy runtime; runtime and therapy-policy authority remain none.</p>
+        <div id="potential-lessons" class="potential-lessons-list"></div>
+      </section>
     </section>
   </main>
 

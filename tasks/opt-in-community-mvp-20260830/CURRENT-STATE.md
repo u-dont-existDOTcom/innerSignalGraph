@@ -108,3 +108,33 @@ plugin.
 No further Commons implementation is currently authorized. The remaining work is recorded as `COMMUNITY-R001` through `COMMUNITY-R010` in `roadmap/autonomous-development.json`, every item has `autoStart: false`, and every item is gated on completion of the core InnerSignal app plus the applicable later reasoning/owner authority. Queue persistence is not execution authority, and this worker must not decide that the core-app-complete gate has been reached.
 
 PR #15 remains draft and unmerged. Preserve `stable`, keep public/network launch, research use, and community-derived therapy behavior inactive, and wait for a later authorized reasoning directive to activate a specific deferred task.
+
+## Private correction-learning candidate layer
+
+The newer explicit owner outcome supersedes the earlier stop only for a private main-app
+candidate-capture slice. Extra High reconciled that outcome under directive
+`ctc-innersignal-private-correction-capture-20260831-001` at reviewed PR head
+`243e61c2662cf9db3e6cb93c8fc7f02918fc2d89`. No Pro escalation was required because the
+slice classifies interaction feedback and controls local storage; it does not decide whether
+a correction is therapeutically true or change therapy semantics.
+
+The private InnerSignal web app now has a conservative deterministic detector for the
+owner-named response signals: did not work, did not make sense, explicit disagreement, and
+explicit correction. A match creates a browser-local, category-only potential-lesson stub
+before the therapy request is sent. The candidate never contains the triggering message,
+assistant answer, transcript position, message/session/ledger identifier, hash, hidden
+context, embedding, therapy state, or generated summary. A manual category-only fallback is
+also available on assistant response controls.
+
+Users can inspect and reclassify a candidate, write an optional redacted summary with an
+explicit privacy acknowledgement, keep it private, queue it for later governance review,
+dismiss it, or delete it. Backup/import/erase supports the candidate array with strict
+field validation. History stores only fixed action codes and timestamps. Every state keeps
+`runtimeAuthority: none` and `therapyPolicyAuthority: none`; no therapy pipeline, prompt,
+graph, Guide Packet, governance ledger, or Commons store consumes the candidate.
+
+This is candidate learning with capture, provenance, review/disposition, and closeout—not
+runtime adoption. Commons behavior and its explicit contribution flow remain unchanged.
+Public/network operation, research use, community-derived therapy behavior, and therapy
+policy approval remain unauthorized. Final package and exact-head hosted verification are
+recorded in the post-execution review packet rather than inferred from this task state.
