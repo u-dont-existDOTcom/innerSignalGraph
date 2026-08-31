@@ -140,8 +140,8 @@ function verifySubmissionArtifacts() {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) fail("public-submission contains a missing or unexpected file");
 
   const allText = walkFiles(submissionRoot).map(readText).join("\n");
+  if (allText.toLowerCase().includes("example.com")) fail("public-submission contains placeholder example URL");
   for (const [label, expression] of [
-    ["placeholder example URL", /example\.com/i],
     ["absolute home path", /\/(?:home|mnt)\//],
     ["Codex private path", /~\/\.codex|\.codex\/plugins\/cache/i],
     ["review handoff content", /\.review-handoff|PRIVATE_[A-Z0-9_]+/]
