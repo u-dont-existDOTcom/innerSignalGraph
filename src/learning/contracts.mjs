@@ -3,6 +3,8 @@ export const PERSONALIZATION_FORMAT = "inner-signal-user-personalization-v1";
 export const CANDIDATE_FORMAT = "inner-signal-generalized-lesson-candidate-v1";
 export const REVIEW_CARD_FORMAT = "inner-signal-learning-review-card-v1";
 export const OWNER_DECISION_REFERENCE_FORMAT = "inner-signal-owner-decision-reference-v1";
+export const CONTRIBUTION_POLICY_FORMAT = "inner-signal-contribution-policy-v1";
+export const PROVIDER_DISCLOSURE_FORMAT = "inner-signal-provider-path-disclosure-v1";
 
 export const FEEDBACK_CLASSES = Object.freeze([
   "style-process-preference",
@@ -39,6 +41,8 @@ const MEMORY_KEYS = Object.freeze(["format", "memoryId", "memoryType", "generali
 const CANDIDATE_KEYS = Object.freeze(["format", "candidateKind", "subjectKey", "generalizedSignal", "proposedInvariant", "expectedBehavior", "failureReason", "syntheticRegressionExample", "evidenceClass", "validationBasis", "policySurface", "outcomeDirection", "causalBoundary", "contextTags", "versionIdentifiers", "runtimeAuthority", "therapyPolicyAuthority", "transmissionAuthority"]);
 const REVIEW_CARD_KEYS = Object.freeze(["format", "candidateReceipt", "status", "candidateKind", "evidenceClass", "causalBoundary", "subjectKey", "generalizedObservation", "proposedInvariant", "proposedRegression", "occurrenceCount", "contradictionCounts", "runtimeAuthority", "therapyPolicyAuthority", "availableReviewActions"]);
 const OWNER_REFERENCE_KEYS = Object.freeze(["format", "sourceLedger", "decisionId", "candidateFingerprint", "decision", "receiptSha256"]);
+const CONTRIBUTION_POLICY_KEYS = Object.freeze(["format", "policyId", "candidateScope", "rawTherapyChatEligible", "freeUserProviderPath", "freeContributionMode", "candidatePreviewRequired", "refusalCost", "refusalScope", "refusalReducesAccess", "freeGlobalContributionDisableAvailable", "paidApiProviderPath", "paidApiRequiresPayment", "paidGlobalContributionDisableAvailable", "paidGlobalContributionSetting", "candidateTransmissionEnabled", "existingCandidateBackfillEnabled", "runtimePersonalizationEnabled", "therapyPolicyActivated", "therapyPolicyAuthority", "releaseAuthorized"]);
+const PROVIDER_DISCLOSURE_KEYS = Object.freeze(["format", "freeUserChatgpt", "paidApi", "identifiabilityWarningRequired", "identifiabilityWarningAppliesTo", "privacyPolicyPublished", "liveSignupEnabled", "releaseAuthorized"]);
 
 function record(value, label) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError(`${label} must be an object.`);
@@ -204,5 +208,57 @@ export function validateOwnerDecisionReference(value) {
   text(value.decisionId, "decisionId", { max: 96 });
   if (!/^[a-f0-9]{64}$/.test(value.candidateFingerprint) || !/^[a-f0-9]{64}$/.test(value.receiptSha256)) throw new TypeError("Owner decision hashes must be lowercase SHA-256 values.");
   oneOf(value.decision, ["approved", "declined", "insufficient-evidence"], "decision");
+  return value;
+}
+
+export function validateContributionPolicy(value) {
+  record(value, "contribution policy");
+  exactKeys(value, CONTRIBUTION_POLICY_KEYS, "contribution policy");
+  exact(value.format, CONTRIBUTION_POLICY_FORMAT, "format");
+  exact(value.policyId, "default-on-per-candidate-refusal", "policyId");
+  exact(value.candidateScope, "privacy-screened-generalized-candidates-only", "candidateScope");
+  exact(value.rawTherapyChatEligible, false, "rawTherapyChatEligible");
+  exact(value.freeUserProviderPath, "user-owned-chatgpt-account", "freeUserProviderPath");
+  exact(value.freeContributionMode, "default-on-per-candidate-refusal", "freeContributionMode");
+  exact(value.candidatePreviewRequired, true, "candidatePreviewRequired");
+  exact(value.refusalCost, "free", "refusalCost");
+  exact(value.refusalScope, "current-candidate-only", "refusalScope");
+  exact(value.refusalReducesAccess, false, "refusalReducesAccess");
+  exact(value.freeGlobalContributionDisableAvailable, false, "freeGlobalContributionDisableAvailable");
+  exact(value.paidApiProviderPath, "innersignal-controlled-openai-api-account", "paidApiProviderPath");
+  exact(value.paidApiRequiresPayment, true, "paidApiRequiresPayment");
+  exact(value.paidGlobalContributionDisableAvailable, true, "paidGlobalContributionDisableAvailable");
+  exact(value.paidGlobalContributionSetting, "UNSPECIFIED_PENDING_FUTURE_BILLING_UI_DECISION", "paidGlobalContributionSetting");
+  for (const field of ["candidateTransmissionEnabled", "existingCandidateBackfillEnabled", "runtimePersonalizationEnabled", "therapyPolicyActivated", "releaseAuthorized"]) exact(value[field], false, field);
+  exact(value.therapyPolicyAuthority, "none", "therapyPolicyAuthority");
+  return value;
+}
+
+export function validateProviderPathDisclosure(value) {
+  record(value, "provider path disclosure");
+  exactKeys(value, PROVIDER_DISCLOSURE_KEYS, "provider path disclosure");
+  exact(value.format, PROVIDER_DISCLOSURE_FORMAT, "format");
+  record(value.freeUserChatgpt, "freeUserChatgpt");
+  exactKeys(value.freeUserChatgpt, ["providerPath", "innerSignalControlsOpenAIAccountSettings", "communityContributionDefaultOn", "generalizedCandidatePreviewRequired", "freePerCandidateRefusal", "rawTherapyChatTransmissionAuthorized"], "freeUserChatgpt");
+  exact(value.freeUserChatgpt.providerPath, "user-owned-chatgpt-account", "freeUserChatgpt.providerPath");
+  exact(value.freeUserChatgpt.innerSignalControlsOpenAIAccountSettings, false, "freeUserChatgpt.innerSignalControlsOpenAIAccountSettings");
+  for (const field of ["communityContributionDefaultOn", "generalizedCandidatePreviewRequired", "freePerCandidateRefusal"]) exact(value.freeUserChatgpt[field], true, `freeUserChatgpt.${field}`);
+  exact(value.freeUserChatgpt.rawTherapyChatTransmissionAuthorized, false, "freeUserChatgpt.rawTherapyChatTransmissionAuthorized");
+  record(value.paidApi, "paidApi");
+  exactKeys(value.paidApi, ["providerPath", "paymentRequired", "trainingUseDefault", "ordinaryAbuseMonitoringPossible", "ordinaryAbuseMonitoringRetention", "applicationStateRetention", "modifiedAbuseMonitoringVerified", "zeroDataRetentionVerified", "globalCommunityContributionDisableAvailable", "globalCommunityContributionSetting"], "paidApi");
+  exact(value.paidApi.providerPath, "innersignal-controlled-openai-api-account", "paidApi.providerPath");
+  exact(value.paidApi.paymentRequired, true, "paidApi.paymentRequired");
+  exact(value.paidApi.trainingUseDefault, "not-used-unless-api-customer-opts-in", "paidApi.trainingUseDefault");
+  exact(value.paidApi.ordinaryAbuseMonitoringPossible, true, "paidApi.ordinaryAbuseMonitoringPossible");
+  exact(value.paidApi.ordinaryAbuseMonitoringRetention, "up-to-30-days-subject-to-documented-exceptions", "paidApi.ordinaryAbuseMonitoringRetention");
+  exact(value.paidApi.applicationStateRetention, "endpoint-and-feature-dependent", "paidApi.applicationStateRetention");
+  exact(value.paidApi.modifiedAbuseMonitoringVerified, false, "paidApi.modifiedAbuseMonitoringVerified");
+  exact(value.paidApi.zeroDataRetentionVerified, false, "paidApi.zeroDataRetentionVerified");
+  exact(value.paidApi.globalCommunityContributionDisableAvailable, true, "paidApi.globalCommunityContributionDisableAvailable");
+  exact(value.paidApi.globalCommunityContributionSetting, "UNSPECIFIED_PENDING_FUTURE_BILLING_UI_DECISION", "paidApi.globalCommunityContributionSetting");
+  exact(value.identifiabilityWarningRequired, true, "identifiabilityWarningRequired");
+  stringArray(value.identifiabilityWarningAppliesTo, "identifiabilityWarningAppliesTo", { min: 2, max: 2 });
+  for (const expected of ["user-owned-chatgpt-account", "innersignal-controlled-openai-api-account"]) if (!value.identifiabilityWarningAppliesTo.includes(expected)) throw new TypeError("Identifiability warning must apply to both provider paths.");
+  for (const field of ["privacyPolicyPublished", "liveSignupEnabled", "releaseAuthorized"]) exact(value[field], false, field);
   return value;
 }

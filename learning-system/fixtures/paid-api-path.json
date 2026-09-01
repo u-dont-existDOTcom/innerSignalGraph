@@ -1,0 +1,28 @@
+{
+  "format": "inner-signal-provider-path-disclosure-v1",
+  "freeUserChatgpt": {
+    "providerPath": "user-owned-chatgpt-account",
+    "innerSignalControlsOpenAIAccountSettings": false,
+    "communityContributionDefaultOn": true,
+    "generalizedCandidatePreviewRequired": true,
+    "freePerCandidateRefusal": true,
+    "rawTherapyChatTransmissionAuthorized": false
+  },
+  "paidApi": {
+    "providerPath": "innersignal-controlled-openai-api-account",
+    "paymentRequired": true,
+    "trainingUseDefault": "not-used-unless-api-customer-opts-in",
+    "ordinaryAbuseMonitoringPossible": true,
+    "ordinaryAbuseMonitoringRetention": "up-to-30-days-subject-to-documented-exceptions",
+    "applicationStateRetention": "endpoint-and-feature-dependent",
+    "modifiedAbuseMonitoringVerified": false,
+    "zeroDataRetentionVerified": false,
+    "globalCommunityContributionDisableAvailable": true,
+    "globalCommunityContributionSetting": "UNSPECIFIED_PENDING_FUTURE_BILLING_UI_DECISION"
+  },
+  "identifiabilityWarningRequired": true,
+  "identifiabilityWarningAppliesTo": ["user-owned-chatgpt-account", "innersignal-controlled-openai-api-account"],
+  "privacyPolicyPublished": false,
+  "liveSignupEnabled": false,
+  "releaseAuthorized": false
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innerself.love/schemas/product-privacy-decision-receipt.schema.json",
+  "title": "InnerSignal product/privacy owner decision receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "exactSource", "interpretation", "implementationAuthority"],
+  "properties": {
+    "format": { "const": "inner-signal-product-privacy-owner-decision-v1" },
+    "exactSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requestId", "sha256", "text"],
+      "properties": {
+        "requestId": { "const": "rr-innersignal-option-a-api-privacy-20260831-003" },
+        "sha256": { "const": "1146d9832a04ad7b3310d684f8ec580a6c3676604688a4990d455d3e48dc608c" },
+        "text": { "type": "string", "minLength": 1 }
+      }
+    },
+    "interpretation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selectedOption", "freeContributionPolicy", "candidateScope", "paidApiRequiredForApiPath", "paidGlobalContributionDisableAvailable", "identifiabilityWarningRequired", "classification", "therapyPolicyAuthority"],
+      "properties": {
+        "selectedOption": { "const": "A" },
+        "freeContributionPolicy": { "const": "default-on-per-candidate-refusal" },
+        "candidateScope": { "const": "privacy-screened-generalized-candidates-only" },
+        "paidApiRequiredForApiPath": { "const": true },
+        "paidGlobalContributionDisableAvailable": { "const": true },
+        "identifiabilityWarningRequired": { "const": true },
+        "classification": { "const": "PRODUCT_PRIVACY_ECONOMIC_POLICY" },
+        "therapyPolicyAuthority": { "const": "none" }
+      }
+    },
+    "implementationAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["offlinePolicyDesign", "rawTherapyChatTransmission", "existingCandidateBackfill", "liveTransmission", "realQueue", "billing", "liveSignup", "privacyPolicyPublication", "runtimePersonalization", "therapyPolicyActivation", "release"],
+      "properties": {
+        "offlinePolicyDesign": { "const": true },
+        "rawTherapyChatTransmission": { "const": false },
+        "existingCandidateBackfill": { "const": false },
+        "liveTransmission": { "const": false },
+        "realQueue": { "const": false },
+        "billing": { "const": false },
+        "liveSignup": { "const": false },
+        "privacyPolicyPublication": { "const": false },
+        "runtimePersonalization": { "const": false },
+        "therapyPolicyActivation": { "const": false },
+        "release": { "const": false }
+      }
+    }
+  }
+}

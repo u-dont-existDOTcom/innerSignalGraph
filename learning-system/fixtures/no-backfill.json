@@ -1,0 +1,9 @@
+{
+  "fixture": "no-backfill",
+  "existingLocalCandidateCount": 3,
+  "existingCandidateBackfillEnabled": false,
+  "candidateTransmissionEnabled": false,
+  "result": "remain-local",
+  "runtimePersonalizationEnabled": false,
+  "therapyPolicyActivated": false
+}

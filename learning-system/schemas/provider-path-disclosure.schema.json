@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innerself.love/schemas/provider-path-disclosure.schema.json",
+  "title": "InnerSignal offline provider-path disclosure",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "freeUserChatgpt", "paidApi", "identifiabilityWarningRequired", "identifiabilityWarningAppliesTo", "privacyPolicyPublished", "liveSignupEnabled", "releaseAuthorized"],
+  "properties": {
+    "format": { "const": "inner-signal-provider-path-disclosure-v1" },
+    "freeUserChatgpt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerPath", "innerSignalControlsOpenAIAccountSettings", "communityContributionDefaultOn", "generalizedCandidatePreviewRequired", "freePerCandidateRefusal", "rawTherapyChatTransmissionAuthorized"],
+      "properties": {
+        "providerPath": { "const": "user-owned-chatgpt-account" },
+        "innerSignalControlsOpenAIAccountSettings": { "const": false },
+        "communityContributionDefaultOn": { "const": true },
+        "generalizedCandidatePreviewRequired": { "const": true },
+        "freePerCandidateRefusal": { "const": true },
+        "rawTherapyChatTransmissionAuthorized": { "const": false }
+      }
+    },
+    "paidApi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerPath", "paymentRequired", "trainingUseDefault", "ordinaryAbuseMonitoringPossible", "ordinaryAbuseMonitoringRetention", "applicationStateRetention", "modifiedAbuseMonitoringVerified", "zeroDataRetentionVerified", "globalCommunityContributionDisableAvailable", "globalCommunityContributionSetting"],
+      "properties": {
+        "providerPath": { "const": "innersignal-controlled-openai-api-account" },
+        "paymentRequired": { "const": true },
+        "trainingUseDefault": { "const": "not-used-unless-api-customer-opts-in" },
+        "ordinaryAbuseMonitoringPossible": { "const": true },
+        "ordinaryAbuseMonitoringRetention": { "const": "up-to-30-days-subject-to-documented-exceptions" },
+        "applicationStateRetention": { "const": "endpoint-and-feature-dependent" },
+        "modifiedAbuseMonitoringVerified": { "const": false },
+        "zeroDataRetentionVerified": { "const": false },
+        "globalCommunityContributionDisableAvailable": { "const": true },
+        "globalCommunityContributionSetting": { "const": "UNSPECIFIED_PENDING_FUTURE_BILLING_UI_DECISION" }
+      }
+    },
+    "identifiabilityWarningRequired": { "const": true },
+    "identifiabilityWarningAppliesTo": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "enum": ["user-owned-chatgpt-account", "innersignal-controlled-openai-api-account"] },
+      "allOf": [
+        { "contains": { "const": "user-owned-chatgpt-account" } },
+        { "contains": { "const": "innersignal-controlled-openai-api-account" } }
+      ]
+    },
+    "privacyPolicyPublished": { "const": false },
+    "liveSignupEnabled": { "const": false },
+    "releaseAuthorized": { "const": false }
+  }
+}

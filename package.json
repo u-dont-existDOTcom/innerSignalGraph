@@ -34,6 +34,8 @@
     "community:test": "node --test tests/community-learning-contracts.test.mjs tests/community-learning-store.test.mjs tests/community-learning-server.test.mjs tests/community-web-client.test.mjs tests/community-main-integration.test.mjs tests/community-learning-schema.test.mjs",
     "learning:groundwork:test": "node --test tests/learning-groundwork-contracts.test.mjs tests/learning-groundwork-privacy.test.mjs tests/learning-groundwork-queue.test.mjs tests/learning-groundwork-personalization.test.mjs tests/learning-groundwork-governance.test.mjs tests/learning-groundwork-isolation.test.mjs",
     "learning:groundwork:verify": "node scripts/verify-learning-groundwork.mjs",
+    "learning:policy:test": "node --test tests/learning-default-contribution-policy.test.mjs tests/learning-provider-disclosure.test.mjs tests/learning-owner-product-privacy-decision.test.mjs tests/learning-identifiability-warning.test.mjs tests/learning-option-a-isolation.test.mjs",
+    "learning:policy:verify": "node scripts/verify-learning-policy-groundwork.mjs",
     "verify": "bash ./scripts/verify-clean.sh",
     "audit:workflows": "node scripts/audit-workflows.mjs",
     "audit:repository": "node scripts/audit-repository.mjs",

@@ -113,12 +113,36 @@ const changedPaths = statusLines.map((line) => line.slice(3)).filter((relative) 
 const allowed = [
   /^learning-system\//,
   /^src\/learning\//,
-  /^scripts\/verify-learning-groundwork\.mjs$/,
+  /^scripts\/verify-learning-(?:groundwork|policy-groundwork)\.mjs$/,
   /^tests\/learning-groundwork-.*\.test\.mjs$/,
+  /^tests\/(?:learning-default-contribution-policy|learning-provider-disclosure|learning-owner-product-privacy-decision|learning-identifiability-warning|learning-option-a-isolation)\.test\.mjs$/,
   /^package\.json$/,
-  /^tasks\/opt-in-community-mvp-20260830\/(?:CURRENT-STATE|LEARNING-GROUNDWORK-EVIDENCE)\.md$/
+  /^tasks\/opt-in-community-mvp-20260830\/(?:CURRENT-STATE|LEARNING-GROUNDWORK-EVIDENCE|DEFAULT-CONTRIBUTION-API-PRIVACY-EVIDENCE)\.md$/,
+  /^tasks\/opt-in-community-mvp-20260830\/OWNER-PRODUCT-PRIVACY-DECISION-20260831-003\.json$/
 ];
-for (const relative of changedPaths) if (!allowed.some((pattern) => pattern.test(relative))) throw new Error(`Changed path falls outside the directive: ${relative}`);
+const isAllowedChangedPath = (relative) => allowed.some((pattern) => pattern.test(relative));
+for (const relative of [
+  "scripts/verify-learning-policy-groundwork.mjs",
+  "tests/learning-default-contribution-policy.test.mjs",
+  "tests/learning-provider-disclosure.test.mjs",
+  "tests/learning-owner-product-privacy-decision.test.mjs",
+  "tests/learning-identifiability-warning.test.mjs",
+  "tests/learning-option-a-isolation.test.mjs",
+  "tasks/opt-in-community-mvp-20260830/OWNER-PRODUCT-PRIVACY-DECISION-20260831-003.json",
+  "tasks/opt-in-community-mvp-20260830/DEFAULT-CONTRIBUTION-API-PRIVACY-EVIDENCE.md"
+]) if (!isAllowedChangedPath(relative)) throw new Error(`Newly authorized path regression failed: ${relative}`);
+for (const relative of [
+  "src/server/create-server.mjs",
+  "apps/web/app.js",
+  "src/prompts/realize.mjs",
+  "THERAPY-LESSONS",
+  "THERAPY-DECISIONS",
+  "roadmap/autonomous-development.json",
+  "scripts/unrelated-learning-script.mjs",
+  "tests/unrelated-policy.test.mjs",
+  "tasks/opt-in-community-mvp-20260830/UNAUTHORIZED-FILE.md"
+]) if (isAllowedChangedPath(relative)) throw new Error(`Unrelated path fail-closed regression failed: ${relative}`);
+for (const relative of changedPaths) if (!isAllowedChangedPath(relative)) throw new Error(`Changed path falls outside the directive: ${relative}`);
 for (const ledger of ["THERAPY-LESSONS", "SUGGESTED-THERAPY-LESSONS", "THERAPY-DECISIONS", "APPROVED-THERAPY-LESSONS"]) if (changedPaths.includes(ledger)) throw new Error(`Therapy ledger changed: ${ledger}`);
 
 process.stdout.write(`PASS ${schemaNames.length} strict schemas, ${required.length} required artifacts, ${cards.length} synthetic review cards, zero network-capable learning imports, and zero runtime consumers.\n`);

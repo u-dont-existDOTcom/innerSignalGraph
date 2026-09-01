@@ -162,3 +162,30 @@ This is `SUBTASK_ENABLEMENT_ONLY`, pending post-execution Extra High reasoning a
 The parent owner outcome remains open. Operational adequacy is limited to the mechanically
 verified offline/no-network/no-runtime boundary; scientific adequacy is not assessed and
 release is not authorized.
+
+## Default contribution and paid API privacy policy — offline only
+
+The exact owner statement in
+`OWNER-PRODUCT-PRIVACY-DECISION-20260831-003.json` selects Option A as a task-local
+product/privacy/economic policy. Free community learning is modeled as default-on for future
+privacy-screened generalized lesson candidates, with a mandatory candidate preview and free
+per-candidate refusal that never reduces access. The paid API path may eventually provide a
+global contribution control, but its default is deliberately left unspecified.
+
+The provider disclosure distinguishes the user's own ChatGPT account from a future paid,
+InnerSignal-controlled OpenAI API account. It does not claim that ordinary API traffic is
+unmonitored, never retained, anonymous, or automatically eligible for Zero Data Retention.
+Both paths require an explicit warning that message content and combinations of facts may
+identify a person despite account anonymity or API routing.
+
+This slice remains offline: no app or server consumes it; no signup, billing, OpenAI API call,
+network write, real queue, candidate transmission, backfill, privacy-policy publication,
+retention schedule, runtime personalization, or therapy-policy activation is enabled. Raw
+therapy chat is never an eligible contribution. Refusal, future revocation, and deletion may
+not be paywalled.
+
+The owner receipt has `therapyPolicyAuthority: none` and cannot serve as a therapy-policy
+approval. Any later candidate that could affect guides, graphs, prompts, safety, evidence
+policy, or therapy behavior still requires the canonical direct owner-decision and
+regression-first governance path. Scientific adequacy remains
+`NOT_ASSESSED_UNCHANGED`; release remains `NOT_AUTHORIZED`; the parent outcome remains open.
