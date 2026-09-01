@@ -220,12 +220,51 @@ The paid API disclosure describes account-identity shielding, not anonymity: pro
 combinations of ordinary facts, payment/account infrastructure, providers, and network metadata
 can still identify or link a person.
 
-Current typed state pending the final mechanical and post-execution review gates:
+Extra High accepted the live-local execution at exact head
+`cd789ea9c5df582ac2524e8f4d563e3a9bd7e98e` with typed claim
+`LIVE_LOCAL_LEARNING_SUBTASK_COMPLETE_PARENT_OPEN`. The accepted checkpoint is:
 
 - Worker-to-contract alignment: `GREEN`.
 - Contract-to-owner alignment: `MATCH_FOR_THIS_SUBTASK`.
-- Operational alignment: `ADEQUATE_FOR_LIVE_LOCAL_LOOPBACK_ONLY`.
+- Operational alignment: `ADEQUATE_FOR_LIVE_LOCAL_LOOPBACK`.
+- Privacy/security/product adequacy: `ADEQUATE_FOR_THIS_BOUNDARY`.
 - Scientific adequacy: `NOT_ASSESSED_UNCHANGED`.
 - Release adequacy: `NOT_AUTHORIZED`.
-- Completion claim: `LIVE_LOCAL_LEARNING_SUBTASK_COMPLETE_PARENT_OPEN`.
+- Completion claim: `LIVE_LOCAL_LEARNING_SUBTASK_COMPLETE_PARENT_OPEN`; the parent outcome is
+  explicitly still open.
 - Pro escalation: `NO_PRO`; this slice changes evidence handling, not therapy semantics.
+
+## Live local owner-review workbench
+
+The owner explicitly required continuation after the accepted subtask because the parent
+learning outcome remains open. Exact continuation source SHA-256:
+`7f7988b3cfe6e3f4fb515bb32acd5cf05737deff8308c6f9dd097ff3804187f2`.
+
+Extra High directive `ctc-innersignal-live-local-owner-review-workbench-20260901-001`, revision
+1, activates the current bounded slice at start head
+`cd789ea9c5df582ac2524e8f4d563e3a9bd7e98e`. The slice adds a same-device owner/maintainer
+review workbench to the existing main-app Local Data surface and four loopback review routes
+backed only by the existing `status/list/show/decide` public projections.
+
+The workbench may inspect strict generalized evidence and apply one of six triage dispositions.
+It cannot expose private queue credentials or raw therapy material, send evidence off-device,
+change personalization/runtime behavior, write a therapy ledger, or approve/install a therapy
+policy. `prepare-therapy-policy-decision` remains only a
+`needs-owner-therapy-decision` triage status.
+
+`tasks/ACTIVE-TASK.json` is a known stale conflicting global lock for an unrelated branch. It
+does not control this explicit owner-selected PR #15 execution and remains unchanged as
+control-plane debt. The deferred Commons queue `COMMUNITY-R001` through `COMMUNITY-R010`
+remains locked; no public/network/provider/billing/release authority is added.
+
+Current worker claim target, subject to the bounded mechanical and post-execution Extra High
+gates: `LIVE_LOCAL_OWNER_REVIEW_WORKBENCH_SUBTASK_COMPLETE_PARENT_OPEN`.
+
+The bounded implementation now exists in the main app and remains pending frozen-diff, final
+package, exact-head hosted, and Extra High execution-receipt review. Pre-freeze verification is
+green: focused tests **28/28**, complete live-local tests **49/49**, correction-learning tests
+**35/35**, Commons tests **17/17**, live-loopback and groundwork verifiers **PASS**, web smoke
+**PASS**, repository audit **PASS** with only the unrelated installed-GitHub-App-permission
+warning, and canonical design audit **PASS** with no findings. Controlled-browser confirmation
+exercised a real triage decision and the on-demand generalized-evidence detail. It also found and
+closed an async refresh-control regression. No owner therapy-policy choice was made or requested.

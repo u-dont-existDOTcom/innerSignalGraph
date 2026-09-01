@@ -562,6 +562,152 @@ async function getJson(url) {
   return payload;
 }
 
+const LEARNING_REVIEW_ROUTES = Object.freeze({
+  status: "/v1/learning/review/status",
+  records: "/v1/learning/review/records",
+  detail: "/v1/learning/review/records/:receipt",
+  decision: "/v1/learning/review/records/:receipt/decision"
+});
+const LEARNING_REVIEW_ACTIONS = Object.freeze([
+  Object.freeze({ disposition: "reject", label: "Reject" }),
+  Object.freeze({ disposition: "insufficient-evidence", label: "Insufficient evidence" }),
+  Object.freeze({ disposition: "duplicate", label: "Duplicate" }),
+  Object.freeze({ disposition: "personalization-process-only", label: "Personalization/process only" }),
+  Object.freeze({ disposition: "needs-external-evidence", label: "Needs external evidence" }),
+  Object.freeze({ disposition: "prepare-therapy-policy-decision", label: "Flag for owner therapy-policy decision" })
+]);
+
+function learningReviewRoute(kind, receipt) {
+  const route = LEARNING_REVIEW_ROUTES[kind];
+  return receipt ? route.replace(":receipt", encodeURIComponent(receipt)) : route;
+}
+
+async function learningReviewRequest(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: { "accept": "application/json", ...(options.headers || {}) }
+  });
+  const payload = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+  if (!response.ok) {
+    const error = new Error(payload.error || `Request failed with status ${response.status}.`);
+    error.code = payload.code;
+    error.availability = payload.availability;
+    throw error;
+  }
+  return payload;
+}
+
+function renderLearningReviewUnavailable() {
+  const badge = $("#learning-review-availability");
+  badge.className = "status error";
+  badge.textContent = "Unavailable";
+  $("#learning-review-summary").textContent = "Queue unavailable — counts not shown.";
+  const root = $("#learning-review-records");
+  root.replaceChildren();
+  const message = document.createElement("p");
+  message.className = "small";
+  message.textContent = "Local learning records could not be read safely. No zero count has been inferred.";
+  root.append(message);
+}
+
+function appendLearningReviewField(list, label, value) {
+  const term = document.createElement("dt");
+  term.textContent = label;
+  const description = document.createElement("dd");
+  description.textContent = String(value ?? "Not recorded");
+  list.append(term, description);
+}
+
+function renderLearningReviewRecords(records) {
+  const root = $("#learning-review-records");
+  root.replaceChildren();
+  if (!records.length) {
+    const empty = document.createElement("p");
+    empty.className = "small";
+    empty.textContent = "The local learning queue has no records.";
+    root.append(empty);
+    return;
+  }
+  for (const record of [...records].reverse()) {
+    const candidate = record.candidate || {};
+    const card = document.createElement("article");
+    card.className = "learning-review-card";
+    const heading = document.createElement("h4");
+    heading.textContent = record.candidateReceipt;
+    const fields = document.createElement("dl");
+    appendLearningReviewField(fields, "Review status", candidateLabel(record.status));
+    appendLearningReviewField(fields, "Feedback category", candidateLabel(candidate.feedbackCategory));
+    appendLearningReviewField(fields, "Evidence class", candidateLabel(candidate.evidenceClass));
+    appendLearningReviewField(fields, "Causal boundary", candidateLabel(candidate.causalBoundary));
+    appendLearningReviewField(fields, "Generalized observation", candidate.generalizedObservation);
+    appendLearningReviewField(fields, "Occurrence count", record.occurrenceCount);
+    appendLearningReviewField(fields, "Updated", record.updatedAt);
+    if (candidate.userAuthoredSummary) appendLearningReviewField(fields, "User-authored summary", candidate.userAuthoredSummary);
+
+    const detail = document.createElement("details");
+    detail.className = "learning-review-detail";
+    const detailSummary = document.createElement("summary");
+    detailSummary.textContent = "Load full generalized evidence";
+    const evidence = document.createElement("pre");
+    evidence.textContent = "Open to load the strict generalized candidate from this device.";
+    detail.append(detailSummary, evidence);
+    detail.addEventListener("toggle", async () => {
+      if (!detail.open || detail.dataset.loaded === "true") return;
+      evidence.textContent = "Loading…";
+      try {
+        const current = await learningReviewRequest(learningReviewRoute("detail", record.candidateReceipt));
+        evidence.textContent = JSON.stringify(current.candidate, null, 2);
+        detail.dataset.loaded = "true";
+      } catch {
+        evidence.textContent = "Generalized evidence is unavailable; no record details were inferred.";
+      }
+    });
+
+    const actions = document.createElement("div");
+    actions.className = "actions wrap learning-review-actions";
+    for (const action of LEARNING_REVIEW_ACTIONS) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "secondary";
+      button.textContent = action.label;
+      button.addEventListener("click", async () => {
+        setBusy(button, true, "Saving triage…");
+        try {
+          await learningReviewRequest(learningReviewRoute("decision", record.candidateReceipt), {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ disposition: action.disposition })
+          });
+          await refreshLearningReview();
+        } catch {
+          alert("The local triage decision could not be saved. The existing record remains unchanged.");
+        } finally {
+          setBusy(button, false);
+        }
+      });
+      actions.append(button);
+    }
+    card.append(heading, fields, detail, actions);
+    root.append(card);
+  }
+}
+
+async function refreshLearningReview() {
+  const badge = $("#learning-review-availability");
+  badge.className = "status pending";
+  badge.textContent = "Checking…";
+  try {
+    const status = await learningReviewRequest(learningReviewRoute("status"));
+    if (status.availability !== "available") return renderLearningReviewUnavailable();
+    badge.className = "status ok";
+    badge.textContent = "Available";
+    $("#learning-review-summary").textContent = `${status.totalOpen} total record${status.totalOpen === 1 ? "" : "s"} · ${status.needsReview} awaiting review`;
+    renderLearningReviewRecords(await learningReviewRequest(learningReviewRoute("records")));
+  } catch {
+    renderLearningReviewUnavailable();
+  }
+}
+
 async function postBinary(url, body, contentType = "application/zip") {
   const response = await fetch(url, { method: "POST", headers: { "content-type": contentType }, body });
   const payload = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
@@ -941,6 +1087,7 @@ function activateTab(id) {
     panel.hidden = !active;
     panel.classList.toggle("active", active);
   }
+  if (id === "data") refreshLearningReview();
 }
 
 async function checkHealth() {
@@ -1074,6 +1221,15 @@ $("#stop-speaking").addEventListener("click", () => window.speechSynthesis?.canc
 
 $("#export-diagnostic").addEventListener("click", (event) => exportDiagnosticZip(event.currentTarget));
 $("#export-diagnostic-data").addEventListener("click", (event) => exportDiagnosticZip(event.currentTarget));
+$("#learning-review-refresh").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  setBusy(button, true, "Refreshing…");
+  try {
+    await refreshLearningReview();
+  } finally {
+    setBusy(button, false);
+  }
+});
 
 $("#export-data").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify({ format: "inner-signal-backup-v1", exportedAt: new Date().toISOString(), state }, null, 2)], { type: "application/json" });
@@ -1181,6 +1337,7 @@ $("#dev-reject").addEventListener("click", () => submitDevelopmentDecision("reje
 renderTherapy();
 renderPotentialLessons();
 renderDataSummary();
+refreshLearningReview();
 checkHealth();
 refreshDevelopmentStatus();
 refreshGuidePacketStatus().catch(() => {});

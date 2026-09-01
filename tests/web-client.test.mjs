@@ -83,6 +83,7 @@ test("private correction learning is category-only, reviewable, and isolated fro
 test("live learning requires an exact preview and explicit action, with revocation before local erasure", async () => {
   const html = await fs.readFile(path.join(root, "apps/web/index.html"), "utf8");
   const js = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");
+  const css = await fs.readFile(path.join(root, "apps/web/styles.css"), "utf8");
   assert.match(html, /preview the exact generalized evidence/i);
   assert.match(html, /refuse it at no charge/i);
   assert.match(html, /account-identity shielding, not anonymity/i);
@@ -99,6 +100,14 @@ test("live learning requires an exact preview and explicit action, with revocati
   assert.match(js, /\["contributed", "submission-pending"\]\.includes\(contribution\?\.state\)/);
   assert.match(js, /occurrenceToken: contribution\.occurrenceToken[\s\S]*revocationToken: contribution\.revocationToken/);
   assert.match(js, /could not be revoked[\s\S]*retry credentials were preserved/i);
+  assert.match(html, /Local learning review/);
+  assert.match(html, /local maintainer view/i);
+  assert.match(html, /does not approve, install, or change therapy/i);
+  assert.match(js, /\/v1\/learning\/review\/status/);
+  assert.match(js, /\/v1\/learning\/review\/records/);
+  assert.match(js, /Flag for owner therapy-policy decision/);
+  assert.match(js, /Queue unavailable — counts not shown/);
+  assert.match(css, /\.learning-review-card/);
   const lifecycle = js.slice(js.indexOf("async function previewLearningContribution"), js.indexOf("\nfunction reviewButton"));
   assert.doesNotMatch(lifecycle, /setInterval\s*\(|setTimeout\s*\(/i);
 });

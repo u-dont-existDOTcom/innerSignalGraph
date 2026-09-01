@@ -30,6 +30,23 @@ npm run learning:review -- show <ISL-LOCAL-receipt>
 npm run learning:review -- decide <ISL-LOCAL-receipt> <disposition>
 ```
 
+The main app's **Local data** tab also contains a **Local learning review** workbench. It
+reads the same public status/list/detail projections and exposes the same six triage
+dispositions through four same-device loopback routes:
+
+```text
+GET  /v1/learning/review/status
+GET  /v1/learning/review/records
+GET  /v1/learning/review/records/:receipt
+POST /v1/learning/review/records/:receipt/decision
+```
+
+The workbench distinguishes an unavailable queue from an empty queue. It shows only strict
+generalized evidence and public review metadata; occurrence/revocation credentials, token
+hashes, filesystem paths, raw therapy content, and assistant answers are not exposed. This is
+a local maintainer surface, so anyone with access to the running local instance may be able to
+view those generalized records.
+
 Disposition is triage only. Even `prepare-therapy-policy-decision` changes the local status to
 `needs-owner-therapy-decision`; it cannot write a therapy ledger, change a guide/graph/prompt,
 generate an adopted therapy regression, install anything, or affect a therapy response.

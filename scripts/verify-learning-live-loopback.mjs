@@ -31,9 +31,12 @@ const required = [
   "tests/learning-live-contracts.test.mjs",
   "tests/learning-live-store.test.mjs",
   "tests/learning-live-server.test.mjs",
+  "tests/learning-live-review-api.test.mjs",
+  "tests/learning-live-review-workbench.test.mjs",
   "tests/learning-live-isolation.test.mjs",
   "tasks/opt-in-community-mvp-20260830/CURRENT-STATE.md",
-  "tasks/opt-in-community-mvp-20260830/LIVE-LEARNING-EVIDENCE.md"
+  "tasks/opt-in-community-mvp-20260830/LIVE-LEARNING-EVIDENCE.md",
+  "tasks/opt-in-community-mvp-20260830/OWNER-REVIEW-WORKBENCH-EVIDENCE.md"
 ];
 for (const relative of required) await fs.access(path.join(root, relative));
 
@@ -89,13 +92,32 @@ const expectedConsumers = [
 if (JSON.stringify(consumers) !== JSON.stringify(expectedConsumers)) throw new Error(`Unexpected live learning consumers: ${JSON.stringify(consumers)}`);
 
 const server = await fs.readFile(path.join(root, "src/server/create-server.mjs"), "utf8");
-const routeDefinitions = [...server.matchAll(/url\.pathname === "(\/v1\/learning\/[^"]+)"/g)].map((match) => match[1]);
-if (JSON.stringify(routeDefinitions) !== JSON.stringify(["/v1/learning/preview", "/v1/learning/submit", "/v1/learning/revoke"])) throw new Error(`Learning route set changed: ${routeDefinitions.join(", ")}`);
-if ((server.match(/readJson\(req, 16 \* 1024\)/g) ?? []).length !== 3) throw new Error("Every learning route must use the 16 KiB JSON limit.");
+const routeBlockStart = server.indexOf("const LIVE_LEARNING_ENDPOINTS");
+const routeBlockEnd = server.indexOf("\n]);", routeBlockStart);
+const routeDefinitions = [...server.slice(routeBlockStart, routeBlockEnd).matchAll(/"(\/v1\/learning\/[^"]+)"/g)].map((match) => match[1]);
+const expectedRoutes = [
+  "/v1/learning/preview",
+  "/v1/learning/submit",
+  "/v1/learning/revoke",
+  "/v1/learning/review/status",
+  "/v1/learning/review/records",
+  "/v1/learning/review/records/:receipt",
+  "/v1/learning/review/records/:receipt/decision"
+];
+if (JSON.stringify(routeDefinitions) !== JSON.stringify(expectedRoutes)) throw new Error(`Learning route set changed: ${routeDefinitions.join(", ")}`);
+if ((server.match(/readJson\(req, 16 \* 1024\)/g) ?? []).length !== 3) throw new Error("The candidate lifecycle must retain three 16 KiB JSON limits.");
+if ((server.match(/readJson\(req, 4096\)/g) ?? []).length !== 1) throw new Error("The review decision route must use exactly one 4096-byte JSON limit.");
 if (!server.includes("connect-src 'self'")) throw new Error("Loopback server CSP no longer limits connections to self.");
 
 const app = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");
 for (const route of routeDefinitions) if (!app.includes(route)) throw new Error(`Browser lacks ${route}.`);
+const reviewUiStart = app.indexOf("const LEARNING_REVIEW_ROUTES");
+const reviewUiEnd = app.indexOf("\nasync function postBinary", reviewUiStart);
+if (reviewUiStart < 0 || reviewUiEnd < 0) throw new Error("Local learning review workbench boundary is missing.");
+const reviewUi = app.slice(reviewUiStart, reviewUiEnd);
+for (const action of ["Reject", "Insufficient evidence", "Duplicate", "Personalization/process only", "Needs external evidence", "Flag for owner therapy-policy decision"]) if (!reviewUi.includes(action)) throw new Error(`Local learning review action is missing: ${action}`);
+for (const forbidden of ["occurrenceHash", "revocationHash", "revocationToken", "occurrenceToken", "previewNonce", "rawUserMessage", "assistantAnswer", "private-learning", "queue.json"]) if (reviewUi.includes(forbidden)) throw new Error(`Local learning review UI references a private field: ${forbidden}`);
+if (!reviewUi.includes("Queue unavailable — counts not shown.") || !reviewUi.includes("No zero count has been inferred.")) throw new Error("Local learning review UI can collapse unavailable into zero.");
 const lifecycleStart = app.indexOf("async function previewLearningContribution");
 const lifecycleEnd = app.indexOf("\nfunction reviewButton", lifecycleStart);
 if (lifecycleStart < 0 || lifecycleEnd < 0) throw new Error("Browser learning lifecycle boundary is missing.");
@@ -136,11 +158,11 @@ const allowed = [
   /^tests\/learning-live-.*\.test\.mjs$/,
   /^tests\/(?:correction-learning|server|web-client|learning-groundwork-isolation|learning-option-a-isolation)\.test\.mjs$/,
   /^package\.json$/,
-  /^tasks\/opt-in-community-mvp-20260830\/(?:CURRENT-STATE|LIVE-LEARNING-EVIDENCE)\.md$/
+  /^tasks\/opt-in-community-mvp-20260830\/(?:CURRENT-STATE|LIVE-LEARNING-EVIDENCE|OWNER-REVIEW-WORKBENCH-EVIDENCE)\.md$/
 ];
 const isAllowed = (relative) => allowed.some((pattern) => pattern.test(relative));
 for (const relative of changedPaths) if (!isAllowed(relative)) throw new Error(`Changed path falls outside the live-loopback directive: ${relative}`);
 for (const relative of ["src/server/unrelated.mjs", "apps/web/unrelated.js", "tests/unrelated.test.mjs", "src/prompts/realize.mjs", "roadmap/roadmap.json", "state/CODEX-CURRENT-STATE.md", "tasks/opt-in-community-mvp-20260830/UNAUTHORIZED.md"]) if (isAllowed(relative)) throw new Error(`Changed-path allowlist is too broad: ${relative}`);
 for (const ledger of ["THERAPY-LESSONS", "SUGGESTED-THERAPY-LESSONS", "THERAPY-DECISIONS", "APPROVED-THERAPY-LESSONS"]) if (changedPaths.includes(ledger)) throw new Error(`Therapy ledger changed: ${ledger}`);
 
-process.stdout.write(`PASS 1 strict live evidence schema, ${LIVE_LEARNING_CATEGORIES.length} conservative category mappings, 3 loopback routes, exactly 2 runtime consumers, 0 external learning calls, 0 diagnostic/progress sync paths, exact account-identity-shielding copy, and runtime/therapy authority=none.\n`);
+process.stdout.write(`PASS 1 strict live evidence schema, ${LIVE_LEARNING_CATEGORIES.length} conservative category mappings, 7 loopback routes, one local owner-review workbench, exactly 2 runtime consumers, 0 external learning calls, 0 diagnostic/progress sync paths, exact account-identity-shielding copy, and runtime/therapy authority=none.\n`);

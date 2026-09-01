@@ -29,11 +29,22 @@ test("only the exact main server and maintainer CLI consume live local learning 
   assert.deepEqual(consumers.sort(), ["src/cli/learning-review.mjs", "src/server/create-server.mjs"]);
 });
 
-test("exactly three learning HTTP routes exist and every one is loopback-app local", async () => {
+test("exactly seven learning HTTP routes exist and every one is loopback-app local", async () => {
   const server = await fs.readFile(path.join(root, "src/server/create-server.mjs"), "utf8");
-  const routes = [...server.matchAll(/url\.pathname === "(\/v1\/learning\/[^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(routes, ["/v1/learning/preview", "/v1/learning/submit", "/v1/learning/revoke"]);
-  assert.match(server, /readJson\(req, 16 \* 1024\)/);
+  const routeStart = server.indexOf("const LIVE_LEARNING_ENDPOINTS");
+  const routeEnd = server.indexOf("\n]);", routeStart);
+  const routes = [...server.slice(routeStart, routeEnd).matchAll(/"(\/v1\/learning\/[^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(routes, [
+    "/v1/learning/preview",
+    "/v1/learning/submit",
+    "/v1/learning/revoke",
+    "/v1/learning/review/status",
+    "/v1/learning/review/records",
+    "/v1/learning/review/records/:receipt",
+    "/v1/learning/review/records/:receipt/decision"
+  ]);
+  assert.equal((server.match(/readJson\(req, 16 \* 1024\)/g) ?? []).length, 3);
+  assert.match(server, /readJson\(req, 4096\)/);
   const app = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");
   for (const route of routes) assert.match(app, new RegExp(route.replaceAll("/", "\\/")));
   assert.doesNotMatch(app, /https?:\/\//);

@@ -201,6 +201,22 @@
         <p class="small">Explicit correction signals can create category-only candidates in this browser. You can preview the exact generalized evidence, refuse it at no charge, or continue with the default local contribution. No triggering chat text or assistant answer is copied into a candidate. Local review does not teach the therapy runtime; runtime and therapy-policy authority remain none.</p>
         <div id="potential-lessons" class="potential-lessons-list"></div>
       </section>
+      <section class="learning-review-section" aria-labelledby="learning-review-heading">
+        <div class="learning-review-heading">
+          <div>
+            <h3 id="learning-review-heading">Local learning review</h3>
+            <p class="small">Review generalized learning evidence saved on this device. These records contain no raw therapy transcript or assistant answer and cannot change InnerSignal therapy behavior.</p>
+          </div>
+          <button id="learning-review-refresh" class="secondary" type="button">Refresh local review</button>
+        </div>
+        <p class="notice compact-notice">This is a local maintainer view. Anyone with access to this running InnerSignal instance may be able to view these generalized records.</p>
+        <p class="small"><strong>Flag for owner therapy-policy decision</strong> only changes triage status to <code>needs-owner-therapy-decision</code>. It does not approve, install, or change therapy.</p>
+        <div class="learning-review-status-row">
+          <span id="learning-review-availability" class="status pending" aria-live="polite">Checking local queue…</span>
+          <span id="learning-review-summary" class="small" aria-live="polite">Counts not loaded.</span>
+        </div>
+        <div id="learning-review-records" class="learning-review-records" aria-live="polite"></div>
+      </section>
     </section>
   </main>
 

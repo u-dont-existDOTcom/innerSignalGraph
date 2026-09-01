@@ -113,8 +113,21 @@ const expectedConsumers = [
 ];
 if (JSON.stringify(learningConsumers) !== JSON.stringify(expectedConsumers)) throw new Error(`Unexpected runtime learning consumers: ${JSON.stringify(learningConsumers)}`);
 routeOwners.sort(([leftFile], [rightFile]) => leftFile.localeCompare(rightFile));
-const learningRoutes = ["/v1/learning/preview", "/v1/learning/revoke", "/v1/learning/submit"];
-const expectedRouteOwners = ["apps/web/app.js", "src/autopilot/web-smoke.mjs", "src/server/create-server.mjs"].map((file) => [file, learningRoutes]);
+const candidateRoutes = ["/v1/learning/preview", "/v1/learning/revoke", "/v1/learning/submit"];
+const learningRoutes = [
+  "/v1/learning/preview",
+  "/v1/learning/review/records",
+  "/v1/learning/review/records/:receipt",
+  "/v1/learning/review/records/:receipt/decision",
+  "/v1/learning/review/status",
+  "/v1/learning/revoke",
+  "/v1/learning/submit"
+];
+const expectedRouteOwners = [
+  ["apps/web/app.js", learningRoutes],
+  ["src/autopilot/web-smoke.mjs", candidateRoutes],
+  ["src/server/create-server.mjs", learningRoutes]
+];
 if (JSON.stringify(routeOwners) !== JSON.stringify(expectedRouteOwners)) throw new Error(`Unexpected local learning route owners: ${JSON.stringify(routeOwners)}`);
 
 const preview = await fs.readFile(path.join(root, "learning-system/reviewer-preview/index.html"), "utf8");
@@ -136,7 +149,7 @@ const allowed = [
   /^tests\/(?:correction-learning|server|web-client)\.test\.mjs$/,
   /^tests\/(?:learning-default-contribution-policy|learning-provider-disclosure|learning-owner-product-privacy-decision|learning-identifiability-warning|learning-option-a-isolation)\.test\.mjs$/,
   /^package\.json$/,
-  /^tasks\/opt-in-community-mvp-20260830\/(?:CURRENT-STATE|LEARNING-GROUNDWORK-EVIDENCE|DEFAULT-CONTRIBUTION-API-PRIVACY-EVIDENCE|LIVE-LEARNING-EVIDENCE)\.md$/,
+  /^tasks\/opt-in-community-mvp-20260830\/(?:CURRENT-STATE|LEARNING-GROUNDWORK-EVIDENCE|DEFAULT-CONTRIBUTION-API-PRIVACY-EVIDENCE|LIVE-LEARNING-EVIDENCE|OWNER-REVIEW-WORKBENCH-EVIDENCE)\.md$/,
   /^tasks\/opt-in-community-mvp-20260830\/OWNER-PRODUCT-PRIVACY-DECISION-20260831-003\.json$/
 ];
 const isAllowedChangedPath = (relative) => allowed.some((pattern) => pattern.test(relative));
@@ -158,10 +171,13 @@ for (const relative of [
   "src/cli/learning-review.mjs",
   "scripts/verify-learning-live-loopback.mjs",
   "tests/learning-live-server.test.mjs",
+  "tests/learning-live-review-api.test.mjs",
+  "tests/learning-live-review-workbench.test.mjs",
   "tests/correction-learning.test.mjs",
   "tests/server.test.mjs",
   "tests/web-client.test.mjs",
-  "tasks/opt-in-community-mvp-20260830/LIVE-LEARNING-EVIDENCE.md"
+  "tasks/opt-in-community-mvp-20260830/LIVE-LEARNING-EVIDENCE.md",
+  "tasks/opt-in-community-mvp-20260830/OWNER-REVIEW-WORKBENCH-EVIDENCE.md"
 ]) if (!isAllowedChangedPath(relative)) throw new Error(`Newly authorized path regression failed: ${relative}`);
 for (const relative of [
   "src/server/unrelated-learning-server.mjs",
@@ -177,4 +193,4 @@ for (const relative of [
 for (const relative of changedPaths) if (!isAllowedChangedPath(relative)) throw new Error(`Changed path falls outside the directive: ${relative}`);
 for (const ledger of ["THERAPY-LESSONS", "SUGGESTED-THERAPY-LESSONS", "THERAPY-DECISIONS", "APPROVED-THERAPY-LESSONS"]) if (changedPaths.includes(ledger)) throw new Error(`Therapy ledger changed: ${ledger}`);
 
-process.stdout.write(`PASS ${schemaNames.length} strict offline schemas, ${required.length} required groundwork artifacts, ${cards.length} synthetic review cards, zero network-capable learning imports, exactly two authorized live runtime consumers, and exactly three local learning routes.\n`);
+process.stdout.write(`PASS ${schemaNames.length} strict offline schemas, ${required.length} required groundwork artifacts, ${cards.length} synthetic review cards, zero network-capable learning imports, exactly two authorized live runtime consumers, and exactly seven local learning routes.\n`);
