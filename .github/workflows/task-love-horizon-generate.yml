@@ -42,6 +42,14 @@ jobs:
 
       - name: Create governed candidate proposal
         run: |
+          python - <<'PYFIX'
+          from pathlib import Path
+          p = Path('scripts/tmp-love-horizon-proposal.mjs')
+          s = p.read_text()
+          s = s.replace("title: 'Bring already-accessible deep love to the younger self without force', kind: 'decision-node', tier: 3, priority: 91", "title: 'Bring already-accessible deep love to the younger self without force', kind: 'decision-node', tier: 3, priority: 95")
+          s = s.replace("self_directed_love:'unsafe',coherent_child_state:'present',existential_sufficiency:'sufficient',spiritual_curiosity:'present',wellbeing_horizon:'deeper_experiential',deep_love_access:'reliable',child_love_inclusion:'blocked'", "self_directed_love:'inaccessible',coherent_child_state:'present',existential_sufficiency:'sufficient',spiritual_curiosity:'present',wellbeing_horizon:'deeper_experiential',deep_love_access:'reliable',child_love_inclusion:'blocked'")
+          p.write_text(s)
+          PYFIX
           node scripts/tmp-love-horizon-proposal.mjs proposal
           node --input-type=module -e "import { materializeProposal } from './src/authoring/proposal-builder.mjs'; try { await materializeProposal({ root: process.cwd(), id: 'love-horizon-r1', enforceCoverage: false }); } catch (error) { console.error(JSON.stringify({ code: error.code, message: error.message, details: error.details ?? null }, null, 2)); process.exit(1); }"
           npm run authoring:proposal:build -- --id love-horizon-r1
