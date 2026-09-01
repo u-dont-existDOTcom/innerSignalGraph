@@ -46,6 +46,33 @@ base_projection_input_sha256: ebc5fac6453fa4eeabca95b87100a5e351d19e91770f5db7e7
           "group_warmth_mismatch"
         ]
       }
+    ],
+    "none": [
+      {
+        "field": "present_safety",
+        "op": "eq",
+        "value": "unsafe"
+      },
+      {
+        "field": "orientation",
+        "op": "eq",
+        "value": "disoriented"
+      },
+      {
+        "field": "ability_to_stop",
+        "op": "eq",
+        "value": "no"
+      },
+      {
+        "field": "ability_to_return",
+        "op": "eq",
+        "value": "no"
+      },
+      {
+        "field": "altered_state",
+        "op": "eq",
+        "value": "altered"
+      }
     ]
   },
   "avoid": [
