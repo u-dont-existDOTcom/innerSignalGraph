@@ -49,16 +49,7 @@ jobs:
           s = s.replace("title: 'Bring already-accessible deep love to the younger self without force', kind: 'decision-node', tier: 3, priority: 91", "title: 'Bring already-accessible deep love to the younger self without force', kind: 'decision-node', tier: 3, priority: 95")
           s = s.replace("self_directed_love:'unsafe',coherent_child_state:'present',existential_sufficiency:'sufficient',spiritual_curiosity:'present',wellbeing_horizon:'deeper_experiential',deep_love_access:'reliable',child_love_inclusion:'blocked'", "self_directed_love:'inaccessible',coherent_child_state:'present',existential_sufficiency:'sufficient',spiritual_curiosity:'present',wellbeing_horizon:'deeper_experiential',deep_love_access:'reliable',child_love_inclusion:'blocked'")
           end_marker = "    }\n  ];\n}\n\nasync function buildProposalSources()"
-          g019 = """    },
-    {
-      id: 'G019', description: 'A past or state-bound extraordinary opening establishes a deeper horizon without proving present integration or requiring recreation.',
-      variables: { present_safety:'safe',orientation:'oriented',ability_to_stop:'yes',ability_to_return:'yes',activation:'low',dissociation:'none',altered_state:'altered',inner_adult_access:'available',witness_capacity:'present',love_access:'accessible',self_directed_love:'safe',coherent_child_state:'present',existential_sufficiency:'sufficient',spiritual_curiosity:'absent',wellbeing_horizon:'deeper_experiential',deep_love_access:'state_dependent',child_love_inclusion:'untested',spiritual_bypass_pattern:'none_observed',protective_response:'absent',credibility_conflict:'absent',self_criticism:'absent',current_intent:'altered_state',support_available:'present' },
-      unknowns: [], expected: { selectedIncludes:['IC.ALTERED_STATE_GATE'],requiredNuancePatterns:['past altered-state opening'] }
-    }
-  ];
-}
-
-async function buildProposalSources()"""
+          g019 = "    },\n    {\n      id: 'G019', description: 'A past or state-bound extraordinary opening establishes a deeper horizon without proving present integration or requiring recreation.',\n      variables: { present_safety:'safe',orientation:'oriented',ability_to_stop:'yes',ability_to_return:'yes',activation:'low',dissociation:'none',altered_state:'altered',inner_adult_access:'available',witness_capacity:'present',love_access:'accessible',self_directed_love:'safe',coherent_child_state:'present',existential_sufficiency:'sufficient',spiritual_curiosity:'absent',wellbeing_horizon:'deeper_experiential',deep_love_access:'state_dependent',child_love_inclusion:'untested',spiritual_bypass_pattern:'none_observed',protective_response:'absent',credibility_conflict:'absent',self_criticism:'absent',current_intent:'altered_state',support_available:'present' },\n      unknowns: [], expected: { selectedIncludes:['IC.ALTERED_STATE_GATE'],requiredNuancePatterns:['past altered-state opening'] }\n    }\n  ];\n}\n\nasync function buildProposalSources()"
           if "id: 'G019'" not in s:
               s = s.replace(end_marker, g019)
           s = s.replace('G017 proves profound existential insufficiency is taken seriously without evangelizing or romanticizing crisis. All existing G001-G012 behavior must remain green.', 'G017 proves profound existential insufficiency is taken seriously without evangelizing or romanticizing crisis. G019 proves a past or state-bound opening is treated as a wellbeing-horizon reference without requiring recreation. All existing G001-G012 behavior must remain green.')
