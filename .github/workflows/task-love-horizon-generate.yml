@@ -51,7 +51,7 @@ jobs:
           p.write_text(s)
           PYFIX
           node scripts/tmp-love-horizon-proposal.mjs proposal
-          node --input-type=module -e "import { materializeProposal } from './src/authoring/proposal-builder.mjs'; try { await materializeProposal({ root: process.cwd(), id: 'love-horizon-r1', enforceCoverage: false }); } catch (error) { console.error(JSON.stringify({ code: error.code, message: error.message, details: error.details ?? null }, null, 2)); process.exit(1); }"
+          node --input-type=module -e "import { materializeProposal } from './src/authoring/proposal-builder.mjs'; try { await materializeProposal({ root: process.cwd(), id: 'love-horizon-r1', enforceCoverage: true }); } catch (error) { console.error(JSON.stringify({ code: error.code, message: error.message, details: error.details ?? null }, null, 2)); process.exit(1); }"
           npm run authoring:proposal:build -- --id love-horizon-r1
           npm run authoring:proposal:check -- --id love-horizon-r1
 
