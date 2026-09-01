@@ -1,0 +1,280 @@
+{
+  "affectedCases": [
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.CREDIBILITY_REPAIR",
+        "IC.MEET_GUARD",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING"
+      ],
+      "declared": false,
+      "id": "G001",
+      "passed": true,
+      "title": "Accessible love feels unsafe and the younger state disputes adult credibility."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.MEET_GUARD",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "IC.SOLAR_PLEXUS_RELAXATION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": false,
+      "id": "G002",
+      "passed": true,
+      "title": "Flooded person with critical parent imagery and little inner-adult access."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.PROTECTOR_ACTION",
+        "IC.SOLAR_PLEXUS_RELAXATION",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING"
+      ],
+      "declared": false,
+      "id": "G003",
+      "passed": true,
+      "title": "Solar-plexus holding blocks self-directed love while external love remains available."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.DEEP_CHILD_DIALOGUE",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.EMDR_DEVELOPMENTAL_DEFER",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING"
+      ],
+      "declared": false,
+      "id": "G005",
+      "passed": true,
+      "title": "Developmental trauma and EMDR interest without basic reparenting capacity."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.DIFFERENTIATION",
+        "IC.IDENTITY_FORMATION",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "declared": false,
+      "id": "G008",
+      "passed": true,
+      "title": "No clear child-self and unstable preferences across contexts."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "IC.PHOTO_EPISTEMIC_CAUTION",
+        "SOM.BYPASS_AUDIT"
+      ],
+      "declared": false,
+      "id": "G009",
+      "passed": true,
+      "title": "Altered-state or photo material risks being treated as historical fact."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.GUIDE_LATER",
+        "SOM.MEANING_INTEGRATION"
+      ],
+      "declared": false,
+      "id": "G010",
+      "passed": true,
+      "title": "Stable integration phase with Guide readiness."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.DEEP_CHILD_DIALOGUE",
+        "IC.GENTLE_SELF_HYPNOSIS",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": false,
+      "id": "G011",
+      "passed": true,
+      "title": "Gentle hypnosis requested without deep-work readiness."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.CREDIBILITY_REPAIR",
+        "IC.MEET_GUARD",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING"
+      ],
+      "declared": false,
+      "id": "G012",
+      "passed": true,
+      "title": "Credibility conflict with adverse track record, established witness capacity, and unresolved adult-side speaker identity."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DEEP_LOVE_TO_CHILD",
+        "IC.EXISTENTIAL_NOURISHMENT",
+        "IC.LOVE_HORIZON_EXPLORATION",
+        "IC.REALIZATION_LOVE_INTEGRATION",
+        "SOM.GENTLE_REGULATION"
+      ],
+      "declared": true,
+      "id": "G013",
+      "passed": true,
+      "title": "Current love and meaning are sufficient and there is no spiritual curiosity; do not prescribe deeper spirituality."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.LOVE_HORIZON_EXPLORATION",
+        "SOM.GENTLE_REGULATION"
+      ],
+      "declared": true,
+      "id": "G014",
+      "passed": true,
+      "title": "Curious about deeper love but has not experienced it; invite exploration without doctrine or promise."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.DEEP_LOVE_TO_CHILD",
+        "IC.GUIDE_LATER",
+        "SOM.GENTLE_REGULATION",
+        "SOM.MEANING_INTEGRATION"
+      ],
+      "declared": true,
+      "id": "G015",
+      "passed": true,
+      "title": "Deep love is presently accessible but cannot yet fully include the inner child."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.EXISTENTIAL_NOURISHMENT",
+        "IC.GUIDE_LATER",
+        "IC.LOVE_HORIZON_EXPLORATION",
+        "IC.REALIZATION_LOVE_INTEGRATION",
+        "SOM.GENTLE_REGULATION",
+        "SOM.MEANING_INTEGRATION"
+      ],
+      "declared": true,
+      "id": "G016",
+      "passed": true,
+      "title": "Spiritual attainment is ahead of actual love access; integration outranks more abstraction."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.EXISTENTIAL_NOURISHMENT",
+        "IC.LOVE_HORIZON_EXPLORATION",
+        "IC.PROTECTOR_ACTION",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": true,
+      "id": "G017",
+      "passed": true,
+      "title": "Profound existential insufficiency without spiritual curiosity; take why-live seriously without evangelizing or romanticizing crisis."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.EXISTENTIAL_NOURISHMENT",
+        "IC.GUIDE_LATER",
+        "IC.LOVE_HORIZON_EXPLORATION",
+        "IC.REALIZATION_LOVE_INTEGRATION",
+        "SOM.GENTLE_REGULATION",
+        "SOM.MEANING_INTEGRATION"
+      ],
+      "declared": true,
+      "id": "G018",
+      "passed": true,
+      "title": "Doctrine says love but the person reports no felt love; treat doctrine as distinct from experiential access."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "SOM.BYPASS_AUDIT",
+        "SOM.GENTLE_REGULATION"
+      ],
+      "declared": true,
+      "id": "G019",
+      "passed": true,
+      "title": "A past or state-bound extraordinary opening establishes a deeper horizon without proving present integration or requiring recreation."
+    }
+  ],
+  "contractVersion": "inner-signal-regression-impact-v1",
+  "declaredCaseIds": [
+    "G013",
+    "G014",
+    "G015",
+    "G016",
+    "G017",
+    "G018",
+    "G019"
+  ],
+  "gaps": [],
+  "ok": true
+}

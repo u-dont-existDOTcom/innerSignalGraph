@@ -1,0 +1,39 @@
+{
+  "id": "G014",
+  "description": "Curious about deeper love but has not experienced it; invite exploration without doctrine or promise.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "love_access": "accessible",
+    "self_directed_love": "safe",
+    "coherent_child_state": "present",
+    "existential_sufficiency": "sufficient",
+    "spiritual_curiosity": "present",
+    "wellbeing_horizon": "deeper_conceptual",
+    "deep_love_access": "none_known",
+    "child_love_inclusion": "untested",
+    "spiritual_bypass_pattern": "not_applicable",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "self_criticism": "absent",
+    "current_intent": "conversation",
+    "support_available": "present"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.LOVE_HORIZON_EXPLORATION",
+    "selectedIncludes": [
+      "IC.LOVE_HORIZON_EXPLORATION"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "everyone needs profound spiritual love"
+    ]
+  }
+}

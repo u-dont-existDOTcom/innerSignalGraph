@@ -1,0 +1,36 @@
+{
+  "baseProjectionInputSha256": "ebc5fac6453fa4eeabca95b87100a5e351d19e91770f5db7e7a86eab3749b4cb",
+  "candidateBundleSha256": "85c0ec64a707ec2127c77b62e8ff4879d576ecf0086479d53b8e7915848f5e85",
+  "candidateGraphHashes": [
+    {
+      "graphId": "inner-child-directed-graph",
+      "path": "candidate/graphs/inner-child.graph.json",
+      "sha256": "b7f327da24a6a914606f97639944ecb1c02609b096e9d443555a08add9a6aa25"
+    },
+    {
+      "graphId": "inner-child-somatic-cross-guide",
+      "path": "candidate/graphs/cross-guide.graph.json",
+      "sha256": "0eb4eb7ac805775a8283da4c8ea50fa0d4985644fad836cbfee37e48996b5151"
+    },
+    {
+      "graphId": "somatic-directed-graph",
+      "path": "candidate/graphs/somatic.graph.json",
+      "sha256": "f7acff85e9d11d38c1fd47830f4fad4998cc1fb1580f641223a6d92538e30140"
+    }
+  ],
+  "canvasSha256": "ec4a61813c855b6173ed5fed5013a1572eb25d1b45e9c7e1c49cf4d1e6fa9366",
+  "contractVersion": "inner-signal-authoring-receipt-v1",
+  "mapSha256": "597eb70be661356aff2d51ddc69a8b02fff8ed1e6bb51c73f12fadffc47b23e4",
+  "ownerDecisionRequired": true,
+  "packetSha256": "9cc04d866adfad99634c80270ea3ab758ddd11f84189114696c53c3659f4bc07",
+  "proposalEvidenceSha256": "4419ce48438dda7dcbe058ebc29e599a1c1e6e7bedde3d97c398364110d39560",
+  "proposalId": "love-horizon-r1",
+  "provenanceImpactSha256": "e122fd1e57962beb3d7f9ea7d75c566a8923278e4ba0ac61d09ec37e53071ee5",
+  "regressionImpactSha256": "f25d3cfb77acab6ada91dde2236a3b832d50325b8f126d0c92b0e073a1a51898",
+  "regressionStatus": {
+    "count": 19,
+    "ok": true,
+    "passed": 19
+  },
+  "semanticDiffSha256": "10b3c5789b61974d7d5079735751f2ef08944b819451214f27e53624ae7fcc5e"
+}

@@ -1,0 +1,143 @@
+{
+  "authoritativeInputs": [
+    {
+      "path": "authoring/migration/owner-map-resolution-2026-08-29.json",
+      "sha256": "3a6572072f63204e7511cd977f442509fe630dd761152edcba248cc1cb43b14e"
+    },
+    {
+      "path": "authoring/overlays/inner-child.overlay.json",
+      "sha256": "8ca238d5494a0449746cc1c877f0e812891379b596559949633fd6bd4230dfda"
+    },
+    {
+      "path": "authoring/overlays/somatic.overlay.json",
+      "sha256": "963ddda6ad444cecaba9bcc3fb35d5dcdc4b3c0cd30946f8aae6b54c98819efc"
+    },
+    {
+      "path": "corpus/graph-cases/G001.json",
+      "sha256": "25d9a4533b9f43f42c47a73ce7cef67af0d00c6272e6c091da07e6467b1515a4"
+    },
+    {
+      "path": "corpus/graph-cases/G002.json",
+      "sha256": "aab88cd64b9fdf00c295dcab62a48374660d98843b72428fd2e43e0654c98e93"
+    },
+    {
+      "path": "corpus/graph-cases/G003.json",
+      "sha256": "f5533f8a573ce00bafe6ae3ab1de865dde7565c60b8849007cc5c1cd46e7ac3d"
+    },
+    {
+      "path": "corpus/graph-cases/G004.json",
+      "sha256": "0f4c223359c2491d4f0f6e661ee921bbd2aa8011e065fc5c0b784f49f751e376"
+    },
+    {
+      "path": "corpus/graph-cases/G005.json",
+      "sha256": "b43b9e5caa0a7e451dcf6a51001a82ce7a989d370ff652b6a34612cc0c1ff827"
+    },
+    {
+      "path": "corpus/graph-cases/G006.json",
+      "sha256": "564ff52aeafbaf1b8e0759954089a9ec92967e758d51de0c4be678e973526987"
+    },
+    {
+      "path": "corpus/graph-cases/G007.json",
+      "sha256": "2400e4090add73c6812d99412f7971fba65281d183c41d5b373dc8bab9418e2b"
+    },
+    {
+      "path": "corpus/graph-cases/G008.json",
+      "sha256": "312bf76a4307d2d0eebd94f1e63028e4676c6654a4ebc133ae36e8423603a5fa"
+    },
+    {
+      "path": "corpus/graph-cases/G009.json",
+      "sha256": "8a0d8e0e96e2a13a267d73c218720718701aecf381a248cf2044de214906770a"
+    },
+    {
+      "path": "corpus/graph-cases/G010.json",
+      "sha256": "abbefde82bd342e59cba4ac1978ea568411a48aaa54fe796bfe4cbaed0be572a"
+    },
+    {
+      "path": "corpus/graph-cases/G011.json",
+      "sha256": "1a9e67cda377bfce23a23c6fbc77ffd8f8c1df0a048c2a40b7c7d9994cbbfd13"
+    },
+    {
+      "path": "corpus/graph-cases/G012.json",
+      "sha256": "1c260ed2fd7be7bdcbf769898ffb61ed9a1a208af5e07f93e98ac68784ec8d82"
+    },
+    {
+      "path": "guide-graphs/candidates/cross-guide.graph.json",
+      "sha256": "0eb4eb7ac805775a8283da4c8ea50fa0d4985644fad836cbfee37e48996b5151"
+    },
+    {
+      "path": "guide-graphs/candidates/inner-child.graph.json",
+      "sha256": "4cffe0bcadbf49cc3e27dc5274221f51ec252a0226e944b4f5541dda47c6d1d6"
+    },
+    {
+      "path": "guide-graphs/candidates/somatic.graph.json",
+      "sha256": "f7acff85e9d11d38c1fd47830f4fad4998cc1fb1580f641223a6d92538e30140"
+    },
+    {
+      "path": "guide-graphs/compiled/bundle.json",
+      "sha256": "81c84b16079e4c6ba61cc1a2338d4c3bab918a571aa8ae53f20367a91b1de66c"
+    },
+    {
+      "path": "guide-graphs/compiled/inner-child-directed-graph.json",
+      "sha256": "658eb09c5be1f7274e5a2341d63a129f31f9ee9e24246577fd6bb17be0066342"
+    },
+    {
+      "path": "guide-graphs/compiled/inner-child-somatic-cross-guide.json",
+      "sha256": "ad7c963a5aebaaeec3199e24892701faa585a247b011f80070883c9fcff1cb06"
+    },
+    {
+      "path": "guide-graphs/compiled/somatic-directed-graph.json",
+      "sha256": "acc599947fc3b777fc09bfc0d907fa3be185c9276325d10db309d0e7c137d649"
+    },
+    {
+      "path": "guides/inner-child-guide.txt",
+      "sha256": "a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3"
+    },
+    {
+      "path": "guides/manifest.json",
+      "sha256": "e2263184465a39683202c42c86dee4b9b0f80b6641929c027632897a95d7342e"
+    },
+    {
+      "path": "guides/owner-amendments.json",
+      "sha256": "d9c2cf90f51452c1316648108638af97c73d9efef0afda02d9baab6f96e14509"
+    },
+    {
+      "path": "guides/somatic-sequencing-guide.txt",
+      "sha256": "f865c8d93221cccd8e49f49adbf0961051f0c0775603e785420ee89509acb419"
+    },
+    {
+      "path": "guides/source-layout.json",
+      "sha256": "0b2701c8b48569e57c71ffda468ba9f66c92a398832f4eafe9f1b693744a0299"
+    },
+    {
+      "path": "guides/vagal-blitz-source.pdf",
+      "sha256": "79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c"
+    },
+    {
+      "path": "src/guide-graph/compiler.mjs",
+      "sha256": "7cd3f8d84893ebc8cb31c08deb380bf5639c4db6575e68acd6d163de98aedc31"
+    },
+    {
+      "path": "src/guide-graph/contract.mjs",
+      "sha256": "4dcf3aeb88a4f0c1c92152147e77d9ea51dccd65700e9312e48394e18440c43e"
+    },
+    {
+      "path": "src/guide-graph/planner.mjs",
+      "sha256": "e27921ecb265d71214d6f985be2a4c1e04ca46ce0fc7b23ccc5fbe186e725101"
+    },
+    {
+      "path": "src/guide-graph/regressions.mjs",
+      "sha256": "0b3c1fd009512734638bb4789e93fd53754bcba4d563dd17c2690c371493482a"
+    },
+    {
+      "path": "src/guide-graph/source-map.mjs",
+      "sha256": "94db29ad60ac15a2b3c7c54eda545fbe860764ebc863c9c20d7053c183d776c5"
+    },
+    {
+      "path": "src/guide-graph/validate.mjs",
+      "sha256": "5b610d6a0d8393270d663fd835c5c40893b2f226ec7b73e28b23cad782b8b831"
+    }
+  ],
+  "contractVersion": "inner-signal-authoring-base-authority-v1",
+  "projectionInputSha256": "ebc5fac6453fa4eeabca95b87100a5e351d19e91770f5db7e7a86eab3749b4cb",
+  "proposalId": "love-horizon-r1"
+}

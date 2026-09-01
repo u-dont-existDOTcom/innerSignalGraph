@@ -1,0 +1,109 @@
+{
+  "changes": [
+    {
+      "after": [
+        "IC.ALTERED_STATES",
+        "IC.ESCAPE_URGE",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON"
+      ],
+      "before": [
+        "IC.ALTERED_STATES",
+        "IC.ESCAPE_URGE"
+      ],
+      "field": "sourceRefs",
+      "nodeId": "IC.ALTERED_STATE_GATE",
+      "resolvedSourceRefs": [
+        {
+          "id": "IC.ALTERED_STATES",
+          "resolved": true
+        },
+        {
+          "id": "IC.ESCAPE_URGE",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.WELLBEING_HORIZON",
+          "resolved": true
+        }
+      ]
+    },
+    {
+      "after": [
+        "IC.LOVE_MISSING",
+        "IC.HEART_SOLAR_LOOP",
+        "AMEND.IC.BORROW_LOVE_EXTERNAL",
+        "AMEND.IC.WELLBEING_HORIZON"
+      ],
+      "before": [
+        "IC.LOVE_MISSING",
+        "IC.HEART_SOLAR_LOOP",
+        "AMEND.IC.BORROW_LOVE_EXTERNAL"
+      ],
+      "field": "sourceRefs",
+      "nodeId": "IC.BORROW_LOVE",
+      "resolvedSourceRefs": [
+        {
+          "id": "IC.LOVE_MISSING",
+          "resolved": true
+        },
+        {
+          "id": "IC.HEART_SOLAR_LOOP",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.BORROW_LOVE_EXTERNAL",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.WELLBEING_HORIZON",
+          "resolved": true
+        }
+      ]
+    },
+    {
+      "after": [
+        "IC.GUIDE_LATER",
+        "IC.THREE_FUNCTIONS",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "AMEND.IC.REALIZATION_LOVE_INTEGRATION"
+      ],
+      "before": [
+        "IC.GUIDE_LATER",
+        "IC.THREE_FUNCTIONS"
+      ],
+      "field": "sourceRefs",
+      "nodeId": "IC.GUIDE_LATER",
+      "resolvedSourceRefs": [
+        {
+          "id": "IC.GUIDE_LATER",
+          "resolved": true
+        },
+        {
+          "id": "IC.THREE_FUNCTIONS",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.WELLBEING_HORIZON",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
+          "resolved": true
+        }
+      ]
+    }
+  ],
+  "contractVersion": "inner-signal-provenance-impact-v1",
+  "ok": true,
+  "unresolved": []
+}

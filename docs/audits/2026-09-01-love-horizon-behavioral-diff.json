@@ -1,0 +1,735 @@
+{
+  "affectedCases": [
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BORROW_LOVE",
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G001",
+      "title": "Accessible love feels unsafe and the younger state disputes adult credibility."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BORROW_LOVE",
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G002",
+      "title": "Flooded person with critical parent imagery and little inner-adult access."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BORROW_LOVE",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G003",
+      "title": "Solar-plexus holding blocks self-directed love while external love remains available."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BORROW_LOVE",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G005",
+      "title": "Developmental trauma and EMDR interest without basic reparenting capacity."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BORROW_LOVE",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G008",
+      "title": "No clear child-self and unstable preferences across contexts."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE"
+      ],
+      "id": "G009",
+      "title": "Altered-state or photo material risks being treated as historical fact."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.GUIDE_LATER"
+      ],
+      "id": "G010",
+      "title": "Stable integration phase with Guide readiness."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BORROW_LOVE",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G011",
+      "title": "Gentle hypnosis requested without deep-work readiness."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BORROW_LOVE",
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G012",
+      "title": "Credibility conflict with adverse track record, established witness capacity, and unresolved adult-side speaker identity."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.DEEP_LOVE_TO_CHILD",
+        "IC.EXISTENTIAL_NOURISHMENT",
+        "IC.LOVE_HORIZON_EXPLORATION",
+        "IC.REALIZATION_LOVE_INTEGRATION"
+      ],
+      "id": "G013",
+      "title": "Current love and meaning are sufficient and there is no spiritual curiosity; do not prescribe deeper spirituality."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.LOVE_HORIZON_EXPLORATION"
+      ],
+      "id": "G014",
+      "title": "Curious about deeper love but has not experienced it; invite exploration without doctrine or promise."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BORROW_LOVE",
+        "IC.DEEP_LOVE_TO_CHILD",
+        "IC.GUIDE_LATER"
+      ],
+      "id": "G015",
+      "title": "Deep love is presently accessible but cannot yet fully include the inner child."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BORROW_LOVE",
+        "IC.EXISTENTIAL_NOURISHMENT",
+        "IC.GUIDE_LATER",
+        "IC.LOVE_HORIZON_EXPLORATION",
+        "IC.REALIZATION_LOVE_INTEGRATION"
+      ],
+      "id": "G016",
+      "title": "Spiritual attainment is ahead of actual love access; integration outranks more abstraction."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BORROW_LOVE",
+        "IC.EXISTENTIAL_NOURISHMENT",
+        "IC.LOVE_HORIZON_EXPLORATION",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G017",
+      "title": "Profound existential insufficiency without spiritual curiosity; take why-live seriously without evangelizing or romanticizing crisis."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BORROW_LOVE",
+        "IC.EXISTENTIAL_NOURISHMENT",
+        "IC.GUIDE_LATER",
+        "IC.LOVE_HORIZON_EXPLORATION",
+        "IC.REALIZATION_LOVE_INTEGRATION"
+      ],
+      "id": "G018",
+      "title": "Doctrine says love but the person reports no felt love; treat doctrine as distinct from experiential access."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE"
+      ],
+      "id": "G019",
+      "title": "A past or state-bound extraordinary opening establishes a deeper horizon without proving present integration or requiring recreation."
+    }
+  ],
+  "baselineVersion": "inner-child-somatic-pilot-2026-08-09-r5",
+  "candidateVersion": "inner-child-somatic-pilot-2026-08-09-r5",
+  "changedNodeIds": [
+    "IC.ADULT_APPRENTICE",
+    "IC.ALTERED_STATE_GATE",
+    "IC.BORROW_LOVE",
+    "IC.DEEP_LOVE_TO_CHILD",
+    "IC.EXISTENTIAL_NOURISHMENT",
+    "IC.GUIDE_LATER",
+    "IC.LOVE_HORIZON_EXPLORATION",
+    "IC.MEET_GUARD",
+    "IC.PROTECTOR_ACTION",
+    "IC.REALIZATION_LOVE_INTEGRATION"
+  ],
+  "changes": [
+    {
+      "after": {
+        "from": "IC.DEEP_LOVE_TO_CHILD",
+        "relation": "integrates-relationally",
+        "to": "IC.ADULT_APPRENTICE"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "0012fec5ab5358c9195699d23bdc1f747a7151e6c98e32197605a03faa0c1571",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.REALIZATION_LOVE_INTEGRATION",
+        "relation": "requires-embodiment",
+        "to": "IC.PROTECTOR_ACTION"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "01efa0a20d94f73518ab176e5390f354b62a2392eae85a8c6e41b9b04c166814",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.LOVE_HORIZON_EXPLORATION",
+        "relation": "can-enable",
+        "to": "IC.DEEP_LOVE_TO_CHILD"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "53b4846ee3d85b79b20e6015034af2ebf068107f1f907eb4d2b00d1ae683ce5e",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.DEEP_LOVE_TO_CHILD",
+        "relation": "embodies-through",
+        "to": "IC.PROTECTOR_ACTION"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "7142662de2673ac63491863cad24cd104c9c4a13bd017532ff5c112235b8d1a3",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.EXISTENTIAL_NOURISHMENT",
+        "relation": "opens-when-curious",
+        "to": "IC.LOVE_HORIZON_EXPLORATION"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "e3cc68b18cad9ed1d431b69cf53584a3579f43c08878ba5cf18bbe95a67db39d",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.REALIZATION_LOVE_INTEGRATION",
+        "relation": "feeds-child-integration",
+        "to": "IC.DEEP_LOVE_TO_CHILD"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "e755a36a419b899182b3d9e026dddf12a11d4336c8c78613635580c5c64b19cd",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.DEEP_LOVE_TO_CHILD",
+        "relation": "routes-block-to",
+        "to": "IC.MEET_GUARD"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "fde4f8aecff3857bdfc4581be2e584e8bef56e16e19a1e22dd7e584b91bbd18d",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.",
+        "Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness."
+      ],
+      "before": [
+        "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing."
+      ],
+      "classification": "therapeutic-safety",
+      "entityId": "IC.ALTERED_STATE_GATE",
+      "entityType": "node",
+      "fieldPath": "avoid",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration."
+      ],
+      "before": [],
+      "classification": "response-semantics",
+      "entityId": "IC.ALTERED_STATE_GATE",
+      "entityType": "node",
+      "fieldPath": "effects.requiredNuance",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "IC.ALTERED_STATES",
+        "IC.ESCAPE_URGE",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON"
+      ],
+      "before": [
+        "IC.ALTERED_STATES",
+        "IC.ESCAPE_URGE"
+      ],
+      "classification": "provenance-policy",
+      "entityId": "IC.ALTERED_STATE_GATE",
+      "entityType": "node",
+      "fieldPath": "sourceRefs",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "The problem may be safety of receiving love rather than absence of love.",
+        "Ordinary affection or care and profound transpersonal love are distinct resources; either may be therapeutically useful, and one must not be used to erase the distinction the user is making."
+      ],
+      "before": [
+        "The problem may be safety of receiving love rather than absence of love."
+      ],
+      "classification": "response-semantics",
+      "entityId": "IC.BORROW_LOVE",
+      "entityType": "node",
+      "fieldPath": "effects.requiredNuance",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.",
+        "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.",
+        "Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love."
+      ],
+      "before": [
+        "First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.",
+        "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible."
+      ],
+      "classification": "therapeutic-response",
+      "entityId": "IC.BORROW_LOVE",
+      "entityType": "node",
+      "fieldPath": "recommendations",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "IC.LOVE_MISSING",
+        "IC.HEART_SOLAR_LOOP",
+        "AMEND.IC.BORROW_LOVE_EXTERNAL",
+        "AMEND.IC.WELLBEING_HORIZON"
+      ],
+      "before": [
+        "IC.LOVE_MISSING",
+        "IC.HEART_SOLAR_LOOP",
+        "AMEND.IC.BORROW_LOVE_EXTERNAL"
+      ],
+      "classification": "provenance-policy",
+      "entityId": "IC.BORROW_LOVE",
+      "entityType": "node",
+      "fieldPath": "sourceRefs",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": "Borrow already-accessible love without flattening its depth",
+      "before": "Borrow love from an already-loved being",
+      "classification": "reviewed-substantive",
+      "entityId": "IC.BORROW_LOVE",
+      "entityType": "node",
+      "fieldPath": "title",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "deep_love_access",
+              "op": "in",
+              "value": [
+                "intermittent",
+                "reliable"
+              ]
+            },
+            {
+              "field": "child_love_inclusion",
+              "op": "in",
+              "value": [
+                "untested",
+                "blocked",
+                "partial"
+              ]
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not force transfer, interpret reluctance as spiritual failure, or prescribe a stronger altered state because the child cannot receive the love."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not call a blocked transfer proof that the child rejects love, is spiritually deficient, or needs a stronger altered state."
+          ],
+          "requiredNuance": [
+            "Having access to profound love and being able to let the wounded child receive it are separate capacities.",
+            "Love can remain present while distrust or refusal is heard; the child’s objection does not need to be argued away."
+          ]
+        },
+        "id": "IC.DEEP_LOVE_TO_CHILD",
+        "kind": "decision-node",
+        "priority": 95,
+        "recommendations": [
+          "Contact the real profound love first in whatever already-valid way it is accessible; do not manufacture a special inner-child feeling.",
+          "Then bring the younger self into awareness and see whether the same love can include them—the feast has to reach the hungry child.",
+          "If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.DEEP_LOVE_TO_CHILD",
+          "AMEND.IC.WELLBEING_HORIZON",
+          "IC.HEART_SOLAR_LOOP",
+          "IC.BOTTOM_UP_SEQUENCE"
+        ],
+        "successSignals": [
+          "Profound love can include the younger self without coercion, or the specific block becomes clear enough to work with relationally."
+        ],
+        "tags": [
+          "deep-love",
+          "inner-child",
+          "integration",
+          "anti-bypass"
+        ],
+        "tier": 3,
+        "title": "Bring already-accessible deep love to the younger self without force"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.DEEP_LOVE_TO_CHILD",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "any": [
+            {
+              "field": "existential_sufficiency",
+              "op": "in",
+              "value": [
+                "insufficient",
+                "profoundly_insufficient"
+              ]
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not tell a satisfied, non-curious person that they are spiritually deficient or must seek a profound experience.",
+          "Do not romanticize suicidal crisis, despair, an NDE, psychedelics, conversion, or extraordinary states as a route to transformation."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not say a small practical act should be sufficient for profound existential hopelessness.",
+            "Do not say a suicidal crisis is spiritually useful or necessary."
+          ],
+          "requiredNuance": [
+            "Immediate safety action and existential nourishment solve different problems; do not confuse preserving life today with answering why life feels worth living.",
+            "Curiosity can open a route without proving that a spiritual conclusion is true or required."
+          ]
+        },
+        "id": "IC.EXISTENTIAL_NOURISHMENT",
+        "kind": "decision-node",
+        "priority": 98,
+        "recommendations": [
+          "Distinguish whether the person is simply working on a wound within a basically sufficient life, is hungry and curious for a deeper horizon, or experiences ordinary life as radically insufficient.",
+          "When the person says they hate themselves yet voluntarily seeks help, believe the self-hating part and also ask what the help-seeking part hoped might happen; do not name that motive love for them.",
+          "When hopelessness is profound, keep immediate safety and human contact first while also taking the why-live question seriously; a small protective action can preserve the person without pretending to answer the existential question."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+          "AMEND.IC.WELLBEING_HORIZON"
+        ],
+        "successSignals": [
+          "The intervention matches the scale of the person’s hunger while preserving safety and choice about spiritual exploration."
+        ],
+        "tags": [
+          "existential",
+          "love",
+          "meaning",
+          "curiosity",
+          "safety"
+        ],
+        "tier": 2,
+        "title": "Match the work to existential hunger without making spirituality mandatory"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.EXISTENTIAL_NOURISHMENT",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing.",
+        "Do not escalate spiritual abstraction or attainment because love feels inaccessible."
+      ],
+      "before": [
+        "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing."
+      ],
+      "classification": "therapeutic-safety",
+      "entityId": "IC.GUIDE_LATER",
+      "entityType": "node",
+      "fieldPath": "avoid",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Spiritual exploration is optional when the person’s current horizon feels sufficient; when realization is already present, assess whether it deepens accessible love and reaches the child rather than assuming attainment itself integrates the wound."
+      ],
+      "before": [],
+      "classification": "response-semantics",
+      "entityId": "IC.GUIDE_LATER",
+      "entityType": "node",
+      "fieldPath": "effects.requiredNuance",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.",
+        "When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion."
+      ],
+      "before": [
+        "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal."
+      ],
+      "classification": "therapeutic-response",
+      "entityId": "IC.GUIDE_LATER",
+      "entityType": "node",
+      "fieldPath": "recommendations",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "IC.GUIDE_LATER",
+        "IC.THREE_FUNCTIONS",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "AMEND.IC.REALIZATION_LOVE_INTEGRATION"
+      ],
+      "before": [
+        "IC.GUIDE_LATER",
+        "IC.THREE_FUNCTIONS"
+      ],
+      "classification": "provenance-policy",
+      "entityId": "IC.GUIDE_LATER",
+      "entityType": "node",
+      "fieldPath": "sourceRefs",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "spiritual_curiosity",
+              "op": "eq",
+              "value": "present"
+            },
+            {
+              "field": "deep_love_access",
+              "op": "in",
+              "value": [
+                "none_known",
+                "past_glimpse",
+                "state_dependent",
+                "unknown"
+              ]
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not prescribe a religion, theism, awakening, nonduality, conversion, psychedelics, NDEs, or a metaphysical conclusion.",
+          "Do not imply that everyone needs profound spiritual love when the person says their present horizon is sufficient."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not say everyone needs profound spiritual love in order to heal or live well."
+          ],
+          "requiredNuance": [
+            "The relevant distinction is experiential access to deeper wellbeing and love, not believer versus atheist or one religion versus another.",
+            "A conceptual horizon and a directly experienced horizon are different; do not pretend reading about profound love is the same as having touched it."
+          ]
+        },
+        "id": "IC.LOVE_HORIZON_EXPLORATION",
+        "kind": "decision-node",
+        "priority": 94,
+        "recommendations": [
+          "Invite investigation rather than belief: notice people, practices, traditions, experiences, nature, art, service, prayer, meditation, or other sources whose lived fruits make a deeper kind of love or wellbeing seem worth exploring.",
+          "Use metta or loving-kindness as one possible cultivation practice, especially when it feels meaningful, without presenting it as the definition or guaranteed depth of love.",
+          "Follow the fruits: prefer paths and exemplars that become more loving, honest, grounded, protective, and able to face pain rather than merely more impressive or certain."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+          "AMEND.IC.WELLBEING_HORIZON",
+          "IC.GUIDE_LATER"
+        ],
+        "successSignals": [
+          "Curiosity becomes a voluntary experiment with no forced doctrine, attainment target, or promise of extraordinary experience."
+        ],
+        "tags": [
+          "spiritual-curiosity",
+          "love",
+          "wellbeing-horizon",
+          "guide"
+        ],
+        "tier": 2,
+        "title": "Explore a deeper horizon of wellbeing when curiosity is genuine"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.LOVE_HORIZON_EXPLORATION",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "any": [
+            {
+              "field": "spiritual_bypass_pattern",
+              "op": "in",
+              "value": [
+                "attainment_outpaces_love",
+                "doctrine_outpaces_love",
+                "group_warmth_mismatch"
+              ]
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not dismiss genuine nibbana, nondual, Christian, mystical, or other realization merely because emotional integration is incomplete.",
+          "Do not treat claims about divine love, spiritual attainment, or a welcoming group atmosphere as proof that the person actually experiences love."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not say that awakening, religious belief, church or sangha membership, or mystical experience proves emotional integration.",
+            "Do not say that ordinary practical care is worthless because profound spiritual love is not accessible."
+          ],
+          "requiredNuance": [
+            "Mystical intensity, doctrinal certainty, and love depth are not interchangeable.",
+            "Practical love and profound love are complementary: practical conduct embodies love, while a deeper wellbeing horizon may enlarge what the person can sincerely wish for beings."
+          ]
+        },
+        "id": "IC.REALIZATION_LOVE_INTEGRATION",
+        "kind": "decision-node",
+        "priority": 99,
+        "recommendations": [
+          "Respect whatever realization, rebirth, doctrine, or community experience is genuine while testing separately whether love is actually felt, can include the inner child, and survives ordinary relational difficulty.",
+          "Do not let mystery outrun love indefinitely: if attainment or doctrine is far ahead of felt love, turn toward the missing love rather than prescribing a more advanced abstraction.",
+          "Translate spiritual opening into protection, truth, reliability, service, Hearthwork or reciprocal relationship, and community where useful; community may reinforce an opening without being assumed to have caused it."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
+          "AMEND.IC.DEEP_LOVE_TO_CHILD",
+          "IC.GUIDE_LATER",
+          "IC.PROTECTOR_VISIBLE",
+          "IC.RELATIONSHIP"
+        ],
+        "successSignals": [
+          "The person can distinguish spiritual truth or identity from felt love and practical integration, and the next step addresses the actual mismatch rather than protecting a status claim."
+        ],
+        "tags": [
+          "spiritual-bypass",
+          "realization",
+          "doctrine",
+          "community",
+          "integration"
+        ],
+        "tier": 2,
+        "title": "Keep realization, doctrine, and community answerable to lived love"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.REALIZATION_LOVE_INTEGRATION",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    }
+  ],
+  "contractVersion": "guide-behavioral-diff-v2",
+  "installedVersion": "inner-child-somatic-pilot-2026-08-09-r5",
+  "substantive": true
+}

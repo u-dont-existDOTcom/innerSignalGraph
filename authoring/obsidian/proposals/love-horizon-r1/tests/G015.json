@@ -1,0 +1,43 @@
+{
+  "id": "G015",
+  "description": "Deep love is presently accessible but cannot yet fully include the inner child.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "love_access": "accessible",
+    "self_directed_love": "inaccessible",
+    "coherent_child_state": "present",
+    "existential_sufficiency": "sufficient",
+    "spiritual_curiosity": "present",
+    "wellbeing_horizon": "deeper_experiential",
+    "deep_love_access": "reliable",
+    "child_love_inclusion": "blocked",
+    "spiritual_bypass_pattern": "none_observed",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "self_criticism": "absent",
+    "current_intent": "integration",
+    "support_available": "present",
+    "guide_readiness": "present"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.DEEP_LOVE_TO_CHILD",
+    "selectedIncludes": [
+      "IC.DEEP_LOVE_TO_CHILD"
+    ],
+    "requiredNuancePatterns": [
+      "separate capacities"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "stronger altered state"
+    ]
+  }
+}

@@ -14,7 +14,7 @@ cited_by_node_ids:
   - IC.CREDIBILITY_REPAIR
   - IC.PROTECTOR_ACTION
   - SOM.EMDR_DEVELOPMENTAL_DEFER
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+projection_input_sha256: ebc5fac6453fa4eeabca95b87100a5e351d19e91770f5db7e7a86eab3749b4cb
 ---
 
 # Make the Protector Visible

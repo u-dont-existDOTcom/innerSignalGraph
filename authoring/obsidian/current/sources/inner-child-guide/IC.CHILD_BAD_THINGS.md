@@ -12,7 +12,7 @@ section_hash: f63070ed1953e89b4f278c46b8c40d249478f43e65b858c0bffd344e16a348e8
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.IDENTITY_FORMATION
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+projection_input_sha256: ebc5fac6453fa4eeabca95b87100a5e351d19e91770f5db7e7a86eab3749b4cb
 ---
 
 # Let the Child Be Bad at Things

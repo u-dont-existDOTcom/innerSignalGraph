@@ -1,0 +1,600 @@
+{
+  "allApproved": false,
+  "cards": [
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G008",
+        "G011",
+        "G012",
+        "G013",
+        "G015",
+        "G017"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.DEEP_LOVE_TO_CHILD\",\n  \"relation\": \"integrates-relationally\",\n  \"to\": \"IC.ADULT_APPRENTICE\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-0447f38dd034b0e6",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 0012fec5ab5358c9195699d23bdc1f747a7151e6c98e32197605a03faa0c1571: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G009",
+        "G019"
+      ],
+      "behavioralEffect": "Changes avoid under the explicit therapeutic-safety policy.",
+      "candidate": "[\n  \"Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.\",\n  \"Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness.\"\n]",
+      "classification": "therapeutic-safety",
+      "cons": [
+        "The proposed new value could weaken or misplace a safety boundary if its conditions or wording are incomplete."
+      ],
+      "current": "[\n  \"Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.\"\n]",
+      "id": "decision-0b4ca15a80a62e5d",
+      "pros": [
+        "Approving lets responses use the exact candidate avoid rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.ALTERED_STATE_GATE: avoid",
+      "worstPlausibleFailure": "The change could weaken a safety boundary or produce an unsafe response under an untested condition."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G012",
+        "G013",
+        "G015"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.DEEP_LOVE_TO_CHILD\",\n  \"relation\": \"routes-block-to\",\n  \"to\": \"IC.MEET_GUARD\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-0cb8129a6b100e95",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge fde4f8aecff3857bdfc4581be2e584e8bef56e16e19a1e22dd7e584b91bbd18d: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G010",
+        "G015",
+        "G016",
+        "G018"
+      ],
+      "behavioralEffect": "Changes recommendations under the explicit therapeutic-response policy.",
+      "candidate": "[\n  \"Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.\",\n  \"When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion.\"\n]",
+      "classification": "therapeutic-response",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.\"\n]",
+      "id": "decision-1862e54b6b6270d4",
+      "pros": [
+        "Approving lets responses use the exact candidate recommendations rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.GUIDE_LATER: recommendations",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G015",
+        "G016",
+        "G017",
+        "G018"
+      ],
+      "behavioralEffect": "Changes title under the explicit reviewed-substantive policy.",
+      "candidate": "\"Borrow already-accessible love without flattening its depth\"",
+      "classification": "reviewed-substantive",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "\"Borrow love from an already-loved being\"",
+      "id": "decision-2065d1b147c57158",
+      "pros": [
+        "Approving records the exact candidate title value and makes the public graph description match that reviewed choice."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.BORROW_LOVE: title",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G015",
+        "G016",
+        "G017",
+        "G018"
+      ],
+      "behavioralEffect": "Changes effects.requiredNuance under the explicit response-semantics policy.",
+      "candidate": "[\n  \"The problem may be safety of receiving love rather than absence of love.\",\n  \"Ordinary affection or care and profound transpersonal love are distinct resources; either may be therapeutically useful, and one must not be used to erase the distinction the user is making.\"\n]",
+      "classification": "response-semantics",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"The problem may be safety of receiving love rather than absence of love.\"\n]",
+      "id": "decision-2da3a6caa815b768",
+      "pros": [
+        "Approving makes the candidate requiredNuance constraint available to the planner or response realization exactly as shown."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.BORROW_LOVE: effects.requiredNuance",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G010",
+        "G015",
+        "G016",
+        "G018"
+      ],
+      "behavioralEffect": "Changes avoid under the explicit therapeutic-safety policy.",
+      "candidate": "[\n  \"Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing.\",\n  \"Do not escalate spiritual abstraction or attainment because love feels inaccessible.\"\n]",
+      "classification": "therapeutic-safety",
+      "cons": [
+        "The proposed new value could weaken or misplace a safety boundary if its conditions or wording are incomplete."
+      ],
+      "current": "[\n  \"Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing.\"\n]",
+      "id": "decision-37f977518fcc324d",
+      "pros": [
+        "Approving lets responses use the exact candidate avoid rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.GUIDE_LATER: avoid",
+      "worstPlausibleFailure": "The change could weaken a safety boundary or produce an unsafe response under an untested condition."
+    },
+    {
+      "affectedRegressions": [
+        "G010",
+        "G015",
+        "G016",
+        "G018"
+      ],
+      "behavioralEffect": "Changes sourceRefs under the explicit provenance-policy policy.",
+      "candidate": "[\n  \"IC.GUIDE_LATER\",\n  \"IC.THREE_FUNCTIONS\",\n  \"AMEND.IC.EXISTENTIAL_LOVE_ROUTING\",\n  \"AMEND.IC.WELLBEING_HORIZON\",\n  \"AMEND.IC.REALIZATION_LOVE_INTEGRATION\"\n]",
+      "classification": "provenance-policy",
+      "cons": [
+        "The proposed new provenance/authority value could overstate support or attach the behavior to the wrong source if approved without exact source review."
+      ],
+      "current": "[\n  \"IC.GUIDE_LATER\",\n  \"IC.THREE_FUNCTIONS\"\n]",
+      "id": "decision-3b753522449bf2bc",
+      "pros": [
+        "Approving records the candidate sourceRefs as the explicit provenance/authority basis instead of leaving the current basis in place."
+      ],
+      "provenance": "source-and-authority-review",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.GUIDE_LATER: sourceRefs",
+      "worstPlausibleFailure": "The change could present unsupported material with stronger authority than its source permits."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G013",
+        "G015",
+        "G017"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.DEEP_LOVE_TO_CHILD\",\n  \"relation\": \"embodies-through\",\n  \"to\": \"IC.PROTECTOR_ACTION\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-3bca2fb9204d6e76",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 7142662de2673ac63491863cad24cd104c9c4a13bd017532ff5c112235b8d1a3: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G015",
+        "G016",
+        "G017",
+        "G018"
+      ],
+      "behavioralEffect": "Changes sourceRefs under the explicit provenance-policy policy.",
+      "candidate": "[\n  \"IC.LOVE_MISSING\",\n  \"IC.HEART_SOLAR_LOOP\",\n  \"AMEND.IC.BORROW_LOVE_EXTERNAL\",\n  \"AMEND.IC.WELLBEING_HORIZON\"\n]",
+      "classification": "provenance-policy",
+      "cons": [
+        "The proposed new provenance/authority value could overstate support or attach the behavior to the wrong source if approved without exact source review."
+      ],
+      "current": "[\n  \"IC.LOVE_MISSING\",\n  \"IC.HEART_SOLAR_LOOP\",\n  \"AMEND.IC.BORROW_LOVE_EXTERNAL\"\n]",
+      "id": "decision-5f05473ed68f4fb0",
+      "pros": [
+        "Approving records the candidate sourceRefs as the explicit provenance/authority basis instead of leaving the current basis in place."
+      ],
+      "provenance": "source-and-authority-review",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.BORROW_LOVE: sourceRefs",
+      "worstPlausibleFailure": "The change could present unsupported material with stronger authority than its source permits."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G015",
+        "G016",
+        "G018"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.REALIZATION_LOVE_INTEGRATION\",\n  \"relation\": \"feeds-child-integration\",\n  \"to\": \"IC.DEEP_LOVE_TO_CHILD\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-7e53d7345dc099a4",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge e755a36a419b899182b3d9e026dddf12a11d4336c8c78613635580c5c64b19cd: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G016",
+        "G018"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"any\": [\n      {\n        \"field\": \"spiritual_bypass_pattern\",\n        \"op\": \"in\",\n        \"value\": [\n          \"attainment_outpaces_love\",\n          \"doctrine_outpaces_love\",\n          \"group_warmth_mismatch\"\n        ]\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not dismiss genuine nibbana, nondual, Christian, mystical, or other realization merely because emotional integration is incomplete.\",\n    \"Do not treat claims about divine love, spiritual attainment, or a welcoming group atmosphere as proof that the person actually experiences love.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not say that awakening, religious belief, church or sangha membership, or mystical experience proves emotional integration.\",\n      \"Do not say that ordinary practical care is worthless because profound spiritual love is not accessible.\"\n    ],\n    \"requiredNuance\": [\n      \"Mystical intensity, doctrinal certainty, and love depth are not interchangeable.\",\n      \"Practical love and profound love are complementary: practical conduct embodies love, while a deeper wellbeing horizon may enlarge what the person can sincerely wish for beings.\"\n    ]\n  },\n  \"id\": \"IC.REALIZATION_LOVE_INTEGRATION\",\n  \"kind\": \"decision-node\",\n  \"priority\": 99,\n  \"recommendations\": [\n    \"Respect whatever realization, rebirth, doctrine, or community experience is genuine while testing separately whether love is actually felt, can include the inner child, and survives ordinary relational difficulty.\",\n    \"Do not let mystery outrun love indefinitely: if attainment or doctrine is far ahead of felt love, turn toward the missing love rather than prescribing a more advanced abstraction.\",\n    \"Translate spiritual opening into protection, truth, reliability, service, Hearthwork or reciprocal relationship, and community where useful; community may reinforce an opening without being assumed to have caused it.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.REALIZATION_LOVE_INTEGRATION\",\n    \"AMEND.IC.DEEP_LOVE_TO_CHILD\",\n    \"IC.GUIDE_LATER\",\n    \"IC.PROTECTOR_VISIBLE\",\n    \"IC.RELATIONSHIP\"\n  ],\n  \"successSignals\": [\n    \"The person can distinguish spiritual truth or identity from felt love and practical integration, and the next step addresses the actual mismatch rather than protecting a status claim.\"\n  ],\n  \"tags\": [\n    \"spiritual-bypass\",\n    \"realization\",\n    \"doctrine\",\n    \"community\",\n    \"integration\"\n  ],\n  \"tier\": 2,\n  \"title\": \"Keep realization, doctrine, and community answerable to lived love\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-8bbed5953ae208a4",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.REALIZATION_LOVE_INTEGRATION: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G014",
+        "G015",
+        "G016",
+        "G017",
+        "G018"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.LOVE_HORIZON_EXPLORATION\",\n  \"relation\": \"can-enable\",\n  \"to\": \"IC.DEEP_LOVE_TO_CHILD\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-93078ae8fefe1bd6",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 53b4846ee3d85b79b20e6015034af2ebf068107f1f907eb4d2b00d1ae683ce5e: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G013",
+        "G016",
+        "G017",
+        "G018"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.REALIZATION_LOVE_INTEGRATION\",\n  \"relation\": \"requires-embodiment\",\n  \"to\": \"IC.PROTECTOR_ACTION\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-9b898e97555ca287",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 01efa0a20d94f73518ab176e5390f354b62a2392eae85a8c6e41b9b04c166814: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G015"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"deep_love_access\",\n        \"op\": \"in\",\n        \"value\": [\n          \"intermittent\",\n          \"reliable\"\n        ]\n      },\n      {\n        \"field\": \"child_love_inclusion\",\n        \"op\": \"in\",\n        \"value\": [\n          \"untested\",\n          \"blocked\",\n          \"partial\"\n        ]\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not force transfer, interpret reluctance as spiritual failure, or prescribe a stronger altered state because the child cannot receive the love.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not call a blocked transfer proof that the child rejects love, is spiritually deficient, or needs a stronger altered state.\"\n    ],\n    \"requiredNuance\": [\n      \"Having access to profound love and being able to let the wounded child receive it are separate capacities.\",\n      \"Love can remain present while distrust or refusal is heard; the child’s objection does not need to be argued away.\"\n    ]\n  },\n  \"id\": \"IC.DEEP_LOVE_TO_CHILD\",\n  \"kind\": \"decision-node\",\n  \"priority\": 95,\n  \"recommendations\": [\n    \"Contact the real profound love first in whatever already-valid way it is accessible; do not manufacture a special inner-child feeling.\",\n    \"Then bring the younger self into awareness and see whether the same love can include them—the feast has to reach the hungry child.\",\n    \"If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.DEEP_LOVE_TO_CHILD\",\n    \"AMEND.IC.WELLBEING_HORIZON\",\n    \"IC.HEART_SOLAR_LOOP\",\n    \"IC.BOTTOM_UP_SEQUENCE\"\n  ],\n  \"successSignals\": [\n    \"Profound love can include the younger self without coercion, or the specific block becomes clear enough to work with relationally.\"\n  ],\n  \"tags\": [\n    \"deep-love\",\n    \"inner-child\",\n    \"integration\",\n    \"anti-bypass\"\n  ],\n  \"tier\": 3,\n  \"title\": \"Bring already-accessible deep love to the younger self without force\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-9e7b95e3fd6d9bb2",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.DEEP_LOVE_TO_CHILD: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G015",
+        "G016",
+        "G017",
+        "G018"
+      ],
+      "behavioralEffect": "Changes recommendations under the explicit therapeutic-response policy.",
+      "candidate": "[\n  \"First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.\",\n  \"Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.\",\n  \"Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love.\"\n]",
+      "classification": "therapeutic-response",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.\",\n  \"Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.\"\n]",
+      "id": "decision-b7837a081df4de53",
+      "pros": [
+        "Approving lets responses use the exact candidate recommendations rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.BORROW_LOVE: recommendations",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G009",
+        "G019"
+      ],
+      "behavioralEffect": "Changes effects.requiredNuance under the explicit response-semantics policy.",
+      "candidate": "[\n  \"A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration.\"\n]",
+      "classification": "response-semantics",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[]",
+      "id": "decision-d41a7b1385359d18",
+      "pros": [
+        "Approving makes the candidate requiredNuance constraint available to the planner or response realization exactly as shown."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.ALTERED_STATE_GATE: effects.requiredNuance",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G009",
+        "G019"
+      ],
+      "behavioralEffect": "Changes sourceRefs under the explicit provenance-policy policy.",
+      "candidate": "[\n  \"IC.ALTERED_STATES\",\n  \"IC.ESCAPE_URGE\",\n  \"AMEND.IC.EXISTENTIAL_LOVE_ROUTING\",\n  \"AMEND.IC.WELLBEING_HORIZON\"\n]",
+      "classification": "provenance-policy",
+      "cons": [
+        "The proposed new provenance/authority value could overstate support or attach the behavior to the wrong source if approved without exact source review."
+      ],
+      "current": "[\n  \"IC.ALTERED_STATES\",\n  \"IC.ESCAPE_URGE\"\n]",
+      "id": "decision-d9d13d0b75223063",
+      "pros": [
+        "Approving records the candidate sourceRefs as the explicit provenance/authority basis instead of leaving the current basis in place."
+      ],
+      "provenance": "source-and-authority-review",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.ALTERED_STATE_GATE: sourceRefs",
+      "worstPlausibleFailure": "The change could present unsupported material with stronger authority than its source permits."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G014",
+        "G016",
+        "G017",
+        "G018"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"spiritual_curiosity\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      },\n      {\n        \"field\": \"deep_love_access\",\n        \"op\": \"in\",\n        \"value\": [\n          \"none_known\",\n          \"past_glimpse\",\n          \"state_dependent\",\n          \"unknown\"\n        ]\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not prescribe a religion, theism, awakening, nonduality, conversion, psychedelics, NDEs, or a metaphysical conclusion.\",\n    \"Do not imply that everyone needs profound spiritual love when the person says their present horizon is sufficient.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not say everyone needs profound spiritual love in order to heal or live well.\"\n    ],\n    \"requiredNuance\": [\n      \"The relevant distinction is experiential access to deeper wellbeing and love, not believer versus atheist or one religion versus another.\",\n      \"A conceptual horizon and a directly experienced horizon are different; do not pretend reading about profound love is the same as having touched it.\"\n    ]\n  },\n  \"id\": \"IC.LOVE_HORIZON_EXPLORATION\",\n  \"kind\": \"decision-node\",\n  \"priority\": 94,\n  \"recommendations\": [\n    \"Invite investigation rather than belief: notice people, practices, traditions, experiences, nature, art, service, prayer, meditation, or other sources whose lived fruits make a deeper kind of love or wellbeing seem worth exploring.\",\n    \"Use metta or loving-kindness as one possible cultivation practice, especially when it feels meaningful, without presenting it as the definition or guaranteed depth of love.\",\n    \"Follow the fruits: prefer paths and exemplars that become more loving, honest, grounded, protective, and able to face pain rather than merely more impressive or certain.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.EXISTENTIAL_LOVE_ROUTING\",\n    \"AMEND.IC.WELLBEING_HORIZON\",\n    \"IC.GUIDE_LATER\"\n  ],\n  \"successSignals\": [\n    \"Curiosity becomes a voluntary experiment with no forced doctrine, attainment target, or promise of extraordinary experience.\"\n  ],\n  \"tags\": [\n    \"spiritual-curiosity\",\n    \"love\",\n    \"wellbeing-horizon\",\n    \"guide\"\n  ],\n  \"tier\": 2,\n  \"title\": \"Explore a deeper horizon of wellbeing when curiosity is genuine\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-ec93fb984c302c42",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.LOVE_HORIZON_EXPLORATION: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G010",
+        "G015",
+        "G016",
+        "G018"
+      ],
+      "behavioralEffect": "Changes effects.requiredNuance under the explicit response-semantics policy.",
+      "candidate": "[\n  \"Spiritual exploration is optional when the person’s current horizon feels sufficient; when realization is already present, assess whether it deepens accessible love and reaches the child rather than assuming attainment itself integrates the wound.\"\n]",
+      "classification": "response-semantics",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[]",
+      "id": "decision-eebd7727557b0c84",
+      "pros": [
+        "Approving makes the candidate requiredNuance constraint available to the planner or response realization exactly as shown."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.GUIDE_LATER: effects.requiredNuance",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G016",
+        "G017",
+        "G018"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"any\": [\n      {\n        \"field\": \"existential_sufficiency\",\n        \"op\": \"in\",\n        \"value\": [\n          \"insufficient\",\n          \"profoundly_insufficient\"\n        ]\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not tell a satisfied, non-curious person that they are spiritually deficient or must seek a profound experience.\",\n    \"Do not romanticize suicidal crisis, despair, an NDE, psychedelics, conversion, or extraordinary states as a route to transformation.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not say a small practical act should be sufficient for profound existential hopelessness.\",\n      \"Do not say a suicidal crisis is spiritually useful or necessary.\"\n    ],\n    \"requiredNuance\": [\n      \"Immediate safety action and existential nourishment solve different problems; do not confuse preserving life today with answering why life feels worth living.\",\n      \"Curiosity can open a route without proving that a spiritual conclusion is true or required.\"\n    ]\n  },\n  \"id\": \"IC.EXISTENTIAL_NOURISHMENT\",\n  \"kind\": \"decision-node\",\n  \"priority\": 98,\n  \"recommendations\": [\n    \"Distinguish whether the person is simply working on a wound within a basically sufficient life, is hungry and curious for a deeper horizon, or experiences ordinary life as radically insufficient.\",\n    \"When the person says they hate themselves yet voluntarily seeks help, believe the self-hating part and also ask what the help-seeking part hoped might happen; do not name that motive love for them.\",\n    \"When hopelessness is profound, keep immediate safety and human contact first while also taking the why-live question seriously; a small protective action can preserve the person without pretending to answer the existential question.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.EXISTENTIAL_LOVE_ROUTING\",\n    \"AMEND.IC.WELLBEING_HORIZON\"\n  ],\n  \"successSignals\": [\n    \"The intervention matches the scale of the person’s hunger while preserving safety and choice about spiritual exploration.\"\n  ],\n  \"tags\": [\n    \"existential\",\n    \"love\",\n    \"meaning\",\n    \"curiosity\",\n    \"safety\"\n  ],\n  \"tier\": 2,\n  \"title\": \"Match the work to existential hunger without making spirituality mandatory\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-ff0539d8e60b5c43",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.EXISTENTIAL_NOURISHMENT: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G014",
+        "G016",
+        "G017",
+        "G018"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.EXISTENTIAL_NOURISHMENT\",\n  \"relation\": \"opens-when-curious\",\n  \"to\": \"IC.LOVE_HORIZON_EXPLORATION\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-ffac6d921f1e80ab",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge e3cc68b18cad9ed1d431b69cf53584a3579f43c08878ba5cf18bbe95a67db39d: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    }
+  ],
+  "contractVersion": "guide-owner-decisions-v1",
+  "proposalEvidenceSha256": "4419ce48438dda7dcbe058ebc29e599a1c1e6e7bedde3d97c398364110d39560",
+  "status": "awaiting-owner"
+}
