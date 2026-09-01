@@ -78,38 +78,36 @@ test("borrowed adulthood explicitly supports the part attempting the adult role"
   assert.ok(node);
   assert.ok(node.tags.includes("adult-side-borrowing"));
   assert.ok(node.recommendations.some((item) => /part attempting the adult role/i.test(item)));
+  assert.ok(node.effects.requiredNuance.some((item) => /not only the younger state/i.test(item)));
 });
+
 
 test("credibility planning keeps unrelated future goals out of Deferred and prefers graph-authored discriminating questions", async () => {
   bundle ??= await compileGuideGraphs({ write: false });
   const plan = planFromGraphs({
     graphs: bundle.graphs,
     variables: {
-      present_safety: "safe",
-      orientation: "oriented",
-      ability_to_stop: "yes",
-      ability_to_return: "yes",
-      activation: "moderate",
-      dissociation: "none",
-      altered_state: "sober",
-      witness_capacity: "present",
-      inner_adult_access: "low",
-      support_available: "present",
-      credibility_conflict: "present",
-      credibility_evidence_state: "adverse",
-      internal_speaker_relation: "unresolved",
-      resentment_toward_younger_self: "present",
-      age_agency_ambiguity: "present",
-      self_directed_love: "unsafe"
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      activation: "moderate", dissociation: "none", altered_state: "sober", inner_adult_access: "partial",
+      love_access: "accessible", self_directed_love: "unsafe", protective_response: "present",
+      witness_capacity: "present", credibility_conflict: "present", credibility_evidence_state: "adverse", internal_speaker_relation: "unresolved",
+      age_agency_ambiguity: "present", resentment_toward_younger_self: "present",
+      coherent_child_state: "present", self_criticism: "present", current_intent: "conversation",
+      forgiveness_interest: "absent", support_available: "present", body_capacity: "adequate", target_type: "developmental"
     },
-    unknowns: [
-      { variable: "coherent_child_state", importance: 4, question: "Is the child-state clear?" }
-    ]
+    unknowns: [{ variable: "love_safety_reason", question: "What makes the love feel unsafe?", importance: 5 }]
   });
   assert.equal(plan.primaryJob.id, "IC.CREDIBILITY_REPAIR");
-  assert.equal(plan.nextQuestionSource?.type, "graph-node");
-  assert.equal(plan.nextQuestionSource?.id, "IC.AGE_RESPONSIBILITY_CLARIFICATION");
-  assert.match(plan.nextQuestion, /Which age or version/i);
-  assert.ok(!plan.deferredNodes.some((item) => item.id === "IC.GUIDE_LATER"));
-  assert.ok(!plan.deferredNodes.some((item) => item.id === "IC.FORGIVENESS_LATER"));
+  assert.equal(plan.nextQuestion, "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?");
+  assert.deepEqual(plan.nextQuestionSource, { type: "graph-node", id: "IC.AGE_RESPONSIBILITY_CLARIFICATION" });
+  assert.equal(plan.deferredNodes.some((item) => item.id === "IC.FORGIVENESS_LATER"), false);
+  assert.ok(plan.displayTrace.secondaryJobs.some((item) => item.id === "IC.AGE_RESPONSIBILITY_CLARIFICATION"));
+  assert.ok(!plan.selectedNodes.some((item) => item.id === "IC.NEUTRAL_WITNESS"));
+  assert.ok(plan.requiredNuance.some((item) => /observable adult-life outcome as adverse evidence/i.test(item)));
+  assert.ok(plan.requiredNuance.some((item) => /Chronological adulthood does not establish/i.test(item)));
+  assert.ok(plan.forbiddenOverclaims.some((item) => /Do not merge the resentful voice/i.test(item)));
+  assert.ok(plan.forbiddenOverclaims.some((item) => /independently established objective verdict/i.test(item)));
+  assert.ok(plan.requiredNuance.some((item) => /regulation remains a supporting job/i.test(item)));
+  assert.ok(plan.requiredNuance.some((item) => /Neither side automatically adjudicates/i.test(item)));
+  assert.ok(!plan.displayTrace.deferredNodes.some((item) => /EMDR|BRAINSPOTTING/i.test(item.id)));
 });
