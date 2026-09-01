@@ -19,6 +19,7 @@ test("local web client serves therapy, hypnosis, local-data, and app-owned route
   assert.equal(result.checks.guideGraphDeclared, true);
   assert.equal(result.checks.planTracePresent, true);
   assert.equal(result.checks.guidePacketScreenPresent, true);
+  assert.equal(result.checks.liveLocalLearningPresent, true);
 });
 
 test("browser route renderer places the app-owned waking return last", async () => {
@@ -43,7 +44,7 @@ test("web client exposes one-click privacy-safe recovery ZIP export", async () =
   const html = await fs.readFile(path.join(root, "apps/web/index.html"), "utf8");
   const js = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");
   assert.match(html, /Export recovery ZIP/);
-  assert.match(html, /excludes chat, therapy reasoning, development-case payloads/i);
+  assert.match(html, /excludes chat, local learning records, therapy reasoning, development-case payloads/i);
   assert.match(js, /\/v1\/debug\/export/);
   assert.match(js, /body: JSON\.stringify\(\{ state \}\)/);
 });
@@ -77,6 +78,29 @@ test("private correction learning is category-only, reviewable, and isolated fro
   assert.match(learning, /therapyPolicyAuthority: "none"/);
   assert.doesNotMatch(learning, /fetch\s*\(|XMLHttpRequest|WebSocket|https?:\/\//);
   assert.match(css, /\.potential-lesson-card/);
+});
+
+test("live learning requires an exact preview and explicit action, with revocation before local erasure", async () => {
+  const html = await fs.readFile(path.join(root, "apps/web/index.html"), "utf8");
+  const js = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");
+  assert.match(html, /preview the exact generalized evidence/i);
+  assert.match(html, /refuse it at no charge/i);
+  assert.match(html, /account-identity shielding, not anonymity/i);
+  assert.match(js, /Preview learning contribution/);
+  assert.match(js, /Continue with default contribution/);
+  assert.match(js, /Do not contribute this candidate/);
+  assert.match(js, /\/v1\/learning\/preview/);
+  assert.match(js, /\/v1\/learning\/submit/);
+  assert.match(js, /\/v1\/learning\/revoke/);
+  assert.match(js, /for \(const contribution of \[\.\.\.state\.learningContributions\]\)/);
+  assert.match(js, /recoverPendingLearningContribution\(contribution, candidate\)/);
+  assert.match(js, /state === "submission-pending"\) return candidate/);
+  assert.match(js, /category\.disabled = contributionPending/);
+  assert.match(js, /\["contributed", "submission-pending"\]\.includes\(contribution\?\.state\)/);
+  assert.match(js, /occurrenceToken: contribution\.occurrenceToken[\s\S]*revocationToken: contribution\.revocationToken/);
+  assert.match(js, /could not be revoked[\s\S]*retry credentials were preserved/i);
+  const lifecycle = js.slice(js.indexOf("async function previewLearningContribution"), js.indexOf("\nfunction reviewButton"));
+  assert.doesNotMatch(lifecycle, /setInterval\s*\(|setTimeout\s*\(/i);
 });
 
 test("web client exposes autonomous development status and only asks humans for policy decisions", async () => {

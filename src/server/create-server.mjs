@@ -23,6 +23,7 @@ import {
   exportInstalledGuidePacket
 } from "../guide-packet/store.mjs";
 import { recoverGuidePacketCandidateOnStartup } from "../guide-packet/autopilot.mjs";
+import { getLiveLearningStore } from "../learning/live-store.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(here, "../../apps/web");
@@ -150,7 +151,11 @@ async function readBody(req, maxBytes = 2_000_000) {
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > maxBytes) throw new Error(`Request body exceeds ${Math.round(maxBytes / 1_000_000)} MB.`);
+    if (size > maxBytes) {
+      const error = new Error(`Request body exceeds ${maxBytes} bytes.`);
+      error.code = "VALIDATION_ERROR";
+      throw error;
+    }
     chunks.push(Buffer.from(chunk));
   }
   return Buffer.concat(chunks);
@@ -162,6 +167,7 @@ async function readJson(req, maxBytes = 2_000_000) {
 }
 
 export function createInnerSignalServer({ config, providers }) {
+  const liveLearningStore = getLiveLearningStore(config);
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url || "/", "http://127.0.0.1");
@@ -189,8 +195,20 @@ export function createInnerSignalServer({ config, providers }) {
             candidateStatus: (await readGuidePacketStatus(config)).candidate?.status ?? null
           },
           webClient: { available: true, path: "/", diagnosticExport: true },
-          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
+          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/hypnosis/compile", "/v1/learning/preview", "/v1/learning/submit", "/v1/learning/revoke", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
+      }
+      if (req.method === "POST" && url.pathname === "/v1/learning/preview") {
+        const candidate = await readJson(req, 16 * 1024);
+        return send(res, 200, liveLearningStore.createPreview(candidate));
+      }
+      if (req.method === "POST" && url.pathname === "/v1/learning/submit") {
+        const input = await readJson(req, 16 * 1024);
+        return send(res, 200, await liveLearningStore.submit(input));
+      }
+      if (req.method === "POST" && url.pathname === "/v1/learning/revoke") {
+        const input = await readJson(req, 16 * 1024);
+        return send(res, 200, await liveLearningStore.revoke(input));
       }
       if (req.method === "POST" && url.pathname === "/v1/plan") {
         const input = await readJson(req);

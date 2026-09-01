@@ -41,7 +41,14 @@ export async function runWebClientSmoke({ config, providers }) {
         && index.text.includes("Behavioral decisions")
         && index.text.includes("Source identity diff")
         && script.text.includes("/v1/guides/import")
-        && script.text.includes("candidate?.independentReview")
+        && script.text.includes("candidate?.independentReview"),
+      liveLocalLearningPresent: index.text.includes("continue with the default local contribution")
+        && index.text.includes("account-identity shielding, not anonymity")
+        && script.text.includes("/v1/learning/preview")
+        && script.text.includes("/v1/learning/submit")
+        && script.text.includes("/v1/learning/revoke")
+        && correctionLearning.text.includes("inner-signal-live-learning-evidence-v1")
+        && health.endpoints?.includes("/v1/learning/preview")
     };
     return { ok: Object.values(checks).every(Boolean), base, checks };
   } finally {

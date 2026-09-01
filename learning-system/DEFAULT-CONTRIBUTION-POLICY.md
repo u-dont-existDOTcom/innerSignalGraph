@@ -1,7 +1,8 @@
-# Default contribution policy — offline draft
+# Default contribution policy — local-loopback draft
 
-**Status:** product/privacy policy model only; no live transmission, queue, signup, billing,
-or release is enabled.
+**Status:** the main app implements local loopback preview, refusal, durable private queue,
+review, revocation, and deletion. No off-device transmission, signup, billing, or release is
+enabled.
 
 ## Current product decision
 
@@ -26,10 +27,11 @@ The model has only these states:
 4. `candidate-refused`
 5. `blocked-live-transport-disabled`
 
-There is no transmitted state. Showing the preview and receiving no refusal can produce
-only `default-contribution-pending-release`, because live transport remains disabled. A
-later transition is mechanically blocked. Refusal produces `candidate-refused`; it never
-changes access. No timing window or grace period is selected here.
+The current local lifecycle adds an explicitly user-continued `contributed-local-loopback`
+state after the mandatory preview. It never uses a timer or background submission. Refusal
+produces `candidate-refused`; it never changes access. The local queue is not sent off the
+device and has no cross-user aggregation or runtime authority. Off-device transmission remains
+blocked. No timing window or grace period is selected here.
 
 Existing local candidates are not backfilled. A future release needs a separately reviewed
 transport, revocation, deletion, provider, signup, and retention implementation.

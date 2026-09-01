@@ -26,20 +26,25 @@ test("Option A policy remains pure when network access throws", async () => {
   }
 });
 
-test("learning sources contain no network, provider client, queue, or billing capability", async () => {
+test("learning sources contain no external network, provider client, or billing capability", async () => {
   const sources = await Promise.all((await filesUnder(learningRoot)).map((file) => fs.readFile(file, "utf8")));
   const joined = sources.join("\n");
   for (const forbidden of ["node:http", "node:https", "node:net", "node:tls", "undici", "octokit", "fetch(", "WebSocket", "XMLHttpRequest", "Authorization:", "Bearer ", "api.openai.com", "stripe", "checkout.session"]) assert.equal(joined.includes(forbidden), false, forbidden);
 });
 
-test("no production runtime consumes the new policy helpers", async () => {
+test("only the exact server and maintainer CLI consume live modules; offline policy helpers remain unconsumed", async () => {
   const productionFiles = (await Promise.all(["src", "apps"].map((directory) => filesUnder(path.join(root, directory))))).flat().filter((file) => !file.startsWith(`${learningRoot}${path.sep}`));
-  const offenders = [];
+  const consumers = [];
   for (const file of productionFiles) {
     const source = await fs.readFile(file, "utf8");
-    if (/src\/learning|\/learning\/(?:contribution-policy|provider-disclosure|identifiability-warning)\.mjs/.test(source)) offenders.push(path.relative(root, file));
+    const imports = [...source.matchAll(/from\s+["']([^"']*\/learning\/[^"']+\.mjs)["']/g)].map((match) => match[1]);
+    for (const specifier of imports) consumers.push([path.relative(root, file), specifier]);
   }
-  assert.deepEqual(offenders, []);
+  consumers.sort(([leftFile], [rightFile]) => leftFile.localeCompare(rightFile));
+  assert.deepEqual(consumers, [
+    ["src/cli/learning-review.mjs", "../learning/live-store.mjs"],
+    ["src/server/create-server.mjs", "../learning/live-store.mjs"]
+  ]);
 });
 
 test("payment and contribution never change epistemic or therapy authority", () => {

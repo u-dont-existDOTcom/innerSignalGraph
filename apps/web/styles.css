@@ -118,6 +118,12 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 .potential-lesson-privacy { display: flex !important; grid-template-columns: auto 1fr; align-items: flex-start; font-weight: 500 !important; }
 .potential-lesson-privacy input { width: auto; margin-top: .2rem; }
 .potential-lesson-actions { justify-content: flex-start; }
+.learning-lifecycle { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 1rem; }
+.learning-lifecycle h4 { margin: 0 0 .35rem; }
+.learning-preview { background: #101719; border: 1px solid var(--line); border-radius: .65rem; max-height: 24rem; overflow: auto; padding: .8rem; white-space: pre-wrap; word-break: break-word; }
+.local-learning-receipt { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; overflow-wrap: anywhere; }
+.compact-notice { margin: .65rem 0; }
+.provider-privacy-copy { margin: 1rem 0; }
 
 .dev-automation { margin: 0 0 1rem; padding: .75rem 1rem; border: 1px solid var(--line, #ccc); border-radius: .75rem; display:flex; gap:1rem; justify-content:space-between; align-items:center; flex-wrap:wrap; }
 .dev-automation strong { margin-right:.6rem; }

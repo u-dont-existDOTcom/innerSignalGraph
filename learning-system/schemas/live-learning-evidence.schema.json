@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innerself.love/schemas/live-learning-evidence.schema.json",
+  "title": "InnerSignal live local learning evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "candidateKind",
+    "feedbackCategory",
+    "generalizedObservation",
+    "userAuthoredSummary",
+    "summaryAuthorship",
+    "privacyAcknowledged",
+    "evidenceClass",
+    "causalBoundary",
+    "outcomeDirection",
+    "policySurface",
+    "syntheticRegressionExample",
+    "versionIdentifiers",
+    "sourceContentRetained",
+    "runtimeAuthority",
+    "therapyPolicyAuthority",
+    "externalTransmissionAuthority"
+  ],
+  "properties": {
+    "format": { "const": "inner-signal-live-learning-evidence-v1" },
+    "candidateKind": { "enum": ["outcome-signal", "comprehension-signal", "disagreement-signal", "correction-signal", "other-feedback-signal"] },
+    "feedbackCategory": { "enum": ["did-not-work", "did-not-make-sense", "disagreement", "correction", "other"] },
+    "generalizedObservation": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "userAuthoredSummary": { "type": "string", "maxLength": 1000 },
+    "summaryAuthorship": { "enum": ["none", "user"] },
+    "privacyAcknowledged": { "type": "boolean" },
+    "evidenceClass": { "enum": ["participant-reported", "unsupported-disagreement", "unresolved"] },
+    "causalBoundary": { "enum": ["participant-report-only-no-causal-inference", "unresolved"] },
+    "outcomeDirection": { "enum": ["unclear", "not-applicable"] },
+    "policySurface": { "const": "therapy-response-feedback" },
+    "syntheticRegressionExample": { "const": false },
+    "versionIdentifiers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtimeVersion", "detectorVersion"],
+      "properties": {
+        "runtimeVersion": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "detectorVersion": { "type": "string", "minLength": 1, "maxLength": 100 }
+      }
+    },
+    "sourceContentRetained": { "const": false },
+    "runtimeAuthority": { "const": "none" },
+    "therapyPolicyAuthority": { "const": "none" },
+    "externalTransmissionAuthority": { "const": "none" }
+  }
+}

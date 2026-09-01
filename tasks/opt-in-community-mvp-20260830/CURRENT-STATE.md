@@ -189,3 +189,43 @@ approval. Any later candidate that could affect guides, graphs, prompts, safety,
 policy, or therapy behavior still requires the canonical direct owner-decision and
 regression-first governance path. Scientific adequacy remains
 `NOT_ASSESSED_UNCHANGED`; release remains `NOT_AUTHORIZED`; the parent outcome remains open.
+
+## Live local learning lifecycle
+
+The latest owner outcome advances the main-app learning objective beyond offline groundwork.
+Extra High independently reconciled the exact owner source at SHA-256
+`61d8521d5a27165b2bac0f8910c3d0fd9629e581ba1010040719b43a68773215` and issued directive
+`ctc-innersignal-live-learning-loopback-20260901-001` at start head
+`3900c58de688fa147628b6bb9e2b88af82abd8e5`. The directive supersedes the older
+zero-runtime-consumer and no-real-persistence holds only for the existing main app's private
+local-loopback learning lifecycle.
+
+The current implementation connects the category-only correction/rejection detector to a
+strict generalized evidence record, mandatory exact preview, explicit default-continuation or
+free refusal, durable same-device private queue, `ISL-LOCAL-*` receipt, maintainer review
+tooling, and user revocation/deletion. Preview is memory-only; queue writes are atomic and use
+private filesystem modes where supported. Browser-local receipt/revocation mappings allow a
+contributed occurrence to be deleted before its local credentials are erased.
+
+No raw user message, assistant answer, transcript, conversation/session/ledger identifier,
+therapy state, case formulation, graph state, embedding, source hash, match offset, or generated
+summary is eligible. The only optional free text is a user-authored, privacy-acknowledged
+summary. Every candidate and every maintainer disposition retains `runtimeAuthority: none`,
+`therapyPolicyAuthority: none`, and `externalTransmissionAuthority: none`.
+
+This lifecycle is live only on the existing loopback service. It adds no off-device request,
+remote queue, cross-user aggregation, OpenAI/OpenRouter integration, billing, signup, public
+deployment, research use, backfill, therapy-ledger mutation, or therapy-runtime incorporation.
+The paid API disclosure describes account-identity shielding, not anonymity: prompts,
+combinations of ordinary facts, payment/account infrastructure, providers, and network metadata
+can still identify or link a person.
+
+Current typed state pending the final mechanical and post-execution review gates:
+
+- Worker-to-contract alignment: `GREEN`.
+- Contract-to-owner alignment: `MATCH_FOR_THIS_SUBTASK`.
+- Operational alignment: `ADEQUATE_FOR_LIVE_LOCAL_LOOPBACK_ONLY`.
+- Scientific adequacy: `NOT_ASSESSED_UNCHANGED`.
+- Release adequacy: `NOT_AUTHORIZED`.
+- Completion claim: `LIVE_LOCAL_LEARNING_SUBTASK_COMPLETE_PARENT_OPEN`.
+- Pro escalation: `NO_PRO`; this slice changes evidence handling, not therapy semantics.

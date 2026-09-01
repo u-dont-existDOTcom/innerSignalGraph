@@ -45,29 +45,43 @@ test("all groundwork behavior remains green when fetch throws", async () => {
   }
 });
 
-test("src/learning imports no network-capable dependency", async () => {
+test("src/learning imports only local filesystem/crypto dependencies and no network dependency", async () => {
   const sources = await Promise.all((await filesUnder(learningRoot)).map((file) => fs.readFile(file, "utf8")));
   const joined = sources.join("\n");
   for (const forbidden of ["node:http", "node:https", "node:net", "node:tls", "undici", "octokit", "github", "fetch(", "WebSocket", "XMLHttpRequest"]) assert.equal(joined.includes(forbidden), false, forbidden);
-  const imports = [...joined.matchAll(/from\s+["']([^"']+)["']/g)].map((match) => match[1]).filter((specifier) => !specifier.startsWith("."));
-  assert.deepEqual(imports, ["node:crypto"]);
+  const imports = new Set([...joined.matchAll(/from\s+["']([^"']+)["']/g)].map((match) => match[1]).filter((specifier) => !specifier.startsWith(".")));
+  assert.deepEqual([...imports].sort(), ["node:crypto", "node:fs/promises", "node:path"]);
 });
 
-test("no production runtime outside src/learning imports the groundwork", async () => {
+test("only the exact server and maintainer CLI import live learning; offline modules remain unconsumed", async () => {
   const productionFiles = (await Promise.all(["src", "apps"].map((dir) => filesUnder(path.join(root, dir))))).flat().filter((file) => !file.startsWith(`${learningRoot}${path.sep}`));
-  const offenders = [];
+  const consumers = [];
   for (const file of productionFiles) {
     const source = await fs.readFile(file, "utf8");
-    if (/src\/learning|\/learning\/(?:contracts|privacy-screen|fingerprint|consent-model|personalization|aggregation|mock-private-queue|reviewer|promotion-gate)\.mjs/.test(source)) offenders.push(path.relative(root, file));
+    const imports = [...source.matchAll(/from\s+["']([^"']*\/learning\/[^"']+\.mjs)["']/g)].map((match) => match[1]);
+    for (const specifier of imports) consumers.push([path.relative(root, file), specifier]);
   }
-  assert.deepEqual(offenders, []);
+  consumers.sort(([leftFile], [rightFile]) => leftFile.localeCompare(rightFile));
+  assert.deepEqual(consumers, [
+    ["src/cli/learning-review.mjs", "../learning/live-store.mjs"],
+    ["src/server/create-server.mjs", "../learning/live-store.mjs"]
+  ]);
 });
 
-test("runtime and app sources define no learning-system endpoint", async () => {
+test("runtime and app sources define only the three authorized local learning endpoints", async () => {
   const productionFiles = (await Promise.all(["src", "apps"].map((dir) => filesUnder(path.join(root, dir))))).flat().filter((file) => !file.startsWith(`${learningRoot}${path.sep}`));
-  const content = (await Promise.all(productionFiles.map((file) => fs.readFile(file, "utf8")))).join("\n");
-  assert.equal(content.includes("learning-system/"), false);
-  assert.equal(/(?:GET|POST|PUT|PATCH|DELETE)\s+\/?learning/.test(content), false);
+  const routeOwners = [];
+  for (const file of productionFiles) {
+    const source = await fs.readFile(file, "utf8");
+    const routes = [...source.matchAll(/["'](\/v1\/learning\/[^"']+)["']/g)].map((match) => match[1]);
+    if (routes.length) routeOwners.push([path.relative(root, file), [...new Set(routes)].sort()]);
+  }
+  routeOwners.sort(([leftFile], [rightFile]) => leftFile.localeCompare(rightFile));
+  assert.deepEqual(routeOwners, [
+    ["apps/web/app.js", ["/v1/learning/preview", "/v1/learning/revoke", "/v1/learning/submit"]],
+    ["src/autopilot/web-smoke.mjs", ["/v1/learning/preview", "/v1/learning/revoke", "/v1/learning/submit"]],
+    ["src/server/create-server.mjs", ["/v1/learning/preview", "/v1/learning/revoke", "/v1/learning/submit"]]
+  ]);
 });
 
 test("static reviewer preview has no script or network resource", async () => {

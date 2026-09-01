@@ -1,7 +1,7 @@
 # Signup agreement — unpublished working draft
 
-**No signup flow uses this text. No checkbox, billing system, provider call, or contribution
-transport is implemented.**
+**No signup flow uses this text. No checkbox, billing system, provider call, or off-device
+contribution transport is implemented.**
 
 ## Agreement shown for free access
 
@@ -15,7 +15,7 @@ Potential community lesson — generalized preview. Free InnerSignal contributes
 
 ## Agreement shown for paid API mode
 
-Paid InnerSignal API mode uses an InnerSignal-controlled OpenAI API account rather than your personal ChatGPT account. OpenAI states that API content is not used to train or improve its models by default unless the API customer opts in. Standard API use is not automatically unmonitored or Zero Data Retention: abuse-monitoring logs may include prompts, responses, and derived metadata and are generally retained for up to 30 days, subject to documented exceptions, and some endpoints or features may retain application state. InnerSignal will not claim Modified Abuse Monitoring or Zero Data Retention unless that status and the exact endpoint configuration are separately verified before release. Paid API mode can provide a global InnerSignal community-learning contribution control. API mode is a paid feature.
+Paid InnerSignal API mode uses an InnerSignal-controlled OpenAI API account rather than your personal ChatGPT account. Paid API mode is designed to shield your personal ChatGPT account identity from the downstream model request by using an InnerSignal-controlled provider account instead of your personal ChatGPT account. InnerSignal does not intentionally forward your personal ChatGPT account identifier as the model-provider account identity. This is account-identity shielding, not anonymity. InnerSignal or its payment/account infrastructure may know who you are; providers and network systems may process request, usage, safety, abuse-monitoring, or technical metadata; and your prompt or a combination of ordinary facts can identify you even without an explicit name, email address, or phone number. OpenAI states that API content is not used to train or improve its models by default unless the API customer opts in. Standard API use is not automatically unmonitored or Zero Data Retention: abuse-monitoring logs may include prompts, responses, and derived metadata and are generally retained for up to 30 days, subject to documented exceptions, and some endpoints or features may retain application state. InnerSignal will not claim Modified Abuse Monitoring or Zero Data Retention unless that status and the exact endpoint configuration are separately verified before release. Paid API mode can provide a global InnerSignal community-learning contribution control. API mode is a paid feature.
 
 Privacy warning: account anonymity or API routing does not make message content anonymous. Names, contact details, exact locations, workplaces, unique events, health history, and combinations of facts can identify you. Remove identifying details you do not want processed before sending.
 

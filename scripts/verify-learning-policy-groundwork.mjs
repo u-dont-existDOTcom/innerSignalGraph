@@ -5,7 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import { CURRENT_CONTRIBUTION_POLICY } from "../src/learning/contribution-policy.mjs";
-import { PROVIDER_PATH_DISCLOSURE, FREE_SIGNUP_COPY, FREE_CANDIDATE_NOTICE, PAID_API_SIGNUP_COPY, IDENTIFIABILITY_WARNING, PROVIDER_BOUNDARY_COPY, COMMUNITY_LEARNING_BOUNDARY_COPY } from "../src/learning/provider-disclosure.mjs";
+import { PROVIDER_PATH_DISCLOSURE, FREE_SIGNUP_COPY, FREE_CANDIDATE_NOTICE, PAID_API_SIGNUP_COPY, IDENTIFIABILITY_WARNING, PROVIDER_BOUNDARY_COPY, COMMUNITY_LEARNING_BOUNDARY_COPY, ACCOUNT_IDENTITY_SHIELDING_COPY, ACCOUNT_IDENTITY_SHIELDING_QUALIFICATION } from "../src/learning/provider-disclosure.mjs";
 import { scanIdentifiability } from "../src/learning/identifiability-warning.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -51,7 +51,7 @@ if (receipt.interpretation.selectedOption !== "A" || receipt.interpretation.ther
 const providerDoc = await fs.readFile(path.join(root, "learning-system/PROVIDER-PATH-DISCLOSURE.md"), "utf8");
 const signupDraft = await fs.readFile(path.join(root, "learning-system/SIGNUP-AGREEMENT-DRAFT.md"), "utf8");
 const privacyDraft = await fs.readFile(path.join(root, "learning-system/PRIVACY-POLICY-DRAFT.md"), "utf8");
-for (const copy of [FREE_SIGNUP_COPY, FREE_CANDIDATE_NOTICE, PAID_API_SIGNUP_COPY, IDENTIFIABILITY_WARNING]) {
+for (const copy of [FREE_SIGNUP_COPY, FREE_CANDIDATE_NOTICE, PAID_API_SIGNUP_COPY, IDENTIFIABILITY_WARNING, ACCOUNT_IDENTITY_SHIELDING_COPY, ACCOUNT_IDENTITY_SHIELDING_QUALIFICATION]) {
   if (!providerDoc.includes(copy) || !signupDraft.includes(copy)) throw new Error("An exact provider/signup copy contract is missing.");
 }
 if (!privacyDraft.includes(PROVIDER_BOUNDARY_COPY) || !privacyDraft.includes(COMMUNITY_LEARNING_BOUNDARY_COPY) || !privacyDraft.includes(IDENTIFIABILITY_WARNING)) throw new Error("Privacy draft is missing an exact boundary or warning.");
@@ -65,7 +65,7 @@ for (const expected of identifierFixture.expectedCategories) if (!categories.has
 const cleanScan = scanIdentifiability(identifierFixture.cleanInput);
 if (cleanScan.anonymous !== false || cleanScan.nonIdentifying !== false || cleanScan.warningRequired !== true) throw new Error("Clean identifiability scan overclaims anonymity.");
 
-if (CURRENT_CONTRIBUTION_POLICY.candidateTransmissionEnabled || CURRENT_CONTRIBUTION_POLICY.existingCandidateBackfillEnabled || CURRENT_CONTRIBUTION_POLICY.runtimePersonalizationEnabled || CURRENT_CONTRIBUTION_POLICY.therapyPolicyActivated || CURRENT_CONTRIBUTION_POLICY.releaseAuthorized) throw new Error("Offline policy enables a forbidden live or therapy capability.");
+if (CURRENT_CONTRIBUTION_POLICY.candidateTransmissionEnabled || CURRENT_CONTRIBUTION_POLICY.existingCandidateBackfillEnabled || CURRENT_CONTRIBUTION_POLICY.runtimePersonalizationEnabled || CURRENT_CONTRIBUTION_POLICY.therapyPolicyActivated || CURRENT_CONTRIBUTION_POLICY.releaseAuthorized) throw new Error("Policy enables forbidden external transmission, backfill, therapy, or release capability.");
 if (PROVIDER_PATH_DISCLOSURE.liveSignupEnabled || PROVIDER_PATH_DISCLOSURE.privacyPolicyPublished || PROVIDER_PATH_DISCLOSURE.releaseAuthorized) throw new Error("Provider disclosure enables signup, publication, or release.");
 if (PROVIDER_PATH_DISCLOSURE.paidApi.globalCommunityContributionSetting !== "UNSPECIFIED_PENDING_FUTURE_BILLING_UI_DECISION") throw new Error("Paid global contribution setting default was improperly selected.");
 
@@ -78,12 +78,19 @@ const learningSource = (await Promise.all(learningFiles.map((file) => fs.readFil
 for (const forbidden of ["node:http", "node:https", "node:net", "node:tls", "undici", "octokit", "fetch(", "WebSocket", "XMLHttpRequest", "api.openai.com", "checkout.session"]) if (learningSource.includes(forbidden)) throw new Error(`Learning source contains forbidden capability token: ${forbidden}`);
 
 const production = (await Promise.all(["src", "apps"].map((directory) => filesUnder(path.join(root, directory))))).flat().filter((file) => !file.startsWith(`${path.join(root, "src/learning")}${path.sep}`));
+const learningConsumers = [];
 for (const file of production) {
   const content = await fs.readFile(file, "utf8");
-  if (/src\/learning|\/learning\/(?:contribution-policy|provider-disclosure|identifiability-warning)\.mjs/.test(content)) throw new Error(`Runtime consumer imports offline learning policy: ${path.relative(root, file)}`);
+  for (const match of content.matchAll(/from\s+["']([^"']*\/learning\/[^"']+\.mjs)["']/g)) learningConsumers.push([path.relative(root, file), match[1]]);
 }
+learningConsumers.sort(([leftFile], [rightFile]) => leftFile.localeCompare(rightFile));
+const expectedConsumers = [
+  ["src/cli/learning-review.mjs", "../learning/live-store.mjs"],
+  ["src/server/create-server.mjs", "../learning/live-store.mjs"]
+];
+if (JSON.stringify(learningConsumers) !== JSON.stringify(expectedConsumers)) throw new Error(`Unexpected runtime learning consumers: ${JSON.stringify(learningConsumers)}`);
 
 const retentionDoc = await fs.readFile(path.join(root, "learning-system/RETENTION-REVOCATION-BOUNDARY.md"), "utf8");
-for (const requiredText of ["at no charge", "without payment", "Existing local candidates are never backfilled", "No current artifact chooses an InnerSignal retention duration"]) if (!retentionDoc.includes(requiredText)) throw new Error(`Retention/revocation boundary is missing: ${requiredText}`);
+for (const requiredText of ["at no charge", "without payment", "Existing local candidates are never backfilled", "No current artifact chooses a remotely hosted InnerSignal retention duration"]) if (!retentionDoc.includes(requiredText)) throw new Error(`Retention/revocation boundary is missing: ${requiredText}`);
 
-process.stdout.write(`PASS ${required.length} required policy artifacts, 3 strict schemas, exact owner source ${ownerSourceSha256}, truthful provider copy, identifiability warnings, zero network writes, zero OpenAI API calls, zero real queue writes, zero live signup/billing/publication, zero runtime consumers, and therapyPolicyAuthority=none.\n`);
+process.stdout.write(`PASS ${required.length} required policy artifacts, 3 strict schemas, exact owner source ${ownerSourceSha256}, truthful account-identity-shielding copy, identifiability warnings, zero external network writes, zero provider API calls, zero live signup/billing/publication, exactly two authorized local-learning consumers, and therapyPolicyAuthority=none.\n`);

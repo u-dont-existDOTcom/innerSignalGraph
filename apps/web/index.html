@@ -182,7 +182,13 @@
           <h2 id="data-heading">Local data</h2>
         </div>
       </div>
-      <p class="notice">Transcript and settings are stored only in this browser profile. Export a browser backup for restoration. The recovery ZIP contains deterministic runtime, Guide Packet, model-entitlement, gate, and supervisor evidence; it excludes chat, therapy reasoning, development-case payloads, .env, and credentials.</p>
+      <p class="notice">Transcript and settings are stored only in this browser profile. Learning contributions are stored in a private queue on this loopback server and are not sent off this device. Export a browser backup for restoration. The recovery ZIP contains deterministic runtime, Guide Packet, model-entitlement, gate, and supervisor evidence; it excludes chat, local learning records, therapy reasoning, development-case payloads, .env, and credentials.</p>
+      <details class="provider-privacy-copy">
+        <summary>Paid API identity and privacy design</summary>
+        <p>Paid API mode is designed to shield your personal ChatGPT account identity from the downstream model request by using an InnerSignal-controlled provider account instead of your personal ChatGPT account. InnerSignal does not intentionally forward your personal ChatGPT account identifier as the model-provider account identity.</p>
+        <p><strong>This is account-identity shielding, not anonymity.</strong> InnerSignal or its payment/account infrastructure may know who you are; providers and network systems may process request, usage, safety, abuse-monitoring, or technical metadata; and your prompt or a combination of ordinary facts can identify you even without an explicit name, email address, or phone number.</p>
+        <p class="small">Paid API mode, billing, and provider integration are not enabled in this local learning build.</p>
+      </details>
       <div class="actions wrap">
         <button id="export-data" type="button">Export backup</button>
         <button id="export-diagnostic-data" class="secondary" type="button">Export recovery ZIP</button>
@@ -192,7 +198,7 @@
       <pre id="data-summary" class="data-summary"></pre>
       <section class="potential-lessons-section" aria-labelledby="potential-lessons-heading">
         <h3 id="potential-lessons-heading">Potential lessons</h3>
-        <p class="small">Explicit correction signals can create category-only candidates in this browser. No triggering chat text or assistant answer is copied into a candidate. Reviewing or queuing one does not teach the therapy runtime; runtime and therapy-policy authority remain none.</p>
+        <p class="small">Explicit correction signals can create category-only candidates in this browser. You can preview the exact generalized evidence, refuse it at no charge, or continue with the default local contribution. No triggering chat text or assistant answer is copied into a candidate. Local review does not teach the therapy runtime; runtime and therapy-policy authority remain none.</p>
         <div id="potential-lessons" class="potential-lessons-list"></div>
       </section>
     </section>

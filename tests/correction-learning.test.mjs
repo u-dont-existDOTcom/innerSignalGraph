@@ -2,11 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   CORRECTION_DETECTOR_VERSION,
+  LEARNING_CONTRIBUTION_FORMAT,
   POTENTIAL_LESSON_FORMAT,
+  buildLiveLearningEvidence,
+  completeLearningContribution,
   createAutomaticPotentialLesson,
   createManualPotentialLesson,
+  createPendingLearningContribution,
+  createRefusedLearningContribution,
   deletePotentialLesson,
   detectCorrectionSignal,
+  restoreLearningContributions,
   restorePotentialLessons,
   reviewPotentialLesson,
   validatePotentialLesson
@@ -215,4 +221,71 @@ test("delete removes only the selected browser-local candidate", () => {
   const first = automatic("I disagree", "pl-aaaaaaaa");
   const second = automatic("That didn't work", "pl-bbbbbbbb");
   assert.deepEqual(deletePotentialLesson([first, second], first.potentialLessonId), [second]);
+});
+
+test("category-only candidate builds conservative live evidence without source chat", () => {
+  const candidate = automatic("That didn't work because PRIVATE_SOURCE_MARKER", "pl-livebuild1");
+  const evidence = buildLiveLearningEvidence(candidate, { runtimeVersion: "0.15.2" });
+  assert.deepEqual({
+    kind: evidence.candidateKind,
+    observation: evidence.generalizedObservation,
+    evidenceClass: evidence.evidenceClass,
+    causalBoundary: evidence.causalBoundary,
+    outcomeDirection: evidence.outcomeDirection
+  }, {
+    kind: "outcome-signal",
+    observation: "A user reported that an InnerSignal response did not work for them.",
+    evidenceClass: "participant-reported",
+    causalBoundary: "participant-report-only-no-causal-inference",
+    outcomeDirection: "unclear"
+  });
+  assert.equal(evidence.sourceContentRetained, false);
+  assert.equal(evidence.runtimeAuthority, "none");
+  assert.equal(evidence.therapyPolicyAuthority, "none");
+  assert.doesNotMatch(JSON.stringify(evidence), /PRIVATE_SOURCE_MARKER|didn't work because/i);
+});
+
+test("browser contribution credentials are private, strict, resumable, and refusal has no queue credentials", () => {
+  const pending = createPendingLearningContribution("pl-livecred1", {
+    occurrenceToken: "a".repeat(64),
+    revocationToken: "b".repeat(64),
+    now: CREATED_AT
+  });
+  assert.equal(pending.format, LEARNING_CONTRIBUTION_FORMAT);
+  assert.equal(pending.state, "submission-pending");
+  const contributed = completeLearningContribution(pending, {
+    candidateReceipt: "ISL-LOCAL-ABCDEF0123456789ABCDEF01",
+    occurrenceCount: 1,
+    status: "needs-review"
+  }, { now: REVIEWED_AT });
+  assert.deepEqual(restoreLearningContributions(JSON.parse(JSON.stringify([contributed]))), [contributed]);
+  assert.equal(contributed.occurrenceToken, null);
+  assert.equal(contributed.revocationToken, "b".repeat(64));
+  assert.throws(() => completeLearningContribution(pending, {
+    candidateReceipt: "ISL-LOCAL-ABCDEF0123456789ABCDEF01",
+    occurrenceCount: null,
+    status: null
+  }, { now: REVIEWED_AT }), /requires only a receipt, revocation credential, and queue state/);
+  assert.throws(() => completeLearningContribution(pending, {
+    candidateReceipt: "ISL-LOCAL-ABCDEF0123456789ABCDEF01",
+    occurrenceCount: 1,
+    status: "incorporated"
+  }, { now: REVIEWED_AT }), /queueStatus is invalid/);
+
+  const refused = createRefusedLearningContribution("pl-liverefus1", { now: CREATED_AT });
+  assert.equal(refused.state, "refused");
+  assert.equal(refused.occurrenceToken, null);
+  assert.equal(refused.revocationToken, null);
+  assert.equal(refused.candidateReceipt, null);
+});
+
+test("browser contribution import rejects raw chat and authority fields", async (t) => {
+  const pending = createPendingLearningContribution("pl-livefail1", {
+    occurrenceToken: "c".repeat(64),
+    revocationToken: "d".repeat(64),
+    now: CREATED_AT
+  });
+  for (const field of ["transcript", "assistantAnswer", "rawUserMessage", "therapyState", "runtimeAuthority", "therapyPolicyAuthority"]) {
+    await t.test(field, () => assert.throws(() => restoreLearningContributions([{ ...pending, [field]: "PRIVATE_MARKER" }]), /unsupported or missing fields/));
+  }
 });

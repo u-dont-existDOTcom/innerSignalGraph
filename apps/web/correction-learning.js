@@ -1,5 +1,7 @@
 export const POTENTIAL_LESSON_FORMAT = "inner-signal-private-potential-lesson-v1";
 export const CORRECTION_DETECTOR_VERSION = "private-correction-signal-v1";
+export const LIVE_LEARNING_EVIDENCE_FORMAT = "inner-signal-live-learning-evidence-v1";
+export const LEARNING_CONTRIBUTION_FORMAT = "inner-signal-browser-learning-contribution-v1";
 
 export const POTENTIAL_LESSON_CATEGORIES = Object.freeze([
   "did-not-work",
@@ -88,6 +90,66 @@ const SIGNALS = Object.freeze([
     expression: /\bi (?:disagree|don't agree|do not agree)\b/
   }
 ]);
+
+const LIVE_CATEGORY_MAPPING = Object.freeze({
+  "did-not-work": Object.freeze({
+    candidateKind: "outcome-signal",
+    generalizedObservation: "A user reported that an InnerSignal response did not work for them.",
+    evidenceClass: "participant-reported",
+    causalBoundary: "participant-report-only-no-causal-inference",
+    outcomeDirection: "unclear"
+  }),
+  "did-not-make-sense": Object.freeze({
+    candidateKind: "comprehension-signal",
+    generalizedObservation: "A user reported that an InnerSignal response did not make sense to them.",
+    evidenceClass: "unresolved",
+    causalBoundary: "unresolved",
+    outcomeDirection: "not-applicable"
+  }),
+  disagreement: Object.freeze({
+    candidateKind: "disagreement-signal",
+    generalizedObservation: "A user explicitly disagreed with an InnerSignal response.",
+    evidenceClass: "unsupported-disagreement",
+    causalBoundary: "unresolved",
+    outcomeDirection: "not-applicable"
+  }),
+  correction: Object.freeze({
+    candidateKind: "correction-signal",
+    generalizedObservation: "A user explicitly corrected an InnerSignal response.",
+    evidenceClass: "unresolved",
+    causalBoundary: "unresolved",
+    outcomeDirection: "not-applicable"
+  }),
+  other: Object.freeze({
+    candidateKind: "other-feedback-signal",
+    generalizedObservation: "A user deliberately saved feedback as a potential InnerSignal lesson.",
+    evidenceClass: "unresolved",
+    causalBoundary: "unresolved",
+    outcomeDirection: "not-applicable"
+  })
+});
+
+const CONTRIBUTION_STATES = Object.freeze(["refused", "submission-pending", "contributed"]);
+const CONTRIBUTION_QUEUE_STATUSES = Object.freeze([
+  "needs-review",
+  "rejected",
+  "insufficient-evidence",
+  "duplicate",
+  "personalization-process-only",
+  "needs-external-evidence",
+  "needs-owner-therapy-decision"
+]);
+const CONTRIBUTION_KEYS = Object.freeze([
+  "format",
+  "potentialLessonId",
+  "state",
+  "occurrenceToken",
+  "revocationToken",
+  "candidateReceipt",
+  "occurrenceCount",
+  "queueStatus",
+  "updatedAt"
+].sort());
 
 function fail(message) {
   throw new Error(`Invalid private potential lesson: ${message}`);
@@ -268,4 +330,108 @@ export function deletePotentialLesson(value, potentialLessonId) {
   const candidates = restorePotentialLessons(value);
   if (typeof potentialLessonId !== "string") fail("delete id is invalid");
   return candidates.filter((candidate) => candidate.potentialLessonId !== potentialLessonId);
+}
+
+export function buildLiveLearningEvidence(candidate, { runtimeVersion = "unavailable" } = {}) {
+  validatePotentialLesson(candidate);
+  const mapping = LIVE_CATEGORY_MAPPING[candidate.category];
+  return Object.freeze({
+    format: LIVE_LEARNING_EVIDENCE_FORMAT,
+    candidateKind: mapping.candidateKind,
+    feedbackCategory: candidate.category,
+    generalizedObservation: mapping.generalizedObservation,
+    userAuthoredSummary: candidate.summary,
+    summaryAuthorship: candidate.summaryAuthorship,
+    privacyAcknowledged: candidate.summary ? candidate.privacyAcknowledged : false,
+    evidenceClass: mapping.evidenceClass,
+    causalBoundary: mapping.causalBoundary,
+    outcomeDirection: mapping.outcomeDirection,
+    policySurface: "therapy-response-feedback",
+    syntheticRegressionExample: false,
+    versionIdentifiers: {
+      runtimeVersion: String(runtimeVersion || "unavailable").slice(0, 100),
+      detectorVersion: CORRECTION_DETECTOR_VERSION
+    },
+    sourceContentRetained: false,
+    runtimeAuthority: "none",
+    therapyPolicyAuthority: "none",
+    externalTransmissionAuthority: "none"
+  });
+}
+
+export function randomOpaqueToken() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return [...bytes].map((value) => value.toString(16).padStart(2, "0")).join("");
+}
+
+export function validateLearningContribution(value) {
+  exactKeys(value, CONTRIBUTION_KEYS, "learning contribution");
+  if (value.format !== LEARNING_CONTRIBUTION_FORMAT) fail("learning contribution format is unsupported");
+  if (typeof value.potentialLessonId !== "string" || !/^pl-[A-Za-z0-9-]{8,100}$/.test(value.potentialLessonId)) fail("learning contribution id is invalid");
+  if (!CONTRIBUTION_STATES.includes(value.state)) fail("learning contribution state is unsupported");
+  for (const field of ["occurrenceToken", "revocationToken"]) {
+    if (value[field] !== null && (typeof value[field] !== "string" || !/^[a-f0-9]{64}$/.test(value[field]))) fail(`${field} is invalid`);
+  }
+  if (value.candidateReceipt !== null && (typeof value.candidateReceipt !== "string" || !/^ISL-LOCAL-[A-F0-9]{24}$/.test(value.candidateReceipt))) fail("candidateReceipt is invalid");
+  if (value.state === "submission-pending" && value.candidateReceipt !== null) fail("pending contribution cannot have a receipt");
+  if (value.state === "contributed" && (value.candidateReceipt === null || value.occurrenceToken !== null || !value.revocationToken || value.occurrenceCount === null || value.queueStatus === null)) fail("contributed record requires only a receipt, revocation credential, and queue state");
+  if (value.state === "submission-pending" && (!value.occurrenceToken || !value.revocationToken)) fail("pending contribution requires opaque tokens");
+  if (value.state === "refused" && [value.occurrenceToken, value.revocationToken, value.candidateReceipt, value.occurrenceCount, value.queueStatus].some((item) => item !== null)) fail("refused contribution cannot have queue credentials");
+  if (value.occurrenceCount !== null && (!Number.isSafeInteger(value.occurrenceCount) || value.occurrenceCount < 1)) fail("occurrenceCount is invalid");
+  if (value.state === "submission-pending" && (value.occurrenceCount !== null || value.queueStatus !== null)) fail("pending contribution cannot have queue state");
+  if (value.queueStatus !== null && !CONTRIBUTION_QUEUE_STATUSES.includes(value.queueStatus)) fail("queueStatus is invalid");
+  isoTimestamp(value.updatedAt, "updatedAt");
+  return value;
+}
+
+export function createPendingLearningContribution(potentialLessonId, { occurrenceToken = randomOpaqueToken(), revocationToken = randomOpaqueToken(), now = defaultNow() } = {}) {
+  return validateLearningContribution({
+    format: LEARNING_CONTRIBUTION_FORMAT,
+    potentialLessonId,
+    state: "submission-pending",
+    occurrenceToken,
+    revocationToken,
+    candidateReceipt: null,
+    occurrenceCount: null,
+    queueStatus: null,
+    updatedAt: now
+  });
+}
+
+export function createRefusedLearningContribution(potentialLessonId, { now = defaultNow() } = {}) {
+  return validateLearningContribution({
+    format: LEARNING_CONTRIBUTION_FORMAT,
+    potentialLessonId,
+    state: "refused",
+    occurrenceToken: null,
+    revocationToken: null,
+    candidateReceipt: null,
+    occurrenceCount: null,
+    queueStatus: null,
+    updatedAt: now
+  });
+}
+
+export function completeLearningContribution(pending, result, { now = defaultNow() } = {}) {
+  validateLearningContribution(pending);
+  if (pending.state !== "submission-pending") fail("only pending contributions can complete");
+  return validateLearningContribution({
+    ...pending,
+    state: "contributed",
+    occurrenceToken: null,
+    candidateReceipt: result.candidateReceipt,
+    occurrenceCount: result.occurrenceCount,
+    queueStatus: result.status,
+    updatedAt: now
+  });
+}
+
+export function restoreLearningContributions(value) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) fail("learningContributions must be an array");
+  const restored = value.map((item) => validateLearningContribution(structuredClone(item)));
+  const ids = new Set(restored.map((item) => item.potentialLessonId));
+  if (ids.size !== restored.length) fail("learning contribution ids must be unique");
+  return restored;
 }

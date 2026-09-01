@@ -1,8 +1,13 @@
 import {
   POTENTIAL_LESSON_CATEGORIES,
+  buildLiveLearningEvidence,
+  completeLearningContribution,
   createAutomaticPotentialLesson,
   createManualPotentialLesson,
+  createPendingLearningContribution,
+  createRefusedLearningContribution,
   deletePotentialLesson,
+  restoreLearningContributions,
   restorePotentialLessons,
   reviewPotentialLesson
 } from "/correction-learning.js";
@@ -13,6 +18,8 @@ const state = loadState();
 let currentPlan = null;
 let selectedRouteText = "";
 let guidePacketStatus = null;
+let currentRuntimeVersion = "unavailable";
+const learningPreviews = new Map();
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -32,6 +39,7 @@ function loadState() {
       hypnosisHistory: Array.isArray(parsed.hypnosisHistory) ? parsed.hypnosisHistory : [],
       settings: parsed.settings && typeof parsed.settings === "object" ? parsed.settings : {},
       potentialLessons: restorePotentialLessons(parsed.potentialLessons),
+      learningContributions: restoreLearningContributions(parsed.learningContributions),
       caseSnapshot: parsed.caseSnapshot && typeof parsed.caseSnapshot === "object" ? parsed.caseSnapshot : null,
       interventionContract: parsed.interventionContract && typeof parsed.interventionContract === "object" ? parsed.interventionContract : null,
       priorProcessingTier: typeof parsed.priorProcessingTier === "string" ? parsed.priorProcessingTier : ""
@@ -39,7 +47,7 @@ function loadState() {
     if (raw && !localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
     return loaded;
   } catch {
-    return { therapy: [], hypnosisHistory: [], settings: {}, potentialLessons: [], caseSnapshot: null, interventionContract: null, priorProcessingTier: "" };
+    return { therapy: [], hypnosisHistory: [], settings: {}, potentialLessons: [], learningContributions: [], caseSnapshot: null, interventionContract: null, priorProcessingTier: "" };
   }
 }
 
@@ -223,6 +231,193 @@ function candidateLabel(value) {
   return String(value || "").replaceAll("-", " ");
 }
 
+function learningContributionFor(potentialLessonId) {
+  return state.learningContributions.find((item) => item.potentialLessonId === potentialLessonId) ?? null;
+}
+
+function setLearningContribution(value) {
+  const index = state.learningContributions.findIndex((item) => item.potentialLessonId === value.potentialLessonId);
+  if (index < 0) state.learningContributions.push(value);
+  else state.learningContributions[index] = value;
+  saveState();
+}
+
+function removeLearningContribution(potentialLessonId) {
+  state.learningContributions = state.learningContributions.filter((item) => item.potentialLessonId !== potentialLessonId);
+  saveState();
+}
+
+function saveCandidateFields(candidate, fields) {
+  if (learningContributionFor(candidate.potentialLessonId)?.state === "submission-pending") return candidate;
+  const index = state.potentialLessons.findIndex((item) => item.potentialLessonId === candidate.potentialLessonId);
+  if (index < 0) throw new Error("Potential lesson no longer exists.");
+  const reviewed = reviewPotentialLesson(candidate, {
+    category: fields.category.value,
+    summary: fields.summary.value,
+    privacyAcknowledged: fields.privacy.checked,
+    disposition: "keep-private-candidate"
+  });
+  state.potentialLessons[index] = reviewed;
+  saveState();
+  return reviewed;
+}
+
+async function previewLearningContribution(candidate, fields, button) {
+  setBusy(button, true, "Preparing preview…");
+  try {
+    const reviewed = saveCandidateFields(candidate, fields);
+    const evidence = buildLiveLearningEvidence(reviewed, { runtimeVersion: currentRuntimeVersion });
+    const preview = await postJson("/v1/learning/preview", evidence);
+    learningPreviews.set(candidate.potentialLessonId, preview);
+    renderPotentialLessons();
+  } catch (error) {
+    alert(`Could not prepare learning preview: ${error.message}`);
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+async function submitLearningContribution(candidate, preview, button) {
+  setBusy(button, true, "Saving locally…");
+  try {
+    let contribution = learningContributionFor(candidate.potentialLessonId);
+    if (!contribution || contribution.state === "refused") {
+      contribution = createPendingLearningContribution(candidate.potentialLessonId);
+      setLearningContribution(contribution);
+    }
+    const result = await postJson("/v1/learning/submit", {
+      candidate: preview.candidate,
+      previewNonce: preview.previewNonce,
+      occurrenceToken: contribution.occurrenceToken,
+      revocationToken: contribution.revocationToken
+    });
+    setLearningContribution(completeLearningContribution(contribution, result));
+    learningPreviews.delete(candidate.potentialLessonId);
+    renderPotentialLessons();
+    showPotentialLessonNotice(`Learning contribution saved locally as ${result.candidateReceipt}. Not sent off this device.`);
+  } catch (error) {
+    learningPreviews.delete(candidate.potentialLessonId);
+    renderPotentialLessons();
+    alert(`Could not save learning contribution: ${error.message}. A retryable browser mapping was preserved.`);
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+function refuseLearningContribution(candidate) {
+  setLearningContribution(createRefusedLearningContribution(candidate.potentialLessonId));
+  learningPreviews.delete(candidate.potentialLessonId);
+  renderPotentialLessons();
+  showPotentialLessonNotice("This candidate was not contributed. Access is unchanged.");
+}
+
+async function recoverPendingLearningContribution(contribution, candidate) {
+  if (contribution.state === "submission-pending") {
+    if (!candidate) throw new Error("The candidate needed to recover the pending local receipt is unavailable.");
+    const evidence = buildLiveLearningEvidence(candidate, { runtimeVersion: currentRuntimeVersion });
+    const preview = await postJson("/v1/learning/preview", evidence);
+    const result = await postJson("/v1/learning/submit", {
+      candidate: preview.candidate,
+      previewNonce: preview.previewNonce,
+      occurrenceToken: contribution.occurrenceToken,
+      revocationToken: contribution.revocationToken
+    });
+    const recovered = completeLearningContribution(contribution, result);
+    setLearningContribution(recovered);
+    return recovered;
+  }
+  return contribution;
+}
+
+async function revokeLearningContribution(contribution, { removeMapping = true, candidate = null } = {}) {
+  const revocable = await recoverPendingLearningContribution(contribution, candidate);
+  if (revocable.state !== "contributed") return { revoked: false, deleted: false, status: revocable.state };
+  const result = await postJson("/v1/learning/revoke", {
+    candidateReceipt: revocable.candidateReceipt,
+    revocationToken: revocable.revocationToken
+  });
+  if (!result.revoked) throw new Error("The local queue did not accept the revocation token.");
+  if (removeMapping) removeLearningContribution(contribution.potentialLessonId);
+  return result;
+}
+
+function renderLearningLifecycle(card, candidate, fields) {
+  const contribution = learningContributionFor(candidate.potentialLessonId);
+  const preview = learningPreviews.get(candidate.potentialLessonId);
+  const section = document.createElement("section");
+  section.className = "learning-lifecycle";
+  const heading = document.createElement("h4");
+  heading.textContent = "Local learning contribution";
+  const boundary = document.createElement("p");
+  boundary.className = "small";
+  boundary.textContent = "A contribution is structured review evidence only. No raw therapy chat or assistant answer is included. It cannot change therapy behavior and is not sent off this device.";
+  section.append(heading, boundary);
+
+  if (contribution?.state === "contributed") {
+    const receipt = document.createElement("p");
+    receipt.className = "local-learning-receipt";
+    receipt.textContent = `${contribution.candidateReceipt} · ${contribution.queueStatus} · ${contribution.occurrenceCount} occurrence${contribution.occurrenceCount === 1 ? "" : "s"} · Not sent off this device.`;
+    const revoke = document.createElement("button");
+    revoke.type = "button";
+    revoke.className = "secondary";
+    revoke.textContent = "Revoke local contribution";
+    revoke.addEventListener("click", async () => {
+      setBusy(revoke, true, "Revoking…");
+      try {
+        await revokeLearningContribution(contribution);
+        renderPotentialLessons();
+        showPotentialLessonNotice("The local contribution was revoked without payment.");
+      } catch (error) {
+        alert(`Could not revoke local contribution: ${error.message}`);
+      } finally {
+        setBusy(revoke, false);
+      }
+    });
+    section.append(receipt, revoke);
+    card.append(section);
+    return;
+  }
+
+  if (contribution?.state === "refused") {
+    const refused = document.createElement("p");
+    refused.className = "small";
+    refused.textContent = "You chose not to contribute this candidate. No queue record exists and access is unchanged.";
+    section.append(refused);
+  }
+
+  if (!preview) {
+    const previewButton = document.createElement("button");
+    previewButton.type = "button";
+    previewButton.className = "secondary";
+    previewButton.textContent = contribution?.state === "submission-pending" ? "Retry with a new preview" : "Preview learning contribution";
+    previewButton.addEventListener("click", () => previewLearningContribution(candidate, fields, previewButton));
+    section.append(previewButton);
+    card.append(section);
+    return;
+  }
+
+  const warning = document.createElement("p");
+  warning.className = "notice compact-notice";
+  warning.textContent = "Identifiability warning: a clean pattern screen does not make this anonymous or de-identified. Ordinary details and combinations of facts may identify you.";
+  const evidence = document.createElement("pre");
+  evidence.className = "learning-preview";
+  evidence.textContent = JSON.stringify(preview.candidate, null, 2);
+  const actions = document.createElement("div");
+  actions.className = "actions wrap";
+  const submit = document.createElement("button");
+  submit.type = "button";
+  submit.textContent = "Continue with default contribution";
+  submit.addEventListener("click", () => submitLearningContribution(candidate, preview, submit));
+  const refuse = document.createElement("button");
+  refuse.type = "button";
+  refuse.className = "secondary";
+  refuse.textContent = "Do not contribute this candidate";
+  refuse.addEventListener("click", () => refuseLearningContribution(candidate));
+  actions.append(submit, refuse);
+  section.append(warning, evidence, actions);
+  card.append(section);
+}
+
 function reviewButton(label, disposition, candidate, fields) {
   const button = document.createElement("button");
   button.type = "button";
@@ -303,6 +498,10 @@ function renderPotentialLessons() {
     const privacy = document.createElement("input");
     privacy.type = "checkbox";
     privacy.checked = candidate.privacyAcknowledged;
+    const contributionPending = learningContributionFor(candidate.potentialLessonId)?.state === "submission-pending";
+    category.disabled = contributionPending;
+    summary.disabled = contributionPending;
+    privacy.disabled = contributionPending;
     const privacyText = document.createElement("span");
     privacyText.textContent = "I wrote this summary and removed private or identifying details.";
     privacyLabel.append(privacy, privacyText);
@@ -318,14 +517,28 @@ function renderPotentialLessons() {
     remove.type = "button";
     remove.className = "danger";
     remove.textContent = "Delete";
-    remove.addEventListener("click", () => {
+    remove.addEventListener("click", async () => {
       if (!confirm("Delete this browser-local potential lesson?")) return;
+      const contribution = learningContributionFor(candidate.potentialLessonId);
+      if (["contributed", "submission-pending"].includes(contribution?.state)) {
+        setBusy(remove, true, "Revoking…");
+        try {
+          await revokeLearningContribution(contribution, { candidate });
+        } catch (error) {
+          alert(`The lesson was not deleted because its local contribution could not be revoked: ${error.message}`);
+          setBusy(remove, false);
+          return;
+        }
+      } else if (contribution) {
+        removeLearningContribution(candidate.potentialLessonId);
+      }
       state.potentialLessons = deletePotentialLesson(state.potentialLessons, candidate.potentialLessonId);
       saveState();
       renderPotentialLessons();
     });
     actions.append(remove);
     card.append(heading, meta, categoryLabel, summaryLabel, privacyLabel, actions);
+    renderLearningLifecycle(card, candidate, { category, summary, privacy });
     root.append(card);
   }
 }
@@ -686,6 +899,7 @@ function renderDataSummary() {
     therapyMessages: state.therapy.length,
     hypnosisSessions: state.hypnosisHistory.length,
     potentialLessons: state.potentialLessons.length,
+    localLearningContributions: state.learningContributions.filter((item) => item.state === "contributed").length,
     storedBytesApprox: new Blob([JSON.stringify(state)]).size
   }, null, 2);
 }
@@ -738,6 +952,7 @@ async function checkHealth() {
     const versionLabel = $("#runtime-version");
     if (versionLabel && health.version) {
       const repair = health.localRepair?.jobId ? ` · local repair ${String(health.localRepair.jobId).slice(0, 8)}` : "";
+      currentRuntimeVersion = String(health.version);
       versionLabel.textContent = `Inner Signal runtime v${health.version}${repair}`;
     }
     badge.className = "status ok";
@@ -877,10 +1092,14 @@ $("#import-data").addEventListener("change", async (event) => {
     const parsed = JSON.parse(await file.text());
     if (parsed.format !== "inner-signal-backup-v1" || !parsed.state) throw new Error("Unrecognized backup format.");
     const potentialLessons = restorePotentialLessons(parsed.state.potentialLessons);
+    const learningContributions = restoreLearningContributions(parsed.state.learningContributions);
+    const potentialLessonIds = new Set(potentialLessons.map((item) => item.potentialLessonId));
+    if (learningContributions.some((item) => !potentialLessonIds.has(item.potentialLessonId))) throw new Error("Backup contains an orphaned learning contribution mapping.");
     state.therapy = Array.isArray(parsed.state.therapy) ? parsed.state.therapy : [];
     state.hypnosisHistory = Array.isArray(parsed.state.hypnosisHistory) ? parsed.state.hypnosisHistory : [];
     state.settings = parsed.state.settings && typeof parsed.state.settings === "object" ? parsed.state.settings : {};
     state.potentialLessons = potentialLessons;
+    state.learningContributions = learningContributions;
     state.caseSnapshot = parsed.state.caseSnapshot && typeof parsed.state.caseSnapshot === "object" ? parsed.state.caseSnapshot : null;
     state.interventionContract = parsed.state.interventionContract && typeof parsed.state.interventionContract === "object" ? parsed.state.interventionContract : null;
     state.priorProcessingTier = typeof parsed.state.priorProcessingTier === "string" ? parsed.state.priorProcessingTier : "";
@@ -894,19 +1113,35 @@ $("#import-data").addEventListener("change", async (event) => {
   }
 });
 
-$("#erase-data").addEventListener("click", () => {
+$("#erase-data").addEventListener("click", async () => {
   if (!confirm("Erase the local Inner Signal transcript, sessions, and settings from this browser?")) return;
+  const button = $("#erase-data");
+  setBusy(button, true, "Revoking contributions…");
+  try {
+    for (const contribution of [...state.learningContributions]) {
+      if (["contributed", "submission-pending"].includes(contribution.state)) {
+        const candidate = state.potentialLessons.find((item) => item.potentialLessonId === contribution.potentialLessonId);
+        await revokeLearningContribution(contribution, { candidate });
+      } else removeLearningContribution(contribution.potentialLessonId);
+    }
+  } catch (error) {
+    alert(`Local data was not erased because a learning contribution could not be revoked: ${error.message}. Its retry credentials were preserved.`);
+    setBusy(button, false);
+    return;
+  }
   localStorage.removeItem(STORAGE_KEY);
   state.therapy = [];
   state.hypnosisHistory = [];
   state.settings = {};
   state.potentialLessons = [];
+  state.learningContributions = [];
   state.caseSnapshot = null;
   state.interventionContract = null;
   state.priorProcessingTier = "";
   renderTherapy();
   renderPotentialLessons();
   renderDataSummary();
+  setBusy(button, false);
 });
 
 $("#guide-packet-import").addEventListener("change", async (event) => {
