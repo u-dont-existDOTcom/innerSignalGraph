@@ -1,0 +1,106 @@
+name: Temporary intuition proposal finalizer
+
+on:
+  push:
+    branches:
+      - task/intuition-calibration-20260902
+    paths:
+      - .github/workflows/tmp-finalize-intuition-proposal.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: task/intuition-calibration-20260902
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci --ignore-scripts
+      - name: Teach packet verifier to reconstruct semantic asset maps
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/guide-packet/verifier.mjs')
+          s = p.read_text()
+          anchor = '''function embeddedPdfSourceMap(layout, source) {
+            return {
+              guideId: source.id,
+              file: pathBasename(source.sourcePath),
+              sections: layout.pdfSections.filter((section) => section.sourceId === source.id).map((section) => ({ id: section.id, sourceId: section.sourceId, pages: section.pages, sha256: source.sourceSha256, excerpt: `PDF source pages ${section.pages.join(", ")}` }))
+            };
+          }
+          '''
+          insert = '''function embeddedSemanticAssetSourceMap(data) {
+            const semanticAssets = JSON.parse(data.toString("utf8"));
+            if (!semanticAssets || !Array.isArray(semanticAssets.items)) throw new Error("semantic-assets.json must contain an items array.");
+            const seen = new Set();
+            return {
+              guideId: "semantic-assets",
+              file: "semantic-assets.json",
+              sections: semanticAssets.items.map((item) => {
+                if (!item || typeof item.id !== "string" || !item.id.startsWith("ASSET.") || seen.has(item.id)) throw new Error("Semantic asset ids must be unique ASSET.* strings.");
+                if (!Array.isArray(item.claims) || !item.claims.length || item.claims.some((claim) => typeof claim !== "string" || !claim.trim())) throw new Error(`Semantic asset ${item.id} must contain explicit non-empty claims.`);
+                seen.add(item.id);
+                const semanticRecord = {
+                  claims: item.claims,
+                  graphRefs: Array.isArray(item.graphRefs) ? item.graphRefs : [],
+                  role: item.role ?? "instructional-visual",
+                  section: item.section ?? item.id,
+                  source: item.source ?? "owner-described-visual"
+                };
+                return {
+                  id: item.id,
+                  heading: item.section ?? item.id,
+                  lineStart: null,
+                  lineEnd: null,
+                  sha256: sha256(JSON.stringify(semanticRecord)),
+                  excerpt: item.claims.join(" ").slice(0, 1000),
+                  role: semanticRecord.role,
+                  graphRefs: semanticRecord.graphRefs,
+                  source: semanticRecord.source
+                };
+              })
+            };
+          }
+
+          '''
+          if insert not in s:
+              if anchor not in s:
+                  raise SystemExit('embeddedPdfSourceMap anchor missing')
+              s = s.replace(anchor, anchor + '\n' + insert)
+          old = '''        } else if (source.format === "json" && source.id === "owner-amendments") expected = embeddedOwnerSourceMap(data);
+                else if (source.format === "pdf") expected = embeddedPdfSourceMap(layout, source);'''
+          new = '''        } else if (source.format === "json" && source.id === "owner-amendments") expected = embeddedOwnerSourceMap(data);
+                else if (source.format === "json" && source.id === "semantic-assets") expected = embeddedSemanticAssetSourceMap(data);
+                else if (source.format === "pdf") expected = embeddedPdfSourceMap(layout, source);'''
+          if old not in s:
+              raise SystemExit('repository source verification branch anchor missing')
+          s = s.replace(old, new)
+          p.write_text(s)
+          PY
+      - name: Remove temporary workflows before verification
+        run: |
+          git rm .github/workflows/tmp-intuition-verify.yml
+          git rm .github/workflows/tmp-finalize-intuition-proposal.yml
+      - name: Build proposal candidate
+        run: npm run authoring:proposal:build -- --id intuition-calibration-r1
+      - name: Verify proposal candidate
+        run: npm run authoring:proposal:check -- --id intuition-calibration-r1
+      - name: Verify current map integrity
+        run: npm run authoring:maps:check
+      - name: Run full repository verification
+        run: npm run verify
+      - name: Commit verified candidate and cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/guide-packet/verifier.mjs authoring/obsidian/proposals/intuition-calibration-r1 .github/workflows
+          git commit -m "proposal: verify intuition calibration candidate"
+          git push origin HEAD:task/intuition-calibration-20260902
