@@ -1,3 +1,4 @@
+# retry after verifier patch-anchor fix
 name: Temporary intuition proposal finalizer
 
 on:
@@ -71,18 +72,16 @@ jobs:
           }
 
           '''
-          if insert not in s:
+          if 'function embeddedSemanticAssetSourceMap(data)' not in s:
               if anchor not in s:
                   raise SystemExit('embeddedPdfSourceMap anchor missing')
               s = s.replace(anchor, anchor + '\n' + insert)
-          old = '''        } else if (source.format === "json" && source.id === "owner-amendments") expected = embeddedOwnerSourceMap(data);
-                else if (source.format === "pdf") expected = embeddedPdfSourceMap(layout, source);'''
-          new = '''        } else if (source.format === "json" && source.id === "owner-amendments") expected = embeddedOwnerSourceMap(data);
-                else if (source.format === "json" && source.id === "semantic-assets") expected = embeddedSemanticAssetSourceMap(data);
-                else if (source.format === "pdf") expected = embeddedPdfSourceMap(layout, source);'''
-          if old not in s:
-              raise SystemExit('repository source verification branch anchor missing')
-          s = s.replace(old, new)
+          pdf_branch = 'else if (source.format === "pdf") expected = embeddedPdfSourceMap(layout, source);'
+          semantic_branch = 'else if (source.format === "json" && source.id === "semantic-assets") expected = embeddedSemanticAssetSourceMap(data);'
+          if semantic_branch not in s:
+              if pdf_branch not in s:
+                  raise SystemExit('pdf source verification branch missing')
+              s = s.replace(pdf_branch, semantic_branch + '\n        ' + pdf_branch, 1)
           p.write_text(s)
           PY
       - name: Remove temporary workflows before verification
