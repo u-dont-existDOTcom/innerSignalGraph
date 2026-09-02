@@ -20,7 +20,7 @@
   "expected": {
     "primary": "IC.INTUITION_TRUST_CALIBRATION",
     "selectedIncludes": ["IC.INTUITION_TRUST_CALIBRATION"],
-    "requiredNuancePatterns": ["Open confession can be genuine self-awareness", "working on it", "current risk exists"],
+    "requiredNuancePatterns": ["Open confession can be genuine self-awareness", "working on it", "confessed problem currently exists"],
     "forbiddenOverclaimPatterns": ["admitting dishonesty", "current risk disappear"]
   }
 }
