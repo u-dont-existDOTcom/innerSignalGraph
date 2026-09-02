@@ -68,7 +68,7 @@ test("only the exact server and maintainer CLI import live learning; offline mod
   ]);
 });
 
-test("runtime and app sources define only the three authorized local learning endpoints", async () => {
+test("runtime and app sources define only the authorized local learning endpoints", async () => {
   const productionFiles = (await Promise.all(["src", "apps"].map((dir) => filesUnder(path.join(root, dir))))).flat().filter((file) => !file.startsWith(`${learningRoot}${path.sep}`));
   const routeOwners = [];
   for (const file of productionFiles) {
@@ -78,9 +78,9 @@ test("runtime and app sources define only the three authorized local learning en
   }
   routeOwners.sort(([leftFile], [rightFile]) => leftFile.localeCompare(rightFile));
   assert.deepEqual(routeOwners, [
-    ["apps/web/app.js", ["/v1/learning/preview", "/v1/learning/revoke", "/v1/learning/submit"]],
+    ["apps/web/app.js", ["/v1/learning/preview", "/v1/learning/review/records", "/v1/learning/review/records/:receipt", "/v1/learning/review/records/:receipt/decision", "/v1/learning/review/status", "/v1/learning/revoke", "/v1/learning/submit"]],
     ["src/autopilot/web-smoke.mjs", ["/v1/learning/preview", "/v1/learning/revoke", "/v1/learning/submit"]],
-    ["src/server/create-server.mjs", ["/v1/learning/preview", "/v1/learning/revoke", "/v1/learning/submit"]]
+    ["src/server/create-server.mjs", ["/v1/learning/preview", "/v1/learning/review/records", "/v1/learning/review/records/:receipt", "/v1/learning/review/records/:receipt/decision", "/v1/learning/review/status", "/v1/learning/revoke", "/v1/learning/submit"]]
   ]);
 });
 
