@@ -1,4 +1,4 @@
-# retry after verifier patch-anchor fix
+# retry after generated current-map drift
 name: Temporary intuition proposal finalizer
 
 on:
@@ -92,6 +92,8 @@ jobs:
         run: npm run authoring:proposal:build -- --id intuition-calibration-r1
       - name: Verify proposal candidate
         run: npm run authoring:proposal:check -- --id intuition-calibration-r1
+      - name: Regenerate current canonical documentation map
+        run: npm run authoring:maps
       - name: Verify current map integrity
         run: npm run authoring:maps:check
       - name: Run full repository verification
@@ -100,6 +102,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/guide-packet/verifier.mjs authoring/obsidian/proposals/intuition-calibration-r1 .github/workflows
+          git add src/guide-packet/verifier.mjs authoring/obsidian/proposals/intuition-calibration-r1 docs authoring/obsidian/current .github/workflows
           git commit -m "proposal: verify intuition calibration candidate"
           git push origin HEAD:task/intuition-calibration-20260902
