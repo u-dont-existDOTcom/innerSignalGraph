@@ -1,0 +1,23 @@
+{
+  "version": "2026-09-02-r1",
+  "items": [
+    {
+      "id": "ASSET.IC.SUICIDE.COSMIC_JACKPOT",
+      "guideId": "inner-child-guide",
+      "section": "If You Want to Kill Yourself > This human life is the most precious opportunity",
+      "role": "doctrinal-motivational-infographic",
+      "source": "owner-supplied-current-guide-image-2026-09-02",
+      "claims": [
+        "Human birth is extraordinarily rare and precious in Buddhist teaching.",
+        "Human life is an opportunity to investigate dukkha, cultivate wisdom and love, and attain liberation rather than merely a life that might be worthwhile.",
+        "Suicidal despair can radically misprice that opportunity; do not discard it before investigating what human birth affords.",
+        "The infographic visually frames human birth as a cosmic jackpot and contrasts the human opportunity with darker conditioned trajectories and hellish states."
+      ],
+      "graphRefs": [
+        "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+        "IC.PRECIOUS_HUMAN_OPPORTUNITY"
+      ],
+      "note": "Compact semantic provenance for meaning carried by the guide image beyond nearby prose; the image binary is not stored here."
+    }
+  ]
+}
