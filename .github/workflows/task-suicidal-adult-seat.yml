@@ -1,0 +1,58 @@
+name: Suicidal adult-seat update
+
+on:
+  push:
+    branches: [task/love-horizon-map-20260901]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: suicidal-adult-seat-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out task branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: task/love-horizon-map-20260901
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Bootstrap exact dependencies
+        run: npm ci --ignore-scripts
+      - name: Apply owner-directed adult-seat source update
+        run: node scripts/tmp-suicidal-adult-seat.mjs prepare
+      - name: Regenerate deterministic current projections
+        run: |
+          npm run graph:compile
+          npm run authoring:project
+      - name: Rebind and extend governed proposal
+        run: node scripts/tmp-suicidal-adult-seat.mjs proposal
+      - name: Build and verify exact proposal
+        run: |
+          npm run authoring:proposal:build -- --id love-horizon-r1
+          npm run authoring:proposal:check -- --id love-horizon-r1
+          node --test tests/love-horizon-proposal.test.mjs
+          npm run authoring:validate
+          npm run authoring:check
+          npm run authoring:maps:check
+      - name: Run complete package gate
+        run: npm run verify
+      - name: Remove one-shot generator
+        run: rm -f scripts/tmp-suicidal-adult-seat.mjs .github/workflows/task-suicidal-adult-seat.yml
+      - name: Commit governed candidate update
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'feat: gate suicidal self-inquiry behind adult witness when fused'
+          git push origin HEAD:task/love-horizon-map-20260901
