@@ -3,6 +3,8 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
+node src/cli/check-runtime-requirements.mjs --quiet
+
 DRY_RUN=false
 NO_LAUNCH=false
 FORCE_VALIDATION=false
@@ -253,15 +255,7 @@ start_server() {
 
 open_browser() {
   local url="$1"
-  if command -v xdg-open >/dev/null 2>&1; then
-    (xdg-open "$url" >/dev/null 2>&1 || true) &
-    return 0
-  fi
-  if command -v gio >/dev/null 2>&1; then
-    (gio open "$url" >/dev/null 2>&1 || true) &
-    return 0
-  fi
-  return 1
+  node src/cli/open-browser.mjs "$url" >/dev/null
 }
 
 start_progress_watcher

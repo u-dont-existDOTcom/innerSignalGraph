@@ -59,14 +59,7 @@ for command in node npm; do
   fi
 done
 
-NODE_VERSION="$(node -p 'process.versions.node')"
-SUPPORTED_NODE_VERSION="$(tr -d '[:space:]' < "$ROOT/.nvmrc")"
-if [[ ! "$SUPPORTED_NODE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-  echo "The supported Node.js version is not configured correctly." >&2
-  exit 1
-fi
-if [[ "$NODE_VERSION" != "$SUPPORTED_NODE_VERSION" ]]; then
-  echo "Node.js $SUPPORTED_NODE_VERSION is required; found ${NODE_VERSION:-unknown}." >&2
+if ! node "$ROOT/src/cli/check-runtime-requirements.mjs" --quiet; then
   exit 1
 fi
 
