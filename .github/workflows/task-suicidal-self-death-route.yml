@@ -35,7 +35,9 @@ jobs:
           npm run graph:compile
           npm run authoring:project
       - name: Rebind and extend governed proposal
-        run: node scripts/tmp-suicidal-self-death-route.mjs proposal
+        run: |
+          node scripts/tmp-suicidal-self-death-route.mjs proposal
+          node scripts/tmp-rebind-love-horizon-edges.mjs
       - name: Build and verify exact proposal
         run: |
           npm run authoring:proposal:build -- --id love-horizon-r1
@@ -47,7 +49,7 @@ jobs:
       - name: Run complete package gate
         run: npm run verify
       - name: Remove one-shot generator
-        run: rm -f scripts/tmp-suicidal-self-death-route.mjs .github/workflows/task-suicidal-self-death-route.yml
+        run: rm -f scripts/tmp-suicidal-self-death-route.mjs scripts/tmp-rebind-love-horizon-edges.mjs .github/workflows/task-suicidal-self-death-route.yml
       - name: Commit governed candidate update
         run: |
           git config user.name 'github-actions[bot]'
