@@ -1,0 +1,29 @@
+{
+  "id": "G032",
+  "description": "Genuine spiritual gifts or realization plus contradictory interpersonal evidence activate trust calibration without dismissing the realization itself.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "suicidal_state": "absent",
+    "spiritual_bypass_pattern": "attainment_outpaces_love",
+    "intuition_evidence_alignment": "contradictory",
+    "epistemic_mode_balance": "intuitive_overrides_analytic",
+    "external_authority_pull": "strong",
+    "influence_hook": "spiritual_attainment",
+    "credibility_conflict": "present",
+    "credibility_evidence_state": "adverse",
+    "current_intent": "trust_decision"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.INTUITION_TRUST_CALIBRATION",
+    "selectedIncludes": ["IC.INTUITION_TRUST_CALIBRATION", "IC.REALIZATION_LOVE_INTEGRATION"],
+    "requiredNuancePatterns": ["realization or gift may be completely genuine", "trust still updates from track record", "Mystical intensity"],
+    "forbiddenOverclaimPatterns": ["spiritual gifts certify", "global authority"]
+  }
+}
