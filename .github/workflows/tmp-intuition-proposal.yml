@@ -23,6 +23,8 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm ci --ignore-scripts
+      - name: Refresh compiled graph contract artifacts
+        run: npm run graph:compile
       - name: Regenerate current authoring projection
         run: npm run authoring:project
       - name: Create governed proposal skeleton
@@ -48,6 +50,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm .github/workflows/tmp-intuition-proposal.yml
-          git add authoring/obsidian/current authoring/obsidian/proposals/intuition-calibration-r1
+          git add guide-graphs/compiled authoring/obsidian/current authoring/obsidian/proposals/intuition-calibration-r1
           git commit -m "authoring: initialize intuition calibration proposal"
           git push origin HEAD:task/intuition-calibration-20260902
