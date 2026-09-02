@@ -17,6 +17,7 @@ function hasNoneGate(node, field, value) {
   return (node.activation.none ?? []).some((condition) => condition.field === field && condition.op === "eq" && condition.value === value);
 }
 
+// G013-G024 remain canonical regression coverage after the owner-approved proposal is reconciled.
 test("reconciled love-horizon authority preserves all proposal regressions and immediate-instability gates", async () => {
   const proposal = await fs.readFile(path.join(proposalRoot, "proposal.md"), "utf8");
   assert.match(proposal, /^status: reconciled$/m);
