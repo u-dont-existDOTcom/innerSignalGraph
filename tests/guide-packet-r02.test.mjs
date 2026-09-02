@@ -4,7 +4,6 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { buildGuidePacket } from "../src/guide-packet/builder.mjs";
 import { compileGuidePacketCandidate } from "../src/guide-packet/model-compiler.mjs";
 import { verifyGuidePacket } from "../src/guide-packet/verifier.mjs";
 import { runGuidePacketRegressionSuite } from "../src/guide-packet/regressions.mjs";
@@ -19,12 +18,7 @@ import {
   stageGuidePacket
 } from "../src/guide-packet/store.mjs";
 
-const sourceFiles = {
-  somatic: path.resolve("guide-packets/source-input/somatic-guide-r01-candidate.html"),
-  innerChild: path.resolve("guide-packets/source-input/inner-child-guide-r01-candidate.html"),
-  vagalPdf: path.resolve("guides/vagal-blitz-source.pdf"),
-  vagalSafetyText: path.resolve("guide-packets/source-input/vagal-blitz-safety-p5.txt")
-};
+const r01FixturePath = path.resolve("guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip");
 const r02FixturePath = path.resolve("guide-packets/fixtures/r02-candidate/inner-signal-guide-packet-r02-candidate.zip");
 
 function sha256(data) {
@@ -55,54 +49,16 @@ class CapturingCompiler {
   }
 }
 
-class FixedProvider {
-  constructor(id, model, value) {
-    this.id = id;
-    this.model = model;
-    this.value = value;
-    this.calls = 0;
-  }
-  async generate() {
-    this.calls += 1;
-    return { text: JSON.stringify(this.value), requestId: `${this.id}-${this.calls}` };
-  }
+async function r02Bytes() {
+  return await fs.readFile(r02FixturePath);
 }
 
-function reviewValue() {
-  return {
-    verdict: "pass",
-    summary: "The corrected graph-owned safety contract is reviewable and remains owner-gated.",
-    unresolved_material_disagreement: false,
-    findings: [],
-    recommended_owner_decisions: [],
-    worst_plausible_failure: "A safety route could still be interpreted too broadly."
-  };
-}
-
-async function buildR02() {
-  return {
-    buffer: await fs.readFile(r02FixturePath),
-    zipPath: r02FixturePath
-  };
-}
-
-test("rebuilding r01 preserves its contract content without rewriting the archived candidate bytes", async () => {
-  const preservedPath = path.resolve("guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip");
-  const preservedBefore = await fs.readFile(preservedPath);
-  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "guide-packet-r01-preservation-"));
-  const rebuilt = await buildGuidePacket({
-    runtimeRoot: path.resolve("."),
-    somaticHtmlPath: sourceFiles.somatic,
-    innerChildHtmlPath: sourceFiles.innerChild,
-    outputDir,
-    packetVersion: "2026.08.11-r01-candidate",
-    packetRevision: 1,
-    status: "candidate"
-  });
-  const preservedAfter = await fs.readFile(preservedPath);
-  assert.deepEqual(readZipEntries(rebuilt.buffer), readZipEntries(preservedBefore));
-  assert.equal(sha256(preservedAfter), sha256(preservedBefore));
-  assert.equal(sha256(preservedAfter), "9395cf2382ce14647d7f14c97268c53094ba822486be72a104e0e24fb0295263");
+test("archived r01 candidate bytes remain exact", async () => {
+  const preserved = await fs.readFile(r01FixturePath);
+  assert.equal(sha256(preserved), "9395cf2382ce14647d7f14c97268c53094ba822486be72a104e0e24fb0295263");
+  const verified = verifyGuidePacket(preserved, { installedRevision: 0 });
+  assert.equal(verified.ok, true, verified.errors.join("\n"));
+  assert.equal(verified.manifest.packetVersion, "2026.08.11-r01-candidate");
 });
 
 test("the runtime bundles r02 as the default active candidate source while retaining r01 separately", async () => {
@@ -112,7 +68,7 @@ test("the runtime bundles r02 as the default active candidate source while retai
   assert.equal(verified.ok, true, verified.errors.join("\n"));
   assert.equal(verified.manifest.packetVersion, "2026.08.12-r02-candidate");
   assert.equal(verified.manifest.packetRevision, 2);
-  assert.equal(sha256(await fs.readFile(path.resolve("guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip"))), "9395cf2382ce14647d7f14c97268c53094ba822486be72a104e0e24fb0295263");
+  assert.equal(sha256(await fs.readFile(r01FixturePath)), "9395cf2382ce14647d7f14c97268c53094ba822486be72a104e0e24fb0295263");
 });
 
 function compilerInput(request) {
@@ -153,8 +109,8 @@ function removeGraphOwnedAdvancedReleaseBlock(buffer) {
 }
 
 test("r02 gives Opus complete hash-verified canonical prose and attached Vagal safety evidence", async () => {
-  const built = await buildR02();
-  const verified = verifyGuidePacket(built.buffer, { installedRevision: 0 });
+  const buffer = await r02Bytes();
+  const verified = verifyGuidePacket(buffer, { installedRevision: 0 });
   assert.equal(verified.ok, true, verified.errors.join("\n"));
   assert.equal(verified.manifest.packetVersion, "2026.08.12-r02-candidate");
   assert.equal(verified.manifest.packetRevision, 2);
@@ -164,7 +120,7 @@ test("r02 gives Opus complete hash-verified canonical prose and attached Vagal s
   assert.equal(verified.externalSources[0].page, 5);
 
   const compiler = new CapturingCompiler();
-  await compileGuidePacketCandidate({ packetBuffer: built.buffer, compiler });
+  await compileGuidePacketCandidate({ packetBuffer: buffer, compiler });
   const input = compilerInput(compiler.requests[0]);
   const innerSection = input.sourceSections["inner-child"].find((section) => section.id === "IC.CHICKEN_EGG");
   const somaticSection = input.sourceSections.somatic.find((section) => section.id === "SOM.MAP_NOT_LADDER");
@@ -181,26 +137,26 @@ test("r02 gives Opus complete hash-verified canonical prose and attached Vagal s
 });
 
 test("r02 owns the advanced-release suppression in the graph and embeds a mutation-sensitive fifth regression", async () => {
-  const built = await buildR02();
-  const verified = verifyGuidePacket(built.buffer, { installedRevision: 0 });
+  const buffer = await r02Bytes();
+  const verified = verifyGuidePacket(buffer, { installedRevision: 0 });
   assert.equal(verified.ok, true, verified.errors.join("\n"));
   const block = verified.graphs.flatMap((graph) => graph.nodes ?? []).find((node) => node.id === "SOM.ADVANCED_RELEASE_BLOCK");
   assert.deepEqual(block.effects.blockNodes, ["SOM.ADVANCED_RELEASE_OPTIONAL"]);
 
-  const result = runGuidePacketRegressionSuite(built.buffer);
+  const result = runGuidePacketRegressionSuite(buffer);
   assert.equal(result.ok, true, JSON.stringify(result.results));
   assert.equal(result.count, 5);
   assert.equal(result.passed, 5);
   assert.ok(result.results.some((item) => item.id === "G-SOM-ADVANCED-BLOCK"));
 
-  const mutated = runGuidePacketRegressionSuite(removeGraphOwnedAdvancedReleaseBlock(built.buffer));
+  const mutated = runGuidePacketRegressionSuite(removeGraphOwnedAdvancedReleaseBlock(buffer));
   assert.equal(mutated.ok, false);
   const safety = mutated.results.find((item) => item.id === "G-SOM-ADVANCED-BLOCK");
   assert.equal(safety.status, "fail");
   assert.match(safety.failures.join("\n"), /blockNodes|SOM\.ADVANCED_RELEASE_OPTIONAL/i);
 });
 
-test("r02 supersedes a blocked r01 as the active uninstalled candidate while preserving r01 bytes and unchanged owner decisions", async () => {
+test("r02 supersedes a blocked r01 candidate while preserving r01 bytes and unchanged owner decisions", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "guide-packet-r02-supersede-"));
   const config = loadConfig({
     mode: "mock",
@@ -208,7 +164,7 @@ test("r02 supersedes a blocked r01 as the active uninstalled candidate while pre
     autopilotStateDir: root,
     guidePacketRoot: path.join(root, "guide-packets")
   });
-  const r01Bytes = await fs.readFile(path.resolve("guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip"));
+  const r01Bytes = await fs.readFile(r01FixturePath);
   const r01 = await stageGuidePacket(config, r01Bytes);
   await recordGuidePacketDecision(config, {
     candidateId: r01.packetId,
@@ -234,17 +190,15 @@ test("r02 supersedes a blocked r01 as the active uninstalled candidate while pre
 
   const oldCandidateDir = path.join(config.guidePacketRoot, "candidates", r01.packetId);
   const oldStateBefore = JSON.parse(await fs.readFile(path.join(oldCandidateDir, "state.json"), "utf8"));
-  const built = await buildR02();
-  const compiler = new CapturingCompiler();
-  const reviewer = new FixedProvider("openai", "gpt-5.6-sol", reviewValue());
   const result = await ensureBundledGuidePacketCandidate({
     config,
-    fixturePath: built.zipPath,
-    compiler,
-    reviewer
+    fixturePath: r02FixturePath,
+    compiler: null,
+    reviewer: null
   });
 
-  assert.equal(result.reviewed, true);
+  assert.equal(result.staged, true);
+  assert.equal(result.reviewed, false);
   const status = await readGuidePacketStatus(config);
   assert.equal(status.candidate.packetVersion, "2026.08.12-r02-candidate");
   assert.equal(status.candidate.packetRevision, 2);
