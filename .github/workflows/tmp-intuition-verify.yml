@@ -1,4 +1,4 @@
-# retry after public-authoring wording fix
+# diagnostic pass for exact regression failures
 name: Temporary intuition proposal verification
 
 on:
@@ -23,9 +23,16 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm ci --ignore-scripts
-      - name: Build proposal candidate
-        run: npm run authoring:proposal:build -- --id intuition-calibration-r1
-      - name: Verify proposal candidate
-        run: npm run authoring:proposal:check -- --id intuition-calibration-r1
-      - name: Verify current map integrity
-        run: npm run authoring:maps:check
+      - name: Diagnose proposal candidate
+        run: |
+          node --input-type=module <<'NODE'
+          import { projectRoot } from './src/core/config.mjs';
+          import { materializeProposal } from './src/authoring/proposal-builder.mjs';
+          try {
+            await materializeProposal({ root: projectRoot, id: 'intuition-calibration-r1' });
+            console.log('proposal materialized successfully');
+          } catch (error) {
+            console.error(JSON.stringify({ code: error.code, message: error.message, details: error.details }, null, 2));
+            process.exit(1);
+          }
+          NODE
