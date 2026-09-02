@@ -21,9 +21,24 @@ umask 077
 tool_root="$(mktemp -d /tmp/inner-signal-gitleaks.XXXXXX)"
 chmod 700 "$tool_root"
 cleanup() {
-  if [[ -n "$tool_root" && "$tool_root" == /tmp/inner-signal-gitleaks.* && -d "$tool_root" ]]; then
-    rm -rf -- "$tool_root"
+  cleanup_status=$?
+  trap - EXIT
+  if [[ -z "$tool_root" || "$tool_root" != /tmp/inner-signal-gitleaks.* || ! -d "$tool_root" ]]; then
+    printf '%s\n' 'hosted-audit-cleanup-failed' >&2
+    exit 2
   fi
+  cleanup_attempt=1
+  while (( cleanup_attempt <= 5 )); do
+    if rm -rf -- "$tool_root"; then
+      exit "$cleanup_status"
+    fi
+    if (( cleanup_attempt < 5 )); then
+      sleep 0.05
+    fi
+    cleanup_attempt=$((cleanup_attempt + 1))
+  done
+  printf '%s\n' 'hosted-audit-cleanup-failed' >&2
+  exit 2
 }
 trap cleanup EXIT
 
