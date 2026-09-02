@@ -56,7 +56,7 @@ base_projection_input_sha256: 0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b
   },
   "recommendations": [
     "Name what the helper did, choose five percent to do personally, and test one action in ordinary life.",
-    "Gradually hand the role and the judgment behind it back to the user: they should become more able to check, disagree, revise, and act without the helper."
+    "Gradually hand the role and the judgment behind it back to the person so they become more able to check, disagree, revise, and act without the helper."
   ],
   "successSignals": [
     "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission."
@@ -67,7 +67,7 @@ base_projection_input_sha256: 0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b
 
 ## Proposal rationale
 
-Authority dependency can survive even when the user starts performing the borrowed behavior. Apprenticeship is complete only when epistemic authority is also returning.
+Authority dependency can survive even when the person starts performing the borrowed behavior. Apprenticeship is complete only when epistemic authority is also returning.
 
 ## Regression intent
 
