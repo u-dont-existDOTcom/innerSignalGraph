@@ -25,21 +25,23 @@ jobs:
           from pathlib import Path
           path = Path('.github/workflows/tmp-approve-reconcile-intuition.yml')
           text = path.read_text()
-          anchor = """              Path('tests/guide-graph.test.mjs'): [
-                  ('assert.equal(bundle.stats.nodeCount, 39);', 'assert.equal(bundle.stats.nodeCount, 41);'),
-                  ('assert.equal(bundle.stats.edgeCount, 35);', 'assert.equal(bundle.stats.edgeCount, 40);'),
-              ],
-          }
-"""
-          replacement = """              Path('tests/guide-graph.test.mjs'): [
-                  ('assert.equal(bundle.stats.nodeCount, 39);', 'assert.equal(bundle.stats.nodeCount, 41);'),
-                  ('assert.equal(bundle.stats.edgeCount, 35);', 'assert.equal(bundle.stats.edgeCount, 40);'),
-              ],
-              Path('scripts/verify-package.sh'): [
-                  ('if (latest.details?.graphBundle?.stats?.nodeCount !== 39) throw new Error(\"Fake autopilot did not record the compiled graph bundle.\");', 'if (latest.details?.graphBundle?.stats?.nodeCount !== 41) throw new Error(\"Fake autopilot did not record the compiled graph bundle.\");'),
-              ],
-          }
-"""
+          anchor = (
+              "              Path('tests/guide-graph.test.mjs'): [\n"
+              "                  ('assert.equal(bundle.stats.nodeCount, 39);', 'assert.equal(bundle.stats.nodeCount, 41);'),\n"
+              "                  ('assert.equal(bundle.stats.edgeCount, 35);', 'assert.equal(bundle.stats.edgeCount, 40);'),\n"
+              "              ],\n"
+              "          }\n"
+          )
+          replacement = (
+              "              Path('tests/guide-graph.test.mjs'): [\n"
+              "                  ('assert.equal(bundle.stats.nodeCount, 39);', 'assert.equal(bundle.stats.nodeCount, 41);'),\n"
+              "                  ('assert.equal(bundle.stats.edgeCount, 35);', 'assert.equal(bundle.stats.edgeCount, 40);'),\n"
+              "              ],\n"
+              "              Path('scripts/verify-package.sh'): [\n"
+              "                  ('if (latest.details?.graphBundle?.stats?.nodeCount !== 39) throw new Error(\\\"Fake autopilot did not record the compiled graph bundle.\\\");', 'if (latest.details?.graphBundle?.stats?.nodeCount !== 41) throw new Error(\\\"Fake autopilot did not record the compiled graph bundle.\\\");'),\n"
+              "              ],\n"
+              "          }\n"
+          )
           if anchor not in text:
               raise SystemExit('inventory replacement anchor missing')
           path.write_text(text.replace(anchor, replacement, 1))
