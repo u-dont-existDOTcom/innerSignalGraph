@@ -23,10 +23,12 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm ci --ignore-scripts
-      - name: Confirm only the one-shot workflow changed after the independently reviewed head
+      - name: Confirm only temporary workflows changed after the independently reviewed head
         run: |
           git merge-base --is-ancestor 4fdaaeed00d9a655e33728fa747a7d02866df901 HEAD
-          test "$(git diff --name-only 4fdaaeed00d9a655e33728fa747a7d02866df901 HEAD)" = ".github/workflows/tmp-approve-reconcile-intuition.yml"
+          expected=$'.github/workflows/tmp-approve-reconcile-intuition.yml\n.github/workflows/tmp-patch-intuition-reconcile.yml'
+          actual="$(git diff --name-only 4fdaaeed00d9a655e33728fa747a7d02866df901 HEAD)"
+          test "$actual" = "$expected"
       - name: Rebuild the exact governed candidate
         run: |
           npm run authoring:proposal:build -- --id intuition-calibration-r1
@@ -187,6 +189,9 @@ jobs:
                   ('assert.equal(bundle.stats.nodeCount, 39);', 'assert.equal(bundle.stats.nodeCount, 41);'),
                   ('assert.equal(bundle.stats.edgeCount, 35);', 'assert.equal(bundle.stats.edgeCount, 40);'),
               ],
+              Path('scripts/verify-package.sh'): [
+                  ('if (latest.details?.graphBundle?.stats?.nodeCount !== 39) throw new Error("Fake autopilot did not record the compiled graph bundle.");', 'if (latest.details?.graphBundle?.stats?.nodeCount !== 41) throw new Error("Fake autopilot did not record the compiled graph bundle.");'),
+              ],
           }
           for path, pairs in replacements.items():
               text = path.read_text()
@@ -219,8 +224,10 @@ jobs:
           )
           Path('docs/INTUITION-CALIBRATION-CANDIDATE.md').write_text(text)
           PY
-      - name: Remove this one-shot workflow before final verification
-        run: git rm .github/workflows/tmp-approve-reconcile-intuition.yml
+      - name: Remove temporary workflows before final verification
+        run: |
+          git rm .github/workflows/tmp-approve-reconcile-intuition.yml
+          git rm .github/workflows/tmp-patch-intuition-reconcile.yml
       - name: Run complete post-reconciliation verification
         run: npm run verify
       - name: Commit and push the reconciled authority
