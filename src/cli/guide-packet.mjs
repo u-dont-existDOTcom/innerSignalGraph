@@ -2,8 +2,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { loadConfig, projectRoot } from "../core/config.mjs";
-import { buildGuidePacket } from "../guide-packet/builder.mjs";
 import { ensureBundledGuidePacketCandidate, DEFAULT_BUNDLED_GUIDE_PACKET } from "../guide-packet/autopilot.mjs";
+import { materializeFrozenGuidePacketFixture } from "../guide-packet/frozen-fixture.mjs";
 import { readGuidePacketStatus, stageGuidePacket } from "../guide-packet/store.mjs";
 import { verifyGuidePacket } from "../guide-packet/verifier.mjs";
 
@@ -47,34 +47,24 @@ async function main() {
   }
 
   if (command === "build-fixture") {
-    const outputDir = path.resolve(option(args, "--output", path.join(projectRoot, "guide-packets/fixtures/r01-candidate")));
-    const built = await buildGuidePacket({
-      runtimeRoot: projectRoot,
-      somaticHtmlPath: path.join(projectRoot, "guide-packets/source-input/somatic-guide-r01-candidate.html"),
-      innerChildHtmlPath: path.join(projectRoot, "guide-packets/source-input/inner-child-guide-r01-candidate.html"),
+    const fixtureDir = path.join(projectRoot, "guide-packets/fixtures/r01-candidate");
+    const outputDir = path.resolve(option(args, "--output", fixtureDir));
+    const built = await materializeFrozenGuidePacketFixture({
+      fixtureDir,
       outputDir,
-      packetVersion: "2026.08.11-r01-candidate",
-      packetRevision: 1,
-      status: "candidate",
-      createdAt: "2026-08-11T19:30:00.000Z"
+      archiveName: "inner-signal-guide-packet-r01-candidate.zip"
     });
     process.stdout.write(JSON.stringify({ ok: true, zipPath: built.zipPath, packetSha256: built.packetSha256, manifest: built.manifest }, null, 2) + "\n");
     return;
   }
 
   if (command === "build-r02-fixture") {
-    const outputDir = path.resolve(option(args, "--output", path.join(projectRoot, "guide-packets/fixtures/r02-candidate")));
-    const built = await buildGuidePacket({
-      runtimeRoot: projectRoot,
-      somaticHtmlPath: path.join(projectRoot, "guide-packets/source-input/somatic-guide-r01-candidate.html"),
-      innerChildHtmlPath: path.join(projectRoot, "guide-packets/source-input/inner-child-guide-r01-candidate.html"),
-      vagalSourcePath: path.join(projectRoot, "guides/vagal-blitz-source.pdf"),
-      vagalSafetyTextPath: path.join(projectRoot, "guide-packets/source-input/vagal-blitz-safety-p5.txt"),
+    const fixtureDir = path.join(projectRoot, "guide-packets/fixtures/r02-candidate");
+    const outputDir = path.resolve(option(args, "--output", fixtureDir));
+    const built = await materializeFrozenGuidePacketFixture({
+      fixtureDir,
       outputDir,
-      packetVersion: "2026.08.12-r02-candidate",
-      packetRevision: 2,
-      status: "candidate",
-      createdAt: "2026-08-12T02:45:00.000Z"
+      archiveName: "inner-signal-guide-packet-r02-candidate.zip"
     });
     process.stdout.write(JSON.stringify({ ok: true, zipPath: built.zipPath, packetSha256: built.packetSha256, manifest: built.manifest }, null, 2) + "\n");
     return;
