@@ -74,7 +74,7 @@
     },
     {
       "path": "guide-graphs/compiled/bundle.json",
-      "sha256": "8b3296fb4c357d5b28729b2b665aaf3f289ab81d9f3849ce38e476cb7a370e49"
+      "sha256": "abb9d571db746c7237b7d5cb225900df19bab2eae3324197a72ad55d374d5b7c"
     },
     {
       "path": "guide-graphs/compiled/inner-child-directed-graph.json",
@@ -118,7 +118,7 @@
     },
     {
       "path": "src/guide-graph/compiler.mjs",
-      "sha256": "7cd3f8d84893ebc8cb31c08deb380bf5639c4db6575e68acd6d163de98aedc31"
+      "sha256": "d0a3e31f3e58c52a2ffba0b663bc374d4cf6511c08ab66822fab000ffdeb67d6"
     },
     {
       "path": "src/guide-graph/contract.mjs",
@@ -142,6 +142,6 @@
     }
   ],
   "contractVersion": "inner-signal-authoring-base-authority-v1",
-  "projectionInputSha256": "0f787fed212f0e7bf6a0201fd36f1c6f0b3f1189425f42a1db02e96ca90501a8",
+  "projectionInputSha256": "0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b5a6afcdef832f3",
   "proposalId": "intuition-calibration-r1"
 }

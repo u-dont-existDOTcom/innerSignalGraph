@@ -281,7 +281,7 @@ export function buildCurrentProjection(authority) {
   for (const source of [...sourceById.values()].sort((left, right) => compareText(left.id, right.id))) {
     const citingNodeIds = bundle.graphs.flatMap((graph) => graph.nodes).filter((node) => node.sourceRefs.includes(source.id)).map((node) => node.id).sort(compareText);
     const sourceFileHash = authority.authoritativeInputs.find((record) => record.path === `guides/${source.file}`)?.sha256 ?? source.sha256;
-    const locatorKind = source.pages ? "pdf-pages" : source.lineStart ? "text-lines" : "amendment-record";
+    const locatorKind = source.pages ? "pdf-pages" : source.lineStart ? "text-lines" : source.guideId === "owner-amendments" ? "amendment-record" : "structured-record";
     const frontmatter = {
       authoring_contract: AUTHORING_CONTRACTS.projection,
       entity_type: "source-section",
@@ -298,7 +298,7 @@ export function buildCurrentProjection(authority) {
       projection_input_sha256: projectionInputSha256
     };
     validateSchema("projectionIndex", frontmatter, { label: source.id });
-    const locator = source.pages ? `Pages ${source.pages.join(", ")}` : source.lineStart ? `Lines ${source.lineStart}–${source.lineEnd}` : "Structured owner-amendment record";
+    const locator = source.pages ? `Pages ${source.pages.join(", ")}` : source.lineStart ? `Lines ${source.lineStart}–${source.lineEnd}` : source.guideId === "owner-amendments" ? "Structured owner-amendment record" : "Structured semantic source record";
     output.set(sourcePath(source.guideId, source.id), renderFrontmatterNote({
       frontmatter,
       heading: source.heading ?? source.id,
