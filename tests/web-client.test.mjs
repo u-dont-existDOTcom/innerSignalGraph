@@ -19,6 +19,7 @@ test("local web client serves therapy, hypnosis, local-data, and app-owned route
   assert.equal(result.checks.guideGraphDeclared, true);
   assert.equal(result.checks.planTracePresent, true);
   assert.equal(result.checks.guidePacketScreenPresent, true);
+  assert.equal(result.checks.liveLocalLearningPresent, true);
 });
 
 test("browser route renderer places the app-owned waking return last", async () => {
@@ -43,7 +44,7 @@ test("web client exposes one-click privacy-safe recovery ZIP export", async () =
   const html = await fs.readFile(path.join(root, "apps/web/index.html"), "utf8");
   const js = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");
   assert.match(html, /Export recovery ZIP/);
-  assert.match(html, /excludes chat, therapy reasoning, development-case payloads/i);
+  assert.match(html, /excludes chat, local learning records, therapy reasoning, development-case payloads/i);
   assert.match(js, /\/v1\/debug\/export/);
   assert.match(js, /body: JSON\.stringify\(\{ state \}\)/);
 });
@@ -56,6 +57,59 @@ test("assistant messages can capture lightweight human development feedback into
   assert.match(js, /Too slow/);
   assert.match(js, /entry\.feedback = \{ rating, note/);
   assert.match(js, /\/v1\/debug\/feedback/);
+});
+
+test("private correction learning is category-only, reviewable, and isolated from runtime authority", async () => {
+  const html = await fs.readFile(path.join(root, "apps/web/index.html"), "utf8");
+  const js = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");
+  const learning = await fs.readFile(path.join(root, "apps/web/correction-learning.js"), "utf8");
+  const css = await fs.readFile(path.join(root, "apps/web/styles.css"), "utf8");
+  assert.match(html, /Potential lessons/);
+  assert.match(html, /No triggering chat text or assistant answer is copied/i);
+  assert.match(html, /runtime and therapy-policy authority remain none/i);
+  assert.match(js, /createAutomaticPotentialLesson\(message\)/);
+  assert.match(js, /state\.potentialLessons\.push\(potentialLesson\)/);
+  assert.match(js, /Save as potential lesson/);
+  assert.match(js, /restorePotentialLessons\(parsed\.state\.potentialLessons\)/);
+  assert.match(js, /state\.potentialLessons = \[\]/);
+  assert.match(js, /Queue for governance review/);
+  assert.match(learning, /automaticTextExtraction: false/);
+  assert.match(learning, /runtimeAuthority: "none"/);
+  assert.match(learning, /therapyPolicyAuthority: "none"/);
+  assert.doesNotMatch(learning, /fetch\s*\(|XMLHttpRequest|WebSocket|https?:\/\//);
+  assert.match(css, /\.potential-lesson-card/);
+});
+
+test("live learning requires an exact preview and explicit action, with revocation before local erasure", async () => {
+  const html = await fs.readFile(path.join(root, "apps/web/index.html"), "utf8");
+  const js = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");
+  const css = await fs.readFile(path.join(root, "apps/web/styles.css"), "utf8");
+  assert.match(html, /preview the exact generalized evidence/i);
+  assert.match(html, /refuse it at no charge/i);
+  assert.match(html, /account-identity shielding, not anonymity/i);
+  assert.match(js, /Preview learning contribution/);
+  assert.match(js, /Continue with default contribution/);
+  assert.match(js, /Do not contribute this candidate/);
+  assert.match(js, /\/v1\/learning\/preview/);
+  assert.match(js, /\/v1\/learning\/submit/);
+  assert.match(js, /\/v1\/learning\/revoke/);
+  assert.match(js, /for \(const contribution of \[\.\.\.state\.learningContributions\]\)/);
+  assert.match(js, /recoverPendingLearningContribution\(contribution, candidate\)/);
+  assert.match(js, /state === "submission-pending"\) return candidate/);
+  assert.match(js, /category\.disabled = contributionPending/);
+  assert.match(js, /\["contributed", "submission-pending"\]\.includes\(contribution\?\.state\)/);
+  assert.match(js, /occurrenceToken: contribution\.occurrenceToken[\s\S]*revocationToken: contribution\.revocationToken/);
+  assert.match(js, /could not be revoked[\s\S]*retry credentials were preserved/i);
+  assert.match(html, /Local learning review/);
+  assert.match(html, /local maintainer view/i);
+  assert.match(html, /does not approve, install, or change therapy/i);
+  assert.match(js, /\/v1\/learning\/review\/status/);
+  assert.match(js, /\/v1\/learning\/review\/records/);
+  assert.match(js, /Flag for owner therapy-policy decision/);
+  assert.match(js, /Queue unavailable — counts not shown/);
+  assert.match(css, /\.learning-review-card/);
+  const lifecycle = js.slice(js.indexOf("async function previewLearningContribution"), js.indexOf("\nfunction reviewButton"));
+  assert.doesNotMatch(lifecycle, /setInterval\s*\(|setTimeout\s*\(/i);
 });
 
 test("web client exposes autonomous development status and only asks humans for policy decisions", async () => {

@@ -1,0 +1,63 @@
+{
+  "format": "inner-signal-community-learning-card-v1",
+  "cardId": "synthetic-adverse-somatic-dose",
+  "sourceKind": "synthetic",
+  "status": "SAFETY_SIGNAL",
+  "reviewStatus": "synthetic-example",
+  "runtimeAuthority": "none",
+  "practiceOrFeature": "Repeating an intense somatic release practice after a calm first session",
+  "observation": "Synthetic pilot reports show that a calm immediate response did not reliably predict the following two or three days. Repeated intense practice before delayed effects were known sometimes coincided with agitation, exhaustion, or sleep disruption.",
+  "independentContributorCount": 5,
+  "sourceCount": 5,
+  "outcomeCounts": {
+    "benefit": 1,
+    "no-change": 0,
+    "mixed": 1,
+    "worsening": 3,
+    "unclear": 0
+  },
+  "timeCoverage": {
+    "immediate": 5,
+    "laterSameDay": 5,
+    "nextMorning": 5,
+    "followingTwoToThreeDays": 5,
+    "longerFollowUp": 3
+  },
+  "contexts": [
+    "All reports involved an intense rather than gentle practice.",
+    "Three people repeated the practice within 24 hours.",
+    "Two had pre-existing sleep disruption."
+  ],
+  "confounders": [
+    "Practice intensity was self-described rather than standardized.",
+    "Two contributors also had stressful life events that week."
+  ],
+  "adverseSignals": [
+    "Three synthetic reports describe delayed worsening.",
+    "Two describe sleep disruption beginning after the immediate calm period.",
+    "One describes exhaustion lasting more than two days."
+  ],
+  "unknowns": [
+    "The reports are synthetic examples, not participant evidence.",
+    "Causality is unresolved.",
+    "No physical-risk assessment is available.",
+    "External evidence has not been checked."
+  ],
+  "externalEvidence": {
+    "status": "not-checked",
+    "references": []
+  },
+  "evidenceProfile": {
+    "independentContributors": 5,
+    "withinPersonRepetition": 2,
+    "temporalSpecificity": 23,
+    "negativeAndAdverseCoverage": 4,
+    "confoundingBurden": 2,
+    "missingLongerFollowUp": 2,
+    "freshness": "synthetic"
+  },
+  "productProposalEligible": true,
+  "createdAt": "2026-08-30T16:05:00.000Z",
+  "updatedAt": "2026-08-30T16:05:00.000Z",
+  "nextReviewAt": "2026-09-06T16:05:00.000Z"
+}

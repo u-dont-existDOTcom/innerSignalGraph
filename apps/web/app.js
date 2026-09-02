@@ -1,9 +1,25 @@
+import {
+  POTENTIAL_LESSON_CATEGORIES,
+  buildLiveLearningEvidence,
+  completeLearningContribution,
+  createAutomaticPotentialLesson,
+  createManualPotentialLesson,
+  createPendingLearningContribution,
+  createRefusedLearningContribution,
+  deletePotentialLesson,
+  restoreLearningContributions,
+  restorePotentialLessons,
+  reviewPotentialLesson
+} from "/correction-learning.js";
+
 const STORAGE_KEY = "inner-signal-runtime-v0100";
 const LEGACY_STORAGE_KEYS = ["inner-signal-runtime-v093", "inner-signal-runtime-v092", "inner-signal-runtime-v091", "inner-signal-runtime-v090", "inner-signal-runtime-v080", "inner-signal-runtime-v070", "inner-signal-runtime-v060"];
 const state = loadState();
 let currentPlan = null;
 let selectedRouteText = "";
 let guidePacketStatus = null;
+let currentRuntimeVersion = "unavailable";
+const learningPreviews = new Map();
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -22,6 +38,8 @@ function loadState() {
       therapy: Array.isArray(parsed.therapy) ? parsed.therapy : [],
       hypnosisHistory: Array.isArray(parsed.hypnosisHistory) ? parsed.hypnosisHistory : [],
       settings: parsed.settings && typeof parsed.settings === "object" ? parsed.settings : {},
+      potentialLessons: restorePotentialLessons(parsed.potentialLessons),
+      learningContributions: restoreLearningContributions(parsed.learningContributions),
       caseSnapshot: parsed.caseSnapshot && typeof parsed.caseSnapshot === "object" ? parsed.caseSnapshot : null,
       interventionContract: parsed.interventionContract && typeof parsed.interventionContract === "object" ? parsed.interventionContract : null,
       priorProcessingTier: typeof parsed.priorProcessingTier === "string" ? parsed.priorProcessingTier : ""
@@ -29,7 +47,7 @@ function loadState() {
     if (raw && !localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
     return loaded;
   } catch {
-    return { therapy: [], hypnosisHistory: [], settings: {}, caseSnapshot: null, interventionContract: null, priorProcessingTier: "" };
+    return { therapy: [], hypnosisHistory: [], settings: {}, potentialLessons: [], learningContributions: [], caseSnapshot: null, interventionContract: null, priorProcessingTier: "" };
   }
 }
 
@@ -121,6 +139,27 @@ function setMessageFeedback(entry, rating) {
   }
 }
 
+function showPotentialLessonNotice(message) {
+  const notice = $("#potential-lesson-capture-notice");
+  if (!notice) return;
+  notice.textContent = message;
+  notice.hidden = false;
+}
+
+function addPotentialLesson(candidate, notice) {
+  state.potentialLessons.push(candidate);
+  saveState();
+  renderPotentialLessons();
+  showPotentialLessonNotice(notice);
+}
+
+function saveManualPotentialLesson() {
+  addPotentialLesson(
+    createManualPotentialLesson(),
+    "A category-only potential lesson was saved for review. No assistant answer or chat text was copied."
+  );
+}
+
 function appendFeedbackControls(block, entry) {
   const row = document.createElement("div");
   row.className = "feedback-controls";
@@ -134,6 +173,12 @@ function appendFeedbackControls(block, entry) {
     button.addEventListener("click", () => setMessageFeedback(entry, rating));
     row.append(button);
   }
+  const saveLesson = document.createElement("button");
+  saveLesson.type = "button";
+  saveLesson.className = "feedback-button";
+  saveLesson.textContent = "Save as potential lesson";
+  saveLesson.addEventListener("click", saveManualPotentialLesson);
+  row.append(saveLesson);
   if (entry.feedback?.note) {
     const note = document.createElement("span");
     note.className = "feedback-note";
@@ -182,6 +227,322 @@ function recentTranscript() {
   return state.therapy.slice(-10).map((item) => `${item.role.toUpperCase()}: ${item.content}`).join("\n\n");
 }
 
+function candidateLabel(value) {
+  return String(value || "").replaceAll("-", " ");
+}
+
+function learningContributionFor(potentialLessonId) {
+  return state.learningContributions.find((item) => item.potentialLessonId === potentialLessonId) ?? null;
+}
+
+function setLearningContribution(value) {
+  const index = state.learningContributions.findIndex((item) => item.potentialLessonId === value.potentialLessonId);
+  if (index < 0) state.learningContributions.push(value);
+  else state.learningContributions[index] = value;
+  saveState();
+}
+
+function removeLearningContribution(potentialLessonId) {
+  state.learningContributions = state.learningContributions.filter((item) => item.potentialLessonId !== potentialLessonId);
+  saveState();
+}
+
+function saveCandidateFields(candidate, fields) {
+  if (learningContributionFor(candidate.potentialLessonId)?.state === "submission-pending") return candidate;
+  const index = state.potentialLessons.findIndex((item) => item.potentialLessonId === candidate.potentialLessonId);
+  if (index < 0) throw new Error("Potential lesson no longer exists.");
+  const reviewed = reviewPotentialLesson(candidate, {
+    category: fields.category.value,
+    summary: fields.summary.value,
+    privacyAcknowledged: fields.privacy.checked,
+    disposition: "keep-private-candidate"
+  });
+  state.potentialLessons[index] = reviewed;
+  saveState();
+  return reviewed;
+}
+
+async function previewLearningContribution(candidate, fields, button) {
+  setBusy(button, true, "Preparing preview…");
+  try {
+    const reviewed = saveCandidateFields(candidate, fields);
+    const evidence = buildLiveLearningEvidence(reviewed, { runtimeVersion: currentRuntimeVersion });
+    const preview = await postJson("/v1/learning/preview", evidence);
+    learningPreviews.set(candidate.potentialLessonId, preview);
+    renderPotentialLessons();
+  } catch (error) {
+    alert(`Could not prepare learning preview: ${error.message}`);
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+async function submitLearningContribution(candidate, preview, button) {
+  setBusy(button, true, "Saving locally…");
+  try {
+    let contribution = learningContributionFor(candidate.potentialLessonId);
+    if (!contribution || contribution.state === "refused") {
+      contribution = createPendingLearningContribution(candidate.potentialLessonId);
+      setLearningContribution(contribution);
+    }
+    const result = await postJson("/v1/learning/submit", {
+      candidate: preview.candidate,
+      previewNonce: preview.previewNonce,
+      occurrenceToken: contribution.occurrenceToken,
+      revocationToken: contribution.revocationToken
+    });
+    setLearningContribution(completeLearningContribution(contribution, result));
+    learningPreviews.delete(candidate.potentialLessonId);
+    renderPotentialLessons();
+    showPotentialLessonNotice(`Learning contribution saved locally as ${result.candidateReceipt}. Not sent off this device.`);
+  } catch (error) {
+    learningPreviews.delete(candidate.potentialLessonId);
+    renderPotentialLessons();
+    alert(`Could not save learning contribution: ${error.message}. A retryable browser mapping was preserved.`);
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+function refuseLearningContribution(candidate) {
+  setLearningContribution(createRefusedLearningContribution(candidate.potentialLessonId));
+  learningPreviews.delete(candidate.potentialLessonId);
+  renderPotentialLessons();
+  showPotentialLessonNotice("This candidate was not contributed. Access is unchanged.");
+}
+
+async function recoverPendingLearningContribution(contribution, candidate) {
+  if (contribution.state === "submission-pending") {
+    if (!candidate) throw new Error("The candidate needed to recover the pending local receipt is unavailable.");
+    const evidence = buildLiveLearningEvidence(candidate, { runtimeVersion: currentRuntimeVersion });
+    const preview = await postJson("/v1/learning/preview", evidence);
+    const result = await postJson("/v1/learning/submit", {
+      candidate: preview.candidate,
+      previewNonce: preview.previewNonce,
+      occurrenceToken: contribution.occurrenceToken,
+      revocationToken: contribution.revocationToken
+    });
+    const recovered = completeLearningContribution(contribution, result);
+    setLearningContribution(recovered);
+    return recovered;
+  }
+  return contribution;
+}
+
+async function revokeLearningContribution(contribution, { removeMapping = true, candidate = null } = {}) {
+  const revocable = await recoverPendingLearningContribution(contribution, candidate);
+  if (revocable.state !== "contributed") return { revoked: false, deleted: false, status: revocable.state };
+  const result = await postJson("/v1/learning/revoke", {
+    candidateReceipt: revocable.candidateReceipt,
+    revocationToken: revocable.revocationToken
+  });
+  if (!result.revoked) throw new Error("The local queue did not accept the revocation token.");
+  if (removeMapping) removeLearningContribution(contribution.potentialLessonId);
+  return result;
+}
+
+function renderLearningLifecycle(card, candidate, fields) {
+  const contribution = learningContributionFor(candidate.potentialLessonId);
+  const preview = learningPreviews.get(candidate.potentialLessonId);
+  const section = document.createElement("section");
+  section.className = "learning-lifecycle";
+  const heading = document.createElement("h4");
+  heading.textContent = "Local learning contribution";
+  const boundary = document.createElement("p");
+  boundary.className = "small";
+  boundary.textContent = "A contribution is structured review evidence only. No raw therapy chat or assistant answer is included. It cannot change therapy behavior and is not sent off this device.";
+  section.append(heading, boundary);
+
+  if (contribution?.state === "contributed") {
+    const receipt = document.createElement("p");
+    receipt.className = "local-learning-receipt";
+    receipt.textContent = `${contribution.candidateReceipt} · ${contribution.queueStatus} · ${contribution.occurrenceCount} occurrence${contribution.occurrenceCount === 1 ? "" : "s"} · Not sent off this device.`;
+    const revoke = document.createElement("button");
+    revoke.type = "button";
+    revoke.className = "secondary";
+    revoke.textContent = "Revoke local contribution";
+    revoke.addEventListener("click", async () => {
+      setBusy(revoke, true, "Revoking…");
+      try {
+        await revokeLearningContribution(contribution);
+        renderPotentialLessons();
+        showPotentialLessonNotice("The local contribution was revoked without payment.");
+      } catch (error) {
+        alert(`Could not revoke local contribution: ${error.message}`);
+      } finally {
+        setBusy(revoke, false);
+      }
+    });
+    section.append(receipt, revoke);
+    card.append(section);
+    return;
+  }
+
+  if (contribution?.state === "refused") {
+    const refused = document.createElement("p");
+    refused.className = "small";
+    refused.textContent = "You chose not to contribute this candidate. No queue record exists and access is unchanged.";
+    section.append(refused);
+  }
+
+  if (!preview) {
+    const previewButton = document.createElement("button");
+    previewButton.type = "button";
+    previewButton.className = "secondary";
+    previewButton.textContent = contribution?.state === "submission-pending" ? "Retry with a new preview" : "Preview learning contribution";
+    previewButton.addEventListener("click", () => previewLearningContribution(candidate, fields, previewButton));
+    section.append(previewButton);
+    card.append(section);
+    return;
+  }
+
+  const warning = document.createElement("p");
+  warning.className = "notice compact-notice";
+  warning.textContent = "Identifiability warning: a clean pattern screen does not make this anonymous or de-identified. Ordinary details and combinations of facts may identify you.";
+  const evidence = document.createElement("pre");
+  evidence.className = "learning-preview";
+  evidence.textContent = JSON.stringify(preview.candidate, null, 2);
+  const actions = document.createElement("div");
+  actions.className = "actions wrap";
+  const submit = document.createElement("button");
+  submit.type = "button";
+  submit.textContent = "Continue with default contribution";
+  submit.addEventListener("click", () => submitLearningContribution(candidate, preview, submit));
+  const refuse = document.createElement("button");
+  refuse.type = "button";
+  refuse.className = "secondary";
+  refuse.textContent = "Do not contribute this candidate";
+  refuse.addEventListener("click", () => refuseLearningContribution(candidate));
+  actions.append(submit, refuse);
+  section.append(warning, evidence, actions);
+  card.append(section);
+}
+
+function reviewButton(label, disposition, candidate, fields) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = disposition === "dismissed" ? "secondary" : "";
+  button.textContent = label;
+  button.addEventListener("click", () => {
+    try {
+      const index = state.potentialLessons.findIndex((item) => item.potentialLessonId === candidate.potentialLessonId);
+      if (index < 0) return;
+      state.potentialLessons[index] = reviewPotentialLesson(candidate, {
+        category: fields.category.value,
+        summary: fields.summary.value,
+        privacyAcknowledged: fields.privacy.checked,
+        disposition
+      });
+      saveState();
+      renderPotentialLessons();
+      showPotentialLessonNotice("Potential lesson review saved. Its runtime and therapy-policy authority remain none.");
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+  return button;
+}
+
+function renderPotentialLessons() {
+  const root = $("#potential-lessons");
+  if (!root) return;
+  root.replaceChildren();
+  if (!state.potentialLessons.length) {
+    const empty = document.createElement("p");
+    empty.className = "small";
+    empty.textContent = "No captured potential lessons yet.";
+    root.append(empty);
+    return;
+  }
+  for (const candidate of [...state.potentialLessons].reverse()) {
+    const card = document.createElement("article");
+    card.className = "potential-lesson-card";
+    const heading = document.createElement("div");
+    heading.className = "potential-lesson-heading";
+    const title = document.createElement("strong");
+    title.textContent = `Potential lesson · ${candidateLabel(candidate.status)}`;
+    const authority = document.createElement("span");
+    authority.className = "authority-none";
+    authority.textContent = "Runtime authority: none";
+    heading.append(title, authority);
+
+    const meta = document.createElement("p");
+    meta.className = "small";
+    const capturedAt = new Date(candidate.createdAt).toLocaleString();
+    const reviewedAt = candidate.reviewedAt ? ` · reviewed ${new Date(candidate.reviewedAt).toLocaleString()}` : "";
+    meta.textContent = `${candidateLabel(candidate.captureSource)} · captured ${capturedAt}${reviewedAt}. Source content retained: no.`;
+
+    const categoryLabel = document.createElement("label");
+    categoryLabel.textContent = "Category";
+    const category = document.createElement("select");
+    for (const value of POTENTIAL_LESSON_CATEGORIES) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = candidateLabel(value);
+      option.selected = value === candidate.category;
+      category.append(option);
+    }
+    categoryLabel.append(category);
+
+    const summaryLabel = document.createElement("label");
+    summaryLabel.textContent = "Optional review summary (write and redact this yourself)";
+    const summary = document.createElement("textarea");
+    summary.rows = 3;
+    summary.maxLength = 1000;
+    summary.value = candidate.summary;
+    summary.placeholder = "A concise, non-private lesson to review later.";
+    summaryLabel.append(summary);
+
+    const privacyLabel = document.createElement("label");
+    privacyLabel.className = "potential-lesson-privacy";
+    const privacy = document.createElement("input");
+    privacy.type = "checkbox";
+    privacy.checked = candidate.privacyAcknowledged;
+    const contributionPending = learningContributionFor(candidate.potentialLessonId)?.state === "submission-pending";
+    category.disabled = contributionPending;
+    summary.disabled = contributionPending;
+    privacy.disabled = contributionPending;
+    const privacyText = document.createElement("span");
+    privacyText.textContent = "I wrote this summary and removed private or identifying details.";
+    privacyLabel.append(privacy, privacyText);
+
+    const actions = document.createElement("div");
+    actions.className = "actions wrap potential-lesson-actions";
+    actions.append(
+      reviewButton("Keep private", "keep-private-candidate", candidate, { category, summary, privacy }),
+      reviewButton("Queue for governance review", "queue-for-governance-review", candidate, { category, summary, privacy }),
+      reviewButton("Dismiss", "dismissed", candidate, { category, summary, privacy })
+    );
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "danger";
+    remove.textContent = "Delete";
+    remove.addEventListener("click", async () => {
+      if (!confirm("Delete this browser-local potential lesson?")) return;
+      const contribution = learningContributionFor(candidate.potentialLessonId);
+      if (["contributed", "submission-pending"].includes(contribution?.state)) {
+        setBusy(remove, true, "Revoking…");
+        try {
+          await revokeLearningContribution(contribution, { candidate });
+        } catch (error) {
+          alert(`The lesson was not deleted because its local contribution could not be revoked: ${error.message}`);
+          setBusy(remove, false);
+          return;
+        }
+      } else if (contribution) {
+        removeLearningContribution(candidate.potentialLessonId);
+      }
+      state.potentialLessons = deletePotentialLesson(state.potentialLessons, candidate.potentialLessonId);
+      saveState();
+      renderPotentialLessons();
+    });
+    actions.append(remove);
+    card.append(heading, meta, categoryLabel, summaryLabel, privacyLabel, actions);
+    renderLearningLifecycle(card, candidate, { category, summary, privacy });
+    root.append(card);
+  }
+}
+
 async function postJson(url, body) {
   const response = await fetch(url, {
     method: "POST",
@@ -199,6 +560,152 @@ async function getJson(url) {
   const payload = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
   if (!response.ok) throw new Error(payload.error || `Request failed with status ${response.status}.`);
   return payload;
+}
+
+const LEARNING_REVIEW_ROUTES = Object.freeze({
+  status: "/v1/learning/review/status",
+  records: "/v1/learning/review/records",
+  detail: "/v1/learning/review/records/:receipt",
+  decision: "/v1/learning/review/records/:receipt/decision"
+});
+const LEARNING_REVIEW_ACTIONS = Object.freeze([
+  Object.freeze({ disposition: "reject", label: "Reject" }),
+  Object.freeze({ disposition: "insufficient-evidence", label: "Insufficient evidence" }),
+  Object.freeze({ disposition: "duplicate", label: "Duplicate" }),
+  Object.freeze({ disposition: "personalization-process-only", label: "Personalization/process only" }),
+  Object.freeze({ disposition: "needs-external-evidence", label: "Needs external evidence" }),
+  Object.freeze({ disposition: "prepare-therapy-policy-decision", label: "Flag for owner therapy-policy decision" })
+]);
+
+function learningReviewRoute(kind, receipt) {
+  const route = LEARNING_REVIEW_ROUTES[kind];
+  return receipt ? route.replace(":receipt", encodeURIComponent(receipt)) : route;
+}
+
+async function learningReviewRequest(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: { "accept": "application/json", ...(options.headers || {}) }
+  });
+  const payload = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+  if (!response.ok) {
+    const error = new Error(payload.error || `Request failed with status ${response.status}.`);
+    error.code = payload.code;
+    error.availability = payload.availability;
+    throw error;
+  }
+  return payload;
+}
+
+function renderLearningReviewUnavailable() {
+  const badge = $("#learning-review-availability");
+  badge.className = "status error";
+  badge.textContent = "Unavailable";
+  $("#learning-review-summary").textContent = "Queue unavailable — counts not shown.";
+  const root = $("#learning-review-records");
+  root.replaceChildren();
+  const message = document.createElement("p");
+  message.className = "small";
+  message.textContent = "Local learning records could not be read safely. No zero count has been inferred.";
+  root.append(message);
+}
+
+function appendLearningReviewField(list, label, value) {
+  const term = document.createElement("dt");
+  term.textContent = label;
+  const description = document.createElement("dd");
+  description.textContent = String(value ?? "Not recorded");
+  list.append(term, description);
+}
+
+function renderLearningReviewRecords(records) {
+  const root = $("#learning-review-records");
+  root.replaceChildren();
+  if (!records.length) {
+    const empty = document.createElement("p");
+    empty.className = "small";
+    empty.textContent = "The local learning queue has no records.";
+    root.append(empty);
+    return;
+  }
+  for (const record of [...records].reverse()) {
+    const candidate = record.candidate || {};
+    const card = document.createElement("article");
+    card.className = "learning-review-card";
+    const heading = document.createElement("h4");
+    heading.textContent = record.candidateReceipt;
+    const fields = document.createElement("dl");
+    appendLearningReviewField(fields, "Review status", candidateLabel(record.status));
+    appendLearningReviewField(fields, "Feedback category", candidateLabel(candidate.feedbackCategory));
+    appendLearningReviewField(fields, "Evidence class", candidateLabel(candidate.evidenceClass));
+    appendLearningReviewField(fields, "Causal boundary", candidateLabel(candidate.causalBoundary));
+    appendLearningReviewField(fields, "Generalized observation", candidate.generalizedObservation);
+    appendLearningReviewField(fields, "Occurrence count", record.occurrenceCount);
+    appendLearningReviewField(fields, "Updated", record.updatedAt);
+    if (candidate.userAuthoredSummary) appendLearningReviewField(fields, "User-authored summary", candidate.userAuthoredSummary);
+
+    const detail = document.createElement("details");
+    detail.className = "learning-review-detail";
+    const detailSummary = document.createElement("summary");
+    detailSummary.textContent = "Load full generalized evidence";
+    const evidence = document.createElement("pre");
+    evidence.textContent = "Open to load the strict generalized candidate from this device.";
+    detail.append(detailSummary, evidence);
+    detail.addEventListener("toggle", async () => {
+      if (!detail.open || detail.dataset.loaded === "true") return;
+      evidence.textContent = "Loading…";
+      try {
+        const current = await learningReviewRequest(learningReviewRoute("detail", record.candidateReceipt));
+        evidence.textContent = JSON.stringify(current.candidate, null, 2);
+        detail.dataset.loaded = "true";
+      } catch {
+        evidence.textContent = "Generalized evidence is unavailable; no record details were inferred.";
+      }
+    });
+
+    const actions = document.createElement("div");
+    actions.className = "actions wrap learning-review-actions";
+    for (const action of LEARNING_REVIEW_ACTIONS) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "secondary";
+      button.textContent = action.label;
+      button.addEventListener("click", async () => {
+        setBusy(button, true, "Saving triage…");
+        try {
+          await learningReviewRequest(learningReviewRoute("decision", record.candidateReceipt), {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ disposition: action.disposition })
+          });
+          await refreshLearningReview();
+        } catch {
+          alert("The local triage decision could not be saved. The existing record remains unchanged.");
+        } finally {
+          setBusy(button, false);
+        }
+      });
+      actions.append(button);
+    }
+    card.append(heading, fields, detail, actions);
+    root.append(card);
+  }
+}
+
+async function refreshLearningReview() {
+  const badge = $("#learning-review-availability");
+  badge.className = "status pending";
+  badge.textContent = "Checking…";
+  try {
+    const status = await learningReviewRequest(learningReviewRoute("status"));
+    if (status.availability !== "available") return renderLearningReviewUnavailable();
+    badge.className = "status ok";
+    badge.textContent = "Available";
+    $("#learning-review-summary").textContent = `${status.totalOpen} total record${status.totalOpen === 1 ? "" : "s"} · ${status.needsReview} awaiting review`;
+    renderLearningReviewRecords(await learningReviewRequest(learningReviewRoute("records")));
+  } catch {
+    renderLearningReviewUnavailable();
+  }
 }
 
 async function postBinary(url, body, contentType = "application/zip") {
@@ -537,6 +1044,8 @@ function renderDataSummary() {
   $("#data-summary").textContent = JSON.stringify({
     therapyMessages: state.therapy.length,
     hypnosisSessions: state.hypnosisHistory.length,
+    potentialLessons: state.potentialLessons.length,
+    localLearningContributions: state.learningContributions.filter((item) => item.state === "contributed").length,
     storedBytesApprox: new Blob([JSON.stringify(state)]).size
   }, null, 2);
 }
@@ -578,6 +1087,7 @@ function activateTab(id) {
     panel.hidden = !active;
     panel.classList.toggle("active", active);
   }
+  if (id === "data") refreshLearningReview();
 }
 
 async function checkHealth() {
@@ -589,6 +1099,7 @@ async function checkHealth() {
     const versionLabel = $("#runtime-version");
     if (versionLabel && health.version) {
       const repair = health.localRepair?.jobId ? ` · local repair ${String(health.localRepair.jobId).slice(0, 8)}` : "";
+      currentRuntimeVersion = String(health.version);
       versionLabel.textContent = `Inner Signal runtime v${health.version}${repair}`;
     }
     badge.className = "status ok";
@@ -607,9 +1118,15 @@ $("#therapy-form").addEventListener("submit", async (event) => {
   if (!message) return;
   const button = $("#therapy-send");
   const priorTranscript = recentTranscript();
+  const potentialLesson = createAutomaticPotentialLesson(message);
+  if (potentialLesson) state.potentialLessons.push(potentialLesson);
   state.therapy.push({ role: "user", content: message, at: new Date().toISOString() });
   saveState();
   renderTherapy();
+  renderPotentialLessons();
+  if (potentialLesson) {
+    showPotentialLessonNotice("A category-only potential lesson was captured for review. No chat text was copied into the lesson record.");
+  }
   $("#therapy-message").value = "";
   setBusy(button, true, "Reasoning…");
   try {
@@ -704,6 +1221,15 @@ $("#stop-speaking").addEventListener("click", () => window.speechSynthesis?.canc
 
 $("#export-diagnostic").addEventListener("click", (event) => exportDiagnosticZip(event.currentTarget));
 $("#export-diagnostic-data").addEventListener("click", (event) => exportDiagnosticZip(event.currentTarget));
+$("#learning-review-refresh").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  setBusy(button, true, "Refreshing…");
+  try {
+    await refreshLearningReview();
+  } finally {
+    setBusy(button, false);
+  }
+});
 
 $("#export-data").addEventListener("click", () => {
   const blob = new Blob([JSON.stringify({ format: "inner-signal-backup-v1", exportedAt: new Date().toISOString(), state }, null, 2)], { type: "application/json" });
@@ -718,29 +1244,60 @@ $("#export-data").addEventListener("click", () => {
 $("#import-data").addEventListener("change", async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
-  const parsed = JSON.parse(await file.text());
-  if (parsed.format !== "inner-signal-backup-v1" || !parsed.state) throw new Error("Unrecognized backup format.");
-  state.therapy = Array.isArray(parsed.state.therapy) ? parsed.state.therapy : [];
-  state.hypnosisHistory = Array.isArray(parsed.state.hypnosisHistory) ? parsed.state.hypnosisHistory : [];
-  state.settings = parsed.state.settings && typeof parsed.state.settings === "object" ? parsed.state.settings : {};
-  state.caseSnapshot = parsed.state.caseSnapshot && typeof parsed.state.caseSnapshot === "object" ? parsed.state.caseSnapshot : null;
-  state.interventionContract = parsed.state.interventionContract && typeof parsed.state.interventionContract === "object" ? parsed.state.interventionContract : null;
-  state.priorProcessingTier = typeof parsed.state.priorProcessingTier === "string" ? parsed.state.priorProcessingTier : "";
-  saveState();
-  renderTherapy();
+  try {
+    const parsed = JSON.parse(await file.text());
+    if (parsed.format !== "inner-signal-backup-v1" || !parsed.state) throw new Error("Unrecognized backup format.");
+    const potentialLessons = restorePotentialLessons(parsed.state.potentialLessons);
+    const learningContributions = restoreLearningContributions(parsed.state.learningContributions);
+    const potentialLessonIds = new Set(potentialLessons.map((item) => item.potentialLessonId));
+    if (learningContributions.some((item) => !potentialLessonIds.has(item.potentialLessonId))) throw new Error("Backup contains an orphaned learning contribution mapping.");
+    state.therapy = Array.isArray(parsed.state.therapy) ? parsed.state.therapy : [];
+    state.hypnosisHistory = Array.isArray(parsed.state.hypnosisHistory) ? parsed.state.hypnosisHistory : [];
+    state.settings = parsed.state.settings && typeof parsed.state.settings === "object" ? parsed.state.settings : {};
+    state.potentialLessons = potentialLessons;
+    state.learningContributions = learningContributions;
+    state.caseSnapshot = parsed.state.caseSnapshot && typeof parsed.state.caseSnapshot === "object" ? parsed.state.caseSnapshot : null;
+    state.interventionContract = parsed.state.interventionContract && typeof parsed.state.interventionContract === "object" ? parsed.state.interventionContract : null;
+    state.priorProcessingTier = typeof parsed.state.priorProcessingTier === "string" ? parsed.state.priorProcessingTier : "";
+    saveState();
+    renderTherapy();
+    renderPotentialLessons();
+  } catch (error) {
+    alert(`Could not import backup: ${error.message}`);
+  } finally {
+    event.target.value = "";
+  }
 });
 
-$("#erase-data").addEventListener("click", () => {
+$("#erase-data").addEventListener("click", async () => {
   if (!confirm("Erase the local Inner Signal transcript, sessions, and settings from this browser?")) return;
+  const button = $("#erase-data");
+  setBusy(button, true, "Revoking contributions…");
+  try {
+    for (const contribution of [...state.learningContributions]) {
+      if (["contributed", "submission-pending"].includes(contribution.state)) {
+        const candidate = state.potentialLessons.find((item) => item.potentialLessonId === contribution.potentialLessonId);
+        await revokeLearningContribution(contribution, { candidate });
+      } else removeLearningContribution(contribution.potentialLessonId);
+    }
+  } catch (error) {
+    alert(`Local data was not erased because a learning contribution could not be revoked: ${error.message}. Its retry credentials were preserved.`);
+    setBusy(button, false);
+    return;
+  }
   localStorage.removeItem(STORAGE_KEY);
   state.therapy = [];
   state.hypnosisHistory = [];
   state.settings = {};
+  state.potentialLessons = [];
+  state.learningContributions = [];
   state.caseSnapshot = null;
   state.interventionContract = null;
   state.priorProcessingTier = "";
   renderTherapy();
+  renderPotentialLessons();
   renderDataSummary();
+  setBusy(button, false);
 });
 
 $("#guide-packet-import").addEventListener("change", async (event) => {
@@ -778,7 +1335,9 @@ $("#dev-approve").addEventListener("click", () => submitDevelopmentDecision("app
 $("#dev-reject").addEventListener("click", () => submitDevelopmentDecision("reject").catch((error) => alert(error.message)));
 
 renderTherapy();
+renderPotentialLessons();
 renderDataSummary();
+refreshLearningReview();
 checkHealth();
 refreshDevelopmentStatus();
 refreshGuidePacketStatus().catch(() => {});

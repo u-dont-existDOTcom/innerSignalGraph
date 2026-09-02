@@ -1,0 +1,13 @@
+{
+  "fixture": "free-candidate-refusal",
+  "userTier": "free",
+  "inputState": "preview-required",
+  "candidatePreviewed": true,
+  "candidateRefused": true,
+  "expectedState": "candidate-refused",
+  "refusalCost": "free",
+  "accessReduced": false,
+  "futureCandidateNoticesDisabled": false,
+  "candidateTransmissionEnabled": false,
+  "therapyPolicyAuthority": "none"
+}

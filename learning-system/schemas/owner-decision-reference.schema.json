@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innerself.love/schemas/owner-decision-reference.schema.json",
+  "title": "Synthetic external owner-decision reference",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "sourceLedger", "decisionId", "candidateFingerprint", "decision", "receiptSha256"],
+  "properties": {
+    "format": { "const": "inner-signal-owner-decision-reference-v1" },
+    "sourceLedger": { "const": "THERAPY-DECISIONS" },
+    "decisionId": { "type": "string", "pattern": "^SYNTHETIC-DECISION-[A-Z0-9-]{3,64}$" },
+    "candidateFingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "decision": { "enum": ["approved", "declined", "insufficient-evidence"] },
+    "receiptSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <title>InnerSignal Commons</title>
+  <meta name="description" content="Invitation-only, pseudonymous InnerSignal peer community and consent-governed learning pilot.">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">INVITATION PILOT</p>
+      <h1>InnerSignal Commons</h1>
+      <p class="subtitle">Peer conversation, structured Field Notes, and inspectable community learning.</p>
+    </div>
+    <div class="header-actions">
+      <a id="main-app-link" class="button secondary" href="http://localhost:8787">Private InnerSignal</a>
+      <span id="service-status" class="status pending" aria-live="polite">Checking service…</span>
+    </div>
+  </header>
+
+  <main>
+    <section id="login-panel" class="panel narrow">
+      <p class="eyebrow">PSEUDONYMOUS ACCESS</p>
+      <h2>Join the Commons</h2>
+      <p class="notice"><strong>Your private InnerSignal sessions are not imported.</strong> Ordinary Commons posts are conversation-only. A contribution enters community learning only when you deliberately create a Field Note and select a specific consent scope.</p>
+      <form id="login-form" class="form-grid">
+        <label>Pseudonym
+          <input id="login-pseudonym" maxlength="40" autocomplete="nickname" required placeholder="Choose a name used only in the Commons">
+        </label>
+        <label>Invitation code
+          <input id="login-invite" type="password" autocomplete="one-time-code" placeholder="May be blank on a local-only pilot">
+        </label>
+        <label>Recovery code <span class="optional">optional when joining; required to return with an existing pseudonym</span>
+          <input id="login-recovery" type="password" autocomplete="off" placeholder="Paste the code shown when you first joined">
+        </label>
+        <fieldset class="joining-boundary">
+          <legend>Participation boundary</legend>
+          <label><input id="login-adult" type="checkbox" required> I confirm that I am at least 18 years old.</label>
+          <label><input id="login-agreement" type="checkbox" required> I will speak from experience, respect each post's response contract, and not diagnose or direct another member.</label>
+          <p class="small">Neither box is preselected. These acknowledgments authorize participation only, not product learning or research.</p>
+        </fieldset>
+        <button id="login-submit" type="submit">Enter Commons</button>
+      </form>
+      <details class="consent-summary">
+        <summary>What joining does—and does not—authorize</summary>
+        <ul>
+          <li>Members may see posts you deliberately publish.</li>
+          <li>Joining does not authorize model training, research, product improvement, or importing private sessions.</li>
+          <li>Field Note permissions are selected separately for each contribution.</li>
+          <li>No direct messages, public indexing, follower counts, or popularity ranking are enabled in this pilot.</li>
+        </ul>
+      </details>
+      <p id="login-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="recovery-panel" class="panel narrow" hidden>
+      <p class="eyebrow">SHOWN ONCE</p>
+      <h2>Save your recovery code</h2>
+      <p>This code is required to return with the same pseudonym after your session cookie is lost. InnerSignal cannot display it again.</p>
+      <pre id="recovery-code" class="recovery-code"></pre>
+      <div class="actions">
+        <button id="copy-recovery" type="button">Copy code</button>
+        <button id="recovery-saved" class="secondary" type="button">I saved it</button>
+      </div>
+    </section>
+
+    <section id="community-app" hidden>
+      <section class="member-bar panel compact">
+        <div>
+          <strong id="member-name"></strong>
+          <span id="community-stats" class="muted"></span>
+        </div>
+        <div class="actions wrap">
+          <button id="pause-community" class="secondary" type="button">Pause community content</button>
+          <button id="logout" class="secondary" type="button">Log out</button>
+        </div>
+      </section>
+
+      <p class="notice safety-notice"><strong>Speak from experience.</strong> Say what happened, under what conditions, and what you are uncertain about. Do not diagnose another member or tell them what they must do. Posts flagged for possible danger, coercion, personal contact data, or solicitation are held for human review rather than silently published.</p>
+
+      <nav class="tabs" aria-label="Commons areas">
+        <button class="tab active" data-view="commons" type="button">Commons</button>
+        <button class="tab" data-view="new-post" type="button">New post</button>
+        <button class="tab" data-view="field-note" type="button">Field Note</button>
+        <button class="tab" data-view="potential-lesson" type="button">Correction draft</button>
+        <button class="tab" data-view="learning" type="button">Learning Cards</button>
+        <button class="tab" data-view="contributions" type="button">My contributions</button>
+      </nav>
+
+      <section id="view-commons" class="view panel">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">CONVERSATION LAYER</p>
+            <h2>Commons</h2>
+          </div>
+          <label class="inline-label">Room
+            <select id="room-filter"><option value="all">All rooms</option></select>
+          </label>
+        </div>
+        <p class="small">Support reactions and evidence follow-ups are counted separately. Neither is treated as proof, and ordinary posts are never mined into lessons.</p>
+        <div id="paused-message" class="paused" hidden>Community content is paused on this device. Your Field Notes and receipts remain available.</div>
+        <div id="posts-list" class="posts" aria-live="polite"></div>
+      </section>
+
+      <section id="view-new-post" class="view panel" hidden>
+        <p class="eyebrow">CONVERSATION-ONLY BY DEFAULT</p>
+        <h2>Start a discussion</h2>
+        <form id="post-form" class="form-grid">
+          <label>Room
+            <select id="post-room" required></select>
+          </label>
+          <label>What kind of response do you want?
+            <select id="post-response-contract" required>
+              <option value="listen-only">Listen or witness only</option>
+              <option value="similar-experiences">Similar experiences welcome</option>
+              <option value="questions-welcome">Questions welcome</option>
+              <option value="practical-ideas">Practical ideas welcome</option>
+              <option value="challenge-interpretation">Challenge my interpretation</option>
+              <option value="help-field-note">Help me make a Field Note</option>
+            </select>
+          </label>
+          <label>Content note <span class="optional">optional</span>
+            <input id="post-content-note" maxlength="180" placeholder="For example: difficult sleep experience">
+          </label>
+          <label>Title
+            <input id="post-title" maxlength="140" required>
+          </label>
+          <label>Post
+            <textarea id="post-body" rows="8" maxlength="12000" required></textarea>
+          </label>
+          <p class="form-boundary">Publishing this post lets Commons members read it. It does <strong>not</strong> authorize aggregation, product improvement, research, or model training.</p>
+          <button id="post-submit" type="submit">Publish post</button>
+        </form>
+        <p id="post-result" class="result" role="status"></p>
+      </section>
+
+      <section id="view-field-note" class="view panel" hidden>
+        <p class="eyebrow">STRUCTURED CONTRIBUTION</p>
+        <h2>Create a Field Note</h2>
+        <p class="notice">A Field Note records what happened without claiming that a method works. Missing details are preferable to guessed details. All downstream uses remain unchecked until you select them.</p>
+        <form id="field-note-form" class="form-grid two-column">
+          <input id="field-source-post-id" type="hidden">
+          <label>Practice or InnerSignal feature
+            <input id="field-practice" maxlength="160" required>
+          </label>
+          <label>Goal
+            <input id="field-goal" maxlength="500" required>
+          </label>
+          <label class="wide">What I tried
+            <textarea id="field-what-tried" rows="5" maxlength="4000" required></textarea>
+          </label>
+          <label>Context <span class="optional">optional</span>
+            <textarea id="field-context" rows="3" maxlength="2000"></textarea>
+          </label>
+          <label>Prior experience <span class="optional">optional</span>
+            <textarea id="field-prior" rows="3" maxlength="1000"></textarea>
+          </label>
+          <fieldset class="wide time-grid">
+            <legend>What happened over time?</legend>
+            <label>Immediately<textarea id="field-immediate" rows="3" maxlength="2000"></textarea></label>
+            <label>Later that day<textarea id="field-same-day" rows="3" maxlength="2000"></textarea></label>
+            <label>Next morning<textarea id="field-next-morning" rows="3" maxlength="2000"></textarea></label>
+            <label>Following 2–3 days<textarea id="field-following-days" rows="3" maxlength="2000"></textarea></label>
+            <label>Longer follow-up<textarea id="field-longer" rows="3" maxlength="2000"></textarea></label>
+          </fieldset>
+          <label>Overall result
+            <select id="field-outcome" required>
+              <option value="benefit">Benefit</option>
+              <option value="no-change">No noticeable change</option>
+              <option value="mixed">Mixed</option>
+              <option value="worsening">Worsening</option>
+              <option value="unclear">Unclear</option>
+            </select>
+          </label>
+          <label>Would I repeat it?
+            <select id="field-repeat" required>
+              <option value="yes">Yes</option>
+              <option value="no">No</option>
+              <option value="unsure">Unsure</option>
+            </select>
+          </label>
+          <label>Downsides or unwanted effects <span class="optional">optional</span>
+            <textarea id="field-downsides" rows="3" maxlength="2000"></textarea>
+          </label>
+          <label>What else changed? <span class="optional">possible confounders</span>
+            <textarea id="field-confounders" rows="3" maxlength="2000"></textarea>
+          </label>
+          <label class="wide">How confident are you that the practice caused the result? <output id="confidence-output">50</output>/100
+            <input id="field-confidence" type="range" min="0" max="100" value="50">
+          </label>
+
+          <section class="wide redaction-box">
+            <div class="panel-heading">
+              <div><h3>Sharing preview</h3><p class="small">Remove names, exact places, clinicians, employers, and details about other people. The pilot uses deterministic local redaction assistance and does not send this draft to an AI provider.</p></div>
+              <button id="preview-redaction" class="secondary" type="button">Preview redaction</button>
+            </div>
+            <pre id="redaction-preview">No preview generated.</pre>
+          </section>
+
+          <fieldset class="wide consent-scopes">
+            <legend>Optional downstream permissions for this Field Note</legend>
+            <label><input type="checkbox" name="consent-scope" value="ai-redaction"> Let an approved InnerSignal model assist with future redaction or structured extraction</label>
+            <label><input type="checkbox" name="consent-scope" value="community-aggregate"> Include this note in de-identified Commons aggregates and Learning Cards</label>
+            <label><input type="checkbox" name="consent-scope" value="product-improvement"> Use this note in governed InnerSignal product-improvement proposals</label>
+            <label><input type="checkbox" name="consent-scope" value="experiment-contact"> Contact me inside the Commons about a defined optional experiment</label>
+            <label><input type="checkbox" name="consent-scope" value="research-protocol"> Use this note only in a separately defined research protocol</label>
+            <label><input type="checkbox" name="consent-scope" value="external-researcher-sharing"> Share it with named external researchers under that protocol</label>
+            <p class="small">No box is preselected. Declining all permissions stores a private Field Note draft visible only in your contribution area.</p>
+          </fieldset>
+          <button id="field-submit" class="wide" type="submit">Save Field Note and receipt</button>
+        </form>
+        <p id="field-result" class="result" role="status"></p>
+      </section>
+
+      <section id="view-potential-lesson" class="view panel" hidden>
+        <p class="eyebrow">PRIVATE, PRESERVATION-ONLY</p>
+        <h2>Save a correction as a potential lesson</h2>
+        <p class="notice"><strong>Nothing from a private chat is copied automatically.</strong> This form does not read a conversation, detect phrases, or decide what a correction means. It saves only the category and optional summary you deliberately enter.</p>
+        <form id="potential-lesson-form" class="form-grid">
+          <label>What kind of correction do you want to remember?
+            <select id="potential-lesson-category" required>
+              <option value="did-not-work">That did not work</option>
+              <option value="did-not-make-sense">That did not make sense</option>
+              <option value="disagreement">I disagreed</option>
+              <option value="correction">I corrected InnerSignal</option>
+              <option value="other">Other correction or rejection</option>
+            </select>
+          </label>
+          <label>Optional summary written by me
+            <textarea id="potential-lesson-summary" rows="5" maxlength="1000" placeholder="Describe only the minimum non-private point you want to inspect later. Do not paste a therapy transcript."></textarea>
+          </label>
+          <label><input id="potential-lesson-privacy" type="checkbox"> If I entered a summary, I reviewed it and removed names, transcript excerpts, exact places, and details about other people.</label>
+          <p class="small">This stays a private, unapproved draft. Community sharing and product-improvement use are off. It cannot change therapy behavior, prompts, guides, maps, safety gates, Learning Cards, or proposals.</p>
+          <button id="potential-lesson-submit" type="submit">Save this correction as a potential lesson</button>
+        </form>
+        <p id="potential-lesson-result" class="result" role="status"></p>
+      </section>
+
+      <section id="view-learning" class="view panel" hidden>
+        <p class="eyebrow">INSPECTABLE, NON-AUTHORITATIVE</p>
+        <h2>Community Learning Cards</h2>
+        <p class="notice">Cards preserve benefit, nonresponse, mixed outcomes, worsening, timing, context, confounders, and unknowns. Community agreement is not efficacy. No card can activate InnerSignal runtime behavior.</p>
+        <div id="cards-list" class="cards"></div>
+      </section>
+
+      <section id="view-contributions" class="view panel" hidden>
+        <div class="panel-heading">
+          <div><p class="eyebrow">CONSENT RECEIPTS</p><h2>My contributions</h2></div>
+          <div class="actions wrap">
+            <button id="export-my-data" class="secondary" type="button">Export my data</button>
+            <button id="delete-my-data" class="danger" type="button">Remove my current Commons content and deactivate account</button>
+          </div>
+        </div>
+        <p class="notice">Removal deletes current Commons posts, replies, reactions, Field Notes, private potential-lesson drafts, receipts, reports, and active sessions, and deactivates the account. The prototype append-only event ledger may retain pseudonymous event, participant, and subject identifiers, event types, and timestamps until a production retention and deletion policy is approved.</p>
+        <h3>Private potential lessons</h3>
+        <div id="my-potential-lessons" class="contribution-list"></div>
+        <h3>Field Notes</h3>
+        <div id="my-notes" class="contribution-list"></div>
+        <h3>Contribution receipts</h3>
+        <div id="my-receipts" class="contribution-list"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="report-dialog">
+    <form id="report-form" method="dialog" class="form-grid">
+      <input id="report-post-id" type="hidden">
+      <h2>Report this post</h2>
+      <label>Reason
+        <select id="report-category">
+          <option value="immediate-danger">Immediate danger</option>
+          <option value="dangerous-instructions">Dangerous instructions</option>
+          <option value="coercive-hypnosis">Coercive hypnosis or influence</option>
+          <option value="privacy-third-party">Privacy or third-party disclosure</option>
+          <option value="predatory-solicitation">Predatory solicitation</option>
+          <option value="harassment">Harassment</option>
+          <option value="commercial-promotion">Commercial promotion</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+      <label>Details <span class="optional">optional</span>
+        <textarea id="report-detail" rows="4" maxlength="1000"></textarea>
+      </label>
+      <div class="actions">
+        <button id="report-cancel" class="secondary" value="cancel" type="button">Cancel</button>
+        <button id="report-submit" value="submit" type="submit">Submit report</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer>
+    <span>InnerSignal Commons MVP · no public indexing · no direct messages</span>
+    <span>Peer discussion is not emergency care or professional treatment.</span>
+  </footer>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

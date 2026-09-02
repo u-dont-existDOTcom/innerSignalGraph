@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innersignal.local/schemas/consent-grant.schema.json",
+  "title": "InnerSignal Commons consent grant",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "grantId",
+    "participantId",
+    "contributionId",
+    "contributionType",
+    "consentTextVersion",
+    "scopes",
+    "revokedScopes",
+    "grantedAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "format": { "const": "inner-signal-consent-grant-v1" },
+    "grantId": { "$ref": "#/$defs/uuid" },
+    "participantId": { "$ref": "#/$defs/uuid" },
+    "contributionId": { "$ref": "#/$defs/uuid" },
+    "contributionType": { "enum": ["field-note"] },
+    "consentTextVersion": { "const": "innersignal-community-consent-2026-08-30-v1" },
+    "scopes": { "$ref": "#/$defs/scopes" },
+    "revokedScopes": { "$ref": "#/$defs/scopes" },
+    "grantedAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "uuid": { "type": "string", "format": "uuid" },
+    "scope": {
+      "enum": [
+        "ai-redaction",
+        "community-aggregate",
+        "product-improvement",
+        "experiment-contact",
+        "research-protocol",
+        "external-researcher-sharing"
+      ]
+    },
+    "scopes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/scope" },
+      "uniqueItems": true,
+      "maxItems": 6
+    }
+  }
+}

@@ -11,7 +11,7 @@ test("local runtime health endpoint starts on an ephemeral port and reports plan
   const result = await runRuntimeSmoke({ config, providers });
   assert.equal(result.ok, true);
   assert.equal(result.health.version, RUNTIME_VERSION);
-  assert.deepEqual(result.health.endpoints, ["/v1/plan", "/v1/therapy/respond", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]);
+  assert.deepEqual(result.health.endpoints, ["/v1/plan", "/v1/therapy/respond", "/v1/hypnosis/compile", "/v1/learning/preview", "/v1/learning/submit", "/v1/learning/revoke", "/v1/learning/review/status", "/v1/learning/review/records", "/v1/learning/review/records/:receipt", "/v1/learning/review/records/:receipt/decision", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]);
 });
 
 import { createInnerSignalServer } from "../src/server/create-server.mjs";
@@ -61,6 +61,76 @@ test("loopback launcher serves the same app through localhost and IPv4 without L
     assert.equal(ipv4Health.version, RUNTIME_VERSION);
   } finally {
     await listener.close();
+  }
+});
+
+test("loopback web server self-hosts the correction-learning module", async () => {
+  const config = loadConfig({ mode: "mock" });
+  const providers = createProviders(config);
+  const server = createInnerSignalServer({ config, providers });
+  await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/correction-learning.js`);
+    const source = await response.text();
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type"), /text\/javascript/);
+    assert.match(source, /detectCorrectionSignal/);
+    assert.match(source, /runtimeAuthority/);
+    assert.doesNotMatch(source, /https?:\/\//);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("diagnostic recovery ZIP ignores private potential-lesson browser state", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-private-lesson-diagnostic-"));
+  const config = loadConfig({
+    mode: "mock",
+    ledgerMode: "off",
+    autopilotStateDir: root,
+    guidePacketRoot: path.join(root, "guide-packets")
+  });
+  const providers = createProviders(config);
+  const server = createInnerSignalServer({ config, providers });
+  await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/v1/debug/export`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        state: {
+          therapy: [{ role: "user", content: "PRIVATE_CHAT_DIAGNOSTIC_MARKER" }],
+          potentialLessons: [{ summary: "PRIVATE_LESSON_DIAGNOSTIC_MARKER" }]
+        }
+      })
+    });
+    const body = Buffer.from(await response.arrayBuffer());
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get("content-type"), /application\/zip/);
+    assert.doesNotMatch(body.toString("utf8"), /PRIVATE_CHAT_DIAGNOSTIC_MARKER|PRIVATE_LESSON_DIAGNOSTIC_MARKER/);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("therapy response endpoint remains isolated from browser-local correction candidates", async () => {
+  const config = loadConfig({ mode: "mock", ledgerMode: "off" });
+  const providers = createProviders(config);
+  const server = createInnerSignalServer({ config, providers });
+  await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/v1/therapy/respond`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ userMessage: "That didn't work.", recentTranscript: "", userFacts: [], processingMode: "fast" })
+    });
+    const result = await response.json();
+    assert.equal(response.status, 200);
+    assert.equal(typeof result.answer, "string");
+    assert.equal(Object.hasOwn(result, "potentialLessons"), false);
+    assert.equal(Object.hasOwn(result, "correctionCandidate"), false);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
   }
 });
 

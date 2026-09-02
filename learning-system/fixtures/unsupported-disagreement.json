@@ -1,0 +1,20 @@
+{
+  "format": "inner-signal-feedback-evidence-v1",
+  "feedbackId": "ISF-SYN-DISAGREEMENT-001",
+  "feedbackClass": "unsupported-disagreement",
+  "validationStatus": "unreviewed",
+  "evidenceClass": "unsupported-disagreement",
+  "generalizedSignal": "A participant disagrees with a fabricated statement but supplies no checkable basis.",
+  "expectedBehavior": "Preserve disagreement as feedback without upgrading it to factual verification.",
+  "failureReason": "Agreement or recurrence alone would not establish the disputed claim.",
+  "syntheticRegressionExample": "Unsupported disagreement cannot validate a lesson candidate.",
+  "policySurface": "factual",
+  "subjectKey": "synthetic-disputed-claim",
+  "outcomeDirection": "not-applicable",
+  "causalBoundary": "unresolved",
+  "evidenceBasis": ["fabricated unsupported disagreement"],
+  "versionContext": { "appVersion": "synthetic-0", "contractVersion": "offline-groundwork-v1" },
+  "runtimeAuthority": "none",
+  "therapyPolicyAuthority": "none",
+  "transmissionAuthority": "none"
+}

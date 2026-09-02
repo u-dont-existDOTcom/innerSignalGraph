@@ -1,0 +1,20 @@
+{
+  "format": "inner-signal-feedback-evidence-v1",
+  "feedbackId": "ISF-SYN-FACT-001",
+  "feedbackClass": "factual-correction",
+  "validationStatus": "validated",
+  "evidenceClass": "independently-verified-fact",
+  "generalizedSignal": "A fabricated response misstated the order of two public, non-therapeutic steps.",
+  "expectedBehavior": "Use the independently checked order in the bounded factual surface.",
+  "failureReason": "The synthetic response reversed the documented order.",
+  "syntheticRegressionExample": "The fabricated two-step ordering fixture must preserve step one before step two.",
+  "policySurface": "factual",
+  "subjectKey": "synthetic-step-order",
+  "outcomeDirection": "not-applicable",
+  "causalBoundary": "independently-verified-fact",
+  "evidenceBasis": ["fabricated canonical reference", "synthetic independent comparison"],
+  "versionContext": { "appVersion": "synthetic-0", "contractVersion": "offline-groundwork-v1" },
+  "runtimeAuthority": "none",
+  "therapyPolicyAuthority": "none",
+  "transmissionAuthority": "none"
+}

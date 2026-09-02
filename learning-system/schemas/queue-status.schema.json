@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innerself.love/schemas/queue-status.schema.json",
+  "title": "InnerSignal truthful learning queue status",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["availability", "totalOpen", "needsReview", "acceptedNotIncorporated", "incorporatedClosed"],
+      "properties": {
+        "availability": { "const": "available" },
+        "totalOpen": { "type": "integer", "minimum": 0 },
+        "needsReview": { "type": "integer", "minimum": 0 },
+        "acceptedNotIncorporated": { "type": "integer", "minimum": 0 },
+        "incorporatedClosed": { "type": "integer", "minimum": 0 }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["availability", "totalOpen", "needsReview", "acceptedNotIncorporated", "incorporatedClosed", "reasonCode"],
+      "properties": {
+        "availability": { "const": "unavailable" },
+        "totalOpen": { "type": "null" },
+        "needsReview": { "type": "null" },
+        "acceptedNotIncorporated": { "type": "null" },
+        "incorporatedClosed": { "type": "null" },
+        "reasonCode": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]{2,63}$" }
+      }
+    }
+  ]
+}

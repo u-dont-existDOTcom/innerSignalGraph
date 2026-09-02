@@ -1,0 +1,22 @@
+{
+  "format": "inner-signal-live-learning-evidence-v1",
+  "candidateKind": "correction-signal",
+  "feedbackCategory": "correction",
+  "generalizedObservation": "A user explicitly corrected an InnerSignal response.",
+  "userAuthoredSummary": "The response contradicted a premise that the user had explicitly supplied.",
+  "summaryAuthorship": "user",
+  "privacyAcknowledged": true,
+  "evidenceClass": "unresolved",
+  "causalBoundary": "unresolved",
+  "outcomeDirection": "not-applicable",
+  "policySurface": "therapy-response-feedback",
+  "syntheticRegressionExample": false,
+  "versionIdentifiers": {
+    "runtimeVersion": "0.15.2",
+    "detectorVersion": "private-correction-signal-v1"
+  },
+  "sourceContentRetained": false,
+  "runtimeAuthority": "none",
+  "therapyPolicyAuthority": "none",
+  "externalTransmissionAuthority": "none"
+}

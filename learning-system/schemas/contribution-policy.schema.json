@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innerself.love/schemas/contribution-policy.schema.json",
+  "title": "InnerSignal offline contribution policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "policyId", "candidateScope", "rawTherapyChatEligible", "freeUserProviderPath", "freeContributionMode", "candidatePreviewRequired", "refusalCost", "refusalScope", "refusalReducesAccess", "freeGlobalContributionDisableAvailable", "paidApiProviderPath", "paidApiRequiresPayment", "paidGlobalContributionDisableAvailable", "paidGlobalContributionSetting", "candidateTransmissionEnabled", "existingCandidateBackfillEnabled", "runtimePersonalizationEnabled", "therapyPolicyActivated", "therapyPolicyAuthority", "releaseAuthorized"],
+  "properties": {
+    "format": { "const": "inner-signal-contribution-policy-v1" },
+    "policyId": { "const": "default-on-per-candidate-refusal" },
+    "candidateScope": { "const": "privacy-screened-generalized-candidates-only" },
+    "rawTherapyChatEligible": { "const": false },
+    "freeUserProviderPath": { "const": "user-owned-chatgpt-account" },
+    "freeContributionMode": { "const": "default-on-per-candidate-refusal" },
+    "candidatePreviewRequired": { "const": true },
+    "refusalCost": { "const": "free" },
+    "refusalScope": { "const": "current-candidate-only" },
+    "refusalReducesAccess": { "const": false },
+    "freeGlobalContributionDisableAvailable": { "const": false },
+    "paidApiProviderPath": { "const": "innersignal-controlled-openai-api-account" },
+    "paidApiRequiresPayment": { "const": true },
+    "paidGlobalContributionDisableAvailable": { "const": true },
+    "paidGlobalContributionSetting": { "const": "UNSPECIFIED_PENDING_FUTURE_BILLING_UI_DECISION" },
+    "candidateTransmissionEnabled": { "const": false },
+    "existingCandidateBackfillEnabled": { "const": false },
+    "runtimePersonalizationEnabled": { "const": false },
+    "therapyPolicyActivated": { "const": false },
+    "therapyPolicyAuthority": { "const": "none" },
+    "releaseAuthorized": { "const": false }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "format": "inner-signal-product-privacy-owner-decision-v1",
+  "exactSource": {
+    "requestId": "rr-innersignal-option-a-api-privacy-20260831-003",
+    "sha256": "1146d9832a04ad7b3310d684f8ec580a6c3676604688a4990d455d3e48dc608c",
+    "text": "A. openai is always monitoring there's no way to opt out of that. you can opt out of learning but not monitoring, so if users really want to pay to opt out of learning and monitoring that would require not using their own chatgpt accounts, we'd need to use api and warn them if they are submitting info that could be used to identify them regardless of anon api access. they must pay if they want to use API. this should be in privacy policy and clearly explained to users the agreement when they sign up"
+  },
+  "interpretation": {
+    "selectedOption": "A",
+    "freeContributionPolicy": "default-on-per-candidate-refusal",
+    "candidateScope": "privacy-screened-generalized-candidates-only",
+    "paidApiRequiredForApiPath": true,
+    "paidGlobalContributionDisableAvailable": true,
+    "identifiabilityWarningRequired": true,
+    "classification": "PRODUCT_PRIVACY_ECONOMIC_POLICY",
+    "therapyPolicyAuthority": "none"
+  },
+  "implementationAuthority": {
+    "offlinePolicyDesign": true,
+    "rawTherapyChatTransmission": false,
+    "existingCandidateBackfill": false,
+    "liveTransmission": false,
+    "realQueue": false,
+    "billing": false,
+    "liveSignup": false,
+    "privacyPolicyPublication": false,
+    "runtimePersonalization": false,
+    "therapyPolicyActivation": false,
+    "release": false
+  }
+}

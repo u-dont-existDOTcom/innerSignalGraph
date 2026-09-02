@@ -23,6 +23,7 @@ import {
   exportInstalledGuidePacket
 } from "../guide-packet/store.mjs";
 import { recoverGuidePacketCandidateOnStartup } from "../guide-packet/autopilot.mjs";
+import { getLiveLearningStore, LIVE_LEARNING_REVIEW_DISPOSITIONS } from "../learning/live-store.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(here, "../../apps/web");
@@ -30,6 +31,7 @@ const STATIC = Object.freeze({
   "/": ["index.html", "text/html; charset=utf-8"],
   "/index.html": ["index.html", "text/html; charset=utf-8"],
   "/app.js": ["app.js", "text/javascript; charset=utf-8"],
+  "/correction-learning.js": ["correction-learning.js", "text/javascript; charset=utf-8"],
   "/styles.css": ["styles.css", "text/css; charset=utf-8"]
 });
 const SAFE_SLUG = /^[a-z][a-z0-9-]{0,63}$/;
@@ -38,6 +40,16 @@ const GIT_SHA = /^[a-f0-9]{40}$/i;
 const DIAGNOSTIC_PATH = /^diagnostics\/[0-9a-f-]{36}\/[a-f0-9]{64}\.json$/i;
 const PROGRESS_PATH = /^progress\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/current\.json$/i;
 const PROGRESS_ASSESSMENT = /^(?:ADVANCING|LONG_RUNNING_STAGE|WAITING_FOR_HUMAN|BLOCKED|COMPLETE|IDLE|WORKER_NOT_RUNNING)$/;
+const LIVE_LEARNING_RECEIPT = /^ISL-LOCAL-[A-F0-9]{24}$/;
+const LIVE_LEARNING_ENDPOINTS = Object.freeze([
+  "/v1/learning/preview",
+  "/v1/learning/submit",
+  "/v1/learning/revoke",
+  "/v1/learning/review/status",
+  "/v1/learning/review/records",
+  "/v1/learning/review/records/:receipt",
+  "/v1/learning/review/records/:receipt/decision"
+]);
 
 async function readStatusJson(file) {
   try {
@@ -149,7 +161,11 @@ async function readBody(req, maxBytes = 2_000_000) {
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > maxBytes) throw new Error(`Request body exceeds ${Math.round(maxBytes / 1_000_000)} MB.`);
+    if (size > maxBytes) {
+      const error = new Error(`Request body exceeds ${maxBytes} bytes.`);
+      error.code = "VALIDATION_ERROR";
+      throw error;
+    }
     chunks.push(Buffer.from(chunk));
   }
   return Buffer.concat(chunks);
@@ -160,7 +176,58 @@ async function readJson(req, maxBytes = 2_000_000) {
   return JSON.parse(body.toString("utf8"));
 }
 
+function requestValidation(message) {
+  const error = new Error(message);
+  error.code = "VALIDATION_ERROR";
+  return error;
+}
+
+function validateLearningReceipt(receipt) {
+  if (!LIVE_LEARNING_RECEIPT.test(receipt)) throw requestValidation("Learning receipt is invalid.");
+  return receipt;
+}
+
+async function readLearningReviewDecision(req) {
+  let input;
+  try {
+    input = await readJson(req, 4096);
+  } catch (error) {
+    if (error?.code === "VALIDATION_ERROR") throw error;
+    throw requestValidation("Learning review decision body must be valid JSON.");
+  }
+  if (!input || typeof input !== "object" || Array.isArray(input) || Object.keys(input).length !== 1 || !("disposition" in input)) {
+    throw requestValidation("Learning review decision body must contain only disposition.");
+  }
+  if (!LIVE_LEARNING_REVIEW_DISPOSITIONS.includes(input.disposition)) throw requestValidation("Learning review disposition is invalid.");
+  return input.disposition;
+}
+
+async function sendLearningReview(res, operation, { counts = false, notFound = false } = {}) {
+  try {
+    const value = await operation();
+    if (notFound && value === null) return send(res, 404, { error: "Learning receipt was not found.", code: "NOT_FOUND" });
+    return send(res, 200, value);
+  } catch {
+    const unavailable = {
+      error: "Local learning review is unavailable.",
+      code: "LEARNING_REVIEW_UNAVAILABLE",
+      availability: "unavailable",
+      reasonCode: "LOCAL_REVIEW_STORE_UNAVAILABLE"
+    };
+    if (counts) Object.assign(unavailable, {
+      totalOpen: null,
+      needsReview: null,
+      acceptedNotIncorporated: null,
+      incorporatedClosed: null,
+      runtimeAuthority: "none",
+      therapyPolicyAuthority: "none"
+    });
+    return send(res, 503, unavailable);
+  }
+}
+
 export function createInnerSignalServer({ config, providers }) {
+  const liveLearningStore = getLiveLearningStore(config);
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url || "/", "http://127.0.0.1");
@@ -188,8 +255,40 @@ export function createInnerSignalServer({ config, providers }) {
             candidateStatus: (await readGuidePacketStatus(config)).candidate?.status ?? null
           },
           webClient: { available: true, path: "/", diagnosticExport: true },
-          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
+          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/hypnosis/compile", ...LIVE_LEARNING_ENDPOINTS, "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
+      }
+      if (req.method === "POST" && url.pathname === "/v1/learning/preview") {
+        const candidate = await readJson(req, 16 * 1024);
+        return send(res, 200, liveLearningStore.createPreview(candidate));
+      }
+      if (req.method === "POST" && url.pathname === "/v1/learning/submit") {
+        const input = await readJson(req, 16 * 1024);
+        return send(res, 200, await liveLearningStore.submit(input));
+      }
+      if (req.method === "POST" && url.pathname === "/v1/learning/revoke") {
+        const input = await readJson(req, 16 * 1024);
+        return send(res, 200, await liveLearningStore.revoke(input));
+      }
+      if (req.method === "GET" && url.pathname === "/v1/learning/review/status") {
+        return sendLearningReview(res, () => liveLearningStore.status(), { counts: true });
+      }
+      if (req.method === "GET" && url.pathname === "/v1/learning/review/records") {
+        return sendLearningReview(res, () => liveLearningStore.list());
+      }
+      const reviewDecisionMatch = url.pathname.match(/^\/v1\/learning\/review\/records\/([^/]+)\/decision$/);
+      if (req.method === "POST" && reviewDecisionMatch) {
+        const receipt = validateLearningReceipt(reviewDecisionMatch[1]);
+        const disposition = await readLearningReviewDecision(req);
+        return sendLearningReview(res, async () => {
+          if (!await liveLearningStore.show(receipt)) return null;
+          return liveLearningStore.decide(receipt, disposition);
+        }, { notFound: true });
+      }
+      const reviewDetailMatch = url.pathname.match(/^\/v1\/learning\/review\/records\/([^/]+)$/);
+      if (req.method === "GET" && reviewDetailMatch) {
+        const receipt = validateLearningReceipt(reviewDetailMatch[1]);
+        return sendLearningReview(res, () => liveLearningStore.show(receipt), { notFound: true });
       }
       if (req.method === "POST" && url.pathname === "/v1/plan") {
         const input = await readJson(req);

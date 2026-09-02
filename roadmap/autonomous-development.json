@@ -104,6 +104,151 @@
       "layer": "guide-graph",
       "objective": "Compile altered-state support after the complete canonical guide is available.",
       "acceptance": ["complete canonical source available"]
+    },
+    {
+      "id": "COMMUNITY-R001",
+      "name": "Production Commons substrate composition",
+      "automationClass": "engineering",
+      "autoStart": false,
+      "priority": 35,
+      "layer": "community-platform",
+      "objective": "After the core InnerSignal app is complete and a later authorized reasoning directive activates this task, compose production hosting and domain controls, identity/SSO, self-hosted Discourse, and PostgreSQL without scaling the prototype forum store.",
+      "acceptance": [
+        "autoStart remains false until the core InnerSignal app is complete",
+        "a later authorized reasoning directive explicitly activates this task",
+        "production hosting, domain, identity/SSO, Discourse, and PostgreSQL boundaries are verified without launching a public or network pilot"
+      ]
+    },
+    {
+      "id": "COMMUNITY-R002",
+      "name": "Production Commons data security and recovery",
+      "automationClass": "engineering",
+      "autoStart": false,
+      "priority": 34,
+      "layer": "community-data",
+      "objective": "After the core InnerSignal app is complete and a later authorized reasoning directive activates this task, implement approved encrypted storage and secrets handling, backups, disaster recovery, deletion operations, and data-lifecycle controls for the production Commons substrate.",
+      "acceptance": [
+        "autoStart remains false until the core InnerSignal app is complete",
+        "a later authorized reasoning directive explicitly activates this task",
+        "key management, retention, recovery, and deletion policy inputs are approved before implementation",
+        "recovery and deletion operations have deterministic and operational verification"
+      ]
+    },
+    {
+      "id": "COMMUNITY-R003",
+      "name": "Validated Commons de-identification and redaction controls",
+      "automationClass": "engineering",
+      "autoStart": false,
+      "priority": 33,
+      "layer": "community-privacy",
+      "objective": "After the core InnerSignal app is complete, approved privacy criteria exist, and a later authorized reasoning directive activates this task, build and validate production de-identification and redaction controls rather than promoting the pilot redactor.",
+      "acceptance": [
+        "autoStart remains false until the core InnerSignal app is complete",
+        "a later authorized reasoning directive explicitly activates this task",
+        "privacy criteria and prohibited disclosure classes are approved inputs rather than worker-authored policy",
+        "validation covers small-cell and indirect reidentification risks"
+      ]
+    },
+    {
+      "id": "COMMUNITY-R004",
+      "name": "Graphical Commons moderation tooling",
+      "automationClass": "engineering",
+      "autoStart": false,
+      "priority": 32,
+      "layer": "community-moderation",
+      "objective": "After the core InnerSignal app is complete and a later authorized reasoning directive activates this task, build graphical moderator tooling on top of approved moderation roles and escalation contracts.",
+      "acceptance": [
+        "autoStart remains false until the core InnerSignal app is complete",
+        "a later authorized reasoning directive explicitly activates this task",
+        "tooling does not invent moderation authority, staffing policy, or jurisdictional escalation rules",
+        "queue review, decision audit, least privilege, and correction flows are verified"
+      ]
+    },
+    {
+      "id": "COMMUNITY-R005",
+      "name": "Staffed moderation and jurisdictional escalation plan",
+      "automationClass": "human-policy-required",
+      "autoStart": false,
+      "priority": 31,
+      "layer": "community-operations",
+      "objective": "After the core InnerSignal app is complete, obtain owner-approved staffed moderation coverage and jurisdiction-appropriate escalation procedures before any real-user or network pilot; a later authorized reasoning directive must activate follow-on work.",
+      "acceptance": [
+        "autoStart remains false until the core InnerSignal app is complete",
+        "staffing, coverage, jurisdiction, and escalation choices are explicitly approved by the applicable human authority",
+        "a later authorized reasoning directive activates any implementation"
+      ]
+    },
+    {
+      "id": "COMMUNITY-R006",
+      "name": "Participant correction and contributor verification",
+      "automationClass": "engineering",
+      "autoStart": false,
+      "priority": 30,
+      "layer": "community-governance",
+      "objective": "After the core InnerSignal app is complete and a later authorized reasoning directive activates this task, implement participant challenge/correction flows and signed contributor-verification receipts under approved governance contracts.",
+      "acceptance": [
+        "autoStart remains false until the core InnerSignal app is complete",
+        "a later authorized reasoning directive explicitly activates this task",
+        "participants can inspect and challenge derived use without granting therapy or runtime authority",
+        "signed verification receipts are provenance-bound and revocation-aware"
+      ]
+    },
+    {
+      "id": "COMMUNITY-R007",
+      "name": "Commons privacy and legal review",
+      "automationClass": "human-policy-required",
+      "autoStart": false,
+      "priority": 29,
+      "layer": "community-privacy",
+      "objective": "After the core InnerSignal app is complete, obtain the applicable privacy and legal review for health-related community data before inviting real participants or activating production processing; a later authorized reasoning directive must activate any resulting implementation.",
+      "acceptance": [
+        "autoStart remains false until the core InnerSignal app is complete",
+        "the applicable human authorities explicitly resolve privacy, legal, retention, notice, and participant-rights requirements",
+        "no worker infers launch authorization from completion of documentation alone"
+      ]
+    },
+    {
+      "id": "COMMUNITY-R008",
+      "name": "Commons research-boundary and ethics determination",
+      "automationClass": "human-policy-required",
+      "autoStart": false,
+      "priority": 28,
+      "layer": "community-research",
+      "objective": "After the core InnerSignal app is complete, obtain a formal determination of when product improvement becomes human-subjects research and define any approved protocol-management capability before research use; a later authorized reasoning directive must activate follow-on work.",
+      "acceptance": [
+        "autoStart remains false until the core InnerSignal app is complete",
+        "research and ethics authorities explicitly determine the boundary and required protocol",
+        "no research use, experiment execution, or external-researcher sharing begins from this queue entry"
+      ]
+    },
+    {
+      "id": "COMMUNITY-R009",
+      "name": "Commons production observability and incident readiness",
+      "automationClass": "engineering",
+      "autoStart": false,
+      "priority": 27,
+      "layer": "community-operations",
+      "objective": "After the core InnerSignal app is complete and a later authorized reasoning directive activates this task, implement production recovery, monitoring, incident response, and operational-readiness controls for the approved Commons architecture.",
+      "acceptance": [
+        "autoStart remains false until the core InnerSignal app is complete",
+        "a later authorized reasoning directive explicitly activates this task",
+        "monitoring, recovery drills, incident handling, and operational ownership are verified before any real-user pilot"
+      ]
+    },
+    {
+      "id": "COMMUNITY-R010",
+      "name": "Invite-only real-user Commons pilot decision",
+      "automationClass": "human-policy-required",
+      "autoStart": false,
+      "priority": 26,
+      "layer": "community-launch",
+      "objective": "Only after the core InnerSignal app is complete, COMMUNITY-R001 through COMMUNITY-R009 have satisfied their applicable technical and human-policy gates, and a later authorized reasoning directive presents the consolidated evidence, ask the owner whether to authorize an invite-only real-user pilot.",
+      "acceptance": [
+        "autoStart remains false",
+        "COMMUNITY-R001 through COMMUNITY-R009 are evidenced complete under their own activation authority",
+        "the owner explicitly authorizes the bounded pilot after reviewing privacy, legal, research, moderation, security, recovery, and operational evidence",
+        "no public or network pilot begins from this queue entry or from silence"
+      ]
     }
   ]
 }

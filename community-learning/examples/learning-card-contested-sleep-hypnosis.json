@@ -1,0 +1,63 @@
+{
+  "format": "inner-signal-community-learning-card-v1",
+  "cardId": "synthetic-contested-sleep-hypnosis",
+  "sourceKind": "synthetic",
+  "status": "CONTESTED_PATTERN",
+  "reviewStatus": "synthetic-example",
+  "runtimeAuthority": "none",
+  "practiceOrFeature": "Brief self-hypnosis immediately before sleep",
+  "observation": "Synthetic pilot reports split between easier sleep onset and increased alertness after brief self-hypnosis immediately before bed. The difference may depend on induction style, prior experience, and whether the session ends with energizing language.",
+  "independentContributorCount": 6,
+  "sourceCount": 6,
+  "outcomeCounts": {
+    "benefit": 3,
+    "no-change": 1,
+    "mixed": 1,
+    "worsening": 1,
+    "unclear": 0
+  },
+  "timeCoverage": {
+    "immediate": 6,
+    "laterSameDay": 0,
+    "nextMorning": 5,
+    "followingTwoToThreeDays": 2,
+    "longerFollowUp": 1
+  },
+  "contexts": [
+    "Three people were new to self-hypnosis.",
+    "Two used a session containing an alertness-oriented return.",
+    "One also changed caffeine timing."
+  ],
+  "confounders": [
+    "Caffeine timing changed for one contributor.",
+    "Session scripts were not identical.",
+    "Baseline insomnia severity was not measured consistently."
+  ],
+  "adverseSignals": [
+    "One contributor reported feeling more mentally activated for approximately an hour.",
+    "One reported benefit on the first night but poorer sleep on the second night."
+  ],
+  "unknowns": [
+    "The reports are synthetic examples, not participant evidence.",
+    "It is unknown whether route language or timing explains the split.",
+    "Longer follow-up is largely absent.",
+    "External evidence has not been checked."
+  ],
+  "externalEvidence": {
+    "status": "not-checked",
+    "references": []
+  },
+  "evidenceProfile": {
+    "independentContributors": 6,
+    "withinPersonRepetition": 1,
+    "temporalSpecificity": 14,
+    "negativeAndAdverseCoverage": 3,
+    "confoundingBurden": 3,
+    "missingLongerFollowUp": 5,
+    "freshness": "synthetic"
+  },
+  "productProposalEligible": true,
+  "createdAt": "2026-08-30T16:00:00.000Z",
+  "updatedAt": "2026-08-30T16:00:00.000Z",
+  "nextReviewAt": "2026-09-29T16:00:00.000Z"
+}

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innersignal.local/schemas/post.schema.json",
+  "title": "InnerSignal Commons post",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "postId",
+    "participantId",
+    "pseudonymSnapshot",
+    "room",
+    "title",
+    "body",
+    "responseContract",
+    "contentNote",
+    "conversationOnly",
+    "createdAt",
+    "moderation",
+    "reactions",
+    "replies"
+  ],
+  "properties": {
+    "postId": { "type": "string", "format": "uuid" },
+    "participantId": { "type": "string", "format": "uuid" },
+    "pseudonymSnapshot": { "type": "string", "minLength": 2, "maxLength": 40 },
+    "room": {
+      "enum": [
+        "using-innersignal",
+        "inner-child-parts",
+        "meditation-awareness",
+        "somatic-practices",
+        "self-hypnosis",
+        "sleep",
+        "relationships-daily-life",
+        "governance-learning"
+      ]
+    },
+    "title": { "type": "string", "minLength": 4, "maxLength": 140 },
+    "body": { "type": "string", "minLength": 10, "maxLength": 12000 },
+    "responseContract": {
+      "enum": [
+        "listen-only",
+        "similar-experiences",
+        "questions-welcome",
+        "practical-ideas",
+        "challenge-interpretation",
+        "help-field-note"
+      ]
+    },
+    "contentNote": { "type": "string", "maxLength": 180 },
+    "conversationOnly": { "const": true },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "moderation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "flags", "reviewedAt", "reviewerNote"],
+      "properties": {
+        "status": { "enum": ["published", "held-for-human-review", "removed", "escalated"] },
+        "flags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "reviewedAt": { "type": ["string", "null"], "format": "date-time" },
+        "reviewerNote": { "type": "string" }
+      }
+    },
+    "reactions": { "type": "array", "items": { "type": "object" } },
+    "replies": { "type": "array", "items": { "type": "object" } }
+  }
+}

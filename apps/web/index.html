@@ -13,7 +13,10 @@
       <p class="eyebrow">LOCAL RUNTIME</p>
       <h1>Inner Signal</h1>
     </div>
-    <div id="runtime-status" class="status pending" aria-live="polite">Checking runtime…</div>
+    <div class="actions wrap">
+      <a class="file-button" href="http://localhost:8790" aria-label="Open the separate InnerSignal Commons pilot">InnerSignal Commons</a>
+      <div id="runtime-status" class="status pending" aria-live="polite">Checking runtime…</div>
+    </div>
   </header>
 
   <main>
@@ -61,6 +64,7 @@
         </div>
       </div>
       <p class="notice">This is a reflective companion, not emergency care. Ordinary low-ambiguity turns use a fast Sonnet + decision-graph path. The runtime automatically adds Codex review or the full Opus + GPT adversarial pipeline when ambiguity, depth, or safety makes that worthwhile.</p>
+      <p id="potential-lesson-capture-notice" class="notice potential-lesson-notice" aria-live="polite" hidden></p>
       <div id="therapy-transcript" class="transcript" aria-live="polite"></div>
       <form id="therapy-form" class="composer">
         <label for="therapy-message">What is happening?</label>
@@ -178,7 +182,13 @@
           <h2 id="data-heading">Local data</h2>
         </div>
       </div>
-      <p class="notice">Transcript and settings are stored only in this browser profile. Export a browser backup for restoration. The recovery ZIP contains deterministic runtime, Guide Packet, model-entitlement, gate, and supervisor evidence; it excludes chat, therapy reasoning, development-case payloads, .env, and credentials.</p>
+      <p class="notice">Transcript and settings are stored only in this browser profile. Learning contributions are stored in a private queue on this loopback server and are not sent off this device. Export a browser backup for restoration. The recovery ZIP contains deterministic runtime, Guide Packet, model-entitlement, gate, and supervisor evidence; it excludes chat, local learning records, therapy reasoning, development-case payloads, .env, and credentials.</p>
+      <details class="provider-privacy-copy">
+        <summary>Paid API identity and privacy design</summary>
+        <p>Paid API mode is designed to shield your personal ChatGPT account identity from the downstream model request by using an InnerSignal-controlled provider account instead of your personal ChatGPT account. InnerSignal does not intentionally forward your personal ChatGPT account identifier as the model-provider account identity.</p>
+        <p><strong>This is account-identity shielding, not anonymity.</strong> InnerSignal or its payment/account infrastructure may know who you are; providers and network systems may process request, usage, safety, abuse-monitoring, or technical metadata; and your prompt or a combination of ordinary facts can identify you even without an explicit name, email address, or phone number.</p>
+        <p class="small">Paid API mode, billing, and provider integration are not enabled in this local learning build.</p>
+      </details>
       <div class="actions wrap">
         <button id="export-data" type="button">Export backup</button>
         <button id="export-diagnostic-data" class="secondary" type="button">Export recovery ZIP</button>
@@ -186,6 +196,27 @@
         <button id="erase-data" class="danger" type="button">Erase local data</button>
       </div>
       <pre id="data-summary" class="data-summary"></pre>
+      <section class="potential-lessons-section" aria-labelledby="potential-lessons-heading">
+        <h3 id="potential-lessons-heading">Potential lessons</h3>
+        <p class="small">Explicit correction signals can create category-only candidates in this browser. You can preview the exact generalized evidence, refuse it at no charge, or continue with the default local contribution. No triggering chat text or assistant answer is copied into a candidate. Local review does not teach the therapy runtime; runtime and therapy-policy authority remain none.</p>
+        <div id="potential-lessons" class="potential-lessons-list"></div>
+      </section>
+      <section class="learning-review-section" aria-labelledby="learning-review-heading">
+        <div class="learning-review-heading">
+          <div>
+            <h3 id="learning-review-heading">Local learning review</h3>
+            <p class="small">Review generalized learning evidence saved on this device. These records contain no raw therapy transcript or assistant answer and cannot change InnerSignal therapy behavior.</p>
+          </div>
+          <button id="learning-review-refresh" class="secondary" type="button">Refresh local review</button>
+        </div>
+        <p class="notice compact-notice">This is a local maintainer view. Anyone with access to this running InnerSignal instance may be able to view these generalized records.</p>
+        <p class="small"><strong>Flag for owner therapy-policy decision</strong> only changes triage status to <code>needs-owner-therapy-decision</code>. It does not approve, install, or change therapy.</p>
+        <div class="learning-review-status-row">
+          <span id="learning-review-availability" class="status pending" aria-live="polite">Checking local queue…</span>
+          <span id="learning-review-summary" class="small" aria-live="polite">Counts not loaded.</span>
+        </div>
+        <div id="learning-review-records" class="learning-review-records" aria-live="polite"></div>
+      </section>
     </section>
   </main>
 

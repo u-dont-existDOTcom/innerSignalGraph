@@ -1,0 +1,83 @@
+{
+  "format": "inner-signal-community-proposal-v1",
+  "proposalId": "3f70f6ec-79c5-4ef4-b499-5f5b07db015b",
+  "candidateOnly": true,
+  "activation": "proposal-only",
+  "runtimeWritable": false,
+  "sourceCardId": "synthetic-product-sharing-friction",
+  "sourceCardSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "consentSnapshotSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "generatedAt": "2026-08-30T16:15:00.000Z",
+  "generatedByParticipantId": "c5f3f73d-3b53-4594-b090-dbf2076e6203",
+  "card": {
+    "format": "inner-signal-community-learning-card-v1",
+    "cardId": "synthetic-product-sharing-friction",
+    "sourceKind": "synthetic",
+    "status": "PRODUCT_PROPOSAL",
+    "reviewStatus": "synthetic-example",
+    "runtimeAuthority": "none",
+    "practiceOrFeature": "Post-session private-versus-community sharing chooser",
+    "observation": "Synthetic usability reports indicate that people better understood the privacy boundary when the first choice was Keep this private and the Field Note option appeared as a separate deliberate action rather than a preselected sharing checkbox.",
+    "independentContributorCount": 8,
+    "sourceCount": 8,
+    "outcomeCounts": {
+      "benefit": 7,
+      "no-change": 1,
+      "mixed": 0,
+      "worsening": 0,
+      "unclear": 0
+    },
+    "timeCoverage": {
+      "immediate": 8,
+      "laterSameDay": 0,
+      "nextMorning": 0,
+      "followingTwoToThreeDays": 0,
+      "longerFollowUp": 0
+    },
+    "contexts": [
+      "Desktop browser prototype.",
+      "Participants reviewed mock content rather than real therapy transcripts."
+    ],
+    "confounders": [
+      "The revised version also used shorter consent language."
+    ],
+    "adverseSignals": [],
+    "unknowns": [
+      "The reports are synthetic examples, not participant evidence.",
+      "The result may not generalize to mobile screens.",
+      "No real sensitive disclosure was used."
+    ],
+    "externalEvidence": {
+      "status": "not-comparable",
+      "references": []
+    },
+    "evidenceProfile": {
+      "independentContributors": 8,
+      "withinPersonRepetition": 0,
+      "temporalSpecificity": 8,
+      "negativeAndAdverseCoverage": 1,
+      "confoundingBurden": 1,
+      "missingLongerFollowUp": 8,
+      "freshness": "synthetic"
+    },
+    "productProposalEligible": true,
+    "createdAt": "2026-08-30T16:10:00.000Z",
+    "updatedAt": "2026-08-30T16:10:00.000Z",
+    "nextReviewAt": "2026-09-29T16:10:00.000Z"
+  },
+  "unresolvedLimitations": [
+    "The reports are synthetic examples, not participant evidence.",
+    "The result may not generalize to mobile screens.",
+    "No real sensitive disclosure was used."
+  ],
+  "requiredNextGate": "replace-synthetic-evidence",
+  "prohibitedTransitions": [
+    "runtime activation",
+    "stable installation",
+    "direct guide-graph write"
+  ],
+  "integrity": {
+    "algorithm": "sha256",
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
+}

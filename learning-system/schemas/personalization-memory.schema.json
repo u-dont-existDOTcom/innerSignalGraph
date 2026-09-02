@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://innerself.love/schemas/personalization-memory.schema.json",
+  "title": "InnerSignal offline personalization memory",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "memoryId", "memoryType", "generalizedValue", "provenance", "status", "consentStatus", "createdAt", "lastConfirmedAt", "reviewAfter", "authority", "overrideClass", "runtimeConsumerPresent"],
+  "properties": {
+    "format": { "const": "inner-signal-user-personalization-v1" },
+    "memoryId": { "type": "string", "pattern": "^ISM-SYN-[A-Z0-9-]{3,64}$" },
+    "memoryType": { "enum": ["presentation-preference", "process-preference", "framing-preference", "user-outcome-caution"] },
+    "generalizedValue": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "not": { "pattern": "(?:[Dd]iagnos(?:is|e)|[Gg]lobal therapy rule|[Cc]aused (?:this|that) outcome|[Tt]hird[- ]party character|[Aa]lways agree|[Ii]gnore safety|[Ii]gnore evidence|[Rr]ecovered[- ]memory certainty)" }
+    },
+    "provenance": { "enum": ["explicit-user-preference", "participant-reported-outcome"] },
+    "status": { "enum": ["active", "revoked", "needs-review"] },
+    "consentStatus": { "enum": ["local-only", "withdrawn"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "lastConfirmedAt": { "type": "string", "format": "date-time" },
+    "reviewAfter": { "type": "string", "format": "date-time" },
+    "authority": { "const": "user-scope-only" },
+    "overrideClass": { "const": "soft" },
+    "runtimeConsumerPresent": { "const": false }
+  }
+}

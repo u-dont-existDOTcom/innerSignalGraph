@@ -1,0 +1,23 @@
+{
+  "format": "inner-signal-contribution-policy-v1",
+  "policyId": "default-on-per-candidate-refusal",
+  "candidateScope": "privacy-screened-generalized-candidates-only",
+  "rawTherapyChatEligible": false,
+  "freeUserProviderPath": "user-owned-chatgpt-account",
+  "freeContributionMode": "default-on-per-candidate-refusal",
+  "candidatePreviewRequired": true,
+  "refusalCost": "free",
+  "refusalScope": "current-candidate-only",
+  "refusalReducesAccess": false,
+  "freeGlobalContributionDisableAvailable": false,
+  "paidApiProviderPath": "innersignal-controlled-openai-api-account",
+  "paidApiRequiresPayment": true,
+  "paidGlobalContributionDisableAvailable": true,
+  "paidGlobalContributionSetting": "UNSPECIFIED_PENDING_FUTURE_BILLING_UI_DECISION",
+  "candidateTransmissionEnabled": false,
+  "existingCandidateBackfillEnabled": false,
+  "runtimePersonalizationEnabled": false,
+  "therapyPolicyActivated": false,
+  "therapyPolicyAuthority": "none",
+  "releaseAuthorized": false
+}

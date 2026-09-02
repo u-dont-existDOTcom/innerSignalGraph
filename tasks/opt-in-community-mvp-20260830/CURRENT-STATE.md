@@ -1,0 +1,270 @@
+# Opt-in community MVP current state
+
+**Task:** `opt-in-community-mvp-20260830`  
+**Branch:** `design/opt-in-community-learning-20260830`  
+**PR:** #15  
+**Authority:** current owner instruction → this task state → current task design/spec/plan → current PR code/tests/CI → repository-global state only where non-conflicting.
+
+## Completed in this slice
+
+- Executable standalone InnerSignal Commons service and web client.
+- Separate community data root from private InnerSignal state.
+- Pseudonymous sessions, recovery, invitation enforcement, adults-only acknowledgment, and CSRF.
+- Response contracts and separated social/evidence reactions.
+- Structured Field Notes and granular consent receipts.
+- Withdrawal/recomputation and stale-proposal tracking.
+- Minimum three-contributor shared-card threshold.
+- No verbatim Field Note prose in participant-facing community-derived cards.
+- Key-protected moderation queue and decisions.
+- Proposal-only exports and authority-path verification.
+- Main local launcher integration and standalone container files.
+- Synthetic contested, adverse-signal, and product-friction cards.
+- Bounded implementation and continuation documentation.
+
+## Independent review repair cycle
+
+Extra High independently reviewed PR #15 at `e70ea3648f40163ce41ba8933f9d0f670b36a769` under directive `ctc-innersignal-pr15-repair-20260831-001`. The bounded repair:
+
+- isolates participant-facing aggregation from product-improvement-only consent;
+- keeps unreviewed community-derived cards out of participant bootstrap and proposal export without adding a review-approval mechanism;
+- stales every proposal linked to a withdrawn contribution even when the recomputed card remains above threshold;
+- classifies multiple reports from one contributor as `REPEATED_PERSONAL_PATTERN`;
+- removes the cookie property-injection and Authorization polynomial-regex paths and stops reflecting unexpected exception detail;
+- replaces overstated deletion/bounded-ledger claims with the factual current-content, account-deactivation, and retained pseudonymous audit-metadata boundary.
+
+The repair was committed and pushed as `e4bb5d1d11ad2a1ee92525f1e5945a899d4adb10`. Extra High accepted that repair and its execution receipt under directive `ctc-innersignal-pr15-closeout-queue-20260831-002` after independently confirming the exact PR head and hosted evidence.
+
+## Verification
+
+Local bounded suite: **PASS 11/11** for all tests runnable without repository-installed AJV.
+
+Covered:
+
+- contract validation;
+- adults-only participation acknowledgment;
+- response-contract enforcement;
+- consent dependency rules;
+- safety holds;
+- invitation, cookie session, and CSRF;
+- human moderation authorization and decisions;
+- conversation-only posts;
+- three-contributor suppression;
+- non-verbatim shared cards;
+- withdrawal and recomputation;
+- stale proposal records;
+- participant export secret exclusion;
+- proposal non-activation;
+- UI privacy and consent boundaries.
+
+Repository verification at executable commit `6c983eb93c1c0392c2f19fdc2c4ac3593a762f0f`:
+
+- repository workflow policy: **PASS**;
+- AJV schema/example verification: **PASS**;
+- complete test suite and deterministic package gate: **PASS**;
+- clean final worktree gate: **PASS**;
+- CodeQL JavaScript analysis: **PASS**.
+
+The independent privacy/security/product review is complete. Therapy-semantic Pro escalation was not required because the repair remained a structural fail-closed authority change and did not decide therapy semantics.
+
+Post-repair local verification on 2026-08-31:
+
+- `npm run community:test`: **PASS 15/15** after locked dependencies were installed with lifecycle scripts disabled;
+- `npm run community:verify`: **PASS**;
+- `npm test`: **PASS 456/456**;
+- `npm run audit:repository`: **PASS** with the known repository-global installed-GitHub-App-permission warning, which belongs to the older hardening task and does not block this task;
+- `npm run verify`: **PASS**.
+
+Exact-head hosted readback for `e4bb5d1d11ad2a1ee92525f1e5945a899d4adb10` is complete: `workflow-policy` (`99479551622`), `deterministic-package` (`99479550970`), `codeql-javascript` (`99479550876`), and the separate GHAS `CodeQL` check (`99479816523`) all succeeded. The separate check had zero annotations and reported no new alerts; analysis `1697837333` reported zero results.
+
+## Product-policy state
+
+No community-derived therapy behavior is active. No automatic AI extraction is active. No research use is authorized. No public or network pilot is authorized by this implementation alone.
+
+## Owner-authorized correction-preservation checkpoint
+
+Directive `EH-INNERSIGNAL-CORRECTION-PRESERVATION-SLICE-20260831-001` implements only a
+private preservation primitive for an explicit user correction or rejection:
+
+- capture requires the deliberate action **Save this correction as a potential lesson**;
+- representative correction phrases in ordinary text trigger nothing automatically;
+- the service does not read or import a private chat, assistant answer, message/session
+  identifier, hidden context, embedding, therapy state, or generated summary;
+- the saved draft contains only a manually selected category and optional user-written
+  summary, with a required privacy/redaction acknowledgement for free text;
+- community sharing and product-improvement use remain `false`, runtime authority remains
+  `none`, and the draft cannot enter Learning Cards or proposal exports;
+- account deletion removes the current private drafts under the same disclosed append-only
+  audit-metadata retention boundary as other Commons content.
+
+Bounded verification is green: `npm run community:test` **PASS 17/17**,
+`npm run community:verify` **PASS**, `npm test` **PASS 458/458**, and
+`npm run audit:repository` **PASS** with the known unrelated installed-GitHub-App-permission
+warning. Overall Commons status remains `CHECKPOINT`; this does not approve therapy policy,
+restore missing therapy ledgers, activate learning, or establish a usable active-account
+plugin.
+
+## Next executable slice
+
+No further Commons implementation is currently authorized. The remaining work is recorded as `COMMUNITY-R001` through `COMMUNITY-R010` in `roadmap/autonomous-development.json`, every item has `autoStart: false`, and every item is gated on completion of the core InnerSignal app plus the applicable later reasoning/owner authority. Queue persistence is not execution authority, and this worker must not decide that the core-app-complete gate has been reached.
+
+PR #15 remains draft and unmerged. Preserve `stable`, keep public/network launch, research use, and community-derived therapy behavior inactive, and wait for a later authorized reasoning directive to activate a specific deferred task.
+
+## Private correction-learning candidate layer
+
+The newer explicit owner outcome supersedes the earlier stop only for a private main-app
+candidate-capture slice. Extra High reconciled that outcome under directive
+`ctc-innersignal-private-correction-capture-20260831-001` at reviewed PR head
+`243e61c2662cf9db3e6cb93c8fc7f02918fc2d89`. No Pro escalation was required because the
+slice classifies interaction feedback and controls local storage; it does not decide whether
+a correction is therapeutically true or change therapy semantics.
+
+The private InnerSignal web app now has a conservative deterministic detector for the
+owner-named response signals: did not work, did not make sense, explicit disagreement, and
+explicit correction. A match creates a browser-local, category-only potential-lesson stub
+before the therapy request is sent. The candidate never contains the triggering message,
+assistant answer, transcript position, message/session/ledger identifier, hash, hidden
+context, embedding, therapy state, or generated summary. A manual category-only fallback is
+also available on assistant response controls.
+
+Users can inspect and reclassify a candidate, write an optional redacted summary with an
+explicit privacy acknowledgement, keep it private, queue it for later governance review,
+dismiss it, or delete it. Backup/import/erase supports the candidate array with strict
+field validation. History stores only fixed action codes and timestamps. Every state keeps
+`runtimeAuthority: none` and `therapyPolicyAuthority: none`; no therapy pipeline, prompt,
+graph, Guide Packet, governance ledger, or Commons store consumes the candidate.
+
+This is candidate learning with capture, provenance, review/disposition, and closeout—not
+runtime adoption. Commons behavior and its explicit contribution flow remain unchanged.
+Public/network operation, research use, community-derived therapy behavior, and therapy
+policy approval remain unauthorized. Final package and exact-head hosted verification are
+recorded in the post-execution review packet rather than inferred from this task state.
+
+## Offline AskRigor-like learning groundwork
+
+Directive `ctc-innersignal-learning-offline-groundwork-20260831-001` authorizes one
+offline-only enablement slice for the clarified parent outcome that InnerSignal itself should
+eventually learn from user feedback. The slice defines strict feedback-evidence,
+personalization-memory, generalized-candidate, review-card, queue-status, and external
+owner-decision-reference contracts. It also provides deterministic privacy screens,
+canonical fingerprints, candidate-scoped occurrence and revocation tokens,
+contradiction-preserving aggregation, a pure in-memory mock queue, a static synthetic review
+preview, and a fail-closed promotion predicate.
+
+This groundwork has zero app, server, orchestrator, prompt, graph, guide, or therapy-runtime
+consumer. It has no network client, endpoint, real queue, GitHub App, issue write, credential,
+or live transmission authority. Personalization remains an inspectable schema and pure
+precedence resolver with `runtimeConsumerPresent: false`; current policy remains
+`local-only`, and participant outcome reports retain the explicit
+`participant-report-only-no-causal-inference` boundary. No therapy ledger is created or
+changed.
+
+This is `SUBTASK_ENABLEMENT_ONLY`, pending post-execution Extra High reasoning acceptance.
+The parent owner outcome remains open. Operational adequacy is limited to the mechanically
+verified offline/no-network/no-runtime boundary; scientific adequacy is not assessed and
+release is not authorized.
+
+## Default contribution and paid API privacy policy — offline only
+
+The exact owner statement in
+`OWNER-PRODUCT-PRIVACY-DECISION-20260831-003.json` selects Option A as a task-local
+product/privacy/economic policy. Free community learning is modeled as default-on for future
+privacy-screened generalized lesson candidates, with a mandatory candidate preview and free
+per-candidate refusal that never reduces access. The paid API path may eventually provide a
+global contribution control, but its default is deliberately left unspecified.
+
+The provider disclosure distinguishes the user's own ChatGPT account from a future paid,
+InnerSignal-controlled OpenAI API account. It does not claim that ordinary API traffic is
+unmonitored, never retained, anonymous, or automatically eligible for Zero Data Retention.
+Both paths require an explicit warning that message content and combinations of facts may
+identify a person despite account anonymity or API routing.
+
+This slice remains offline: no app or server consumes it; no signup, billing, OpenAI API call,
+network write, real queue, candidate transmission, backfill, privacy-policy publication,
+retention schedule, runtime personalization, or therapy-policy activation is enabled. Raw
+therapy chat is never an eligible contribution. Refusal, future revocation, and deletion may
+not be paywalled.
+
+The owner receipt has `therapyPolicyAuthority: none` and cannot serve as a therapy-policy
+approval. Any later candidate that could affect guides, graphs, prompts, safety, evidence
+policy, or therapy behavior still requires the canonical direct owner-decision and
+regression-first governance path. Scientific adequacy remains
+`NOT_ASSESSED_UNCHANGED`; release remains `NOT_AUTHORIZED`; the parent outcome remains open.
+
+## Live local learning lifecycle
+
+The latest owner outcome advances the main-app learning objective beyond offline groundwork.
+Extra High independently reconciled the exact owner source at SHA-256
+`61d8521d5a27165b2bac0f8910c3d0fd9629e581ba1010040719b43a68773215` and issued directive
+`ctc-innersignal-live-learning-loopback-20260901-001` at start head
+`3900c58de688fa147628b6bb9e2b88af82abd8e5`. The directive supersedes the older
+zero-runtime-consumer and no-real-persistence holds only for the existing main app's private
+local-loopback learning lifecycle.
+
+The current implementation connects the category-only correction/rejection detector to a
+strict generalized evidence record, mandatory exact preview, explicit default-continuation or
+free refusal, durable same-device private queue, `ISL-LOCAL-*` receipt, maintainer review
+tooling, and user revocation/deletion. Preview is memory-only; queue writes are atomic and use
+private filesystem modes where supported. Browser-local receipt/revocation mappings allow a
+contributed occurrence to be deleted before its local credentials are erased.
+
+No raw user message, assistant answer, transcript, conversation/session/ledger identifier,
+therapy state, case formulation, graph state, embedding, source hash, match offset, or generated
+summary is eligible. The only optional free text is a user-authored, privacy-acknowledged
+summary. Every candidate and every maintainer disposition retains `runtimeAuthority: none`,
+`therapyPolicyAuthority: none`, and `externalTransmissionAuthority: none`.
+
+This lifecycle is live only on the existing loopback service. It adds no off-device request,
+remote queue, cross-user aggregation, OpenAI/OpenRouter integration, billing, signup, public
+deployment, research use, backfill, therapy-ledger mutation, or therapy-runtime incorporation.
+The paid API disclosure describes account-identity shielding, not anonymity: prompts,
+combinations of ordinary facts, payment/account infrastructure, providers, and network metadata
+can still identify or link a person.
+
+Extra High accepted the live-local execution at exact head
+`cd789ea9c5df582ac2524e8f4d563e3a9bd7e98e` with typed claim
+`LIVE_LOCAL_LEARNING_SUBTASK_COMPLETE_PARENT_OPEN`. The accepted checkpoint is:
+
+- Worker-to-contract alignment: `GREEN`.
+- Contract-to-owner alignment: `MATCH_FOR_THIS_SUBTASK`.
+- Operational alignment: `ADEQUATE_FOR_LIVE_LOCAL_LOOPBACK`.
+- Privacy/security/product adequacy: `ADEQUATE_FOR_THIS_BOUNDARY`.
+- Scientific adequacy: `NOT_ASSESSED_UNCHANGED`.
+- Release adequacy: `NOT_AUTHORIZED`.
+- Completion claim: `LIVE_LOCAL_LEARNING_SUBTASK_COMPLETE_PARENT_OPEN`; the parent outcome is
+  explicitly still open.
+- Pro escalation: `NO_PRO`; this slice changes evidence handling, not therapy semantics.
+
+## Live local owner-review workbench
+
+The owner explicitly required continuation after the accepted subtask because the parent
+learning outcome remains open. Exact continuation source SHA-256:
+`7f7988b3cfe6e3f4fb515bb32acd5cf05737deff8308c6f9dd097ff3804187f2`.
+
+Extra High directive `ctc-innersignal-live-local-owner-review-workbench-20260901-001`, revision
+1, activates the current bounded slice at start head
+`cd789ea9c5df582ac2524e8f4d563e3a9bd7e98e`. The slice adds a same-device owner/maintainer
+review workbench to the existing main-app Local Data surface and four loopback review routes
+backed only by the existing `status/list/show/decide` public projections.
+
+The workbench may inspect strict generalized evidence and apply one of six triage dispositions.
+It cannot expose private queue credentials or raw therapy material, send evidence off-device,
+change personalization/runtime behavior, write a therapy ledger, or approve/install a therapy
+policy. `prepare-therapy-policy-decision` remains only a
+`needs-owner-therapy-decision` triage status.
+
+`tasks/ACTIVE-TASK.json` is a known stale conflicting global lock for an unrelated branch. It
+does not control this explicit owner-selected PR #15 execution and remains unchanged as
+control-plane debt. The deferred Commons queue `COMMUNITY-R001` through `COMMUNITY-R010`
+remains locked; no public/network/provider/billing/release authority is added.
+
+Current worker claim target, subject to the bounded mechanical and post-execution Extra High
+gates: `LIVE_LOCAL_OWNER_REVIEW_WORKBENCH_SUBTASK_COMPLETE_PARENT_OPEN`.
+
+The bounded implementation now exists in the main app and remains pending frozen-diff, final
+package, exact-head hosted, and Extra High execution-receipt review. Pre-freeze verification is
+green: focused tests **28/28**, complete live-local tests **49/49**, correction-learning tests
+**35/35**, Commons tests **17/17**, live-loopback and groundwork verifiers **PASS**, web smoke
+**PASS**, repository audit **PASS** with only the unrelated installed-GitHub-App-permission
+warning, and canonical design audit **PASS** with no findings. Controlled-browser confirmation
+exercised a real triage decision and the on-demand generalized-evidence detail. It also found and
+closed an async refresh-control regression. No owner therapy-policy choice was made or requested.

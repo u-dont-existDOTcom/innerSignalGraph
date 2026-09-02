@@ -1,0 +1,14 @@
+{
+  "fixture": "synthetic-identifiability-warning",
+  "syntheticInputs": [
+    "Contact sample.person@example.test about this fabricated case.",
+    "The synthetic phone number is +1 (555) 010-2030.",
+    "A fabricated address is 42 Example Street.",
+    "The fabricated customer ID is customer-id: DEMO_48291.",
+    "The synthetic local file is /var/example/private-note.txt."
+  ],
+  "expectedCategories": ["email", "phone", "exact-address-like", "account-id", "abs-local-path"],
+  "cleanInput": "A participant prefers shorter instructions.",
+  "cleanInputAnonymous": false,
+  "warningRequiredForBothProviderPaths": true
+}
