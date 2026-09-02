@@ -21,7 +21,7 @@ regression_refs:
   - G008
 base_record_sha256: 2094b53095b0213ede115a8db91bb4aab513f48ed727a16853da008dee1a192c
 base_graph_sha256: e2532806378ef613edac19a9eacbe57653b21a4061a2b9f393bb54d1fa30ff2d
-projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
+projection_input_sha256: 0f787fed212f0e7bf6a0201fd36f1c6f0b3f1189425f42a1db02e96ca90501a8
 ---
 
 # Borrow the best-friend standard of care

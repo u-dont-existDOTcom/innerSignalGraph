@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.SUICIDAL_ADULT_SEAT
 status: owner-approved
 domain: inner-child
-base_record_sha256: 8c30e56dc3ebb023932e9bd15bc1c3fdb1ab8da5c6b40770f4bf2dd1f7288838
-source_file_sha256: 2078f64bdeca839952e03233b66c23b4919b6756615dbc9a30b3258ba21da9bf
-projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
+base_record_sha256: 8f7f1541ecb425bc01fc38f8ea0b4909ac8b75a1b5b21f8e4219c604c0c08138
+source_file_sha256: b490f1b5802671cb9bde9c66fdabd02fe8753a18e980d7ec08104e3a06f71764
+projection_input_sha256: 0f787fed212f0e7bf6a0201fd36f1c6f0b3f1189425f42a1db02e96ca90501a8
 ---
 
 # AMEND.IC.SUICIDAL_ADULT_SEAT
@@ -24,6 +24,6 @@ projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac
     "status": "owner-approved",
     "text": "When a suicidal person appears strongly fused with the state that wants death or lacks even a minimal observing/protective adult position, do not begin by debating abstract metaphysics from inside that fused state. First invite a second seat into the room: a neutral witness, a minimally available inner adult, or one borrowed adult function from a safe person, future self, spiritual figure, plan, or value. Do not assume the suicidal voice is literally an inner child or invent multiplicity; ask whether the wish to die feels like all of them or whether any observing/protective position can sit beside it. The adult or witness does not need to prove life is good, suppress the suicidal part, or claim complete healing. Its first job is to protect the body, listen without retaliation, and postpone irreversible action long enough for inquiry. Once enough differentiation exists, continue the strict self/death/rebirth inquiry. If a witness or partial/available adult position is already present, do not force an extra ritual before that inquiry."
   },
-  "version": "2026-09-02-r3"
+  "version": "2026-09-02-r4"
 }
 ```

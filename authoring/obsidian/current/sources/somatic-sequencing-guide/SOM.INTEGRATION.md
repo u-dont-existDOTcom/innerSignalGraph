@@ -12,7 +12,7 @@ section_hash: 6114c5f9d587adc034cb57b1f0cc67cbc7dade3a4d6a2171cf73f202e69b875c
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.MEANING_INTEGRATION
-projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
+projection_input_sha256: 0f787fed212f0e7bf6a0201fd36f1c6f0b3f1189425f42a1db02e96ca90501a8
 ---
 
 # Light CBT / Narrative Integration
