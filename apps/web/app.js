@@ -1,9 +1,17 @@
+import { createSpeechPlaybackController, deriveSpeechPlaybackUi } from "./speech-playback.js";
+
 const STORAGE_KEY = "inner-signal-runtime-v0100";
 const LEGACY_STORAGE_KEYS = ["inner-signal-runtime-v093", "inner-signal-runtime-v092", "inner-signal-runtime-v091", "inner-signal-runtime-v090", "inner-signal-runtime-v080", "inner-signal-runtime-v070", "inner-signal-runtime-v060"];
 const state = loadState();
 let currentPlan = null;
 let selectedRouteText = "";
 let guidePacketStatus = null;
+
+const speechPlayback = createSpeechPlaybackController({
+  synthesis: window.speechSynthesis,
+  Utterance: window.SpeechSynthesisUtterance,
+  onStateChange: syncSpeechPlaybackControls
+});
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -367,7 +375,18 @@ export function renderHypnosisRoute(plan, routeId) {
   return joinParts([announcement, body, plan.appOwned?.wakingReturn]);
 }
 
+function syncSpeechPlaybackControls(playback = speechPlayback.snapshot()) {
+  const hasSelectedRoute = selectedRouteText.length > 0;
+  const view = deriveSpeechPlaybackUi(playback, hasSelectedRoute);
+  $("#speak-session").disabled = view.readDisabled;
+  $("#pause-speaking").disabled = view.pauseDisabled;
+  $("#resume-speaking").disabled = view.resumeDisabled;
+  $("#stop-speaking").disabled = view.stopDisabled;
+  $("#speech-playback-status").textContent = view.status;
+}
+
 function showPlan(plan) {
+  speechPlayback.stop();
   currentPlan = plan;
   selectedRouteText = "";
   $("#hypnosis-result").hidden = false;
@@ -388,17 +407,16 @@ function showPlan(plan) {
     button.addEventListener("click", () => selectRoute(routeId));
     actions.append(button);
   }
-  $("#speak-session").disabled = true;
-  $("#stop-speaking").disabled = true;
+  syncSpeechPlaybackControls();
 }
 
 function selectRoute(routeId) {
+  speechPlayback.stop();
   selectedRouteText = renderHypnosisRoute(currentPlan, routeId);
   $("#hypnosis-route").textContent = selectedRouteText;
   $("#hypnosis-route").hidden = false;
   $("#hypnosis-gate").hidden = true;
-  $("#speak-session").disabled = !("speechSynthesis" in window);
-  $("#stop-speaking").disabled = !("speechSynthesis" in window);
+  syncSpeechPlaybackControls();
   state.hypnosisHistory.push({
     at: new Date().toISOString(),
     target: currentPlan.target,
@@ -572,6 +590,7 @@ async function exportDiagnosticZip(button) {
 }
 
 function activateTab(id) {
+  if (id !== "hypnosis") speechPlayback.stop();
   for (const button of $$(".tab")) button.classList.toggle("active", button.dataset.tab === id);
   for (const panel of $$(".panel")) {
     const active = panel.id === id;
@@ -693,14 +712,14 @@ $("#hypnosis-form").addEventListener("submit", async (event) => {
   }
 });
 
-$("#speak-session").addEventListener("click", () => {
-  if (!selectedRouteText || !("speechSynthesis" in window)) return;
-  speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(selectedRouteText);
-  utterance.rate = 0.88;
-  speechSynthesis.speak(utterance);
+$("#speak-session").addEventListener("click", () => speechPlayback.start(selectedRouteText));
+$("#pause-speaking").addEventListener("click", () => speechPlayback.pause());
+$("#resume-speaking").addEventListener("click", () => speechPlayback.resume());
+$("#stop-speaking").addEventListener("click", () => speechPlayback.stop());
+document.addEventListener("visibilitychange", () => {
+  speechPlayback.handleVisibilityChange(document.visibilityState);
 });
-$("#stop-speaking").addEventListener("click", () => window.speechSynthesis?.cancel());
+window.addEventListener("pagehide", () => speechPlayback.stop());
 
 $("#export-diagnostic").addEventListener("click", (event) => exportDiagnosticZip(event.currentTarget));
 $("#export-diagnostic-data").addEventListener("click", (event) => exportDiagnosticZip(event.currentTarget));
@@ -779,6 +798,7 @@ $("#dev-reject").addEventListener("click", () => submitDevelopmentDecision("reje
 
 renderTherapy();
 renderDataSummary();
+syncSpeechPlaybackControls();
 checkHealth();
 refreshDevelopmentStatus();
 refreshGuidePacketStatus().catch(() => {});
