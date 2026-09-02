@@ -1,4 +1,4 @@
-# retry after generated current-map drift
+# final retry after verified inventory drift only
 name: Temporary intuition proposal finalizer
 
 on:
@@ -24,7 +24,7 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm ci --ignore-scripts
-      - name: Teach packet verifier to reconstruct semantic asset maps
+      - name: Persist semantic-asset packet verification
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -84,6 +84,27 @@ jobs:
               s = s.replace(pdf_branch, semantic_branch + '\n        ' + pdf_branch, 1)
           p.write_text(s)
           PY
+      - name: Update deterministic source inventories
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('tests/authoring-projection.test.mjs')
+          s = p.read_text()
+          s = s.replace('assert.equal(keys.filter((item) => item.includes("/sources/")).length, 68);', 'assert.equal(keys.filter((item) => item.includes("/sources/")).length, 73);')
+          s = s.replace('assert.equal(keys.filter((item) => item.includes("/governance/amendments/")).length, 15);', 'assert.equal(keys.filter((item) => item.includes("/governance/amendments/")).length, 19);')
+          p.write_text(s)
+
+          p = Path('tests/guide-graph.test.mjs')
+          s = p.read_text()
+          s = s.replace('assert.equal(bundle.stats.ownerAmendmentCount, 15);', 'assert.equal(bundle.stats.ownerAmendmentCount, 19);')
+          needle = 'assert.ok(bundle.sourceMaps.some((item) => item.guideId === "vagal-blitz-source"));'
+          addition = needle + '\n  assert.ok(bundle.sourceMaps.some((item) => item.guideId === "semantic-assets"));'
+          if 'guideId === "semantic-assets"' not in s:
+              if needle not in s:
+                  raise SystemExit('semantic asset source assertion anchor missing')
+              s = s.replace(needle, addition, 1)
+          p.write_text(s)
+          PY
       - name: Remove temporary workflows before verification
         run: |
           git rm .github/workflows/tmp-intuition-verify.yml
@@ -102,6 +123,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/guide-packet/verifier.mjs authoring/obsidian/proposals/intuition-calibration-r1 docs authoring/obsidian/current .github/workflows
+          git add src/guide-packet/verifier.mjs tests/authoring-projection.test.mjs tests/guide-graph.test.mjs authoring/obsidian/proposals/intuition-calibration-r1 docs authoring/obsidian/current .github/workflows
           git commit -m "proposal: verify intuition calibration candidate"
           git push origin HEAD:task/intuition-calibration-20260902
