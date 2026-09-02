@@ -1,4 +1,4 @@
-# diagnostic pass for exact regression failures
+# diagnostic pass after exact regression matcher fix
 name: Temporary intuition proposal verification
 
 on:
