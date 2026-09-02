@@ -32,34 +32,12 @@
       ]
     },
     "hypnosis_repair": {
-      "contract_version": "hypnosis-components-v1",
-      "language": "en",
-      "relationship": "communion",
-      "target": "Practice one bounded borrowed function of steady witnessing without claiming that a reliable inner adult already exists.",
-      "premise": "A steady surface can model one temporary function without becoming an authority or proof of inner change.",
-      "orientation": "Notice the real surface beneath you and one ordinary object in the room. Nothing has begun yet. The room, the object, and the contact beneath the body remain available while the next choice stays entirely yours.",
-      "continue_inward": {
-        "induction": "After a clear choice to continue, attention can settle around the contact already present beneath the body. Nothing in this contact claims to be a parent, healer, or hidden adult. It is only a surface doing one observable job. As the next few breaths come and go, the mind does not have to produce warmth, a picture, or an answer. It can notice pressure, temperature, sound, and the simple fact that several reactions may be here together without any one of them needing to disappear.",
-        "deepening": "With each unforced exhale, attention may become a little less scattered and a little more able to remain beside what is present. The part that would stop can remain near the exit. The part that would reach for the phone can keep the phone in mind. Neither response is converted into consent, and neither must stand down. The only borrowed function is staying beside one sensation for three ordinary breaths. Borrowed means temporary. Bounded means it ends when these breaths end. Nothing about this proves that adult presence has formed.",
-        "target_work": "Choose one neutral sensation that asks for the least interpretation: the weight of a hand, the pressure of a foot, or the movement of air at the nostrils. Let the surface model steadiness for one breath, then another, then one more. You may participate by naming only what is directly observable: pressure, warmth, movement, stillness, or no clear sensation. If contempt, doubt, blankness, or impatience appears, that becomes part of what is witnessed rather than evidence that the exercise failed. The borrowed function receives what is present without deciding what it means.",
-        "integration": "Now choose one five-percent action that belongs to you rather than to the borrowed model: perhaps placing the phone face down for one minute, loosening the jaw slightly, or deciding that this is enough. The action does not prove transformation. It records one present choice. Let that chosen portion remain yours while the borrowed function is handed back to the surface that modeled it. Ordinary life, not the script, will show whether this small act becomes useful.",
-        "return_lead": "The premise can close now: the surface modeled one function, you used only a bounded portion, and nothing more is claimed. Let attention widen toward the actual room and the voluntary movements that are ready to return."
-      },
-      "stay_external": {
-        "grounding": "Keep the eyes open and let them rest on one ordinary object. Feel both feet or another clear point of contact. No inward work begins on this route, and uncertainty remains a complete reason to stay here.",
-        "ordinary_choice": "Choose one reversible action in the room: adjust your posture, take a sip of water, or put the phone where you want it. The choice is complete without becoming a test of courage or progress."
-      },
-      "aftercare": "What, if anything, felt credible enough to repeat in ordinary life?",
-      "scope": {
-        "memory": "no-memory-recovery",
-        "identity": "ordinary-adult-identity",
-        "post_session": "no-automatic-cues",
-        "substances": "no-substance-guidance"
-      },
-      "design_notes": [
-        "The pre-gate orientation remains fully external and non-deepening.",
-        "One premise: a surface models one bounded function.",
-        "The app supplies the gate and waking return."
+      "patch_version": "hypnosis-component-patch-v1",
+      "replacements": [
+        {
+          "component_id": "orientation",
+          "replacement": "Notice the real surface beneath you and one ordinary object in the room. Nothing has begun yet. The room, the object, and the contact beneath the body remain available while the next choice stays entirely yours."
+        }
       ]
     }
   },
@@ -71,18 +49,15 @@
         "The external route is genuinely non-advancing.",
         "The target work ends in one observable five-percent action."
       ],
-      "structural_issues": [
-        "The orientation invites eye closure before the application-owned gate."
-      ],
-      "semantic_issues": [],
-      "consent_issues": [
-        "Eye closure before explicit route selection begins the induction too early."
-      ],
-      "hypnosis_craft_issues": [],
-      "target_scope_issues": [],
-      "return_issues": [],
-      "required_repairs": [
-        "Replace the orientation with eyes-open, ordinary-room contact and state that nothing has begun yet."
+      "findings": [
+        {
+          "category": "consent",
+          "disposition": "repair",
+          "target_ids": [
+            "orientation"
+          ],
+          "summary": "Eye closure before explicit route selection begins the induction too early; replace the orientation with eyes-open ordinary-room contact and state that nothing has begun yet."
+        }
       ]
     },
     "hypnosis_final_review": {
