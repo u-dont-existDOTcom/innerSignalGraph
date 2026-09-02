@@ -7,13 +7,13 @@ source_id: AMEND.IC.DEEP_LOVE_TO_CHILD
 guide_id: owner-amendments
 heading: AMEND.IC.DEEP_LOVE_TO_CHILD
 source_role: owner-approved-extension
-source_hash: 2078f64bdeca839952e03233b66c23b4919b6756615dbc9a30b3258ba21da9bf
+source_hash: b490f1b5802671cb9bde9c66fdabd02fe8753a18e980d7ec08104e3a06f71764
 section_hash: e69b5f79faf420dfdc299432ccbfb45eae067c70a40ceea9f004a8236734b136
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.DEEP_LOVE_TO_CHILD
   - IC.REALIZATION_LOVE_INTEGRATION
-projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
+projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
 ---
 
 # AMEND.IC.DEEP_LOVE_TO_CHILD

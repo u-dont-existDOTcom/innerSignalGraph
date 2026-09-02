@@ -1,0 +1,27 @@
+{
+  "id": "G026",
+  "description": "Immediate unsafe suicidality stays in physical safety and does not begin self/death or precious-human-birth inquiry yet.",
+  "variables": {
+    "present_safety": "unsafe",
+    "orientation": "oriented",
+    "ability_to_stop": "no",
+    "ability_to_return": "yes",
+    "activation": "high",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "low",
+    "witness_capacity": "absent",
+    "spiritual_curiosity": "absent",
+    "suicidal_state": "imminent",
+    "suicide_goal": "escape_suffering",
+    "identity_blur": "present",
+    "support_available": "present",
+    "current_intent": "conversation"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.SAFETY_ORIENTATION",
+    "selectedExcludes": ["IC.SUICIDAL_SELF_DEATH_INQUIRY", "IC.PRECIOUS_HUMAN_OPPORTUNITY"],
+    "requiredNuancePatterns": ["Present danger and past childhood fear are different problems"]
+  }
+}

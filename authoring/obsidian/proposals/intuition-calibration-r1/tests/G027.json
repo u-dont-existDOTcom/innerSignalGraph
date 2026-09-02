@@ -1,0 +1,28 @@
+{
+  "id": "G027",
+  "description": "Strong intuitive trust plus adverse evidence and external authority pull activates calibration instead of treating resonance as proof.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "suicidal_state": "absent",
+    "spiritual_bypass_pattern": "not_applicable",
+    "intuition_evidence_alignment": "contradictory",
+    "epistemic_mode_balance": "intuitive_overrides_analytic",
+    "external_authority_pull": "strong",
+    "influence_hook": "mixed",
+    "credibility_conflict": "present",
+    "credibility_evidence_state": "adverse",
+    "current_intent": "trust_decision"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.INTUITION_TRUST_CALIBRATION",
+    "selectedIncludes": ["IC.INTUITION_TRUST_CALIBRATION"],
+    "selectedExcludes": ["IC.GUIDE_LATER"],
+    "nextQuestion": "What exactly is your intuition telling you, what evidence supports or contradicts that conclusion, and what evidence would actually lower your trust?",
+    "requiredNuancePatterns": ["Neither receives unilateral control", "Separate the raw signal", "Trust is domain-specific"],
+    "forbiddenOverclaimPatterns": ["strong intuitive click proves", "global authority"]
+  }
+}

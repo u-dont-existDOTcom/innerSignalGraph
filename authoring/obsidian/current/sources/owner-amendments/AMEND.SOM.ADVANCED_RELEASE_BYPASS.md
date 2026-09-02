@@ -7,12 +7,12 @@ source_id: AMEND.SOM.ADVANCED_RELEASE_BYPASS
 guide_id: owner-amendments
 heading: AMEND.SOM.ADVANCED_RELEASE_BYPASS
 source_role: owner-approved-extension
-source_hash: 2078f64bdeca839952e03233b66c23b4919b6756615dbc9a30b3258ba21da9bf
+source_hash: b490f1b5802671cb9bde9c66fdabd02fe8753a18e980d7ec08104e3a06f71764
 section_hash: f519674221cb06a7df7ff9b77ed5c5f0c6df0905d8345525926905391560ab8f
 locator_kind: amendment-record
 cited_by_node_ids:
   - SOM.BYPASS_AUDIT
-projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
+projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
 ---
 
 # AMEND.SOM.ADVANCED_RELEASE_BYPASS

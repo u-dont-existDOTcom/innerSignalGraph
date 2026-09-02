@@ -560,6 +560,66 @@
           "excerpt": "When a suicidal person appears strongly fused with the state that wants death or lacks even a minimal observing/protective adult position, do not begin by debating abstract metaphysics from inside that fused state. First invite a second seat into the room: a neutral witness, a minimally available inner adult, or one borrowed adult function from a safe person, future self, spiritual figure, plan, or value. Do not assume the suicidal voice is literally an inner child or invent multiplicity; ask whether the wish to die feels like all of them or whether any observing/protective position can sit beside it. The adult or witness does not need to prove life is good, suppress the suicidal part, or claim complete healing. Its first job is to protect the body, listen without retaliation, and postpone irreversible action long enough for inquiry. Once enough differentiation exists, continue the strict self/death/rebirth inquiry. If a witness or partial/available adult position is already present, do not force an extra ritual before that inquiry.",
           "status": "owner-approved",
           "domain": "inner-child"
+        },
+        {
+          "id": "AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY",
+          "heading": "AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "668b83dcf0b98ffe55de9bafca1119de1464b0d46ee2069506167c94df3fa55a",
+          "excerpt": "For every suicidal desire or intent, once the person is safe and differentiated enough to reflect, give a serious spiritual/metaphysical reality check regardless of prior spiritual curiosity. Do not frame continued life merely as possibly worthwhile. Explain the Buddhist view that a human birth is an extraordinarily rare and precious opportunity to investigate dukkha, cultivate wisdom and love, and attain liberation; the blind-turtle-and-yoke analogy may be used as a vivid explanation that the person has effectively won a cosmic jackpot and should not discard the ticket before investigating what it affords. The person need not accept Buddhist doctrine, but because suicide is an irreversible act resting on assumptions about self, mind, and death, these teachings, rebirth evidence, NDE evidence and limits, and other serious continuity claims must be treated as routes to investigate rather than dismissed for lack of prior spiritual interest. A warning about hell or severe postmortem suffering may be stated plainly as Buddhist teaching and a dangerous possibility; do not suppress a relevant danger warning merely because fear is uncomfortable. Keep the evidentiary layers honest: deliberate self-harm and self-destructive mental conditioning cause harm within life; Buddhist teaching additionally says those intentional trajectories can continue through death and rebirth. Do not invent postmortem odds or claim empirical certainty about the individual destination.",
+          "status": "owner-approved",
+          "domain": "inner-child"
+        },
+        {
+          "id": "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
+          "heading": "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "8512276c375eec599c0dd0cc351d498bbf052d914b785f5706b0a54eab5eb98a",
+          "excerpt": "Intuitive, mystical, gestalt, affective, and subconscious cognition are required resources, but they must work together with analytical, propositional, contradiction-sensitive cognition. Do not literalize this as a simplistic left-brain/right-brain anatomy claim. Intuitive cognition can surface patterns, resonance, meaning, and information that analysis has not consciously assembled, but a felt gestalt is not by itself a true/false adjudicator. Analytical cognition checks contradiction, track record, scope, falsifiability, and whether a compelling experience is being generalized beyond its evidence; it can also become overburdened, rigid, or eager to hand off the pressure of checking. In high-stakes trust and spiritual-authority decisions, neither mode gets unilateral control: separate the felt signal from the proposition inferred from it, let both modes contribute, and require the conclusion to remain corrigible by contrary evidence.",
+          "status": "owner-approved",
+          "domain": "inner-child"
+        },
+        {
+          "id": "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+          "heading": "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "dee2c5e7565ae4376eedaf45bd6871f7234dc825de6a6974586e733c881e5561",
+          "excerpt": "An external guide does not need to demand surrender. Sophisticated influence can invite the user to surrender judgment voluntarily through praise, specialness, mirroring, pity for a wounded healer, rescue or miracle hopes, attraction, belonging, spiritual charisma, hypnotic or mystical ease, confession of flaws, and humor or half-jokes that lower analytical vigilance. Openly admitting dishonesty, danger, manipulation, addiction, or another flaw may be genuine self-awareness and is simultaneously evidence that the present risk exists; saying 'I am working on it' does not convert current unreliability into trustworthiness. Compassion for a wounded person must not erase adverse evidence or exempt them from ordinary standards. A true teaching, beautiful voice, healing result, intuitive hit, moving confession, or extraordinary gift can be real without proving global trustworthiness. Evaluate trust by domain, track record, contradictions, boundaries, response to disagreement and no, and whether contrary evidence can still lower trust. Do not ban humor, spontaneity, intuition, mystical cognition, vulnerability, or compassion; the problem is when one channel becomes an epistemic bypass that prevents correction by the other.",
+          "status": "owner-approved",
+          "domain": "inner-child"
+        },
+        {
+          "id": "AMEND.IC.SEMANTIC_ASSET_NOTES",
+          "heading": "AMEND.IC.SEMANTIC_ASSET_NOTES",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "6ade0347968283c87b1371bccdfd837c913a0b3c8ffec0375c666e5a5c0a5849",
+          "excerpt": "Instructional images, infographics, diagrams, captions, and other visual assets may carry therapeutic or doctrinal meaning beyond nearby prose. The guide-to-map pipeline must preserve that meaning through compact semantic asset notes identifying the asset, its role, its explicit claims, and related guide sections or graph nodes. Decorative images need no semantic note. Asset notes are source provenance, not permission for the extractor to invent claims that are not actually present in the image or owner description.",
+          "status": "owner-approved",
+          "domain": "inner-child"
+        }
+      ]
+    },
+    {
+      "guideId": "semantic-assets",
+      "file": "semantic-assets.json",
+      "sections": [
+        {
+          "id": "ASSET.IC.SUICIDE.COSMIC_JACKPOT",
+          "heading": "If You Want to Kill Yourself > This human life is the most precious opportunity",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "2a5d05880e00302c6682152d95a6550215eb010367c84d3d0ad8b6fe42646bdd",
+          "excerpt": "Human birth is extraordinarily rare and precious in Buddhist teaching. Human life is an opportunity to investigate dukkha, cultivate wisdom and love, and attain liberation rather than merely a life that might be worthwhile. Suicidal despair can radically misprice that opportunity; do not discard it before investigating what human birth affords. The infographic visually frames human birth as a cosmic jackpot and contrasts the human opportunity with darker conditioned trajectories and hellish states.",
+          "role": "doctrinal-motivational-infographic",
+          "graphRefs": [
+            "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+            "IC.PRECIOUS_HUMAN_OPPORTUNITY"
+          ],
+          "source": "owner-supplied-current-guide-image-2026-09-02"
         }
       ]
     },
@@ -1020,19 +1080,21 @@
           },
           "sourceRefs": [
             "IC.BORROW_ONE_FUNCTION",
-            "IC.ADULT_APPRENTICE"
+            "IC.ADULT_APPRENTICE",
+            "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
           ],
           "authority": "author-framework",
           "recommendations": [
             "Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.",
-            "Keep it bounded, observable, and returnable.",
+            "Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.",
             "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness."
           ],
           "avoid": [
-            "Do not demand an ideal parent image or let the helper become authority over memories, medicine, relationships, or future."
+            "Do not demand an ideal parent image or let the helper become authority over memories, medicine, relationships, spiritual conclusions, or future.",
+            "Do not generalize one admirable function, true teaching, healing result, or spiritual gift into global trustworthiness."
           ],
           "successSignals": [
-            "The person can perform one adult function without pretending the whole role is available."
+            "The person can perform one adult function without pretending the whole role or the source’s wider authority is available."
           ],
           "tags": [
             "borrowed-adulthood",
@@ -1042,16 +1104,17 @@
             "adult-side-borrowing"
           ],
           "effects": {
+            "blockNodes": [],
             "deferNodes": [
               "IC.DEEP_CHILD_DIALOGUE"
             ],
-            "blockNodes": [],
-            "requiredNuance": [
-              "Adult identity may form after behavior.",
-              "Borrowed adulthood can support the part attempting the adult role, not only the younger state."
-            ],
             "forbiddenOverclaims": [
               "Do not claim the inner adult has already been built."
+            ],
+            "requiredNuance": [
+              "Adult identity may form after behavior.",
+              "Borrowed adulthood can support the part attempting the adult role, not only the younger state.",
+              "Borrow only in the domain and dose the source’s track record has earned; competence or warmth in one domain does not silently transfer authority to another."
             ]
           },
           "defaultQuestion": ""
@@ -1093,18 +1156,19 @@
           },
           "sourceRefs": [
             "IC.ADULT_APPRENTICE",
-            "IC.RELATIONSHIP"
+            "IC.RELATIONSHIP",
+            "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
           ],
           "authority": "author-framework",
           "recommendations": [
             "Name what the helper did, choose five percent to do personally, and test one action in ordinary life.",
-            "Gradually hand the role back to the user."
+            "Gradually hand the role and the judgment behind it back to the person so they become more able to check, disagree, revise, and act without the helper."
           ],
           "avoid": [
-            "Do not create permanent authority dependency."
+            "Do not create permanent practical or epistemic authority dependency."
           ],
           "successSignals": [
-            "One protective or nurturing act occurs without the helper present."
+            "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission."
           ],
           "tags": [
             "adult-apprentice",
@@ -1112,10 +1176,12 @@
             "relationship"
           ],
           "effects": {
-            "deferNodes": [],
             "blockNodes": [],
-            "requiredNuance": [],
-            "forbiddenOverclaims": []
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": [
+              "The helper hands back judgment as well as behavior; successful apprenticeship should make independent checking easier rather than making the helper harder to question."
+            ]
           },
           "defaultQuestion": ""
         },
@@ -1549,18 +1615,22 @@
             ]
           },
           "sourceRefs": [
-            "IC.DIFFERENTIATION"
+            "IC.DIFFERENTIATION",
+            "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
+            "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
           ],
           "authority": "author-framework",
           "recommendations": [
             "Notice where other people’s emotions and group expectations replace personal knowing.",
+            "Notice when praise, pity, fear, attraction, belonging, or resonance changes what seems true; if felt certainty and evidence diverge, use intuition/trust calibration rather than treating either feeling or consensus as automatic authority.",
             "Practice selective belonging, disagreement, and leaving when staying requires disappearance."
           ],
           "avoid": [
-            "Do not equate differentiation with isolation or automatic permanent cutoff."
+            "Do not equate differentiation with isolation or automatic permanent cutoff.",
+            "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate."
           ],
           "successSignals": [
-            "The person remains recognizably themselves across settings."
+            "The person remains recognizably themselves across settings and can update beliefs without having their knowing automatically replaced by approval, fear, attraction, or group pressure."
           ],
           "tags": [
             "differentiation",
@@ -1568,10 +1638,12 @@
             "identity"
           ],
           "effects": {
-            "deferNodes": [],
             "blockNodes": [],
-            "requiredNuance": [],
-            "forbiddenOverclaims": []
+            "deferNodes": [],
+            "forbiddenOverclaims": [],
+            "requiredNuance": [
+              "Differentiation includes epistemic continuity: the person can notice when praise, pity, fear, attraction, belonging, or resonance suddenly changes what they think they know without either obeying or suppressing the feeling automatically."
+            ]
           },
           "defaultQuestion": ""
         },
@@ -1620,19 +1692,24 @@
             "IC.THREE_FUNCTIONS",
             "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
             "AMEND.IC.WELLBEING_HORIZON",
-            "AMEND.IC.REALIZATION_LOVE_INTEGRATION"
+            "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
+            "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
+            "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
           ],
           "authority": "author-framework",
           "recommendations": [
             "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.",
-            "When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion."
+            "When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion.",
+            "Borrow from outer guides selectively. A strong intuitive click is information, not proof; when intuition and evidence diverge or outside authority starts displacing independent judgment, route to intuition/trust calibration before increasing the stakes."
           ],
           "avoid": [
             "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing.",
-            "Do not escalate spiritual abstraction or attainment because love feels inaccessible."
+            "Do not escalate spiritual abstraction or attainment because love feels inaccessible.",
+            "Do not treat explicit demands for surrender as the only authority risk; voluntary judgment transfer can occur through praise, mirroring, pity, attraction, rescue hopes, confession, humor, or spiritual charisma.",
+            "Do not use an intuitive or mystical style as an exemption from ordinary contradiction, track-record, scope, and boundary checks."
           ],
           "successSignals": [
-            "Direction increases life participation without exiling the child."
+            "Direction increases life participation without exiling the child, and outside guidance strengthens rather than replaces the person’s capacity to evaluate truth, boundaries, and trust."
           ],
           "tags": [
             "guide",
@@ -1642,9 +1719,12 @@
           "effects": {
             "blockNodes": [],
             "deferNodes": [],
-            "forbiddenOverclaims": [],
+            "forbiddenOverclaims": [
+              "Do not say a guide’s self-awareness about their flaws proves those flaws are currently repaired or makes consequential trust safe."
+            ],
             "requiredNuance": [
-              "Spiritual exploration is optional when the person’s current horizon feels sufficient; when realization is already present, assess whether it deepens accessible love and reaches the child rather than assuming attainment itself integrates the wound."
+              "Spiritual exploration is optional when the person’s current horizon feels sufficient; when realization is already present, assess whether it deepens accessible love and reaches the child rather than assuming attainment itself integrates the wound.",
+              "An external guide may contribute real wisdom while remaining trustworthy only in a limited domain. The internal Guide keeps authority corrigible by evidence and does not outsource true/false judgment to charisma, intuition, or specialness."
             ]
           },
           "defaultQuestion": ""
@@ -2110,6 +2190,8 @@
           "sourceRefs": [
             "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
             "AMEND.IC.DEEP_LOVE_TO_CHILD",
+            "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
+            "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
             "IC.GUIDE_LATER",
             "IC.PROTECTOR_VISIBLE",
             "IC.RELATIONSHIP"
@@ -2118,14 +2200,15 @@
           "recommendations": [
             "Respect whatever realization, rebirth, doctrine, or community experience is genuine while testing separately whether love is actually felt, can include the inner child, and survives ordinary relational difficulty.",
             "Do not let mystery outrun love indefinitely: if attainment or doctrine is far ahead of felt love, turn toward the missing love rather than prescribing a more advanced abstraction.",
+            "Keep spiritual truth separate from authority transfer. If a teacher’s gifts or realization are being used—by the teacher, group, or user’s own intuition—to override contradictory evidence about trust, use intuition/trust calibration.",
             "Translate spiritual opening into protection, truth, reliability, service, Hearthwork or reciprocal relationship, and community where useful; community may reinforce an opening without being assumed to have caused it."
           ],
           "avoid": [
             "Do not dismiss genuine nibbana, nondual, Christian, mystical, or other realization merely because emotional integration is incomplete.",
-            "Do not treat claims about divine love, spiritual attainment, or a welcoming group atmosphere as proof that the person actually experiences love."
+            "Do not treat claims about divine love, spiritual attainment, a welcoming group atmosphere, extraordinary gifts, or one genuine insight as proof of either emotional integration or another person’s trustworthiness."
           ],
           "successSignals": [
-            "The person can distinguish spiritual truth or identity from felt love and practical integration, and the next step addresses the actual mismatch rather than protecting a status claim."
+            "The person can distinguish spiritual truth or identity from felt love, practical integration, and interpersonal trustworthiness, and the next step addresses the actual mismatch rather than protecting a status claim."
           ],
           "tags": [
             "spiritual-bypass",
@@ -2138,12 +2221,13 @@
             "blockNodes": [],
             "deferNodes": [],
             "forbiddenOverclaims": [
-              "Do not say that awakening, religious belief, church or sangha membership, or mystical experience proves emotional integration.",
+              "Do not say that awakening, religious belief, church or sangha membership, mystical experience, psychic-seeming ability, or spiritual gifts certify moral reliability or authority.",
               "Do not say that ordinary practical care is worthless because profound spiritual love is not accessible."
             ],
             "requiredNuance": [
-              "Mystical intensity, doctrinal certainty, and love depth are not interchangeable.",
-              "Practical love and profound love are complementary: practical conduct embodies love, while a deeper wellbeing horizon may enlarge what the person can sincerely wish for beings."
+              "Mystical intensity, doctrinal certainty, love depth, and interpersonal trustworthiness are separate variables.",
+              "Practical love and profound love are complementary: practical conduct embodies love, while a deeper wellbeing horizon may enlarge what the person can sincerely wish for beings.",
+              "A realization or gift may be completely genuine while the person who carries it remains unreliable in another domain; trust still updates from track record, contradiction, boundaries, and response to disagreement."
             ]
           },
           "defaultQuestion": ""
@@ -2312,27 +2396,30 @@
           },
           "sourceRefs": [
             "AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY",
+            "AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY",
             "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
-            "AMEND.IC.WELLBEING_HORIZON"
+            "AMEND.IC.WELLBEING_HORIZON",
+            "ASSET.IC.SUICIDE.COSMIC_JACKPOT"
           ],
           "authority": "author-framework",
           "recommendations": [
             "Ask what the person is trying to end or obtain through death—annihilation, escape, punishment, love or reunion, God or spiritual contact, liberation or release, or something else—without using motive to predict a postmortem outcome.",
             "Examine whether the person is equating the relevant self with the body and what evidence supports the belief that bodily death ends the mind-state, identity, or suffering they want ended.",
             "Challenge annihilation certainty without demanding belief: examine dream phenomenology, rebirth arguments and reports, NDE accounts and their survivor-selection limits, and major contemplative traditions that warn bodily death may not end suffering.",
-            "State the Buddhist warning plainly as a serious teaching to consider, not a belief the person must adopt: intentional mental trajectories have consequences, rebirth and hellish states are possible, and a human birth is a rare opportunity to investigate dukkha and its cessation. Do not invent odds or threaten divine punishment.",
+            "State the Buddhist danger warning plainly: intentional mental trajectories have consequences, rebirth and hellish states are possible, and bodily death should not be treated as a demonstrated off-switch. Keep doctrine, evidence, and inference distinguished rather than inventing odds.",
             "Use the shared mental-trajectory principle carefully: psychology supports self-reinforcing negative cognition within life, while Buddhist teaching extends intentional causation across death and rebirth; therefore bodily death should not be assumed to interrupt the process the person is trying to escape.",
+            "Pair this inquiry with the precious-human-opportunity reality check: human birth is presented in Buddhism as an extraordinarily rare chance to investigate suffering, wisdom, love, and liberation before discarding the platform on which that investigation is possible.",
             "Ask what previously forbidden but reversible changes become negotiable if the person is already contemplating losing everything: what would they change before making the one irreversible change?",
             "Keep the body alive while investigating. If danger becomes imminent or the person cannot delay action, return immediately to concrete human contact and physical safety."
           ],
           "avoid": [
-            "Do not shame or condemn the person, guarantee hell, assign postmortem odds, or say that a spiritual motive makes suicide safer.",
+            "Do not shame or condemn the person, claim punitive divine certainty, assign postmortem odds, or say that a spiritual motive makes suicide safer.",
             "Do not present dreams, NDEs, rebirth reports, or religious teachings as empirical proof of a specific individual’s postmortem outcome.",
             "Do not claim psychology proves postmortem mental continuity.",
             "Do not prescribe an NDE, psychedelic experience, or solitary spiritual practice as a substitute for urgent real-world protection when danger is imminent."
           ],
           "successSignals": [
-            "The person can name what death is supposed to accomplish, recognize uncertainty in the self/death assumption, and delay irreversible action while investigating spiritual claims and reversible life changes."
+            "The person can name what death is supposed to accomplish, recognize uncertainty in the self/death assumption, grasp the high value Buddhism assigns to the present human opportunity, and delay irreversible action while investigating spiritual claims and reversible life changes."
           ],
           "tags": [
             "suicide-prevention",
@@ -2349,16 +2436,228 @@
             ],
             "forbiddenOverclaims": [
               "Do not say suicide reliably leads to hell or reliably leads to heaven, nothingness, liberation, reunion, or any other postmortem outcome.",
-              "Do not infer that suicidality itself proves spiritual attainment or that a person must be curious about spirituality before this inquiry is relevant."
+              "Do not infer that suicidality itself proves spiritual attainment or that a person must be curious about spirituality before this inquiry or the precious-human-birth reality check is relevant."
             ],
             "requiredNuance": [
               "Suicidal intent itself stakes an irreversible act on assumptions about self, body, mind, and death; the guide therefore examines those assumptions even when ordinary spiritual curiosity is absent, while belief remains voluntary.",
               "Immediate safety preserves the opportunity for inquiry but does not answer the existential or metaphysical question.",
               "Repeated self-hatred, despair, rumination, attentional narrowing, withdrawal, and self-destructive cognition can become self-reinforcing within life; Buddhism additionally teaches continuity of intentional mental causation through death and rebirth. Keep those evidentiary levels distinct.",
-              "A Buddhist warning may explicitly include rebirth, hellish states, and the rarity/value of human birth without claiming certainty about this individual’s destination."
+              "A Buddhist warning may explicitly include rebirth, hellish states, and severe postmortem suffering without claiming certainty about this individual’s destination or suppressing the warning merely because it is frightening.",
+              "Every reflective suicidal route also presents human birth as an extraordinarily rare and precious opportunity to investigate dukkha and liberation, not merely as a life that might possibly become worthwhile."
             ]
           },
           "defaultQuestion": "What exactly is the self you want to kill, and what makes you think killing this body ends that self or the suffering you are trying to escape?"
+        },
+        {
+          "id": "IC.INTUITION_TRUST_CALIBRATION",
+          "title": "Make intuition and analysis correct each other before trust transfers",
+          "kind": "decision-node",
+          "tier": 2,
+          "priority": 100,
+          "activation": {
+            "any": [
+              {
+                "field": "intuition_evidence_alignment",
+                "op": "in",
+                "value": [
+                  "mixed",
+                  "contradictory"
+                ]
+              },
+              {
+                "field": "epistemic_mode_balance",
+                "op": "in",
+                "value": [
+                  "intuitive_overrides_analytic",
+                  "analytic_overrides_intuitive",
+                  "oscillating"
+                ]
+              },
+              {
+                "field": "external_authority_pull",
+                "op": "in",
+                "value": [
+                  "elevated",
+                  "strong"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
+            "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+            "IC.GUIDE_LATER",
+            "IC.DIFFERENTIATION"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Name the felt/intuitive signal without arguing it away, then state separately the factual or trust conclusion being drawn from it.",
+            "Inventory direct observations, relevant track record, contradictions, domain-specific competence, and what happens when the person is disagreed with, refused, delayed, or denied special status.",
+            "Notice influence hooks without diagnosing the other person: praise or specialness, mirroring, pity for a wounded healer, rescue or miracle hopes, attraction, belonging, fear, spiritual charisma, hypnotic or mystical ease, confession, and humor can all change how evidence is weighted.",
+            "Ask whether compassion is preserving the facts or erasing them. A wounded person can deserve compassion while still being unsafe or unreliable in a particular domain.",
+            "Use prediction → observation → update: state what trustworthy and untrustworthy behavior would each predict, watch what actually happens, and let the result change trust rather than protecting the original intuition.",
+            "When intuition and evidence seriously conflict, do not increase high-leverage authority while the conflict is unresolved. Keep money, medical decisions, sexual consent, isolation, legal control, altered-state dependence, and exclusive spiritual authority especially answerable to ordinary evidence."
+          ],
+          "avoid": [
+            "Do not teach that intuition, mystical cognition, humor, spontaneity, compassion, attraction, or spiritual gifts are inherently untrustworthy.",
+            "Do not make analytical cognition the sole authority or treat every contradiction, confession, or influence cue as proof that another person is malicious or manipulative.",
+            "Do not literalize the intuitive/analytic distinction as a simplistic left-brain/right-brain anatomy claim.",
+            "Do not recommend automatic cutoff merely because trust is unresolved; slow consequential transfers while evidence is being calibrated."
+          ],
+          "successSignals": [
+            "The person can preserve useful intuitive information and analytical checking at the same time, distinguish resonance from proof, and allow new evidence to raise or lower domain-specific trust."
+          ],
+          "tags": [
+            "intuition",
+            "epistemic-trust",
+            "external-guide",
+            "protector",
+            "differentiation"
+          ],
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [
+              "Do not say a strong intuitive click proves trustworthiness or that a suspicious feeling proves danger.",
+              "Do not say admitting dishonesty, danger, manipulation, addiction, or another flaw makes the current risk disappear merely because the admission sounds self-aware.",
+              "Do not generalize one true teaching, healing result, beautiful voice, spiritual gift, confession, or accurate intuitive hit into global authority."
+            ],
+            "requiredNuance": [
+              "Intuitive, gestalt, affective, mystical, and subconscious cognition can surface real pattern information that analysis has not consciously assembled; analytical, propositional cognition checks contradiction, track record, scope, and falsifiability. Neither receives unilateral control in a high-stakes trust decision.",
+              "Separate the raw signal from the proposition inferred from it: feeling seen, safe, fascinated, compassionate, attracted, spiritually opened, amused, or deeply resonant is real data without by itself proving 'therefore this person is trustworthy.'",
+              "Open confession can be genuine self-awareness and simultaneous evidence that the confessed problem currently exists. 'I am working on it' is not the same as a repaired track record.",
+              "Humor and half-jokes may legitimately relieve pressure and expand perspective; when a joke also carries a consequential factual claim, request, permission, boundary move, or authority transfer, test that content as if it had been said plainly.",
+              "Trust is domain-specific and corrigible: what matters is whether track record, contradictions, boundaries, response to disagreement or no, and new evidence can still update the conclusion."
+            ]
+          },
+          "defaultQuestion": "What exactly is your intuition telling you, what evidence supports or contradicts that conclusion, and what evidence would actually lower your trust?"
+        },
+        {
+          "id": "IC.PRECIOUS_HUMAN_OPPORTUNITY",
+          "title": "Treat human birth as a precious opportunity before discarding it",
+          "kind": "decision-node",
+          "tier": 1,
+          "priority": 98,
+          "activation": {
+            "all": [
+              {
+                "field": "suicidal_state",
+                "op": "in",
+                "value": [
+                  "ideation",
+                  "intent",
+                  "imminent"
+                ]
+              }
+            ],
+            "any": [
+              {
+                "field": "witness_capacity",
+                "op": "in",
+                "value": [
+                  "present",
+                  "partial"
+                ]
+              },
+              {
+                "field": "inner_adult_access",
+                "op": "in",
+                "value": [
+                  "partial",
+                  "available"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "ability_to_stop",
+                "op": "eq",
+                "value": "no"
+              },
+              {
+                "field": "ability_to_return",
+                "op": "eq",
+                "value": "no"
+              },
+              {
+                "field": "altered_state",
+                "op": "eq",
+                "value": "altered"
+              },
+              {
+                "field": "identity_blur",
+                "op": "eq",
+                "value": "present"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY",
+            "AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY",
+            "ASSET.IC.SUICIDE.COSMIC_JACKPOT"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Give the reality check plainly: in Buddhist teaching, a human birth is extraordinarily rare and precious—a high-leverage opportunity to understand dukkha, deepen wisdom and love, and pursue liberation before discarding the conditions that make that investigation possible.",
+            "Use the blind-turtle-and-yoke or cosmic-jackpot analogy when helpful: the person need not accept the doctrine, but should understand the magnitude of the opportunity Buddhism says is presently in hand before making an irreversible decision.",
+            "Present hell, rebirth, and severe postmortem suffering as serious Buddhist possibilities to investigate rather than as fabricated probabilities; the purpose of the warning is to challenge the assumption that bodily death is a safe off-switch.",
+            "Keep the human body and social world available while investigating: sensory reality, other people, practice, learning, repair, and reversible life changes all remain possible redirections while alive."
+          ],
+          "avoid": [
+            "Do not reduce the message to 'life might possibly be worthwhile' when the Buddhist claim being presented is that human birth is an extraordinarily rare and precious opportunity.",
+            "Do not shame the person, claim punitive divine certainty, guarantee an individual postmortem destination, or invent odds for hell, heaven, nothingness, rebirth, or liberation.",
+            "Do not prescribe an NDE, psychedelic experience, dangerous ordeal, or solitary spiritual practice instead of urgent human protection when immediate safety deteriorates."
+          ],
+          "successSignals": [
+            "The person can recognize that suicide may discard an exceptionally valuable investigative opportunity, can hold uncertainty about what death does, and is willing to preserve the human platform while investigating further."
+          ],
+          "tags": [
+            "suicide-prevention",
+            "precious-human-birth",
+            "rebirth",
+            "existential",
+            "buddhist-reality-check"
+          ],
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [
+              "IC.EXISTENTIAL_NOURISHMENT",
+              "IC.LOVE_HORIZON_EXPLORATION"
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim empirical certainty about this individual’s postmortem destination.",
+              "Do not require pre-existing spiritual curiosity before presenting the precious-human-birth reality check."
+            ],
+            "requiredNuance": [
+              "Once a suicidal person is safe and differentiated enough to reflect, the precious-human-opportunity reality check applies regardless of prior spiritual curiosity.",
+              "The Buddhist claim is stronger than mere possible worth: human birth is an extraordinarily rare opportunity to investigate dukkha, cultivate wisdom and love, and attain liberation.",
+              "Fear can carry information about danger. Do not suppress a relevant Buddhist warning about rebirth, hellish states, or severe postmortem suffering merely because the warning may be frightening; keep uncertainty and provenance explicit.",
+              "Within life, deliberate self-harm and repeated self-destructive cognition cause harm and can reinforce a destructive trajectory; Buddhism additionally teaches that intentional causal momentum can continue through death and rebirth."
+            ]
+          },
+          "defaultQuestion": ""
         }
       ],
       "edges": [
@@ -2446,6 +2745,31 @@
           "from": "IC.EXISTENTIAL_NOURISHMENT",
           "relation": "opens-when-curious",
           "to": "IC.LOVE_HORIZON_EXPLORATION"
+        },
+        {
+          "from": "IC.DIFFERENTIATION",
+          "relation": "supports-calibration",
+          "to": "IC.INTUITION_TRUST_CALIBRATION"
+        },
+        {
+          "from": "IC.REALIZATION_LOVE_INTEGRATION",
+          "relation": "does-not-certify-authority",
+          "to": "IC.INTUITION_TRUST_CALIBRATION"
+        },
+        {
+          "from": "IC.INTUITION_TRUST_CALIBRATION",
+          "relation": "slows-high-stakes-transfer",
+          "to": "IC.PROTECTOR_ACTION"
+        },
+        {
+          "from": "IC.INTUITION_TRUST_CALIBRATION",
+          "relation": "calibrates",
+          "to": "IC.GUIDE_LATER"
+        },
+        {
+          "from": "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+          "relation": "requires-reality-check",
+          "to": "IC.PRECIOUS_HUMAN_OPPORTUNITY"
         }
       ],
       "bundleVersion": "inner-child-somatic-pilot-2026-08-09-r5"
@@ -3447,9 +3771,9 @@
   ],
   "stats": {
     "graphCount": 3,
-    "nodeCount": 39,
-    "edgeCount": 35,
-    "sourceSectionCount": 68,
-    "ownerAmendmentCount": 15
+    "nodeCount": 41,
+    "edgeCount": 40,
+    "sourceSectionCount": 73,
+    "ownerAmendmentCount": 19
   }
 }

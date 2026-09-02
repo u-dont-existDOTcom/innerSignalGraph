@@ -1,0 +1,25 @@
+{
+  "id": "G031",
+  "description": "Humor or half-jokes that lower analytical vigilance while contradictory evidence is being dismissed activate calibration without banning humor.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "suicidal_state": "absent",
+    "spiritual_bypass_pattern": "not_applicable",
+    "intuition_evidence_alignment": "contradictory",
+    "epistemic_mode_balance": "intuitive_overrides_analytic",
+    "external_authority_pull": "elevated",
+    "influence_hook": "humor_disarmament",
+    "credibility_conflict": "present",
+    "credibility_evidence_state": "adverse",
+    "current_intent": "trust_decision"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.INTUITION_TRUST_CALIBRATION",
+    "selectedIncludes": ["IC.INTUITION_TRUST_CALIBRATION"],
+    "requiredNuancePatterns": ["Humor and half-jokes", "test that content as if it had been said plainly"]
+  }
+}

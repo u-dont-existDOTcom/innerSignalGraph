@@ -117,6 +117,40 @@ function embeddedPdfSourceMap(layout, source) {
   };
 }
 
+function embeddedSemanticAssetSourceMap(data) {
+  const semanticAssets = JSON.parse(data.toString("utf8"));
+  if (!semanticAssets || !Array.isArray(semanticAssets.items)) throw new Error("semantic-assets.json must contain an items array.");
+  const seen = new Set();
+  return {
+    guideId: "semantic-assets",
+    file: "semantic-assets.json",
+    sections: semanticAssets.items.map((item) => {
+      if (!item || typeof item.id !== "string" || !item.id.startsWith("ASSET.") || seen.has(item.id)) throw new Error("Semantic asset ids must be unique ASSET.* strings.");
+      if (!Array.isArray(item.claims) || !item.claims.length || item.claims.some((claim) => typeof claim !== "string" || !claim.trim())) throw new Error(`Semantic asset ${item.id} must contain explicit non-empty claims.`);
+      seen.add(item.id);
+      const semanticRecord = {
+        claims: item.claims,
+        graphRefs: Array.isArray(item.graphRefs) ? item.graphRefs : [],
+        role: item.role ?? "instructional-visual",
+        section: item.section ?? item.id,
+        source: item.source ?? "owner-described-visual"
+      };
+      return {
+        id: item.id,
+        heading: item.section ?? item.id,
+        lineStart: null,
+        lineEnd: null,
+        sha256: sha256(JSON.stringify(semanticRecord)),
+        excerpt: item.claims.join(" ").slice(0, 1000),
+        role: semanticRecord.role,
+        graphRefs: semanticRecord.graphRefs,
+        source: semanticRecord.source
+      };
+    })
+  };
+}
+
+
 function pathBasename(value) {
   return String(value ?? "").split("/").pop();
 }
@@ -199,6 +233,7 @@ export function verifyGuidePacket(buffer, { installedRevision = null, installedB
           if (!guide) throw new Error(`Source layout lacks ${source.id}.`);
           expected = embeddedTextSourceMap(data.toString("utf8"), guide);
         } else if (source.format === "json" && source.id === "owner-amendments") expected = embeddedOwnerSourceMap(data);
+        else if (source.format === "json" && source.id === "semantic-assets") expected = embeddedSemanticAssetSourceMap(data);
         else if (source.format === "pdf") expected = embeddedPdfSourceMap(layout, source);
         if (!expected || canonicalJson(sourceMap) !== canonicalJson(expected)) errors.push(`Repository source map is stale for ${source.id}.`);
       } catch (error) {

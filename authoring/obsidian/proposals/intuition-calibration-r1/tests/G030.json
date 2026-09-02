@@ -1,0 +1,26 @@
+{
+  "id": "G030",
+  "description": "Analytical overcontrol that dismisses relevant intuitive pattern information also activates integration; calibration is not an anti-intuition rule.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "suicidal_state": "absent",
+    "spiritual_bypass_pattern": "not_applicable",
+    "intuition_evidence_alignment": "mixed",
+    "epistemic_mode_balance": "analytic_overrides_intuitive",
+    "external_authority_pull": "none",
+    "influence_hook": "none_observed",
+    "credibility_conflict": "absent",
+    "credibility_evidence_state": "mixed",
+    "current_intent": "trust_decision"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.INTUITION_TRUST_CALIBRATION",
+    "selectedIncludes": ["IC.INTUITION_TRUST_CALIBRATION"],
+    "requiredNuancePatterns": ["Intuitive, gestalt, affective", "Neither receives unilateral control"],
+    "forbiddenOverclaimPatterns": ["suspicious feeling proves danger"]
+  }
+}

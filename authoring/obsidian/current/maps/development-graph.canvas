@@ -43,6 +43,12 @@
       "toNode": "53a9ddb7f819388accd5566867c8c75ed46d2b49d317719666f40c6ad7e41879"
     },
     {
+      "fromNode": "bd2dbc298786d84c13a4f6f885126827fbab67b8af4cf3449b01acf938b3b2e8",
+      "id": "2917aa30ed169ecabd50cd2971be4c8dd2021a7a8b2ba95009dc5e2261744aaf",
+      "label": "supports-calibration",
+      "toNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38"
+    },
+    {
       "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
       "id": "31137bf17186f8b7d941530b5612447e2649d84c7415834211cc075c5bf4d9f7",
       "label": "feeds-child-integration",
@@ -59,6 +65,18 @@
       "id": "3b4784649beec5d311e2460315fd119a1ac52ea5d07b5498dd6d0d352ed4967f",
       "label": "defers-until-capacity",
       "toNode": "64ebc6f168c2ea2af64a9a06e10dfa187d8119de082117a5d4430936c53ffbf6"
+    },
+    {
+      "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
+      "id": "3ca16b953ccf5107710444dc6f2c6f93f9cc798af89cc872501333f94beb116a",
+      "label": "does-not-certify-authority",
+      "toNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38"
+    },
+    {
+      "fromNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38",
+      "id": "407425a28f148560e64008f3c5a32f8007e3d87c166d54fa7b3f3b0078a0acc6",
+      "label": "slows-high-stakes-transfer",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
     },
     {
       "fromNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527",
@@ -121,6 +139,12 @@
       "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
     },
     {
+      "fromNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38",
+      "id": "99d56077b4e97a9f5f60877bf3c300afe7a3af6a2a78663f5026cf6d05a8b2ac",
+      "label": "calibrates",
+      "toNode": "0ad12526759ac2032a6df506212c0f90ebce3a7d603e935db86d1d680a0a6052"
+    },
+    {
       "fromNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323",
       "id": "9d1f6834fd64c41ca20b5e69bd9b30fc1acc1229e8a2e2b0282424e3c48b313b",
       "label": "precedes",
@@ -175,6 +199,12 @@
       "toNode": "d574e90790edf2cd322c9494132ff1daab32d9bf43a7e1cd4f40034f5245ed0d"
     },
     {
+      "fromNode": "1b46c1f38e020701f55256235a8d0fce98acfb96181a467d97a276e326ad0519",
+      "id": "ccb40506ccca7c38657c8b15a024f0889bacf7a343c9bebe8026327ee58e3a45",
+      "label": "requires-reality-check",
+      "toNode": "d162e5224e2d1b3b86c3871646337e27c6435b06998ee2f030fd86de810aec00"
+    },
+    {
       "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
       "id": "d6f3913d7d34fecee202f467c9c976192a877dfe984cdf09a9447eae353caf66",
       "label": "requires-embodiment",
@@ -212,6 +242,15 @@
     }
   ],
   "nodes": [
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.INTUITION_TRUST_CALIBRATION.md",
+      "height": 140,
+      "id": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38",
+      "type": "file",
+      "width": 300,
+      "x": 440,
+      "y": 0
+    },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.FORGIVENESS_LATER.md",
       "height": 140,
@@ -255,7 +294,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 880
+      "y": 1100
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.GENTLE_SELF_HYPNOSIS.md",
@@ -300,7 +339,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 660
+      "y": 880
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.MEET_GUARD.md",
@@ -318,7 +357,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 440
+      "y": 660
     },
     {
       "color": "3",
@@ -551,7 +590,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 220
+      "y": 440
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.BYPASS_AUDIT.md",
@@ -592,6 +631,15 @@
       "y": 2420
     },
     {
+      "file": "current/nodes/inner-child-directed-graph/IC.PRECIOUS_HUMAN_OPPORTUNITY.md",
+      "height": 140,
+      "id": "d162e5224e2d1b3b86c3871646337e27c6435b06998ee2f030fd86de810aec00",
+      "type": "file",
+      "width": 300,
+      "x": 0,
+      "y": 660
+    },
+    {
       "file": "current/nodes/inner-child-directed-graph/IC.NEUTRAL_WITNESS.md",
       "height": 140,
       "id": "d574e90790edf2cd322c9494132ff1daab32d9bf43a7e1cd4f40034f5245ed0d",
@@ -616,7 +664,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 0
+      "y": 220
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.BORROW_LOVE.md",

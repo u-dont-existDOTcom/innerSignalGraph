@@ -10,7 +10,7 @@ from_node_id: SOM.RESOURCE_BRAINSPOTTING
 to_node_id: IC.MEET_GUARD
 relation: parallel-preparation
 base_graph_sha256: 0eb4eb7ac805775a8283da4c8ea50fa0d4985644fad836cbfee37e48996b5151
-projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
+projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
 ---
 
 # SOM.RESOURCE_BRAINSPOTTING parallel-preparation IC.MEET_GUARD

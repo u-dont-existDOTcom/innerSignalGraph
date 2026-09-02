@@ -16,10 +16,12 @@ graph_tags:
   - identity
 source_refs:
   - IC.DIFFERENTIATION
+  - AMEND.IC.INTUITION_ANALYTIC_INTEGRATION
+  - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
 regression_refs: []
-base_record_sha256: 3787bf0c21cfe4a805a6b5e53821396576cdb3b6e34eb45d0774151806cca797
-base_graph_sha256: e2532806378ef613edac19a9eacbe57653b21a4061a2b9f393bb54d1fa30ff2d
-projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
+base_record_sha256: 2f50d59757fcebac25511712f72f59494f3a7313fd33234f959734b69038ce59
+base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
+projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
 ---
 
 # Untangle belonging from self-betrayal
@@ -46,21 +48,25 @@ projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac
     ]
   },
   "avoid": [
-    "Do not equate differentiation with isolation or automatic permanent cutoff."
+    "Do not equate differentiation with isolation or automatic permanent cutoff.",
+    "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate."
   ],
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [],
-    "requiredNuance": []
+    "requiredNuance": [
+      "Differentiation includes epistemic continuity: the person can notice when praise, pity, fear, attraction, belonging, or resonance suddenly changes what they think they know without either obeying or suppressing the feeling automatically."
+    ]
   },
   "recommendations": [
     "Notice where other people’s emotions and group expectations replace personal knowing.",
+    "Notice when praise, pity, fear, attraction, belonging, or resonance changes what seems true; if felt certainty and evidence diverge, use intuition/trust calibration rather than treating either feeling or consensus as automatic authority.",
     "Practice selective belonging, disagreement, and leaving when staying requires disappearance."
   ],
   "successSignals": [
-    "The person remains recognizably themselves across settings."
+    "The person remains recognizably themselves across settings and can update beliefs without having their knowing automatically replaced by approval, fear, attraction, or group pressure."
   ]
 }
 ```
@@ -69,3 +75,7 @@ projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac
 ## Source navigation
 
 [[current/sources/inner-child-guide/IC.DIFFERENTIATION]]
+
+[[current/governance/amendments/AMEND.IC.INTUITION_ANALYTIC_INTEGRATION]]
+
+[[current/governance/amendments/AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION]]

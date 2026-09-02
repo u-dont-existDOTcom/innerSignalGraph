@@ -30,11 +30,19 @@
     },
     {
       "id": "owner-amendments",
-      "version": "2026-09-02-r3",
+      "version": "2026-09-02-r4",
       "file": "owner-amendments.json",
       "role": "owner-approved-extension",
       "format": "json"
+    },
+    {
+      "id": "semantic-assets",
+      "version": "2026-09-02-r1",
+      "file": "semantic-assets.json",
+      "sha256": "aee2364244ff989c850a1e84d4e556ae1ae67891fa706e852081d5f82d74936d",
+      "role": "instructional-visual-provenance",
+      "format": "json"
     }
   ],
-  "notes": "The canonical article text is preserved verbatim. Owner-approved additions and reconciliations are stored separately and cited explicitly by graph nodes."
+  "notes": "The canonical article text is preserved verbatim. Owner-approved additions and reconciliations are stored separately and cited explicitly by graph nodes. Instructional images may contribute semantic claims through compact semantic asset notes."
 }

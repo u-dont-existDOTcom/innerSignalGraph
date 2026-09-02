@@ -17,10 +17,11 @@ graph_tags:
 source_refs:
   - IC.ADULT_APPRENTICE
   - IC.RELATIONSHIP
+  - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
 regression_refs: []
-base_record_sha256: 4d9a03f5d84e4c1b5513ae0388739069f893801344a16925bbbf9cb6a5124cfa
-base_graph_sha256: e2532806378ef613edac19a9eacbe57653b21a4061a2b9f393bb54d1fa30ff2d
-projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
+base_record_sha256: 2654262d6c489b46f8f9eedc1b42bc316c21b8f6ddb646ca11ac1205f725f907
+base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
+projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
 ---
 
 # Move from receiving care to doing five percent
@@ -62,21 +63,23 @@ projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac
     ]
   },
   "avoid": [
-    "Do not create permanent authority dependency."
+    "Do not create permanent practical or epistemic authority dependency."
   ],
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [],
-    "requiredNuance": []
+    "requiredNuance": [
+      "The helper hands back judgment as well as behavior; successful apprenticeship should make independent checking easier rather than making the helper harder to question."
+    ]
   },
   "recommendations": [
     "Name what the helper did, choose five percent to do personally, and test one action in ordinary life.",
-    "Gradually hand the role back to the user."
+    "Gradually hand the role and the judgment behind it back to the person so they become more able to check, disagree, revise, and act without the helper."
   ],
   "successSignals": [
-    "One protective or nurturing act occurs without the helper present."
+    "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission."
   ]
 }
 ```
@@ -87,3 +90,5 @@ projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac
 [[current/sources/inner-child-guide/IC.ADULT_APPRENTICE]]
 
 [[current/sources/inner-child-guide/IC.RELATIONSHIP]]
+
+[[current/governance/amendments/AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION]]
