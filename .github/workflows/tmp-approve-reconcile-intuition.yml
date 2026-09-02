@@ -23,10 +23,10 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: npm ci --ignore-scripts
-      - name: Confirm the exact independently reviewed parent
+      - name: Confirm only the one-shot workflow changed after the independently reviewed head
         run: |
-          test "$(git rev-parse HEAD^)" = "4fdaaeed00d9a655e33728fa747a7d02866df901"
-          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/tmp-approve-reconcile-intuition.yml"
+          git merge-base --is-ancestor 4fdaaeed00d9a655e33728fa747a7d02866df901 HEAD
+          test "$(git diff --name-only 4fdaaeed00d9a655e33728fa747a7d02866df901 HEAD)" = ".github/workflows/tmp-approve-reconcile-intuition.yml"
       - name: Rebuild the exact governed candidate
         run: |
           npm run authoring:proposal:build -- --id intuition-calibration-r1
@@ -200,16 +200,20 @@ jobs:
           import json
           from pathlib import Path
           metadata = json.loads(Path('authoring/.build/intuition-calibration-r1/approval-metadata.json').read_text())
-          Path('docs/INTUITION-CALIBRATION-CANDIDATE.md').write_text(f'''# Intuition calibration reconciliation
-
-Owner-approved and reconciled proposal `intuition-calibration-r1`.
-
-The canonical directed graph now includes the precious-human-opportunity suicide reality check, intuition/analytic trust calibration, smart external-authority safeguards, and semantic provenance for instructional guide images.
-
-Owner approval was recorded across {metadata["decisionCount"]} exact decision cards after an independent GPT-5.6 Pro pass found no blockers. Approved packet: `{metadata["packetId"]}`; SHA-256: `{metadata["packetSha256"]}`; decided at `{metadata["decidedAt"]}`.
-
-Reconciliation remained on the task branch until the complete repository verification and pull-request checks passed.
-''')
+          text = (
+              "# Intuition calibration reconciliation\n\n"
+              "Owner-approved and reconciled proposal `intuition-calibration-r1`.\n\n"
+              "The canonical directed graph now includes the precious-human-opportunity suicide reality check, "
+              "intuition/analytic trust calibration, smart external-authority safeguards, and semantic provenance "
+              "for instructional guide images.\n\n"
+              f"Owner approval was recorded across {metadata['decisionCount']} exact decision cards after an "
+              "independent GPT-5.6 Pro pass found no blockers. "
+              f"Approved packet: `{metadata['packetId']}`; SHA-256: `{metadata['packetSha256']}`; "
+              f"decided at `{metadata['decidedAt']}`.\n\n"
+              "Reconciliation remained on the task branch until the complete repository verification and "
+              "pull-request checks passed.\n"
+          )
+          Path('docs/INTUITION-CALIBRATION-CANDIDATE.md').write_text(text)
           PY
       - name: Remove this one-shot workflow before final verification
         run: git rm .github/workflows/tmp-approve-reconcile-intuition.yml
@@ -220,9 +224,6 @@ Reconciliation remained on the task branch until the complete repository verific
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          if git ls-files --error-unmatch authoring/.build >/dev/null 2>&1; then
-            echo "authoring/.build must remain untracked" >&2
-            exit 1
-          fi
+          test -z "$(git ls-files 'authoring/.build/**')"
           git commit -m "proposal: reconcile approved intuition calibration"
           git push origin HEAD:task/intuition-calibration-20260902
