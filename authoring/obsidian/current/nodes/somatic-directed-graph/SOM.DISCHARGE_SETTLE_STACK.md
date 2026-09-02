@@ -21,7 +21,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: d698ab969a49146d76966743e2f0c9ab804b25f11018b64fba75f0dc05f6ba96
 base_graph_sha256: f7acff85e9d11d38c1fd47830f4fad4998cc1fb1580f641223a6d92538e30140
-projection_input_sha256: ebc5fac6453fa4eeabca95b87100a5e351d19e91770f5db7e7a86eab3749b4cb
+projection_input_sha256: 2cd50da8bfdb8e3e7b08926f7d1b9eabc9cf854231c4fa59350f27a7bf684320
 ---
 
 # Discharge, then settle and reorient

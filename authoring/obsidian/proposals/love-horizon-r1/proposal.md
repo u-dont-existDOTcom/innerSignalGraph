@@ -3,7 +3,7 @@ authoring_contract: inner-signal-authoring-proposal-v1
 entity_type: proposal
 proposal_id: love-horizon-r1
 status: draft
-base_projection_input_sha256: ebc5fac6453fa4eeabca95b87100a5e351d19e91770f5db7e7a86eab3749b4cb
+base_projection_input_sha256: 2cd50da8bfdb8e3e7b08926f7d1b9eabc9cf854231c4fa59350f27a7bf684320
 target_graph_ids:
   - inner-child-directed-graph
 declared_regression_ids:
@@ -15,6 +15,8 @@ declared_regression_ids:
   - G018
   - G019
   - G020
+  - G021
+  - G022
 owner_decision_required: true
 contains_therapy_semantic_change: true
 contains_documentation_overlay_change: false
@@ -24,7 +26,7 @@ contains_documentation_overlay_change: false
 
 ## Intent
 
-Separate ordinary care from profound love, add existential-sufficiency and curiosity routing, route already-accessible deep love toward the inner child, and detect realization or doctrine that has outrun lived love.
+Separate ordinary care from profound love, add existential-sufficiency and curiosity routing, route already-accessible deep love toward the inner child, detect realization or doctrine that has outrun lived love, and add a strict self/death/rebirth inquiry when suicidal desire or intent is present.
 
 ## Non-goals
 

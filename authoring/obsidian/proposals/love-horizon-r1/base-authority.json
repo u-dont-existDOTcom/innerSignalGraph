@@ -74,7 +74,7 @@
     },
     {
       "path": "guide-graphs/compiled/bundle.json",
-      "sha256": "81c84b16079e4c6ba61cc1a2338d4c3bab918a571aa8ae53f20367a91b1de66c"
+      "sha256": "a49c827002887c17565a60f3742aef202cc9117f83e7c3a403ae70cbcfc294bf"
     },
     {
       "path": "guide-graphs/compiled/inner-child-directed-graph.json",
@@ -94,11 +94,11 @@
     },
     {
       "path": "guides/manifest.json",
-      "sha256": "e2263184465a39683202c42c86dee4b9b0f80b6641929c027632897a95d7342e"
+      "sha256": "5eb7f07440d60e88aaefb533a776496714f64704d2dc6949f98754b2b212baf7"
     },
     {
       "path": "guides/owner-amendments.json",
-      "sha256": "d9c2cf90f51452c1316648108638af97c73d9efef0afda02d9baab6f96e14509"
+      "sha256": "f52b8485794c9b6ade61d9dfb42a5ef2f78742ef42fc2e5952492923e22640f4"
     },
     {
       "path": "guides/somatic-sequencing-guide.txt",
@@ -118,7 +118,7 @@
     },
     {
       "path": "src/guide-graph/contract.mjs",
-      "sha256": "4dcf3aeb88a4f0c1c92152147e77d9ea51dccd65700e9312e48394e18440c43e"
+      "sha256": "a833e8ff13416f8e9bd4b38e8a4fe3e65890adc92138ac5dde42d9a5d5bfdab6"
     },
     {
       "path": "src/guide-graph/planner.mjs",
@@ -138,6 +138,6 @@
     }
   ],
   "contractVersion": "inner-signal-authoring-base-authority-v1",
-  "projectionInputSha256": "ebc5fac6453fa4eeabca95b87100a5e351d19e91770f5db7e7a86eab3749b4cb",
+  "projectionInputSha256": "2cd50da8bfdb8e3e7b08926f7d1b9eabc9cf854231c4fa59350f27a7bf684320",
   "proposalId": "love-horizon-r1"
 }

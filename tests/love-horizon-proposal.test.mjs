@@ -17,10 +17,10 @@ function hasNoneGate(node, field, value) {
 test("love-horizon proposal is coverage-complete and gates existential/spiritual routing during immediate instability", async () => {
   const built = await materializeProposal({ root, id: "love-horizon-r1", enforceCoverage: true });
   assert.equal(built.regressionImpact.ok, true);
-  assert.deepEqual(built.receipt.regressionStatus, { ok: true, count: 20, passed: 20 });
+  assert.deepEqual(built.receipt.regressionStatus, { ok: true, count: 22, passed: 22 });
   assert.equal(built.packetVerification.ok, true);
 
-  for (const id of ["IC.EXISTENTIAL_NOURISHMENT", "IC.LOVE_HORIZON_EXPLORATION", "IC.REALIZATION_LOVE_INTEGRATION"]) {
+  for (const id of ["IC.EXISTENTIAL_NOURISHMENT", "IC.LOVE_HORIZON_EXPLORATION", "IC.REALIZATION_LOVE_INTEGRATION", "IC.SUICIDAL_SELF_DEATH_INQUIRY"]) {
     const node = nodeById(built.candidateBundle, id);
     assert.ok(node, id);
     assert.ok(hasNoneGate(node, "present_safety", "unsafe"), `${id} must wait for present safety`);
@@ -29,6 +29,15 @@ test("love-horizon proposal is coverage-complete and gates existential/spiritual
     assert.ok(hasNoneGate(node, "ability_to_return", "no"), `${id} must wait until the person can return`);
     assert.ok(hasNoneGate(node, "altered_state", "altered"), `${id} must not run during a current altered state`);
   }
+
+  const suicidalSelfDeath = nodeById(built.candidateBundle, "IC.SUICIDAL_SELF_DEATH_INQUIRY");
+  assert.ok(suicidalSelfDeath);
+  assert.equal(suicidalSelfDeath.tier, 1);
+  assert.equal(suicidalSelfDeath.priority, 99);
+  assert.ok(suicidalSelfDeath.activation.all.some((condition) => condition.field === "suicidal_state"));
+  assert.ok(!suicidalSelfDeath.activation.all.some((condition) => condition.field === "spiritual_curiosity"));
+  assert.ok(suicidalSelfDeath.effects.deferNodes.includes("IC.LOVE_HORIZON_EXPLORATION"));
+  assert.ok(suicidalSelfDeath.effects.forbiddenOverclaims.some((item) => /postmortem outcome/i.test(item)));
 
   const deepLove = nodeById(built.candidateBundle, "IC.DEEP_LOVE_TO_CHILD");
   assert.ok(deepLove);

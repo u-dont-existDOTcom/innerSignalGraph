@@ -12,7 +12,7 @@ section_hash: 13f4847745acc33800e993f55143883ce1fe049e87a966b561091051a8b00330
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.MEANING_INTEGRATION
-projection_input_sha256: ebc5fac6453fa4eeabca95b87100a5e351d19e91770f5db7e7a86eab3749b4cb
+projection_input_sha256: 2cd50da8bfdb8e3e7b08926f7d1b9eabc9cf854231c4fa59350f27a7bf684320
 ---
 
 # Phase 5: Meaning-Making and Life Integration

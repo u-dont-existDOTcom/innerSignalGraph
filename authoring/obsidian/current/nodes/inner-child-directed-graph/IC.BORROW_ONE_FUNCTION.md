@@ -29,7 +29,7 @@ regression_refs:
   - G012
 base_record_sha256: 11f21fa8d4679e259279acbf9a15ffb60035cacb540b19a8f539985730b106a2
 base_graph_sha256: 4cffe0bcadbf49cc3e27dc5274221f51ec252a0226e944b4f5541dda47c6d1d6
-projection_input_sha256: ebc5fac6453fa4eeabca95b87100a5e351d19e91770f5db7e7a86eab3749b4cb
+projection_input_sha256: 2cd50da8bfdb8e3e7b08926f7d1b9eabc9cf854231c4fa59350f27a7bf684320
 ---
 
 # Borrow one bounded adult function

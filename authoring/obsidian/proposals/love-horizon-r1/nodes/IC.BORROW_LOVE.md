@@ -21,7 +21,7 @@ source_refs:
   - AMEND.IC.WELLBEING_HORIZON
 base_record_sha256: f5bea4835b1f723233d7a5c49b1e0f9e9346a40c5a515f5c98cccbb8cdd70c8d
 base_graph_sha256: 4cffe0bcadbf49cc3e27dc5274221f51ec252a0226e944b4f5541dda47c6d1d6
-base_projection_input_sha256: ebc5fac6453fa4eeabca95b87100a5e351d19e91770f5db7e7a86eab3749b4cb
+base_projection_input_sha256: 2cd50da8bfdb8e3e7b08926f7d1b9eabc9cf854231c4fa59350f27a7bf684320
 ---
 
 # Borrow already-accessible love without flattening its depth
