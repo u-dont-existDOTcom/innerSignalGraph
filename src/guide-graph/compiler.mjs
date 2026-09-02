@@ -41,6 +41,45 @@ function buildOwnerSourceMap(amendments) {
   };
 }
 
+function buildSemanticAssetSourceMap(semanticAssets, sourceById) {
+  if (!semanticAssets || typeof semanticAssets !== "object" || !Array.isArray(semanticAssets.items)) {
+    throw new ValidationError("semantic-assets.json must contain an items array.");
+  }
+  const seen = new Set();
+  const sections = semanticAssets.items.map((item) => {
+    if (!item || typeof item.id !== "string" || !item.id.startsWith("ASSET.") || seen.has(item.id)) {
+      throw new ValidationError("Semantic asset ids must be unique ASSET.* strings.");
+    }
+    if (!Array.isArray(item.claims) || !item.claims.length || item.claims.some((claim) => typeof claim !== "string" || !claim.trim())) {
+      throw new ValidationError(`Semantic asset ${item.id} must contain explicit non-empty claims.`);
+    }
+    seen.add(item.id);
+    const semanticRecord = {
+      claims: item.claims,
+      graphRefs: Array.isArray(item.graphRefs) ? item.graphRefs : [],
+      role: item.role ?? "instructional-visual",
+      section: item.section ?? item.id,
+      source: item.source ?? "owner-described-visual"
+    };
+    return {
+      id: item.id,
+      heading: item.section ?? item.id,
+      lineStart: null,
+      lineEnd: null,
+      sha256: createHash("sha256").update(JSON.stringify(semanticRecord)).digest("hex"),
+      excerpt: item.claims.join(" ").slice(0, 1000),
+      role: semanticRecord.role,
+      graphRefs: semanticRecord.graphRefs,
+      source: semanticRecord.source
+    };
+  });
+  return {
+    guideId: "semantic-assets",
+    file: sourceById.get("semantic-assets")?.file ?? "semantic-assets.json",
+    sections
+  };
+}
+
 function buildPdfSourceMap(layout, sourceById) {
   return {
     guideId: "vagal-blitz-source",
@@ -78,11 +117,12 @@ function graphReport(bundle, amendments) {
     `- Resentful chronological-adult speech and the attempted Nurturer/Protector role remain separate unless the user establishes that they are the same speaker.\n` +
     `- Developmental EMDR may follow basic reparenting capacity; a stable discrete target is different.\n` +
     `- Advanced release is optional and parallel, not proof of readiness; bliss requires a bypass audit.\n` +
-    `- Personal and community claims remain provenance-labelled rather than promoted to established medical fact.\n\n` +
+    `- Personal and community claims remain provenance-labelled rather than promoted to established medical fact.\n` +
+    `- Instructional images can contribute explicit source claims through semantic asset notes without duplicating all visual meaning into article prose.\n\n` +
     `## Deliberate constraints\n\n` +
     `- The planner routes by function, dose, target, and capacity rather than modality name alone.\n` +
     `- Safety, orientation, stopping, and return capacity outrank all therapeutic preferences.\n` +
-    `- Source text remains unchanged; additions live in owner-amendments.json.\n` +
+    `- Source text remains unchanged; additions live in owner-amendments.json or semantic-assets.json.\n` +
     `- The deterministic plan owns the substantive next question; response realization cannot replace it with a merely interesting question.\n` +
     `- Advanced-release nodes never coach syncope, substance potentiation, or standing lightheadedness.\n`;
 }
@@ -105,8 +145,12 @@ export async function compileGuideGraphs({ root = projectRoot, write = true, can
   const textMaps = [];
   for (const guide of layout.textGuides) textMaps.push(await buildTextSourceMap({ root, guide }));
   const ownerMap = buildOwnerSourceMap(amendments);
+  const semanticAssetSource = sourceById.get("semantic-assets");
+  const semanticAssetMap = semanticAssetSource
+    ? buildSemanticAssetSourceMap(await readJson(path.join(guidesDir, semanticAssetSource.file)), sourceById)
+    : null;
   const pdfMap = buildPdfSourceMap(layout, sourceById);
-  const sourceMaps = [...textMaps, ownerMap, pdfMap];
+  const sourceMaps = [...textMaps, ownerMap, ...(semanticAssetMap ? [semanticAssetMap] : []), pdfMap];
   const sourceIndex = new Set(sourceMaps.flatMap((map) => map.sections.map((section) => section.id)));
 
   const graphFiles = ["inner-child.graph.json", "somatic.graph.json", "cross-guide.graph.json"];
