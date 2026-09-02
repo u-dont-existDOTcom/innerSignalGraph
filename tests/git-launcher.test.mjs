@@ -38,9 +38,12 @@ fi
 exit 0`);
   await executable(path.join(bin, "node"), `
 printf 'node %s\\n' "$*" >> "$INNER_SIGNAL_TEST_LOG"
-if [[ "$1" == "-p" && "$2" == "process.versions.node" ]]; then
-  printf '%s\\n' "\${INNER_SIGNAL_TEST_NODE_VERSION:-24.18.0}"
-  exit 0
+if [[ "$*" == *"src/cli/check-runtime-requirements.mjs"* ]]; then
+  version="\${INNER_SIGNAL_TEST_NODE_VERSION:-24.18.0}"
+  major="\${version%%.*}"
+  if [[ "$major" == "24" ]]; then exit 0; fi
+  printf 'BLOCKED: Node.js >=24 <25 is required; found %s. Recommended patch: 24.18.0.\\n' "$version" >&2
+  exit 1
 fi
 if [[ "$*" == *"src/cli/git-update.mjs"* ]]; then
   mkdir -p "$INNER_SIGNAL_GIT_INSTALL_ROOT"
@@ -67,11 +70,25 @@ exit 0`);
   assert.match(calls, /gh api repos\/u-dont-existDOTcom\/innerSignalGraph .*\.full_name/);
   assert.match(calls, /gh api repos\/u-dont-existDOTcom\/innerSignalGraph .*\.permissions\.push/);
   assert.match(calls, /git clone --branch stable/);
-  assert.match(calls, /node -p process\.versions\.node/);
+  assert.match(calls, /node .*src\/cli\/check-runtime-requirements\.mjs --quiet/);
   assert.match(calls, /node .*src\/cli\/git-update\.mjs --bootstrap/);
   assert.doesNotMatch(`${stdout}\n${stderr}`, /upload.*(?:ZIP|log)|download.*ZIP/i);
 
-  for (const nodeVersion of ["20.0.0", "24.18.1"]) {
+  const compatibleRoot = path.join(root, "compatible-24.18.1");
+  await execFileAsync("bash", ["packaging/install-from-git.sh"], {
+    cwd: projectRoot,
+    env: {
+      ...process.env,
+      HOME: root,
+      PATH: `${bin}:${process.env.PATH}`,
+      INNER_SIGNAL_TEST_LOG: log,
+      INNER_SIGNAL_INSTALL_ONLY: "true",
+      INNER_SIGNAL_INSTALL_BASE: compatibleRoot,
+      INNER_SIGNAL_TEST_NODE_VERSION: "24.18.1"
+    }
+  });
+
+  for (const nodeVersion of ["23.99.0", "25.0.0"]) {
     await assert.rejects(
       execFileAsync("bash", ["packaging/install-from-git.sh"], {
         cwd: projectRoot,
@@ -85,7 +102,7 @@ exit 0`);
           INNER_SIGNAL_TEST_NODE_VERSION: nodeVersion
         }
       }),
-      (error) => /Node\.js 24\.18\.0 is required/.test(error.stderr)
+      (error) => /Node\.js >=24 <25 is required/.test(error.stderr)
     );
   }
 });

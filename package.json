@@ -6,7 +6,7 @@
   "type": "module",
   "packageManager": "npm@11.16.0",
   "engines": {
-    "node": "24.18.0"
+    "node": ">=24 <25"
   },
   "scripts": {
     "authoring:task:preflight": "node scripts/authoring-task-preflight.mjs",
@@ -44,6 +44,7 @@
     "autopilot": "node --env-file=.env src/cli/autopilot.mjs",
     "web:smoke": "node -e \"import('./src/core/config.mjs').then(async ({loadConfig})=>{const {createProviders}=await import('./src/providers/factory.mjs');const {runWebClientSmoke}=await import('./src/autopilot/web-smoke.mjs');const c=loadConfig({mode:'mock'});console.log(JSON.stringify(await runWebClientSmoke({config:c,providers:createProviders(c)}),null,2));})\"",
     "benchmark:therapy-latency": "node scripts/benchmark-therapy-latency.mjs",
+    "verify:local-release": "node scripts/verify-local-release.mjs",
     "graph:compile": "node src/cli/compile-guide-graphs.mjs",
     "graph:test": "node src/cli/run-graph-regressions.mjs",
     "prepare:env": "node src/cli/prepare-environment.mjs",
