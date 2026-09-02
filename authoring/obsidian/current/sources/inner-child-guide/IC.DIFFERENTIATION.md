@@ -12,7 +12,7 @@ section_hash: 2c7dfa01a389d27c0f361d447e871ddad3a093c58b1424d3934a65466484327a
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.DIFFERENTIATION
-projection_input_sha256: 2cd50da8bfdb8e3e7b08926f7d1b9eabc9cf854231c4fa59350f27a7bf684320
+projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f07d7f6a3f5
 ---
 
 # Untangling the Belonging Bargains

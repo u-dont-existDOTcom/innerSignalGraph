@@ -74,7 +74,7 @@
     },
     {
       "path": "guide-graphs/compiled/bundle.json",
-      "sha256": "a49c827002887c17565a60f3742aef202cc9117f83e7c3a403ae70cbcfc294bf"
+      "sha256": "8a8dbff337fa4a36fb892698565dac2a25c86778c02e32d38453e0179ab73117"
     },
     {
       "path": "guide-graphs/compiled/inner-child-directed-graph.json",
@@ -94,11 +94,11 @@
     },
     {
       "path": "guides/manifest.json",
-      "sha256": "5eb7f07440d60e88aaefb533a776496714f64704d2dc6949f98754b2b212baf7"
+      "sha256": "61e34c44091bf9fc8bd90a3026eff04a2c5a423ed004a5f57e871b82fddcd33f"
     },
     {
       "path": "guides/owner-amendments.json",
-      "sha256": "f52b8485794c9b6ade61d9dfb42a5ef2f78742ef42fc2e5952492923e22640f4"
+      "sha256": "2078f64bdeca839952e03233b66c23b4919b6756615dbc9a30b3258ba21da9bf"
     },
     {
       "path": "guides/somatic-sequencing-guide.txt",
@@ -138,6 +138,6 @@
     }
   ],
   "contractVersion": "inner-signal-authoring-base-authority-v1",
-  "projectionInputSha256": "2cd50da8bfdb8e3e7b08926f7d1b9eabc9cf854231c4fa59350f27a7bf684320",
+  "projectionInputSha256": "a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f07d7f6a3f5",
   "proposalId": "love-horizon-r1"
 }

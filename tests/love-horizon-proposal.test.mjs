@@ -17,10 +17,10 @@ function hasNoneGate(node, field, value) {
 test("love-horizon proposal is coverage-complete and gates existential/spiritual routing during immediate instability", async () => {
   const built = await materializeProposal({ root, id: "love-horizon-r1", enforceCoverage: true });
   assert.equal(built.regressionImpact.ok, true);
-  assert.deepEqual(built.receipt.regressionStatus, { ok: true, count: 22, passed: 22 });
+  assert.deepEqual(built.receipt.regressionStatus, { ok: true, count: 24, passed: 24 });
   assert.equal(built.packetVerification.ok, true);
 
-  for (const id of ["IC.EXISTENTIAL_NOURISHMENT", "IC.LOVE_HORIZON_EXPLORATION", "IC.REALIZATION_LOVE_INTEGRATION", "IC.SUICIDAL_SELF_DEATH_INQUIRY"]) {
+  for (const id of ["IC.EXISTENTIAL_NOURISHMENT", "IC.LOVE_HORIZON_EXPLORATION", "IC.REALIZATION_LOVE_INTEGRATION", "IC.SUICIDAL_SELF_DEATH_INQUIRY", "IC.SUICIDAL_ADULT_SEAT"]) {
     const node = nodeById(built.candidateBundle, id);
     assert.ok(node, id);
     assert.ok(hasNoneGate(node, "present_safety", "unsafe"), `${id} must wait for present safety`);
@@ -29,6 +29,13 @@ test("love-horizon proposal is coverage-complete and gates existential/spiritual
     assert.ok(hasNoneGate(node, "ability_to_return", "no"), `${id} must wait until the person can return`);
     assert.ok(hasNoneGate(node, "altered_state", "altered"), `${id} must not run during a current altered state`);
   }
+
+  const suicidalAdultSeat = nodeById(built.candidateBundle, "IC.SUICIDAL_ADULT_SEAT");
+  assert.ok(suicidalAdultSeat);
+  assert.equal(suicidalAdultSeat.tier, 1);
+  assert.equal(suicidalAdultSeat.priority, 100);
+  assert.ok(suicidalAdultSeat.effects.deferNodes.includes("IC.SUICIDAL_SELF_DEATH_INQUIRY"));
+  assert.ok(suicidalAdultSeat.effects.forbiddenOverclaims.some((item) => /every suicidal state/i.test(item)));
 
   const suicidalSelfDeath = nodeById(built.candidateBundle, "IC.SUICIDAL_SELF_DEATH_INQUIRY");
   assert.ok(suicidalSelfDeath);

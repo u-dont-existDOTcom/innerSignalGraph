@@ -21,7 +21,7 @@ source_refs:
   - AMEND.IC.EXISTENTIAL_LOVE_ROUTING
   - AMEND.IC.WELLBEING_HORIZON
 base_graph_sha256: 4cffe0bcadbf49cc3e27dc5274221f51ec252a0226e944b4f5541dda47c6d1d6
-base_projection_input_sha256: 2cd50da8bfdb8e3e7b08926f7d1b9eabc9cf854231c4fa59350f27a7bf684320
+base_projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f07d7f6a3f5
 ---
 
 # Examine the self/death assumption before an irreversible act
