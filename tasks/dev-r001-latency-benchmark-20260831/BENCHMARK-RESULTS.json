@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 1,
+  "benchmark": "therapy-latency-fast-reviewed-v1",
+  "mode": "mock-only",
+  "baselineCommit": "f0ce1e5062c1a34c57d630cbd158491816ac5292",
+  "iterations": 3,
+  "baselineCapture": {
+    "instrumentationOnly": true,
+    "cases": [
+      {
+        "id": "fast",
+        "semanticHashes": [
+          "e5c4df0bd3f9a15c93efa1c5f77c4605ea7f7c4256ed165731b76146ba5baa1d"
+        ],
+        "providerStages": [
+          [
+            "case_extraction",
+            "realization"
+          ]
+        ],
+        "providerCallCounts": [
+          2
+        ],
+        "planningPassCounts": [
+          1
+        ],
+        "stageTimings": [
+          {
+            "caseExtractionMs": 3,
+            "planningMs": null,
+            "realizationMs": 0,
+            "totalMs": 10
+          },
+          {
+            "caseExtractionMs": 1,
+            "planningMs": null,
+            "realizationMs": 0,
+            "totalMs": 3
+          },
+          {
+            "caseExtractionMs": 1,
+            "planningMs": null,
+            "realizationMs": 0,
+            "totalMs": 3
+          }
+        ]
+      },
+      {
+        "id": "reviewed",
+        "semanticHashes": [
+          "9d347f9072e7d41903b944563663d61a021220dfbcd69806ad8d8ffacef9ef97"
+        ],
+        "providerStages": [
+          [
+            "case_extraction",
+            "case_audit",
+            "realization"
+          ]
+        ],
+        "providerCallCounts": [
+          3
+        ],
+        "planningPassCounts": [
+          2
+        ],
+        "stageTimings": [
+          {
+            "caseExtractionMs": 1,
+            "caseAuditMs": 1,
+            "planningMs": 2,
+            "realizationMs": 0,
+            "totalMs": 19
+          },
+          {
+            "caseExtractionMs": 1,
+            "caseAuditMs": 0,
+            "planningMs": 2,
+            "realizationMs": 0,
+            "totalMs": 6
+          },
+          {
+            "caseExtractionMs": 1,
+            "caseAuditMs": 1,
+            "planningMs": 1,
+            "realizationMs": 1,
+            "totalMs": 5
+          }
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "fast",
+      "expectedTier": "fast",
+      "fixture": "tests/fixtures/fast-therapy.json",
+      "baseline": {
+        "semanticHash": "e5c4df0bd3f9a15c93efa1c5f77c4605ea7f7c4256ed165731b76146ba5baa1d",
+        "providerStages": [
+          "case_extraction",
+          "realization"
+        ],
+        "providerCallCount": 2,
+        "planningPassCount": 1
+      },
+      "optimized": {
+        "semanticHashes": [
+          "e5c4df0bd3f9a15c93efa1c5f77c4605ea7f7c4256ed165731b76146ba5baa1d"
+        ],
+        "providerStages": [
+          [
+            "case_extraction",
+            "realization"
+          ]
+        ],
+        "providerCallCounts": [
+          2
+        ],
+        "planningPassCounts": [
+          1
+        ],
+        "observedWallMs": [
+          10.782,
+          4.613,
+          2.192
+        ],
+        "stageTimings": [
+          {
+            "caseExtractionMs": 3,
+            "planningMs": 4,
+            "realizationMs": 0,
+            "totalMs": 10
+          },
+          {
+            "caseExtractionMs": 2,
+            "planningMs": 2,
+            "realizationMs": 0,
+            "totalMs": 4
+          },
+          {
+            "caseExtractionMs": 1,
+            "planningMs": 1,
+            "realizationMs": 0,
+            "totalMs": 3
+          }
+        ]
+      },
+      "acceptance": {
+        "tierPreserved": true,
+        "semanticEquivalentEveryIteration": true,
+        "providerStagesPreserved": true,
+        "providerCallCountPreserved": true,
+        "onePlanningPassEveryIteration": true,
+        "requiredTimingsRetained": true
+      }
+    },
+    {
+      "id": "reviewed",
+      "expectedTier": "reviewed",
+      "fixture": "fixtures/mock-responses/A001.json",
+      "baseline": {
+        "semanticHash": "9d347f9072e7d41903b944563663d61a021220dfbcd69806ad8d8ffacef9ef97",
+        "providerStages": [
+          "case_extraction",
+          "case_audit",
+          "realization"
+        ],
+        "providerCallCount": 3,
+        "planningPassCount": 2
+      },
+      "optimized": {
+        "semanticHashes": [
+          "9d347f9072e7d41903b944563663d61a021220dfbcd69806ad8d8ffacef9ef97"
+        ],
+        "providerStages": [
+          [
+            "case_extraction",
+            "case_audit",
+            "realization"
+          ]
+        ],
+        "providerCallCounts": [
+          3
+        ],
+        "planningPassCounts": [
+          1
+        ],
+        "observedWallMs": [
+          22.677,
+          4.499,
+          12.392
+        ],
+        "stageTimings": [
+          {
+            "caseExtractionMs": 0,
+            "caseAuditMs": 1,
+            "planningMs": 18,
+            "realizationMs": 1,
+            "totalMs": 22
+          },
+          {
+            "caseExtractionMs": 1,
+            "caseAuditMs": 0,
+            "planningMs": 2,
+            "realizationMs": 0,
+            "totalMs": 5
+          },
+          {
+            "caseExtractionMs": 1,
+            "caseAuditMs": 1,
+            "planningMs": 2,
+            "realizationMs": 1,
+            "totalMs": 12
+          }
+        ]
+      },
+      "acceptance": {
+        "tierPreserved": true,
+        "semanticEquivalentEveryIteration": true,
+        "providerStagesPreserved": true,
+        "providerCallCountPreserved": true,
+        "onePlanningPassEveryIteration": true,
+        "requiredTimingsRetained": true
+      }
+    }
+  ],
+  "acceptance": {
+    "mockOnly": true,
+    "semanticEquivalent": true,
+    "providerCallsPreserved": true,
+    "onePlanningPassPerTier": true,
+    "timingsRetained": true
+  },
+  "ok": true
+}

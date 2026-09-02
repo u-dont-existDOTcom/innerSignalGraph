@@ -5,7 +5,12 @@ import path from "node:path";
 import { loadConfig, projectRoot } from "../src/core/config.mjs";
 import { buildContext } from "../src/orchestrator/context-builder.mjs";
 import { createProviders } from "../src/providers/factory.mjs";
-import { runCaseFormulation, applyCaseAudit } from "../src/case-formulation/run.mjs";
+import {
+  runCaseFormulation,
+  runUnauditedCaseSnapshot,
+  runUnauditedCaseFormulation,
+  applyCaseAudit
+} from "../src/case-formulation/run.mjs";
 import { runFormulatedPipeline } from "../src/orchestrator/run-formulated-pipeline.mjs";
 import { blankCaseVariables } from "../src/guide-graph/contract.mjs";
 
@@ -25,6 +30,31 @@ test("audited A001 case formulation routes credibility repair before generic rel
   assert.ok(result.plan.selectedNodes.some((item) => item.id === "IC.AGE_RESPONSIBILITY_CLARIFICATION"));
   assert.ok(result.plan.requiredNuance.some((item) => /relaxation/i.test(item)));
   assert.ok(result.plan.graphTrace.activeEdges.length > 0);
+});
+
+test("snapshot-only extraction preserves unaudited formulation behavior without planning early", async () => {
+  const snapshotSetup = await a001Setup();
+  const snapshotOnly = await runUnauditedCaseSnapshot({
+    context: snapshotSetup.context,
+    provider: snapshotSetup.providers.renderer
+  });
+  assert.equal(Object.hasOwn(snapshotOnly, "plan"), false);
+  assert.equal(Object.hasOwn(snapshotOnly, "graphBundleVersion"), false);
+
+  const formulationSetup = await a001Setup();
+  let planningPasses = 0;
+  const formulation = await runUnauditedCaseFormulation({
+    context: formulationSetup.context,
+    provider: formulationSetup.providers.renderer,
+    onPlanningPass: () => { planningPasses += 1; }
+  });
+  assert.deepEqual(snapshotOnly.snapshot, formulation.snapshot);
+  assert.equal(snapshotOnly.providerMetadata.extractor.provider, formulation.providerMetadata.extractor.provider);
+  assert.equal(snapshotOnly.providerMetadata.extractor.model, formulation.providerMetadata.extractor.model);
+  assert.equal(snapshotOnly.providerMetadata.extractor.requestId, formulation.providerMetadata.extractor.requestId);
+  assert.equal(planningPasses, 1);
+  assert.ok(formulation.plan);
+  assert.equal(formulation.graphBundleVersion, "inner-child-somatic-pilot-2026-08-09-r5");
 });
 
 test("case audit corrections are applied without converting hypotheses into observations", () => {
