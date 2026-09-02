@@ -17,11 +17,13 @@ graph_tags:
 source_refs:
   - IC.ALTERED_STATES
   - IC.ESCAPE_URGE
+  - AMEND.IC.EXISTENTIAL_LOVE_ROUTING
+  - AMEND.IC.WELLBEING_HORIZON
 regression_refs:
   - G009
-base_record_sha256: 060cdaab7a4a4f9f86b1d663aa049b4320367165af4c0dcbb911de485173ba62
-base_graph_sha256: 4cffe0bcadbf49cc3e27dc5274221f51ec252a0226e944b4f5541dda47c6d1d6
-projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f07d7f6a3f5
+base_record_sha256: 1834ec961af7d1f5ff5052faf3c6344361f8f2b1d373144193182cae0a303fea
+base_graph_sha256: e2532806378ef613edac19a9eacbe57653b21a4061a2b9f393bb54d1fa30ff2d
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # Build sober capacity before using altered states to deepen
@@ -48,14 +50,17 @@ projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f0
     ]
   },
   "avoid": [
-    "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing."
+    "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.",
+    "Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness."
   ],
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [],
-    "requiredNuance": []
+    "requiredNuance": [
+      "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration."
+    ]
   },
   "recommendations": [
     "Prefer sober Nurturer and Protector capacity first or grounded support that does not seize authority.",
@@ -73,3 +78,7 @@ projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f0
 [[current/sources/inner-child-guide/IC.ALTERED_STATES]]
 
 [[current/sources/inner-child-guide/IC.ESCAPE_URGE]]
+
+[[current/governance/amendments/AMEND.IC.EXISTENTIAL_LOVE_ROUTING]]
+
+[[current/governance/amendments/AMEND.IC.WELLBEING_HORIZON]]

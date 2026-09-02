@@ -12,7 +12,7 @@ section_hash: 81a6b117249bf2af08794814d9eae8c094acaa117102de10d9e897c7c925b18d
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.BORROW_LOVE
-projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f07d7f6a3f5
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # AMEND.IC.BORROW_LOVE_EXTERNAL

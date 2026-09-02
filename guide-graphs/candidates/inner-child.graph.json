@@ -229,7 +229,7 @@
     },
     {
       "id": "IC.BORROW_LOVE",
-      "title": "Borrow love from an already-loved being",
+      "title": "Borrow already-accessible love without flattening its depth",
       "kind": "decision-node",
       "tier": 4,
       "priority": 92,
@@ -267,12 +267,14 @@
       "sourceRefs": [
         "IC.LOVE_MISSING",
         "IC.HEART_SOLAR_LOOP",
-        "AMEND.IC.BORROW_LOVE_EXTERNAL"
+        "AMEND.IC.BORROW_LOVE_EXTERNAL",
+        "AMEND.IC.WELLBEING_HORIZON"
       ],
       "authority": "author-framework",
       "recommendations": [
         "First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.",
-        "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible."
+        "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.",
+        "Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love."
       ],
       "avoid": [
         "Do not manufacture warmth or make the loved being responsible for the session."
@@ -286,13 +288,14 @@
         "nurturer"
       ],
       "effects": {
-        "deferNodes": [],
         "blockNodes": [],
-        "requiredNuance": [
-          "The problem may be safety of receiving love rather than absence of love."
-        ],
+        "deferNodes": [],
         "forbiddenOverclaims": [
           "Do not call reluctance proof that the child rejects love."
+        ],
+        "requiredNuance": [
+          "The problem may be safety of receiving love rather than absence of love.",
+          "Ordinary affection or care and profound transpersonal love are distinct resources; either may be therapeutically useful, and one must not be used to erase the distinction the user is making."
         ]
       },
       "defaultQuestion": ""
@@ -407,9 +410,9 @@
       ],
       "authority": "author-framework",
       "recommendations": [
-        "Borrow one narrow function\u2014warmth, protection, or direction\u2014from a safe person, figure, plan, value, or ordinary action.",
+        "Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.",
         "Keep it bounded, observable, and returnable.",
-        "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too\u2014for example, how a decent adult would hear contempt without arguing its own goodness."
+        "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness."
       ],
       "avoid": [
         "Do not demand an ideal parent image or let the helper become authority over memories, medicine, relationships, or future."
@@ -936,7 +939,7 @@
       ],
       "authority": "author-framework",
       "recommendations": [
-        "Notice where other people\u2019s emotions and group expectations replace personal knowing.",
+        "Notice where other people’s emotions and group expectations replace personal knowing.",
         "Practice selective belonging, disagreement, and leaving when staying requires disappearance."
       ],
       "avoid": [
@@ -1000,14 +1003,19 @@
       },
       "sourceRefs": [
         "IC.GUIDE_LATER",
-        "IC.THREE_FUNCTIONS"
+        "IC.THREE_FUNCTIONS",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "AMEND.IC.REALIZATION_LOVE_INTEGRATION"
       ],
       "authority": "author-framework",
       "recommendations": [
-        "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal."
+        "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.",
+        "When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion."
       ],
       "avoid": [
-        "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing."
+        "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing.",
+        "Do not escalate spiritual abstraction or attainment because love feels inaccessible."
       ],
       "successSignals": [
         "Direction increases life participation without exiling the child."
@@ -1018,10 +1026,12 @@
         "meaning"
       ],
       "effects": {
-        "deferNodes": [],
         "blockNodes": [],
-        "requiredNuance": [],
-        "forbiddenOverclaims": []
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": [
+          "Spiritual exploration is optional when the person’s current horizon feels sufficient; when realization is already present, assess whether it deepens accessible love and reaches the child rather than assuming attainment itself integrates the wound."
+        ]
       },
       "defaultQuestion": ""
     },
@@ -1094,7 +1104,9 @@
       },
       "sourceRefs": [
         "IC.ALTERED_STATES",
-        "IC.ESCAPE_URGE"
+        "IC.ESCAPE_URGE",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -1102,7 +1114,8 @@
         "Return to ordinary orientation when the state outruns the ability to hold what appears."
       ],
       "avoid": [
-        "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing."
+        "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.",
+        "Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness."
       ],
       "successSignals": [
         "The person can stop, orient, and integrate without escalating use."
@@ -1113,10 +1126,12 @@
         "epistemic"
       ],
       "effects": {
-        "deferNodes": [],
         "blockNodes": [],
-        "requiredNuance": [],
-        "forbiddenOverclaims": []
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": [
+          "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration."
+        ]
       },
       "defaultQuestion": ""
     },
@@ -1165,6 +1180,571 @@
         "forbiddenOverclaims": []
       },
       "defaultQuestion": ""
+    },
+    {
+      "id": "IC.DEEP_LOVE_TO_CHILD",
+      "title": "Bring already-accessible deep love to the younger self without force",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 95,
+      "activation": {
+        "all": [
+          {
+            "field": "deep_love_access",
+            "op": "in",
+            "value": [
+              "intermittent",
+              "reliable"
+            ]
+          },
+          {
+            "field": "child_love_inclusion",
+            "op": "in",
+            "value": [
+              "untested",
+              "blocked",
+              "partial"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.DEEP_LOVE_TO_CHILD",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "IC.HEART_SOLAR_LOOP",
+        "IC.BOTTOM_UP_SEQUENCE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Contact the real profound love first in whatever already-valid way it is accessible; do not manufacture a special inner-child feeling.",
+        "Then bring the younger self into awareness and see whether the same love can include them—the feast has to reach the hungry child.",
+        "If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity."
+      ],
+      "avoid": [
+        "Do not force transfer, interpret reluctance as spiritual failure, or prescribe a stronger altered state because the child cannot receive the love."
+      ],
+      "successSignals": [
+        "Profound love can include the younger self without coercion, or the specific block becomes clear enough to work with relationally."
+      ],
+      "tags": [
+        "deep-love",
+        "inner-child",
+        "integration",
+        "anti-bypass"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not call a blocked transfer proof that the child rejects love, is spiritually deficient, or needs a stronger altered state."
+        ],
+        "requiredNuance": [
+          "Having access to profound love and being able to let the wounded child receive it are separate capacities.",
+          "Love can remain present while distrust or refusal is heard; the child’s objection does not need to be argued away."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.EXISTENTIAL_NOURISHMENT",
+      "title": "Match the work to existential hunger without making spirituality mandatory",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 98,
+      "activation": {
+        "any": [
+          {
+            "field": "existential_sufficiency",
+            "op": "in",
+            "value": [
+              "insufficient",
+              "profoundly_insufficient"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Distinguish whether the person is simply working on a wound within a basically sufficient life, is hungry and curious for a deeper horizon, or experiences ordinary life as radically insufficient.",
+        "When the person says they hate themselves yet voluntarily seeks help, believe the self-hating part and also ask what the help-seeking part hoped might happen; do not name that motive love for them.",
+        "When hopelessness is profound, keep immediate safety and human contact first while also taking the why-live question seriously; a small protective action can preserve the person without pretending to answer the existential question."
+      ],
+      "avoid": [
+        "Do not tell a satisfied, non-curious person that they are spiritually deficient or must seek a profound experience.",
+        "Do not romanticize suicidal crisis, despair, an NDE, psychedelics, conversion, or extraordinary states as a route to transformation."
+      ],
+      "successSignals": [
+        "The intervention matches the scale of the person’s hunger while preserving safety and choice about spiritual exploration."
+      ],
+      "tags": [
+        "existential",
+        "love",
+        "meaning",
+        "curiosity",
+        "safety"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not say a small practical act should be sufficient for profound existential hopelessness.",
+          "Do not say a suicidal crisis is spiritually useful or necessary."
+        ],
+        "requiredNuance": [
+          "Immediate safety action and existential nourishment solve different problems; do not confuse preserving life today with answering why life feels worth living.",
+          "Curiosity can open a route without proving that a spiritual conclusion is true or required."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.LOVE_HORIZON_EXPLORATION",
+      "title": "Explore a deeper horizon of wellbeing when curiosity is genuine",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 94,
+      "activation": {
+        "all": [
+          {
+            "field": "spiritual_curiosity",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "deep_love_access",
+            "op": "in",
+            "value": [
+              "none_known",
+              "past_glimpse",
+              "state_dependent",
+              "unknown"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "IC.GUIDE_LATER"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Invite investigation rather than belief: notice people, practices, traditions, experiences, nature, art, service, prayer, meditation, or other sources whose lived fruits make a deeper kind of love or wellbeing seem worth exploring.",
+        "Use metta or loving-kindness as one possible cultivation practice, especially when it feels meaningful, without presenting it as the definition or guaranteed depth of love.",
+        "Follow the fruits: prefer paths and exemplars that become more loving, honest, grounded, protective, and able to face pain rather than merely more impressive or certain."
+      ],
+      "avoid": [
+        "Do not prescribe a religion, theism, awakening, nonduality, conversion, psychedelics, NDEs, or a metaphysical conclusion.",
+        "Do not imply that everyone needs profound spiritual love when the person says their present horizon is sufficient."
+      ],
+      "successSignals": [
+        "Curiosity becomes a voluntary experiment with no forced doctrine, attainment target, or promise of extraordinary experience."
+      ],
+      "tags": [
+        "spiritual-curiosity",
+        "love",
+        "wellbeing-horizon",
+        "guide"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not say everyone needs profound spiritual love in order to heal or live well."
+        ],
+        "requiredNuance": [
+          "The relevant distinction is experiential access to deeper wellbeing and love, not believer versus atheist or one religion versus another.",
+          "A conceptual horizon and a directly experienced horizon are different; do not pretend reading about profound love is the same as having touched it."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.REALIZATION_LOVE_INTEGRATION",
+      "title": "Keep realization, doctrine, and community answerable to lived love",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 99,
+      "activation": {
+        "any": [
+          {
+            "field": "spiritual_bypass_pattern",
+            "op": "in",
+            "value": [
+              "attainment_outpaces_love",
+              "doctrine_outpaces_love",
+              "group_warmth_mismatch"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
+        "AMEND.IC.DEEP_LOVE_TO_CHILD",
+        "IC.GUIDE_LATER",
+        "IC.PROTECTOR_VISIBLE",
+        "IC.RELATIONSHIP"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Respect whatever realization, rebirth, doctrine, or community experience is genuine while testing separately whether love is actually felt, can include the inner child, and survives ordinary relational difficulty.",
+        "Do not let mystery outrun love indefinitely: if attainment or doctrine is far ahead of felt love, turn toward the missing love rather than prescribing a more advanced abstraction.",
+        "Translate spiritual opening into protection, truth, reliability, service, Hearthwork or reciprocal relationship, and community where useful; community may reinforce an opening without being assumed to have caused it."
+      ],
+      "avoid": [
+        "Do not dismiss genuine nibbana, nondual, Christian, mystical, or other realization merely because emotional integration is incomplete.",
+        "Do not treat claims about divine love, spiritual attainment, or a welcoming group atmosphere as proof that the person actually experiences love."
+      ],
+      "successSignals": [
+        "The person can distinguish spiritual truth or identity from felt love and practical integration, and the next step addresses the actual mismatch rather than protecting a status claim."
+      ],
+      "tags": [
+        "spiritual-bypass",
+        "realization",
+        "doctrine",
+        "community",
+        "integration"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not say that awakening, religious belief, church or sangha membership, or mystical experience proves emotional integration.",
+          "Do not say that ordinary practical care is worthless because profound spiritual love is not accessible."
+        ],
+        "requiredNuance": [
+          "Mystical intensity, doctrinal certainty, and love depth are not interchangeable.",
+          "Practical love and profound love are complementary: practical conduct embodies love, while a deeper wellbeing horizon may enlarge what the person can sincerely wish for beings."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.SUICIDAL_ADULT_SEAT",
+      "title": "Bring a second adult or witness seat into the room",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 100,
+      "activation": {
+        "all": [
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ],
+        "any": [
+          {
+            "field": "identity_blur",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "unknown"
+            ]
+          },
+          {
+            "field": "witness_capacity",
+            "op": "in",
+            "value": [
+              "absent",
+              "unknown"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.SUICIDAL_ADULT_SEAT",
+        "AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY",
+        "IC.NEUTRAL_WITNESS",
+        "IC.BORROW_ONE_FUNCTION"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "First discriminate fusion: ask whether the wish to die feels like the whole self right now or whether any observing/protective position can sit beside it.",
+        "Invite one second seat rather than a complete ideal parent: neutral witness, Nurturer, Protector, future self, trusted person, spiritual figure, written plan, or another bounded source of adult capacity.",
+        "If no internal adult position is available, borrow one function only: keep the body safe, listen without retaliation, and postpone irreversible action while the suicidal state speaks.",
+        "Once the person can hold the suicidal state and an observing/protective position at the same time, continue to the strict self/death/rebirth inquiry rather than remaining indefinitely in preparatory soothing."
+      ],
+      "avoid": [
+        "Do not announce that the suicidal voice is the inner child or impose a parts model the person has not endorsed.",
+        "Do not make the borrowed adult into a new external authority over memories, medicine, relationships, or spiritual conclusions.",
+        "Do not use the adult position to lecture, shame, suppress, or outvote the suicidal state."
+      ],
+      "successSignals": [
+        "The person can distinguish the suicidal state from at least one observing or protective position, even if that adult capacity is weak, borrowed, or temporary."
+      ],
+      "tags": [
+        "suicide-prevention",
+        "borrowed-adulthood",
+        "witness",
+        "differentiation",
+        "safety"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+          "IC.EXISTENTIAL_NOURISHMENT",
+          "IC.LOVE_HORIZON_EXPLORATION"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim a complete inner adult already exists merely because the person can momentarily observe the suicidal state.",
+          "Do not claim every suicidal state is a child-state."
+        ],
+        "requiredNuance": [
+          "The prerequisite is a minimally reflective second position, not a fully healed or spiritually advanced self.",
+          "A neutral witness, partial inner adult, or borrowed adult function can be enough to begin; adult identity may form after protective behavior.",
+          "The adult position first protects the body and listens. It does not need to convince the suicidal state that life is good before the self/death inquiry can begin."
+        ]
+      },
+      "defaultQuestion": "Before we decide anything, can we invite any part of you that can observe, protect the body, or simply postpone the decision to sit beside the part that wants to die—even if we have to borrow that adult position from someone you trust?"
+    },
+    {
+      "id": "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+      "title": "Examine the self/death assumption before an irreversible act",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 99,
+      "activation": {
+        "all": [
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Ask what the person is trying to end or obtain through death—annihilation, escape, punishment, love or reunion, God or spiritual contact, liberation or release, or something else—without using motive to predict a postmortem outcome.",
+        "Examine whether the person is equating the relevant self with the body and what evidence supports the belief that bodily death ends the mind-state, identity, or suffering they want ended.",
+        "Challenge annihilation certainty without demanding belief: examine dream phenomenology, rebirth arguments and reports, NDE accounts and their survivor-selection limits, and major contemplative traditions that warn bodily death may not end suffering.",
+        "State the Buddhist warning plainly as a serious teaching to consider, not a belief the person must adopt: intentional mental trajectories have consequences, rebirth and hellish states are possible, and a human birth is a rare opportunity to investigate dukkha and its cessation. Do not invent odds or threaten divine punishment.",
+        "Use the shared mental-trajectory principle carefully: psychology supports self-reinforcing negative cognition within life, while Buddhist teaching extends intentional causation across death and rebirth; therefore bodily death should not be assumed to interrupt the process the person is trying to escape.",
+        "Ask what previously forbidden but reversible changes become negotiable if the person is already contemplating losing everything: what would they change before making the one irreversible change?",
+        "Keep the body alive while investigating. If danger becomes imminent or the person cannot delay action, return immediately to concrete human contact and physical safety."
+      ],
+      "avoid": [
+        "Do not shame or condemn the person, guarantee hell, assign postmortem odds, or say that a spiritual motive makes suicide safer.",
+        "Do not present dreams, NDEs, rebirth reports, or religious teachings as empirical proof of a specific individual’s postmortem outcome.",
+        "Do not claim psychology proves postmortem mental continuity.",
+        "Do not prescribe an NDE, psychedelic experience, or solitary spiritual practice as a substitute for urgent real-world protection when danger is imminent."
+      ],
+      "successSignals": [
+        "The person can name what death is supposed to accomplish, recognize uncertainty in the self/death assumption, and delay irreversible action while investigating spiritual claims and reversible life changes."
+      ],
+      "tags": [
+        "suicide-prevention",
+        "self-inquiry",
+        "rebirth",
+        "existential",
+        "safety"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.EXISTENTIAL_NOURISHMENT",
+          "IC.LOVE_HORIZON_EXPLORATION"
+        ],
+        "forbiddenOverclaims": [
+          "Do not say suicide reliably leads to hell or reliably leads to heaven, nothingness, liberation, reunion, or any other postmortem outcome.",
+          "Do not infer that suicidality itself proves spiritual attainment or that a person must be curious about spirituality before this inquiry is relevant."
+        ],
+        "requiredNuance": [
+          "Suicidal intent itself stakes an irreversible act on assumptions about self, body, mind, and death; the guide therefore examines those assumptions even when ordinary spiritual curiosity is absent, while belief remains voluntary.",
+          "Immediate safety preserves the opportunity for inquiry but does not answer the existential or metaphysical question.",
+          "Repeated self-hatred, despair, rumination, attentional narrowing, withdrawal, and self-destructive cognition can become self-reinforcing within life; Buddhism additionally teaches continuity of intentional mental causation through death and rebirth. Keep those evidentiary levels distinct.",
+          "A Buddhist warning may explicitly include rebirth, hellish states, and the rarity/value of human birth without claiming certainty about this individual’s destination."
+        ]
+      },
+      "defaultQuestion": "What exactly is the self you want to kill, and what makes you think killing this body ends that self or the suffering you are trying to escape?"
     }
   ],
   "edges": [
@@ -1217,6 +1797,41 @@
       "from": "IC.ALTERED_STATE_GATE",
       "to": "IC.DEEP_CHILD_DIALOGUE",
       "relation": "gates"
+    },
+    {
+      "from": "IC.DEEP_LOVE_TO_CHILD",
+      "relation": "embodies-through",
+      "to": "IC.PROTECTOR_ACTION"
+    },
+    {
+      "from": "IC.REALIZATION_LOVE_INTEGRATION",
+      "relation": "feeds-child-integration",
+      "to": "IC.DEEP_LOVE_TO_CHILD"
+    },
+    {
+      "from": "IC.DEEP_LOVE_TO_CHILD",
+      "relation": "integrates-relationally",
+      "to": "IC.ADULT_APPRENTICE"
+    },
+    {
+      "from": "IC.LOVE_HORIZON_EXPLORATION",
+      "relation": "can-enable",
+      "to": "IC.DEEP_LOVE_TO_CHILD"
+    },
+    {
+      "from": "IC.REALIZATION_LOVE_INTEGRATION",
+      "relation": "requires-embodiment",
+      "to": "IC.PROTECTOR_ACTION"
+    },
+    {
+      "from": "IC.DEEP_LOVE_TO_CHILD",
+      "relation": "routes-block-to",
+      "to": "IC.MEET_GUARD"
+    },
+    {
+      "from": "IC.EXISTENTIAL_NOURISHMENT",
+      "relation": "opens-when-curious",
+      "to": "IC.LOVE_HORIZON_EXPLORATION"
     }
   ]
 }

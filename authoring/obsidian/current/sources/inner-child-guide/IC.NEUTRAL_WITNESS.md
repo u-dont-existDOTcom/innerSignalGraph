@@ -12,7 +12,8 @@ section_hash: 58388aa15bda2b9697deb6b897a551e4b866aea33e3d74cc5d5ddadd2b6719f1
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.NEUTRAL_WITNESS
-projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f07d7f6a3f5
+  - IC.SUICIDAL_ADULT_SEAT
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # A Witness Is Enough to Begin

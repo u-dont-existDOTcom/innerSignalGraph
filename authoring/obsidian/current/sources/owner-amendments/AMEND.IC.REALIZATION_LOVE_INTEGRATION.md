@@ -10,8 +10,10 @@ source_role: owner-approved-extension
 source_hash: 2078f64bdeca839952e03233b66c23b4919b6756615dbc9a30b3258ba21da9bf
 section_hash: 3122e43e9246d5ccf3d1e706f1af7528769ed0e88f087e1fe479ff480aa4824c
 locator_kind: amendment-record
-cited_by_node_ids: []
-projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f07d7f6a3f5
+cited_by_node_ids:
+  - IC.GUIDE_LATER
+  - IC.REALIZATION_LOVE_INTEGRATION
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # AMEND.IC.REALIZATION_LOVE_INTEGRATION

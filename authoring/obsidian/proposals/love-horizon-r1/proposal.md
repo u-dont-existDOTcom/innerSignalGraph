@@ -2,7 +2,7 @@
 authoring_contract: inner-signal-authoring-proposal-v1
 entity_type: proposal
 proposal_id: love-horizon-r1
-status: draft
+status: reconciled
 base_projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f07d7f6a3f5
 target_graph_ids:
   - inner-child-directed-graph

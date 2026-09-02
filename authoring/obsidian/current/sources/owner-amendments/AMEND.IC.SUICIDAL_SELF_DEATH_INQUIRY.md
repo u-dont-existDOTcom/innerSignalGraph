@@ -10,8 +10,10 @@ source_role: owner-approved-extension
 source_hash: 2078f64bdeca839952e03233b66c23b4919b6756615dbc9a30b3258ba21da9bf
 section_hash: 59b5186c39ee4caadc93b37d138dcda7c94fa450f6254e02ae3997eee485e992
 locator_kind: amendment-record
-cited_by_node_ids: []
-projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f07d7f6a3f5
+cited_by_node_ids:
+  - IC.SUICIDAL_ADULT_SEAT
+  - IC.SUICIDAL_SELF_DEATH_INQUIRY
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY

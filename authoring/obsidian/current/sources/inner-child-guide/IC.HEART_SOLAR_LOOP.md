@@ -12,8 +12,9 @@ section_hash: f44816b8f26571236e452663f002aa9d64ec0cf0e234a7d15181676513459040
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.BORROW_LOVE
+  - IC.DEEP_LOVE_TO_CHILD
   - IC.SOLAR_PLEXUS_RELAXATION
-projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f07d7f6a3f5
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # A Heart-to-Child Loop

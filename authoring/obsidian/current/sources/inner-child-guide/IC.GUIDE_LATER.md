@@ -12,7 +12,9 @@ section_hash: d02913788461ea67251fb746e0464d97de16f864c4f85601c07e6093900c8483
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.GUIDE_LATER
-projection_input_sha256: a7aeada0a9fa9fd791ae52f7e25dd7e6b7ea855bdfda56a37f438f07d7f6a3f5
+  - IC.LOVE_HORIZON_EXPLORATION
+  - IC.REALIZATION_LOVE_INTEGRATION
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # The Inner Guide Comes Later
