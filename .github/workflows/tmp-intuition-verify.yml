@@ -1,4 +1,4 @@
-# diagnostic pass after exact regression matcher fix
+# diagnostic pass after guide-later coverage assertion
 name: Temporary intuition proposal verification
 
 on:
