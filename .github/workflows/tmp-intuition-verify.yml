@@ -1,0 +1,30 @@
+name: Temporary intuition proposal verification
+
+on:
+  push:
+    branches:
+      - task/intuition-calibration-20260902
+    paths:
+      - .github/workflows/tmp-intuition-verify.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify-proposal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: task/intuition-calibration-20260902
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - run: npm ci --ignore-scripts
+      - name: Build proposal candidate
+        run: npm run authoring:proposal:build -- --id intuition-calibration-r1
+      - name: Verify proposal candidate
+        run: npm run authoring:proposal:check -- --id intuition-calibration-r1
+      - name: Verify current map integrity
+        run: npm run authoring:maps:check
