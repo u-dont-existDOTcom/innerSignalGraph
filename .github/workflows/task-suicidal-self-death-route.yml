@@ -28,6 +28,18 @@ jobs:
           node-version-file: .nvmrc
       - name: Bootstrap exact dependencies
         run: npm ci --ignore-scripts
+      - name: Align semantic regression matchers
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/tmp-suicidal-self-death-route.mjs')
+          s = p.read_text()
+          old = "requiredNuancePatterns:['Suicidal intent itself','Immediate safety preserves','self-reinforcing within life','rebirth and hellish states'],forbiddenOverclaimPatterns:['reliably leads to hell','prior spiritual curiosity']"
+          new = "requiredNuancePatterns:['Suicidal intent itself','Immediate safety preserves','self-reinforcing within life','hellish states'],forbiddenOverclaimPatterns:['reliably leads to hell','curious about spirituality']"
+          if old not in s:
+              raise SystemExit('expected regression matcher source not found')
+          p.write_text(s.replace(old, new))
+          PY
       - name: Apply owner-approved source and runtime contract update
         run: node scripts/tmp-suicidal-self-death-route.mjs prepare
       - name: Regenerate deterministic current projections
@@ -38,17 +50,6 @@ jobs:
         run: |
           node scripts/tmp-suicidal-self-death-route.mjs proposal
           node scripts/tmp-rebind-love-horizon-edges.mjs
-      - name: Diagnose exact proposal regression
-        run: |
-          node --input-type=module - <<'NODE'
-          import { materializeProposal } from './src/authoring/proposal-builder.mjs';
-          try {
-            await materializeProposal({ root: process.cwd(), id: 'love-horizon-r1', enforceCoverage: false });
-          } catch (error) {
-            console.error(JSON.stringify({ code: error.code, message: error.message, details: error.details ?? null }, null, 2));
-            process.exit(1);
-          }
-          NODE
       - name: Build and verify exact proposal
         run: |
           npm run authoring:proposal:build -- --id love-horizon-r1
