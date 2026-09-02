@@ -12,7 +12,7 @@ section_hash: 5fd97f85e2f0becb09bdd390d53523570e7a8cecbd8bfa111e53058918890947
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.AGE_RESPONSIBILITY_CLARIFICATION
-projection_input_sha256: 0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b5a6afcdef832f3
+projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
 ---
 
 # The Parent You Inherited

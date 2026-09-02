@@ -10,8 +10,10 @@ source_role: instructional-visual-provenance
 source_hash: aee2364244ff989c850a1e84d4e556ae1ae67891fa706e852081d5f82d74936d
 section_hash: 2a5d05880e00302c6682152d95a6550215eb010367c84d3d0ad8b6fe42646bdd
 locator_kind: structured-record
-cited_by_node_ids: []
-projection_input_sha256: 0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b5a6afcdef832f3
+cited_by_node_ids:
+  - IC.PRECIOUS_HUMAN_OPPORTUNITY
+  - IC.SUICIDAL_SELF_DEATH_INQUIRY
+projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
 ---
 
 # If You Want to Kill Yourself > This human life is the most precious opportunity

@@ -12,7 +12,7 @@ section_hash: 766b82344b2a2cea0d55ad0d72508c162132b9f11e65630a5eb8bf2bd61a2a1d
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.DEEP_CHILD_DIALOGUE
-projection_input_sha256: 0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b5a6afcdef832f3
+projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
 ---
 
 # AMEND.SOM.EARLY_INNER_CHILD_PARALLEL

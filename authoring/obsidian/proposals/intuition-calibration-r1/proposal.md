@@ -2,7 +2,7 @@
 authoring_contract: inner-signal-authoring-proposal-v1
 entity_type: proposal
 proposal_id: intuition-calibration-r1
-status: draft
+status: reconciled
 base_projection_input_sha256: 0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b5a6afcdef832f3
 target_graph_ids:
   - inner-child-directed-graph

@@ -4,13 +4,13 @@ Bundle: `inner-child-somatic-pilot-2026-08-09-r5`
 
 ## Compiled graphs
 
-- inner-child-directed-graph: 25 nodes, 17 edges
+- inner-child-directed-graph: 27 nodes, 22 edges
 - somatic-directed-graph: 14 nodes, 8 edges
 - inner-child-somatic-cross-guide: 0 nodes, 10 edges
 
 ## Authority labels
 
-- author-framework: 39
+- author-framework: 41
 
 ## Owner-approved extensions applied
 

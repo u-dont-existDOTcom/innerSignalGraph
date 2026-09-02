@@ -19,6 +19,7 @@ graph_tags:
 source_refs:
   - IC.BORROW_ONE_FUNCTION
   - IC.ADULT_APPRENTICE
+  - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
 regression_refs:
   - G001
   - G002
@@ -27,9 +28,9 @@ regression_refs:
   - G008
   - G011
   - G012
-base_record_sha256: 11f21fa8d4679e259279acbf9a15ffb60035cacb540b19a8f539985730b106a2
-base_graph_sha256: e2532806378ef613edac19a9eacbe57653b21a4061a2b9f393bb54d1fa30ff2d
-projection_input_sha256: 0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b5a6afcdef832f3
+base_record_sha256: 2f50064b0f852caadf685fb63244ff82fb18e00e5e9b7f1fa9406dda6374c24f
+base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
+projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
 ---
 
 # Borrow one bounded adult function
@@ -84,7 +85,8 @@ projection_input_sha256: 0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b5a6af
     ]
   },
   "avoid": [
-    "Do not demand an ideal parent image or let the helper become authority over memories, medicine, relationships, or future."
+    "Do not demand an ideal parent image or let the helper become authority over memories, medicine, relationships, spiritual conclusions, or future.",
+    "Do not generalize one admirable function, true teaching, healing result, or spiritual gift into global trustworthiness."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -97,16 +99,17 @@ projection_input_sha256: 0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b5a6af
     ],
     "requiredNuance": [
       "Adult identity may form after behavior.",
-      "Borrowed adulthood can support the part attempting the adult role, not only the younger state."
+      "Borrowed adulthood can support the part attempting the adult role, not only the younger state.",
+      "Borrow only in the domain and dose the source’s track record has earned; competence or warmth in one domain does not silently transfer authority to another."
     ]
   },
   "recommendations": [
     "Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.",
-    "Keep it bounded, observable, and returnable.",
+    "Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.",
     "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness."
   ],
   "successSignals": [
-    "The person can perform one adult function without pretending the whole role is available."
+    "The person can perform one adult function without pretending the whole role or the source’s wider authority is available."
   ]
 }
 ```
@@ -117,3 +120,5 @@ projection_input_sha256: 0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b5a6af
 [[current/sources/inner-child-guide/IC.BORROW_ONE_FUNCTION]]
 
 [[current/sources/inner-child-guide/IC.ADULT_APPRENTICE]]
+
+[[current/governance/amendments/AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION]]

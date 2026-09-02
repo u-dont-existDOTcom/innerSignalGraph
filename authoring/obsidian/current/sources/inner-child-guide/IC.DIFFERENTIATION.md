@@ -12,7 +12,8 @@ section_hash: 2c7dfa01a389d27c0f361d447e871ddad3a093c58b1424d3934a65466484327a
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.DIFFERENTIATION
-projection_input_sha256: 0a2eab73975fed08839da48a4c3cbf02cc547fbed3b33b618b5a6afcdef832f3
+  - IC.INTUITION_TRUST_CALIBRATION
+projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
 ---
 
 # Untangling the Belonging Bargains
