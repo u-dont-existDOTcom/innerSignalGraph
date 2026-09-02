@@ -36,7 +36,7 @@
             "source_role": { "$ref": "#/$defs/text" },
             "source_hash": { "$ref": "#/$defs/hash" },
             "section_hash": { "$ref": "#/$defs/hash" },
-            "locator_kind": { "enum": ["text-lines", "pdf-pages", "amendment-record"] },
+            "locator_kind": { "enum": ["text-lines", "pdf-pages", "amendment-record", "structured-record"] },
             "cited_by_node_ids": { "$ref": "#/$defs/strings" },
             "projection_input_sha256": { "$ref": "#/$defs/hash" }
           }
