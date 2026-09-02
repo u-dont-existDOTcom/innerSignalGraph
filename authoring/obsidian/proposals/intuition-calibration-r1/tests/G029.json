@@ -1,0 +1,28 @@
+{
+  "id": "G029",
+  "description": "A strong intuitive click that remains integrated with supportive evidence and no authority transfer does not activate corrective trust calibration.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "coherent_child_state": "present",
+    "self_directed_love": "safe",
+    "suicidal_state": "absent",
+    "spiritual_bypass_pattern": "not_applicable",
+    "intuition_evidence_alignment": "aligned",
+    "epistemic_mode_balance": "integrated",
+    "external_authority_pull": "none",
+    "influence_hook": "praise_specialness",
+    "credibility_conflict": "absent",
+    "credibility_evidence_state": "positive",
+    "current_intent": "conversation",
+    "guide_readiness": "absent",
+    "belonging_pressure": "absent",
+    "identity_blur": "absent"
+  },
+  "unknowns": [],
+  "expected": {
+    "selectedExcludes": ["IC.INTUITION_TRUST_CALIBRATION"]
+  }
+}
