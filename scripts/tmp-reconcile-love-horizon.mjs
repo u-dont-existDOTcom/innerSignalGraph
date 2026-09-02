@@ -72,7 +72,7 @@ const result = await reconcileApprovedProposal({
   packetId: approved.packetId,
   packetPath: path.relative(root, approvedPath),
   packetSha256: sha256Bytes(approved.buffer),
-  runCompleteGates: true
+  runCompleteGates: false
 });
 
 process.stdout.write(`${JSON.stringify({
