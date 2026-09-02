@@ -2,11 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import os from 'node:os';
 import { createHash } from 'node:crypto';
 import { createStoredZip, readZipEntries } from '../src/core/zip.mjs';
 import { extractEditorBody, extractHtmlSections, htmlToText } from '../src/guide-packet/source-html.mjs';
-import { buildGuidePacket } from '../src/guide-packet/builder.mjs';
 import { verifyGuidePacket } from '../src/guide-packet/verifier.mjs';
 import { buildBehavioralDiff, buildDecisionCards } from '../src/guide-packet/diff.mjs';
 import { runGuideQualityAudit } from '../src/guide-packet/quality-audit.mjs';
@@ -59,18 +57,9 @@ test('HTML-to-text conversion decodes each entity exactly once', () => {
   assert.equal(htmlToText('<p>&amp;lt;script&amp;gt;</p>'), '&lt;script&gt;');
 });
 
-test('valid candidate packet verifies but remains candidate-only', async () => {
-  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), 'guide-packet-valid-candidate-'));
-  const built = await buildGuidePacket({
-    runtimeRoot: path.resolve('.'),
-    somaticHtmlPath: sourceFiles.somatic,
-    innerChildHtmlPath: sourceFiles.innerChild,
-    outputDir,
-    packetVersion: '2026.08.11-r01-candidate',
-    packetRevision: 1,
-    status: 'candidate'
-  });
-  const result = verifyGuidePacket(built.buffer, { installedRevision: 0 });
+test('valid frozen candidate packet verifies but remains candidate-only', async () => {
+  const zip = await fs.readFile(path.join(fixtureRoot, 'inner-signal-guide-packet-r01-candidate.zip'));
+  const result = verifyGuidePacket(zip, { installedRevision: 0 });
   assert.equal(result.ok, true, JSON.stringify(result.errors));
   assert.equal(result.manifest.status, 'candidate');
   assert.equal(result.installable, false);
