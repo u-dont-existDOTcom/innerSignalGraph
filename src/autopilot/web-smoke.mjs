@@ -15,9 +15,10 @@ export async function runWebClientSmoke({ config, providers }) {
   try {
     const address = server.address();
     const base = `http://127.0.0.1:${address.port}`;
-    const [index, script, style, healthResponse] = await Promise.all([
+    const [index, script, speechController, style, healthResponse] = await Promise.all([
       fetchText(base, "/"),
       fetchText(base, "/app.js"),
+      fetchText(base, "/speech-playback.js"),
       fetchText(base, "/styles.css"),
       fetch(`${base}/health`)
     ]);
@@ -25,6 +26,9 @@ export async function runWebClientSmoke({ config, providers }) {
     const checks = {
       indexServed: index.response.ok && index.text.includes("Inner Signal") && index.text.includes("Structured awake hypnosis"),
       scriptServed: script.response.ok && script.text.includes("renderHypnosisRoute") && script.text.includes("/v1/therapy/respond") && script.text.includes("appendPlanTrace") && script.text.includes("priorCaseSnapshot"),
+      speechControllerServed: speechController.response.ok
+        && speechController.text.includes("createSpeechPlaybackController")
+        && speechController.text.includes("handleVisibilityChange"),
       styleServed: style.response.ok && style.text.includes(".gate") && style.text.includes(".transcript"),
       healthDeclaresWeb: healthResponse.ok && health.webClient?.available === true && health.version === RUNTIME_VERSION,
       appOwnedReturnPresent: script.text.includes("plan.appOwned?.wakingReturn"),

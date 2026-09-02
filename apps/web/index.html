@@ -127,10 +127,13 @@
           <div id="gate-actions" class="gate-actions"></div>
         </div>
         <div id="hypnosis-route" class="script-block" hidden></div>
-        <div class="playback-controls">
+        <div class="playback-controls actions wrap">
           <button id="speak-session" class="secondary" type="button" disabled>Read selected route aloud</button>
+          <button id="pause-speaking" class="secondary" type="button" disabled>Pause voice</button>
+          <button id="resume-speaking" class="secondary" type="button" disabled>Resume voice</button>
           <button id="stop-speaking" class="secondary" type="button" disabled>Stop voice</button>
         </div>
+        <p id="speech-playback-status" class="small" role="status" aria-live="polite">Checking voice playback…</p>
       </section>
     </section>
 
