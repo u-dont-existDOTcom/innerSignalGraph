@@ -17,6 +17,10 @@ import { withOpenedRegularFile } from "../src/core/opened-regular-file.mjs";
 
 const execFileAsync = promisify(execFile);
 
+async function removeTemporaryTree(root) {
+  await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 25 });
+}
+
 async function git(root, ...args) {
   return await execFileAsync("git", args, { cwd: root });
 }
@@ -60,11 +64,13 @@ function hostedAuditResult({ ok = true, findings = [] } = {}) {
 
 async function makeHostedWrapperHarness(context) {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-wrapper-contract-test-"));
-  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
   const fakeBin = path.join(root, "bin");
   await mkdir(fakeBin);
   const invocationLog = path.join(root, "invocation.log");
   const outputModeLog = path.join(root, "output-mode.log");
+  const cleanupAttemptLog = path.join(root, "cleanup-attempt.log");
+  const cleanupTargetLog = path.join(root, "cleanup-target.log");
 
   await writeExecutable(
     path.join(fakeBin, "uname"),
@@ -97,16 +103,35 @@ printf '%s' "$FAKE_AUDIT_OUTPUT"
 exit "$FAKE_AUDIT_EXIT"
 `
   );
+  await writeExecutable(
+    path.join(fakeBin, "rm"),
+    `#!/usr/bin/env bash
+attempt=0
+if [[ -f "$FAKE_RM_ATTEMPT_LOG" ]]; then attempt="$(<"$FAKE_RM_ATTEMPT_LOG")"; fi
+attempt=$((attempt + 1))
+printf '%s\n' "$attempt" > "$FAKE_RM_ATTEMPT_LOG"
+target="\${!#}"
+printf '%s\n' "$target" > "$FAKE_RM_TARGET_LOG"
+if (( attempt <= \${FAKE_RM_FAILURES:-0} )); then exit 1; fi
+exec "$REAL_RM" "$@"
+`
+  );
 
   return {
     invocationLog,
     outputModeLog,
+    cleanupAttemptLog,
+    cleanupTargetLog,
     env: {
       ...process.env,
       PATH: `${fakeBin}:/usr/bin:/bin`,
       REAL_NODE: process.execPath,
+      REAL_RM: "/usr/bin/rm",
       FAKE_INVOCATION_LOG: invocationLog,
-      FAKE_OUTPUT_MODE_LOG: outputModeLog
+      FAKE_OUTPUT_MODE_LOG: outputModeLog,
+      FAKE_RM_ATTEMPT_LOG: cleanupAttemptLog,
+      FAKE_RM_TARGET_LOG: cleanupTargetLog,
+      FAKE_RM_FAILURES: "0"
     }
   };
 }
@@ -313,7 +338,7 @@ test("publication path policy rejects private files and accepts safe examples", 
 
 test("historical commit and non-default ref credentials remain detectable", async (context) => {
   const root = await makeGitRepository();
-  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
 
   const historicalSecret = `ghp_${"h".repeat(36)}`;
   await writeFile(path.join(root, "historical.txt"), `token=${historicalSecret}\n`);
@@ -350,7 +375,7 @@ test("historical commit and non-default ref credentials remain detectable", asyn
 
 test("safe example history passes the Git publication audit", async (context) => {
   const root = await makeGitRepository();
-  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
 
   await writeFile(path.join(root, ".env.example"), "TOKEN=replace-me\n");
   await git(root, "add", ".env.example");
@@ -367,7 +392,7 @@ test("safe example history passes the Git publication audit", async (context) =>
 
 test("long tracked paths retain private basename policy after display truncation", async (context) => {
   const root = await makeGitRepository();
-  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
   const deepDirectory = Array.from({ length: 55 }, (_, index) => `segment-${String(index).padStart(2, "0")}`).join("/");
   assert.ok(deepDirectory.length > 440);
   await mkdir(path.join(root, deepDirectory), { recursive: true });
@@ -717,7 +742,7 @@ test("tree parser accepts a valid non-blob Gitlink record without reading it", a
 
 test("hosted coverage enumerates every required surface and safely scans action logs", async (context) => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
-  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(tempRoot));
   const fixture = makeHostedRunCommand();
 
   const result = await collectHostedPublicationRecords({
@@ -766,8 +791,8 @@ test("hosted coverage enumerates every required surface and safely scans action 
 test("repository fields retain stable safe locators and complete key-context coverage", async (context) => {
   const firstRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-repository-fields-first-test-"));
   const secondRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-repository-fields-second-test-"));
-  context.after(async () => await rm(firstRoot, { recursive: true, force: true }));
-  context.after(async () => await rm(secondRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(firstRoot));
+  context.after(async () => await removeTemporaryTree(secondRoot));
   const sentinel = `ghp_${"v".repeat(36)}`;
   const entries = [
     ["full_name", EXPECTED_REPOSITORY],
@@ -832,7 +857,7 @@ test("repository fields retain stable safe locators and complete key-context cov
 
 test("exact repository transport credential is discarded while variants and descriptions remain covered", async (context) => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-repository-transport-test-"));
-  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(tempRoot));
   const sentinel = `ghp_${"t".repeat(36)}`;
   const fixture = makeHostedRunCommand();
   const command = async (tool, args, options) => {
@@ -875,7 +900,7 @@ test("exact repository transport credential is discarded while variants and desc
 
 test("malformed repository transport credential type fails before any persistence", async (context) => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-repository-transport-type-test-"));
-  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(tempRoot));
   const fixture = makeHostedRunCommand();
   const command = async (tool, args, options) => {
     if (args.at(-1) === `repos/${EXPECTED_REPOSITORY}`) {
@@ -905,7 +930,7 @@ test("malformed repository transport credential type fails before any persistenc
 
 test("null repository transport credential is accepted and discarded", async (context) => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-repository-transport-null-test-"));
-  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(tempRoot));
   const fixture = makeHostedRunCommand();
   const command = async (tool, args, options) => {
     if (args.at(-1) === `repos/${EXPECTED_REPOSITORY}`) {
@@ -935,7 +960,7 @@ test("null repository transport credential is accepted and discarded", async (co
 
 test("hosted pagination consumes every concatenated page for arrays and object collections", async (context) => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
-  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(tempRoot));
   const fixture = makeHostedRunCommand();
   const pagedCommand = async (command, args, options) => {
     const endpoint = args.at(-1);
@@ -997,8 +1022,8 @@ test("hosted pagination consumes every concatenated page for arrays and object c
 test("branch locators are stable across reordered pages and shared-commit collisions", async (context) => {
   const firstRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-branch-locator-first-test-"));
   const secondRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-branch-locator-second-test-"));
-  context.after(async () => await rm(firstRoot, { recursive: true, force: true }));
-  context.after(async () => await rm(secondRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(firstRoot));
+  context.after(async () => await removeTemporaryTree(secondRoot));
   const sharedCommit = "1".repeat(40);
   const distinctCommit = "2".repeat(40);
   const alpha = { name: "alpha", commit: { sha: sharedCommit }, protected: false };
@@ -1042,7 +1067,7 @@ test("branch locators are stable across reordered pages and shared-commit collis
 
 test("hosted pagination frames escaped quotes and structural characters inside strings", async (context) => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-json-framing-test-"));
-  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(tempRoot));
   const fixture = makeHostedRunCommand();
   const command = async (tool, args, options) => {
     if (args.at(-1) === `repos/${EXPECTED_REPOSITORY}/issues/comments?per_page=100`) {
@@ -1062,7 +1087,7 @@ test("hosted pagination frames escaped quotes and structural characters inside s
 
 test("missing action log fails hosted coverage closed with a safe identifier", async (context) => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
-  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(tempRoot));
   const fixture = makeHostedRunCommand({ logFailure: true });
 
   await assert.rejects(
@@ -1082,7 +1107,7 @@ test("missing action log fails hosted coverage closed with a safe identifier", a
 
 test("artifact coverage scans every regular member without following symlinks", async (context) => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
-  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(tempRoot));
   const fixture = makeHostedRunCommand({
     artifactWriter: async (artifactRoot) => {
       await mkdir(path.join(artifactRoot, "nested"), { recursive: true });
@@ -1111,7 +1136,7 @@ test("artifact coverage scans every regular member without following symlinks", 
   );
 
   const symlinkRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-symlink-test-"));
-  context.after(async () => await rm(symlinkRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(symlinkRoot));
   const symlinkFixture = makeHostedRunCommand({
     artifactWriter: async (artifactRoot) => {
       await mkdir(artifactRoot, { recursive: true });
@@ -1134,7 +1159,7 @@ test("artifact coverage scans every regular member without following symlinks", 
 
 test("artifact scanning reads the opened member inode after pathname replacement", async (context) => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-artifact-race-test-"));
-  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(tempRoot));
   const replacement = path.join(tempRoot, "replacement.txt");
   await writeFile(replacement, "replacement member\n");
   let replaced = false;
@@ -1166,8 +1191,8 @@ test("artifact scanning reads the opened member inode after pathname replacement
 test("artifact download failure and malformed pagination fail hosted coverage closed", async (context) => {
   const artifactRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
   const malformedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
-  context.after(async () => await rm(artifactRoot, { recursive: true, force: true }));
-  context.after(async () => await rm(malformedRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(artifactRoot));
+  context.after(async () => await removeTemporaryTree(malformedRoot));
 
   const artifactFixture = makeHostedRunCommand({ artifactFailure: true });
   await assert.rejects(
@@ -1207,8 +1232,8 @@ test("artifact download failure and malformed pagination fail hosted coverage cl
 test("empty artifact and malformed artifact metadata fail before coverage can pass", async (context) => {
   const emptyRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-empty-artifact-test-"));
   const malformedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-malformed-artifact-test-"));
-  context.after(async () => await rm(emptyRoot, { recursive: true, force: true }));
-  context.after(async () => await rm(malformedRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(emptyRoot));
+  context.after(async () => await removeTemporaryTree(malformedRoot));
 
   const emptyFixture = makeHostedRunCommand({ artifactWriter: async () => {} });
   await assert.rejects(
@@ -1254,8 +1279,8 @@ test("empty artifact and malformed artifact metadata fail before coverage can pa
 test("artifact member and aggregate byte ceilings fail closed before member reads", async (context) => {
   const memberRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-member-limit-test-"));
   const aggregateRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-aggregate-limit-test-"));
-  context.after(async () => await rm(memberRoot, { recursive: true, force: true }));
-  context.after(async () => await rm(aggregateRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(memberRoot));
+  context.after(async () => await removeTemporaryTree(aggregateRoot));
 
   const createSparse = async (filePath, size) => {
     const handle = await open(filePath, "w", 0o600);
@@ -1351,7 +1376,7 @@ test("endpoint-specific hosted schemas reject malformed scalar and nested fields
 
   for (const [index, malformed] of cases.entries()) {
     const tempRoot = await mkdtemp(path.join(os.tmpdir(), `inner-signal-hosted-schema-${index}-`));
-    context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+    context.after(async () => await removeTemporaryTree(tempRoot));
     const fixture = makeHostedRunCommand();
     const command = async (tool, args, options) => {
       if (args.at(-1) === malformed.endpoint) return { stdout: malformed.stdout, stderr: "" };
@@ -1370,7 +1395,7 @@ test("endpoint-specific hosted schemas reject malformed scalar and nested fields
 
 test("repository identity other than the exact publication target fails closed", async (context) => {
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-audit-test-"));
-  context.after(async () => await rm(tempRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(tempRoot));
 
   await assert.rejects(
     collectHostedPublicationRecords({
@@ -1388,7 +1413,7 @@ test("repository identity other than the exact publication target fails closed",
 
 test("pinned Gitleaks wrapper downloads and executes only the reviewed Linux x86_64 asset", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-wrapper-test-"));
-  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
   const fakeBin = path.join(root, "bin");
   await mkdir(fakeBin);
   const invocationLog = path.join(root, "invocation.log");
@@ -1553,6 +1578,98 @@ test("hosted wrapper rejects absent or invalid audit results and preserves valid
   }
 });
 
+test("hosted wrapper preserves invalid-audit exit after transient cleanup failure", async (context) => {
+  const harness = await makeHostedWrapperHarness(context);
+
+  await assert.rejects(
+    execFileAsync("bash", ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY], {
+      cwd: process.cwd(),
+      env: {
+        ...harness.env,
+        FAKE_AUDIT_OUTPUT: "",
+        FAKE_AUDIT_EXIT: "0",
+        FAKE_RM_FAILURES: "1"
+      }
+    }),
+    (error) => {
+      assert.equal(error.code, 2);
+      assert.equal(error.stdout, "");
+      assert.equal(error.stderr, "invalid-hosted-audit-result\n");
+      return true;
+    }
+  );
+
+  assert.equal(await readFile(harness.cleanupAttemptLog, "utf8"), "2\n");
+  const cleanedRoot = (await readFile(harness.cleanupTargetLog, "utf8")).trim();
+  assert.match(cleanedRoot, /^\/tmp\/inner-signal-gitleaks\.[^/]+$/);
+  await assert.rejects(access(cleanedRoot), "the wrapper temp root must be removed after a transient cleanup failure");
+});
+
+test("hosted wrapper preserves valid success after transient cleanup failure", async (context) => {
+  const harness = await makeHostedWrapperHarness(context);
+  const expected = hostedAuditResult();
+
+  const execution = await execFileAsync(
+    "bash",
+    ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...harness.env,
+        FAKE_AUDIT_OUTPUT: JSON.stringify(expected),
+        FAKE_AUDIT_EXIT: "0",
+        FAKE_RM_FAILURES: "1"
+      }
+    }
+  );
+
+  assert.deepEqual(JSON.parse(execution.stdout), expected);
+  assert.equal(execution.stderr, "");
+  assert.equal(await readFile(harness.cleanupAttemptLog, "utf8"), "2\n");
+  const cleanedRoot = (await readFile(harness.cleanupTargetLog, "utf8")).trim();
+  assert.match(cleanedRoot, /^\/tmp\/inner-signal-gitleaks\.[^/]+$/);
+  await assert.rejects(access(cleanedRoot), "the wrapper temp root must be removed after a transient cleanup failure");
+});
+
+test("hosted wrapper fails closed without leaking details after cleanup retries are exhausted", async (context) => {
+  const harness = await makeHostedWrapperHarness(context);
+  const expected = hostedAuditResult();
+  let rejection;
+  let strandedRoot;
+
+  try {
+    try {
+      await execFileAsync("bash", ["scripts/run-publication-audit-hosted.sh", "--github", EXPECTED_REPOSITORY], {
+        cwd: process.cwd(),
+        env: {
+          ...harness.env,
+          FAKE_AUDIT_OUTPUT: JSON.stringify(expected),
+          FAKE_AUDIT_EXIT: "0",
+          FAKE_RM_FAILURES: "5"
+        }
+      });
+    } catch (error) {
+      rejection = error;
+    }
+
+    assert.ok(rejection, "cleanup exhaustion must reject");
+    strandedRoot = (await readFile(harness.cleanupTargetLog, "utf8")).trim();
+    assert.match(strandedRoot, /^\/tmp\/inner-signal-gitleaks\.[^/]+$/);
+    assert.equal(rejection.code, 2);
+    assert.deepEqual(JSON.parse(rejection.stdout), expected);
+    assert.equal(rejection.stderr, "hosted-audit-cleanup-failed\n");
+    assert.equal(rejection.stderr.includes(strandedRoot), false);
+    assert.equal(await readFile(harness.cleanupAttemptLog, "utf8"), "5\n");
+    await access(strandedRoot);
+  } finally {
+    if (strandedRoot?.startsWith("/tmp/inner-signal-gitleaks.")) {
+      await removeTemporaryTree(strandedRoot);
+    }
+  }
+
+  await assert.rejects(access(strandedRoot), "the test must remove its intentionally stranded wrapper temp root");
+});
+
 test("hosted wrapper rejects silent audit and validator processes", async (context) => {
   const harness = await makeHostedWrapperHarness(context);
   for (const auditOutput of ["", JSON.stringify(hostedAuditResult())]) {
@@ -1578,7 +1695,7 @@ test("hosted wrapper rejects silent audit and validator processes", async (conte
 
 test("wrong Gitleaks digest prevents scanner execution and cleans the private temp root", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-wrapper-test-"));
-  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
   const fakeBin = path.join(root, "bin");
   await mkdir(fakeBin);
   const invocationLog = path.join(root, "invocation.log");
@@ -1614,7 +1731,7 @@ test("wrong Gitleaks digest prevents scanner execution and cleans the private te
 
 test("unsupported scanner platform exits with a named error before download", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-wrapper-test-"));
-  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
   const fakeBin = path.join(root, "bin");
   await mkdir(fakeBin);
   const invocationLog = path.join(root, "invocation.log");
@@ -1645,8 +1762,8 @@ test("unsupported scanner platform exits with a named error before download", as
 test("Gitleaks safe normalization discards secret fields and redacts malicious metadata", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-adapter-test-"));
   const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-hosted-test-"));
-  context.after(async () => await rm(root, { recursive: true, force: true }));
-  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
+  context.after(async () => await removeTemporaryTree(hostedRoot));
   const sentinel = `ghp_${"q".repeat(36)}`;
   const reportRoots = [];
 
@@ -1702,8 +1819,8 @@ test("Gitleaks safe normalization discards secret fields and redacts malicious m
 test("Gitleaks hosted findings use actionable in-memory locators and unknown files fail closed", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-map-test-"));
   const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-map-hosted-test-"));
-  context.after(async () => await rm(root, { recursive: true, force: true }));
-  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
+  context.after(async () => await removeTemporaryTree(hostedRoot));
   await writeFile(path.join(hostedRoot, "hosted-1.raw"), "private fixture\n", { mode: 0o600 });
   await writeFile(path.join(hostedRoot, "hosted-2.raw"), "private branch fixture\n", { mode: 0o600 });
   await writeFile(path.join(hostedRoot, "hosted-3.raw"), "private repository fixture\n", { mode: 0o600 });
@@ -1780,8 +1897,8 @@ test("Gitleaks hosted findings use actionable in-memory locators and unknown fil
 test("Gitleaks report files exist as private regular files before scanner writes", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-mode-test-"));
   const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-mode-hosted-test-"));
-  context.after(async () => await rm(root, { recursive: true, force: true }));
-  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
+  context.after(async () => await removeTemporaryTree(hostedRoot));
 
   const visibleModes = [];
   const result = await runGitleaks({
@@ -1807,8 +1924,8 @@ test("Gitleaks rejects report mode drift and symlink replacement before reading"
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-output-test-"));
   const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-output-hosted-test-"));
   const outsideReport = path.join(hostedRoot, "outside-report.json");
-  context.after(async () => await rm(root, { recursive: true, force: true }));
-  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
+  context.after(async () => await removeTemporaryTree(hostedRoot));
   await writeFile(outsideReport, "[]\n", { mode: 0o600 });
 
   const result = await runGitleaks({
@@ -1840,8 +1957,8 @@ test("Gitleaks normalization reads each opened report inode after pathname repla
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-race-test-"));
   const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-report-race-hosted-test-"));
   const replacement = path.join(hostedRoot, "replacement.json");
-  context.after(async () => await rm(root, { recursive: true, force: true }));
-  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
+  context.after(async () => await removeTemporaryTree(hostedRoot));
   await writeFile(replacement, "not-json\n", { mode: 0o600 });
   let replacements = 0;
 
@@ -1869,8 +1986,8 @@ test("Gitleaks normalization reads each opened report inode after pathname repla
 test("Gitleaks rejects zero-byte git and directory reports for every scanner exit", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-empty-report-test-"));
   const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-empty-report-hosted-test-"));
-  context.after(async () => await rm(root, { recursive: true, force: true }));
-  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
+  context.after(async () => await removeTemporaryTree(hostedRoot));
 
   for (const exitCode of [0, 1, 2]) {
     const result = await runGitleaks({
@@ -1896,8 +2013,8 @@ test("Gitleaks rejects zero-byte git and directory reports for every scanner exi
 test("Gitleaks exit handling treats only zero and one as complete scanner outcomes", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-adapter-test-"));
   const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-hosted-test-"));
-  context.after(async () => await rm(root, { recursive: true, force: true }));
-  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
+  context.after(async () => await removeTemporaryTree(hostedRoot));
 
   const clear = await runGitleaks({
     binary: "/synthetic/gitleaks",
@@ -1930,8 +2047,8 @@ test("Gitleaks exit handling treats only zero and one as complete scanner outcom
 test("binary Gitleaks report and unsafe reported file path fail closed without raw bytes or paths", async (context) => {
   const root = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-adapter-test-"));
   const hostedRoot = await mkdtemp(path.join(os.tmpdir(), "inner-signal-gitleaks-hosted-test-"));
-  context.after(async () => await rm(root, { recursive: true, force: true }));
-  context.after(async () => await rm(hostedRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
+  context.after(async () => await removeTemporaryTree(hostedRoot));
 
   let invocation = 0;
   const result = await runGitleaks({
@@ -1978,8 +2095,8 @@ test("publication result merging preserves only safe finding projections", () =>
 test("publication audit CLI returns one JSON result with contractual exit codes", async (context) => {
   const safeRoot = await makeGitRepository();
   const blockedRoot = await makeGitRepository();
-  context.after(async () => await rm(safeRoot, { recursive: true, force: true }));
-  context.after(async () => await rm(blockedRoot, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(safeRoot));
+  context.after(async () => await removeTemporaryTree(blockedRoot));
 
   await writeFile(path.join(safeRoot, ".env.example"), "TOKEN=replace-me\n");
   await git(safeRoot, "add", ".env.example");
@@ -2022,8 +2139,8 @@ test("publication audit CLI returns one JSON result with contractual exit codes"
 test("hosted publication audit CLI composes Git, hosted records, and Gitleaks with private cleanup", async (context) => {
   const root = await makeGitRepository();
   const fakeBin = await mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-cli-bin-"));
-  context.after(async () => await rm(root, { recursive: true, force: true }));
-  context.after(async () => await rm(fakeBin, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
+  context.after(async () => await removeTemporaryTree(fakeBin));
   await writeFile(path.join(root, "safe.txt"), "safe repository content\n");
   await git(root, "add", "safe.txt");
   await git(root, "commit", "-m", "add safe content");
@@ -2117,7 +2234,7 @@ test("publication audit CLI returns exit 2 for a Git tool failure", async () => 
 
 test("filename-only credential is redacted from publication audit CLI JSON", async (context) => {
   const root = await makeGitRepository();
-  context.after(async () => await rm(root, { recursive: true, force: true }));
+  context.after(async () => await removeTemporaryTree(root));
   const sentinel = `ghp_${"c".repeat(36)}`;
 
   await writeFile(path.join(root, sentinel), "safe body\n");
