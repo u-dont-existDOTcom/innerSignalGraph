@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "taskId": "obsidian-authoring-architecture-v1",
   "title": "Implement the graph-authoritative Obsidian authoring and mapping architecture",
-  "status": "active",
-  "exclusive": true,
+  "status": "complete",
+  "exclusive": false,
   "repository": "u-dont-existDOTcom/innerSignalGraph",
   "requiredBranch": "codex/obsidian-authoring-architecture-20260829",
-  "pullRequest": null,
+  "pullRequest": 13,
   "ownerAuthorized": true,
   "source": {
     "repository": "u-dont-existDOTcom/innerSignalGraph",
@@ -17,14 +17,15 @@
   "preflightCommand": "npm run authoring:task:preflight",
   "completionCommand": "npm run authoring:task:acceptance",
   "completionClaimRule": "Ordinary tests and green CI are prerequisites only. Readiness requires the task-specific acceptance command; completion additionally requires protected integration and an immutable receipt.",
-  "suspendedTaskSources": [
-    "the installed-GitHub-App permission readback in the repository-wide checkpoint",
-    "old conversation objectives and handoffs",
-    "unrelated worktree tasks",
-    "autonomous roadmap selection",
-    "Guide Packet r03 and therapy-policy queues",
-    "stable release and installation queues"
-  ],
+  "suspendedTaskSources": [],
+  "terminal": {
+    "mergedHead": "534a7f71cae35ee3df77ac88782879d02fcc3376",
+    "mergeCommit": "20c2387e0c200893a20d9b4d562fed96d7c39920",
+    "mergedTree": "7b2be66cc001264dbcc2564e3163d2eba418b4aa",
+    "mergedAt": "2026-08-29T16:33:53Z",
+    "closeoutRecordedAt": "2026-08-31T15:39:17Z",
+    "closeoutReceipt": "tasks/obsidian-authoring-architecture-v1/CLOSEOUT-RECEIPT.json"
+  },
   "acceptance": {
     "requiredArtifacts": [
       "authoring/obsidian/current/manifest.json",

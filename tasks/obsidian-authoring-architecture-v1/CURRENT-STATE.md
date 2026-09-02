@@ -4,6 +4,8 @@ Task ID: `obsidian-authoring-architecture-v1`
 
 Task acceptance: `npm run authoring:task:acceptance`
 
+Terminal checkpoint: `COMPLETE`
+
 ## Goal
 
 Implement the owner-supplied hybrid Obsidian architecture without changing therapy semantics, graph routing, canonical guide/source bytes, model-role policy, privacy policy, release policy, or installed runtime behavior.
@@ -43,22 +45,22 @@ Implement the owner-supplied hybrid Obsidian architecture without changing thera
 
 ## Current checkpoint
 
-The architecture and all local implementation stages are complete and verified. Projection and map drift checks pass with projection input `4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e`. The branch is ready to commit/push and enter the protected pull-request path. Ordinary repository queues named in `tasks/ACTIVE-TASK.json` remain suspended for this task only.
+PR #13 merged at `2026-08-29T16:33:53Z`. Its reviewed head `534a7f71cae35ee3df77ac88782879d02fcc3376` and squash merge commit `20c2387e0c200893a20d9b4d562fed96d7c39920` both resolve to tree `7b2be66cc001264dbcc2564e3163d2eba418b4aa`. The protected integration therefore contains the exact reviewed implementation.
+
+The root active-task record is now a non-exclusive historical terminal record. It has no suspended task sources and no longer selects current work. The authoring preflight remains useful for historical authoring verification but is no longer a current task selector. Normal roadmap selection may resume.
 
 ## Remaining
 
-- Commit the final verified implementation and push only the task branch.
-- Open the protected pull request to `main`.
-- Obtain independent review and exact-head required-check readback. Do not merge in this task.
+No implementation, commit, push, pull-request, or review action remains for this task.
 
 ## Blockers and stop conditions
 
-No current implementation blocker. The owner resolved the Stage 3 map authority boundary in decisions `OWNER.MAP.RESOLUTION.2026-08-29.D01` through `D15`. Review and common-humanity guidance are required future guide proposals; this architecture migration does not rewrite guide prose. The usefulness-only forgiveness phrase and the universal every-session-ends claim are retired. All 57 manual arrows are retired as executable topology. Independent review and hosted checks remain PR-path conditions, not local implementation blockers.
+No current task blocker. The owner resolved the Stage 3 map authority boundary in decisions `OWNER.MAP.RESOLUTION.2026-08-29.D01` through `D15`. Review and common-humanity guidance remain future guide proposals; this architecture migration did not rewrite guide prose. The usefulness-only forgiveness phrase and the universal every-session-ends claim are retired. All 57 manual arrows are retired as executable topology.
 
 ## Next safe action
 
-Commit the final verified tree, push `codex/obsidian-authoring-architecture-20260829`, open the protected pull request, and wait for review/checks. Do not merge, install, promote, or touch `stable`.
+Select work from the normal repository roadmap and current owner authority. `DEV-R001` is the highest-priority auto-startable engineering item at this closeout boundary. Do not infer release, installation, therapy-policy, or `stable` authority from this completed task.
 
 ## Recovery rule
 
-After interruption, inspect Git status and recent commits, run `npm run authoring:task:preflight`, reconcile this file with actual artifacts, and resume the first incomplete stage. Do not consult suspended queues to select a different task.
+After interruption, inspect Git status and the immutable receipt at `tasks/obsidian-authoring-architecture-v1/CLOSEOUT-RECEIPT.json`. Do not reopen or repeat the Obsidian implementation unless new evidence shows the recorded merge identities are wrong. Current work selection comes from the normal roadmap and newer owner/task authority.
