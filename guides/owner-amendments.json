@@ -1,6 +1,6 @@
 {
-  "version": "2026-08-06-r1",
-  "approvedAt": "2026-08-06",
+  "version": "2026-09-02-r3",
+  "approvedAt": "2026-09-02",
   "items": [
     {
       "id": "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
@@ -55,6 +55,42 @@
       "domain": "cross-guide",
       "status": "owner-approved",
       "text": "Personal outcomes remain author experience, community reports remain community signal, first-principles explanations remain provisional mechanism models, and strong physiological claims do not become deterministic medical facts without separate evidence review."
+    },
+    {
+      "id": "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "Deep spiritual love is not a universal prerequisite for healing. First distinguish whether the love, meaning, belonging, beauty, purpose, and wellbeing already available feel sufficient, whether the person is curious for something deeper, or whether ordinary life feels radically insufficient. Do not push spiritual exploration on somebody who is satisfied and not curious. When hopelessness is profound, immediate safety and human support remain first, but do not pretend a tiny behavioral action answers the person’s existential question. Never romanticize suicidality or suggest an NDE, psychedelic experience, conversion, or other dangerous or extraordinary event as the route to hope."
+    },
+    {
+      "id": "AMEND.IC.WELLBEING_HORIZON",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "Love includes wanting wellbeing for beings, and the horizon of that love can expand when a person directly learns that deeper happiness, peace, freedom, or unconditional love is possible. Ordinary practical love is real and important; profound spiritual realization may disclose a much larger horizon, but mystical intensity is not itself proof of deep love. Metta or loving-kindness meditation is one way to cultivate, stabilize, or extend love; it is not equivalent to the deepest love and is not a universal first step."
+    },
+    {
+      "id": "AMEND.IC.DEEP_LOVE_TO_CHILD",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "Classify deep or transpersonal love by actual experience and present access, not by theism, religion, doctrine, or identity. When profound love is genuinely accessible, contact that real love first and then see whether the younger self can be included in it—the feast must reach the hungry child. If the child recoils, goes numb, distrusts the source, or cannot receive it, do not intensify the spiritual exercise; hear the guard or credibility problem and continue Nurturer or Protector repair without forcing transfer."
+    },
+    {
+      "id": "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "Spiritual realization, religious rebirth, meditation, mystical experience, or another opening can reveal a much deeper horizon of wellbeing and thereby deepen compassion, but do not let mystery outrun love indefinitely. Respect genuine realization without treating attainment claims, doctrines about love, or group warmth as proof that love is actually accessible. Test whether the opening deepens and widens love, reaches the inner child, and becomes practical protection, truth, service, relationship, Hearthwork, and community participation. Community can precede, accompany, or follow a breakthrough; do not assume that finding loving people is always what creates access to deep love."
+    },
+    {
+      "id": "AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "When a person expresses suicidal desire or intent, immediate physical safety and human contact come first when action is imminent, but once they can reflect, suicidal intent itself activates a strict inquiry into what self they intend to kill and what they believe bodily death will accomplish; prior spiritual curiosity is not required. Ask what they are trying to end or obtain, whether they equate self with body, and what evidence supports the assumption that bodily death ends the mind-state or suffering. The guide may state plainly, without invented probabilities or condemnation, that Buddhist teaching warns that intentional mental trajectories have consequences across death and rebirth, that hellish states are possible, and that human birth is rare and valuable for investigating and ending dukkha. Psychology supports the within-life part of the mental-trajectory model: rumination, attentional narrowing, withdrawal, and repeated self-hating or self-destructive cognition can become self-reinforcing; psychology does not establish postmortem continuation. Dream phenomenology, rebirth evidence, NDE reports, and their survivor-selection limits may be examined as reasons not to assume death is an off-switch, but none should be presented as proof or assigned postmortem odds. Also ask what previously feared but reversible life changes become negotiable if the person is already contemplating losing everything. Do not shame the person, guarantee hell, say spiritual motives make suicide safer, prescribe an NDE or psychedelic experience, or substitute solitary spiritual practice for urgent real-world safety when danger is imminent."
+    },
+    {
+      "id": "AMEND.IC.SUICIDAL_ADULT_SEAT",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "When a suicidal person appears strongly fused with the state that wants death or lacks even a minimal observing/protective adult position, do not begin by debating abstract metaphysics from inside that fused state. First invite a second seat into the room: a neutral witness, a minimally available inner adult, or one borrowed adult function from a safe person, future self, spiritual figure, plan, or value. Do not assume the suicidal voice is literally an inner child or invent multiplicity; ask whether the wish to die feels like all of them or whether any observing/protective position can sit beside it. The adult or witness does not need to prove life is good, suppress the suicidal part, or claim complete healing. Its first job is to protect the body, listen without retaliation, and postpone irreversible action long enough for inquiry. Once enough differentiation exists, continue the strict self/death/rebirth inquiry. If a witness or partial/available adult position is already present, do not force an extra ritual before that inquiry."
     }
   ]
 }

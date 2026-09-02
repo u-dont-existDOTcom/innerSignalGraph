@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.EVIDENCE.PROVENANCE
 status: owner-approved
 domain: cross-guide
-base_record_sha256: 2b3d7371fbf39cdc899aa6b723521c93c377f71f3b1f5df81247ef83a0bf9c12
-source_file_sha256: 4363bf4f3721a9e3a8a4859ce34e7a530d8d48f6135fd7021b577bf8e3a05f56
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+base_record_sha256: 2aaa2eafcf343905f8ae7321efa2a38771f02632cbe71cba3e094468abcf8bbd
+source_file_sha256: 2078f64bdeca839952e03233b66c23b4919b6756615dbc9a30b3258ba21da9bf
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # AMEND.EVIDENCE.PROVENANCE
@@ -17,13 +17,13 @@ projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f6
 
 ```json
 {
-  "approvedAt": "2026-08-06",
+  "approvedAt": "2026-09-02",
   "item": {
     "domain": "cross-guide",
     "id": "AMEND.EVIDENCE.PROVENANCE",
     "status": "owner-approved",
     "text": "Personal outcomes remain author experience, community reports remain community signal, first-principles explanations remain provisional mechanism models, and strong physiological claims do not become deterministic medical facts without separate evidence review."
   },
-  "version": "2026-08-06-r1"
+  "version": "2026-09-02-r3"
 }
 ```

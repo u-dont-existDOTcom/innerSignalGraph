@@ -1,0 +1,38 @@
+{
+  "id": "G019",
+  "description": "A past or state-bound extraordinary opening establishes a deeper horizon without proving present integration or requiring recreation.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "altered",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "love_access": "accessible",
+    "self_directed_love": "safe",
+    "coherent_child_state": "present",
+    "existential_sufficiency": "sufficient",
+    "spiritual_curiosity": "absent",
+    "wellbeing_horizon": "deeper_experiential",
+    "deep_love_access": "state_dependent",
+    "child_love_inclusion": "untested",
+    "spiritual_bypass_pattern": "none_observed",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "self_criticism": "absent",
+    "current_intent": "altered_state",
+    "support_available": "present"
+  },
+  "unknowns": [],
+  "expected": {
+    "selectedIncludes": [
+      "IC.ALTERED_STATE_GATE"
+    ],
+    "requiredNuancePatterns": [
+      "past altered-state opening"
+    ]
+  }
+}

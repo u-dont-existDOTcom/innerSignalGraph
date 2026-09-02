@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.SOM.PREP_MODALITIES
 status: owner-approved
 domain: somatic
-base_record_sha256: e438e19a11c87d2c55e3b628ce15d0fc232be4817ff6d1ed85e0fb9d10b721e9
-source_file_sha256: 4363bf4f3721a9e3a8a4859ce34e7a530d8d48f6135fd7021b577bf8e3a05f56
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+base_record_sha256: 50d736ea24b720c9d577931ef59929828f1699fe3c0856c30957d16854b8b3a9
+source_file_sha256: 2078f64bdeca839952e03233b66c23b4919b6756615dbc9a30b3258ba21da9bf
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # AMEND.SOM.PREP_MODALITIES
@@ -17,13 +17,13 @@ projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f6
 
 ```json
 {
-  "approvedAt": "2026-08-06",
+  "approvedAt": "2026-09-02",
   "item": {
     "domain": "somatic",
     "id": "AMEND.SOM.PREP_MODALITIES",
     "status": "owner-approved",
     "text": "EFT, gentle qigong shaking, longer unforced exhales, gentle Buteyko-style breathing, Somatic Experiencing, trauma-sensitive yoga, and resource-oriented Brainspotting may prepare for or accompany inner-child work."
   },
-  "version": "2026-08-06-r1"
+  "version": "2026-09-02-r3"
 }
 ```

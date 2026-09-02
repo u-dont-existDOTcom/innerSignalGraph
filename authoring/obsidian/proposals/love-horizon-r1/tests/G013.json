@@ -1,0 +1,38 @@
+{
+  "id": "G013",
+  "description": "Current love and meaning are sufficient and there is no spiritual curiosity; do not prescribe deeper spirituality.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "love_access": "accessible",
+    "self_directed_love": "safe",
+    "coherent_child_state": "present",
+    "existential_sufficiency": "sufficient",
+    "spiritual_curiosity": "absent",
+    "wellbeing_horizon": "ordinary_known",
+    "deep_love_access": "none_known",
+    "child_love_inclusion": "untested",
+    "spiritual_bypass_pattern": "not_applicable",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "self_criticism": "absent",
+    "current_intent": "conversation",
+    "support_available": "present"
+  },
+  "unknowns": [],
+  "expected": {
+    "selectedExcludes": [
+      "IC.EXISTENTIAL_NOURISHMENT",
+      "IC.LOVE_HORIZON_EXPLORATION",
+      "IC.DEEP_LOVE_TO_CHILD",
+      "IC.REALIZATION_LOVE_INTEGRATION"
+    ]
+  }
+}

@@ -5,7 +5,6 @@ import os from 'node:os';
 import path from 'node:path';
 import { loadConfig } from '../src/core/config.mjs';
 import { readZipEntries } from '../src/core/zip.mjs';
-import { buildGuidePacket } from '../src/guide-packet/builder.mjs';
 import { loadCompiledGuideGraphBundle } from '../src/guide-graph/compiler.mjs';
 import { loadGuide, loadSomaticGuide } from '../src/guide/load-guide.mjs';
 import {
@@ -20,11 +19,8 @@ import {
 } from '../src/guide-packet/store.mjs';
 
 const runtimeRoot = path.resolve('.');
-
-const source = {
-  somatic: path.resolve('guide-packets/source-input/somatic-guide-r01-candidate.html'),
-  innerChild: path.resolve('guide-packets/source-input/inner-child-guide-r01-candidate.html')
-};
+const r01Fixture = 'guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip';
+const r02Fixture = 'guide-packets/fixtures/r02-candidate/inner-signal-guide-packet-r02-candidate.zip';
 
 async function approveAll(config, candidateId) {
   let status = await readGuidePacketStatus(config);
@@ -37,7 +33,7 @@ async function approveAll(config, candidateId) {
 test('candidate staging never changes installed policy before owner approval', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'guide-packet-store-'));
   const config = loadConfig({ mode: 'mock', autopilotStateDir: root, guidePacketRoot: path.join(root, 'guide-packets') });
-  const zip = await fs.readFile('guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip');
+  const zip = await fs.readFile(r01Fixture);
   const staged = await stageGuidePacket(config, zip);
   assert.equal(staged.status, 'awaiting-owner');
   const status = await readGuidePacketStatus(config);
@@ -54,7 +50,7 @@ test('candidate staging never changes installed policy before owner approval', a
 test('approved packet installs atomically, exports byte-identically, and same revision cannot replace it', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'guide-packet-install-'));
   const config = loadConfig({ mode: 'mock', autopilotStateDir: root, guidePacketRoot: path.join(root, 'guide-packets') });
-  const original = await fs.readFile('guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip');
+  const original = await fs.readFile(r01Fixture);
   const staged = await stageGuidePacket(config, original);
   const approved = await approveAll(config, staged.packetId);
   assert.equal(approved.candidate.allApproved, true);
@@ -70,14 +66,13 @@ test('approved packet installs atomically, exports byte-identically, and same re
 test('second install retains exact rollback and rollback restores prior packet identity', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'guide-packet-rollback-'));
   const config = loadConfig({ mode: 'mock', autopilotStateDir: root, guidePacketRoot: path.join(root, 'guide-packets') });
-  const first = await fs.readFile('guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip');
+  const first = await fs.readFile(r01Fixture);
   const c1 = await stageGuidePacket(config, first);
   await approveAll(config, c1.packetId);
   const i1 = await installApprovedGuidePacket(config, c1.packetId);
 
-  const buildDir = path.join(root, 'build-r02');
-  const secondBuild = await buildGuidePacket({ runtimeRoot: path.resolve('.'), somaticHtmlPath: source.somatic, innerChildHtmlPath: source.innerChild, outputDir: buildDir, packetVersion: '2026.08.12-r02-candidate', packetRevision: 2, status: 'candidate', createdAt: '2026-08-12T00:00:00.000Z' });
-  const c2 = await stageGuidePacket(config, secondBuild.buffer);
+  const second = await fs.readFile(r02Fixture);
+  const c2 = await stageGuidePacket(config, second);
   await approveAll(config, c2.packetId);
   const i2 = await installApprovedGuidePacket(config, c2.packetId);
   assert.equal(i2.manifest.packetRevision, 2);
@@ -96,7 +91,7 @@ test("installed packet becomes the active guide and graph source while a staged 
     somaticGuidePath: path.join(runtimeRoot, "guides/somatic-sequencing-guide.txt"),
     guideManifestPath: path.join(runtimeRoot, "guides/manifest.json")
   };
-  const { buffer } = await buildGuidePacket({ runtimeRoot, somaticHtmlPath: source.somatic, innerChildHtmlPath: source.innerChild, outputDir: path.join(root, "build"), packetRevision: 1, packetVersion: "2026.08.11-r01-candidate" });
+  const buffer = await fs.readFile(r01Fixture);
   const bundled = await loadCompiledGuideGraphBundle({ root: runtimeRoot, packetRoot: config.guidePacketRoot });
   assert.equal(bundled.version, "inner-child-somatic-pilot-2026-08-09-r5");
   await stageGuidePacket(config, buffer);
@@ -118,7 +113,7 @@ test("installed packet becomes the active guide and graph source while a staged 
 test('approved packet preserves Opus compilation and independent Codex review as checksummed audit members', async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'guide-packet-audit-preservation-'));
   const config = loadConfig({ mode: 'mock', autopilotStateDir: root, guidePacketRoot: path.join(root, 'guide-packets') });
-  const original = await fs.readFile('guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip');
+  const original = await fs.readFile(r01Fixture);
   const staged = await stageGuidePacket(config, original);
   await applyGuidePacketCompilation(config, staged.packetId, {
     contractVersion: 'guide-packet-opus-compilation-v1',

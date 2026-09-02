@@ -12,7 +12,7 @@ section_hash: be86763ca389d531d7cb28c834dc1fee6cf7a077b8afcc10ccf8ef5d7c7f9ff3
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.SAFETY_STABILIZATION
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # This is a Map, But You Are the Explorer

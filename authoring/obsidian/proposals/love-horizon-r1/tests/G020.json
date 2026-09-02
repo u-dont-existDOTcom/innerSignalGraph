@@ -1,0 +1,41 @@
+{
+  "id": "G020",
+  "description": "Current altered state with existential hunger and spiritual-bypass material; gate the state before existential or spiritual exploration/integration.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "altered",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "love_access": "limited",
+    "self_directed_love": "inaccessible",
+    "coherent_child_state": "present",
+    "existential_sufficiency": "profoundly_insufficient",
+    "spiritual_curiosity": "present",
+    "wellbeing_horizon": "deeper_experiential",
+    "deep_love_access": "state_dependent",
+    "child_love_inclusion": "untested",
+    "spiritual_bypass_pattern": "attainment_outpaces_love",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "self_criticism": "present",
+    "current_intent": "altered_state",
+    "support_available": "present",
+    "guide_readiness": "present"
+  },
+  "unknowns": [],
+  "expected": {
+    "selectedIncludes": [
+      "IC.ALTERED_STATE_GATE"
+    ],
+    "selectedExcludes": [
+      "IC.EXISTENTIAL_NOURISHMENT",
+      "IC.LOVE_HORIZON_EXPLORATION",
+      "IC.REALIZATION_LOVE_INTEGRATION"
+    ]
+  }
+}

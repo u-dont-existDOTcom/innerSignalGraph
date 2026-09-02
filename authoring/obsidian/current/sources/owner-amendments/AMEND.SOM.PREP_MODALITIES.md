@@ -7,7 +7,7 @@ source_id: AMEND.SOM.PREP_MODALITIES
 guide_id: owner-amendments
 heading: AMEND.SOM.PREP_MODALITIES
 source_role: owner-approved-extension
-source_hash: 4363bf4f3721a9e3a8a4859ce34e7a530d8d48f6135fd7021b577bf8e3a05f56
+source_hash: 2078f64bdeca839952e03233b66c23b4919b6756615dbc9a30b3258ba21da9bf
 section_hash: 62869fd188e810a0e67d82c8dc864827ea8f0a88befec3496857857daf794f44
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -16,7 +16,7 @@ cited_by_node_ids:
   - SOM.GENTLE_REGULATION
   - SOM.GENTLE_SHAKING
   - SOM.RESOURCE_BRAINSPOTTING
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # AMEND.SOM.PREP_MODALITIES

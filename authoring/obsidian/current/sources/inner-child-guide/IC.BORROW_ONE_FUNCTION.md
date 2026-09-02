@@ -13,8 +13,9 @@ locator_kind: text-lines
 cited_by_node_ids:
   - IC.BEST_FRIEND_PERSPECTIVE
   - IC.BORROW_ONE_FUNCTION
+  - IC.SUICIDAL_ADULT_SEAT
   - SOM.EMDR_DEVELOPMENTAL_DEFER
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # Borrow One Function at a Time

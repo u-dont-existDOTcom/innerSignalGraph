@@ -1,0 +1,44 @@
+{
+  "id": "G017",
+  "description": "Profound existential insufficiency without spiritual curiosity; take why-live seriously without evangelizing or romanticizing crisis.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "low",
+    "witness_capacity": "present",
+    "love_access": "limited",
+    "self_directed_love": "inaccessible",
+    "coherent_child_state": "present",
+    "existential_sufficiency": "profoundly_insufficient",
+    "spiritual_curiosity": "absent",
+    "wellbeing_horizon": "ordinary_known",
+    "deep_love_access": "none_known",
+    "child_love_inclusion": "untested",
+    "spiritual_bypass_pattern": "not_applicable",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "self_criticism": "present",
+    "current_intent": "conversation",
+    "support_available": "present"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.EXISTENTIAL_NOURISHMENT",
+    "selectedExcludes": [
+      "IC.LOVE_HORIZON_EXPLORATION"
+    ],
+    "requiredNuancePatterns": [
+      "safety action",
+      "curiosity"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "small practical act",
+      "suicidal crisis"
+    ]
+  }
+}

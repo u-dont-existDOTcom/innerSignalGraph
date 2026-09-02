@@ -259,7 +259,7 @@ node --input-type=module - "$auto_tmp/runtime/.inner-signal-autopilot/latest.jso
 import fs from "node:fs";
 const latest = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 if (latest.details?.graphRegressions?.ok !== true) throw new Error("Fake autopilot did not record the graph regression gate.");
-if (latest.details?.graphBundle?.stats?.nodeCount !== 33) throw new Error("Fake autopilot did not record the compiled graph bundle.");
+if (latest.details?.graphBundle?.stats?.nodeCount !== 39) throw new Error("Fake autopilot did not record the compiled graph bundle.");
 NODE
 test ! -e "$auto_tmp/runtime"/inner-signal-evidence-*.zip
 echo "PASS evidence remains local and no transfer bundle is created."

@@ -1,0 +1,43 @@
+{
+  "id": "G016",
+  "description": "Spiritual attainment is ahead of actual love access; integration outranks more abstraction.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "love_access": "limited",
+    "self_directed_love": "inaccessible",
+    "coherent_child_state": "present",
+    "existential_sufficiency": "insufficient",
+    "spiritual_curiosity": "present",
+    "wellbeing_horizon": "deeper_experiential",
+    "deep_love_access": "none_known",
+    "child_love_inclusion": "untested",
+    "spiritual_bypass_pattern": "attainment_outpaces_love",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "self_criticism": "present",
+    "current_intent": "integration",
+    "support_available": "present",
+    "guide_readiness": "present"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.REALIZATION_LOVE_INTEGRATION",
+    "selectedIncludes": [
+      "IC.REALIZATION_LOVE_INTEGRATION"
+    ],
+    "requiredNuancePatterns": [
+      "mystical intensity"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "awakening"
+    ]
+  }
+}

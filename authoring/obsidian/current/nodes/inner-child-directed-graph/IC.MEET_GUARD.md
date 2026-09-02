@@ -24,8 +24,8 @@ regression_refs:
   - G002
   - G012
 base_record_sha256: 5081f590139bf4cd47892199051f1003a1d2f9a36dd313c18f502fe3fb3fff63
-base_graph_sha256: 4cffe0bcadbf49cc3e27dc5274221f51ec252a0226e944b4f5541dda47c6d1d6
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+base_graph_sha256: e2532806378ef613edac19a9eacbe57653b21a4061a2b9f393bb54d1fa30ff2d
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # Meet the protective response before pushing deeper

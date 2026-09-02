@@ -17,11 +17,14 @@ graph_tags:
 source_refs:
   - IC.GUIDE_LATER
   - IC.THREE_FUNCTIONS
+  - AMEND.IC.EXISTENTIAL_LOVE_ROUTING
+  - AMEND.IC.WELLBEING_HORIZON
+  - AMEND.IC.REALIZATION_LOVE_INTEGRATION
 regression_refs:
   - G010
-base_record_sha256: bf72775cd9eaf412b8f7c36b20271992ebb15e90367f7e8fb7478bb2b4b18633
-base_graph_sha256: 4cffe0bcadbf49cc3e27dc5274221f51ec252a0226e944b4f5541dda47c6d1d6
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+base_record_sha256: aac258d7bd5e5642d9e6f79b9fa481b2ddfe4be1154daa4017ef6420be20e2eb
+base_graph_sha256: e2532806378ef613edac19a9eacbe57653b21a4061a2b9f393bb54d1fa30ff2d
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # Bring in direction after warmth, safety, and a coherent child exist
@@ -68,17 +71,21 @@ projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f6
     ]
   },
   "avoid": [
-    "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing."
+    "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing.",
+    "Do not escalate spiritual abstraction or attainment because love feels inaccessible."
   ],
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [],
-    "requiredNuance": []
+    "requiredNuance": [
+      "Spiritual exploration is optional when the person’s current horizon feels sufficient; when realization is already present, assess whether it deepens accessible love and reaches the child rather than assuming attainment itself integrates the wound."
+    ]
   },
   "recommendations": [
-    "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal."
+    "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.",
+    "When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion."
   ],
   "successSignals": [
     "Direction increases life participation without exiling the child."
@@ -92,3 +99,9 @@ projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f6
 [[current/sources/inner-child-guide/IC.GUIDE_LATER]]
 
 [[current/sources/inner-child-guide/IC.THREE_FUNCTIONS]]
+
+[[current/governance/amendments/AMEND.IC.EXISTENTIAL_LOVE_ROUTING]]
+
+[[current/governance/amendments/AMEND.IC.WELLBEING_HORIZON]]
+
+[[current/governance/amendments/AMEND.IC.REALIZATION_LOVE_INTEGRATION]]

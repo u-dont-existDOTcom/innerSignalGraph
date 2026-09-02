@@ -1,0 +1,39 @@
+{
+  "id": "G018",
+  "description": "Doctrine says love but the person reports no felt love; treat doctrine as distinct from experiential access.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "love_access": "limited",
+    "self_directed_love": "inaccessible",
+    "coherent_child_state": "present",
+    "existential_sufficiency": "insufficient",
+    "spiritual_curiosity": "present",
+    "wellbeing_horizon": "deeper_conceptual",
+    "deep_love_access": "none_known",
+    "child_love_inclusion": "untested",
+    "spiritual_bypass_pattern": "doctrine_outpaces_love",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "self_criticism": "present",
+    "current_intent": "integration",
+    "support_available": "present"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.REALIZATION_LOVE_INTEGRATION",
+    "selectedIncludes": [
+      "IC.REALIZATION_LOVE_INTEGRATION"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "religious belief"
+    ]
+  }
+}

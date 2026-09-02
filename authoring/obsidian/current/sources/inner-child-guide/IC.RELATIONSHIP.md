@@ -12,7 +12,8 @@ section_hash: 67d0f38baf522a69b21915fff87b658afabd68c16ad67cc5e59c04113172e119
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.ADULT_APPRENTICE
-projection_input_sha256: 4481c17e9ee7ea48f2127b7e58a33ef8c25abb06dbb1bf2cf17f9f615da0794e
+  - IC.REALIZATION_LOVE_INTEGRATION
+projection_input_sha256: 4b5bea805e0b1d4aee6cc9121081d2b08ca6fa6bf019444d2cd96ac39680268f
 ---
 
 # Borrowed Adulthood in Relationship
