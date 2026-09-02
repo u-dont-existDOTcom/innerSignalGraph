@@ -25,6 +25,7 @@ const sourceFiles = {
   vagalPdf: path.resolve("guides/vagal-blitz-source.pdf"),
   vagalSafetyText: path.resolve("guide-packets/source-input/vagal-blitz-safety-p5.txt")
 };
+const r02FixturePath = path.resolve("guide-packets/fixtures/r02-candidate/inner-signal-guide-packet-r02-candidate.zip");
 
 function sha256(data) {
   return createHash("sha256").update(data).digest("hex");
@@ -79,19 +80,10 @@ function reviewValue() {
 }
 
 async function buildR02() {
-  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "guide-packet-r02-"));
-  return await buildGuidePacket({
-    runtimeRoot: path.resolve("."),
-    somaticHtmlPath: sourceFiles.somatic,
-    innerChildHtmlPath: sourceFiles.innerChild,
-    vagalSourcePath: sourceFiles.vagalPdf,
-    vagalSafetyTextPath: sourceFiles.vagalSafetyText,
-    outputDir,
-    packetVersion: "2026.08.12-r02-candidate",
-    packetRevision: 2,
-    status: "candidate",
-    createdAt: "2026-08-12T02:45:00.000Z"
-  });
+  return {
+    buffer: await fs.readFile(r02FixturePath),
+    zipPath: r02FixturePath
+  };
 }
 
 test("rebuilding r01 preserves its contract content without rewriting the archived candidate bytes", async () => {
