@@ -20,6 +20,7 @@
   "expected": {
     "primary": "IC.INTUITION_TRUST_CALIBRATION",
     "selectedIncludes": ["IC.INTUITION_TRUST_CALIBRATION"],
+    "selectedExcludes": ["IC.GUIDE_LATER"],
     "nextQuestion": "What exactly is your intuition telling you, what evidence supports or contradicts that conclusion, and what evidence would actually lower your trust?",
     "requiredNuancePatterns": ["Neither receives unilateral control", "Separate the raw signal", "Trust is domain-specific"],
     "forbiddenOverclaimPatterns": ["strong intuitive click proves", "global authority"]
