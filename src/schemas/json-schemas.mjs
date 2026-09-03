@@ -1,3 +1,8 @@
+import {
+  HYPNOSIS_REVIEW_TARGET_IDS,
+  REPAIRABLE_HYPNOSIS_COMPONENT_IDS
+} from "../hypnosis/component-repair.mjs";
+
 const stringArray = {
   type: "array",
   items: { type: "string" }
@@ -210,25 +215,51 @@ export const hypnosisReviewSchema = {
   properties: {
     verdict: { type: "string", enum: ["accept", "revise", "reject"] },
     strengths: stringArray,
-    structural_issues: stringArray,
-    semantic_issues: stringArray,
-    consent_issues: stringArray,
-    hypnosis_craft_issues: stringArray,
-    target_scope_issues: stringArray,
-    return_issues: stringArray,
-    required_repairs: stringArray
+    findings: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          category: {
+            type: "string",
+            enum: ["structural", "semantic", "consent", "hypnosis_craft", "target_scope", "return"]
+          },
+          disposition: { type: "string", enum: ["repair", "block"] },
+          target_ids: {
+            type: "array",
+            minItems: 1,
+            uniqueItems: true,
+            items: { type: "string", enum: HYPNOSIS_REVIEW_TARGET_IDS }
+          },
+          summary: { type: "string" }
+        },
+        required: ["category", "disposition", "target_ids", "summary"]
+      }
+    }
   },
-  required: [
-    "verdict",
-    "strengths",
-    "structural_issues",
-    "semantic_issues",
-    "consent_issues",
-    "hypnosis_craft_issues",
-    "target_scope_issues",
-    "return_issues",
-    "required_repairs"
-  ]
+  required: ["verdict", "strengths", "findings"]
+};
+
+export const hypnosisRepairPatchSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    patch_version: { type: "string", enum: ["hypnosis-component-patch-v1"] },
+    replacements: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          component_id: { type: "string", enum: REPAIRABLE_HYPNOSIS_COMPONENT_IDS },
+          replacement: { type: "string", minLength: 1 }
+        },
+        required: ["component_id", "replacement"]
+      }
+    }
+  },
+  required: ["patch_version", "replacements"]
 };
 
 export const hypnosisFinalReviewSchema = {

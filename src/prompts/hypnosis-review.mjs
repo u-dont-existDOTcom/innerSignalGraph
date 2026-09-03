@@ -8,14 +8,40 @@ Return exactly one JSON object:
 {
   "verdict": "accept|revise|reject",
   "strengths": ["..."],
-  "structural_issues": ["..."],
-  "semantic_issues": ["..."],
-  "consent_issues": ["..."],
-  "hypnosis_craft_issues": ["..."],
-  "target_scope_issues": ["..."],
-  "return_issues": ["..."],
-  "required_repairs": ["..."]
-}`;
+  "findings": [
+    {
+      "category": "structural|semantic|consent|hypnosis_craft|target_scope|return",
+      "disposition": "repair|block",
+      "target_ids": ["orientation"],
+      "summary": "..."
+    }
+  ]
+}
+
+Use target_ids as the sole attribution authority. Never infer or encode repair scope in summary prose. A revise verdict may contain only repair findings targeting registered model-owned components. A reject verdict must contain at least one block finding; use a block finding when a registered metadata target would need to change. An accept verdict has no findings. App-owned gate, route, announcement, end-session, and waking-return identifiers are not valid targets.
+
+Registered repair targets:
+- orientation
+- continue_inward.induction
+- continue_inward.deepening
+- continue_inward.target_work
+- continue_inward.integration
+- continue_inward.return_lead
+- stay_external.grounding
+- stay_external.ordinary_choice
+- aftercare
+
+Registered block-only metadata targets:
+- contract_version
+- language
+- relationship
+- target
+- premise
+- scope.memory
+- scope.identity
+- scope.post_session
+- scope.substances
+- design_notes`;
 
   const user = `GUIDE VERSION: ${context.guideManifest.version}
 
