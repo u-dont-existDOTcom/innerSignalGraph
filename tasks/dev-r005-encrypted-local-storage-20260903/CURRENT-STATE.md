@@ -19,8 +19,17 @@ Updated: 2026-09-03
 
 ## Authorization boundary
 
-- DEV-R005 implementation remains blocked pending exact-head checkpoint review and a separate implementation authorization; `implementationAuthorized` remains `false`.
-- This checkpoint authorizes no storage design, encryption format, migration, unlock flow, recovery implementation, or production change.
+- `DEV-R005-EXEC-S001-v1` separately authorizes only the pure vault boundary contract on canonical base `a11700547b48f77e7968b378eb57b8d184bd3ec4`.
+- The durable receipt is `tasks/dev-r005-encrypted-local-storage-20260903/IMPLEMENTATION-AUTHORIZATION.json`; its scope is `VAULT_BOUNDARY_CONTRACT_ONLY` and no later slice is authorized.
+- `implementationAuthorized` is `true` only within that receipt's S001 boundary. It is not blanket DEV-R005 implementation authority.
+- S001 may encode immutable policy facts and side-effect-free lifecycle/action evaluation. It does not persist, encrypt, decrypt, migrate, unlock, recover, delete, authenticate, transmit, or wire anything into the browser application.
+- Cryptographic choices, persistence technology, OS integration or fallback behavior, transport, pricing, account identity, retention, and exact handoff shape remain undecided.
+
+## Current implementation frontier
+
+- `src/storage/vault-boundary.mjs` is the only authorized implementation surface.
+- The next safe action is to finish the S001 branch gates, open a Draft PR, obtain exact-head hosted checks, and return that immutable head for Extra High review.
+- A green S001 review packet does not authorize merge or any later implementation slice.
 
 ## Privacy boundary
 

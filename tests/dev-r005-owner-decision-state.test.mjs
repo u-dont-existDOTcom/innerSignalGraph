@@ -90,6 +90,21 @@ const expectedD004 = {
   source: 'explicit-owner-selection-in-active-chat',
 };
 
+const expectedDecisions = [expectedD001, expectedD002, expectedD003, expectedD004];
+const expectedDecisionBytes = expectedDecisions
+  .map((decision) => JSON.stringify(decision, null, 2).replace(/^/gm, '    '))
+  .join(',\n');
+
+const expectedAuthorizedPaths = [
+  'src/storage/vault-boundary.mjs',
+  'tests/dev-r005-vault-boundary.test.mjs',
+  'tasks/dev-r005-encrypted-local-storage-20260903/IMPLEMENTATION-AUTHORIZATION.json',
+  'tasks/dev-r005-encrypted-local-storage-20260903/OWNER-DECISIONS.json',
+  'tasks/dev-r005-encrypted-local-storage-20260903/CURRENT-STATE.md',
+  'tests/dev-r005-owner-decision-state.test.mjs',
+  'state/CODEX-CURRENT-STATE.md',
+];
+
 test('DEV-R005 checkpoint preserves D001 and records exact D002-D004 decisions', async () => {
   const ledgerSource = await readUtf8(`${taskDirectory}/OWNER-DECISIONS.json`);
   const ledger = JSON.parse(ledgerSource);
@@ -98,9 +113,9 @@ test('DEV-R005 checkpoint preserves D001 and records exact D002-D004 decisions',
     schemaVersion: 1,
     taskId: 'DEV-R005',
     decisionSetId: 'dev-r005-encrypted-local-storage-20260903',
-    decisions: [expectedD001, expectedD002, expectedD003, expectedD004],
+    decisions: expectedDecisions,
     pendingDecisionIds: [],
-    implementationAuthorized: false,
+    implementationAuthorized: true,
   });
 
   const d001Start = ledgerSource.indexOf('    {\n      "decisionId": "DEV-R005-D001"');
@@ -108,6 +123,10 @@ test('DEV-R005 checkpoint preserves D001 and records exact D002-D004 decisions',
   assert.notEqual(d001Start, -1);
   assert.notEqual(d002Start, -1);
   assert.equal(ledgerSource.slice(d001Start, d002Start), `${expectedD001Bytes},\n`);
+
+  const decisionsEnd = ledgerSource.indexOf('\n  ],\n  "pendingDecisionIds"');
+  assert.notEqual(decisionsEnd, -1);
+  assert.equal(ledgerSource.slice(d001Start, decisionsEnd), expectedDecisionBytes);
 
   assert.equal(expectedD003.boundary.wholeChatGPTHistoryIngestion, false);
   assert.equal(expectedD003.boundary.freePluginVault.retainedServerPlaintext, false);
@@ -151,25 +170,48 @@ test('DEV-R005 checkpoint preserves D001 and records exact D002-D004 decisions',
   );
 });
 
-test('DEV-R005 checkpoints resolve D001-D004 without authorizing implementation', async () => {
-  const [taskState, repositoryState] = await Promise.all([
+test('DEV-R005 checkpoints bind implementation authority to S001 only', async () => {
+  const [authorizationSource, taskState, repositoryState] = await Promise.all([
+    readUtf8(`${taskDirectory}/IMPLEMENTATION-AUTHORIZATION.json`),
     readUtf8(`${taskDirectory}/CURRENT-STATE.md`),
     readUtf8(`${repositoryRoot}/state/CODEX-CURRENT-STATE.md`),
   ]);
+  const authorization = JSON.parse(authorizationSource);
   const exactLedgerPath =
     'tasks/dev-r005-encrypted-local-storage-20260903/OWNER-DECISIONS.json';
+  const exactAuthorizationPath =
+    'tasks/dev-r005-encrypted-local-storage-20260903/IMPLEMENTATION-AUTHORIZATION.json';
+
+  assert.deepEqual(authorization, {
+    schemaVersion: 1,
+    taskId: 'DEV-R005',
+    authorizationId: 'DEV-R005-EXEC-S001-v1',
+    authoritySourceRequestId: 'dev-r005-post-pr35-continuation-20260903',
+    canonicalBase: {
+      commit: 'a11700547b48f77e7968b378eb57b8d184bd3ec4',
+      tree: 'defbf48cffd5eee4d2438d6c03fe7d62d26c7516',
+    },
+    scope: 'VAULT_BOUNDARY_CONTRACT_ONLY',
+    authorizedPaths: expectedAuthorizedPaths,
+    laterSlicesAuthorized: false,
+  });
 
   assert.match(taskState, new RegExp(exactLedgerPath.replaceAll('.', '\\.')));
   assert.match(repositoryState, new RegExp(exactLedgerPath.replaceAll('.', '\\.')));
+  assert.match(taskState, new RegExp(exactAuthorizationPath.replaceAll('.', '\\.')));
+  assert.match(repositoryState, new RegExp(exactAuthorizationPath.replaceAll('.', '\\.')));
   assert.match(taskState, /All four currently defined DEV-R005 owner decisions.*are resolved/);
   assert.match(repositoryState, /All four currently defined owner decisions are resolved/);
   assert.match(taskState, /pendingDecisionIds` is empty for D001-D004 only/);
   assert.match(repositoryState, /pendingDecisionIds` is empty for D001-D004 only/);
-  assert.match(taskState, /implementation remains blocked pending exact-head checkpoint review and a separate implementation authorization/);
-  assert.match(taskState, /implementationAuthorized` remains `false/);
-  assert.match(repositoryState, /implementation remains blocked pending exact-head checkpoint review and a separate implementation authorization/);
+  assert.match(taskState, /implementationAuthorized` is `true` only within that receipt's S001 boundary/);
+  assert.match(repositoryState, /implementationAuthorized` is `true` only for S001/);
+  assert.match(taskState, /no later slice is authorized/i);
+  assert.match(repositoryState, /No later slice is authorized/);
+  assert.match(taskState, /does not persist, encrypt, decrypt, migrate, unlock, recover, delete, authenticate, transmit/);
+  assert.match(repositoryState, /no browser wiring, persistence, cryptography, OS integration, migration execution/);
   assert.match(taskState, /No additional product-policy decision is inferred or encoded/);
-  const taskFixtureText = `${await readUtf8(`${taskDirectory}/OWNER-DECISIONS.json`)}\n${taskState}`;
+  const taskFixtureText = `${await readUtf8(`${taskDirectory}/OWNER-DECISIONS.json`)}\n${authorizationSource}\n${taskState}`;
   assert.doesNotMatch(
     taskFixtureText,
     /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY|credentialValue|privateContentHash|recoverySecretValue|"transcript"\s*:/i,
