@@ -10,6 +10,10 @@
 - `../package.json`: supported commands
 - `RELEASE-EVIDENCE.md`: stable-promotion evidence contract
 
+## Worker → Brave Pro review
+
+- `WORKER-BRAVE-PRO-REVIEW-PROTOCOL.md`: canonical project-local worker/Extra High/Brave/Pro review-and-transport contract
+
 ## Public repository transition
 
 - `docs/superpowers/specs/2026-08-14-public-repository-transition-design.md`: accepted publication and hosted-control design

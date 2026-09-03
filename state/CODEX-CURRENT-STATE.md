@@ -10,12 +10,15 @@ Updated: 2026-09-03
 - `DEV-R005-EXEC-S001-v1` separately authorizes only `VAULT_BOUNDARY_CONTRACT_ONLY` on canonical base `a11700547b48f77e7968b378eb57b8d184bd3ec4`; its durable receipt is `tasks/dev-r005-encrypted-local-storage-20260903/IMPLEMENTATION-AUTHORIZATION.json`.
 - `implementationAuthorized` is `true` only for S001. No later slice is authorized, and a green review packet does not authorize merge.
 - S001 is a pure, side-effect-free policy seam with no browser wiring, persistence, cryptography, OS integration, migration execution, recovery implementation, deletion, authentication, transport, dependency, or private-data effect.
+- PR #36 merged the completed S001 vault boundary contract into `main` as `3dc7e50486eb54c1e946e56fc4b979061123ec50`.
+- The Worker → Brave Pro governance protocol is the current active bounded repair; S002 remains unauthorized.
+- This protocol repair has no runtime, storage, cryptography, application, plugin, or therapy effect.
 - No keys, recovery secrets, credentials, private therapy transcripts, real therapy data, or private-derived hashes belong in repository evidence.
 - The publication-transition material below is preserved as historical repository context; it does not override this active task checkpoint.
 
 ## Goal
 
-Complete the bounded DEV-R005 S001 vault boundary contract through a Draft PR and exact-head review without changing runtime storage or any reserved architecture choice. Maintain the verified public repository baseline without changing therapy/hypnosis policy, model roles, privacy scope, owner decisions, transactional installation, or `stable` release authority.
+Restore the canonical Worker → Brave Pro review protocol through a Draft PR and exact-head Pro review without changing runtime storage, DEV-R005 S002 authority, or any reserved architecture choice. Maintain the verified public repository baseline without changing therapy/hypnosis policy, model roles, privacy scope, owner decisions, transactional installation, or `stable` release authority.
 
 ## Authority / baseline
 
