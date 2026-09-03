@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-08-15
+Updated: 2026-09-03
+
+## Active development frontier
+
+- DEV-R005 resumes from `tasks/dev-r005-encrypted-local-storage-20260903/CURRENT-STATE.md` and its exact decision ledger at `tasks/dev-r005-encrypted-local-storage-20260903/OWNER-DECISIONS.json`.
+- The owner explicitly selected `USER_HELD_RECOVERY_SECRET` for `DEV-R005-D001`, with both service escrow and third-party escrow prohibited.
+- `DEV-R005-D002` is the next substantive owner decision; `DEV-R005-D003` and `DEV-R005-D004` remain unanswered.
+- DEV-R005 implementation remains unauthorized. No keys, recovery secrets, credentials, private therapy transcripts, real therapy data, or private-derived hashes belong in repository evidence.
+- The publication-transition material below is preserved as historical repository context; it does not override this active task checkpoint.
 
 ## Goal
 
