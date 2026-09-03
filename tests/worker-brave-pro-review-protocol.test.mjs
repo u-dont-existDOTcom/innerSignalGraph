@@ -100,7 +100,14 @@ test('protocol and checkpoints explicitly deny DEV-R005 S002 and runtime effects
     assert.match(checkpoint, /no runtime, storage, cryptography, application, plugin, or therapy effect/i);
   }
 
-  assert.equal(protocol.toLowerCase().includes('https://chatgpt.com/c/'), false);
+  const urls = protocol.match(/https?:\/\/[^\s`)'"<>]+/g) ?? [];
+  assert.equal(
+    urls.some((candidate) => {
+      const url = new URL(candidate);
+      return url.hostname === 'chatgpt.com' && url.pathname.startsWith('/c/');
+    }),
+    false,
+  );
   assert.doesNotMatch(
     protocol,
     /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY|(?:cookie|token|sessionId|credentialValue|recoverySecretValue)\s*[:=]/i,
