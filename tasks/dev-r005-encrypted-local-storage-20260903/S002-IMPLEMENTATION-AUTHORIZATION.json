@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "taskId": "DEV-R005",
+  "authorizationId": "DEV-R005-EXEC-S002-v1",
+  "authoritySourceRequestId": "dev-r005-post-pr37-continuation-20260903",
+  "canonicalBase": {
+    "commit": "e2ed489edcb74d510c91d596dcff4260e4336f2f",
+    "tree": "0716837786388ea564e5360f5ca31e62ba524d0e"
+  },
+  "scope": "IN_MEMORY_DUAL_WRAP_CRYPTO_ENVELOPE_ONLY",
+  "design": {
+    "suiteId": "inner-signal-vault-envelope-v1",
+    "cipher": "aes-256-gcm",
+    "dekBytes": 32,
+    "ivBytes": 12,
+    "authTagBytes": 16,
+    "routineKekBytes": 32,
+    "recoveryKdf": {
+      "algorithm": "argon2id",
+      "saltBytes": 16,
+      "memoryKiB": 65536,
+      "passes": 3,
+      "parallelism": 4,
+      "derivedKeyBytes": 32
+    },
+    "binaryRecoveryInterfaceOnly": true,
+    "persistence": false,
+    "osIntegration": false,
+    "applicationWiring": false,
+    "migrationExecution": false,
+    "networkTransport": false,
+    "realPrivateData": false
+  },
+  "authorizedPaths": [
+    "src/storage/vault-crypto.mjs",
+    "tests/dev-r005-vault-crypto.test.mjs",
+    "tasks/dev-r005-encrypted-local-storage-20260903/S002-IMPLEMENTATION-AUTHORIZATION.json",
+    "tasks/dev-r005-encrypted-local-storage-20260903/CURRENT-STATE.md",
+    "state/CODEX-CURRENT-STATE.md",
+    "tests/dev-r005-owner-decision-state.test.mjs"
+  ],
+  "laterSlicesAuthorized": false
+}

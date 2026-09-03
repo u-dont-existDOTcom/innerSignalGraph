@@ -8,17 +8,21 @@ Updated: 2026-09-03
 - All four currently defined owner decisions are resolved: `DEV-R005-D001` is `USER_HELD_RECOVERY_SECRET`, `DEV-R005-D002` is `OS_BACKED_REAUTH_WITH_USER_LOCK_POLICY`, `DEV-R005-D003` is `OPT_IN_PLUGIN_VAULT_MIGRATION`, and `DEV-R005-D004` is `PRESERVE_UNTIL_EXPLICIT_RESET`.
 - `pendingDecisionIds` is empty for D001-D004 only; no additional product-policy decision is inferred.
 - `DEV-R005-EXEC-S001-v1` separately authorizes only `VAULT_BOUNDARY_CONTRACT_ONLY` on canonical base `a11700547b48f77e7968b378eb57b8d184bd3ec4`; its durable receipt is `tasks/dev-r005-encrypted-local-storage-20260903/IMPLEMENTATION-AUTHORIZATION.json`.
-- `implementationAuthorized` is `true` only for S001. No later slice is authorized, and a green review packet does not authorize merge.
 - S001 is a pure, side-effect-free policy seam with no browser wiring, persistence, cryptography, OS integration, migration execution, recovery implementation, deletion, authentication, transport, dependency, or private-data effect.
 - PR #36 merged the completed S001 vault boundary contract into `main` as `3dc7e50486eb54c1e946e56fc4b979061123ec50`.
-- The Worker → Brave Pro governance protocol is the current active bounded repair; S002 remains unauthorized.
-- This protocol repair has no runtime, storage, cryptography, application, plugin, or therapy effect.
+- PR #37 merged the canonical Worker → Brave Pro governance protocol into `main` as `e2ed489edcb74d510c91d596dcff4260e4336f2f`.
+- Historical PR #37 checkpoint language recorded the governance protocol as the current bounded repair, that S002 remains unauthorized, and that the protocol repair had no runtime, storage, cryptography, application, plugin, or therapy effect. `DEV-R005-EXEC-S002-v1` now supersedes only that historical S002 status through its separate receipt.
+- `DEV-R005-EXEC-S002-v1` independently authorizes S002 as `IN_MEMORY_DUAL_WRAP_CRYPTO_ENVELOPE_ONLY`; its durable receipt is `tasks/dev-r005-encrypted-local-storage-20260903/S002-IMPLEMENTATION-AUTHORIZATION.json`.
+- Ledger `implementationAuthorized` is not blanket DEV-R005 authority. S002 fixes only the in-memory AES-256-GCM/Argon2id envelope design and keeps `laterSlicesAuthorized: false`.
+- S002 has no persistence, serialization, OS secure-store integration/fallback, browser/application/plugin wiring, migration execution, recovery/reset UI, network transport, account-identity, pricing, retention, or recovery-secret-format effect.
+- S003 remains unauthorized, and a green review packet does not authorize merge.
+- DEV-R005 next safe action: complete the six-path S002 implementation, gates, Draft PR, exact-head hosted evidence, and Extra High/Pro review; stop before merge or S003.
 - No keys, recovery secrets, credentials, private therapy transcripts, real therapy data, or private-derived hashes belong in repository evidence.
 - The publication-transition material below is preserved as historical repository context; it does not override this active task checkpoint.
 
 ## Goal
 
-Restore the canonical Worker → Brave Pro review protocol through a Draft PR and exact-head Pro review without changing runtime storage, DEV-R005 S002 authority, or any reserved architecture choice. Maintain the verified public repository baseline without changing therapy/hypnosis policy, model roles, privacy scope, owner decisions, transactional installation, or `stable` release authority.
+Implement and verify only the authorized DEV-R005 S002 in-memory dual-wrap cryptographic envelope through a Draft PR and exact-head Extra High/Pro review. Preserve D001-D004, S001, the public repository baseline, privacy boundaries, therapy/hypnosis policy, model roles, transactional installation, and `stable` release authority; do not begin persistence, OS integration, migration, application/plugin wiring, or S003.
 
 ## Authority / baseline
 

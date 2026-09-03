@@ -95,7 +95,7 @@ const expectedDecisionBytes = expectedDecisions
   .map((decision) => JSON.stringify(decision, null, 2).replace(/^/gm, '    '))
   .join(',\n');
 
-const expectedAuthorizedPaths = [
+const expectedS001AuthorizedPaths = [
   'src/storage/vault-boundary.mjs',
   'tests/dev-r005-vault-boundary.test.mjs',
   'tasks/dev-r005-encrypted-local-storage-20260903/IMPLEMENTATION-AUTHORIZATION.json',
@@ -103,6 +103,15 @@ const expectedAuthorizedPaths = [
   'tasks/dev-r005-encrypted-local-storage-20260903/CURRENT-STATE.md',
   'tests/dev-r005-owner-decision-state.test.mjs',
   'state/CODEX-CURRENT-STATE.md',
+];
+
+const expectedS002AuthorizedPaths = [
+  'src/storage/vault-crypto.mjs',
+  'tests/dev-r005-vault-crypto.test.mjs',
+  'tasks/dev-r005-encrypted-local-storage-20260903/S002-IMPLEMENTATION-AUTHORIZATION.json',
+  'tasks/dev-r005-encrypted-local-storage-20260903/CURRENT-STATE.md',
+  'state/CODEX-CURRENT-STATE.md',
+  'tests/dev-r005-owner-decision-state.test.mjs',
 ];
 
 test('DEV-R005 checkpoint preserves D001 and records exact D002-D004 decisions', async () => {
@@ -170,19 +179,23 @@ test('DEV-R005 checkpoint preserves D001 and records exact D002-D004 decisions',
   );
 });
 
-test('DEV-R005 checkpoints bind implementation authority to S001 only', async () => {
-  const [authorizationSource, taskState, repositoryState] = await Promise.all([
+test('DEV-R005 checkpoints preserve S001 and independently bind S002 only', async () => {
+  const [s001Source, s002Source, taskState, repositoryState] = await Promise.all([
     readUtf8(`${taskDirectory}/IMPLEMENTATION-AUTHORIZATION.json`),
+    readUtf8(`${taskDirectory}/S002-IMPLEMENTATION-AUTHORIZATION.json`),
     readUtf8(`${taskDirectory}/CURRENT-STATE.md`),
     readUtf8(`${repositoryRoot}/state/CODEX-CURRENT-STATE.md`),
   ]);
-  const authorization = JSON.parse(authorizationSource);
+  const s001Authorization = JSON.parse(s001Source);
+  const s002Authorization = JSON.parse(s002Source);
   const exactLedgerPath =
     'tasks/dev-r005-encrypted-local-storage-20260903/OWNER-DECISIONS.json';
-  const exactAuthorizationPath =
+  const exactS001Path =
     'tasks/dev-r005-encrypted-local-storage-20260903/IMPLEMENTATION-AUTHORIZATION.json';
+  const exactS002Path =
+    'tasks/dev-r005-encrypted-local-storage-20260903/S002-IMPLEMENTATION-AUTHORIZATION.json';
 
-  assert.deepEqual(authorization, {
+  assert.deepEqual(s001Authorization, {
     schemaVersion: 1,
     taskId: 'DEV-R005',
     authorizationId: 'DEV-R005-EXEC-S001-v1',
@@ -192,26 +205,67 @@ test('DEV-R005 checkpoints bind implementation authority to S001 only', async ()
       tree: 'defbf48cffd5eee4d2438d6c03fe7d62d26c7516',
     },
     scope: 'VAULT_BOUNDARY_CONTRACT_ONLY',
-    authorizedPaths: expectedAuthorizedPaths,
+    authorizedPaths: expectedS001AuthorizedPaths,
+    laterSlicesAuthorized: false,
+  });
+
+  assert.deepEqual(s002Authorization, {
+    schemaVersion: 1,
+    taskId: 'DEV-R005',
+    authorizationId: 'DEV-R005-EXEC-S002-v1',
+    authoritySourceRequestId: 'dev-r005-post-pr37-continuation-20260903',
+    canonicalBase: {
+      commit: 'e2ed489edcb74d510c91d596dcff4260e4336f2f',
+      tree: '0716837786388ea564e5360f5ca31e62ba524d0e',
+    },
+    scope: 'IN_MEMORY_DUAL_WRAP_CRYPTO_ENVELOPE_ONLY',
+    design: {
+      suiteId: 'inner-signal-vault-envelope-v1',
+      cipher: 'aes-256-gcm',
+      dekBytes: 32,
+      ivBytes: 12,
+      authTagBytes: 16,
+      routineKekBytes: 32,
+      recoveryKdf: {
+        algorithm: 'argon2id',
+        saltBytes: 16,
+        memoryKiB: 65536,
+        passes: 3,
+        parallelism: 4,
+        derivedKeyBytes: 32,
+      },
+      binaryRecoveryInterfaceOnly: true,
+      persistence: false,
+      osIntegration: false,
+      applicationWiring: false,
+      migrationExecution: false,
+      networkTransport: false,
+      realPrivateData: false,
+    },
+    authorizedPaths: expectedS002AuthorizedPaths,
     laterSlicesAuthorized: false,
   });
 
   assert.match(taskState, new RegExp(exactLedgerPath.replaceAll('.', '\\.')));
   assert.match(repositoryState, new RegExp(exactLedgerPath.replaceAll('.', '\\.')));
-  assert.match(taskState, new RegExp(exactAuthorizationPath.replaceAll('.', '\\.')));
-  assert.match(repositoryState, new RegExp(exactAuthorizationPath.replaceAll('.', '\\.')));
+  assert.match(taskState, new RegExp(exactS001Path.replaceAll('.', '\\.')));
+  assert.match(repositoryState, new RegExp(exactS001Path.replaceAll('.', '\\.')));
+  assert.match(taskState, new RegExp(exactS002Path.replaceAll('.', '\\.')));
+  assert.match(repositoryState, new RegExp(exactS002Path.replaceAll('.', '\\.')));
   assert.match(taskState, /All four currently defined DEV-R005 owner decisions.*are resolved/);
   assert.match(repositoryState, /All four currently defined owner decisions are resolved/);
   assert.match(taskState, /pendingDecisionIds` is empty for D001-D004 only/);
   assert.match(repositoryState, /pendingDecisionIds` is empty for D001-D004 only/);
-  assert.match(taskState, /implementationAuthorized` is `true` only within that receipt's S001 boundary/);
-  assert.match(repositoryState, /implementationAuthorized` is `true` only for S001/);
-  assert.match(taskState, /no later slice is authorized/i);
-  assert.match(repositoryState, /No later slice is authorized/);
+  assert.match(taskState, /implementationAuthorized` is not blanket DEV-R005 authority/);
+  assert.match(repositoryState, /implementationAuthorized` is not blanket DEV-R005 authority/);
+  assert.match(taskState, /S002.*IN_MEMORY_DUAL_WRAP_CRYPTO_ENVELOPE_ONLY/);
+  assert.match(repositoryState, /S002.*IN_MEMORY_DUAL_WRAP_CRYPTO_ENVELOPE_ONLY/);
+  assert.match(taskState, /S003 remains unauthorized/);
+  assert.match(repositoryState, /S003 remains unauthorized/);
   assert.match(taskState, /does not persist, encrypt, decrypt, migrate, unlock, recover, delete, authenticate, transmit/);
   assert.match(repositoryState, /no browser wiring, persistence, cryptography, OS integration, migration execution/);
   assert.match(taskState, /No additional product-policy decision is inferred or encoded/);
-  const taskFixtureText = `${await readUtf8(`${taskDirectory}/OWNER-DECISIONS.json`)}\n${authorizationSource}\n${taskState}`;
+  const taskFixtureText = `${await readUtf8(`${taskDirectory}/OWNER-DECISIONS.json`)}\n${s001Source}\n${s002Source}\n${taskState}`;
   assert.doesNotMatch(
     taskFixtureText,
     /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY|credentialValue|privateContentHash|recoverySecretValue|"transcript"\s*:/i,
