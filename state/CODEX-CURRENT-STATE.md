@@ -5,9 +5,9 @@ Updated: 2026-09-03
 ## Active development frontier
 
 - DEV-R005 resumes from `tasks/dev-r005-encrypted-local-storage-20260903/CURRENT-STATE.md` and its exact decision ledger at `tasks/dev-r005-encrypted-local-storage-20260903/OWNER-DECISIONS.json`.
-- The owner explicitly selected `USER_HELD_RECOVERY_SECRET` for `DEV-R005-D001`, with both service escrow and third-party escrow prohibited.
-- `DEV-R005-D002` is the next substantive owner decision; `DEV-R005-D003` and `DEV-R005-D004` remain unanswered.
-- DEV-R005 implementation remains unauthorized. No keys, recovery secrets, credentials, private therapy transcripts, real therapy data, or private-derived hashes belong in repository evidence.
+- All four currently defined owner decisions are resolved: `DEV-R005-D001` is `USER_HELD_RECOVERY_SECRET`, `DEV-R005-D002` is `OS_BACKED_REAUTH_WITH_USER_LOCK_POLICY`, `DEV-R005-D003` is `OPT_IN_PLUGIN_VAULT_MIGRATION`, and `DEV-R005-D004` is `PRESERVE_UNTIL_EXPLICIT_RESET`.
+- `pendingDecisionIds` is empty for D001-D004 only; no additional product-policy decision is inferred.
+- DEV-R005 implementation remains blocked pending exact-head checkpoint review and a separate implementation authorization. No keys, recovery secrets, credentials, private therapy transcripts, real therapy data, or private-derived hashes belong in repository evidence.
 - The publication-transition material below is preserved as historical repository context; it does not override this active task checkpoint.
 
 ## Goal
