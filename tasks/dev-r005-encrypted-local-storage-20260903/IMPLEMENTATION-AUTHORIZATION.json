@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "taskId": "DEV-R005",
+  "authorizationId": "DEV-R005-EXEC-S001-v1",
+  "authoritySourceRequestId": "dev-r005-post-pr35-continuation-20260903",
+  "canonicalBase": {
+    "commit": "a11700547b48f77e7968b378eb57b8d184bd3ec4",
+    "tree": "defbf48cffd5eee4d2438d6c03fe7d62d26c7516"
+  },
+  "scope": "VAULT_BOUNDARY_CONTRACT_ONLY",
+  "authorizedPaths": [
+    "src/storage/vault-boundary.mjs",
+    "tests/dev-r005-vault-boundary.test.mjs",
+    "tasks/dev-r005-encrypted-local-storage-20260903/IMPLEMENTATION-AUTHORIZATION.json",
+    "tasks/dev-r005-encrypted-local-storage-20260903/OWNER-DECISIONS.json",
+    "tasks/dev-r005-encrypted-local-storage-20260903/CURRENT-STATE.md",
+    "tests/dev-r005-owner-decision-state.test.mjs",
+    "state/CODEX-CURRENT-STATE.md"
+  ],
+  "laterSlicesAuthorized": false
+}
