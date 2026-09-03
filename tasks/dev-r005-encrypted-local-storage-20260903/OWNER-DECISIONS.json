@@ -12,12 +12,63 @@
         "thirdPartyEscrow": false
       },
       "source": "explicit-owner-selection-in-active-chat"
+    },
+    {
+      "decisionId": "DEV-R005-D002",
+      "status": "owner-selected",
+      "selection": "OS_BACKED_REAUTH_WITH_USER_LOCK_POLICY",
+      "boundary": {
+        "scope": "paid-standalone-app",
+        "routineUnlock": "os-secure-credential-store",
+        "recoverySecretUsedForRoutineUnlock": false,
+        "lockOnLogoutOrReboot": true,
+        "lockOnAppClose": true,
+        "reauthenticateOnReopen": true,
+        "manualLockControl": true,
+        "inactivityLockout": "optional-user-configurable",
+        "forcedInactivityTimeout": false
+      },
+      "source": "explicit-owner-selection-in-active-chat"
+    },
+    {
+      "decisionId": "DEV-R005-D003",
+      "status": "owner-selected",
+      "selection": "OPT_IN_PLUGIN_VAULT_MIGRATION",
+      "boundary": {
+        "migrationPromptOnPaidSetup": true,
+        "automaticMigration": false,
+        "wholeChatGPTHistoryIngestion": false,
+        "preferredMigrationSource": "inner-signal-plugin-vault",
+        "freePluginVault": {
+          "firstUseConsentRequired": true,
+          "automaticSavingAfterConsent": true,
+          "perSessionOptOut": true,
+          "pauseSavingControl": true,
+          "deletionControl": true,
+          "defaultRecord": "structured-inner-signal-session-handoff",
+          "rawTranscriptArchiveByDefault": false,
+          "retainedServerPlaintext": false,
+          "serverHeldDecryptionKey": false,
+          "currentInterimTransport": "transient-plaintext-processing-may-occur-before-encrypted-storage",
+          "futurePreference": "client-side-pre-server-zero-knowledge-when-platform-reliably-supports-it"
+        }
+      },
+      "source": "explicit-owner-selection-in-active-chat"
+    },
+    {
+      "decisionId": "DEV-R005-D004",
+      "status": "owner-selected",
+      "selection": "PRESERVE_UNTIL_EXPLICIT_RESET",
+      "boundary": {
+        "silentResetOrDeletion": false,
+        "preserveUnreadableVault": true,
+        "recoveryFirst": true,
+        "explicitDestructiveConfirmationRequired": true,
+        "deleteOnlyOnExplicitUserChoice": true
+      },
+      "source": "explicit-owner-selection-in-active-chat"
     }
   ],
-  "pendingDecisionIds": [
-    "DEV-R005-D002",
-    "DEV-R005-D003",
-    "DEV-R005-D004"
-  ],
+  "pendingDecisionIds": [],
   "implementationAuthorized": false
 }
