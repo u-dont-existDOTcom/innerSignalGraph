@@ -27,9 +27,10 @@ Updated: 2026-09-03
 
 ## Current implementation frontier
 
-- `src/storage/vault-boundary.mjs` is the only authorized implementation surface.
-- The next safe action is to finish the S001 branch gates, open a Draft PR, obtain exact-head hosted checks, and return that immutable head for Extra High review.
-- A green S001 review packet does not authorize merge or any later implementation slice.
+- PR #36 merged the completed S001 vault boundary contract into `main` as `3dc7e50486eb54c1e946e56fc4b979061123ec50`.
+- The Worker → Brave Pro governance-protocol restoration is the current bounded repair.
+- S002 remains unauthorized and requires a separate exact-head implementation authorization after this governance repair is complete.
+- This protocol repair has no runtime, storage, cryptography, application, plugin, or therapy effect.
 
 ## Privacy boundary
 
