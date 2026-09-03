@@ -59,6 +59,40 @@ test('protocol separates reasoning, execution, independent review, and browser t
   assert.match(protocol, /BROWSER_TRANSPORT_BLOCKED/);
 });
 
+test('protocol separates private review content from credential and public-repository exclusions', async () => {
+  const protocol = await readUtf8(protocolPath);
+
+  assert.doesNotMatch(protocol, /private application content out of Git and review evidence/i);
+  assert.match(
+    protocol,
+    /Owner email addresses, passwords\/credentials, cookies, authentication tokens, session identifiers, authentication files, private profile paths, and private chat URLs must remain out of Git and out of review packets\/evidence/,
+  );
+  assert.match(
+    protocol,
+    /Private application content must remain out of public Git and public repository evidence/,
+  );
+  assert.match(
+    protocol,
+    /Minimum-necessary private application content may be included in a private review packet only when all of the following permit it/,
+  );
+  for (const requiredPermission of [
+    'current owner authority',
+    'current project authority',
+    'applicable data classification',
+    'selected authenticated account/context',
+    'evaluator authorization',
+  ]) {
+    assert.match(protocol, new RegExp(requiredPermission.replace('/', '\\/')));
+  }
+  assert.match(protocol, /receiving account\/context must be verified before transmission/i);
+  assert.match(
+    protocol,
+    /do not silently omit it and claim the independent review is valid or complete/,
+  );
+  assert.match(protocol, /preserve the evidence gap/);
+  assert.match(protocol, /return it to Extra High for routing under the existing authority\/owner-decision boundary/);
+});
+
 test('protocol fails closed on stale heads, placeholder checks, and false owner escalation', async () => {
   const protocol = await readUtf8(protocolPath);
 

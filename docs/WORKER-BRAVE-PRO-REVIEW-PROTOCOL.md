@@ -78,8 +78,14 @@ Review transport must:
 - avoid unnecessary desktop-focus stealing;
 - reuse an existing task-specific review chat only while its scope, authority epoch, and context remain valid;
 - treat automation-opened tabs as leased resources and intentionally reuse or close them at the task boundary;
-- keep owner email addresses, cookies, tokens, session IDs, private profile paths, private chat URLs, and private application content out of Git and review evidence;
+- Owner email addresses, passwords/credentials, cookies, authentication tokens, session identifiers, authentication files, private profile paths, and private chat URLs must remain out of Git and out of review packets/evidence;
+- Private application content must remain out of public Git and public repository evidence;
+- Minimum-necessary private application content may be included in a private review packet only when all of the following permit it: current owner authority, current project authority, applicable data classification, the selected authenticated account/context, and evaluator authorization;
+- the receiving account/context must be verified before transmission;
+- if decision-essential private context cannot permissibly be supplied, do not transmit it; do not silently omit it and claim the independent review is valid or complete; preserve the evidence gap; and return it to Extra High for routing under the existing authority/owner-decision boundary;
 - use only bounded supported recovery after transport failure.
+
+This conditional boundary is not a blanket permission to transmit private application content. It does not authorize therapy transcripts, credentials, browser secrets, private account mapping, or unrestricted private data.
 
 Browser failure is a transport failure, not an owner-policy decision. If transport cannot be restored within the authorized recovery boundary, preserve the exact self-contained packet and return `BROWSER_TRANSPORT_BLOCKED`; do not substitute Codex or an unauthorized model as reviewer.
 
