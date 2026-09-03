@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "prompts": [
+    {
+      "id": "starter-inner-child-conflict",
+      "prompt": "Help me work with an inner-child conflict without forcing a quick resolution."
+    },
+    {
+      "id": "starter-care-feels-unsafe",
+      "prompt": "Help me understand why directing care toward a younger part of me feels unsafe."
+    },
+    {
+      "id": "starter-grounded-next-step",
+      "prompt": "Help me find one grounded next step in a self-relationship conflict."
+    }
+  ]
+}
