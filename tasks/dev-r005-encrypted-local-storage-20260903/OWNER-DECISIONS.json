@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "taskId": "DEV-R005",
+  "decisionSetId": "dev-r005-encrypted-local-storage-20260903",
+  "decisions": [
+    {
+      "decisionId": "DEV-R005-D001",
+      "status": "owner-selected",
+      "selection": "USER_HELD_RECOVERY_SECRET",
+      "boundary": {
+        "serviceEscrow": false,
+        "thirdPartyEscrow": false
+      },
+      "source": "explicit-owner-selection-in-active-chat"
+    }
+  ],
+  "pendingDecisionIds": [
+    "DEV-R005-D002",
+    "DEV-R005-D003",
+    "DEV-R005-D004"
+  ],
+  "implementationAuthorized": false
+}
