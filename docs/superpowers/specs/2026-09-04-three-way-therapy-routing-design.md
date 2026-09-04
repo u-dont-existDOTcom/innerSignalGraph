@@ -130,6 +130,20 @@ The implementation must demonstrate:
 6. existing tier-1 safety routing continues to outrank every new route;
 7. existing discrete/developmental EMDR distinctions and advanced-release safety blocks remain intact.
 
+## A001 benchmark reconciliation
+
+The latency benchmark's historical baseline commit remains `f0ce1e5062c1a34c57d630cbd158491816ac5292`. That record owns performance structure only: provider stages, provider-call counts, and the former two-pass Reviewed planning count. It does not own current therapy policy.
+
+Running the same current A001 mock pipeline once with the pre-change compiled graph and once with the authorized three-way graph produces hashes `9d347f9072e7d41903b944563663d61a021220dfbcd69806ad8d8ffacef9ef97` and `141acf5b4fa50e20c89fb30391fe28a5691ba59051c1e1cabb5380670d419ce5`, respectively. The exact normalized-result delta is confined to graph trace metadata:
+
+- `activeEdges` adds `ROUTE.GO_INWARD may-route-to IC.MEET_GUARD` and `ROUTE.GO_INWARD may-route-to SOM.GENTLE_REGULATION`.
+- `matchedEdges` adds `ROUTE.ACT_OUTWARD acts-through IC.PROTECTOR_ACTION` plus the seven `ROUTE.GO_INWARD` links to `IC.MEET_GUARD`, `SOM.GENTLE_REGULATION`, `SOM.EFT_PORTABLE`, `SOM.GENTLE_SHAKING`, `SOM.RESOURCE_BRAINSPOTTING`, `SOM.DEEP_BRAINSPOTTING`, and `SOM.EMDR_DEVELOPMENTAL`.
+- `sequencingNotes` adds the two active `ROUTE.GO_INWARD` relationships above.
+
+No normalized field was removed or otherwise changed. In particular, A001 remains Reviewed with `IC.CREDIBILITY_REPAIR` primary; the five selected jobs, empty deferred set, required nuance, discriminating question, response, and safety result are unchanged.
+
+The executable benchmark therefore compares latency structure with the historical performance baseline and compares normalized therapy output with a separately versioned current-policy fingerprint. An intentional, owner-authorized policy change updates the latter with an explicit semantic reconciliation; it does not rewrite history or appear as a latency regression.
+
 ## What this change does not claim
 
 - Rumination is not asserted to be the principal cause of all post-psychedelic or dissociative difficulties.

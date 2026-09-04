@@ -161,7 +161,9 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
   });
 
   if (routing.tier !== "fast") {
-    await preflightGraphPlanningAvailability({ loadGraphBundle: instrumentation.loadGraphBundle });
+    await preflightGraphPlanningAvailability({
+      loadPreflightGraphBundle: instrumentation.loadPreflightGraphBundle
+    });
   }
   onProgress?.({ stage: "therapy-routing", status: "completed", detail: `${routing.tier}: ${routing.reason}` });
 
@@ -169,7 +171,7 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
     const planningStarted = Date.now();
     const planned = await planCaseSnapshot(initial.snapshot, {
       onPlanningPass: instrumentation.onPlanningPass,
-      loadGraphBundle: instrumentation.loadGraphBundle
+      loadPlanningGraphBundle: instrumentation.loadPlanningGraphBundle
     });
     const planningMs = Date.now() - planningStarted;
     const formulation = {
@@ -188,7 +190,7 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
   const planningStarted = Date.now();
   const planned = await planCaseSnapshot(auditedSnapshot, {
     onPlanningPass: instrumentation.onPlanningPass,
-    loadGraphBundle: instrumentation.loadGraphBundle
+    loadPlanningGraphBundle: instrumentation.loadPlanningGraphBundle
   });
   const planningMs = Date.now() - planningStarted;
   const formulation = {
