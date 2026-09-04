@@ -161,13 +161,18 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
   });
 
   if (routing.tier !== "fast") {
-    await preflightGraphPlanningAvailability({ loadGraphBundle: instrumentation.loadGraphBundle });
+    await preflightGraphPlanningAvailability({
+      loadPreflightGraphBundle: instrumentation.loadPreflightGraphBundle
+    });
   }
   onProgress?.({ stage: "therapy-routing", status: "completed", detail: `${routing.tier}: ${routing.reason}` });
 
   if (routing.tier === "fast") {
     const planningStarted = Date.now();
-    const planned = await planCaseSnapshot(initial.snapshot, { onPlanningPass: instrumentation.onPlanningPass });
+    const planned = await planCaseSnapshot(initial.snapshot, {
+      onPlanningPass: instrumentation.onPlanningPass,
+      loadPlanningGraphBundle: instrumentation.loadPlanningGraphBundle
+    });
     const planningMs = Date.now() - planningStarted;
     const formulation = {
       ...initial,
@@ -183,7 +188,10 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
   const audit = await runCaseAuditWithRecovery({ context, snapshot: initial.snapshot, provider: providers.openai, onProgress, recovery: caseRecovery });
   const auditedSnapshot = applyCaseAudit(initial.snapshot, audit.value);
   const planningStarted = Date.now();
-  const planned = await planCaseSnapshot(auditedSnapshot, { onPlanningPass: instrumentation.onPlanningPass });
+  const planned = await planCaseSnapshot(auditedSnapshot, {
+    onPlanningPass: instrumentation.onPlanningPass,
+    loadPlanningGraphBundle: instrumentation.loadPlanningGraphBundle
+  });
   const planningMs = Date.now() - planningStarted;
   const formulation = {
     snapshot: auditedSnapshot,

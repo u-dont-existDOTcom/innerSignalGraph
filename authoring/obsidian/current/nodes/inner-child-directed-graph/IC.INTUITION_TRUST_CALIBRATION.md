@@ -24,7 +24,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 4af0d28a175db667f5a5a4fa75d0c5aedb320e933ae0a8f1076dcd198369e125
 base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d3143f8084
 ---
 
 # Make intuition and analysis correct each other before trust transfers

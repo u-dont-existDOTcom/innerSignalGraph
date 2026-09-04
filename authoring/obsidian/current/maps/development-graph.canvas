@@ -7,6 +7,18 @@
       "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
     },
     {
+      "fromNode": "c717271c8c6a4a0a51cff7953fef5ef3b9ee210077dfcb951b4a448b04ef0f47",
+      "id": "06a8c74337e6989553f3f7fe5af46a3d98a47905ecb091903e390c5a3b5db729",
+      "label": "preferred-when-inward-attention-worsens",
+      "toNode": "66df413311b471f9480ef160717fa978aa4f82465dd84466e596df84ec39c358"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "0724cc98ceb9bdc4a46fe2af3bed14b899935f5904098be2ddbb6b937b255d9b",
+      "label": "conditional-deep-route",
+      "toNode": "c7f091253683d7953765dff2375050ea7fb25de8f44539b65505bb3d3f219851"
+    },
+    {
       "fromNode": "27324d61a60f8178d929c2187521d2e92a7c73bd135de27b1f611b7b90a318db",
       "id": "0fd4fe1ae59d9df061c193d5923a1c0d93b8922cc65b6329582d13e1c677bd27",
       "label": "does-not-establish-readiness",
@@ -19,6 +31,18 @@
       "toNode": "c7f091253683d7953765dff2375050ea7fb25de8f44539b65505bb3d3f219851"
     },
     {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "139f0d7d0cce5f343c25d26015bfcacdf75516528e7559a9f0e42beb478234c5",
+      "label": "may-route-to",
+      "toNode": "683d11b72cfbe5e86dd8c881d2a3e43a5bf487a1def7a928eb5a3fd763cc44a5"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "14587a2cab2f9bb058f3c1bb3939b45db85e0c508cc239701659f3d315ae3f57",
+      "label": "may-route-to",
+      "toNode": "9a74110f276a95b18c15d4b29458f59b9bb0f62ed17596d3cdeaaf2365d64152"
+    },
+    {
       "fromNode": "df987d0196b5385ad35a79b61c02b2f6c43bd7c1b5d1bbc3035c65abbfcfba41",
       "id": "1908fe10a903af07a8828370b2bd0193303593d38b5fee58d54913496ed0e8d3",
       "label": "enables",
@@ -29,6 +53,12 @@
       "id": "1d3f1e7b5698541bbdee94803b9f61c6ebf5e1b793ef9769578f4c50988a62a3",
       "label": "enables",
       "toNode": "be09f16ecf061641b15c4eecf76deafba418bcde2622eed99f82d7e33b796da2"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "202fb9356923a08c998f2ee69f00ef6bb5ce4ecc95deb64d7a3910f56ef7c359",
+      "label": "may-route-to",
+      "toNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323"
     },
     {
       "fromNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96",
@@ -47,6 +77,12 @@
       "id": "2917aa30ed169ecabd50cd2971be4c8dd2021a7a8b2ba95009dc5e2261744aaf",
       "label": "supports-calibration",
       "toNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38"
+    },
+    {
+      "fromNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff",
+      "id": "2c306b88920d5bb9c7f3c3eabb29f41067772e484c90bfea0d3dc22f51f17b6f",
+      "label": "acts-through",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
     },
     {
       "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
@@ -79,6 +115,18 @@
       "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
     },
     {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "4d0886366d54fb51ae0440a0fabb2eb07bb4d06ce3bf298e6c8b672089a975e6",
+      "label": "may-route-to",
+      "toNode": "a0f00f17c6370918a5a671d1fba951be6ea1b30a90cdd44b40f23e539959cefc"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "4d41a1935ebeaacc417497d7b3cd27d1b9a26802d1150d96d15ebf9ec8fa57bd",
+      "label": "conditional-memory-route",
+      "toNode": "64ebc6f168c2ea2af64a9a06e10dfa187d8119de082117a5d4430936c53ffbf6"
+    },
+    {
       "fromNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527",
       "id": "500078a2c25f7bb6c81b2252b215f8dc2afd269d03b6cb7d76045ef947043643",
       "label": "integrates-relationally",
@@ -91,10 +139,28 @@
       "toNode": "64ebc6f168c2ea2af64a9a06e10dfa187d8119de082117a5d4430936c53ffbf6"
     },
     {
+      "fromNode": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
+      "id": "5560cac1685543c3e03eb7a5fdffc0017d7791e9e4a787e57b6ceaf56c32197b",
+      "label": "routes-to",
+      "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "658ef849326bde99319e7d932a5421e4cf33af968a613edba156cf608139b8b6",
+      "label": "conditional-memory-route",
+      "toNode": "8e99c4a92a36a0f4b29b55982f0b83c450d61b0ebeba7e3b9b79893e061d21b6"
+    },
+    {
       "fromNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c",
       "id": "6e83229592d968aa4a2f370de7dc10a8d50e3ac6f59706408b416f107dabcc07",
       "label": "enables",
       "toNode": "9a74110f276a95b18c15d4b29458f59b9bb0f62ed17596d3cdeaaf2365d64152"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "6fb9a21aa26c1dd65dba394f0cd7f5697d1e98f6570d3aac0e92a38077d63678",
+      "label": "optional-parallel-not-readiness",
+      "toNode": "27324d61a60f8178d929c2187521d2e92a7c73bd135de27b1f611b7b90a318db"
     },
     {
       "fromNode": "df987d0196b5385ad35a79b61c02b2f6c43bd7c1b5d1bbc3035c65abbfcfba41",
@@ -113,6 +179,12 @@
       "id": "80a67ed9a89e011b5042c574020aa39ee1d8a1e6455ff714a3b6cee438f5a044",
       "label": "can-enable",
       "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
+    },
+    {
+      "fromNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff",
+      "id": "84d33992287c942100392870dc515e509f0e55e953350d5b7999be5ae2341793",
+      "label": "organizes-through",
+      "toNode": "0ad12526759ac2032a6df506212c0f90ebce3a7d603e935db86d1d680a0a6052"
     },
     {
       "fromNode": "8e99c4a92a36a0f4b29b55982f0b83c450d61b0ebeba7e3b9b79893e061d21b6",
@@ -157,10 +229,22 @@
       "toNode": "df987d0196b5385ad35a79b61c02b2f6c43bd7c1b5d1bbc3035c65abbfcfba41"
     },
     {
+      "fromNode": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
+      "id": "a967dfb563310f10596645fe1ce5b0454192965ae8ff36e2b971ace9a7a684ed",
+      "label": "routes-to",
+      "toNode": "c717271c8c6a4a0a51cff7953fef5ef3b9ee210077dfcb951b4a448b04ef0f47"
+    },
+    {
       "fromNode": "683d11b72cfbe5e86dd8c881d2a3e43a5bf487a1def7a928eb5a3fd763cc44a5",
       "id": "aa6f11fe4acf35288161e2d93bcd49115ee83e5889b19ede7b0cf76cfdab8331",
       "label": "requires-aftercare",
       "toNode": "f623c3a763dcce1056f2474536e5822476a1fee405ce6bede3a7eedbe654915b"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "ae78549bf2cabb388aba773f55643dda84e7ec188b673de2956b3d307ad3a752",
+      "label": "may-route-to",
+      "toNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c"
     },
     {
       "fromNode": "a0f00f17c6370918a5a671d1fba951be6ea1b30a90cdd44b40f23e539959cefc",
@@ -221,6 +305,18 @@
       "id": "e5e41b401fe787facd147a6d04f564814ffbd94b6a572b660f0773f5da8e488a",
       "label": "requires-audit",
       "toNode": "c51271b9d9d6745b7d4bbc7d13ac42ba19f997d1c5b4ab372d63942037bb78b7"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "e82744b5edb10b35c0b0dba5b5d7f8dfea7319f33f87be52704c309213687a35",
+      "label": "conditional-deep-route",
+      "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
+    },
+    {
+      "fromNode": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
+      "id": "f00c27e8e9f9b9cc845b7b2a95a8f7c00905978176c00538c0bad19b7f8cb122",
+      "label": "routes-to",
+      "toNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff"
     },
     {
       "fromNode": "5d6a3b677041db6df91ff2b8e23d8f09503277106cb240b9d442b2f0a0cd6f3c",
@@ -389,6 +485,15 @@
       "y": 0
     },
     {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.GO_INWARD.md",
+      "height": 140,
+      "id": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 660
+    },
+    {
       "color": "3",
       "height": 140,
       "id": "52ff0b3f131b19801cc8645450589a96c597a17bb109699f877926dc8d7b2c45",
@@ -443,6 +548,15 @@
       "width": 300,
       "x": 10600,
       "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.EXTERNAL_EMBODIMENT.md",
+      "height": 140,
+      "id": "66df413311b471f9480ef160717fa978aa4f82465dd84466e596df84ec39c358",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 440
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.GENTLE_SHAKING.md",
@@ -575,6 +689,15 @@
       "y": 220
     },
     {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.THREE_WAY_GATE.md",
+      "height": 140,
+      "id": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 880
+    },
+    {
       "file": "current/nodes/inner-child-directed-graph/IC.ADULT_APPRENTICE.md",
       "height": 140,
       "id": "be09f16ecf061641b15c4eecf76deafba418bcde2622eed99f82d7e33b796da2",
@@ -600,6 +723,15 @@
       "width": 300,
       "x": 9720,
       "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.LEAVE_ALONE.md",
+      "height": 140,
+      "id": "c717271c8c6a4a0a51cff7953fef5ef3b9ee210077dfcb951b4a448b04ef0f47",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 0
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.DEEP_BRAINSPOTTING.md",
@@ -629,6 +761,15 @@
       "width": 300,
       "x": 12600,
       "y": 2420
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ACT_OUTWARD.md",
+      "height": 140,
+      "id": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 220
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.PRECIOUS_HUMAN_OPPORTUNITY.md",

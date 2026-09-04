@@ -11,9 +11,9 @@ test("inner-child and somatic sources compile into a validated directed-graph bu
   assert.equal(bundle.contractVersion, "guide-graph-v1");
   assert.equal(bundle.version, "inner-child-somatic-pilot-2026-08-09-r5");
   assert.equal(bundle.stats.graphCount, 3);
-  assert.equal(bundle.stats.nodeCount, 41);
-  assert.equal(bundle.stats.edgeCount, 40);
-  assert.equal(bundle.stats.ownerAmendmentCount, 19);
+  assert.equal(bundle.stats.nodeCount, 46);
+  assert.equal(bundle.stats.edgeCount, 56);
+  assert.equal(bundle.stats.ownerAmendmentCount, 20);
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "inner-child-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "somatic-sequencing-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "vagal-blitz-source"));
@@ -111,4 +111,109 @@ test("credibility planning keeps unrelated future goals out of Deferred and pref
   assert.ok(plan.requiredNuance.some((item) => /regulation remains a supporting job/i.test(item)));
   assert.ok(plan.requiredNuance.some((item) => /Neither side automatically adjudicates/i.test(item)));
   assert.ok(!plan.displayTrace.deferredNodes.some((item) => /EMDR|BRAINSPOTTING/i.test(item.id)));
+});
+
+test("repetitive no-output processing routes to leave it alone only when no real problem or unresolved material remains", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
+      attention_loop: "present", thinking_yield: "repetitive_no_new_output",
+      actionable_problem: "absent", unresolved_inner_material: "absent", inward_attention_effect: "neutral",
+      current_intent: "deep_dialogue", target_type: "developmental"
+    }
+  });
+  assert.equal(plan.primaryJob.id, "ROUTE.LEAVE_ALONE");
+  assert.ok(plan.deferredNodes.some((item) => item.id === "SOM.DEEP_BRAINSPOTTING"));
+  assert.ok(plan.deferredNodes.some((item) => item.id === "IC.DEEP_CHILD_DIALOGUE"));
+  assert.ok(plan.requiredNuance.some((item) => /need to keep finding or performing therapy/i.test(item)));
+  assert.ok(plan.avoid.some((item) => /medical, safety, relational, or practical problem/i.test(item)));
+});
+
+test("a concrete problem outranks surrounding rumination and routes to outward action", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
+      attention_loop: "present", thinking_yield: "mixed",
+      actionable_problem: "present", unresolved_inner_material: "present", inward_attention_effect: "neutral"
+    }
+  });
+  assert.equal(plan.primaryJob.id, "ROUTE.ACT_OUTWARD");
+  assert.ok(plan.selectedNodes.some((item) => item.id === "ROUTE.GO_INWARD"));
+  assert.ok(!plan.selectedNodes.some((item) => item.id === "ROUTE.LEAVE_ALONE"));
+  assert.ok(plan.requiredNuance.some((item) => /outward action goes first/i.test(item)));
+});
+
+test("clearly unresolved material routes inward through existing inner-child and somatic branches", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
+      attention_loop: "absent", thinking_yield: "new_information_or_action",
+      actionable_problem: "absent", unresolved_inner_material: "present", inward_attention_effect: "helps",
+      body_capacity: "adequate", target_type: "developmental"
+    }
+  });
+  assert.equal(plan.primaryJob.id, "ROUTE.GO_INWARD");
+  const routeEdges = plan.graphTrace.activeEdges.filter((edge) => edge.from === "ROUTE.GO_INWARD");
+  assert.ok(routeEdges.some((edge) => edge.to === "IC.MEET_GUARD"));
+  assert.ok(routeEdges.some((edge) => edge.to === "SOM.GENTLE_REGULATION"));
+  assert.ok(routeEdges.some((edge) => edge.to === "SOM.EFT_PORTABLE"));
+  assert.ok(routeEdges.some((edge) => edge.to === "SOM.GENTLE_SHAKING"));
+  assert.ok(routeEdges.some((edge) => edge.to === "SOM.RESOURCE_BRAINSPOTTING"));
+  assert.ok(routeEdges.some((edge) => edge.to === "SOM.EMDR_DEVELOPMENTAL"));
+});
+
+test("inward attention that worsens derealization or hypermonitoring routes to external embodiment without banning somatic work", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
+      attention_loop: "present", thinking_yield: "mixed",
+      actionable_problem: "absent", unresolved_inner_material: "present", inward_attention_effect: "worsens"
+    }
+  });
+  assert.equal(plan.primaryJob.id, "ROUTE.EXTERNAL_EMBODIMENT");
+  assert.ok(!plan.selectedNodes.some((item) => item.id === "ROUTE.GO_INWARD"));
+  assert.ok(plan.requiredNuance.some((item) => /difficulty with one does not imply inability to benefit from the other/i.test(item)));
+  assert.ok(plan.avoid.some((item) => /all somatic therapy is contraindicated/i.test(item)));
+});
+
+test("an ambiguous attention loop asks the three-way stop-rule question before adding another technique", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
+      attention_loop: "present", thinking_yield: "unknown",
+      actionable_problem: "unknown", unresolved_inner_material: "unknown", inward_attention_effect: "neutral"
+    }
+  });
+  assert.equal(plan.primaryJob.id, "ROUTE.THREE_WAY_GATE");
+  assert.match(plan.nextQuestion, /new information, a decision, or an action/i);
+  assert.match(plan.nextQuestion, /concrete problem/i);
+});
+
+test("safety still outranks the leave-it-alone branch", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "unsafe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      suicidal_state: "absent", attention_loop: "present", thinking_yield: "repetitive_no_new_output",
+      actionable_problem: "absent", unresolved_inner_material: "absent", inward_attention_effect: "neutral"
+    }
+  });
+  assert.equal(plan.primaryJob.tier, 1);
+  assert.notEqual(plan.primaryJob.id, "ROUTE.LEAVE_ALONE");
 });
