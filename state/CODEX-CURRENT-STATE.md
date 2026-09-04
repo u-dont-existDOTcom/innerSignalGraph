@@ -5,8 +5,8 @@ Updated: 2026-09-04
 ## Active development frontier
 
 - DEV-R005 resumes from `tasks/dev-r005-encrypted-local-storage-20260903/CURRENT-STATE.md` and its exact decision ledger at `tasks/dev-r005-encrypted-local-storage-20260903/OWNER-DECISIONS.json`.
-- All four currently defined owner decisions are resolved: `DEV-R005-D001` is `USER_HELD_RECOVERY_SECRET`, `DEV-R005-D002` is `OS_BACKED_REAUTH_WITH_USER_LOCK_POLICY`, `DEV-R005-D003` is `OPT_IN_PLUGIN_VAULT_MIGRATION`, and `DEV-R005-D004` is `PRESERVE_UNTIL_EXPLICIT_RESET`.
-- `pendingDecisionIds` is empty for D001-D004 only; no additional product-policy decision is inferred.
+- All five currently defined owner decisions are resolved: `DEV-R005-D001` is `USER_HELD_RECOVERY_SECRET`, `DEV-R005-D002` is `OS_BACKED_REAUTH_WITH_USER_LOCK_POLICY`, `DEV-R005-D003` is `OPT_IN_PLUGIN_VAULT_MIGRATION`, `DEV-R005-D004` is `PRESERVE_UNTIL_EXPLICIT_RESET`, and `DEV-R005-D005` is `DETERMINISTIC_CBOR`. D005 selects a deterministic CBOR direction only.
+- `pendingDecisionIds` is empty for D001-D005 only; no additional product-policy decision is inferred.
 - `DEV-R005-EXEC-S001-v1` separately authorizes only `VAULT_BOUNDARY_CONTRACT_ONLY` on canonical base `a11700547b48f77e7968b378eb57b8d184bd3ec4`; its durable receipt is `tasks/dev-r005-encrypted-local-storage-20260903/IMPLEMENTATION-AUTHORIZATION.json`.
 - S001 is a pure, side-effect-free policy seam with no browser wiring, persistence, cryptography, OS integration, migration execution, recovery implementation, deletion, authentication, transport, dependency, or private-data effect.
 - PR #36 merged the completed S001 vault boundary contract into `main` as `3dc7e50486eb54c1e946e56fc4b979061123ec50`.
@@ -15,19 +15,22 @@ Updated: 2026-09-04
 - `DEV-R005-EXEC-S002-v1` independently authorizes S002 as `IN_MEMORY_DUAL_WRAP_CRYPTO_ENVELOPE_ONLY`; its durable receipt is `tasks/dev-r005-encrypted-local-storage-20260903/S002-IMPLEMENTATION-AUTHORIZATION.json`.
 - `DEV-R005-EXEC-S003-v1` independently authorizes S003 as `IN_MEMORY_ROUTINE_UNLOCK_POLICY_CRYPTO_COMPOSITION_ONLY`; its durable receipt is `tasks/dev-r005-encrypted-local-storage-20260903/S003-IMPLEMENTATION-AUTHORIZATION.json`.
 - PR #38 merged the reviewed S002 in-memory dual-wrap cryptographic envelope into `main` as `fd6160a690c047515d6df1e16729fac7f2b346f8`.
-- S001 and S002 are complete. Their implementation-authorization receipts remain historical authority for those slices only, and D001-D004 remain unchanged.
+- S001, S002, and S003 are complete. Their implementation-authorization receipts remain historical authority for those slices only, and D001-D004 remain unchanged.
 - PR #39 merged the post-S002 checkpoint reconciliation into `main` as `de045f8ce71f84dc05cd8e045a06f962a2e04dbd`.
-- Ledger `implementationAuthorized` is not blanket DEV-R005 authority. S003 is the current bounded implementation slice and `laterSlicesAuthorized: false` remains controlling. No implementation after S003 is authorized.
+- PR #40 merged the reviewed S003 in-memory routine-unlock policy/crypto composition seam into `main` as `64863eefa9678c063ed5c5a48a3280fa507a4c95`.
+- PR #41 remains parked as a pre-D005, noncanonical draft and is not a source of current implementation authority.
+- Ledger `implementationAuthorized` is not blanket DEV-R005 authority. `laterSlicesAuthorized: false` remains controlling. No implementation after S003 is authorized. S004 is not authorized.
 - S002 has no persistence, serialization, OS secure-store integration/fallback, browser/application/plugin wiring, migration execution, recovery/reset UI, network transport, account-identity, pricing, retention, or recovery-secret-format effect.
 - The S002 merge authorizes no persistence, serialization, OS secure-store integration or fallback, migration, application/plugin wiring, network/cloud transport, recovery/reset UI, pricing, account identity, retention duration, exact session-handoff schema, default inactivity duration, or recovery-secret UX.
 - S003 composes only the existing routine-unlock policy and routine decrypt primitive. It performs no OS authentication or credential retrieval and has no persistence, serialization, session-state, recovery, migration, application/browser/plugin, network/cloud, or unresolved-architecture effect.
-- DEV-R005 next safe action: complete the six-path S003 implementation, targeted and affected regressions, one durable full verification, a Draft PR, fresh exact-head hosted evidence, and Extra High/Pro review; stop before merge or any later implementation.
+- CBOR library, deterministic encoding profile, and field layout remain unselected. The D005 choice does not select any of them. No serializer is active.
+- DEV-R005 next safe activity: complete the read-only deterministic-CBOR prior-work scan, checkpoint it through a Draft PR, and obtain exact-head Extra High acceptance. Any serializer or other implementation remains blocked until a separate S004 authorization.
 - No keys, recovery secrets, credentials, private therapy transcripts, real therapy data, or private-derived hashes belong in repository evidence.
 - The publication-transition material below is preserved as historical repository context; it does not override this active task checkpoint.
 
 ## Goal
 
-Implement and verify only the authorized DEV-R005 S003 in-memory routine-unlock policy/crypto composition seam through a Draft PR and exact-head Extra High/Pro review. Preserve D001-D004, the completed S001/S002 primitives and receipts, the public repository baseline, privacy boundaries, therapy/hypnosis policy, model roles, transactional installation, and `stable` release authority. Keep `laterSlicesAuthorized: false` controlling; do not begin persistence, serialization, OS integration or fallback, migration, recovery, session-state, application/plugin wiring, network/cloud transport, or later implementation.
+Record the exact DEV-R005 D005 deterministic-CBOR direction and complete a read-only standards/ecosystem scan through a Draft PR and exact-head Extra High review. Preserve D001-D004 and completed S001-S003 behavior and receipts. Keep `laterSlicesAuthorized: false` controlling; do not begin S004, serialization, persistence, OS integration or fallback, migration, recovery, session-state, application/plugin wiring, network/cloud transport, or any later implementation.
 
 ## Authority / baseline
 

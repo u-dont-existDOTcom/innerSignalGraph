@@ -67,6 +67,12 @@
         "deleteOnlyOnExplicitUserChoice": true
       },
       "source": "explicit-owner-selection-in-active-chat"
+    },
+    {
+      "decisionId": "DEV-R005-D005",
+      "status": "owner-selected",
+      "selection": "DETERMINISTIC_CBOR",
+      "source": "explicit-owner-selection-in-active-chat"
     }
   ],
   "pendingDecisionIds": [],
