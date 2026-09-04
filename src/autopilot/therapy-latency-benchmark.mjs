@@ -32,6 +32,14 @@ const OMITTED_SEMANTIC_KEYS = new Set([
   "requestIds"
 ]);
 
+const OPTIONAL_UNKNOWN_ROUTING_KEYS = new Set([
+  "actionable_problem",
+  "unresolved_inner_material",
+  "attention_loop",
+  "thinking_yield",
+  "inward_attention_effect"
+]);
+
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === "object") {
@@ -46,7 +54,8 @@ export function normalizeTherapyBenchmarkResult(value) {
     if (item && typeof item === "object") {
       return Object.fromEntries(
         Object.entries(item)
-          .filter(([key]) => !OMITTED_SEMANTIC_KEYS.has(key))
+          .filter(([key, nested]) => !OMITTED_SEMANTIC_KEYS.has(key)
+            && !(OPTIONAL_UNKNOWN_ROUTING_KEYS.has(key) && nested === "unknown"))
           .map(([key, nested]) => [key, visit(nested)])
       );
     }
