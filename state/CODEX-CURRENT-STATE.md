@@ -10,7 +10,7 @@ Updated: 2026-09-04
 - `GUIDE-R002` remains `source-required` and `autoStart: false`; this records the requirement without claiming the complete canonical altered-state guide exists or authorizing compilation from incomplete source.
 - Task branch: `therapy/altered-state-capacity-routing-2026-09-04`, stacked on the concise-response branch so the new queue contract can be reviewed independently after PR #44.
 - Verification completed under Node 24.18.0: the complete `npm run verify` gate passes, including 540/540 automated tests, 12/12 graph regressions, therapy-lesson verification, authoring checks, package smokes, and repository hygiene checks.
-- Next safe action: inspect and audit the isolated diff, open a Draft stacked PR against `therapy/concise-external-replies-2026-09-04`, and wait for exact-head hosted checks. Do not compile `GUIDE-R002`, change `stable`, or install runtime policy from this queue-only task.
+- Review handoff: Draft PR #45 is open against `therapy/concise-external-replies-2026-09-04`; wait for exact-head hosted checks, then review and merge it after PR #44 and its routing base. Do not compile `GUIDE-R002`, change `stable`, or install runtime policy from this queue-only task.
 
 ## Concurrent therapy response-presentation task
 
