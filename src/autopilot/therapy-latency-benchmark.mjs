@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { loadConfig, projectRoot } from "../core/config.mjs";
+import { compileGuideGraphs } from "../guide-graph/compiler.mjs";
 import { buildContext } from "../orchestrator/context-builder.mjs";
 import { runTieredTherapyPipeline } from "../orchestrator/run-tiered-pipeline.mjs";
 import { createProviders } from "../providers/factory.mjs";
@@ -94,15 +95,23 @@ function timingProjection(performanceRecord, tier) {
   return Object.fromEntries(fields.map((field) => [field, performanceRecord?.[field] ?? null]));
 }
 
-async function runBenchmarkIteration(specification) {
+async function installFrozenGraphBundle(packetRoot, graphBundle) {
+  const graphDirectory = path.join(packetRoot, "installed", "current", "contents", "graphs");
+  await fs.mkdir(graphDirectory, { recursive: true });
+  await fs.writeFile(path.join(graphDirectory, "bundle.json"), `${JSON.stringify(graphBundle, null, 2)}\n`);
+}
+
+async function runBenchmarkIteration(specification, graphBundle) {
   const benchmarkStateRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-therapy-latency-"));
+  const guidePacketRoot = path.join(benchmarkStateRoot, "guide-packets");
   try {
+    await installFrozenGraphBundle(guidePacketRoot, graphBundle);
     const config = loadConfig({
       mode: "mock",
       ledgerMode: "off",
       therapyProcessingMode: "auto",
       autopilotStateDir: benchmarkStateRoot,
-      guidePacketRoot: path.join(benchmarkStateRoot, "guide-packets")
+      guidePacketRoot
     });
     const providers = createProviders(config, { fixturePath: specification.fixturePath });
     const providerCalls = [];
@@ -175,9 +184,10 @@ export async function runTherapyLatencyBenchmark({ iterations = 3 } = {}) {
   if (!Number.isInteger(iterations) || iterations < 1 || iterations > 20) {
     throw new Error("Therapy latency benchmark iterations must be an integer from 1 to 20.");
   }
-  const a001 = JSON.parse(
-    await fs.readFile(path.join(projectRoot, "corpus/difficult-cases/A001-inner-child-credibility/case.json"), "utf8")
-  );
+  const [a001, graphBundle] = await Promise.all([
+    fs.readFile(path.join(projectRoot, "corpus/difficult-cases/A001-inner-child-credibility/case.json"), "utf8").then(JSON.parse),
+    compileGuideGraphs({ root: projectRoot, write: false })
+  ]);
   const specifications = [
     {
       id: "fast",
@@ -200,7 +210,7 @@ export async function runTherapyLatencyBenchmark({ iterations = 3 } = {}) {
   for (const specification of specifications) {
     const runs = [];
     for (let iteration = 0; iteration < iterations; iteration += 1) {
-      runs.push(await runBenchmarkIteration(specification));
+      runs.push(await runBenchmarkIteration(specification, graphBundle));
     }
     cases.push(summarizeCase(specification, runs));
   }
