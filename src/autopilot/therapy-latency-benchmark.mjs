@@ -124,7 +124,10 @@ async function runBenchmarkIteration(specification, graphBundle) {
       providers,
       config,
       processingMode: "auto",
-      instrumentation: { onPlanningPass: () => { planningPassCount += 1; } }
+      instrumentation: {
+        onPlanningPass: () => { planningPassCount += 1; },
+        loadGraphBundle: async () => graphBundle
+      }
     });
     const observedWallMs = Number((performance.now() - started).toFixed(3));
     const semanticHash = therapyBenchmarkSemanticHash(result);
