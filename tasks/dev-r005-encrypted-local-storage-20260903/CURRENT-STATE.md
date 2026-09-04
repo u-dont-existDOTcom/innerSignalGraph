@@ -1,6 +1,6 @@
 # DEV-R005 encrypted local storage checkpoint
 
-Updated: 2026-09-03
+Updated: 2026-09-04
 
 ## Resolved owner decisions
 
@@ -32,9 +32,11 @@ Updated: 2026-09-03
 - PR #36 merged the completed S001 vault boundary contract into `main` as `3dc7e50486eb54c1e946e56fc4b979061123ec50`.
 - PR #37 merged the canonical Worker → Brave Pro governance protocol into `main` as `e2ed489edcb74d510c91d596dcff4260e4336f2f`.
 - Historical PR #37 checkpoint language recorded the governance protocol as the current bounded repair, that S002 remains unauthorized, and that the protocol repair had no runtime, storage, cryptography, application, plugin, or therapy effect. `DEV-R005-EXEC-S002-v1` now supersedes only that historical S002 status through its separate receipt.
-- S002 is the current bounded implementation slice and may create only the authorized in-memory dual-wrap cryptographic envelope and its regression evidence.
-- S002 has no persistence, serialization, OS secure-store integration/fallback, browser/application/plugin wiring, migration execution, network transport, account-identity, pricing, retention, or recovery-secret-format effect.
-- S003 remains unauthorized.
+- PR #38 merged the reviewed S002 in-memory dual-wrap cryptographic envelope into `main` as `fd6160a690c047515d6df1e16729fac7f2b346f8`.
+- S001 and S002 are complete. Their implementation-authorization receipts remain historical authority for those slices only, and D001-D004 remain unchanged.
+- `laterSlicesAuthorized: false` remains controlling. S003 remains unauthorized, and no implementation slice is active.
+- The S002 merge authorizes no persistence, serialization, OS secure-store integration or fallback, browser/application/plugin wiring, migration, network/cloud transport, recovery/reset UI, pricing, account identity, retention, exact handoff schema, default inactivity duration, or recovery-secret UX.
+- The next safe action is Extra High design/authority decomposition for a possible later slice, not implementation. That analysis must not invent S003 contents or confer implementation authority.
 
 ## Privacy boundary
 
