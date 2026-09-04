@@ -16,7 +16,7 @@ function byId(result, id) {
 
 test("mock benchmark preserves Fast and Reviewed semantics while removing the discarded planning pass", async () => {
   const result = await runTherapyLatencyBenchmark({ iterations: 2 });
-  assert.equal(result.ok, true);
+  assert.equal(result.ok, true, JSON.stringify(result, null, 2));
   assert.equal(result.mode, "mock-only");
   assert.equal(result.baselineCommit, THERAPY_LATENCY_BASELINE.commit);
 
