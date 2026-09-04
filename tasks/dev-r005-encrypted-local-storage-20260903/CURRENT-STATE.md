@@ -23,6 +23,8 @@ Updated: 2026-09-04
 - The durable receipt is `tasks/dev-r005-encrypted-local-storage-20260903/IMPLEMENTATION-AUTHORIZATION.json`; its scope is `VAULT_BOUNDARY_CONTRACT_ONLY` and no later slice is authorized.
 - `DEV-R005-EXEC-S002-v1` separately authorizes S002 as `IN_MEMORY_DUAL_WRAP_CRYPTO_ENVELOPE_ONLY` on canonical base `e2ed489edcb74d510c91d596dcff4260e4336f2f`.
 - The S002 receipt is `tasks/dev-r005-encrypted-local-storage-20260903/S002-IMPLEMENTATION-AUTHORIZATION.json`; it fixes the in-memory AES-256-GCM/Argon2id envelope suite and keeps `laterSlicesAuthorized: false`.
+- `DEV-R005-EXEC-S003-v1` separately authorizes S003 as `IN_MEMORY_ROUTINE_UNLOCK_POLICY_CRYPTO_COMPOSITION_ONLY` on canonical base `de045f8ce71f84dc05cd8e045a06f962a2e04dbd`.
+- The S003 receipt is `tasks/dev-r005-encrypted-local-storage-20260903/S003-IMPLEMENTATION-AUTHORIZATION.json`; it composes the existing routine-unlock policy with the existing routine decrypt primitive and keeps `laterSlicesAuthorized: false`.
 - Ledger `implementationAuthorized` is not blanket DEV-R005 authority. Each slice requires its own durable authorization.
 - S001 may encode immutable policy facts and side-effect-free lifecycle/action evaluation. It does not persist, encrypt, decrypt, migrate, unlock, recover, delete, authenticate, transmit, or wire anything into the browser application.
 - Persistence technology, serialization, OS integration or fallback behavior, transport, pricing, account identity, retention, exact handoff shape, and recovery-secret UX remain unauthorized or undecided.
@@ -34,9 +36,12 @@ Updated: 2026-09-04
 - Historical PR #37 checkpoint language recorded the governance protocol as the current bounded repair, that S002 remains unauthorized, and that the protocol repair had no runtime, storage, cryptography, application, plugin, or therapy effect. `DEV-R005-EXEC-S002-v1` now supersedes only that historical S002 status through its separate receipt.
 - PR #38 merged the reviewed S002 in-memory dual-wrap cryptographic envelope into `main` as `fd6160a690c047515d6df1e16729fac7f2b346f8`.
 - S001 and S002 are complete. Their implementation-authorization receipts remain historical authority for those slices only, and D001-D004 remain unchanged.
-- `laterSlicesAuthorized: false` remains controlling. S003 remains unauthorized, and no implementation slice is active.
+- PR #39 merged the post-S002 checkpoint reconciliation into `main` as `de045f8ce71f84dc05cd8e045a06f962a2e04dbd`.
+- S003 is the current bounded implementation slice and may create only the authorized in-memory routine-unlock policy/crypto composition seam and its regression evidence.
+- `laterSlicesAuthorized: false` remains controlling. No implementation after S003 is authorized.
 - The S002 merge authorizes no persistence, serialization, OS secure-store integration or fallback, browser/application/plugin wiring, migration, network/cloud transport, recovery/reset UI, pricing, account identity, retention, exact handoff schema, default inactivity duration, or recovery-secret UX.
-- The next safe action is Extra High design/authority decomposition for a possible later slice, not implementation. That analysis must not invent S003 contents or confer implementation authority.
+- S003 performs no OS authentication, OS credential retrieval, persistence, serialization, session-state retention, recovery, migration, application/browser/plugin wiring, or network/cloud behavior and selects no unresolved architecture.
+- The next safe action is to complete the six-path S003 implementation, focused and affected regressions, one durable full verification, a Draft PR, fresh exact-head hosted evidence, and Extra High/Pro review. Stop before merge or any later implementation.
 
 ## Privacy boundary
 

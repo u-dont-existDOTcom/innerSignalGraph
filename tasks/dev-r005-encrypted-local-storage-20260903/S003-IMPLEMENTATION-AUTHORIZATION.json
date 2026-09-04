@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "taskId": "DEV-R005",
+  "authorizationId": "DEV-R005-EXEC-S003-v1",
+  "authoritySourceRequestId": "dev-r005-post-s002-decomposition-20260904",
+  "canonicalBase": {
+    "commit": "de045f8ce71f84dc05cd8e045a06f962a2e04dbd",
+    "tree": "733d600ee798aca4a9629b50c10917a00b28dc00"
+  },
+  "scope": "IN_MEMORY_ROUTINE_UNLOCK_POLICY_CRYPTO_COMPOSITION_ONLY",
+  "design": {
+    "policyAction": "routine-unlock",
+    "requiredEvidence": "osBackedReauthenticated",
+    "cryptoDelegate": "decryptVaultEnvelopeWithRoutineKek",
+    "recoverySecretUsedForRoutineUnlock": false,
+    "statefulSession": false,
+    "persistence": false,
+    "serialization": false,
+    "osIntegration": false,
+    "fallbackAuthenticationImplementation": false,
+    "recoveryPathImplementation": false,
+    "migrationExecution": false,
+    "applicationWiring": false,
+    "networkTransport": false,
+    "realPrivateData": false
+  },
+  "authorizedPaths": [
+    "src/storage/vault-routine-access.mjs",
+    "tests/dev-r005-vault-routine-access.test.mjs",
+    "tasks/dev-r005-encrypted-local-storage-20260903/S003-IMPLEMENTATION-AUTHORIZATION.json",
+    "tasks/dev-r005-encrypted-local-storage-20260903/CURRENT-STATE.md",
+    "state/CODEX-CURRENT-STATE.md",
+    "tests/dev-r005-owner-decision-state.test.mjs"
+  ],
+  "laterSlicesAuthorized": false
+}
