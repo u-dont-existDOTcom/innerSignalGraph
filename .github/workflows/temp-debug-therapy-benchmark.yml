@@ -28,5 +28,8 @@ jobs:
       - name: Bootstrap exact dependencies
         run: npm ci --ignore-scripts
 
-      - name: Print benchmark diagnostic
-        run: npm run benchmark:therapy-latency -- --iterations=1 || true
+      - name: Print two-iteration benchmark diagnostic
+        run: npm run benchmark:therapy-latency -- --iterations=2 || true
+
+      - name: Run benchmark test in isolation
+        run: node --test tests/therapy-latency-benchmark.test.mjs || true
