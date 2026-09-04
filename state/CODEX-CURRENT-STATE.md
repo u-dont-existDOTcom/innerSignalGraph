@@ -9,7 +9,7 @@ Updated: 2026-09-04
 - Safety constraint: safety routing remains prior to response presentation and suppresses lower-priority inward, outward, and leave-alone presentation. Brevity may expand only for the minimum necessary safety response.
 - Deterministic contract: default answers are capped at three short answer paragraphs/about 180 words; leave-alone answers at one paragraph/about 90 words; explicit map/debug mode exposes case variables, route decision and rejections, rationale, role selection, somatic modifiers, and next-question source separately from the answer.
 - Verification completed under Node 24.18.0: focused response tests; all 540 automated tests; 12/12 graph regressions; therapy-lesson verification; authoring validate/check/map checks; repository audit; and the complete `npm run verify` package gate all pass. The separate all-ref local publication scan remains non-green only for five pre-existing credential-pattern fixtures in historical commits of `tests/learning-groundwork-privacy.test.mjs`; this task adds none of those objects.
-- Next safe action: inspect the final isolated diff, push the task branch, open a Draft stacked PR against `therapy/three-way-routing-2026-09-04`, and wait for exact-head hosted checks. Do not change `stable` or install runtime policy.
+- Review handoff: Draft PR #44 is open against `therapy/three-way-routing-2026-09-04`; wait for exact-head hosted checks, then review and merge it after its base PR #42. Do not change `stable` or install runtime policy.
 
 ## Active development frontier
 
