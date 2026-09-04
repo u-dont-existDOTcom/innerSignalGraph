@@ -36,6 +36,9 @@ test("realization contract separates conservative reasoning from natural prose",
   assert.match(prompt.system, /Primary versus supporting jobs are not mutually exclusive/i);
   assert.match(prompt.system, /Treat competing internal positions symmetrically/i);
   assert.match(prompt.system, /Plan-realization fidelity is mandatory/i);
+  assert.match(prompt.system, /at most 3 short answer paragraphs/i);
+  assert.match(prompt.system, /Internal depth must improve selection, not increase visible length/i);
+  assert.match(prompt.system, /Never expose case variables, winning or rejected routes/i);
   assert.match(prompt.user, /big fuckity whoopty doo/i);
   assert.match(prompt.user, /Which age or version/i);
 });
@@ -78,6 +81,30 @@ test("response contract does not duplicate a renderer that already used the cano
   assert.equal((realized.answer.match(/Which age or version/g) ?? []).length, 1);
   assert.equal(realized.next_question, context.interventionContract.nextQuestion);
   assert.equal(realized.responseContract.rendererQuestionMatched, true);
+});
+
+test("default response presentation deterministically caps visible analysis at three short paragraphs", () => {
+  const realized = enforceResponseContract({
+    answer: [
+      "The credibility problem needs one visible act.",
+      "Make the act small enough to repeat.",
+      "Let repetition, rather than explanation, supply evidence.",
+      "This fourth paragraph is extra analysis.",
+      "Winning route: ROUTE.GO_INWARD."
+    ].join("\n\n"),
+    next_question: context.interventionContract.nextQuestion,
+    realized_nodes: [
+      { id: "IC.CREDIBILITY_REPAIR", evidence_quote: "The credibility problem needs one visible act." }
+    ]
+  }, {
+    plan: context.interventionContract,
+    adjudication,
+    presentation: { mode: "default", maxAnswerParagraphs: 3, maxAnswerWords: 180 }
+  });
+  assert.equal(realized.answer_body.split(/\n{2,}/).length, 3);
+  assert.doesNotMatch(realized.answer, /fourth paragraph|ROUTE\.GO_INWARD/i);
+  assert.equal(realized.responseContract.presentation.trimmedForBrevity, true);
+  assert.equal(realized.responseContract.presentation.maxParagraphs, 3);
 });
 
 

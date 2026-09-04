@@ -302,11 +302,13 @@ if grep -n 'joinParts(\[announcement, body, plan.appOwned?.wakingReturn,' apps/w
   exit 1
 fi
 echo "PASS browser route renderer ends with the app-owned waking return."
-if ! grep -q 'Why this route' apps/web/app.js; then
-  echo "FAIL browser lacks the deterministic route trace"
+if ! grep -q 'Map / debug' apps/web/app.js || ! grep -q 'entry.responseMode === "map-debug"' apps/web/app.js; then
+  echo "FAIL browser lacks the explicit map/debug route trace"
   exit 1
 fi
-echo "PASS browser exposes a compact guide-graph route trace."
+grep -q '<option value="default" selected>Concise</option>' apps/web/index.html || { echo "FAIL browser does not default to concise therapy replies"; exit 1; }
+grep -q '<option value="map-debug">Map / debug</option>' apps/web/index.html || { echo "FAIL browser lacks explicit map/debug mode"; exit 1; }
+echo "PASS browser defaults to concise replies and exposes the deterministic route trace only in map/debug mode."
 
 grep -q '/v1/debug/export' apps/web/app.js || { echo "FAIL browser lacks one-click diagnostic export"; exit 1; }
 grep -q 'Export recovery ZIP' apps/web/index.html || { echo "FAIL browser lacks recovery ZIP button"; exit 1; }

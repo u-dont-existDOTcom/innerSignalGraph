@@ -37,6 +37,8 @@ test("fast tier uses one structured extraction and one realization without Codex
   });
   assert.equal(result.processingTier, "fast");
   assert.equal(result.mode, "fast-graph");
+  assert.equal(result.responseMode, "default");
+  assert.equal(Object.hasOwn(result, "mapDebug"), false);
   assert.match(result.answer, /one small/i);
   assert.ok(result.interventionContract);
   assert.deepEqual(providerStages, ["case_extraction", "realization"]);
@@ -45,6 +47,29 @@ test("fast tier uses one structured extraction and one realization without Codex
   assert.equal(Number.isFinite(result.performance.planningMs), true);
   assert.equal(Number.isFinite(result.performance.realizationMs), true);
   assert.equal(Number.isFinite(result.performance.totalMs), true);
+});
+
+test("explicit map-debug mode exposes the completed formulation without changing the concise answer", async () => {
+  const config = loadConfig({ mode: "mock", ledgerMode: "off", therapyProcessingMode: "auto" });
+  const providers = createProviders(config, { fixturePath: path.join(root, "tests/fixtures/fast-therapy.json") });
+  const context = await buildContext({ userMessage: "Give me one simple suggestion.", recentTranscript: "", userFacts: [] }, config);
+  const result = await runTieredTherapyPipeline({
+    context,
+    providers,
+    config,
+    processingMode: "auto",
+    responseMode: "map-debug"
+  });
+  assert.equal(result.responseMode, "map-debug");
+  assert.match(result.answer, /one small/i);
+  assert.equal(result.mapDebug.version, "therapy-formulation-map-v1");
+  assert.equal(result.mapDebug.caseVariables.present_safety, "safe");
+  assert.equal(result.mapDebug.safetyRouting.precedenceApplied, false);
+  assert.equal(result.mapDebug.fusionWitnessAssessment.witnessCapacity, "unknown");
+  assert.ok(Array.isArray(result.mapDebug.threeWayRouting.rejectedRoutes));
+  assert.deepEqual(result.mapDebug.adultFunctionSelection.map((item) => item.role), ["Protector", "Nurturer", "Guide"]);
+  assert.ok(result.mapDebug.somaticModifiers);
+  assert.ok(Object.hasOwn(result.mapDebug.nextQuestionLogic, "question"));
 });
 
 

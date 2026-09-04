@@ -6,11 +6,12 @@ Bundle: `inner-child-somatic-pilot-2026-08-09-r5`
 
 - inner-child-directed-graph: 27 nodes, 22 edges
 - somatic-directed-graph: 14 nodes, 8 edges
-- inner-child-somatic-cross-guide: 0 nodes, 10 edges
+- inner-child-somatic-cross-guide: 5 nodes, 26 edges
 
 ## Authority labels
 
 - author-framework: 41
+- owner-approved-extension: 5
 
 ## Owner-approved extensions applied
 
@@ -23,6 +24,7 @@ Bundle: `inner-child-somatic-pilot-2026-08-09-r5`
 - AMEND.SOM.ADVANCED_RELEASE_PARALLEL: Sky Hypnosis and Vagal Blitz are optional advanced-release practices that may be considered by stable people even before other therapies. They do not prove readiness for deep trauma processing and are not prerequisites.
 - AMEND.SOM.ADVANCED_RELEASE_BYPASS: Advanced release can produce bliss or dramatic state shifts that bypass trauma. Judge it by later functioning, boundaries, willingness to meet pain, and whether it becomes compulsive or replaces relational and practical work.
 - AMEND.EVIDENCE.PROVENANCE: Personal outcomes remain author experience, community reports remain community signal, first-principles explanations remain provisional mechanism models, and strong physiological claims do not become deterministic medical facts without separate evidence review.
+- AMEND.CROSS.THREE_WAY_THERAPY_ROUTING: Before adding more therapy, classify the useful movement as go inward, act outward, or leave it alone. Go inward when there is genuinely avoided, disowned, or unfinished emotional, relational, somatic, memory, or part-level material and enough capacity to contact it; act outward when a concrete current problem can yield a decision or observable action; leave it alone when rumination, symptom checking, reassurance seeking, repeated self-analysis, or searching for the right healing method repeats without producing new information, a decision, or an action. 'Leave it alone' means notice thoughts or sensations without suppressing them or repeatedly answering them, then re-engage ordinary life; it is not denial of safety, medical, relational, or practical problems. If inward attention reliably worsens derealization, panic, or hypermonitoring, prefer eyes-open external orientation and ordinary embodied activity such as walking, gym, sport, chores, or social contact without concluding that all somatic therapy is contraindicated. If a concrete problem or clearly avoided material emerges, route back to outward action or inward processing.
 - AMEND.IC.EXISTENTIAL_LOVE_ROUTING: Deep spiritual love is not a universal prerequisite for healing. First distinguish whether the love, meaning, belonging, beauty, purpose, and wellbeing already available feel sufficient, whether the person is curious for something deeper, or whether ordinary life feels radically insufficient. Do not push spiritual exploration on somebody who is satisfied and not curious. When hopelessness is profound, immediate safety and human support remain first, but do not pretend a tiny behavioral action answers the person’s existential question. Never romanticize suicidality or suggest an NDE, psychedelic experience, conversion, or other dangerous or extraordinary event as the route to hope.
 - AMEND.IC.WELLBEING_HORIZON: Love includes wanting wellbeing for beings, and the horizon of that love can expand when a person directly learns that deeper happiness, peace, freedom, or unconditional love is possible. Ordinary practical love is real and important; profound spiritual realization may disclose a much larger horizon, but mystical intensity is not itself proof of deep love. Metta or loving-kindness meditation is one way to cultivate, stabilize, or extend love; it is not equivalent to the deepest love and is not a universal first step.
 - AMEND.IC.DEEP_LOVE_TO_CHILD: Classify deep or transpersonal love by actual experience and present access, not by theism, religion, doctrine, or identity. When profound love is genuinely accessible, contact that real love first and then see whether the younger self can be included in it—the feast must reach the hungry child. If the child recoils, goes numb, distrusts the source, or cannot receive it, do not intensify the spiritual exercise; hear the guard or credibility problem and continue Nurturer or Protector repair without forcing transfer.

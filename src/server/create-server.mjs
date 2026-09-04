@@ -176,7 +176,7 @@ export function createInnerSignalServer({ config, providers }) {
           version: RUNTIME_VERSION,
           localRepair: localRepair ? { jobId: localRepair.jobId, promotedAt: localRepair.promotedAt } : null,
           models: { openai: providers.openai.model, anthropic: providers.anthropic.model, renderer: providers.renderer?.model ?? providers.anthropic.model },
-          therapy: { adjudicatorProvider: config.adjudicatorProvider, rendererModel: providers.renderer?.model ?? providers.anthropic.model, realizationContractVersion: "response-realization-v5", formulation: "case-formulation-v2", graphBundleVersion: graphBundle.version, routing: "auto-tiered-v3", tiers: ["fast", "reviewed", "deep", "forensic"] },
+          therapy: { adjudicatorProvider: config.adjudicatorProvider, rendererModel: providers.renderer?.model ?? providers.anthropic.model, realizationContractVersion: "response-realization-v5", responsePresentationVersion: "therapy-response-presentation-v1", responseModes: ["default", "map-debug"], formulation: "case-formulation-v2", graphBundleVersion: graphBundle.version, routing: "auto-tiered-v3", tiers: ["fast", "reviewed", "deep", "forensic"] },
           hypnosis: {
             writerProvider: config.hypnosisWriterProvider,
             reviewerProvider: config.hypnosisReviewerProvider,
@@ -205,7 +205,8 @@ export function createInnerSignalServer({ config, providers }) {
           context,
           providers,
           config,
-          processingMode: input.processingMode ?? config.therapyProcessingMode ?? "auto"
+          processingMode: input.processingMode ?? config.therapyProcessingMode ?? "auto",
+          responseMode: input.responseMode ?? "default"
         });
         if (config.devAutomationEnabled && result.responseContract?.realizationCoveragePassed === false) {
           recordAutomaticDevelopmentIncident(config, {

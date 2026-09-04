@@ -14,6 +14,42 @@ function splitParagraphs(answer) {
   return text(answer).split(/\n{2,}/).map((item) => item.trim()).filter(Boolean);
 }
 
+function wordCount(value) {
+  return text(value).split(/\s+/).filter(Boolean).length;
+}
+
+function constrainBrevity(paragraphs, presentation = {}) {
+  const maxParagraphs = Number.isSafeInteger(presentation.maxAnswerParagraphs)
+    ? Math.max(1, presentation.maxAnswerParagraphs)
+    : 3;
+  const maxWords = Number.isSafeInteger(presentation.maxAnswerWords)
+    ? Math.max(20, presentation.maxAnswerWords)
+    : 180;
+  const internalMapPattern = /\b(?:case variables?|winning route|rejected routes?|next-question (?:source|logic)|ROUTE\.[A-Z_]+|IC\.[A-Z_]+|SOM\.[A-Z_]+)\b/i;
+  const withoutMapLeakage = paragraphs.filter((paragraph) => !internalMapPattern.test(paragraph));
+  const selected = withoutMapLeakage.slice(0, maxParagraphs);
+  const constrained = [];
+  let remaining = maxWords;
+  for (const paragraph of selected) {
+    if (remaining <= 0) break;
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    if (words.length <= remaining) {
+      constrained.push(paragraph);
+      remaining -= words.length;
+      continue;
+    }
+    constrained.push(`${words.slice(0, remaining).join(" ").replace(/[,:;.!?]+$/, "")}…`);
+    remaining = 0;
+  }
+  return {
+    paragraphs: constrained,
+    removedInternalMapParagraphs: paragraphs.filter((paragraph) => internalMapPattern.test(paragraph)),
+    trimmed: constrained.join("\n\n") !== paragraphs.join("\n\n"),
+    maxParagraphs,
+    maxWords
+  };
+}
+
 function stripFinalQuestionSentence(paragraph) {
   const value = text(paragraph);
   if (!value.endsWith("?")) return { text: value, removed: "" };
@@ -50,7 +86,7 @@ export function canonicalQuestion({ plan, adjudication } = {}) {
     || text(adjudication?.next_question);
 }
 
-export function enforceResponseContract(realization, { plan, adjudication } = {}) {
+export function enforceResponseContract(realization, { plan, adjudication, presentation } = {}) {
   const question = canonicalQuestion({ plan, adjudication });
   const paragraphs = splitParagraphs(realization?.answer);
   let strippedQuestion = "";
@@ -65,7 +101,9 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
     }
   }
 
-  const answerBody = paragraphs.join("\n\n").trim();
+  const originalAnswerBody = paragraphs.join("\n\n").trim();
+  const brevity = constrainBrevity(paragraphs, presentation);
+  const answerBody = brevity.paragraphs.join("\n\n").trim();
   const userFacingAnswer = [answerBody, question].filter(Boolean).join("\n\n");
   const rendererQuestion = text(realization?.next_question);
   const requiredNodeIds = requiredRealizationNodeIds(plan);
@@ -100,7 +138,19 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
       verifiedRealizations,
       rejectedRealizations,
       missingRealizationNodeIds: missingNodeIds,
-      realizationCoveragePassed: missingNodeIds.length === 0
+      realizationCoveragePassed: missingNodeIds.length === 0,
+      presentation: {
+        mode: presentation?.mode ?? "default",
+        paragraphCount: brevity.paragraphs.length,
+        wordCount: wordCount(answerBody),
+        maxParagraphs: brevity.maxParagraphs,
+        maxWords: brevity.maxWords,
+        brevityPassed: !brevity.trimmed,
+        trimmedForBrevity: brevity.trimmed,
+        removedInternalMapParagraphs: brevity.removedInternalMapParagraphs,
+        originalParagraphCount: splitParagraphs(originalAnswerBody).length,
+        originalWordCount: wordCount(originalAnswerBody)
+      }
     }
   };
 }

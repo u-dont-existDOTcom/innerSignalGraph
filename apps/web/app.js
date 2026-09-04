@@ -61,41 +61,40 @@ function text(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function compactPlan(plan, responseContract = null) {
-  if (!plan || typeof plan !== "object") return null;
-  const rawSecondary = Array.isArray(plan.displayTrace?.secondaryJobs) ? plan.displayTrace.secondaryJobs : (Array.isArray(plan.secondaryJobs) ? plan.secondaryJobs : []);
-  const realizedIds = new Set(Array.isArray(responseContract?.realizedNodeIds) ? responseContract.realizedNodeIds : []);
-  const secondaryJobs = realizedIds.size ? rawSecondary.filter((item) => realizedIds.has(item.id)) : rawSecondary;
-  return {
-    graphBundleVersion: plan.graphBundleVersion || null,
-    primaryJob: plan.primaryJob || null,
-    secondaryJobs,
-    deferredNodes: Array.isArray(plan.displayTrace?.deferredNodes) ? plan.displayTrace.deferredNodes : [],
-    blockedNodes: Array.isArray(plan.displayTrace?.blockedNodes) ? plan.displayTrace.blockedNodes : [],
-    nextQuestion: text(plan.nextQuestion),
-    sequencingNotes: Array.isArray(plan.graphTrace?.sequencingNotes) ? plan.graphTrace.sequencingNotes : [],
-    coverageWarning: Array.isArray(responseContract?.missingRealizationNodeIds) && responseContract.missingRealizationNodeIds.length
-      ? `Renderer omitted: ${responseContract.missingRealizationNodeIds.join(", ")}`
-      : ""
-  };
+function appendDebugList(root, heading, values) {
+  if (!Array.isArray(values) || !values.length) return;
+  const title = document.createElement("h4");
+  title.textContent = heading;
+  const list = document.createElement("ul");
+  for (const value of values) {
+    const item = document.createElement("li");
+    item.textContent = typeof value === "string" ? value : JSON.stringify(value);
+    list.append(item);
+  }
+  root.append(title, list);
 }
 
-function appendPlanTrace(block, plan) {
-  if (!plan?.primaryJob) return;
+function appendPlanTrace(block, map) {
+  if (!map || typeof map !== "object") return;
   const details = document.createElement("details");
   details.className = "plan-trace";
   const summary = document.createElement("summary");
-  summary.textContent = "Why this route";
+  summary.textContent = "Map / debug";
   details.append(summary);
 
+  const route = map.threeWayRouting?.winningRoute;
+  const functions = (map.adultFunctionSelection || []).filter((item) => item.selected).map((item) => item.role).join(", ");
+  const intervention = map.interventionSelection || {};
   const rows = [
-    ["Primary job", plan.primaryJob.title],
-    ["Secondary", (plan.secondaryJobs || []).map((item) => item.title).join("; ")],
-    ["Deferred", (plan.deferredNodes || []).map((item) => item.title).join("; ")],
-    ["Blocked", (plan.blockedNodes || []).map((item) => item.title).join("; ")],
-    ["Next discriminating question", plan.nextQuestion],
-    ["Graph", plan.graphBundleVersion],
-    ["Renderer coverage", plan.coverageWarning]
+    ["Safety precedence", map.safetyRouting?.precedenceApplied ? "active" : "not triggered"],
+    ["Fusion / witness", `${map.fusionWitnessAssessment?.suicidalState || "unknown"}; witness ${map.fusionWitnessAssessment?.witnessCapacity || "unknown"}; adult ${map.fusionWitnessAssessment?.innerAdultAccess || "unknown"}`],
+    ["Winning route", route ? `${route.id}: ${route.title}` : "No three-way branch selected"],
+    ["Primary job", intervention.primary?.title],
+    ["Secondary jobs", (intervention.secondary || []).map((item) => item.title).join("; ")],
+    ["Protector / Nurturer / Guide", functions || "No role-specific function selected"],
+    ["Somatic modifiers", `activation ${map.somaticModifiers?.activation || "unknown"}; dissociation ${map.somaticModifiers?.dissociation || "unknown"}; inward attention ${map.somaticModifiers?.inwardAttentionEffect || "unknown"}`],
+    ["Routing rationale", map.rationale?.tierReason],
+    ["Next-question logic", `${map.nextQuestionLogic?.question || "No question"}${map.nextQuestionLogic?.source ? ` · ${JSON.stringify(map.nextQuestionLogic.source)}` : ""}`]
   ].filter(([, value]) => text(value));
   const list = document.createElement("dl");
   for (const [label, value] of rows) {
@@ -106,6 +105,17 @@ function appendPlanTrace(block, plan) {
     list.append(term, description);
   }
   details.append(list);
+  const variables = Object.entries(map.caseVariables || {}).map(([field, value]) => `${field}: ${value}`);
+  const rejectedRoutes = (map.threeWayRouting?.rejectedRoutes || []).map((item) => {
+    const failed = (item.failedConditions || []).map((condition) => `${condition.field}=${condition.actual}`).join(", ");
+    return `${item.id}: ${item.reason}${failed ? ` (${failed})` : ""}`;
+  });
+  appendDebugList(details, "Case variables", variables);
+  appendDebugList(details, "Rejected routes", rejectedRoutes);
+  appendDebugList(details, "Rationale", [
+    ...(map.rationale?.requiredNuance || []),
+    ...(map.rationale?.rejectedClaims || []).map((item) => `Reject: ${item}`)
+  ]);
   block.append(details);
 }
 
@@ -171,8 +181,8 @@ function renderTherapy() {
     body.textContent = entry.content;
     block.append(role, body);
     if (entry.role === "assistant") {
-      appendPlanTrace(block, entry.plan);
-      if (entry.processingTier) {
+      if (entry.responseMode === "map-debug" && entry.mapDebug) appendPlanTrace(block, entry.mapDebug);
+      if (entry.responseMode === "map-debug" && entry.processingTier) {
         const tier = document.createElement("span");
         tier.className = "processing-tier";
         const timing = Number.isFinite(entry.processingMs) ? ` · ${(entry.processingMs / 1000).toFixed(1)}s` : "";
@@ -637,6 +647,7 @@ $("#therapy-form").addEventListener("submit", async (event) => {
       recentTranscript: priorTranscript,
       userFacts: [],
       processingMode: $("#therapy-processing-mode")?.value || "auto",
+      responseMode: $("#therapy-response-mode")?.value || "default",
       priorCaseSnapshot: state.caseSnapshot,
       priorInterventionContract: state.interventionContract,
       priorProcessingTier: state.priorProcessingTier
@@ -651,7 +662,8 @@ $("#therapy-form").addEventListener("submit", async (event) => {
       at: new Date().toISOString(),
       ledgerId: result.decisionLedgerId,
       graphBundleVersion: result.graphBundleVersion,
-      plan: compactPlan(result.interventionContract, result.responseContract),
+      responseMode: result.responseMode || "default",
+      mapDebug: result.mapDebug || null,
       processingTier: result.processingTier || result.mode || "unknown",
       routingReason: result.routingReason || "",
       processingMs: Number(result.processingMs) || null,
