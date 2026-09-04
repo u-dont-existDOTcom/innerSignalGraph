@@ -7,6 +7,12 @@ import {
 } from "../case-formulation/run.mjs";
 import { runAdversarialPipeline, runCompactAdversarialPipeline, realizeAdjudication } from "./run-pipeline.mjs";
 import { writeLedger } from "./ledger.mjs";
+import {
+  buildInternalFormulationMap,
+  buildResponsePresentation,
+  mapDebugForMode,
+  normalizeResponseMode
+} from "./response-presentation.mjs";
 
 const HARD_INTENTS = new Set(["deep_dialogue", "hypnosis", "memory_processing", "photo_work", "altered_state", "advanced_release"]);
 const CRITICAL_DELTA_FIELDS = [
@@ -31,7 +37,8 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
     || v.ability_to_return === "no"
     || v.dissociation === "high"
     || v.altered_state === "altered"
-    || v.memory_source_risk === "present";
+    || v.memory_source_risk === "present"
+    || ["ideation", "intent", "imminent"].includes(v.suicidal_state);
   const ambiguityHard = v.age_agency_ambiguity === "present"
     && v.resentment_toward_younger_self === "present"
     && v.credibility_conflict === "present";
@@ -94,12 +101,31 @@ function planAdjudication(snapshot, plan, safetyFlags = []) {
   };
 }
 
-async function realizePlan({ context, formulation, provider, onProgress }) {
+function preparePresentation(formulation, routing, responseMode) {
+  const internalFormulationMap = buildInternalFormulationMap({
+    snapshot: formulation.snapshot,
+    plan: formulation.plan,
+    routing
+  });
+  return {
+    internalFormulationMap,
+    responsePresentation: buildResponsePresentation({ responseMode, internalMap: internalFormulationMap })
+  };
+}
+
+function debugResult(responseMode, internalFormulationMap) {
+  const mapDebug = mapDebugForMode(responseMode, internalFormulationMap);
+  return mapDebug ? { mapDebug } : {};
+}
+
+async function realizePlan({ context, formulation, routing, responseMode, provider, onProgress }) {
+  const presentation = preparePresentation(formulation, routing, responseMode);
   const enriched = {
     ...context,
     caseFormulation: formulation.snapshot,
     interventionContract: formulation.plan,
-    graphBundleVersion: formulation.graphBundleVersion
+    graphBundleVersion: formulation.graphBundleVersion,
+    ...presentation
   };
   const adjudication = planAdjudication(
     formulation.snapshot,
@@ -113,12 +139,12 @@ async function realizePlan({ context, formulation, provider, onProgress }) {
     onProgress,
     fixtureKey: "realization"
   });
-  return { enriched, adjudication, realization };
+  return { enriched, adjudication, realization, ...presentation };
 }
 
-async function simpleResult({ context, formulation, routing, extractor, tier, config, startedAt, caseAudit = null, stageTimings = {}, onProgress }) {
+async function simpleResult({ context, formulation, routing, responseMode, extractor, tier, config, startedAt, caseAudit = null, stageTimings = {}, onProgress }) {
   const realizationStarted = Date.now();
-  const { enriched, adjudication, realization } = await realizePlan({ context, formulation, provider: extractor, onProgress });
+  const { enriched, adjudication, realization, internalFormulationMap } = await realizePlan({ context, formulation, routing, responseMode, provider: extractor, onProgress });
   const realizationMs = realization.timing?.totalMs ?? (Date.now() - realizationStarted);
   const result = {
     answer: realization.value.answer,
@@ -126,6 +152,7 @@ async function simpleResult({ context, formulation, routing, extractor, tier, co
     processingTier: tier,
     routingReason: routing.reason,
     routingDeltaCount: routing.deltaCount,
+    responseMode,
     degraded: false,
     graphBundleVersion: formulation.graphBundleVersion,
     guidePacketVersion: context.guidePacketVersion ?? null,
@@ -138,7 +165,8 @@ async function simpleResult({ context, formulation, routing, extractor, tier, co
     realizationContractVersion: "response-realization-v5",
     responseContract: realization.value.responseContract,
     performance: { ...stageTimings, realizationMs, totalMs: Date.now() - Date.parse(startedAt) },
-    processingMs: Date.now() - Date.parse(startedAt)
+    processingMs: Date.now() - Date.parse(startedAt),
+    ...debugResult(responseMode, internalFormulationMap)
   };
   const ledger = await writeLedger(config, {
     caseId: null,
@@ -151,8 +179,9 @@ async function simpleResult({ context, formulation, routing, extractor, tier, co
   return { ...result, decisionLedgerId: ledger.id, decisionLedgerPath: ledger.path };
 }
 
-export async function runTieredTherapyPipeline({ context, providers, config, processingMode = "auto", onProgress, caseRecovery, instrumentation = {} }) {
+export async function runTieredTherapyPipeline({ context, providers, config, processingMode = "auto", responseMode = "default", onProgress, caseRecovery, instrumentation = {} }) {
   const startedAt = new Date().toISOString();
+  const selectedResponseMode = normalizeResponseMode(responseMode);
   const extractor = providers.renderer ?? providers.anthropic;
   const initial = await runUnauditedCaseSnapshot({ context, provider: extractor, onProgress, recovery: caseRecovery });
   const routing = classifyTherapyTier(initial.snapshot, processingMode, {
@@ -180,7 +209,7 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
       graphBundleVersion: planned.graphBundleVersion
     };
     return await simpleResult({
-      context, formulation, routing, extractor, tier: "fast", config, startedAt, onProgress,
+      context, formulation, routing, responseMode: selectedResponseMode, extractor, tier: "fast", config, startedAt, onProgress,
       stageTimings: { caseExtractionMs: initial.providerMetadata?.extractor?.durationMs ?? null, caseAuditMs: 0, planningMs }
     });
   }
@@ -205,7 +234,7 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
 
   if (routing.tier === "reviewed") {
     return await simpleResult({
-      context, formulation, routing, extractor, tier: "reviewed", config, startedAt, caseAudit: audit, onProgress,
+      context, formulation, routing, responseMode: selectedResponseMode, extractor, tier: "reviewed", config, startedAt, caseAudit: audit, onProgress,
       stageTimings: {
         caseExtractionMs: initial.providerMetadata?.extractor?.durationMs ?? null,
         caseAuditMs: audit.durationMs ?? null,
@@ -214,11 +243,13 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
     });
   }
 
+  const presentation = preparePresentation(formulation, routing, selectedResponseMode);
   const enrichedContext = {
     ...context,
     caseFormulation: formulation.snapshot,
     interventionContract: formulation.plan,
-    graphBundleVersion: formulation.graphBundleVersion
+    graphBundleVersion: formulation.graphBundleVersion,
+    ...presentation
   };
 
   if (routing.tier === "deep") {
@@ -229,6 +260,7 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
       processingTier: "deep",
       routingReason: routing.reason,
       routingDeltaCount: routing.deltaCount,
+      responseMode: selectedResponseMode,
       graphBundleVersion: formulation.graphBundleVersion,
       guidePacketVersion: context.guidePacketVersion ?? null,
       caseFormulation: formulation.snapshot,
@@ -241,7 +273,8 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
         planningMs,
         totalMs: Date.now() - Date.parse(startedAt)
       },
-      processingMs: Date.now() - Date.parse(startedAt)
+      processingMs: Date.now() - Date.parse(startedAt),
+      ...debugResult(selectedResponseMode, presentation.internalFormulationMap)
     };
   }
 
@@ -252,6 +285,7 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
     processingTier: "forensic",
     routingReason: routing.reason,
     routingDeltaCount: routing.deltaCount,
+    responseMode: selectedResponseMode,
     graphBundleVersion: formulation.graphBundleVersion,
     guidePacketVersion: context.guidePacketVersion ?? null,
     caseFormulation: formulation.snapshot,
@@ -264,6 +298,7 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
       planningMs,
       totalMs: Date.now() - Date.parse(startedAt)
     },
-    processingMs: Date.now() - Date.parse(startedAt)
+    processingMs: Date.now() - Date.parse(startedAt),
+    ...debugResult(selectedResponseMode, presentation.internalFormulationMap)
   };
 }

@@ -2,6 +2,14 @@
 
 This root log records concrete lessons about how Inner Signal handles therapy prompts better. Timestamps are UTC. `active-runtime` means the behavior is in the current installed guide/prompt contract. `candidate-awaiting-owner` means the lesson was found in the newest uploaded Guide Packet but is not active until its substantive owner decision is approved and installed.
 
+## 2026-09-04T00:00:00.000Z — Let formulation depth improve selection, not visible length
+
+<!-- therapy-lesson {"lessonId":"active-concise-external-realization","learnedAt":"2026-09-04T00:00:00.000Z","activation":"active-runtime"} -->
+
+The chatbot should still complete safety, fusion/witness, three-way route, adult-function, somatic, and next-question formulation before it speaks. In ordinary dialogue, that work should produce one concise natural response rather than a visible map walkthrough. A separate explicit map/debug view may expose the formulation. When the leave-alone route wins, verbosity must not recreate the very attention loop the route is meant to stop.
+
+Evidence: `src/orchestrator/response-presentation.mjs`, `src/orchestrator/response-contract.mjs`, `src/prompts/realize.mjs`, and deterministic response-presentation tests.
+
 ## 2026-08-12T03:29:10.000Z — Preserve the user's distinctions before choosing an intervention
 
 <!-- therapy-lesson {"lessonId":"active-formulation-distinctions","learnedAt":"2026-08-12T03:29:10.000Z","activation":"active-runtime"} -->

@@ -88,6 +88,19 @@ test("assistant messages can capture lightweight human development feedback into
   assert.match(js, /\/v1\/debug\/feedback/);
 });
 
+test("therapy UI defaults to concise replies and exposes formulation only in explicit map-debug mode", async () => {
+  const html = await fs.readFile(path.join(root, "apps/web/index.html"), "utf8");
+  const js = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");
+  assert.match(html, /id="therapy-response-mode"/);
+  assert.match(html, /<option value="default" selected>Concise<\/option>/);
+  assert.match(html, /<option value="map-debug">Map \/ debug<\/option>/);
+  assert.match(js, /responseMode: \$\("#therapy-response-mode"\)/);
+  assert.match(js, /entry\.responseMode === "map-debug" && entry\.mapDebug/);
+  assert.match(js, /Case variables/);
+  assert.match(js, /Rejected routes/);
+  assert.match(js, /Next-question logic/);
+});
+
 test("web client exposes autonomous development status and only asks humans for policy decisions", async () => {
   const html = await fs.readFile(path.join(root, "apps/web/index.html"), "utf8");
   const js = await fs.readFile(path.join(root, "apps/web/app.js"), "utf8");

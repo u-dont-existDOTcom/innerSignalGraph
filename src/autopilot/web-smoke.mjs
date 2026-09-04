@@ -34,7 +34,7 @@ export async function runWebClientSmoke({ config, providers }) {
       appOwnedReturnPresent: script.text.includes("plan.appOwned?.wakingReturn"),
       gateRouteIsolationPresent: script.text.includes("routeId === \"continue_inward\"") && script.text.includes("routeId === \"stay_external\""),
       guideGraphDeclared: health.endpoints?.includes("/v1/plan") && Boolean(health.therapy?.graphBundleVersion),
-      planTracePresent: script.text.includes("Why this route") && style.text.includes(".plan-trace"),
+      planTracePresent: script.text.includes("Map / debug") && script.text.includes("entry.responseMode === \"map-debug\"") && style.text.includes(".plan-trace"),
       guidePacketScreenPresent: index.text.includes("Guide Packet")
         && index.text.includes("Behavioral decisions")
         && index.text.includes("Source identity diff")

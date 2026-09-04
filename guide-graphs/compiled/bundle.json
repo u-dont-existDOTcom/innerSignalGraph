@@ -502,6 +502,16 @@
           "domain": "cross-guide"
         },
         {
+          "id": "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+          "heading": "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "945e2f5552ccb7c7fddc81c8f774b7fb8896f5edee29101de58716bd7ec7fb52",
+          "excerpt": "Before adding more therapy, classify the useful movement as go inward, act outward, or leave it alone. Go inward when there is genuinely avoided, disowned, or unfinished emotional, relational, somatic, memory, or part-level material and enough capacity to contact it; act outward when a concrete current problem can yield a decision or observable action; leave it alone when rumination, symptom checking, reassurance seeking, repeated self-analysis, or searching for the right healing method repeats without producing new information, a decision, or an action. 'Leave it alone' means notice thoughts or sensations without suppressing them or repeatedly answering them, then re-engage ordinary life; it is not denial of safety, medical, relational, or practical problems. If inward attention reliably worsens derealization, panic, or hypermonitoring, prefer eyes-open external orientation and ordinary embodied activity such as walking, gym, sport, chores, or social contact without concluding that all somatic therapy is contraindicated. If a concrete problem or clearly avoided material emerges, route back to outward action or inward processing.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
+        },
+        {
           "id": "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
           "heading": "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
           "lineStart": null,
@@ -3712,8 +3722,426 @@
       "graphId": "inner-child-somatic-cross-guide",
       "guideId": "cross-guide",
       "version": "2026-08-09-r5",
-      "description": "Cross-guide dependencies and sequencing decisions approved for the pilot.",
-      "nodes": [],
+      "description": "Cross-guide dependencies and sequencing decisions approved for the pilot, including three-way routing between inward processing, outward action, and non-engagement with self-maintaining attention loops.",
+      "nodes": [
+        {
+          "id": "ROUTE.LEAVE_ALONE",
+          "title": "Leave the loop alone and re-enter ordinary life",
+          "kind": "decision-node",
+          "tier": 3,
+          "priority": 100,
+          "activation": {
+            "all": [
+              {
+                "field": "attention_loop",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "thinking_yield",
+                "op": "eq",
+                "value": "repetitive_no_new_output"
+              },
+              {
+                "field": "actionable_problem",
+                "op": "eq",
+                "value": "absent"
+              },
+              {
+                "field": "unresolved_inner_material",
+                "op": "eq",
+                "value": "absent"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "suicidal_state",
+                "op": "in",
+                "value": [
+                  "ideation",
+                  "intent",
+                  "imminent"
+                ]
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING"
+          ],
+          "authority": "owner-approved-extension",
+          "recommendations": [
+            "Notice the thought, sensation, or urge to solve without suppressing it and without answering the same question again; then re-engage ordinary life.",
+            "Stop repeated reassurance, symptom checking, healing-method searching, and therapeutic interpretation when they are producing no new information, decision, or action.",
+            "If a concrete problem or clearly avoided inner issue later appears, route back to outward action or inward processing rather than preserving non-engagement as a dogma."
+          ],
+          "avoid": [
+            "Do not call thought suppression, denial, emotional numbing, or ignoring a medical, safety, relational, or practical problem 'leaving it alone'.",
+            "Do not treat reduced attention to symptoms as proof that the underlying condition is cured."
+          ],
+          "successSignals": [
+            "Checking and reassurance decrease while flexible attention, ordinary activity, relationships, and functioning increase.",
+            "The person can let an unanswered thought exist without immediately converting it into another healing task."
+          ],
+          "tags": [
+            "three-way-routing",
+            "rumination",
+            "metacognitive",
+            "ordinary-life"
+          ],
+          "effects": {
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE",
+              "SOM.RESOURCE_BRAINSPOTTING",
+              "SOM.DEEP_BRAINSPOTTING",
+              "SOM.EMDR_DISCRETE",
+              "SOM.EMDR_DEVELOPMENTAL",
+              "SOM.ADVANCED_RELEASE_OPTIONAL"
+            ],
+            "blockNodes": [],
+            "requiredNuance": [
+              "For some people, the imagined need to keep finding or performing therapy can itself become part of the maintaining attention loop.",
+              "Low-dose regulation is not forbidden when it is needed for functioning; the stop rule targets repetitive processing and checking rather than every form of support."
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim that rumination or attention caused all symptoms, or that every persistent symptom should simply be ignored."
+            ]
+          },
+          "defaultQuestion": ""
+        },
+        {
+          "id": "ROUTE.ACT_OUTWARD",
+          "title": "Act on the concrete problem",
+          "kind": "decision-node",
+          "tier": 3,
+          "priority": 99,
+          "activation": {
+            "all": [
+              {
+                "field": "actionable_problem",
+                "op": "eq",
+                "value": "present"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "suicidal_state",
+                "op": "in",
+                "value": [
+                  "ideation",
+                  "intent",
+                  "imminent"
+                ]
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING"
+          ],
+          "authority": "owner-approved-extension",
+          "recommendations": [
+            "Extract one concrete problem that can be changed and choose the next observable decision or action.",
+            "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
+            "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged."
+          ],
+          "avoid": [
+            "Do not wait for complete emotional certainty before taking a reversible necessary action.",
+            "Do not use action as a way to deny clearly unresolved inner material that continues to drive the problem."
+          ],
+          "successSignals": [
+            "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
+            "Thinking becomes shorter and more specific because it terminates in action or a defined wait for new information."
+          ],
+          "tags": [
+            "three-way-routing",
+            "outward-action",
+            "protector",
+            "guide"
+          ],
+          "effects": {
+            "deferNodes": [],
+            "blockNodes": [],
+            "requiredNuance": [
+              "A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job."
+            ],
+            "forbiddenOverclaims": [
+              "Do not reduce every emotional problem to productivity or behavioral execution."
+            ]
+          },
+          "defaultQuestion": "What is the next observable action that could actually change this situation?"
+        },
+        {
+          "id": "ROUTE.EXTERNAL_EMBODIMENT",
+          "title": "Shift from inward monitoring to external embodiment",
+          "kind": "decision-node",
+          "tier": 3,
+          "priority": 98,
+          "activation": {
+            "all": [
+              {
+                "field": "inward_attention_effect",
+                "op": "eq",
+                "value": "worsens"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "suicidal_state",
+                "op": "in",
+                "value": [
+                  "ideation",
+                  "intent",
+                  "imminent"
+                ]
+              },
+              {
+                "field": "actionable_problem",
+                "op": "eq",
+                "value": "present"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+            "SOM.MAP_NOT_LADDER",
+            "SOM.SE"
+          ],
+          "authority": "owner-approved-extension",
+          "recommendations": [
+            "Prefer eyes-open orientation and ordinary embodied activity that requires contact with the environment: walking, gym, sport, swimming, cycling, chores, social contact, or another tolerable activity.",
+            "Treat this as embodiment without symptom-scanning: attention can be in movement, coordination, effort, surroundings, and ordinary life rather than repeatedly checking the internal state.",
+            "If inward attention later becomes tolerable or clearly useful, reassess rather than permanently banning somatic or contemplative work."
+          ],
+          "avoid": [
+            "Do not repeatedly body-scan to test whether the external activity is working.",
+            "Do not infer that all somatic therapy is contraindicated merely because introspective attention is destabilizing right now."
+          ],
+          "successSignals": [
+            "Derealization, panic, or hypermonitoring is no longer being amplified by repeated inward checking.",
+            "The person spends more time engaged in ordinary embodied life and can flex attention inward or outward with more choice."
+          ],
+          "tags": [
+            "three-way-routing",
+            "external-orientation",
+            "embodiment",
+            "derealization"
+          ],
+          "effects": {
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE",
+              "SOM.DEEP_BRAINSPOTTING",
+              "SOM.EMDR_DISCRETE",
+              "SOM.EMDR_DEVELOPMENTAL"
+            ],
+            "blockNodes": [],
+            "requiredNuance": [
+              "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other."
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim that external activity proves the symptoms are psychological or that exercise is sufficient treatment for every cause of derealization or panic."
+            ]
+          },
+          "defaultQuestion": "Does turning attention inward reliably help, do nothing, or make the derealization, panic, or monitoring worse?"
+        },
+        {
+          "id": "ROUTE.GO_INWARD",
+          "title": "Go inward only for material that is actually there",
+          "kind": "decision-node",
+          "tier": 3,
+          "priority": 97,
+          "activation": {
+            "all": [
+              {
+                "field": "unresolved_inner_material",
+                "op": "eq",
+                "value": "present"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "suicidal_state",
+                "op": "in",
+                "value": [
+                  "ideation",
+                  "intent",
+                  "imminent"
+                ]
+              },
+              {
+                "field": "inward_attention_effect",
+                "op": "eq",
+                "value": "worsens"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+            "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
+            "AMEND.SOM.PREP_MODALITIES",
+            "AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL",
+            "AMEND.SOM.ADVANCED_RELEASE_PARALLEL"
+          ],
+          "authority": "owner-approved-extension",
+          "recommendations": [
+            "Contact only material that is actually present rather than assuming that distress always hides another layer of trauma.",
+            "Route relational, part-level, credibility, trust, or developmental conflict toward the relevant Nurturer, Protector, Guide, guard, or inner-child function; route bodily activation or freeze toward low-dose somatic regulation, EFT, movement or shaking, and titrated body work according to response.",
+            "For a stable discrete memory target, EMDR can be considered without forcing a long preparatory ladder; for diffuse or developmental body-held material, resource-oriented or deeper Brainspotting and developmental EMDR remain conditional on capacity.",
+            "Advanced release remains optional and parallel; a dramatic state change does not establish readiness for deep processing."
+          ],
+          "avoid": [
+            "Do not use a generic instruction to 'go deeper' when the person cannot name what is unresolved or when repeated inward attention is making them worse.",
+            "Do not force a rigid somatic ladder or assume the most intense modality is the most therapeutic."
+          ],
+          "successSignals": [
+            "Contact with inner material produces new emotional information, greater integration, a changed relationship to a part or memory, or more behavioral freedom rather than only more description.",
+            "Somatic work increases regulation, range, or integration without prolonged destabilization."
+          ],
+          "tags": [
+            "three-way-routing",
+            "inward-processing",
+            "inner-child",
+            "somatic"
+          ],
+          "effects": {
+            "deferNodes": [],
+            "blockNodes": [],
+            "requiredNuance": [
+              "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order."
+            ],
+            "forbiddenOverclaims": [
+              "Do not infer recovered memories, hidden trauma, or a coherent inner child from symptoms alone."
+            ]
+          },
+          "defaultQuestion": "What exactly seems unfinished or avoided here, and what changes when you contact it rather than merely think about it?"
+        },
+        {
+          "id": "ROUTE.THREE_WAY_GATE",
+          "title": "Discriminate processing, action, and non-engagement",
+          "kind": "decision-node",
+          "tier": 3,
+          "priority": 96,
+          "activation": {
+            "all": [
+              {
+                "field": "attention_loop",
+                "op": "eq",
+                "value": "present"
+              }
+            ],
+            "any": [
+              {
+                "field": "thinking_yield",
+                "op": "in",
+                "value": [
+                  "mixed",
+                  "unknown"
+                ]
+              },
+              {
+                "field": "actionable_problem",
+                "op": "eq",
+                "value": "unknown"
+              },
+              {
+                "field": "unresolved_inner_material",
+                "op": "eq",
+                "value": "unknown"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "suicidal_state",
+                "op": "in",
+                "value": [
+                  "ideation",
+                  "intent",
+                  "imminent"
+                ]
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING"
+          ],
+          "authority": "owner-approved-extension",
+          "recommendations": [
+            "Before prescribing another technique, discriminate whether the next useful movement is inward processing, outward action, or leaving a self-maintaining loop unanswered.",
+            "Use output rather than intensity as the stop rule: useful thinking should yield new information, a decision, an action, or genuinely changed contact with previously avoided material."
+          ],
+          "avoid": [
+            "Do not assume repeated analysis is problem-solving merely because the topic is important.",
+            "Do not label refusal to process as healthy non-engagement until concrete problems and clearly avoided material have been checked."
+          ],
+          "successSignals": [
+            "The case can be classified into one primary movement without forcing every difficulty into a therapy technique."
+          ],
+          "tags": [
+            "three-way-routing",
+            "discrimination",
+            "stop-rule"
+          ],
+          "effects": {
+            "deferNodes": [],
+            "blockNodes": [],
+            "requiredNuance": [
+              "The three movements can alternate over time; this is a routing decision for the current maintaining process, not a permanent personality classification."
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim that one branch is universally superior to the others."
+            ]
+          },
+          "defaultQuestion": "Is this thinking giving you genuinely new information, a decision, or an action—or are we running the same computation again; and is there a concrete problem to act on or clearly avoided material to contact?"
+        }
+      ],
       "edges": [
         {
           "from": "SOM.GENTLE_REGULATION",
@@ -3764,6 +4192,86 @@
           "from": "IC.GENTLE_SELF_HYPNOSIS",
           "to": "IC.DEEP_CHILD_DIALOGUE",
           "relation": "does-not-imply-readiness"
+        },
+        {
+          "from": "ROUTE.THREE_WAY_GATE",
+          "to": "ROUTE.ACT_OUTWARD",
+          "relation": "routes-to"
+        },
+        {
+          "from": "ROUTE.THREE_WAY_GATE",
+          "to": "ROUTE.GO_INWARD",
+          "relation": "routes-to"
+        },
+        {
+          "from": "ROUTE.THREE_WAY_GATE",
+          "to": "ROUTE.LEAVE_ALONE",
+          "relation": "routes-to"
+        },
+        {
+          "from": "ROUTE.ACT_OUTWARD",
+          "to": "IC.PROTECTOR_ACTION",
+          "relation": "acts-through"
+        },
+        {
+          "from": "ROUTE.ACT_OUTWARD",
+          "to": "IC.GUIDE_LATER",
+          "relation": "organizes-through"
+        },
+        {
+          "from": "ROUTE.GO_INWARD",
+          "to": "IC.MEET_GUARD",
+          "relation": "may-route-to"
+        },
+        {
+          "from": "ROUTE.GO_INWARD",
+          "to": "IC.DEEP_CHILD_DIALOGUE",
+          "relation": "conditional-deep-route"
+        },
+        {
+          "from": "ROUTE.GO_INWARD",
+          "to": "SOM.GENTLE_REGULATION",
+          "relation": "may-route-to"
+        },
+        {
+          "from": "ROUTE.GO_INWARD",
+          "to": "SOM.EFT_PORTABLE",
+          "relation": "may-route-to"
+        },
+        {
+          "from": "ROUTE.GO_INWARD",
+          "to": "SOM.GENTLE_SHAKING",
+          "relation": "may-route-to"
+        },
+        {
+          "from": "ROUTE.GO_INWARD",
+          "to": "SOM.RESOURCE_BRAINSPOTTING",
+          "relation": "may-route-to"
+        },
+        {
+          "from": "ROUTE.GO_INWARD",
+          "to": "SOM.DEEP_BRAINSPOTTING",
+          "relation": "conditional-deep-route"
+        },
+        {
+          "from": "ROUTE.GO_INWARD",
+          "to": "SOM.EMDR_DISCRETE",
+          "relation": "conditional-memory-route"
+        },
+        {
+          "from": "ROUTE.GO_INWARD",
+          "to": "SOM.EMDR_DEVELOPMENTAL",
+          "relation": "conditional-memory-route"
+        },
+        {
+          "from": "ROUTE.GO_INWARD",
+          "to": "SOM.ADVANCED_RELEASE_OPTIONAL",
+          "relation": "optional-parallel-not-readiness"
+        },
+        {
+          "from": "ROUTE.LEAVE_ALONE",
+          "to": "ROUTE.EXTERNAL_EMBODIMENT",
+          "relation": "preferred-when-inward-attention-worsens"
         }
       ],
       "bundleVersion": "inner-child-somatic-pilot-2026-08-09-r5"
@@ -3771,9 +4279,9 @@
   ],
   "stats": {
     "graphCount": 3,
-    "nodeCount": 41,
-    "edgeCount": 40,
-    "sourceSectionCount": 73,
-    "ownerAmendmentCount": 19
+    "nodeCount": 46,
+    "edgeCount": 56,
+    "sourceSectionCount": 74,
+    "ownerAmendmentCount": 20
   }
 }

@@ -33,20 +33,25 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
   attempts.push({ stage: "realization", durationMs: rawResult.durationMs, provider: provider.id, model: provider.model });
   let enforced = enforceResponseContract(rawResult.value, {
     plan: context.interventionContract,
-    adjudication
+    adjudication,
+    presentation: context.responsePresentation
   });
 
   // A selected intervention that disappears during prose realization is a
   // model-contract miss, not a reason to silently misrepresent the route.
   // Retry the renderer once with the exact missing node IDs. This adds no
   // latency when the first realization faithfully covers the plan.
-  if (!enforced.responseContract.realizationCoveragePassed && !String(provider.model || "").startsWith("mock-")) {
+  const presentationMiss = !enforced.answer_body
+    || enforced.responseContract.presentation.removedInternalMapParagraphs.length > 0;
+  if ((!enforced.responseContract.realizationCoveragePassed || presentationMiss) && !String(provider.model || "").startsWith("mock-")) {
     const retryContext = {
       ...context,
       autopilotFeedback: {
-        type: "realization-coverage-retry",
+        type: presentationMiss ? "realization-presentation-retry" : "realization-coverage-retry",
         missingNodeIds: enforced.responseContract.missingRealizationNodeIds,
-        instruction: "Rewrite the response so every missing selected intervention is materially realized. Preserve the canonical question and all prior epistemic constraints."
+        instruction: presentationMiss
+          ? "Rewrite as concise natural user-facing prose. Do not expose internal map labels, route names, node IDs, or bookkeeping. Preserve the canonical question, selected interventions, safety precedence, and all prior epistemic constraints."
+          : "Rewrite the response so every missing selected intervention is materially realized. Preserve the canonical question and all prior epistemic constraints."
       }
     };
     rawResult = await structuredCall(
@@ -60,7 +65,8 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
     attempts.push({ stage: "realization_retry", durationMs: rawResult.durationMs, provider: provider.id, model: provider.model });
     enforced = enforceResponseContract(rawResult.value, {
       plan: context.interventionContract,
-      adjudication
+      adjudication,
+      presentation: context.responsePresentation
     });
   }
 

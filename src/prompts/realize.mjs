@@ -1,18 +1,17 @@
 import { sharedClinicalRules } from "./common.mjs";
+import { hasSafetyPrecedence } from "../orchestrator/response-presentation.mjs";
 
 function deterministicSafetyTrigger(plan) {
-  const v = plan?.variables ?? {};
-  return v.present_safety === "unsafe"
-    || v.orientation === "disoriented"
-    || v.ability_to_stop === "no"
-    || v.ability_to_return === "no"
-    || v.dissociation === "high"
-    || v.altered_state === "altered"
-    || v.memory_source_risk === "present";
+  return hasSafetyPrecedence(plan?.variables ?? {});
 }
 
 export function realizationPrompt(context, adjudication, rendererName) {
   const plan = context.interventionContract ?? null;
+  const presentation = context.responsePresentation ?? {
+    maxAnswerParagraphs: 3,
+    maxAnswerWords: 180,
+    leaveAloneBrevity: false
+  };
   const safetyRequired = deterministicSafetyTrigger(plan);
   const system = `You are the ${rendererName} response realizer for Inner Signal. The hard reasoning is already complete: a case formulation, a deterministic intervention contract, and—when the routing tier required it—an adversarial reasoning packet are supplied below.${sharedClinicalRules}
 
@@ -41,6 +40,9 @@ REALIZATION RULES
 20. Primary versus supporting jobs are not mutually exclusive. If credibility is the blocking job and regulation is a supporting job, say that regulation may help the person stay with the conflict without pretending it resolves the credibility dispute. Do not manufacture an either/or.
 21. Treat competing internal positions symmetrically as data unless the resolved reasoning packet establishes otherwise. Do not cast one as the credible witness and the other merely as contamination, resistance, or pathology.
 22. Plan-realization fidelity is mandatory. Materially realize the primary job and every job listed in displayTrace.secondaryJobs. A job is realized only when the answer actually performs or explains that intervention, not merely when related vocabulary appears. For every claimed realization, return a short exact quote copied from the answer that demonstrates where the intervention was materially realized. Do not claim a node unless that evidence quote exists verbatim in the answer.
+23. Keep the user-facing answer concise even when the internal formulation is extensive: at most ${presentation.maxAnswerParagraphs} short answer paragraph${presentation.maxAnswerParagraphs === 1 ? "" : "s"} and about ${presentation.maxAnswerWords} words before the canonical question. Do not turn a short emotional statement into an essay, a route walkthrough, or a variable-by-variable interpretation.
+24. Internal depth must improve selection, not increase visible length. Never expose case variables, winning or rejected routes, node IDs, function-selection bookkeeping, or next-question source logic in the answer; explicit map/debug presentation is handled separately by the application.
+25. ${presentation.leaveAloneBrevity ? "The leave-it-alone branch is active. Do not defeat it with more processing: offer one brief natural acknowledgement or permission to disengage, and add no new theory." : "If the user did not request analysis, give only the minimum formulation needed to make the next move intelligible."}
 
 Return exactly one JSON object with this shape:
 {
@@ -51,6 +53,6 @@ Return exactly one JSON object with this shape:
   ]
 }`;
 
-  const user = `CURRENT USER MESSAGE:\n${context.userMessage}\n\nRECENT TRANSCRIPT:\n${context.recentTranscript || "(none supplied)"}\n\nDETERMINISTIC INTERVENTION CONTRACT:\n${plan ? JSON.stringify(plan, null, 2) : "(not supplied)"}\n\nRESOLVED REASONING PACKET:\n${JSON.stringify(adjudication, null, 2)}\n\nRETRY FEEDBACK (if any):\n${context.autopilotFeedback ? JSON.stringify(context.autopilotFeedback, null, 2) : "(none)"}`;
+  const user = `CURRENT USER MESSAGE:\n${context.userMessage}\n\nRECENT TRANSCRIPT:\n${context.recentTranscript || "(none supplied)"}\n\nDETERMINISTIC INTERVENTION CONTRACT:\n${plan ? JSON.stringify(plan, null, 2) : "(not supplied)"}\n\nINTERNAL FORMULATION MAP (reason from it; never narrate it in the answer):\n${context.internalFormulationMap ? JSON.stringify(context.internalFormulationMap, null, 2) : "(not supplied)"}\n\nRESOLVED REASONING PACKET:\n${JSON.stringify(adjudication, null, 2)}\n\nRETRY FEEDBACK (if any):\n${context.autopilotFeedback ? JSON.stringify(context.autopilotFeedback, null, 2) : "(none)"}`;
   return { system, user };
 }
