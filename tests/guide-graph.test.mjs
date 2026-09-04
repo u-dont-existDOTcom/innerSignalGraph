@@ -121,7 +121,8 @@ test("repetitive no-output processing routes to leave it alone only when no real
       present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
       suicidal_state: "absent", activation: "moderate", dissociation: "none", altered_state: "sober",
       attention_loop: "present", thinking_yield: "repetitive_no_new_output",
-      actionable_problem: "absent", unresolved_inner_material: "absent", inward_attention_effect: "neutral"
+      actionable_problem: "absent", unresolved_inner_material: "absent", inward_attention_effect: "neutral",
+      current_intent: "deep_dialogue", target_type: "developmental"
     }
   });
   assert.equal(plan.primaryJob.id, "ROUTE.LEAVE_ALONE");
@@ -161,7 +162,7 @@ test("clearly unresolved material routes inward through existing inner-child and
     }
   });
   assert.equal(plan.primaryJob.id, "ROUTE.GO_INWARD");
-  const routeEdges = plan.displayTrace.adjacentEdges.filter((edge) => edge.from === "ROUTE.GO_INWARD");
+  const routeEdges = plan.graphTrace.activeEdges.filter((edge) => edge.from === "ROUTE.GO_INWARD");
   assert.ok(routeEdges.some((edge) => edge.to === "IC.MEET_GUARD"));
   assert.ok(routeEdges.some((edge) => edge.to === "SOM.GENTLE_REGULATION"));
   assert.ok(routeEdges.some((edge) => edge.to === "SOM.EFT_PORTABLE"));
