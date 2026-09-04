@@ -306,7 +306,9 @@ test('implementation remains an in-memory Node-built-in-only primitive', async (
     /node:fs|localStorage|indexedDB|\bfetch\s*\(|\bWebSocket\b|process\.env|database|plugin|telemetry/i,
   );
   assert.doesNotMatch(source, /JSON\.(?:stringify|parse)|base64|argon2Sync/);
+  assert.doesNotMatch(source, /Buffer\.from\s*\(\s*derivedKey\s*\)/);
   assert.match(source, /argon2\s*\(/);
+  assert.match(source, /resolve\s*\(\s*derivedKey\s*\)/);
   assert.match(source, /createCipheriv\s*\(/);
   assert.match(source, /createDecipheriv\s*\(/);
 });

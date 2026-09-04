@@ -146,7 +146,7 @@ function deriveRecoveryKek(recoverySecret, salt) {
           reject(error);
           return;
         }
-        resolve(Buffer.from(derivedKey));
+        resolve(derivedKey);
       },
     );
   });
