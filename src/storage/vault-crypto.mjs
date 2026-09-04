@@ -125,7 +125,28 @@ function decryptGcm({ key, iv, ciphertext, authTag, aad }) {
   });
   decipher.setAAD(aad);
   decipher.setAuthTag(authTag);
-  return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  let updateChunk;
+  let finalChunk;
+  try {
+    updateChunk = decipher.update(ciphertext);
+    finalChunk = decipher.final();
+  } catch (error) {
+    zero(updateChunk, finalChunk);
+    throw error;
+  }
+
+  if (finalChunk.length === 0) {
+    return updateChunk;
+  }
+  if (updateChunk.length === 0) {
+    return finalChunk;
+  }
+
+  try {
+    return Buffer.concat([updateChunk, finalChunk]);
+  } finally {
+    zero(updateChunk, finalChunk);
+  }
 }
 
 function deriveRecoveryKek(recoverySecret, salt) {

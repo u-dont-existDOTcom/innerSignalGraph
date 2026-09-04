@@ -169,6 +169,12 @@ test('payload ciphertext and authentication-tag tampering fail generically', asy
     await assertUnreadable(() =>
       decryptVaultEnvelopeWithRoutineKek({ envelope: tampered, routineKek }),
     );
+    await assertUnreadable(() =>
+      decryptVaultEnvelopeWithRecoverySecret({
+        envelope: tampered,
+        recoverySecretBytes,
+      }),
+    );
   }
 });
 
@@ -311,4 +317,38 @@ test('implementation remains an in-memory Node-built-in-only primitive', async (
   assert.match(source, /resolve\s*\(\s*derivedKey\s*\)/);
   assert.match(source, /createCipheriv\s*\(/);
   assert.match(source, /createDecipheriv\s*\(/);
+});
+
+test('authenticated decryption retains and clears sensitive plaintext chunks', async () => {
+  const source = await readFile(modulePath, 'utf8');
+  const helper = source.match(
+    /function decryptGcm\([\s\S]+?\n}\n\nfunction deriveRecoveryKek/,
+  )?.[0];
+
+  assert.ok(helper, 'decryptGcm helper must remain inspectable');
+  assert.doesNotMatch(
+    helper,
+    /Buffer\.concat\s*\(\s*\[\s*decipher\.update\([\s\S]*?decipher\.final\(\)/,
+  );
+  assert.match(helper, /let updateChunk;/);
+  assert.match(helper, /let finalChunk;/);
+  assert.match(helper, /updateChunk = decipher\.update\(ciphertext\);/);
+  assert.match(helper, /finalChunk = decipher\.final\(\);/);
+  assert.match(
+    helper,
+    /catch \(error\) {[\s\S]*?zero\(updateChunk, finalChunk\);[\s\S]*?throw error;/,
+  );
+  assert.match(
+    helper,
+    /if \(finalChunk\.length === 0\) {[\s\S]*?return updateChunk;/,
+  );
+  assert.match(
+    helper,
+    /if \(updateChunk\.length === 0\) {[\s\S]*?return finalChunk;/,
+  );
+  assert.match(
+    helper,
+    /try {[\s\S]*?Buffer\.concat\(\[updateChunk, finalChunk\]\)[\s\S]*?finally {[\s\S]*?zero\(updateChunk, finalChunk\);/,
+  );
+  assert.doesNotMatch(source, /Buffer\.from\s*\(\s*derivedKey\s*\)/);
 });
