@@ -273,11 +273,7 @@ function zero(...buffers) {
   }
 }
 
-export async function createVaultEnvelope({
-  plaintextBytes,
-  routineKek,
-  recoverySecretBytes,
-} = {}) {
+export async function createVaultEnvelope(input = {}) {
   let plaintext;
   let routineKey;
   let recoverySecret;
@@ -285,6 +281,10 @@ export async function createVaultEnvelope({
   let recoveryKek;
 
   try {
+    if (!isRecord(input)) throw invalidInput();
+    const plaintextBytes = input.plaintextBytes;
+    const routineKek = input.routineKek;
+    const recoverySecretBytes = input.recoverySecretBytes;
     plaintext = copyBytes(plaintextBytes);
     routineKey = copyRoutineKek(routineKek);
     recoverySecret = copyRecoverySecret(recoverySecretBytes);
@@ -322,23 +322,20 @@ export async function createVaultEnvelope({
       payload,
       keyWraps,
     };
-  } catch (error) {
-    if (error instanceof TypeError && error.message === 'Invalid vault crypto input.') {
-      throw error;
-    }
+  } catch {
     throw invalidInput();
   } finally {
     zero(plaintext, routineKey, recoverySecret, dek, recoveryKek);
   }
 }
 
-export async function decryptVaultEnvelopeWithRoutineKek({
-  envelope,
-  routineKek,
-} = {}) {
+export async function decryptVaultEnvelopeWithRoutineKek(input = {}) {
   let routineKey;
   let dek;
   try {
+    if (!isRecord(input)) throw invalidInput();
+    const envelope = input.envelope;
+    const routineKek = input.routineKek;
     const current = readEnvelope(envelope);
     routineKey = copyRoutineKek(routineKek);
     dek = decryptGcm({
@@ -358,14 +355,14 @@ export async function decryptVaultEnvelopeWithRoutineKek({
   }
 }
 
-export async function decryptVaultEnvelopeWithRecoverySecret({
-  envelope,
-  recoverySecretBytes,
-} = {}) {
+export async function decryptVaultEnvelopeWithRecoverySecret(input = {}) {
   let recoverySecret;
   let recoveryKek;
   let dek;
   try {
+    if (!isRecord(input)) throw invalidInput();
+    const envelope = input.envelope;
+    const recoverySecretBytes = input.recoverySecretBytes;
     const current = readEnvelope(envelope);
     recoverySecret = copyRecoverySecret(recoverySecretBytes);
     recoveryKek = await deriveRecoveryKek(

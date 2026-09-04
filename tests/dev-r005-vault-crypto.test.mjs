@@ -68,6 +68,37 @@ const assertUnreadable = async (operation) => {
   });
 };
 
+const assertInvalidInput = async (operation) => {
+  await assert.rejects(operation, (error) => {
+    assert.equal(error instanceof TypeError, true);
+    assert.equal(error.name, 'TypeError');
+    assert.equal(error.message, 'Invalid vault crypto input.');
+    assert.equal(Object.hasOwn(error, 'cause'), false);
+    return true;
+  });
+};
+
+const revokedProxy = () => {
+  const { proxy, revoke } = Proxy.revocable({}, {});
+  revoke();
+  return proxy;
+};
+
+const throwingProxy = (message) =>
+  new Proxy({}, {
+    get() {
+      throw new Error(message);
+    },
+  });
+
+const throwingGetter = (base, property, message) =>
+  Object.defineProperty({ ...base }, property, {
+    enumerable: true,
+    get() {
+      throw new Error(message);
+    },
+  });
+
 let envelope;
 
 before(async () => {
@@ -300,6 +331,113 @@ test('byte-only inputs are not mutated and malformed creation inputs fail safely
   }
 });
 
+test('create normalizes top-level, accessor, and revoked-proxy failures', async () => {
+  const operations = [
+    () => createVaultEnvelope(null),
+    () => createVaultEnvelope({}),
+    () => createVaultEnvelope(17),
+    () => createVaultEnvelope([]),
+    () => createVaultEnvelope(throwingProxy('synthetic-create-proxy-leak')),
+    () => createVaultEnvelope(revokedProxy()),
+    () =>
+      createVaultEnvelope(
+        throwingGetter(
+          { routineKek, recoverySecretBytes },
+          'plaintextBytes',
+          'synthetic-plaintext-getter-leak',
+        ),
+      ),
+    () =>
+      createVaultEnvelope(
+        throwingGetter(
+          { plaintextBytes, recoverySecretBytes },
+          'routineKek',
+          'synthetic-routine-getter-leak',
+        ),
+      ),
+    () =>
+      createVaultEnvelope(
+        throwingGetter(
+          { plaintextBytes, routineKek },
+          'recoverySecretBytes',
+          'synthetic-recovery-getter-leak',
+        ),
+      ),
+  ];
+
+  for (const operation of operations) {
+    await assertInvalidInput(operation);
+  }
+});
+
+test('routine decrypt normalizes every malformed public-input boundary', async () => {
+  const operations = [
+    () => decryptVaultEnvelopeWithRoutineKek(null),
+    () => decryptVaultEnvelopeWithRoutineKek({}),
+    () => decryptVaultEnvelopeWithRoutineKek(17),
+    () => decryptVaultEnvelopeWithRoutineKek([]),
+    () =>
+      decryptVaultEnvelopeWithRoutineKek(
+        throwingProxy('synthetic-routine-proxy-leak'),
+      ),
+    () => decryptVaultEnvelopeWithRoutineKek(revokedProxy()),
+    () =>
+      decryptVaultEnvelopeWithRoutineKek(
+        throwingGetter(
+          { routineKek },
+          'envelope',
+          'synthetic-envelope-getter-leak',
+        ),
+      ),
+    () =>
+      decryptVaultEnvelopeWithRoutineKek(
+        throwingGetter(
+          { envelope },
+          'routineKek',
+          'synthetic-routine-getter-leak',
+        ),
+      ),
+  ];
+
+  for (const operation of operations) {
+    await assertUnreadable(operation);
+  }
+});
+
+test('recovery decrypt normalizes every malformed public-input boundary', async () => {
+  const operations = [
+    () => decryptVaultEnvelopeWithRecoverySecret(null),
+    () => decryptVaultEnvelopeWithRecoverySecret({}),
+    () => decryptVaultEnvelopeWithRecoverySecret(17),
+    () => decryptVaultEnvelopeWithRecoverySecret([]),
+    () =>
+      decryptVaultEnvelopeWithRecoverySecret(
+        throwingProxy('synthetic-recovery-proxy-leak'),
+      ),
+    () => decryptVaultEnvelopeWithRecoverySecret(revokedProxy()),
+    () =>
+      decryptVaultEnvelopeWithRecoverySecret(
+        throwingGetter(
+          { recoverySecretBytes },
+          'envelope',
+          'synthetic-envelope-getter-leak',
+        ),
+      ),
+    () =>
+      decryptVaultEnvelopeWithRecoverySecret(
+        throwingGetter(
+          { envelope },
+          'recoverySecretBytes',
+          'synthetic-recovery-getter-leak',
+        ),
+      ),
+  ];
+
+  for (const operation of operations) {
+    await assertUnreadable(operation);
+  }
+});
+
 test('implementation remains an in-memory Node-built-in-only primitive', async () => {
   const source = await readFile(modulePath, 'utf8');
   const importSpecifiers = [
@@ -317,6 +455,49 @@ test('implementation remains an in-memory Node-built-in-only primitive', async (
   assert.match(source, /resolve\s*\(\s*derivedKey\s*\)/);
   assert.match(source, /createCipheriv\s*\(/);
   assert.match(source, /createDecipheriv\s*\(/);
+});
+
+test('public crypto APIs enter normalization before reading caller input', async () => {
+  const source = await readFile(modulePath, 'utf8');
+  const functions = [
+    {
+      name: 'createVaultEnvelope',
+      next: 'decryptVaultEnvelopeWithRoutineKek',
+      properties: ['plaintextBytes', 'routineKek', 'recoverySecretBytes'],
+    },
+    {
+      name: 'decryptVaultEnvelopeWithRoutineKek',
+      next: 'decryptVaultEnvelopeWithRecoverySecret',
+      properties: ['envelope', 'routineKek'],
+    },
+    {
+      name: 'decryptVaultEnvelopeWithRecoverySecret',
+      next: null,
+      properties: ['envelope', 'recoverySecretBytes'],
+    },
+  ];
+
+  for (const entry of functions) {
+    assert.doesNotMatch(
+      source,
+      new RegExp(`function ${entry.name}\\s*\\(\\s*\\{`),
+    );
+    assert.match(
+      source,
+      new RegExp(`function ${entry.name}\\s*\\(input = \\{\\}\\)`),
+    );
+
+    const start = source.indexOf(`export async function ${entry.name}`);
+    const end = entry.next
+      ? source.indexOf(`export async function ${entry.next}`, start)
+      : source.length;
+    const body = source.slice(start, end);
+    const tryIndex = body.indexOf('try {');
+    assert.notEqual(tryIndex, -1);
+    for (const property of entry.properties) {
+      assert.ok(body.indexOf(`input.${property}`) > tryIndex);
+    }
+  }
 });
 
 test('authenticated decryption retains and clears sensitive plaintext chunks', async () => {
