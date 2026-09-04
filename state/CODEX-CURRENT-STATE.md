@@ -13,18 +13,21 @@ Updated: 2026-09-04
 - PR #37 merged the canonical Worker → Brave Pro governance protocol into `main` as `e2ed489edcb74d510c91d596dcff4260e4336f2f`.
 - Historical PR #37 checkpoint language recorded the governance protocol as the current bounded repair, that S002 remains unauthorized, and that the protocol repair had no runtime, storage, cryptography, application, plugin, or therapy effect. `DEV-R005-EXEC-S002-v1` now supersedes only that historical S002 status through its separate receipt.
 - `DEV-R005-EXEC-S002-v1` independently authorizes S002 as `IN_MEMORY_DUAL_WRAP_CRYPTO_ENVELOPE_ONLY`; its durable receipt is `tasks/dev-r005-encrypted-local-storage-20260903/S002-IMPLEMENTATION-AUTHORIZATION.json`.
+- `DEV-R005-EXEC-S003-v1` independently authorizes S003 as `IN_MEMORY_ROUTINE_UNLOCK_POLICY_CRYPTO_COMPOSITION_ONLY`; its durable receipt is `tasks/dev-r005-encrypted-local-storage-20260903/S003-IMPLEMENTATION-AUTHORIZATION.json`.
 - PR #38 merged the reviewed S002 in-memory dual-wrap cryptographic envelope into `main` as `fd6160a690c047515d6df1e16729fac7f2b346f8`.
 - S001 and S002 are complete. Their implementation-authorization receipts remain historical authority for those slices only, and D001-D004 remain unchanged.
-- Ledger `implementationAuthorized` is not blanket DEV-R005 authority. `laterSlicesAuthorized: false` remains controlling, S003 remains unauthorized, and no implementation slice is active.
+- PR #39 merged the post-S002 checkpoint reconciliation into `main` as `de045f8ce71f84dc05cd8e045a06f962a2e04dbd`.
+- Ledger `implementationAuthorized` is not blanket DEV-R005 authority. S003 is the current bounded implementation slice and `laterSlicesAuthorized: false` remains controlling. No implementation after S003 is authorized.
 - S002 has no persistence, serialization, OS secure-store integration/fallback, browser/application/plugin wiring, migration execution, recovery/reset UI, network transport, account-identity, pricing, retention, or recovery-secret-format effect.
 - The S002 merge authorizes no persistence, serialization, OS secure-store integration or fallback, migration, application/plugin wiring, network/cloud transport, recovery/reset UI, pricing, account identity, retention duration, exact session-handoff schema, default inactivity duration, or recovery-secret UX.
-- DEV-R005 next safe action: Extra High design/authority decomposition for a possible later slice, not implementation. That analysis must not invent S003 contents or confer implementation authority.
+- S003 composes only the existing routine-unlock policy and routine decrypt primitive. It performs no OS authentication or credential retrieval and has no persistence, serialization, session-state, recovery, migration, application/browser/plugin, network/cloud, or unresolved-architecture effect.
+- DEV-R005 next safe action: complete the six-path S003 implementation, targeted and affected regressions, one durable full verification, a Draft PR, fresh exact-head hosted evidence, and Extra High/Pro review; stop before merge or any later implementation.
 - No keys, recovery secrets, credentials, private therapy transcripts, real therapy data, or private-derived hashes belong in repository evidence.
 - The publication-transition material below is preserved as historical repository context; it does not override this active task checkpoint.
 
 ## Goal
 
-Preserve the completed DEV-R005 S001 boundary contract and S002 in-memory dual-wrap cryptographic envelope, their exact historical authorization receipts, D001-D004, the public repository baseline, privacy boundaries, therapy/hypnosis policy, model roles, transactional installation, and `stable` release authority. Keep `laterSlicesAuthorized: false` controlling; do not begin or define S003 implementation, persistence, serialization, OS integration or fallback, migration, application/plugin wiring, network/cloud transport, recovery/reset UI, or other unresolved product architecture.
+Implement and verify only the authorized DEV-R005 S003 in-memory routine-unlock policy/crypto composition seam through a Draft PR and exact-head Extra High/Pro review. Preserve D001-D004, the completed S001/S002 primitives and receipts, the public repository baseline, privacy boundaries, therapy/hypnosis policy, model roles, transactional installation, and `stable` release authority. Keep `laterSlicesAuthorized: false` controlling; do not begin persistence, serialization, OS integration or fallback, migration, recovery, session-state, application/plugin wiring, network/cloud transport, or later implementation.
 
 ## Authority / baseline
 
