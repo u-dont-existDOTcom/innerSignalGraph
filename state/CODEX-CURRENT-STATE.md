@@ -2,6 +2,16 @@
 
 Updated: 2026-09-04
 
+## Queued altered-state routing lesson
+
+- Owner requirement recorded in roadmap task `GUIDE-R002`: altered-state disclosure is a routing modifier, not a blanket therapy blocker. The future state machine must assess explicit self-reported coherence, capacity, physical safety, and desired engagement level before choosing stay-with-experience, light-conversation, deeper-therapy, containment, or safety handling.
+- The queue preserves the AI observation boundary: it cannot see posture, affect, coordination, or other nonverbal cues, so substance disclosure alone cannot establish incapacity. Disorientation, inability to engage coherently, urgent physical symptoms, or other safety concerns still take precedence.
+- Deterministic acceptance fixtures must distinguish `took harmalas` alone from impairment and safety-concern cases. Concise presentation remains independent of therapeutic depth, so a brief answer can still make a substantive therapeutic move.
+- `GUIDE-R002` remains `source-required` and `autoStart: false`; this records the requirement without claiming the complete canonical altered-state guide exists or authorizing compilation from incomplete source.
+- Task branch: `therapy/altered-state-capacity-routing-2026-09-04`, stacked on the concise-response branch so the new queue contract can be reviewed independently after PR #44.
+- Verification completed under Node 24.18.0: the complete `npm run verify` gate passes, including 540/540 automated tests, 12/12 graph regressions, therapy-lesson verification, authoring checks, package smokes, and repository hygiene checks.
+- Next safe action: inspect and audit the isolated diff, open a Draft stacked PR against `therapy/concise-external-replies-2026-09-04`, and wait for exact-head hosted checks. Do not compile `GUIDE-R002`, change `stable`, or install runtime policy from this queue-only task.
+
 ## Concurrent therapy response-presentation task
 
 - Owner-authorized goal: keep the full safety/formulation/three-way planning pipeline internal while making ordinary therapy replies concise by default and exposing the formulation only through explicit `map-debug` mode.
