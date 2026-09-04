@@ -97,13 +97,24 @@
     },
     {
       "id": "GUIDE-R002",
-      "name": "Compile altered-state support state machine",
+      "name": "Compile capacity-led altered-state support state machine",
       "automationClass": "source-required",
       "autoStart": false,
       "priority": 40,
       "layer": "guide-graph",
-      "objective": "Compile altered-state support after the complete canonical guide is available.",
-      "acceptance": ["complete canonical source available"]
+      "objective": "Compile altered-state support after the complete canonical guide is available. Treat a reported altered state as a routing modifier rather than a blanket blocker: first assess the user's current coherence, capacity, physical safety, and preferred level of engagement, then support staying with the experience, light conversation, or deeper therapeutic work as appropriate. Do not infer incapacity from substance disclosure alone. Preserve explicit safety escalation and account for the AI's inability to observe posture, affect, coordination, or other nonverbal cues by relying more heavily on explicit self-report.",
+      "acceptance": [
+        "complete canonical source available",
+        "a substance disclosure such as 'took harmalas' does not by itself force shallow containment, suspend therapy, or imply incapacity",
+        "the first altered-state routing pass assesses current coherence, capacity, physical safety, and the user's preferred engagement level: stay with the experience, light conversation, or deeper therapy",
+        "coherent users can choose intentional therapeutically substantive engagement, including deeper work, while altered",
+        "the route explicitly compensates for missing nonverbal observation by relying on user self-report rather than unsupported assumptions about posture, affect, coordination, or impairment",
+        "disorientation, inability to engage coherently, urgent physical symptoms, or other safety concerns still override preference and escalate to the appropriate containment or safety route",
+        "response length remains a presentation decision: concise mode may deliver a therapeutically substantive move and must not be treated as synonymous with shallow therapy",
+        "deterministic tests prove that 'took harmalas' alone preserves capacity-led choice, while disorientation, inability to engage, and safety-concern fixtures escalate appropriately",
+        "existing safety precedence, three-way therapy routing, internal formulation, and explicit map/debug transparency remain intact",
+        "therapy lesson, graph, authoring, package, and repository gates pass"
+      ]
     }
   ]
 }
