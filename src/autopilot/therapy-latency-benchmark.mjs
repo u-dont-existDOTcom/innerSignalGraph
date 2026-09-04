@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import { loadConfig, projectRoot } from "../core/config.mjs";
@@ -94,33 +95,44 @@ function timingProjection(performanceRecord, tier) {
 }
 
 async function runBenchmarkIteration(specification) {
-  const config = loadConfig({ mode: "mock", ledgerMode: "off", therapyProcessingMode: "auto" });
-  const providers = createProviders(config, { fixturePath: specification.fixturePath });
-  const providerCalls = [];
-  instrumentProviders(providers, providerCalls);
-  const context = await buildContext(specification.input, config);
-  let planningPassCount = 0;
-  const started = performance.now();
-  const result = await runTieredTherapyPipeline({
-    context,
-    providers,
-    config,
-    processingMode: "auto",
-    instrumentation: { onPlanningPass: () => { planningPassCount += 1; } }
-  });
-  const observedWallMs = Number((performance.now() - started).toFixed(3));
-  const semanticHash = therapyBenchmarkSemanticHash(result);
-  return {
-    processingTier: result.processingTier,
-    providerCalls,
-    providerStages: providerCalls.map(({ stage }) => stage),
-    providerCallCount: providerCalls.length,
-    planningPassCount,
-    stageTimings: timingProjection(result.performance, specification.expectedTier),
-    observedWallMs,
-    semanticHash,
-    semanticEquivalentToBaseline: semanticHash === specification.baseline.semanticHash
-  };
+  const benchmarkStateRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-therapy-latency-"));
+  try {
+    const config = loadConfig({
+      mode: "mock",
+      ledgerMode: "off",
+      therapyProcessingMode: "auto",
+      autopilotStateDir: benchmarkStateRoot,
+      guidePacketRoot: path.join(benchmarkStateRoot, "guide-packets")
+    });
+    const providers = createProviders(config, { fixturePath: specification.fixturePath });
+    const providerCalls = [];
+    instrumentProviders(providers, providerCalls);
+    const context = await buildContext(specification.input, config);
+    let planningPassCount = 0;
+    const started = performance.now();
+    const result = await runTieredTherapyPipeline({
+      context,
+      providers,
+      config,
+      processingMode: "auto",
+      instrumentation: { onPlanningPass: () => { planningPassCount += 1; } }
+    });
+    const observedWallMs = Number((performance.now() - started).toFixed(3));
+    const semanticHash = therapyBenchmarkSemanticHash(result);
+    return {
+      processingTier: result.processingTier,
+      providerCalls,
+      providerStages: providerCalls.map(({ stage }) => stage),
+      providerCallCount: providerCalls.length,
+      planningPassCount,
+      stageTimings: timingProjection(result.performance, specification.expectedTier),
+      observedWallMs,
+      semanticHash,
+      semanticEquivalentToBaseline: semanticHash === specification.baseline.semanticHash
+    };
+  } finally {
+    await fs.rm(benchmarkStateRoot, { recursive: true, force: true });
+  }
 }
 
 function allNumeric(record, fields) {
