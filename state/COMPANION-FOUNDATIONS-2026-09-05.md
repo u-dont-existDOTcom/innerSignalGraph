@@ -1,12 +1,31 @@
 # Parallel task: companion foundations
 
 Updated 2026-09-05. Branch `companion/foundations-2026-09-05`, draft PR #46.
-The owner-approved fictional-data interface is implemented under `tasks/companion-foundations-20260905/mock/`. It is not imported by the application, connected to a model, or connected to real history.
 
-Start with `docs/OWNER-TERMINOLOGY.md`, the design at `docs/superpowers/specs/2026-09-05-companion-foundations-design.md`, the task's `OWNER-DECISIONS.json` and `CURRENT-STATE.md`, and `mock/README.md`.
+Start with `tasks/companion-foundations-20260905/CURRENT-STATE.md`. Then read `docs/OWNER-TERMINOLOGY.md`, `OWNER-DECISIONS.json`, `MODEL-EVALUATION-PROTOCOL-v2.md`, `framework-revisability-cases.json`, and the preflight under `evaluations/2026-09-05-preflight/`.
 
-Actual continuation checks: 34 new Node tests passed on Node 22.16.0; 42 Chromium browser assertions passed on the exact generated HTML with desktop/mobile rendering. Direct file navigation and required Node 24/full-repository checks are not claimed. See `mock/verification.json` for source identities and limits. The original 16 model behavior cases remain unevaluated.
+## Current product direction
 
-The interface preserves independent invitations, optional history use, tentative mixed reflections, source withdrawal, rejected interpretations, natural development through friendship, direct help without compulsory questioning, and unconditional app exit. No percent-healed score or spiritual/modality completion requirement.
+The founder's present philosophy remains explicit: complete healing, within this approach, includes a developed inner adult in living relationship with the inner child and genuine spiritual connection. Formal therapy, books, app use, imagery, or adopting this vocabulary are not prerequisites for those capacities.
 
-The unrelated DEV-R005 frontier and authorization limits remain unchanged. No application integration, storage, crypto, graph-policy activation, paid model call, plugin, live pilot, merge or stable promotion is performed. Next: interface/semantic review plus exact-head repository checks before a separately reviewed application/privacy seam.
+The philosophy is **revisable rather than protected doctrine**. InnerSignal must represent it faithfully while allowing competing frameworks to earn attention from explanatory fit, predictions, disconfirming evidence, practical consequences, and repeated usefulness. Neither founder authority nor novelty is evidence.
+
+## Current bounded implementation
+
+The fictional-data interface, freshness guard, synthetic reflection controller, semantic-review contract, revision-2 evaluation fixtures, and offline working-framework policy remain task-local and are not imported by the application.
+
+Semantic review now separates philosophy fidelity from framework revisability. The working-framework prototype distinguishes personal metaphor, functional hypothesis, repeated personal pattern, unsupported literal factual claim, and global product-policy promotion. It cannot automatically promote any framework into the canonical map.
+
+Revision-2 evaluation preserves the original frozen v1 corpus and adds four synthetic framework-revisability cases. Current v2 shape is 30 isolated conversations / 43 listed user entries if replayed chronologically.
+
+## Behavioral execution status
+
+The owner has authorized running the behavioral evaluation in principle. **No target responder or independent grader has run in this supervisor session.** `modelRuns: 0`; zero target-responder calls; zero independent grades; no pass rate.
+
+The blocker is access to the established authenticated InnerSignal execution worker plus exact responder/grader binding and replay/call-budget definition. Do not ask the owner to reapprove the same direction, reveal credentials, or transport routine logs. Do not substitute the supervising chat as a blind responder.
+
+## Scope
+
+No real intake/history, persistence, new vault/crypto work, OS integration, provider call, active prompt, guide-graph mutation, Guide Packet, plugin, deployment, main merge, stable promotion, or diagnostics change is authorized or claimed. The unrelated DEV-R005 frontier remains separate.
+
+Exact-head Verify, repository workflow policy, and CodeQL are required after each source change. See the task checkpoint for current CI status; prior-head green results do not transfer automatically.
