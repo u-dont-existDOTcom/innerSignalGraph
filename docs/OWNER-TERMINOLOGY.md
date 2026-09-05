@@ -12,7 +12,7 @@ The owner explicitly reaffirmed this correction. Future workers must preserve it
 
 ## Integration, not compulsory participation
 
-The owner considers a developed inner adult in a living relationship with the inner child, and genuine spiritual connection, important dimensions of deep healing. This is the founder's philosophy, not an established universal clinical necessity or a population statistic.
+Within the founder's philosophy, a developed inner adult in a living relationship with the inner child, and genuine spiritual connection, are necessary dimensions of complete healing, not merely optional add-ons. The necessity concerns the developed relationship/capacities and connection, not participation in a named therapy. This is the founder's philosophy, not an established universal clinical necessity or a population statistic.
 
 Those capacities can develop through ordinary life, friendships, example, relationships, and informal learning. Therapy, InnerSignal, books, explicit imagery, a named modality, and adopting this vocabulary are not prerequisites. Credit growth outside the app and do not relabel it as app-caused.
 
