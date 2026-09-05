@@ -19,7 +19,9 @@ export const CONDITIONAL_SEMANTIC_CRITERIA = Object.freeze([
   'progress_balance',
   'spiritual_epistemic_humility',
   'self_guidance_scrutiny',
-  'safety_support_continuity'
+  'safety_support_continuity',
+  'philosophy_fidelity',
+  'framework_revisability'
 ]);
 
 const VERDICTS = Object.freeze(['pass', 'revise', 'block']);
