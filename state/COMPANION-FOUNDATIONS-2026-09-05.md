@@ -1,16 +1,12 @@
 # Parallel task: companion foundations
 
-Owner-authorized direction, recorded 2026-09-05. This is a parallel, offline-only task; the DEV-R005 frontier and its bounded authorizations remain unchanged.
+Updated 2026-09-05. Branch `companion/foundations-2026-09-05`, draft PR #46.
+The owner-approved fictional-data interface is implemented under `tasks/companion-foundations-20260905/mock/`. It is not imported by the application, connected to a model, or connected to real history.
 
-Start with:
+Start with `docs/OWNER-TERMINOLOGY.md`, the design at `docs/superpowers/specs/2026-09-05-companion-foundations-design.md`, the task's `OWNER-DECISIONS.json` and `CURRENT-STATE.md`, and `mock/README.md`.
 
-- `docs/OWNER-TERMINOLOGY.md`: use secular/non-spiritual appropriately; preserve the distinction from nontheism.
-- `docs/superpowers/specs/2026-09-05-companion-foundations-design.md`: clarified founder philosophy, natural development, adult/child integration, progress, self-guidance, autonomy, and non-sycophancy.
-- `tasks/companion-foundations-20260905/OWNER-DECISIONS.json`: approved principles versus provisional implementation decisions.
-- `tasks/companion-foundations-20260905/CURRENT-STATE.md`: exact scope, actual verification, limitations and next safe actions.
+Actual continuation checks: 34 new Node tests passed on Node 22.16.0; 42 Chromium browser assertions passed on the exact generated HTML with desktop/mobile rendering. Direct file navigation and required Node 24/full-repository checks are not claimed. See `mock/verification.json` for source identities and limits. The original 16 model behavior cases remain unevaluated.
 
-Task branch: `companion/foundations-2026-09-05`.
+The interface preserves independent invitations, optional history use, tentative mixed reflections, source withdrawal, rejected interpretations, natural development through friendship, direct help without compulsory questioning, and unconditional app exit. No percent-healed score or spiritual/modality completion requirement.
 
-Status: preparatory pure prototype, 30 local deterministic tests passed on Node 22; required Node 24/full-repository and semantic verification are separate. Sixteen synthetic behavioral cases are prepared but unevaluated. No application import, storage, therapy activation, model call, plugin, live pilot, main merge, or stable promotion is claimed.
-
-Do not require named inner-child practice, books, app use, spirituality milestones, or agreement with the founder before recognizing reported growth or respecting app exit. The owner considers inner adult/child integration and spiritual connection important dimensions of deep healing; preserve that as disclosed philosophy rather than an imposed diagnosis.
+The unrelated DEV-R005 frontier and authorization limits remain unchanged. No application integration, storage, crypto, graph-policy activation, paid model call, plugin, live pilot, merge or stable promotion is performed. Next: interface/semantic review plus exact-head repository checks before a separately reviewed application/privacy seam.

@@ -1,0 +1,40 @@
+{
+  "kind": "fictional-ui-prototype-verification",
+  "date": "2026-09-05",
+  "nodeVersion": "v22.16.0",
+  "newLocalTests": {
+    "passed": 34,
+    "failed": 0
+  },
+  "original30TestsRerun": false,
+  "browser": {
+    "version": "144.0.7559.96",
+    "assertionsPassed": 42,
+    "viewports": [
+      "1400x1100",
+      "390x844"
+    ],
+    "rendering": "set_content(exact_generated_html)",
+    "fileSchemeNavigationTested": false,
+    "fileSchemeLimitation": "Managed browser blocked file navigation; policy not changed.",
+    "pageNetworkRequests": 0,
+    "javascriptErrors": 0,
+    "cspConsoleErrors": 0
+  },
+  "fullRepositoryChecksRun": false,
+  "requiredNode24ChecksRun": false,
+  "liveModelRuns": 0,
+  "clinicalValidation": false,
+  "productionIntegration": false,
+  "sourceGitBlobs": {
+    "policy.mjs": "15aa0b964be78bc7b6595a8319ea7737884e7a73",
+    "mock/README.md": "5e1097e81e5a2394d9632366fe26c36b6cb20ea5",
+    "mock/browser-smoke.py": "4fbf04119a2af25ce36eb5f447935b49a71206db",
+    "mock/build.mjs": "09e7854180dd135066650edba69d1f9dae7bbee2",
+    "mock/model.mjs": "66ff1122ff4c3f29f1c649ed2b3b3593ab03d503",
+    "mock/model.test.mjs": "b90b0394c281398c77b538f8afd95dd7b785f683",
+    "mock/shell.html": "ebca767379a914f8f51dc5746ac1d393052dfd29",
+    "mock/view.mjs": "e369e9d3241eeed1448db0f57ccc7ce21dca56be"
+  },
+  "generatedHtmlSha256": "222b6d34ebb07ea4ba9b54e504bd0149619ea61edb09599219ceb26db72c6c5c"
+}
