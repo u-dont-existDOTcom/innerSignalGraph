@@ -1,6 +1,10 @@
-# Companion foundations: fictional-data interface
+# Companion foundations: fictional-data interface, revision 2
 
 This is a standalone design prototype, not a live therapist, model integration, memory system, or installed InnerSignal feature. It is scoped to the owner's instruction to continue with the synthetic, non-persistent interface described in the companion-foundations checkpoint.
+
+Publishing status: this revision was built and tested locally; its GitHub code upload was blocked. PR #46 has not been advanced. See `../CURRENT-STATE.md` and `verification-v2.json`.
+
+New in revision 2: history controls are grouped beside the examples; three fixed source corrections invalidate obsolete readings; a manual delayed-reply test uses `../reflection-handoff.mjs`. This freshness guard is not a memory backend, authentication mechanism or semantic review. See `../INTEGRATION-SEAM.md` for the real application boundary.
 
 ## Use
 
@@ -29,7 +33,7 @@ All user interactions are page-memory only. Ending the preview clears active sta
 ## Tests
 
 ```bash
-node --test tasks/companion-foundations-20260905/mock/model.test.mjs
+node --test tasks/companion-foundations-20260905/reflection-handoff.test.mjs tasks/companion-foundations-20260905/mock/model.test.mjs tasks/companion-foundations-20260905/mock/revision.test.mjs
 ```
 
 Optional browser test requires an already installed Python Playwright and Chromium:
@@ -40,4 +44,4 @@ python tasks/companion-foundations-20260905/mock/browser-smoke.py /tmp/InnerSign
 
 The browser harness injects the exact generated HTML with `set_content`. It checks interactions, invalidation, focus, mobile overflow, absence of network requests and JavaScript/CSP errors. It does not test file-scheme navigation, which is blocked by administrator policy in the development environment. No browser policies were changed.
 
-Actual results and exact source identities are in `verification.json`. The local environment was Node 22.16.0, not the repository-required Node 24. Full-repository and hosted checks must be assessed independently. The original 16 model behavior cases remain unevaluated.
+Revision 2 passed 58 local Node tests and 64 browser assertions. Actual results and exact source identities are in `verification-v2.json`; `verification.json` is historical revision-1 evidence. The local environment was Node 22.16.0, not the repository-required Node 24. Full-repository and hosted checks must be assessed independently. The original 16 model behavior cases remain unevaluated.

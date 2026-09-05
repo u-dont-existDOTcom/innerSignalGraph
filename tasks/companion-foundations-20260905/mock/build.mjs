@@ -6,7 +6,7 @@ const hash = content => createHash('sha256').update(content).digest('base64');
 /** Deterministic single-file build. No bundler, network or runtime imports. */
 export async function buildPreview() {
   const read = path => readFile(new URL(path, import.meta.url), 'utf8');
-  const files = await Promise.all(['../policy.mjs', './model.mjs', './view.mjs'].map(read));
+  const files = await Promise.all(['../policy.mjs', '../reflection-handoff.mjs', './model.mjs', './view.mjs'].map(read));
   const script = `'use strict';\n(() => {\n${files.map(content => content
     .replace(/^import \{[^\n]+\} from '[^']+';\n/gm, '')
     .replace(/^export (?=(?:const|function) )/gm, '')).join('\n')}\n})();\n`;

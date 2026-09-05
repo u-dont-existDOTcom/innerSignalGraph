@@ -50,6 +50,12 @@ export const SCENARIOS = freezeDeep({
     reading: null
   }
 });
+// Fixed corrections for the demo; a real evidence store is not implemented here.
+export const CORRECTIONS = freezeDeep({
+  b2: { quote: 'Correction: I returned to my evening briefly, then spent most of the night replaying this different disagreement.', assessment: 'complicates' },
+  m2: { quote: 'Correction: that steadier week was while I was on leave. I have not tried it with my usual work demands.', assessment: 'complicates' },
+  n2: { quote: 'Correction: my friends helped me respond kindly on that occasion, but I still attack myself after other mistakes.', assessment: 'complicates' }
+});
 const INVITATIONS = ['unset', 'welcome', 'user_initiated', 'do_not_suggest'];
 const REFLECTIONS = ['off', 'on_request', 'occasional'];
 const THEMES = ['inner', 'spirit'];
@@ -63,7 +69,7 @@ export function initialState() {
   return {
     closed: false, scenario: 'boundaries', history: false,
     preferences: { inner: 'unset', spirit: 'unset', reflections: 'on_request' },
-    withdrawn: {}, rejected: {}, reviewed: {}, offered: { inner: false, spirit: false },
+    withdrawn: {}, corrected: {}, rejected: {}, reviewed: {}, offered: { inner: false, spirit: false },
     reports: [], reflection: null, feedback: '', notice: 'Choose a fictional history and enable its use to try a reflection.',
     invitations: { inner: '', spirit: '' }, asked: false, support: ''
   };
@@ -71,7 +77,9 @@ export function initialState() {
 const clearReading = state => { state.reflection = null; state.feedback = ''; };
 const refreshReports = state => {
   state.reports = state.history ? structuredClone(SCENARIOS[state.scenario].reports)
-    .filter(item => !(state.withdrawn[state.scenario] || []).includes(item.id)) : [];
+    .filter(item => !(state.withdrawn[state.scenario] || []).includes(item.id))
+    .map(item => (state.corrected[state.scenario] || []).includes(item.id)
+      ? { ...item, ...CORRECTIONS[item.id], corrected: true } : item) : [];
 };
 export function previewInvitation(state, theme, requestedNow = false) {
   validateChoice(theme, THEMES);
@@ -85,7 +93,7 @@ export function previewReflection(state, requestedNow = true) {
   if (state.rejected[state.scenario]) return { allowed: false, reason: 'INTERPRETATION_REJECTED' };
   const scenario = SCENARIOS[state.scenario];
   // Do not silently drop withdrawn counterevidence and reuse the original prose.
-  if ((state.withdrawn[state.scenario] || []).length) {
+  if ((state.withdrawn[state.scenario] || []).length || (state.corrected[state.scenario] || []).length) {
     return { allowed: false, reason: 'SOURCE_CHANGED_REASSESSMENT_REQUIRED' };
   }
   const evidence = state.reports.map(({ id, episodeId, period, assessment }) => ({
@@ -104,7 +112,7 @@ export const REASONS = freezeDeep({
   NO_REPEAT_PROGRESS_CHECK: 'This example has already been reviewed. No repeated unprompted check-in is shown.',
   DISTINCT_EARLIER_AND_RECENT_EPISODES_REQUIRED: 'There is not enough distinct earlier and recent evidence to describe change. I will not invent a comparison.',
   INTERPRETATION_REJECTED: 'You rejected this reading. It stays withdrawn, even when you revisit this example. Reset this fictional example only to test it again.',
-  SOURCE_CHANGED_REASSESSMENT_REQUIRED: 'A source was withdrawn. The previous comparison is cleared and cannot be reused. This scripted preview cannot create a new interpretation.',
+  SOURCE_CHANGED_REASSESSMENT_REQUIRED: 'A source was changed or withdrawn. The previous comparison is cleared and cannot be reused. This scripted preview cannot create a new interpretation.',
   PREVIEW_CLOSED: 'This preview session has ended.'
 });
 
@@ -151,6 +159,18 @@ export function transition(previous, action) {
       } else state.notice = REASONS[decision.reason] || 'No supported comparison is available.';
       break;
     }
+    case 'clear-reading':
+      clearReading(state);
+      break;
+    case 'correct':
+      if (!state.reports.some(item => item.id === action.id) || !Object.hasOwn(CORRECTIONS, action.id)) {
+        throw new TypeError('Unknown correctable fictional source');
+      }
+      state.corrected[state.scenario] = [...new Set([...(state.corrected[state.scenario] || []), action.id])];
+      refreshReports(state);
+      clearReading(state);
+      state.notice = REASONS.SOURCE_CHANGED_REASSESSMENT_REQUIRED;
+      break;
     case 'withdraw':
       if (!state.reports.some(item => item.id === action.id)) throw new TypeError('Unknown active source');
       state.withdrawn[state.scenario] = [...(state.withdrawn[state.scenario] || []), action.id];
@@ -170,6 +190,7 @@ export function transition(previous, action) {
       break;
     case 'reset':
       delete state.withdrawn[state.scenario];
+      delete state.corrected[state.scenario];
       delete state.rejected[state.scenario];
       delete state.reviewed[state.scenario];
       refreshReports(state);

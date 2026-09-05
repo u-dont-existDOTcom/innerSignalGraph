@@ -1,47 +1,40 @@
 # Companion foundations checkpoint
 
-Updated: 2026-09-05. Task: COMPANION-FOUNDATIONS-20260905.
-Branch: `companion/foundations-2026-09-05`. Draft PR: #46.
-Base for this continuation: `af76a2f4add98b1e7f1429be16d3e26382b7afe3`.
-Original main base: `64863eefa9678c063ed5c5a48a3280fa507a4c95`.
+Updated 2026-09-05. Task COMPANION-FOUNDATIONS-20260905. Draft PR #46.
+Branch: companion/foundations-2026-09-05.
+Continuation base: 2a638d9089922380fc111898882d6f002c3c9b15.
+Original main base: 64863eefa9678c063ed5c5a48a3280fa507a4c95.
 
-## Current completed slice
+## Publishing status: LOCAL ONLY
 
-The owner's continuation approves the next previously specified step: preference controls and a progress-reflection interface using fictional histories only. Implemented as a standalone page under `mock/`, not inside the application.
+The tested continuation has not been committed to the PR branch. The second GitHub create_tree call was blocked by the platform because it could not determine request safety. No retry through another write route was attempted. One earlier unreferenced tree object (`eac758c459984e9e06c4d3f1612394bd9c27f6d4`) exists, but no new commit was created and no branch reference was advanced. PR #46 remains at the continuation base above. The local source package is the completed working copy, not proof of a remote commit. New-head hosted verification therefore does not exist.
 
-The mock includes independent invitation preferences, explicit fictional-history permission, on-request/occasional/off reflections, five source-linked fictional scenarios, mixed evidence, recognition of development through friends, no-comparison cases, rejection and source withdrawal, optional self-guidance/direct help, and unrestricted exit clearing active state. Rejected interpretations and withdrawn examples remain excluded across scenario switching. No reuse of prewritten prose is permitted after withdrawing counterevidence. A clearly labeled fictional reset is the only way to reload that scenario inside the same preview session.
+## Latest owner feedback and completed work
 
-The founder's philosophy remains accurately disclosed; secular language is preserved; participation in therapy or the app is not required for the capacities being described. These are scripted examples, not an evaluated therapeutic model.
+Owner: the preview looked pretty good, but fictional-history opt-in was in the wrong section; continue. This is continuation of the agreed prototype and integration groundwork, not release or real-data authority.
 
-## Preserved first slice
+Moved the checkbox, example selector and reflection preference into one labeled group in the example workspace. Corrected the empty-state location instruction. Added three fixed fictional source corrections and tests that remove obsolete readings without inventing a replacement. Added the offline request-freshness seam and connected it to manual delayed-reply controls in the mock. Old replies are rejected after source/context/permission changes, reset, cancellation, exit or restart; stale delivery cannot erase a newer reading. Page-hide clears the demo session. Tickets carry no evidence or identity.
 
-The terminology record, founder design, ten-principle OWNER-DECISIONS ledger, original pure policy functions, original tests and 16 synthetic unevaluated behavioral cases remain unchanged. This continuation uses the existing policy module; its reconstructed local bytes were verified against Git blob `15aa0b964be78bc7b6595a8319ea7737884e7a73` before testing.
+The model examples remain scripted, not model-evaluated. The original owner philosophy, terminology, approval ledger, 30 policy tests and 16 unevaluated behavior cases are unchanged. No clinical approval or broad copy approval is inferred from positive interface feedback.
 
-The first slice recorded 30 prior local tests. This continuation does not claim to rerun that original suite; it adds and actually runs a separate 34-test suite covering the UI model, existing policy integration, build and source constraints.
+## Verification for this continuation
 
-## Actual verification
+58 local Node tests passed on Node v22.16.0: 34 existing mock tests, 5 new correction/layout tests and 19 new request-freshness tests. Browser assertions and exact source identities are in mock/verification-v2.json; the extended browser harness checks layout, source corrections and delayed-reply invalidation using the generated HTML. Desktop/mobile rendered output was inspected. This is not local Node 24 or full repository verification.
 
-- New local Node tests: **34 passed, 0 failed**, Node **v22.16.0**.
-- Browser smoke: **42 assertions passed**, Chromium **144.0.7559.96**, desktop 1400x1100 and mobile 390x844.
-- Browser page initiated zero network requests and produced zero JavaScript or CSP console errors. Desktop and mobile renders were inspected.
-- Browser loaded the exact generated HTML via `set_content`. Direct file navigation was blocked by managed-browser policy and is not claimed as tested. No policy was changed.
-- Standalone generation is deterministic with verified inline-script/style CSP hashes and no external assets.
-- Exact checked source identities, generated artifact SHA-256 and coverage limits are in `mock/verification.json`.
+The direct Git read was attempted once and failed to resolve github.com. GitHub connector reads/writes remain available. Hosted CI for the final published head must be read separately; do not substitute prior-head checks.
 
-Direct Git cloning failed because this local runtime could not resolve github.com. The connected GitHub tool remained available. Therefore this is not a full repository checkout, Node 24 verification, `npm test`, repository/publication audit, or `npm run verify` result. Exact-head hosted checks are separate and must be read from the PR. Do not weaken unrelated checks or modify workflows to obtain green status.
+Historical hosted failure remains explicitly retained in INTEGRATION-SEAM.md: prior PR head had 591/592 passing tests, with a publication-wrapper exit-code failure. Its root cause is not established. The wrapper and the earlier PR #32 repair were inspected; no speculative infrastructure change or rerun-to-green was made. A fresh head passing does not establish repair of that earlier failure.
 
-No model calls, model-level semantic evaluation, independent clinical review or efficacy finding occurred. The 16 behavioral cases still have `modelRuns: 0`.
+## Scope and non-effects
 
-## Authority and non-effects
+All changed executable code remains inside this task. Production code imports none of it. No real intake, persistent storage, vault/crypto or OS integration, provider/model call, active prompt, guide graph, Guide Packet, plugin, public pilot, deployment, main merge, stable promotion or diagnostics change. PR #42 and DEV-R005 remain separate; their checkpoints and authorization boundaries were not changed.
 
-This is an offline mock UI only. Existing production application code imports none of these additions. No real intake, persistent history, crypto, vault, OS integration, telemetry, provider, active prompt, guide graph, Guide Packet, plugin, deployment, main merge or stable promotion is performed. The `safetyClear: true` inputs are fictional test assumptions, not clinical screening.
-
-PR #42 remains separate. DEV-R005 and the root `state/CODEX-CURRENT-STATE.md` retain their own bounded authority. This work does not authorize later vault/storage slices. Use `state/COMPANION-FOUNDATIONS-2026-09-05.md` for this parallel task.
+The seam establishes one freshness boundary, not clinical truth, full deletion, upstream transport cancellation, user authentication or semantic review. Mock booleans are fictional assumptions, never evidence of actual screening or vault access. Read INTEGRATION-SEAM.md before extending it.
 
 ## Next safe action
 
-Review the clickable mock and exact diff. Validate the draft copy and interaction semantics against `docs/OWNER-TERMINOLOGY.md` and the approved design. Establish required Node 24/full-repository and exact-head hosted checks, without changing unrelated infrastructure.
+Inspect the final PR head, exact tree and hosted checks. Preserve and diagnose the recorded publication-wrapper failure rather than deleting or relaxing it. Review the new handoff seam and wiring independently.
 
-The next functional step is a reviewed application integration seam using only the approved preference and privacy architecture. It must not create a parallel storage backend or connect real histories before consent, correction/deletion propagation, evidence extraction and semantic evaluation are tested. The source/provenance gate cannot prove the truth, completeness or clinical interpretation of evidence.
+Next functional slice: define/test a multi-stage reflection controller with a synthetic snapshot adapter and a deliberately unapproved semantic-review result by default. Recheck freshness after every asynchronous stage. Only after exact-source extraction, substantive model evaluation and the approved history/vault adapter exist may real histories be considered. No parallel memory backend, automatic migration or new provider authorization.
 
-Keep PR #46 draft until review and required gates complete. No automatic merge, deployment, live pilot, model evaluation or release is authorized by this checkpoint. Do not rerun successful work or rediscover the original design after interruption.
+Keep PR #46 draft until required verification and independent review complete. Treat the original 16 model behavior cases as unevaluated, not implicitly passed by interface tests. Save continuation here without overwriting the unrelated root development frontier.

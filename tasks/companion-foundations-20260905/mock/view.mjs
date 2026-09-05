@@ -1,7 +1,11 @@
-import { initialState, transition, SCENARIOS } from './model.mjs';
+import { initialState, transition, previewReflection, SCENARIOS, CORRECTIONS } from './model.mjs';
+
+import { createReflectionHandoff } from '../reflection-handoff.mjs';
 
 export function mountPreview(doc) {
   let state = initialState();
+  const handoff = createReflectionHandoff();
+  let queuedTicket = null;
   const el = id => {
     const element = doc.getElementById(id);
     if (!element) throw new Error(`Missing preview element: ${id}`);
@@ -30,12 +34,22 @@ export function mountPreview(doc) {
       button.id = `withdraw-${report.id}`;
       button.setAttribute('aria-label', `Withdraw fictional source ${report.id}`);
       button.addEventListener('click', () => dispatch({ type: 'withdraw', id: report.id }, 'notice'));
-      node.append(caption, quote, button); return node;
+      const actions = doc.createElement('div'); actions.className = 'row';
+      actions.append(button);
+      if (Object.hasOwn(CORRECTIONS, report.id) && !report.corrected) {
+        const correct = doc.createElement('button'); correct.textContent = 'Simulate a correction';
+        correct.id = `correct-${report.id}`;
+        correct.setAttribute('aria-label', `Correct fictional source ${report.id}`);
+        correct.addEventListener('click', () => dispatch({ type: 'correct', id: report.id }, 'notice'));
+        actions.append(correct);
+      }
+      if (report.corrected) caption.textContent += ' · corrected example';
+      node.append(caption, quote, actions); return node;
     });
     if (!nodes.length) {
       const empty = doc.createElement('div'); empty.className = 'empty';
       empty.textContent = state.history ? 'No active fictional reports remain.'
-        : 'Enable the fictional history under Your approach to show the example reports.';
+        : 'Use the fictional-history checkbox just above the example selector to show the reports.';
       nodes.push(empty);
     }
     el('reports').replaceChildren(...nodes);
@@ -63,10 +77,19 @@ export function mountPreview(doc) {
   }
   function dispatch(action, focusId) {
     try {
+      if (['preference', 'history', 'scenario', 'correct', 'withdraw', 'reject', 'reset', 'review', 'exit', 'restart'].includes(action.type)) {
+        handoff.invalidate();
+        setText('handoff-status', queuedTicket ? 'The queued reply is no longer current. Deliver it to test that it is blocked.' : '');
+      }
+      if (action.type === 'exit' || action.type === 'restart') {
+        queuedTicket = null;
+        setText('handoff-status', '');
+      }
       state = transition(state, action);
       render();
       if (focusId) el(focusId).focus();
     } catch {
+      handoff.invalidate(); queuedTicket = null; setText('handoff-status', '');
       // A rendering/transition failure must not leave a stale reading on screen.
       state = initialState();
       state.notice = 'The preview could not apply that change. Its temporary state has been cleared.';
@@ -74,6 +97,28 @@ export function mountPreview(doc) {
       el('notice').focus();
     }
   }
+  el('queue-reflection').addEventListener('click', () => {
+    dispatch({ type: 'clear-reading' });
+    const request = handoff.begin(() => previewReflection(state, true).allowed);
+    queuedTicket = request.allowed ? request.ticket : null;
+    setText('handoff-status', request.allowed ? 'Example reply queued. Nothing has been generated or sent.'
+      : 'No reply queued: the current example or permissions do not support a comparison.');
+  });
+  el('deliver-reflection').addEventListener('click', () => {
+    const decision = handoff.consume(queuedTicket, () => previewReflection(state, true).allowed);
+    queuedTicket = null;
+    if (decision.allowed) {
+      // Freshness is not semantic approval. Only the existing labeled scripted demo is rendered.
+      dispatch({ type: 'review', requestedNow: true });
+      setText('handoff-status', 'Current scripted example delivered once. No model or semantic evaluation occurred.');
+    } else setText('handoff-status', 'Old or unavailable reply blocked. No reading was added or changed.');
+  });
+  el('cancel-reflection').addEventListener('click', () => {
+    handoff.invalidate(); queuedTicket = null;
+    setText('handoff-status', 'Queued reply cancelled. You can leave without completing anything.');
+  });
+  // This is a demo lifecycle hook, not an OS-backed vault implementation.
+  doc.defaultView?.addEventListener('pagehide', () => dispatch({ type: 'exit' }));
   for (const [id, key] of [['inner-pref', 'inner'], ['spirit-pref', 'spirit'], ['reflection-pref', 'reflections']]) {
     el(id).addEventListener('change', event => dispatch({ type: 'preference', key, value: event.target.value }));
   }
