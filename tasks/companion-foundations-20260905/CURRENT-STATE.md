@@ -32,6 +32,22 @@ Revision-2 corpus: 30 isolated conversations = original 26 + four supplement cas
 
 `modelRuns: 0`. These additions are test design and deterministic review machinery, not behavioral results.
 
+## Working-framework prototype
+
+`framework-hypothesis-policy.mjs` adds an offline, non-production lifecycle for a user's own explanatory language without creating another therapy department or a global-learning backend.
+
+It distinguishes:
+
+- **personal metaphor** — useful language can be used without a factual truth claim;
+- **functional working hypothesis** — a model can be tested when it makes a discriminating prediction;
+- **repeated personal pattern** — repeated support across distinct episodes may strengthen personal confidence without becoming global policy;
+- **literal factual claim** — subjective usefulness and repeated personal fit do not by themselves establish an extraordinary ontology;
+- **product-policy promotion** — never automatic in this task, even with strong personal support; a separate evidence/privacy/governance decision is required.
+
+Conflict with the current founder framework is deliberately not an exploration veto. Counterevidence produces a mixed personal hypothesis instead of being assimilated into a success story. The comparison surface uses questions rather than a pseudo-precise score: what the new model explains, predicts, would be falsified by, changes in action, repeats across situations, and which claims are metaphorical/functional versus literal factual claims.
+
+This prototype has no storage, provider call, cross-user aggregation, canonical graph mutation, or authority to promote a framework.
+
 ## Behavioral-evaluation execution status
 
 The owner has already authorized running the behavioral evaluation in principle. Do not ask for the same directional approval again.
