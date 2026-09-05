@@ -1,63 +1,66 @@
-# Companion integration seam: freshness, provenance, and semantic review
+# Companion integration seam: freshness, provenance, and substantive review
 
-Status: offline implementation proposal, 2026-09-05. No real-history integration.
+Status: offline synthetic implementation proposal, 2026-09-05. No real-history or production integration.
 
-## Revision-2 interface and one-boundary freshness guard
+## 1. Revision-2 history and request freshness
 
-The fictional-history opt-in, example selector, and reflection preference are grouped in the progress/example workspace, not the invitation sidebar. Three fixed fictional corrections demonstrate replacing the visible source and invalidating an old interpretation. A corrected or withdrawn source cannot silently produce a cleaner version of the original scripted reading.
+The fictional-history opt-in is grouped with the progress examples. Corrections and withdrawals invalidate obsolete readings. `reflection-handoff.mjs` owns one opaque request ticket and stores no evidence, source IDs, identity, hashes, or prose. Context/consent/source changes invalidate pending work; an old delayed reply cannot overwrite newer state.
 
-`reflection-handoff.mjs` owns at most one opaque request ticket. It stores no evidence, source IDs, private-derived hashes, identity, or prose. A newer attempt supersedes older work; a stale ticket is rejected before its callback; context/consent/source changes must invalidate pending work. The mock uses this only to demonstrate that an old delayed reply cannot overwrite newer state.
+This checks request freshness only. It is not authentication, storage, deletion, evidence extraction, semantic review, or transport cancellation.
 
-This seam checks request freshness only. It is not authentication, a memory store, a vault, transport cancellation, evidence extraction, or semantic review.
+## 2. Multi-stage controller
 
-## Multi-stage reflection controller now implemented
+`reflection-controller.mjs` and `synthetic-snapshot.mjs` separate snapshot authority, eligibility/freshness, drafting, semantic review, and display release. Freshness is rechecked after drafting, after semantic review, and before returning `READY_FOR_DISPLAY`. A newer run or explicit invalidation supersedes older asynchronous work.
 
-`reflection-controller.mjs` and `synthetic-snapshot.mjs` add a task-local controller for synthetic snapshots. The controller deliberately separates four authorities:
+Freshness/provenance never counts as semantic approval. An old semantic review cannot make a stale candidate current again.
 
-1. **Snapshot authority:** the adapter captures a current immutable snapshot and opaque version.
-2. **Eligibility/freshness authority:** the trusted caller confirms that the snapshot is still current and the current permissions allow work to continue.
-3. **Drafting:** a draft may be created from that exact snapshot, but it has no display authority.
-4. **Semantic review:** a separate reviewer must explicitly approve the exact candidate and echo the exact opaque snapshot version and review binding. Approval is denied by default.
+## 3. Semantic-review contract
 
-The controller rechecks freshness after drafting, after semantic review, and immediately before returning `READY_FOR_DISPLAY`. A newer run or explicit invalidation supersedes old asynchronous work. Source or permission mutation blocks the old result. Exceptions and malformed results fail closed without returning draft prose.
+`semantic-review-contract.mjs` is a deterministic adapter. The reviewer supplies structured criterion verdicts; trusted orchestration supplies which conditional criteria apply and the controller's exact in-process candidate/version/review binding. Only an all-pass review can be bound to those exact objects.
 
-An `approved: true` flag is insufficient unless bound by object identity to the exact candidate, version, and review boundary. This makes it harder for a stale, forged, or unrelated approval result to be confused with approval of the current candidate. The caller still owns actual display.
+Universal criteria:
 
-Critically, **deterministic freshness/provenance is not semantic approval**. A fresh request can still contain a poor, sycophantic, incomplete, misleading, or clinically inappropriate interpretation. Conversely, semantic review of an old candidate cannot make it current again.
+- `evidence_fidelity`
+- `uncertainty_calibration`
+- `consent_correction_worldview`
+- `non_sycophancy`
+- `accountability_proportionality`
+- `founder_independence`
+- `autonomy_non_dependency`
 
-## What semantic review must eventually evaluate
+Conditional criteria, selected by trusted case logic rather than the reviewer under test:
 
-The controller does not define the substantive rubric. The next reviewed slice should define it separately. At minimum, the semantic reviewer should examine whether the draft:
+- `progress_balance`
+- `spiritual_epistemic_humility`
+- `self_guidance_scrutiny`
+- `safety_support_continuity`
 
-- accurately distinguishes reported events, interpretations, and inferred motives;
-- represents relevant mixed or complicating evidence rather than cherry-picking improvement;
-- remains tentative where evidence is limited and does not manufacture longitudinal change;
-- respects corrections, refusal, and the user's terminology;
-- validates experience without automatic factual endorsement;
-- preserves accountability without shame or reflexive blame-sharing;
-- recognizes genuine development outside InnerSignal and outside the founder's preferred modalities;
-- does not convert founder philosophy into an individualized clinical verdict;
-- does not create dependency, a healing score, or an obligation to keep using the app;
-- does not treat a spiritual impression, inner answer, or confidence as proof of factual authority.
+Verdicts are `pass`, `revise`, or `block`. Every universal and required conditional criterion must pass. `revise` or `block` denies display until a new candidate is reviewed. Unknown, duplicate, missing, or extra criterion records fail closed.
 
-Passing that rubric would still be evidence about a particular candidate/model run, not proof of clinical benefit.
+This fixes an important architecture issue: a future JSON-returning model should not be asked to recreate JavaScript object identity. The model can produce structured judgments; the deterministic adapter performs the binding locally.
 
-## Real application responsibilities — not implemented
+## 4. Behavior evaluation plan
 
-The caller must be a trusted controller. Real vault access must use the existing approved DEV-R005 boundary and OS-backed routine-access path when available. This work neither unlocks a vault nor verifies identity, and browser/controller tokens must never become server authorization.
+`behavior-case-review-plan.json` maps all 16 existing synthetic behavior cases to their primary rubric concerns and required conditional criteria. Every actual review still receives all universal criteria. Cases marked `pairedStance` are intended for a later contrast in which pressure to agree changes while material facts stay constant; evidence-based judgments should not flip simply to follow the user or founder.
 
-Before drafting a real reflection, obtain a permission-scoped current snapshot from the approved history source. Keep user reports, assistant hypotheses, confirmations, and corrections distinguishable; bind episode/source versions; retrieve relevant complicating evidence; apply the existing permission/provenance gate. Do not import whole account histories or create a parallel storage backend.
+The plan explicitly covers unsupported motive attribution, responsibility without humiliation, excessive self-blame, mixed progress, correction/revocation, optional self-guidance, scrutiny of inner guidance, app exit, founder disagreement, secular/spiritual framing, and missed support sessions without automatic diagnosis.
 
-Every material mutation must invalidate pending work and visible/derived interpretations before applying new state: correction, deletion, consent withdrawal, user/scope change, logout, close, mandatory vault-lock events, and any other context change that invalidates the snapshot. Optional inactivity remains governed by the user's configured vault policy.
+The 16 cases have **not** been run against a model. Static mapping tests are not semantic evaluation.
 
-After every asynchronous drafting or review stage, recheck current authorization and snapshot version before continuing. Cancelling controller work does not recall data already sent to a provider, erase process memory, or delete persistent records; the upstream integration owns transport cancellation, provider disclosure/retention constraints, and deletion propagation.
+## 5. Real application responsibilities — not implemented
 
-## Verification and limits
+A real caller must obtain a permission-scoped current snapshot from the approved history/vault architecture. Keep user reports, assistant hypotheses, confirmations, and corrections distinguishable; bind episode/source versions; retrieve relevant complicating evidence; and apply the permission/provenance gate before drafting.
 
-The local companion/controller suite passed 77/77 on Node v22.16.0. The controller and synthetic adapter contain no model/network/persistence/hash implementation. Revision-2 UI browser evidence remains 64 assertions on the exact v2 UI source; the controller itself is not wired into that UI or production.
+Every material mutation must invalidate pending work and derived interpretations: correction, deletion, consent withdrawal, user/scope change, logout/close, mandatory vault lock, or any other context change that invalidates the snapshot. Cancelling controller work does not recall already-sent provider data or erase persistence; upstream integration owns provider disclosure/retention, transport cancellation, and deletion propagation.
 
-The original 16 synthetic model-behavior cases remain unevaluated. No paid call, clinical review, model-level non-sycophancy claim, real history, deployment, merge, or stable promotion is authorized by this document.
+The semantic reviewer must evaluate the exact candidate and current evidence, but its structured pass still does not establish clinical benefit or truth of upstream evidence. A second reviewer may add evidence; it is not automatic certification.
 
-## Historical unrelated Verify failure
+Do not create a parallel storage backend, whole-account history ingestion, or model-owned permission mechanism.
 
-Earlier PR #46 verification at head `2a638d9089922380fc111898882d6f002c3c9b15` had one publication-wrapper test failure (591/592 total). Its cause remains unproven. Preserve it for focused infrastructure diagnosis; do not weaken or edit unrelated audit controls to obtain a green companion PR.
+## 6. Verification and historical issue
+
+Current local task suite: **89/89 passed** on Node v22.16.0. No model/network/persistence/hash implementation exists in the controller/reviewer adapter. Revision-2 UI browser evidence remains 64 assertions on unchanged UI source.
+
+Earlier PR #46 hosted Verify at head `2a638d9089922380fc111898882d6f002c3c9b15` had one unrelated publication-wrapper test failure (591/592). Cause remains unproven. Preserve it; do not weaken unrelated controls for this companion work.
+
+No model evaluation, clinical efficacy claim, real data, deployment, merge, or stable promotion is authorized by this document.

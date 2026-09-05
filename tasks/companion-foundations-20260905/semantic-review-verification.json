@@ -1,0 +1,29 @@
+{
+  "kind": "synthetic-companion-semantic-review-contract-v1",
+  "date": "2026-09-05",
+  "local": {
+    "node": "v22.16.0",
+    "testsPassed": 89,
+    "testsFailed": 0,
+    "originalPolicySuiteIncludedInThisCount": false
+  },
+  "rubric": {
+    "universalCriteria": 7,
+    "conditionalCriteria": 4,
+    "verdicts": ["pass", "revise", "block"],
+    "reviewerChoosesConditionalApplicability": false,
+    "semanticApprovalDefault": "denied"
+  },
+  "behaviorPlan": {
+    "casesMapped": 16,
+    "modelRuns": 0,
+    "status": "SYNTHETIC_UNEVALUATED_REVIEW_PLAN"
+  },
+  "productionIntegrated": false,
+  "modelCalls": 0,
+  "clinicalEvaluationPerformed": false,
+  "hosted": {
+    "status": "PENDING_EXACT_HEAD_AFTER_BRANCH_ADVANCE",
+    "historicalVerifyFailurePreserved": true
+  }
+}
