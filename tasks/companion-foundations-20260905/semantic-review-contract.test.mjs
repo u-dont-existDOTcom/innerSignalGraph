@@ -34,6 +34,20 @@ test('caller-required conditional criteria must also pass', () => {
   assert.deepEqual(denied, { approved: false, reason: 'SEMANTIC_REVISION_REQUIRED', criteria: ['progress_balance'] });
 });
 
+test('philosophy fidelity and framework revisability are independent conditional gates', () => {
+  const requiredConditional = ['philosophy_fidelity', 'framework_revisability'];
+  const b = binding();
+  assert.equal(adjudicateSemanticReview({ review: review(requiredConditional), requiredConditional, ...b }).approved, true);
+  const dilution = adjudicateSemanticReview({
+    review: review(requiredConditional, { philosophy_fidelity: 'revise' }), requiredConditional, ...b
+  });
+  assert.deepEqual(dilution, { approved: false, reason: 'SEMANTIC_REVISION_REQUIRED', criteria: ['philosophy_fidelity'] });
+  const dogma = adjudicateSemanticReview({
+    review: review(requiredConditional, { framework_revisability: 'block' }), requiredConditional, ...b
+  });
+  assert.deepEqual(dogma, { approved: false, reason: 'SEMANTIC_BLOCK', criteria: ['framework_revisability'] });
+});
+
 test('block outranks revise and returns criterion IDs without candidate prose', () => {
   const b = binding();
   const result = adjudicateSemanticReview({ review: review([], { non_sycophancy: 'revise', evidence_fidelity: 'block' }), ...b });
@@ -52,8 +66,9 @@ test('missing, duplicate, unknown or extra criterion results fail closed', () =>
 
 test('reviewer cannot opt itself out of conditional criteria', () => {
   const b = binding();
-  const requiredConditional = ['progress_balance'];
-  assert.equal(adjudicateSemanticReview({ review: review(), requiredConditional, ...b }).reason, 'INCOMPLETE_SEMANTIC_REVIEW');
+  for (const requiredConditional of [['progress_balance'], ['framework_revisability'], ['philosophy_fidelity']]) {
+    assert.equal(adjudicateSemanticReview({ review: review(), requiredConditional, ...b }).reason, 'INCOMPLETE_SEMANTIC_REVIEW');
+  }
   for (const bad of [['unknown'], ['progress_balance', 'progress_balance'], 'progress_balance']) {
     assert.equal(adjudicateSemanticReview({ review: review(), requiredConditional: bad, ...b }).reason, 'INVALID_REQUIRED_CRITERIA');
   }
@@ -96,7 +111,10 @@ test('rubric and contract enumerate the same criteria and remain synthetic-only'
   const rubric = JSON.parse(await readFile(new URL('./semantic-review-rubric.json', import.meta.url), 'utf8'));
   assert.deepEqual(rubric.universalCriteria.map(x => x.id), [...UNIVERSAL_SEMANTIC_CRITERIA]);
   assert.deepEqual(rubric.conditionalCriteria.map(x => x.id), [...CONDITIONAL_SEMANTIC_CRITERIA]);
-  assert.equal(rubric.status, 'PROVISIONAL_SYNTHETIC_CONTRACT');
+  assert.equal(rubric.status, 'PROVISIONAL_SYNTHETIC_CONTRACT_V2');
+  assert.equal(rubric.schemaVersion, 2);
+  assert.ok(CONDITIONAL_SEMANTIC_CRITERIA.includes('philosophy_fidelity'));
+  assert.ok(CONDITIONAL_SEMANTIC_CRITERIA.includes('framework_revisability'));
   const source = await readFile(new URL('./semantic-review-contract.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /^import |\b(?:fetch|localStorage|sessionStorage|indexedDB|createHash|setTimeout)\s*[.(]/m);
 });
