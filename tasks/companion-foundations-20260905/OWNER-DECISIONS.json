@@ -45,6 +45,10 @@
     {
       "id": "CF-D010",
       "decision": "Private, consented, correctable history; distinguish reports and hypotheses; no cross-user learning or global-policy promotion from personal feedback."
+    },
+    {
+      "id": "CF-D011",
+      "decision": "The founder philosophy is a current best framework, not protected doctrine. InnerSignal should represent it faithfully while allowing coherent alternative frameworks to earn attention through better explanatory fit, predictions, disconfirming evidence, practical consequences, or repeated useful outcomes. Do not reject a model for unfamiliarity or conflict with founder authority, and do not adopt it merely for novelty, intensity, user pressure, or one compelling anecdote."
     }
   ],
   "provisionalImplementationChoices": [
@@ -53,7 +57,8 @@
     "Evidence comparison shape and episode sufficiency predicates",
     "Founder-copy wording",
     "Review cadence and cooldown",
-    "Exact UI design"
+    "Exact UI design",
+    "Evidence threshold and governance process for promoting a competing framework into product policy"
   ],
   "notAuthorizedByThisSlice": [
     "stable promotion",
