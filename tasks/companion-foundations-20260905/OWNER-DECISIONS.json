@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "taskId": "COMPANION-FOUNDATIONS-20260905",
+  "recordedDate": "2026-09-05",
+  "authority": "Current owner instructions; paraphrased product decisions, not private therapy data.",
+  "directionApproved": true,
+  "prototypeStatus": "OFFLINE_ONLY_NOT_IMPORTED_BY_APP",
+  "approvedPrinciples": [
+    {
+      "id": "CF-D001",
+      "decision": "Use secular/non-spiritual for the relevant distinction; never equate non-spirituality with nontheism."
+    },
+    {
+      "id": "CF-D002",
+      "decision": "Founder views inner adult/child integration and spiritual connection as dimensions of deep healing; disclose as philosophy, not universal clinical fact."
+    },
+    {
+      "id": "CF-D003",
+      "decision": "Capacities may develop naturally or through friends and relationships; therapy, app use, books, named methods and vocabulary are not prerequisites."
+    },
+    {
+      "id": "CF-D004",
+      "decision": "Value capable adult care/protection/direction together with child vitality, connection, enjoyment and feeling; do not equate adult dominance or suppression with integration."
+    },
+    {
+      "id": "CF-D005",
+      "decision": "Respect readiness, refusal and disagreement; independent inner-child/spiritual invitation preferences; no refusal-as-pathology."
+    },
+    {
+      "id": "CF-D006",
+      "decision": "Occasional evidence-linked, tentative, correctable progress reflections; no percentage healed, praise-only feedback or engagement-based progress."
+    },
+    {
+      "id": "CF-D007",
+      "decision": "Support self-guidance through optional perspective questions and gradual scaffolding without withholding concrete help or endorsing every inner answer."
+    },
+    {
+      "id": "CF-D008",
+      "decision": "Honesty applies to user and founder; validate feeling without automatic endorsement; accountability without shame or reflexive opposition."
+    },
+    {
+      "id": "CF-D009",
+      "decision": "Leaving the app is not conditional on complete healing, a modality, spirituality, goals or founder agreement; do not terminate clinician care."
+    },
+    {
+      "id": "CF-D010",
+      "decision": "Private, consented, correctable history; distinguish reports and hypotheses; no cross-user learning or global-policy promotion from personal feedback."
+    }
+  ],
+  "provisionalImplementationChoices": [
+    "Prototype API fields and enums",
+    "One optional self-guidance question per opportunity",
+    "Evidence comparison shape and episode sufficiency predicates",
+    "Founder-copy wording",
+    "Review cadence and cooldown",
+    "Exact UI design"
+  ],
+  "notAuthorizedByThisSlice": [
+    "stable promotion",
+    "deployment",
+    "public or real-user pilot",
+    "real history storage",
+    "vault or crypto implementation",
+    "plugin creation",
+    "provider changes or paid model calls",
+    "community policy promotion",
+    "automatic monitoring",
+    "claims of clinical or model-level validation"
+  ],
+  "publication": "Only generalized owner-approved product direction and wholly synthetic fixtures; omit real friend names, attendance anecdotes, transcripts and private identifiers."
+}
