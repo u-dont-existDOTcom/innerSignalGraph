@@ -103,12 +103,12 @@ Local Node `24.18.0` results for this map revision:
 - affected graph, authoring, tiered-pipeline, benchmark, and task-policy tests: pass;
 - authoring validate/check/maps-check: pass with projection input `5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129` and 269 generated files;
 - therapy lesson provenance: 5/5 pass;
-- broad `node --test`: 672/673 pass on two full runs, and `npm run verify` reaches the same 672/673 result after passing its preceding graph, projection, lesson, fixture, and syntax stages. The sole repeated failure is the unchanged publication-wrapper exit-semantics test at `tests/publication-audit.test.mjs:1480`; it passes when run alone without a code change and is outside this map change. This remains an exact local package-gate conflict until hosted exact-head checks resolve whether it is host-load-specific.
+- final `npm run verify`: pass, including 673/673 automated tests, immutable packet checks, mock therapy/hypnosis replays, web smoke, fake-CLI autopilot smoke, runtime fingerprint, package hygiene, and autonomous-development-loop checks. Earlier local broad runs intermittently observed the unchanged publication-wrapper exit-semantics test at `tests/publication-audit.test.mjs:1480`; it passed alone without a code change, passed in the final local package run, and passed in the hosted 673/673 test run. No unresolved map or package conflict remains from that observation.
 
 Fresh exact-head GitHub checks are required after push; do not infer them from prior commits. No live-model semantic evaluation or clinical efficacy finding has occurred.
 
 ## Next safe action
 
-Push only the existing task branch, keep PR #46 draft, and read exact-head hosted checks. If the publication-wrapper test fails there too, treat it as an unrelated repository test-stability issue rather than silently widening this therapy change. If deterministic gates are green, keep PR #46 draft until the authenticated execution worker runs the revision-2 behavioral protocol with exact responder/grader identity, replay policy, bounded call budget, preserved transcripts/failures, and independent grading.
+Push only the existing task branch, keep PR #46 draft, and read exact-head hosted checks. If deterministic gates are green, keep PR #46 draft until the authenticated execution worker runs the revision-2 behavioral protocol with exact responder/grader identity, replay policy, bounded call budget, preserved transcripts/failures, and independent grading.
 
 A future global framework change requires a separate evidence/governance decision. One person's useful metaphor may remain valuable without becoming universal product policy.
