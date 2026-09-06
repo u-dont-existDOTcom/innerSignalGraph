@@ -28,6 +28,18 @@ Two new cross-guide amendments make the authorized behavior executable:
 
 The executable contract adds explicit fields for relational centrality and capacity, takeover pressure, realistic interaction outcomes, influence domain, and current access to mettā. Six new route nodes and graph cases `G013`-`G018` test relational precedence, ordinary danger, internal influence, accessible mettā, capacity-building when love is unavailable, and uncertain ontology. The compiled development graph now contains 52 nodes, 67 edges, 76 source sections, 22 owner amendments, and 18 graph regressions.
 
+### Borrowed spiritual love refinement
+
+The owner has now clarified the existing `ROUTE.INFLUENCE_LOVE_CAPACITY` semantics without requesting another topological node. When direct mettā/love is inaccessible under fear, but the user has a spiritually meaningful source of loving support, InnerSignal may help them borrow love/protection through their own tradition or language—for example God, Jesus, angels, devas, saints, ancestors, or another loving presence.
+
+Preferred developmental sequence: **receive -> participate -> generate -> internalize**. First receive the loving support; then join the loving intention rather than remaining only passive; then practice generating some of the love directly; then carry more of that capacity personally over time.
+
+This is capacity transfer, not secularization. Continuing prayer, surrender to God, devotion, reliance on grace, or ongoing relationship with a spiritual source is not itself pathology or failed transfer. The functional question is whether the relationship increases love, courage, discernment, and agency, or whether the person remains psychologically helpless unless an external rescuer acts for them. The goal is not spiritual independence from the divine.
+
+If neither direct nor borrowed spiritual love is accessible, route back to the smallest believable Nurturer/Protector/Guide function rather than psychic combat. Ordinary physical/social safety remains independent and is never replaced by spiritual borrowing.
+
+This clarification is recorded as `CF-D014` in `OWNER-DECISIONS.json` and in `BORROWED-SPIRITUAL-LOVE-ADDENDUM-2026-09-06.md`. The current graph already has the correct structural route and explicitly permits borrowing from a spiritual figure, so no new node/edge was added in this clarification. When the generated graph wording is next revised/regenerated, it must preserve the receive/participate/generate/internalize sequence and the distinction between devotion and helpless dependency.
+
 ## Evaluation revision 2
 
 The original frozen evaluation protocol and 26-conversation corpus remain preserved at commit `0cc46be4aad204c28672cb93ce68597f198fc544`. No target responder or independent grader ran under that version.
@@ -97,7 +109,7 @@ The retained v1/v2 behavioral-evaluation fixtures remain byte-identical:
 - `MODEL-EVALUATION-PROTOCOL.md`: `1e39ff0fc04078c8d258f75feb717fd19506a7e7de84b400dcab7a746d9b3a5a`
 - `MODEL-EVALUATION-PROTOCOL-v2.md`: `c071c35fb1997f6f734540fb042c75362ec2c56f241dfe95e878a5105c7d4c33`
 
-Local Node `24.18.0` results for this map revision:
+Local Node `24.18.0` results for the last graph revision remain:
 
 - graph regressions: 18/18 pass;
 - affected graph, authoring, tiered-pipeline, benchmark, and task-policy tests: pass;
@@ -105,10 +117,12 @@ Local Node `24.18.0` results for this map revision:
 - therapy lesson provenance: 5/5 pass;
 - final `npm run verify`: pass, including 673/673 automated tests, immutable packet checks, mock therapy/hypnosis replays, web smoke, fake-CLI autopilot smoke, runtime fingerprint, package hygiene, and autonomous-development-loop checks. Earlier local broad runs intermittently observed the unchanged publication-wrapper exit-semantics test at `tests/publication-audit.test.mjs:1480`; it passed alone without a code change, passed in the final local package run, and passed in the hosted 673/673 test run. No unresolved map or package conflict remains from that observation.
 
-Fresh exact-head GitHub checks are required after push; do not infer them from prior commits. No live-model semantic evaluation or clinical efficacy finding has occurred.
+The borrowed-spiritual-love clarification added only task-level owner semantics/checkpoint documentation and no graph topology or generated projection. Fresh hosted checks at the resulting exact branch head remain authoritative for repository integrity; do not mislabel prior-head CI as exact-head evidence.
+
+No live-model semantic evaluation or clinical efficacy finding has occurred.
 
 ## Next safe action
 
-Push only the existing task branch, keep PR #46 draft, and read exact-head hosted checks. If deterministic gates are green, keep PR #46 draft until the authenticated execution worker runs the revision-2 behavioral protocol with exact responder/grader identity, replay policy, bounded call budget, preserved transcripts/failures, and independent grading.
+Keep PR #46 draft and read exact-head hosted checks. The next structural graph regeneration/revision should copy the borrowed-spiritual-love wording into `ROUTE.INFLUENCE_LOVE_CAPACITY` while preserving the same topology. Behavioral evaluation remains a separate authenticated-worker step with exact responder/grader identity, replay policy, bounded call budget, preserved transcripts/failures, and independent grading.
 
 A future global framework change requires a separate evidence/governance decision. One person's useful metaphor may remain valuable without becoming universal product policy.
