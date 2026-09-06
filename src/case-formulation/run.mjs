@@ -43,9 +43,9 @@ export function applyCaseAudit(snapshot, audit) {
   };
 }
 
-async function planSnapshot(snapshot, { onPlanningPass } = {}) {
+async function planSnapshot(snapshot, { onPlanningPass, loadPlanningGraphBundle = loadCompiledGuideGraphBundle } = {}) {
   onPlanningPass?.();
-  const bundle = await loadCompiledGuideGraphBundle();
+  const bundle = await loadPlanningGraphBundle();
   const plan = planFromGraphs({
     variables: snapshot.variables,
     unknowns: snapshot.unknowns,
@@ -54,8 +54,8 @@ async function planSnapshot(snapshot, { onPlanningPass } = {}) {
   return { plan, graphBundleVersion: bundle.version };
 }
 
-export async function preflightGraphPlanningAvailability({ loadGraphBundle = loadCompiledGuideGraphBundle } = {}) {
-  const bundle = await loadGraphBundle();
+export async function preflightGraphPlanningAvailability({ loadPreflightGraphBundle = loadCompiledGuideGraphBundle } = {}) {
+  const bundle = await loadPreflightGraphBundle();
   return { graphBundleVersion: bundle.version };
 }
 
@@ -159,17 +159,17 @@ export async function runUnauditedCaseSnapshot({ context, provider, onProgress, 
   };
 }
 
-export async function runUnauditedCaseFormulation({ context, provider, onProgress, recovery, onPlanningPass }) {
+export async function runUnauditedCaseFormulation({ context, provider, onProgress, recovery, onPlanningPass, loadPlanningGraphBundle }) {
   const initial = await runUnauditedCaseSnapshot({ context, provider, onProgress, recovery });
-  const { plan, graphBundleVersion } = await planSnapshot(initial.snapshot, { onPlanningPass });
+  const { plan, graphBundleVersion } = await planSnapshot(initial.snapshot, { onPlanningPass, loadPlanningGraphBundle });
   return { ...initial, plan, graphBundleVersion };
 }
 
-export async function runAuditedCaseFormulation({ context, extractorProvider, auditorProvider, onProgress, recovery }) {
+export async function runAuditedCaseFormulation({ context, extractorProvider, auditorProvider, onProgress, recovery, loadPlanningGraphBundle }) {
   const extraction = await resolveCaseExtraction({ context, provider: extractorProvider, onProgress, recovery });
   const audit = await runCaseAuditWithRecovery({ context, snapshot: extraction.value, provider: auditorProvider, onProgress, recovery });
   const snapshot = applyCaseAudit(extraction.value, audit.value);
-  const { plan, graphBundleVersion } = await planSnapshot(snapshot);
+  const { plan, graphBundleVersion } = await planSnapshot(snapshot, { loadPlanningGraphBundle });
   return {
     snapshot,
     plan,
@@ -181,12 +181,13 @@ export async function runAuditedCaseFormulation({ context, extractorProvider, au
   };
 }
 
-export async function runCaseFormulation({ context, providers, onProgress, recovery }) {
+export async function runCaseFormulation({ context, providers, onProgress, recovery, loadPlanningGraphBundle }) {
   return await runAuditedCaseFormulation({
     context,
     extractorProvider: providers.anthropic,
     auditorProvider: providers.openai,
     onProgress,
-    recovery
+    recovery,
+    loadPlanningGraphBundle
   });
 }
