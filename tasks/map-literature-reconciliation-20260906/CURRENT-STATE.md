@@ -1,31 +1,15 @@
 # Map/literature implementation checkpoint
 
-Updated2026-09-06. R1-R6 approved by the owner and implemented in the development candidate. See IMPLEMENTATION-RECEIPT.md for precise changes, baseline, limits and source attribution; `tasks/guide-fidelity-20260906/PROTOCOL.md` for response-vs-guide testing.
+Updated 2026-09-06. R1-R6 are owner-authorized and implemented in draft PR #46. Implementation commit: `8e393a74b047d6e714f9f4e506c1ce45c1b8c5ce`; baseline: `77bd76e2b8a5252dedfcaa502673dd877b1336ae`.
 
-Do not redo generic source mapping or recreate goals, borrowed adulthood, memory, or a modality department. The current code carries scoped completion/permission, task progression and explicit execution requirements, action/emotion guidance, and one spiritual-struggle node. Existing Guide Packets retain legacy selection behavior when not opted into taskPolicyVersion1.
+Read `CLOSEOUT.md` for exact implemented behavior, verification, source manifest and the remaining execution boundary. `IMPLEMENTATION-RECEIPT.md` retains the change history. Source mapping is in `docs/research/THERAPEUTIC-SOURCES.md` and `docs/superpowers/specs/2026-09-06-map-literature-reconciliation.md`. Do not repeat the broad book review or recreate existing goals, borrowed adulthood or history infrastructure.
 
-Next boundary: complete final deterministic/package/hosted verification, then use the authenticated exact target responder/grader configuration for the calibrated guide-fidelity smoke comparison. No model response or independent semantic grade has yet been produced here. Prepared tests and mock transport checks do not close that gate. Retain draft PR46; no merge, deployment, stable change or real-data storage.
+Local and checksum-matched hosted preparation both passed the complete Node24.18.0 package: 712/712 automated tests, 29/29 graph regressions, authoring and package/smoke gates. Candidate totals: 53 nodes,70 edges,80 source sections,26 amendments,292 generated files. The normal exact-head checks on the native cleanup/closeout commit are recorded in the PR after actual completion, not inferred from the preparation run.
 
-Original research checkpoint follows for history; its unimplemented status is superseded only by this explicitly authorized candidate work.
+Guide-fidelity runner: `tasks/guide-fidelity-20260906/PROTOCOL.md`. Twelve original development scenarios,23 user turns,three source/graph conditions,two independent graders and six grader calibration controls. The three-arm smoke and resume were checked with fake transport, not live model answers. Frozen companion v1/v2 evaluation inputs remain unchanged.
 
----
+Actual live preflight with --live --smoke returned BLOCKED_CONFIGURATION. Zero live calls,zero responder outputs,zero independent semantic grades,no pass rate. Exact authenticated responder/grader settings and bounded budget are required in the established execution worker; use the already-authorized intended GPT-5.6 Sol xhigh route without guessing API identifiers or reviving stale Claude defaults. The pipeline for this supplement uses the explicitly selected responder for each role.
 
-# Specific map/literature reconciliation checkpoint
+Next step: execute calibrated live smoke in the authenticated worker, inspect source-grounded results and per-stage traces, then proceed to the full guide-fidelity supplement and the preserved evaluation corpus. No repeated design approval or new books needed. Candidate-source/prompt fidelity, actual model behavior and clinical usefulness remain separate gates.
 
-Recorded 2026-09-06. Baseline code head: `046614b045d4a15ea71b3b61e74b11d6b615a2ed`, PR46. This is a separate research/implementation-spec task; do not overwrite the DEV-R005 or companion frontier.
-
-Completed: traced the actual candidate/extraction/planning/realization/enforcement path; distinguished existing coverage from task-local prototype and missing operational behavior; retained ten-book plus contributor/source register; specified six bounded change groups with exact code homes; prepared 30 synthetic acceptance contrasts and a source-pinned full-repository read-only probe.
-
-Read `docs/research/THERAPEUTIC-SOURCES.md`, `docs/superpowers/specs/2026-09-06-map-literature-reconciliation.md`, and this directory's acceptance cases. These replace the need to rediscover generic book-to-modality mappings. Recheck specific source passages only when resolving a concrete ambiguity, not as a new broad literature scan.
-
-Actual verification: ten isolated source-mechanism observations ran locally on Node22.16.0. The full-repository probe was syntax checked but not run: local DNS could not resolve GitHub and the checked workflow run had no downloadable checkout artifact. Connected source reads worked. This is not repository Node24 verification. No patch to runtime or graph was applied, and no model or clinical evaluation occurred. modelRuns=0; independentGrades=0. Source illustrations and code claims are not passed therapeutic tests.
-
-Next bounded implementation: reproduce baseline observations in the real repository, make R1/R2 plus unknown-only activation corrections first, then the small current-task execution seam, bounded action/emotion guidance and the proposed spiritual-struggle node after semantic approval. Keep original owner arguments and existing safety/evidence constraints. Do not fabricate approval of new clinical claims from this documentation. Preserve v1/v2 evaluation files and use a separate LIT supplement.
-
-Run graph, authoring validate/check/maps-check, affected lessons and complete package gate on Node24.18.0; inspect regenerated outputs and retain exact-head evidence before behavioral testing. Keep PR draft, no merge/release/stable or real-data storage changes. No additional broad reading list is a prerequisite.
-
-## Verification closeout (2026-09-06)
-
-The complete Node24.18.0 package gate passed after correcting its explicit expected graph count to53. The refreshed routing/authoring generation passes with53 nodes,70 edges,29 graph cases and292 projection files. Subsequent narrow evaluation-transport hardening (serialized parallel checkpoints, a single-writer live-run lock, and preserving missing provider receipts as unknown) has its own focused tests and is included in the final rerun/evidence manifest.
-
-The actual live guide-fidelity preflight was invoked with --live --smoke but no authenticated role settings were available. It returned BLOCKED_CONFIGURATION without sending a network call:0 real responder outputs,0 independent semantic grades. A full21-output/42-review smoke was exercised through fake transport to validate orchestration and exact-input resume; that is not a behavioral result. Source details and the protocol are ready for the existing authenticated worker; no new approval of the design is needed.
+Keep PR draft. No merge/release/stable promotion, deployment, real-user history or new memory backend. This task does not supersede the independent DEV-R005 frontier.
