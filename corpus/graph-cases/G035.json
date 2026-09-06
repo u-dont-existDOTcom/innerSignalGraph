@@ -1,0 +1,32 @@
+{
+  "id": "G035",
+  "title": "safety overrides spiritual struggle",
+  "variables": {
+    "present_safety": "unsafe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "coherent_child_state": "present",
+    "body_capacity": "adequate",
+    "current_intent": "conversation",
+    "other_person_central": "no",
+    "influence_domain": "none",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "absent",
+    "attention_loop": "absent",
+    "inward_attention_effect": "neutral",
+    "spiritual_struggle": "present"
+  },
+  "expected": {
+    "primary": "IC.SAFETY_ORIENTATION",
+    "selectedExcludes": [
+      "IC.SPIRITUAL_STRUGGLE"
+    ]
+  }
+}

@@ -17,12 +17,14 @@ graph_tags:
   - guide
 source_refs:
   - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
+  - AMEND.CROSS.LITERATURE_ACTION_REVIEW
 regression_refs:
   - G013
   - G014
-base_record_sha256: 33a99d0a8d97fdb5d00f63242ddee664bdf569e562398cc1b406ae37525d9731
-base_graph_sha256: 52bce090d4dd5380cdc2c647b12704655d9596451468807184e41d3b64c192af
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+  - G033
+base_record_sha256: 90524ce906f30738dd6a9a128b9c4cc2f3a8a55b0323ba439bc58cfc0145f2b6
+base_graph_sha256: 9ca2615aba6172792631bfbc33d8610dcd20e2a16ceed756be839ba7878fba40
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # Act on the concrete problem
@@ -66,7 +68,8 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
   },
   "avoid": [
     "Do not wait for complete emotional certainty before taking a reversible necessary action.",
-    "Do not use action as a way to deny clearly unresolved inner material that continues to drive the problem."
+    "Do not use action as a way to deny clearly unresolved inner material that continues to drive the problem.",
+    "Do not treat noncompletion as lack of motivation or a protective part before examining practical barriers; do not treat task completion or immediate mood improvement as the sole evidence of benefit."
   ],
   "defaultQuestion": "What is the next observable action that could actually change this situation?",
   "effects": {
@@ -79,10 +82,15 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
       "A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job."
     ]
   },
+  "questionPolicy": {
+    "purpose": "discriminate",
+    "unresolvedFields": []
+  },
   "recommendations": [
     "Extract one concrete problem that can be changed and choose the next observable decision or action.",
     "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
-    "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged."
+    "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.",
+    "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again."
   ],
   "successSignals": [
     "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -95,3 +103,5 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
 ## Source navigation
 
 [[current/governance/amendments/AMEND.CROSS.THREE_WAY_THERAPY_ROUTING]]
+
+[[current/governance/amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW]]

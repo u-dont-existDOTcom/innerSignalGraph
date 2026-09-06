@@ -19,10 +19,12 @@ source_refs:
   - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
   - SOM.MAP_NOT_LADDER
   - SOM.SE
-regression_refs: []
-base_record_sha256: a27bc6e0ce96f64433d4e271452e3a3ab1efed419b226c34b9a7cf427585546e
-base_graph_sha256: 52bce090d4dd5380cdc2c647b12704655d9596451468807184e41d3b64c192af
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+  - AMEND.CROSS.LITERATURE_TASK_PROGRESS
+regression_refs:
+  - G032
+base_record_sha256: 7bfec7046e592060c89d6493621deb16c87b13c542afe3a7594b6200bafcd9f1
+base_graph_sha256: 9ca2615aba6172792631bfbc33d8610dcd20e2a16ceed756be839ba7878fba40
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # Shift from inward monitoring to external embodiment
@@ -73,7 +75,7 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
     "Do not repeatedly body-scan to test whether the external activity is working.",
     "Do not infer that all somatic therapy is contraindicated merely because introspective attention is destabilizing right now."
   ],
-  "defaultQuestion": "Does turning attention inward reliably help, do nothing, or make the derealization, panic, or monitoring worse?",
+  "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [
@@ -109,3 +111,5 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
 [[current/sources/somatic-sequencing-guide/SOM.MAP_NOT_LADDER]]
 
 [[current/sources/somatic-sequencing-guide/SOM.SE]]
+
+[[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]

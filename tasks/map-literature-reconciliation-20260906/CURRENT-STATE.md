@@ -1,3 +1,15 @@
+# Map/literature implementation checkpoint
+
+Updated2026-09-06. R1-R6 approved by the owner and implemented in the development candidate. See IMPLEMENTATION-RECEIPT.md for precise changes, baseline, limits and source attribution; `tasks/guide-fidelity-20260906/PROTOCOL.md` for response-vs-guide testing.
+
+Do not redo generic source mapping or recreate goals, borrowed adulthood, memory, or a modality department. The current code carries scoped completion/permission, task progression and explicit execution requirements, action/emotion guidance, and one spiritual-struggle node. Existing Guide Packets retain legacy selection behavior when not opted into taskPolicyVersion1.
+
+Next boundary: complete final deterministic/package/hosted verification, then use the authenticated exact target responder/grader configuration for the calibrated guide-fidelity smoke comparison. No model response or independent semantic grade has yet been produced here. Prepared tests and mock transport checks do not close that gate. Retain draft PR46; no merge, deployment, stable change or real-data storage.
+
+Original research checkpoint follows for history; its unimplemented status is superseded only by this explicitly authorized candidate work.
+
+---
+
 # Specific map/literature reconciliation checkpoint
 
 Recorded 2026-09-06. Baseline code head: `046614b045d4a15ea71b3b61e74b11d6b615a2ed`, PR46. This is a separate research/implementation-spec task; do not overwrite the DEV-R005 or companion frontier.
@@ -11,3 +23,9 @@ Actual verification: ten isolated source-mechanism observations ran locally on N
 Next bounded implementation: reproduce baseline observations in the real repository, make R1/R2 plus unknown-only activation corrections first, then the small current-task execution seam, bounded action/emotion guidance and the proposed spiritual-struggle node after semantic approval. Keep original owner arguments and existing safety/evidence constraints. Do not fabricate approval of new clinical claims from this documentation. Preserve v1/v2 evaluation files and use a separate LIT supplement.
 
 Run graph, authoring validate/check/maps-check, affected lessons and complete package gate on Node24.18.0; inspect regenerated outputs and retain exact-head evidence before behavioral testing. Keep PR draft, no merge/release/stable or real-data storage changes. No additional broad reading list is a prerequisite.
+
+## Verification closeout (2026-09-06)
+
+The complete Node24.18.0 package gate passed after correcting its explicit expected graph count to53. The refreshed routing/authoring generation passes with53 nodes,70 edges,29 graph cases and292 projection files. Subsequent narrow evaluation-transport hardening (serialized parallel checkpoints, a single-writer live-run lock, and preserving missing provider receipts as unknown) has its own focused tests and is included in the final rerun/evidence manifest.
+
+The actual live guide-fidelity preflight was invoked with --live --smoke but no authenticated role settings were available. It returned BLOCKED_CONFIGURATION without sending a network call:0 real responder outputs,0 independent semantic grades. A full21-output/42-review smoke was exercised through fake transport to validate orchestration and exact-input resume; that is not a behavioral result. Source details and the protocol are ready for the existing authenticated worker; no new approval of the design is needed.

@@ -221,6 +221,46 @@
       "excerpt": "Instructional images, infographics, diagrams, captions, and other visual assets may carry therapeutic or doctrinal meaning beyond nearby prose. The guide-to-map pipeline must preserve that meaning through compact semantic asset notes identifying the asset, its role, its explicit claims, and related guide sections or graph nodes. Decorative images need no semantic note. Asset notes are source provenance, not permission for the extractor to invent claims that are not actually present in the image or owner description.",
       "status": "owner-approved",
       "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+      "heading": "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "421582517725cb52d9eaff0cc41caae341098b3e2342524ae9e0aa143cf56816",
+      "excerpt": "Apply the approved literature reconciliation to the current task without duplicating existing modalities. Completed relational assessment is not reopened by repeated reassurance alone; new relevant evidence or a changed decision does reopen it. A distinct repetitive checking process may be left unanswered while background grief remains meaningful. A present protective response that permits a bounded step need not disappear; unknown or refused permission never licenses deeper work. Unknown capacities are not deficits. Keep one chosen current task and only necessary supporting interventions, while all applicable safety and evidence constraints remain in force. Record the user’s reported response and advance, adapt or close rather than replay completed steps. Authored questions must still matter now, and intentional absence of a question is authoritative.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+      "heading": "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "888ddef39f6952a4bc6762b597d3769475841d5bc418644f8782e6bfda960ba0",
+      "excerpt": "Use the existing outward, Protector and apprentice routes for agreed feasible actions. Establish only useful details of cue, size, resources, purpose and review. Review actual attempts and their consequences; check opportunity, practical constraints, skill, safety and competing consequences before inferring resistance. Completion or immediate relief is not the sole criterion. Rest, connection, flexibility, grief and appropriate relinquishment may be useful; activity does not mean productivity or forced exposure. Return capacity and judgment without requiring refusal of help.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+      "heading": "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "39f692a4ad517c72227bd0582499e744a3044b0fc28fae904518f2f2766de669",
+      "excerpt": "Carry bounded original emotional-task guidance and change signals into the response path: unclear feeling, reported self-treatment, interruption, unmet relational need or care for anguish, without imposing a part or history. Use the reported marker, an agreed small step, the person’s response and a partial change point. Preserve justified emotion and valid accountability; do not assume all anger hides sadness or that tears mean improvement. Adapt intrusive care instead of intensifying it. Non-cruelty may begin love, not replace it; include attunement, delight and supported exploration. Stop or reduce depth when orientation or stopping capacity is lost. Emotion-focused therapy is not tapping EFT.",
+      "status": "owner-approved",
+      "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.SPIRITUAL_STRUGGLE",
+      "heading": "AMEND.IC.SPIRITUAL_STRUGGLE",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "f575f89c7addaa9c379909a33de87875bece1690370de130a93fd87d9fd7daf8",
+      "excerpt": "Treat distress within a valued sacred relationship, practice or community as a possible current therapeutic job in its own right. Follow what the person wants to preserve, mourn, reconsider or change. Neither stronger belief nor rejection of the tradition is required. Do not infer spiritual failure, divine judgment, a literal entity or a parental projection. Do not send the person back into a distressing spiritual resource without examining its fit and willingness. Mature capacity can include action where possible and surrender of control that is not theirs; ongoing prayer is not failed development. Ordinary safety and human support remain independent.",
+      "status": "owner-approved",
+      "domain": "inner-child"
     }
   ]
 }

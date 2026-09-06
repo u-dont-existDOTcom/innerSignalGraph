@@ -17,13 +17,16 @@ graph_tags:
 source_refs:
   - IC.PROTECTOR_VISIBLE
   - IC.ADULT_APPRENTICE
+  - AMEND.CROSS.LITERATURE_ACTION_REVIEW
 regression_refs:
   - G003
   - G008
   - G011
-base_record_sha256: ea3047ef98652e45c526e0d1db708957e808e99e9b546ad8386f655fae889bbf
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+  - G029
+  - G030
+base_record_sha256: 84133c7495f9d44ef5e76862f9d6e821e2514fc806b149764990ecdc56486d75
+base_graph_sha256: d4b4c8dcccb63795c523c14bf995d9957c6c3e0b0b0af4f137ec9ae9bb58744e
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # Make the Protector visible in ordinary life
@@ -72,7 +75,8 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
     "Report the action without requiring the younger state to trust it yet."
   ],
   "successSignals": [
-    "One small promise is kept."
+    "One small promise is kept.",
+    "The action or its review provides truthful information about what supports protection and follow-through, including when a reasonable plan needs changing."
   ]
 }
 ```
@@ -83,3 +87,5 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
 [[current/sources/inner-child-guide/IC.PROTECTOR_VISIBLE]]
 
 [[current/sources/inner-child-guide/IC.ADULT_APPRENTICE]]
+
+[[current/governance/amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW]]

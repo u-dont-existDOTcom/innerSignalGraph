@@ -187,6 +187,12 @@
       "toNode": "8e99c4a92a36a0f4b29b55982f0b83c450d61b0ebeba7e3b9b79893e061d21b6"
     },
     {
+      "fromNode": "0b2becc508c2fc228c9b357bd4c30fa28986893e886e3cd0efa375710bae0a10",
+      "id": "6cc02fe08378d0fd582d6118f4f3047ab6af7f7e276cf0477ae307dfd232c994",
+      "label": "may-connect-to",
+      "toNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96"
+    },
+    {
       "fromNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c",
       "id": "6e83229592d968aa4a2f370de7dc10a8d50e3ac6f59706408b416f107dabcc07",
       "label": "enables",
@@ -215,6 +221,12 @@
       "id": "80a67ed9a89e011b5042c574020aa39ee1d8a1e6455ff714a3b6cee438f5a044",
       "label": "can-enable",
       "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
+    },
+    {
+      "fromNode": "0b2becc508c2fc228c9b357bd4c30fa28986893e886e3cd0efa375710bae0a10",
+      "id": "818ced9e73c5558ba8f958569ed1fea1d7c52e463fa8f7916be6746099492885",
+      "label": "may-connect-to",
+      "toNode": "c007b9501bf18a172ff8ced765221d9b9f1b24ab2474cf5ededb59f510017773"
     },
     {
       "fromNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff",
@@ -385,6 +397,12 @@
       "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
     },
     {
+      "fromNode": "0b2becc508c2fc228c9b357bd4c30fa28986893e886e3cd0efa375710bae0a10",
+      "id": "f444fb0c1458244b7b8de1d095fa7880314285deea3b7b60b45ea71fc443d1c0",
+      "label": "may-connect-to",
+      "toNode": "bd2dbc298786d84c13a4f6f885126827fbab67b8af4cf3449b01acf938b3b2e8"
+    },
+    {
       "fromNode": "5d6a3b677041db6df91ff2b8e23d8f09503277106cb240b9d442b2f0a0cd6f3c",
       "id": "f815620d3ea663acc9771afe0c3751d0fdb9d2d8c8a0929532075fd3e919dfc7",
       "label": "enables",
@@ -438,6 +456,15 @@
       "type": "file",
       "width": 300,
       "x": 2640,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.SPIRITUAL_STRUGGLE.md",
+      "height": 140,
+      "id": "0b2becc508c2fc228c9b357bd4c30fa28986893e886e3cd0efa375710bae0a10",
+      "type": "file",
+      "width": 300,
+      "x": 880,
       "y": 0
     },
     {
@@ -510,7 +537,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 660
+      "y": 880
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.PHOTO_EPISTEMIC_CAUTION.md",
@@ -528,7 +555,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 880
+      "y": 1100
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.RELATIONAL_REALITY_CHECK.md",
@@ -750,7 +777,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 0
+      "y": 220
     },
     {
       "color": "3",
@@ -769,7 +796,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1100
+      "y": 1320
     },
     {
       "color": "3",
@@ -898,7 +925,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 440
+      "y": 660
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_NONORDINARY_METTA.md",
@@ -916,7 +943,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 1320
+      "y": 1540
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.REALIZATION_LOVE_INTEGRATION.md",
@@ -981,7 +1008,7 @@
       "type": "file",
       "width": 300,
       "x": 880,
-      "y": 220
+      "y": 440
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DEEP_CHILD_DIALOGUE.md",

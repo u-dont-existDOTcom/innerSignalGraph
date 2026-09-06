@@ -19,9 +19,11 @@ source_refs:
 regression_refs:
   - G014
   - G025
-base_record_sha256: 9e83e56f6ec8c4992858d1ae666290ea161c0b01675269545dc1b2e44657b8d3
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+  - G031
+  - G035
+base_record_sha256: b1e65d2504260a9a984e57eccfe96057e0116ab9e8b7aeba5957e00552b94344
+base_graph_sha256: d4b4c8dcccb63795c523c14bf995d9957c6c3e0b0b0af4f137ec9ae9bb58744e
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # Outside safety and present orientation first
@@ -54,6 +56,11 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
         "field": "ability_to_return",
         "op": "eq",
         "value": "no"
+      },
+      {
+        "field": "suicidal_state",
+        "op": "eq",
+        "value": "imminent"
       }
     ]
   },
@@ -66,7 +73,9 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
     "deferNodes": [
       "IC.DEEP_CHILD_DIALOGUE",
       "IC.GUIDE_LATER",
-      "IC.FORGIVENESS_LATER"
+      "IC.FORGIVENESS_LATER",
+      "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+      "IC.PRECIOUS_HUMAN_OPPORTUNITY"
     ],
     "forbiddenOverclaims": [
       "Do not claim a hidden adult capacity or hidden progress."
@@ -77,7 +86,8 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
   },
   "recommendations": [
     "Pause deeper dialogue; orient to the actual room, body, time, and available human support.",
-    "Use eyes-open, present-focused contact and the smallest reversible action."
+    "Use eyes-open, present-focused contact and the smallest reversible action.",
+    "When self-harm action is imminent, prioritize distance from means, immediate human contact and urgent in-person help. Defer deeper or metaphysical inquiry until immediate safety and reflective capacity are restored."
   ],
   "successSignals": [
     "The person can stop, orient, and return to ordinary life."

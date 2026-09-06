@@ -38,7 +38,7 @@ test("planning endpoint returns an audited case snapshot and deterministic graph
     const result = await response.json();
     assert.equal(response.status, 200);
     assert.equal(result.graphBundleVersion, "inner-child-somatic-pilot-2026-08-09-r5");
-    assert.equal(result.plan.contractVersion, "case-plan-v4");
+    assert.equal(result.plan.contractVersion, "case-plan-v5");
     assert.ok(result.plan.primaryJob);
     assert.ok(result.snapshot.audit);
   } finally {

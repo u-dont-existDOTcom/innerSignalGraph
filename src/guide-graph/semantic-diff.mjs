@@ -56,6 +56,8 @@ export function assertClassifiedGraphBundle(bundle, { label = "graph bundle" } =
       assertKeys(node.activation, ACTIVATION_KEYS, `${node.id}.activation`);
       for (const group of ACTIVATION_KEYS) for (const [index, condition] of (node.activation[group] ?? []).entries()) assertKeys(condition, CONDITION_KEYS, `${node.id}.activation.${group}[${index}]`);
       assertKeys(node.effects, EFFECT_KEYS, `${node.id}.effects`);
+      for (const [index, condition] of (node.effects.deferralUnless ?? []).entries()) assertKeys(condition, CONDITION_KEYS, `${node.id}.effects.deferralUnless[${index}]`);
+      if (node.questionPolicy) assertKeys(node.questionPolicy, ["purpose", "unresolvedFields"], `${node.id}.questionPolicy`);
     }
     for (const [index, edge] of graph.edges.entries()) assertKeys(edge, EDGE_KEYS, `${graph.graphId}.edges[${index}]`);
   }
@@ -93,7 +95,7 @@ function change({ graphId, entityType, entityId, fieldPath, before, after, class
 
 function compareNodeFields(prior, next, graphId) {
   const changes = [];
-  const simple = ["title", "kind", "tier", "priority", "activation", "sourceRefs", "authority", "recommendations", "avoid", "successSignals", "tags", "defaultQuestion"];
+  const simple = ["title", "kind", "tier", "priority", "activation", "sourceRefs", "authority", "recommendations", "avoid", "successSignals", "tags", "defaultQuestion", "questionPolicy"];
   for (const field of simple) {
     if (!same(prior[field], next[field])) changes.push(change({ graphId, entityType: "node", entityId: next.id, fieldPath: field, before: prior[field], after: next[field], classification: NODE_SEMANTIC_FIELDS[field] }));
   }

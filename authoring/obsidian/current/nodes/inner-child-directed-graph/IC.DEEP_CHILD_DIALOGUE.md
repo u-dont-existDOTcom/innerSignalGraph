@@ -18,13 +18,16 @@ source_refs:
   - IC.BEFORE_DEEP
   - IC.ALTERED_STATES
   - AMEND.SOM.EARLY_INNER_CHILD_PARALLEL
+  - AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 regression_refs:
   - G004
   - G005
   - G011
-base_record_sha256: 65f073956ce75cccc4bc04cbd999d6b8752126eb8848c44dfb9e0b84f78ffd6c
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+  - G029
+  - G030
+base_record_sha256: a662fd97fb51466ad7494c1b42e913df7a0663728a1edc7768fbc3b69c9053a6
+base_graph_sha256: d4b4c8dcccb63795c523c14bf995d9957c6c3e0b0b0af4f137ec9ae9bb58744e
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # Enter deeper child dialogue only when capacity is adequate
@@ -78,7 +81,8 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
   },
   "recommendations": [
     "Use deeper dialogue only when the person can remain present, stop voluntarily, and recover afterward.",
-    "Keep memory-source distinctions explicit."
+    "Keep memory-source distinctions explicit.",
+    "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift."
   ],
   "successSignals": [
     "The session increases capacity and functioning rather than compulsion or disorientation."
@@ -94,3 +98,5 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
 [[current/sources/inner-child-guide/IC.ALTERED_STATES]]
 
 [[current/governance/amendments/AMEND.SOM.EARLY_INNER_CHILD_PARALLEL]]
+
+[[current/governance/amendments/AMEND.IC.EMOTIONAL_TASK_GUIDANCE]]

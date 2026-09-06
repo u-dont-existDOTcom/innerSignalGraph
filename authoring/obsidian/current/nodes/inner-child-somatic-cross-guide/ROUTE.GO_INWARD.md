@@ -26,9 +26,10 @@ regression_refs:
   - G014
   - G015
   - G017
-base_record_sha256: 91f958acf7cf9b573098598cbbdb3183a7a3d30fc51fa9e458b731c82639f547
-base_graph_sha256: 52bce090d4dd5380cdc2c647b12704655d9596451468807184e41d3b64c192af
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+  - G027
+base_record_sha256: 1c26cf6ac1f2e2726cc71ad942ac05bb06ac23b969ea3cd27c39ad1ea7ca3ae0
+base_graph_sha256: 9ca2615aba6172792631bfbc33d8610dcd20e2a16ceed756be839ba7878fba40
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # Go inward only for material that is actually there
@@ -89,6 +90,10 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
     "requiredNuance": [
       "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order."
     ]
+  },
+  "questionPolicy": {
+    "purpose": "discriminate",
+    "unresolvedFields": []
   },
   "recommendations": [
     "Contact only material that is actually present rather than assuming that distress always hides another layer of trauma.",

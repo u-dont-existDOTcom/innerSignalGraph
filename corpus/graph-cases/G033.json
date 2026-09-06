@@ -1,0 +1,33 @@
+{
+  "id": "G033",
+  "title": "unassessed capacities do not imply deficits",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "unknown",
+    "witness_capacity": "unknown",
+    "coherent_child_state": "unknown",
+    "body_capacity": "unknown",
+    "current_intent": "conversation",
+    "other_person_central": "no",
+    "influence_domain": "none",
+    "actionable_problem": "present",
+    "unresolved_inner_material": "absent",
+    "attention_loop": "absent",
+    "inward_attention_effect": "neutral"
+  },
+  "expected": {
+    "primary": "ROUTE.ACT_OUTWARD",
+    "selectedExcludes": [
+      "IC.NEUTRAL_WITNESS",
+      "IC.BORROW_ONE_FUNCTION",
+      "SOM.GENTLE_REGULATION"
+    ]
+  }
+}

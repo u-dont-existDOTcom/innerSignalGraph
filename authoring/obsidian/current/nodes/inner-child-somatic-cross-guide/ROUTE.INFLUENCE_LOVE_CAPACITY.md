@@ -23,14 +23,16 @@ source_refs:
   - AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
   - AMEND.IC.BORROW_LOVE_EXTERNAL
   - AMEND.IC.BEST_FRIEND_PROMPT
+  - AMEND.IC.SPIRITUAL_STRUGGLE
 regression_refs:
   - G016
   - G017
   - G018
   - G025
-base_record_sha256: 0fe3c82c2f8de8d37a093110e61bea53a47ba34d4d7f3fa531f23d95e92b986f
-base_graph_sha256: 52bce090d4dd5380cdc2c647b12704655d9596451468807184e41d3b64c192af
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+  - G031
+base_record_sha256: 0bcbb7b27ce3a298c2d1b12dc5a5bab2f23951b888a486f977ae57c11822205c
+base_graph_sha256: 9ca2615aba6172792631bfbc33d8610dcd20e2a16ceed756be839ba7878fba40
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # Build the capacities that make protective love accessible
@@ -80,12 +82,17 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
       "Borrowed spiritual love never replaces practical physical or social safety, and the user's spiritual language is mirrored without affirming or denying metaphysical fact."
     ]
   },
+  "questionPolicy": {
+    "purpose": "discriminate",
+    "unresolvedFields": []
+  },
   "recommendations": [
     "Do not demand love on cue. When direct metta is inaccessible but a spiritually meaningful source of loving support is accessible, invite borrowed spiritual love or protection in the user's own tradition and language—for example through God, Jesus, angels, devas, saints, ancestors, or another loving presence.",
     "Use receive -> participate -> generate -> internalize as a developmental movement: first receive the loving support, then join its loving intention, then practice generating some love directly, then carry more love, courage, discernment, and agency personally over time.",
     "Treat continuing prayer, devotion, surrender to God, reliance on grace, or ongoing relationship with a spiritual source as compatible with mature capacity. The transfer target is increased love, courage, discernment, and agency, not spiritual independence from the divine.",
     "If neither direct nor borrowed spiritual love is accessible, build the smallest believable Nurturer, Protector, or Guide function rather than escalating to psychic combat; ordinary adult or human support may supply one bounded function while authority returns to the person.",
-    "Use ordinary grounding, rest, human support, boundaries, and practical protection alongside capacity-building whenever they are needed."
+    "Use ordinary grounding, rest, human support, boundaries, and practical protection alongside capacity-building whenever they are needed.",
+    "Capacity includes acting where action is possible and relinquishing control that is not the person’s to exercise. Continued devotion or entrusting outcomes is not failed transfer. When the spiritual source itself evokes distress, attend to that struggle rather than automatically prescribe more borrowing; identity is not consent."
   ],
   "successSignals": [
     "A believable caring or non-hating response becomes more accessible without surrendering agency, judgment, or practical protection.",
@@ -102,3 +109,5 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
 [[current/governance/amendments/AMEND.IC.BORROW_LOVE_EXTERNAL]]
 
 [[current/governance/amendments/AMEND.IC.BEST_FRIEND_PROMPT]]
+
+[[current/governance/amendments/AMEND.IC.SPIRITUAL_STRUGGLE]]

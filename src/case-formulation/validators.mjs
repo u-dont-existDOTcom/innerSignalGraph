@@ -1,3 +1,4 @@
+import { validateTurnTask } from "./turn-task.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
@@ -24,6 +25,7 @@ export function validateCaseSnapshot(value) {
     if (observationIds.has(item.id)) throw new ValidationError(`Duplicate observation id ${item.id}.`);
     observationIds.add(item.id);
   }
+  if (Object.hasOwn(value, "turn_task")) value.turn_task = validateTurnTask(value.turn_task, { issue: value.current_issue, observationIds });
   value.variables = validateCaseVariables(value.variables);
   if (!Array.isArray(value.hypotheses)) throw new ValidationError("caseSnapshot.hypotheses must be an array.");
   const hypothesisIds = new Set();
@@ -47,6 +49,8 @@ export function validateCaseSnapshot(value) {
 
 export function validateCaseAudit(value) {
   object(value, "caseAudit");
+  if (Object.hasOwn(value, "corrected_turn_task")) value.corrected_turn_task = validateTurnTask(value.corrected_turn_task);
+  if (value.invalidate_turn_task != null && typeof value.invalidate_turn_task !== "boolean") throw new ValidationError("invalidate_turn_task must be boolean.");
   stringArray(value.remove_observation_ids, "caseAudit.remove_observation_ids");
   stringArray(value.remove_hypothesis_ids, "caseAudit.remove_hypothesis_ids");
   if (!Array.isArray(value.variable_corrections)) throw new ValidationError("caseAudit.variable_corrections must be an array.");

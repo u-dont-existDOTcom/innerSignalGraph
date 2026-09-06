@@ -34,6 +34,12 @@ function stripFinalQuestionSentence(paragraph) {
 
 
 export function requiredRealizationNodeIds(plan = {}) {
+  if (plan.executionContract?.version === 1) {
+    const required = plan.executionContract.requiredNodeIds;
+    if (!Array.isArray(required) || required.some(id => typeof id !== "string" || !id.trim())) throw new TypeError("Invalid execution-contract node list.");
+    const primary = text(plan.primaryJob?.id);
+    return [...new Set([primary, ...required].filter(Boolean))];
+  }
   const ids = [];
   const primary = text(plan?.primaryJob?.id);
   if (primary) ids.push(primary);
@@ -45,6 +51,8 @@ export function requiredRealizationNodeIds(plan = {}) {
 }
 
 export function canonicalQuestion({ plan, adjudication } = {}) {
+  if (plan?.questionContract?.mode === "none") return "";
+  if (plan?.questionContract?.mode === "canonical") return text(plan.questionContract.question);
   return text(plan?.questionContract?.question)
     || text(plan?.nextQuestion)
     || text(adjudication?.next_question);

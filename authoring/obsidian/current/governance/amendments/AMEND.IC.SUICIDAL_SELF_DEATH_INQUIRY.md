@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY
 status: owner-approved
 domain: inner-child
-base_record_sha256: 09483eb06b597bbb1436e51eb4270606f8f7ef80ce9d20aab0e842bec612aeae
-source_file_sha256: 3a42140ebcb5d9aca693d98ab100a4dc8485e18d8e4c60f9dab295445fec5047
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+base_record_sha256: defcd3c0f53fd6541405aa447bbd109a3ad76b2b20a25b5e9ce2ed7c8770b15c
+source_file_sha256: 1d1d78a359df20cddf3aac6f5f93bb3badda84b7bcf7bcff085d8ee9f75e0dd1
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY
@@ -24,6 +24,6 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
     "status": "owner-approved",
     "text": "When a person expresses suicidal desire or intent, immediate physical safety and human contact come first when action is imminent, but once they can reflect, suicidal intent itself activates a strict inquiry into what self they intend to kill and what they believe bodily death will accomplish; prior spiritual curiosity is not required. Ask what they are trying to end or obtain, whether they equate self with body, and what evidence supports the assumption that bodily death ends the mind-state or suffering. The guide may state plainly, without invented probabilities or condemnation, that Buddhist teaching warns that intentional mental trajectories have consequences across death and rebirth, that hellish states are possible, and that human birth is rare and valuable for investigating and ending dukkha. Psychology supports the within-life part of the mental-trajectory model: rumination, attentional narrowing, withdrawal, and repeated self-hating or self-destructive cognition can become self-reinforcing; psychology does not establish postmortem continuation. Dream phenomenology, rebirth evidence, NDE reports, and their survivor-selection limits may be examined as reasons not to assume death is an off-switch, but none should be presented as proof or assigned postmortem odds. Also ask what previously feared but reversible life changes become negotiable if the person is already contemplating losing everything. Do not shame the person, guarantee hell, say spiritual motives make suicide safer, prescribe an NDE or psychedelic experience, or substitute solitary spiritual practice for urgent real-world safety when danger is imminent."
   },
-  "version": "2026-09-06-r6"
+  "version": "2026-09-06-r7"
 }
 ```

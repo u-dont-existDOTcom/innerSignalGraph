@@ -17,9 +17,9 @@ graph_tags:
 source_refs:
   - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
 regression_refs: []
-base_record_sha256: 7acfc475d67770638b3c689f8308c37d114fd27876d708aded37f2aac8e59767
-base_graph_sha256: 52bce090d4dd5380cdc2c647b12704655d9596451468807184e41d3b64c192af
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+base_record_sha256: 97af1b6ca44e660f2509eb1caf53c3116c311a2eafe63516fa6fb23d7f9883b0
+base_graph_sha256: 9ca2615aba6172792631bfbc33d8610dcd20e2a16ceed756be839ba7878fba40
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # Discriminate processing, action, and non-engagement
@@ -95,6 +95,10 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
     "requiredNuance": [
       "The three movements can alternate over time; this is a routing decision for the current maintaining process, not a permanent personality classification."
     ]
+  },
+  "questionPolicy": {
+    "purpose": "discriminate",
+    "unresolvedFields": []
   },
   "recommendations": [
     "Before prescribing another technique, discriminate whether the next useful movement is inward processing, outward action, or leaving a self-maintaining loop unanswered.",

@@ -14,7 +14,8 @@ const CRITICAL_DELTA_FIELDS = [
   "memory_source_risk", "current_intent", "credibility_conflict", "age_agency_ambiguity", "resentment_toward_younger_self",
   "inner_adult_access", "witness_capacity", "protective_response", "self_directed_love", "credibility_evidence_state",
   "internal_speaker_relation", "target_type", "other_person_central", "relational_capacity_evidence",
-  "emotional_takeover_pressure", "realistic_interaction_outcome", "influence_domain", "metta_access", "spiritual_support_access"
+  "emotional_takeover_pressure", "realistic_interaction_outcome", "influence_domain", "metta_access", "spiritual_support_access",
+  "relational_check_status", "loop_target_relation", "guard_engagement", "spiritual_struggle"
 ];
 
 function criticalDeltaCount(snapshot, priorSnapshot) {
@@ -43,7 +44,7 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
     && ["same", "distinct", "blend", "unresolved"].includes(v.internal_speaker_relation);
   const intentHard = HARD_INTENTS.has(v.current_intent);
   const importantUnknown = Math.max(0, ...(snapshot?.unknowns ?? []).map((item) => item.importance ?? 0));
-  const reviewedSignal = v.protective_response === "present"
+  const reviewedSignal = Boolean(snapshot?.turn_task) || v.spiritual_struggle === "present" || v.protective_response === "present"
     || v.self_directed_love === "unsafe"
     || v.credibility_conflict === "present"
     || v.emotional_takeover_pressure === "present"
@@ -135,7 +136,7 @@ async function simpleResult({ context, formulation, routing, extractor, tier, co
     guidePacketVersion: context.guidePacketVersion ?? null,
     caseFormulation: formulation.snapshot,
     interventionContract: formulation.plan,
-    next_question: realization.value.next_question || formulation.plan.nextQuestion || "",
+    next_question: realization.value.next_question ?? formulation.plan.nextQuestion ?? "",
     safety_flags: formulation.snapshot.audit?.safety_flags ?? [],
     rendererProvider: extractor.id,
     rendererModel: extractor.model,

@@ -1,0 +1,34 @@
+{
+  "id": "G031",
+  "title": "safety question with spiritual support",
+  "variables": {
+    "present_safety": "unsafe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "coherent_child_state": "present",
+    "body_capacity": "adequate",
+    "current_intent": "conversation",
+    "other_person_central": "no",
+    "influence_domain": "experienced_other_than_self",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "absent",
+    "attention_loop": "absent",
+    "inward_attention_effect": "neutral",
+    "metta_access": "inaccessible",
+    "spiritual_support_access": "accessible"
+  },
+  "expected": {
+    "primary": "IC.SAFETY_ORIENTATION",
+    "nextQuestion": "",
+    "requiredExecutionExcludes": [
+      "ROUTE.INFLUENCE_LOVE_CAPACITY"
+    ]
+  }
+}

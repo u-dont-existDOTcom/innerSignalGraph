@@ -1,3 +1,4 @@
+import { validateTurnTask, reconcileIssueScope } from "./turn-task.mjs";
 import { parseModelJson } from "../core/json.mjs";
 import { caseSnapshotSchema, caseAuditSchema } from "./schemas.mjs";
 import { validateCaseSnapshot, validateCaseAudit } from "./validators.mjs";
@@ -28,9 +29,16 @@ export function applyCaseAudit(snapshot, audit) {
   const removeHypotheses = new Set(audit.remove_hypothesis_ids);
   const variables = { ...snapshot.variables };
   for (const correction of audit.variable_corrections) variables[correction.field] = correction.value;
+  if (audit.remove_observation_ids.length || audit.invalidate_turn_task === true) {
+    for (const field of ["relational_check_status", "loop_target_relation", "guard_engagement", "leave_alone_eligibility"]) variables[field] = "unknown";
+  }
   return {
     ...snapshot,
     direct_observations: snapshot.direct_observations.filter((item) => !removeObservations.has(item.id)),
+    ...((Object.hasOwn(snapshot, "turn_task") || audit.corrected_turn_task || audit.invalidate_turn_task) ? { turn_task: audit.invalidate_turn_task ? null : validateTurnTask(audit.corrected_turn_task ?? snapshot.turn_task, {
+      issue: snapshot.current_issue,
+      observationIds: new Set(snapshot.direct_observations.filter(item => !removeObservations.has(item.id)).map(item => item.id))
+    }) } : {}),
     hypotheses: snapshot.hypotheses.filter((item) => !removeHypotheses.has(item.id)),
     variables: validateCaseVariables(variables),
     unknowns: [...snapshot.unknowns, ...audit.add_unknowns],
@@ -49,7 +57,8 @@ async function planSnapshot(snapshot, { onPlanningPass, loadPlanningGraphBundle 
   const plan = planFromGraphs({
     variables: snapshot.variables,
     unknowns: snapshot.unknowns,
-    graphs: bundle.graphs
+    graphs: bundle.graphs,
+    turnTask: snapshot.turn_task ?? null
   });
   return { plan, graphBundleVersion: bundle.version };
 }
@@ -68,7 +77,7 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
     caseSnapshotSchema,
     onProgress
   );
-  return extraction;
+  return { ...extraction, value: reconcileIssueScope(extraction.value, context.priorCaseSnapshot) };
 }
 
 export async function resolveCaseExtraction({ context, provider, onProgress, recovery }) {

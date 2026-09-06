@@ -115,3 +115,8 @@ Suggested wording:
 For unintegrated features use 'reviewed during development' or 'proposed adaptation', not 'InnerSignal delivers this therapy'. Later convergence is not retroactive evidence that a book caused the original design. No listed author or institution is represented as endorsing, supervising, certifying or partnering with the app. Human-delivered therapy research does not automatically validate an AI adaptation or the whole app.
 
 No source PDFs/EPUBs, long extracts, textbook clinical transcripts, proprietary forms or full-text retrieval indexes are published here. Bibliographic credit does not itself grant permission to reproduce those materials. App prompts/examples should be original. Per-contribution implementation and evaluation status should be updated with exact commits and real results, not by moving an entire author's name into an 'evidence-based' marketing list.
+
+
+## 2026-09-06 candidate implementation follow-through
+
+The owner authorized continuing the R1-R6 reconciliation and testing responses against the guide. `tasks/map-literature-reconciliation-20260906/IMPLEMENTATION-RECEIPT.md` records the implemented candidate changes and exact verification boundary. Current-task/action/emotion guidance and the spiritual-struggle node are candidate adaptations, not delivery of ten complete therapy protocols. `tasks/guide-fidelity-20260906/PROTOCOL.md` supplies the source-grounded, blinded comparative test. Its preflight currently records zero real responder outputs and zero independent response grades; prepared testing is not a pass or deployment.

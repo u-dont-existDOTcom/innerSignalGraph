@@ -48,6 +48,15 @@ export function validateGraph(graph, { knownSourceRefs = null, knownNodeIds = nu
     }
     const effects = node.effects ?? {};
     for (const key of ["deferNodes", "blockNodes", "requiredNuance", "forbiddenOverclaims"]) requireStringArray(effects[key] ?? [], `${label}.effects.${key}`);
+    if (effects.deferralUnless != null) {
+      if (!Array.isArray(effects.deferralUnless)) throw new ValidationError(`${label}.effects.deferralUnless must be an array.`);
+      effects.deferralUnless.forEach((condition, i) => validateCondition(condition, `${label}.effects.deferralUnless[${i}]`));
+    }
+    if (node.questionPolicy != null) {
+      if (!["safety", "discriminate", "task"].includes(node.questionPolicy.purpose)) throw new ValidationError(`${label}.questionPolicy.purpose is invalid.`);
+      requireStringArray(node.questionPolicy.unresolvedFields ?? [], `${label}.questionPolicy.unresolvedFields`);
+      for (const field of node.questionPolicy.unresolvedFields ?? []) if (!Object.hasOwn(CASE_VARIABLE_ENUMS, field)) throw new ValidationError(`Unknown question field: ${field}`);
+    }
     if (node.defaultQuestion != null && typeof node.defaultQuestion !== "string") throw new ValidationError(`${label}.defaultQuestion must be a string.`);
   }
   const allNodeIds = knownNodeIds ? new Set([...knownNodeIds, ...ids]) : ids;

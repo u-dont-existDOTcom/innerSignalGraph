@@ -20,9 +20,11 @@ source_refs:
 regression_refs:
   - G014
   - G025
-base_record_sha256: f274e3d130d1f380cb942f7c15fb7c9277dfe2de431c0745ff3b61e732c9ff9c
-base_graph_sha256: f7acff85e9d11d38c1fd47830f4fad4998cc1fb1580f641223a6d92538e30140
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+  - G031
+  - G035
+base_record_sha256: e89d236a5e416e45a6e8a909a2c70bcde7a48e74c6e06d29e26eff011966b92b
+base_graph_sha256: 0f47a3ce32a6207f69d5cbb30b18f8173d558597d10e03092e4720b8d4a9d559
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # Safety, orientation, and stopping capacity
@@ -60,6 +62,11 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
         "field": "dissociation",
         "op": "eq",
         "value": "high"
+      },
+      {
+        "field": "suicidal_state",
+        "op": "eq",
+        "value": "imminent"
       }
     ]
   },

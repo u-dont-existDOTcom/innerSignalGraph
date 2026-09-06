@@ -22,9 +22,9 @@ source_refs:
   - IC.GUIDE_LATER
   - IC.DIFFERENTIATION
 regression_refs: []
-base_record_sha256: 4af0d28a175db667f5a5a4fa75d0c5aedb320e933ae0a8f1076dcd198369e125
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+base_record_sha256: 654eb69e423d9615aa46e5ef73b5cd983a75e816f471fecdca2dbdb09ffb031a
+base_graph_sha256: d4b4c8dcccb63795c523c14bf995d9957c6c3e0b0b0af4f137ec9ae9bb58744e
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # Make intuition and analysis correct each other before trust transfers
@@ -99,6 +99,10 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
       "Humor and half-jokes may legitimately relieve pressure and expand perspective; when a joke also carries a consequential factual claim, request, permission, boundary move, or authority transfer, test that content as if it had been said plainly.",
       "Trust is domain-specific and corrigible: what matters is whether track record, contradictions, boundaries, response to disagreement or no, and new evidence can still update the conclusion."
     ]
+  },
+  "questionPolicy": {
+    "purpose": "discriminate",
+    "unresolvedFields": []
   },
   "recommendations": [
     "Name the felt/intuitive signal without arguing it away, then state separately the factual or trust conclusion being drawn from it.",

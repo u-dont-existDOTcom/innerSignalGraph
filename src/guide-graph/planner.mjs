@@ -1,5 +1,6 @@
 import { blankCaseVariables, CASE_VARIABLE_ENUMS } from "./contract.mjs";
 import { validateCaseVariables } from "./validate.mjs";
+import { validateTurnTask, immediateProtectionNeeded, taskQuestion, guidanceForTask } from "../case-formulation/turn-task.mjs";
 
 function conditionMatches(condition, variables) {
   const actual = variables[condition.field] ?? "unknown";
@@ -116,6 +117,13 @@ export function deriveCaseVariables(input = {}) {
     variables.altered_state === "sober"
   ].every(Boolean);
   variables.stable_for_advanced_release = advancedUnsafe ? "no" : advancedReady ? "yes" : "unknown";
+  const relational = variables.other_person_central === "yes" || variables.influence_domain === "ordinary_social";
+  const relationalCleared = !relational || ["completed", "not_needed"].includes(variables.relational_check_status);
+  const loopSeparated = variables.loop_target_relation === "distinct_repetitive_process" || (variables.unresolved_inner_material === "absent" && variables.loop_target_relation !== "live_work");
+  const loopReady = variables.attention_loop === "present" && variables.thinking_yield === "repetitive_no_new_output"
+    && variables.actionable_problem === "absent" && relationalCleared && loopSeparated;
+  const danger = immediateProtectionNeeded(variables) || ["ideation", "intent"].includes(variables.suicidal_state);
+  variables.leave_alone_eligibility = danger ? "ineligible" : loopReady ? "eligible" : "ineligible";
   return variables;
 }
 
@@ -123,8 +131,18 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
-export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs }) {
+export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs, turnTask = null }) {
   const variables = deriveCaseVariables(rawVariables);
+  const taskPolicy = graphs.every(graph => graph.taskPolicyVersion === 1);
+  const task = taskPolicy ? validateTurnTask(turnTask) : null;
+  const emergency = immediateProtectionNeeded(variables);
+  const deferTargets = (node) => {
+    if (taskPolicy && (node.effects?.deferralUnless ?? []).some(c => conditionMatches(c, variables))) return [];
+    if (taskPolicy && task?.agreement === "accepted" && task.capacity === "adequate" && task.phase === "practice"
+        && task.node_id === "IC.DEEP_CHILD_DIALOGUE" && variables.deep_work_readiness === "yes"
+        && ["IC.BORROW_ONE_FUNCTION", "IC.SOLAR_PLEXUS_RELAXATION"].includes(node.id)) return [];
+    return node.effects?.deferNodes ?? [];
+  };
   const nodes = graphs.flatMap((graph) => graph.nodes ?? []);
   const edges = graphs.flatMap((graph) => (graph.edges ?? []).map((edge) => ({ ...edge, graphId: graph.graphId })));
   const matched = nodes
@@ -132,7 +150,7 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs 
     .sort((a, b) => a.tier - b.tier || b.priority - a.priority || a.id.localeCompare(b.id));
 
   const matchedIds = new Set(matched.map((node) => node.id));
-  const deferredIds = new Set(matched.flatMap((node) => node.effects?.deferNodes ?? []));
+  const deferredIds = new Set(matched.flatMap(deferTargets));
   const blockedIds = new Set(matched.flatMap((node) => node.effects?.blockNodes ?? []));
 
   // Backward-compatible fallback for installed r5 and preserved r01 packets.
@@ -161,6 +179,16 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs 
     });
   }
 
+  if (taskPolicy && task?.agreement === "declined" && task.node_id) {
+    eligible = eligible.filter(node => node.id !== task.node_id || node.tier <= 2);
+  }
+  // An evidenced current task can outrank generic preparation, but never protective
+  // constraints, a live external problem or an uncompleted relational reality check.
+  if (taskPolicy && task?.agreement === "accepted" && task.node_id && !emergency
+      && !eligible.some(node => node.tier <= 2)
+      && !eligible.some(node => ["ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.ACT_OUTWARD", "ROUTE.LEAVE_ALONE", "ROUTE.EXTERNAL_EMBODIMENT"].includes(node.id) && node.id !== task.node_id)) {
+    eligible = [...eligible].sort((a,b) => Number(b.id === task.node_id) - Number(a.id === task.node_id));
+  }
   const primary = eligible[0] ?? null;
   const secondary = eligible.slice(1, 5);
   const deferredNodes = nodes
@@ -185,8 +213,8 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs 
     ...secondary.map((node) => node.id)
   ]).map((id) => eligibleById.get(id)).filter(Boolean).slice(0, 3);
   const directlyDeferred = new Set([
-    ...(primary?.effects?.deferNodes ?? []),
-    ...displaySecondary.flatMap((node) => node.effects?.deferNodes ?? [])
+    ...deferTargets(primary ?? {}),
+    ...displaySecondary.flatMap(deferTargets)
   ]);
   const directlyBlocked = new Set([
     ...(primary?.effects?.blockNodes ?? []),
@@ -195,19 +223,38 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs 
   // A question authored on a selected graph node outranks model-generated curiosity.
   // Such a question exists because its answer changes a live route or interpretation.
   // Model unknowns are fallback-only, and known case variables are never re-asked.
-  const questionNode = selected
-    .filter((node) => node?.defaultQuestion?.trim())
-    .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))[0]
-    ?? eligible.find((node) => node.defaultQuestion?.trim());
-  const usefulUnknowns = [...unknowns]
-    .filter((item) => unknownIsStillUseful(item, variables))
-    .sort((a, b) => (b.importance ?? 0) - (a.importance ?? 0));
-  const nextQuestion = questionNode?.defaultQuestion || usefulUnknowns[0]?.question || "";
-  const nextQuestionSource = questionNode
-    ? { type: "graph-node", id: questionNode.id }
-    : usefulUnknowns[0]
-      ? { type: "case-unknown", variable: usefulUnknowns[0].variable }
-      : null;
+  const questionEligible = (node) => {
+    if (!node?.defaultQuestion?.trim()) return false;
+    if (!taskPolicy) return true;
+    if (emergency) return node.questionPolicy?.purpose === "safety";
+    if (task?.phase === "close" || task?.agreement === "declined" || primary?.id === "ROUTE.LEAVE_ALONE") return false;
+    return !(node.questionPolicy?.unresolvedFields ?? []).length || node.questionPolicy.unresolvedFields.some(field => variables[field] === "unknown");
+  };
+  const questionNode = selected.filter(questionEligible).sort((a,b) => b.priority - a.priority)[0]
+    ?? eligible.find(questionEligible);
+  const usefulUnknowns = [...unknowns].filter(item => unknownIsStillUseful(item, variables))
+    .filter(item => !taskPolicy || !emergency || ["present_safety", "orientation", "ability_to_stop", "ability_to_return", "support_available"].includes(item.variable))
+    .sort((a,b) => (b.importance ?? 0) - (a.importance ?? 0));
+  const currentTaskQuestion = !emergency && task && task.node_id === primary?.id ? taskQuestion(task) : "";
+  const noQuestion = taskPolicy && ((!emergency && (task?.phase === "close" || task?.agreement === "declined" || primary?.id === "ROUTE.LEAVE_ALONE"))
+    || (task?.question_focus === "none" && task.node_id === primary?.id && !emergency));
+  const nextQuestion = noQuestion ? "" : currentTaskQuestion || questionNode?.defaultQuestion || usefulUnknowns[0]?.question || "";
+  const nextQuestionSource = !nextQuestion ? null : currentTaskQuestion
+    ? { type: "turn-task", phase: task.phase, focus: task.question_focus }
+    : questionNode ? { type: "graph-node", id: questionNode.id }
+    : { type: "case-unknown", variable: usefulUnknowns[0].variable };
+  const requiredNodeIds = primary ? [primary.id] : [];
+  if (taskPolicy && !emergency && primary?.id === "ROUTE.INFLUENCE_NONORDINARY_METTA"
+      && selectedIds.has("ROUTE.INFLUENCE_LOVE_CAPACITY")) requiredNodeIds.push("ROUTE.INFLUENCE_LOVE_CAPACITY");
+  const taskApplies = task && (task.node_id === primary?.id || task.kind === "relationship_repair" || task.agreement === "declined" || task.phase === "close");
+  const execution = taskPolicy ? {
+    version: 1, requiredNodeIds,
+    contextNodeIds: selected.filter(n => !requiredNodeIds.includes(n.id)).map(n => n.id),
+    task: taskApplies ? task : null,
+    taskGuidance: taskApplies && !emergency ? guidanceForTask(task) : [],
+    reason: emergency ? "Immediate protection controls this turn; other selected nodes are context only."
+      : "Perform the primary and explicitly necessary support, not every diagram secondary."
+  } : null;
 
   const dynamicNuance = [];
   const dynamicForbidden = [];
@@ -235,7 +282,8 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs 
   }
 
   return {
-    contractVersion: "case-plan-v4",
+    contractVersion: taskPolicy ? "case-plan-v5" : "case-plan-v4",
+    ...(execution ? { executionContract: execution } : {}),
     graphBundleVersion: graphs[0]?.bundleVersion ?? null,
     variables,
     primaryJob: primary ? { id: primary.id, title: primary.title, tier: primary.tier } : null,
@@ -246,7 +294,8 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs 
       tier: node.tier,
       priority: node.priority,
       recommendations: node.recommendations,
-      sourceRefs: node.sourceRefs
+      sourceRefs: node.sourceRefs,
+      ...(taskPolicy ? { successSignals: node.successSignals, avoid: node.avoid } : {})
     })),
     deferredNodes,
     blockedNodes,
@@ -255,9 +304,9 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs 
       deferredNodes: deferredNodes.filter((node) => directlyDeferred.has(node.id)),
       blockedNodes: blockedNodes.filter((node) => directlyBlocked.has(node.id))
     },
-    requiredNuance: unique([...selected.flatMap((node) => node.effects?.requiredNuance ?? []), ...dynamicNuance]),
-    forbiddenOverclaims: unique([...selected.flatMap((node) => node.effects?.forbiddenOverclaims ?? []), ...dynamicForbidden]),
-    avoid: unique(selected.flatMap((node) => node.avoid ?? [])),
+    requiredNuance: unique([...(taskPolicy ? matched : selected).flatMap((node) => node.effects?.requiredNuance ?? []), ...dynamicNuance]),
+    forbiddenOverclaims: unique([...(taskPolicy ? matched : selected).flatMap((node) => node.effects?.forbiddenOverclaims ?? []), ...dynamicForbidden]),
+    avoid: unique((taskPolicy ? matched : selected).flatMap((node) => node.avoid ?? [])),
     nextQuestion,
     nextQuestionSource,
     questionContract: {

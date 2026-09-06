@@ -25,9 +25,9 @@ regression_refs:
   - G017
   - G018
   - G025
-base_record_sha256: 18036e2913aa58cb2cb4ba455029d3de1032f89ead3a9974cf1882a07974630e
-base_graph_sha256: 52bce090d4dd5380cdc2c647b12704655d9596451468807184e41d3b64c192af
-projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
+base_record_sha256: e9f35463702464428be82df9a43623c3212fad8cb1136c81f2d7087492b0f16d
+base_graph_sha256: 9ca2615aba6172792631bfbc33d8610dcd20e2a16ceed756be839ba7878fba40
+projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
 ---
 
 # Route internal influence through existing process maps
@@ -62,6 +62,10 @@ projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940c
     "requiredNuance": [
       "Internal influence is a route into the existing inner-child, somatic, and metacognitive architecture, not a new modality department."
     ]
+  },
+  "questionPolicy": {
+    "purpose": "discriminate",
+    "unresolvedFields": []
   },
   "recommendations": [
     "For parts, compulsions, urges, or loops, use the least elaborate existing inner-child, somatic, or metacognitive route that fits the maintaining process.",

@@ -110,7 +110,8 @@ function notePayload(node) {
     avoid: structuredClone(node.avoid),
     successSignals: structuredClone(node.successSignals),
     effects: structuredClone(node.effects),
-    defaultQuestion: node.defaultQuestion
+    defaultQuestion: node.defaultQuestion,
+    ...(node.questionPolicy ? { questionPolicy: structuredClone(node.questionPolicy) } : {})
   };
 }
 
