@@ -51,6 +51,7 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   realistic_interaction_outcome: ["mutual_understanding", "convey_information", "boundary_or_refusal", "distance_or_exit", "observe_boundary_response", "unresolved", "unknown"],
   influence_domain: ["ordinary_social", "internal", "experienced_other_than_self", "uncertain_ontology", "none", "unknown"],
   metta_access: ["accessible", "limited", "inaccessible", "unknown"],
+  spiritual_support_access: ["accessible", "inaccessible", "unknown"],
   current_intent: ["conversation", "gentle_practice", "deep_dialogue", "hypnosis", "memory_processing", "photo_work", "altered_state", "integration", "trust_decision", "advanced_release", "unknown"],
   memory_source_risk: ["present", "absent", "unknown"],
   forgiveness_interest: ["present", "absent", "unknown"],

@@ -14,7 +14,7 @@ const CRITICAL_DELTA_FIELDS = [
   "memory_source_risk", "current_intent", "credibility_conflict", "age_agency_ambiguity", "resentment_toward_younger_self",
   "inner_adult_access", "witness_capacity", "protective_response", "self_directed_love", "credibility_evidence_state",
   "internal_speaker_relation", "target_type", "other_person_central", "relational_capacity_evidence",
-  "emotional_takeover_pressure", "realistic_interaction_outcome", "influence_domain", "metta_access"
+  "emotional_takeover_pressure", "realistic_interaction_outcome", "influence_domain", "metta_access", "spiritual_support_access"
 ];
 
 function criticalDeltaCount(snapshot, priorSnapshot) {

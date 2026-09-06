@@ -60,6 +60,8 @@ Within the spiritual framework, metta or love itself may be the primary protecti
 
 If love is limited or inaccessible, do not prescribe psychic combat, retaliatory imagery, escalating occult technique, or spiritual fearlessness. Build the smallest believable Nurturer, Protector, or Guide capacity; borrowed adulthood may supply one bounded function while returning authority to the person. Practical safety, sleep, orientation, medical assessment, and human support remain independently available.
 
+When direct metta is inaccessible but the person can access a spiritually meaningful source of loving support or protection, the existing love-capacity route may borrow that support in the person's own tradition and language—for example through God, Jesus, angels, devas, saints, ancestors, or another loving presence. The developmental movement is **receive -> participate -> generate -> internalize**: receive support, join its loving intention, practice generating some love directly, then carry more love, courage, discernment, and agency personally over time. Continuing prayer, devotion, surrender to God, reliance on grace, or ongoing spiritual relationship is not itself dependency or failed transfer. The target is growing capacity and agency, not spiritual independence from the divine. If borrowed spiritual love is also inaccessible, return to the smallest believable Nurturer, Protector, or Guide/reparenting function rather than psychic combat.
+
 ### Uncertain ontology
 
 When the person is unsure whether the cause is internal, external, spiritual, psychological, physiological, or mixed, leave the cause unresolved. Work with directly reportable phenomenology—sensations, images, felt agency, triggers, timing, sleep, orientation, urges, effects of attention, and what changes choice. Symptom response to metta, grounding, boundaries, medication, sleep, or inner work does not prove the cause.
@@ -74,6 +76,7 @@ New case variables:
 - `realistic_interaction_outcome`
 - `influence_domain`
 - `metta_access`
+- `spiritual_support_access`
 
 New cross-guide nodes:
 
@@ -84,7 +87,7 @@ New cross-guide nodes:
 - `ROUTE.INFLUENCE_LOVE_CAPACITY`
 - `ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN`
 
-Graph cases `G013`–`G018` test relational precedence, practical-safety precedence, internal routing, metta as primary nonordinary protection, inaccessible-love capacity-building, and unresolved ontology. The companion behavioral-evaluation v1/v2 protocols and fixtures remain unchanged; these are separate deterministic graph regressions, not scored model behavior.
+Graph cases `G013`–`G018` test relational precedence, practical-safety precedence, internal routing, metta as primary nonordinary protection, inaccessible-love capacity-building, and unresolved ontology. Versioned graph case `G025` adds direct-metta-inaccessible plus spiritual-support-accessible coverage: practical safety stays primary, the existing love-capacity route carries borrowed spiritual love, and continuing devotion is not treated as failed transfer. `G019`–`G024` remain reserved by the separate love-horizon proposal. The companion behavioral-evaluation v1/v2 protocols and fixtures remain unchanged; these are separate deterministic graph regressions, not scored model behavior.
 
 ## Non-claims and later gates
 

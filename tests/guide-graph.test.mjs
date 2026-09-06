@@ -28,7 +28,37 @@ test("compiled guide-graph bundles contain no wall-clock build metadata", async 
 test("all authored branch cases pass the deterministic graph planner", async () => {
   const result = await runGraphRegressionSuite();
   assert.equal(result.ok, true, JSON.stringify(result.results.filter((item) => !item.ok), null, 2));
-  assert.equal(result.count, 18);
+  assert.equal(result.count, 19);
+});
+
+test("borrowed spiritual love preserves devotion, agency transfer, ontology humility, and ordinary safety", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "unsafe",
+      orientation: "oriented",
+      ability_to_stop: "yes",
+      ability_to_return: "yes",
+      suicidal_state: "absent",
+      activation: "moderate",
+      dissociation: "none",
+      altered_state: "sober",
+      influence_domain: "experienced_other_than_self",
+      metta_access: "inaccessible",
+      spiritual_support_access: "accessible",
+      actionable_problem: "present",
+      unresolved_inner_material: "present",
+      inward_attention_effect: "neutral"
+    }
+  });
+  assert.equal(plan.variables.spiritual_support_access, "accessible");
+  assert.equal(plan.primaryJob.id, "IC.SAFETY_ORIENTATION");
+  assert.ok(plan.selectedNodes.some((item) => item.id === "ROUTE.INFLUENCE_LOVE_CAPACITY"));
+  assert.ok(plan.requiredNuance.some((item) => /receive -> participate -> generate -> internalize/i.test(item)));
+  assert.ok(plan.requiredNuance.some((item) => /not itself dependency or failed transfer/i.test(item)));
+  assert.ok(plan.requiredNuance.some((item) => /never replaces practical physical or social safety/i.test(item)));
+  assert.ok(plan.requiredNuance.some((item) => /without affirming or denying metaphysical fact/i.test(item)));
 });
 
 test("advanced release is blocked by physical risk and cannot outrank safety", async () => {

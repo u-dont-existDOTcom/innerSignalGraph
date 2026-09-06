@@ -18,6 +18,7 @@ Pay special attention to:
 - interpersonal pressure being upgraded into deliberate coercive intent without transcript evidence, or pressure that displaced the user's position being missed;
 - an experienced presence, jinn, spirit, entity, unattached burden, or astral attack being affirmed as literal ontology, dismissed as unreal, or silently relabeled as an internal part;
 - love or metta being treated as available because it is spiritually preferred rather than because the person can presently access it;
+- spiritually meaningful loving support being treated as accessible merely because the user names a religion, spiritual figure, prayer, devotion, or belief, or being treated as dependency merely because the relationship continues;
 - imagery or body experience being treated as historical fact.
 
 VARIABLE ENUMS:

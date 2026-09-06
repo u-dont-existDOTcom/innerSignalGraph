@@ -7,8 +7,8 @@ source_id: AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
 guide_id: owner-amendments
 heading: AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
 source_role: owner-approved-extension
-source_hash: d3e63889907630a34b836555b6f9d9295cdedc49104a76216a40a8934f662b11
-section_hash: 5aa44b5d9da6b9fd8f3a5ea176d20e16e8c10a1be1abc86f8920d0ac4021689d
+source_hash: 3a42140ebcb5d9aca693d98ab100a4dc8485e18d8e4c60f9dab295445fec5047
+section_hash: 16abf254685f89cc5f5517795cdaeffc70a8fcd4f371f993cfafdeeeee66110d
 locator_kind: amendment-record
 cited_by_node_ids:
   - ROUTE.INFLUENCE_INTERNAL
@@ -16,7 +16,7 @@ cited_by_node_ids:
   - ROUTE.INFLUENCE_NONORDINARY_METTA
   - ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN
   - ROUTE.INFLUENCE_SOCIAL_PROTECTION
-projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
+projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
 ---
 
 # AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
@@ -28,5 +28,5 @@ Authority path: `guides/owner-amendments.json`
 Locator: Structured owner-amendment record
 
 ```text
-Treat influence, protection, and love as a cross-cutting capability with separate routes. In ordinary social or interpersonal influence, love may remain an ethical orientation but never substitutes for physical or social safety, boundaries, distance, refusal, or concrete action. Internal influence from parts, compulsions, urges, or loops uses the existing inner-child, somatic, or metacognitive routes. When a person experiences something as other-than-self and uses language such as a presence, jinn, spirit, entity, unattached burden, or astral attack, mirror the person's language without affirming or denying ontology. Within the spiritual framework, metta or love itself may be used as the primary protective response rather than merely being added to a boundary visualization. If love is inaccessible, build the Nurturer, Protector, and Guide capacities that make a loving response genuinely available instead of prescribing psychic combat. When ontology is uncertain, work phenomenologically and leave cause unresolved. Love or metta may be protective in nonordinary or spiritual experience; physical or social danger still requires practical safety. Remaining loving under unavoidable harm is a spiritual aspiration, not therapy advice to approach, tolerate, or remain exposed to danger.
+Treat influence, protection, and love as a cross-cutting capability with separate routes. In ordinary social or interpersonal influence, love may remain an ethical orientation but never substitutes for physical or social safety, boundaries, distance, refusal, or concrete action. Internal influence from parts, compulsions, urges, or loops uses the existing inner-child, somatic, or metacognitive routes. When a person experiences something as other-than-self and uses language such as a presence, jinn, spirit, entity, unattached burden, or astral attack, mirror the person's language without affirming or denying ontology. Within the spiritual framework, metta or love itself may be used as the primary protective response rather than merely being added to a boundary visualization. When direct metta is inaccessible but the person can access a spiritually meaningful source of loving support or protection—such as God, Jesus, angels, devas, saints, ancestors, or another loving presence—allow borrowed spiritual love in the person's own tradition and language. Prefer receive -> participate -> generate -> internalize: receive loving support, join the loving intention, practice generating some love directly, then carry more love, courage, discernment, and agency personally over time. Continuing prayer, devotion, surrender to God, reliance on grace, or an ongoing spiritual relationship is not itself dependency or failed transfer; the goal is increased capacity and agency, not spiritual independence from the divine. If neither direct nor borrowed spiritual love is accessible, build the smallest believable Nurturer, Protector, or Guide capacities that make a loving response genuinely available instead of prescribing psychic combat. When ontology is uncertain, work phenomenologically and leave cause unresolved. Love or metta may be protective in nonordinary or spiritual experience; physical or social danger still requires practical safety. Remaining loving under unavoidable harm is a spiritual aspiration, not therapy advice to approach, tolerate, or remain exposed to danger.
 ```

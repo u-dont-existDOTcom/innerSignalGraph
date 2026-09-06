@@ -1,6 +1,6 @@
-# Borrowed spiritual love: implementation addendum
+# Borrowed spiritual love: integration record
 
-Recorded 2026-09-06 from explicit owner approval. This refines the existing `Influence / Protection / Love` route; it does not create a new modality department, change stable, merge, deploy, or establish metaphysical/clinical truth.
+Recorded 2026-09-06 from explicit owner approval and integrated into the authoritative graph on the same task branch. This record preserves the decision provenance; the operative semantics now live directly in `AMEND.CROSS.INFLUENCE_PROTECTION_LOVE`, `ROUTE.INFLUENCE_LOVE_CAPACITY`, and graph regression `G025`. The change does not create a new modality department, change stable, merge, deploy, or establish metaphysical/clinical truth.
 
 ## Why this is an extension, not a new route
 
@@ -44,6 +44,6 @@ This route is only about the spiritual/nonordinary intervention logic. Prayer or
 
 InnerSignal may mirror the user's language—jinn, spirit, entity, presence, unattached burden, astral attack—without affirming or denying the underlying ontology. A helpful response to prayer or mettā does not prove what caused the experience.
 
-## Routing implication
+## Integrated routing
 
-No new topological node is required. `ROUTE.INFLUENCE_LOVE_CAPACITY` remains the correct bounded route for direct mettā being limited/inaccessible. Future generated graph wording should preserve the sequence and devotion-vs-helplessness distinction above when that node is next regenerated or revised. Until then, this addendum and `CF-D014` are the controlling owner clarification for the task branch.
+No new topological node is required. `ROUTE.INFLUENCE_LOVE_CAPACITY` remains the correct bounded route for direct mettā being limited/inaccessible. Its authoritative wording now preserves the receive/participate/generate/internalize sequence, the devotion-vs-helplessness distinction, the reparenting fallback, ordinary-safety precedence, and ontology humility. `CF-D014` remains the owner-decision record; this file is historical integration context rather than a deferred semantic authority.

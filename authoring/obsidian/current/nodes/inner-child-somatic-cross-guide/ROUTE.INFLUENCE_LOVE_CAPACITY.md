@@ -12,7 +12,10 @@ priority: 98
 authority: owner-approved-extension
 graph_tags:
   - influence-protection-love
+  - borrowed-spiritual-love
   - capacity-building
+  - devotion
+  - agency
   - nurturer
   - protector
   - guide
@@ -24,9 +27,10 @@ regression_refs:
   - G016
   - G017
   - G018
-base_record_sha256: 1f03b9d29e75f8670f6ac21c7d813daadb4b5b8d33cb1eb49e87df1e63b52aab
-base_graph_sha256: 484f0ab3b8f54b7921a6dfa7e7b8e3eec21cc6bbe4376a5c0af62a9521453f33
-projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
+  - G025
+base_record_sha256: 0fe3c82c2f8de8d37a093110e61bea53a47ba34d4d7f3fa531f23d95e92b986f
+base_graph_sha256: 52bce090d4dd5380cdc2c647b12704655d9596451468807184e41d3b64c192af
+projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
 ---
 
 # Build the capacities that make protective love accessible
@@ -57,26 +61,35 @@ projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee62
   },
   "avoid": [
     "Do not replace inaccessible love with psychic combat, adversarial entity techniques, or pressure to perform spiritual fearlessness.",
-    "Do not force affection, forgiveness, or compassion while the person's available protective capacity is saying no."
+    "Do not force affection, forgiveness, or compassion while the person's available protective capacity is saying no.",
+    "Do not pathologize continuing prayer or devotion, and do not confuse spiritual relationship with psychological helplessness that displaces the person's agency or judgment."
   ],
   "defaultQuestion": "Which capacity is missing right now: warmth and non-cruelty, protection and a firm no, or guidance about the next sane action?",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [
-      "Do not claim that capacity-building confirms the experience was internal or that spiritual language was mistaken."
+      "Do not claim that capacity-building confirms the experience was internal or that spiritual language was mistaken.",
+      "Do not treat continuing prayer, devotion, reliance on God, grace, or relationship with a spiritual source as dependency or failed transfer merely because it continues."
     ],
     "requiredNuance": [
-      "Love that is not presently accessible must be built toward through believable caring, protective, and guiding functions rather than treated as a moral or spiritual performance demand."
+      "Love that is not presently accessible must be built toward through believable caring, protective, and guiding functions rather than treated as a moral or spiritual performance demand.",
+      "When direct metta is inaccessible and spiritually meaningful loving support is accessible, borrowed spiritual love follows receive -> participate -> generate -> internalize in the user's own tradition or language.",
+      "Continuing prayer, devotion, reliance on God, grace, or an ongoing spiritual relationship is not itself dependency or failed transfer; the transfer target is increased love, courage, discernment, and agency rather than spiritual independence from the divine.",
+      "If neither direct nor borrowed spiritual love is accessible, return to believable Nurturer, Protector, or Guide capacity-building rather than psychic combat.",
+      "Borrowed spiritual love never replaces practical physical or social safety, and the user's spiritual language is mirrored without affirming or denying metaphysical fact."
     ]
   },
   "recommendations": [
-    "Do not demand love on cue. Build the smallest missing Nurturer, Protector, or Guide function that would make non-combat protection believable and available.",
-    "Borrow one bounded function from a safe person, future self, spiritual figure, value, or plan when direct access is weak, reality-check it, and return authority to the person.",
+    "Do not demand love on cue. When direct metta is inaccessible but a spiritually meaningful source of loving support is accessible, invite borrowed spiritual love or protection in the user's own tradition and language—for example through God, Jesus, angels, devas, saints, ancestors, or another loving presence.",
+    "Use receive -> participate -> generate -> internalize as a developmental movement: first receive the loving support, then join its loving intention, then practice generating some love directly, then carry more love, courage, discernment, and agency personally over time.",
+    "Treat continuing prayer, devotion, surrender to God, reliance on grace, or ongoing relationship with a spiritual source as compatible with mature capacity. The transfer target is increased love, courage, discernment, and agency, not spiritual independence from the divine.",
+    "If neither direct nor borrowed spiritual love is accessible, build the smallest believable Nurturer, Protector, or Guide function rather than escalating to psychic combat; ordinary adult or human support may supply one bounded function while authority returns to the person.",
     "Use ordinary grounding, rest, human support, boundaries, and practical protection alongside capacity-building whenever they are needed."
   ],
   "successSignals": [
-    "A believable caring or non-hating response becomes more accessible without surrendering agency, judgment, or practical protection."
+    "A believable caring or non-hating response becomes more accessible without surrendering agency, judgment, or practical protection.",
+    "Spiritual relationship and growing personal capacity coexist: ongoing devotion may continue while love, courage, discernment, and agency increase."
   ]
 }
 ```

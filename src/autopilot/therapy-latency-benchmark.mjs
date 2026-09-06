@@ -53,7 +53,8 @@ const OPTIONAL_UNKNOWN_ROUTING_KEYS = new Set([
   "emotional_takeover_pressure",
   "realistic_interaction_outcome",
   "influence_domain",
-  "metta_access"
+  "metta_access",
+  "spiritual_support_access"
 ]);
 
 function canonical(value) {

@@ -7,8 +7,8 @@ amendment_id: AMEND.IC.BEST_FRIEND_PROMPT
 status: owner-approved
 domain: inner-child
 base_record_sha256: 63d6aaee85d5ee4aece9f9cce387524f4af89f168efaf0137f9aedded07aec0b
-source_file_sha256: d3e63889907630a34b836555b6f9d9295cdedc49104a76216a40a8934f662b11
-projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
+source_file_sha256: 3a42140ebcb5d9aca693d98ab100a4dc8485e18d8e4c60f9dab295445fec5047
+projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
 ---
 
 # AMEND.IC.BEST_FRIEND_PROMPT

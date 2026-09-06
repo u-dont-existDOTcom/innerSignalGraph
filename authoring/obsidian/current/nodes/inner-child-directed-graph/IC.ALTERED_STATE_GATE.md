@@ -23,7 +23,7 @@ regression_refs:
   - G009
 base_record_sha256: 1834ec961af7d1f5ff5052faf3c6344361f8f2b1d373144193182cae0a303fea
 base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
+projection_input_sha256: 03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24
 ---
 
 # Build sober capacity before using altered states to deepen

@@ -121,7 +121,8 @@ function graphReport(bundle, amendments) {
     `- Instructional images can contribute explicit source claims through semantic asset notes without duplicating all visual meaning into article prose.\n` +
     `- When another person is central, detached observation, demonstrated relational capacity, takeover-pressure detection, and a realistic outcome precede inward processing.\n` +
     `- Ordinary social influence keeps love separate from practical protection; internal influence reuses existing process maps; nonordinary experience may use metta itself as protection without deciding ontology.\n` +
-    `- Inaccessible protective love routes toward Nurturer, Protector, and Guide capacity-building rather than psychic combat; uncertain ontology remains phenomenological and unresolved.\n\n` +
+    `- When direct metta is inaccessible, spiritually meaningful loving support may be borrowed through receive -> participate -> generate -> internalize; continuing devotion is not failed transfer, and if borrowing is also inaccessible the route returns to Nurturer, Protector, and Guide capacity-building rather than psychic combat.\n` +
+    `- Borrowed spiritual love never replaces practical safety, and uncertain ontology remains phenomenological and unresolved.\n\n` +
     `## Deliberate constraints\n\n` +
     `- The planner routes by function, dose, target, and capacity rather than modality name alone.\n` +
     `- Safety, orientation, stopping, and return capacity outrank all therapeutic preferences.\n` +
