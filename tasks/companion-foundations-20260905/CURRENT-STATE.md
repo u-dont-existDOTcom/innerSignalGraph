@@ -26,7 +26,7 @@ Two new cross-guide amendments make the authorized behavior executable:
 - `AMEND.CROSS.RELATIONAL_REALITY_CHECK`: when another person is central, observe behavior, assess demonstrated relational capacity, notice takeover pressure, choose a realistic interaction outcome, take outward action where needed, and only then examine the user's internal activation when useful. It does not diagnose or globally label the other person, infer motives, treat disagreement as incapacity, or default to cutoff.
 - `AMEND.CROSS.INFLUENCE_PROTECTION_LOVE`: ordinary social danger keeps practical protection primary; internal influence uses existing inner/somatic/metacognitive routes; experienced other-than-self influence may use mettā/love itself as the spiritual protective practice while ordinary safety remains independent; inaccessible love routes to Nurturer/Protector/Guide capacity-building rather than psychic combat; uncertain ontology remains phenomenological and non-dismissive.
 
-The executable contract adds explicit fields for relational centrality and capacity, takeover pressure, realistic interaction outcomes, influence domain, and current access to mettā. Six new route nodes and graph cases `G013`-`G018` test relational precedence, ordinary danger, internal influence, accessible mettā, capacity-building when love is unavailable, and uncertain ontology. The compiled development graph now contains 52 nodes, 67 edges, 76 source sections, 22 owner amendments, and 18 graph regressions.
+The executable contract adds explicit fields for relational centrality and capacity, takeover pressure, realistic interaction outcomes, influence domain, current access to mettā, and access to spiritually meaningful loving support. Six route nodes and graph cases `G013`-`G018` test relational precedence, ordinary danger, internal influence, accessible mettā, capacity-building when love is unavailable, and uncertain ontology. Versioned graph case `G025` adds the borrowed-spiritual-love condition while leaving proposal-reserved `G019`-`G024` untouched. The compiled development graph contains 52 nodes, 67 edges, 76 source sections, 22 owner amendments, and 19 graph regressions.
 
 ### Borrowed spiritual love refinement
 
@@ -38,7 +38,7 @@ This is capacity transfer, not secularization. Continuing prayer, surrender to G
 
 If neither direct nor borrowed spiritual love is accessible, route back to the smallest believable Nurturer/Protector/Guide function rather than psychic combat. Ordinary physical/social safety remains independent and is never replaced by spiritual borrowing.
 
-This clarification is recorded as `CF-D014` in `OWNER-DECISIONS.json` and in `BORROWED-SPIRITUAL-LOVE-ADDENDUM-2026-09-06.md`. The current graph already has the correct structural route and explicitly permits borrowing from a spiritual figure, so no new node/edge was added in this clarification. When the generated graph wording is next revised/regenerated, it must preserve the receive/participate/generate/internalize sequence and the distinction between devotion and helpless dependency.
+This clarification remains recorded as `CF-D014` in `OWNER-DECISIONS.json`; `BORROWED-SPIRITUAL-LOVE-ADDENDUM-2026-09-06.md` is now an integration record rather than deferred semantic authority. The approved wording is folded directly into `AMEND.CROSS.INFLUENCE_PROTECTION_LOVE` and `ROUTE.INFLUENCE_LOVE_CAPACITY`, and the compiled bundles, source map, report, therapy map, Canvas, and complete Obsidian current projection were regenerated. No node or edge was added.
 
 ## Evaluation revision 2
 
@@ -109,20 +109,31 @@ The retained v1/v2 behavioral-evaluation fixtures remain byte-identical:
 - `MODEL-EVALUATION-PROTOCOL.md`: `1e39ff0fc04078c8d258f75feb717fd19506a7e7de84b400dcab7a746d9b3a5a`
 - `MODEL-EVALUATION-PROTOCOL-v2.md`: `c071c35fb1997f6f734540fb042c75362ec2c56f241dfe95e878a5105c7d4c33`
 
-Local Node `24.18.0` results for the last graph revision remain:
+Verified implementation head: `88ab54fad1e66572fc27433149f30d3d5602917b`. This checkpoint update is an evidence-only descendant; the PR body records the live branch head because a tracked file cannot self-identify the commit that contains it.
 
-- graph regressions: 18/18 pass;
-- affected graph, authoring, tiered-pipeline, benchmark, and task-policy tests: pass;
-- authoring validate/check/maps-check: pass with projection input `5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129` and 269 generated files;
-- therapy lesson provenance: 5/5 pass;
-- final `npm run verify`: pass, including 673/673 automated tests, immutable packet checks, mock therapy/hypnosis replays, web smoke, fake-CLI autopilot smoke, runtime fingerprint, package hygiene, and autonomous-development-loop checks. Earlier local broad runs intermittently observed the unchanged publication-wrapper exit-semantics test at `tests/publication-audit.test.mjs:1480`; it passed alone without a code change, passed in the final local package run, and passed in the hosted 673/673 test run. No unresolved map or package conflict remains from that observation.
+Local Node `24.18.0` results at the verified implementation head/tree:
 
-The borrowed-spiritual-love clarification added only task-level owner semantics/checkpoint documentation and no graph topology or generated projection. Fresh hosted checks at the resulting exact branch head remain authoritative for repository integrity; do not mislabel prior-head CI as exact-head evidence.
+- `npm run graph:test`: 19/19 pass, including new `G025`; existing `G013`-`G018` remain green;
+- targeted graph/schema/projection/tiering/benchmark set: 25/25 pass;
+- focused `tests/guide-graph.test.mjs`: 14/14 pass, including explicit preservation of `spiritual_support_access`, practical-safety priority, devotion, agency transfer, and ontology humility;
+- `npm run authoring:validate`: pass, projection input `03b5fbde47286f0ba3b55df88057273a2822276d9d24cc0cac6940cfea418c24`, 270 generated files, six Bases, one map;
+- `npm run authoring:check`: pass with the same projection input and 270 generated files;
+- `npm run authoring:maps:check`: pass, one map and Canvas current;
+- `npm run therapy-lessons:verify`: 5/5 pass, four active runtime lessons documented;
+- final `npm run verify`: `VERDICT PASS`, including 674/674 automated tests, 19/19 graph cases, immutable packet checks, mock therapy/hypnosis replays, web smoke, fake-CLI autopilot smoke, runtime fingerprint, package hygiene, and autonomous-development-loop checks.
+
+The first full package attempt observed the unchanged intermittent publication-wrapper exit-semantics assertion at `tests/publication-audit.test.mjs:1480` (673/674). The exact test then passed 1/1 in isolation without a code change, and the required full rerun passed 674/674. No unresolved map or package defect remains from that observation.
+
+Exact-head hosted evidence for `88ab54fad1e66572fc27433149f30d3d5602917b`:
+
+- Verify run `34009320435`: success (`deterministic-package`);
+- Repository workflow policy run `34009320437`: success (`workflow-policy`);
+- CodeQL run `34009320535`: success (`codeql-javascript`), with the associated CodeQL status also successful.
 
 No live-model semantic evaluation or clinical efficacy finding has occurred.
 
 ## Next safe action
 
-Keep PR #46 draft and read exact-head hosted checks. The next structural graph regeneration/revision should copy the borrowed-spiritual-love wording into `ROUTE.INFLUENCE_LOVE_CAPACITY` while preserving the same topology. Behavioral evaluation remains a separate authenticated-worker step with exact responder/grader identity, replay policy, bounded call budget, preserved transcripts/failures, and independent grading.
+Keep PR #46 draft. This is the last planned therapy-map editing step for the current slice; do not reopen map semantics unless a deterministic test exposes a real defect. The next phase is behavioral realization testing with GPT-5.6 Sol at xhigh reasoning through the established authenticated harness, with exact responder/grader identity, replay policy, bounded call budget, preserved transcripts/failures, and independent grading. After that, proceed to separately authorized plugin/runtime implementation.
 
 A future global framework change requires a separate evidence/governance decision. One person's useful metaphor may remain valuable without becoming universal product policy.

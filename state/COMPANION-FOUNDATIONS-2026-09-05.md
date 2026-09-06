@@ -1,6 +1,6 @@
 # Parallel task: companion foundations
 
-Updated 2026-09-05. Branch `companion/foundations-2026-09-05`, draft PR #46.
+Updated 2026-09-06. Branch `companion/foundations-2026-09-05`, draft PR #46.
 
 Start with `tasks/companion-foundations-20260905/CURRENT-STATE.md`. Then read `docs/OWNER-TERMINOLOGY.md`, `OWNER-DECISIONS.json`, `MODEL-EVALUATION-PROTOCOL-v2.md`, `framework-revisability-cases.json`, and the preflight under `evaluations/2026-09-05-preflight/`.
 
@@ -14,6 +14,8 @@ The philosophy is **revisable rather than protected doctrine**. InnerSignal must
 
 The fictional-data interface, freshness guard, synthetic reflection controller, semantic-review contract, revision-2 evaluation fixtures, and offline working-framework policy remain task-local and are not imported by the application.
 
+The final planned therapy-map edit for this slice is complete at verified implementation commit `88ab54fad1e66572fc27433149f30d3d5602917b`: borrowed spiritual love now lives directly in the authoritative owner amendment and `ROUTE.INFLUENCE_LOVE_CAPACITY`, `G025` covers the condition without adding topology, and all compiled/Obsidian/map projections are regenerated. See the task checkpoint for exact local and hosted evidence.
+
 Semantic review now separates philosophy fidelity from framework revisability. The working-framework prototype distinguishes personal metaphor, functional hypothesis, repeated personal pattern, unsupported literal factual claim, and global product-policy promotion. It cannot automatically promote any framework into the canonical map.
 
 Revision-2 evaluation preserves the original frozen v1 corpus and adds four synthetic framework-revisability cases. Current v2 shape is 30 isolated conversations / 43 listed user entries if replayed chronologically.
@@ -26,6 +28,6 @@ The blocker is access to the established authenticated InnerSignal execution wor
 
 ## Scope
 
-No real intake/history, persistence, new vault/crypto work, OS integration, provider call, active prompt, guide-graph mutation, Guide Packet, plugin, deployment, main merge, stable promotion, or diagnostics change is authorized or claimed. The unrelated DEV-R005 frontier remains separate.
+No real intake/history, persistence, new vault/crypto work, OS integration, provider call, Guide Packet installation, plugin, deployment, main merge, stable promotion, or diagnostics change is authorized or claimed. The owner-authorized task-branch guide-graph change above is development-only and does not establish clinical efficacy or metaphysical truth. The unrelated DEV-R005 frontier remains separate.
 
 Exact-head Verify, repository workflow policy, and CodeQL are required after each source change. See the task checkpoint for current CI status; prior-head green results do not transfer automatically.
