@@ -7,7 +7,7 @@ source_id: AMEND.IC.INTUITION_ANALYTIC_INTEGRATION
 guide_id: owner-amendments
 heading: AMEND.IC.INTUITION_ANALYTIC_INTEGRATION
 source_role: owner-approved-extension
-source_hash: 2e7a2a887f4e9232fdcb452ed13e878527fa35032d495db65b008c2cb10f4f43
+source_hash: d3e63889907630a34b836555b6f9d9295cdedc49104a76216a40a8934f662b11
 section_hash: 8512276c375eec599c0dd0cc351d498bbf052d914b785f5706b0a54eab5eb98a
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -15,7 +15,8 @@ cited_by_node_ids:
   - IC.GUIDE_LATER
   - IC.INTUITION_TRUST_CALIBRATION
   - IC.REALIZATION_LOVE_INTEGRATION
-projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d3143f8084
+  - ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN
+projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
 ---
 
 # AMEND.IC.INTUITION_ANALYTIC_INTEGRATION

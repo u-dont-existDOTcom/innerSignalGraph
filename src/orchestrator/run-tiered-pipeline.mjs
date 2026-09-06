@@ -13,7 +13,8 @@ const CRITICAL_DELTA_FIELDS = [
   "present_safety", "orientation", "ability_to_stop", "ability_to_return", "activation", "dissociation", "altered_state",
   "memory_source_risk", "current_intent", "credibility_conflict", "age_agency_ambiguity", "resentment_toward_younger_self",
   "inner_adult_access", "witness_capacity", "protective_response", "self_directed_love", "credibility_evidence_state",
-  "internal_speaker_relation", "target_type"
+  "internal_speaker_relation", "target_type", "other_person_central", "relational_capacity_evidence",
+  "emotional_takeover_pressure", "realistic_interaction_outcome", "influence_domain", "metta_access"
 ];
 
 function criticalDeltaCount(snapshot, priorSnapshot) {
@@ -45,6 +46,9 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
   const reviewedSignal = v.protective_response === "present"
     || v.self_directed_love === "unsafe"
     || v.credibility_conflict === "present"
+    || v.emotional_takeover_pressure === "present"
+    || ["experienced_other_than_self", "uncertain_ontology"].includes(v.influence_domain)
+    || ["limited", "mixed"].includes(v.relational_capacity_evidence)
     || ["low", "partial"].includes(v.inner_adult_access)
     || ["moderate", "high"].includes(v.activation)
     || v.dissociation === "mild"

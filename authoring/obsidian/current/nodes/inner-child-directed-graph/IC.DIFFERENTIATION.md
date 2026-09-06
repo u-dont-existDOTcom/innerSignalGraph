@@ -21,7 +21,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 2f50d59757fcebac25511712f72f59494f3a7313fd33234f959734b69038ce59
 base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d3143f8084
+projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
 ---
 
 # Untangle belonging from self-betrayal

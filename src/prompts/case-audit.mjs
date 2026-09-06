@@ -14,6 +14,10 @@ Pay special attention to:
 - existing witness capacity being overlooked because a stable inner-adult role is incomplete;
 - deep-work readiness being inferred from motivation or intensity;
 - advanced-release safety being marked absent without evidence;
+- another person's motive, diagnosis, worth, or global maturity being inferred from capacity evidence, or disagreement alone being treated as incapacity;
+- interpersonal pressure being upgraded into deliberate coercive intent without transcript evidence, or pressure that displaced the user's position being missed;
+- an experienced presence, jinn, spirit, entity, unattached burden, or astral attack being affirmed as literal ontology, dismissed as unreal, or silently relabeled as an internal part;
+- love or metta being treated as available because it is spiritually preferred rather than because the person can presently access it;
 - imagery or body experience being treated as historical fact.
 
 VARIABLE ENUMS:

@@ -13,7 +13,7 @@ locator_kind: text-lines
 cited_by_node_ids:
   - SOM.ADVANCED_RELEASE_BLOCK
   - SOM.ADVANCED_RELEASE_OPTIONAL
-projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d3143f8084
+projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
 ---
 
 # For Fun & Advanced Release try sky hypnosis and vagal blitz breathwork (sky hypnosis transcript here, then vagal blitz post attached as pdf):

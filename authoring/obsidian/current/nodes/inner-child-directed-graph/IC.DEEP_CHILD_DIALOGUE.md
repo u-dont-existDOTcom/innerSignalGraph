@@ -24,7 +24,7 @@ regression_refs:
   - G011
 base_record_sha256: 65f073956ce75cccc4bc04cbd999d6b8752126eb8848c44dfb9e0b84f78ffd6c
 base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d3143f8084
+projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
 ---
 
 # Enter deeper child dialogue only when capacity is adequate

@@ -17,10 +17,12 @@ graph_tags:
 source_refs:
   - SOM.EFT
   - AMEND.SOM.PREP_MODALITIES
-regression_refs: []
+regression_refs:
+  - G016
+  - G018
 base_record_sha256: 06ba98fd307149cdb274cd0fd010d741c68e55d8816ae21fcbae2b25960dcc21
 base_graph_sha256: f7acff85e9d11d38c1fd47830f4fad4998cc1fb1580f641223a6d92538e30140
-projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d3143f8084
+projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
 ---
 
 # Portable EFT for real-world triggers

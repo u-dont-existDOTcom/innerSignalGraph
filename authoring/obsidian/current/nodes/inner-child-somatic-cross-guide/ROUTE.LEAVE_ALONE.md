@@ -17,10 +17,12 @@ graph_tags:
   - ordinary-life
 source_refs:
   - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
-regression_refs: []
-base_record_sha256: c03b00d29da9a3e6ae6906046c8e06912bc34dc90ce201afc4b4a54ab4f6366e
-base_graph_sha256: 007ae86467ce97299bbe223bd97c1035f8ffb26354d456ceedc8d6e789154ec2
-projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d3143f8084
+regression_refs:
+  - G013
+  - G014
+base_record_sha256: ea98415f36af14b7f242776590f49bf7146f598d4c127544e72d920eb5d63d98
+base_graph_sha256: 484f0ab3b8f54b7921a6dfa7e7b8e3eec21cc6bbe4376a5c0af62a9521453f33
+projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
 ---
 
 # Leave the loop alone and re-enter ordinary life
@@ -74,6 +76,16 @@ projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d
           "intent",
           "imminent"
         ]
+      },
+      {
+        "field": "other_person_central",
+        "op": "eq",
+        "value": "yes"
+      },
+      {
+        "field": "influence_domain",
+        "op": "eq",
+        "value": "ordinary_social"
       }
     ]
   },

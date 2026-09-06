@@ -22,7 +22,7 @@ regression_refs:
   - G010
 base_record_sha256: c4d28d1685a405c1293aa34e0d62198c6855a73e9ed2756cea2dd30d1e986341
 base_graph_sha256: f7acff85e9d11d38c1fd47830f4fad4998cc1fb1580f641223a6d92538e30140
-projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d3143f8084
+projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
 ---
 
 # Meaning-making after the body is less trapped in survival mode

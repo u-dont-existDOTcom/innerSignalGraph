@@ -5,6 +5,7 @@
   "authority": "Current owner instructions; paraphrased product decisions, not private therapy data.",
   "directionApproved": true,
   "prototypeStatus": "OFFLINE_ONLY_NOT_IMPORTED_BY_APP",
+  "developmentGraphStatus": "OWNER_AUTHORIZED_TASK_BRANCH_ONLY_NOT_STABLE",
   "approvedPrinciples": [
     {
       "id": "CF-D001",
@@ -49,6 +50,14 @@
     {
       "id": "CF-D011",
       "decision": "The founder philosophy is a current best framework, not protected doctrine. InnerSignal should represent it faithfully while allowing coherent alternative frameworks to earn attention through better explanatory fit, predictions, disconfirming evidence, practical consequences, or repeated useful outcomes. Do not reject a model for unfamiliarity or conflict with founder authority, and do not adopt it merely for novelty, intensity, user pressure, or one compelling anecdote."
+    },
+    {
+      "id": "CF-D012",
+      "decision": "When another person is central, detached observation, demonstrated relational capacity, emotional-takeover pressure, inner boundaries/self-possession, and a realistic interaction outcome precede inward processing. Act outward as needed, then work inward only if useful. Assess capacity rather than motive or diagnosis; do not auto-label emotional immaturity, treat disagreement as incapacity, or default to cutoff."
+    },
+    {
+      "id": "CF-D013",
+      "decision": "Influence, protection, and love are cross-cutting. Ordinary social danger always retains practical safety and boundaries; internal influence uses existing process routes; experienced other-than-self phenomena may use metta/love itself as primary spiritual protection without affirming or denying ontology; inaccessible love routes to Nurturer/Protector/Guide capacity-building rather than psychic combat; uncertain ontology remains phenomenological. Non-hatred under unavoidable harm is a spiritual aspiration, never advice to accept preventable danger."
     }
   ],
   "provisionalImplementationChoices": [

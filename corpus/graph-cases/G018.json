@@ -1,0 +1,41 @@
+{
+  "id": "G018",
+  "description": "Uncertain ontology stays phenomenological and corrigible while practical and inward routes remain available by observed effect.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "influence_domain": "uncertain_ontology",
+    "metta_access": "limited",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "absent",
+    "inward_attention_effect": "mixed"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
+    "selectedIncludes": [],
+    "selectedExcludes": [
+      "ROUTE.INFLUENCE_INTERNAL",
+      "ROUTE.INFLUENCE_NONORDINARY_METTA",
+      "ROUTE.INFLUENCE_LOVE_CAPACITY"
+    ],
+    "matchedIncludes": [
+      "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN"
+    ],
+    "deferredIncludes": [],
+    "blockedIncludes": [],
+    "nextQuestion": "Without deciding the cause yet, what exactly happens in your body, attention, sense of agency, and behavior—and what reliably gives you more choice?",
+    "requiredNuancePatterns": [
+      "causal ontology remains explicitly unresolved"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "proves what caused"
+    ]
+  }
+}

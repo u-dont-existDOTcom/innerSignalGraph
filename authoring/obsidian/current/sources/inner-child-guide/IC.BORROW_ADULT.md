@@ -12,7 +12,7 @@ section_hash: bbe3987ef92f3b14ffc9183ca8b88b6e00b8ec65743062c6c3dbb3f000d3be16
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.NEUTRAL_WITNESS
-projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d3143f8084
+projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
 ---
 
 # Borrow the Adult Before You Can Be the Adult

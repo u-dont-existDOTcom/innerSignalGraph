@@ -138,6 +138,9 @@ test('owner ledger separates approved direction from deployment and unresolved c
   assert.equal(data.directionApproved, true);
   assert.equal(data.prototypeStatus, 'OFFLINE_ONLY_NOT_IMPORTED_BY_APP');
   assert.equal(new Set(data.approvedPrinciples.map(item => item.id)).size, data.approvedPrinciples.length);
+  assert.equal(data.developmentGraphStatus, 'OWNER_AUTHORIZED_TASK_BRANCH_ONLY_NOT_STABLE');
+  assert.ok(data.approvedPrinciples.some(item => item.id === 'CF-D012' && /capacity rather than motive/i.test(item.decision)));
+  assert.ok(data.approvedPrinciples.some(item => item.id === 'CF-D013' && /metta\/love itself/i.test(item.decision)));
   assert.ok(data.provisionalImplementationChoices.length > 0);
   assert.ok(data.notAuthorizedByThisSlice.includes('real history storage'));
   assert.ok(data.notAuthorizedByThisSlice.includes('stable promotion'));

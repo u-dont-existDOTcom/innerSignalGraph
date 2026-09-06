@@ -1,6 +1,6 @@
 # Companion foundations checkpoint
 
-Updated 2026-09-05. Task `COMPANION-FOUNDATIONS-20260905`. Draft PR #46 on branch `companion/foundations-2026-09-05`. Original main base: `64863eefa9678c063ed5c5a48a3280fa507a4c95`.
+Updated 2026-09-06. Task `COMPANION-FOUNDATIONS-20260905`. Draft PR #46 on branch `companion/foundations-2026-09-05`. Original main base: `64863eefa9678c063ed5c5a48a3280fa507a4c95`.
 
 ## Current owner clarification
 
@@ -14,6 +14,19 @@ Two errors are now explicitly separated:
 2. **framework dogmatism** — bending evidence to preserve the current view or rejecting a competing model because it is unfamiliar or conflicts with founder authority.
 
 A third error, **novelty credulity**, is also prohibited: a new framework is not promoted because it is vivid, intense, unusual, preferred by the user, or reported helpful once.
+
+## Owner-authorized map extension
+
+The 2026-09-06 owner message explicitly authorizes a development-graph change on this task branch. It does not authorize release, merge, stable promotion, or clinical-efficacy claims.
+
+The branch first incorporates the owner-approved three-way therapy router from PR #42 at local merge commit `23cf78033b44b073b84ac8dabb1e3a7ae7ac7c40`. Its precedence remains safety first, then outward action, inward work, or leaving the issue alone when no useful intervention is indicated.
+
+Two new cross-guide amendments make the authorized behavior executable:
+
+- `AMEND.CROSS.RELATIONAL_REALITY_CHECK`: when another person is central, observe behavior, assess demonstrated relational capacity, notice takeover pressure, choose a realistic interaction outcome, take outward action where needed, and only then examine the user's internal activation when useful. It does not diagnose or globally label the other person, infer motives, treat disagreement as incapacity, or default to cutoff.
+- `AMEND.CROSS.INFLUENCE_PROTECTION_LOVE`: ordinary social danger keeps practical protection primary; internal influence uses existing inner/somatic/metacognitive routes; experienced other-than-self influence may use mettā/love itself as the spiritual protective practice while ordinary safety remains independent; inaccessible love routes to Nurturer/Protector/Guide capacity-building rather than psychic combat; uncertain ontology remains phenomenological and non-dismissive.
+
+The executable contract adds explicit fields for relational centrality and capacity, takeover pressure, realistic interaction outcomes, influence domain, and current access to mettā. Six new route nodes and graph cases `G013`-`G018` test relational precedence, ordinary danger, internal influence, accessible mettā, capacity-building when love is unavailable, and uncertain ontology. The compiled development graph now contains 52 nodes, 67 edges, 76 source sections, 22 owner amendments, and 18 graph regressions.
 
 ## Evaluation revision 2
 
@@ -66,7 +79,9 @@ Universal semantic criteria remain evidence fidelity, uncertainty calibration, c
 
 ## Scope and non-effects
 
-Everything executable in this slice remains under `tasks/companion-foundations-20260905/`. Production code imports none of it. No real intake/history, persistence, vault/crypto or OS integration, provider/model call, active prompt, guide graph, Guide Packet, plugin, public pilot, deployment, main merge, stable promotion, or diagnostics change is claimed or authorized.
+The original companion and behavioral-evaluation prototype remains under `tasks/companion-foundations-20260905/`. The 2026-09-06 owner-authorized extension changes the task-branch development graph, case-extraction/audit contracts, tiered-pipeline escalation signals, owner amendments, focused graph regressions, and generated authoring projection. It does not install or promote a Guide Packet and does not change a live deployed service.
+
+No real intake/history, persistence, vault/crypto or OS integration, provider/model call, plugin, public pilot, deployment, main merge, stable promotion, or clinical-efficacy finding is claimed or authorized.
 
 The synthetic snapshot adapter must not become a parallel memory backend. A real integration must use the approved privacy/vault boundary and propagate corrections/deletions/consent changes across snapshots, pending work, derived interpretations, and display.
 
@@ -74,12 +89,26 @@ No personal account of how the founder arrived at the philosophy is required for
 
 ## Verification
 
-The last exact source head before this revision had green Verify, repository-workflow-policy, and CodeQL. Fresh exact-head checks for the current revision are required; do not infer them from prior commits.
+The retained v1/v2 behavioral-evaluation fixtures remain byte-identical:
 
-The previous local synthetic count predates these new files. Current GitHub `npm test` / Verify is the authoritative broad deterministic check after this revision. No live-model semantic evaluation or clinical efficacy finding has occurred.
+- `behavior-cases.json`: `1ce83300794197d9f885f882ddfcecc140c6849fde840680e0753ac1386eb568`
+- `behavior-paired-cases.json`: `f5555b87bd68b3ee3d082841b61df727824a9c78fff6b52165420c53e3ff800a`
+- `framework-revisability-cases.json`: `69f885013ebfe330fda2034dfac20d745daa64a33900e28cd8c817e428077462`
+- `MODEL-EVALUATION-PROTOCOL.md`: `1e39ff0fc04078c8d258f75feb717fd19506a7e7de84b400dcab7a746d9b3a5a`
+- `MODEL-EVALUATION-PROTOCOL-v2.md`: `c071c35fb1997f6f734540fb042c75362ec2c56f241dfe95e878a5105c7d4c33`
+
+Local Node `24.18.0` results for this map revision:
+
+- graph regressions: 18/18 pass;
+- affected graph, authoring, tiered-pipeline, benchmark, and task-policy tests: pass;
+- authoring validate/check/maps-check: pass with projection input `5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129` and 269 generated files;
+- therapy lesson provenance: 5/5 pass;
+- broad `node --test`: 672/673 pass on two full runs, and `npm run verify` reaches the same 672/673 result after passing its preceding graph, projection, lesson, fixture, and syntax stages. The sole repeated failure is the unchanged publication-wrapper exit-semantics test at `tests/publication-audit.test.mjs:1480`; it passes when run alone without a code change and is outside this map change. This remains an exact local package-gate conflict until hosted exact-head checks resolve whether it is host-load-specific.
+
+Fresh exact-head GitHub checks are required after push; do not infer them from prior commits. No live-model semantic evaluation or clinical efficacy finding has occurred.
 
 ## Next safe action
 
-Read exact-head hosted checks. If deterministic gates are green, keep PR #46 draft until the authenticated execution worker runs the revision-2 behavioral protocol with exact responder/grader identity, replay policy, bounded call budget, preserved transcripts/failures, and independent grading.
+Push only the existing task branch, keep PR #46 draft, and read exact-head hosted checks. If the publication-wrapper test fails there too, treat it as an unrelated repository test-stability issue rather than silently widening this therapy change. If deterministic gates are green, keep PR #46 draft until the authenticated execution worker runs the revision-2 behavioral protocol with exact responder/grader identity, replay policy, bounded call budget, preserved transcripts/failures, and independent grading.
 
 A future global framework change requires a separate evidence/governance decision. One person's useful metaphor may remain valuable without becoming universal product policy.

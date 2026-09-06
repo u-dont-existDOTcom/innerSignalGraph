@@ -1,6 +1,6 @@
 # InnerSignal companion foundations: integration, agency, and honest support
 
-Date: 2026-09-05. Status: owner-approved direction with a bounded offline prototype; not installed therapy policy.
+Date: 2026-09-05; updated 2026-09-06. Status: owner-approved direction with a bounded offline prototype and owner-authorized development-graph additions; not installed stable therapy policy.
 
 ## 1. Owner intent and the distinction resolved
 
@@ -18,11 +18,13 @@ Terminology authority: `docs/OWNER-TERMINOLOGY.md`. Use secular/non-spiritual ap
 
 This document records product direction from the owner. It does not claim clinical efficacy for the composition. The task ledger distinguishes approved principles from provisional implementation choices.
 
-The first slice consists of this design, the terminology rule, an approval ledger, pure permission/provenance decision functions, synthetic tests, and an unevaluated behavioral evaluation set. It performs no I/O, generates no therapy response, and is not imported by application code. It changes no guide graph, provider, active prompt, stable branch, packet, plugin, storage, cryptography, or public pilot.
+The original first slice consists of this design, the terminology rule, an approval ledger, pure permission/provenance decision functions, synthetic tests, and an unevaluated behavioral evaluation set. It performs no I/O, generates no therapy response, and is not imported by application code.
+
+The 2026-09-06 continuation separately updates the actual development guide graph and case-extraction/audit vocabulary for the owner-authorized relational reality-check and Influence, Protection & Love routes. It does not update `stable`, install a Guide Packet, change a provider, add storage or cryptography, run a model evaluation, or authorize a public pilot. The complete map contract is in `2026-09-06-relational-influence-protection-love-routing-design.md`.
 
 Do not interpret this task as permission to execute the separately bounded DEV-R005 storage slices or COMMUNITY tasks. Do not revive historical model-role defaults from the README. No paid model calls or model selection changes are needed here.
 
-PR #42's three-way routing remains separate. These foundations neither merge it nor certify that it is installed. Future integration should use the actual approved map and exact active model configuration at that time.
+PR #42's owner-approved three-way routing is merged into this task branch as the routing baseline. The new relational-capacity gate enriches its concrete-action branch without changing the precedence of safety, concrete external action, external embodiment when inward attention destabilizes, inward processing, and non-engagement with maintenance loops. Neither branch is installed on `stable` by this work.
 
 ## 3. Visible philosophy, genuine consent
 
@@ -112,6 +114,8 @@ Use shared cross-map capabilities rather than additional modality departments:
 2. A private, evidence-linked reflection candidate and a permission/provenance gate.
 3. Optional self-guidance scaffolding and user-owned step-back support.
 4. Semantic evaluation for honesty, accountability, non-coercion, and non-dependence.
+5. A relational reality-check gate before inward processing when another person is central.
+6. Distinct ordinary-social, internal, experienced-other-than-self, and uncertain-ontology routes under a shared Influence, Protection & Love capability.
 
 Keep the modality router process-specific. A person can need grief support while leaving repeated checking about that grief unanswered. Having any unresolved issue must not permanently exclude disengagement from an unproductive loop.
 

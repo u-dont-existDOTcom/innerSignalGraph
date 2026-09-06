@@ -1,0 +1,50 @@
+{
+  "id": "G013",
+  "description": "Another person is central, interpersonal pressure displaced self-possession, and both outward action and later inward work are relevant.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "other_person_central": "yes",
+    "relational_capacity_evidence": "limited",
+    "emotional_takeover_pressure": "present",
+    "realistic_interaction_outcome": "boundary_or_refusal",
+    "influence_domain": "ordinary_social",
+    "actionable_problem": "present",
+    "unresolved_inner_material": "present",
+    "inward_attention_effect": "neutral"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "ROUTE.RELATIONAL_REALITY_CHECK",
+    "selectedIncludes": [
+      "ROUTE.ACT_OUTWARD",
+      "ROUTE.INFLUENCE_SOCIAL_PROTECTION",
+      "ROUTE.GO_INWARD"
+    ],
+    "selectedExcludes": [
+      "ROUTE.LEAVE_ALONE"
+    ],
+    "matchedIncludes": [
+      "ROUTE.RELATIONAL_REALITY_CHECK"
+    ],
+    "deferredIncludes": [],
+    "blockedIncludes": [],
+    "nextQuestion": "What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?",
+    "requiredNuancePatterns": [
+      "Relational capacity is not motive or diagnosis",
+      "forced adulthood",
+      "Selecting for reciprocal maturity",
+      "outward action goes first"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "disagreement",
+      "hidden motives or fixed character"
+    ]
+  }
+}

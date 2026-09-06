@@ -1,0 +1,40 @@
+{
+  "id": "G015",
+  "description": "Internal influence routes through the existing inner-child, somatic, and metacognitive architecture.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "influence_domain": "internal",
+    "unresolved_inner_material": "present",
+    "actionable_problem": "absent",
+    "inward_attention_effect": "helps"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "ROUTE.GO_INWARD",
+    "selectedIncludes": [
+      "ROUTE.INFLUENCE_INTERNAL"
+    ],
+    "selectedExcludes": [
+      "ROUTE.INFLUENCE_NONORDINARY_METTA",
+      "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN"
+    ],
+    "matchedIncludes": [
+      "ROUTE.INFLUENCE_INTERNAL"
+    ],
+    "deferredIncludes": [],
+    "blockedIncludes": [],
+    "requiredNuancePatterns": [
+      "existing inner-child, somatic, and metacognitive architecture"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "every internal influence"
+    ]
+  }
+}

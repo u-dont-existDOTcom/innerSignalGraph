@@ -47,7 +47,13 @@ const OPTIONAL_UNKNOWN_ROUTING_KEYS = new Set([
   "unresolved_inner_material",
   "attention_loop",
   "thinking_yield",
-  "inward_attention_effect"
+  "inward_attention_effect",
+  "other_person_central",
+  "relational_capacity_evidence",
+  "emotional_takeover_pressure",
+  "realistic_interaction_outcome",
+  "influence_domain",
+  "metta_access"
 ]);
 
 function canonical(value) {

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.SOM.ADVANCED_RELEASE_BYPASS
 status: owner-approved
 domain: somatic
-base_record_sha256: 58c7f273ad0c8b417bd5f7829f601469cb70f8ce4bb3fa89c5518c8f99161eed
-source_file_sha256: 2e7a2a887f4e9232fdcb452ed13e878527fa35032d495db65b008c2cb10f4f43
-projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d3143f8084
+base_record_sha256: a648101ac5e0e5e628b3aae615fb582b5f9543e60dc33974e6e548e0fada1b56
+source_file_sha256: d3e63889907630a34b836555b6f9d9295cdedc49104a76216a40a8934f662b11
+projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
 ---
 
 # AMEND.SOM.ADVANCED_RELEASE_BYPASS
@@ -17,13 +17,13 @@ projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d
 
 ```json
 {
-  "approvedAt": "2026-09-04",
+  "approvedAt": "2026-09-06",
   "item": {
     "domain": "somatic",
     "id": "AMEND.SOM.ADVANCED_RELEASE_BYPASS",
     "status": "owner-approved",
     "text": "Advanced release can produce bliss or dramatic state shifts that bypass trauma. Judge it by later functioning, boundaries, willingness to meet pain, and whether it becomes compulsive or replaces relational and practical work."
   },
-  "version": "2026-09-04-r5"
+  "version": "2026-09-06-r6"
 }
 ```

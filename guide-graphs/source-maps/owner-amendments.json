@@ -93,6 +93,36 @@
       "domain": "cross-guide"
     },
     {
+      "id": "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+      "heading": "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "945e2f5552ccb7c7fddc81c8f774b7fb8896f5edee29101de58716bd7ec7fb52",
+      "excerpt": "Before adding more therapy, classify the useful movement as go inward, act outward, or leave it alone. Go inward when there is genuinely avoided, disowned, or unfinished emotional, relational, somatic, memory, or part-level material and enough capacity to contact it; act outward when a concrete current problem can yield a decision or observable action; leave it alone when rumination, symptom checking, reassurance seeking, repeated self-analysis, or searching for the right healing method repeats without producing new information, a decision, or an action. 'Leave it alone' means notice thoughts or sensations without suppressing them or repeatedly answering them, then re-engage ordinary life; it is not denial of safety, medical, relational, or practical problems. If inward attention reliably worsens derealization, panic, or hypermonitoring, prefer eyes-open external orientation and ordinary embodied activity such as walking, gym, sport, chores, or social contact without concluding that all somatic therapy is contraindicated. If a concrete problem or clearly avoided material emerges, route back to outward action or inward processing.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
+      "heading": "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "7e9ff75eaa56c11dd52865f8362f5b2921ba56da705b1247afe993016ae2544b",
+      "excerpt": "When another person is central, do not begin by asking only what inside the user was triggered. First use detached observation: identify observable behavior and sequence; assess only the relational capacities the person has demonstrated, including tolerance of disagreement, empathy, accountability, respect for no, repair, and reality-based conduct under stress; notice whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; and define a realistic interaction outcome before re-engaging. The available outcome may be mutual understanding, conveying information, a boundary or refusal, distance or ending the interaction, or learning how the person responds to a limit. Act outward as needed, then route inward only if useful. Preserve inner boundaries and self-possession. A history of internalizing, managing adults, or forced adulthood can make self-analysis or caretaking reflexive, but do not infer that history without evidence. Select and invest for demonstrated reciprocal maturity rather than motive or potential. Do not diagnose or automatically label someone emotionally immature, recommend cutoff by default, or treat disagreement as immaturity.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
+      "id": "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
+      "heading": "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "5aa44b5d9da6b9fd8f3a5ea176d20e16e8c10a1be1abc86f8920d0ac4021689d",
+      "excerpt": "Treat influence, protection, and love as a cross-cutting capability with separate routes. In ordinary social or interpersonal influence, love may remain an ethical orientation but never substitutes for physical or social safety, boundaries, distance, refusal, or concrete action. Internal influence from parts, compulsions, urges, or loops uses the existing inner-child, somatic, or metacognitive routes. When a person experiences something as other-than-self and uses language such as a presence, jinn, spirit, entity, unattached burden, or astral attack, mirror the person's language without affirming or denying ontology. Within the spiritual framework, metta or love itself may be used as the primary protective response rather than merely being added to a boundary visualization. If love is inaccessible, build the Nurturer, Protector, and Guide capacities that make a loving response genuinely available instead of prescribing psychic combat. When ontology is uncertain, work phenomenologically and leave cause unresolved. Love or metta may be protective in nonordinary or spiritual experience; physical or social danger still requires practical safety. Remaining loving under unavoidable harm is a spiritual aspiration, not therapy advice to approach, tolerate, or remain exposed to danger.",
+      "status": "owner-approved",
+      "domain": "cross-guide"
+    },
+    {
       "id": "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
       "heading": "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
       "lineStart": null,

@@ -27,9 +27,12 @@ regression_refs:
   - G005
   - G011
   - G012
+  - G015
+  - G016
+  - G018
 base_record_sha256: c3f791e80587029c64a7840c02972042059ac60365993c1ffabbc8a9fe811d6c
 base_graph_sha256: f7acff85e9d11d38c1fd47830f4fad4998cc1fb1580f641223a6d92538e30140
-projection_input_sha256: c5c4aed6b8851992ca36c580a60360aeef78931bfaf972429487e3d3143f8084
+projection_input_sha256: 5186451f521009dc8acd45b07cfd20f476c4ecd588761bed3aaee625ef3e4129
 ---
 
 # Gentle regulation and embodiment
