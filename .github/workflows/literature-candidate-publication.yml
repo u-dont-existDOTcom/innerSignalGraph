@@ -1,0 +1,127 @@
+name: Publish reviewed literature candidate
+
+on:
+  push:
+    branches: [transport/literature-20260906]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: literature-candidate-20260906
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: github.repository == 'u-dont-existDOTcom/innerSignalGraph'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Check out pinned application baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 77bd76e2b8a5252dedfcaa502673dd877b1336ae
+          path: candidate
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check out checksum-bound transport
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: transport
+          persist-credentials: false
+      - name: Apply exactly reviewed source changes
+        run: python transport/tasks/literature-transport/prepare.py apply candidate
+      - name: Set up exact Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: candidate/.nvmrc
+      - name: Bootstrap locked dependencies
+        working-directory: candidate
+        run: npm ci --ignore-scripts
+      - name: Regenerate authoritative outputs
+        working-directory: candidate
+        run: |
+          npm run graph:compile
+          npm run authoring:project
+          npm run authoring:maps
+      - name: Verify candidate without write credentials
+        working-directory: candidate
+        run: |
+          set -euo pipefail
+          mkdir -p ../prepared
+          npm run audit:repository 2>&1 | tee ../prepared/repository-audit.log
+          npm run graph:test 2>&1 | tee ../prepared/graph.log
+          npm run authoring:validate 2>&1 | tee ../prepared/authoring.log
+          npm run authoring:check
+          npm run authoring:maps:check
+          npm run verify 2>&1 | tee ../prepared/verify.log
+      - name: Require exact reviewed final file manifest
+        run: |
+          python transport/tasks/literature-transport/prepare.py collect candidate prepared/files.json
+          echo '3a282c21a14cb4c86502e78f864704775056048f115b771fef26bf5c7a7f7b05  prepared/files.json' | sha256sum -c -
+      - name: Retain candidate and verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: reviewed-literature-candidate
+          path: prepared/
+          retention-days: 7
+          if-no-files-found: error
+  publish:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Download only the verified publication artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: reviewed-literature-candidate
+          path: prepared
+      - name: Publish exact reviewed tree without executing application code
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, pathlib, urllib.request
+          repo = 'u-dont-existDOTcom/innerSignalGraph'
+          head = '1c670ecc58ba9b837aaf62659ba86a4b81d3cff7'
+          base = '77bd76e2b8a5252dedfcaa502673dd877b1336ae'
+          branch = 'companion/foundations-2026-09-05'
+          payload = pathlib.Path('prepared/files.json').read_bytes()
+          assert hashlib.sha256(payload).hexdigest() == '3a282c21a14cb4c86502e78f864704775056048f115b771fef26bf5c7a7f7b05'
+          files = json.loads(payload)
+          assert len(files) == 354 and len({x['path'] for x in files}) == 354
+          for item in files:
+              assert not item['path'].startswith(('/', '.github/'))
+              assert '..' not in pathlib.PurePosixPath(item['path']).parts
+              assert item['mode'] in ('100644', '100755')
+              assert hashlib.sha256(item['content'].encode()).hexdigest() == item['sha256']
+          def api(path, body=None, method=None):
+              req = urllib.request.Request('https://api.github.com/repos/' + repo + path,
+                  data=None if body is None else json.dumps(body).encode(),
+                  method=method or ('GET' if body is None else 'POST'),
+                  headers={'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+                           'Accept':'application/vnd.github+json','Content-Type':'application/json',
+                           'X-GitHub-Api-Version':'2022-11-28'})
+              with urllib.request.urlopen(req, timeout=90) as response:
+                  return json.load(response)
+          assert api('/git/ref/heads/' + branch)['object']['sha'] == head, 'Target advanced; do not overwrite'
+          delta = api('/compare/' + base + '...' + head)
+          assert {x['filename'] for x in delta['files']} == {'.github/workflows/literature-task-source.yml'}
+          parent = api('/git/commits/' + head)
+          tree = api('/git/trees', {'base_tree': parent['tree']['sha'], 'tree': [
+              {'path': x['path'], 'mode': x['mode'], 'type':'blob', 'content': x['content']} for x in files]})
+          commit = api('/git/commits', {'message': 'feat(therapy): implement task-aware literature reconciliation and guide-fidelity evaluation\n\nVerified exact source/file hashes and full deterministic gates. Preserve frozen behavioral fixtures. Real model evaluation remains unrun; no deployment or stable promotion.',
+              'tree': tree['sha'], 'parents':[head]})
+          result = api('/git/refs/heads/' + branch, {'sha':commit['sha'], 'force':False}, 'PATCH')
+          assert result['object']['sha'] == commit['sha']
+          print('PUBLISHED_CANDIDATE=' + commit['sha'])
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write('Published candidate `' + commit['sha'] + '` to draft PR #46.\n\n354 checksum-verified files; candidate code executed only in read-only preparation job. Model calls: 0. No merge, release or stable change.\n')
+          PY
