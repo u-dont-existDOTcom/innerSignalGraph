@@ -1,0 +1,31 @@
+name: Literature task source snapshot
+
+on:
+  push:
+    branches: [companion/foundations-2026-09-05]
+    paths: [.github/workflows/literature-task-source.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1, same reviewed pin as Verify
+        with:
+          ref: 77bd76e2b8a5252dedfcaa502673dd877b1336ae
+          persist-credentials: false
+      - name: Archive only tracked public baseline source
+        run: |
+          mkdir -p "$RUNNER_TEMP/literature-task"
+          git archive --format=zip --output="$RUNNER_TEMP/literature-task/baseline-source.zip" HEAD
+          git rev-parse HEAD > "$RUNNER_TEMP/literature-task/COMMIT.txt"
+          sha256sum "$RUNNER_TEMP/literature-task/baseline-source.zip"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4, official tag resolved for this task
+        with:
+          name: literature-task-public-source
+          path: ${{ runner.temp }}/literature-task/
+          retention-days: 1
+          if-no-files-found: error
