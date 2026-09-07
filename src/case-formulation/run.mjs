@@ -1,6 +1,12 @@
 import { ValidationError } from "../core/errors.mjs";
 import { evaluatePathPerformance, CASE_RISK_SIGNALS } from "./path-performance.mjs";
-import { relationalReadinessDecision, preparePathPriorForReadiness } from "./relational-readiness.mjs";
+import {
+  relationalReadinessDecision,
+  preparePathPriorForReadiness,
+  applyRelationalReadinessToPath,
+  decoratePlanWithRelationalReadiness,
+  validateRelationalEvidence
+} from "./relational-readiness.mjs";
 import { deriveCaseVariables } from "../guide-graph/planner.mjs";
 import { validateTurnTask, reconcileIssueScope, immediateProtectionNeeded } from "./turn-task.mjs";
 import { parseModelJson } from "../core/json.mjs";
@@ -26,6 +32,18 @@ async function structuredCall(provider, prompt, metadata, validator, outputSchem
   } catch (error) {
     throw asCaseStageError(error, { stage: metadata.stage, provider });
   }
+}
+
+function readinessObservationIds(readiness) {
+  if (!readiness) return [];
+  return [...new Set([
+    ...readiness.stability_observation_ids,
+    ...readiness.harm_observation_ids,
+    ...readiness.trajectory_observation_ids,
+    ...readiness.support_observation_ids,
+    ...readiness.supports_observation_ids,
+    ...readiness.risk_signals.flatMap(signal => signal.observation_ids)
+  ])];
 }
 
 export function applyCaseAudit(snapshot, audit) {
@@ -63,15 +81,29 @@ export function applyCaseAudit(snapshot, audit) {
     pathUpdate.failure_hypotheses = pathUpdate.failure_hypotheses.filter(h => !h.observation_ids.some(id => removeObservations.has(id)));
     if (pathUpdate.strategy?.observation_ids.some(id => removeObservations.has(id))) pathUpdate.strategy = null;
   }
+
+  const remainingObservations = snapshot.direct_observations.filter(item => !removeObservations.has(item.id));
+  const remainingIds = new Set(remainingObservations.map(item => item.id));
+  const originalReadiness = snapshot.relational_readiness ?? null;
+  const originalReadinessWithdrawn = readinessObservationIds(originalReadiness).some(id => removeObservations.has(id));
+  const correctedProvided = Object.hasOwn(audit, "corrected_relational_readiness");
+  let readiness = correctedProvided ? audit.corrected_relational_readiness : originalReadiness;
+  if (audit.invalidate_relational_readiness === true || (!correctedProvided && originalReadinessWithdrawn)) readiness = null;
+  if (readiness) {
+    readiness = validateRelationalEvidence(readiness, { issue: snapshot.current_issue, observationIds: remainingIds }, message => { throw new ValidationError(message); });
+  }
+  const readinessWasTracked = Object.hasOwn(snapshot, "relational_readiness") || correctedProvided || audit.invalidate_relational_readiness === true;
+
   return {
     ...snapshot,
     ...(priorState ? { _path_prior: priorState } : {}),
     ...(Object.hasOwn(snapshot, "path_update") || snapshot._path_prior ? { path_update: pathUpdate, _path_invalidated: pathInvalidated } : {}),
-    direct_observations: snapshot.direct_observations.filter((item) => !removeObservations.has(item.id)),
+    direct_observations: remainingObservations,
     ...((Object.hasOwn(snapshot, "turn_task") || audit.corrected_turn_task || audit.invalidate_turn_task) ? { turn_task: audit.invalidate_turn_task ? null : validateTurnTask(audit.corrected_turn_task ?? snapshot.turn_task, {
       issue: snapshot.current_issue,
-      observationIds: new Set(snapshot.direct_observations.filter(item => !removeObservations.has(item.id)).map(item => item.id))
+      observationIds: remainingIds
     }) } : {}),
+    ...(readinessWasTracked ? { relational_readiness: readiness } : {}),
     hypotheses: snapshot.hypotheses.filter((item) => !removeHypotheses.has(item.id)),
     variables: validateCaseVariables(variables),
     unknowns: [...snapshot.unknowns, ...audit.add_unknowns],
@@ -79,7 +111,8 @@ export function applyCaseAudit(snapshot, audit) {
       verdict: audit.verdict,
       summary: audit.summary,
       safety_flags: audit.safety_flags,
-      variable_corrections: audit.variable_corrections
+      variable_corrections: audit.variable_corrections,
+      relational_readiness_reviewed: readinessWasTracked
     }
   };
 }
@@ -89,28 +122,35 @@ async function planSnapshot(snapshot, { onPlanningPass, loadPlanningGraphBundle 
   const bundle = await loadPlanningGraphBundle();
   const enabled = bundle.graphs.length > 0 && bundle.graphs.every(g => g.pathPerformancePolicyVersion === 1);
   const derivedVariables = deriveCaseVariables(snapshot.variables);
-  const readinessDecision = relationalReadinessDecision(snapshot.turn_task?.relational_readiness ?? null, {
+  const readinessDecision = relationalReadinessDecision(snapshot.relational_readiness ?? null, {
     immediateProtection: immediateProtectionNeeded(derivedVariables) || derivedVariables.suicidal_state === "intent"
   });
-  const priorForPath = preparePathPriorForReadiness(snapshot._path_prior, readinessDecision);
-  const pathPerformance = enabled && (Object.hasOwn(snapshot, "path_update") || priorForPath)
-    ? evaluatePathPerformance({ prior: priorForPath, update: snapshot.path_update,
+  const priorForPath = preparePathPriorForReadiness(snapshot._path_prior, readinessDecision, {
+    issueChanged: snapshot._relational_issue_changed === true
+  });
+  const basePathPerformance = enabled && (Object.hasOwn(snapshot, "path_update") || priorForPath)
+    ? evaluatePathPerformance({
+        prior: priorForPath,
+        update: snapshot.path_update,
         variables: derivedVariables,
         observationIds: new Set((snapshot.direct_observations ?? []).map(o => o.id)),
-        invalidated: snapshot._path_invalidated,
-        relationalReadiness: snapshot.turn_task?.relational_readiness ?? null }) : null;
+        invalidated: snapshot._path_invalidated
+      }) : null;
+  const pathPerformance = applyRelationalReadinessToPath(basePathPerformance, readinessDecision);
   if (pathPerformance?.active && !bundle.graphs.some(g => g.nodes.some(n => n.id === pathPerformance.active.strategy.node_id))) throw new TypeError("Strategy references a node outside the current graph.");
   if (pathPerformance) snapshot.path_performance = pathPerformance;
   else delete snapshot.path_performance;
   delete snapshot._path_prior;
   delete snapshot._path_invalidated;
-  const plan = planFromGraphs({
+  delete snapshot._relational_issue_changed;
+  const rawPlan = planFromGraphs({
     variables: snapshot.variables,
     unknowns: snapshot.unknowns,
     graphs: bundle.graphs,
     turnTask: snapshot.turn_task ?? null,
     pathPerformance
   });
+  const plan = decoratePlanWithRelationalReadiness(rawPlan, pathPerformance, readinessDecision);
   return { plan, graphBundleVersion: bundle.version };
 }
 
@@ -125,7 +165,10 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
     caseExtractionPrompt(context),
     { stage: "case_extraction", fixtureKey: "case_extraction" },
     value => {
-      if (context.pathPerformanceEnabled && !String(provider.model).startsWith("mock-") && !Object.hasOwn(value, "path_update")) throw new ValidationError("Candidate extraction must declare path_update; missing strategy tracking cannot silently bypass monitoring.");
+      if (context.pathPerformanceEnabled && !String(provider.model).startsWith("mock-")) {
+        if (!Object.hasOwn(value, "path_update")) throw new ValidationError("Candidate extraction must declare path_update; missing strategy tracking cannot silently bypass monitoring.");
+        if (!Object.hasOwn(value, "relational_readiness")) throw new ValidationError("Candidate extraction must declare relational_readiness as null or an evidenced current assessment.");
+      }
       return validateCaseSnapshot(value);
     },
     caseSnapshotSchema,
@@ -136,12 +179,15 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
   delete extraction.value._path_prior;
   const prior = context.priorCaseSnapshot?.path_performance;
   if (prior) extraction.value._path_prior = structuredClone(prior);
-  return { ...extraction, value: reconcileIssueScope(extraction.value, context.priorCaseSnapshot) };
+  const issueChanged = Boolean(context.priorCaseSnapshot?.current_issue && extraction.value.current_issue !== context.priorCaseSnapshot.current_issue);
+  const scoped = reconcileIssueScope(extraction.value, context.priorCaseSnapshot);
+  if (issueChanged) scoped._relational_issue_changed = true;
+  return { ...extraction, value: scoped };
 }
 
 export async function resolveCaseExtraction({ context, provider, onProgress, recovery }) {
   const resumed = await recovery?.loadExtraction?.({ provider });
-  if (resumed) {
+  if (resumed && (!context.pathPerformanceEnabled || Object.hasOwn(resumed.value, "relational_readiness"))) {
     onProgress?.({
       stage: "case_extraction",
       status: "resumed",
