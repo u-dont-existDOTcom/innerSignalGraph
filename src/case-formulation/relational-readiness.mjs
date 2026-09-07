@@ -90,6 +90,40 @@ export function relationalReadinessDecision(readiness, { immediateProtection = f
   };
 }
 
+// A relational pause is a current decision constraint, not evidence that an otherwise
+// viable therapeutic mechanism failed. When a fresh audited assessment reopens
+// readiness, clear only a switch that was caused solely by that broader relational
+// constraint. Never erase prediction failures, harm, invalidation, narrow persistent
+// risk, or any other path evidence.
+export function preparePathPriorForReadiness(prior, currentDecision) {
+  if (!prior || !currentDecision) return prior;
+  const state = structuredClone(prior);
+  const previous = state.latest;
+  const active = state.active;
+  const intrinsicFailure = Boolean(active?.invalidated || active?.misses > 0
+    || Object.values(active?.prediction_failures ?? {}).some(count => count > 0)
+    || (previous?.failure_sources ?? []).length
+    || previous?.goal_substitution?.narrow_romance_pause === true);
+  const previousRelationalOnly = Boolean(active?.switch_pending && !intrinsicFailure
+    && (previous?.relational_readiness || previous?.goal_substitution?.instrumental_socializing)
+    && ["action", "reconsider"].includes(previous?.route));
+  const currentClearsConstraint = currentDecision.status === "NOT_BLOCKED"
+    && currentDecision.supportProgress !== "NOT_EQUIVALENT_TO_NONROMANTIC_SUPPORT";
+  if (!previousRelationalOnly || !currentClearsConstraint) return state;
+  active.switch_pending = false;
+  if (active.status === "STALLED" && active.decision === "SWITCH") {
+    active.status = "UNCLEAR";
+    active.decision = "PROBE";
+  }
+  state.readiness_reopened = {
+    from_status: previous.relational_readiness?.status ?? "support_substitution",
+    to_status: currentDecision.status,
+    retained_episode_id: active.id,
+    retained_path_evidence: true
+  };
+  return state;
+}
+
 export function relationalReadinessGuidance(decision) {
   if (!decision) return [];
   const common = "Distinguish romantic/sexual involvement from friendship, community and practical support. Readiness concerns current functioning, foreseeable serious harm to self, partner and dependent or future children, load and responsibility; it is not worthiness, moral purity, complete healing or 'love yourself first'. A diagnosis or hospitalization history alone is never a permanent ban. Generic evidence that human connection helps cannot override this case-specific harm assessment.";
