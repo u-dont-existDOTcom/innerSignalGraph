@@ -1,5 +1,6 @@
 import { validatePathUpdate } from "./path-performance.mjs";
 import { validateTurnTask } from "./turn-task.mjs";
+import { validateRelationalEvidence } from "./relational-readiness.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
@@ -28,13 +29,16 @@ export function validateCaseSnapshot(value) {
   }
   if (Object.hasOwn(value, "turn_task")) value.turn_task = validateTurnTask(value.turn_task, { issue: value.current_issue, observationIds });
   if (Object.hasOwn(value, "path_update")) value.path_update = validatePathUpdate(value.path_update, observationIds);
+  if (Object.hasOwn(value, "relational_readiness")) {
+    value.relational_readiness = validateRelationalEvidence(value.relational_readiness, { issue: value.current_issue, observationIds }, message => { throw new ValidationError(message); });
+  }
   value.variables = validateCaseVariables(value.variables);
   if (!Array.isArray(value.hypotheses)) throw new ValidationError("caseSnapshot.hypotheses must be an array.");
   const hypothesisIds = new Set();
   for (const [index, item] of value.hypotheses.entries()) {
     object(item, `caseSnapshot.hypotheses[${index}]`);
     for (const key of ["id", "claim", "evidence"]) string(item[key], `caseSnapshot.hypotheses[${index}].${key}`);
-    if (!['low','medium','high'].includes(item.confidence)) throw new ValidationError(`caseSnapshot.hypotheses[${index}].confidence is invalid.`);
+    if (!["low","medium","high"].includes(item.confidence)) throw new ValidationError(`caseSnapshot.hypotheses[${index}].confidence is invalid.`);
     stringArray(item.alternatives, `caseSnapshot.hypotheses[${index}].alternatives`);
     if (hypothesisIds.has(item.id)) throw new ValidationError(`Duplicate hypothesis id ${item.id}.`);
     hypothesisIds.add(item.id);
@@ -53,6 +57,8 @@ export function validateCaseAudit(value) {
   object(value, "caseAudit");
   if (Object.hasOwn(value, "corrected_turn_task")) value.corrected_turn_task = validateTurnTask(value.corrected_turn_task);
   if (value.invalidate_turn_task != null && typeof value.invalidate_turn_task !== "boolean") throw new ValidationError("invalidate_turn_task must be boolean.");
+  if (Object.hasOwn(value, "corrected_relational_readiness") && value.corrected_relational_readiness !== null) object(value.corrected_relational_readiness, "caseAudit.corrected_relational_readiness");
+  if (value.invalidate_relational_readiness != null && typeof value.invalidate_relational_readiness !== "boolean") throw new ValidationError("invalidate_relational_readiness must be boolean.");
   stringArray(value.remove_observation_ids, "caseAudit.remove_observation_ids");
   stringArray(value.remove_hypothesis_ids, "caseAudit.remove_hypothesis_ids");
   if (!Array.isArray(value.variable_corrections)) throw new ValidationError("caseAudit.variable_corrections must be an array.");
