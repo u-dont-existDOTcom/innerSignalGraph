@@ -126,7 +126,7 @@ function graphReport(bundle, amendments) {
     `## Deliberate constraints\n\n` +
     `- The planner routes by function, dose, target, and capacity rather than modality name alone.\n` +
     `- Safety, orientation, stopping, and return capacity outrank all therapeutic preferences.\n` +
-    `- Source text remains unchanged; additions live in owner-amendments.json or semantic-assets.json.\n` +
+    `- Versioned source snapshots preserve approved article text; separately approved additions remain in owner-amendments.json or semantic-assets.json.\n` +
     `- The deterministic plan owns the substantive next question; response realization cannot replace it with a merely interesting question.\n` +
     `- Advanced-release nodes never coach syncope, substance potentiation, or standing lightheadedness.\n`;
 }

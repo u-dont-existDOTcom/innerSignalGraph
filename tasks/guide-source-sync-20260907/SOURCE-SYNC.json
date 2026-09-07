@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "status": "SOURCE_SYNCHRONIZED_DETERMINISTICALLY_VERIFIED",
+  "baselineCommit": "3871b984b94bc14ab6025fe8f16b8ac7fb090c5b",
+  "source": {
+    "file": "guides/snapshots/inner-child-guide-owner-2026-09-06.txt",
+    "sha256": "96569956f07a62a7a1d4f33a8007caaa53fa56aec3d10348eee0df527a989de5",
+    "bytes": 84456,
+    "conversationId": "6a9b75e2-15c4-83ea-9232-4b1b33e58a37",
+    "messageId": "a56688c2-1f9b-4692-8ac4-1ab007347897",
+    "recoveredAt": "2026-09-07",
+    "method": "Exact textContent of expanded owner message, read through authenticated browser; fresh DOM equality independently checked. Only the leading task instruction was excluded.",
+    "startsWith": "Listen & Watch:",
+    "endsWith": "For bottom-up support, see my Somatic Therapies Guide.",
+    "truncated": false,
+    "limitations": [
+      "Owner message content is plain rendered text in a DIV; fresh DOM inventory found zero links and zero image/video/audio/iframe/source elements. Visible article-card and media-reference labels remain verbatim, but absent original destinations/media cannot be recovered from this message.",
+      "Pasted article contains embedded article-card labels and typographic/original textual errors; these are preserved verbatim.",
+      "Article starts at Listen & Watch: and contains no separate main title in this owner message.",
+      "Owner adopted E01–E12 later in the conversation; this file is the complete pre-patch source to which those approved edits must be applied."
+    ]
+  },
+  "target": {
+    "file": "guides/inner-child-guide-2026-09-07.txt",
+    "sha256": "00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f",
+    "bytes": 89874,
+    "version": "owner-current-2026-09-07-e01-e12"
+  },
+  "approvedPatch": {
+    "file": "tasks/map-literature-reconciliation-20260906/GUIDE-EDITORIAL-PATCH-2026-09-06.md",
+    "sha256": "81e7bdfbb7fc3cf8ec4f86a5a90bab88f8bcb6dcee5aab5d0c3719d6745eec32"
+  },
+  "ownerAdoption": {
+    "file": "tasks/map-literature-reconciliation-20260906/OWNER-ADOPTION-2026-09-07.md",
+    "sha256": "2d554fadbbe166690213b5ffcfec4ccba56de2ca7656e9329eaa33e49629c1c9"
+  },
+  "operations": {
+    "file": "tasks/guide-source-sync-20260907/EDIT-OPERATIONS.json",
+    "sha256": "8f12e1460b2ef788ecd3e50d0717597588630d2562f2bfbf1d90c334a4b0d7db",
+    "ids": [
+      "E01",
+      "E02",
+      "E03",
+      "E04",
+      "E05",
+      "E06",
+      "E07",
+      "E08",
+      "E09",
+      "E10",
+      "E11",
+      "E12"
+    ]
+  },
+  "historicalSource": {
+    "file": "guides/inner-child-guide.txt",
+    "sha256": "a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3",
+    "disposition": "Preserved byte-for-byte; no longer the active current article after manifest repin."
+  },
+  "preservation": {
+    "method": "Exact source plus twelve unique replacements; inverse reconstruction must recover original bytes.",
+    "unexplainedChanges": 0,
+    "approvedNetWordChange": 866,
+    "semanticScope": "Already adopted E01-E12 only; no new editorial or therapy-policy decisions."
+  },
+  "independentReview": {
+    "status": "PASS",
+    "method": "Separate reviewer independently reconstructed all twelve operations from the original source and approved editorial patch, without relying on EDIT-OPERATIONS.json; exact target byte/hash equality.",
+    "unexplainedChanges": 0,
+    "protectedPassages": "Suicide section and placement, IFS criticism, spiritual-influence section and first-person victim-mentality paragraph, Rumi sentence, following overwhelm warning, remaining forgiveness text unchanged.",
+    "scope": "Textual preservation; no clinical or runtime conclusion."
+  },
+  "verification": {
+    "runtime": "Node 24.18.0",
+    "completePackage": "PASS",
+    "automatedTests": {
+      "passed": 729,
+      "failed": 0
+    },
+    "graphRegressions": {
+      "passed": 29,
+      "failed": 0
+    },
+    "focusedTests": {
+      "passed": 35,
+      "failed": 0
+    },
+    "authoring": [
+      "validate PASS",
+      "check PASS",
+      "maps-check PASS"
+    ],
+    "generatedFiles": 301,
+    "sourceSections": 89,
+    "graphNodes": 53,
+    "graphEdges": 70,
+    "ownerAmendments": 26,
+    "projectionInputSha256": "8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e",
+    "liveModelCalls": 0,
+    "scope": "Deterministic source/reader/package verification, independent textual preservation review and fake transport. No live semantic result yet.",
+    "repositoryAudit": {
+      "ok": true,
+      "errors": 0,
+      "warnings": 1,
+      "warning": "Existing installed GitHub App permissions remain unverified; unrelated to source synchronization."
+    },
+    "publicationAudit": {
+      "ok": true,
+      "scannedRecords": 81328,
+      "findings": 0
+    }
+  }
+}

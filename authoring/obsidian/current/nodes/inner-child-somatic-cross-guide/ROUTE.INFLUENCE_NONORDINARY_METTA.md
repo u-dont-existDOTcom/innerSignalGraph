@@ -27,7 +27,7 @@ regression_refs:
   - G031
 base_record_sha256: b874ae48e83a4b7849adc2dbe9257533a5725b06e8860f98742f1f1062d0e1b7
 base_graph_sha256: 9ca2615aba6172792631bfbc33d8610dcd20e2a16ceed756be839ba7878fba40
-projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
+projection_input_sha256: 8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e
 ---
 
 # Allow love itself to protect in nonordinary experience

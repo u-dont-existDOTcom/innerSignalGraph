@@ -7,31 +7,25 @@ source_id: IC.START_WHATEVER
 guide_id: inner-child-guide
 heading: Start With Whatever Showed Up
 source_role: primary-framework
-source_hash: a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3
-section_hash: 29cbcf61e6152fe4bd7787cedeaca9a192d11106be285c7b9fa0c270f4d4d30b
+source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
+section_hash: 2336314c14833d4459ec2bb3ab898fe12ad8d7c9b3edaa793eaf70624cfa4444
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.MEET_GUARD
-projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
+projection_input_sha256: 8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e
 ---
 
 # Start With Whatever Showed Up
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide.txt`
+Authority path: `guides/inner-child-guide-2026-09-07.txt`
 
-Locator: Lines 180–190
+Locator: Lines 359–373
 
 ```text
 Start With Whatever Showed Up
-The cynical voice, numbness, urge to scroll, anger, dissociation, or sudden need to do something else all belong inside the pl/ork. They are protective parts standing between you and pain they consider dangerous.
+The cynical voice, numbness, urge to scroll, anger, dissociation, or sudden need to do something else all belong inside the pl/ork. The response may be a protector, the child speaking directly, an inherited critic, a present-day grievance, or a blend. Start with what it is trying to prevent, accomplish, or communicate before deciding who is speaking.
 
-Pushing past them only confirms that you still don’t listen when part of you says no.
-
-You might say:
-
-“I notice you. You seem to be protecting something. I’m not going to force past you. What are you afraid will happen if you let me get closer?”
-
-Then wai
+Sometimes it is only a thought. Do not create a new inner person every time the mind produces a sentence. Use the le
 ```

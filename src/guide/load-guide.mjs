@@ -1,6 +1,22 @@
 import fs from "node:fs/promises";
+import path from "node:path";
+import { createHash } from "node:crypto";
+import { ValidationError } from "../core/errors.mjs";
 import { readActiveGuidePacketEntry } from "../guide-packet/store.mjs";
 import { htmlToText } from "../guide-packet/source-html.mjs";
+
+async function readManifestSource(manifestPath, manifest, sourceId) {
+  const sources = manifest.sources?.filter((source) => source.id === sourceId) ?? [];
+  if (sources.length !== 1 || typeof sources[0].file !== "string" || !sources[0].file) {
+    throw new ValidationError(`Guide manifest must select exactly one file for ${sourceId}.`);
+  }
+  const source = sources[0];
+  const data = await fs.readFile(path.resolve(path.dirname(manifestPath), source.file));
+  if (createHash("sha256").update(data).digest("hex") !== source.sha256) {
+    throw new ValidationError(`Source hash mismatch for ${source.file}.`);
+  }
+  return data.toString("utf8");
+}
 
 export async function loadGuide(config) {
   const [activeSource, activeManifest] = await Promise.all([
@@ -19,17 +35,19 @@ export async function loadGuide(config) {
       }
     };
   }
-  const [text, manifestRaw] = await Promise.all([
-    fs.readFile(config.guidePath, "utf8"),
-    fs.readFile(config.guideManifestPath, "utf8")
-  ]);
-  return { text, manifest: JSON.parse(manifestRaw) };
+  const manifest = JSON.parse(await fs.readFile(config.guideManifestPath, "utf8"));
+  const text = config.guidePath != null
+    ? await fs.readFile(config.guidePath, "utf8")
+    : await readManifestSource(config.guideManifestPath, manifest, "inner-child-guide");
+  return { text, manifest };
 }
 
 export async function loadSomaticGuide(config) {
   const activeSource = await readActiveGuidePacketEntry(config, "guides/somatic/canonical-source.html");
   if (activeSource) return htmlToText(activeSource.toString("utf8"));
-  return fs.readFile(config.somaticGuidePath, "utf8");
+  if (config.somaticGuidePath != null) return fs.readFile(config.somaticGuidePath, "utf8");
+  const manifest = JSON.parse(await fs.readFile(config.guideManifestPath, "utf8"));
+  return readManifestSource(config.guideManifestPath, manifest, "somatic-sequencing-guide");
 }
 
 function normalizeTokens(text) {

@@ -99,8 +99,9 @@ export function loadConfig(overrides = {}) {
     devJobRoot: path.resolve(projectRoot, process.env.DEV_JOB_ROOT ?? "./.inner-signal-autopilot/development-jobs"),
     devPromotionMarker: path.resolve(projectRoot, process.env.DEV_PROMOTION_MARKER ?? "./.inner-signal-autopilot/promotion-ready.json"),
     autopilotStateDir: path.resolve(projectRoot, process.env.AUTOPILOT_STATE_DIR ?? "./.inner-signal-autopilot"),
-    guidePath: path.join(projectRoot, "guides/inner-child-guide.txt"),
-    somaticGuidePath: path.join(projectRoot, "guides/somatic-sequencing-guide.txt"),
+    // Null selects the current source from guideManifestPath; explicit paths remain overrides.
+    guidePath: null,
+    somaticGuidePath: null,
     guideManifestPath: path.join(projectRoot, "guides/manifest.json"),
     guideGraphBundlePath: path.join(projectRoot, "guide-graphs/compiled/bundle.json"),
     guidePacketRoot: path.resolve(projectRoot, process.env.GUIDE_PACKET_ROOT ?? "./.inner-signal-autopilot/guide-packets"),

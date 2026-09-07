@@ -22,7 +22,9 @@ All pipeline roles in this evaluation use the explicitly selected responder, not
 
 The guide packet is read from repository source files and explicit approved amendments. Case references resolve to full line spans or complete amendment entries, not truncated search snippets or graph recommendations. The manifest hashes sources, current source/runtime files, cases, calibration controls, settings and commit. No book text, proprietary form or textbook clinical transcript is included. The book/source register documents the intellectual contributions; it is not the scoring oracle by itself.
 
-This source packet is the pinned repository guide family, not an assertion that every sentence of a later website/article revision is synchronized. A source conflict or missing relevant instruction must be reported rather than hidden by a forced score.
+The current source pin is `tasks/guide-source-sync-20260907/FIDELITY-SOURCE-PIN.json`: the complete recovered owner article with adopted E01-E12, the unchanged somatic source, and approved amendments. `SOURCE-SYNC.json` in that directory records exact source identity, the authorized edits and preservation evidence. Original media destinations absent from the pasted owner message remain unavailable. A source conflict or missing relevant instruction must be reported rather than hidden by a forced score.
+
+The source reader selects filenames from `guides/manifest.json` and rejects stale guide hashes, source-map filenames, span bounds and span hashes. Manifest and source-map bytes participate in source identity. `case-source-bindings-2026-09-07.json` adds the newly indexed article passages to grader context without rewriting `cases.json`, its user turns/required functions, or `grader-controls.json`. The run records original and effective suite hashes and the additive binding hash. Previous run directories and frozen companion v1/v2 evidence are preserved; use a new directory for this revised source.
 
 ## Real response grading
 

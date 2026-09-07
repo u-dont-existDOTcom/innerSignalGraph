@@ -65,6 +65,6 @@ Bundle: `inner-child-somatic-pilot-2026-08-09-r5`
 
 - The planner routes by function, dose, target, and capacity rather than modality name alone.
 - Safety, orientation, stopping, and return capacity outrank all therapeutic preferences.
-- Source text remains unchanged; additions live in owner-amendments.json or semantic-assets.json.
+- Versioned source snapshots preserve approved article text; separately approved additions remain in owner-amendments.json or semantic-assets.json.
 - The deterministic plan owns the substantive next question; response realization cannot replace it with a merely interesting question.
 - Advanced-release nodes never coach syncope, substance potentiation, or standing lightheadedness.

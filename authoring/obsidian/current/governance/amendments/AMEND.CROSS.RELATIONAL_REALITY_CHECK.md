@@ -8,7 +8,7 @@ status: owner-approved
 domain: cross-guide
 base_record_sha256: ee4822d423fd156e185dc66c6a7034ff3828c2328eadb68572a274f4b0940fc4
 source_file_sha256: 1d1d78a359df20cddf3aac6f5f93bb3badda84b7bcf7bcff085d8ee9f75e0dd1
-projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
+projection_input_sha256: 8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e
 ---
 
 # AMEND.CROSS.RELATIONAL_REALITY_CHECK

@@ -22,7 +22,7 @@ regression_refs:
   - G012
 base_record_sha256: 79edfb36dffb16c2670c7d479094e371bf7be00629a56637843006eaa46ad943
 base_graph_sha256: d4b4c8dcccb63795c523c14bf995d9957c6c3e0b0b0af4f137ec9ae9bb58744e
-projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
+projection_input_sha256: 8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e
 ---
 
 # Separate developmental ages and responsibility

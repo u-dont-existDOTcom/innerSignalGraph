@@ -7,24 +7,24 @@ source_id: IC.BORROW_ONE_FUNCTION
 guide_id: inner-child-guide
 heading: Borrow One Function at a Time
 source_role: primary-framework
-source_hash: a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3
-section_hash: 10801e04ba16a1b3e66ed7b703767f0ad504a09b1ba727ddf1664347ac4c5dfd
+source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
+section_hash: 28a19fd804d30b18356870360e6d95e51b3cc6e67d847707bcbb058ea5c6d1e6
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.BEST_FRIEND_PERSPECTIVE
   - IC.BORROW_ONE_FUNCTION
   - IC.SUICIDAL_ADULT_SEAT
   - SOM.EMDR_DEVELOPMENTAL_DEFER
-projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
+projection_input_sha256: 8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e
 ---
 
 # Borrow One Function at a Time
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide.txt`
+Authority path: `guides/inner-child-guide-2026-09-07.txt`
 
-Locator: Lines 88–100
+Locator: Lines 157–171
 
 ```text
 Borrow One Function at a Time

@@ -2,6 +2,23 @@
 
 Updated 2026-09-07. R1-R6 are owner-authorized and implemented in draft PR #46. Implementation commit: `8e393a74b047d6e714f9f4e506c1ce45c1b8c5ce`; baseline: `77bd76e2b8a5252dedfcaa502673dd877b1336ae`.
 
+## Source synchronization continuation — 2026-09-07
+
+**Source synchronization is complete.** The exact recovered original is `guides/snapshots/inner-child-guide-owner-2026-09-06.txt`; the active approved source is `guides/inner-child-guide-2026-09-07.txt`. `tasks/guide-source-sync-20260907/SOURCE-SYNC.json` records origin, twelve exact operations, independent preservation review and deterministic evidence. The older source, frozen cases/evidence and packet archives are unchanged. Current package: **729/729 tests, 29/29 graph regressions, 89 source sections and 301 generated files**; nodes/edges/amendments remain 53/70/26.
+
+The current source packet is pinned by `tasks/guide-source-sync-20260907/FIDELITY-SOURCE-PIN.json`. The next action is authenticated calibrated smoke with `SMOKE-CONFIG.json` (Sol xhigh; separate Astra and Terra graders; direct OpenAI routes; 120-call cap; 16,384 output tokens per call). Credential acceptance and live catalog/endpoints were checked; no generation identity or semantic grade is claimed before actual probes. This supersedes the historical missing-source/configuration description below.
+
+Resume baseline: PR #46 head `3871b984b94bc14ab6025fe8f16b8ac7fb090c5b`, independently read from GitHub and matched by the isolated checkout. Its deterministic-package, workflow-policy and codeql-javascript checks passed. The current owner requested continuation of the handoff and saving the resulting work to the same GitHub branch; PR #46 remains draft.
+
+Active task constraints, compiled from the current handoff and the universal lesson router at `8e49a77d644ed6575fe3911c2e710c37e28d77b2`:
+
+- **Exact authority / recovery:** use the verified PR head and complete owner article; fail on partial source or a competing master. Recover exact missing text before editing. Enforce through source identity and boundary checks.
+- **Authorized transformation:** apply only adopted E01-E12; retain the unedited current article and the older repository snapshot. Require exact reconstruction from the source plus the twelve operations, with no unexplained changes, before downstream verification.
+- **Source dependencies:** update the active source manifest, layout and actual fidelity/pipeline readers together; reject stale file hashes or source spans. Preserve frozen behavioral cases, evaluation evidence and Guide Packet archives.
+- **Evidence and closeout:** deterministic and simulated results are not live semantic evidence. Record actual authenticated calls, independent grader calibration and source/configuration pins before any response-quality claim. Save the resulting checkpoint and next action on this branch.
+
+Universal references: `patterns/github-first-agent-bootstrap.md`, `patterns/editorial-authority-and-lossless-editing.md`, `patterns/transformation-preservation-proof.md`, `patterns/task-time-lesson-activation.md`, and `patterns/context-compaction-resilience.md`. The current owner instruction and adopted exact patch supply the bounded execution authority; this task does not reopen article policy or the independent DEV-R005 work.
+
 Read `CLOSEOUT.md` for exact implemented behavior, verification, source manifest and the remaining execution boundary. `IMPLEMENTATION-RECEIPT.md` retains the change history. Source mapping is in `docs/research/THERAPEUTIC-SOURCES.md` and `docs/superpowers/specs/2026-09-06-map-literature-reconciliation.md`. Do not repeat the broad book review or recreate existing goals, borrowed adulthood or history infrastructure.
 
 Local and checksum-matched hosted preparation both passed the complete Node24.18.0 package: 712/712 automated tests, 29/29 graph regressions, authoring and package/smoke gates. Candidate totals: 53 nodes,70 edges,80 source sections,26 amendments,292 generated files. The normal exact-head checks on the native cleanup/closeout commit are recorded in the PR after actual completion, not inferred from the preparation run.

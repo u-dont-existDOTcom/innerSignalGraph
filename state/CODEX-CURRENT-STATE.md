@@ -4,7 +4,7 @@ Updated: 2026-09-04
 
 ## Parallel approved map/fidelity task (2026-09-06)
 
-PR #46 adds the owner-authorized R1-R6 candidate implementation and guide-grounded response testing. Resume from `tasks/map-literature-reconciliation-20260906/CURRENT-STATE.md` and `tasks/guide-fidelity-20260906/PROTOCOL.md`. This separate map task does not alter DEV-R005 authorization below. No release or stable promotion; live responder fidelity remains untested until the calibrated authenticated run completes.
+PR #46 adds the owner-authorized R1-R6 candidate implementation and guide-grounded response testing. The 2026-09-07 complete guide source synchronization is deterministically verified (729 tests / 29 graph cases); current source, exact adopted edits and preservation receipt are in `tasks/guide-source-sync-20260907/SOURCE-SYNC.json`. Resume the authenticated fidelity smoke from `tasks/map-literature-reconciliation-20260906/CURRENT-STATE.md` and `tasks/guide-fidelity-20260906/PROTOCOL.md`. This separate map task does not alter DEV-R005 authorization below. No release or stable promotion; live responder fidelity remains untested until the calibrated authenticated run completes.
 
 ## Active development frontier
 

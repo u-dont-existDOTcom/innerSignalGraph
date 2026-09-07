@@ -1,0 +1,30 @@
+{
+  "responder": {
+    "model": "openai/gpt-5.6-sol",
+    "expected_response_model": "openai/gpt-5.6-sol",
+    "provider": "openai",
+    "effort": "xhigh",
+    "max_tokens": 16384,
+    "api_key_env": "OPENROUTER_API_KEY"
+  },
+  "graders": [
+    {
+      "model": "openai/gpt-6-astra",
+      "expected_response_model": "openai/gpt-6-astra",
+      "provider": "openai",
+      "effort": "xhigh",
+      "max_tokens": 16384,
+      "api_key_env": "OPENROUTER_API_KEY"
+    },
+    {
+      "model": "openai/gpt-5.6-terra",
+      "expected_response_model": "openai/gpt-5.6-terra",
+      "provider": "openai",
+      "effort": "xhigh",
+      "max_tokens": 16384,
+      "api_key_env": "OPENROUTER_API_KEY"
+    }
+  ],
+  "max_calls": 120,
+  "acknowledge_provider_retention": true
+}

@@ -2,6 +2,14 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Latest continuation — source synchronization completed
+
+The next bounded content task below is now complete. The full owner article was recovered from message `a56688c2-1f9b-4692-8ac4-1ab007347897` in conversation `6a9b75e2-15c4-83ea-9232-4b1b33e58a37`. Original: `guides/snapshots/inner-child-guide-owner-2026-09-06.txt`; revised active source: `guides/inner-child-guide-2026-09-07.txt`. All E01-E12 were applied exactly and independently checked, with zero unrelated changes.
+
+Read `tasks/guide-source-sync-20260907/SOURCE-SYNC.json` and `FIDELITY-SOURCE-PIN.json` in that directory. Runtime and fidelity readers now follow the manifest; stale file/span hashes are rejected. The old article, original cases/evidence and packet archives remain unchanged. Current complete package: **729/729 tests, 29/29 graph regressions**, 53 nodes, 70 edges, **89 source sections**, 26 amendments, **301 generated files**.
+
+**Next:** run the calibrated authenticated smoke against this revised source with `tasks/guide-source-sync-20260907/SMOKE-CONFIG.json`, then inspect its actual terminal status before continuing. Existing credential acceptance and direct OpenAI catalog endpoints were verified. Generation identity probes and independent semantic grades are still required. The historical missing-source step and absence-of-local-configuration claims below are superseded; source synchronization must not be repeated. Keep draft PR #46 on the same branch.
+
 ## Repository / active work
 
 - Repo: `u-dont-existDOTcom/innerSignalGraph`

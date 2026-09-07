@@ -1,16 +1,22 @@
 {
-  "version": "source-layout-v1",
+  "version": "source-layout-v2-2026-09-07",
   "textGuides": [
     {
       "guideId": "inner-child-guide",
-      "file": "inner-child-guide.txt",
+      "file": "inner-child-guide-2026-09-07.txt",
       "sections": [
         {"id":"IC.CHICKEN_EGG","heading":"The Chicken-and-Egg Problem"},
+        {"id":"IC.HELPER_AUTHORITY","heading":"Don’t Give the Inner Adult Away"},
         {"id":"IC.BEFORE_DEEP","heading":"Before You Try to Go Deep"},
         {"id":"IC.REGULATION_BEFORE_DIALOGUE","heading":"Regulation May Come Before Dialogue"},
+        {"id":"IC.RELATIONAL_REALITY","heading":"Also Look Outward"},
+        {"id":"IC.CHECKING_LOOP","heading":"When More Processing Becomes the Hook"},
         {"id":"IC.BORROW_ADULT","heading":"Borrow the Adult Before You Can Be the Adult"},
         {"id":"IC.NEUTRAL_WITNESS","heading":"A Witness Is Enough to Begin"},
         {"id":"IC.BORROW_ONE_FUNCTION","heading":"Borrow One Function at a Time"},
+        {"id":"IC.BORROW_LOVE","heading":"Borrow Love—or Borrow the Perspective of Care"},
+        {"id":"IC.SPIRITUAL_LOAN","heading":"Ask God for a Loan"},
+        {"id":"IC.SPIRITUAL_STRUGGLE","heading":"When the Spiritual Relationship Hurts"},
         {"id":"IC.ADULT_APPRENTICE","heading":"Become the Adult Apprentice"},
         {"id":"IC.THREE_FUNCTIONS","heading":"The Three Adult Functions"},
         {"id":"IC.PROTECTOR_VISIBLE","heading":"Make the Protector Visible"},
@@ -18,7 +24,7 @@
         {"id":"IC.ADULT_VOICE_FAKE","heading":"When the Adult Voice Feels Fake"},
         {"id":"IC.INHERITED_PARENT","heading":"The Parent You Inherited"},
         {"id":"IC.START_WHATEVER","heading":"Start With Whatever Showed Up"},
-        {"id":"IC.GUARDS","heading":"The Two Common Guards"},
+        {"id":"IC.GUARDS","heading":"Two Common Protective Patterns"},
         {"id":"IC.BOTTOM_UP_SEQUENCE","heading":"A Bottom-Up Sequence"},
         {"id":"IC.ESCAPE_URGE","heading":"When the Urge to Escape Arrives"},
         {"id":"IC.NO_CLEAR_CHILD","heading":"Sometimes There Isn’t a Clear Child Yet"},
@@ -28,11 +34,14 @@
         {"id":"IC.GUIDE_LATER","heading":"The Inner Guide Comes Later"},
         {"id":"IC.HEART_SOLAR_LOOP","heading":"A Heart-to-Child Loop"},
         {"id":"IC.PHOTOS","heading":"Use Childhood Photographs Without Interrogating Them"},
+        {"id":"IC.SESSION_CLOSURE","heading":"Close the Session and Return to Life"},
         {"id":"IC.LOVE_MISSING","heading":"When Love Still Feels Missing"},
+        {"id":"IC.SOMATIC_HEART_OPENING","heading":"Somatic Heart Opening"},
         {"id":"IC.ALTERED_STATES","heading":"Altered States Can Deepen the Therapy"},
         {"id":"IC.FORGIVENESS","heading":"How to Forgive Without Forgetting"},
         {"id":"IC.RELATIONSHIP","heading":"Borrowed Adulthood in Relationship"},
-        {"id":"IC.IFS","heading":"How This Relates to IFS"}
+        {"id":"IC.IFS","heading":"How This Relates to IFS"},
+        {"id":"IC.RELATED_CLINICAL_WORK","heading":"Related Clinical Work"}
       ]
     },
     {

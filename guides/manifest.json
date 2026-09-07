@@ -5,9 +5,9 @@
   "sources": [
     {
       "id": "inner-child-guide",
-      "version": "source-upload-2026-08-06-052320",
-      "file": "inner-child-guide.txt",
-      "sha256": "a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3",
+      "version": "owner-current-2026-09-07-e01-e12",
+      "file": "inner-child-guide-2026-09-07.txt",
+      "sha256": "00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f",
       "role": "primary-framework",
       "format": "text"
     },
@@ -44,5 +44,19 @@
       "format": "json"
     }
   ],
-  "notes": "The canonical article text is preserved verbatim. Owner-approved additions and reconciliations are stored separately and cited explicitly by graph nodes. Instructional images may contribute semantic claims through compact semantic asset notes."
+  "notes": "The active inner-child article is the complete owner-pasted current guide with adopted E01-E12, recorded in tasks/guide-source-sync-20260907/SOURCE-SYNC.json. Earlier source snapshots are retained byte-for-byte. Owner amendments remain separately cited extensions; semantic assets retain instructional-visual provenance. The graph contract/bundle identity and installed Guide Packets are unchanged by this candidate source revision.",
+  "sourceHistory": [
+    {
+      "id": "inner-child-guide",
+      "version": "source-upload-2026-08-06-052320",
+      "file": "inner-child-guide.txt",
+      "sha256": "a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-pasted-current-before-e01-e12",
+      "file": "snapshots/inner-child-guide-owner-2026-09-06.txt",
+      "sha256": "96569956f07a62a7a1d4f33a8007caaa53fa56aec3d10348eee0df527a989de5"
+    }
+  ]
 }

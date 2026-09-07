@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "sourceFile": "guides/inner-child-guide-2026-09-07.txt",
+  "sourceSha256": "00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f",
+  "purpose": "Add current article passages to grader context after E01-E12 source synchronization. Original cases, turns, required functions and calibration controls remain unchanged.",
+  "additionalSourceRefs": {
+    "GF01": [
+      "IC.CHECKING_LOOP"
+    ],
+    "GF02": [
+      "IC.RELATIONAL_REALITY"
+    ],
+    "GF03": [],
+    "GF04": [],
+    "GF05": [],
+    "GF06": [
+      "IC.PROTECTOR_VISIBLE"
+    ],
+    "GF07": [
+      "IC.BORROW_LOVE"
+    ],
+    "GF08": [],
+    "GF09": [
+      "IC.SPIRITUAL_STRUGGLE"
+    ],
+    "GF10": [
+      "IC.SPIRITUAL_LOAN",
+      "IC.SPIRITUAL_STRUGGLE"
+    ],
+    "GF11": [
+      "IC.HELPER_AUTHORITY"
+    ],
+    "GF12": [
+      "IC.SESSION_CLOSURE"
+    ]
+  }
+}

@@ -5,27 +5,27 @@ projection_mode: current
 generated: true
 source_id: IC.GUARDS
 guide_id: inner-child-guide
-heading: The Two Common Guards
+heading: Two Common Protective Patterns
 source_role: primary-framework
-source_hash: a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3
-section_hash: 5f8e3499bc1c0ba7656420088e553951026ee9a669bfd27a26dfb22731a22d83
+source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
+section_hash: ce6dc8878692610fc8a3191b00e0d19cbda67ffc0c1f2fcda15ea8ce8aa9dd22
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.MEET_GUARD
-projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
+projection_input_sha256: 8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e
 ---
 
-# The Two Common Guards
+# Two Common Protective Patterns
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide.txt`
+Authority path: `guides/inner-child-guide-2026-09-07.txt`
 
-Locator: Lines 191–197
+Locator: Lines 374–380
 
 ```text
-The Two Common Guards
-Proactive protection stays on duty most of the time: the skeptic, intellectualizer, inner critic, or voice watching for weakness and self-indulgence. It may have spent years preventing humiliation, deception, overwhelm, or another abandonment. It has probably watched you begin other healing methods with great enthusiasm and then disappear. It may be tired, but it is experienced and competent.
+Two Common Protective Patterns
+Two patterns often do have a protective function. Proactive protection stays on duty most of the time: the skeptic, intellectualizer, inner critic, or voice watching for weakness and self-indulgence. It may have spent years preventing humiliation, deception, overwhelm, or another abandonment. It has probably watched you begin other healing methods with great enthusiasm and then disappear. It may be tired, but it is experienced and competent.
 
-Reactive protection arrives when pain gets close. You suddenly want to drink, smo
+Reactive protection of
 ```

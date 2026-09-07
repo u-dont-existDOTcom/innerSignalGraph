@@ -7,28 +7,28 @@ source_id: IC.PROTECTOR_VISIBLE
 guide_id: inner-child-guide
 heading: Make the Protector Visible
 source_role: primary-framework
-source_hash: a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3
-section_hash: 9a9918c08e428335d1f656e0f460ea7fb1c3deb07d802f7b7a20ecee11369f06
+source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
+section_hash: 75ec4a75b88dbede4a401415265af3044eb5c9de9902d662b73bb441df3d3680
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.CREDIBILITY_REPAIR
   - IC.PROTECTOR_ACTION
   - IC.REALIZATION_LOVE_INTEGRATION
   - SOM.EMDR_DEVELOPMENTAL_DEFER
-projection_input_sha256: a79819e9410ad9d210bf943baffaca37a61bd81b0ae1540687d7bb8613a4dceb
+projection_input_sha256: 8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e
 ---
 
 # Make the Protector Visible
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide.txt`
+Authority path: `guides/inner-child-guide-2026-09-07.txt`
 
-Locator: Lines 143–147
+Locator: Lines 269–324
 
 ```text
 Make the Protector Visible
 Set one boundary. Say no to something costly. Handle an avoided task or financial mess. Leave a relationship that keeps eroding safety. Keep one small promise. Clean your room. These acts accumulate into trust because internal soothing without external competence can sound like the same unreliability that wounded the child.
 
-When the Nurturer is unavailable, the Protector can begin the relationship. Care may first appear as a locked door, a meal, a cancelled obligation
+Some protective acts happen inside the relationship. Hearing “big whoop” without retaliating, allowing distrust without demanding reassurance, adm
 ```

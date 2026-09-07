@@ -59,9 +59,14 @@ async function pinRun(out,manifest) {
 
 async function evaluateUnlocked({out,settings=null,live=false,smoke=false,repeat=1,fetchImpl=fetch}) {
   out=path.resolve(out);await fs.mkdir(out,{recursive:true,mode:0o700});
-  const suite=await read(path.join(here,'cases.json'));
+  const frozenSuite=await read(path.join(here,'cases.json'));
+  const sourceBindings=await read(path.join(here,'case-source-bindings-2026-09-07.json'));
+  const suite=structuredClone(frozenSuite);
   const controls=await read(path.join(here,'grader-controls.json'));
   const packet=await loadSourcePacket(root);
+  if (packet.files[sourceBindings.sourceFile] !== sourceBindings.sourceSha256) throw new Error('FIDELITY_SOURCE_BINDINGS_STALE');
+  if (JSON.stringify(Object.keys(sourceBindings.additionalSourceRefs).sort()) !== JSON.stringify(suite.cases.map(c=>c.id).sort())) throw new Error('FIDELITY_SOURCE_BINDING_CASE_MISMATCH');
+  for (const c of suite.cases) c.sourceRefs=[...new Set([...c.sourceRefs,...sourceBindings.additionalSourceRefs[c.id]])];
   for(const c of suite.cases)sourceForCase(packet,c);
   if(!Number.isInteger(repeat)||repeat<1||repeat>3)throw new Error('repeat must be 1..3');
   const cases=smoke?suite.cases.filter(c=>['GF01','GF02','GF07','GF09'].includes(c.id)):suite.cases;
@@ -78,12 +83,12 @@ async function evaluateUnlocked({out,settings=null,live=false,smoke=false,repeat
   const walk=async d=>(await fs.readdir(d,{withFileTypes:true})).flatMap(e=>e.isDirectory()?[]:[path.join(d,e.name)]);
   for(const d of [here,path.join(root,'src/case-formulation')])for(const p of await walk(d))files.push(path.relative(root,p));
   const bindings={};for(const p of [...new Set(files)].sort())bindings[p]=hash(await fs.readFile(path.join(root,p)));
-  const manifest={version:1,scope:'SYNTHETIC_SOURCE_FIDELITY_NOT_CLINICAL_EFFICACY',commit:execFileSync('git',['rev-parse','HEAD'],{cwd:root}).toString().trim(),
-    bindings,sourceSha256:packet.sha256,suiteSha256:hash(suite),controlsSha256:hash(controls),settings:publicSettings(settings),caseIds:cases.map(c=>c.id),arms:ARMS,repeat,
+  const manifest={version:2,scope:'SYNTHETIC_SOURCE_FIDELITY_NOT_CLINICAL_EFFICACY',commit:execFileSync('git',['rev-parse','HEAD'],{cwd:root}).toString().trim(),
+    bindings,sourceSha256:packet.sha256,sourceBindingsSha256:hash(sourceBindings),frozenSuiteSha256:hash(frozenSuite),suiteSha256:hash(suite),controlsSha256:hash(controls),settings:publicSettings(settings),caseIds:cases.map(c=>c.id),arms:ARMS,repeat,
     replay:'Each arm has an independent assistant history; prerecorded user turns are synthetic, not observed client outcomes.',
     contamination:'Development set disclosed during implementation; not held out.',
     requestedResponder:'Owner-selected GPT-5.6 Sol xhigh; settings must bind its exact verified provider ID. No UI label establishes API entitlement.',
-    sourceLimit:'Pinned repository guides plus approved amendments; not a claim to include unpublished or later blog edits.'};
+    sourceLimit:'Pinned complete owner article with adopted E01-E12 plus the unchanged somatic guide and approved amendments. Source receipt: tasks/guide-source-sync-20260907/SOURCE-SYNC.json. Original media destinations absent from the pasted source are not reconstructed.'};
   await pinRun(out,manifest);
   const caller=await makeCaller(out,settings.max_calls);
   const make=(r,id)=>makeOpenRouterProvider(r,{id,execute:(...args)=>caller.execute(...args),fetchImpl});

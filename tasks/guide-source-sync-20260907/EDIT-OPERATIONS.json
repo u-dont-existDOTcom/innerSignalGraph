@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "authority": "tasks/map-literature-reconciliation-20260906/GUIDE-EDITORIAL-PATCH-2026-09-06.md",
+  "formatAdaptation": "Approved subsection heading markers (###) become plain heading lines to match the exact owner-pasted plain-text source. Other wording and source bytes are unchanged outside E01-E12.",
+  "operations": [
+    {
+      "id": "E01",
+      "operation": "replace-exact-unique-span",
+      "anchor": "Borrow adulthood. Do not surrender it.",
+      "replacement": "Disagreement with a helper is not automatically a defense against healing. Their interpretation may be wrong, their method may not fit, or you may not share their goal. They should be able to examine that without making your objection prove their theory.\n\nBorrow adulthood. Do not surrender it."
+    },
+    {
+      "id": "E02",
+      "operation": "replace-exact-unique-span",
+      "anchor": "The Witness notices what is happening inside me. The Protector notices what is happening between us. The Guide asks: “Given both, what is the next sane move?”",
+      "replacement": "The Witness notices what is happening inside me. The Protector notices what is happening between us. The Guide asks: “Given both, what is the next sane move?”\n\nWhen More Processing Becomes the Hook\n\nA real wound and an unhelpful response to it can coexist. You may still have grief to feel while repeatedly checking whether you have grieved correctly. Attend to immediate safety and practical action when needed, but another round of analysis is not automatically more care.\n\nAsk: “Is this helping me feel or understand something more clearly, make a decision, or respond differently—or am I checking the same question for reassurance?” Meaningful grief and practice can revisit familiar ground; novelty is not required every time. But repetition alone does not make a thought a new request from the child.\n\nWhen it is a checking loop, let the thought be there without arguing with it, chasing it away, or waiting to feel completely resolved. Return to a chosen activity or relationship. You can care for the child without holding a meeting every time the mind produces a sentence.\n\nThe exercises here should not become a ritual you must complete before you are allowed to live."
+    },
+    {
+      "id": "E03",
+      "operation": "replace-exact-unique-span",
+      "anchor": "Don’t force the transfer. Even recognizing that the capacity exists somewhere in you is useful. You are borrowing a familiar pathway rather than manufacturing a feeling on command.",
+      "replacement": "Don’t force the transfer. Even recognizing that the capacity exists somewhere in you is useful. You are borrowing a familiar pathway rather than manufacturing a feeling on command.\n\nNotice not just the words, but how they are being said inside. “I care about you” can carry patience or a demand to hurry up and feel better. If imagined closeness feels intrusive, try more distance, no touch, a different voice, or another source of care. Difficulty with this particular offer does not establish an inability to receive love. Let the response teach you how to care, rather than forcing the child to accept your preferred version."
+    },
+    {
+      "id": "E04",
+      "operation": "replace-exact-unique-span",
+      "anchor": "This is the feast problem. You can have an enormous spiritual feast upstairs while the child is still starving downstairs. Spiritual integration means some of what you have actually reaches them.",
+      "replacement": "This is the feast problem. You can have an enormous spiritual feast upstairs while the child is still starving downstairs. Spiritual integration means some of what you have actually reaches them.\n\nWhen the Spiritual Relationship Hurts\n\nSometimes the difficulty is not simply accessing love. Prayer may evoke abandonment or condemnation; a teacher’s betrayal may damage trust in what once felt sacred. Don’t automatically call this bypass, lack of faith, or disguised parental conflict. Ask what has been lost, what needs questioning, and what is still worth preserving. You may need to grieve or change a relationship, practice, or understanding. This need not require either abandoning spirituality or forcing more of the same.\n\nNor does developing an inner adult mean controlling everything yourself. Spiritual support can help you act where responsibility is yours and relinquish outcomes or other people’s choices where control is not yours."
+    },
+    {
+      "id": "E05",
+      "operation": "replace-exact-unique-span",
+      "anchor": "The Nurturer makes room for what is true without attacking the person who feels it.",
+      "replacement": "The Nurturer makes room for what is true without attacking the person who feels it. The Nurturer also takes pleasure in the child’s company: “I’m glad you’re here.” The child needs to be enjoyed, not only comforted when hurt or managed when difficult."
+    },
+    {
+      "id": "E06",
+      "operation": "replace-exact-unique-span",
+      "anchor": "Warmth can come later.",
+      "replacement": "Warmth can come later.\n\nMake one chosen act specific: when will you do it, how small can the first step be, and what support or resources does it need? A brief rehearsal may help with a predictable difficult moment. Afterward, review what actually happened. Not doing it may reflect fear, uncertainty about the goal, lack of skill, exhaustion, or a practical barrier; don’t decide which without looking. Completing it without immediate relief is not automatically failure, and completion alone does not prove it helped. Adjust the action to what it actually contributes to safety, connection, competence, or enjoyment—not just to whether it earns a tick."
+    },
+    {
+      "id": "E07",
+      "operation": "replace-exact-unique-span",
+      "anchor": "Only after the protective layer feels heard does the inner child often come forward. Push past the guards and you may produce a convincing performance of inner-child pl/ork—the right words, the right visualization, perhaps even the right tears—while nothing underneath feels safer.",
+      "replacement": "Only after the protective layer feels heard does the inner child often come forward. Push past the guards and you may produce a convincing performance of inner-child pl/ork—the right words, the right visualization, perhaps even the right tears—while nothing underneath feels safer.\n\nThe protector does not have to disappear. It may remain watchful while willingly allowing one small step, provided you remain present and able to stop. If it says no, don’t turn that into permission.\n\nThen follow what changes. A critic may soften into a fear; a vague hurt may become a specific need; anger may clarify a boundary that needs action. Respond to what has become available instead of restarting the original exercise. When a need becomes clear, try offering that kind of care and notice how it lands. You don’t need an age, a recovered memory, or a complete cast of parts to work with a feeling. A useful shift may be small; more intensity is not the only way forward."
+    },
+    {
+      "id": "E08",
+      "operation": "replace-exact-unique-span",
+      "anchor": "Without direction, reparenting can become permissive. The child receives attention but doesn’t develop. Candy, screens, and escape from anything difficult can masquerade as self-love.",
+      "replacement": "Without direction, reparenting can become permissive. The child receives attention but doesn’t develop. Candy, screens, and escape from anything difficult can masquerade as self-love.\n\nThe opposite trap is forced adulthood: perfect discipline, no visible needs, and very little joy or closeness. In that case the next adult act may be asking for help, expressing a preference, or letting a safe person see something imperfect—not tightening control again. Judge the strategy as well as the need. Wanting closeness is legitimate; demanding instant replies or punishing someone for needing space is not the same thing. The Guide helps find a workable way to meet the need without erasing either person."
+    },
+    {
+      "id": "E09",
+      "operation": "replace-exact-unique-span",
+      "anchor": "The original mechanism language here locates the feeling around the ventral-vagal system and cardiac plexus: some people find that deep grieving eventually drops the nervous system into social engagement and gives way to a physical sense of being held by the universe—a biological rebound.",
+      "replacement": "Some people find that deep grieving gives way to warmth, connection, or a bodily sense of being held by the universe. That describes an experience, not evidence for one particular physiological mechanism. Love can also open grief in the other direction: receiving care may bring sadness for the care that was missing. That need not mean the love failed. Stay with it when you can remain present and retain choice; more tears are not, by themselves, proof of more healing."
+    },
+    {
+      "id": "E10",
+      "operation": "replace-exact-unique-span",
+      "anchor": "Shaking, EFT, EMDR, Brainspotting, Somatic Experiencing",
+      "replacement": "Shaking, tapping (Emotional Freedom Techniques), EMDR, Brainspotting, Somatic Experiencing"
+    },
+    {
+      "id": "E11",
+      "operation": "replace-exact-unique-span",
+      "anchor": "Stay with the inquiry until the understanding becomes real enough to change the emotional relationship.",
+      "replacement": "Return to the inquiry over time, without forcing it or endlessly rehearsing the same case, until the understanding becomes real enough to change the emotional relationship."
+    },
+    {
+      "id": "E12",
+      "operation": "replace-exact-unique-span",
+      "anchor": "Teachers and Practice Resources",
+      "replacement": "Related Clinical Work\n\nThis framework developed through the teachers and collaborators credited below and my own practice. Later revisions also draw on comparisons with schema therapy, compassion-focused therapy, attachment repair, motivational interviewing, mentalizing, metacognitive therapy, behavioral activation, radically open DBT, emotion-focused therapy, and spiritually integrated psychotherapy. These approaches do not all make the same claims. I borrow particular distinctions and practices rather than presenting the whole synthesis as their consensus or claiming that their research validates it as a package.\n\nTeachers and Practice Resources"
+    }
+  ]
+}
