@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 
 const source = JSON.parse(readFileSync(new URL('./SOURCE.json', import.meta.url), 'utf8'));
 const supplement = JSON.parse(readFileSync(new URL('./SUPPLEMENT.json', import.meta.url), 'utf8'));
+const ownerLink = JSON.parse(readFileSync(new URL('./OWNER-LINK-CONFIRMATION.json', import.meta.url), 'utf8'));
 const hash = value => createHash('sha256').update(value, 'utf8').digest('hex');
 const TOPICS = Object.freeze({
   none: [], readiness: ['RG01', 'RG03', 'RG06'],
@@ -26,14 +27,17 @@ const ENUMS = Object.freeze({
 });
 const text = value => typeof value === 'string' && value.trim().length > 0;
 
-export function validateRomanceSources(s = source, p = supplement) {
+export function validateRomanceSources(s = source, p = supplement, link = ownerLink) {
   if (s?.schemaVersion !== 1 || p?.schemaVersion !== 1 || p.sourceId !== s.id
       || p.status !== 'candidate-development-only' || s.pageCount !== 83
       || s.pdfSha256 !== 'b4bc13f8c0e02d2782cbe6b2f5aae65169e44ed482dc9e7085c72cf5016c342f'
       || s.canonicalUrl !== 'https://romance.u-dont-exist.com'
       || p.linkPolicy?.url !== s.canonicalUrl
       || p.linkPolicy?.automaticFetching !== false
-      || p.linkPolicy?.personalDataInUrl !== false) throw new Error('Invalid romance source contract');
+      || p.linkPolicy?.personalDataInUrl !== false
+      || link?.schemaVersion !== 1 || link.url !== s.canonicalUrl
+      || link.ownerConfirmedReachability !== true
+      || link.verificationKind !== 'owner-confirmed-not-independently-network-verified') throw new Error('Invalid romance source contract');
   if (!Array.isArray(s.excerpts) || !Array.isArray(p.rules)) throw new Error('Missing romance source arrays');
   const excerpts = new Map();
   for (const e of s.excerpts) {
@@ -52,7 +56,8 @@ export function validateRomanceSources(s = source, p = supplement) {
     ids.add(r.id);
   }
   if (Object.values(TOPICS).flat().some(id => !ids.has(id))) throw new Error('Unbound romance topic');
-  return { sourceId: s.id, supplementId: p.id, excerpts: excerpts.size, rules: ids.size };
+  return { sourceId: s.id, supplementId: p.id, excerpts: excerpts.size, rules: ids.size,
+    optionalReference: { url: link.url, reachability: 'owner-confirmed' } };
 }
 validateRomanceSources();
 
@@ -129,11 +134,13 @@ export function composeRomanceContext(plan, input = {}) {
   else if (o.interest === 'declined') referenceDecision = 'DECLINED';
   else if (o.alreadyOffered && o.interest !== 'requested') referenceDecision = 'ALREADY_OFFERED';
   else if (o.interest === 'requested' || o.interest === 'curious' || optional) referenceDecision =
-    supplement.linkPolicy.reachabilityVerified === true ? 'OFFER_OPTIONAL_REFERENCE' : 'LINK_VERIFICATION_REQUIRED';
+    (supplement.linkPolicy.reachabilityVerified === true || ownerLink.ownerConfirmedReachability === true)
+      ? 'OFFER_OPTIONAL_REFERENCE' : 'LINK_VERIFICATION_REQUIRED';
   const reference = referenceDecision === 'OFFER_OPTIONAL_REFERENCE' ? {
     url: source.canonicalUrl,
-    text: 'Joel discusses the broader relationship questions in his romance guide. Reading it is optional.',
-    openAutomatically: false
+    text: 'If you are curious about the broader relationship questions, Joel’s romance guide is at romance.u-dont-exist.com. Reading it is optional.',
+    openAutomatically: false,
+    reachabilityEvidence: supplement.linkPolicy.reachabilityVerified === true ? 'independently-verified' : 'owner-confirmed'
   } : null;
   return { ...base, plan: candidatePlan, canRealize: !replanningRequired,
     action: replanningRequired ? 'REPLAN_FOR_STABILIZATION' : route === 'stabilization' ? 'PRESERVE_STABILIZATION'
