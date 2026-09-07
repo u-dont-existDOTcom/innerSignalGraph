@@ -6,6 +6,7 @@ const choice = values => ({ type: "string", enum: values });
 const record = properties => ({ type: "object", additionalProperties: false, properties, required: Object.keys(properties) });
 
 export const relationalReadinessSchema = { anyOf: [{ type: "null" }, record({
+  issue: text,
   scope: choice(["romantic_sexual_pursuit", "support_building"]),
   current_stability: choice(["sufficient", "insufficient", "unknown"]),
   stability_observation_ids: ids,
@@ -28,12 +29,12 @@ export const relationalReadinessSchema = { anyOf: [{ type: "null" }, record({
   review_when: text
 })] };
 
-export function validateRelationalEvidence(readiness, task, fail) {
-  if (!readiness) return;
-  const taskIds = new Set(task.observation_ids);
+export function validateRelationalEvidence(readiness, { issue, observationIds = new Set() } = {}, fail = message => { throw new TypeError(message); }) {
+  if (!readiness) return null;
+  if (!readiness.issue?.trim() || (issue != null && readiness.issue !== issue)) fail("Relational readiness must be bound to the current issue.");
   const references = (values, required = false) => {
-    if ((required && !values.length) || new Set(values).size !== values.length || values.some(id => !taskIds.has(id))) {
-      fail("Relational readiness needs current task observation references.");
+    if ((required && !values.length) || new Set(values).size !== values.length || values.some(id => !observationIds.has(id))) {
+      fail("Relational readiness needs current direct-observation references.");
     }
   };
   for (const [field, evidence] of [["current_stability", "stability_observation_ids"], ["foreseeable_harm", "harm_observation_ids"], ["trajectory", "trajectory_observation_ids"], ["support_purpose", "support_observation_ids"]]) {
@@ -47,9 +48,11 @@ export function validateRelationalEvidence(readiness, task, fail) {
   if (new Set(readiness.harm_to).size !== readiness.harm_to.length || (readiness.foreseeable_harm === "substantial" && !readiness.harm_to.length)) {
     fail("Substantial relational harm needs an identified affected party.");
   }
+  return structuredClone(readiness);
 }
 
 const dependencySignals = new Set(["dependency", "relational_preoccupation", "escalating_pursuit", "partner_as_regulator"]);
+const readinessProbe = "How are you managing daily life and distress at the moment, including any non-romantic support you can rely on?";
 
 export function relationalReadinessDecision(readiness, { immediateProtection = false } = {}) {
   if (!readiness) return null;
@@ -67,6 +70,7 @@ export function relationalReadinessDecision(readiness, { immediateProtection = f
   if (readiness.harm_to.some(item => ["dependent_children", "future_children"].includes(item))) sourceRuleIds.add("RG10");
   return {
     version: 1,
+    issue: readiness.issue,
     status,
     allowRomanceRecommendation: ready,
     pauseRomance: pause,
@@ -84,43 +88,123 @@ export function relationalReadinessDecision(readiness, { immediateProtection = f
       ...(ready ? ["CURRENT_STABILITY_AND_HARM_ASSESSED"] : [])
     ],
     sourceRuleIds: [...sourceRuleIds],
-    // Preserve assessed evidence, counterevidence, supports and reopening conditions
-    // in the private current-session decision trace. This does not create a client record.
     assessment: structuredClone(readiness)
   };
 }
 
-// A relational pause is a current decision constraint, not evidence that an otherwise
-// viable therapeutic mechanism failed. When a fresh audited assessment reopens
-// readiness, clear only a switch that was caused solely by that broader relational
-// constraint. Never erase prediction failures, harm, invalidation, narrow persistent
-// risk, or any other path evidence.
-export function preparePathPriorForReadiness(prior, currentDecision) {
-  if (!prior || !currentDecision) return prior;
-  const state = structuredClone(prior);
-  const previous = state.latest;
-  const active = state.active;
-  const intrinsicFailure = Boolean(active?.invalidated || active?.misses > 0
+function intrinsicPathFailure(state) {
+  const active = state?.active;
+  const latest = state?.latest;
+  return Boolean(active?.invalidated || active?.misses > 0
     || Object.values(active?.prediction_failures ?? {}).some(count => count > 0)
-    || (previous?.failure_sources ?? []).length
-    || previous?.goal_substitution?.narrow_romance_pause === true);
-  const previousRelationalOnly = Boolean(active?.switch_pending && !intrinsicFailure
-    && (previous?.relational_readiness || previous?.goal_substitution?.instrumental_socializing)
-    && ["action", "reconsider"].includes(previous?.route));
-  const currentClearsConstraint = currentDecision.status === "NOT_BLOCKED"
-    && currentDecision.supportProgress !== "NOT_EQUIVALENT_TO_NONROMANTIC_SUPPORT";
-  if (!previousRelationalOnly || !currentClearsConstraint) return state;
+    || (latest?.failure_sources ?? []).length
+    || latest?.status === "ADVERSE"
+    || latest?.goal_substitution?.narrow_romance_pause === true);
+}
+
+// A broad readiness pause is a current decision constraint, not evidence that an
+// otherwise viable therapeutic mechanism failed. Clear only that relational-only
+// switch after a fresh audited reopening or a genuinely new issue; retain all path
+// failures and the pre-existing narrow persistent-risk state.
+export function preparePathPriorForReadiness(prior, currentDecision, { issueChanged = false } = {}) {
+  if (!prior) return prior;
+  const state = structuredClone(prior);
+  const active = state.active;
+  if (!active?.relational_constraint_only || intrinsicPathFailure(state)) return state;
+  const clears = issueChanged || (currentDecision?.status === "NOT_BLOCKED"
+    && currentDecision.supportProgress !== "NOT_EQUIVALENT_TO_NONROMANTIC_SUPPORT");
+  if (!clears) return state;
   active.switch_pending = false;
+  active.relational_constraint_only = false;
   if (active.status === "STALLED" && active.decision === "SWITCH") {
     active.status = "UNCLEAR";
     active.decision = "PROBE";
   }
   state.readiness_reopened = {
-    from_status: previous.relational_readiness?.status ?? "support_substitution",
-    to_status: currentDecision.status,
+    reason: issueChanged ? "issue_changed" : "fresh_current_readiness",
+    from_status: state.latest?.relational_readiness?.status ?? "support_substitution",
+    to_status: currentDecision?.status ?? "not_applicable_to_new_issue",
     retained_episode_id: active.id,
     retained_path_evidence: true
   };
+  return state;
+}
+
+function readinessEvidenceIds(decision) {
+  const r = decision?.assessment;
+  if (!r) return [];
+  return [...new Set([
+    ...r.stability_observation_ids,
+    ...r.harm_observation_ids,
+    ...r.trajectory_observation_ids,
+    ...r.support_observation_ids,
+    ...r.supports_observation_ids,
+    ...r.risk_signals.flatMap(signal => signal.observation_ids)
+  ])];
+}
+
+// Compose the broader audited readiness decision around the existing Path Performance
+// Controller rather than changing its authoring-semantic implementation. The original
+// narrow five-signal romance-risk rule remains intact and independently protective.
+export function applyRelationalReadinessToPath(control, decision) {
+  if (!control || !decision) return control;
+  const state = structuredClone(control);
+  const t = state.latest;
+  const active = state.active;
+  const baseNarrowPause = Boolean(t.goal_substitution?.romance_pause);
+  const baseDecision = t.decision;
+  const baseStatus = t.status;
+  const baseRoute = t.route;
+  const instrumental = decision.supportProgress === "NOT_EQUIVALENT_TO_NONROMANTIC_SUPPORT";
+  const combinedPause = baseNarrowPause || decision.pauseRomance;
+  const highPriority = ["safety", "external", "protective", "leave"].includes(baseRoute)
+    || baseDecision === "STOP_DEESCALATE" || baseStatus === "ADVERSE";
+  const intrinsicBefore = intrinsicPathFailure(state) || baseNarrowPause
+    || ["SWITCH", "STOP_DEESCALATE", "CLOSE"].includes(baseDecision);
+
+  t.relational_readiness = decision;
+  t.readiness_conflict = baseNarrowPause && decision.status === "NOT_BLOCKED"
+    ? "NARROW_CURRENT_RISK_OVERRIDES_GENERAL_NOT_BLOCKED"
+    : decision.pauseRomance && !baseNarrowPause
+      ? "BROAD_FORESEEABLE_HARM_PAUSE_WITHOUT_NARROW_CONJUNCTION" : null;
+  t.goal_substitution = {
+    ...(t.goal_substitution ?? {}),
+    romance_pause: combinedPause,
+    narrow_romance_pause: baseNarrowPause,
+    instrumental_socializing: Boolean(t.goal_substitution?.instrumental_socializing || instrumental),
+    evidence_ids: [...new Set([...(t.goal_substitution?.evidence_ids ?? []), ...readinessEvidenceIds(decision)])],
+    source_rule_ids: decision.sourceRuleIds
+  };
+
+  if (!highPriority && decision.status === "ASSESS_BEFORE_ROMANCE" && decision.assessment.scope === "romantic_sexual_pursuit"
+      && ["CONTINUE", "PROBE"].includes(baseDecision) && !baseNarrowPause) {
+    t.status = "UNCLEAR";
+    t.decision = "PROBE";
+    t.route = "reconsider";
+    t.reason = "Romantic readiness is unresolved; assess current functioning and foreseeable harm before normalizing or recommending dating.";
+  }
+
+  if (!highPriority && instrumental && decision.assessment.scope === "support_building") {
+    t.status = "STALLED";
+    t.decision = "SWITCH";
+    t.route = "action";
+    t.reason = "Partner-seeking is substituting for the non-romantic support target; preserve any separate friendship gain and choose a genuinely non-romantic support step.";
+  }
+
+  if (!highPriority && decision.pauseRomance) {
+    if (t.status !== "ADVERSE") t.status = "STALLED";
+    t.decision = "SWITCH";
+    t.route = "action";
+    t.reason = "Current foreseeable-harm/readiness evidence requires pausing active romance-seeking while widening non-romantic support.";
+  }
+
+  if (active) {
+    active.status = t.status;
+    active.decision = t.decision;
+    active.switch_pending = ["SWITCH", "STOP_DEESCALATE", "CLOSE"].includes(t.decision);
+    active.relational_constraint_only = Boolean(active.switch_pending && !intrinsicBefore && !baseNarrowPause
+      && (decision.pauseRomance || (instrumental && decision.assessment.scope === "support_building")));
+  }
   return state;
 }
 
@@ -144,30 +228,25 @@ export function relationalReadinessGuidance(decision) {
   ];
 }
 
-export const relationalAdviceSchema = record({
-  romance: choice(["not_addressed", "discuss_without_endorsement", "normalize_or_recommend", "pause"]),
-  support: choice(["not_addressed", "offer_nonromantic", "acknowledge_partial_friendship_gain", "claim_support_progress"]),
-  evidence_quote: text
-});
-
-// This verifies the renderer's declared action semantics and a verbatim grounding
-// quote. It cannot prove that unclaimed prose is safe; semantic review remains separate.
-export function relationalAdviceViolations(advice, decision, answer) {
-  if (!decision) return [];
-  if (!advice || typeof advice !== "object" || Array.isArray(advice)
-      || Object.keys(advice).some(key => !Object.hasOwn(relationalAdviceSchema.properties, key))
-      || !relationalAdviceSchema.properties.romance.enum.includes(advice.romance)
-      || !relationalAdviceSchema.properties.support.enum.includes(advice.support)
-      || typeof advice.evidence_quote !== "string" || advice.evidence_quote.length > 1600) {
-    return ["MISSING_OR_INVALID_RELATIONAL_ADVICE"];
+export function decoratePlanWithRelationalReadiness(plan, control, decision) {
+  if (!decision) return plan;
+  const guidance = relationalReadinessGuidance(decision);
+  const result = structuredClone(plan);
+  result.requiredNuance = [...new Set([...(result.requiredNuance ?? []), ...guidance])];
+  result.forbiddenOverclaims = [...new Set([...(result.forbiddenOverclaims ?? []),
+    "Do not collapse supportive human connection into romantic readiness or treat temporary relational relief as evidence that dating is safe.",
+    "Do not turn a current relational pause into a permanent person-level prohibition, moral judgment, or compulsory breakup."] )];
+  if (result.executionContract) {
+    result.executionContract.taskGuidance = [...new Set([...(result.executionContract.taskGuidance ?? []), ...guidance])];
   }
-  const errors = [];
-  if ((advice.romance !== "not_addressed" || advice.support !== "not_addressed")
-      && (advice.evidence_quote.trim().length < 8 || !answer.includes(advice.evidence_quote.trim()))) {
-    errors.push("UNGROUNDED_RELATIONAL_ADVICE");
+  if (result.pathPerformanceContract) {
+    result.pathPerformanceContract.guidance = [...new Set([...(result.pathPerformanceContract.guidance ?? []), ...guidance])];
   }
-  if (!decision.allowRomanceRecommendation && advice.romance === "normalize_or_recommend") errors.push("ROMANCE_NOT_READY");
-  if (decision.status === "NOT_BLOCKED" && advice.romance === "pause") errors.push("UNSUPPORTED_ROMANCE_PAUSE");
-  if (decision.supportProgress === "NOT_EQUIVALENT_TO_NONROMANTIC_SUPPORT" && advice.support === "claim_support_progress") errors.push("SUPPORT_SUBSTITUTION_NOT_PROGRESS");
-  return errors;
+  if (result.pathPerformance) result.pathPerformance.relational_readiness = decision;
+  if (decision.status === "ASSESS_BEFORE_ROMANCE" && control?.latest?.route === "reconsider") {
+    result.nextQuestion = readinessProbe;
+    result.nextQuestionSource = { type: "relational-readiness", issue: decision.issue };
+    result.questionContract = { mode: "canonical", question: readinessProbe, source: result.nextQuestionSource };
+  }
+  return result;
 }
