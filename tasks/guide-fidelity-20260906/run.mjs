@@ -83,7 +83,7 @@ async function evaluateUnlocked({out,settings=null,live=false,smoke=false,repeat
   const walk=async d=>(await fs.readdir(d,{withFileTypes:true})).flatMap(e=>e.isDirectory()?[]:[path.join(d,e.name)]);
   for(const d of [here,path.join(root,'src/case-formulation')])for(const p of await walk(d))files.push(path.relative(root,p));
   const bindings={};for(const p of [...new Set(files)].sort())bindings[p]=hash(await fs.readFile(path.join(root,p)));
-  const manifest={version:2,scope:'SYNTHETIC_SOURCE_FIDELITY_NOT_CLINICAL_EFFICACY',commit:execFileSync('git',['rev-parse','HEAD'],{cwd:root}).toString().trim(),
+  const manifest={version:2,gradeContractVersion:2,scope:'SYNTHETIC_SOURCE_FIDELITY_NOT_CLINICAL_EFFICACY',commit:execFileSync('git',['rev-parse','HEAD'],{cwd:root}).toString().trim(),
     bindings,sourceSha256:packet.sha256,sourceBindingsSha256:hash(sourceBindings),frozenSuiteSha256:hash(frozenSuite),suiteSha256:hash(suite),controlsSha256:hash(controls),settings:publicSettings(settings),caseIds:cases.map(c=>c.id),arms:ARMS,repeat,
     replay:'Each arm has an independent assistant history; prerecorded user turns are synthetic, not observed client outcomes.',
     contamination:'Development set disclosed during implementation; not held out.',

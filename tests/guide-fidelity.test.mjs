@@ -10,7 +10,7 @@ import {validateSettings,makeOpenRouterProvider} from '../tasks/guide-fidelity-2
 const packet=await loadSourcePacket(root);
 const suite=JSON.parse(await fs.readFile(path.join(root,'tasks/guide-fidelity-20260906/cases.json'),'utf8'));
 const temporary=async t=>{const d=await fs.mkdtemp(path.join(os.tmpdir(),'is-fidelity-'));t.after(()=>fs.rm(d,{recursive:true,force:true}));return d;};
-const grade=(over={})=>({criteria:CRITERIA.map(id=>({id,verdict:'pass',reason:'Synthetic contract fixture, not a semantic judgment',source_ids:['X'],answer_quote:'One useful response.'})),source_conflict:false,source_conflict_reason:'',...over});
+const grade=(over={})=>({criteria:CRITERIA.map(id=>({id,applicable:true,verdict:'pass',reason:'Synthetic contract fixture, not a semantic judgment',source_ids:['X'],answer_quote:'One useful response.'})),source_conflict:false,source_conflict_reason:'',...over});
 
 test('fidelity suite cites actual source spans, not graph recommendation IDs',()=>{
  assert.equal(suite.cases.length,12);assert.equal(suite.cases.reduce((n,c)=>n+c.turns.length,0),23);
@@ -36,6 +36,25 @@ test('independent disagreement or missing grades cannot become a pass',()=>{
  assert.equal(combineGrades([{verdict:'pass'}]).verdict,'ungraded');
  assert.equal(combineGrades([{verdict:'pass'},{verdict:'revise'}]).verdict,'review_required');
  assert.equal(combineGrades([{verdict:'pass'},{verdict:'block'}]).verdict,'block');
+});
+test('inapplicable judgments need an explicit explanation but no invented citation',()=>{
+ const context={answer:'One useful response.',sources:[{id:'X'}]};
+ const g=grade();
+ const criterion=g.criteria.find(c=>c.id==='founder_independence');
+ Object.assign(criterion,{applicable:false,reason:'No founder authority is invoked in this scene.',source_ids:[]});
+ assert.equal(validateGrade(g,context).verdict,'pass');
+ g.criteria.find(c=>c.id==='current_task_fit').verdict='block';
+ assert.equal(validateGrade(g,context).verdict,'block','An inapplicable criterion cannot erase another criterion’s blocker');
+ criterion.applicable=true;
+ assert.throws(()=>validateGrade(g,context),/requires source evidence/);
+ criterion.applicable=false;criterion.verdict='block';
+ assert.throws(()=>validateGrade(g,context),/Inapplicable criterion/);
+ criterion.verdict='pass';criterion.source_ids=['invented'];
+ assert.throws(()=>validateGrade(g,context),/unavailable source/);
+ criterion.source_ids=[];criterion.reason='';
+ assert.throws(()=>validateGrade(g,context),/Incomplete/);
+ criterion.reason='No founder authority is invoked.';delete criterion.applicable;
+ assert.throws(()=>validateGrade(g,context),/applicability/);
 });
 test('preflight with no credential performs zero network calls and returns blocked, not a score',async t=>{
  let calls=0;const out=await temporary(t);
@@ -95,7 +114,7 @@ test('entire three-condition smoke and replay execute through fake transport onl
   if(system.startsWith('You independently review')){
    const packet=JSON.parse(user),control=controls.controls.find(c=>c.response===packet.candidate_response);
    const verdict=control?.expect==='reject'?'revise':'pass';
-   text=JSON.stringify({criteria:CRITERIA.map(id=>({id,verdict,reason:'Deterministic fake transport fixture only; not a semantic grade.',source_ids:[packet.source_material[0].id],answer_quote:packet.candidate_response})),source_conflict:false,source_conflict_reason:''});
+   text=JSON.stringify({criteria:CRITERIA.map(id=>({id,applicable:true,verdict,reason:'Deterministic fake transport fixture only; not a semantic grade.',source_ids:[packet.source_material[0].id],answer_quote:packet.candidate_response})),source_conflict:false,source_conflict_reason:''});
   }else if(system.includes('case-formulation extractor')){
    text=JSON.stringify({user_goal:'Fixture planning',current_issue:'transport test',turn_task:null,direct_observations:[],variables:{...blankCaseVariables(),present_safety:'safe',orientation:'oriented',ability_to_stop:'yes',ability_to_return:'yes',suicidal_state:'absent',altered_state:'sober',dissociation:'none',activation:'low',actionable_problem:'present',current_intent:'conversation'},hypotheses:[],unknowns:[]});
   }else if(system.includes('response realizer')){

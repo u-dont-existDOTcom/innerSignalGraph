@@ -1508,7 +1508,7 @@ test("hosted wrapper rejects absent or invalid audit results and preserves valid
         }
       }),
       (error) => {
-        assert.equal(error.code, 2, fixture.name);
+        assert.equal(error.code, 2, `${fixture.name}: ${error.stderr}`);
         assert.equal(error.stdout, "", fixture.name);
         assert.match(error.stderr, /invalid-hosted-audit-result/, fixture.name);
         return true;
@@ -1568,7 +1568,7 @@ test("hosted wrapper rejects absent or invalid audit results and preserves valid
         }),
         (error) => {
           assert.equal(error.code, fixture.exitCode);
-          assert.equal(error.stdout, expected);
+          assert.equal(error.stdout, expected, `child exit ${error.code}: ${error.stderr}`);
           assert.equal(error.stderr, "");
           return true;
         }

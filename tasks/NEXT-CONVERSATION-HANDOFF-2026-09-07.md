@@ -6,9 +6,9 @@ Use this packet to resume without relying on chat memory. **First read the curre
 
 The next bounded content task below is now complete. The full owner article was recovered from message `a56688c2-1f9b-4692-8ac4-1ab007347897` in conversation `6a9b75e2-15c4-83ea-9232-4b1b33e58a37`. Original: `guides/snapshots/inner-child-guide-owner-2026-09-06.txt`; revised active source: `guides/inner-child-guide-2026-09-07.txt`. All E01-E12 were applied exactly and independently checked, with zero unrelated changes.
 
-Read `tasks/guide-source-sync-20260907/SOURCE-SYNC.json` and `FIDELITY-SOURCE-PIN.json` in that directory. Runtime and fidelity readers now follow the manifest; stale file/span hashes are rejected. The old article, original cases/evidence and packet archives remain unchanged. Current complete package: **729/729 tests, 29/29 graph regressions**, 53 nodes, 70 edges, **89 source sections**, 26 amendments, **301 generated files**.
+Read `tasks/guide-source-sync-20260907/SOURCE-SYNC.json` and `FIDELITY-SOURCE-PIN.json` in that directory. Runtime and fidelity readers now follow the manifest; stale file/span hashes are rejected. The old article, original cases/evidence and packet archives remain unchanged. Current complete package: **730/730 tests, 29/29 graph regressions**, 53 nodes, 70 edges, **89 source sections**, 26 amendments, **301 generated files**.
 
-**Next:** run the calibrated authenticated smoke against this revised source with `tasks/guide-source-sync-20260907/SMOKE-CONFIG.json`, then inspect its actual terminal status before continuing. Existing credential acceptance and direct OpenAI catalog endpoints were verified. Generation identity probes and independent semantic grades are still required. The historical missing-source step and absence-of-local-configuration claims below are superseded; source synchronization must not be repeated. Keep draft PR #46 on the same branch.
+**Next:** run the calibrated authenticated smoke against this revised source with `tasks/guide-source-sync-20260907/SMOKE-CONFIG.json`, then inspect its actual terminal status before continuing. All three generation identity probes passed. The first calibration stopped after four completed calls on an applicability/citation interface mismatch; no bot response or admitted semantic grade exists. See `tasks/guide-source-sync-20260907/evidence/smoke-attempt-1/FAILURE-RECEIPT.json`. The narrow grader-contract repair requires a fresh calibration run with 116 calls remaining within the original 120-call aggregate cap. The historical missing-source step and absence-of-local-configuration claims below are superseded; source synchronization must not be repeated. Keep draft PR #46 on the same branch.
 
 ## Repository / active work
 
@@ -24,7 +24,7 @@ Baseline immediately before this handoff file was created: `3d0d85c7771a6d2765aa
 
 The owner is trying to **ship an InnerSignal app**, not continue indefinite literature expansion. The current priority is source synchronization -> behavioral fidelity testing -> runtime/plugin implementation. Do not reopen broad modality research unless an actual test failure exposes a missing concept.
 
-## Current therapy-map state
+## Historical therapy-map implementation baseline
 
 The R1-R6 literature/map reconciliation has been implemented and deterministically verified.
 
@@ -108,11 +108,11 @@ The adopted edits are:
 - E11 bound repeated forgiveness inquiry without changing its aim;
 - E12 concise Related Clinical Work attribution note.
 
-### Source synchronization problem
+### Historical source synchronization problem — resolved above
 
 `guides/inner-child-guide.txt` is an **older repository snapshot** and differs materially from the complete current article pasted by the owner before adopting E01-E12. Do not partially patch that stale file and call it the current guide.
 
-**Next bounded content task:** obtain/reconstruct the complete current guide text from the owner-provided current version, apply E01-E12 exactly, save it as a **new versioned guide source snapshot**, update `guides/manifest.json` / SHA / version / source layout as required, preserve the older source snapshot and frozen evaluation evidence, regenerate only outputs that truly derive from guide-source hashes, and run deterministic gates.
+**Completed bounded content task:** obtain/reconstruct the complete current guide text from the owner-provided current version, apply E01-E12 exactly, save it as a **new versioned guide source snapshot**, update `guides/manifest.json` / SHA / version / source layout as required, preserve the older source snapshot and frozen evaluation evidence, regenerate only outputs that truly derive from guide-source hashes, and run deterministic gates.
 
 If the full current article is not accessible in the next conversation, do not guess missing sections. Ask for or retrieve the exact current source before source synchronization.
 
@@ -155,9 +155,9 @@ Two independent grader identities must calibrate first against deliberate good/b
 
 **source gap -> extraction loss -> routing/representation failure -> delivery/context loss -> realization failure -> enforcement failure.**
 
-### LIVE STATUS
+### Historical live status before the 2026-09-07 continuation
 
-Latest recorded real preflight: **BLOCKED_CONFIGURATION**.
+The original recorded preflight was **BLOCKED_CONFIGURATION**. The latest continuation section above supersedes these counts.
 
 - 0 live model calls
 - 0 real responder outputs
@@ -213,4 +213,4 @@ Start by checking PR #46’s current head and reading:
 5. `tasks/guide-fidelity-20260906/PROTOCOL.md`;
 6. `docs/research/THERAPEUTIC-SOURCES.md`.
 
-Then **synchronize the complete current guide source with the already-adopted E01-E12 edits**. Do not redo the literature review. After deterministic verification, move directly to the authenticated fidelity smoke.
+Source synchronization and the exact E01-E12 preservation audit are complete. Read the latest continuation and source-sync evidence first, then continue the calibrated authenticated fidelity smoke from its actual terminal status. Do not repeat the source synchronization or literature review.

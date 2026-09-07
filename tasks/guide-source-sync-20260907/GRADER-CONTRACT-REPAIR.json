@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "status": "DETERMINISTICALLY_VERIFIED_FRESH_CALIBRATION_REQUIRED",
+  "sourceSyncCommit": "ee48377b47b130de1f892882bd1522d955173fb2",
+  "change": "Explicit required applicability field aligns prompt, JSON schema and validator. Applicable judgments still require valid source evidence; an inapplicable criterion must be an explained pass. Supplied IDs and exact quotes remain checked; an independent blocker survives.",
+  "gradeContractVersion": 2,
+  "oldRawOutputRepaired": false,
+  "controlsRelabeled": false,
+  "sourceOrCaseEdits": false,
+  "independentReview": "PASS: source-reader reviewer checked applicability, evidence, invalid/missing applicability and blocker preservation; semantic applicability still requires calibrated review.",
+  "verification": {
+    "node": "24.18.0",
+    "focusedTests": 13,
+    "fullTests": 730,
+    "graphRegressions": 29,
+    "fullPackage": "PASS",
+    "fullPackageLogSha256": "5f3d0867470927905503f9426550d95af8ab05fef30e04af198bcd4a60fce820",
+    "intermittentExistingTest": "An initial full run had one publication-audit wrapper failure; an isolated run also failed on a different fixture. Added failure-message diagnostics only. Six subsequent isolated runs and the full package passed. Root cause is not established; no production audit behavior or test expectation changed."
+  },
+  "files": {
+    "tasks/guide-fidelity-20260906/judging.mjs": "391154f4fde8bb81d7f4ba7e5569af06ac00d27fc48571003675ab6c141eb5e8",
+    "tasks/guide-fidelity-20260906/run.mjs": "92a86ca9ebf44b6185591e1cb82ebc35c41dea9e4d8e2f77b408465375e61a33",
+    "tests/guide-fidelity.test.mjs": "43ba6bd46c7dc38ed8a5ae39f6aa6034d0e351d13e4506fdc654ede14f410076"
+  },
+  "budget": {
+    "originalAggregateCalls": 120,
+    "usedBeforeFreshCalibration": 4,
+    "freshRunCap": 116,
+    "maxTokensPerCall": 16384
+  },
+  "next": "Run fresh calibration in a new directory at the committed repaired head. Keep the first run immutable and unscored. Stop on another interface validation mismatch for review."
+}

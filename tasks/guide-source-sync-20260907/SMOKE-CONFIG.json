@@ -25,6 +25,6 @@
       "api_key_env": "OPENROUTER_API_KEY"
     }
   ],
-  "max_calls": 120,
+  "max_calls": 116,
   "acknowledge_provider_retention": true
 }

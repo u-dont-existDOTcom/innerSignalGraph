@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "status": "READY_FOR_LIVE_PROBES",
+  "reasons": [],
+  "sourceSha256": "5d724a5c1d0158769cc577d065caca75b36da0e6ce76deb23add05b71db1efcf",
+  "sourceCharacters": 125967,
+  "sourceTruncated": false,
+  "scenarios": 4,
+  "userTurns": 7,
+  "arms": [
+    "normal_bot",
+    "guide_reference",
+    "source_augmented"
+  ],
+  "repeat": 1,
+  "liveCalls": 0,
+  "responderOutputs": 0,
+  "independentGrades": 0,
+  "clinicalEvaluation": false,
+  "note": "No response-quality result exists until real calls and independent source-grounded grades complete. No fallback model is selected."
+}
