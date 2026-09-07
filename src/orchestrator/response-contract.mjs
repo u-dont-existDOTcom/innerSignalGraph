@@ -32,6 +32,27 @@ function stripFinalQuestionSentence(paragraph) {
   return { text: kept, removed };
 }
 
+function relationalPolicyMarkers(plan = {}) {
+  const trace = plan.pathPerformance ?? {};
+  const readiness = trace.relational_readiness;
+  const required = [];
+  const forbidden = [];
+  if (readiness?.status === "PAUSE_ROMANCE" || trace.goal_substitution?.romance_pause) {
+    required.push("POLICY.RELATIONAL_PAUSE");
+    forbidden.push("POLICY.RELATIONAL_NOT_BLOCKED");
+  } else if (readiness?.status === "ASSESS_BEFORE_ROMANCE") {
+    required.push("POLICY.RELATIONAL_ASSESS");
+    forbidden.push("POLICY.RELATIONAL_PAUSE", "POLICY.RELATIONAL_NOT_BLOCKED");
+  } else if (readiness?.status === "NOT_BLOCKED") {
+    required.push("POLICY.RELATIONAL_NOT_BLOCKED");
+    forbidden.push("POLICY.RELATIONAL_PAUSE");
+  }
+  if (trace.goal_substitution?.instrumental_socializing
+      || readiness?.supportProgress === "NOT_EQUIVALENT_TO_NONROMANTIC_SUPPORT") {
+    required.push("POLICY.NONROMANTIC_SUPPORT_TARGET");
+  }
+  return { required: [...new Set(required)], forbidden: [...new Set(forbidden)] };
+}
 
 export function requiredRealizationNodeIds(plan = {}) {
   if (plan.executionContract?.version === 1) {
@@ -94,8 +115,12 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const missingNodeIds = requiredNodeIds.filter((id) => !realizedNodeIds.includes(id));
   const pathContract = plan?.pathPerformanceContract;
   const prohibitedNodeIds = pathContract?.prohibit_prior_exercise
-    ? reportedRealizations.map(item => text(item?.id)).filter(id => id && !requiredNodeIds.includes(id)) : [];
-  const pathAdherence = !pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0);
+    ? reportedRealizations.map(item => text(item?.id)).filter(id => id && !id.startsWith("POLICY.") && !requiredNodeIds.includes(id)) : [];
+  const relational = relationalPolicyMarkers(plan);
+  const missingRelationalPolicyMarkers = relational.required.filter(id => !realizedNodeIds.includes(id));
+  const forbiddenRelationalPolicyMarkers = relational.forbidden.filter(id => realizedNodeIds.includes(id));
+  const pathAdherence = (!pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0))
+    && missingRelationalPolicyMarkers.length === 0 && forbiddenRelationalPolicyMarkers.length === 0;
 
   return {
     answer: userFacingAnswer,
@@ -113,8 +138,14 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
       rejectedRealizations,
       missingRealizationNodeIds: missingNodeIds,
       realizationCoveragePassed: missingNodeIds.length === 0,
-      ...(pathContract ? { pathPerformanceAdherencePassed: pathAdherence, prohibitedRealizationNodeIds: [...new Set(prohibitedNodeIds)],
-        semanticAdherence: "REQUIRES_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW" } : {})
+      relationalPolicyMarkersRequired: relational.required,
+      missingRelationalPolicyMarkers,
+      forbiddenRelationalPolicyMarkers,
+      ...(pathContract || relational.required.length || relational.forbidden.length ? {
+        pathPerformanceAdherencePassed: pathAdherence,
+        prohibitedRealizationNodeIds: [...new Set(prohibitedNodeIds)],
+        semanticAdherence: "DECLARED_POLICY_MARKERS_ARE_VERBATIM_GROUNDED_BUT_REQUIRE_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW"
+      } : {})
     }
   };
 }
