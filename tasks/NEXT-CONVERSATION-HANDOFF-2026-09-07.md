@@ -27,6 +27,10 @@ The support-capability audit's lessons (10) and (11) require distinguishing huma
 
 This delta records verification/integration requirements only. It does not authorize merging PR #47, duplicating its readiness policy, choosing a web-search/external-support router, adding discovery services or a fresh-ChatGPT handoff, deployment, stable promotion, or expanded live-call spending. Keep the originating chat's research/architecture decision separate.
 
+### External-support research candidate — documentation only
+
+The separate 2026-09-07 owner request authorizes the [external-support routing candidate note](../docs/research/2026-09-07-external-support-routing-candidate.md), initially prepared against PR #46 head `16c5f94d59388eb29db902d6bcd1527196b426f4` and refreshed onto `39fd233f31970dc3892e86a18212f541b0b1ab40` after inspecting its authoring-fingerprint delta. It preserves semantic need/intensity decisions inside InnerSignal, proposes pluggable privacy-minimized discovery, records the established-work scan and COMPOSE/ADAPT disposition, and treats external GPT as a fallback. It is an owner-discussion candidate, not selected runtime architecture or approved policy. PR #47 was re-fetched read-only at `989a889dc3c7974144bda9a73137f9f2c6846023`; the readiness composition gap above remains. No implementation, duplicate controller, merge, deployment or stable change follows from this note. Its verification/remaining boundary is recorded in the note.
+
 ## Latest continuation — source synchronization completed
 
 The next bounded content task below is now complete. The full owner article was recovered from message `a56688c2-1f9b-4692-8ac4-1ab007347897` in conversation `6a9b75e2-15c4-83ea-9232-4b1b33e58a37`. Original: `guides/snapshots/inner-child-guide-owner-2026-09-06.txt`; revised active source: `guides/inner-child-guide-2026-09-07.txt`. All E01-E12 were applied exactly and independently checked, with zero unrelated changes.

@@ -2,6 +2,10 @@
 
 Updated: 2026-09-07
 
+## Parallel external-support research candidate — documentation only
+
+The owner-requested [candidate architecture/research note](../docs/research/2026-09-07-external-support-routing-candidate.md) preserves its initial PR #46 baseline and is refreshed onto fetched head `39fd233f31970dc3892e86a18212f541b0b1ab40`. It records the independent semantic-need/discovery split, established-work scan, COMPOSE/ADAPT proposal, privacy-minimized fallback and closed-loop access questions. It does not select approved policy, implement discovery, duplicate path-performance/readiness work, change the active implementation frontier or complete live evaluation. PR #47 remains separate. Resume owner discussion from the note; implementation, merge, deployment and stable promotion are not authorized by it.
+
 ## Current owner-authorized PR #46 path-performance implementation
 
 The 2026-09-07 owner request authorizes the dynamic therapeutic strategy controller on `companion/foundations-2026-09-05`, draft PR #46. It supersedes the map/fidelity next-action routing for this bounded implementation only; independent DEV-R005 authority and the completed guide-source synchronization below remain intact.
