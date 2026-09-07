@@ -1,6 +1,7 @@
 import { pathUpdateSchema } from "./path-performance.mjs";
 import { turnTaskSchema } from "./turn-task.mjs";
 import { relationalReadinessSchema } from "./relational-readiness.mjs";
+import { romanceGuideContextSchema } from "./romance-guide.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 
 const observationSchema = {
@@ -27,6 +28,7 @@ export const caseSnapshotSchema = {
     turn_task: turnTaskSchema,
     path_update: pathUpdateSchema,
     relational_readiness: relationalReadinessSchema,
+    romance_guide_context: romanceGuideContextSchema,
     direct_observations: { type: "array", items: observationSchema },
     variables: {
       type: "object",
@@ -71,7 +73,7 @@ export const caseSnapshotSchema = {
 // Provider generation requires all properties declared, with null for optional
 // semantics. The historical runtime validator still accepts omitted delivery_review.
 export const caseSnapshotGenerationSchema = structuredClone(caseSnapshotSchema);
-caseSnapshotGenerationSchema.required.push("relational_readiness");
+caseSnapshotGenerationSchema.required.push("relational_readiness", "romance_guide_context");
 caseSnapshotGenerationSchema.properties.path_update.anyOf[1].required.push("delivery_review");
 
 export const caseAuditSchema = {
@@ -82,6 +84,8 @@ export const caseAuditSchema = {
     invalidate_turn_task: { type: "boolean" },
     corrected_relational_readiness: relationalReadinessSchema,
     invalidate_relational_readiness: { type: "boolean" },
+    corrected_romance_guide_context: romanceGuideContextSchema,
+    invalidate_romance_guide_context: { type: "boolean" },
     remove_observation_ids: { type: "array", items: { type: "string" } },
     remove_hypothesis_ids: { type: "array", items: { type: "string" } },
     variable_corrections: {
@@ -119,4 +123,9 @@ export const caseAuditSchema = {
 
 // Keep historical audit omission compatibility while requiring explicit provider output.
 export const caseAuditGenerationSchema = structuredClone(caseAuditSchema);
-caseAuditGenerationSchema.required.push("corrected_relational_readiness", "invalidate_relational_readiness");
+caseAuditGenerationSchema.required.push(
+  "corrected_relational_readiness",
+  "invalidate_relational_readiness",
+  "corrected_romance_guide_context",
+  "invalidate_romance_guide_context"
+);

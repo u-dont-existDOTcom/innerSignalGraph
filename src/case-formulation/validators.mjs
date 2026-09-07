@@ -1,6 +1,7 @@
 import { validatePathUpdate } from "./path-performance.mjs";
 import { validateTurnTask } from "./turn-task.mjs";
 import { validateRelationalEvidence } from "./relational-readiness.mjs";
+import { validateRomanceGuideContext } from "./romance-guide.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
@@ -32,6 +33,9 @@ export function validateCaseSnapshot(value) {
   if (Object.hasOwn(value, "relational_readiness")) {
     value.relational_readiness = validateRelationalEvidence(value.relational_readiness, { issue: value.current_issue, observationIds }, message => { throw new ValidationError(message); });
   }
+  if (Object.hasOwn(value, "romance_guide_context")) {
+    value.romance_guide_context = validateRomanceGuideContext(value.romance_guide_context, { issue: value.current_issue, observationIds }, message => { throw new ValidationError(message); });
+  }
   value.variables = validateCaseVariables(value.variables);
   if (!Array.isArray(value.hypotheses)) throw new ValidationError("caseSnapshot.hypotheses must be an array.");
   const hypothesisIds = new Set();
@@ -59,6 +63,8 @@ export function validateCaseAudit(value) {
   if (value.invalidate_turn_task != null && typeof value.invalidate_turn_task !== "boolean") throw new ValidationError("invalidate_turn_task must be boolean.");
   if (Object.hasOwn(value, "corrected_relational_readiness") && value.corrected_relational_readiness !== null) object(value.corrected_relational_readiness, "caseAudit.corrected_relational_readiness");
   if (value.invalidate_relational_readiness != null && typeof value.invalidate_relational_readiness !== "boolean") throw new ValidationError("invalidate_relational_readiness must be boolean.");
+  if (Object.hasOwn(value, "corrected_romance_guide_context") && value.corrected_romance_guide_context !== null) object(value.corrected_romance_guide_context, "caseAudit.corrected_romance_guide_context");
+  if (value.invalidate_romance_guide_context != null && typeof value.invalidate_romance_guide_context !== "boolean") throw new ValidationError("invalidate_romance_guide_context must be boolean.");
   stringArray(value.remove_observation_ids, "caseAudit.remove_observation_ids");
   stringArray(value.remove_hypothesis_ids, "caseAudit.remove_hypothesis_ids");
   if (!Array.isArray(value.variable_corrections)) throw new ValidationError("caseAudit.variable_corrections must be an array.");

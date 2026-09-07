@@ -2,6 +2,16 @@
 
 Updated: 2026-09-07
 
+## Current owner-authorized romance-guide runtime integration (PR #46)
+
+The latest 2026-09-07 owner directive finishes the previously source-only romance supplement at the actual candidate boundary. Resume from `tasks/romance-guide-20260907/INTEGRATION.md`, `tasks/romance-guide-20260907/README.md`, and `docs/superpowers/specs/2026-09-07-romance-guide-integration.md`. Work began from freshly fetched `e5968cecccf8eb5efd15d94804129067290fdace` and was reconciled onto refreshed descendant `e4427d175e06ad8aa313b9cfa4a340379d3e9590`; fetch draft PR #46 again before new work because the branch may advance.
+
+- The Path Performance Controller and broader relational-readiness gate were both already committed at the fetched head. Preserve them; they were verified rather than recreated. Earlier text below saying readiness was absent or the romance adapter was not wired is historical and superseded.
+- `src/case-formulation/romance-guide.mjs` now provides the owner-authorized ordinary candidate seam. Extraction emits one issue/evidence-bound context or null; non-null context forces reviewed audit; audit correction, invalidation, and evidence withdrawal are explicit.
+- Planning composes the selected publication-safe RG rules and ordinary-life progress checks into the existing path contract. Trace is explicit: source/rule and excerpt hash -> observed case variables -> readiness/path judgment -> route/switch -> realization/link constraint. Coercion routes outward before inward or mutual processing.
+- The owner verified `https://romance.u-dont-exist.com` as the working canonical optional reference. It may be mentioned briefly only for a relevant topic when curiosity/request or an outside-current-task boundary is evidenced. It is not a footer and is suppressed for immediate safety/stabilization, a current romance pause, medical/unsafe-practice help, audience/decline/repetition/completion boundaries, and irrelevant turns. Response enforcement blocks unauthorized mentions.
+- Synthetic deterministic tests only. No private client history or uploaded PDF was added; frozen fidelity cases/pins are unchanged; no paid calls or new semantic grades were used. No merge, deploy, install, stable promotion, or clinical-efficacy claim.
+
 ## Current owner-authorized delivery-system trust lesson (PR #46)
 
 The 2026-09-07 direct owner lesson separately authorizes method-value vs provider/business/supervision trust. This candidate composes `src/case-formulation/delivery-system-assessment.mjs` with the existing Path Performance Controller and the completed task-local external-support contract; it does not duplicate or activate a new navigator. Read `docs/superpowers/specs/2026-09-07-delivery-system-assessment.md` and sole task ledger `tasks/delivery-trust-20260907/INTEGRATION.md` for scope, requirements, evidence and recovery.
@@ -34,9 +44,9 @@ The 2026-09-07 owner request authorizes the dynamic therapeutic strategy control
 
 Next safe action after deterministic closeout: review the candidate's actual model behavior on the additive path-performance cases using the existing fidelity evaluation architecture and explicit current model/source/budget pins. The older smoke evidence remains unadmitted history; do not claim that this implementation ran or passed that live gate.
 
-## Parallel romance-guide source integration (2026-09-07)
+## Historical romance-guide source-only checkpoint (superseded)
 
-The owner-authorized selective romance guide integration is preserved in `tasks/romance-guide-20260907/README.md` and `docs/superpowers/specs/2026-09-07-romance-guide-integration.md`. The candidate binds 20 exact PDF excerpts to 12 scoped principles and an explicit-opt-in case-plan-v5 context adapter, with 29 focused deterministic tests. It is not installed or wired into ordinary responses, is not clinical validation, and does not complete the independently handed-off path-performance/readiness controller. The registered optional guide URL still needs live reachability verification. No private client history was saved. Resume this bounded supplement through its README; preserve the separate pinned fidelity campaign and all DEV-R005 boundaries below. Full current-head hosted checks remain evidence to inspect, not a success inferred from the local Node 22 subset.
+The initial source-only checkpoint bound 20 exact PDF excerpts to 12 scoped principles before ordinary runtime composition. Its old not-wired and unverified-link conclusions are superseded by the current runtime-integration section above: the owner has verified the canonical URL and the candidate now composes through extraction, reviewed audit, planning, path guidance, realization, and response enforcement. The source/privacy/fidelity/release limits remain in force.
 
 ## Parallel approved map/fidelity task (2026-09-06)
 

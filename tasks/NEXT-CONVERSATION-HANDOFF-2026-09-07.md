@@ -2,6 +2,16 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Current continuation — romance guide is behaviorally integrated
+
+The latest owner-authorized candidate integration began from freshly fetched PR #46 head `e5968cecccf8eb5efd15d94804129067290fdace` and was reconciled onto refreshed descendant `e4427d175e06ad8aa313b9cfa4a340379d3e9590`. Read [the sole integration receipt](romance-guide-20260907/INTEGRATION.md), [resume file](romance-guide-20260907/README.md), and [design](../docs/superpowers/specs/2026-09-07-romance-guide-integration.md). Fetch the draft head again before editing.
+
+Both the Path Performance Controller and broader relational-readiness gate were already committed at the fetched head. The remaining gap was real: `tasks/romance-guide-20260907/context.mjs` was test-local and did not reach ordinary candidate extraction/planning/realization. `src/case-formulation/romance-guide.mjs` now closes that gap through one evidence-bound, reviewed selector and the existing controller. It records source/rule/excerpt identity, case observations, readiness/path judgment, route/switch, ordinary-life progress checks, and realization/reference policy. Coercion routes outward before inward or mutual exercises; medical/unsafe-practice questions retain the appropriate immediate route without guide content.
+
+The owner verified `https://romance.u-dont-exist.com` as the working canonical optional URL. A brief pointer is allowed only when romance is materially relevant and either the user is curious/requests more or deeper exploration is outside the current task. It is not an automatic footer. Safety/stabilization/current pause/medical or unsafe practice/irrelevance/decline/repetition/completion/audience boundaries suppress it, and the response contract rejects unauthorized mentions or ungrounded markers.
+
+All new regression data is synthetic. The uploaded PDF and private client material remain outside the repo; the existing publication-safe excerpt identities remain. Frozen fidelity cases/pins are untouched, and no paid model calls or semantic grades were spent. Keep PR #46 draft. Do not merge, deploy, install, promote stable, or claim clinical efficacy. Historical statements later in this file saying the readiness module was absent, the controllers were uncomposed, the guide URL was unverified, or the supplement was not wired are superseded by this section and the current receipt.
+
 ## Current continuation — separate method value and delivery trust
 
 The owner-authorized delivery-system lesson is implemented in the shared assessor and composed with the Path Performance Controller and the external-support/program audit. Resume from [its sole integration ledger](delivery-trust-20260907/INTEGRATION.md), [specification](../docs/superpowers/specs/2026-09-07-delivery-system-assessment.md) and [exact delta manifest](delivery-trust-20260907/CHANGED-PATHS.txt). The final immutable head and hosted verification are in the PR receipt. Useful partial method benefit can coexist with unsafe delivery, premium safety-paywall concerns, provider switching and a strong staged-purchase requirement. No motive or clinical-efficacy inference is licensed.

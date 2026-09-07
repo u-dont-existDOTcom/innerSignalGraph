@@ -47,7 +47,8 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
         type: "realization-coverage-retry",
         missingNodeIds: enforced.responseContract.missingRealizationNodeIds,
         prohibitedNodeIds: enforced.responseContract.prohibitedRealizationNodeIds ?? [],
-        instruction: "Rewrite the response so every missing selected intervention is materially realized and prohibited interventions are removed. Follow the path-performance switch/stop decision; do not paraphrase the old exercise. Preserve the canonical question and all prior epistemic constraints."
+        romanceGuideReferenceDecision: enforced.responseContract.romanceGuideReferenceDecision ?? null,
+        instruction: "Rewrite the response so every missing selected intervention is materially realized and prohibited interventions are removed. Follow the path-performance switch/stop decision and deterministic romance-guide reference decision; do not paraphrase the old exercise or add an unauthorized link. Preserve the canonical question and all prior epistemic constraints."
       }
     };
     rawResult = await structuredCall(
@@ -66,7 +67,7 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
   }
 
   if (enforced.responseContract.pathPerformanceAdherencePassed === false) {
-    throw new RuntimeError("The response did not satisfy the path switch/stop contract.", { code: "PATH_PERFORMANCE_REALIZATION_BLOCKED" });
+    throw new RuntimeError("The response did not satisfy the candidate path, readiness, or romance-reference realization contract.", { code: "PATH_PERFORMANCE_REALIZATION_BLOCKED" });
   }
   const episode = context.caseFormulation?.path_performance?.active;
   const contract = context.interventionContract;

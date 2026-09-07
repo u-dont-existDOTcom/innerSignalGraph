@@ -8,6 +8,11 @@ import {
   decoratePlanWithRelationalReadiness,
   validateRelationalEvidence
 } from "./relational-readiness.mjs";
+import {
+  applyRomanceGuideRouteConstraint,
+  composeRomanceGuidePlan,
+  validateRomanceGuideContext
+} from "./romance-guide.mjs";
 import { deriveCaseVariables } from "../guide-graph/planner.mjs";
 import { validateTurnTask, reconcileIssueScope, immediateProtectionNeeded } from "./turn-task.mjs";
 import { parseModelJson } from "../core/json.mjs";
@@ -15,7 +20,12 @@ import { caseSnapshotGenerationSchema, caseAuditGenerationSchema } from "./schem
 import { validateCaseSnapshot, validateCaseAudit } from "./validators.mjs";
 import { caseExtractionPrompt } from "../prompts/case-extract.mjs";
 import { caseAuditPrompt } from "../prompts/case-audit.mjs";
-import { relationalReadinessExtractionRules, relationalReadinessAuditRules } from "../prompts/relational-readiness.mjs";
+import {
+  relationalReadinessExtractionRules,
+  relationalReadinessAuditRules,
+  romanceGuideContextExtractionRules,
+  romanceGuideContextAuditRules
+} from "../prompts/relational-readiness.mjs";
 import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
 import { planFromGraphs } from "../guide-graph/planner.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
@@ -45,6 +55,15 @@ function readinessObservationIds(readiness) {
     ...readiness.support_observation_ids,
     ...readiness.supports_observation_ids,
     ...readiness.risk_signals.flatMap(signal => signal.observation_ids)
+  ])];
+}
+
+function romanceGuideObservationIds(context) {
+  if (!context) return [];
+  return [...new Set([
+    ...context.observation_ids,
+    ...context.audience_observation_ids,
+    ...context.interest_observation_ids
   ])];
 }
 
@@ -106,6 +125,19 @@ export function applyCaseAudit(snapshot, audit) {
     readiness = validateRelationalEvidence(readiness, { issue: snapshot.current_issue, observationIds: remainingIds }, message => { throw new ValidationError(message); });
   }
   const readinessWasTracked = Object.hasOwn(snapshot, "relational_readiness") || correctedProvided || audit.invalidate_relational_readiness === true;
+  const originalRomanceContext = snapshot.romance_guide_context ?? null;
+  const originalRomanceContextWithdrawn = romanceGuideObservationIds(originalRomanceContext).some(id => removeObservations.has(id));
+  const correctedRomanceContextProvided = audit.corrected_romance_guide_context != null;
+  let romanceGuideContext = correctedRomanceContextProvided ? audit.corrected_romance_guide_context : originalRomanceContext;
+  if (audit.invalidate_romance_guide_context === true || (!correctedRomanceContextProvided && originalRomanceContextWithdrawn)) romanceGuideContext = null;
+  if (romanceGuideContext) {
+    romanceGuideContext = validateRomanceGuideContext(romanceGuideContext, {
+      issue: snapshot.current_issue,
+      observationIds: remainingIds
+    }, message => { throw new ValidationError(message); });
+  }
+  const romanceContextWasTracked = Object.hasOwn(snapshot, "romance_guide_context")
+    || correctedRomanceContextProvided || audit.invalidate_romance_guide_context === true;
 
   return {
     ...snapshot,
@@ -117,6 +149,7 @@ export function applyCaseAudit(snapshot, audit) {
       observationIds: remainingIds
     }) } : {}),
     ...(readinessWasTracked ? { relational_readiness: readiness } : {}),
+    ...(romanceContextWasTracked ? { romance_guide_context: romanceGuideContext } : {}),
     hypotheses: snapshot.hypotheses.filter((item) => !removeHypotheses.has(item.id)),
     variables: validateCaseVariables(variables),
     unknowns: [...snapshot.unknowns, ...audit.add_unknowns],
@@ -125,12 +158,17 @@ export function applyCaseAudit(snapshot, audit) {
       summary: audit.summary,
       safety_flags: audit.safety_flags,
       variable_corrections: audit.variable_corrections,
-      ...(readinessWasTracked ? { relational_readiness_reviewed: true } : {})
+      ...(readinessWasTracked ? { relational_readiness_reviewed: true } : {}),
+      ...(romanceContextWasTracked ? { romance_guide_context_reviewed: true } : {})
     }
   };
 }
 
-async function planSnapshot(snapshot, { onPlanningPass, loadPlanningGraphBundle = loadCompiledGuideGraphBundle } = {}) {
+async function planSnapshot(snapshot, {
+  onPlanningPass,
+  loadPlanningGraphBundle = loadCompiledGuideGraphBundle,
+  romanceGuideAlreadyOffered = false
+} = {}) {
   onPlanningPass?.();
   const bundle = await loadPlanningGraphBundle();
   const enabled = bundle.graphs.length > 0 && bundle.graphs.every(g => g.pathPerformancePolicyVersion === 1);
@@ -156,14 +194,20 @@ async function planSnapshot(snapshot, { onPlanningPass, loadPlanningGraphBundle 
   delete snapshot._path_prior;
   delete snapshot._path_invalidated;
   delete snapshot._relational_issue_changed;
+  const routingControl = applyRomanceGuideRouteConstraint(pathPerformance, snapshot.romance_guide_context ?? null);
   const rawPlan = planFromGraphs({
     variables: snapshot.variables,
     unknowns: snapshot.unknowns,
     graphs: bundle.graphs,
     turnTask: snapshot.turn_task ?? null,
-    pathPerformance
+    pathPerformance: routingControl
   });
-  const plan = decoratePlanWithRelationalReadiness(rawPlan, pathPerformance, readinessDecision);
+  const readinessPlan = decoratePlanWithRelationalReadiness(rawPlan, routingControl, readinessDecision);
+  const { plan, composition } = composeRomanceGuidePlan(readinessPlan, snapshot.romance_guide_context ?? null, {
+    readinessDecision,
+    alreadyOffered: romanceGuideAlreadyOffered
+  });
+  if (!composition.canRealize) throw new ValidationError(`Romance guide context requires replanning before realization: ${composition.action}.`);
   return { plan, graphBundleVersion: bundle.version };
 }
 
@@ -174,7 +218,7 @@ export async function preflightGraphPlanningAvailability({ loadPreflightGraphBun
 
 export async function runCaseExtraction({ context, provider, onProgress }) {
   const prompt = caseExtractionPrompt(context);
-  prompt.system += relationalReadinessExtractionRules;
+  prompt.system += relationalReadinessExtractionRules + romanceGuideContextExtractionRules;
   const extraction = await structuredCall(
     provider,
     prompt,
@@ -183,6 +227,7 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
       if (context.pathPerformanceEnabled && !String(provider.model).startsWith("mock-")) {
         if (!Object.hasOwn(value, "path_update")) throw new ValidationError("Candidate extraction must declare path_update; missing strategy tracking cannot silently bypass monitoring.");
         if (!Object.hasOwn(value, "relational_readiness")) throw new ValidationError("Candidate extraction must declare relational_readiness as null or an evidenced current assessment.");
+        if (!Object.hasOwn(value, "romance_guide_context")) throw new ValidationError("Candidate extraction must declare romance_guide_context as null or an evidenced current-turn selector.");
       }
       return validateCaseSnapshot(value);
     },
@@ -202,7 +247,8 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
 
 export async function resolveCaseExtraction({ context, provider, onProgress, recovery }) {
   const resumed = await recovery?.loadExtraction?.({ provider });
-  if (resumed && (!context.pathPerformanceEnabled || Object.hasOwn(resumed.value, "relational_readiness"))) {
+  if (resumed && (!context.pathPerformanceEnabled || (Object.hasOwn(resumed.value, "relational_readiness")
+      && Object.hasOwn(resumed.value, "romance_guide_context")))) {
     onProgress?.({
       stage: "case_extraction",
       status: "resumed",
@@ -225,12 +271,19 @@ export async function resolveCaseExtraction({ context, provider, onProgress, rec
 
 export async function runCaseAudit({ context, snapshot, provider, onProgress }) {
   const prompt = caseAuditPrompt(context, snapshot);
-  prompt.system += relationalReadinessAuditRules;
+  prompt.system += relationalReadinessAuditRules + romanceGuideContextAuditRules;
   return await structuredCall(
     provider,
     prompt,
     { stage: "case_audit", fixtureKey: "case_audit" },
-    validateCaseAudit,
+    value => {
+      if (context.pathPerformanceEnabled && !String(provider.model).startsWith("mock-")) {
+        if (!Object.hasOwn(value, "corrected_romance_guide_context") || !Object.hasOwn(value, "invalidate_romance_guide_context")) {
+          throw new ValidationError("Candidate audit must explicitly review romance_guide_context.");
+        }
+      }
+      return validateCaseAudit(value);
+    },
     caseAuditGenerationSchema,
     onProgress
   );
@@ -292,7 +345,11 @@ export async function runUnauditedCaseSnapshot({ context, provider, onProgress, 
 
 export async function runUnauditedCaseFormulation({ context, provider, onProgress, recovery, onPlanningPass, loadPlanningGraphBundle }) {
   const initial = await runUnauditedCaseSnapshot({ context, provider, onProgress, recovery });
-  const { plan, graphBundleVersion } = await planSnapshot(initial.snapshot, { onPlanningPass, loadPlanningGraphBundle });
+  const { plan, graphBundleVersion } = await planSnapshot(initial.snapshot, {
+    onPlanningPass,
+    loadPlanningGraphBundle,
+    romanceGuideAlreadyOffered: /(?:https?:\/\/)?romance\.u-dont-exist\.com\b/i.test(context.recentTranscript ?? "")
+  });
   return { ...initial, plan, graphBundleVersion };
 }
 
@@ -300,7 +357,10 @@ export async function runAuditedCaseFormulation({ context, extractorProvider, au
   const extraction = await resolveCaseExtraction({ context, provider: extractorProvider, onProgress, recovery });
   const audit = await runCaseAuditWithRecovery({ context, snapshot: extraction.value, provider: auditorProvider, onProgress, recovery });
   const snapshot = applyCaseAudit(extraction.value, audit.value);
-  const { plan, graphBundleVersion } = await planSnapshot(snapshot, { loadPlanningGraphBundle });
+  const { plan, graphBundleVersion } = await planSnapshot(snapshot, {
+    loadPlanningGraphBundle,
+    romanceGuideAlreadyOffered: /(?:https?:\/\/)?romance\.u-dont-exist\.com\b/i.test(context.recentTranscript ?? "")
+  });
   return {
     snapshot,
     plan,

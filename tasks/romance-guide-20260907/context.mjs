@@ -25,6 +25,12 @@ const ENUMS = Object.freeze({
   audience: ['adult', 'minor', 'unknown'],
   interest: ['unspecified', 'curious', 'requested', 'declined']
 });
+export const ROMANCE_GUIDE_CONTEXT_ENUMS = Object.freeze({
+  topic: Object.freeze(Object.keys(TOPICS).filter(value => value !== 'none')),
+  stage: Object.freeze([...ENUMS.stage]),
+  audience: Object.freeze([...ENUMS.audience]),
+  interest: Object.freeze([...ENUMS.interest])
+});
 const text = value => typeof value === 'string' && value.trim().length > 0;
 
 export function validateRomanceSources(s = source, p = supplement, link = ownerLink) {
@@ -32,9 +38,12 @@ export function validateRomanceSources(s = source, p = supplement, link = ownerL
       || p.status !== 'candidate-development-only' || s.pageCount !== 83
       || s.pdfSha256 !== 'b4bc13f8c0e02d2782cbe6b2f5aae65169e44ed482dc9e7085c72cf5016c342f'
       || s.canonicalUrl !== 'https://romance.u-dont-exist.com'
+      || s.linkVerification?.status !== 'OWNER_VERIFIED_CANONICAL_URL'
       || p.linkPolicy?.url !== s.canonicalUrl
       || p.linkPolicy?.automaticFetching !== false
       || p.linkPolicy?.personalDataInUrl !== false
+      || p.linkPolicy?.ownerConfirmedReachability !== true
+      || p.linkPolicy?.independentReachabilityVerified !== false
       || link?.schemaVersion !== 1 || link.url !== s.canonicalUrl
       || link.ownerConfirmedReachability !== true
       || link.verificationKind !== 'owner-confirmed-not-independently-network-verified') throw new Error('Invalid romance source contract');
@@ -63,11 +72,12 @@ validateRomanceSources();
 
 function options(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new TypeError('Expected romance options');
-  const allowed = new Set([...Object.keys(ENUMS), 'enabled', 'alreadyOffered']);
+  const allowed = new Set([...Object.keys(ENUMS), 'enabled', 'alreadyOffered', 'outsideCurrentTask']);
   if (Object.keys(input).some(key => !allowed.has(key))) throw new TypeError('Unknown romance option');
   const result = { enabled: false, topic: 'none', stage: 'unknown', readiness: 'unassessed',
-    audience: 'unknown', interest: 'unspecified', alreadyOffered: false, ...input };
-  if (typeof result.enabled !== 'boolean' || typeof result.alreadyOffered !== 'boolean') throw new TypeError('Expected boolean options');
+    audience: 'unknown', interest: 'unspecified', alreadyOffered: false, outsideCurrentTask: false, ...input };
+  if (typeof result.enabled !== 'boolean' || typeof result.alreadyOffered !== 'boolean'
+      || typeof result.outsideCurrentTask !== 'boolean') throw new TypeError('Expected boolean options');
   for (const [key, values] of Object.entries(ENUMS)) if (!values.includes(result[key])) throw new TypeError(`Invalid ${key}`);
   return result;
 }
@@ -104,8 +114,13 @@ export function composeRomanceContext(plan, input = {}) {
     return { ...base, canRealize: safetyPrimary, action: safetyPrimary ? 'PRESERVE_SAFETY' : 'REPLAN_FOR_SAFETY', referenceDecision: 'SAFETY_FIRST' };
   }
   if (route === 'leave-alone') return { ...base, action: 'PRESERVE_CLOSE', referenceDecision: 'DO_NOT_REOPEN' };
-  if (['medical-practice', 'unsafe-practice'].includes(o.topic)) return { ...base,
-    canRealize: false, action: 'USE_APPROPRIATE_SAFETY_OR_MEDICAL_ROUTE', referenceDecision: 'NO_REFERENCE_BYPASS' };
+  if (['medical-practice', 'unsafe-practice'].includes(o.topic)) {
+    const appropriatePrimary = Number.isInteger(plan.primaryJob?.tier) && plan.primaryJob.tier <= 2
+      || ['ROUTE.ACT_OUTWARD', 'ROUTE.EXTERNAL_EMBODIMENT'].includes(plan.primaryJob?.id);
+    return { ...base, canRealize: appropriatePrimary,
+      action: appropriatePrimary ? 'PRESERVE_APPROPRIATE_PRIMARY_ROUTE' : 'USE_APPROPRIATE_SAFETY_OR_MEDICAL_ROUTE',
+      referenceDecision: 'NO_REFERENCE_BYPASS' };
+  }
   const pauseNewRomance = o.readiness === 'pause' && ['considering', 'unknown'].includes(o.stage);
   const ids = [...(route === 'stabilization' || pauseNewRomance ? ['RG01', 'RG06'] : TOPICS[o.topic])];
   if (o.stage === 'existing' && o.readiness === 'pause' && !ids.includes('RG12')) ids.push('RG12');
@@ -133,14 +148,14 @@ export function composeRomanceContext(plan, input = {}) {
   else if (o.audience !== 'adult') referenceDecision = 'ADULT_GUIDE_BOUNDARY';
   else if (o.interest === 'declined') referenceDecision = 'DECLINED';
   else if (o.alreadyOffered && o.interest !== 'requested') referenceDecision = 'ALREADY_OFFERED';
-  else if (o.interest === 'requested' || o.interest === 'curious' || optional) referenceDecision =
-    (supplement.linkPolicy.reachabilityVerified === true || ownerLink.ownerConfirmedReachability === true)
-      ? 'OFFER_OPTIONAL_REFERENCE' : 'LINK_VERIFICATION_REQUIRED';
+  else if (o.interest === 'requested' || o.interest === 'curious' || o.outsideCurrentTask) {
+    referenceDecision = 'OFFER_OPTIONAL_REFERENCE';
+  }
   const reference = referenceDecision === 'OFFER_OPTIONAL_REFERENCE' ? {
     url: source.canonicalUrl,
-    text: 'If you are curious about the broader relationship questions, Joel’s romance guide is at romance.u-dont-exist.com. Reading it is optional.',
+    text: "If you're curious, my fuller romance guide is at romance.u-dont-exist.com.",
     openAutomatically: false,
-    reachabilityEvidence: supplement.linkPolicy.reachabilityVerified === true ? 'independently-verified' : 'owner-confirmed'
+    reachabilityEvidence: 'owner-confirmed'
   } : null;
   return { ...base, plan: candidatePlan, canRealize: !replanningRequired,
     action: replanningRequired ? 'REPLAN_FOR_STABILIZATION' : route === 'stabilization' ? 'PRESERVE_STABILIZATION'

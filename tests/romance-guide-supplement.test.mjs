@@ -149,14 +149,19 @@ test('support-building includes a discriminating goal-substitution check, not mi
   assert.match(result.plan.requiredNuance.join(' '), /Do not infer hidden romantic motives/);
 });
 test('optional philosophical content is bounded and can point to the owner-confirmed guide', () => {
-  const result = composeRomanceContext(plan(), enabled({ topic: 'polarity' }));
+  const result = composeRomanceContext(plan(), enabled({ topic: 'polarity', outsideCurrentTask: true }));
   assert.match(result.optionalTopicBoundary, /Do not install gender generalizations/);
   assert.equal(result.referenceDecision, 'OFFER_OPTIONAL_REFERENCE');
   assert.equal(result.reference.reachabilityEvidence, 'owner-confirmed');
   const reference = new URL(result.reference.url);
-  const displayedHost = result.reference.text.match(/guide is at (\S+)\. Reading/)?.[1];
+  const displayedHost = result.reference.text.match(/guide is at (\S+)\.$/)?.[1];
   assert.equal(reference.href, 'https://romance.u-dont-exist.com/');
   assert.equal(new URL(`https://${displayedHost}`).href, reference.href);
+});
+test('romance relevance alone does not turn the guide into an automatic footer', () => {
+  const result = composeRomanceContext(plan(), enabled({ topic: 'polarity' }));
+  assert.equal(result.referenceDecision, 'NOT_REQUESTED');
+  assert.equal(result.reference, null);
 });
 test('full adult guide is not surfaced for minors or an unknown-age audience', () => {
   for (const audience of ['minor', 'unknown']) {
@@ -175,9 +180,17 @@ test('no link bypass for unsafe or medical practice requests', () => {
     assert.equal(result.reference, null);
   }
 });
+test('an appropriate primary route can answer a medical or unsafe-practice request directly without the guide', () => {
+  for (const topic of ['medical-practice', 'unsafe-practice']) {
+    const result = composeRomanceContext(plan('ROUTE.ACT_OUTWARD', 3), enabled({ topic, interest: 'requested' }));
+    assert.equal(result.canRealize, true); assert.equal(result.action, 'PRESERVE_APPROPRIATE_PRIMARY_ROUTE');
+    assert.equal(result.referenceDecision, 'NO_REFERENCE_BYPASS'); assert.equal(result.reference, null);
+  }
+});
 test('owner confirmation enables the optional reference without being misreported as independent verification', () => {
   assert.equal(source().canonicalUrl, 'https://romance.u-dont-exist.com');
-  assert.equal(policy().linkPolicy.reachabilityVerified, false);
+  assert.equal(policy().linkPolicy.ownerConfirmedReachability, true);
+  assert.equal(policy().linkPolicy.independentReachabilityVerified, false);
   assert.equal(linkConfirmation().ownerConfirmedReachability, true);
   const result = composeRomanceContext(plan(), enabled({ interest: 'requested' }));
   assert.equal(result.referenceDecision, 'OFFER_OPTIONAL_REFERENCE');

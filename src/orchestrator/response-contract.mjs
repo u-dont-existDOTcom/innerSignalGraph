@@ -63,6 +63,16 @@ function relationalPolicyMarkers(plan = {}) {
   return { required: [...new Set(required)], forbidden: [...new Set(forbidden)] };
 }
 
+const ROMANCE_GUIDE_REFERENCE_MARKER = "POLICY.ROMANCE_GUIDE_REFERENCE";
+const ROMANCE_GUIDE_DOMAIN = /(?:https?:\/\/)?romance\.u-dont-exist\.com\b/i;
+function romanceReferenceMentions(value) {
+  return String(value ?? "").split(/\s+/).filter(token => ROMANCE_GUIDE_DOMAIN.test(token));
+}
+function isCanonicalRomanceReferenceToken(token) {
+  const cleaned = String(token).replace(/^[('"`]+/, "").replace(/[)'"`,.!?;:]+$/, "");
+  return ["romance.u-dont-exist.com", "https://romance.u-dont-exist.com", "https://romance.u-dont-exist.com/"].includes(cleaned);
+}
+
 export function requiredRealizationNodeIds(plan = {}) {
   if (plan.executionContract?.version === 1) {
     const required = plan.executionContract.requiredNodeIds;
@@ -129,8 +139,28 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const relationalTracked = Boolean(plan?.pathPerformance?.relational_readiness || relational.required.length || relational.forbidden.length);
   const missingRelationalPolicyMarkers = relational.required.filter(id => !realizedNodeIds.includes(id));
   const forbiddenRelationalPolicyMarkers = relational.forbidden.filter(id => realizedNodeIds.includes(id));
+  const romanceGuide = plan?.romanceGuide ?? null;
+  const romanceReferenceDecision = romanceGuide?.realization?.reference_decision ?? "NOT_AUTHORIZED";
+  const romanceReferenceAllowed = romanceReferenceDecision === "OFFER_OPTIONAL_REFERENCE"
+    && romanceGuide?.realization?.reference?.url === "https://romance.u-dont-exist.com";
+  const romanceReferenceMentionsInAnswer = romanceReferenceMentions(answerBody);
+  const romanceReferenceShown = romanceReferenceMentionsInAnswer.length > 0;
+  const romanceReferenceCanonical = romanceReferenceShown
+    && romanceReferenceMentionsInAnswer.every(isCanonicalRomanceReferenceToken);
+  const romanceReferenceMarker = verifiedRealizations.find(item => item.id === ROMANCE_GUIDE_REFERENCE_MARKER);
+  const markerMentions = romanceReferenceMentions(romanceReferenceMarker?.evidenceQuote);
+  const romanceReferenceMarkerValid = Boolean(romanceReferenceMarker && markerMentions.length
+    && markerMentions.every(isCanonicalRomanceReferenceToken));
+  const missingRomanceGuideReferenceMarker = romanceReferenceShown && romanceReferenceAllowed
+    && romanceReferenceCanonical && !romanceReferenceMarkerValid;
+  const forbiddenRomanceGuideReference = romanceReferenceShown && (!romanceReferenceAllowed || !romanceReferenceCanonical);
+  const unsupportedRomanceGuideReferenceMarker = realizedNodeIds.includes(ROMANCE_GUIDE_REFERENCE_MARKER)
+    && (!romanceReferenceShown || !romanceReferenceAllowed || !romanceReferenceCanonical || !romanceReferenceMarkerValid);
+  const romanceGuideAdherence = !missingRomanceGuideReferenceMarker
+    && !forbiddenRomanceGuideReference && !unsupportedRomanceGuideReferenceMarker;
   const pathAdherence = (!pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0))
-    && missingRelationalPolicyMarkers.length === 0 && forbiddenRelationalPolicyMarkers.length === 0;
+    && missingRelationalPolicyMarkers.length === 0 && forbiddenRelationalPolicyMarkers.length === 0
+    && romanceGuideAdherence;
 
   return {
     answer: userFacingAnswer,
@@ -149,7 +179,16 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
       missingRealizationNodeIds: missingNodeIds,
       realizationCoveragePassed: missingNodeIds.length === 0,
       ...(relationalTracked ? { relationalPolicyMarkersRequired: relational.required, missingRelationalPolicyMarkers, forbiddenRelationalPolicyMarkers } : {}),
-      ...(pathContract || relational.required.length || relational.forbidden.length ? {
+      ...(romanceGuide ? {
+        romanceGuideReferenceDecision: romanceReferenceDecision,
+        romanceGuideReferenceAllowed: romanceReferenceAllowed,
+        romanceGuideReferenceShown: romanceReferenceShown,
+        romanceGuideReferenceCanonical: romanceReferenceCanonical,
+        missingRomanceGuideReferenceMarker,
+        forbiddenRomanceGuideReference,
+        unsupportedRomanceGuideReferenceMarker
+      } : {}),
+      ...(pathContract || relational.required.length || relational.forbidden.length || romanceGuide ? {
         pathPerformanceAdherencePassed: pathAdherence,
         prohibitedRealizationNodeIds: [...new Set(prohibitedNodeIds)],
         semanticAdherence: relationalTracked ? "DECLARED_POLICY_MARKERS_ARE_VERBATIM_GROUNDED_BUT_REQUIRE_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW" : "REQUIRES_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW"

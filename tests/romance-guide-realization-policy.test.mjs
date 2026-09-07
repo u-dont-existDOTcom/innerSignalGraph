@@ -11,10 +11,10 @@ function prompt() {
 
 test("realizer contains the owner-confirmed optional romance guide reference", () => {
   const { system } = prompt();
-  const reference = new URL(system.match(/reference is (\S+)\. Use it/)?.[1]);
-  assert.equal(reference.href, "https://romance.u-dont-exist.com/");
-  assert.match(system, /broader romance topic would otherwise distract/);
-  assert.match(system, /one brief optional sentence/);
+  assert.ok(system.includes("https://romance.u-dont-exist.com"));
+  assert.match(system, /deterministic romanceGuide trace owns the optional reference decision/);
+  assert.match(system, /OFFER_OPTIONAL_REFERENCE/);
+  assert.match(system, /POLICY\.ROMANCE_GUIDE_REFERENCE/);
 });
 
 test("optional reference cannot replace safety, stabilization or current help", () => {
@@ -26,7 +26,7 @@ test("optional reference cannot replace safety, stabilization or current help", 
 
 test("optional reference is bounded for audience, repetition and consent", () => {
   const { system } = prompt();
-  assert.match(system, /adult status established/);
+  assert.match(system, /For every other reference decision, do not mention or link/);
   assert.match(system, /after the user declined it/);
   assert.match(system, /repeatedly after it was already offered/);
 });

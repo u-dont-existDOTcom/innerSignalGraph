@@ -1,30 +1,32 @@
 # Resume: romance source supplement
 
-Status: **candidate source and executable context adapter; not installed or wired into ordinary responses**.
+Status: **integrated into the owner-authorized candidate case architecture; not installed, released, or promoted**.
 
-Start with current PR #46 head, `AGENTS.md`, `state/CODEX-CURRENT-STATE.md`, and `docs/superpowers/specs/2026-09-07-romance-guide-integration.md`.
+Start with the current draft PR #46 head, `AGENTS.md`, `state/CODEX-CURRENT-STATE.md`, `docs/REASONING-SELECTION.md`, `docs/superpowers/specs/2026-09-07-romance-guide-integration.md`, and `INTEGRATION.md`.
 
-- `SOURCE.json`: original uploaded PDF identity and 20 exact page-anchored excerpts. No full PDF or private client record is published.
-- `SUPPLEMENT.json`: 12 source-derived rules with explicit adaptation limits, transfer checks, optional topics and excluded adoption categories.
-- `context.mjs`: deterministic source validation and explicit-opt-in case-plan-v5 context composition. It has no model, network, persistence, installation or private-client-memory behavior. A caller must honor `canRealize:false` by replanning rather than emitting the unchanged plan.
-- `SEMANTIC-CASES.json`: 12 separately authored fictional, unexecuted cases. These are not the user's friend or a de-identified client history.
-- `../../tests/romance-guide-supplement.test.mjs`: 29 deterministic tests, included by the existing `node --test` discovery.
+- `SOURCE.json`: publication-safe identity for the original uploaded PDF and 20 exact page-anchored excerpts. The full PDF and private client material are not published.
+- `SUPPLEMENT.json`: 12 source-derived rules with adaptation limits, ordinary-life transfer checks, optional topics, and excluded adoption categories.
+- `context.mjs`: deterministic source validation and bounded case-plan-v5 composition. It has no provider calls, network fetching, persistence, installation, or private-client-memory behavior.
+- `src/case-formulation/romance-guide.mjs`: the ordinary candidate boundary. It validates one current-issue, observation-bound selector; constrains coercion toward outward safety/support; composes source trace and progress checks into the existing plan/path contract; and carries the deterministic optional-reference decision into realization.
+- `SEMANTIC-CASES.json`: 12 separately versioned fictional cases. These are not a real client history and were not sent to a paid model.
+- `tests/romance-guide-supplement.test.mjs`, `tests/romance-guide-runtime-composition.test.mjs`, and `tests/romance-guide-realization-policy.test.mjs`: source-integrity, routing/composition, traceability, and realization-policy regressions. The pre-existing path-performance and relational-readiness suites remain authoritative for their controllers.
 
-## Verification recorded before publication
+## Runtime behavior
 
-- All 20 selected quotations checked against their exact source PDF pages; only whitespace and line-wrapped hyphenated words normalized.
-- PDF SHA-256: `b4bc13f8c0e02d2782cbe6b2f5aae65169e44ed482dc9e7085c72cf5016c342f`.
-- `node --check tasks/romance-guide-20260907/context.mjs`: passed.
-- `node --test tests/romance-guide-supplement.test.mjs`: **29/29 passed** on available **Node 22.16.0**. This is supplemental local evidence, not the mandated Node 24.18.0 full package gate.
-- Container Git clone was unavailable because network DNS resolution failed. Canonical reads/writes use the authenticated GitHub connector; the supported-runtime full gate must be established by current-head hosted CI, not inferred from the local subset.
-- 0 live target-model calls; 0 semantic grades; no clinical efficacy claim.
+The live candidate extractor must emit `romance_guide_context` as null or one evidenced current-turn selector. Any non-null selector forces the existing reviewed case-audit lane. The auditor can correct or invalidate it; withdrawing a supporting observation invalidates the selector. Ordinary planning then records:
 
-## Deliberate remaining boundaries
+`source/rule -> current case observations -> readiness/path judgment -> route/switch -> realization constraints/reference decision`
 
-The registered owner URL is `https://romance.u-dont-exist.com`. Reachability was not verified; automatic presentation remains `LINK_VERIFICATION_REQUIRED`. Verify the actual redirect/landing page without adding private URL data before enabling the reference.
+The supplement uses the existing Path Performance Controller and relational-readiness gate. It does not create another planner or readiness score. Its source-derived progress checks become path-contract guidance, so felt closeness, praise, relief, or an intense state do not establish durable change without ordinary-life transfer. Coercion/fear of refusal or leaving switches the current plan outward before inward or mutual exercises. Medical and unsafe-practice topics receive the appropriate immediate route without guide-derived instructions or a link bypass.
 
-Do not assume earlier Work handoffs for path-performance or relational readiness completed. Inspect their current committed implementation before composing it with this adapter. This slice supplies source policy and transfer criteria, not a replacement controller. Do not modify the active fidelity smoke's pinned conditions, labels, existing source packet or frozen corpus to make this supplement appear retrospectively tested.
+## Optional guide reference
 
-Next: review actual hosted gates, integrate through the committed controller/candidate Guide Packet boundary, and run a separately versioned baseline-versus-supplement semantic comparison with the current calibrated evaluation process. Keep PR #46 draft; no merge, deployment, stable promotion or paid-call budget expansion is authorized.
+The owner verified `https://romance.u-dont-exist.com` as the working canonical optional reference URL on 2026-09-07. This is owner confirmation, not an independent network/content-identity audit.
 
-Lesson disposition: **project-specific source/behavior correction**. Human connection is not the same target as romantic readiness; felt depth is not the same target as demonstrated compatibility or ordinary-life improvement. Negative controls must protect legitimate reciprocal care and stable clients from overgeneralized dependency or readiness rules.
+The candidate may use the concise sentence `If you're curious, my fuller romance guide is at romance.u-dont-exist.com.` only when romance material is currently relevant and either the user expresses interest or deeper exploration is outside the current task. It is never an automatic footer. The plan suppresses it for immediate safety/stabilization, a current romance pause, medical/drug/unsafe-practice help, minors or unknown age for the adult guide, declined reading, repeated offers without renewed interest, completed work, and irrelevant turns. If a renderer includes it, the response contract requires a grounded `POLICY.ROMANCE_GUIDE_REFERENCE` marker; unauthorized links fail realization rather than leaking through.
+
+## Verification and limits
+
+All cases are synthetic. The original fidelity corpus and pins remain unchanged. No paid target-model calls or semantic grades were added. Deterministic success establishes bounded software behavior, not human usefulness, clinical validity, safety in deployment, or clinical efficacy. Exact commands/results and the fetched baseline are recorded in `INTEGRATION.md`; the final containing commit and hosted checks belong in Git/PR closeout.
+
+Keep PR #46 draft. Do not merge, deploy, install, promote `stable`, expand private storage, publish the source PDF, or claim clinical efficacy.
