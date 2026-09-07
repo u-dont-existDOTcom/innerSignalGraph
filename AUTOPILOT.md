@@ -90,3 +90,9 @@ A successful campaign writes a runtime fingerprint. Unchanged launches reuse pri
 ## Recovery diagnostic
 
 The one-click recovery ZIP contains deterministic packet status/attempts, the safe A001 audit-attempt ledger, normalized failure, candidate manifest/hash/state, compilation/review outputs, owner decisions, production manifest, exact-model evidence, gate summaries, and supervisor history. It excludes the A001 clinical extraction checkpoint, raw provider output, browser chat, therapy reasoning ledgers, development-case payloads, Guide Packet ZIP bodies, `.env`, credentials, and tokens.
+
+## Reasoning selection
+
+For nontrivial analysis, design, therapy-dialogue/guide work, and graph/runtime reasoning, use `docs/REASONING-SELECTION.md` as the project reasoning supplement. Use the smallest sufficient reasoning method or combination for the actual question and task phase; do not turn the method catalog into a checklist.
+
+The supplement is subordinate to current owner/task instructions, `AGENTS.md`, owner locks, privacy/budget/action gates, and installed/stable authority. It grants no execution, spending, publication, installation, merge, deployment, promotion, or release authority. Therapy/framework semantics remain owner-gated, and demonstrated behavioral evidence—not the existence of this reasoning document—must justify any later guide, graph, or runtime change.
