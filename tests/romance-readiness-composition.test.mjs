@@ -2,19 +2,32 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { blankCaseVariables } from "../src/guide-graph/contract.mjs";
 import { deriveCaseVariables } from "../src/guide-graph/planner.mjs";
-import { validateTurnTask } from "../src/case-formulation/turn-task.mjs";
-import { relationalReadinessDecision, relationalReadinessGuidance, preparePathPriorForReadiness } from "../src/case-formulation/relational-readiness.mjs";
-import { evaluatePathPerformance, pathPerformanceGuidance, performanceQuestion } from "../src/case-formulation/path-performance.mjs";
+import {
+  relationalReadinessDecision,
+  relationalReadinessGuidance,
+  preparePathPriorForReadiness,
+  applyRelationalReadinessToPath,
+  validateRelationalEvidence
+} from "../src/case-formulation/relational-readiness.mjs";
+import { evaluatePathPerformance } from "../src/case-formulation/path-performance.mjs";
 import { classifyTherapyTier } from "../src/orchestrator/run-tiered-pipeline.mjs";
 import { enforceResponseContract } from "../src/orchestrator/response-contract.mjs";
-import { planCaseSnapshot } from "../src/case-formulation/run.mjs";
+import { planCaseSnapshot, applyCaseAudit } from "../src/case-formulation/run.mjs";
 
+const issue = "Considering romance";
 const observations = Array.from({ length: 20 }, (_, i) => ({ id: `O${i + 1}`, statement: `Synthetic observation ${i + 1}`, evidence: "fictional regression only" }));
 const observationIds = new Set(observations.map(o => o.id));
-const variables = deriveCaseVariables({ ...blankCaseVariables(), present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes", suicidal_state: "absent", activation: "low", dissociation: "none", altered_state: "sober", current_intent: "conversation", actionable_problem: "absent", other_person_central: "no", influence_domain: "none", inward_attention_effect: "neutral", inner_adult_access: "available", witness_capacity: "present", coherent_child_state: "present", body_capacity: "adequate", unresolved_inner_material: "present" });
+const variables = deriveCaseVariables({
+  ...blankCaseVariables(), present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+  suicidal_state: "absent", activation: "low", dissociation: "none", altered_state: "sober", current_intent: "conversation",
+  actionable_problem: "absent", other_person_central: "no", influence_domain: "none", inward_attention_effect: "neutral",
+  inner_adult_access: "available", witness_capacity: "present", coherent_child_state: "present", body_capacity: "adequate",
+  unresolved_inner_material: "present"
+});
 
 const risk = (kind, timeframe = "current", observation_ids = ["O1"]) => ({ kind, timeframe, observation_ids });
 const readiness = (changes = {}) => ({
+  issue,
   scope: "romantic_sexual_pursuit",
   current_stability: "sufficient", stability_observation_ids: ["O1"],
   foreseeable_harm: "not_substantial", harm_observation_ids: ["O1"], harm_to: [],
@@ -36,40 +49,56 @@ const unstable = (changes = {}) => readiness({
   readiness_markers: ["Reality testing and self-care remain reliable", "Non-romantic regulation works in ordinary life"],
   ...changes
 });
-const task = (r = readiness(), changes = {}) => ({
-  version: 1, issue: "Considering romance", node_id: "ROUTE.ACT_OUTWARD", kind: "action", phase: "practice", agreement: "accepted",
-  observation_ids: ["O1", "O2", "O3", "O4", "O5"], marker: "Considering the next relational step", last_response: "No attempt yet", capacity: "adequate", question_focus: "cue",
-  action: { step: "Arrange a date", cue: "", size: "One meeting", barriers: "", purpose: "Connection", outcome: "not_reported", result: "", adjustment: "" },
-  relational_readiness: r, emotion: null, ...changes
+const task = (changes = {}) => ({
+  version: 1, issue, node_id: "IC.DEEP_CHILD_DIALOGUE", kind: "emotion", phase: "practice", agreement: "accepted",
+  observation_ids: ["O1", "O2", "O3", "O4", "O5"], marker: "Trying inward work", last_response: "No durable change yet",
+  capacity: "adequate", question_focus: "none", action: null,
+  emotion: { process: "unclear_feeling", response: "Trying to understand it", change_point: "" },
+  ...changes
 });
 const strategy = () => ({
-  process_id: "romance-regulation", target: "make a safe next decision", formulation: "Clarifying the next action may increase agency", family: "practical_action", node_id: "ROUTE.ACT_OUTWARD",
-  selection_reason: "The fictional person asked what to do next", observation_ids: ["O1"],
-  predictions: [{ id: "P1", sign: "agency", description: "The person can choose without needing a partner to regulate the state", horizon: "durable" }],
+  process_id: "inward-self-regulation", target: "increase stable agency", formulation: "Inward processing may increase agency",
+  family: "inner_dialogue", node_id: "IC.DEEP_CHILD_DIALOGUE", selection_reason: "The fictional person was already trying inward work",
+  observation_ids: ["O1"], predictions: [{ id: "P1", sign: "agency", description: "The person can choose without needing a partner to regulate the state", horizon: "durable" }],
   adverse_signs: ["dependency", "destabilization"]
 });
 const pathUpdate = (signals = [], patch = {}) => ({ strategy: strategy(), response: "not_observed", signals, failure_hypotheses: [], probe: null, ...patch });
 const signal = (kind, observation_id, patch = {}) => ({ observation_id, kind, prediction_id: "", timing: "immediate", severity: "ordinary", ...patch });
 
-function evaluate(r, signals = [], prior = null, patch = {}) {
-  return evaluatePathPerformance({ prior, update: pathUpdate(signals, patch), variables, observationIds, relationalReadiness: r });
+function baseEvaluate(signals = [], prior = null, patch = {}) {
+  return evaluatePathPerformance({ prior, update: pathUpdate(signals, patch), variables, observationIds });
 }
-
+function evaluate(r, signals = [], prior = null, patch = {}) {
+  return applyRelationalReadinessToPath(baseEvaluate(signals, prior, patch), relationalReadinessDecision(r));
+}
 function planForTrace(trace) {
   return {
     primaryJob: { id: "ROUTE.ACT_OUTWARD", title: "Synthetic outward action", tier: 2 },
     executionContract: { version: 1, requiredNodeIds: ["ROUTE.ACT_OUTWARD"] },
-    pathPerformanceContract: { version: 1, prohibit_prior_exercise: false },
+    pathPerformanceContract: { version: 1, prohibit_prior_exercise: true },
     pathPerformance: trace,
     questionContract: { mode: "none", question: "", source: null }
   };
 }
-
 function realization(answer, markers = []) {
   return { answer, next_question: "", realized_nodes: [
     { id: "ROUTE.ACT_OUTWARD", evidence_quote: answer },
     ...markers.map(id => ({ id, evidence_quote: answer }))
   ] };
+}
+
+function audit(overrides = {}) {
+  return {
+    corrected_turn_task: null, invalidate_turn_task: false,
+    remove_observation_ids: [], remove_hypothesis_ids: [], variable_corrections: [], add_unknowns: [], safety_flags: [],
+    verdict: "accept", summary: "Synthetic audit accepted.", ...overrides
+  };
+}
+function snapshot(r = readiness()) {
+  return {
+    user_goal: "Stay stable", current_issue: issue, turn_task: task(), path_update: pathUpdate(), relational_readiness: r,
+    direct_observations: observations, variables, hypotheses: [], unknowns: []
+  };
 }
 
 test("stable lonely adult is not blocked merely for loneliness or history", () => {
@@ -89,9 +118,10 @@ test("substantial current foreseeable harm pauses romance without requiring the 
   assert.equal(control.latest.relational_readiness.status, "PAUSE_ROMANCE");
   assert.equal(control.latest.readiness_conflict, "BROAD_FORESEEABLE_HARM_PAUSE_WITHOUT_NARROW_CONJUNCTION");
   assert.equal(control.latest.route, "action");
-  assert.match(pathPerformanceGuidance(control).join(" "), /pausing active romance-seeking/);
+  assert.match(relationalReadinessGuidance(control.latest.relational_readiness).join(" "), /pausing active romance-seeking/);
   assert.ok(control.latest.goal_substitution.source_rule_ids.includes("RG01"));
   assert.ok(control.latest.goal_substitution.source_rule_ids.includes("RG08"));
+  assert.equal(control.active.relational_constraint_only, true);
 });
 
 test("relationship-as-reality-anchor worsening dependency pauses and does not count relief as progress", () => {
@@ -126,14 +156,13 @@ test("narrow current risk conjunction overrides a broad not-blocked assessment u
   assert.equal(control.latest.readiness_conflict, "NARROW_CURRENT_RISK_OVERRIDES_GENERAL_NOT_BLOCKED");
 });
 
-test("unknown readiness creates a bounded assessment probe, not clearance or prohibition", () => {
+test("unknown readiness creates a bounded assessment state, not clearance or prohibition", () => {
   const r = readiness({ current_stability: "unknown", stability_observation_ids: [], foreseeable_harm: "unknown", harm_observation_ids: [],
     trajectory: "unknown", trajectory_observation_ids: [], support_purpose: "unknown", support_observation_ids: [],
     reasons: "Current stability and foreseeable harm have not yet been established." });
   const control = evaluate(r);
   assert.equal(control.latest.relational_readiness.status, "ASSESS_BEFORE_ROMANCE");
   assert.equal(control.latest.decision, "PROBE"); assert.equal(control.latest.route, "reconsider");
-  assert.match(performanceQuestion(control), /managing daily life and distress/);
 });
 
 test("fresh current improvement can reopen readiness without erasing path evidence", () => {
@@ -145,10 +174,11 @@ test("fresh current improvement can reopen readiness without erasing path eviden
   const prepared = preparePathPriorForReadiness(blocked, decision);
   assert.equal(prepared.active.switch_pending, false);
   assert.equal(prepared.readiness_reopened.retained_path_evidence, true);
-  const reopened = evaluatePathPerformance({ prior: prepared, update: { strategy: null, response: "not_observed", signals: [], failure_hypotheses: [], probe: null }, variables, observationIds, relationalReadiness: improved });
+  assert.equal(prepared.active.id, blocked.active.id);
+  const reopenedBase = evaluatePathPerformance({ prior: prepared, update: { strategy: null, response: "not_observed", signals: [], failure_hypotheses: [], probe: null }, variables, observationIds });
+  const reopened = applyRelationalReadinessToPath(reopenedBase, decision);
   assert.equal(reopened.latest.relational_readiness.status, "NOT_BLOCKED");
   assert.equal(reopened.latest.goal_substitution.romance_pause, false);
-  assert.notEqual(reopened.latest.reason, blocked.latest.reason);
   assert.equal(reopened.active.id, blocked.active.id);
 });
 
@@ -161,32 +191,60 @@ test("readiness reopening cannot erase actual path failure or the narrow persist
   assert.equal(preparePathPriorForReadiness(narrow, relationalReadinessDecision(improved)).active.switch_pending, true);
 });
 
-test("readiness objects require current evidence, affected parties for substantial harm, and reopening markers", () => {
-  const valid = task(unstable());
-  assert.equal(validateTurnTask(valid).relational_readiness.foreseeable_harm, "substantial");
+test("readiness objects fail closed on malformed structure, stale evidence, affected-party omissions and missing reopening markers", () => {
+  assert.equal(validateRelationalEvidence(unstable(), { issue, observationIds }).foreseeable_harm, "substantial");
   for (const bad of [
     unstable({ harm_to: [] }),
     unstable({ readiness_markers: [] }),
     readiness({ current_stability: "sufficient", stability_observation_ids: [] }),
-    readiness({ risk_signals: [risk("dissociation", "current", ["missing"]) ] })
-  ]) assert.throws(() => validateTurnTask(task(bad)));
+    readiness({ risk_signals: [risk("dissociation", "current", ["missing"]) ] }),
+    readiness({ current_stability: "perfectly_fine" }),
+    readiness({ unexpected: true }),
+    readiness({ issue: "Different issue" })
+  ]) assert.throws(() => validateRelationalEvidence(bad, { issue, observationIds }));
 });
 
 test("relational readiness forces reviewed audit even when fast mode was requested", () => {
-  const snapshot = { variables, unknowns: [], turn_task: task(readiness()), path_update: null };
-  const routing = classifyTherapyTier(snapshot, "fast");
+  const s = snapshot(readiness());
+  const routing = classifyTherapyTier(s, "fast");
   assert.equal(routing.tier, "reviewed"); assert.equal(routing.forced, true);
 });
 
-test("planner receives audited readiness through the path controller and routes a pause to outward action", async () => {
-  const r = unstable();
-  const snapshot = { user_goal: "Stay stable", current_issue: "Considering romance", turn_task: task(r), path_update: pathUpdate(),
-    direct_observations: observations, variables, hypotheses: [], unknowns: [] };
-  const { plan } = await planCaseSnapshot(snapshot);
+test("case audit can invalidate or replace readiness without touching the task schema", () => {
+  const original = snapshot(unstable());
+  const invalidated = applyCaseAudit(original, audit({ invalidate_relational_readiness: true }));
+  assert.equal(invalidated.relational_readiness, null);
+  assert.equal(invalidated.turn_task.issue, issue);
+  const replacement = readiness({ reasons: "Fresh current functioning is stable in this fictional reassessment." });
+  const revised = applyCaseAudit(original, audit({ corrected_relational_readiness: replacement, verdict: "revise" }));
+  assert.equal(revised.relational_readiness.current_stability, "sufficient");
+  assert.equal(revised.relational_readiness.foreseeable_harm, "not_substantial");
+});
+
+test("removing readiness evidence invalidates the readiness conclusion rather than leaving a stale ban", () => {
+  const original = snapshot(unstable({ stability_observation_ids: ["O3"], harm_observation_ids: ["O3"], trajectory_observation_ids: ["O3"] }));
+  const result = applyCaseAudit(original, audit({ remove_observation_ids: ["O3"], verdict: "revise" }));
+  assert.equal(result.relational_readiness, null);
+});
+
+test("planner receives audited readiness through the existing path controller and routes a pause away from prior inward work", async () => {
+  const s = snapshot(unstable());
+  const { plan } = await planCaseSnapshot(s);
   assert.equal(plan.pathPerformance.relational_readiness.status, "PAUSE_ROMANCE");
   assert.equal(plan.pathPerformance.goal_substitution.romance_pause, true);
-  assert.equal(plan.primaryJob.id, "ROUTE.ACT_OUTWARD");
+  assert.notEqual(plan.primaryJob.id, "IC.DEEP_CHILD_DIALOGUE");
+  assert.ok(["ROUTE.ACT_OUTWARD", "ROUTE.THREE_WAY_GATE"].includes(plan.primaryJob.id));
   assert.match(plan.executionContract.taskGuidance.join(" "), /foreseeable serious harm/);
+});
+
+test("unknown readiness overrides the canonical next question with the bounded functional assessment", async () => {
+  const r = readiness({ current_stability: "unknown", stability_observation_ids: [], foreseeable_harm: "unknown", harm_observation_ids: [],
+    trajectory: "unknown", trajectory_observation_ids: [], support_purpose: "unknown", support_observation_ids: [],
+    reasons: "Current stability and foreseeable harm have not yet been established." });
+  const { plan } = await planCaseSnapshot(snapshot(r));
+  assert.equal(plan.pathPerformance.relational_readiness.status, "ASSESS_BEFORE_ROMANCE");
+  assert.match(plan.nextQuestion, /managing daily life and distress/);
+  assert.equal(plan.nextQuestionSource.type, "relational-readiness");
 });
 
 test("response contract requires a verbatim relational policy marker on a pause", () => {
