@@ -1,7 +1,8 @@
 import { ValidationError } from "../core/errors.mjs";
 import { evaluatePathPerformance, CASE_RISK_SIGNALS } from "./path-performance.mjs";
+import { relationalReadinessDecision, preparePathPriorForReadiness } from "./relational-readiness.mjs";
 import { deriveCaseVariables } from "../guide-graph/planner.mjs";
-import { validateTurnTask, reconcileIssueScope } from "./turn-task.mjs";
+import { validateTurnTask, reconcileIssueScope, immediateProtectionNeeded } from "./turn-task.mjs";
 import { parseModelJson } from "../core/json.mjs";
 import { caseSnapshotSchema, caseAuditSchema } from "./schemas.mjs";
 import { validateCaseSnapshot, validateCaseAudit } from "./validators.mjs";
@@ -87,9 +88,14 @@ async function planSnapshot(snapshot, { onPlanningPass, loadPlanningGraphBundle 
   onPlanningPass?.();
   const bundle = await loadPlanningGraphBundle();
   const enabled = bundle.graphs.length > 0 && bundle.graphs.every(g => g.pathPerformancePolicyVersion === 1);
-  const pathPerformance = enabled && (Object.hasOwn(snapshot, "path_update") || snapshot._path_prior)
-    ? evaluatePathPerformance({ prior: snapshot._path_prior, update: snapshot.path_update,
-        variables: deriveCaseVariables(snapshot.variables),
+  const derivedVariables = deriveCaseVariables(snapshot.variables);
+  const readinessDecision = relationalReadinessDecision(snapshot.turn_task?.relational_readiness ?? null, {
+    immediateProtection: immediateProtectionNeeded(derivedVariables) || derivedVariables.suicidal_state === "intent"
+  });
+  const priorForPath = preparePathPriorForReadiness(snapshot._path_prior, readinessDecision);
+  const pathPerformance = enabled && (Object.hasOwn(snapshot, "path_update") || priorForPath)
+    ? evaluatePathPerformance({ prior: priorForPath, update: snapshot.path_update,
+        variables: derivedVariables,
         observationIds: new Set((snapshot.direct_observations ?? []).map(o => o.id)),
         invalidated: snapshot._path_invalidated,
         relationalReadiness: snapshot.turn_task?.relational_readiness ?? null }) : null;
