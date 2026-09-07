@@ -13,7 +13,7 @@ anchors:
   - IC.GUIDE_LATER
 reconciled_nodes: []
 base_record_sha256: e3f82a386a1293f509d5368f2186929b23a859d4e1dc0af7002ce625dc610a8d
-projection_input_sha256: 87fe2a86cd73db5cb54f86ba19f04d231dff02d8a775faa8121ab27f34ae51b1
+projection_input_sha256: ffe83d54068ac1f15fc624fee5bc33d28e07d074b318546b1801871d58fb0d38
 ---
 
 # Develop enough identity before deconstructive practice when needed

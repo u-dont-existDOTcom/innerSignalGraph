@@ -308,6 +308,7 @@ guide-graphs/compiled/inner-child-directed-graph.json
 guide-graphs/compiled/inner-child-somatic-cross-guide.json
 guide-graphs/compiled/somatic-directed-graph.json
 src/authoring/contract.mjs
+src/authoring/projection.mjs
 src/case-formulation/path-performance.mjs
 src/case-formulation/run.mjs
 src/case-formulation/schemas.mjs
@@ -327,5 +328,6 @@ tasks/NEXT-CONVERSATION-HANDOFF-2026-09-07.md
 tasks/path-performance-20260907/CHANGED-PATHS.txt
 tasks/path-performance-20260907/HUMAN-EVALUATION.md
 tasks/path-performance-20260907/INTEGRATION.md
+tests/authoring-proposal.test.mjs
 tests/guide-fidelity.test.mjs
 tests/path-performance.test.mjs

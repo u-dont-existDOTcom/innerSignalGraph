@@ -62,6 +62,8 @@ Delivery stamping is a structural receipt, not proof of clinical function. Obser
 
 Final bounded independent review found no remaining deterministic defects in its frozen scope after the repairs and passed all 42 controller regressions. Human usefulness, evidence interpretation and semantic realization remain unestablished. Exact reviewer disposition is summarized here rather than treating independent code review as clinical review.
 
+The final comparison with the separate PR #47 also exposed a missing authoring dependency fingerprint: the planner's new path-performance module and shared turn-task protection predicate must participate in stale-proposal checks. They were added to the existing semantic input list and proposal fixtures; the existing stale-base regression now independently mutates the planner, controller and turn-task modules. A changed controller cannot leave a previously created owner proposal falsely current. Generated projections and final gates were rerun for this concrete safeguard repair.
+
 ## Verification receipt
 
 Focused iteration and affected tests are measured with the current universal test-efficiency observer. Final gate results and exact containing head are recorded in the PR closeout receipt because a commit cannot embed its own immutable identity. See the final response/PR for exact counts rather than treating the prior 730-test source-sync result as current evidence.

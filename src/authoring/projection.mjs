@@ -18,6 +18,8 @@ const GRAPH_FILES = [
   "guide-graphs/candidates/somatic.graph.json"
 ];
 const SEMANTIC_CODE_INPUTS = [
+  "src/case-formulation/path-performance.mjs",
+  "src/case-formulation/turn-task.mjs",
   "src/guide-graph/compiler.mjs",
   "src/guide-graph/contract.mjs",
   "src/guide-graph/planner.mjs",
