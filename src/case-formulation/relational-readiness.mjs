@@ -29,9 +29,37 @@ export const relationalReadinessSchema = { anyOf: [{ type: "null" }, record({
   review_when: text
 })] };
 
+function validateShape(value, schema, label, fail) {
+  if (schema.anyOf) {
+    if (value === null) return;
+    return validateShape(value, schema.anyOf[1], label, fail);
+  }
+  if (schema.type === "object") {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return fail(`${label} must be an object.`);
+    if (schema.additionalProperties === false && Object.keys(value).some(key => !Object.hasOwn(schema.properties, key))) return fail(`${label} has undeclared fields.`);
+    for (const key of schema.required ?? []) {
+      if (!Object.hasOwn(value, key)) return fail(`${label}.${key} is required.`);
+      validateShape(value[key], schema.properties[key], `${label}.${key}`, fail);
+    }
+    return;
+  }
+  if (schema.type === "array") {
+    if (!Array.isArray(value) || value.length > (schema.maxItems ?? Number.POSITIVE_INFINITY)) return fail(`${label} must be a bounded array.`);
+    value.forEach((item, index) => validateShape(item, schema.items, `${label}[${index}]`, fail));
+    return;
+  }
+  if (schema.type === "string") {
+    if (typeof value !== "string" || value.length > (schema.maxLength ?? Number.POSITIVE_INFINITY)) return fail(`${label} must be bounded text.`);
+    if (schema.enum && !schema.enum.includes(value)) return fail(`${label} is invalid.`);
+    return;
+  }
+  return fail(`${label} has an unsupported schema.`);
+}
+
 export function validateRelationalEvidence(readiness, { issue, observationIds = new Set() } = {}, fail = message => { throw new TypeError(message); }) {
   if (!readiness) return null;
-  if (!readiness.issue?.trim() || (issue != null && readiness.issue !== issue)) fail("Relational readiness must be bound to the current issue.");
+  validateShape(readiness, relationalReadinessSchema.anyOf[1], "relational_readiness", fail);
+  if (!readiness.issue.trim() || (issue != null && readiness.issue !== issue)) fail("Relational readiness must be bound to the current issue.");
   const references = (values, required = false) => {
     if ((required && !values.length) || new Set(values).size !== values.length || values.some(id => !observationIds.has(id))) {
       fail("Relational readiness needs current direct-observation references.");
