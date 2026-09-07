@@ -1,3 +1,5 @@
+import { relationalReadinessDecision, relationalReadinessGuidance } from "../case-formulation/relational-readiness.mjs";
+import { strategyPerformanceDecision, strategyPerformanceGuidance } from "../case-formulation/strategy-performance.mjs";
 import { blankCaseVariables, CASE_VARIABLE_ENUMS } from "./contract.mjs";
 import { validateCaseVariables } from "./validate.mjs";
 import { validateTurnTask, immediateProtectionNeeded, taskQuestion, guidanceForTask } from "../case-formulation/turn-task.mjs";
@@ -136,6 +138,9 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   const taskPolicy = graphs.every(graph => graph.taskPolicyVersion === 1);
   const task = taskPolicy ? validateTurnTask(turnTask) : null;
   const emergency = immediateProtectionNeeded(variables);
+  const relational = relationalReadinessDecision(task?.relational_readiness, { immediateProtection: emergency || variables.suicidal_state === "intent" });
+  const relationalPause = relational?.pauseCurrent === true;
+  const strategy = strategyPerformanceDecision(task, relational);
   const deferTargets = (node) => {
     if (taskPolicy && (node.effects?.deferralUnless ?? []).some(c => conditionMatches(c, variables))) return [];
     if (taskPolicy && task?.agreement === "accepted" && task.capacity === "adequate" && task.phase === "practice"
@@ -184,11 +189,18 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   }
   // An evidenced current task can outrank generic preparation, but never protective
   // constraints, a live external problem or an uncompleted relational reality check.
-  if (taskPolicy && task?.agreement === "accepted" && task.node_id && !emergency
+  if (taskPolicy && task?.agreement === "accepted" && task.node_id && !emergency && !strategy.pauseCurrent
       && !eligible.some(node => node.tier <= 2)
       && !eligible.some(node => ["ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.ACT_OUTWARD", "ROUTE.LEAVE_ALONE", "ROUTE.EXTERNAL_EMBODIMENT"].includes(node.id) && node.id !== task.node_id)) {
     eligible = [...eligible].sort((a,b) => Number(b.id === task.node_id) - Number(a.id === task.node_id));
   }
+  const protectedJob = eligible.some(node => node.tier <= 2)
+    || eligible.some(node => ["ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.ACT_OUTWARD", "ROUTE.LEAVE_ALONE", "ROUTE.EXTERNAL_EMBODIMENT"].includes(node.id) && node.id !== task?.node_id);
+  const strategyReviewMode = taskPolicy && strategy.pauseCurrent && task?.agreement !== "declined" && !emergency && !protectedJob;
+  // An alternative is a proposal within the existing eligible set. The model
+  // cannot invent a node, unblock a deferred route or consent on the user's behalf.
+  const alternative = strategyReviewMode && eligible.find(node => node.id === task?.strategy_review?.alternative_node_id && node.id !== task.node_id);
+  if (alternative) eligible = [alternative, ...eligible.filter(node => node !== alternative)];
   const primary = eligible[0] ?? null;
   const secondary = eligible.slice(1, 5);
   const deferredNodes = nodes
@@ -227,6 +239,7 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     if (!node?.defaultQuestion?.trim()) return false;
     if (!taskPolicy) return true;
     if (emergency) return node.questionPolicy?.purpose === "safety";
+    if (relationalPause) return node.questionPolicy?.purpose === "safety";
     if (task?.phase === "close" || task?.agreement === "declined" || primary?.id === "ROUTE.LEAVE_ALONE") return false;
     return !(node.questionPolicy?.unresolvedFields ?? []).length || node.questionPolicy.unresolvedFields.some(field => variables[field] === "unknown");
   };
@@ -235,24 +248,30 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   const usefulUnknowns = [...unknowns].filter(item => unknownIsStillUseful(item, variables))
     .filter(item => !taskPolicy || !emergency || ["present_safety", "orientation", "ability_to_stop", "ability_to_return", "support_available"].includes(item.variable))
     .sort((a,b) => (b.importance ?? 0) - (a.importance ?? 0));
-  const currentTaskQuestion = !emergency && task && task.node_id === primary?.id ? taskQuestion(task) : "";
-  const noQuestion = taskPolicy && ((!emergency && (task?.phase === "close" || task?.agreement === "declined" || primary?.id === "ROUTE.LEAVE_ALONE"))
+  const currentTaskQuestion = !emergency && !relationalPause && task && task.node_id === primary?.id ? taskQuestion(task) : "";
+  const readinessQuestion = relational?.status === "ASSESS_BEFORE_ROMANCE" && !emergency && task?.agreement !== "declined" && task?.phase !== "close" && task?.question_focus !== "none"
+    ? "How are you managing daily life and distress at the moment, including any non-romantic support?" : "";
+  const reviewQuestion = !relationalPause && strategyReviewMode && task.question_focus !== "none" ? "What would make the next step more useful or manageable for you?" : "";
+  const noQuestion = (!emergency && relationalPause && !questionNode) || (strategyReviewMode && !reviewQuestion) || taskPolicy && ((!emergency && (task?.phase === "close" || task?.agreement === "declined" || primary?.id === "ROUTE.LEAVE_ALONE"))
     || (task?.question_focus === "none" && task.node_id === primary?.id && !emergency));
-  const nextQuestion = noQuestion ? "" : currentTaskQuestion || questionNode?.defaultQuestion || usefulUnknowns[0]?.question || "";
-  const nextQuestionSource = !nextQuestion ? null : currentTaskQuestion
+  const nextQuestion = readinessQuestion || reviewQuestion || (noQuestion ? "" : currentTaskQuestion || questionNode?.defaultQuestion || usefulUnknowns[0]?.question || "");
+  const nextQuestionSource = readinessQuestion ? { type: "relational-readiness", status: relational.status } : reviewQuestion ? { type: "strategy-review", status: strategy.status } : !nextQuestion ? null : currentTaskQuestion
     ? { type: "turn-task", phase: task.phase, focus: task.question_focus }
     : questionNode ? { type: "graph-node", id: questionNode.id }
     : { type: "case-unknown", variable: usefulUnknowns[0].variable };
-  const requiredNodeIds = primary ? [primary.id] : [];
-  if (taskPolicy && !emergency && primary?.id === "ROUTE.INFLUENCE_NONORDINARY_METTA"
+  const requiredNodeIds = primary && !strategyReviewMode ? [primary.id] : [];
+  if (taskPolicy && !strategyReviewMode && !emergency && primary?.id === "ROUTE.INFLUENCE_NONORDINARY_METTA"
       && selectedIds.has("ROUTE.INFLUENCE_LOVE_CAPACITY")) requiredNodeIds.push("ROUTE.INFLUENCE_LOVE_CAPACITY");
-  const taskApplies = task && (task.node_id === primary?.id || task.kind === "relationship_repair" || task.agreement === "declined" || task.phase === "close");
+  const taskApplies = task && (strategyReviewMode || strategy.pauseCurrent || task.node_id === primary?.id || task.kind === "relationship_repair" || task.agreement === "declined" || task.phase === "close");
   const execution = taskPolicy ? {
     version: 1, requiredNodeIds,
+    ...((task?.strategy_review || relationalPause) && !emergency ? { strategyReview: { ...strategy, mode: strategyReviewMode ? "review_before_exercise" : "within_current_route", alternativeEligible: Boolean(alternative) } } : {}),
+    ...(relational ? { relationalReadiness: relational, relationalGuidance: relationalReadinessGuidance(relational) } : {}),
     contextNodeIds: selected.filter(n => !requiredNodeIds.includes(n.id)).map(n => n.id),
     task: taskApplies ? task : null,
-    taskGuidance: taskApplies && !emergency ? guidanceForTask(task) : [],
+    taskGuidance: taskApplies && !emergency ? [...((strategyReviewMode || relationalPause) && task.agreement !== "declined" && task.phase !== "close" ? [] : guidanceForTask(task)), ...strategyPerformanceGuidance(task.strategy_review, strategy)] : [],
     reason: emergency ? "Immediate protection controls this turn; other selected nodes are context only."
+      : strategyReviewMode ? "Review the current strategy before another exercise. Selected graph nodes are eligible options for discussion only; no alternative exercise is consented to by this review."
       : "Perform the primary and explicitly necessary support, not every diagram secondary."
   } : null;
 

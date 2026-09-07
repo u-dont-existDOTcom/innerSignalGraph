@@ -23,6 +23,10 @@ Pay special attention to:
 - completion or guard permission carried into a new issue, inferred from silence, or retained after relevant new evidence/refusal;
 - redundant checking mistaken for all unresolved grief, and practical noncompletion mistaken for resistance without reviewing barriers;
 - a current task repeated after a meaningful reported response, or a valid correction of the app mistaken for pathology;
+- relational_readiness that collapses support/friendship/community and romance; normalizes dating despite substantial foreseeable current harm; treats one diagnosis or past hospitalization as a permanent ban; demands complete healing, moral worthiness or 'love yourself first'; recommends isolation; invents harm to children; or converts a pause into a compulsory breakup. Check current functional stability, risk, trajectory, supports, counterevidence and revisitable readiness markers against observations; use corrected_turn_task/invalidate_turn_task to repair unsupported assessments;
+- social attendance or temporary partner relief counted as successful support-building when the purpose is instrumental partner-seeking, worsening dependency, relational preoccupation, escalating pursuit, or a partner used as primary regulator/analgesic/reality anchor/rescuer/proof of worth. Generic connection benefits do not override case-specific harm; a phrase such as 'keeps me sane' requires contextual assessment. Reopen readiness when current evidence improves, rather than carrying forward a stale pause or clearance;
+- strategy_review outcomes or poor fit inferred from silence, brief replies, compliance, intensity, insight, ongoing symptoms or noncompletion alone; a not-yet-due effect scored as failure; partial gains/costs or the app's own mistake omitted; private history used without scope;
+- the old strategy's evidence or consent copied to a new approach, fabricated counts or clinical cutoffs, a renamed repetition offered as an alternative, or a hypothesis reported as a clinical fact. Review the stated expected change against actual observations and prior task context; correct or invalidate unsupported strategy_review through corrected_turn_task/invalidate_turn_task;
 - spiritual struggle mistaken for bypass, identity mistaken for consent, or emotion-focused work mistaken for tapping.
 
 For a task correction, return corrected_turn_task with supported observation IDs. Use invalidate_turn_task to drop stale, withdrawn or wrongly framed task state; otherwise return null and false. Removed supporting observations must not continue authorizing the task. Correct scoped enum fields as well when completion/permission is unsupported.
@@ -32,7 +36,7 @@ ${JSON.stringify(CASE_VARIABLE_ENUMS, null, 2)}
 
 Return exactly the requested JSON object.`;
 
-  const user = `RECENT TRANSCRIPT:
+  const user = `PRIOR TASK AND INTERVENTION CONTRACT:\n${JSON.stringify({ task: context.priorCaseSnapshot?.turn_task ?? null, plan: context.priorInterventionContract ?? null }, null, 2)}\n\nRECENT TRANSCRIPT:
 ${context.recentTranscript || "(none supplied)"}
 
 CURRENT USER MESSAGE:

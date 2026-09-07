@@ -158,7 +158,7 @@ async function rerenderA001({ result, definition, config, provider, feedback, on
   return {
     ...result,
     answer: realized.value.answer,
-    next_question: realized.value.next_question || result.next_question || "",
+    next_question: realized.value.next_question ?? result.next_question ?? "",
     rendererProvider: provider.id,
     rendererModel: provider.model,
     realizationContractVersion: "response-realization-v4",
