@@ -157,6 +157,7 @@ export const SEMANTIC_FIELD_POLICY = Object.freeze({
   defaultQuestion: "substantive-response-routing",
   questionPolicy: "substantive-response-routing",
   taskPolicyVersion: "substantive-routing-safety",
+  pathPerformancePolicyVersion: "substantive-routing-safety",
   description: "reviewed-metadata",
   edges: "substantive-topology",
   contractVersion: "immutable",

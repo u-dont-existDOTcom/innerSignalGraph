@@ -116,7 +116,9 @@ test('entire three-condition smoke and replay execute through fake transport onl
    const verdict=control?.expect==='reject'?'revise':'pass';
    text=JSON.stringify({criteria:CRITERIA.map(id=>({id,applicable:true,verdict,reason:'Deterministic fake transport fixture only; not a semantic grade.',source_ids:[packet.source_material[0].id],answer_quote:packet.candidate_response})),source_conflict:false,source_conflict_reason:''});
   }else if(system.includes('case-formulation extractor')){
-   text=JSON.stringify({user_goal:'Fixture planning',current_issue:'transport test',turn_task:null,direct_observations:[],variables:{...blankCaseVariables(),present_safety:'safe',orientation:'oriented',ability_to_stop:'yes',ability_to_return:'yes',suicidal_state:'absent',altered_state:'sober',dissociation:'none',activation:'low',actionable_problem:'present',current_intent:'conversation'},hypotheses:[],unknowns:[]});
+   text=JSON.stringify({user_goal:'Fixture planning',current_issue:'transport test',turn_task:null,path_update:null,direct_observations:[],variables:{...blankCaseVariables(),present_safety:'safe',orientation:'oriented',ability_to_stop:'yes',ability_to_return:'yes',suicidal_state:'absent',altered_state:'sober',dissociation:'none',activation:'low',actionable_problem:'present',current_intent:'conversation'},hypotheses:[],unknowns:[]});
+  }else if(system.includes('adversarial case-formulation auditor')){
+   text=JSON.stringify({corrected_turn_task:null,invalidate_turn_task:false,remove_observation_ids:[],remove_hypothesis_ids:[],variable_corrections:[],add_unknowns:[],safety_flags:[],verdict:'accept',summary:'Synthetic transport only'});
   }else if(system.includes('response realizer')){
    const raw=user.split('DETERMINISTIC INTERVENTION CONTRACT:\n')[1].split('\n\nRESOLVED REASONING PACKET:')[0];
    const plan=JSON.parse(raw),answer='This is a synthetic transport fixture, not a therapeutic result.';

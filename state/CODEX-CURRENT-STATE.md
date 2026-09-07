@@ -1,6 +1,20 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-04
+Updated: 2026-09-07
+
+## Current owner-authorized PR #46 path-performance implementation
+
+The 2026-09-07 owner request authorizes the dynamic therapeutic strategy controller on `companion/foundations-2026-09-05`, draft PR #46. It supersedes the map/fidelity next-action routing for this bounded implementation only; independent DEV-R005 authority and the completed guide-source synchronization below remain intact.
+
+- Fetched starting head: `aadae353dd383ac95dbe39178ee4645bab7980ec`. Fetch the latest PR head before resuming; exact final containing commit and hosted gates are recorded on the PR.
+- Candidate implementation: `src/case-formulation/path-performance.mjs`, integrated with extraction/audit, current session state, graph planning and realization. The three candidate graphs explicitly declare `pathPerformancePolicyVersion: 1`; this field is substantive owner-gated routing/safety. Installed/legacy packets without it remain on their existing behavior.
+- Design and current semantics: `docs/superpowers/specs/2026-09-07-path-performance-controller.md`. Sole task ledger, independent conception and bounded COMPOSE/ADAPT scan: `tasks/path-performance-20260907/INTEGRATION.md`.
+- Synthetic adversarial and lifecycle cases: `tests/path-performance.test.mjs`. Separate human-usefulness/harm evaluation remains unperformed; `tasks/path-performance-20260907/HUMAN-EVALUATION.md` defines the actual behavioral review needed. Schema/graph/test success is not human or clinical efficacy evidence.
+- Preserve the case-level, evidence-bound romance-regulation constraint with increased structured non-romantic support and no isolation. No identifying client information or verbatim private conversation is stored.
+- Independent code review found and drove repairs to actual delivery binding, safety/block precedence, withdrawn/closed evidence, evidence replay, same-path rewording, process changes and case-risk persistence. Read the task ledger for verification and remaining limits.
+- No merge, deployment, stable promotion, installation, source-article change, hypnosis-gate change or privacy-schema expansion is authorized or performed. The rollback point is the fetched starting head; reversal of this candidate is a normal revert, never a shared-history rewrite.
+
+Next safe action after deterministic closeout: review the candidate's actual model behavior on the additive path-performance cases using the existing fidelity evaluation architecture and explicit current model/source/budget pins. The older smoke evidence remains unadmitted history; do not claim that this implementation ran or passed that live gate.
 
 ## Parallel romance-guide source integration (2026-09-07)
 

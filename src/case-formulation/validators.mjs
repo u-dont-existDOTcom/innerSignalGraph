@@ -1,3 +1,4 @@
+import { validatePathUpdate } from "./path-performance.mjs";
 import { validateTurnTask } from "./turn-task.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
@@ -26,6 +27,7 @@ export function validateCaseSnapshot(value) {
     observationIds.add(item.id);
   }
   if (Object.hasOwn(value, "turn_task")) value.turn_task = validateTurnTask(value.turn_task, { issue: value.current_issue, observationIds });
+  if (Object.hasOwn(value, "path_update")) value.path_update = validatePathUpdate(value.path_update, observationIds);
   value.variables = validateCaseVariables(value.variables);
   if (!Array.isArray(value.hypotheses)) throw new ValidationError("caseSnapshot.hypotheses must be an array.");
   const hypothesisIds = new Set();

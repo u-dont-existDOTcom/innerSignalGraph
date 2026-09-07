@@ -2,6 +2,14 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Latest continuation — dynamic path-performance candidate
+
+The owner subsequently authorized implementing the dynamic therapeutic path controller on this same draft PR. Recover the current result from `state/CODEX-CURRENT-STATE.md`, `docs/superpowers/specs/2026-09-07-path-performance-controller.md` and `tasks/path-performance-20260907/INTEGRATION.md`. The bounded controller reuses the existing snapshot/router/realizer/ledger, retains prediction failures across wording changes, interrupts ineffective or adverse paths, and carries the de-identified case-level support/romance-regulation policy. Its deterministic regression suite is `tests/path-performance.test.mjs`.
+
+This is candidate runtime behavior, enabled by explicit substantive policy on the candidate graphs. It changes the runtime/planner baseline for future live evaluation. Keep old source-sync, guide-fidelity and companion evidence frozen; use a fresh evaluation directory and exact current candidate identity for subsequent tests. `tasks/path-performance-20260907/HUMAN-EVALUATION.md` separates required human-usefulness/harm review from deterministic success. No authenticated therapeutic response or clinical outcome is claimed from this implementation.
+
+The source synchronization below remains complete. Its pending calibrated smoke has not been rerun or completed by this task; its previous four calls and 116-call remainder are unchanged. No merge, deployment, installation or stable promotion.
+
 ## Latest continuation — source synchronization completed
 
 The next bounded content task below is now complete. The full owner article was recovered from message `a56688c2-1f9b-4692-8ac4-1ab007347897` in conversation `6a9b75e2-15c4-83ea-9232-4b1b33e58a37`. Original: `guides/snapshots/inner-child-guide-owner-2026-09-06.txt`; revised active source: `guides/inner-child-guide-2026-09-07.txt`. All E01-E12 were applied exactly and independently checked, with zero unrelated changes.

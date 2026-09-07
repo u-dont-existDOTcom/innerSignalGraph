@@ -5,6 +5,7 @@ export const GRAPH_SEMANTIC_FIELDS = Object.freeze({
   version: "generated-prohibited",
   description: "reviewed-metadata",
   taskPolicyVersion: "substantive-routing-safety",
+  pathPerformancePolicyVersion: "substantive-routing-safety",
   bundleVersion: "generated-prohibited",
   sourceRevision: "generated-prohibited"
 });
@@ -44,7 +45,7 @@ export const BUNDLE_SEMANTIC_FIELDS = Object.freeze({
   sourceMaps: "generated-prohibited"
 });
 
-export const GRAPH_KEYS = Object.freeze(["contractVersion", "graphId", "guideId", "version", "description", "taskPolicyVersion", "nodes", "edges", "bundleVersion", "sourceRevision"]);
+export const GRAPH_KEYS = Object.freeze(["contractVersion", "graphId", "guideId", "version", "description", "taskPolicyVersion", "pathPerformancePolicyVersion", "nodes", "edges", "bundleVersion", "sourceRevision"]);
 export const NODE_KEYS = Object.freeze(["id", "title", "kind", "tier", "priority", "activation", "sourceRefs", "authority", "recommendations", "avoid", "successSignals", "tags", "effects", "defaultQuestion", "questionPolicy"]);
 export const ACTIVATION_KEYS = Object.freeze(["all", "any", "none"]);
 export const CONDITION_KEYS = Object.freeze(["field", "op", "value"]);

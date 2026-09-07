@@ -990,5 +990,6 @@
       "relation": "may-use-phenomenological-inner-work-without-verdict"
     }
   ],
-  "taskPolicyVersion": 1
+  "taskPolicyVersion": 1,
+  "pathPerformancePolicyVersion": 1
 }

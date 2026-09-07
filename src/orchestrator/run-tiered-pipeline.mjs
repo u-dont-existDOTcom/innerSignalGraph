@@ -27,7 +27,8 @@ function criticalDeltaCount(snapshot, priorSnapshot) {
 
 export function classifyTherapyTier(snapshot, requested = "auto", session = {}) {
   const v = snapshot?.variables ?? {};
-  const safetyHard = v.present_safety === "unsafe"
+  const performanceDanger = snapshot?.path_update?.signals?.some(s => ["dissociation", "fragmentation", "destabilization"].includes(s.kind) && s.severity === "significant");
+  const safetyHard = performanceDanger || v.present_safety === "unsafe"
     || v.orientation === "disoriented"
     || v.ability_to_stop === "no"
     || v.ability_to_return === "no"
@@ -44,7 +45,7 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
     && ["same", "distinct", "blend", "unresolved"].includes(v.internal_speaker_relation);
   const intentHard = HARD_INTENTS.has(v.current_intent);
   const importantUnknown = Math.max(0, ...(snapshot?.unknowns ?? []).map((item) => item.importance ?? 0));
-  const reviewedSignal = Boolean(snapshot?.turn_task) || v.spiritual_struggle === "present" || v.protective_response === "present"
+  const reviewedSignal = Boolean(snapshot?.path_update || snapshot?._path_prior) || Boolean(snapshot?.turn_task) || v.spiritual_struggle === "present" || v.protective_response === "present"
     || v.self_directed_love === "unsafe"
     || v.credibility_conflict === "present"
     || v.emotional_takeover_pressure === "present"

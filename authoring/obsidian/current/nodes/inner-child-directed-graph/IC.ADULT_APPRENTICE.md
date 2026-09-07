@@ -22,8 +22,8 @@ source_refs:
   - AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 regression_refs: []
 base_record_sha256: e7fcbbd83cbe5878a3d032e7ebeb3f5ee8d04197c4f5c16ec4c663690bde4eac
-base_graph_sha256: d4b4c8dcccb63795c523c14bf995d9957c6c3e0b0b0af4f137ec9ae9bb58744e
-projection_input_sha256: 8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: 87fe2a86cd73db5cb54f86ba19f04d231dff02d8a775faa8121ab27f34ae51b1
 ---
 
 # Move from receiving care to doing five percent

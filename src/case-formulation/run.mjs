@@ -1,3 +1,6 @@
+import { ValidationError } from "../core/errors.mjs";
+import { evaluatePathPerformance, CASE_RISK_SIGNALS } from "./path-performance.mjs";
+import { deriveCaseVariables } from "../guide-graph/planner.mjs";
 import { validateTurnTask, reconcileIssueScope } from "./turn-task.mjs";
 import { parseModelJson } from "../core/json.mjs";
 import { caseSnapshotSchema, caseAuditSchema } from "./schemas.mjs";
@@ -32,8 +35,37 @@ export function applyCaseAudit(snapshot, audit) {
   if (audit.remove_observation_ids.length || audit.invalidate_turn_task === true) {
     for (const field of ["relational_check_status", "loop_target_relation", "guard_engagement", "leave_alone_eligibility"]) variables[field] = "unknown";
   }
+  const pathUpdate = snapshot.path_update ? structuredClone(snapshot.path_update) : null;
+  let priorState = snapshot._path_prior ? structuredClone(snapshot._path_prior) : null;
+  const episodeSignal = signal => !CASE_RISK_SIGNALS.includes(signal.kind) || Boolean(signal.prediction_id);
+  const episodeRefs = episode => episode ? [
+    ...episode.strategy.observation_ids, ...(episode.failure_evidence_ids ?? []),
+    ...episode.reviews.flatMap(r => r.observed_signals.filter(episodeSignal).map(s => s.observation_id))
+  ] : [];
+  const activeWithdrawn = episodeRefs(priorState?.active).some(id => removeObservations.has(id));
+  const pathInvalidated = Boolean(snapshot._path_invalidated || activeWithdrawn || (pathUpdate && [
+    ...(pathUpdate.strategy?.observation_ids ?? []), ...pathUpdate.signals.filter(episodeSignal).map(s => s.observation_id),
+    ...pathUpdate.failure_hypotheses.flatMap(h => h.observation_ids)
+  ].some(id => removeObservations.has(id))));
+  const withdraw = episode => {
+    if (!episode || !episodeRefs(episode).some(id => removeObservations.has(id))) return;
+    episode.reviews = []; episode.failure_evidence_ids = []; episode.delivery = null;
+    episode.invalidated = true; episode.switch_pending = true;
+  };
+  if (priorState) {
+    withdraw(priorState.active);
+    for (const closed of priorState.closed) withdraw(closed.retained_episode);
+    priorState.risk_signals = (priorState.risk_signals ?? []).filter(s => !removeObservations.has(s.observation_id));
+  }
+  if (pathUpdate) {
+    pathUpdate.signals = pathUpdate.signals.filter(s => !removeObservations.has(s.observation_id));
+    pathUpdate.failure_hypotheses = pathUpdate.failure_hypotheses.filter(h => !h.observation_ids.some(id => removeObservations.has(id)));
+    if (pathUpdate.strategy?.observation_ids.some(id => removeObservations.has(id))) pathUpdate.strategy = null;
+  }
   return {
     ...snapshot,
+    ...(priorState ? { _path_prior: priorState } : {}),
+    ...(Object.hasOwn(snapshot, "path_update") || snapshot._path_prior ? { path_update: pathUpdate, _path_invalidated: pathInvalidated } : {}),
     direct_observations: snapshot.direct_observations.filter((item) => !removeObservations.has(item.id)),
     ...((Object.hasOwn(snapshot, "turn_task") || audit.corrected_turn_task || audit.invalidate_turn_task) ? { turn_task: audit.invalidate_turn_task ? null : validateTurnTask(audit.corrected_turn_task ?? snapshot.turn_task, {
       issue: snapshot.current_issue,
@@ -54,11 +86,22 @@ export function applyCaseAudit(snapshot, audit) {
 async function planSnapshot(snapshot, { onPlanningPass, loadPlanningGraphBundle = loadCompiledGuideGraphBundle } = {}) {
   onPlanningPass?.();
   const bundle = await loadPlanningGraphBundle();
+  const enabled = bundle.graphs.length > 0 && bundle.graphs.every(g => g.pathPerformancePolicyVersion === 1);
+  const pathPerformance = enabled && (Object.hasOwn(snapshot, "path_update") || snapshot._path_prior)
+    ? evaluatePathPerformance({ prior: snapshot._path_prior, update: snapshot.path_update,
+        variables: deriveCaseVariables(snapshot.variables),
+        observationIds: new Set((snapshot.direct_observations ?? []).map(o => o.id)), invalidated: snapshot._path_invalidated }) : null;
+  if (pathPerformance?.active && !bundle.graphs.some(g => g.nodes.some(n => n.id === pathPerformance.active.strategy.node_id))) throw new TypeError("Strategy references a node outside the current graph.");
+  if (pathPerformance) snapshot.path_performance = pathPerformance;
+  else delete snapshot.path_performance;
+  delete snapshot._path_prior;
+  delete snapshot._path_invalidated;
   const plan = planFromGraphs({
     variables: snapshot.variables,
     unknowns: snapshot.unknowns,
     graphs: bundle.graphs,
-    turnTask: snapshot.turn_task ?? null
+    turnTask: snapshot.turn_task ?? null,
+    pathPerformance
   });
   return { plan, graphBundleVersion: bundle.version };
 }
@@ -73,10 +116,18 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
     provider,
     caseExtractionPrompt(context),
     { stage: "case_extraction", fixtureKey: "case_extraction" },
-    validateCaseSnapshot,
+    value => {
+      if (context.pathPerformanceEnabled && !String(provider.model).startsWith("mock-") && !Object.hasOwn(value, "path_update")) throw new ValidationError("Candidate extraction must declare path_update; missing strategy tracking cannot silently bypass monitoring.");
+      return validateCaseSnapshot(value);
+    },
     caseSnapshotSchema,
     onProgress
   );
+  // Ignore model-supplied controller state. Only the existing session state owns history.
+  delete extraction.value.path_performance;
+  delete extraction.value._path_prior;
+  const prior = context.priorCaseSnapshot?.path_performance;
+  if (prior) extraction.value._path_prior = structuredClone(prior);
   return { ...extraction, value: reconcileIssueScope(extraction.value, context.priorCaseSnapshot) };
 }
 

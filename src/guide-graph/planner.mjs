@@ -1,3 +1,4 @@
+import { pathPerformanceGuidance, performanceQuestion } from "../case-formulation/path-performance.mjs";
 import { blankCaseVariables, CASE_VARIABLE_ENUMS } from "./contract.mjs";
 import { validateCaseVariables } from "./validate.mjs";
 import { validateTurnTask, immediateProtectionNeeded, taskQuestion, guidanceForTask } from "../case-formulation/turn-task.mjs";
@@ -131,10 +132,12 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
-export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs, turnTask = null }) {
+export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs, turnTask = null, pathPerformance = null }) {
   const variables = deriveCaseVariables(rawVariables);
   const taskPolicy = graphs.every(graph => graph.taskPolicyVersion === 1);
-  const task = taskPolicy ? validateTurnTask(turnTask) : null;
+  const control = graphs.length > 0 && graphs.every(g => g.pathPerformancePolicyVersion === 1) ? pathPerformance : null;
+  let interrupt = control && control.latest.route !== "continue";
+  let task = taskPolicy && !interrupt ? validateTurnTask(turnTask) : null;
   const emergency = immediateProtectionNeeded(variables);
   const deferTargets = (node) => {
     if (taskPolicy && (node.effects?.deferralUnless ?? []).some(c => conditionMatches(c, variables))) return [];
@@ -189,6 +192,43 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
       && !eligible.some(node => ["ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.ACT_OUTWARD", "ROUTE.LEAVE_ALONE", "ROUTE.EXTERNAL_EMBODIMENT"].includes(node.id) && node.id !== task.node_id)) {
     eligible = [...eligible].sort((a,b) => Number(b.id === task.node_id) - Number(a.id === task.node_id));
   }
+  // A controller switch is a causal routing decision, never adjacency traversal.
+  // Keep graph safety and concrete external action ahead of the reconsideration route.
+  const safetyIds = new Set(["IC.SAFETY_ORIENTATION", "IC.ALTERED_STATE_GATE", "IC.PHOTO_EPISTEMIC_CAUTION"]);
+  const higherRoutes = new Set([...safetyIds, "ROUTE.ACT_OUTWARD", "ROUTE.EXTERNAL_EMBODIMENT", "ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.LEAVE_ALONE"]);
+  if (control && !interrupt) {
+    const wanted = eligible.find(n => n.id === control.active?.strategy.node_id);
+    const precedence = eligible.find(n => (higherRoutes.has(n.id) || n.tier === 1) && n.id !== wanted?.id);
+    if (wanted && !precedence && task?.agreement !== "declined") eligible = [wanted, ...eligible.filter(n => n.id !== wanted.id)];
+    else if (eligible[0]?.id !== wanted?.id || !wanted) {
+      control.latest.status = "UNCLEAR"; control.latest.decision = "PROBE";
+      control.latest.route = precedence?.id === "ROUTE.ACT_OUTWARD" ? "action" : precedence?.id === "ROUTE.EXTERNAL_EMBODIMENT" ? "external" : (safetyIds.has(precedence?.id) || precedence?.tier === 1) ? "protective" : "reconsider";
+      control.latest.reason = "The proposed strategy is not the permitted executed route; clarify/reselect before attributing outcomes.";
+      control.active.status = control.latest.status; control.active.decision = control.latest.decision; control.active.switch_pending = true;
+      interrupt = true; task = null;
+    }
+  }
+  let controlNode = null;
+  if (interrupt) {
+    const route = control.latest.route;
+    const protective = eligible.find(n => (safetyIds.has(n.id) || n.tier === 1) && n.id !== control.active?.strategy.node_id);
+    const action = eligible.find(n => n.id === "ROUTE.ACT_OUTWARD" && n.id !== control.active?.strategy.node_id);
+    const relational = eligible.find(n => n.id === "ROUTE.RELATIONAL_REALITY_CHECK" && n.id !== control.active?.strategy.node_id);
+    const forcedId = route === "safety" ? "IC.SAFETY_ORIENTATION"
+      : route === "action" ? "ROUTE.ACT_OUTWARD"
+      : route === "external" ? "ROUTE.EXTERNAL_EMBODIMENT"
+      : route === "leave" ? "ROUTE.LEAVE_ALONE" : "ROUTE.THREE_WAY_GATE";
+    controlNode = route === "safety" ? nodes.find(n => n.id === "IC.SAFETY_ORIENTATION")
+      : protective ?? action ?? (route === "reconsider" ? relational : null) ?? nodes.find(n => n.id === forcedId);
+    if (!controlNode || blockedIds.has(controlNode.id)) throw new TypeError("Path controller requires an available permitted routing node.");
+    if (controlNode.id === control.active?.strategy.node_id && route !== "safety") {
+      const exhaustedProbe = control.active.strategy.node_id === "ROUTE.THREE_WAY_GATE";
+      controlNode = nodes.find(n => n.id === (exhaustedProbe ? "ROUTE.EXTERNAL_EMBODIMENT" : "ROUTE.THREE_WAY_GATE"));
+      control.latest.route = exhaustedProbe ? "external" : "reconsider";
+    }
+    // Prior task, secondary jobs and their questions cannot smuggle the old exercise back in.
+    eligible = [controlNode];
+  }
   const primary = eligible[0] ?? null;
   const secondary = eligible.slice(1, 5);
   const deferredNodes = nodes
@@ -238,11 +278,15 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   const currentTaskQuestion = !emergency && task && task.node_id === primary?.id ? taskQuestion(task) : "";
   const noQuestion = taskPolicy && ((!emergency && (task?.phase === "close" || task?.agreement === "declined" || primary?.id === "ROUTE.LEAVE_ALONE"))
     || (task?.question_focus === "none" && task.node_id === primary?.id && !emergency));
-  const nextQuestion = noQuestion ? "" : currentTaskQuestion || questionNode?.defaultQuestion || usefulUnknowns[0]?.question || "";
-  const nextQuestionSource = !nextQuestion ? null : currentTaskQuestion
+  let nextQuestion = noQuestion ? "" : currentTaskQuestion || questionNode?.defaultQuestion || usefulUnknowns[0]?.question || "";
+  let nextQuestionSource = !nextQuestion ? null : currentTaskQuestion
     ? { type: "turn-task", phase: task.phase, focus: task.question_focus }
     : questionNode ? { type: "graph-node", id: questionNode.id }
     : { type: "case-unknown", variable: usefulUnknowns[0].variable };
+  if (interrupt && (primary?.tier > 2 || control.latest.route === "safety")) {
+    nextQuestion = primary.id === "ROUTE.THREE_WAY_GATE" ? performanceQuestion(control) : "";
+    nextQuestionSource = nextQuestion ? { type: "path-performance", episode: control.latest.episode_id } : null;
+  }
   const requiredNodeIds = primary ? [primary.id] : [];
   if (taskPolicy && !emergency && primary?.id === "ROUTE.INFLUENCE_NONORDINARY_METTA"
       && selectedIds.has("ROUTE.INFLUENCE_LOVE_CAPACITY")) requiredNodeIds.push("ROUTE.INFLUENCE_LOVE_CAPACITY");
@@ -251,7 +295,7 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     version: 1, requiredNodeIds,
     contextNodeIds: selected.filter(n => !requiredNodeIds.includes(n.id)).map(n => n.id),
     task: taskApplies ? task : null,
-    taskGuidance: taskApplies && !emergency ? guidanceForTask(task) : [],
+    taskGuidance: [...(taskApplies && !emergency ? guidanceForTask(task) : []), ...(control ? pathPerformanceGuidance(control) : [])],
     reason: emergency ? "Immediate protection controls this turn; other selected nodes are context only."
       : "Perform the primary and explicitly necessary support, not every diagram secondary."
   } : null;
@@ -284,6 +328,12 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   return {
     contractVersion: taskPolicy ? "case-plan-v5" : "case-plan-v4",
     ...(execution ? { executionContract: execution } : {}),
+    ...(control ? { pathPerformance: { ...control.latest, selected_node: primary?.id ?? null },
+      pathPerformanceContract: { version: 1, decision: control.latest.decision,
+        strategy: control.active?.strategy ?? null,
+        prior_node: control.active?.strategy.node_id ?? null,
+        prohibit_prior_exercise: Boolean(interrupt), guidance: pathPerformanceGuidance(control),
+        humanUsefulnessEstablished: false } } : {}),
     graphBundleVersion: graphs[0]?.bundleVersion ?? null,
     variables,
     primaryJob: primary ? { id: primary.id, title: primary.title, tier: primary.tier } : null,

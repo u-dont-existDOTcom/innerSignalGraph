@@ -28,6 +28,7 @@ export function validateGraph(graph, { knownSourceRefs = null, knownNodeIds = nu
   if (graph.contractVersion !== GUIDE_GRAPH_CONTRACT) throw new ValidationError(`Graph contract must be ${GUIDE_GRAPH_CONTRACT}.`);
   for (const key of ["graphId", "guideId", "version", "description"]) requireString(graph[key], key);
   if (!Array.isArray(graph.nodes) || !Array.isArray(graph.edges)) throw new ValidationError("Graph nodes and edges must be arrays.");
+  if (graph.pathPerformancePolicyVersion != null && (graph.pathPerformancePolicyVersion !== 1 || graph.taskPolicyVersion !== 1)) throw new ValidationError("Unsupported path-performance policy or missing task policy.");
   const ids = new Set();
   for (const [index, node] of graph.nodes.entries()) {
     const label = `${graph.graphId}.nodes[${index}]`;

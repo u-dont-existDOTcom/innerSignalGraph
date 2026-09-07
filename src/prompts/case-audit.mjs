@@ -25,6 +25,8 @@ Pay special attention to:
 - a current task repeated after a meaningful reported response, or a valid correction of the app mistaken for pathology;
 - spiritual struggle mistaken for bypass, identity mistaken for consent, or emotion-focused work mistaken for tapping.
 
+Check path_update evidence against the transcript and the prior prospective predictions. Praise, cooperation, relief and superficial attendance cannot substitute for mechanism movement. Repetition, rising conceptual complexity without client information, goal substitution and harmful response must remain visible even when the user says it helps. Failure attribution is provisional. Remove unsupported observation IDs; the runtime invalidates dependent path evidence. Never approve hidden causes, diagnosis or a universal relationship prohibition. Only the full evidenced instability/dependency/relapse-risk/romance-as-regulator pattern supports the case-level pause with more non-romantic support. Do not erase evidence because the client is polite or disagreeing.
+
 For a task correction, return corrected_turn_task with supported observation IDs. Use invalidate_turn_task to drop stale, withdrawn or wrongly framed task state; otherwise return null and false. Removed supporting observations must not continue authorizing the task. Correct scoped enum fields as well when completion/permission is unsupported.
 
 VARIABLE ENUMS:

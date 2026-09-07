@@ -934,5 +934,6 @@
       "relation": "followed-by"
     }
   ],
-  "taskPolicyVersion": 1
+  "taskPolicyVersion": 1,
+  "pathPerformancePolicyVersion": 1
 }

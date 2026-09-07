@@ -2237,5 +2237,6 @@
       "relation": "may-connect-to"
     }
   ],
-  "taskPolicyVersion": 1
+  "taskPolicyVersion": 1,
+  "pathPerformancePolicyVersion": 1
 }

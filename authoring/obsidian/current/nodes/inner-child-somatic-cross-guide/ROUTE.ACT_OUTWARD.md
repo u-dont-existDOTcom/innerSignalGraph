@@ -23,8 +23,8 @@ regression_refs:
   - G014
   - G033
 base_record_sha256: 90524ce906f30738dd6a9a128b9c4cc2f3a8a55b0323ba439bc58cfc0145f2b6
-base_graph_sha256: 9ca2615aba6172792631bfbc33d8610dcd20e2a16ceed756be839ba7878fba40
-projection_input_sha256: 8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e
+base_graph_sha256: beb05b08a340cf9bd62efacaab7619a3dd4f6adf6bedabb4927cfe4e3a329560
+projection_input_sha256: 87fe2a86cd73db5cb54f86ba19f04d231dff02d8a775faa8121ab27f34ae51b1
 ---
 
 # Act on the concrete problem

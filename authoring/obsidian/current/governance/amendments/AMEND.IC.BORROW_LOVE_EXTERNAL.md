@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: bee2371a62660ca03f31692f2687ca53c913075e33c4dbd2a0e2956c7cd3cd92
 source_file_sha256: 1d1d78a359df20cddf3aac6f5f93bb3badda84b7bcf7bcff085d8ee9f75e0dd1
-projection_input_sha256: 8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e
+projection_input_sha256: 87fe2a86cd73db5cb54f86ba19f04d231dff02d8a775faa8121ab27f34ae51b1
 ---
 
 # AMEND.IC.BORROW_LOVE_EXTERNAL

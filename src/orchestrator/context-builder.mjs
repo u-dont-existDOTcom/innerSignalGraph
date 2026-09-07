@@ -28,6 +28,8 @@ export async function buildContext(input, config) {
     priorProcessingTier: typeof input.priorProcessingTier === "string" ? input.priorProcessingTier : "",
     guideManifest: guide.manifest,
     graphBundleVersion: graphBundle.version,
+    pathPerformanceNodes: graphBundle.graphs.flatMap(g => g.nodes.map(({ id, title, successSignals }) => ({ id, title, successSignals }))),
+    pathPerformanceEnabled: graphBundle.graphs.length > 0 && graphBundle.graphs.every(g => g.pathPerformancePolicyVersion === 1),
     guidePacketVersion: guide.manifest.guidePacketVersion ?? null,
     guideSources: guide.manifest.sources?.map((source) => ({ id: source.id, version: source.version })) ?? [],
     guideExcerpts

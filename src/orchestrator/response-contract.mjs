@@ -92,6 +92,10 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   }
   const realizedNodeIds = [...new Set(verifiedRealizations.map((item) => item.id))];
   const missingNodeIds = requiredNodeIds.filter((id) => !realizedNodeIds.includes(id));
+  const pathContract = plan?.pathPerformanceContract;
+  const prohibitedNodeIds = pathContract?.prohibit_prior_exercise
+    ? reportedRealizations.map(item => text(item?.id)).filter(id => id && !requiredNodeIds.includes(id)) : [];
+  const pathAdherence = !pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0);
 
   return {
     answer: userFacingAnswer,
@@ -108,7 +112,9 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
       verifiedRealizations,
       rejectedRealizations,
       missingRealizationNodeIds: missingNodeIds,
-      realizationCoveragePassed: missingNodeIds.length === 0
+      realizationCoveragePassed: missingNodeIds.length === 0,
+      ...(pathContract ? { pathPerformanceAdherencePassed: pathAdherence, prohibitedRealizationNodeIds: [...new Set(prohibitedNodeIds)],
+        semanticAdherence: "REQUIRES_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW" } : {})
     }
   };
 }

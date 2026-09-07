@@ -12,7 +12,7 @@ section_hash: 2336314c14833d4459ec2bb3ab898fe12ad8d7c9b3edaa793eaf70624cfa4444
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.MEET_GUARD
-projection_input_sha256: 8eab1260542250c1c0101960a13a1a5d784920380377dfb4e918a2fb8b3d221e
+projection_input_sha256: 87fe2a86cd73db5cb54f86ba19f04d231dff02d8a775faa8121ab27f34ae51b1
 ---
 
 # Start With Whatever Showed Up

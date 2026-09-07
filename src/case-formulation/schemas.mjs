@@ -1,3 +1,4 @@
+import { pathUpdateSchema } from "./path-performance.mjs";
 import { turnTaskSchema } from "./turn-task.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 
@@ -23,6 +24,7 @@ export const caseSnapshotSchema = {
     user_goal: { type: "string" },
     current_issue: { type: "string" },
     turn_task: turnTaskSchema,
+    path_update: pathUpdateSchema,
     direct_observations: { type: "array", items: observationSchema },
     variables: {
       type: "object",
@@ -59,7 +61,7 @@ export const caseSnapshotSchema = {
       }
     }
   },
-  required: ["user_goal", "current_issue", "turn_task", "direct_observations", "variables", "hypotheses", "unknowns"]
+  required: ["user_goal", "current_issue", "turn_task", "path_update", "direct_observations", "variables", "hypotheses", "unknowns"]
 };
 
 export const caseAuditSchema = {
