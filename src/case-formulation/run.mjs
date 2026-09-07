@@ -14,6 +14,7 @@ import { caseSnapshotSchema, caseAuditSchema } from "./schemas.mjs";
 import { validateCaseSnapshot, validateCaseAudit } from "./validators.mjs";
 import { caseExtractionPrompt } from "../prompts/case-extract.mjs";
 import { caseAuditPrompt } from "../prompts/case-audit.mjs";
+import { relationalReadinessExtractionRules, relationalReadinessAuditRules } from "../prompts/relational-readiness.mjs";
 import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
 import { planFromGraphs } from "../guide-graph/planner.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
@@ -160,9 +161,11 @@ export async function preflightGraphPlanningAvailability({ loadPreflightGraphBun
 }
 
 export async function runCaseExtraction({ context, provider, onProgress }) {
+  const prompt = caseExtractionPrompt(context);
+  prompt.system += relationalReadinessExtractionRules;
   const extraction = await structuredCall(
     provider,
-    caseExtractionPrompt(context),
+    prompt,
     { stage: "case_extraction", fixtureKey: "case_extraction" },
     value => {
       if (context.pathPerformanceEnabled && !String(provider.model).startsWith("mock-")) {
@@ -209,9 +212,11 @@ export async function resolveCaseExtraction({ context, provider, onProgress, rec
 }
 
 export async function runCaseAudit({ context, snapshot, provider, onProgress }) {
+  const prompt = caseAuditPrompt(context, snapshot);
+  prompt.system += relationalReadinessAuditRules;
   return await structuredCall(
     provider,
-    caseAuditPrompt(context, snapshot),
+    prompt,
     { stage: "case_audit", fixtureKey: "case_audit" },
     validateCaseAudit,
     caseAuditSchema,
