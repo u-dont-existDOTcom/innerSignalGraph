@@ -126,6 +126,7 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const prohibitedNodeIds = pathContract?.prohibit_prior_exercise
     ? reportedRealizations.map(item => text(item?.id)).filter(id => id && !id.startsWith("POLICY.") && !requiredNodeIds.includes(id)) : [];
   const relational = relationalPolicyMarkers(plan);
+  const relationalTracked = Boolean(plan?.pathPerformance?.relational_readiness || relational.required.length || relational.forbidden.length);
   const missingRelationalPolicyMarkers = relational.required.filter(id => !realizedNodeIds.includes(id));
   const forbiddenRelationalPolicyMarkers = relational.forbidden.filter(id => realizedNodeIds.includes(id));
   const pathAdherence = (!pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0))
@@ -147,13 +148,11 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
       rejectedRealizations,
       missingRealizationNodeIds: missingNodeIds,
       realizationCoveragePassed: missingNodeIds.length === 0,
-      relationalPolicyMarkersRequired: relational.required,
-      missingRelationalPolicyMarkers,
-      forbiddenRelationalPolicyMarkers,
+      ...(relationalTracked ? { relationalPolicyMarkersRequired: relational.required, missingRelationalPolicyMarkers, forbiddenRelationalPolicyMarkers } : {}),
       ...(pathContract || relational.required.length || relational.forbidden.length ? {
         pathPerformanceAdherencePassed: pathAdherence,
         prohibitedRealizationNodeIds: [...new Set(prohibitedNodeIds)],
-        semanticAdherence: "DECLARED_POLICY_MARKERS_ARE_VERBATIM_GROUNDED_BUT_REQUIRE_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW"
+        semanticAdherence: relationalTracked ? "DECLARED_POLICY_MARKERS_ARE_VERBATIM_GROUNDED_BUT_REQUIRE_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW" : "REQUIRES_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW"
       } : {})
     }
   };

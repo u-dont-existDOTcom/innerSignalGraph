@@ -23,7 +23,7 @@ regression_refs:
   - G003
 base_record_sha256: 18763dcc2839b80e777c89163237f384df333a778f911ff19f28ccda4128d641
 base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: ffe83d54068ac1f15fc624fee5bc33d28e07d074b318546b1801871d58fb0d38
+projection_input_sha256: 9499803d7373c2217bf3f59035cf680e8b679dbf7281c7db14797be0b132a557
 ---
 
 # Relax solar-plexus or abdominal holding before dialogue

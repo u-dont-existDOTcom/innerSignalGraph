@@ -2,6 +2,12 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Current continuation — separate method value and delivery trust
+
+The owner-authorized delivery-system lesson is implemented in the shared assessor and composed with the Path Performance Controller and the external-support/program audit. Resume from [its sole integration ledger](delivery-trust-20260907/INTEGRATION.md), [specification](../docs/superpowers/specs/2026-09-07-delivery-system-assessment.md) and [exact delta manifest](delivery-trust-20260907/CHANGED-PATHS.txt). The final immutable head and hosted verification are in the PR receipt. Useful partial method benefit can coexist with unsafe delivery, premium safety-paywall concerns, provider switching and a strong staged-purchase requirement. No motive or clinical-efficacy inference is licensed.
+
+**Readiness checkpoint supersession:** PR #46 independently received broader top-level audited readiness and response-scope composition through `92b1c853eeb1096c3f99b88bb4875a160a9c1d31` during this task. It now contains `src/case-formulation/relational-readiness.mjs`, explicit affected-party evidence and current combined regressions. The historical absent-module and six-pending-case statements below describe the earlier support handoff, not current branch state. Keep the current readiness code and tests; do not recreate them or merge PR #47. Combined delivery/readiness repairs preserve nullable audit no-correction semantics, independent method/provider constraints, and correct narrow/broad guidance. Actual extraction, clinical suitability and live usefulness remain unvalidated; deterministic coverage is not clinical validation.
+
 ## Latest continuation — external-support owner deltas A–J
 
 The subsequent owner instruction authorizes the [candidate architecture extension](../docs/superpowers/specs/2026-09-07-external-support-owner-delta.md), [bounded source comparison](../docs/research/2026-09-07-external-support-owner-delta-scan.md) and task-local deterministic support contract. Resume through [the integration ledger](external-support-20260907/INTEGRATION.md), which supplies the requirement matrix, verified branch boundaries, commands and remaining runtime decisions. This advances the earlier discussion note into authorized candidate requirements; it does not activate discovery or persist sensitive profiles.
@@ -251,3 +257,8 @@ Start by checking PR #46’s current head and reading:
 6. `docs/research/THERAPEUTIC-SOURCES.md`.
 
 Source synchronization and the exact E01-E12 preservation audit are complete. Read the latest continuation and source-sync evidence first, then continue the calibrated authenticated fidelity smoke from its actual terminal status. Do not repeat the source synchronization or literature review.
+
+
+## Delivery-system trust lesson — current owner delta
+
+Resume the shared method-value / delivery-trust candidate from `tasks/delivery-trust-20260907/INTEGRATION.md` and `docs/superpowers/specs/2026-09-07-delivery-system-assessment.md`, after fetching current PR #46 head. It composes the path controller and the completed external-support ProgramAudit, method and cost safeguards. Method benefit and provider/business/supervision trust have independent outputs; poor delivery can require an alternative provider without discarding useful partial benefit. Basic safety access paywalled behind an exorbitant premium is a serious arrangement-level trust red flag, not a motive accusation. Optional expensive coaching with adequate ordinary safety support does not force rejection. Fresh concrete corrective support can reduce concern; silence, replay and provider relabeling cannot certify safety. Deterministic gates, current candidate limitations and exact change receipt are in the task ledger. This does not perform live discovery, domain validation, a PR #47 merge, release or stable promotion. Preserve the independently composed current PR #46 readiness gate.

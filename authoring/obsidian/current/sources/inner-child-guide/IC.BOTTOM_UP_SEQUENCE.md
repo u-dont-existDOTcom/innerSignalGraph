@@ -15,7 +15,7 @@ cited_by_node_ids:
   - IC.CREDIBILITY_REPAIR
   - IC.DEEP_LOVE_TO_CHILD
   - IC.MEET_GUARD
-projection_input_sha256: ffe83d54068ac1f15fc624fee5bc33d28e07d074b318546b1801871d58fb0d38
+projection_input_sha256: 9499803d7373c2217bf3f59035cf680e8b679dbf7281c7db14797be0b132a557
 ---
 
 # A Bottom-Up Sequence

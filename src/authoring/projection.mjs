@@ -19,6 +19,8 @@ const GRAPH_FILES = [
 ];
 const SEMANTIC_CODE_INPUTS = [
   "src/case-formulation/path-performance.mjs",
+  "src/case-formulation/delivery-system-assessment.mjs",
+  "src/case-formulation/bounded-schema.mjs",
   "src/case-formulation/turn-task.mjs",
   "src/guide-graph/compiler.mjs",
   "src/guide-graph/contract.mjs",

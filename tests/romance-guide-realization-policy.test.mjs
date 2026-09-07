@@ -11,7 +11,7 @@ function prompt() {
 
 test("realizer contains the owner-confirmed optional romance guide reference", () => {
   const { system } = prompt();
-  assert.match(system, /https:\/\/romance\.u-dont-exist\.com/);
+  assert.ok(system.includes("https://romance.u-dont-exist.com"));
   assert.match(system, /broader romance topic would otherwise distract/);
   assert.match(system, /one brief optional sentence/);
 });

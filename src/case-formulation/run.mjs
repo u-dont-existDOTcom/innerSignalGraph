@@ -1,4 +1,5 @@
 import { ValidationError } from "../core/errors.mjs";
+import { withdrawDeliveryEvidence } from "./delivery-system-assessment.mjs";
 import { evaluatePathPerformance, CASE_RISK_SIGNALS } from "./path-performance.mjs";
 import {
   relationalReadinessDecision,
@@ -10,7 +11,7 @@ import {
 import { deriveCaseVariables } from "../guide-graph/planner.mjs";
 import { validateTurnTask, reconcileIssueScope, immediateProtectionNeeded } from "./turn-task.mjs";
 import { parseModelJson } from "../core/json.mjs";
-import { caseSnapshotSchema, caseAuditSchema } from "./schemas.mjs";
+import { caseSnapshotGenerationSchema, caseAuditGenerationSchema } from "./schemas.mjs";
 import { validateCaseSnapshot, validateCaseAudit } from "./validators.mjs";
 import { caseExtractionPrompt } from "../prompts/case-extract.mjs";
 import { caseAuditPrompt } from "../prompts/case-audit.mjs";
@@ -73,11 +74,22 @@ export function applyCaseAudit(snapshot, audit) {
     episode.invalidated = true; episode.switch_pending = true;
   };
   if (priorState) {
+    withdrawDeliveryEvidence(priorState.delivery_system_state, removeObservations);
     withdraw(priorState.active);
     for (const closed of priorState.closed) withdraw(closed.retained_episode);
     priorState.risk_signals = (priorState.risk_signals ?? []).filter(s => !removeObservations.has(s.observation_id));
   }
   if (pathUpdate) {
+    // Withdraw only dependent delivery facts. Do not invalidate unrelated method predictions.
+    if (pathUpdate.delivery_review) {
+      const a = pathUpdate.delivery_review.assessment;
+      if (a.observation_ids.some(id => removeObservations.has(id))) pathUpdate.delivery_review = null;
+      else {
+        a.facts = a.facts.filter(f => !f.observation_ids.some(id => removeObservations.has(id)));
+        if (a.method.observation_ids.some(id => removeObservations.has(id))) a.method = { ...a.method, benefit: "UNKNOWN", durability: "UNKNOWN", current: false, observation_ids: [] };
+        if (a.financial?.observation_ids.some(id => removeObservations.has(id))) a.financial = null;
+      }
+    }
     pathUpdate.signals = pathUpdate.signals.filter(s => !removeObservations.has(s.observation_id));
     pathUpdate.failure_hypotheses = pathUpdate.failure_hypotheses.filter(h => !h.observation_ids.some(id => removeObservations.has(id)));
     if (pathUpdate.strategy?.observation_ids.some(id => removeObservations.has(id))) pathUpdate.strategy = null;
@@ -87,7 +99,7 @@ export function applyCaseAudit(snapshot, audit) {
   const remainingIds = new Set(remainingObservations.map(item => item.id));
   const originalReadiness = snapshot.relational_readiness ?? null;
   const originalReadinessWithdrawn = readinessObservationIds(originalReadiness).some(id => removeObservations.has(id));
-  const correctedProvided = Object.hasOwn(audit, "corrected_relational_readiness");
+  const correctedProvided = audit.corrected_relational_readiness != null;
   let readiness = correctedProvided ? audit.corrected_relational_readiness : originalReadiness;
   if (audit.invalidate_relational_readiness === true || (!correctedProvided && originalReadinessWithdrawn)) readiness = null;
   if (readiness) {
@@ -113,7 +125,7 @@ export function applyCaseAudit(snapshot, audit) {
       summary: audit.summary,
       safety_flags: audit.safety_flags,
       variable_corrections: audit.variable_corrections,
-      relational_readiness_reviewed: readinessWasTracked
+      ...(readinessWasTracked ? { relational_readiness_reviewed: true } : {})
     }
   };
 }
@@ -174,7 +186,7 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
       }
       return validateCaseSnapshot(value);
     },
-    caseSnapshotSchema,
+    caseSnapshotGenerationSchema,
     onProgress
   );
   // Ignore model-supplied controller state. Only the existing session state owns history.
@@ -219,7 +231,7 @@ export async function runCaseAudit({ context, snapshot, provider, onProgress }) 
     prompt,
     { stage: "case_audit", fixtureKey: "case_audit" },
     validateCaseAudit,
-    caseAuditSchema,
+    caseAuditGenerationSchema,
     onProgress
   );
 }

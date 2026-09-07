@@ -1,5 +1,7 @@
-// Candidate-only executable contract. No runtime imports, I/O, inference or persistence.
+// Candidate-only executable contract. Reuses shared pure assessment policy; no
+// runtime entrypoint imports this task, and no I/O, inference or persistence occurs.
 import Ajv from 'ajv';
+import { assessDeliverySystem, assessOpportunityCost, deliveryAssessmentSchema, resourceSchema, validateDeliveryAssessment } from '../../src/case-formulation/delivery-system-assessment.mjs';
 
 export const suitabilityChecks = ['acuity', 'selfCare', 'suicideViolenceSafety', 'substanceStability', 'realityTesting', 'hostRules', 'safeExit', 'financesTransport', 'conflictTolerance', 'fallbackSupport'];
 export const hostChecks = ['workload', 'accommodation', 'hygiene', 'interpersonalClimate', 'privacy', 'substanceEnvironment', 'transportExit', 'medicalAccess', 'dailySchedule', 'reviews', 'disclosedNeedsPreparedness'];
@@ -16,10 +18,10 @@ const object = properties => ({ type: 'object', additionalProperties: false, pro
 const fact = object({ status: choice(['PASS', 'FAIL', 'UNKNOWN']), evidenceRef: text, checkedAt: text, current: { type: 'boolean' } });
 const facts = keys => object(Object.fromEntries(keys.map(key => [key, fact])));
 const factMap = { type: 'object', additionalProperties: fact };
-const financial = {
-  ...object({ consentToIncome: { type: 'boolean' }, monthlyIncome: money, monthlyDisposable: money, maxCommitment: money }),
-  allOf: [{ if: { properties: { consentToIncome: { const: false } } }, then: { properties: { monthlyIncome: { type: 'null' }, monthlyDisposable: { type: 'null' } } } }]
-};
+const financial = resourceSchema;
+// Missing remains compatible with older task-local fixtures, explicitly UNASSESSED.
+// Once supplied, an assessment must be valid and its unknowns cannot clear fit.
+const withDeliveryAssessment = schema => ({ ...schema, properties: { ...schema.properties, deliveryAssessment: deliveryAssessmentSchema } });
 
 // This bounded projection is NOT the full private interview or an admitted storage schema.
 export const supportProfileSchema = object({
@@ -30,14 +32,14 @@ export const supportProfileSchema = object({
   constraints: { type: 'array', items: object({ id: text, kind: choice(['NATURE', 'MEDICATION_PHILOSOPHY', 'ALLERGY_ASTHMA_MOLD_ANIMAL', 'SENSORY_ACCESS_PRIVACY', 'GEOGRAPHY_LEGAL', 'OTHER']), requirement: text, hard: { type: 'boolean' }, authority: choice(['USER', 'OWNER_AND_USER']) }) },
   finances: financial
 });
-export const programAuditSchema = object({
+export const programAuditSchema = withDeliveryAssessment(object({
   id: text, kind: choice(['ORDINARY_EXCHANGE', 'SUPPORTED_PROGRAM', 'MODULE']),
   functions: factMap, compatibility: factMap, host: facts(hostChecks),
   access: choice(['AVAILABLE', 'WAITLISTED', 'ACCESS_BLOCKED', 'UNKNOWN']),
   // All-in costs over an explicitly shared horizon, including travel and safe exit.
   cost: object({ totalCommitment: money, horizon: text }),
   workSafeguards: facts(['voluntary', 'safeLoad', 'titratable', 'careNotReplaced'])
-});
+}));
 const ajv = new Ajv({ allErrors: true, strict: true });
 const validateProfile = ajv.compile(supportProfileSchema);
 const validateProgram = ajv.compile(programAuditSchema);
@@ -49,7 +51,18 @@ export function validateSupportProfile(value) {
   if (new Set(value.constraints.map(c => c.id)).size !== value.constraints.length) throw new TypeError('Duplicate constraint ID');
   return true;
 }
-export function validateProgramAudit(value) { assertValid(validateProgram, value); return true; }
+export function validateProgramAudit(value) {
+  assertValid(validateProgram, value);
+  if (Object.hasOwn(value, 'deliveryAssessment')) {
+    validateDeliveryAssessment(value.deliveryAssessment);
+    if (value.deliveryAssessment.provider_id !== value.id) throw new TypeError('Delivery assessment provider_id must match the audited program id');
+  }
+  return true;
+}
+function deliveryProjection(value) {
+  const deliveryAssessment = Object.hasOwn(value, 'deliveryAssessment') ? assessDeliverySystem(value.deliveryAssessment) : null;
+  return { deliveryStatus: deliveryAssessment?.trustStatus ?? 'UNASSESSED', deliveryAssessment };
+}
 const status = f => !f || !f.current ? 'UNKNOWN' : f.status;
 const unique = values => [...new Set(values)];
 const requiredFunctions = p => unique([...p.requiredFunctions, ...(p.meaningfulActivity.wanted && ['ABLE', 'LIMITED'].includes(p.meaningfulActivity.capacity) ? ['meaningful_activity'] : [])]);
@@ -70,7 +83,8 @@ export function assessOrdinaryPlacement(profile, program) {
 
 export function assessFit(profile, program) {
   validateSupportProfile(profile); validateProgramAudit(program);
-  if (profile.emergency !== 'ABSENT') return { outcome: profile.emergency === 'ACTIVE' ? 'EXISTING_SAFETY_ROUTE' : 'VERIFICATION_PENDING', reasons: ['current_safety'] };
+  const delivery = deliveryProjection(program);
+  if (profile.emergency !== 'ABSENT') return { outcome: profile.emergency === 'ACTIVE' ? 'EXISTING_SAFETY_ROUTE' : 'VERIFICATION_PENDING', reasons: ['current_safety'], environmentFit: { outcome: 'NOT_ASSESSED_CURRENT_SAFETY' }, ...delivery };
   const ordinary = assessOrdinaryPlacement(profile, program);
   const reasons = [], unknown = [];
   if (profile.meaningfulActivity.wanted && profile.meaningfulActivity.capacity === 'UNKNOWN') unknown.push('activity_capacity');
@@ -91,7 +105,12 @@ export function assessFit(profile, program) {
   if (program.access === 'UNKNOWN') unknown.push('access');
   if (program.cost.totalCommitment === null || (program.cost.totalCommitment > 0 && profile.finances.maxCommitment === null)) unknown.push('affordability');
   else if (program.cost.totalCommitment > profile.finances.maxCommitment) reasons.push('TOO_EXPENSIVE');
-  return { outcome: reasons.length ? 'NO_GOOD_MATCH' : unknown.length ? 'VERIFICATION_PENDING' : 'FIT_TO_CONSIDER', reasons: unique(reasons), pending: unique(unknown), uncoveredFunctions: missing };
+  // Preserve environment/function evidence even when delivery disqualifies a program.
+  const environmentFit = { outcome: reasons.length ? 'NO_GOOD_MATCH' : unknown.length ? 'VERIFICATION_PENDING' : 'FIT_TO_CONSIDER', reasons: unique(reasons), pending: unique(unknown), uncoveredFunctions: missing };
+  if (delivery.deliveryStatus === 'HIGH_RISK_DELIVERY') reasons.push('HIGH_RISK_DELIVERY');
+  if (delivery.deliveryStatus === 'UNCLEAR') unknown.push('delivery_safeguards');
+  if (delivery.deliveryStatus === 'CAUTION') unknown.push('delivery_concerns');
+  return { outcome: reasons.length ? 'NO_GOOD_MATCH' : unknown.length ? 'VERIFICATION_PENDING' : 'FIT_TO_CONSIDER', reasons: unique(reasons), pending: unique(unknown), uncoveredFunctions: missing, environmentFit, ...delivery };
 }
 
 const trialSchema = object({
@@ -126,27 +145,34 @@ const offerSchema = object({
 const validateFinance = ajv.compile(financial), validateOffer = ajv.compile(offerSchema);
 export function assessFinancialFit(finances, offer) {
   assertValid(validateFinance, finances); assertValid(validateOffer, offer);
-  const known = offer.totalCommitment === 0 || (offer.totalCommitment !== null && finances.maxCommitment !== null);
-  const affordability = !known ? 'UNKNOWN' : offer.totalCommitment > finances.maxCommitment ? 'TOO_EXPENSIVE' : 'WITHIN_USER_CAP';
-  const ratios = finances.consentToIncome && finances.monthlyIncome > 0 && offer.totalCommitment !== null ? { monthsOfIncome: offer.totalCommitment / finances.monthlyIncome, fractionOfAnnualIncome: offer.totalCommitment / (12 * finances.monthlyIncome) } : null;
-  const disposableMonths = finances.consentToIncome && finances.monthlyDisposable > 0 && offer.totalCommitment !== null ? offer.totalCommitment / finances.monthlyDisposable : null;
+  const opportunityCost = assessOpportunityCost(finances, offer.totalCommitment);
+  const { affordability } = opportunityCost;
   const questions = practitionerQuestions.filter(q => status(offer.answers[q]) !== 'PASS');
   const unresolved = questions.length || !offer.independentFitQualityChecked || !offer.cheaperStagedAlternativesChecked || !offer.reversibleSmallPurchase;
-  return { affordability, ratios, disposableMonths, questions, redFlags: [...offer.redFlags],
-    outcome: affordability === 'TOO_EXPENSIVE' || offer.disproportionateToResources === 'YES' || offer.redFlags.length || unresolved || affordability === 'UNKNOWN' || offer.disproportionateToResources === 'UNKNOWN' ? 'DEFER_COMMITMENT_REVIEW_ALTERNATIVES' : 'SMALL_REVERSIBLE_OPTION_TO_CONSIDER',
+  return { ...opportunityCost, questions, redFlags: [...offer.redFlags],
+    outcome: opportunityCost.stagedTrialRequired || affordability === 'TOO_EXPENSIVE' || offer.disproportionateToResources === 'YES' || offer.redFlags.length || unresolved || affordability === 'UNKNOWN' || offer.disproportionateToResources === 'UNKNOWN' ? 'DEFER_COMMITMENT_REVIEW_ALTERNATIVES' : 'SMALL_REVERSIBLE_OPTION_TO_CONSIDER',
     alternatives: ['DONATION_SLIDING_SCALE', 'GROUP_SUPPORT', 'ONE_OFF_CONSULT', 'SMALL_CANCELLABLE_PACKAGE'], treatmentChange: 'NO_ABRUPT_PRESCRIBED_TREATMENT_STOP' };
 }
 
-const methodSchema = object({
+const methodSchema = withDeliveryAssessment(object({
   benefitMagnitude: choice(['CLEAR', 'SMALL', 'NONE', 'UNKNOWN']), durability: choice(['BRIEF', 'SUSTAINED', 'UNKNOWN']),
   doseResponse: choice(['MORE_IS_WORSE', 'NO_ADVERSE_PATTERN', 'UNKNOWN']), adverseNow: { type: 'boolean' }, adverseHistory: { type: 'boolean' },
   supervisionNeeded: { type: 'boolean' }, supervisionAvailable: { type: 'boolean' },
   dailyFunction: choice(['IMPROVING', 'FLAT', 'WORSENING', 'UNKNOWN']), broaderNeeds: { type: 'boolean' },
   cureHypothesis: { type: 'boolean' }, existingProtectiveStop: { type: 'boolean' }
-});
+}));
 const validateMethod = ajv.compile(methodSchema);
 export function assessMethod(input) {
   assertValid(validateMethod, input);
+  const delivery = deliveryProjection(input);
+  const sharedMethod = delivery.deliveryAssessment?.method;
+  if (sharedMethod?.current) {
+    const outerBenefit = ['CLEAR', 'SMALL'].includes(input.benefitMagnitude) ? 'USEFUL' : input.benefitMagnitude === 'NONE' ? 'NONE' : 'UNKNOWN';
+    const innerBenefit = ['OBSERVED_PARTIAL', 'OBSERVED_USEFUL'].includes(sharedMethod.benefit) ? 'USEFUL' : sharedMethod.benefit === 'NO_BENEFIT' ? 'NONE' : 'UNKNOWN';
+    const outerDurability = ({ BRIEF: 'TEMPORARY', SUSTAINED: 'SUSTAINED' })[input.durability] ?? 'UNKNOWN';
+    if (outerBenefit !== 'UNKNOWN' && innerBenefit !== 'UNKNOWN' && outerBenefit !== innerBenefit) throw new TypeError('Conflicting known method benefit assessments require reconciliation');
+    if (outerDurability !== 'UNKNOWN' && sharedMethod.durability !== 'UNKNOWN' && outerDurability !== sharedMethod.durability) throw new TypeError('Conflicting known method durability assessments require reconciliation');
+  }
   const actions = [];
   const pause = input.adverseNow || input.existingProtectiveStop;
   if (pause) actions.push('PAUSE_IF_ADVERSE');
@@ -154,8 +180,14 @@ export function assessMethod(input) {
   if (input.doseResponse === 'MORE_IS_WORSE' || input.adverseHistory) actions.push('REDUCE_DOSE');
   if (input.supervisionNeeded || input.adverseHistory) actions.push('SEEK_SUPERVISION');
   if (input.broaderNeeds || input.dailyFunction !== 'IMPROVING') actions.push('COMBINE_WITH_OTHER_SUPPORTS');
-  return { actions, currentPractice: pause ? 'PAUSE_NOW_EXISTING_SAFETY_GATES' : input.supervisionNeeded && !input.supervisionAvailable ? 'REASSESS_SAFE_LIMITS_WITH_HUMAN' : 'REVIEW_TITRATION', benefitPreserved: input.benefitMagnitude,
-    cureClaim: input.cureHypothesis ? 'HYPOTHESIS_COMPARE_PREDICTED_FUNCTION_WITH_TRAJECTORY' : 'NO_CURE_CLAIM', safeDoseEstablished: false };
+  const poorDelivery = delivery.deliveryStatus === 'HIGH_RISK_DELIVERY';
+  const providerActions = delivery.deliveryAssessment?.actions.filter(action => action !== 'CONTINUE_IF_METHOD_AND_SAFETY_PERMIT') ?? [];
+  if (poorDelivery && input.benefitMagnitude === 'NONE') actions.push('REASSESS_OR_SWITCH_METHOD');
+  if (delivery.deliveryAssessment?.findings.some(f => f.code === 'DESTABILIZATION_DISMISSED_AS_RELEASE')) actions.push('DE_ESCALATE');
+  const rejectTotalCure = providerActions.includes('REJECT_UNSUPPORTED_TOTAL_CURE_CLAIM');
+  return { actions: unique([...actions, ...providerActions]), providerActions,
+    currentPractice: pause ? 'PAUSE_NOW_EXISTING_SAFETY_GATES' : poorDelivery || input.supervisionNeeded && !input.supervisionAvailable ? 'REASSESS_SAFE_LIMITS_WITH_HUMAN' : 'REVIEW_TITRATION', benefitPreserved: input.benefitMagnitude,
+    cureClaim: rejectTotalCure ? 'REJECT_UNSUPPORTED_TOTAL_CURE_CLAIM' : input.cureHypothesis ? 'HYPOTHESIS_COMPARE_PREDICTED_FUNCTION_WITH_TRAJECTORY' : 'NO_CURE_CLAIM', safeDoseEstablished: false, ...delivery };
 }
 
 export function assembleSupport(profile, modules, coordination) {
@@ -164,7 +196,7 @@ export function assembleSupport(profile, modules, coordination) {
   if (!Array.isArray(modules)) throw new TypeError('Modules must be an array');
   const validateCoordination = ajv.compile(object({ responsibleNavigator: { type: 'boolean' }, scheduleTransportCompatible: { type: 'boolean' }, coverageConfirmed: { type: 'boolean' } }));
   assertValid(validateCoordination, coordination);
-  const accepted = [], rejected = [], reasons = [], pending = [];
+  const accepted = [], rejected = [], reasons = [], pending = [], programAssessments = [];
   const activityCapacityPending = profile.meaningfulActivity.wanted && profile.meaningfulActivity.capacity === 'UNKNOWN';
   if (activityCapacityPending) pending.push('activity_capacity');
   for (const module of modules) {
@@ -172,6 +204,7 @@ export function assembleSupport(profile, modules, coordination) {
     validateProgramAudit(module);
     const subprofile = { ...profile, requiredFunctions: [], meaningfulActivity: { ...profile.meaningfulActivity, wanted: false } };
     const fit = assessFit(subprofile, module);
+    programAssessments.push({ id: module.id, environmentFit: fit.environmentFit, deliveryStatus: fit.deliveryStatus, deliveryAssessment: fit.deliveryAssessment });
     if (fit.outcome === 'FIT_TO_CONSIDER') accepted.push(module);
     else { rejected.push(module.id); reasons.push(...(fit.reasons ?? [])); pending.push(...(fit.pending ?? [])); }
   }
@@ -182,7 +215,7 @@ export function assembleSupport(profile, modules, coordination) {
   if (!affordable && profile.finances.maxCommitment !== null) reasons.push('TOO_EXPENSIVE');
   if (!modules.length) reasons.push('NO_GOOD_MATCH');
   return { outcome: !activityCapacityPending && !uncoveredFunctions.length && accepted.length && affordable && sameHorizon && Object.values(coordination).every(Boolean) ? 'MODULAR_PLAN_TO_VERIFY_WITH_PERSON' : 'INCOMPLETE_MODULAR_PLAN',
-    accepted: accepted.map(m => m.id), rejected, uncoveredFunctions, totalCommitment, comparableCostHorizon: sameHorizon, coordination, reasons: unique(reasons), pending: unique(pending),
+    accepted: accepted.map(m => m.id), rejected, uncoveredFunctions, totalCommitment, comparableCostHorizon: sameHorizon, coordination, reasons: unique(reasons), pending: unique(pending), programAssessments,
     rediscoverOn: ['CONSTRAINT_CHANGE', 'RESOURCE_FUNDING_CHANGE', 'WAITLIST_AVAILABILITY_CHANGE', 'FIT_FAILURE', 'FACT_EXPIRY'], hardConstraintsRelaxed: false };
 }
 

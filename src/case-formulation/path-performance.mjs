@@ -1,4 +1,6 @@
+import { checkBoundedSchema as check } from "./bounded-schema.mjs";
 import { ValidationError } from "../core/errors.mjs";
+import { deliveryAssessmentSchema, validateDeliveryAssessment, updateDeliveryAssessment, deliverySystemGuidance } from "./delivery-system-assessment.mjs";
 import { immediateProtectionNeeded } from "./turn-task.mjs";
 
 // Candidate engineering policy, not a clinical instrument or diagnosis.
@@ -28,24 +30,20 @@ export const pathUpdateSchema = nullable(record({
   probe: nullable(record({ question: str, alternatives: { ...list(record({ hypothesis: str, if_observed: str, next_strategy: str }), 3), minItems: 2 } }))
 }));
 
-function check(value, schema, name) {
-  if (schema.anyOf) { if (value === null) return; return check(value, schema.anyOf[1], name); }
-  if (schema.type === "object") {
-    if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError(`${name} must be an object.`);
-    if (Object.keys(value).some(key => !Object.hasOwn(schema.properties, key))) throw new ValidationError(`${name} has undeclared fields.`);
-    for (const key of schema.required) check(value[key], schema.properties[key], `${name}.${key}`);
-  } else if (schema.type === "array") {
-    if (!Array.isArray(value) || value.length < (schema.minItems ?? 0) || value.length > schema.maxItems) throw new ValidationError(`${name} must be a bounded array.`);
-    value.forEach(item => check(item, schema.items, name));
-  } else if (schema.type === "string" && (typeof value !== "string" || value.length > (schema.maxLength ?? 1200) || value.trim().length < (schema.minLength ?? 0))) throw new ValidationError(`${name} must be bounded text.`);
-  if (schema.enum && !schema.enum.includes(value)) throw new ValidationError(`${name} is invalid.`);
-}
+// Optional for preserved historical snapshots; current extraction declares it when relevant.
+pathUpdateSchema.anyOf[1].properties.delivery_review = nullable(record({ process_id: id, node_id: id, assessment: deliveryAssessmentSchema }));
 
 export function validatePathUpdate(value, observationIds) {
   if (value == null) return null;
   check(value, pathUpdateSchema, "path_update");
   const referenced = [...(value.strategy?.observation_ids ?? []), ...value.signals.map(s => s.observation_id), ...value.failure_hypotheses.flatMap(h => h.observation_ids)];
   if (observationIds && referenced.some(ref => !observationIds.has(ref))) throw new ValidationError("path_update references unavailable observations.");
+  if (value.delivery_review != null) {
+    const review = value.delivery_review;
+    if (Object.keys(review).some(k => !["process_id", "node_id", "assessment"].includes(k))) throw new ValidationError("Undeclared delivery review field.");
+    check(review.process_id, id, "delivery_review.process_id"); check(review.node_id, id, "delivery_review.node_id");
+    validateDeliveryAssessment(review.assessment, observationIds);
+  }
   const predictions = value.strategy?.predictions ?? [];
   if (new Set(predictions.map(p => p.id)).size !== predictions.length) throw new ValidationError("Prediction IDs must be unique within a strategy.");
   return structuredClone(value);
@@ -96,6 +94,18 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
     }
   }
   const active = state.active;
+  const deliveryReview = update?.delivery_review;
+  if (deliveryReview && (!active || deliveryReview.process_id !== active.strategy.process_id || deliveryReview.node_id !== active.strategy.node_id)) throw new ValidationError("Delivery review must match the active strategy process and path.");
+  // Provider/method facts and replay tombstones are case-level; episodes carry only
+  // the selected key. A topic/process change cannot launder provider risk.
+  const deliveryLedger = state.delivery_system_state;
+  const scopedLedger = deliveryLedger ? { ...deliveryLedger, selected: active?.delivery_assessment_key ?? null } : null;
+  const deliveryResult = active ? updateDeliveryAssessment(scopedLedger, deliveryReview?.assessment, observationIds) : null;
+  if (active && (deliveryReview || deliveryLedger)) {
+    state.delivery_system_state = deliveryResult.state;
+    active.delivery_assessment_key = deliveryResult.state.selected;
+  }
+  const deliveryAssessment = deliveryResult?.assessment ?? null;
   // This case-level constraint survives a process/topic change; episode failure does not.
   const previousRisk = state.risk_signals ?? [];
   const riskSignals = clearRisk ? [] : [...new Map([...previousRisk, ...freshRiskSignals.filter(s => riskKinds.includes(s.kind))].map(s => [s.kind, s])).values()];
@@ -122,7 +132,9 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   const predictionFailure = evidence.some(e => e.result === "CONTRADICTED");
   const lowInformation = freshSignals.some(s => ["repetition", "low_information", "complexity_without_information"].includes(s.kind));
   const opportunity = update?.response === "meaningful" && Boolean(evaluated);
-  if (evaluated && !duplicateOnly) {
+  const constraintOnlyReview = state.readiness_constraint_review === true;
+  delete state.readiness_constraint_review;
+  if (evaluated && !duplicateOnly && !((deliveryReview || constraintOnlyReview) && signals.length === 0 && update?.response !== "meaningful")) {
     evaluated.review_count += 1;
     evaluated.observed_ids = unique([...(evaluated.observed_ids ?? []), ...freshSignals.map(s => s.observation_id)]);
     if (evaluated.observed_ids.length > 512) throw new ValidationError("Strategy evidence capacity reached; preserve state and request a bounded reassessment, never reset counters.");
@@ -176,10 +188,36 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
     route = state.latest?.route ?? "reconsider";
     reason = "No new observation opportunity; replayed evidence cannot improve or worsen the trajectory.";
   }
+  const methodStatus = status;
+  const poorDelivery = deliveryAssessment?.trustStatus === "HIGH_RISK_DELIVERY";
+  const benefitReported = ["OBSERVED_PARTIAL", "OBSERVED_USEFUL"].includes(deliveryAssessment?.method.benefit);
+  const methodMismatch = hypotheses.some(h => ["FORMULATION_MISMATCH", "TARGET_MISMATCH", "METHOD_MISMATCH"].includes(h.kind));
+  const preserveMethod = (status === "MOVING" || benefitReported) && !methodMismatch && deliveryAssessment?.method.benefit !== "NO_BENEFIT";
+  const deliveryActions = [...(deliveryAssessment?.actions ?? [])];
+  if (poorDelivery && preserveMethod) deliveryActions.push("PRESERVE_METHOD_AS_PARTIAL_TOOL");
+  if (poorDelivery && !preserveMethod && (methodMismatch || deliveryAssessment.method.benefit === "NO_BENEFIT" || predictionFailure && active?.misses >= 2)) deliveryActions.push("DISCONTINUE_OR_SWITCH_METHOD");
+  const pushThrough = deliveryAssessment?.findings.some(f => f.code === "DESTABILIZATION_DISMISSED_AS_RELEASE");
+  if (deliveryAssessment && !emergency && !significantHarm && !external && !romancePause && variables.actionable_problem !== "present" && update?.response !== "declined" && decision !== "CLOSE") {
+    if (poorDelivery) {
+      decision = !stalled && !harm && !methodMismatch && decision !== "SWITCH" ? "SEEK_ALTERNATIVE_SUPERVISION" : "SWITCH";
+      route = "reconsider";
+      reason = preserveMethod ? "Preserve the observed method benefit while replacing an unsafe provider or supervision arrangement; benefit is not provider trust." : "Delivery is high risk; reassess method fit and seek a safer provider without inferring motives.";
+      addFailure("DELIVERY_MISMATCH");
+    }
+    const doseIssue = has("dose_problem") || has("delivery_problem") || hypotheses.some(h => ["PACING_MISMATCH", "DELIVERY_MISMATCH"].includes(h.kind));
+    if (preserveMethod && doseIssue && !stalled && !harm && !methodMismatch && !predictionFailure) {
+      decision = "KEEP_BUT_TITRATE"; route = "reconsider";
+      deliveryActions.push("KEEP_BUT_TITRATE");
+      if (poorDelivery) deliveryActions.push("SEEK_ALTERNATIVE_SUPERVISION");
+      reason = "Retain the observed partial benefit; reassess dose and supervision before further practice. This does not establish a safe dose or confirm the mechanism.";
+    }
+  }
+  if (pushThrough && harm) { decision = "STOP_DEESCALATE"; route = "safety"; reason = "Destabilization is being dismissed as release. Stop and de-escalate; seek alternative supervision."; }
   const trace = {
     episode_id: evaluated?.id ?? active?.id ?? null, next_episode_id: active?.id ?? null,
     review: evaluated?.review_count ?? 0, replayed_observation_ids: signals.filter(s => consumed.has(s.observation_id)).map(s => s.observation_id), delivery: evaluated?.delivery ?? null, predictions: evidence, observed_signals: signals,
     status, decision, route, reason, failure_sources: failures,
+    ...(deliveryAssessment ? { method_status: methodStatus, delivery_assessment: deliveryAssessment, delivery_actions: [...new Set(deliveryActions)] } : {}),
     reconsider: ["SWITCH", "STOP_DEESCALATE", "PROBE"].includes(decision) ? RECONSIDER : [],
     goal_substitution: { romance_pause: romancePause, instrumental_socializing: riskSignals.some(s => s.kind === "instrumental_partner_seeking"), evidence_ids: unique(riskSignals.map(s => s.observation_id)), cleared_by_reassessment: clearRisk },
     probe: decision === "PROBE" || route === "reconsider" ? (update?.probe ?? null) : null,
@@ -187,6 +225,7 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   };
   if (active) {
     active.status = status; active.decision = decision;
+    // Provider-only reconsideration retains predictions and does not mark the method failed.
     active.switch_pending = ["SWITCH", "STOP_DEESCALATE", "CLOSE"].includes(decision);
     active.reviews = [...active.reviews, trace].slice(-12);
   }
@@ -199,9 +238,12 @@ export function pathPerformanceGuidance(control) {
   const guidance = ["Judge this process by prospective movement and adverse response, independently of praise or complaint. A polite answer, cooperation, temporary relief, fluent explanation or completed surface action is not mechanism confirmation. Formulation and failure attribution remain provisional."];
   if (["SWITCH", "PROBE", "STOP_DEESCALATE", "CLOSE"].includes(t.decision)) guidance.push("Stop repeating the previous exercise or its paraphrase. Reconsider process, formulation, target, need for external stabilization, mechanism, pacing/delivery and whether this is already a completed checking loop. Do not automatically choose an adjacent graph node or infer hidden trauma.");
   if (t.route === "external" || t.goal_substitution.romance_pause) guidance.push("Use external stabilization and practical support before further inward processing. Match intensity to evidenced need; ordinary eyes-open activity can suffice when the issue is inward attention. When structured supervision is actually needed, agree a feasible step toward supervised non-romantic support and mentoring. Where locally appropriate, explore therapeutic community, supported residential, care-farm/green-care, Soteria-like or other supervised non-carceral settings; verify local suitability and availability rather than promising a model, rejecting all clinical care or changing medication.");
-  if (t.goal_substitution.romance_pause) guidance.push("For this evidenced current state, recommend pausing active romance-seeking because instability, load and using a partner as regulator/rescuer/proof-of-worth can increase dependency. This is case-level and revisable, not a universal requirement to love oneself before relationships. Do not advise isolation or reannounce this constraint during unrelated work. Preserve supportive community and mentoring; socializing mainly to obtain a partner is goal substitution, not success toward non-romantic stabilization.");
+  if (t.goal_substitution.narrow_romance_pause ?? t.goal_substitution.romance_pause) guidance.push("For this evidenced current state, recommend pausing active romance-seeking because instability, load and using a partner as regulator/rescuer/proof-of-worth can increase dependency. This is case-level and revisable, not a universal requirement to love oneself before relationships. Do not advise isolation or reannounce this constraint during unrelated work. Preserve supportive community and mentoring; socializing mainly to obtain a partner is goal substitution, not success toward non-romantic stabilization.");
   if (t.decision === "STOP_DEESCALATE") guidance.push("Stop the destabilizing intervention immediately. Keep the response simple and outward-oriented; follow existing safety/consent/return gates and support access. No deeper imagery, memory search, hypnosis, intensification or further inward probe.");
   if (t.decision === "ADJUST_DELIVERY") guidance.push("Change only the supported manner/dose issue once and retain the episode's original predictions and failure history; do not restart the same mechanism under a new label.");
+  if (t.delivery_assessment) guidance.push(...deliverySystemGuidance(t.delivery_assessment));
+  if (["KEEP_BUT_TITRATE", "SEEK_ALTERNATIVE_SUPERVISION"].includes(t.decision)) guidance.push("Retain any evidenced partial benefit and the original prediction history; unknown benefit remains unknown. The next step is to agree dose limits and safer supervision, not repeat or intensify the exercise now. A supervision change cannot reset failed method predictions or override an existing safety stop.");
+  if (t.delivery_actions?.includes("DISCONTINUE_OR_SWITCH_METHOD")) guidance.push("Both method fit/performance and delivery are poor: discontinue or switch this method with appropriate support. Avoid abrupt changes to prescribed treatment.");
   return guidance;
 }
 

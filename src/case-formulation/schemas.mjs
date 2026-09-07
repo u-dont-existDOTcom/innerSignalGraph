@@ -68,6 +68,12 @@ export const caseSnapshotSchema = {
   required: ["user_goal", "current_issue", "turn_task", "path_update", "direct_observations", "variables", "hypotheses", "unknowns"]
 };
 
+// Provider generation requires all properties declared, with null for optional
+// semantics. The historical runtime validator still accepts omitted delivery_review.
+export const caseSnapshotGenerationSchema = structuredClone(caseSnapshotSchema);
+caseSnapshotGenerationSchema.required.push("relational_readiness");
+caseSnapshotGenerationSchema.properties.path_update.anyOf[1].required.push("delivery_review");
+
 export const caseAuditSchema = {
   type: "object",
   additionalProperties: false,
@@ -110,3 +116,7 @@ export const caseAuditSchema = {
   },
   required: ["corrected_turn_task", "invalidate_turn_task", "remove_observation_ids", "remove_hypothesis_ids", "variable_corrections", "add_unknowns", "safety_flags", "verdict", "summary"]
 };
+
+// Keep historical audit omission compatibility while requiring explicit provider output.
+export const caseAuditGenerationSchema = structuredClone(caseAuditSchema);
+caseAuditGenerationSchema.required.push("corrected_relational_readiness", "invalidate_relational_readiness");

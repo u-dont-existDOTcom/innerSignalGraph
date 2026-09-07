@@ -62,8 +62,9 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
   if (requested === "forensic") return { tier: "forensic", reason: "user-selected forensic council", forced: false, deltaCount };
   if (["deep", "adversarial"].includes(requested)) return { tier: "deep", reason: "user-selected deep review", forced: false, deltaCount };
   if (requested === "reviewed") return { tier: "reviewed", reason: "user-selected reviewed mode", forced: false, deltaCount };
-  if (snapshot?.relational_readiness && !intentHard && !ambiguityHard) return { tier: "reviewed", reason: "relational readiness and foreseeable harm require case audit", forced: true, deltaCount };
-  if (requested === "fast" && !intentHard && !ambiguityHard) return { tier: "fast", reason: "user-selected fast mode", forced: false, deltaCount };
+  const readinessReviewRequired = Boolean(snapshot?.relational_readiness);
+  const deliveryReviewRequired = Boolean(snapshot?.path_update?.delivery_review || snapshot?._path_prior?.active?.delivery_assessment_key);
+  if (requested === "fast" && !intentHard && !ambiguityHard && !deliveryReviewRequired && !readinessReviewRequired) return { tier: "fast", reason: "user-selected fast mode", forced: false, deltaCount };
 
   if (intentHard) return { tier: "deep", reason: "deep/high-stakes intent", forced: false, deltaCount };
   if (ambiguityHard) {
@@ -75,6 +76,8 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
     }
     return { tier: "deep", reason: "unresolved responsibility and speaker ambiguity", forced: false, deltaCount };
   }
+  if (readinessReviewRequired) return { tier: "reviewed", reason: "relational readiness and foreseeable harm require case audit", forced: true, deltaCount };
+  if (deliveryReviewRequired) return { tier: "reviewed", reason: "evidence-bound delivery and practitioner trust review", forced: requested === "fast", deltaCount };
   if (reviewedSignal) return { tier: "reviewed", reason: "moderate ambiguity or protective conflict", forced: false, deltaCount };
   return { tier: "fast", reason: "low-ambiguity graph-following", forced: false, deltaCount };
 }

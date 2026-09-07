@@ -32,6 +32,8 @@ async function fixtureRoot(t) {
   ]) await copyTree(directory, path.join(root, directory));
   for (const file of [
     "src/case-formulation/path-performance.mjs",
+  "src/case-formulation/delivery-system-assessment.mjs",
+  "src/case-formulation/bounded-schema.mjs",
     "src/case-formulation/turn-task.mjs",
     "src/guide-graph/compiler.mjs",
     "src/guide-graph/contract.mjs",
@@ -118,7 +120,9 @@ test("proposal build emits an exact per-field decision card with regression evid
   assert.equal(built.packetVerification.manifest.candidateOnly, true);
 });
 
-for (const dependency of ["src/guide-graph/planner.mjs", "src/case-formulation/path-performance.mjs", "src/case-formulation/turn-task.mjs"]) test(`stale proposal base fails before writing build output: ${dependency}`, async (t) => {
+for (const dependency of ["src/guide-graph/planner.mjs", "src/case-formulation/path-performance.mjs",
+  "src/case-formulation/delivery-system-assessment.mjs",
+  "src/case-formulation/bounded-schema.mjs", "src/case-formulation/turn-task.mjs"]) test(`stale proposal base fails before writing build output: ${dependency}`, async (t) => {
   const root = await fixtureRoot(t);
   await createProposal({ root, id: "neutral-stale-r1", nodeIds: ["IC.NEUTRAL_WITNESS"] });
   const semanticInput = path.join(root, dependency);

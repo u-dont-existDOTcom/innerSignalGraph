@@ -22,7 +22,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 1615b92c2ea8785b967ca1ccca4c8d4dd3bcab5edd8a358978c7f90ce257da31
 base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: ffe83d54068ac1f15fc624fee5bc33d28e07d074b318546b1801871d58fb0d38
+projection_input_sha256: 9499803d7373c2217bf3f59035cf680e8b679dbf7281c7db14797be0b132a557
 ---
 
 # Explore a deeper horizon of wellbeing when curiosity is genuine

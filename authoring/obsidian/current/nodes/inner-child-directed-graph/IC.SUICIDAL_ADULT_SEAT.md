@@ -24,7 +24,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 5e78ce47d2eb8608ffc30c1e4117ca2a7e745a559d76c96291c9d5a0de95957a
 base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: ffe83d54068ac1f15fc624fee5bc33d28e07d074b318546b1801871d58fb0d38
+projection_input_sha256: 9499803d7373c2217bf3f59035cf680e8b679dbf7281c7db14797be0b132a557
 ---
 
 # Bring a second adult or witness seat into the room

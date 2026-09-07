@@ -2,6 +2,14 @@
 
 Updated: 2026-09-07
 
+## Current owner-authorized delivery-system trust lesson (PR #46)
+
+The 2026-09-07 direct owner lesson separately authorizes method-value vs provider/business/supervision trust. This candidate composes `src/case-formulation/delivery-system-assessment.mjs` with the existing Path Performance Controller and the completed task-local external-support contract; it does not duplicate or activate a new navigator. Read `docs/superpowers/specs/2026-09-07-delivery-system-assessment.md` and sole task ledger `tasks/delivery-trust-20260907/INTEGRATION.md` for scope, requirements, evidence and recovery.
+
+- Original fetched head: `39fd233f31970dc3892e86a18212f541b0b1ab40`. Concurrent external-support work was preserved at `76df72c14dbd4369908561865b52cbd1594e8a62`; concurrent readiness work through `92b1c853eeb1096c3f99b88bb4875a160a9c1d31` was then composed. Fetch current PR #46 head before resuming; final immutable head/check links belong in Git/PR closeout.
+- OWNER_POLICY: inaccessible basic harm management behind an exorbitant premium can itself be a serious delivery trust red flag. Helpful personal method effects remain separate. No practitioner motive, clinical efficacy, mechanism or total cure is inferred.
+- Complete combined verification passed: 928/928 automated tests, 29/29 graph cases and all package gates. Exact changed paths and review findings are recorded in the task ledger. No merge, deployment, installation or stable promotion. Existing source/fidelity pins, archived packets, independent DEV-R005 boundaries remain unchanged. PR #46 now contains the independently added broader readiness gate; earlier absent-module/composition-gap statements below are historical. Preserve the actual current readiness implementation and its regressions. PR #47 itself remains unmerged.
+
 ## Current external-support owner delta — candidate contract
 
 The subsequent 2026-09-07 owner instruction A–J authorizes the [external-support candidate extension](../docs/superpowers/specs/2026-09-07-external-support-owner-delta.md), its [bounded research scan](../docs/research/2026-09-07-external-support-owner-delta-scan.md) and the pure schemas/behavioral prototype under `tasks/external-support-20260907/`. Recover exact scope, source heads, A–J traceability, verification and unresolved implementation decisions from the sole [integration ledger](../tasks/external-support-20260907/INTEGRATION.md). Meaningful work, ordinary-exchange suitability, reversible fit trials, scarcity/modular gaps, cost/exploitation screening, partial-method benefit/harm and peer burden are now candidate requirements. The interview/prior-treatment/profile/owner-policy pipeline preserves official evidence versus fit authority. No runtime, provider, storage or discovery wiring is introduced.

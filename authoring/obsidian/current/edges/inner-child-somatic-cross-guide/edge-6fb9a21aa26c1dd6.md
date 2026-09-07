@@ -10,7 +10,7 @@ from_node_id: ROUTE.GO_INWARD
 to_node_id: SOM.ADVANCED_RELEASE_OPTIONAL
 relation: optional-parallel-not-readiness
 base_graph_sha256: beb05b08a340cf9bd62efacaab7619a3dd4f6adf6bedabb4927cfe4e3a329560
-projection_input_sha256: ffe83d54068ac1f15fc624fee5bc33d28e07d074b318546b1801871d58fb0d38
+projection_input_sha256: 9499803d7373c2217bf3f59035cf680e8b679dbf7281c7db14797be0b132a557
 ---
 
 # ROUTE.GO_INWARD optional-parallel-not-readiness SOM.ADVANCED_RELEASE_OPTIONAL

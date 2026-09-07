@@ -243,3 +243,8 @@ This note is the sole research/disposition record for the task. Handoff/checkpoi
 - Candidate admission review: **PASS within the requested documentation scope** for authority/nonduplication, preserved conception, bounded source claims, privacy and closed-loop access semantics, with literal evidence in the sections above. This is not owner acceptance, an independent clinical review or permission to implement.
 
 Exact task commit identity is supplied by Git and the delivery receipt. The next step is owner discussion of this candidate; no further product action follows automatically.
+
+
+### Later owner-authorized delivery-trust lesson
+
+Evaluate intervention/environment value independently of provider, business model and supervision trust, including retreats, residential programs, farms and coaching ecosystems. The shared candidate and policy are specified in `../superpowers/specs/2026-09-07-delivery-system-assessment.md`. An accessible ordinary offering with adequate harm-management support can remain reasonable despite an overpriced optional premium. In contrast, enabling potentially destabilizing self-practice while requiring an exorbitant package for practical basic safety support is a substantial delivery-model trust red flag. Preserve any observed method benefit, seek safer delivery, and make no unsupported motive accusation. Current practitioner response, transparency, independent reports, pressure, uncertainty and alternatives all inform a revisable evidence-linked assessment. This is explicit owner policy; this research note supplies no new clinical efficacy claim.

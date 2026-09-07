@@ -123,9 +123,13 @@ export function relationalReadinessDecision(readiness, { immediateProtection = f
 function intrinsicPathFailure(state) {
   const active = state?.active;
   const latest = state?.latest;
+  // Provider/pacing constraints are not method failure. Reopening readiness must
+  // preserve their separate assessment without converting them to formulation failure.
+  const deliveryOnly = latest?.delivery_assessment && ["MOVING", "UNCLEAR"].includes(latest.method_status);
+  const intrinsicSources = (latest?.failure_sources ?? []).filter(source => !(deliveryOnly && ["DELIVERY_MISMATCH", "PACING_MISMATCH"].includes(source.kind)));
   return Boolean(active?.invalidated || active?.misses > 0
     || Object.values(active?.prediction_failures ?? {}).some(count => count > 0)
-    || (latest?.failure_sources ?? []).length
+    || intrinsicSources.length
     || latest?.status === "ADVERSE"
     || latest?.goal_substitution?.narrow_romance_pause === true);
 }
@@ -141,14 +145,17 @@ export function preparePathPriorForReadiness(prior, currentDecision, { issueChan
   if (!active?.relational_constraint_only || intrinsicPathFailure(state)) return state;
   const clears = issueChanged || (currentDecision?.status === "NOT_BLOCKED"
     && currentDecision.supportProgress !== "NOT_EQUIVALENT_TO_NONROMANTIC_SUPPORT");
-  if (!clears) return state;
+  // Re-evaluate an audited continuing pause around the base controller. Feeding
+  // its synthetic switch back into the method counters would invent a failure.
+  if (!clears && !currentDecision) return state;
   active.switch_pending = false;
   active.relational_constraint_only = false;
+  state.readiness_constraint_review = true;
   if (active.status === "STALLED" && active.decision === "SWITCH") {
     active.status = "UNCLEAR";
     active.decision = "PROBE";
   }
-  state.readiness_reopened = {
+  if (clears) state.readiness_reopened = {
     reason: issueChanged ? "issue_changed" : "fresh_current_readiness",
     from_status: state.latest?.relational_readiness?.status ?? "support_substitution",
     to_status: currentDecision?.status ?? "not_applicable_to_new_issue",
@@ -258,7 +265,10 @@ export function relationalReadinessGuidance(decision) {
 
 export function decoratePlanWithRelationalReadiness(plan, control, decision) {
   if (!decision) return plan;
-  const guidance = relationalReadinessGuidance(decision);
+  const narrowOverrides = control?.latest?.readiness_conflict === "NARROW_CURRENT_RISK_OVERRIDES_GENERAL_NOT_BLOCKED";
+  const effectiveDecision = narrowOverrides ? { ...decision, status: "PAUSE_ROMANCE", pauseRomance: true, allowRomanceRecommendation: false } : decision;
+  const guidance = relationalReadinessGuidance(effectiveDecision);
+  if (narrowOverrides) guidance.push("The broader assessment and the still-current narrow risk pattern disagree. Preserve the current pause until fresh functional evidence resolves that conflict; do not erase either assessment or announce dating as unblocked.");
   const result = structuredClone(plan);
   result.requiredNuance = [...new Set([...(result.requiredNuance ?? []), ...guidance])];
   result.forbiddenOverclaims = [...new Set([...(result.forbiddenOverclaims ?? []),
