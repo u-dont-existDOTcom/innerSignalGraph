@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "url": "https://romance.u-dont-exist.com",
+  "ownerConfirmedReachability": true,
+  "confirmedAt": "2026-09-07",
+  "verificationKind": "owner-confirmed-not-independently-network-verified",
+  "scope": "Allows the candidate runtime to offer the already owner-approved optional romance-guide reference when task policy permits. It does not bypass safety, stabilization, adult-audience, medical, unsafe-practice, repetition, or current-help gates."
+}
