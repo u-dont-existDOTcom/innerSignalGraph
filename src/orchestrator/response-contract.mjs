@@ -37,20 +37,29 @@ function relationalPolicyMarkers(plan = {}) {
   const readiness = trace.relational_readiness;
   const required = [];
   const forbidden = [];
-  if (readiness?.status === "PAUSE_ROMANCE" || trace.goal_substitution?.romance_pause) {
-    required.push("POLICY.RELATIONAL_PAUSE");
+  const effectivePause = readiness?.status === "PAUSE_ROMANCE" || trace.goal_substitution?.romance_pause === true;
+  const pauseControlsTurn = effectivePause && trace.route === "action"
+    && (text(trace.reason).includes("pausing active romance-seeking")
+      || trace.goal_substitution?.narrow_romance_pause === true);
+  const assessControlsTurn = readiness?.status === "ASSESS_BEFORE_ROMANCE" && trace.route === "reconsider"
+    && text(trace.reason).includes("Romantic readiness is unresolved");
+  const supportControlsTurn = trace.goal_substitution?.instrumental_socializing === true && trace.route === "action";
+
+  // Preserve the decision constraint even when a higher-priority safety/external/leave
+  // route controls the current response, but do not force the renderer to re-announce
+  // romance policy during an unrelated or more urgent turn.
+  if (effectivePause) {
+    if (pauseControlsTurn) required.push("POLICY.RELATIONAL_PAUSE");
     forbidden.push("POLICY.RELATIONAL_NOT_BLOCKED");
   } else if (readiness?.status === "ASSESS_BEFORE_ROMANCE") {
-    required.push("POLICY.RELATIONAL_ASSESS");
+    if (assessControlsTurn) required.push("POLICY.RELATIONAL_ASSESS");
     forbidden.push("POLICY.RELATIONAL_PAUSE", "POLICY.RELATIONAL_NOT_BLOCKED");
   } else if (readiness?.status === "NOT_BLOCKED") {
-    required.push("POLICY.RELATIONAL_NOT_BLOCKED");
+    // NOT_BLOCKED prevents an invented prohibition; it need not become a repeated
+    // user-facing declaration when romance is not the live job.
     forbidden.push("POLICY.RELATIONAL_PAUSE");
   }
-  if (trace.goal_substitution?.instrumental_socializing
-      || readiness?.supportProgress === "NOT_EQUIVALENT_TO_NONROMANTIC_SUPPORT") {
-    required.push("POLICY.NONROMANTIC_SUPPORT_TARGET");
-  }
+  if (supportControlsTurn) required.push("POLICY.NONROMANTIC_SUPPORT_TARGET");
   return { required: [...new Set(required)], forbidden: [...new Set(forbidden)] };
 }
 
