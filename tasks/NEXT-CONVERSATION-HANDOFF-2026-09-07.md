@@ -10,6 +10,23 @@ This is candidate runtime behavior, enabled by explicit substantive policy on th
 
 The source synchronization below remains complete. Its pending calibrated smoke has not been rerun or completed by this task; its previous four calls and 116-call remainder are unchanged. No merge, deployment, installation or stable promotion.
 
+### Support/readiness coordination delta — verification requirement only
+
+The support-capability audit's lessons (10) and (11) require distinguishing human connection/support from romance, and assessing current foreseeable serious harm to self, partner and relevant dependent/future children. Readiness is revisable as stability improves; it is not complete healing, worthiness or a permanent diagnosis-based prohibition. Do not infer that children exist or that generic benefits of connection establish romantic readiness.
+
+**Verified branch composition:** PR #46's path controller implements the narrower five-signal `goal_substitution.romance_pause` case pattern and replay-safe reassessment. Its 42 focused controller tests cover structured non-romantic support, instrumental goal substitution, negative controls for incomplete risk patterns and clearing without stale-risk replay. PR #46 does not contain `src/case-formulation/relational-readiness.mjs` or an explicit `harm_to` assessment. Separate draft [PR #47](https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/47), verified at `989a889dc3c7974144bda9a73137f9f2c6846023`, contains that broader assessment, planner/extraction/audit/response seams and 24 relational-readiness cases. Its source/tests/receipt were inspected read-only here; its test results are other-PR evidence, not current PR #46 combined coverage. The independently committed romance supplement on PR #46 is optional context, not that readiness gate.
+
+**Open integration gap:** the two candidate controllers are not composed, and combined semantic/deterministic coverage is absent. When composition is separately authorized, require synthetic regressions proving:
+
+- substantial foreseeable harm cannot be bypassed because the five-signal path-controller conjunction is incomplete;
+- disagreement between trajectory state and readiness assessment cannot silently permit unsafe endorsement or impose a permanent ban;
+- pausing pursuit preserves structured non-romantic support, and independently evidenced friendship gains survive;
+- instrumental partner-seeking does not count as achieving a non-romantic support goal;
+- currently stable isolated clients are not blocked by loneliness or historical risk alone;
+- improved current stability can reopen readiness, while stale risk or stale clearance cannot replay across reassessment.
+
+This delta records verification/integration requirements only. It does not authorize merging PR #47, duplicating its readiness policy, choosing a web-search/external-support router, adding discovery services or a fresh-ChatGPT handoff, deployment, stable promotion, or expanded live-call spending. Keep the originating chat's research/architecture decision separate.
+
 ## Latest continuation — source synchronization completed
 
 The next bounded content task below is now complete. The full owner article was recovered from message `a56688c2-1f9b-4692-8ac4-1ab007347897` in conversation `6a9b75e2-15c4-83ea-9232-4b1b33e58a37`. Original: `guides/snapshots/inner-child-guide-owner-2026-09-06.txt`; revised active source: `guides/inner-child-guide-2026-09-07.txt`. All E01-E12 were applied exactly and independently checked, with zero unrelated changes.
