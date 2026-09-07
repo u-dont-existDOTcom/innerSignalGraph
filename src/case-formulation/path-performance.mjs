@@ -1,6 +1,5 @@
 import { ValidationError } from "../core/errors.mjs";
 import { immediateProtectionNeeded } from "./turn-task.mjs";
-import { relationalReadinessDecision, relationalReadinessGuidance } from "./relational-readiness.mjs";
 
 // Candidate engineering policy, not a clinical instrument or diagnosis.
 export const MOVEMENT_SIGNALS = Object.freeze(["new_information", "specificity", "agency", "emotion_access", "need_access", "functional_change", "durable_movement"]);
@@ -57,10 +56,9 @@ const key = strategy => JSON.stringify([strategy.process_id, strategy.node_id]);
 const RECONSIDER = ["process", "formulation", "target", "external_stabilization", "mechanism", "pacing_delivery", "completion_checking_loop"];
 const defaultProbe = "What, if anything, changed after that step, and was it useful in what you could feel, choose, or do?";
 const rethinkProbe = "Are we missing what actually needs help here, or would support with the situation outside this exercise be more useful now?";
-const readinessProbe = "How are you managing daily life and distress at the moment, including any non-romantic support you can rely on?";
 
 // Prior state is supplied only by the existing session snapshot, never by model output.
-export function evaluatePathPerformance({ prior = null, update = null, variables = {}, observationIds = new Set(), invalidated = false, relationalReadiness = null }) {
+export function evaluatePathPerformance({ prior = null, update = null, variables = {}, observationIds = new Set(), invalidated = false }) {
   update = validatePathUpdate(update, observationIds);
   const state = prior ? structuredClone(prior) : { version: 1, sequence: 0, active: null, closed: [], risk_signals: [] };
   if (state.version !== 1 || !Number.isSafeInteger(state.sequence) || state.sequence < 0 || (!Array.isArray(state.closed) || state.closed.length > 12)) throw new ValidationError("Invalid path-performance session state.");
@@ -77,7 +75,6 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   const processChanged = state.active && update?.strategy && update.strategy.process_id !== state.active.strategy.process_id && has("new_process");
   const clearRisk = freshRiskSignals.some(s => s.kind === "romance_regulation_risk_cleared") && freshRiskSignals.some(s => s.kind === "durable_movement" && s.timing === "durable") && freshRiskSignals.some(s => s.kind === "agency" && s.timing === "durable");
   const emergency = immediateProtectionNeeded(variables);
-  const readiness = relationalReadinessDecision(relationalReadiness, { immediateProtection: emergency || variables.suicidal_state === "intent" });
   const significantHarm = signals.some(s => HARM_SIGNALS.includes(s.kind) && s.severity === "significant");
   const harm = signals.some(s => HARM_SIGNALS.includes(s.kind));
   const old = state.active;
@@ -99,23 +96,14 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
     }
   }
   const active = state.active;
-  // This narrow case-level risk state survives a process/topic change; the broader
-  // readiness gate is re-audited for the current relational issue instead of becoming
-  // a permanent person-level label.
+  // This case-level constraint survives a process/topic change; episode failure does not.
   const previousRisk = state.risk_signals ?? [];
   const riskSignals = clearRisk ? [] : [...new Map([...previousRisk, ...freshRiskSignals.filter(s => riskKinds.includes(s.kind))].map(s => [s.kind, s])).values()];
   state.risk_observed_ids = unique([...consumedRisk, ...signals.filter(s => CASE_RISK_SIGNALS.includes(s.kind) || clearRisk && ["durable_movement", "agency"].includes(s.kind)).map(s => s.observation_id)]);
   if (state.risk_observed_ids.length > 512) throw new ValidationError("Case-risk evidence capacity reached; preserve reassessment history instead of replaying cleared evidence.");
-  const narrowRomancePause = riskKinds.slice(0, 5).every(kind => riskSignals.some(s => s.kind === kind));
-  const romancePause = narrowRomancePause || readiness?.pauseRomance === true;
-  const instrumentalSocializing = riskSignals.some(s => s.kind === "instrumental_partner_seeking")
-    || readiness?.supportProgress === "NOT_EQUIVALENT_TO_NONROMANTIC_SUPPORT";
-  const readinessUnresolved = readiness?.status === "ASSESS_BEFORE_ROMANCE" && readiness.assessment.scope === "romantic_sexual_pursuit";
-  const readinessConflict = narrowRomancePause && readiness?.status === "NOT_BLOCKED"
-    ? "NARROW_CURRENT_RISK_OVERRIDES_GENERAL_NOT_BLOCKED"
-    : readiness?.pauseRomance && !narrowRomancePause ? "BROAD_FORESEEABLE_HARM_PAUSE_WITHOUT_NARROW_CONJUNCTION" : null;
+  const romancePause = riskKinds.slice(0, 5).every(kind => riskSignals.some(s => s.kind === kind));
   state.risk_signals = riskSignals;
-  const external = update?.failure_hypotheses.some(h => h.kind === "STATE_CONSTRAINT") || has("external_stabilization_needed") || narrowRomancePause || variables.inward_attention_effect === "worsens";
+  const external = update?.failure_hypotheses.some(h => h.kind === "STATE_CONSTRAINT") || has("external_stabilization_needed") || romancePause || variables.inward_attention_effect === "worsens";
   const evaluated = old && !starts && !processChanged ? active : null;
   const consumed = new Set(evaluated?.observed_ids ?? []);
   const freshSignals = signals.filter(s => !consumed.has(s.observation_id));
@@ -178,26 +166,12 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   if (harm) { status = "ADVERSE"; decision = "SWITCH"; route = "reconsider"; reason = "The exercise had an adverse response; stop and reconsider its fit without inferring a need for residential or supervised care."; }
   if (external) { status = harm ? "ADVERSE" : "STALLED"; decision = "SWITCH"; route = "external"; reason = "Evidenced state constraints make external stabilization the next strategy."; addFailure("STATE_CONSTRAINT"); }
   if (variables.actionable_problem === "present" && !emergency && !significantHarm) { route = "action"; if (decision === "CONTINUE" || decision === "PROBE") decision = "SWITCH"; reason = "A concrete external problem takes precedence; address the actionable conditions."; }
-  if (readinessUnresolved && !emergency && !significantHarm && !harm) {
-    status = "UNCLEAR"; decision = "PROBE"; route = "reconsider";
-    reason = "Romantic readiness is unresolved; assess current functioning and foreseeable harm before normalizing or recommending dating.";
-  }
-  if (instrumentalSocializing && readiness?.assessment.scope === "support_building" && !emergency && !significantHarm) {
-    status = "STALLED"; decision = "SWITCH"; route = "action";
-    reason = "Partner-seeking is substituting for the non-romantic support target; preserve any separate friendship gain and choose a genuinely non-romantic support step.";
-  }
-  if (romancePause && !emergency && !significantHarm) {
-    if (!harm) status = "STALLED";
-    decision = "SWITCH"; route = "action";
-    reason = readiness?.pauseRomance
-      ? "Current foreseeable-harm/readiness evidence requires pausing active romance-seeking while widening non-romantic support."
-      : "Reduce instability and regulator/rescuer substitution through structured supervised non-romantic support.";
-  }
+  if (romancePause) { route = "action"; reason = "Reduce instability and regulator/rescuer substitution through structured supervised non-romantic support."; }
   if (emergency || significantHarm) { status = "ADVERSE"; decision = "STOP_DEESCALATE"; route = "safety"; reason = "Significant destabilization or immediate protection need stops processing now."; addFailure("STATE_CONSTRAINT"); }
-  if (["SWITCH", "PROBE"].includes(decision) && route === "action" && old?.strategy.node_id === "ROUTE.ACT_OUTWARD" && stalled && !romancePause && !instrumentalSocializing) {
+  if (["SWITCH", "PROBE"].includes(decision) && route === "action" && old?.strategy.node_id === "ROUTE.ACT_OUTWARD" && stalled && !romancePause) {
     route = "reconsider"; reason = "The external action strategy itself failed; reconsider its target, assumptions and feasibility before another action plan.";
   }
-  if (duplicateOnly && evaluated && !harm && !external && !emergency && !stalled && !romancePause && !readinessUnresolved && !instrumentalSocializing) {
+  if (duplicateOnly && evaluated && !harm && !external && !emergency && !stalled) {
     status = evaluated.status; decision = evaluated.decision;
     route = state.latest?.route ?? "reconsider";
     reason = "No new observation opportunity; replayed evidence cannot improve or worsen the trajectory.";
@@ -207,16 +181,7 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
     review: evaluated?.review_count ?? 0, replayed_observation_ids: signals.filter(s => consumed.has(s.observation_id)).map(s => s.observation_id), delivery: evaluated?.delivery ?? null, predictions: evidence, observed_signals: signals,
     status, decision, route, reason, failure_sources: failures,
     reconsider: ["SWITCH", "STOP_DEESCALATE", "PROBE"].includes(decision) ? RECONSIDER : [],
-    relational_readiness: readiness,
-    readiness_conflict: readinessConflict,
-    goal_substitution: {
-      romance_pause: romancePause,
-      narrow_romance_pause: narrowRomancePause,
-      instrumental_socializing: instrumentalSocializing,
-      evidence_ids: unique([...(riskSignals.map(s => s.observation_id)), ...((readiness?.assessment?.stability_observation_ids ?? [])), ...((readiness?.assessment?.harm_observation_ids ?? []))]),
-      cleared_by_reassessment: clearRisk,
-      source_rule_ids: readiness?.sourceRuleIds ?? (romancePause ? ["RG01", "RG05", "RG06", "RG11"] : [])
-    },
+    goal_substitution: { romance_pause: romancePause, instrumental_socializing: riskSignals.some(s => s.kind === "instrumental_partner_seeking"), evidence_ids: unique(riskSignals.map(s => s.observation_id)), cleared_by_reassessment: clearRisk },
     probe: decision === "PROBE" || route === "reconsider" ? (update?.probe ?? null) : null,
     human_evaluation: "NOT_ESTABLISHED_BY_DETERMINISTIC_TRACE"
   };
@@ -233,11 +198,8 @@ export function pathPerformanceGuidance(control) {
   const t = control.latest;
   const guidance = ["Judge this process by prospective movement and adverse response, independently of praise or complaint. A polite answer, cooperation, temporary relief, fluent explanation or completed surface action is not mechanism confirmation. Formulation and failure attribution remain provisional."];
   if (["SWITCH", "PROBE", "STOP_DEESCALATE", "CLOSE"].includes(t.decision)) guidance.push("Stop repeating the previous exercise or its paraphrase. Reconsider process, formulation, target, need for external stabilization, mechanism, pacing/delivery and whether this is already a completed checking loop. Do not automatically choose an adjacent graph node or infer hidden trauma.");
-  if (t.route === "external" || t.goal_substitution.romance_pause) guidance.push("Use external stabilization and practical support before further inward processing when state evidence requires it. Match intensity to evidenced need; ordinary eyes-open activity can suffice when the issue is inward attention. When structured supervision is actually needed, agree a feasible step toward supervised non-romantic support and mentoring. Where locally appropriate, explore therapeutic community, supported residential, care-farm/green-care, Soteria-like or other supervised non-carceral settings; verify local suitability and availability rather than promising a model, rejecting all clinical care or changing medication.");
-  if (t.goal_substitution.romance_pause) guidance.push("For this evidenced current state, recommend pausing active romance-seeking because current instability/load or foreseeable harm makes romance a poor regulation strategy. This is case-level and revisable, not a universal requirement to love oneself before relationships. Do not advise isolation or reannounce this constraint during unrelated work. Preserve supportive community and mentoring; socializing mainly to obtain a partner is goal substitution, not success toward non-romantic stabilization.");
-  if (t.relational_readiness) guidance.push(...relationalReadinessGuidance(t.relational_readiness));
-  if (t.readiness_conflict) guidance.push("When broad readiness and the narrower current risk pattern disagree, use the more protective current evidence without converting it into a permanent trait. Reassess with fresh functional evidence before reopening romance-seeking.");
-  if (t.goal_substitution.instrumental_socializing && !t.goal_substitution.romance_pause) guidance.push("Do not count a social outing as support-building merely because it occurred. If its primary purpose is obtaining a partner, preserve any real friendship or community gain separately and redirect the stabilization target toward support that remains useful without romantic opportunity.");
+  if (t.route === "external" || t.goal_substitution.romance_pause) guidance.push("Use external stabilization and practical support before further inward processing. Match intensity to evidenced need; ordinary eyes-open activity can suffice when the issue is inward attention. When structured supervision is actually needed, agree a feasible step toward supervised non-romantic support and mentoring. Where locally appropriate, explore therapeutic community, supported residential, care-farm/green-care, Soteria-like or other supervised non-carceral settings; verify local suitability and availability rather than promising a model, rejecting all clinical care or changing medication.");
+  if (t.goal_substitution.romance_pause) guidance.push("For this evidenced current state, recommend pausing active romance-seeking because instability, load and using a partner as regulator/rescuer/proof-of-worth can increase dependency. This is case-level and revisable, not a universal requirement to love oneself before relationships. Do not advise isolation or reannounce this constraint during unrelated work. Preserve supportive community and mentoring; socializing mainly to obtain a partner is goal substitution, not success toward non-romantic stabilization.");
   if (t.decision === "STOP_DEESCALATE") guidance.push("Stop the destabilizing intervention immediately. Keep the response simple and outward-oriented; follow existing safety/consent/return gates and support access. No deeper imagery, memory search, hypnosis, intensification or further inward probe.");
   if (t.decision === "ADJUST_DELIVERY") guidance.push("Change only the supported manner/dose issue once and retain the episode's original predictions and failure history; do not restart the same mechanism under a new label.");
   return guidance;
@@ -246,7 +208,6 @@ export function pathPerformanceGuidance(control) {
 export function performanceQuestion(control) {
   const t = control.latest;
   if (t.route !== "reconsider") return "";
-  if (t.relational_readiness?.status === "ASSESS_BEFORE_ROMANCE") return readinessProbe;
   if (!t.episode_id) return "What would be useful to change here in what you can feel, choose, or do?";
   if (t.probe && new Set(t.probe.alternatives.map(a => a.next_strategy)).size >= 2) return t.probe.question;
   return t.decision === "PROBE" ? defaultProbe : rethinkProbe;
