@@ -5,6 +5,7 @@ import { composeRomanceContext, validateRomanceSources } from '../tasks/romance-
 
 const source = () => JSON.parse(readFileSync(new URL('../tasks/romance-guide-20260907/SOURCE.json', import.meta.url)));
 const policy = () => JSON.parse(readFileSync(new URL('../tasks/romance-guide-20260907/SUPPLEMENT.json', import.meta.url)));
+const linkConfirmation = () => JSON.parse(readFileSync(new URL('../tasks/romance-guide-20260907/OWNER-LINK-CONFIRMATION.json', import.meta.url)));
 function plan(id = 'IC.DEEP_CHILD_DIALOGUE', tier = 4) {
   return { contractVersion: 'case-plan-v5', primaryJob: { id, title: 'Synthetic test', tier },
     variables: { present_safety: 'safe', orientation: 'oriented', dissociation: 'low', altered_state: 'sober' },
@@ -15,31 +16,38 @@ function plan(id = 'IC.DEEP_CHILD_DIALOGUE', tier = 4) {
 }
 const enabled = extra => ({ enabled: true, topic: 'compatibility', audience: 'adult', stage: 'considering', ...extra });
 
-test('candidate source has twenty bound excerpts and twelve rules', () => {
+test('candidate source has twenty bound excerpts, twelve rules, and owner-confirmed optional reference', () => {
   assert.deepEqual(validateRomanceSources(), { sourceId: 'owner-romance-2026-08-27',
-    supplementId: 'romance-2026-08-27-supplement-v1', excerpts: 20, rules: 12 });
+    supplementId: 'romance-2026-08-27-supplement-v1', excerpts: 20, rules: 12,
+    optionalReference: { url: 'https://romance.u-dont-exist.com', reachability: 'owner-confirmed' } });
 });
 test('changed source wording fails integrity validation', () => {
   const s = source(); s.excerpts[0].quote += ' Altered wording.';
-  assert.throws(() => validateRomanceSources(s, policy()), /excerpt/);
+  assert.throws(() => validateRomanceSources(s, policy(), linkConfirmation()), /excerpt/);
 });
 test('changed page attribution fails even when quote is untouched', () => {
   const s = source(); s.excerpts[0].page = 11;
-  assert.throws(() => validateRomanceSources(s, policy()), /excerpt/);
+  assert.throws(() => validateRomanceSources(s, policy(), linkConfirmation()), /excerpt/);
 });
 test('changed behavioral policy fails its separate integrity binding', () => {
   const p = policy(); p.rules[0].guidance = 'Automatically approve romance.';
-  assert.throws(() => validateRomanceSources(source(), p), /provenance/);
+  assert.throws(() => validateRomanceSources(source(), p, linkConfirmation()), /provenance/);
 });
 test('source identity cannot silently drift to a different uploaded PDF', () => {
   const s = source(); s.pdfSha256 = '0'.repeat(64);
-  assert.throws(() => validateRomanceSources(s, policy()), /contract/);
+  assert.throws(() => validateRomanceSources(s, policy(), linkConfirmation()), /contract/);
 });
 test('unbound source references and changed URLs are rejected', () => {
   const p = policy(); p.rules[0].excerptIds = ['not-a-source'];
-  assert.throws(() => validateRomanceSources(source(), p), /provenance/);
+  assert.throws(() => validateRomanceSources(source(), p, linkConfirmation()), /provenance/);
   const q = policy(); q.linkPolicy.url += '?case=synthetic';
-  assert.throws(() => validateRomanceSources(source(), q), /contract/);
+  assert.throws(() => validateRomanceSources(source(), q, linkConfirmation()), /contract/);
+});
+test('owner-confirmed URL evidence is bound separately and cannot silently change', () => {
+  const l = linkConfirmation(); l.url += '/different';
+  assert.throws(() => validateRomanceSources(source(), policy(), l), /contract/);
+  const q = linkConfirmation(); q.ownerConfirmedReachability = false;
+  assert.throws(() => validateRomanceSources(source(), policy(), q), /contract/);
 });
 test('default remains disabled and leaves installed behavior untouched', () => {
   const p = plan(); const result = composeRomanceContext(p);
@@ -140,10 +148,12 @@ test('support-building includes a discriminating goal-substitution check, not mi
   assert.match(result.progressChecks[0].criterion, /no romantic opportunity/);
   assert.match(result.plan.requiredNuance.join(' '), /Do not infer hidden romantic motives/);
 });
-test('optional philosophical content is bounded rather than prescribed', () => {
+test('optional philosophical content is bounded and can point to the owner-confirmed guide', () => {
   const result = composeRomanceContext(plan(), enabled({ topic: 'polarity' }));
   assert.match(result.optionalTopicBoundary, /Do not install gender generalizations/);
-  assert.equal(result.referenceDecision, 'LINK_VERIFICATION_REQUIRED');
+  assert.equal(result.referenceDecision, 'OFFER_OPTIONAL_REFERENCE');
+  assert.equal(result.reference.reachabilityEvidence, 'owner-confirmed');
+  assert.match(result.reference.text, /romance\.u-dont-exist\.com/);
 });
 test('full adult guide is not surfaced for minors or an unknown-age audience', () => {
   for (const audience of ['minor', 'unknown']) {
@@ -162,9 +172,11 @@ test('no link bypass for unsafe or medical practice requests', () => {
     assert.equal(result.reference, null);
   }
 });
-test('owner-supplied link is registered but unverified reachability is not misreported', () => {
+test('owner confirmation enables the optional reference without being misreported as independent verification', () => {
   assert.equal(source().canonicalUrl, 'https://romance.u-dont-exist.com');
   assert.equal(policy().linkPolicy.reachabilityVerified, false);
+  assert.equal(linkConfirmation().ownerConfirmedReachability, true);
   const result = composeRomanceContext(plan(), enabled({ interest: 'requested' }));
-  assert.equal(result.referenceDecision, 'LINK_VERIFICATION_REQUIRED'); assert.equal(result.reference, null);
+  assert.equal(result.referenceDecision, 'OFFER_OPTIONAL_REFERENCE');
+  assert.equal(result.reference.reachabilityEvidence, 'owner-confirmed');
 });
