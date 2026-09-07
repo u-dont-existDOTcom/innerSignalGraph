@@ -1,6 +1,10 @@
 # External-support routing — candidate architecture and research note
 
-**Status: CANDIDATE / BRAINSTORM FOR OWNER DISCUSSION. Documentation only; not an accepted specification or runtime policy.**
+**Current status: OWNER-AUTHORIZED CANDIDATE DESIGN with a task-local deterministic contract; no runtime discovery or release activation.**
+
+The later 2026-09-07 owner instruction A–J authorizes the [compatibility/activity/trial/scarcity/cost/method/peer additions](../superpowers/specs/2026-09-07-external-support-owner-delta.md), grounded by a [bounded supplemental scan](2026-09-07-external-support-owner-delta-scan.md). Follow the [current integration ledger](../../tasks/external-support-20260907/INTEGRATION.md) for implementation scope, verification and remaining decisions. The current pipeline is **Compatibility Interview → Prior-Treatment Failure Model → SupportProfile → OwnerSupportPolicy → Archetype Selection → Discovery → Verification → Fit Ranking → Action Bridge → Closed-loop Follow-up**, with existing controller, consent and protective boundaries. Official recommendation is discovery evidence, not fit authority; nature and least-use/shared-decision medication philosophy can be explicit owner/user hard constraints, separately labelled from evidence.
+
+The original conception, source register and receipt below are preserved as historical provenance. Their discussion-only/no-publication scope describes the earlier note task; the current owner instruction supersedes that restriction for the authorized candidate additions and active-PR update. It does not authorize live discovery, storage, clinical clearance or release. The wider PR #46/#47 readiness-composition gap remains open.
 
 ## Independent conception — recorded before external research
 

@@ -2,7 +2,13 @@
 
 Updated: 2026-09-07
 
-## Parallel external-support research candidate — documentation only
+## Current external-support owner delta — candidate contract
+
+The subsequent 2026-09-07 owner instruction A–J authorizes the [external-support candidate extension](../docs/superpowers/specs/2026-09-07-external-support-owner-delta.md), its [bounded research scan](../docs/research/2026-09-07-external-support-owner-delta-scan.md) and the pure schemas/behavioral prototype under `tasks/external-support-20260907/`. Recover exact scope, source heads, A–J traceability, verification and unresolved implementation decisions from the sole [integration ledger](../tasks/external-support-20260907/INTEGRATION.md). Meaningful work, ordinary-exchange suitability, reversible fit trials, scarcity/modular gaps, cost/exploitation screening, partial-method benefit/harm and peer burden are now candidate requirements. The interview/prior-treatment/profile/owner-policy pipeline preserves official evidence versus fit authority. No runtime, provider, storage or discovery wiring is introduced.
+
+Update target is draft PR #46, `companion/foundations-2026-09-05`, fetched baseline `39fd233f31970dc3892e86a18212f541b0b1ab40`. PR #47 remains separate at `989a889dc3c7974144bda9a73137f9f2c6846023`; do not duplicate its readiness policy or claim combined coverage. Existing path-controller, guide, fidelity, DEV-R005 and release boundaries below remain intact. No merge, deployment or stable promotion. Final containing commit and exact-head checks belong in Git/PR receipt, not a self-referential hash inside this file.
+
+## Earlier external-support research candidate — historical scope
 
 The owner-requested [candidate architecture/research note](../docs/research/2026-09-07-external-support-routing-candidate.md) preserves its initial PR #46 baseline and is refreshed onto fetched head `39fd233f31970dc3892e86a18212f541b0b1ab40`. It records the independent semantic-need/discovery split, established-work scan, COMPOSE/ADAPT proposal, privacy-minimized fallback and closed-loop access questions. It does not select approved policy, implement discovery, duplicate path-performance/readiness work, change the active implementation frontier or complete live evaluation. PR #47 remains separate. Resume owner discussion from the note; implementation, merge, deployment and stable promotion are not authorized by it.
 

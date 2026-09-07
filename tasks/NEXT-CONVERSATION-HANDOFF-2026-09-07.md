@@ -2,7 +2,15 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
-## Latest continuation — dynamic path-performance candidate
+## Latest continuation — external-support owner deltas A–J
+
+The subsequent owner instruction authorizes the [candidate architecture extension](../docs/superpowers/specs/2026-09-07-external-support-owner-delta.md), [bounded source comparison](../docs/research/2026-09-07-external-support-owner-delta-scan.md) and task-local deterministic support contract. Resume through [the integration ledger](external-support-20260907/INTEGRATION.md), which supplies the requirement matrix, verified branch boundaries, commands and remaining runtime decisions. This advances the earlier discussion note into authorized candidate requirements; it does not activate discovery or persist sensitive profiles.
+
+Implementations must preserve meaningful voluntary work matched to capacity, the ordinary exchange/supported-care boundary, explicit allergy/environment fit and reversible trials, honest scarcity with modular coverage gaps, consented financial comparisons, benefit-plus-harm method assessment, and peer boundaries with added stable support. Keep the Compatibility Interview → Prior-Treatment Failure Model → SupportProfile → OwnerSupportPolicy chain before archetypes/discovery. Nature and least-use/shared-decision medication philosophy can be owner/user compatibility constraints; neither government endorsement nor search ranking is fit authority.
+
+PR #46's existing path-performance/support-purpose tests and PR #47's separate readiness tests are verification surfaces, not new work to duplicate. Keep the six composition regressions below pending until an actual integration is authorized and evaluated. Candidate contracts test already-assessed fictional facts; truthful extraction, real suitability, resource verification, clinical effects and live combined behavior remain unestablished. No merge, deployment, stable promotion, provider calls or expanded fidelity budget.
+
+## Earlier continuation — dynamic path-performance candidate
 
 The owner subsequently authorized implementing the dynamic therapeutic path controller on this same draft PR. Recover the current result from `state/CODEX-CURRENT-STATE.md`, `docs/superpowers/specs/2026-09-07-path-performance-controller.md` and `tasks/path-performance-20260907/INTEGRATION.md`. The bounded controller reuses the existing snapshot/router/realizer/ledger, retains prediction failures across wording changes, interrupts ineffective or adverse paths, and carries the de-identified case-level support/romance-regulation policy. Its deterministic regression suite is `tests/path-performance.test.mjs`.
 
