@@ -11,7 +11,8 @@ function prompt() {
 
 test("realizer contains the owner-confirmed optional romance guide reference", () => {
   const { system } = prompt();
-  assert.ok(system.includes("https://romance.u-dont-exist.com"));
+  const reference = new URL(system.match(/reference is (\S+)\. Use it/)?.[1]);
+  assert.equal(reference.href, "https://romance.u-dont-exist.com/");
   assert.match(system, /broader romance topic would otherwise distract/);
   assert.match(system, /one brief optional sentence/);
 });

@@ -153,7 +153,10 @@ test('optional philosophical content is bounded and can point to the owner-confi
   assert.match(result.optionalTopicBoundary, /Do not install gender generalizations/);
   assert.equal(result.referenceDecision, 'OFFER_OPTIONAL_REFERENCE');
   assert.equal(result.reference.reachabilityEvidence, 'owner-confirmed');
-  assert.ok(result.reference.text.includes('romance.u-dont-exist.com'));
+  const reference = new URL(result.reference.url);
+  const displayedHost = result.reference.text.match(/guide is at (\S+)\. Reading/)?.[1];
+  assert.equal(reference.href, 'https://romance.u-dont-exist.com/');
+  assert.equal(new URL(`https://${displayedHost}`).href, reference.href);
 });
 test('full adult guide is not surfaced for minors or an unknown-age audience', () => {
   for (const audience of ['minor', 'unknown']) {
