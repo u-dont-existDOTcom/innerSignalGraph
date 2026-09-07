@@ -6,6 +6,10 @@ Updated: 2026-09-04
 
 PR #46 adds the owner-authorized R1-R6 candidate implementation and guide-grounded response testing. The 2026-09-07 complete guide source synchronization is deterministically verified (730 tests / 29 graph cases, including the subsequent grader applicability contract repair); current source, exact adopted edits and preservation receipt are in `tasks/guide-source-sync-20260907/SOURCE-SYNC.json`. Resume the authenticated fidelity smoke from `tasks/map-literature-reconciliation-20260906/CURRENT-STATE.md` and `tasks/guide-fidelity-20260906/PROTOCOL.md`. This separate map task does not alter DEV-R005 authorization below. No release or stable promotion; live responder fidelity remains untested until the calibrated authenticated run completes.
 
+## Separate strategy-performance candidate (2026-09-07)
+
+The current owner separately requested inspection and integration of missing dynamic strategy evaluation/switching plus a de-identified case abstraction. Work is isolated on `therapy/strategy-performance-20260907`, based on PR #46 head `aadae353dd383ac95dbe39178ee4645bab7980ec`. Its bounded authority, exact affected files, checks, privacy disposition and remaining gates are recorded in `tasks/strategy-performance-20260907/IMPLEMENTATION.md`; design and evidence basis are in `docs/superpowers/specs/2026-09-07-strategy-performance-review.md`. This is a draft current-session task/planner change. It does not complete PR #46's live fidelity gate, supersede DEV-R005, authorize private-history integration, install a packet, or promote `stable`. The prior fidelity candidate and frozen artifacts remain untouched. Resume this requested slice from its actual branch/PR, not the unrelated global frontier below.
+
 ## Active development frontier
 
 - DEV-R005 resumes from `tasks/dev-r005-encrypted-local-storage-20260903/CURRENT-STATE.md` and its exact decision ledger at `tasks/dev-r005-encrypted-local-storage-20260903/OWNER-DECISIONS.json`.

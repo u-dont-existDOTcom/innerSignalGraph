@@ -1,3 +1,4 @@
+import { strategyReviewSchema, validateStrategyEvidence } from "./strategy-performance.mjs";
 import { ValidationError } from "../core/errors.mjs";
 
 // A current-session record, not a second goal system, diagnosis or memory store.
@@ -16,6 +17,7 @@ export const turnTaskSchema = {
     capacity: { type: "string", enum: ["unknown", "adequate", "needs_support"] },
     question_focus: { type: "string", enum: FOCI },
     action: { anyOf: [{ type: "null" }, record({ step: str, cue: str, size: str, barriers: str, purpose: str, outcome: { type: "string", enum: ["not_reported", "not_attempted", "partial", "completed", "appropriately_abandoned"] }, result: str, adjustment: str })] },
+    strategy_review: strategyReviewSchema,
     emotion: { anyOf: [{ type: "null" }, record({ process: { type: "string", enum: ["unclear_feeling", "self_treatment", "interruption", "relational_hurt", "anguish", "adaptive_emotion", "unknown"] }, response: str, change_point: str })] }
   })]
 };
@@ -24,17 +26,27 @@ export function validateTurnTask(input, { issue, observationIds } = {}) {
   if (input == null) return null;
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new ValidationError("turn_task must be an object or null.");
   const shape = turnTaskSchema.anyOf[1];
-  function check(obj, spec, name) {
-    if (!obj || typeof obj !== "object" || Array.isArray(obj)) throw new ValidationError(`${name} must be an object.`);
-    for (const key of Object.keys(obj)) if (!Object.hasOwn(spec.properties, key)) throw new ValidationError(`${name}.${key} is not declared.`);
-    for (const key of spec.required) {
-      const rule = spec.properties[key], value = obj[key];
-      if (rule.anyOf) { if (value !== null) check(value, rule.anyOf[1], `${name}.${key}`); }
-      else if (rule.type === "string" && (typeof value !== "string" || value.length > (rule.maxLength ?? 1600))) throw new ValidationError(`${name}.${key} must be bounded text.`);
-      else if (rule.type === "integer" && !Number.isInteger(value)) throw new ValidationError(`${name}.${key} must be an integer.`);
-      else if (rule.type === "array" && (!Array.isArray(value) || value.length > 12 || value.some(x => typeof x !== "string" || x.length > 160))) throw new ValidationError(`${name}.${key} must contain bounded observation IDs.`);
-      if (rule.enum && !rule.enum.includes(value)) throw new ValidationError(`${name}.${key} is invalid.`);
+  function check(value, rule, name) {
+    if (rule.anyOf) {
+      if (value !== null) check(value, rule.anyOf[1], name);
+      return;
     }
+    if (rule.type === "object") {
+      if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError(`${name} must be an object.`);
+      for (const key of Object.keys(value)) if (!Object.hasOwn(rule.properties, key)) throw new ValidationError(`${name}.${key} is not declared.`);
+      for (const key of rule.required) {
+        // Legacy saved v1 tasks predate this additive nullable field. Newly
+        // generated structured output supplies it explicitly, including null.
+        if (name === "turn_task" && key === "strategy_review" && !Object.hasOwn(value, key)) continue;
+        check(value[key], rule.properties[key], `${name}.${key}`);
+      }
+    } else if (rule.type === "array") {
+      if (!Array.isArray(value) || value.length > (rule.maxItems ?? 12)) throw new ValidationError(`${name} must contain bounded observation IDs.`);
+      value.forEach(item => check(item, { ...rule.items, maxLength: rule.items.maxLength ?? 160 }, name));
+    } else if (rule.type === "string" && (typeof value !== "string" || value.length > (rule.maxLength ?? 1600))) throw new ValidationError(`${name} must be bounded text.`);
+    else if (rule.type === "integer" && !Number.isInteger(value)) throw new ValidationError(`${name} must be an integer.`);
+    else if (rule.type === "boolean" && typeof value !== "boolean") throw new ValidationError(`${name} must be boolean.`);
+    if (rule.enum && !rule.enum.includes(value)) throw new ValidationError(`${name} is invalid.`);
   }
   check(input, shape, "turn_task");
   if (!input.issue.trim() || !input.marker.trim()) throw new ValidationError("turn_task needs a current issue and a transcript-grounded marker.");
@@ -43,6 +55,7 @@ export function validateTurnTask(input, { issue, observationIds } = {}) {
   if (observationIds && (!input.observation_ids.length || input.observation_ids.some(id => !observationIds.has(id)))) return null;
   if (input.agreement !== "unknown" && !input.observation_ids.length) throw new ValidationError("Task agreement needs observation references.");
   if (input.capacity === "adequate" && !input.observation_ids.length) throw new ValidationError("Task capacity needs observation references.");
+  validateStrategyEvidence(input.strategy_review, input, message => { throw new ValidationError(message); });
   return structuredClone(input);
 }
 
@@ -100,6 +113,7 @@ export function reconcileIssueScope(snapshot, priorSnapshot) {
   if (!priorSnapshot?.current_issue || snapshot.current_issue === priorSnapshot.current_issue) return snapshot;
   return {
     ...snapshot,
+    ...(snapshot.turn_task?.strategy_review ? { turn_task: { ...snapshot.turn_task, strategy_review: null } } : {}),
     variables: { ...snapshot.variables, relational_check_status: "unknown", loop_target_relation: "unknown", guard_engagement: "unknown", leave_alone_eligibility: "unknown" }
   };
 }

@@ -44,9 +44,11 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
     const retryContext = {
       ...context,
       autopilotFeedback: {
-        type: "realization-coverage-retry",
+        type: enforced.responseContract.strategyReviewExerciseClaimed ? "strategy-review-retry" : "realization-coverage-retry",
         missingNodeIds: enforced.responseContract.missingRealizationNodeIds,
-        instruction: "Rewrite the response so every missing selected intervention is materially realized. Preserve the canonical question and all prior epistemic constraints."
+        instruction: enforced.responseContract.strategyReviewExerciseClaimed
+          ? "Rewrite as a strategy review only. Do not enact the paused exercise or an alternative exercise. Remove exercise enactment and return an empty realized_nodes array. Preserve the canonical question, consent and safety constraints."
+          : "Rewrite the response so every missing selected intervention is materially realized. Preserve the canonical question and all prior epistemic constraints."
       }
     };
     rawResult = await structuredCall(
@@ -62,6 +64,10 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
       plan: context.interventionContract,
       adjudication
     });
+  }
+
+  if (enforced.responseContract.strategyReviewExerciseClaimed) {
+    throw new RuntimeError("Strategy review attempted an exercise without a new agreement.", { code: "STRATEGY_REVIEW_EXERCISE_BLOCKED" });
   }
 
   return {

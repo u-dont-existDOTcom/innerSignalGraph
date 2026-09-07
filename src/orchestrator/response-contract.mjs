@@ -37,6 +37,10 @@ export function requiredRealizationNodeIds(plan = {}) {
   if (plan.executionContract?.version === 1) {
     const required = plan.executionContract.requiredNodeIds;
     if (!Array.isArray(required) || required.some(id => typeof id !== "string" || !id.trim())) throw new TypeError("Invalid execution-contract node list.");
+    if (plan.executionContract.strategyReview?.mode === "review_before_exercise") {
+      if (plan.executionContract.strategyReview.pauseCurrent !== true || required.length) throw new TypeError("Invalid strategy-review execution contract.");
+      return [];
+    }
     const primary = text(plan.primaryJob?.id);
     return [...new Set([primary, ...required].filter(Boolean))];
   }
@@ -79,13 +83,14 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const requiredNodeIds = requiredRealizationNodeIds(plan);
   const normalizedAnswer = answerBody.replace(/\s+/g, " ").trim();
   const reportedRealizations = Array.isArray(realization?.realized_nodes) ? realization.realized_nodes : [];
+  const strategyReviewExerciseClaimed = plan?.executionContract?.strategyReview?.mode === "review_before_exercise" && reportedRealizations.length > 0;
   const verifiedRealizations = [];
   const rejectedRealizations = [];
   for (const item of reportedRealizations) {
     const id = text(item?.id);
     const evidenceQuote = text(item?.evidence_quote);
     const normalizedQuote = evidenceQuote.replace(/\s+/g, " ").trim();
-    const verified = Boolean(id && normalizedQuote.length >= 8 && normalizedAnswer.includes(normalizedQuote));
+    const verified = !strategyReviewExerciseClaimed && Boolean(id && normalizedQuote.length >= 8 && normalizedAnswer.includes(normalizedQuote));
     const record = { id, evidenceQuote, verified };
     if (verified) verifiedRealizations.push(record);
     else rejectedRealizations.push(record);
@@ -108,7 +113,8 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
       verifiedRealizations,
       rejectedRealizations,
       missingRealizationNodeIds: missingNodeIds,
-      realizationCoveragePassed: missingNodeIds.length === 0
+      ...(strategyReviewExerciseClaimed ? { strategyReviewExerciseClaimed: true } : {}),
+      realizationCoveragePassed: missingNodeIds.length === 0 && !strategyReviewExerciseClaimed
     }
   };
 }

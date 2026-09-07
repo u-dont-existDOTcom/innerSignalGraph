@@ -31,6 +31,8 @@ async function fixtureRoot(t) {
     "authoring/obsidian/current"
   ]) await copyTree(directory, path.join(root, directory));
   for (const file of [
+    "src/case-formulation/turn-task.mjs",
+    "src/case-formulation/strategy-performance.mjs",
     "src/guide-graph/compiler.mjs",
     "src/guide-graph/contract.mjs",
     "src/guide-graph/planner.mjs",
