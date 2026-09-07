@@ -2,6 +2,10 @@
 
 Updated: 2026-09-04
 
+## Parallel romance-guide source integration (2026-09-07)
+
+The owner-authorized selective romance guide integration is preserved in `tasks/romance-guide-20260907/README.md` and `docs/superpowers/specs/2026-09-07-romance-guide-integration.md`. The candidate binds 20 exact PDF excerpts to 12 scoped principles and an explicit-opt-in case-plan-v5 context adapter, with 29 focused deterministic tests. It is not installed or wired into ordinary responses, is not clinical validation, and does not complete the independently handed-off path-performance/readiness controller. The registered optional guide URL still needs live reachability verification. No private client history was saved. Resume this bounded supplement through its README; preserve the separate pinned fidelity campaign and all DEV-R005 boundaries below. Full current-head hosted checks remain evidence to inspect, not a success inferred from the local Node 22 subset.
+
 ## Parallel approved map/fidelity task (2026-09-06)
 
 PR #46 adds the owner-authorized R1-R6 candidate implementation and guide-grounded response testing. The 2026-09-07 complete guide source synchronization is deterministically verified (730 tests / 29 graph cases, including the subsequent grader applicability contract repair); current source, exact adopted edits and preservation receipt are in `tasks/guide-source-sync-20260907/SOURCE-SYNC.json`. Resume the authenticated fidelity smoke from `tasks/map-literature-reconciliation-20260906/CURRENT-STATE.md` and `tasks/guide-fidelity-20260906/PROTOCOL.md`. This separate map task does not alter DEV-R005 authorization below. No release or stable promotion; live responder fidelity remains untested until the calibrated authenticated run completes.
