@@ -49,9 +49,9 @@ That remainder warrants a project supplement, not a new formal algorithm.
 
 - `docs/REASONING-SELECTION.md` — full owner-authorized reasoning supplement.
 - `AUTOPILOT.md` — mandatory-read pointer and scope guard so development workers discover the supplement.
-- `tasks/NEXT-CONVERSATION-HANDOFF-2026-09-07.md` — continuity note so future work does not repeat this integration or mistake it for completion of the live fidelity gate.
+- this receipt — durable architecture/scan record so the integration rationale does not have to be reconstructed later.
 
-`AGENTS.md` and `docs/INDEX.md` are deliberately left unchanged. They already establish the authority/read path, and changing integrity-bound root governance files would be unnecessary scope expansion.
+The existing `tasks/NEXT-CONVERSATION-HANDOFF-2026-09-07.md` is intentionally unchanged because its live guide-fidelity next step remains authoritative and should not be displaced by a docs-only reasoning integration. `AGENTS.md` and `docs/INDEX.md` are also deliberately unchanged. They already establish the authority/read path, and changing integrity-bound root governance files would be unnecessary scope expansion.
 
 ## Baseline and benchmark
 
