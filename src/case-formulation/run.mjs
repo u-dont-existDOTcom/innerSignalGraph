@@ -90,7 +90,9 @@ async function planSnapshot(snapshot, { onPlanningPass, loadPlanningGraphBundle 
   const pathPerformance = enabled && (Object.hasOwn(snapshot, "path_update") || snapshot._path_prior)
     ? evaluatePathPerformance({ prior: snapshot._path_prior, update: snapshot.path_update,
         variables: deriveCaseVariables(snapshot.variables),
-        observationIds: new Set((snapshot.direct_observations ?? []).map(o => o.id)), invalidated: snapshot._path_invalidated }) : null;
+        observationIds: new Set((snapshot.direct_observations ?? []).map(o => o.id)),
+        invalidated: snapshot._path_invalidated,
+        relationalReadiness: snapshot.turn_task?.relational_readiness ?? null }) : null;
   if (pathPerformance?.active && !bundle.graphs.some(g => g.nodes.some(n => n.id === pathPerformance.active.strategy.node_id))) throw new TypeError("Strategy references a node outside the current graph.");
   if (pathPerformance) snapshot.path_performance = pathPerformance;
   else delete snapshot.path_performance;
