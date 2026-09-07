@@ -1,3 +1,4 @@
+import { relationalReadinessSchema, validateRelationalEvidence } from "./relational-readiness.mjs";
 import { strategyReviewSchema, validateStrategyEvidence } from "./strategy-performance.mjs";
 import { ValidationError } from "../core/errors.mjs";
 
@@ -18,6 +19,7 @@ export const turnTaskSchema = {
     question_focus: { type: "string", enum: FOCI },
     action: { anyOf: [{ type: "null" }, record({ step: str, cue: str, size: str, barriers: str, purpose: str, outcome: { type: "string", enum: ["not_reported", "not_attempted", "partial", "completed", "appropriately_abandoned"] }, result: str, adjustment: str })] },
     strategy_review: strategyReviewSchema,
+    relational_readiness: relationalReadinessSchema,
     emotion: { anyOf: [{ type: "null" }, record({ process: { type: "string", enum: ["unclear_feeling", "self_treatment", "interruption", "relational_hurt", "anguish", "adaptive_emotion", "unknown"] }, response: str, change_point: str })] }
   })]
 };
@@ -37,7 +39,7 @@ export function validateTurnTask(input, { issue, observationIds } = {}) {
       for (const key of rule.required) {
         // Legacy saved v1 tasks predate this additive nullable field. Newly
         // generated structured output supplies it explicitly, including null.
-        if (name === "turn_task" && key === "strategy_review" && !Object.hasOwn(value, key)) continue;
+        if (name === "turn_task" && ["strategy_review", "relational_readiness"].includes(key) && !Object.hasOwn(value, key)) continue;
         check(value[key], rule.properties[key], `${name}.${key}`);
       }
     } else if (rule.type === "array") {
@@ -55,6 +57,7 @@ export function validateTurnTask(input, { issue, observationIds } = {}) {
   if (observationIds && (!input.observation_ids.length || input.observation_ids.some(id => !observationIds.has(id)))) return null;
   if (input.agreement !== "unknown" && !input.observation_ids.length) throw new ValidationError("Task agreement needs observation references.");
   if (input.capacity === "adequate" && !input.observation_ids.length) throw new ValidationError("Task capacity needs observation references.");
+  validateRelationalEvidence(input.relational_readiness, input, message => { throw new ValidationError(message); });
   validateStrategyEvidence(input.strategy_review, input, message => { throw new ValidationError(message); });
   return structuredClone(input);
 }
@@ -111,9 +114,26 @@ export function guidanceForTask(task) {
 // Conservatively request fresh assessment on the new issue; this is not a global trait.
 export function reconcileIssueScope(snapshot, priorSnapshot) {
   if (!priorSnapshot?.current_issue || snapshot.current_issue === priorSnapshot.current_issue) return snapshot;
+  const readiness = snapshot.turn_task?.relational_readiness;
+  const priorObservations = new Map((priorSnapshot.direct_observations ?? []).map(item => [item.id, item]));
+  const freshIds = new Set((snapshot.direct_observations ?? []).filter(item => {
+    const prior = priorObservations.get(item.id);
+    return !prior || prior.statement !== item.statement || prior.evidence !== item.evidence;
+  }).map(item => item.id));
+  // Keep a newly evidenced assessment for the NEW issue; discard inherited
+  // permission/prohibition. Scope reconciliation precedes the case audit.
+  const freshlyAssessed = readiness && snapshot.turn_task.issue === snapshot.current_issue
+    && ["stability_observation_ids", "harm_observation_ids"].every(field => {
+      const state = field === "stability_observation_ids" ? "current_stability" : "foreseeable_harm";
+      return readiness[state] === "unknown" || readiness[field].some(id => freshIds.has(id));
+    })
+    && ([...readiness.stability_observation_ids, ...readiness.harm_observation_ids, ...readiness.risk_signals.flatMap(signal => signal.observation_ids)].some(id => freshIds.has(id))
+      || (readiness.current_stability === "unknown" && readiness.foreseeable_harm === "unknown"
+        && readiness.trajectory === "unknown" && readiness.support_purpose === "unknown" && !readiness.risk_signals.length
+        && snapshot.turn_task.observation_ids.some(id => freshIds.has(id))));
   return {
     ...snapshot,
-    ...(snapshot.turn_task?.strategy_review ? { turn_task: { ...snapshot.turn_task, strategy_review: null } } : {}),
+    ...(snapshot.turn_task ? { turn_task: { ...snapshot.turn_task, strategy_review: null, relational_readiness: freshlyAssessed ? readiness : null } } : {}),
     variables: { ...snapshot.variables, relational_check_status: "unknown", loop_target_relation: "unknown", guard_engagement: "unknown", leave_alone_eligibility: "unknown" }
   };
 }

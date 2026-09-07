@@ -11,7 +11,7 @@ source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
 section_hash: f4c3967d4bf4d1f900c2712070a4931dbfcfe4d4031ad079bf69c4edae866438
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: c4d2182b637336edfa59680276b150d868b2057650c75fd97453cd904987f8ef
+projection_input_sha256: 3b334606ff10f36690771c46f59b87e7b90a407aca49d339e05f9e0b8c5117f7
 ---
 
 # Borrow Love—or Borrow the Perspective of Care

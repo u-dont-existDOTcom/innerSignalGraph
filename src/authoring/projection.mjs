@@ -20,6 +20,7 @@ const GRAPH_FILES = [
 const SEMANTIC_CODE_INPUTS = [
   "src/case-formulation/turn-task.mjs",
   "src/case-formulation/strategy-performance.mjs",
+  "src/case-formulation/relational-readiness.mjs",
   "src/guide-graph/compiler.mjs",
   "src/guide-graph/contract.mjs",
   "src/guide-graph/planner.mjs",

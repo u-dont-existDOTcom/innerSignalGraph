@@ -14,6 +14,7 @@ function deterministicSafetyTrigger(plan) {
 export function realizationPrompt(context, adjudication, rendererName) {
   const plan = context.interventionContract ?? null;
   const safetyRequired = deterministicSafetyTrigger(plan);
+  const relational = plan?.executionContract?.relationalReadiness;
   const system = `You are the ${rendererName} response realizer for Inner Signal. The hard reasoning is already complete: a case formulation, a deterministic intervention contract, and—when the routing tier required it—an adversarial reasoning packet are supplied below.${sharedClinicalRules}
 
 Your job is NOT to redo the formulation. Your job is to turn the resolved reasoning into the strongest natural response to this particular user.
@@ -42,10 +43,13 @@ REALIZATION RULES
 21. Treat competing internal positions symmetrically as data unless the resolved reasoning packet establishes otherwise. Do not cast one as the credible witness and the other merely as contamination, resistance, or pathology.
 22. If executionContract.strategyReview.mode is review_before_exercise, review the mismatch and offer at most one fitting alternative using taskGuidance. Selected nodes are options for discussion, not exercises to perform. Do not enact or repeat the paused exercise or claim its realization. Consent to the old exercise does not transfer. For all other modes, plan-realization fidelity is mandatory: when executionContract.version is 1, materially realize the primary job and only its explicitly requiredNodeIds; contextNodeIds are constraints or context, not additional exercises. Use taskGuidance and the reported current-task response/change point. For a legacy plan without that execution contract, materially realize the primary job and every job listed in displayTrace.secondaryJobs. A job is realized only when the answer actually performs or explains that intervention, not merely when related vocabulary appears. For every claimed realization, return a short exact quote copied from the answer that demonstrates where the intervention was materially realized. Do not claim a node unless that evidence quote exists verbatim in the answer.
 
+23. When executionContract.relationalReadiness is present, follow that decision and relationalGuidance even if a different external or protective graph job is primary, the task is refused/closed, or an older reasoning packet recommends dating. A paused or unresolved romance action is not an action to schedule or facilitate. Preserve immediate protection first. Non-romantic support remains available; do not use it as a covert route to a partner. Revisit a pause using current readiness markers. Without a readiness assessment, do not introduce or normalize romance as treatment for isolation or distress.
+${relational ? '24. Return relational_advice with honest romance and support classifications and a short exact evidence_quote from your answer. romance is not_addressed, discuss_without_endorsement, normalize_or_recommend, or pause; support is not_addressed, offer_nonromantic, acknowledge_partial_friendship_gain, or claim_support_progress. Use acknowledge_partial_friendship_gain for separately evidenced friendship benefits while explicitly withholding an overall support-goal success claim; claim_support_progress asserts success toward the non-romantic support goal. A voluntary user choice to pause dating is discuss_without_endorsement, not an imposed readiness pause. Classify endorsement/normalization even without the word dating. Correct unsafe advice, not merely its label. A pause is temporary and reasoned, never a worthiness judgment; NOT_BLOCKED is not guaranteed safety.' : ''}
+
 Return exactly one JSON object with this shape:
 {
   "answer": "complete user-facing answer body with no final substantive question",
-  "next_question": "one discriminating question or empty string",
+  "next_question": "one discriminating question or empty string",${relational ? '\n  "relational_advice": { "romance": "classification", "support": "classification", "evidence_quote": "short exact quote from answer, or empty when both not_addressed" },' : ""}
   "realized_nodes": [
     { "id": "graph node ID materially realized in the answer", "evidence_quote": "short exact quote copied verbatim from answer" }
   ]

@@ -1,3 +1,4 @@
+import { relationalAdviceSchema } from "../case-formulation/relational-readiness.mjs";
 import { candidatePrompt } from "../prompts/candidate.mjs";
 import { critiquePrompt } from "../prompts/critique.mjs";
 import { adjudicationPrompt } from "../prompts/adjudicate.mjs";
@@ -22,12 +23,15 @@ async function structuredCall(provider, prompt, metadata, validator, outputSchem
 
 export async function realizeAdjudication({ context, adjudication, provider, onProgress, fixtureKey = "realization" }) {
   const attempts = [];
+  const outputSchema = context.interventionContract?.executionContract?.relationalReadiness
+    ? { ...realizationSchema, properties: { ...realizationSchema.properties, relational_advice: relationalAdviceSchema }, required: [...realizationSchema.required, "relational_advice"] }
+    : realizationSchema;
   let rawResult = await structuredCall(
     provider,
     realizationPrompt(context, adjudication, provider.id === "anthropic" ? "Claude" : "OpenAI"),
     { stage: "realization", fixtureKey },
     validateRealization,
-    realizationSchema,
+    outputSchema,
     onProgress
   );
   attempts.push({ stage: "realization", durationMs: rawResult.durationMs, provider: provider.id, model: provider.model });
@@ -44,9 +48,12 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
     const retryContext = {
       ...context,
       autopilotFeedback: {
-        type: enforced.responseContract.strategyReviewExerciseClaimed ? "strategy-review-retry" : "realization-coverage-retry",
+        type: enforced.responseContract.relationalAdviceViolations?.length ? "relational-readiness-retry" : enforced.responseContract.strategyReviewExerciseClaimed ? "strategy-review-retry" : "realization-coverage-retry",
         missingNodeIds: enforced.responseContract.missingRealizationNodeIds,
-        instruction: enforced.responseContract.strategyReviewExerciseClaimed
+        relationalAdviceViolations: enforced.responseContract.relationalAdviceViolations ?? [],
+        instruction: enforced.responseContract.relationalAdviceViolations?.length
+          ? "Follow the relationalReadiness decision and relationalGuidance. Correct the advice itself and declare relational_advice honestly with a verbatim quote. Do not recommend or normalize romance without readiness, impose an unsupported pause, or count instrumental partner-seeking as support progress. Preserve the strategy review mode, safety route and canonical question; do not enact a paused exercise."
+          : enforced.responseContract.strategyReviewExerciseClaimed
           ? "Rewrite as a strategy review only. Do not enact the paused exercise or an alternative exercise. Remove exercise enactment and return an empty realized_nodes array. Preserve the canonical question, consent and safety constraints."
           : "Rewrite the response so every missing selected intervention is materially realized. Preserve the canonical question and all prior epistemic constraints."
       }
@@ -56,7 +63,7 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
       realizationPrompt(retryContext, adjudication, provider.id === "anthropic" ? "Claude" : "OpenAI"),
       { stage: "realization_retry", fixtureKey },
       validateRealization,
-      realizationSchema,
+      outputSchema,
       onProgress
     );
     attempts.push({ stage: "realization_retry", durationMs: rawResult.durationMs, provider: provider.id, model: provider.model });
@@ -64,6 +71,10 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
       plan: context.interventionContract,
       adjudication
     });
+  }
+
+  if (enforced.responseContract.relationalAdviceViolations?.length) {
+    throw new RuntimeError("Relational advice failed the current readiness contract.", { code: "RELATIONAL_READINESS_ADVICE_BLOCKED" });
   }
 
   if (enforced.responseContract.strategyReviewExerciseClaimed) {
@@ -124,7 +135,7 @@ function compactAdjudicationPacket(context, candidate, critique) {
       unknowns.map((item) => item.question),
       candidate.unresolved_questions
     ]),
-    next_question: plan.nextQuestion || candidate.unresolved_questions?.[0] || "",
+    next_question: plan.nextQuestion ?? candidate.unresolved_questions?.[0] ?? "",
     accepted_insights: accepted,
     rejected_claims: rejected,
     safety_flags: uniqueStrings([
@@ -173,7 +184,7 @@ export async function runCompactAdversarialPipeline({ context, providers, config
     responseContract: realization.value.responseContract,
     what_is_clear: adjudication.what_is_clear,
     uncertainties: adjudication.uncertainties,
-    next_question: realization.value.next_question || adjudication.next_question,
+    next_question: realization.value.next_question ?? adjudication.next_question,
     accepted_insights: adjudication.accepted_insights,
     rejected_claims: adjudication.rejected_claims,
     safety_flags: adjudication.safety_flags,
@@ -307,7 +318,7 @@ export async function runAdversarialPipeline({ context, providers, config, caseI
     responseContract: realization.value.responseContract,
     what_is_clear: adjudication.value.what_is_clear,
     uncertainties: adjudication.value.uncertainties,
-    next_question: realization.value.next_question || adjudication.value.next_question,
+    next_question: realization.value.next_question ?? adjudication.value.next_question,
     accepted_insights: adjudication.value.accepted_insights,
     rejected_claims: adjudication.value.rejected_claims,
     safety_flags: adjudication.value.safety_flags,

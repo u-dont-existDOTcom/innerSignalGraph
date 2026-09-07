@@ -1,3 +1,5 @@
+import { relationalAdviceViolations } from "../case-formulation/relational-readiness.mjs";
+
 function text(value) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -80,6 +82,7 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const answerBody = paragraphs.join("\n\n").trim();
   const userFacingAnswer = [answerBody, question].filter(Boolean).join("\n\n");
   const rendererQuestion = text(realization?.next_question);
+  const relationalViolations = relationalAdviceViolations(realization?.relational_advice, plan?.executionContract?.relationalReadiness, userFacingAnswer);
   const requiredNodeIds = requiredRealizationNodeIds(plan);
   const normalizedAnswer = answerBody.replace(/\s+/g, " ").trim();
   const reportedRealizations = Array.isArray(realization?.realized_nodes) ? realization.realized_nodes : [];
@@ -114,7 +117,8 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
       rejectedRealizations,
       missingRealizationNodeIds: missingNodeIds,
       ...(strategyReviewExerciseClaimed ? { strategyReviewExerciseClaimed: true } : {}),
-      realizationCoveragePassed: missingNodeIds.length === 0 && !strategyReviewExerciseClaimed
+      ...(plan?.executionContract?.relationalReadiness ? { relationalReadinessStatus: plan.executionContract.relationalReadiness.status, relationalAdviceViolations: relationalViolations } : {}),
+      realizationCoveragePassed: missingNodeIds.length === 0 && !strategyReviewExerciseClaimed && !relationalViolations.length
     }
   };
 }

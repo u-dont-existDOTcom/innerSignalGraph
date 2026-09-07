@@ -61,6 +61,7 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
   if (requested === "forensic") return { tier: "forensic", reason: "user-selected forensic council", forced: false, deltaCount };
   if (["deep", "adversarial"].includes(requested)) return { tier: "deep", reason: "user-selected deep review", forced: false, deltaCount };
   if (requested === "reviewed") return { tier: "reviewed", reason: "user-selected reviewed mode", forced: false, deltaCount };
+  if (snapshot?.turn_task?.relational_readiness && !intentHard && !ambiguityHard) return { tier: "reviewed", reason: "relational readiness and harm require case audit", forced: true, deltaCount };
   if (snapshot?.turn_task?.strategy_review && !intentHard && !ambiguityHard) return { tier: "reviewed", reason: "strategy outcome and fit require case audit", forced: true, deltaCount };
   if (requested === "fast" && !intentHard && !ambiguityHard) return { tier: "fast", reason: "user-selected fast mode", forced: false, deltaCount };
 

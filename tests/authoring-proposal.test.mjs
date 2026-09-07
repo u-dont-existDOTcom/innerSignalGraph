@@ -33,6 +33,7 @@ async function fixtureRoot(t) {
   for (const file of [
     "src/case-formulation/turn-task.mjs",
     "src/case-formulation/strategy-performance.mjs",
+  "src/case-formulation/relational-readiness.mjs",
     "src/guide-graph/compiler.mjs",
     "src/guide-graph/contract.mjs",
     "src/guide-graph/planner.mjs",

@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: 4bc3b5dc803b1e37483fbdf653cd8c386faee5f9fb86ad91cc51fa11eb01d6b5
 source_file_sha256: 1d1d78a359df20cddf3aac6f5f93bb3badda84b7bcf7bcff085d8ee9f75e0dd1
-projection_input_sha256: c4d2182b637336edfa59680276b150d868b2057650c75fd97453cd904987f8ef
+projection_input_sha256: 3b334606ff10f36690771c46f59b87e7b90a407aca49d339e05f9e0b8c5117f7
 ---
 
 # AMEND.IC.EMOTIONAL_TASK_GUIDANCE

@@ -32,10 +32,13 @@ export function validateStrategyEvidence(review, task, fail) {
 
 }
 
-export function strategyPerformanceDecision(task) {
+export function strategyPerformanceDecision(task, relational = null) {
   const result = (status, pauseCurrent, compareAlternatives) => ({ status, pauseCurrent, compareAlternatives });
   if (!task || task.phase === "close") return result("NO_ACTIVE_REVIEW", false, false);
   if (task.agreement === "declined") return result("RESPECT_REFUSAL", true, false);
+  if (relational?.pauseCurrent) return result(relational.adverseTrajectory ? "REASSESS_RELATIONAL_DEPENDENCY"
+    : relational.supportProgress === "NOT_EQUIVALENT_TO_NONROMANTIC_SUPPORT" && task.relational_readiness?.scope === "support_building"
+      ? "REASSESS_SUPPORT_SUBSTITUTION" : "REASSESS_RELATIONAL_READINESS", true, true);
   const review = task.strategy_review;
   if (!review) return result("UNMEASURED", false, false);
   if (review.fit === "rupture") return result("REPAIR_RELATIONSHIP", true, true);
