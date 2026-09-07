@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { blankCaseVariables } from "../src/guide-graph/contract.mjs";
 import { deriveCaseVariables } from "../src/guide-graph/planner.mjs";
 import { validateTurnTask } from "../src/case-formulation/turn-task.mjs";
-import { relationalReadinessDecision, relationalReadinessGuidance } from "../src/case-formulation/relational-readiness.mjs";
+import { relationalReadinessDecision, relationalReadinessGuidance, preparePathPriorForReadiness } from "../src/case-formulation/relational-readiness.mjs";
 import { evaluatePathPerformance, pathPerformanceGuidance, performanceQuestion } from "../src/case-formulation/path-performance.mjs";
 import { classifyTherapyTier } from "../src/orchestrator/run-tiered-pipeline.mjs";
 import { enforceResponseContract } from "../src/orchestrator/response-contract.mjs";
@@ -136,15 +136,29 @@ test("unknown readiness creates a bounded assessment probe, not clearance or pro
   assert.match(performanceQuestion(control), /managing daily life and distress/);
 });
 
-test("fresh current improvement can reopen readiness rather than creating a permanent ban", () => {
+test("fresh current improvement can reopen readiness without erasing path evidence", () => {
   const blocked = evaluate(unstable());
   assert.equal(blocked.latest.relational_readiness.status, "PAUSE_ROMANCE");
   const improved = readiness({ trajectory: "improving", risk_signals: [risk("hospitalization", "historical"), risk("substance_dependence_relapse", "historical")],
     reasons: "Current self-care, boundaries and support are reliable; prior crises remain historical context." });
-  const reopened = evaluatePathPerformance({ prior: blocked, update: { strategy: null, response: "not_observed", signals: [], failure_hypotheses: [], probe: null }, variables, observationIds, relationalReadiness: improved });
+  const decision = relationalReadinessDecision(improved);
+  const prepared = preparePathPriorForReadiness(blocked, decision);
+  assert.equal(prepared.active.switch_pending, false);
+  assert.equal(prepared.readiness_reopened.retained_path_evidence, true);
+  const reopened = evaluatePathPerformance({ prior: prepared, update: { strategy: null, response: "not_observed", signals: [], failure_hypotheses: [], probe: null }, variables, observationIds, relationalReadiness: improved });
   assert.equal(reopened.latest.relational_readiness.status, "NOT_BLOCKED");
   assert.equal(reopened.latest.goal_substitution.romance_pause, false);
   assert.notEqual(reopened.latest.reason, blocked.latest.reason);
+  assert.equal(reopened.active.id, blocked.active.id);
+});
+
+test("readiness reopening cannot erase actual path failure or the narrow persistent risk state", () => {
+  const failed = evaluate(unstable());
+  failed.active.misses = 1;
+  const improved = readiness({ trajectory: "improving", reasons: "Current functioning improved." });
+  assert.equal(preparePathPriorForReadiness(failed, relationalReadinessDecision(improved)).active.switch_pending, true);
+  const narrow = evaluate(readiness(), ["significant_instability", "external_regulation_dependency", "loneliness", "relapse_or_dissociation_risk", "romance_as_regulator"].map((kind, i) => signal(kind, `O${i + 3}`)));
+  assert.equal(preparePathPriorForReadiness(narrow, relationalReadinessDecision(improved)).active.switch_pending, true);
 });
 
 test("readiness objects require current evidence, affected parties for substantial harm, and reopening markers", () => {
