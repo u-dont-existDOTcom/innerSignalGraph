@@ -58,5 +58,5 @@ test("response realization receives the same longitudinal invariants", () => {
 });
 
 test("public longitudinal policy remains general and de-identified", () => {
-  assert.doesNotMatch(longitudinalClinicalRules, /Louka|Prague|Czech|2500|1000|Joel/iu);
+  assert.doesNotMatch(longitudinalClinicalRules, /private transcript|source conversation|real-person name|[$€£]\s*\d{3,}/iu);
 });

@@ -21,6 +21,101 @@ function genericTaxonomy(rubric) {
   return rubric.errorClasses.map(({ id, severity, definition, repairTarget }) => ({ id, severity, definition, repairTarget }));
 }
 
+function evidenceSchema() {
+  return {
+    oneOf: [
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['kind', 'quote'],
+        properties: {
+          kind: { const: 'QUOTE' },
+          quote: { type: 'string', minLength: 1 }
+        }
+      },
+      {
+        type: 'object',
+        additionalProperties: false,
+        required: ['kind', 'targetId'],
+        properties: {
+          kind: { const: 'OMISSION' },
+          targetId: { type: 'string', minLength: 1 }
+        }
+      }
+    ]
+  };
+}
+
+function responseGradeSchema(opaqueItemId, rubric) {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['opaqueItemId', 'errorJudgments', 'dimensionJudgments'],
+    properties: {
+      opaqueItemId: { const: opaqueItemId },
+      errorJudgments: {
+        type: 'array',
+        minItems: rubric.errorClasses.length,
+        maxItems: rubric.errorClasses.length,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['errorId', 'verdict', 'reason', 'evidence'],
+          properties: {
+            errorId: { enum: rubric.errorClasses.map(item => item.id) },
+            verdict: { enum: ['PRESENT', 'ABSENT', 'UNCERTAIN'] },
+            reason: { type: 'string', minLength: 1 },
+            evidence: evidenceSchema()
+          }
+        }
+      },
+      dimensionJudgments: {
+        type: 'array',
+        minItems: rubric.behavioralDimensions.length,
+        maxItems: rubric.behavioralDimensions.length,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['dimensionId', 'rating', 'reason', 'evidence'],
+          properties: {
+            dimensionId: { enum: rubric.behavioralDimensions.map(item => item.id) },
+            rating: { type: 'integer', minimum: 0, maximum: 4 },
+            reason: { type: 'string', minLength: 1 },
+            evidence: evidenceSchema()
+          }
+        }
+      }
+    }
+  };
+}
+
+function findingValidationSchema(opaqueItemId, findings) {
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['opaqueItemId', 'judgments'],
+    properties: {
+      opaqueItemId: { const: opaqueItemId },
+      judgments: {
+        type: 'array',
+        minItems: findings.length,
+        maxItems: findings.length,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['findingId', 'verdict', 'reason', 'evidence'],
+          properties: {
+            findingId: { enum: findings.map(item => item.id) },
+            verdict: { enum: ['SUPPORTED', 'UNSUPPORTED', 'UNRESOLVED'] },
+            reason: { type: 'string', minLength: 1 },
+            evidence: evidenceSchema()
+          }
+        }
+      }
+    }
+  };
+}
+
 function stageContract(architectures, stageId) {
   for (const architecture of architectures.architectures) {
     const stage = architecture.stages.find(candidate => candidate.id === stageId);
@@ -97,7 +192,7 @@ export function buildResponseGradePacket({
     schemaVersion: 1,
     opaqueItemId,
     role: 'BLINDED_COMPLETE_RESPONSE_GRADER',
-    task: 'Judge the response exhaustively against every error class and behavioral dimension. Treat the behavioral target as a reference and rubric, not proof of one uniquely correct therapeutic answer. Use only case evidence. Do not infer the producing architecture, model, or rationale. Return evidence for every judgment; do not rewrite the answer.',
+    task: 'Judge the response exhaustively against every error class and behavioral dimension. Treat the behavioral target as a reference and rubric, not proof of one uniquely correct therapeutic answer. Use only case evidence. Do not infer the producing architecture, model, or rationale. Return only JSON matching outputSchema exactly and cover each error and dimension ID exactly once. QUOTE evidence must be an exact nonempty substring of candidateResponse. OMISSION evidence must use a targetId allowed by that criterion. Do not rewrite the answer.',
     caseEvidence: publicCaseEvidence(caseFixture),
     settledHistory: caseFixture.settledHistory,
     behavioralTarget: {
@@ -107,11 +202,7 @@ export function buildResponseGradePacket({
     errorTaxonomy: rubric.errorClasses,
     behavioralDimensions: rubric.behavioralDimensions,
     candidateResponse,
-    outputContract: {
-      opaqueItemId,
-      errorJudgments: rubric.errorClasses.map(item => ({ errorId: item.id, verdict: 'PRESENT|ABSENT|UNCERTAIN', reason: 'nonempty', evidence: 'exact quote or criterion-specific target omission ID' })),
-      dimensionJudgments: rubric.behavioralDimensions.map(item => ({ dimensionId: item.id, rating: 'integer 0..4', reason: 'nonempty', evidence: 'exact quote or criterion-specific target omission ID' }))
-    }
+    outputSchema: responseGradeSchema(opaqueItemId, rubric)
   };
 }
 
@@ -132,7 +223,7 @@ export function buildFindingValidationPacket({
     schemaVersion: 1,
     opaqueItemId,
     role: 'BLINDED_FINDING_SUPPORT_VALIDATOR',
-    task: 'Judge only whether each frozen finding is supported by the case and draft. Do not decide whether it was seeded, infer the producing architecture, or repair the response.',
+    task: 'Judge only whether each frozen finding is supported by the case and draft. Return only JSON matching outputSchema exactly and cover each finding ID exactly once. QUOTE evidence must be an exact nonempty substring of draftResponse. OMISSION evidence must use a targetId allowed by the finding error class. A proposed draftQuote is a claim to verify, not evidence that the text appears in draftResponse. Do not decide whether a finding was seeded, infer the producing architecture, or repair the response.',
     caseEvidence: publicCaseEvidence(caseFixture),
     settledHistory: caseFixture.settledHistory,
     behavioralTarget: {
@@ -142,9 +233,6 @@ export function buildFindingValidationPacket({
     errorTaxonomy: rubric.errorClasses,
     draftResponse,
     findings,
-    outputContract: {
-      opaqueItemId,
-      judgments: findings.map(item => ({ findingId: item.id, verdict: 'SUPPORTED|UNSUPPORTED|UNRESOLVED', reason: 'nonempty', evidence: 'exact draft quote or criterion-specific target omission ID' }))
-    }
+    outputSchema: findingValidationSchema(opaqueItemId, findings)
   };
 }

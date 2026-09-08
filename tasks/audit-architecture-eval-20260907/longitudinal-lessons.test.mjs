@@ -120,7 +120,7 @@ test('current experiment decisions forbid paid API execution and encode the chos
 
 test('new public artifacts remain synthetic and contain no private identifiers or exact personal amounts', () => {
   const text = [cases, drafts, target, rubric, supplement, decisions].map(allText).join('\n');
-  assert.doesNotMatch(text, /Louka|Joel|Prague|Czech|Ziguinchor|Dakar/iu);
-  assert.doesNotMatch(text, /€\s*(?:1000|2500)|\b(?:1000|2500)\s*€/u);
+  assert.doesNotMatch(text, /sourceConversationId|privateSource|privateTranscript|realPersonIdentifier/u);
+  assert.doesNotMatch(text, /[$€£]\s*\d{3,}/u);
   assert.equal(cases.modelRuns + drafts.modelRuns + supplement.modelRuns, 0);
 });

@@ -159,13 +159,21 @@ test('ChatGPT packets enforce audit and grader information firewalls', () => {
   });
   assert.equal(JSON.stringify(grade).includes('referenceResponse'), false);
   assert.equal(JSON.stringify(grade).includes('conditionId'), false);
+  assert.equal(grade.outputSchema.properties.opaqueItemId.const, 'GRADE-1');
+  assert.equal(grade.outputSchema.properties.errorJudgments.minItems, rubric.errorClasses.length);
+  assert.deepEqual(grade.outputSchema.properties.errorJudgments.items.properties.evidence.oneOf.map(item => item.properties.kind.const), ['QUOTE', 'OMISSION']);
 
   const finding = buildFindingValidationPacket({
-    opaqueItemId: 'FIND-1', caseId: 'AE-C001', draftResponse: 'A synthetic draft.', findings: [],
+    opaqueItemId: 'FIND-1', caseId: 'AE-C001', draftResponse: 'A synthetic draft.',
+    findings: [{ id: 'FINDING-1', errorId: 'REPETITION', draftQuote: 'synthetic', missingBehavior: null }],
     cases, referenceTarget, rubric
   });
   assert.equal(JSON.stringify(finding).includes('seededErrorIds'), false);
   assert.equal(JSON.stringify(finding).includes('conditionId'), false);
+  assert.match(finding.task, /proposed draftQuote is a claim to verify/);
+  assert.equal(finding.outputSchema.properties.opaqueItemId.const, 'FIND-1');
+  assert.equal(finding.outputSchema.properties.judgments.minItems, 1);
+  assert.deepEqual(finding.outputSchema.properties.judgments.items.properties.evidence.oneOf.map(item => item.properties.kind.const), ['QUOTE', 'OMISSION']);
 });
 
 function modelCalls(conditionId, action, pairId, criticOrder, runId) {
