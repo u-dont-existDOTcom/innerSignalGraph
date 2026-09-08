@@ -6,6 +6,7 @@ tasks/audit-architecture-eval-20260907/OWNER-DECISIONS-20260908.json
 tasks/audit-architecture-eval-20260907/cases.json
 tasks/audit-architecture-eval-20260907/drafts.json
 tasks/audit-architecture-eval-20260907/effective-architectures.mjs
+tasks/audit-architecture-eval-20260907/grader-controls.json
 tasks/audit-architecture-eval-20260907/longitudinal-lessons.test.mjs
 tasks/audit-architecture-eval-20260907/reference-target.json
 tasks/audit-architecture-eval-20260907/rubric.json
