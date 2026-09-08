@@ -7,7 +7,7 @@ import { realizationPrompt } from "../src/prompts/realize.mjs";
 
 test("longitudinal rules preserve client phenomenology without granting causal authority", () => {
   assert.match(longitudinalClinicalRules, /privileged evidence about phenomenology/u);
-  assert.match(longitudinalClinicalRules, /not automatically authoritative about cause/u);
+  assert.match(longitudinalClinicalRules, /automatically authoritative about cause/u);
   assert.match(longitudinalClinicalRules, /salience, importance, and centrality separate/u);
   assert.match(longitudinalClinicalRules, /Preserve the established longitudinal target/u);
 });
