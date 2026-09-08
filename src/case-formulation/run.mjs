@@ -1,4 +1,5 @@
 import { ValidationError } from "../core/errors.mjs";
+import { hasCanonicalRomanceReference } from "../core/romance-reference.mjs";
 import { withdrawDeliveryEvidence } from "./delivery-system-assessment.mjs";
 import { evaluatePathPerformance, CASE_RISK_SIGNALS, validateRepresentationSelection } from "./path-performance.mjs";
 import {
@@ -388,7 +389,7 @@ export async function runUnauditedCaseFormulation({ context, provider, onProgres
   const { plan, graphBundleVersion } = await planSnapshot(initial.snapshot, {
     onPlanningPass,
     loadPlanningGraphBundle,
-    romanceGuideAlreadyOffered: /(?:https?:\/\/)?romance\.u-dont-exist\.com\b/i.test(context.recentTranscript ?? "")
+    romanceGuideAlreadyOffered: hasCanonicalRomanceReference(context.recentTranscript)
   });
   return { ...initial, plan, graphBundleVersion };
 }
@@ -399,7 +400,7 @@ export async function runAuditedCaseFormulation({ context, extractorProvider, au
   const snapshot = applyCaseAudit(extraction.value, audit.value);
   const { plan, graphBundleVersion } = await planSnapshot(snapshot, {
     loadPlanningGraphBundle,
-    romanceGuideAlreadyOffered: /(?:https?:\/\/)?romance\.u-dont-exist\.com\b/i.test(context.recentTranscript ?? "")
+    romanceGuideAlreadyOffered: hasCanonicalRomanceReference(context.recentTranscript)
   });
   return {
     snapshot,

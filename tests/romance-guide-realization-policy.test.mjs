@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { realizationPrompt } from "../src/prompts/realize.mjs";
+import { hasCanonicalRomanceReference, romanceReferenceMentions } from "../src/core/romance-reference.mjs";
 
 function prompt() {
   return realizationPrompt({
@@ -11,10 +12,23 @@ function prompt() {
 
 test("realizer contains the owner-confirmed optional romance guide reference", () => {
   const { system } = prompt();
-  assert.ok(system.includes("https://romance.u-dont-exist.com"));
+  assert.equal(hasCanonicalRomanceReference(system), true);
   assert.match(system, /deterministic romanceGuide trace owns the optional reference decision/);
   assert.match(system, /OFFER_OPTIONAL_REFERENCE/);
   assert.match(system, /POLICY\.ROMANCE_GUIDE_REFERENCE/);
+});
+
+test("canonical romance reference recognition rejects arbitrary hosts and URL embedding", () => {
+  const domain = ["romance", "u-dont-exist", "com"].join(".");
+  assert.equal(hasCanonicalRomanceReference(`See https://${domain}/.`), true);
+  for (const unsafe of [
+    `https://${domain}.example.org/private`,
+    `https://example.org/?next=https://${domain}`,
+    `https://example.${domain}/`
+  ]) {
+    assert.equal(romanceReferenceMentions(unsafe).length, 1);
+    assert.equal(hasCanonicalRomanceReference(unsafe), false);
+  }
 });
 
 test("optional reference cannot replace safety, stabilization or current help", () => {

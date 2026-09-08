@@ -313,6 +313,7 @@ src/case-formulation/path-performance.mjs
 src/case-formulation/run.mjs
 src/case-formulation/schemas.mjs
 src/case-formulation/validators.mjs
+src/core/romance-reference.mjs
 src/guide-graph/planner.mjs
 src/orchestrator/response-contract.mjs
 src/orchestrator/run-pipeline.mjs
@@ -322,6 +323,7 @@ src/prompts/case-extract.mjs
 src/prompts/realize.mjs
 state/CODEX-CURRENT-STATE.md
 tasks/NEXT-CONVERSATION-HANDOFF-2026-09-07.md
+tasks/guide-fidelity-20260906/openrouter-adapter.mjs
 tasks/representation-delivery-20260908/CHANGED-PATHS.txt
 tasks/representation-delivery-20260908/HUMAN-EVALUATION.md
 tasks/representation-delivery-20260908/INTEGRATION.md
@@ -331,4 +333,5 @@ tests/delivery-system-assessment.test.mjs
 tests/guide-fidelity.test.mjs
 tests/path-performance.test.mjs
 tests/representation-delivery.test.mjs
+tests/romance-guide-realization-policy.test.mjs
 tests/resume-state.test.mjs

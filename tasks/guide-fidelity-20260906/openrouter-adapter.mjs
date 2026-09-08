@@ -33,6 +33,10 @@ export function makeOpenRouterProvider(role, {id='openai', execute, fetchImpl=fe
         provider:{only:[role.provider],allow_fallbacks:false,require_parameters:true},
         ...(outputSchema?{response_format:{type:'json_schema',json_schema:{name:'innersignal_eval',strict:true,schema:outputSchema}}}:{})};
       return execute({role:id,model:role.model,expectedModel:role.expected_response_model,stage:metadata.stage ?? 'unknown',request},async()=>{
+        // This evaluation-only sink intentionally sends schema-validated synthetic
+        // fixtures to one fixed endpoint after explicit retention and budget gates.
+        // It cannot select an endpoint or read arbitrary file bytes at this layer.
+        // codeql[js/file-access-to-http]
         const result=await fetchImpl('https://openrouter.ai/api/v1/chat/completions',{
           method:'POST',headers:{'Authorization':`Bearer ${env[role.api_key_env]}`,'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.timeout(900000)
         });

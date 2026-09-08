@@ -1,3 +1,8 @@
+import {
+  romanceReferenceMentions,
+  isCanonicalRomanceReferenceToken
+} from "../core/romance-reference.mjs";
+
 function text(value) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -76,15 +81,6 @@ const SYMBOLIC_OVERCLAIM_PATTERNS = Object.freeze([
 function symbolicOverclaimViolations(answer) {
   return SYMBOLIC_OVERCLAIM_PATTERNS.filter(({ pattern }) => pattern.test(answer)).map(({ code }) => code);
 }
-const ROMANCE_GUIDE_DOMAIN = /(?:https?:\/\/)?romance\.u-dont-exist\.com\b/i;
-function romanceReferenceMentions(value) {
-  return String(value ?? "").split(/\s+/).filter(token => ROMANCE_GUIDE_DOMAIN.test(token));
-}
-function isCanonicalRomanceReferenceToken(token) {
-  const cleaned = String(token).replace(/^[('"`]+/, "").replace(/[)'"`,.!?;:]+$/, "");
-  return ["romance.u-dont-exist.com", "https://romance.u-dont-exist.com", "https://romance.u-dont-exist.com/"].includes(cleaned);
-}
-
 export function requiredRealizationNodeIds(plan = {}) {
   if (plan.executionContract?.version === 1) {
     const required = plan.executionContract.requiredNodeIds;
