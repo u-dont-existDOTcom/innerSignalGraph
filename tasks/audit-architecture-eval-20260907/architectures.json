@@ -1,0 +1,280 @@
+{
+  "schemaVersion": 1,
+  "status": "PROMPT_CONTRACTS_ONLY_NO_PROVIDER_EXECUTION",
+  "modelRuns": 0,
+  "sharedRules": [
+    "Use only the synthetic case evidence and settled history supplied in the current payload.",
+    "Treat the error taxonomy as definitions, not as a list of errors necessarily present in this draft.",
+    "Do not receive or infer the draft's seededErrorIds, referenceResponse, producer rationale, prior verdicts, or unblinded architecture label.",
+    "If the draft is already sound, return KEEP and preserve its bytes; do not add generic warnings, referrals, blanket prohibitions, diagnoses, or length without information gain.",
+    "A repair must answer the client, preserve mixed benefit and risk, and prioritize the smallest discriminating questions.",
+    "Every finding must quote the faulty draft span or name the missing behavior; use null for the inapplicable evidence form, never fabricate a quote.",
+    "Report findings before repair. Do not treat a repairer's assertion as proof that an error was removed."
+  ],
+  "scoredFindingProvenance": {
+    "A": "Use the deduplicated findings emitted by A1.",
+    "B": "Use the cumulative deduplicated finding set frozen by B3; both repair arms reuse the same calls, artifacts, bytes, validation, and initial grades.",
+    "C": "C4 emits the final reconciled deduplicated finding set with its repair. If all three critic bundles are empty and C4 is skipped, score the empty set. Preserve every raw critic and C4 artifact hash.",
+    "D": "D2 emits the final reconciled finding set with its repair. If D1 is empty and D2 is skipped, score the empty D1 set. Preserve both raw artifact hashes when D2 runs.",
+    "E": "Score only the frozen first E1 critique of the original draft for detection. Preserve later critique and patch outputs as repair trace; final-response grades measure introduced regressions.",
+    "N": "Score an empty finding set with no audit source call."
+  },
+  "schemas": {
+    "findingSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["findings", "strongestRemainingRisk"],
+      "properties": {
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "errorId", "evidenceTurnIds", "draftQuote", "missingBehavior", "explanation", "repairInstruction"],
+            "allOf": [{
+              "oneOf": [
+                {"properties": {"draftQuote": {"type": "string", "minLength": 1}, "missingBehavior": {"type": "null"}}},
+                {"properties": {"draftQuote": {"type": "null"}, "missingBehavior": {"type": "string", "minLength": 1}}}
+              ]
+            }],
+            "properties": {
+              "id": {"type": "string"},
+              "errorId": {"type": "string"},
+              "evidenceTurnIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+              "draftQuote": {"type": ["string", "null"]},
+              "missingBehavior": {"type": ["string", "null"]},
+              "explanation": {"type": "string"},
+              "repairInstruction": {"type": "string"}
+            }
+          }
+        },
+        "strongestRemainingRisk": {"type": ["string", "null"]}
+      }
+    },
+    "repair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "addressedErrorIds", "finalResponse"],
+      "properties": {
+        "action": {"type": "string", "enum": ["KEEP", "PATCH", "RECONSTRUCT"]},
+        "addressedErrorIds": {"type": "array", "items": {"type": "string"}},
+        "finalResponse": {"type": "string"}
+      }
+    },
+    "integratedAuditRepair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["findings", "strongestRemainingRisk", "action", "addressedErrorIds", "finalResponse"],
+      "properties": {
+        "findings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "errorId", "evidenceTurnIds", "draftQuote", "missingBehavior", "explanation", "repairInstruction"],
+            "allOf": [{
+              "oneOf": [
+                {"properties": {"draftQuote": {"type": "string", "minLength": 1}, "missingBehavior": {"type": "null"}}},
+                {"properties": {"draftQuote": {"type": "null"}, "missingBehavior": {"type": "string", "minLength": 1}}}
+              ]
+            }],
+            "properties": {
+              "id": {"type": "string"},
+              "errorId": {"type": "string"},
+              "evidenceTurnIds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+              "draftQuote": {"type": ["string", "null"]},
+              "missingBehavior": {"type": ["string", "null"]},
+              "explanation": {"type": "string"},
+              "repairInstruction": {"type": "string"}
+            }
+          }
+        },
+        "strongestRemainingRisk": {"type": ["string", "null"]},
+        "action": {"type": "string", "enum": ["KEEP", "RECONSTRUCT"]},
+        "addressedErrorIds": {"type": "array", "items": {"type": "string"}},
+        "finalResponse": {"type": "string"}
+      }
+    }
+  },
+  "architectures": [
+    {
+      "id": "N",
+      "name": "NO_AUDIT_BASELINE",
+      "independenceClass": "zero_cost_control",
+      "stages": [],
+      "contract": "Return the exact frozen initial draft with no findings or rewrite. This baseline measures the value added and harm introduced by auditing."
+    },
+    {
+      "id": "A",
+      "name": "SINGLE_HOLISTIC_AUDIT",
+      "independenceClass": "single_fresh_critic",
+      "stages": [
+        {
+          "id": "A1_HOLISTIC_AUDIT_AND_REPAIR",
+          "freshContext": true,
+          "parallelGroup": null,
+          "sees": ["case", "settledHistory", "draft", "errorTaxonomy"],
+          "withholds": ["seededErrorIds", "openQuestions", "behavioralTarget", "producerRationale", "priorAuditHistory", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "integratedAuditRepair",
+          "prompt": "Audit the synthetic client-facing draft across evidence, causality, phenomenology, history, safety calibration, mixed benefit and harm, delayed trajectory, information gain, repetition, conversation integrity, pain uncertainty, and coaching/business reasoning. Report every material supported finding using the generic taxonomy. If none exist, return KEEP and reproduce the draft byte-for-byte. Otherwise reconstruct one concise response from the case evidence and findings; do not debate earlier assistant messages or add unsupported warnings."
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "name": "SEQUENTIAL_SPECIALISTS",
+      "independenceClass": "ordered_specialists_with_accumulating_findings",
+      "sharedFindingSetKey": "B_FROZEN_FINDINGS",
+      "stages": [
+        {
+          "id": "B1_EVIDENCE_HISTORY",
+          "freshContext": true,
+          "parallelGroup": null,
+          "sees": ["case", "settledHistory", "draft", "errorTaxonomy"],
+          "withholds": ["seededErrorIds", "openQuestions", "behavioralTarget", "producerRationale", "priorAuditHistory", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "findingSet",
+          "prompt": "Review only evidence and history fidelity: causal overclaim, invented phenomenology, premature formulation, pain reasoning, and routing that ignores settled prior care. Record supported findings and repair instructions. Do not repair the draft."
+        },
+        {
+          "id": "B2_SAFETY_MIXED_TRAJECTORY",
+          "freshContext": false,
+          "parallelGroup": null,
+          "sees": ["case", "settledHistory", "draft", "errorTaxonomy", "B1_frozenFindings"],
+          "withholds": ["seededErrorIds", "openQuestions", "behavioralTarget", "producerRationale", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "findingSet",
+          "prompt": "Review only safety calibration and mixed benefit-harm reasoning: overreaction, underreaction, prior-tolerance-as-safe-dose, delayed effects, current versus historical state, and collapse of mixed trajectory. Preserve valid earlier findings, correct them only with explicit case evidence, and append supported findings. Do not repair the draft."
+        },
+        {
+          "id": "B3_INTERACTION_INFORMATION_GAIN",
+          "freshContext": false,
+          "parallelGroup": null,
+          "sees": ["case", "settledHistory", "draft", "errorTaxonomy", "B1_B2_frozenFindings"],
+          "withholds": ["seededErrorIds", "openQuestions", "behavioralTarget", "producerRationale", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "findingSet",
+          "prompt": "Review only interaction quality and information gain: repetition, arbitrary precision, low-information advice, self-reply, unnecessary length, and price/business reasoning. Preserve supported earlier findings and append only material case-grounded findings. Do not repair the draft. Freeze the combined findings for both repair arms."
+        },
+        {
+          "id": "B4_REPAIR",
+          "freshContext": true,
+          "parallelGroup": null,
+          "seesByRepairMode": {
+            "PATCH_EXISTING_DRAFT": ["case", "settledHistory", "draft", "errorTaxonomy", "B_FROZEN_FINDINGS"],
+            "RECONSTRUCT_FROM_CASE_AND_FINDINGS": ["case", "settledHistory", "errorTaxonomy", "B_FROZEN_FINDINGS"]
+          },
+          "withholds": ["seededErrorIds", "openQuestions", "behavioralTarget", "producerRationale", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "repair",
+          "promptByRepairMode": {
+            "PATCH_EXISTING_DRAFT": "Apply the frozen findings to the existing draft with the smallest coherent changes. If the finding set is empty, return KEEP and reproduce the draft byte-for-byte. Do not add concerns not present in the findings or case.",
+            "RECONSTRUCT_FROM_CASE_AND_FINDINGS": "Write a fresh concise client-facing response using only the case evidence and frozen findings. You do not receive the old draft or the case-specific grading target. If the finding set is empty, the controller will preserve the original bytes; return KEEP with an empty finalResponse."
+          }
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "name": "PARALLEL_INDEPENDENT_CRITICS",
+      "independenceClass": "three_fresh_context_critics_then_synthesis",
+      "stages": [
+        {
+          "id": "C1_EPISTEMIC_CRITIC",
+          "freshContext": true,
+          "parallelGroup": "C_CRITICS",
+          "sees": ["case", "settledHistory", "draft", "errorTaxonomy"],
+          "withholds": ["seededErrorIds", "openQuestions", "behavioralTarget", "producerRationale", "otherCriticOutputs", "priorAuditHistory", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "findingSet",
+          "prompt": "Independently audit evidence, causality, phenomenology, pain uncertainty, formulation status, and history fidelity. Return findings only; do not repair."
+        },
+        {
+          "id": "C2_SAFETY_CRITIC",
+          "freshContext": true,
+          "parallelGroup": "C_CRITICS",
+          "sees": ["case", "settledHistory", "draft", "errorTaxonomy"],
+          "withholds": ["seededErrorIds", "openQuestions", "behavioralTarget", "producerRationale", "otherCriticOutputs", "priorAuditHistory", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "findingSet",
+          "prompt": "Independently audit current versus historical risk, safety overreaction and underreaction, prior tolerance, delayed trajectory, and preservation of mixed benefit and harm. Return findings only; do not repair."
+        },
+        {
+          "id": "C3_INTERACTION_CRITIC",
+          "freshContext": true,
+          "parallelGroup": "C_CRITICS",
+          "sees": ["case", "settledHistory", "draft", "errorTaxonomy"],
+          "withholds": ["seededErrorIds", "openQuestions", "behavioralTarget", "producerRationale", "otherCriticOutputs", "priorAuditHistory", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "findingSet",
+          "prompt": "Independently audit repetition, conversation integrity, information gain, arbitrary precision, concision, generic routing, and coaching/business reasoning. Return findings only; do not repair."
+        },
+        {
+          "id": "C4_SYNTHESIZE_AND_RECONSTRUCT",
+          "freshContext": true,
+          "parallelGroup": null,
+          "sees": ["case", "settledHistory", "errorTaxonomy", "C1_C2_C3_frozenFindings"],
+          "withholds": ["draft", "seededErrorIds", "openQuestions", "behavioralTarget", "producerRationale", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "integratedAuditRepair",
+          "prompt": "Reconcile duplicate or conflicting frozen findings against the case and emit the final deduplicated finding set, then reconstruct one concise client-facing response. Do not retain a finding merely because a critic asserted it. If all findings are unsupported or empty, emit an empty finding set and return KEEP with an empty finalResponse so the controller preserves the original bytes."
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "name": "FRESH_CONTEXT_ADVERSARIAL_REVIEW",
+      "independenceClass": "fresh_attack_then_reconstruction",
+      "stages": [
+        {
+          "id": "D1_ADVERSARIAL_CRITIC",
+          "freshContext": true,
+          "parallelGroup": null,
+          "sees": ["case", "settledHistory", "draft", "errorTaxonomy"],
+          "withholds": ["seededErrorIds", "openQuestions", "behavioralTarget", "producerRationale", "priorAuditHistory", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "findingSet",
+          "prompt": "Attack the draft as a fresh reviewer. Look for the strongest evidence, safety, history, interaction, and information-gain failures, including audit-induced conservatism. State only case-supported findings. Do not repair and do not assume a problem must exist."
+        },
+        {
+          "id": "D2_RECONSTRUCT",
+          "freshContext": true,
+          "parallelGroup": null,
+          "sees": ["case", "settledHistory", "errorTaxonomy", "D1_frozenFindings"],
+          "withholds": ["draft", "seededErrorIds", "openQuestions", "behavioralTarget", "producerRationale", "priorAuditHistory", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "integratedAuditRepair",
+          "prompt": "Reconcile the adversarial findings and emit the final deduplicated finding set, then reconstruct a concise answer from case evidence and the generic taxonomy. If there is no material supported finding, emit an empty finding set and return KEEP with an empty finalResponse so the controller preserves the original bytes."
+        }
+      ]
+    },
+    {
+      "id": "E",
+      "name": "SELF_CRITIQUE_LOOP",
+      "independenceClass": "same_context_anchoring_control",
+      "maxLoops": 2,
+      "stages": [
+        {
+          "id": "E1_SELF_CRITIQUE",
+          "freshContext": false,
+          "parallelGroup": null,
+          "sees": ["case", "settledHistory", "currentDraft", "errorTaxonomy", "sameContextPriorWork"],
+          "withholds": ["seededErrorIds", "openQuestions", "behavioralTarget", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "findingSet",
+          "prompt": "Critique your current draft using the taxonomy. On the first loop, freeze the deduplicated findings about the original draft as the scored detection set. Preserve later findings separately as repair trace; do not merge repair-induced problems into initial detection. Do not manufacture a defect to justify another loop. Return no findings when the answer is already sound."
+        },
+        {
+          "id": "E2_SELF_PATCH",
+          "freshContext": false,
+          "parallelGroup": null,
+          "sees": ["case", "settledHistory", "currentDraft", "errorTaxonomy", "sameContextFindings", "sameContextPriorWork"],
+          "withholds": ["seededErrorIds", "openQuestions", "behavioralTarget", "unblindedArchitectureLabel"],
+          "outputSchemaRef": "repair",
+          "prompt": "Patch only supported findings. If none exist, return KEEP and preserve the draft byte-for-byte. Stop after a clean critique or after two critique/patch loops; do not claim independence."
+        }
+      ]
+    }
+  ],
+  "conditions": [
+    {"id": "N_NO_AUDIT", "architectureId": "N", "repairMode": "KEEP", "allowedActions": ["KEEP"], "minimumModelPasses": 0, "maximumModelPasses": 0},
+    {"id": "A_INTEGRATED", "architectureId": "A", "repairMode": "INTEGRATED_REPAIR", "allowedActions": ["KEEP", "RECONSTRUCT"], "minimumModelPasses": 1, "maximumModelPasses": 1},
+    {"id": "B_PATCH", "architectureId": "B", "repairMode": "PATCH_EXISTING_DRAFT", "allowedActions": ["KEEP", "PATCH"], "minimumModelPasses": 3, "maximumModelPasses": 4, "sharedFindingSetKey": "B_FROZEN_FINDINGS"},
+    {"id": "B_RECONSTRUCT", "architectureId": "B", "repairMode": "RECONSTRUCT_FROM_CASE_AND_FINDINGS", "allowedActions": ["KEEP", "RECONSTRUCT"], "minimumModelPasses": 3, "maximumModelPasses": 4, "sharedFindingSetKey": "B_FROZEN_FINDINGS"},
+    {"id": "C_RECONSTRUCT", "architectureId": "C", "repairMode": "RECONSTRUCT_FROM_CASE_AND_FINDINGS", "allowedActions": ["KEEP", "RECONSTRUCT"], "minimumModelPasses": 3, "maximumModelPasses": 4},
+    {"id": "D_RECONSTRUCT", "architectureId": "D", "repairMode": "RECONSTRUCT_FROM_CASE_AND_FINDINGS", "allowedActions": ["KEEP", "RECONSTRUCT"], "minimumModelPasses": 1, "maximumModelPasses": 2},
+    {"id": "E_SELF_LOOP", "architectureId": "E", "repairMode": "PATCH_EXISTING_DRAFT", "allowedActions": ["KEEP", "PATCH"], "minimumModelPasses": 1, "maximumModelPasses": 4}
+  ],
+  "sharedPassAccounting": {
+    "B_PATCH_vs_B_RECONSTRUCT": "Run B1-B3 once per draft and freeze B_FROZEN_FINDINGS, then fork two repair calls. Standalone cost is four passes per arm; paired marginal experiment cost is five passes total, not eight."
+  }
+}

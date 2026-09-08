@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-07
+Updated: 2026-09-08
+
+## Current owner-authorized audit-architecture evaluation (PR #46)
+
+The 2026-09-07 owner request authorizes a de-identified synthetic comparison harness for therapy-response audit architectures on draft PR #46. The initial fetched head was `e4427d175e06ad8aa313b9cfa4a340379d3e9590`; after the PR advanced, the task was replayed linearly onto refreshed parent `48204b1dcae424434bec2859dda72e3b109d3027` without a merge commit or shared-history rewrite. Read `docs/superpowers/specs/2026-09-07-audit-architecture-evaluation.md` and the sole task ledger at `tasks/audit-architecture-eval-20260907/INTEGRATION.md`.
+
+The additive task contains one nine-turn fictional case, eight seeded flawed drafts covering 15 requested failures, two neutrally named already-good termination controls, runtime-like prompt contracts for A–D plus optional E and no-audit baseline, content-bound B patch-versus-reconstruct pairing, repeat-aware opaque scheduling, schema-validated canonical stage outputs, topology-derived findings/actions/responses, raw evidence-bearing initial/final grades, full-schedule comparison gating, deterministic pooled/macro scoring, privacy/schema/mutant regressions, and a later live xhigh protocol. Two independent read-only reviews drove information-firewall, regression-attribution, no-op, calibration, topology, pairing, schedule, cost, comparison, and audit-output provenance repairs. Focused harness tests pass 20/20 on pinned Node 24.18.0. `modelRuns: 0`; no provider budget was borrowed and no real-person identifier, transcript excerpt, source conversation ID, exact personal amount/location, or private-derived hash is stored.
+
+This is an evaluation harness, not therapy/runtime policy. No architecture winner, live-model result, clinical efficacy, merge, deployment, installation, or stable promotion is claimed or authorized. Focused tests, repository audit, and two independent read-only reviews are green. Pre-refresh package verification passed 948/948; on refreshed parent `48204b1`, integrated verification passed 957/958 and reproducibly failed only the concurrent runtime's stale therapy-policy fingerprint assertion in `tests/therapy-latency-benchmark.test.mjs`, outside this task's paths and scope. The Git-object publication audit remains post-commit. Later live execution requires an explicit call/token/spend budget, exact verified model/provider identities and grader-independence configuration. Any runtime adoption remains a separate owner decision.
 
 ## Current owner-authorized romance-guide runtime integration (PR #46)
 
