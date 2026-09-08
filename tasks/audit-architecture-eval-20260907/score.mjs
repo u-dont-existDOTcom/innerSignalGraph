@@ -282,12 +282,25 @@ export function validateExecutionPlan({ plan, drafts, architectures }) {
   invariant(Array.isArray(graders) && graders.length === 2 && new Set(graders.map(item => item.id)).size === 2, 'exactly two independent grader passes are required');
   invariant(graders.every(item => item.selectorLabel === 'GPT-5.6 Sol' && item.reasoningEffortLabel === 'Extra High' && item.freshContext === true && item.architectureBlind === true && item.producerRationaleBlind === true && item.otherGradesBlind === true), 'grader independence or model contract drifted');
   invariant(smoke.primaryEvaluation.deterministicScoring === true && smoke.primaryEvaluation.randomizeOpaqueOutputsBeforeEachGrader === true, 'deterministic scoring and blinded randomization are required');
+  const batching = smoke.primaryEvaluation.batching;
+  invariant(batching?.enabled === true && batching.oneFreshSubmissionPerRolePerGraderPass === true && batching.neverMixRolesInOneSubmission === true, 'grader batching must preserve role and fresh-context separation');
+  invariant(JSON.stringify(batching.roles) === JSON.stringify(['FINDING_VALIDATOR', 'INITIAL_RESPONSE_GRADER', 'FINAL_RESPONSE_GRADER']), 'grader batching roles drifted');
+  invariant(batching.deduplicateItemsByExactInputBytes === true && batching.opaqueItemOrderRandomizedSeparatelyPerPass === true, 'grader batch blinding or exact-byte deduplication drifted');
+  invariant(batching.logicalItemCallIdsRemainUnique === true && batching.physicalSubmissionIdAndOutputHashRequired === true, 'grader batch provenance binding drifted');
+  invariant(batching.maximumPrimaryEvaluationSubmissions === graders.length * batching.roles.length, 'grader batch submission bound is invalid');
   invariant(smoke.primaryEvaluation.referenceTargetRole === 'REFERENCE_AND_RUBRIC_NOT_UNIQUE_GROUND_TRUTH' && smoke.primaryEvaluation.proIsPrimaryGrader === false, 'grader authority contract drifted');
   invariant(smoke.pruningGate?.smokeCanSelectWinner === false && smoke.pruningGate.smokeCanQualifyForRuntime === false && smoke.pruningGate.clearlyInferiorOnly === true, 'smoke pruning cannot become selection or adoption');
   invariant(smoke.pruningGate.preferFewerRepeatsOverLessFixtureCoverage === true && smoke.pruningGate.preserveNoAuditBaselineForComparison === true, 'coverage and baseline pruning rules drifted');
   for (const penalty of ['falsePositiveCritique', 'safetyInflation', 'repetition', 'responseLengthInflation', 'unnecessaryGoodResponseRewrite', 'newRepairError']) {
     invariant(smoke.pruningGate.penalize.includes(penalty), `missing over-audit penalty ${penalty}`);
   }
+
+  const budget = plan.submissionBudgetProof;
+  invariant(Number.isInteger(budget?.maximumArchitectureStageSubmissions) && Number.isInteger(budget.maximumLatestComparatorSubmissions) && Number.isInteger(budget.calibrationSubmissions), 'submission budget components are required');
+  invariant(budget.maximumPrimaryEvaluationSubmissions === batching.maximumPrimaryEvaluationSubmissions, 'submission budget and grader batching disagree');
+  const plannedMaximum = budget.maximumArchitectureStageSubmissions + budget.maximumLatestComparatorSubmissions + budget.calibrationSubmissions + budget.maximumPrimaryEvaluationSubmissions;
+  invariant(budget.maximumPlannedSubmissions === plannedMaximum, 'submission budget total is not derived from its components');
+  invariant(budget.minimumReserveBeforeOwnerReview === boundary.maximumChatgptSubmissionsBeforeOwnerReview - plannedMaximum && budget.minimumReserveBeforeOwnerReview >= 0, 'submission budget exceeds its owner-review ceiling');
 
   const comparison = plan.modelComparison;
   invariant(comparison?.status === 'SMALL_SEPARATE_SMOKE_ONLY' && comparison.fixedConditionId === 'A_INTEGRATED', 'model comparison must remain a small fixed-instrument smoke');
@@ -376,6 +389,16 @@ function validateEvidence(evidence, source, targetIds, label) {
   } else throw new Error(`${label} evidence kind is invalid`);
 }
 
+function validateBatchBinding(value, label) {
+  const hasSubmissionId = Object.hasOwn(value, 'submissionId');
+  const hasOutputHash = Object.hasOwn(value, 'submissionOutputHash');
+  invariant(hasSubmissionId === hasOutputHash, `${label} batch binding must include submissionId and submissionOutputHash together`);
+  if (!hasSubmissionId) return null;
+  invariant(typeof value.submissionId === 'string' && value.submissionId.length > 0, `${label} submissionId is required`);
+  invariant(/^[a-f0-9]{64}$/u.test(value.submissionOutputHash), `${label} submissionOutputHash must be SHA-256`);
+  return { submissionId: value.submissionId, submissionOutputHash: value.submissionOutputHash };
+}
+
 function validateGradeRuns(grades, { label, source, errorById, dimensionById }) {
   const errorIds = [...errorById.keys()];
   const dimensionIds = [...dimensionById.keys()];
@@ -385,6 +408,7 @@ function validateGradeRuns(grades, { label, source, errorById, dimensionById }) 
   invariant(graderById.size > 0, `${label} needs at least one grader`);
   for (const grade of graderById.values()) {
     invariant(typeof grade.callId === 'string' && grade.callId.length > 0, `${label}.${grade.graderId} needs a callId`);
+    validateBatchBinding(grade, `${label}.${grade.graderId}`);
     const errorById = uniqueMap(grade.errorJudgments, 'errorId', `${label}.${grade.graderId}.errorJudgments`);
     invariant(errorById.size === errorIds.length && errorIds.every(id => errorById.has(id)), `${label} must cover every error class exactly`);
     for (const judgment of errorById.values()) {
@@ -441,6 +465,7 @@ function validateFindingGrades(grades, findings, source, errorById) {
   const findingIds = findings.map(item => item.id);
   for (const grade of graderById.values()) {
     invariant(typeof grade.callId === 'string' && grade.callId.length > 0, `findingGrades.${grade.graderId} needs a callId`);
+    validateBatchBinding(grade, `findingGrades.${grade.graderId}`);
     const judgmentById = uniqueMap(grade.judgments, 'findingId', `findingGrades.${grade.graderId}`);
     invariant(judgmentById.size === findingIds.length && findingIds.every(id => judgmentById.has(id)), 'finding validator must cover every finding exactly');
     for (const judgment of judgmentById.values()) {
@@ -677,12 +702,15 @@ function deriveAuditOutcome({ condition, calls, outputs, draft, record }) {
 function validateEvaluationCalls(usage, expected) {
   invariant(Array.isArray(usage.evaluationCalls), 'usage.evaluationCalls must be an array');
   const callById = uniqueMap(usage.evaluationCalls, 'id', 'usage.evaluationCalls');
-  const expectedById = new Map(expected.map(item => [item.callId, item.stageId]));
+  const expectedById = new Map(expected.map(item => [item.callId, item]));
   invariant(expectedById.size === expected.length, 'one evaluation call cannot stand in for multiple grader roles in a record');
   invariant(callById.size === expectedById.size && [...expectedById.keys()].every(id => callById.has(id)), 'evaluation calls must cover every grader call exactly');
-  for (const [id, stageId] of expectedById) {
+  for (const [id, expectedCall] of expectedById) {
     const call = callById.get(id);
-    invariant(call.stageId === stageId, `${id} has the wrong evaluation stage`);
+    invariant(call.stageId === expectedCall.stageId, `${id} has the wrong evaluation stage`);
+    const expectedBatch = validateBatchBinding(expectedCall, `${id} expected grade`);
+    const actualBatch = validateBatchBinding(call, `${id} evaluation call`);
+    invariant(canonicalFindingBytes(actualBatch) === canonicalFindingBytes(expectedBatch), `${id} has inconsistent batch-submission binding`);
     invariant(typeof call.waveId === 'string' && call.waveId.length > 0, `${id} needs a waveId`);
     finiteNonNegative(call.inputTokens, `${id}.inputTokens`, { nullable: true });
     finiteNonNegative(call.outputTokens, `${id}.outputTokens`, { nullable: true });
@@ -736,9 +764,9 @@ export function scoreRecord({ record, cases, drafts, referenceTarget, rubric, ar
   invariant(record.action === derivedAudit.action, `${condition.id} action differs from the canonical source output`);
   invariant(record.finalResponse === derivedAudit.finalResponse, `${condition.id} final response differs from the canonical source output`);
   const evaluationCalls = validateEvaluationCalls(record.usage, [
-    ...record.findingGrades.map(item => ({ callId: item.callId, stageId: 'FINDING_VALIDATOR' })),
-    ...record.initialGrades.map(item => ({ callId: item.callId, stageId: 'INITIAL_RESPONSE_GRADER' })),
-    ...record.finalGrades.map(item => ({ callId: item.callId, stageId: 'FINAL_RESPONSE_GRADER' }))
+    ...record.findingGrades.map(item => ({ callId: item.callId, stageId: 'FINDING_VALIDATOR', ...(item.submissionId ? { submissionId: item.submissionId, submissionOutputHash: item.submissionOutputHash } : {}) })),
+    ...record.initialGrades.map(item => ({ callId: item.callId, stageId: 'INITIAL_RESPONSE_GRADER', ...(item.submissionId ? { submissionId: item.submissionId, submissionOutputHash: item.submissionOutputHash } : {}) })),
+    ...record.finalGrades.map(item => ({ callId: item.callId, stageId: 'FINAL_RESPONSE_GRADER', ...(item.submissionId ? { submissionId: item.submissionId, submissionOutputHash: item.submissionOutputHash } : {}) }))
   ]);
 
   if (condition.id.startsWith('B_')) {
@@ -937,6 +965,24 @@ function uniqueCalls(records) {
   return [...byId.values()].map(item => item.call);
 }
 
+function uniquePhysicalCalls(records) {
+  const bySubmission = new Map();
+  for (const record of records) for (const call of record.cost.calls) {
+    const key = call.submissionId ?? call.id;
+    const fingerprint = canonicalFindingBytes({
+      stageId: call.stageId,
+      waveId: call.waveId,
+      inputTokens: call.inputTokens,
+      outputTokens: call.outputTokens,
+      elapsedMs: call.elapsedMs,
+      submissionOutputHash: call.submissionOutputHash ?? null
+    });
+    invariant(!bySubmission.has(key) || bySubmission.get(key).fingerprint === fingerprint, `submission ${key} has inconsistent accounting`);
+    if (!bySubmission.has(key)) bySubmission.set(key, { call, fingerprint });
+  }
+  return [...bySubmission.values()].map(item => item.call);
+}
+
 function verifyReusedGradeOutputs(records) {
   const byCall = new Map();
   for (const record of records) {
@@ -1054,7 +1100,7 @@ function verifyBPairs(records) {
       repeatId: patch.repeatId,
       outcome,
       marginalPairedAuditCallCount: new Map(pair.flatMap(item => item.cost.auditCalls).map(call => [call.id, call])).size,
-      marginalPairedTotalCallCount: uniqueCalls(pair).length
+      marginalPairedTotalCallCount: uniquePhysicalCalls(pair).length
     });
   }
   return comparisons;
@@ -1069,7 +1115,7 @@ function conditionSummary(conditionId, records, comparisonEnabled) {
   const removedWeight = records.reduce((sum, record) => sum + record.repair.removedSeededWeight, 0);
   const supported = records.reduce((sum, record) => sum + record.detection.supportedFindingCount, 0);
   const unsupported = records.reduce((sum, record) => sum + record.detection.unsupportedFindingCount, 0);
-  const calls = uniqueCalls(records);
+  const calls = uniquePhysicalCalls(records);
   const good = records.filter(record => record.termination.isGoodControl);
   const summary = {
     conditionId,
@@ -1095,8 +1141,8 @@ function conditionSummary(conditionId, records, comparisonEnabled) {
     cleanAuditTerminationRate: round(mean(good.map(record => record.termination.cleanAuditTermination ? 1 : 0))),
     meanWordInflationRatio: round(mean(records.map(record => record.length.inflationRatio))),
     meanDimensions: Object.fromEntries(dimensionIds.map(id => [id, round(mean(records.map(record => record.dimensions[id])))])),
-    standaloneUniqueAuditCalls: new Map(records.flatMap(record => record.cost.auditCalls).map(call => [call.id, call])).size,
-    standaloneUniqueEvaluationCalls: new Map(records.flatMap(record => record.cost.evaluationCalls).map(call => [call.id, call])).size,
+    standaloneUniqueAuditCalls: new Map(records.flatMap(record => record.cost.auditCalls).map(call => [call.submissionId ?? call.id, call])).size,
+    standaloneUniqueEvaluationCalls: new Map(records.flatMap(record => record.cost.evaluationCalls).map(call => [call.submissionId ?? call.id, call])).size,
     standaloneUniqueCalls: calls.length,
     totalInputTokens: calls.every(call => call.inputTokens !== null) ? calls.reduce((sum, call) => sum + call.inputTokens, 0) : null,
     totalOutputTokens: calls.every(call => call.outputTokens !== null) ? calls.reduce((sum, call) => sum + call.outputTokens, 0) : null,
@@ -1144,8 +1190,8 @@ export function aggregateScores(scoredRecords, { cases, drafts, referenceTarget,
     finiteNonNegative(call.outputTokens, `${call.id}.outputTokens`, { nullable: true });
     finiteNonNegative(call.elapsedMs, `${call.id}.elapsedMs`, { nullable: true });
   }
-  const runCalls = uniqueCalls(scoredRecords);
-  const calls = uniqueCalls([{ cost: { calls: [...runCalls, ...calibrationEvidence.calls, ...identityCalls] } }]);
+  const runCalls = uniquePhysicalCalls(scoredRecords);
+  const calls = uniquePhysicalCalls([{ cost: { calls: [...runCalls, ...calibrationEvidence.calls, ...identityCalls] } }]);
   const reviewRequired = conditions.some(condition => condition.reviewRequiredRuns > 0);
   return {
     schemaVersion: 1,

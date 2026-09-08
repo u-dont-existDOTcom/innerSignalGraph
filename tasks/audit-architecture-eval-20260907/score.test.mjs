@@ -14,7 +14,13 @@ import {
   validateSyntheticPrivacy,
   wordTokens
 } from './score.mjs';
-import { buildAuditStagePacket, buildFindingValidationPacket, buildResponseGradePacket } from './packets.mjs';
+import {
+  buildAuditStagePacket,
+  buildFindingValidationBatchPacket,
+  buildFindingValidationPacket,
+  buildResponseGradeBatchPacket,
+  buildResponseGradePacket
+} from './packets.mjs';
 
 const load = async name => JSON.parse(await readFile(new URL(name, import.meta.url), 'utf8'));
 const [cases, drafts, referenceTarget, rubric, architectures, controls, executionPlan] = await Promise.all([
@@ -121,6 +127,16 @@ test('execution-plan mutants cannot infer Latest, weaken fresh grading, or omit 
   const noControl = structuredClone(executionPlan);
   noControl.mainSmoke.fixtureDraftIds = ['AE-D003', 'AE-D004', 'AE-D005', 'AE-D007'];
   assert.throws(() => validateExecutionPlan({ plan: noControl, drafts, architectures }), /exactly one good-response control/);
+
+  const mixedBatchRoles = structuredClone(executionPlan);
+  mixedBatchRoles.mainSmoke.primaryEvaluation.batching.neverMixRolesInOneSubmission = false;
+  assert.throws(() => validateExecutionPlan({ plan: mixedBatchRoles, drafts, architectures }), /role and fresh-context separation/);
+
+  const overBudget = structuredClone(executionPlan);
+  overBudget.submissionBudgetProof.maximumArchitectureStageSubmissions = 90;
+  overBudget.submissionBudgetProof.maximumPlannedSubmissions = 106;
+  overBudget.submissionBudgetProof.minimumReserveBeforeOwnerReview = -6;
+  assert.throws(() => validateExecutionPlan({ plan: overBudget, drafts, architectures }), /owner-review ceiling/);
 });
 
 test('execution-plan mutants cannot promote Pro dissent or relax owner adoption gate', () => {
@@ -174,6 +190,38 @@ test('ChatGPT packets enforce audit and grader information firewalls', () => {
   assert.equal(finding.outputSchema.properties.opaqueItemId.const, 'FIND-1');
   assert.equal(finding.outputSchema.properties.judgments.minItems, 1);
   assert.deepEqual(finding.outputSchema.properties.judgments.items.properties.evidence.oneOf.map(item => item.properties.kind.const), ['QUOTE', 'OMISSION']);
+});
+
+test('blinded batch packets cover unique opaque items without exposing arm identity', () => {
+  const responseBatch = buildResponseGradeBatchPacket({
+    opaqueBatchId: 'BATCH-GRADE-1', caseId: 'AE-C001', cases, referenceTarget, rubric,
+    items: [
+      { opaqueItemId: 'ITEM-B', candidateResponse: 'Second synthetic candidate.' },
+      { opaqueItemId: 'ITEM-A', candidateResponse: 'First synthetic candidate.' }
+    ]
+  });
+  assert.deepEqual(responseBatch.outputSchema.properties.results.required, ['ITEM-B', 'ITEM-A']);
+  assert.deepEqual(Object.keys(responseBatch.outputSchema.properties.results.properties), ['ITEM-B', 'ITEM-A']);
+  assert.equal(JSON.stringify(responseBatch).includes('conditionId'), false);
+  assert.equal(JSON.stringify(responseBatch).includes('seededErrorIds'), false);
+
+  const findingBatch = buildFindingValidationBatchPacket({
+    opaqueBatchId: 'BATCH-FINDING-1', caseId: 'AE-C001', cases, referenceTarget, rubric,
+    items: [{
+      opaqueItemId: 'FINDING-ITEM-A',
+      draftResponse: 'A synthetic draft.',
+      findings: [{ id: 'FINDING-1', errorId: 'REPETITION', draftQuote: 'synthetic', missingBehavior: null }]
+    }]
+  });
+  assert.deepEqual(findingBatch.outputSchema.properties.results.required, ['FINDING-ITEM-A']);
+  assert.equal(findingBatch.outputSchema.properties.results.properties['FINDING-ITEM-A'].properties.judgments.minItems, 1);
+  assert.throws(() => buildResponseGradeBatchPacket({
+    opaqueBatchId: 'DUPLICATE-BYTES', caseId: 'AE-C001', cases, referenceTarget, rubric,
+    items: [
+      { opaqueItemId: 'ONE', candidateResponse: 'Same bytes.' },
+      { opaqueItemId: 'TWO', candidateResponse: 'Same bytes.' }
+    ]
+  }), /deduplicate exact candidateResponse bytes/);
 });
 
 function modelCalls(conditionId, action, pairId, criticOrder, runId) {
@@ -323,6 +371,16 @@ function recordFor({
     sharedFindingSetHash: canonical ? sha256(canonical) : null,
     usage: { calls, auditArtifacts, evaluationCalls, criticalPathMs: conditionId === 'N_NO_AUDIT' ? 0 : null }
   };
+}
+
+function bindEvaluationBatch(record, collectionKey, submissionId, submissionOutputHash) {
+  for (const grade of record[collectionKey]) {
+    grade.submissionId = submissionId;
+    grade.submissionOutputHash = submissionOutputHash;
+    const call = record.usage.evaluationCalls.find(item => item.id === grade.callId);
+    call.submissionId = submissionId;
+    call.submissionOutputHash = submissionOutputHash;
+  }
 }
 
 function codebookFor(record) {
@@ -641,6 +699,21 @@ test('B repair arms require identical frozen finding bytes and deduplicate share
   assert.throws(() => aggregate([scoredPatch, rerunSpecialists]), /identical specialist calls/);
 });
 
+test('batched grader projections retain logical IDs while cost counts physical submissions once', () => {
+  const patch = recordFor({ draftId: 'AE-D002', runId: 'AE-R0111', conditionId: 'B_PATCH', action: 'PATCH', findingErrorIds: ['CAUSAL_OVERCLAIM'], pairId: 'PAIR-BATCH-1' });
+  const reconstruct = recordFor({ draftId: 'AE-D002', runId: 'AE-R0112', conditionId: 'B_RECONSTRUCT', action: 'RECONSTRUCT', findingErrorIds: ['CAUSAL_OVERCLAIM'], pairId: 'PAIR-BATCH-1' });
+  const batchHash = 'a'.repeat(64);
+  bindEvaluationBatch(patch, 'finalGrades', 'FINAL-GRADER-BATCH-1', batchHash);
+  bindEvaluationBatch(reconstruct, 'finalGrades', 'FINAL-GRADER-BATCH-1', batchHash);
+  const summary = aggregate([score(patch), score(reconstruct)]);
+  assert.equal(summary.experimentCost.runUniqueCallCount, 8);
+  assert.equal(summary.experimentCost.uniqueCallCount, 14);
+
+  const conflicting = recordFor({ draftId: 'AE-D002', runId: 'AE-R0113', conditionId: 'B_RECONSTRUCT', action: 'RECONSTRUCT', findingErrorIds: ['CAUSAL_OVERCLAIM'], pairId: 'PAIR-BATCH-1' });
+  bindEvaluationBatch(conflicting, 'finalGrades', 'FINAL-GRADER-BATCH-1', 'b'.repeat(64));
+  assert.throws(() => aggregate([score(patch), score(conflicting)]), /inconsistent accounting/);
+});
+
 test('micro weighting, unweighted recall, qualification, and Pareto data remain separate', () => {
   const first = score(recordFor({ draftId: 'AE-D001', runId: 'AE-R0201', findingErrorIds: ['REPETITION', 'LOW_INFORMATION_ADVICE'] }));
   const second = score(recordFor({ draftId: 'AE-D002', runId: 'AE-R0202', findingErrorIds: ['CAUSAL_OVERCLAIM'], finalPresent: ['SAFE_DOSE_INFERENCE', 'MIXED_TRAJECTORY_COLLAPSE'] }));
@@ -721,6 +794,15 @@ test('calibration is split by role and blocks scoring when any control fails', (
   const badDimension = structuredClone(calibration);
   badDimension.finalResponseGrader[0].grade.dimensionJudgments[0].rating = 0;
   assert.throws(() => validateCalibrationResult({ calibration: badDimension, controls, drafts, referenceTarget, rubric }), /gate failed dimensions/);
+});
+
+test('negative finding-validator controls cannot be supported by a different passage in the same error class', () => {
+  for (const control of controls.findingValidatorControls.filter(item => item.expectedVerdict === 'UNSUPPORTED')) {
+    const draft = drafts.drafts.find(item => item.id === control.draftId);
+    assert.equal(draft.controlIntent, 'GOOD_TERMINATION_CONTROL');
+    assert.equal(draft.seededErrorIds.includes(control.finding.errorId), false);
+    assert.equal(draft.response.includes(control.finding.draftQuote), false);
+  }
 });
 
 test('word metrics are deterministic for fixture prose', () => {

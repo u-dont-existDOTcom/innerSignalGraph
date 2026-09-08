@@ -46,13 +46,12 @@ function evidenceSchema() {
   };
 }
 
-function responseGradeSchema(opaqueItemId, rubric) {
+function responseGradeBodySchema(rubric) {
   return {
     type: 'object',
     additionalProperties: false,
-    required: ['opaqueItemId', 'errorJudgments', 'dimensionJudgments'],
+    required: ['errorJudgments', 'dimensionJudgments'],
     properties: {
-      opaqueItemId: { const: opaqueItemId },
       errorJudgments: {
         type: 'array',
         minItems: rubric.errorClasses.length,
@@ -89,13 +88,21 @@ function responseGradeSchema(opaqueItemId, rubric) {
   };
 }
 
-function findingValidationSchema(opaqueItemId, findings) {
+function responseGradeSchema(opaqueItemId, rubric) {
+  const body = responseGradeBodySchema(rubric);
+  return {
+    ...body,
+    required: ['opaqueItemId', ...body.required],
+    properties: { opaqueItemId: { const: opaqueItemId }, ...body.properties }
+  };
+}
+
+function findingValidationBodySchema(findings) {
   return {
     type: 'object',
     additionalProperties: false,
-    required: ['opaqueItemId', 'judgments'],
+    required: ['judgments'],
     properties: {
-      opaqueItemId: { const: opaqueItemId },
       judgments: {
         type: 'array',
         minItems: findings.length,
@@ -114,6 +121,41 @@ function findingValidationSchema(opaqueItemId, findings) {
       }
     }
   };
+}
+
+function findingValidationSchema(opaqueItemId, findings) {
+  const body = findingValidationBodySchema(findings);
+  return {
+    ...body,
+    required: ['opaqueItemId', ...body.required],
+    properties: { opaqueItemId: { const: opaqueItemId }, ...body.properties }
+  };
+}
+
+function batchSchema(opaqueBatchId, items, bodySchemaFor) {
+  const itemIds = items.map(item => item.opaqueItemId);
+  return {
+    type: 'object',
+    additionalProperties: false,
+    required: ['opaqueBatchId', 'results'],
+    properties: {
+      opaqueBatchId: { const: opaqueBatchId },
+      results: {
+        type: 'object',
+        additionalProperties: false,
+        required: itemIds,
+        properties: Object.fromEntries(items.map(item => [item.opaqueItemId, bodySchemaFor(item)]))
+      }
+    }
+  };
+}
+
+function validateBatchIdentity(opaqueBatchId, items) {
+  invariant(typeof opaqueBatchId === 'string' && opaqueBatchId.trim(), 'opaqueBatchId is required');
+  invariant(Array.isArray(items) && items.length > 0, 'batch items are required');
+  const itemIds = items.map(item => item.opaqueItemId);
+  invariant(itemIds.every(id => typeof id === 'string' && id.trim()), 'every batch item needs an opaqueItemId');
+  invariant(new Set(itemIds).size === itemIds.length, 'batch opaqueItemIds must be unique');
 }
 
 function stageContract(architectures, stageId) {
@@ -206,6 +248,38 @@ export function buildResponseGradePacket({
   };
 }
 
+export function buildResponseGradeBatchPacket({
+  opaqueBatchId,
+  caseId,
+  items,
+  cases,
+  referenceTarget,
+  rubric
+}) {
+  validateBatchIdentity(opaqueBatchId, items);
+  invariant(items.every(item => typeof item.candidateResponse === 'string' && item.candidateResponse.trim()), 'every response batch item needs candidateResponse');
+  const responseBytes = items.map(item => item.candidateResponse);
+  invariant(new Set(responseBytes).size === responseBytes.length, 'response batches must deduplicate exact candidateResponse bytes');
+  const caseFixture = byId(cases.cases, caseId, 'case');
+  invariant(referenceTarget.caseId === caseId, 'reference target and case binding is invalid');
+  return {
+    schemaVersion: 1,
+    opaqueBatchId,
+    role: 'BLINDED_COMPLETE_RESPONSE_GRADER_BATCH',
+    task: 'Independently judge every opaque response exhaustively against every error class and behavioral dimension. Treat the behavioral target as a reference and rubric, not proof of one uniquely correct therapeutic answer. Use only case evidence. The items are randomly ordered and may not be mapped to architectures, models, or run roles. Return only JSON matching outputSchema exactly and cover every opaque item, error ID, and dimension ID exactly once. For each item, QUOTE evidence must be an exact nonempty substring of that item\'s candidateResponse. OMISSION evidence must use a targetId allowed by that criterion. Keep reasons concise. Do not rewrite any answer.',
+    caseEvidence: publicCaseEvidence(caseFixture),
+    settledHistory: caseFixture.settledHistory,
+    behavioralTarget: {
+      required: referenceTarget.required,
+      forbidden: referenceTarget.forbidden
+    },
+    errorTaxonomy: rubric.errorClasses,
+    behavioralDimensions: rubric.behavioralDimensions,
+    candidateResponses: items,
+    outputSchema: batchSchema(opaqueBatchId, items, () => responseGradeBodySchema(rubric))
+  };
+}
+
 export function buildFindingValidationPacket({
   opaqueItemId,
   caseId,
@@ -234,5 +308,38 @@ export function buildFindingValidationPacket({
     draftResponse,
     findings,
     outputSchema: findingValidationSchema(opaqueItemId, findings)
+  };
+}
+
+export function buildFindingValidationBatchPacket({
+  opaqueBatchId,
+  caseId,
+  items,
+  cases,
+  referenceTarget,
+  rubric
+}) {
+  validateBatchIdentity(opaqueBatchId, items);
+  for (const item of items) {
+    invariant(typeof item.draftResponse === 'string' && item.draftResponse.trim(), `${item.opaqueItemId} needs draftResponse`);
+    invariant(Array.isArray(item.findings) && item.findings.length > 0, `${item.opaqueItemId} needs findings`);
+  }
+  const bundleBytes = items.map(item => JSON.stringify({ draftResponse: item.draftResponse, findings: item.findings }));
+  invariant(new Set(bundleBytes).size === bundleBytes.length, 'finding batches must deduplicate exact draft-and-finding bundles');
+  const caseFixture = byId(cases.cases, caseId, 'case');
+  return {
+    schemaVersion: 1,
+    opaqueBatchId,
+    role: 'BLINDED_FINDING_SUPPORT_VALIDATOR_BATCH',
+    task: 'Independently judge only whether every frozen finding in every opaque item is supported by that item\'s case and draft. The items are randomly ordered and may not be mapped to architectures, models, or run roles. Return only JSON matching outputSchema exactly and cover every opaque item and finding ID exactly once. For each item, QUOTE evidence must be an exact nonempty substring of that item\'s draftResponse. OMISSION evidence must use a targetId allowed by the finding error class. A proposed draftQuote is a claim to verify, not evidence that the text appears. Keep reasons concise. Do not decide whether a finding was seeded and do not repair responses.',
+    caseEvidence: publicCaseEvidence(caseFixture),
+    settledHistory: caseFixture.settledHistory,
+    behavioralTarget: {
+      required: referenceTarget.required,
+      forbidden: referenceTarget.forbidden
+    },
+    errorTaxonomy: rubric.errorClasses,
+    items,
+    outputSchema: batchSchema(opaqueBatchId, items, item => findingValidationBodySchema(item.findings))
   };
 }

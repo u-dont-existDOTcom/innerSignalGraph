@@ -4,7 +4,7 @@
   "modelRuns": 0,
   "caseId": "AE-C001",
   "semantics": {
-    "findingValidator": "Each expected verdict is exact. The validator judges support only and never sees seed truth.",
+    "findingValidator": "Each expected verdict is exact. The validator judges support only and never sees seed truth. Negative controls use a clean response and an error class absent from that response so a different passage cannot independently support the same class.",
     "finalResponseGrader": "ACCEPT controls are complete responses and require all error classes ABSENT. REJECT controls require the listed PRESENT errors; unlisted errors may vary but every class must still be graded.",
     "gate": "Every listed control must pass for its role before experiment scoring. Partial calibration is a failed gate."
   },
@@ -22,11 +22,11 @@
     },
     {
       "id": "AE-FVC02",
-      "draftId": "AE-D005",
+      "draftId": "AE-D009",
       "finding": {
         "id": "AE-CF02",
-        "errorId": "PHENOMENOLOGY_INVENTION",
-        "draftQuote": "the client is gambling",
+        "errorId": "GENERIC_REFERRAL_LOOP",
+        "draftQuote": "see another psychiatrist",
         "missingBehavior": null
       },
       "expectedVerdict": "UNSUPPORTED"

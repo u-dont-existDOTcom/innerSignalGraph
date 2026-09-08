@@ -88,6 +88,17 @@
         }
       ],
       "randomizeOpaqueOutputsBeforeEachGrader": true,
+      "batching": {
+        "enabled": true,
+        "roles": ["FINDING_VALIDATOR", "INITIAL_RESPONSE_GRADER", "FINAL_RESPONSE_GRADER"],
+        "oneFreshSubmissionPerRolePerGraderPass": true,
+        "neverMixRolesInOneSubmission": true,
+        "deduplicateItemsByExactInputBytes": true,
+        "opaqueItemOrderRandomizedSeparatelyPerPass": true,
+        "logicalItemCallIdsRemainUnique": true,
+        "physicalSubmissionIdAndOutputHashRequired": true,
+        "maximumPrimaryEvaluationSubmissions": 6
+      },
       "referenceTargetRole": "REFERENCE_AND_RUBRIC_NOT_UNIQUE_GROUND_TRUTH",
       "proIsPrimaryGrader": false
     },
@@ -113,6 +124,14 @@
       "preserveNoAuditBaselineForComparison": true,
       "preferFewerRepeatsOverLessFixtureCoverage": true
     }
+  },
+  "submissionBudgetProof": {
+    "maximumArchitectureStageSubmissions": 64,
+    "maximumLatestComparatorSubmissions": 4,
+    "calibrationSubmissions": 6,
+    "maximumPrimaryEvaluationSubmissions": 6,
+    "maximumPlannedSubmissions": 80,
+    "minimumReserveBeforeOwnerReview": 20
   },
   "modelComparison": {
     "status": "SMALL_SEPARATE_SMOKE_ONLY",
