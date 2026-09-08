@@ -1,10 +1,11 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "status": "SYNTHETIC_GRADER_CALIBRATION_CONTROLS",
+  "graderOutputContractVersion": "AE-GRADER-SEGMENT-EVIDENCE-V2",
   "modelRuns": 0,
   "caseId": "AE-C001",
   "semantics": {
-    "findingValidator": "Each expected verdict is exact. The validator judges support only and never sees seed truth. Negative controls use a clean response and an error class absent from that response so a different passage cannot independently support the same class.",
+    "findingValidator": "Each expected verdict is exact. The validator judges support only and never sees seed truth. Every proposed quote is an actual source segment. Negative controls pair a benign source passage with an error class absent from a clean response, so the validator must judge meaning rather than quote existence.",
     "finalResponseGrader": "ACCEPT controls are complete responses and require all error classes ABSENT. REJECT controls require the listed PRESENT errors; unlisted errors may vary but every class must still be graded.",
     "gate": "Every listed control must pass for its role before experiment scoring. Partial calibration is a failed gate."
   },
@@ -26,7 +27,7 @@
       "finding": {
         "id": "AE-CF02",
         "errorId": "GENERIC_REFERRAL_LOOP",
-        "draftQuote": "see another psychiatrist",
+        "draftQuote": "The coaching concern is already established and does not need another long discussion unless a new purchase decision appears.",
         "missingBehavior": null
       },
       "expectedVerdict": "UNSUPPORTED"

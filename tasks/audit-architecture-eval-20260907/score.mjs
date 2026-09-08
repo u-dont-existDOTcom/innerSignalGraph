@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import Ajv from 'ajv';
+import { GRADER_OUTPUT_CONTRACT_VERSION, buildSourceSegments } from './grading-contract.mjs';
 
 const FINDING_VERDICTS = new Set(['SUPPORTED', 'UNSUPPORTED', 'UNRESOLVED']);
 const ERROR_VERDICTS = new Set(['ABSENT', 'PRESENT', 'UNCERTAIN']);
@@ -214,16 +215,19 @@ export function validateHarness({ cases, drafts, referenceTarget, rubric, archit
   }
   invariant(conditionById.get('B_PATCH')?.sharedFindingSetKey === conditionById.get('B_RECONSTRUCT')?.sharedFindingSetKey, 'B repair arms must share frozen findings');
 
-  invariant(controls?.schemaVersion === 1 && controls.status === 'SYNTHETIC_GRADER_CALIBRATION_CONTROLS' && controls.modelRuns === 0, 'invalid grader controls');
+  invariant(controls?.schemaVersion === 2 && controls.status === 'SYNTHETIC_GRADER_CALIBRATION_CONTROLS' && controls.modelRuns === 0, 'invalid grader controls');
+  invariant(controls.graderOutputContractVersion === GRADER_OUTPUT_CONTRACT_VERSION, 'grader controls use the wrong output contract');
   invariant(controls.caseId === drafts.caseId, 'grader controls must use the fixture case');
   const findingControlById = uniqueMap(controls.findingValidatorControls, 'id', 'findingValidatorControls');
   const finalControlById = uniqueMap(controls.finalResponseControls, 'id', 'finalResponseControls');
   invariant([...findingControlById.values()].some(item => item.expectedVerdict === 'SUPPORTED'), 'finding controls need SUPPORTED');
   invariant([...findingControlById.values()].some(item => item.expectedVerdict === 'UNSUPPORTED'), 'finding controls need UNSUPPORTED');
   for (const control of findingControlById.values()) {
-    invariant(draftById.has(control.draftId), `${control.id} references an unknown draft`);
+    const draft = draftById.get(control.draftId);
+    invariant(draft, `${control.id} references an unknown draft`);
     invariant(FINDING_VERDICTS.has(control.expectedVerdict), `${control.id} has invalid expected verdict`);
     invariant(errorById.has(control.finding?.errorId), `${control.id} has unknown finding error`);
+    invariant(typeof control.finding.draftQuote === 'string' && control.finding.draftQuote.length > 0 && draft.response.includes(control.finding.draftQuote), `${control.id} must bind its proposed quote to the control draft`);
   }
   for (const control of finalControlById.values()) {
     const draft = draftById.get(control.draftId);
@@ -258,7 +262,14 @@ export function validateExecutionPlan({ plan, drafts, architectures }) {
   invariant(boundary.subscriptionChatgptRunsAllowed === true && boundary.noFallback === true, 'authorized ChatGPT execution must be explicit and fallback-free');
   invariant(Number.isInteger(boundary.maximumChatgptSubmissionsBeforeOwnerReview) && boundary.maximumChatgptSubmissionsBeforeOwnerReview > 0, 'ChatGPT execution needs a positive submission cap');
   invariant(boundary.noRuntimeAdoption === true && boundary.ownerReviewRequiredBeforeSelectionOrImplementation === true, 'runtime adoption must remain owner-gated');
-  invariant(Array.isArray(boundary.freezeBeforeUnblinding) && ['prompts', 'cases', 'drafts', 'rawStageOutputs', 'rawGrades', 'scores', 'auditFindings'].every(item => boundary.freezeBeforeUnblinding.includes(item)), 'freeze set is incomplete');
+  invariant(Array.isArray(boundary.freezeBeforeUnblinding) && ['prompts', 'cases', 'drafts', 'rawStageOutputs', 'rawGrades', 'rawNonGatingRationales', 'evidenceSegmentMaps', 'scores', 'auditFindings'].every(item => boundary.freezeBeforeUnblinding.includes(item)), 'freeze set is incomplete');
+  const graderContract = plan.graderOutputContract;
+  invariant(graderContract?.version === GRADER_OUTPUT_CONTRACT_VERSION && graderContract.ownerApproved === true, 'approved grader output contract is required');
+  invariant(graderContract.gatingJsonContainsFreeText === false && graderContract.silentRepairAllowed === false && graderContract.retryCurrentStoppedRunAllowed === false, 'grader output contract cannot restore free-text gating, repair, or stopped-run retry');
+  invariant(JSON.stringify(graderContract.evidenceKinds) === JSON.stringify(['SOURCE_SEGMENTS', 'TARGET_OMISSION']), 'grader evidence kinds drifted');
+  invariant(graderContract.nonGatingRationale?.archivedExactly === true && graderContract.nonGatingRationale.affectsAdmissionOrScoring === false, 'grader rationale must remain separate and non-gating');
+  invariant(graderContract.previousRunClassification === 'STRUCTURED_OUTPUT_SYNTAX_FAILURE', 'previous structured-output failure classification drifted');
+  invariant(graderContract.newRunRequiresAllCalibrationControls === true, 'new output contract requires complete recalibration');
 
   const observation = plan.selectorObservation;
   invariant(observation?.surface === 'CHATGPT_WEB_VISIBLE_MODEL_SELECTOR' && !Number.isNaN(Date.parse(observation.observedAt)), 'visible selector observation and timestamp are required');
@@ -301,6 +312,9 @@ export function validateExecutionPlan({ plan, drafts, architectures }) {
   const plannedMaximum = budget.maximumArchitectureStageSubmissions + budget.maximumLatestComparatorSubmissions + budget.calibrationSubmissions + budget.maximumPrimaryEvaluationSubmissions;
   invariant(budget.maximumPlannedSubmissions === plannedMaximum, 'submission budget total is not derived from its components');
   invariant(budget.minimumReserveBeforeOwnerReview === boundary.maximumChatgptSubmissionsBeforeOwnerReview - plannedMaximum && budget.minimumReserveBeforeOwnerReview >= 0, 'submission budget exceeds its owner-review ceiling');
+  invariant(Number.isInteger(budget.archivedSubmissionsBeforeNewRun) && budget.archivedSubmissionsBeforeNewRun >= 0, 'archived submission count is required');
+  invariant(budget.maximumCumulativeSubmissions === budget.archivedSubmissionsBeforeNewRun + plannedMaximum, 'cumulative submission budget is not derived');
+  invariant(budget.minimumCumulativeReserveBeforeOwnerReview === boundary.maximumChatgptSubmissionsBeforeOwnerReview - budget.maximumCumulativeSubmissions && budget.minimumCumulativeReserveBeforeOwnerReview >= 0, 'cumulative submission budget exceeds its owner-review ceiling');
 
   const comparison = plan.modelComparison;
   invariant(comparison?.status === 'SMALL_SEPARATE_SMOKE_ONLY' && comparison.fixedConditionId === 'A_INTEGRATED', 'model comparison must remain a small fixed-instrument smoke');
@@ -323,7 +337,9 @@ export function validateExecutionPlan({ plan, drafts, architectures }) {
     smokeFixtureCount: smoke.fixtureDraftIds.length,
     smokeConditionCount: smoke.conditionIds.length,
     graderPasses: graders.length,
+    graderOutputContractVersion: graderContract.version,
     providerApiCallsAllowed: boundary.providerApiCallsAllowed,
+    maximumCumulativeSubmissions: budget.maximumCumulativeSubmissions,
     latestBackendIdentity: observation.latestBackendIdentity,
     winnerSelectionAllowed: false
   };
@@ -381,12 +397,22 @@ export function buildBlindedSchedule({ draftIds, conditionIds, seed, repeats = 1
 
 function validateEvidence(evidence, source, targetIds, label) {
   invariant(evidence && typeof evidence === 'object' && !Array.isArray(evidence), `${label} evidence must be an object`);
-  if (evidence.kind === 'QUOTE') {
-    invariant(typeof evidence.quote === 'string' && evidence.quote.length > 0, `${label} quote is required`);
-    invariant(source.includes(evidence.quote), `${label} quote is not present in the evaluated response`);
-  } else if (evidence.kind === 'OMISSION') {
-    invariant(typeof evidence.targetId === 'string' && targetIds.has(evidence.targetId), `${label} omission needs a stable target id`);
+  if (evidence.kind === 'SOURCE_SEGMENTS') {
+    exactObjectKeys(evidence, ['kind', 'segmentIds'], `${label}.evidence`);
+    invariant(Array.isArray(evidence.segmentIds) && evidence.segmentIds.length >= 1 && evidence.segmentIds.length <= 3, `${label} needs one to three source segment ids`);
+    invariant(new Set(evidence.segmentIds).size === evidence.segmentIds.length, `${label} source segment ids must be unique`);
+    const validSegmentIds = new Set(buildSourceSegments(source).map(item => item.id));
+    invariant(evidence.segmentIds.every(id => validSegmentIds.has(id)), `${label} references an unknown source segment id`);
+  } else if (evidence.kind === 'TARGET_OMISSION') {
+    exactObjectKeys(evidence, ['kind', 'targetId'], `${label}.evidence`);
+    invariant(typeof evidence.targetId === 'string' && targetIds.has(evidence.targetId), `${label} target omission needs a stable criterion id`);
   } else throw new Error(`${label} evidence kind is invalid`);
+}
+
+function evidenceSegmentTexts(evidence, source) {
+  if (evidence.kind !== 'SOURCE_SEGMENTS') return [];
+  const segmentById = new Map(buildSourceSegments(source).map(item => [item.id, item.text]));
+  return evidence.segmentIds.map(id => segmentById.get(id));
 }
 
 function validateBatchBinding(value, label) {
@@ -407,20 +433,26 @@ function validateGradeRuns(grades, { label, source, errorById, dimensionById }) 
   const graderById = uniqueMap(grades, 'graderId', label);
   invariant(graderById.size > 0, `${label} needs at least one grader`);
   for (const grade of graderById.values()) {
+    exactObjectKeysWithOptional(
+      grade,
+      ['graderId', 'callId', 'errorJudgments', 'dimensionJudgments'],
+      ['submissionId', 'submissionOutputHash'],
+      `${label}.${grade.graderId}`
+    );
     invariant(typeof grade.callId === 'string' && grade.callId.length > 0, `${label}.${grade.graderId} needs a callId`);
     validateBatchBinding(grade, `${label}.${grade.graderId}`);
     const errorById = uniqueMap(grade.errorJudgments, 'errorId', `${label}.${grade.graderId}.errorJudgments`);
     invariant(errorById.size === errorIds.length && errorIds.every(id => errorById.has(id)), `${label} must cover every error class exactly`);
     for (const judgment of errorById.values()) {
+      exactObjectKeys(judgment, ['errorId', 'verdict', 'evidence'], `${label}.${judgment.errorId}`);
       invariant(ERROR_VERDICTS.has(judgment.verdict), `${label}.${judgment.errorId} has invalid verdict`);
-      invariant(typeof judgment.reason === 'string' && judgment.reason.trim(), `${label}.${judgment.errorId} needs a reason`);
       validateEvidence(judgment.evidence, source, new Set(errorCriteria.get(judgment.errorId).targetIds), `${label}.${judgment.errorId}`);
     }
     const dimensionById = uniqueMap(grade.dimensionJudgments, 'dimensionId', `${label}.${grade.graderId}.dimensionJudgments`);
     invariant(dimensionById.size === dimensionIds.length && dimensionIds.every(id => dimensionById.has(id)), `${label} must cover every dimension exactly`);
     for (const judgment of dimensionById.values()) {
+      exactObjectKeys(judgment, ['dimensionId', 'rating', 'evidence'], `${label}.${judgment.dimensionId}`);
       invariant(Number.isInteger(judgment.rating) && judgment.rating >= 0 && judgment.rating <= 4, `${label}.${judgment.dimensionId} has invalid rating`);
-      invariant(typeof judgment.reason === 'string' && judgment.reason.trim(), `${label}.${judgment.dimensionId} needs a reason`);
       validateEvidence(judgment.evidence, source, new Set(dimensionCriteria.get(judgment.dimensionId).targetIds), `${label}.${judgment.dimensionId}`);
     }
   }
@@ -464,18 +496,24 @@ function validateFindingGrades(grades, findings, source, errorById) {
   invariant(graderById.size > 0, 'reported findings need at least one validator');
   const findingIds = findings.map(item => item.id);
   for (const grade of graderById.values()) {
+    exactObjectKeysWithOptional(
+      grade,
+      ['graderId', 'callId', 'judgments'],
+      ['submissionId', 'submissionOutputHash'],
+      `findingGrades.${grade.graderId}`
+    );
     invariant(typeof grade.callId === 'string' && grade.callId.length > 0, `findingGrades.${grade.graderId} needs a callId`);
     validateBatchBinding(grade, `findingGrades.${grade.graderId}`);
     const judgmentById = uniqueMap(grade.judgments, 'findingId', `findingGrades.${grade.graderId}`);
     invariant(judgmentById.size === findingIds.length && findingIds.every(id => judgmentById.has(id)), 'finding validator must cover every finding exactly');
     for (const judgment of judgmentById.values()) {
+      exactObjectKeys(judgment, ['findingId', 'verdict', 'evidence'], `findingGrades.${grade.graderId}.${judgment.findingId}`);
       invariant(FINDING_VERDICTS.has(judgment.verdict), `${judgment.findingId} has invalid finding verdict`);
-      invariant(typeof judgment.reason === 'string' && judgment.reason.trim(), `${judgment.findingId} needs a reason`);
       const finding = findings.find(item => item.id === judgment.findingId);
       validateEvidence(judgment.evidence, source, new Set(errorById.get(finding.errorId).targetIds), `finding ${judgment.findingId}`);
       if (finding.draftQuote !== null) {
-        invariant(judgment.evidence.kind === 'QUOTE' && (finding.draftQuote.includes(judgment.evidence.quote) || judgment.evidence.quote.includes(finding.draftQuote)), `finding ${judgment.findingId} evidence must overlap its draftQuote`);
-      } else invariant(judgment.evidence.kind === 'OMISSION', `finding ${judgment.findingId} missing behavior requires omission evidence`);
+        invariant(judgment.evidence.kind === 'SOURCE_SEGMENTS' && evidenceSegmentTexts(judgment.evidence, source).some(text => text.includes(finding.draftQuote) || finding.draftQuote.includes(text)), `finding ${judgment.findingId} evidence must overlap its draftQuote`);
+      } else invariant(judgment.evidence.kind === 'TARGET_OMISSION', `finding ${judgment.findingId} missing behavior requires target-omission evidence`);
     }
   }
   return categoricalConsensus([...graderById.values()], 'judgments', 'findingId', 'verdict', findingIds, 'UNRESOLVED');
@@ -504,6 +542,13 @@ function validateFindings(findings, errorById, validTurnIds, label = 'reportedFi
 function exactObjectKeys(value, keys, label) {
   invariant(value && typeof value === 'object' && !Array.isArray(value), `${label} must be an object`);
   invariant(JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort()), `${label} has unexpected or missing fields`);
+}
+
+function exactObjectKeysWithOptional(value, requiredKeys, optionalKeys, label) {
+  invariant(value && typeof value === 'object' && !Array.isArray(value), `${label} must be an object`);
+  const actual = Object.keys(value);
+  invariant(requiredKeys.every(key => actual.includes(key)), `${label} is missing a required field`);
+  invariant(actual.every(key => requiredKeys.includes(key) || optionalKeys.includes(key)), `${label} has an unexpected field`);
 }
 
 function validateStagePayload(payload, schemaRef, schemaValidator, errorById, validTurnIds, label) {
@@ -923,9 +968,9 @@ export function validateCalibrationResult({ calibration, controls, drafts, refer
   for (const [id, control] of findingControlById) {
     const result = findingResultById.get(id);
     invariant(result.verdict === control.expectedVerdict, `calibration.findingValidator gate failed for ${id}`);
-    invariant(typeof result.reason === 'string' && result.reason.trim(), `${id} needs a calibration reason`);
     const draft = draftById.get(control.draftId);
     validateEvidence(result.evidence, draft.response, new Set(errorById.get(control.finding.errorId).targetIds), id);
+    invariant(result.evidence.kind === 'SOURCE_SEGMENTS' && evidenceSegmentTexts(result.evidence, draft.response).some(text => text.includes(control.finding.draftQuote) || control.finding.draftQuote.includes(text)), `${id} calibration evidence must overlap its proposed draftQuote`);
     invariant(result.call?.id === result.callId && result.call.stageId === 'CALIBRATION_FINDING_VALIDATOR', `${id} has invalid call evidence`);
     calls.push(result.call);
   }

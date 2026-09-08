@@ -21,6 +21,13 @@ import {
   buildResponseGradeBatchPacket,
   buildResponseGradePacket
 } from './packets.mjs';
+import {
+  GATING_JSON_END,
+  GATING_JSON_START,
+  GRADER_OUTPUT_CONTRACT_VERSION,
+  buildSourceSegments,
+  parseGraderOutputEnvelope
+} from './grading-contract.mjs';
 
 const load = async name => JSON.parse(await readFile(new URL(name, import.meta.url), 'utf8'));
 const [cases, drafts, referenceTarget, rubric, architectures, controls, executionPlan] = await Promise.all([
@@ -34,8 +41,8 @@ const errorById = new Map(rubric.errorClasses.map(item => [item.id, item]));
 const dimensionById = new Map(rubric.behavioralDimensions.map(item => [item.id, item]));
 function evidenceFor(source, targetId, verdict = 'ABSENT') {
   return verdict === 'PRESENT'
-    ? { kind: 'QUOTE', quote: source.slice(0, Math.min(18, source.length)) }
-    : { kind: 'OMISSION', targetId };
+    ? { kind: 'SOURCE_SEGMENTS', segmentIds: [buildSourceSegments(source)[0].id] }
+    : { kind: 'TARGET_OMISSION', targetId };
 }
 
 function gradeRuns({ source, callPrefix, present = [], uncertain = [], rating = 4, graders = ['GRADER-1'], overrides = {} }) {
@@ -48,13 +55,12 @@ function gradeRuns({ source, callPrefix, present = [], uncertain = [], rating = 
       callId: `${callPrefix}-${graderId}`,
       errorJudgments: allErrorIds.map(errorId => {
         const verdict = uncertainSet.has(errorId) ? 'UNCERTAIN' : presentSet.has(errorId) ? 'PRESENT' : 'ABSENT';
-        return { errorId, verdict, reason: `Evidence-based ${verdict.toLowerCase()} judgment.`, evidence: evidenceFor(source, errorById.get(errorId).targetIds[0], verdict) };
+        return { errorId, verdict, evidence: evidenceFor(source, errorById.get(errorId).targetIds[0], verdict) };
       }),
       dimensionJudgments: allDimensionIds.map(dimensionId => ({
         dimensionId,
         rating: graderOverride.rating ?? rating,
-        reason: 'Evidence-based dimension judgment.',
-        evidence: { kind: 'OMISSION', targetId: dimensionById.get(dimensionId).targetIds[0] }
+        evidence: { kind: 'TARGET_OMISSION', targetId: dimensionById.get(dimensionId).targetIds[0] }
       }))
     };
   });
@@ -73,10 +79,10 @@ function buildCalibration() {
         controlId: control.id,
         callId,
         verdict: control.expectedVerdict,
-        reason: 'Calibration finding checked against its complete draft.',
-        evidence: control.expectedVerdict === 'SUPPORTED'
-          ? { kind: 'QUOTE', quote: control.finding.draftQuote }
-          : { kind: 'QUOTE', quote: draft.response.slice(0, 18) },
+        evidence: {
+          kind: 'SOURCE_SEGMENTS',
+          segmentIds: [buildSourceSegments(draft.response).find(item => item.text.includes(control.finding.draftQuote)).id]
+        },
         call: callEvidence(callId, 'CALIBRATION_FINDING_VALIDATOR')
       };
     }),
@@ -109,7 +115,9 @@ test('owner-frozen ChatGPT execution plan is bounded, blinded, and API-free', ()
     smokeFixtureCount: 4,
     smokeConditionCount: 7,
     graderPasses: 2,
+    graderOutputContractVersion: GRADER_OUTPUT_CONTRACT_VERSION,
     providerApiCallsAllowed: false,
+    maximumCumulativeSubmissions: 96,
     latestBackendIdentity: null,
     winnerSelectionAllowed: false
   });
@@ -137,6 +145,20 @@ test('execution-plan mutants cannot infer Latest, weaken fresh grading, or omit 
   overBudget.submissionBudgetProof.maximumPlannedSubmissions = 106;
   overBudget.submissionBudgetProof.minimumReserveBeforeOwnerReview = -6;
   assert.throws(() => validateExecutionPlan({ plan: overBudget, drafts, architectures }), /owner-review ceiling/);
+
+  const freeTextGating = structuredClone(executionPlan);
+  freeTextGating.graderOutputContract.gatingJsonContainsFreeText = true;
+  assert.throws(() => validateExecutionPlan({ plan: freeTextGating, drafts, architectures }), /cannot restore free-text gating/);
+
+  const rationaleChangesScore = structuredClone(executionPlan);
+  rationaleChangesScore.graderOutputContract.nonGatingRationale.affectsAdmissionOrScoring = true;
+  assert.throws(() => validateExecutionPlan({ plan: rationaleChangesScore, drafts, architectures }), /rationale must remain separate/);
+
+  const cumulativeOverBudget = structuredClone(executionPlan);
+  cumulativeOverBudget.submissionBudgetProof.archivedSubmissionsBeforeNewRun = 21;
+  cumulativeOverBudget.submissionBudgetProof.maximumCumulativeSubmissions = 101;
+  cumulativeOverBudget.submissionBudgetProof.minimumCumulativeReserveBeforeOwnerReview = -1;
+  assert.throws(() => validateExecutionPlan({ plan: cumulativeOverBudget, drafts, architectures }), /cumulative submission budget exceeds/);
 });
 
 test('execution-plan mutants cannot promote Pro dissent or relax owner adoption gate', () => {
@@ -175,9 +197,15 @@ test('ChatGPT packets enforce audit and grader information firewalls', () => {
   });
   assert.equal(JSON.stringify(grade).includes('referenceResponse'), false);
   assert.equal(JSON.stringify(grade).includes('conditionId'), false);
+  assert.equal(grade.schemaVersion, 2);
+  assert.equal(grade.graderOutputContractVersion, GRADER_OUTPUT_CONTRACT_VERSION);
   assert.equal(grade.outputSchema.properties.opaqueItemId.const, 'GRADE-1');
   assert.equal(grade.outputSchema.properties.errorJudgments.minItems, rubric.errorClasses.length);
-  assert.deepEqual(grade.outputSchema.properties.errorJudgments.items.properties.evidence.oneOf.map(item => item.properties.kind.const), ['QUOTE', 'OMISSION']);
+  const firstErrorSchema = grade.outputSchema.properties.errorJudgments.items.oneOf[0];
+  assert.deepEqual(firstErrorSchema.properties.evidence.oneOf.map(item => item.properties.kind.const), ['SOURCE_SEGMENTS', 'TARGET_OMISSION']);
+  assert.equal(grade.outputSchema.properties.errorJudgments.items.oneOf.some(item => Object.hasOwn(item.properties, 'reason')), false);
+  assert.equal(grade.outputSchema.properties.dimensionJudgments.items.oneOf.some(item => Object.hasOwn(item.properties, 'reason')), false);
+  assert.ok(grade.sourceSegments.length > 0);
 
   const finding = buildFindingValidationPacket({
     opaqueItemId: 'FIND-1', caseId: 'AE-C001', draftResponse: 'A synthetic draft.',
@@ -189,7 +217,53 @@ test('ChatGPT packets enforce audit and grader information firewalls', () => {
   assert.match(finding.task, /proposed draftQuote is a claim to verify/);
   assert.equal(finding.outputSchema.properties.opaqueItemId.const, 'FIND-1');
   assert.equal(finding.outputSchema.properties.judgments.minItems, 1);
-  assert.deepEqual(finding.outputSchema.properties.judgments.items.properties.evidence.oneOf.map(item => item.properties.kind.const), ['QUOTE', 'OMISSION']);
+  assert.deepEqual(finding.outputSchema.properties.judgments.items.oneOf[0].properties.evidence.oneOf.map(item => item.properties.kind.const), ['SOURCE_SEGMENTS', 'TARGET_OMISSION']);
+  assert.equal(finding.outputSchema.properties.judgments.items.oneOf.some(item => Object.hasOwn(item.properties, 'reason')), false);
+});
+
+test('grader envelope isolates free-form rationale from score-bearing JSON', () => {
+  const outputSchema = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['verdict'],
+    properties: { verdict: { const: 'SUPPORTED' } }
+  };
+  const rawOutput = `${GATING_JSON_START}\n{"verdict":"SUPPORTED"}\n${GATING_JSON_END}\nThe phrase "quoted by the grader" is preserved without entering JSON.`;
+  const parsed = parseGraderOutputEnvelope({ rawOutput, outputSchema });
+  assert.deepEqual(parsed.gatingResult, { verdict: 'SUPPORTED' });
+  assert.equal(parsed.rawOutput, rawOutput);
+  assert.equal(parsed.nonGatingRationale, '\nThe phrase "quoted by the grader" is preserved without entering JSON.');
+  assert.match(parsed.nonGatingRationale, /"quoted by the grader"/u);
+  assert.match(parsed.rawOutputHash, /^[a-f0-9]{64}$/u);
+  assert.match(parsed.gatingOutputHash, /^[a-f0-9]{64}$/u);
+
+  assert.throws(() => parseGraderOutputEnvelope({
+    rawOutput: `${GATING_JSON_START}\n{"verdict":"SUPPORTED","reason":"not allowed"}\n${GATING_JSON_END}`,
+    outputSchema
+  }), /violates outputSchema/);
+  assert.throws(() => parseGraderOutputEnvelope({
+    rawOutput: `${GATING_JSON_START}\n{"verdict":"SUPPORTED","reason":"an "unescaped" quote"}\n${GATING_JSON_END}`,
+    outputSchema
+  }), /gating JSON is invalid/);
+  assert.throws(() => parseGraderOutputEnvelope({ rawOutput: '{"verdict":"SUPPORTED"}', outputSchema }), /marker pair/);
+  assert.throws(() => parseGraderOutputEnvelope({
+    rawOutput: `A preamble that could hide score-bearing claims.\n${GATING_JSON_START}\n{"verdict":"SUPPORTED"}\n${GATING_JSON_END}`,
+    outputSchema
+  }), /cannot contain prose before/);
+});
+
+test('source segment IDs are deterministic and preserve exact source slices', () => {
+  const source = 'First sentence.  A quoted question: “Really?”\nFinal clause without punctuation';
+  const first = buildSourceSegments(source);
+  const repeated = buildSourceSegments(source);
+  assert.deepEqual(first, repeated);
+  assert.deepEqual(first.map(item => item.id), ['S001', 'S002', 'S003']);
+  assert.deepEqual(first.map(item => item.text), [
+    'First sentence.',
+    'A quoted question: “Really?”',
+    'Final clause without punctuation'
+  ]);
+  for (const segment of first) assert.equal(source.slice(segment.startOffset, segment.endOffset), segment.text);
 });
 
 test('blinded batch packets cover unique opaque items without exposing arm identity', () => {
@@ -315,8 +389,7 @@ function recordFor({
     judgments: findings.map(finding => ({
       findingId: finding.id,
       verdict: findingVerdicts[finding.errorId] ?? 'SUPPORTED',
-      reason: 'The finding is checked against the frozen draft.',
-      evidence: { kind: 'OMISSION', targetId: errorById.get(finding.errorId).targetIds[0] }
+      evidence: { kind: 'TARGET_OMISSION', targetId: errorById.get(finding.errorId).targetIds[0] }
     }))
   }] : [];
   const initialGrades = gradeRuns({
@@ -619,10 +692,16 @@ test('condition contracts reject altered KEEP, no-audit mutation, and invalid ea
 test('grade evidence must cite the evaluated answer or a criterion-specific target', () => {
   const record = recordFor({ draftId: 'AE-D002', findingErrorIds: ['CAUSAL_OVERCLAIM'] });
   const repetition = record.initialGrades[0].errorJudgments.find(item => item.errorId === 'REPETITION');
-  repetition.evidence = { kind: 'OMISSION', targetId: 'AE-RT13' };
-  assert.throws(() => score(record), /omission needs a stable target id/);
-  repetition.evidence = { kind: 'QUOTE', quote: 'words absent from the draft' };
-  assert.throws(() => score(record), /quote is not present/);
+  repetition.evidence = { kind: 'TARGET_OMISSION', targetId: 'AE-RT13' };
+  assert.throws(() => score(record), /target omission needs a stable criterion id/);
+  repetition.evidence = { kind: 'SOURCE_SEGMENTS', segmentIds: ['S999'] };
+  assert.throws(() => score(record), /unknown source segment id/);
+  repetition.evidence = { kind: 'SOURCE_SEGMENTS', segmentIds: ['S001'], quote: 'free text is forbidden' };
+  assert.throws(() => score(record), /unexpected or missing fields/);
+
+  const rationaleLeak = recordFor({ draftId: 'AE-D002', findingErrorIds: ['CAUSAL_OVERCLAIM'] });
+  rationaleLeak.initialGrades[0].nonGatingRationale = 'This must remain in the separately archived raw-output record.';
+  assert.throws(() => score(rationaleLeak), /unexpected field/);
 });
 
 test('pre-existing unseeded errors trigger truth review but are not repair regressions', () => {
@@ -801,7 +880,7 @@ test('negative finding-validator controls cannot be supported by a different pas
     const draft = drafts.drafts.find(item => item.id === control.draftId);
     assert.equal(draft.controlIntent, 'GOOD_TERMINATION_CONTROL');
     assert.equal(draft.seededErrorIds.includes(control.finding.errorId), false);
-    assert.equal(draft.response.includes(control.finding.draftQuote), false);
+    assert.equal(draft.response.includes(control.finding.draftQuote), true);
   }
 });
 

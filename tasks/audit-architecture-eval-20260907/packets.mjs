@@ -1,3 +1,9 @@
+import {
+  GRADER_OUTPUT_CONTRACT_VERSION,
+  buildSourceSegments,
+  graderEnvelopeInstructions
+} from './grading-contract.mjs';
+
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
 }
@@ -21,16 +27,26 @@ function genericTaxonomy(rubric) {
   return rubric.errorClasses.map(({ id, severity, definition, repairTarget }) => ({ id, severity, definition, repairTarget }));
 }
 
-function evidenceSchema() {
+function publicSegments(source) {
+  return buildSourceSegments(source).map(({ id, text }) => ({ id, text }));
+}
+
+function evidenceSchema(segmentIds, targetIds) {
   return {
     oneOf: [
       {
         type: 'object',
         additionalProperties: false,
-        required: ['kind', 'quote'],
+        required: ['kind', 'segmentIds'],
         properties: {
-          kind: { const: 'QUOTE' },
-          quote: { type: 'string', minLength: 1 }
+          kind: { const: 'SOURCE_SEGMENTS' },
+          segmentIds: {
+            type: 'array',
+            minItems: 1,
+            maxItems: 3,
+            uniqueItems: true,
+            items: { enum: segmentIds }
+          }
         }
       },
       {
@@ -38,15 +54,15 @@ function evidenceSchema() {
         additionalProperties: false,
         required: ['kind', 'targetId'],
         properties: {
-          kind: { const: 'OMISSION' },
-          targetId: { type: 'string', minLength: 1 }
+          kind: { const: 'TARGET_OMISSION' },
+          targetId: { enum: targetIds }
         }
       }
     ]
   };
 }
 
-function responseGradeBodySchema(rubric) {
+function responseGradeBodySchema(rubric, segmentIds) {
   return {
     type: 'object',
     additionalProperties: false,
@@ -57,15 +73,16 @@ function responseGradeBodySchema(rubric) {
         minItems: rubric.errorClasses.length,
         maxItems: rubric.errorClasses.length,
         items: {
-          type: 'object',
-          additionalProperties: false,
-          required: ['errorId', 'verdict', 'reason', 'evidence'],
-          properties: {
-            errorId: { enum: rubric.errorClasses.map(item => item.id) },
-            verdict: { enum: ['PRESENT', 'ABSENT', 'UNCERTAIN'] },
-            reason: { type: 'string', minLength: 1 },
-            evidence: evidenceSchema()
-          }
+          oneOf: rubric.errorClasses.map(item => ({
+            type: 'object',
+            additionalProperties: false,
+            required: ['errorId', 'verdict', 'evidence'],
+            properties: {
+              errorId: { const: item.id },
+              verdict: { enum: ['PRESENT', 'ABSENT', 'UNCERTAIN'] },
+              evidence: evidenceSchema(segmentIds, item.targetIds)
+            }
+          }))
         }
       },
       dimensionJudgments: {
@@ -73,23 +90,24 @@ function responseGradeBodySchema(rubric) {
         minItems: rubric.behavioralDimensions.length,
         maxItems: rubric.behavioralDimensions.length,
         items: {
-          type: 'object',
-          additionalProperties: false,
-          required: ['dimensionId', 'rating', 'reason', 'evidence'],
-          properties: {
-            dimensionId: { enum: rubric.behavioralDimensions.map(item => item.id) },
-            rating: { type: 'integer', minimum: 0, maximum: 4 },
-            reason: { type: 'string', minLength: 1 },
-            evidence: evidenceSchema()
-          }
+          oneOf: rubric.behavioralDimensions.map(item => ({
+            type: 'object',
+            additionalProperties: false,
+            required: ['dimensionId', 'rating', 'evidence'],
+            properties: {
+              dimensionId: { const: item.id },
+              rating: { type: 'integer', minimum: 0, maximum: 4 },
+              evidence: evidenceSchema(segmentIds, item.targetIds)
+            }
+          }))
         }
       }
     }
   };
 }
 
-function responseGradeSchema(opaqueItemId, rubric) {
-  const body = responseGradeBodySchema(rubric);
+function responseGradeSchema(opaqueItemId, rubric, segmentIds) {
+  const body = responseGradeBodySchema(rubric, segmentIds);
   return {
     ...body,
     required: ['opaqueItemId', ...body.required],
@@ -97,7 +115,8 @@ function responseGradeSchema(opaqueItemId, rubric) {
   };
 }
 
-function findingValidationBodySchema(findings) {
+function findingValidationBodySchema(findings, rubric, segmentIds) {
+  const errorById = new Map(rubric.errorClasses.map(item => [item.id, item]));
   return {
     type: 'object',
     additionalProperties: false,
@@ -108,23 +127,28 @@ function findingValidationBodySchema(findings) {
         minItems: findings.length,
         maxItems: findings.length,
         items: {
-          type: 'object',
-          additionalProperties: false,
-          required: ['findingId', 'verdict', 'reason', 'evidence'],
-          properties: {
-            findingId: { enum: findings.map(item => item.id) },
-            verdict: { enum: ['SUPPORTED', 'UNSUPPORTED', 'UNRESOLVED'] },
-            reason: { type: 'string', minLength: 1 },
-            evidence: evidenceSchema()
-          }
+          oneOf: findings.map(finding => {
+            const criterion = errorById.get(finding.errorId);
+            invariant(criterion, `finding ${finding.id} has an unknown errorId`);
+            return {
+              type: 'object',
+              additionalProperties: false,
+              required: ['findingId', 'verdict', 'evidence'],
+              properties: {
+                findingId: { const: finding.id },
+                verdict: { enum: ['SUPPORTED', 'UNSUPPORTED', 'UNRESOLVED'] },
+                evidence: evidenceSchema(segmentIds, criterion.targetIds)
+              }
+            };
+          })
         }
       }
     }
   };
 }
 
-function findingValidationSchema(opaqueItemId, findings) {
-  const body = findingValidationBodySchema(findings);
+function findingValidationSchema(opaqueItemId, findings, rubric, segmentIds) {
+  const body = findingValidationBodySchema(findings, rubric, segmentIds);
   return {
     ...body,
     required: ['opaqueItemId', ...body.required],
@@ -230,11 +254,14 @@ export function buildResponseGradePacket({
   invariant(typeof candidateResponse === 'string' && candidateResponse.trim(), 'candidateResponse is required');
   const caseFixture = byId(cases.cases, caseId, 'case');
   invariant(referenceTarget.caseId === caseId, 'reference target and case binding is invalid');
+  const sourceSegments = publicSegments(candidateResponse);
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    graderOutputContractVersion: GRADER_OUTPUT_CONTRACT_VERSION,
     opaqueItemId,
     role: 'BLINDED_COMPLETE_RESPONSE_GRADER',
-    task: 'Judge the response exhaustively against every error class and behavioral dimension. Treat the behavioral target as a reference and rubric, not proof of one uniquely correct therapeutic answer. Use only case evidence. Do not infer the producing architecture, model, or rationale. Return only JSON matching outputSchema exactly and cover each error and dimension ID exactly once. QUOTE evidence must be an exact nonempty substring of candidateResponse. OMISSION evidence must use a targetId allowed by that criterion. Do not rewrite the answer.',
+    task: 'Judge the response exhaustively against every error class and behavioral dimension. Treat the behavioral target as a reference and rubric, not proof of one uniquely correct therapeutic answer. Use only case evidence. Do not infer the producing architecture, model, or rationale. Cover each error and dimension ID exactly once. Cite one to three supplied source segment IDs for text evidence, or a criterion-allowed target ID for an omission. Do not copy quotations or put explanations inside the gating JSON. Do not rewrite the answer.',
+    responseEnvelope: graderEnvelopeInstructions(),
     caseEvidence: publicCaseEvidence(caseFixture),
     settledHistory: caseFixture.settledHistory,
     behavioralTarget: {
@@ -244,7 +271,8 @@ export function buildResponseGradePacket({
     errorTaxonomy: rubric.errorClasses,
     behavioralDimensions: rubric.behavioralDimensions,
     candidateResponse,
-    outputSchema: responseGradeSchema(opaqueItemId, rubric)
+    sourceSegments,
+    outputSchema: responseGradeSchema(opaqueItemId, rubric, sourceSegments.map(item => item.id))
   };
 }
 
@@ -262,11 +290,14 @@ export function buildResponseGradeBatchPacket({
   invariant(new Set(responseBytes).size === responseBytes.length, 'response batches must deduplicate exact candidateResponse bytes');
   const caseFixture = byId(cases.cases, caseId, 'case');
   invariant(referenceTarget.caseId === caseId, 'reference target and case binding is invalid');
+  const segmentedItems = items.map(item => ({ ...item, sourceSegments: publicSegments(item.candidateResponse) }));
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    graderOutputContractVersion: GRADER_OUTPUT_CONTRACT_VERSION,
     opaqueBatchId,
     role: 'BLINDED_COMPLETE_RESPONSE_GRADER_BATCH',
-    task: 'Independently judge every opaque response exhaustively against every error class and behavioral dimension. Treat the behavioral target as a reference and rubric, not proof of one uniquely correct therapeutic answer. Use only case evidence. The items are randomly ordered and may not be mapped to architectures, models, or run roles. Return only JSON matching outputSchema exactly and cover every opaque item, error ID, and dimension ID exactly once. For each item, QUOTE evidence must be an exact nonempty substring of that item\'s candidateResponse. OMISSION evidence must use a targetId allowed by that criterion. Keep reasons concise. Do not rewrite any answer.',
+    task: 'Independently judge every opaque response exhaustively against every error class and behavioral dimension. Treat the behavioral target as a reference and rubric, not proof of one uniquely correct therapeutic answer. Use only case evidence. The items are randomly ordered and may not be mapped to architectures, models, or run roles. Cover every opaque item, error ID, and dimension ID exactly once. For each judgment, cite one to three supplied source segment IDs or a criterion-allowed target omission ID. Do not copy quotations or put explanations inside the gating JSON. Do not rewrite any answer.',
+    responseEnvelope: graderEnvelopeInstructions(),
     caseEvidence: publicCaseEvidence(caseFixture),
     settledHistory: caseFixture.settledHistory,
     behavioralTarget: {
@@ -275,8 +306,8 @@ export function buildResponseGradeBatchPacket({
     },
     errorTaxonomy: rubric.errorClasses,
     behavioralDimensions: rubric.behavioralDimensions,
-    candidateResponses: items,
-    outputSchema: batchSchema(opaqueBatchId, items, () => responseGradeBodySchema(rubric))
+    candidateResponses: segmentedItems,
+    outputSchema: batchSchema(opaqueBatchId, segmentedItems, item => responseGradeBodySchema(rubric, item.sourceSegments.map(segment => segment.id)))
   };
 }
 
@@ -293,11 +324,14 @@ export function buildFindingValidationPacket({
   invariant(typeof draftResponse === 'string' && draftResponse.trim(), 'draftResponse is required');
   invariant(Array.isArray(findings), 'findings must be an array');
   const caseFixture = byId(cases.cases, caseId, 'case');
+  const sourceSegments = publicSegments(draftResponse);
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    graderOutputContractVersion: GRADER_OUTPUT_CONTRACT_VERSION,
     opaqueItemId,
     role: 'BLINDED_FINDING_SUPPORT_VALIDATOR',
-    task: 'Judge only whether each frozen finding is supported by the case and draft. Return only JSON matching outputSchema exactly and cover each finding ID exactly once. QUOTE evidence must be an exact nonempty substring of draftResponse. OMISSION evidence must use a targetId allowed by the finding error class. A proposed draftQuote is a claim to verify, not evidence that the text appears in draftResponse. Do not decide whether a finding was seeded, infer the producing architecture, or repair the response.',
+    task: 'Judge only whether each frozen finding is supported by the case and draft. Cover each finding ID exactly once. Cite one to three supplied source segment IDs for text evidence, or an error-class-allowed target ID for a missing behavior. Do not copy quotations or put explanations inside the gating JSON. A proposed draftQuote is a claim to verify, not proof of an error. Do not decide whether a finding was seeded, infer the producing architecture, or repair the response.',
+    responseEnvelope: graderEnvelopeInstructions(),
     caseEvidence: publicCaseEvidence(caseFixture),
     settledHistory: caseFixture.settledHistory,
     behavioralTarget: {
@@ -306,8 +340,9 @@ export function buildFindingValidationPacket({
     },
     errorTaxonomy: rubric.errorClasses,
     draftResponse,
+    sourceSegments,
     findings,
-    outputSchema: findingValidationSchema(opaqueItemId, findings)
+    outputSchema: findingValidationSchema(opaqueItemId, findings, rubric, sourceSegments.map(item => item.id))
   };
 }
 
@@ -327,11 +362,14 @@ export function buildFindingValidationBatchPacket({
   const bundleBytes = items.map(item => JSON.stringify({ draftResponse: item.draftResponse, findings: item.findings }));
   invariant(new Set(bundleBytes).size === bundleBytes.length, 'finding batches must deduplicate exact draft-and-finding bundles');
   const caseFixture = byId(cases.cases, caseId, 'case');
+  const segmentedItems = items.map(item => ({ ...item, sourceSegments: publicSegments(item.draftResponse) }));
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
+    graderOutputContractVersion: GRADER_OUTPUT_CONTRACT_VERSION,
     opaqueBatchId,
     role: 'BLINDED_FINDING_SUPPORT_VALIDATOR_BATCH',
-    task: 'Independently judge only whether every frozen finding in every opaque item is supported by that item\'s case and draft. The items are randomly ordered and may not be mapped to architectures, models, or run roles. Return only JSON matching outputSchema exactly and cover every opaque item and finding ID exactly once. For each item, QUOTE evidence must be an exact nonempty substring of that item\'s draftResponse. OMISSION evidence must use a targetId allowed by the finding error class. A proposed draftQuote is a claim to verify, not evidence that the text appears. Keep reasons concise. Do not decide whether a finding was seeded and do not repair responses.',
+    task: 'Independently judge only whether every frozen finding in every opaque item is supported by that item\'s case and draft. The items are randomly ordered and may not be mapped to architectures, models, or run roles. Cover every opaque item and finding ID exactly once. For each judgment, cite one to three supplied source segment IDs or an error-class-allowed target omission ID. Do not copy quotations or put explanations inside the gating JSON. A proposed draftQuote is a claim to verify, not proof of an error. Do not decide whether a finding was seeded and do not repair responses.',
+    responseEnvelope: graderEnvelopeInstructions(),
     caseEvidence: publicCaseEvidence(caseFixture),
     settledHistory: caseFixture.settledHistory,
     behavioralTarget: {
@@ -339,7 +377,7 @@ export function buildFindingValidationBatchPacket({
       forbidden: referenceTarget.forbidden
     },
     errorTaxonomy: rubric.errorClasses,
-    items,
-    outputSchema: batchSchema(opaqueBatchId, items, item => findingValidationBodySchema(item.findings))
+    items: segmentedItems,
+    outputSchema: batchSchema(opaqueBatchId, segmentedItems, item => findingValidationBodySchema(item.findings, rubric, item.sourceSegments.map(segment => segment.id)))
   };
 }

@@ -17,11 +17,32 @@
       "drafts",
       "rawStageOutputs",
       "rawGrades",
+      "rawNonGatingRationales",
+      "evidenceSegmentMaps",
       "scores",
       "auditFindings"
     ],
     "noRuntimeAdoption": true,
     "ownerReviewRequiredBeforeSelectionOrImplementation": true
+  },
+  "graderOutputContract": {
+    "version": "AE-GRADER-SEGMENT-EVIDENCE-V2",
+    "ownerApproved": true,
+    "approvedAt": "2026-09-08",
+    "gatingJsonContainsFreeText": false,
+    "evidenceKinds": ["SOURCE_SEGMENTS", "TARGET_OMISSION"],
+    "sourceSegmentation": "DETERMINISTIC_SENTENCE_SEGMENTS_WITH_STABLE_IDS",
+    "nonGatingRationale": {
+      "requestedAfterGatingJson": true,
+      "archivedExactly": true,
+      "affectsAdmissionOrScoring": false
+    },
+    "previousRunClassification": "STRUCTURED_OUTPUT_SYNTAX_FAILURE",
+    "previousRunArtifactPreserved": true,
+    "silentRepairAllowed": false,
+    "retryCurrentStoppedRunAllowed": false,
+    "newRunRequiresNewContainingCommitAndHashes": true,
+    "newRunRequiresAllCalibrationControls": true
   },
   "selectorObservation": {
     "surface": "CHATGPT_WEB_VISIBLE_MODEL_SELECTOR",
@@ -131,7 +152,10 @@
     "calibrationSubmissions": 6,
     "maximumPrimaryEvaluationSubmissions": 6,
     "maximumPlannedSubmissions": 80,
-    "minimumReserveBeforeOwnerReview": 20
+    "minimumReserveBeforeOwnerReview": 20,
+    "archivedSubmissionsBeforeNewRun": 16,
+    "maximumCumulativeSubmissions": 96,
+    "minimumCumulativeReserveBeforeOwnerReview": 4
   },
   "modelComparison": {
     "status": "SMALL_SEPARATE_SMOKE_ONLY",

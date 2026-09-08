@@ -50,6 +50,18 @@
     "freezeBeforeOwnerReview": ["prompts", "cases", "outputs", "scores", "audit_findings"],
     "ownerHumanReviewRequired": true
   },
+  "graderOutputContract": {
+    "approvedAt": "2026-09-08",
+    "decision": "SMALL_MACHINE_ONLY_GATING_CONTRACT",
+    "version": "AE-GRADER-SEGMENT-EVIDENCE-V2",
+    "gatingFields": ["verdict_or_rating", "source_segment_ids_or_target_omission_id"],
+    "freeFormProseInsideGatingJson": false,
+    "nonGatingRationale": "ARCHIVE_EXACTLY_OUTSIDE_GATING_JSON",
+    "silentRepairAuthorized": false,
+    "retryStoppedRunAuthorized": false,
+    "newRunRequired": true,
+    "repeatAllCalibrationControls": true
+  },
   "overAuditPenalties": [
     "false_positive_critique",
     "safety_inflation",

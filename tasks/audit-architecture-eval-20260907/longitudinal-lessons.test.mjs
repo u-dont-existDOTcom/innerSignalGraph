@@ -116,6 +116,12 @@ test('current experiment decisions forbid paid API execution and encode the chos
   assert.equal(decisions.latestModelComparison.comparisonLabel, 'Latest');
   assert.equal(decisions.latestModelComparison.inferBackendIdentity, false);
   assert.equal(decisions.adoption.automaticRuntimeAdoption, false);
+  assert.equal(decisions.graderOutputContract.version, 'AE-GRADER-SEGMENT-EVIDENCE-V2');
+  assert.equal(decisions.graderOutputContract.freeFormProseInsideGatingJson, false);
+  assert.equal(decisions.graderOutputContract.nonGatingRationale, 'ARCHIVE_EXACTLY_OUTSIDE_GATING_JSON');
+  assert.equal(decisions.graderOutputContract.silentRepairAuthorized, false);
+  assert.equal(decisions.graderOutputContract.retryStoppedRunAuthorized, false);
+  assert.equal(decisions.graderOutputContract.repeatAllCalibrationControls, true);
 });
 
 test('new public artifacts remain synthetic and contain no private identifiers or exact personal amounts', () => {

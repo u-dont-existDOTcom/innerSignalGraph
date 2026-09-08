@@ -8,6 +8,7 @@ tasks/audit-architecture-eval-20260907/cases.json
 tasks/audit-architecture-eval-20260907/drafts.json
 tasks/audit-architecture-eval-20260907/execution-plan.json
 tasks/audit-architecture-eval-20260907/grader-controls.json
+tasks/audit-architecture-eval-20260907/grading-contract.mjs
 tasks/audit-architecture-eval-20260907/packets.mjs
 tasks/audit-architecture-eval-20260907/reference-target.json
 tasks/audit-architecture-eval-20260907/rubric.json
