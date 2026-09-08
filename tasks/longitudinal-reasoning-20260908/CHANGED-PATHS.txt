@@ -1,0 +1,15 @@
+docs/superpowers/specs/2026-09-08-longitudinal-therapy-reasoning.md
+src/prompts/case-audit.mjs
+src/prompts/common.mjs
+tasks/audit-architecture-eval-20260907/LONGITUDINAL-AUDIT-SUPPLEMENT.json
+tasks/audit-architecture-eval-20260907/OWNER-DECISIONS-20260908.json
+tasks/audit-architecture-eval-20260907/cases.json
+tasks/audit-architecture-eval-20260907/drafts.json
+tasks/audit-architecture-eval-20260907/effective-architectures.mjs
+tasks/audit-architecture-eval-20260907/grader-controls.json
+tasks/audit-architecture-eval-20260907/longitudinal-lessons.test.mjs
+tasks/audit-architecture-eval-20260907/reference-target.json
+tasks/audit-architecture-eval-20260907/rubric.json
+tasks/longitudinal-reasoning-20260908/CHANGED-PATHS.txt
+tasks/longitudinal-reasoning-20260908/INTEGRATION.md
+tests/longitudinal-therapy-reasoning.test.mjs
