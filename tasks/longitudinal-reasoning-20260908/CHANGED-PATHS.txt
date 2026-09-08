@@ -9,5 +9,6 @@ tasks/audit-architecture-eval-20260907/effective-architectures.mjs
 tasks/audit-architecture-eval-20260907/longitudinal-lessons.test.mjs
 tasks/audit-architecture-eval-20260907/reference-target.json
 tasks/audit-architecture-eval-20260907/rubric.json
+tasks/longitudinal-reasoning-20260908/CHANGED-PATHS.txt
 tasks/longitudinal-reasoning-20260908/INTEGRATION.md
 tests/longitudinal-therapy-reasoning.test.mjs
