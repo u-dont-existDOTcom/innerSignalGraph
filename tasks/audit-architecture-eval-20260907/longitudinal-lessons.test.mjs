@@ -1,13 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { applyLongitudinalAuditSupplement } from './effective-architectures.mjs';
 
 const load = async name => JSON.parse(await readFile(new URL(name, import.meta.url), 'utf8'));
-const [cases, drafts, target, rubric, supplement, decisions] = await Promise.all([
+const [cases, drafts, target, rubric, architectures, supplement, decisions] = await Promise.all([
   load('./cases.json'),
   load('./drafts.json'),
   load('./reference-target.json'),
   load('./rubric.json'),
+  load('./architectures.json'),
   load('./LONGITUDINAL-AUDIT-SUPPLEMENT.json'),
   load('./OWNER-DECISIONS-20260908.json')
 ]);
@@ -85,6 +87,21 @@ test('audit supplement covers every new failure across each architecture family'
     'E1_SELF_CRITIQUE'
   ]) assert.ok(Object.hasOwn(supplement.stageCoverage, stageId), `missing stage coverage ${stageId}`);
   assert.equal(supplement.modelRuns, 0);
+});
+
+test('effective audit contracts actually receive the longitudinal supplement', () => {
+  const effective = applyLongitudinalAuditSupplement(architectures, supplement);
+  assert.ok(effective.sharedRules.length > architectures.sharedRules.length);
+  assert.deepEqual(effective.longitudinalSupplement.newErrorIds, requiredNewErrors);
+  for (const architecture of effective.architectures) {
+    for (const stage of architecture.stages) {
+      if (!Object.hasOwn(supplement.stageCoverage, stage.id)) continue;
+      const promptText = [stage.prompt, ...Object.values(stage.promptByRepairMode ?? {})].filter(Boolean).join('\n');
+      assert.match(promptText, /LONGITUDINAL AUDIT SUPPLEMENT/u, `supplement absent from ${stage.id}`);
+      assert.match(promptText, /Treat client first-person reports as privileged evidence/u);
+    }
+  }
+  assert.equal(architectures.longitudinalSupplement, undefined, 'base contract must remain frozen');
 });
 
 test('current experiment decisions forbid paid API execution and encode the chosen grading design', () => {
