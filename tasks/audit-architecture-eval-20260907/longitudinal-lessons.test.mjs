@@ -22,7 +22,12 @@ const requiredNewErrors = [
   'HISTORY_OBLIVIOUS_REQUESTIONING',
   'CLIENT_HYPOTHESIS_MISHANDLING',
   'SALIENCE_CENTRALITY_COLLAPSE',
-  'INTEGRATION_FRAGMENTATION_BINARY'
+  'INTEGRATION_FRAGMENTATION_BINARY',
+  'TELOS_ABANDONMENT',
+  'ROUTE_RIGIDITY',
+  'CONSENT_OVERRIDE',
+  'METHOD_IDENTITY_DRIFT',
+  'CLIENT_EVIDENCE_STEERING_FAILURE'
 ];
 
 const allText = value => JSON.stringify(value);
@@ -37,8 +42,8 @@ test('longitudinal error classes are defined, seeded, and mapped to stable targe
   }
   const requiredTargetIds = new Set(target.required.map(item => item.id));
   const forbiddenTargetIds = new Set(target.forbidden.map(item => item.id));
-  for (let n = 15; n <= 23; n += 1) assert.ok(requiredTargetIds.has(`AE-RT${n}`));
-  for (let n = 12; n <= 19; n += 1) assert.ok(forbiddenTargetIds.has(`AE-RF${n}`));
+  for (let n = 15; n <= 33; n += 1) assert.ok(requiredTargetIds.has(`AE-RT${n}`));
+  for (let n = 12; n <= 27; n += 1) assert.ok(forbiddenTargetIds.has(`AE-RF${n}`));
 });
 
 test('synthetic chronology retains the longitudinal target and settled nonverbal/history facts', () => {
@@ -51,7 +56,8 @@ test('synthetic chronology retains the longitudinal target and settled nonverbal
   assert.ok(fixture.facts.some(fact => fact.id === 'AE-F019' && /appraises/iu.test(fact.claim)));
   assert.ok(fixture.settledHistory.some(item => /long-term targets/iu.test(item)));
   assert.ok(fixture.settledHistory.some(item => /no reported verbal content/iu.test(item)));
-  assert.ok(fixture.settledHistory.some(item => /Sleep is explicitly unchanged/u.test(item)));
+  assert.ok(fixture.settledHistory.some(item => /Recent sleep is reported close to a variable usual baseline/u.test(item)));
+  assert.ok(fixture.settledHistory.some(item => /Trajectory observability is poor/u.test(item)));
   assert.ok(fixture.openQuestions.some(item => /shame makes the client do or avoid/iu.test(item)));
   assert.ok(fixture.openQuestions.some(item => /curiosity\/inclusion\/integration/iu.test(item)));
 });
@@ -68,7 +74,8 @@ test('good controls preserve the new longitudinal invariants without seeded defe
   assert.match(compact.response, /shame may protect/u);
   assert.match(compact.response, /longer goal/u);
   assert.match(compact.response, /division relevant but non-central/u);
-  assert.match(compact.response, /Sleep is already unchanged/u);
+  assert.match(compact.response, /Recent sleep close to a variable baseline/u);
+  assert.match(compact.response, /THC/u);
 });
 
 test('audit supplement covers every new failure across each architecture family', () => {

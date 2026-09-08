@@ -1,4 +1,4 @@
-import { sharedClinicalRules } from "./common.mjs";
+import { durableCaseContextBlock, sharedClinicalRules } from "./common.mjs";
 
 function deterministicSafetyTrigger(plan) {
   const v = plan?.variables ?? {};
@@ -63,6 +63,6 @@ Return exactly one JSON object with this shape:
   ]
 }`;
 
-  const user = `CURRENT USER MESSAGE:\n${context.userMessage}\n\nRECENT TRANSCRIPT:\n${context.recentTranscript || "(none supplied)"}\n\nDETERMINISTIC INTERVENTION CONTRACT:\n${plan ? JSON.stringify(plan, null, 2) : "(not supplied)"}\n\nRESOLVED REASONING PACKET:\n${JSON.stringify(adjudication, null, 2)}\n\nRETRY FEEDBACK (if any):\n${context.autopilotFeedback ? JSON.stringify(context.autopilotFeedback, null, 2) : "(none)"}`;
+  const user = `CURRENT USER MESSAGE:\n${context.userMessage}\n\n${durableCaseContextBlock(context)}\n\nRECENT TRANSCRIPT:\n${context.recentTranscript || "(none supplied)"}\n\nDETERMINISTIC INTERVENTION CONTRACT:\n${plan ? JSON.stringify(plan, null, 2) : "(not supplied)"}\n\nRESOLVED REASONING PACKET:\n${JSON.stringify(adjudication, null, 2)}\n\nRETRY FEEDBACK (if any):\n${context.autopilotFeedback ? JSON.stringify(context.autopilotFeedback, null, 2) : "(none)"}`;
   return { system, user };
 }

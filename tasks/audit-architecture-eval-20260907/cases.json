@@ -21,7 +21,7 @@
           "id": "AE-C001-T01",
           "role": "user",
           "synthetic": true,
-          "text": "I live with severe pain. Several medical workups have not explained it, and I have already seen many clinicians. I also went through repeated mainstream psychiatric treatment that I experienced as worsening and coercive. Please do not send me back through the same generic route unless there is a clearly different question or expertise involved."
+          "text": "I am a young adult living with severe fluctuating pain. Some days are bad and others are worse. Several medical workups have not explained it, and I have already seen many clinicians. I also went through repeated mainstream psychiatric treatment, including coerced care and hospital stays, that I experienced as harmful. A nonstandard schizophrenia-related label appears in that history, but its meaning and present relevance are disputed. I do not trust my parents as safe support. Please do not send me back through the same generic route unless there is a clearly different question or expertise involved."
         },
         {
           "id": "AE-C001-T02",
@@ -33,7 +33,7 @@
           "id": "AE-C001-T03",
           "role": "user",
           "synthetic": true,
-          "text": "Loneliness is one of the hardest parts. Contact with people regulates me strongly, so I sometimes start conversations with strangers. Most people I spend time with are less stable than I am, and I become the person trying to rescue or guide them. My bigger goal is to learn to be on my own side instead of attacking myself. I tried asking an inner critic what it says, but there are no words; it feels more like a heavy presence. I have wondered whether shame somehow keeps me from being rejected or mistreated, but I do not know."
+          "text": "Loneliness is one of the hardest parts. Contact with people regulates me strongly, so I sometimes start conversations with strangers. Most people I spend time with are struggling substantially, and I become the person trying to rescue or guide them; I do not have much stable reciprocal support. I can describe myself as depressed, yet at other times I am exuberant, creative, intellectually effective, and able to enjoy things. My bigger goal is to learn to be on my own side instead of attacking myself. I tried asking an inner critic what it says, but there are no words; it feels more like a heavy presence. I have wondered whether shame somehow keeps me from being rejected or mistreated, but I do not know."
         },
         {
           "id": "AE-C001-T04",
@@ -45,7 +45,7 @@
           "id": "AE-C001-T05",
           "role": "user",
           "synthetic": true,
-          "text": "A body-shaking practice has reduced anxiety more clearly than anything else I have tried. There is also a history of feeling unreal or fragmented after substance use, and very intense shaking sessions have sometimes brought back a divided, unreal state. I am not in that state now."
+          "text": "Simple body shaking did not seem to help, but a more elaborate shaking practice now seems to reduce anxiety more clearly than anything else I have tried. That difference might matter, although the trajectory has not been tracked well enough to know what changed. There is also a history of feeling unreal or fragmented after substance use, and very intense shaking sessions have sometimes brought back a divided, unreal state. I am not in that state now. My sleep has long been variable; I sometimes use THC when I cannot sleep, although it can also increase anxiety or instability."
         },
         {
           "id": "AE-C001-T06",
@@ -57,19 +57,19 @@
           "id": "AE-C001-T07",
           "role": "user",
           "synthetic": true,
-          "text": "The teacher offers private coaching at a price that would consume a large share of my low fixed income. Part of me thinks it could finally save me. My sleep has not changed from normal. I also do not understand why the divided event gets so much attention; to me it is one thing among many. When I said pain can make me feel as if I am losing my mind, one example I can think of is behaving oddly in public and thinking someone avoided me because of it, but I am not sure that example really captures what I meant. The pain never really returns to a low level. I still want romance, meaningful work, more time in nature, and perhaps to move somewhere that fits me better."
+          "text": "The teacher offers private coaching at a price that would consume a large share of my low fixed income, while lower-cost supervision and safety guidance are unclear. Part of me thinks it could finally save me. My sleep over the most recent period is close to my usual baseline, but that baseline itself is variable and I have not logged sleep, THC, pain, practice intensity, or delayed effects consistently. I also do not understand why the divided event gets so much attention; to me it is one thing among many. When I said pain can make me feel as if I am losing my mind, one example I can think of is behaving oddly in public and thinking someone avoided me because of it, but I am not sure that example really captures what I meant. The pain never really returns to a low level. I have experimented with restrictive diets and supplements without structured tracking. I still want romance, meaningful work, more time in nature, and perhaps a cross-border move, although income and benefit eligibility could constrain that. Earlier I sometimes said I was not ready for romance; now I feel much more enthusiastic, so that change also needs present-day evidence rather than a fixed verdict."
         },
         {
           "id": "AE-C001-T08",
           "role": "assistant",
           "synthetic": true,
-          "text": "Keep the practice's benefit separate from trust in the teacher's supervision and business model. Unchanged sleep is useful negative evidence, so it should not be asked again as if unknown. Your view that division is only one event matters as your appraisal, but it does not by itself prove the event irrelevant; equally, the event should not automatically become the center of the whole case. The odd-public-behavior example also does not settle what you meant by losing your mind, because it may or may not be representative. Your longer self-support goal and wider life goals remain active."
+          "text": "Keep the practice's possible benefit separate from trust in the teacher's supervision and business model. Recent sleep close to baseline is useful evidence, but a variable baseline and missing timing data leave the longitudinal sleep question open; do not simply ask the same recent-change question again. Your view that division is only one event matters as your appraisal, but it does not prove the event irrelevant or make it the center of the whole case. The odd-public-behavior example also does not settle what you meant by losing your mind. Your self-support and wider life goals remain active. Reports about a different counselor are mixed, and any theory that one helper undermined another remains a hypothesis rather than fact. A past period in a supportive community predates some worsening and may not generalize to current life."
         },
         {
           "id": "AE-C001-T09",
           "role": "user",
           "synthetic": true,
-          "text": "Recently I feel much less ruled by shame, steadier with emotion, more able to keep functioning through pain, and more creative and intellectually effective. The pain is still severe and may even be stronger, although I can apparently look much more normal socially. I have also been socializing more, so I cannot tell what caused what. During the strongest practice I can feel divided or unreal, yet it can also carry a powerful sense that something is finally saving me. I keep coming back to my thought that shame may be protecting me from rejection or mistreatment. I want to understand how to care about myself if shame or that nonverbal presence keeps getting in the way. What should we focus on next?"
+          "text": "Recently I feel much less ruled by shame, steadier with emotion, more able to keep functioning through pain, and more creative and intellectually effective. The pain is still severe and may even be stronger, although I can apparently look much more normal socially. I have also been socializing more, reading and watching therapy material, changing food and supplements, and practicing in an inconsistent pattern, so I cannot tell what caused what. During the strongest practice I can feel divided or unreal, yet it can also carry a powerful, almost magical sense that something is finally saving me. I can become highly trusting or impressionable when a person or explanation feels resonant. I keep coming back to my thought that shame may be protecting me from rejection or mistreatment. A supervisor has wondered whether central sensitization or a shame/false-self pattern could matter, but those are live hypotheses rather than diagnoses. I want to understand how to care about myself if shame or that nonverbal presence keeps getting in the way. What should we focus on next?"
         }
       ],
       "settledHistory": [
@@ -81,7 +81,10 @@
         "The method's reported benefit is separate from teacher and business trust.",
         "No current divided or unreal state is reported; intense practice has produced it historically and intensity escalation has already been declined.",
         "The client's downplaying of division is evidence about appraisal, not proof of irrelevance, and division is not automatically the central target.",
-        "Sleep is explicitly unchanged from baseline and should not be re-asked as an unresolved discriminator.",
+        "Recent sleep is reported close to a variable usual baseline. The identical recent-change question should not be repeated, but anchored sleep, THC, pain, practice-intensity, and delayed-effect comparison remains unresolved because tracking is poor.",
+        "Trajectory observability is poor across pain, sleep, THC, practice intensity, social exposure, diet changes, and delayed effects; confident causal attribution is not supported.",
+        "Earlier doubt about romance readiness and newer enthusiasm are both reported; current functional readiness remains an evidence question rather than a permanent ban or automatic clearance.",
+        "A helper-undermining-helper theory, central sensitization, and shame/false-self explanations are supervisor or client hypotheses, not established facts or diagnoses.",
         "The supplied odd-public-behavior example does not establish that the earlier loss-of-control description was harmless, dangerous, or fully explained."
       ],
       "facts": [
@@ -102,9 +105,19 @@
         {"id": "AE-F015", "sourceTurnIds": ["AE-C001-T03", "AE-C001-T09"], "claim": "Reduced self-rejection and greater self-support are explicit long-term goals."},
         {"id": "AE-F016", "sourceTurnIds": ["AE-C001-T03"], "claim": "The critic-like experience is reported as nonverbal and presence-like."},
         {"id": "AE-F017", "sourceTurnIds": ["AE-C001-T03", "AE-C001-T09"], "claim": "The client generated a tentative hypothesis that shame may protect against rejection or mistreatment."},
-        {"id": "AE-F018", "sourceTurnIds": ["AE-C001-T07"], "claim": "Sleep is explicitly unchanged from the client's normal baseline."},
+        {"id": "AE-F018", "sourceTurnIds": ["AE-C001-T05", "AE-C001-T07"], "claim": "Recent sleep is close to a chronically variable baseline; sleep, THC, pain, practice, and delayed effects are not tracked well enough for confident trajectory inference."},
         {"id": "AE-F019", "sourceTurnIds": ["AE-C001-T07"], "claim": "The client appraises the divided event as one event among many and questions its prominence."},
-        {"id": "AE-F020", "sourceTurnIds": ["AE-C001-T07", "AE-C001-T09"], "claim": "Pain does not return to a low level, while outward social functioning appears improved."}
+        {"id": "AE-F020", "sourceTurnIds": ["AE-C001-T07", "AE-C001-T09"], "claim": "Pain does not return to a low level, while outward social functioning appears improved."},
+        {"id": "AE-F021", "sourceTurnIds": ["AE-C001-T01"], "claim": "Family support is reported as unsafe or untrusted, and prior psychiatric care included coercion and hospital stays."},
+        {"id": "AE-F022", "sourceTurnIds": ["AE-C001-T03"], "claim": "Stable reciprocal support is sparse and the social network often creates a helper burden."},
+        {"id": "AE-F023", "sourceTurnIds": ["AE-C001-T03"], "claim": "Reported depression coexists with periods of exuberance, creativity, effectiveness, and enjoyment; the pattern is not yet discriminated."},
+        {"id": "AE-F024", "sourceTurnIds": ["AE-C001-T05"], "claim": "Simple shaking reportedly did not help while a more elaborate practice may help; the reason for the difference is unknown."},
+        {"id": "AE-F025", "sourceTurnIds": ["AE-C001-T05", "AE-C001-T07"], "claim": "THC is sometimes used for sleep and may worsen anxiety or instability."},
+        {"id": "AE-F026", "sourceTurnIds": ["AE-C001-T07"], "claim": "Diet and supplement experiments occurred without structured tracking."},
+        {"id": "AE-F027", "sourceTurnIds": ["AE-C001-T07"], "claim": "Earlier romance unreadiness and current enthusiasm conflict; relocation is constrained by income or benefit eligibility."},
+        {"id": "AE-F028", "sourceTurnIds": ["AE-C001-T08", "AE-C001-T09"], "claim": "Alternative-helper conflict, central sensitization, and shame/false-self accounts are hypotheses rather than established diagnoses or motives."},
+        {"id": "AE-F029", "sourceTurnIds": ["AE-C001-T09"], "claim": "The client reports increased trust or impressionability when a person or explanation feels resonant."},
+        {"id": "AE-F030", "sourceTurnIds": ["AE-C001-T07", "AE-C001-T09"], "claim": "Trajectory observability is poor across multiple simultaneous interventions, exposures, and life changes."}
       ],
       "openQuestions": [
         "In a concrete trigger, what shame makes the client do or avoid that might protect against rejection or mistreatment.",
@@ -112,7 +125,11 @@
         "Whether the client's relationship to the divided material is moving toward curiosity/inclusion/integration or toward rejection/eradication/alienation.",
         "Why the mundane public-behavior example counts as an example of losing control and whether it is representative of what the earlier phrase referred to.",
         "Trajectory during intense practice, immediately afterward, later that day, and the next day when that branch is relevant.",
-        "What aspects of improved functioning reflect greater internal choice versus social co-regulation or masking."
+        "What aspects of improved functioning reflect greater internal choice versus social co-regulation or masking.",
+        "How sleep duration and quality, THC timing, pain, energy, practice intensity, and delayed unreality cluster against the client's variable personal baseline.",
+        "What concrete current behavior supports or contradicts readiness for romance, work, relocation, and stable reciprocal connection.",
+        "Whether perceived benefit differs reliably between simple and elaborate shaking after simultaneous changes and expectancy are separated.",
+        "Which reported helper claims are direct observations, which are client or supervisor hypotheses, and which remain unresolved conflicts."
       ]
     }
   ]

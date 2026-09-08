@@ -11,25 +11,17 @@ async function readJson(relativePath) {
 }
 
 test("merged Obsidian task is terminal and normal roadmap selection is restored", async () => {
-  const lock = await readJson("tasks/ACTIVE-TASK.json");
-  assert.equal(lock.taskId, "obsidian-authoring-architecture-v1");
-  assert.equal(lock.status, "complete");
-  assert.equal(lock.exclusive, false);
-  assert.equal(lock.pullRequest, 13);
-  assert.deepEqual(lock.suspendedTaskSources, []);
+  const activeTask = await readJson("tasks/ACTIVE-TASK.json");
+  assert.notEqual(activeTask.taskId, "obsidian-authoring-architecture-v1", "a completed historical task cannot retake the active lock");
 
-  const receiptPath = lock.terminal?.closeoutReceipt;
-  assert.equal(
-    receiptPath,
-    "tasks/obsidian-authoring-architecture-v1/CLOSEOUT-RECEIPT.json",
-  );
+  const receiptPath = "tasks/obsidian-authoring-architecture-v1/CLOSEOUT-RECEIPT.json";
   const receipt = await readJson(receiptPath);
-  assert.equal(receipt.taskId, lock.taskId);
+  assert.equal(receipt.taskId, "obsidian-authoring-architecture-v1");
   assert.equal(receipt.status, "COMPLETE");
-  assert.equal(receipt.pullRequest, lock.pullRequest);
-  assert.equal(receipt.reviewedHead, lock.terminal.mergedHead);
-  assert.equal(receipt.squashMergeCommit, lock.terminal.mergeCommit);
-  assert.equal(receipt.mergedTree, lock.terminal.mergedTree);
+  assert.equal(receipt.pullRequest, 13);
+  assert.match(receipt.reviewedHead, /^[0-9a-f]{40}$/);
+  assert.match(receipt.squashMergeCommit, /^[0-9a-f]{40}$/);
+  assert.match(receipt.mergedTree, /^[0-9a-f]{40}$/);
   assert.equal(receipt.sourceTree, receipt.mergedTree);
   assert.equal(receipt.treeMatch, true);
   assert.equal(receipt.roadmapSelectionRestored, true);

@@ -48,7 +48,7 @@ When reduced self-rejection, self-love, self-respect, or self-support is an expl
 
 ## Runtime composition
 
-`src/prompts/common.mjs` owns the shared general invariant. Realization receives it through `sharedClinicalRules`; the case auditor imports it explicitly. Extraction remains governed by its existing incremental/history rules and current issue/task state; future extraction wiring should reuse the same invariant rather than create a parallel target system.
+`src/prompts/common.mjs` owns the shared general invariant and always-loaded constitution. Extraction, case audit, candidate, critique, adjudication, and realization receive durable state, current episode, targeted retrieval requests, and a descriptive tracker window through the ordinary prompt context rather than a parallel target system.
 
 This refinement deliberately does not add graph nodes or new persistent case-schema fields for salience/importance/centrality. The distinctions are enforced semantically and evaluated through synthetic multi-turn regressions first. A schema addition would require evidence that prompt/audit/controller enforcement is insufficient.
 

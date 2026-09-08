@@ -1,7 +1,7 @@
 import { createSpeechPlaybackController, deriveSpeechPlaybackUi } from "./speech-playback.js";
 
-const STORAGE_KEY = "inner-signal-runtime-v0100";
-const LEGACY_STORAGE_KEYS = ["inner-signal-runtime-v093", "inner-signal-runtime-v092", "inner-signal-runtime-v091", "inner-signal-runtime-v090", "inner-signal-runtime-v080", "inner-signal-runtime-v070", "inner-signal-runtime-v060"];
+const STORAGE_KEY = "inner-signal-settings-v1";
+const LEGACY_STORAGE_KEYS = ["inner-signal-runtime-v0100", "inner-signal-runtime-v093", "inner-signal-runtime-v092", "inner-signal-runtime-v091", "inner-signal-runtime-v090", "inner-signal-runtime-v080", "inner-signal-runtime-v070", "inner-signal-runtime-v060"];
 const state = loadState();
 let currentPlan = null;
 let selectedRouteText = "";
@@ -18,31 +18,30 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 
 function loadState() {
   try {
-    let raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      for (const legacyKey of LEGACY_STORAGE_KEYS) {
-        raw = localStorage.getItem(legacyKey);
-        if (raw) break;
-      }
-    }
-    const parsed = JSON.parse(raw || "{}");
-    const loaded = {
-      therapy: Array.isArray(parsed.therapy) ? parsed.therapy : [],
-      hypnosisHistory: Array.isArray(parsed.hypnosisHistory) ? parsed.hypnosisHistory : [],
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    return {
+      therapy: [],
+      hypnosisHistory: [],
       settings: parsed.settings && typeof parsed.settings === "object" ? parsed.settings : {},
-      caseSnapshot: parsed.caseSnapshot && typeof parsed.caseSnapshot === "object" ? parsed.caseSnapshot : null,
-      interventionContract: parsed.interventionContract && typeof parsed.interventionContract === "object" ? parsed.interventionContract : null,
-      priorProcessingTier: typeof parsed.priorProcessingTier === "string" ? parsed.priorProcessingTier : ""
+      caseId: typeof parsed.caseId === "string" ? parsed.caseId : `case-${crypto.randomUUID()}`,
+      caseSnapshot: null,
+      interventionContract: null,
+      priorProcessingTier: "",
+      durableCaseState: null,
+      caseStateView: null,
+      lastStateDiff: null,
+      trackerEntries: [],
+      journalEntries: [],
+      privateStorageMode: "unknown",
+      legacyPrivateDataDetected: LEGACY_STORAGE_KEYS.some((key) => localStorage.getItem(key))
     };
-    if (raw && !localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
-    return loaded;
   } catch {
-    return { therapy: [], hypnosisHistory: [], settings: {}, caseSnapshot: null, interventionContract: null, priorProcessingTier: "" };
+    return { therapy: [], hypnosisHistory: [], settings: {}, caseId: `case-${crypto.randomUUID()}`, caseSnapshot: null, interventionContract: null, priorProcessingTier: "", durableCaseState: null, caseStateView: null, lastStateDiff: null, trackerEntries: [], journalEntries: [], privateStorageMode: "unknown", legacyPrivateDataDetected: false };
   }
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ settings: state.settings, caseId: state.caseId }));
   renderDataSummary();
 }
 
@@ -188,6 +187,32 @@ function renderTherapy() {
 
 function recentTranscript() {
   return state.therapy.slice(-10).map((item) => `${item.role.toUpperCase()}: ${item.content}`).join("\n\n");
+}
+
+function structuredTranscript() {
+  return state.therapy.filter((item) => item.id && item.exchangeId && ["user", "assistant"].includes(item.role)).map((item) => ({
+    id: item.id,
+    exchange_id: item.exchangeId,
+    role: item.role,
+    text: item.content,
+    at: item.at,
+    episode_id: item.episodeId || null
+  }));
+}
+
+function renderCaseState(mode = "state") {
+  const root = $("#case-state-output");
+  if (!root) return;
+  const value = mode === "diff" ? state.lastStateDiff : state.caseStateView;
+  root.textContent = value ? JSON.stringify(value, null, 2) : "No structured case-state evidence is available yet.";
+  $("#case-storage-status").textContent = state.privateStorageMode === "encrypted"
+    ? "Encrypted private storage is active. Raw transcript and journal content are not shown here."
+    : "Session-only mode: sensitive case content is held in memory and will be lost when this page closes.";
+}
+
+function trackerNumber(selector) {
+  const raw = $(selector)?.value;
+  return raw === "" || raw == null ? null : Number(raw);
 }
 
 async function postJson(url, body) {
@@ -552,11 +577,18 @@ async function refreshGuidePacketStatus() {
 }
 
 function renderDataSummary() {
+  const persisted = { settings: state.settings, caseId: state.caseId };
   $("#data-summary").textContent = JSON.stringify({
-    therapyMessages: state.therapy.length,
-    hypnosisSessions: state.hypnosisHistory.length,
-    storedBytesApprox: new Blob([JSON.stringify(state)]).size
+    sensitiveSessionMode: state.privateStorageMode,
+    therapyMessagesInMemory: state.therapy.length,
+    hypnosisSessionsInMemory: state.hypnosisHistory.length,
+    trackerEntriesInMemory: state.trackerEntries.length,
+    journalEntriesInMemory: state.journalEntries.length,
+    browserStoredSettingsBytesApprox: new Blob([JSON.stringify(persisted)]).size,
+    legacyPrivateDataDetected: state.legacyPrivateDataDetected
   }, null, 2);
+  const legacy = $("#legacy-data-notice");
+  if (legacy) legacy.hidden = !state.legacyPrivateDataDetected;
 }
 
 
@@ -612,6 +644,16 @@ async function checkHealth() {
     }
     badge.className = "status ok";
     badge.textContent = `${health.models.anthropic} + ${health.models.openai} · ${health.therapy.graphBundleVersion}`;
+    state.privateStorageMode = health.privateCaseStorage?.available ? "encrypted" : "session_only";
+    if (health.privateCaseStorage?.available) {
+      try {
+        const saved = await getJson(`/v1/case/state?caseId=${encodeURIComponent(state.caseId)}`);
+        state.durableCaseState = saved.durableCaseState || null;
+        state.caseStateView = saved.caseState || null;
+        state.lastStateDiff = saved.caseStateDiff || null;
+      } catch {}
+    }
+    renderCaseState();
   } catch (error) {
     badge.className = "status error";
     badge.textContent = error.message;
@@ -626,7 +668,11 @@ $("#therapy-form").addEventListener("submit", async (event) => {
   if (!message) return;
   const button = $("#therapy-send");
   const priorTranscript = recentTranscript();
-  state.therapy.push({ role: "user", content: message, at: new Date().toISOString() });
+  const priorTranscriptEntries = structuredTranscript();
+  const exchangeId = `exchange-${crypto.randomUUID()}`;
+  const userTurnId = `${exchangeId}-user`;
+  const assistantTurnId = `${exchangeId}-assistant`;
+  state.therapy.push({ id: userTurnId, exchangeId, role: "user", content: message, at: new Date().toISOString() });
   saveState();
   renderTherapy();
   $("#therapy-message").value = "";
@@ -634,7 +680,14 @@ $("#therapy-form").addEventListener("submit", async (event) => {
   try {
     const result = await postJson("/v1/therapy/respond", {
       userMessage: message,
+      caseId: state.caseId,
+      exchangeId,
+      userTurnId,
+      assistantTurnId,
       recentTranscript: priorTranscript,
+      recentTranscriptEntries: priorTranscriptEntries,
+      durableCaseState: state.durableCaseState,
+      trackerEntries: state.trackerEntries,
       userFacts: [],
       processingMode: $("#therapy-processing-mode")?.value || "auto",
       priorCaseSnapshot: state.caseSnapshot,
@@ -645,7 +698,13 @@ $("#therapy-form").addEventListener("submit", async (event) => {
     state.caseSnapshot = result.caseFormulation && typeof result.caseFormulation === "object" ? result.caseFormulation : state.caseSnapshot;
     state.interventionContract = result.interventionContract && typeof result.interventionContract === "object" ? result.interventionContract : state.interventionContract;
     state.priorProcessingTier = result.processingTier || result.mode || state.priorProcessingTier || "";
+    state.durableCaseState = result.durableCaseState || state.durableCaseState;
+    state.caseStateView = result.caseState || state.caseStateView;
+    state.lastStateDiff = result.caseStateDiff || null;
+    state.privateStorageMode = result.privateCaseStorage || state.privateStorageMode;
     state.therapy.push({
+      id: assistantTurnId,
+      exchangeId,
       role: "assistant",
       content: answer,
       at: new Date().toISOString(),
@@ -659,6 +718,7 @@ $("#therapy-form").addEventListener("submit", async (event) => {
     });
     saveState();
     renderTherapy();
+    renderCaseState("diff");
   } catch (error) {
     state.therapy.push({ role: "assistant", content: `Runtime error: ${error.message}`, at: new Date().toISOString(), error: true });
     saveState();
@@ -673,8 +733,12 @@ $("#clear-therapy").addEventListener("click", () => {
   state.caseSnapshot = null;
   state.interventionContract = null;
   state.priorProcessingTier = "";
+  state.durableCaseState = null;
+  state.caseStateView = null;
+  state.lastStateDiff = null;
   saveState();
   renderTherapy();
+  renderCaseState();
 });
 
 $("#hypnosis-form").addEventListener("submit", async (event) => {
@@ -745,21 +809,103 @@ $("#import-data").addEventListener("change", async (event) => {
   state.caseSnapshot = parsed.state.caseSnapshot && typeof parsed.state.caseSnapshot === "object" ? parsed.state.caseSnapshot : null;
   state.interventionContract = parsed.state.interventionContract && typeof parsed.state.interventionContract === "object" ? parsed.state.interventionContract : null;
   state.priorProcessingTier = typeof parsed.state.priorProcessingTier === "string" ? parsed.state.priorProcessingTier : "";
+  state.durableCaseState = parsed.state.durableCaseState && typeof parsed.state.durableCaseState === "object" ? parsed.state.durableCaseState : null;
+  state.caseStateView = parsed.state.caseStateView && typeof parsed.state.caseStateView === "object" ? parsed.state.caseStateView : null;
+  state.lastStateDiff = parsed.state.lastStateDiff && typeof parsed.state.lastStateDiff === "object" ? parsed.state.lastStateDiff : null;
+  state.trackerEntries = Array.isArray(parsed.state.trackerEntries) ? parsed.state.trackerEntries : [];
+  state.journalEntries = Array.isArray(parsed.state.journalEntries) ? parsed.state.journalEntries : [];
   saveState();
   renderTherapy();
+  renderCaseState();
+  renderDataSummary();
 });
 
 $("#erase-data").addEventListener("click", () => {
-  if (!confirm("Erase the local Inner Signal transcript, sessions, and settings from this browser?")) return;
+  if (!confirm("Erase Inner Signal settings and any legacy transcript or session data from this browser? Encrypted server-side case data is not deleted by this action.")) return;
   localStorage.removeItem(STORAGE_KEY);
+  for (const key of LEGACY_STORAGE_KEYS) localStorage.removeItem(key);
   state.therapy = [];
   state.hypnosisHistory = [];
   state.settings = {};
   state.caseSnapshot = null;
   state.interventionContract = null;
   state.priorProcessingTier = "";
+  state.durableCaseState = null;
+  state.caseStateView = null;
+  state.lastStateDiff = null;
+  state.trackerEntries = [];
+  state.journalEntries = [];
+  state.legacyPrivateDataDetected = false;
   renderTherapy();
+  renderCaseState();
   renderDataSummary();
+});
+
+for (const id of ["#open-current-state", "#show-current-state"]) $(id)?.addEventListener("click", () => {
+  activateTab("case-state");
+  renderCaseState("state");
+});
+for (const id of ["#open-state-diff", "#show-state-diff"]) $(id)?.addEventListener("click", () => {
+  activateTab("case-state");
+  renderCaseState("diff");
+});
+
+$("#tracker-form")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = $("#tracker-save");
+  const thc = $("#tracker-thc").value;
+  const note = $("#tracker-note").value.trim();
+  const entry = {
+    schema_version: 1,
+    id: `tracker-${crypto.randomUUID()}`,
+    observed_at: new Date().toISOString(),
+    sleep_duration_hours: trackerNumber("#tracker-sleep-hours"),
+    sleep_quality: trackerNumber("#tracker-sleep-quality"),
+    pain_intensity: trackerNumber("#tracker-pain"),
+    anxiety: trackerNumber("#tracker-anxiety"),
+    stability: trackerNumber("#tracker-stability"),
+    unreality: trackerNumber("#tracker-unreality"),
+    division: trackerNumber("#tracker-division"),
+    functioning: trackerNumber("#tracker-functioning"),
+    shaking_minutes: trackerNumber("#tracker-shaking-minutes"),
+    thc_used: thc === "" ? null : thc === "yes",
+    stressors_events: note ? [note] : []
+  };
+  state.trackerEntries.push(entry);
+  setBusy(button, true, "Saving…");
+  try {
+    if (state.privateStorageMode === "encrypted") await postJson("/v1/case/tracker", { caseId: state.caseId, entry });
+    event.currentTarget.reset();
+    renderDataSummary();
+    $("#case-storage-status").textContent = state.privateStorageMode === "encrypted"
+      ? "Trajectory entry saved in encrypted private storage. Tracking remains descriptive, not causal."
+      : "Trajectory entry saved for this session only. Tracking remains descriptive, not causal.";
+  } catch (error) {
+    state.trackerEntries = state.trackerEntries.filter((item) => item.id !== entry.id);
+    alert(`Could not save trajectory entry: ${error.message}`);
+  } finally {
+    setBusy(button, false);
+  }
+});
+
+$("#journal-form")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = $("#journal-save");
+  const entry = { id: `journal-${crypto.randomUUID()}`, observed_at: new Date().toISOString(), kind: $("#journal-kind").value, text: $("#journal-text").value.trim() };
+  state.journalEntries.push(entry);
+  setBusy(button, true, "Saving…");
+  try {
+    if (state.privateStorageMode === "encrypted") await postJson("/v1/case/journal", { caseId: state.caseId, entry });
+    event.currentTarget.reset();
+    $("#case-storage-status").textContent = state.privateStorageMode === "encrypted"
+      ? "Private note saved in encrypted storage. Its contents are not displayed in the case-state view."
+      : "Private note remains session-only and will be lost when this page closes.";
+  } catch (error) {
+    state.journalEntries = state.journalEntries.filter((item) => item.id !== entry.id);
+    alert(`Could not save private note: ${error.message}`);
+  } finally {
+    setBusy(button, false);
+  }
 });
 
 $("#guide-packet-import").addEventListener("change", async (event) => {
@@ -798,6 +944,8 @@ $("#dev-reject").addEventListener("click", () => submitDevelopmentDecision("reje
 
 renderTherapy();
 renderDataSummary();
+renderCaseState();
+saveState();
 syncSpeechPlaybackControls();
 checkHealth();
 refreshDevelopmentStatus();

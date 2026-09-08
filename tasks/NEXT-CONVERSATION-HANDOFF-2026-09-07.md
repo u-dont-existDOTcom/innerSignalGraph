@@ -2,6 +2,16 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Current continuation — audit the last proposed reply before new therapy direction
+
+The owner-authorized constitution/context candidate is recorded in `tasks/constitution-context-audit-20260908/INTEGRATION.md` and `docs/superpowers/specs/2026-09-08-constitution-context-state-architecture.md`. Fetch draft PR #46 first, then read those files, `tasks/ACTIVE-TASK.json`, and the current state file before acting.
+
+At the start of the next private therapy conversation, do **not** generate a fresh direction from this public handoff alone. Load the authorized private longitudinal record through the encrypted case-store boundary, including the exact last proposed client-facing response, structured case state, contradictions, tracker window, and current episode. The private response is intentionally not embedded or hashed here. First audit that proposed response against the always-loaded constitution and the present case evidence: identify unsupported certainty, missed high-information questions, steering drift, repetition, safety inflation or underreaction, and any conflict with the client's reported consent or current state. Then either preserve it unchanged or reconstruct it from case evidence plus supported findings. Show the owner what changed in the structured state and name the remaining unknowns before offering a materially new direction.
+
+Do not treat a lossy summary or a claim that prior consensus existed as authority over unresolved evidence. Preserve exact recent exchanges, the current therapeutic episode, and targeted older high-relevance retrieval. Keep direct reports, supervisor reports, hypotheses, inferences, and contradictions distinct. Poor trajectory observability blocks confident causal conclusions.
+
+The public synthetic audit instrument changed in this candidate. Historical calibration is not certification for the new instrument. Before any architecture smoke or visible-`Latest` comparison, establish a new exact artifact freeze and pass all calibration controls. Provider/API/OpenRouter calls remain prohibited; no architecture selection or runtime adoption is automatic. Keep PR #46 draft/open. Do not merge, deploy, install, or promote stable.
+
 ## Current continuation — one truth system, many experiential languages
 
 The 2026-09-08 owner-authorized candidate began from freshly fetched PR #46 head `48204b1dcae424434bec2859dda72e3b109d3027`. Its sole recovery ledger is [representation-delivery-20260908/INTEGRATION.md](representation-delivery-20260908/INTEGRATION.md); read the [design](../docs/superpowers/specs/2026-09-08-representation-delivery-modes.md), [Butoh evidence scan](../docs/research/2026-09-08-butoh-ecstatic-enactment-scan.md), and exact changed-path manifest before editing. Fetch the draft head again rather than relying on the starting SHA.

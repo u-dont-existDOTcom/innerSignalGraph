@@ -1,4 +1,5 @@
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -23,6 +24,14 @@ import {
   exportInstalledGuidePacket
 } from "../guide-packet/store.mjs";
 import { recoverGuidePacketCandidateOnStartup } from "../guide-packet/autopilot.mjs";
+import {
+  createEmptyCaseState,
+  diffCaseStates,
+  mergeRuntimeSnapshotIntoCaseState,
+  projectCaseStateForInspection,
+  validateCaseState
+} from "../case-state/longitudinal-state.mjs";
+import { summarizeTrackerWindow } from "../case-state/tracker.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(here, "../../apps/web");
@@ -39,6 +48,21 @@ const GIT_SHA = /^[a-f0-9]{40}$/i;
 const DIAGNOSTIC_PATH = /^diagnostics\/[0-9a-f-]{36}\/[a-f0-9]{64}\.json$/i;
 const PROGRESS_PATH = /^progress\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/current\.json$/i;
 const PROGRESS_ASSESSMENT = /^(?:ADVANCING|LONG_RUNNING_STAGE|WAITING_FOR_HUMAN|BLOCKED|COMPLETE|IDLE|WORKER_NOT_RUNNING)$/;
+const SAFE_CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
+
+function readCaseId(value) {
+  const caseId = typeof value === "string" && SAFE_CASE_ID.test(value) ? value : null;
+  if (!caseId) {
+    const error = new Error("caseId must use lowercase letters, digits, underscores, or hyphens.");
+    error.code = "VALIDATION_ERROR";
+    throw error;
+  }
+  return caseId;
+}
+
+function safeEntryId(value, fallback) {
+  return typeof value === "string" && /^[A-Za-z0-9:_-]{1,160}$/.test(value) ? value : fallback;
+}
 
 async function readStatusJson(file) {
   try {
@@ -161,7 +185,7 @@ async function readJson(req, maxBytes = 2_000_000) {
   return JSON.parse(body.toString("utf8"));
 }
 
-export function createInnerSignalServer({ config, providers }) {
+export function createInnerSignalServer({ config, providers, privateCaseStore = null }) {
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url || "/", "http://127.0.0.1");
@@ -189,7 +213,8 @@ export function createInnerSignalServer({ config, providers }) {
             candidateStatus: (await readGuidePacketStatus(config)).candidate?.status ?? null
           },
           webClient: { available: true, path: "/", diagnosticExport: true },
-          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
+          privateCaseStorage: { available: Boolean(privateCaseStore), plaintextFallback: false },
+          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
       }
       if (req.method === "POST" && url.pathname === "/v1/plan") {
@@ -200,13 +225,46 @@ export function createInnerSignalServer({ config, providers }) {
       }
       if (req.method === "POST" && url.pathname === "/v1/therapy/respond") {
         const input = await readJson(req);
-        const context = await buildContext(input, config);
+        const caseId = readCaseId(input.caseId ?? "local-case");
+        const stored = privateCaseStore ? await privateCaseStore.loadOrCreate(caseId) : null;
+        const previousCaseState = stored?.case_state
+          ?? (input.durableCaseState ? validateCaseState(structuredClone(input.durableCaseState)) : createEmptyCaseState({ caseId }));
+        const priorTranscriptEntries = stored?.raw_transcript ?? input.recentTranscriptEntries ?? [];
+        const trackerEntries = stored?.tracker_entries ?? input.trackerEntries ?? [];
+        const context = await buildContext({
+          ...input,
+          caseId,
+          recentTranscriptEntries: priorTranscriptEntries,
+          durableCaseState: previousCaseState,
+          trackerEntries
+        }, config);
         const result = await runTieredTherapyPipeline({
           context,
           providers,
           config,
           processingMode: input.processingMode ?? config.therapyProcessingMode ?? "auto"
         });
+        const timestamp = new Date().toISOString();
+        const exchangeId = safeEntryId(input.exchangeId, `exchange-${randomUUID()}`);
+        const userTurnId = safeEntryId(input.userTurnId, `${exchangeId}-user`);
+        const assistantTurnId = safeEntryId(input.assistantTurnId, `${exchangeId}-assistant`);
+        const nextCaseState = mergeRuntimeSnapshotIntoCaseState(previousCaseState, result.caseFormulation, {
+          turnId: userTurnId,
+          recordedAt: timestamp,
+          interventionContract: result.interventionContract
+        });
+        const caseStateDiff = diffCaseStates(previousCaseState, nextCaseState);
+        const episodeId = nextCaseState.current_episode?.id ?? null;
+        if (privateCaseStore) {
+          await privateCaseStore.commitTurn(caseId, {
+            transcript_entries: [
+              { id: userTurnId, exchange_id: exchangeId, role: "user", text: input.userMessage, at: timestamp, episode_id: episodeId },
+              { id: assistantTurnId, exchange_id: exchangeId, role: "assistant", text: result.answer, at: timestamp, episode_id: episodeId }
+            ],
+            case_state: nextCaseState,
+            state_diff: caseStateDiff
+          });
+        }
         if (config.devAutomationEnabled && result.responseContract?.realizationCoveragePassed === false) {
           recordAutomaticDevelopmentIncident(config, {
             origin: "response-contract",
@@ -229,7 +287,42 @@ export function createInnerSignalServer({ config, providers }) {
             graphBundleVersion: result.graphBundleVersion
           }).catch(() => {});
         }
-        return send(res, 200, result);
+        return send(res, 200, {
+          ...result,
+          durableCaseState: nextCaseState,
+          caseState: projectCaseStateForInspection(nextCaseState),
+          caseStateDiff,
+          privateCaseStorage: privateCaseStore ? "encrypted" : "session_only"
+        });
+      }
+      if (req.method === "GET" && url.pathname === "/v1/case/state") {
+        if (!privateCaseStore) return send(res, 503, { error: "Encrypted private case storage is not configured; state remains session-only.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
+        const caseId = readCaseId(url.searchParams.get("caseId"));
+        const record = await privateCaseStore.loadOrCreate(caseId);
+        return send(res, 200, {
+          caseId,
+          durableCaseState: record.case_state,
+          caseState: projectCaseStateForInspection(record.case_state),
+          caseStateDiff: record.last_state_diff,
+          trackerWindow: summarizeTrackerWindow(record.tracker_entries),
+          transcriptTurnCount: record.raw_transcript.length,
+          rawTranscriptIncluded: false,
+          hiddenReasoningIncluded: false
+        });
+      }
+      if (req.method === "POST" && url.pathname === "/v1/case/tracker") {
+        if (!privateCaseStore) return send(res, 503, { error: "Encrypted private case storage is not configured; tracker entry was not persisted.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
+        const input = await readJson(req);
+        const caseId = readCaseId(input.caseId);
+        const record = await privateCaseStore.appendTracker(caseId, input.entry);
+        return send(res, 200, { caseId, trackerWindow: summarizeTrackerWindow(record.tracker_entries), persisted: "encrypted" });
+      }
+      if (req.method === "POST" && url.pathname === "/v1/case/journal") {
+        if (!privateCaseStore) return send(res, 503, { error: "Encrypted private case storage is not configured; journal entry was not persisted.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
+        const input = await readJson(req);
+        const caseId = readCaseId(input.caseId);
+        const record = await privateCaseStore.appendJournal(caseId, input.entry);
+        return send(res, 200, { caseId, journalEntryCount: record.journal_entries.length, persisted: "encrypted" });
       }
       if (req.method === "POST" && url.pathname === "/v1/hypnosis/compile") {
         const input = await readJson(req);

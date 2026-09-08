@@ -1,5 +1,5 @@
 import { CASE_VARIABLE_ENUMS } from "../guide-graph/contract.mjs";
-import { longitudinalClinicalRules } from "./common.mjs";
+import { durableCaseContextBlock, longitudinalClinicalRules } from "./common.mjs";
 
 export function caseAuditPrompt(context, snapshot) {
   const system = `You are the adversarial case-formulation auditor. Review a structured extraction before deterministic routing.
@@ -47,7 +47,9 @@ ${JSON.stringify(CASE_VARIABLE_ENUMS, null, 2)}
 
 Return exactly the requested JSON object.`;
 
-  const user = `RECENT TRANSCRIPT:
+  const user = `${durableCaseContextBlock(context)}
+
+RECENT TRANSCRIPT:
 ${context.recentTranscript || "(none supplied)"}
 
 CURRENT USER MESSAGE:

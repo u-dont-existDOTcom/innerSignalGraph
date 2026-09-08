@@ -1,3 +1,27 @@
+import { renderInnerSignalConstitution } from "../therapy/constitution.mjs";
+
+export function durableCaseContextBlock(context) {
+  const state = context?.durableCaseState ?? null;
+  const episode = context?.currentTherapeuticEpisode ?? null;
+  const tracker = context?.trackerWindow ?? null;
+  const retrieval = context?.targetedRetrievalRequests ?? [];
+  const olderEvidence = context?.targetedOlderEvidence ?? [];
+  return `DURABLE CASE STATE (structured evidence; never hidden reasoning):
+${state ? JSON.stringify(state, null, 2) : "(none supplied)"}
+
+CURRENT THERAPEUTIC EPISODE:
+${episode ? JSON.stringify(episode, null, 2) : "(none supplied)"}
+
+RECENT DESCRIPTIVE TRACKER WINDOW (association is not causation):
+${tracker ? JSON.stringify(tracker, null, 2) : "(none supplied)"}
+
+TARGETED OLDER-EVIDENCE RETRIEVAL REQUESTS:
+${retrieval.length ? JSON.stringify(retrieval, null, 2) : "(none)"}
+
+TARGETED OLDER VERBATIM EVIDENCE (null means the referenced exact turn is not available in this context):
+${olderEvidence.length ? JSON.stringify(olderEvidence, null, 2) : "(none)"}`;
+}
+
 export const longitudinalClinicalRules = `
 LONGITUDINAL REASONING RULES
 - Treat the user's first-person report as privileged evidence about phenomenology, preferences, remembered events, and current appraisal. Do not treat the user's interpretation as automatically authoritative about cause, mechanism, therapeutic importance, risk, or whether a potentially relevant signal can be ignored. Their downplaying or emphasizing something is evidence about their appraisal, not a dispositive verdict about its importance.
@@ -8,10 +32,12 @@ LONGITUDINAL REASONING RULES
 - If a later concrete example does not obviously instantiate an earlier high-stakes description such as 'I lose control' or 'I go crazy', do not use the mundane example to prove the original statement harmless, and do not use the original label to prove danger. Clarify why the example counts, whether it is representative, and what else the earlier phrase referred to.
 - Before asking a supposedly discriminating question, check the supplied transcript and settled history for the answer. Do not re-ask known information unless the new question makes a genuinely different comparison explicit.
 - Give a client-generated functional hypothesis more evidential priority than a therapist-imposed story because it is phenomenologically grounded, while still treating it as a hypothesis. Test it concretely: what does the state make the person do or avoid, what protective outcome is predicted, and what observation would count against the hypothesis. Do not either ignore it or confirm it merely because it sounds psychologically coherent.
-- When self-love, self-respect, or reduced self-rejection is an explicitly established long-term target, preserve that target without claiming it causes every symptom. When useful, test what would feel dangerous if shame, self-attack, or self-rejection no longer had to perform its current function, and whether adult protection, boundaries, or other capacities could perform any useful function without self-attack. Do not suggest the answer in advance.
+- Preserve the fixed therapeutic ends in the Inner Signal Constitution. When self-love, self-respect, or reduced self-rejection is the established target, keep it active without claiming it causes every symptom. Routes and techniques may change when evidence says they are not helping, but the method must not silently abandon care, self-respect, protection, integration, connection, meaning, or growth. When useful, test what would feel dangerous if shame, self-attack, or self-rejection no longer had to perform its current function, and whether adult protection, boundaries, or other capacities could perform any useful function without self-attack. Do not suggest the answer in advance.
 `;
 
 export const sharedClinicalRules = `
+${renderInnerSignalConstitution()}
+
 Use the supplied Inner Child Therapy Guide as the primary framework. Stay close to the user's exact wording and do not replace an unusual conflict with a generic trauma narrative.
 
 Separate:

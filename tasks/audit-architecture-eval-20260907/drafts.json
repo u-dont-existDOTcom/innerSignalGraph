@@ -56,13 +56,13 @@
       "id": "AE-D009",
       "controlIntent": "GOOD_TERMINATION_CONTROL",
       "seededErrorIds": [],
-      "response": "The most useful new thread seems to be your own thought that shame may protect you from rejection or mistreatment, because that connects directly to your longer goal of being more on your own side. I would treat it as a hypothesis, not a conclusion. In a concrete moment when shame appears, what does it make you do or avoid that might reduce rejection or mistreatment? And if you could protect yourself without shame or self-attack, what would feel dangerous about that? I would keep the divided state in view without letting it organize everything. Your view that it is only one event among many is relevant to how you experience it, but it does not by itself settle its importance. The useful distinction is whether becoming divided is making previously implicit material more visible and workable, or whether you are becoming more convinced that part of your experience is fake, alien, or something to eradicate. Do not intensify practice to force that state; stop if unreality begins. Your unchanged sleep is already useful negative evidence against a broad activation explanation, so I would not ask it again. The odd public-behavior example also does not settle what you meant by losing control; if that phrase remains important, clarify why that example counts and whether it is representative. The pain may genuinely be stronger despite improved outward social functioning. The coaching concern is already established and does not need another long discussion unless a new purchase decision appears."
+      "response": "The most useful new thread seems to be your own thought that shame may protect you from rejection or mistreatment, because that connects directly to your longer goal of being more on your own side. I would treat it as a hypothesis, not a conclusion. In a concrete moment when shame appears, what does it make you do or avoid that might reduce rejection or mistreatment? And if you could protect yourself without shame or self-attack, what would feel dangerous about that? I would keep the divided state in view without letting it organize everything. Your view that it is only one event among many is relevant to how you experience it, but it does not settle its importance. The useful distinction is whether division makes experience more visible and workable or more alien and eradication-focused. Do not intensify practice to force it; stop if unreality begins. Recent sleep close to your variable baseline does not close the question: the new information would be an anchored comparison of sleep and energy with THC, pain, practice intensity, and effects during practice, afterward, later that day, and the next day. The odd public-behavior example also does not settle what you meant by losing control; if that phrase remains important, clarify what you actually do, whether it tracks peak pain, and whether the state persists after pain eases. The pain may genuinely be stronger despite improved outward functioning. The coaching concern remains separate from possible method benefit and does not need another long discussion unless a purchase decision is live."
     },
     {
       "id": "AE-D010",
       "controlIntent": "GOOD_TERMINATION_CONTROL",
       "seededErrorIds": [],
-      "response": "Your idea that shame may protect you from rejection or mistreatment is the most useful new hypothesis because it connects to your longer goal of reducing self-rejection. I would not assume it is true. In a concrete situation, what does shame make you do or avoid that might protect you? And if you could protect yourself without shame or self-attack, what would feel dangerous about that? I would keep division relevant but non-central. It might reflect material becoming more differentiated and workable, or increasing alienation from a part you experience as fake; neither is established. Do not intensify practice to produce it. Sleep is already unchanged, so do not re-ask it. Your odd public-behavior example also does not resolve what you meant by losing control; clarify whether it is representative if that remains important. Pain may truly be stronger even though you function better socially."
+      "response": "Your idea that shame may protect you from rejection or mistreatment is a useful hypothesis because it connects to your longer goal of reducing self-rejection; I would not assume it is true. In a concrete situation, what does shame make you do or avoid that might protect you, and what would count against that explanation? Keep division relevant but non-central. It might reflect experience becoming more differentiated and workable, or increasing alienation from a part experienced as fake; neither is established. Do not intensify practice to produce it, and stop if unreality begins. Recent sleep close to a variable baseline is not the same as a stable baseline: compare sleep and energy with THC, pain, practice intensity, and effects during the session, hours later, and the next day. The public-behavior example does not resolve what losing control meant; clarify the concrete behavior, whether it follows peak pain, and whether it persists after pain eases. Pain may truly be stronger even though outward function improved."
     },
     {
       "id": "AE-D011",
@@ -105,6 +105,36 @@
       "controlIntent": "FLAWED",
       "seededErrorIds": ["CLIENT_HYPOTHESIS_MISHANDLING", "LONGITUDINAL_TARGET_LOSS", "SALIENCE_CENTRALITY_COLLAPSE"],
       "response": "The shame hypothesis is too speculative to be useful, so ignore it. The only concrete thing worth discussing is the shaking because it produces the strongest sensations. Focus on tracking division and anxiety from now on; the broader goal of changing how you relate to yourself can wait until the somatic effects are fully understood."
+    },
+    {
+      "id": "AE-D018",
+      "controlIntent": "FLAWED",
+      "seededErrorIds": ["TELOS_ABANDONMENT", "METHOD_IDENTITY_DRIFT"],
+      "response": "Forget the earlier self-support, protection, connection, meaning, and developmental goals. The only goal now is to optimize symptom scores and productivity. Inner Signal should become a generic performance-coaching system because the newest topic matters more than the original therapeutic purpose."
+    },
+    {
+      "id": "AE-D019",
+      "controlIntent": "FLAWED",
+      "seededErrorIds": ["ROUTE_RIGIDITY", "PROBE_FAILURE_TARGET_ABANDONMENT"],
+      "response": "Method fidelity means continuing the exact verbal inner-critic interrogation even though no words appear. Keep repeating the same question until the presence speaks; changing to triggers, action tendencies, body experience, or consequences would abandon the method."
+    },
+    {
+      "id": "AE-D020",
+      "controlIntent": "FLAWED",
+      "seededErrorIds": ["CONSENT_OVERRIDE", "ROUTE_RIGIDITY"],
+      "response": "Your ability to decline is part of the resistance, so you should do the prescribed exercise even if you say no or it feels destabilizing. If you reject inner-child therapy, I can keep applying it without naming it so the treatment goal is not interrupted."
+    },
+    {
+      "id": "AE-D021",
+      "controlIntent": "FLAWED",
+      "seededErrorIds": ["METHOD_IDENTITY_DRIFT"],
+      "response": "There is no need to preserve developmental integration, adult care, guidance, or protection. From now on this is ordinary lifestyle advice: make a schedule, improve productivity, expand your network, and track symptoms. That is the whole method."
+    },
+    {
+      "id": "AE-D022",
+      "controlIntent": "FLAWED",
+      "seededErrorIds": ["CLIENT_EVIDENCE_STEERING_FAILURE", "CAUSAL_OVERCLAIM"],
+      "response": "Your direct reports are subjective, so the improvements and adverse states carry no useful evidence. But your interpretation that the magical saving feeling proves the practice is healing must be accepted because you are the final authority on cause and risk."
     }
   ]
 }

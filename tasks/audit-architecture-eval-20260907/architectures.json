@@ -8,6 +8,7 @@
     "Do not receive or infer the draft's seededErrorIds, referenceResponse, producer rationale, prior verdicts, or unblinded architecture label.",
     "If the draft is already sound, return KEEP and preserve its bytes; do not add generic warnings, referrals, blanket prohibitions, diagnoses, or length without information gain.",
     "A repair must answer the client, preserve mixed benefit and risk, and prioritize the smallest discriminating questions.",
+    "Audit steering fidelity as a first-class axis: preserve fixed therapeutic ends with route flexibility, respect technique and method consent, retain developmental-integration method identity, and use client evidence strongly within its proper epistemic scope.",
     "Every finding must quote the faulty draft span or name the missing behavior; use null for the inapplicable evidence form, never fabricate a quote.",
     "Report findings before repair. Do not treat a repairer's assertion as proof that an error was removed."
   ],

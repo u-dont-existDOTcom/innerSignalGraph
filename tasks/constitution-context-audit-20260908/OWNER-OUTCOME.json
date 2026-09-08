@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "ownerOutcomeId": "OO-INNERSIGNAL-CONSTITUTION-CONTEXT-AUDIT-20260908",
+  "epoch": 1,
+  "source": {
+    "kind": "private_owner_directive",
+    "recordedAt": "2026-09-08",
+    "verbatimExcludedFromPublicRepository": true,
+    "privateDerivedHashExcluded": true,
+    "reason": "The source contains private real-person case material. Public Git stores only this de-identified operational projection."
+  },
+  "normalizedResult": "On draft PR 46, deliver and durably push a public-safe candidate that combines the prior audit architecture harness with a versioned always-loaded InnerSignal constitution, private encrypted longitudinal case-storage architecture, provenance-aware case state and contradiction handling, recent verbatim-window and targeted-retrieval rules, tracker and state-diff UI seams, corrected synthetic case fixtures, deterministic tests, and a next-conversation audit-first handoff.",
+  "requiredOutcomes": [
+    {"id":"RO-01","text":"Version and always load the global therapeutic constitution separately from case state.","terminalRequired":true},
+    {"id":"RO-02","text":"Provide encrypted-at-rest private transcript/case-state persistence architecture; never publish private case content or private-derived hashes.","terminalRequired":true},
+    {"id":"RO-03","text":"Provide durable provenance-aware case state, contradiction clusters, poor-observability handling, current episode state, recent verbatim windows, and targeted retrieval.","terminalRequired":true},
+    {"id":"RO-04","text":"Provide a structured symptom/context tracker plus minimal journaling and trend retrieval without causal inference.","terminalRequired":true},
+    {"id":"RO-05","text":"Provide user-visible Current saved state and What changed this turn inspection controls without exposing hidden reasoning.","terminalRequired":true},
+    {"id":"RO-06","text":"Correct the public synthetic gold fixture and audit rubric for the newly supplied trajectory, steering, trust, sleep/substance/pain, romance, support, and case-history structure.","terminalRequired":true},
+    {"id":"RO-07","text":"Add deterministic privacy, compaction, poisoning, decision-equivalence, tracker, constitution, steering, and state-diff tests.","terminalRequired":true},
+    {"id":"RO-08","text":"Update the canonical handoff so the next supervisor audits the private last proposed response before offering new therapy direction.","terminalRequired":true},
+    {"id":"RO-09","text":"Push the exact verified head to the existing PR branch, keep PR 46 draft/open/unmerged, and obtain exact-head hosted evidence.","terminalRequired":true}
+  ],
+  "nonSatisfyingProxies": [
+    "local tests pass",
+    "documentation only",
+    "a schema exists without runtime/service composition",
+    "the audit fixture was updated without privacy and compaction tests",
+    "the branch was committed but not pushed",
+    "PR ready",
+    "an audit architecture is selected without frozen evidence"
+  ],
+  "forbiddenTerminalClaims": [
+    "clinical validation",
+    "audit architecture winner",
+    "runtime adoption",
+    "deployment",
+    "installation",
+    "stable promotion",
+    "merge"
+  ]
+}

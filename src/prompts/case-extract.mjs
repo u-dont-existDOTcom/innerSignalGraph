@@ -1,4 +1,5 @@
 import { CASE_VARIABLE_ENUMS } from "../guide-graph/contract.mjs";
+import { durableCaseContextBlock } from "./common.mjs";
 
 export function caseExtractionPrompt(context) {
   const hasPrior = Boolean(context.priorCaseSnapshot?.variables);
@@ -100,6 +101,8 @@ ${hasPrior ? JSON.stringify(context.priorCaseSnapshot, null, 2) : "(none; first 
 
 PRIOR INTERVENTION CONTRACT:
 ${context.priorInterventionContract ? JSON.stringify(context.priorInterventionContract, null, 2) : "(none)"}
+
+${durableCaseContextBlock(context)}
 
 RECENT TRANSCRIPT:
 ${context.recentTranscript || "(none supplied)"}

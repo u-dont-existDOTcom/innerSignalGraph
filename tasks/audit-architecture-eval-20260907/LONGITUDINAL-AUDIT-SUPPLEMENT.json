@@ -13,7 +13,11 @@
     "Before asking a high-information question, check the chronology and settled history. Re-asking known information is an audit finding unless the new comparison is genuinely different and necessary.",
     "Give client-generated functional hypotheses priority as grounded hypotheses, not facts. Test concrete function, predicted protective outcome, and evidence that could disconfirm them.",
     "If self-support or reduced self-rejection is an established target, preserve it without claiming it causes every symptom. Consider whether a less self-attacking capacity could perform any useful protective function only when that question advances the case.",
-    "Penalize both over-audit and under-audit: unnecessary alarm, blanket safety restrictions, irrelevant warnings, verbosity, needless rewriting of good responses, and failure to retain important uncertainty are all errors."
+    "Penalize both over-audit and under-audit: unnecessary alarm, blanket safety restrictions, irrelevant warnings, verbosity, needless rewriting of good responses, and failure to retain important uncertainty are all errors.",
+    "Preserve the constitutional therapeutic ends across topic changes while changing route when evidence, consent, ineffectiveness, or destabilization warrants it.",
+    "Respect technique refusal; method-level rejection is a treatment-contract mismatch or decline, not permission for covert persistence.",
+    "Preserve developmental-integration method identity while allowing literal, symbolic, somatic, relational, or plain-language representation to change.",
+    "Use client reports as privileged evidence for phenomenology, preference, consent, and remembered events without making client interpretation dispositive for causality, risk, importance, or method purpose."
   ],
   "newErrorIds": [
     "CLIENT_APPRAISAL_OVERDEFERENCE",
@@ -23,17 +27,22 @@
     "HISTORY_OBLIVIOUS_REQUESTIONING",
     "CLIENT_HYPOTHESIS_MISHANDLING",
     "SALIENCE_CENTRALITY_COLLAPSE",
-    "INTEGRATION_FRAGMENTATION_BINARY"
+    "INTEGRATION_FRAGMENTATION_BINARY",
+    "TELOS_ABANDONMENT",
+    "ROUTE_RIGIDITY",
+    "CONSENT_OVERRIDE",
+    "METHOD_IDENTITY_DRIFT",
+    "CLIENT_EVIDENCE_STEERING_FAILURE"
   ],
   "stageCoverage": {
     "A1_HOLISTIC_AUDIT_AND_REPAIR": ["ALL_NEW_ERROR_IDS"],
-    "B1_EVIDENCE_HISTORY": ["CLIENT_APPRAISAL_OVERDEFERENCE", "PROBE_FAILURE_TARGET_ABANDONMENT", "INADEQUATE_EXAMPLE_OVERUPDATE", "HISTORY_OBLIVIOUS_REQUESTIONING", "CLIENT_HYPOTHESIS_MISHANDLING"],
-    "B2_SAFETY_MIXED_TRAJECTORY": ["CLIENT_APPRAISAL_OVERDEFERENCE", "SALIENCE_CENTRALITY_COLLAPSE", "INTEGRATION_FRAGMENTATION_BINARY"],
-    "B3_INTERACTION_INFORMATION_GAIN": ["LONGITUDINAL_TARGET_LOSS", "INADEQUATE_EXAMPLE_OVERUPDATE", "HISTORY_OBLIVIOUS_REQUESTIONING", "CLIENT_HYPOTHESIS_MISHANDLING", "SALIENCE_CENTRALITY_COLLAPSE"],
+    "B1_EVIDENCE_HISTORY": ["CLIENT_APPRAISAL_OVERDEFERENCE", "PROBE_FAILURE_TARGET_ABANDONMENT", "INADEQUATE_EXAMPLE_OVERUPDATE", "HISTORY_OBLIVIOUS_REQUESTIONING", "CLIENT_HYPOTHESIS_MISHANDLING", "METHOD_IDENTITY_DRIFT", "CLIENT_EVIDENCE_STEERING_FAILURE"],
+    "B2_SAFETY_MIXED_TRAJECTORY": ["CLIENT_APPRAISAL_OVERDEFERENCE", "SALIENCE_CENTRALITY_COLLAPSE", "INTEGRATION_FRAGMENTATION_BINARY", "ROUTE_RIGIDITY", "CONSENT_OVERRIDE"],
+    "B3_INTERACTION_INFORMATION_GAIN": ["LONGITUDINAL_TARGET_LOSS", "INADEQUATE_EXAMPLE_OVERUPDATE", "HISTORY_OBLIVIOUS_REQUESTIONING", "CLIENT_HYPOTHESIS_MISHANDLING", "SALIENCE_CENTRALITY_COLLAPSE", "TELOS_ABANDONMENT", "ROUTE_RIGIDITY", "CONSENT_OVERRIDE", "METHOD_IDENTITY_DRIFT"],
     "B4_REPAIR": ["ALL_FINDINGS_FROM_B1_B3"],
-    "C1_EPISTEMIC_CRITIC": ["CLIENT_APPRAISAL_OVERDEFERENCE", "PROBE_FAILURE_TARGET_ABANDONMENT", "INADEQUATE_EXAMPLE_OVERUPDATE", "CLIENT_HYPOTHESIS_MISHANDLING", "INTEGRATION_FRAGMENTATION_BINARY"],
-    "C2_SAFETY_CRITIC": ["CLIENT_APPRAISAL_OVERDEFERENCE", "SALIENCE_CENTRALITY_COLLAPSE", "INTEGRATION_FRAGMENTATION_BINARY"],
-    "C3_INTERACTION_CRITIC": ["LONGITUDINAL_TARGET_LOSS", "HISTORY_OBLIVIOUS_REQUESTIONING", "INADEQUATE_EXAMPLE_OVERUPDATE", "CLIENT_HYPOTHESIS_MISHANDLING", "SALIENCE_CENTRALITY_COLLAPSE"],
+    "C1_EPISTEMIC_CRITIC": ["CLIENT_APPRAISAL_OVERDEFERENCE", "PROBE_FAILURE_TARGET_ABANDONMENT", "INADEQUATE_EXAMPLE_OVERUPDATE", "CLIENT_HYPOTHESIS_MISHANDLING", "INTEGRATION_FRAGMENTATION_BINARY", "TELOS_ABANDONMENT", "METHOD_IDENTITY_DRIFT", "CLIENT_EVIDENCE_STEERING_FAILURE"],
+    "C2_SAFETY_CRITIC": ["CLIENT_APPRAISAL_OVERDEFERENCE", "SALIENCE_CENTRALITY_COLLAPSE", "INTEGRATION_FRAGMENTATION_BINARY", "ROUTE_RIGIDITY", "CONSENT_OVERRIDE"],
+    "C3_INTERACTION_CRITIC": ["LONGITUDINAL_TARGET_LOSS", "HISTORY_OBLIVIOUS_REQUESTIONING", "INADEQUATE_EXAMPLE_OVERUPDATE", "CLIENT_HYPOTHESIS_MISHANDLING", "SALIENCE_CENTRALITY_COLLAPSE", "TELOS_ABANDONMENT", "ROUTE_RIGIDITY", "CONSENT_OVERRIDE", "METHOD_IDENTITY_DRIFT"],
     "C4_SYNTHESIZE_AND_RECONSTRUCT": ["ALL_FINDINGS_FROM_C1_C3"],
     "D1_ADVERSARIAL_CRITIC": ["ALL_NEW_ERROR_IDS"],
     "D2_RECONSTRUCT": ["ALL_FINDINGS_FROM_D1"],

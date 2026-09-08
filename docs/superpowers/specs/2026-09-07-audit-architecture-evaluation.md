@@ -16,7 +16,7 @@ No provider/API/OpenRouter call is authorized by this design. The owner authoriz
 
 The fixture contains no real name, transcript excerpt, exact personal amount, exact location, contact detail, URL, source conversation identifier, or private-data-derived hash. Earlier assistant turns settle several issues so repetition, history loss, and replying to prior assistant commentary can be detected.
 
-`drafts.json` contains 15 deliberately flawed replies covering 25 original-plus-longitudinal failure classes and two neutrally named already-good controls. `reference-target.json` gives stable IDs to grader-only behavioral requirements and prohibitions and includes one synthetic reference response. Critics and reconstructors do not receive that case-specific target or the open-question key; they receive runtime-like case evidence, settled history, the generic taxonomy, and only the prior findings their topology permits.
+`drafts.json` contains 20 deliberately flawed replies covering 30 original, longitudinal, and steering failure classes and two neutrally named already-good controls. `STEERING-CONTEXT-SUPPLEMENT.json` adds public synthetic adversarial cases for telos persistence, route flexibility, consent, method identity, scoped client authority, metaphysical agenda capture, acute preemption, and compaction poisoning. `reference-target.json` gives stable IDs to grader-only behavioral requirements and prohibitions and includes one synthetic reference response. Critics and reconstructors do not receive that case-specific target or the open-question key; they receive runtime-like case evidence, settled history, the generic taxonomy, and only the prior findings their topology permits.
 
 ## Compared conditions
 
@@ -63,7 +63,7 @@ The strongest in-repository external baseline is the guide-fidelity protocol's i
 
 ## Acceptance
 
-- all 25 original-plus-longitudinal failure classes are represented by at least one seeded draft;
+- all 30 original, longitudinal, and steering failure classes are represented by at least one seeded draft;
 - at least two zero-error controls exercise the keep/termination rule;
 - A–D contracts and optional E are machine readable;
 - B patch and reconstruct arms reuse byte-identical, hash-bound specialist findings;
