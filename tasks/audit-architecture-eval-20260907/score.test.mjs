@@ -9,15 +9,17 @@ import {
   scoreRecord,
   sha256,
   validateCalibrationResult,
+  validateExecutionPlan,
   validateHarness,
   validateSyntheticPrivacy,
   wordTokens
 } from './score.mjs';
+import { buildAuditStagePacket, buildFindingValidationPacket, buildResponseGradePacket } from './packets.mjs';
 
 const load = async name => JSON.parse(await readFile(new URL(name, import.meta.url), 'utf8'));
-const [cases, drafts, referenceTarget, rubric, architectures, controls] = await Promise.all([
+const [cases, drafts, referenceTarget, rubric, architectures, controls, executionPlan] = await Promise.all([
   load('./cases.json'), load('./drafts.json'), load('./reference-target.json'),
-  load('./rubric.json'), load('./architectures.json'), load('./grader-controls.json')
+  load('./rubric.json'), load('./architectures.json'), load('./grader-controls.json'), load('./execution-plan.json')
 ]);
 
 const allErrorIds = rubric.errorClasses.map(item => item.id);
@@ -94,6 +96,77 @@ function buildCalibration() {
 }
 
 const calibration = buildCalibration();
+
+test('owner-frozen ChatGPT execution plan is bounded, blinded, and API-free', () => {
+  const summary = validateExecutionPlan({ plan: executionPlan, drafts, architectures });
+  assert.deepEqual(summary, {
+    smokeFixtureCount: 4,
+    smokeConditionCount: 7,
+    graderPasses: 2,
+    providerApiCallsAllowed: false,
+    latestBackendIdentity: null,
+    winnerSelectionAllowed: false
+  });
+});
+
+test('execution-plan mutants cannot infer Latest, weaken fresh grading, or omit the good control', () => {
+  const inferredLatest = structuredClone(executionPlan);
+  inferredLatest.selectorObservation.latestBackendIdentity = 'guessed-model';
+  assert.throws(() => validateExecutionPlan({ plan: inferredLatest, drafts, architectures }), /Latest must remain a label/);
+
+  const anchoredGrader = structuredClone(executionPlan);
+  anchoredGrader.mainSmoke.primaryEvaluation.graderPasses[1].freshContext = false;
+  assert.throws(() => validateExecutionPlan({ plan: anchoredGrader, drafts, architectures }), /grader independence/);
+
+  const noControl = structuredClone(executionPlan);
+  noControl.mainSmoke.fixtureDraftIds = ['AE-D003', 'AE-D004', 'AE-D005', 'AE-D007'];
+  assert.throws(() => validateExecutionPlan({ plan: noControl, drafts, architectures }), /exactly one good-response control/);
+});
+
+test('execution-plan mutants cannot promote Pro dissent or relax owner adoption gate', () => {
+  const proVerdict = structuredClone(executionPlan);
+  proVerdict.optionalProDissent.mayDirectlyChangeScoreOrFailureStatus = true;
+  assert.throws(() => validateExecutionPlan({ plan: proVerdict, drafts, architectures }), /Pro dissent/);
+
+  const autoAdopt = structuredClone(executionPlan);
+  autoAdopt.executionBoundary.ownerReviewRequiredBeforeSelectionOrImplementation = false;
+  assert.throws(() => validateExecutionPlan({ plan: autoAdopt, drafts, architectures }), /owner-gated/);
+});
+
+test('ChatGPT packets enforce audit and grader information firewalls', () => {
+  const holistic = buildAuditStagePacket({
+    opaqueCallId: 'OPAQUE-1', caseId: 'AE-C001', draftId: 'AE-D004', stageId: 'A1_HOLISTIC_AUDIT_AND_REPAIR',
+    cases, drafts, rubric, architectures
+  });
+  const holisticText = JSON.stringify(holistic);
+  assert.equal(holistic.payload.draft, drafts.drafts.find(item => item.id === 'AE-D004').response);
+  assert.equal(Object.hasOwn(holistic.payload.case, 'openQuestions'), false);
+  assert.equal(Object.hasOwn(holistic.payload, 'seededErrorIds'), false);
+  assert.equal(Object.hasOwn(holistic.payload, 'referenceResponse'), false);
+  assert.equal(holisticText.includes('SINGLE_HOLISTIC_AUDIT'), false);
+
+  const reconstruct = buildAuditStagePacket({
+    opaqueCallId: 'OPAQUE-2', caseId: 'AE-C001', draftId: 'AE-D004', stageId: 'B4_REPAIR',
+    repairMode: 'RECONSTRUCT_FROM_CASE_AND_FINDINGS', cases, drafts, rubric, architectures,
+    priorInputs: { B_FROZEN_FINDINGS: { findings: [], strongestRemainingRisk: null } }
+  });
+  assert.equal(Object.hasOwn(reconstruct.payload, 'draft'), false);
+  assert.equal(JSON.stringify(reconstruct).includes(drafts.drafts.find(item => item.id === 'AE-D004').response), false);
+
+  const grade = buildResponseGradePacket({
+    opaqueItemId: 'GRADE-1', caseId: 'AE-C001', candidateResponse: 'A synthetic candidate response.',
+    cases, referenceTarget, rubric
+  });
+  assert.equal(JSON.stringify(grade).includes('referenceResponse'), false);
+  assert.equal(JSON.stringify(grade).includes('conditionId'), false);
+
+  const finding = buildFindingValidationPacket({
+    opaqueItemId: 'FIND-1', caseId: 'AE-C001', draftResponse: 'A synthetic draft.', findings: [],
+    cases, referenceTarget, rubric
+  });
+  assert.equal(JSON.stringify(finding).includes('seededErrorIds'), false);
+  assert.equal(JSON.stringify(finding).includes('conditionId'), false);
+});
 
 function modelCalls(conditionId, action, pairId, criticOrder, runId) {
   const stages = {

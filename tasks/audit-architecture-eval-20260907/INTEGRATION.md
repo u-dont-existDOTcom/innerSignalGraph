@@ -1,20 +1,24 @@
 # Audit-architecture evaluation integration — 2026-09-07
 
-Status: deterministic harness implemented and locally tested on draft PR #46; live comparison not run; no winning architecture selected.
+Status: deterministic harness and owner-frozen ChatGPT-UI smoke plan implemented and locally tested on draft PR #46; smoke not yet run; no winning architecture selected.
 
 ## Authority and scope
 
-Current owner instruction authorizes only a de-identified, synthetic, runnable comparison of therapy-response audit architectures on the active PR/branch. It does not authorize live provider spending, runtime integration, therapy policy, guide or graph changes, merging, deployment, installation, or stable promotion.
+Current owner instruction authorizes a de-identified, synthetic, runnable comparison of therapy-response audit architectures on the active PR/branch and a bounded subscription-ChatGPT smoke controlled through Codex or Mission Control. It prohibits provider/API/OpenRouter spending and does not authorize runtime integration, therapy policy, guide or graph changes, merging, deployment, installation, or stable promotion.
 
 - Repository: `u-dont-existDOTcom/innerSignalGraph`
 - PR: draft #46, `companion/foundations-2026-09-05`
 - Initial fetched head: `e4427d175e06ad8aa313b9cfa4a340379d3e9590`
 - Refreshed PR parent before update: `48204b1dcae424434bec2859dda72e3b109d3027`
-- Local integration branch: `codex/audit-architecture-eval-20260908`, tracking the PR source branch
+- Owner-decision refresh head: `fd70a9bb2cb3fee85e3864f16974fb6be272a728`
+- Local integration branch: `codex/audit-architecture-eval-20260908-v2`, tracking the PR source branch
 - Integration receipt: the PR advanced during implementation, so the reviewed task commit was replayed linearly onto the refreshed parent. No merge commit, shared-history rewrite, or PR merge occurred.
 - Rollback boundary: the refreshed PR parent remains the direct parent; the pre-refresh task commit also remains reachable locally. This additive task can be reverted normally.
 - Provider calls: 0
+- ChatGPT model submissions after the owner-decision refresh: 0; only the visible selector was inspected
 - Real client records or transcript text: 0
+
+The frozen execution decisions are machine-readable in `execution-plan.json`: four fixtures (`AE-D004`, `AE-D005`, `AE-D007`, `AE-D010`), one repeat, the complete N/A/B-patch/B-reconstruct/C/D/E cross, visible `GPT-5.6 Sol` with visible `Extra High` for candidate/audit work, deterministic scoring plus two fresh blinded Sol Extra High graders, optional non-primary Pro dissent with blinded Sol adjudication, a separate fixed-A comparison against the visible `Latest` label, and a 100-submission stop. The ChatGPT selector inventory was observed at `2026-09-08T10:31:09Z`; the backend behind `Latest` is deliberately recorded as unknown.
 
 Current owner/task requirements outrank this ledger. Root `AGENTS.md`, `.github/codex-repository.json`, `state/CODEX-CURRENT-STATE.md`, `AUTOPILOT.md`, `docs/REASONING-SELECTION.md`, current code/tests, and the relevant universal lessons were read before implementation. The completed non-exclusive historical active-task record did not reserve this branch.
 
@@ -50,9 +54,11 @@ Strongest external baseline inside the project: the guide-fidelity protocol's is
 - `rubric.json`: 17-class taxonomy including the 15 required classes, explicit high-severity current-risk ambiguity, and low-severity style bloat; weights `HIGH=5`, `MEDIUM=3`, `LOW=1`, with 12 behavioral dimensions.
 - `architectures.json`: exact A–E and no-audit topologies, context boundaries, prompts, output schemas, pass counts, and B finding-set reuse.
 - `grader-controls.json`: separate finding-validator controls and complete-response grader controls with exact/subset semantics.
+- `execution-plan.json`: owner-frozen no-API execution boundary, four-fixture smoke, two fresh Sol Extra High graders, conservative pruning rule, selector-label evidence, `Latest` comparison, optional Pro dissent route, and owner-review/no-adoption gate.
+- `packets.mjs`: deterministic audit, finding-validation, and complete-response grading packets that enforce case-target and architecture/model firewalls for ChatGPT conversations.
 - `score.mjs`: structural privacy checks, repeat-aware opaque scheduling, schema-validated canonical audit-output bytes with recomputed content hashes, topology-derived findings/actions/responses, raw evidence-bearing grades, hidden-truth scoring, early-stop enforcement, content-bound B pairing, pooled/macro metrics, unique-call accounting, safety qualification, Pareto reporting, paired repair comparisons, and perpetual `winner: null`.
-- `score.test.mjs`: deterministic and mutant tests for coverage, privacy, answer-key withholding, repetitions, C ordering, record swaps, exact topology, canonical-output substitution and false-clean-stop rejection, criterion-bound evidence, severity, hidden seed derivation, pre-existing error versus regression, raw disagreement, duplicate findings, no-op termination, B byte/hash identity, schedule completeness, reused-grade identity, cost deduplication, derived calibration, and comparison behavior.
-- `PROTOCOL.md`: later live xhigh protocol, role separation, call formula, exact-model/budget gate, claims, and non-effects.
+- `score.test.mjs`: deterministic and mutant tests for coverage, privacy, answer-key withholding, repetitions, C ordering, record swaps, exact topology, canonical-output substitution and false-clean-stop rejection, criterion-bound evidence, severity, hidden seed derivation, pre-existing error versus regression, raw disagreement, duplicate findings, no-op termination, B byte/hash identity, schedule completeness, reused-grade identity, cost deduplication, derived calibration, execution-plan drift, packet firewalls, and comparison behavior.
+- `PROTOCOL.md`: ChatGPT-UI smoke protocol, role separation, submission/cost formula, selector-label gate, small model comparison, optional Pro adjudication, claims, and non-effects.
 
 `CHANGED-PATHS.txt` is the exact intended task delta relative to the fetched baseline. The containing commit and hosted check identities belong in Git/PR evidence because a commit cannot embed its own final hash.
 
@@ -62,7 +68,9 @@ Focused test after independent-review repairs:
 
 `/home/joel/.nvm/versions/node/v24.18.0/bin/node --test --test-isolation=none tasks/audit-architecture-eval-20260907/score.test.mjs`
 
-Result: 20/20 passing on pinned Node 24.18.0. The strengthened suite exposed and drove repairs to control length, stage-name/setup drift, criterion-map shadowing, late no-op topology, schedule completeness, shared-call identity, grade-call cost identity, and raw audit-output provenance. Test-efficiency telemetry preserves the sequence outside the worktree.
+Latest focused result: 24/24 passing on pinned Node 24.18.0. The strengthened suite now also rejects API/provider activation, inferred `Latest` identity, anchored/non-blind graders, missing good-control coverage, direct Pro verdicts, automatic adoption, and audit/grader packet leakage. Earlier repairs covered control length, stage-name/setup drift, criterion-map shadowing, late no-op topology, schedule completeness, shared-call identity, grade-call cost identity, and raw audit-output provenance.
+
+On owner-decision refresh parent `fd70a9bb2cb3fee85e3864f16974fb6be272a728`, the complete pinned Node 24.18.0 package gate passes: 975/975 automated tests, 29/29 graph cases, therapy lessons, authoring validate/check/maps, immutable packet archives, mock A001/H001 replays, web/autopilot smokes, runtime fingerprint, package hygiene, and autonomous-development checks. A sandboxed run was discarded after permission-sensitive subprocess and loopback tests failed; the required host-boundary rerun is the valid green result.
 
 Pre-refresh pinned-runtime package verification passed, including 948/948 automated tests, 29/29 graph cases, syntax and authoring checks, archive verification, mock replays, web/autopilot smoke checks, package hygiene, and autonomous-development checks. `npm run audit:repository` also passed with zero errors and its pre-existing warning that hosted GitHub App permissions require external verification.
 
@@ -93,14 +101,8 @@ The committed tests intentionally do not contain a forbidden list built from pri
 
 ## Exact remaining owner decisions
 
-No owner decision is needed to retain this deterministic harness on the draft PR. Before a live experiment, the owner must authorize:
-
-1. the strict maximum provider-call/token/spend budget and repeat count, including whether optional E is in the paid run;
-2. the final-grader and finding-validator independence configuration after the executor verifies exact available model/API identities and provider routes;
-3. the smoke subset versus full-corpus boundary if the full paired design exceeds the authorized budget.
-
-After live grades are frozen and unblinded, architecture adoption is a separate owner/product-policy decision. The evidence may support a recommendation, but the harness cannot promote any condition into runtime policy, merge the PR, deploy, install, or advance `stable`.
+No owner decision remains before the frozen four-fixture smoke. The owner has resolved the execution surface, models, grading roles, repeat/fixture boundary, optional Pro route, and no-spend/no-adoption rules. The next owner decision occurs only after prompts, outputs, scores, findings, and grader/adjudication records are frozen: whether evidence warrants a full-corpus run, whether `Latest` materially changes eventual-runtime assumptions, and eventually whether any architecture should be adopted. The harness cannot decide or implement those choices.
 
 ## Next safe action
 
-Complete the ephemeral private-overlap and final staged-diff checks, amend the linear task commit, run the Git-object publication audit, and update draft PR #46 only while preserving the named refreshed-parent package-gate failure. Stop before merge, deployment, installation, or stable promotion.
+Freeze the current containing commit and artifact hashes, create the private ignored run manifest, calibrate both fresh Sol Extra High grading passes, and run the one-repeat four-fixture ChatGPT smoke under the 100-submission ceiling. Freeze and grade before unblinding. Do not run a full corpus, select or implement an architecture, infer the backend behind `Latest`, merge, deploy, install, or advance `stable`.

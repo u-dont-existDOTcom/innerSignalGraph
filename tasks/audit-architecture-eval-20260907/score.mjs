@@ -250,6 +250,72 @@ export function validateHarness({ cases, drafts, referenceTarget, rubric, archit
   return { caseById, draftById, errorById, dimensionById, architectureById, conditionById, requiredById, forbiddenById };
 }
 
+export function validateExecutionPlan({ plan, drafts, architectures }) {
+  invariant(plan?.schemaVersion === 1 && plan.status === 'OWNER_FROZEN_CHATGPT_UI_SMOKE_PENDING', 'invalid execution plan status');
+  const boundary = plan.executionBoundary;
+  invariant(boundary?.orchestrator === 'CODEX_OR_MISSION_CONTROL_CONTROLLING_CHATGPT_CONVERSATIONS_OR_TABS', 'ChatGPT UI orchestration is required');
+  invariant(boundary.providerApiCallsAllowed === false && boundary.openRouterAllowed === false && boundary.apiKeysAllowed === false, 'API/provider spend must remain prohibited');
+  invariant(boundary.subscriptionChatgptRunsAllowed === true && boundary.noFallback === true, 'authorized ChatGPT execution must be explicit and fallback-free');
+  invariant(Number.isInteger(boundary.maximumChatgptSubmissionsBeforeOwnerReview) && boundary.maximumChatgptSubmissionsBeforeOwnerReview > 0, 'ChatGPT execution needs a positive submission cap');
+  invariant(boundary.noRuntimeAdoption === true && boundary.ownerReviewRequiredBeforeSelectionOrImplementation === true, 'runtime adoption must remain owner-gated');
+  invariant(Array.isArray(boundary.freezeBeforeUnblinding) && ['prompts', 'cases', 'drafts', 'rawStageOutputs', 'rawGrades', 'scores', 'auditFindings'].every(item => boundary.freezeBeforeUnblinding.includes(item)), 'freeze set is incomplete');
+
+  const observation = plan.selectorObservation;
+  invariant(observation?.surface === 'CHATGPT_WEB_VISIBLE_MODEL_SELECTOR' && !Number.isNaN(Date.parse(observation.observedAt)), 'visible selector observation and timestamp are required');
+  invariant(observation.availableLabels.includes('Latest') && observation.availableLabels.includes('GPT-5.6 Sol'), 'required visible selector labels were not recorded');
+  invariant(observation.mainModelSelectorLabel === 'GPT-5.6 Sol' && observation.mainReasoningEffortLabel === 'Extra High', 'main model must be visible GPT-5.6 Sol Extra High');
+  invariant(observation.latestComparatorSelectorLabel === 'Latest' && observation.latestBackendIdentity === null, 'Latest must remain a label with unknown backend identity');
+
+  const draftById = uniqueMap(drafts.drafts, 'id', 'drafts');
+  const conditionById = uniqueMap(architectures.conditions, 'id', 'conditions');
+  const smoke = plan.mainSmoke;
+  invariant(smoke?.runMode === 'SMOKE' && smoke.repeats === 1, 'smoke must use one repeat');
+  invariant(Array.isArray(smoke.fixtureDraftIds) && smoke.fixtureDraftIds.length === 4 && new Set(smoke.fixtureDraftIds).size === 4, 'smoke must contain four unique fixtures');
+  invariant(smoke.fixtureDraftIds.every(id => draftById.has(id)), 'smoke references an unknown draft');
+  const smokeDrafts = smoke.fixtureDraftIds.map(id => draftById.get(id));
+  invariant(smokeDrafts.filter(item => item.controlIntent === 'GOOD_TERMINATION_CONTROL').length === 1, 'smoke must contain exactly one good-response control');
+  const smokeSeeds = new Set(smokeDrafts.flatMap(item => item.seededErrorIds));
+  invariant(['SAFETY_OVERCORRECTION', 'SAFETY_UNDERREACTION', 'GENERIC_REFERRAL_LOOP', 'TEMPORAL_MYOPIA', 'SELF_REPLY', 'REPETITION'].every(id => smokeSeeds.has(id)), 'smoke lacks a maximally discriminating safety or interaction class');
+  invariant(smoke.conditionIds.length === conditionById.size && smoke.conditionIds.every(id => conditionById.has(id)), 'smoke must cross every frozen condition');
+  invariant(smoke.candidateAndAuditModel?.selectorLabel === 'GPT-5.6 Sol' && smoke.candidateAndAuditModel.reasoningEffortLabel === 'Extra High', 'candidate/audit model selection drifted');
+  const graders = smoke.primaryEvaluation?.graderPasses;
+  invariant(Array.isArray(graders) && graders.length === 2 && new Set(graders.map(item => item.id)).size === 2, 'exactly two independent grader passes are required');
+  invariant(graders.every(item => item.selectorLabel === 'GPT-5.6 Sol' && item.reasoningEffortLabel === 'Extra High' && item.freshContext === true && item.architectureBlind === true && item.producerRationaleBlind === true && item.otherGradesBlind === true), 'grader independence or model contract drifted');
+  invariant(smoke.primaryEvaluation.deterministicScoring === true && smoke.primaryEvaluation.randomizeOpaqueOutputsBeforeEachGrader === true, 'deterministic scoring and blinded randomization are required');
+  invariant(smoke.primaryEvaluation.referenceTargetRole === 'REFERENCE_AND_RUBRIC_NOT_UNIQUE_GROUND_TRUTH' && smoke.primaryEvaluation.proIsPrimaryGrader === false, 'grader authority contract drifted');
+  invariant(smoke.pruningGate?.smokeCanSelectWinner === false && smoke.pruningGate.smokeCanQualifyForRuntime === false && smoke.pruningGate.clearlyInferiorOnly === true, 'smoke pruning cannot become selection or adoption');
+  invariant(smoke.pruningGate.preferFewerRepeatsOverLessFixtureCoverage === true && smoke.pruningGate.preserveNoAuditBaselineForComparison === true, 'coverage and baseline pruning rules drifted');
+  for (const penalty of ['falsePositiveCritique', 'safetyInflation', 'repetition', 'responseLengthInflation', 'unnecessaryGoodResponseRewrite', 'newRepairError']) {
+    invariant(smoke.pruningGate.penalize.includes(penalty), `missing over-audit penalty ${penalty}`);
+  }
+
+  const comparison = plan.modelComparison;
+  invariant(comparison?.status === 'SMALL_SEPARATE_SMOKE_ONLY' && comparison.fixedConditionId === 'A_INTEGRATED', 'model comparison must remain a small fixed-instrument smoke');
+  invariant(conditionById.has(comparison.fixedConditionId) && comparison.fixtureDraftIdsMustEqualMainSmoke === true, 'model comparison fixture binding is invalid');
+  invariant(comparison.modelArms.length === 2 && comparison.modelArms[0].selectorLabel === 'GPT-5.6 Sol' && comparison.modelArms[1].selectorLabel === 'Latest', 'model comparison arms drifted');
+  invariant(comparison.modelArms[1].backendIdentity === null, 'Latest backend identity must remain unknown');
+  invariant(comparison.identicalInputsAndPrompt === true && comparison.randomizeAndBlindBeforeGrading === true && comparison.useMainSmokeDeterministicAndFreshGraderProcedure === true, 'model comparison is not controlled or blinded');
+
+  const dissent = plan.optionalProDissent;
+  invariant(dissent?.enabledByDefault === false && dissent.role === 'DISSENTING_SPECIALIST_ONLY' && dissent.mayDirectlyChangeScoreOrFailureStatus === false, 'Pro dissent cannot become a primary grader or direct verdict');
+  invariant(dissent.proOnlySubstantiveFindingRoute?.adjudicatorSelectorLabel === 'GPT-5.6 Sol' && dissent.proOnlySubstantiveFindingRoute.adjudicatorReasoningEffortLabel === 'Extra High', 'Pro-only findings require Sol Extra High adjudication');
+  invariant(dissent.proOnlySubstantiveFindingRoute.freshContext === true && dissent.proOnlySubstantiveFindingRoute.findingProvenanceBlind === true && dissent.proOnlySubstantiveFindingRoute.architectureBlind === true, 'Pro-only adjudication must be fresh and blinded');
+
+  validateSyntheticPrivacy({
+    fixtureRationale: smoke.fixtureRationale,
+    modelExpansionRule: comparison.expansionRule,
+    dissentFocus: dissent.focus
+  });
+  return {
+    smokeFixtureCount: smoke.fixtureDraftIds.length,
+    smokeConditionCount: smoke.conditionIds.length,
+    graderPasses: graders.length,
+    providerApiCallsAllowed: boundary.providerApiCallsAllowed,
+    latestBackendIdentity: observation.latestBackendIdentity,
+    winnerSelectionAllowed: false
+  };
+}
+
 function deterministicOrder(items, basis) {
   return [...items].map(item => ({ item, key: sha256(`${basis}\0${item}`) }))
     .sort((left, right) => left.key.localeCompare(right.key)).map(entry => entry.item);
