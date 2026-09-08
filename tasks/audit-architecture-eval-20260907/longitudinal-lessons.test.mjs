@@ -50,7 +50,7 @@ test('synthetic chronology retains the longitudinal target and settled nonverbal
   assert.ok(fixture.facts.some(fact => fact.id === 'AE-F018' && /sleep/iu.test(fact.claim)));
   assert.ok(fixture.facts.some(fact => fact.id === 'AE-F019' && /appraises/iu.test(fact.claim)));
   assert.ok(fixture.settledHistory.some(item => /long-term targets/iu.test(item)));
-  assert.ok(fixture.settledHistory.some(item => /nonverbal/iu.test(item)));
+  assert.ok(fixture.settledHistory.some(item => /no reported verbal content/iu.test(item)));
   assert.ok(fixture.settledHistory.some(item => /Sleep is explicitly unchanged/u.test(item)));
   assert.ok(fixture.openQuestions.some(item => /shame makes the client do or avoid/iu.test(item)));
   assert.ok(fixture.openQuestions.some(item => /curiosity\/inclusion\/integration/iu.test(item)));
