@@ -7,13 +7,13 @@ source_id: SOM.MAP_NOT_LADDER
 guide_id: somatic-sequencing-guide
 heading: This is a Map, But You Are the Explorer
 source_role: primary-framework
-source_hash: f865c8d93221cccd8e49f49adbf0961051f0c0775603e785420ee89509acb419
+source_hash: 5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267
 section_hash: be86763ca389d531d7cb28c834dc1fee6cf7a077b8afcc10ccf8ef5d7c7f9ff3
 locator_kind: text-lines
 cited_by_node_ids:
   - ROUTE.EXTERNAL_EMBODIMENT
   - SOM.SAFETY_STABILIZATION
-projection_input_sha256: 9499803d7373c2217bf3f59035cf680e8b679dbf7281c7db14797be0b132a557
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # This is a Map, But You Are the Explorer

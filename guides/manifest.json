@@ -13,9 +13,9 @@
     },
     {
       "id": "somatic-sequencing-guide",
-      "version": "source-upload-2026-08-06-052022",
+      "version": "owner-authorized-external-modality-note-2026-09-08",
       "file": "somatic-sequencing-guide.txt",
-      "sha256": "f865c8d93221cccd8e49f49adbf0961051f0c0775603e785420ee89509acb419",
+      "sha256": "5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267",
       "role": "primary-framework",
       "format": "text"
     },
@@ -44,7 +44,7 @@
       "format": "json"
     }
   ],
-  "notes": "The active inner-child article is the complete owner-pasted current guide with adopted E01-E12, recorded in tasks/guide-source-sync-20260907/SOURCE-SYNC.json. Earlier source snapshots are retained byte-for-byte. Owner amendments remain separately cited extensions; semantic assets retain instructional-visual provenance. The graph contract/bundle identity and installed Guide Packets are unchanged by this candidate source revision.",
+  "notes": "The active inner-child article is the complete owner-pasted current guide with adopted E01-E12, recorded in tasks/guide-source-sync-20260907/SOURCE-SYNC.json. The somatic source includes the owner-authorized, evidence-labeled Butoh/ecstatic/enactment external-practice note; it is not a runtime intervention or efficacy claim. Earlier source snapshots are retained byte-for-byte. Owner amendments remain separately cited extensions; semantic assets retain instructional-visual provenance. The graph contract/bundle identity and installed Guide Packets are unchanged by this candidate source revision.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",

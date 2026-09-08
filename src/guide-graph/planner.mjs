@@ -283,6 +283,11 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     ? { type: "turn-task", phase: task.phase, focus: task.question_focus }
     : questionNode ? { type: "graph-node", id: questionNode.id }
     : { type: "case-unknown", variable: usefulUnknowns[0].variable };
+  if (!emergency && control?.latest?.decision === "PROBE" && control.latest.route === "continue"
+      && control.latest.failure_sources?.some(f => f.kind === "REPRESENTATION_MISMATCH")) {
+    nextQuestion = performanceQuestion(control);
+    nextQuestionSource = nextQuestion ? { type: "path-performance-representation", episode: control.latest.episode_id } : null;
+  }
   if (interrupt && (primary?.tier > 2 || control.latest.route === "safety")) {
     nextQuestion = primary.id === "ROUTE.THREE_WAY_GATE" ? performanceQuestion(control) : "";
     nextQuestionSource = nextQuestion ? { type: "path-performance", episode: control.latest.episode_id } : null;
@@ -329,13 +334,15 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     contractVersion: taskPolicy ? "case-plan-v5" : "case-plan-v4",
     ...(execution ? { executionContract: execution } : {}),
     ...(control ? { pathPerformance: { ...control.latest, selected_node: primary?.id ?? null },
-      pathPerformanceContract: { version: 1, decision: control.latest.decision,
+      pathPerformanceContract: { version: 2, decision: control.latest.decision,
         strategy: control.active?.strategy ?? null,
+        representation: control.latest.representation ?? null,
         delivery_assessment: control.latest.delivery_assessment ?? null,
         delivery_actions: control.latest.delivery_actions ?? [],
         prior_node: control.active?.strategy.node_id ?? null,
         prohibit_prior_exercise: Boolean(interrupt), guidance: pathPerformanceGuidance(control),
-        humanUsefulnessEstablished: false } } : {}),
+        humanUsefulnessEstablished: false,
+        humanHarmEvaluation: "SEPARATE_REVIEW_REQUIRED" } } : {}),
     graphBundleVersion: graphs[0]?.bundleVersion ?? null,
     variables,
     primaryJob: primary ? { id: primary.id, title: primary.title, tier: primary.tier } : null,

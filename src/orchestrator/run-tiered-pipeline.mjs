@@ -27,7 +27,7 @@ function criticalDeltaCount(snapshot, priorSnapshot) {
 
 export function classifyTherapyTier(snapshot, requested = "auto", session = {}) {
   const v = snapshot?.variables ?? {};
-  const performanceDanger = snapshot?.path_update?.signals?.some(s => ["dissociation", "fragmentation", "destabilization"].includes(s.kind) && s.severity === "significant");
+  const performanceDanger = snapshot?.path_update?.signals?.some(s => ["dissociation", "fragmentation", "destabilization", "reality_testing_instability"].includes(s.kind) && s.severity === "significant");
   const safetyHard = performanceDanger || v.present_safety === "unsafe"
     || v.orientation === "disoriented"
     || v.ability_to_stop === "no"
@@ -65,8 +65,10 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
   const readinessReviewRequired = Boolean(snapshot?.relational_readiness);
   const romanceGuideReviewRequired = Boolean(snapshot?.romance_guide_context);
   const deliveryReviewRequired = Boolean(snapshot?.path_update?.delivery_review || snapshot?._path_prior?.active?.delivery_assessment_key);
+  const representation = snapshot?.path_update?.representation ?? snapshot?._path_prior?.active?.representation ?? null;
+  const representationReviewRequired = Boolean(representation && (representation.mode !== "CLEAR" || ["SWITCH", "STAY_SYMBOLIC", "TRANSLATE_TO_PLAIN"].includes(representation.transition)));
   if (requested === "fast" && !intentHard && !ambiguityHard && !deliveryReviewRequired
-      && !readinessReviewRequired && !romanceGuideReviewRequired) return { tier: "fast", reason: "user-selected fast mode", forced: false, deltaCount };
+      && !readinessReviewRequired && !romanceGuideReviewRequired && !representationReviewRequired) return { tier: "fast", reason: "user-selected fast mode", forced: false, deltaCount };
 
   if (intentHard) return { tier: "deep", reason: "deep/high-stakes intent", forced: false, deltaCount };
   if (ambiguityHard) {
@@ -81,6 +83,7 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
   if (readinessReviewRequired) return { tier: "reviewed", reason: "relational readiness and foreseeable harm require case audit", forced: true, deltaCount };
   if (romanceGuideReviewRequired) return { tier: "reviewed", reason: "source-bound romance context requires case audit", forced: true, deltaCount };
   if (deliveryReviewRequired) return { tier: "reviewed", reason: "evidence-bound delivery and practitioner trust review", forced: requested === "fast", deltaCount };
+  if (representationReviewRequired) return { tier: "reviewed", reason: "process-scoped experiential or bridge representation requires epistemic audit", forced: requested === "fast", deltaCount };
   if (reviewedSignal) return { tier: "reviewed", reason: "moderate ambiguity or protective conflict", forced: false, deltaCount };
   return { tier: "fast", reason: "low-ambiguity graph-following", forced: false, deltaCount };
 }

@@ -1,5 +1,5 @@
 {
-  "version": "source-layout-v2-2026-09-07",
+  "version": "source-layout-v3-2026-09-08",
   "textGuides": [
     {
       "guideId": "inner-child-guide",
@@ -59,6 +59,7 @@
         {"id":"SOM.EFT","heading":"EFT / Tapping"},
         {"id":"SOM.SHAKING_QIGONG","heading":"Shaking Qigong / Shaking Medicine"},
         {"id":"SOM.STACK","heading":"The Discharge → Settle Stack"},
+        {"id":"SOM.BUTOH_EXTERNAL","heading":"Optional External Practice: Butoh-Informed Expressive Movement / Ecstatic Movement + Enactment — Experimental"},
         {"id":"SOM.PHASE3","heading":"Phase 3: Deep Subcortical Reprocessing"},
         {"id":"SOM.BRAINSPOTTING","heading":"Primary Modality: Brainspotting"},
         {"id":"SOM.POST_BRAINSPOTTING","heading":"Post-Brainspotting Integration"},

@@ -46,9 +46,12 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
       autopilotFeedback: {
         type: "realization-coverage-retry",
         missingNodeIds: enforced.responseContract.missingRealizationNodeIds,
+        requiredRepresentationPolicyMarker: enforced.responseContract.requiredRepresentationPolicyMarker ?? null,
+        missingRepresentationPolicyMarker: enforced.responseContract.missingRepresentationPolicyMarker ?? false,
+        unexpectedRepresentationPolicyMarkers: enforced.responseContract.unexpectedRepresentationPolicyMarkers ?? [],
         prohibitedNodeIds: enforced.responseContract.prohibitedRealizationNodeIds ?? [],
         romanceGuideReferenceDecision: enforced.responseContract.romanceGuideReferenceDecision ?? null,
-        instruction: "Rewrite the response so every missing selected intervention is materially realized and prohibited interventions are removed. Follow the path-performance switch/stop decision and deterministic romance-guide reference decision; do not paraphrase the old exercise or add an unauthorized link. Preserve the canonical question and all prior epistemic constraints."
+        instruction: "Rewrite the response so every missing selected intervention and required representation marker is materially realized, obvious symbolic overclaims and prohibited interventions are removed, and every marker has a verbatim answer quote. Follow the path-performance switch/stop decision and deterministic romance-guide reference decision; do not paraphrase the old exercise or add an unauthorized link. Preserve the canonical question and all prior epistemic constraints."
       }
     };
     rawResult = await structuredCall(
@@ -73,9 +76,9 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
   const contract = context.interventionContract;
   if (episode) episode.delivery = null;
   if (episode && enforced.responseContract.pathPerformanceAdherencePassed === true
-      && ["CONTINUE", "ADJUST_DELIVERY"].includes(contract.pathPerformanceContract.decision)
+      && ["CONTINUE", "ADJUST_DELIVERY", "SWITCH_REPRESENTATION"].includes(contract.pathPerformanceContract.decision)
       && contract.primaryJob?.id === episode.strategy.node_id) {
-    episode.delivery = { node_id: contract.primaryJob.id, review: episode.review_count, evidence: "realization_contract_passed_semantics_unverified" };
+    episode.delivery = { node_id: contract.primaryJob.id, review: episode.review_count, representation: contract.pathPerformanceContract.representation?.selected ?? null, evidence: "realization_contract_passed_semantics_unverified" };
   }
   return {
     ...rawResult,

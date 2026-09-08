@@ -7,13 +7,13 @@ source_id: SOM.ADVANCED_RELEASE_SOURCE
 guide_id: somatic-sequencing-guide
 heading: "For Fun & Advanced Release try sky hypnosis and vagal blitz breathwork (sky hypnosis transcript here, then vagal blitz post attached as pdf):"
 source_role: primary-framework
-source_hash: f865c8d93221cccd8e49f49adbf0961051f0c0775603e785420ee89509acb419
+source_hash: 5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267
 section_hash: fe5989c2c7a3a8494bc5ea30919e7c940d72b2d28af0f1f4fffc92b9b28f6940
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.ADVANCED_RELEASE_BLOCK
   - SOM.ADVANCED_RELEASE_OPTIONAL
-projection_input_sha256: 9499803d7373c2217bf3f59035cf680e8b679dbf7281c7db14797be0b132a557
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # For Fun & Advanced Release try sky hypnosis and vagal blitz breathwork (sky hypnosis transcript here, then vagal blitz post attached as pdf):
@@ -22,7 +22,7 @@ projection_input_sha256: 9499803d7373c2217bf3f59035cf680e8b679dbf7281c7db14797be
 
 Authority path: `guides/somatic-sequencing-guide.txt`
 
-Locator: Lines 329–410
+Locator: Lines 346–428
 
 ```text
 For Fun & Advanced Release try sky hypnosis and vagal blitz breathwork (sky hypnosis transcript here, then vagal blitz post attached as pdf):

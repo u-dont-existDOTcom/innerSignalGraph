@@ -7,12 +7,12 @@ source_id: SOM.PHASE3
 guide_id: somatic-sequencing-guide
 heading: "Phase 3: Deep Subcortical Reprocessing"
 source_role: primary-framework
-source_hash: f865c8d93221cccd8e49f49adbf0961051f0c0775603e785420ee89509acb419
+source_hash: 5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267
 section_hash: b371489705eed42aeaa2e1554b39c4df808d3e1857d7d86d52689a1586fe835f
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.DEEP_BRAINSPOTTING
-projection_input_sha256: 9499803d7373c2217bf3f59035cf680e8b679dbf7281c7db14797be0b132a557
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Phase 3: Deep Subcortical Reprocessing
@@ -21,7 +21,7 @@ projection_input_sha256: 9499803d7373c2217bf3f59035cf680e8b679dbf7281c7db14797be
 
 Authority path: `guides/somatic-sequencing-guide.txt`
 
-Locator: Lines 203–205
+Locator: Lines 220–222
 
 ```text
 Phase 3: Deep Subcortical Reprocessing

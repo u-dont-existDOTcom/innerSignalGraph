@@ -1,4 +1,4 @@
-import { validatePathUpdate } from "./path-performance.mjs";
+import { validatePathUpdate, validateRepresentationSelection } from "./path-performance.mjs";
 import { validateTurnTask } from "./turn-task.mjs";
 import { validateRelationalEvidence } from "./relational-readiness.mjs";
 import { validateRomanceGuideContext } from "./romance-guide.mjs";
@@ -61,6 +61,8 @@ export function validateCaseAudit(value) {
   object(value, "caseAudit");
   if (Object.hasOwn(value, "corrected_turn_task")) value.corrected_turn_task = validateTurnTask(value.corrected_turn_task);
   if (value.invalidate_turn_task != null && typeof value.invalidate_turn_task !== "boolean") throw new ValidationError("invalidate_turn_task must be boolean.");
+  if (Object.hasOwn(value, "corrected_path_representation")) value.corrected_path_representation = validateRepresentationSelection(value.corrected_path_representation);
+  if (value.invalidate_path_representation != null && typeof value.invalidate_path_representation !== "boolean") throw new ValidationError("invalidate_path_representation must be boolean.");
   if (Object.hasOwn(value, "corrected_relational_readiness") && value.corrected_relational_readiness !== null) object(value.corrected_relational_readiness, "caseAudit.corrected_relational_readiness");
   if (value.invalidate_relational_readiness != null && typeof value.invalidate_relational_readiness !== "boolean") throw new ValidationError("invalidate_relational_readiness must be boolean.");
   if (Object.hasOwn(value, "corrected_romance_guide_context") && value.corrected_romance_guide_context !== null) object(value.corrected_romance_guide_context, "caseAudit.corrected_romance_guide_context");

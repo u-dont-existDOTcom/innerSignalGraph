@@ -64,6 +64,18 @@ function relationalPolicyMarkers(plan = {}) {
 }
 
 const ROMANCE_GUIDE_REFERENCE_MARKER = "POLICY.ROMANCE_GUIDE_REFERENCE";
+const representationMarker = representation => representation?.mode && representation?.channel
+  ? `POLICY.REPRESENTATION.${representation.mode}.${representation.channel}` : null;
+const SYMBOLIC_OVERCLAIM_PATTERNS = Object.freeze([
+  { code: "SYMBOL_AS_TRAUMA_FACT", pattern: /\b(?:your|the)\s+(?:house|monster|colou?r|drawing|image|poem|story|metaphor)\s+(?:means|proves|reveals|confirms|shows)\s+(?:that\s+)?(?:you\s+(?:were|have been)\s+abused|(?:the|your)\s+trauma\s+(?:really\s+)?happened|(?:a\s+)?(?:repressed|recovered)\s+memory\s+is\s+(?:real|true)|you\s+have\s+[a-z -]*trauma)\b/i },
+  { code: "UNCONSCIOUS_REVELATION", pattern: /\byour unconscious (?:is )?(?:revealing|telling|showing)\b/i },
+  { code: "HIDDEN_MESSAGE_CERTAINTY", pattern: /\b(?:this|the)\s+(?:archetype|synchronicity|symbol|image)\s+(?:is|contains)\s+(?:a\s+)?hidden message\b/i },
+  { code: "ONTOLOGICAL_MESSAGE_CERTAINTY", pattern: /\b(?:the universe|an archetype|this synchronicity)\s+(?:is telling|confirms|proves|reveals)\b/i },
+  { code: "AI_IMAGE_REVELATION", pattern: /\b(?:the|this|an)\s+AI-generated (?:image|artwork)\s+(?:is|offers|provides|contains)\s+(?:a\s+)?revelation\b/i }
+]);
+function symbolicOverclaimViolations(answer) {
+  return SYMBOLIC_OVERCLAIM_PATTERNS.filter(({ pattern }) => pattern.test(answer)).map(({ code }) => code);
+}
 const ROMANCE_GUIDE_DOMAIN = /(?:https?:\/\/)?romance\.u-dont-exist\.com\b/i;
 function romanceReferenceMentions(value) {
   return String(value ?? "").split(/\s+/).filter(token => ROMANCE_GUIDE_DOMAIN.test(token));
@@ -139,6 +151,16 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const relationalTracked = Boolean(plan?.pathPerformance?.relational_readiness || relational.required.length || relational.forbidden.length);
   const missingRelationalPolicyMarkers = relational.required.filter(id => !realizedNodeIds.includes(id));
   const forbiddenRelationalPolicyMarkers = relational.forbidden.filter(id => realizedNodeIds.includes(id));
+  const representation = pathContract?.representation ?? null;
+  const selectedRepresentation = representation?.selected ?? null;
+  const observedRepresentation = representation?.observed ?? null;
+  const requiredRepresentationPolicyMarker = representationMarker(selectedRepresentation);
+  const priorRepresentationPolicyMarker = representationMarker(observedRepresentation);
+  const unexpectedRepresentationPolicyMarkers = realizedNodeIds.filter(id => id.startsWith("POLICY.REPRESENTATION.") && id !== requiredRepresentationPolicyMarker);
+  const missingRepresentationPolicyMarker = Boolean(requiredRepresentationPolicyMarker && !realizedNodeIds.includes(requiredRepresentationPolicyMarker));
+  const forbiddenPriorRepresentationPolicyMarker = Boolean(["SWITCH", "DECLINED", "STABILIZE_CLEAR"].includes(representation?.action) && priorRepresentationPolicyMarker
+    && priorRepresentationPolicyMarker !== requiredRepresentationPolicyMarker && realizedNodeIds.includes(priorRepresentationPolicyMarker));
+  const symbolicOverclaims = representation ? symbolicOverclaimViolations(answerBody) : [];
   const romanceGuide = plan?.romanceGuide ?? null;
   const romanceReferenceDecision = romanceGuide?.realization?.reference_decision ?? "NOT_AUTHORIZED";
   const romanceReferenceAllowed = romanceReferenceDecision === "OFFER_OPTIONAL_REFERENCE"
@@ -160,6 +182,7 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
     && !forbiddenRomanceGuideReference && !unsupportedRomanceGuideReferenceMarker;
   const pathAdherence = (!pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0))
     && missingRelationalPolicyMarkers.length === 0 && forbiddenRelationalPolicyMarkers.length === 0
+    && !missingRepresentationPolicyMarker && !forbiddenPriorRepresentationPolicyMarker && unexpectedRepresentationPolicyMarkers.length === 0 && symbolicOverclaims.length === 0
     && romanceGuideAdherence;
 
   return {
@@ -179,6 +202,14 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
       missingRealizationNodeIds: missingNodeIds,
       realizationCoveragePassed: missingNodeIds.length === 0,
       ...(relationalTracked ? { relationalPolicyMarkersRequired: relational.required, missingRelationalPolicyMarkers, forbiddenRelationalPolicyMarkers } : {}),
+      ...(representation ? {
+        requiredRepresentationPolicyMarker,
+        missingRepresentationPolicyMarker,
+        forbiddenPriorRepresentationPolicyMarker,
+        unexpectedRepresentationPolicyMarkers,
+        symbolicOverclaimViolations: symbolicOverclaims,
+        representationSemanticLimit: "NARROW_OBVIOUS_OVERCLAIM_BACKSTOP_REQUIRES_SEPARATE_HUMAN_REVIEW"
+      } : {}),
       ...(romanceGuide ? {
         romanceGuideReferenceDecision: romanceReferenceDecision,
         romanceGuideReferenceAllowed: romanceReferenceAllowed,

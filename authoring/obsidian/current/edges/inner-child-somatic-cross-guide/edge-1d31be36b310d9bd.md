@@ -10,7 +10,7 @@ from_node_id: ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN
 to_node_id: ROUTE.ACT_OUTWARD
 relation: may-use-practical-protection-without-verdict
 base_graph_sha256: beb05b08a340cf9bd62efacaab7619a3dd4f6adf6bedabb4927cfe4e3a329560
-projection_input_sha256: 9499803d7373c2217bf3f59035cf680e8b679dbf7281c7db14797be0b132a557
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN may-use-practical-protection-without-verdict ROUTE.ACT_OUTWARD

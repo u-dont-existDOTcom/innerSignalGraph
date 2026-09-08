@@ -2,6 +2,18 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Current continuation — one truth system, many experiential languages
+
+The 2026-09-08 owner-authorized candidate began from freshly fetched PR #46 head `48204b1dcae424434bec2859dda72e3b109d3027`. Its sole recovery ledger is [representation-delivery-20260908/INTEGRATION.md](representation-delivery-20260908/INTEGRATION.md); read the [design](../docs/superpowers/specs/2026-09-08-representation-delivery-modes.md), [Butoh evidence scan](../docs/research/2026-09-08-butoh-ecstatic-enactment-scan.md), and exact changed-path manifest before editing. Fetch the draft head again rather than relying on the starting SHA.
+
+The existing Path Performance Controller now selects delivery per process, not per person: CLEAR, EXPERIENTIAL, or BRIDGE across analytic prose, felt sense/body, image/drawing, metaphor/story/poem, enactment/role dialogue, and movement/gesture. It can switch cheaply when a channel produces repeated low-information replies, assistant verbosity without client-generated information, explicit mismatch, or vivid expression without discriminating information. Causal strategy state survives a representation-only switch. The trace distinguishes selection from actual delivery and records prediction, observed response, channel performance, path performance, and the still-unestablished human usefulness/harm judgment. Declines are respected; different processes for one person can use different modes.
+
+Hard invariants keep the epistemic core analytic: the user owns symbols; drawings are not projective tests; metaphor/image/poetry create phenomenological meaning or hypotheses, not external facts; AI imagery is not revelation; consequential claims use ordinary evidence/reality checks; and the user may request a plain explanation or optional translation bridge. Reality-testing instability moves toward concrete CLEAR/prose orientation without archetypal, synchronicity, unconscious-message, or hidden-truth certainty.
+
+The somatic source adds `SOM.BUTOH_EXTERNAL` only as an optional **external, experimental** note. The bounded scan did not establish “Butoh ecstatic dance” as a standardized clinical therapy; the label is best treated as a loose/local hybrid. Adjacent Butoh-informed therapy is partial/experimental, while established DMT/psychodrama evidence does not validate this hybrid. The owner's BDSM observation remains anecdotal, not intrinsic to Butoh. No AI-led physical/sexual/contact/coercive enactment was added, and no graph node can select it. Consent, boundaries, opt-out/leave capacity, sober consent for sexual/contact elements, trauma-aware facilitation, vulnerability cautions, and post-session destabilization-as-ADVERSE are explicit.
+
+No paid/live fidelity calls, merge, deployment, installation, stable promotion, or clinical-efficacy claim. Real usefulness/harm, subtle symbolic inflation, local event/facilitator quality, and clinical suitability remain for separate human evaluation.
+
 ## Current continuation — romance guide is behaviorally integrated
 
 The latest owner-authorized candidate integration began from freshly fetched PR #46 head `e5968cecccf8eb5efd15d94804129067290fdace` and was reconciled onto refreshed descendant `e4427d175e06ad8aa313b9cfa4a340379d3e9590`. Read [the sole integration receipt](romance-guide-20260907/INTEGRATION.md), [resume file](romance-guide-20260907/README.md), and [design](../docs/superpowers/specs/2026-09-07-romance-guide-integration.md). Fetch the draft head again before editing.

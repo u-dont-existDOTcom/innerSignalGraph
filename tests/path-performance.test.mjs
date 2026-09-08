@@ -168,7 +168,7 @@ test("strict schema/validator reject fabricated references and invented counters
  }
  assert.throws(() => validatePathUpdate(update([signal("praise", { observation_id: "missing" })]), observationIds), /unavailable/);
  assert.equal(caseSnapshotSchema.required.includes("path_update"), true);
- assert.deepEqual(FAILURE_SOURCES, ["FORMULATION_MISMATCH", "TARGET_MISMATCH", "METHOD_MISMATCH", "PACING_MISMATCH", "DELIVERY_MISMATCH", "STATE_CONSTRAINT", "PROCESS_COMPLETE"]);
+ assert.deepEqual(FAILURE_SOURCES, ["FORMULATION_MISMATCH", "TARGET_MISMATCH", "METHOD_MISMATCH", "PACING_MISMATCH", "DELIVERY_MISMATCH", "REPRESENTATION_MISMATCH", "STATE_CONSTRAINT", "PROCESS_COMPLETE"]);
 });
 
 const snapshot = u => ({ user_goal: "understand the current process", current_issue: "self-attack", direct_observations: observations, variables: steady, hypotheses: [], unknowns: [], turn_task: null, path_update: u });

@@ -1,4 +1,4 @@
-import { pathUpdateSchema } from "./path-performance.mjs";
+import { pathUpdateSchema, representationSchema } from "./path-performance.mjs";
 import { turnTaskSchema } from "./turn-task.mjs";
 import { relationalReadinessSchema } from "./relational-readiness.mjs";
 import { romanceGuideContextSchema } from "./romance-guide.mjs";
@@ -74,7 +74,7 @@ export const caseSnapshotSchema = {
 // semantics. The historical runtime validator still accepts omitted delivery_review.
 export const caseSnapshotGenerationSchema = structuredClone(caseSnapshotSchema);
 caseSnapshotGenerationSchema.required.push("relational_readiness", "romance_guide_context");
-caseSnapshotGenerationSchema.properties.path_update.anyOf[1].required.push("delivery_review");
+caseSnapshotGenerationSchema.properties.path_update.anyOf[1].required.push("delivery_review", "representation");
 
 export const caseAuditSchema = {
   type: "object",
@@ -82,6 +82,8 @@ export const caseAuditSchema = {
   properties: {
     corrected_turn_task: turnTaskSchema,
     invalidate_turn_task: { type: "boolean" },
+    corrected_path_representation: { anyOf: [{ type: "null" }, representationSchema] },
+    invalidate_path_representation: { type: "boolean" },
     corrected_relational_readiness: relationalReadinessSchema,
     invalidate_relational_readiness: { type: "boolean" },
     corrected_romance_guide_context: romanceGuideContextSchema,
@@ -124,6 +126,8 @@ export const caseAuditSchema = {
 // Keep historical audit omission compatibility while requiring explicit provider output.
 export const caseAuditGenerationSchema = structuredClone(caseAuditSchema);
 caseAuditGenerationSchema.required.push(
+  "corrected_path_representation",
+  "invalidate_path_representation",
   "corrected_relational_readiness",
   "invalidate_relational_readiness",
   "corrected_romance_guide_context",
