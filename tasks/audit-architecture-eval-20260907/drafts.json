@@ -13,7 +13,7 @@
     {
       "id": "AE-D002",
       "controlIntent": "FLAWED",
-      "seededErrorIds": ["CAUSAL_OVERCLAIM", "SAFE_DOSE_INFERENCE", "MIXED_TRAJECTORY_COLLAPSE", "INTEGRATION_FRAGMENTATION_BINARY"],
+      "seededErrorIds": ["CAUSAL_OVERCLAIM", "SAFE_DOSE_INFERENCE", "MIXED_TRAJECTORY_COLLAPSE"],
       "response": "The shaking is clearly working and has produced the reduction in shame, stronger emotional control, better functioning, and creative improvement. That overall progress shows you are on the right path even if pain remains. Because you have tolerated lighter sessions more than once, that level is your safe dose. Stay at that dose and regard the divided feeling as a temporary side effect of an otherwise successful healing process."
     },
     {
