@@ -45,15 +45,15 @@ test('synthetic chronology retains the longitudinal target and settled nonverbal
   const fixture = cases.cases[0];
   assert.equal(fixture.turns.length, 9);
   assert.equal(fixture.turns.at(-1).role, 'user');
-  assert.ok(fixture.facts.some(fact => fact.id === 'AE-F015' && /self-support/u.test(fact.claim)));
-  assert.ok(fixture.facts.some(fact => fact.id === 'AE-F016' && /nonverbal/u.test(fact.claim)));
-  assert.ok(fixture.facts.some(fact => fact.id === 'AE-F018' && /sleep/u.test(fact.claim)));
-  assert.ok(fixture.facts.some(fact => fact.id === 'AE-F019' && /appraises/u.test(fact.claim)));
-  assert.ok(fixture.settledHistory.some(item => /long-term targets/u.test(item)));
-  assert.ok(fixture.settledHistory.some(item => /nonverbal/u.test(item)));
+  assert.ok(fixture.facts.some(fact => fact.id === 'AE-F015' && /self-support/iu.test(fact.claim)));
+  assert.ok(fixture.facts.some(fact => fact.id === 'AE-F016' && /nonverbal/iu.test(fact.claim)));
+  assert.ok(fixture.facts.some(fact => fact.id === 'AE-F018' && /sleep/iu.test(fact.claim)));
+  assert.ok(fixture.facts.some(fact => fact.id === 'AE-F019' && /appraises/iu.test(fact.claim)));
+  assert.ok(fixture.settledHistory.some(item => /long-term targets/iu.test(item)));
+  assert.ok(fixture.settledHistory.some(item => /nonverbal/iu.test(item)));
   assert.ok(fixture.settledHistory.some(item => /Sleep is explicitly unchanged/u.test(item)));
-  assert.ok(fixture.openQuestions.some(item => /shame makes the client do or avoid/u.test(item)));
-  assert.ok(fixture.openQuestions.some(item => /curiosity\/inclusion\/integration/u.test(item)));
+  assert.ok(fixture.openQuestions.some(item => /shame makes the client do or avoid/iu.test(item)));
+  assert.ok(fixture.openQuestions.some(item => /curiosity\/inclusion\/integration/iu.test(item)));
 });
 
 test('good controls preserve the new longitudinal invariants without seeded defects', () => {
