@@ -31,6 +31,9 @@ try {
     await service.saveCaseDiff(caseId, payload.state_diff, { turnId: payload.state_diff_turn_id, diffId: payload.state_diff_id }, authContext);
     for (const turn of payload.transcript_turns) await service.appendTranscriptTurn(caseId, turn, authContext);
     await service.saveCandidateResponse(caseId, payload.candidate_id, payload.candidate_text, payload.candidate_metadata, authContext);
+    for (const artifact of payload.source_artifacts ?? []) {
+      await service.saveSourceArtifact(caseId, artifact.id, artifact.chunks, artifact.metadata, authContext);
+    }
     await writeJson({ seeded: true, case_id: caseId, candidate_id: payload.candidate_id });
   } else if (action === "load") {
     const value = await service.loadCaseContext(caseId, authContext, {
@@ -48,6 +51,10 @@ try {
       authContext,
       auditor: async (input) => ({ audited_exact_text: input.candidate_response, recent_turn_ids: input.recent_verbatim.turns.map((turn) => turn.id) })
     });
+    await writeJson(value);
+  } else if (action === "source") {
+    const value = await service.getSourceArtifact(caseId, payloadPathOrUrl, authContext);
+    if (!value) throw new Error("Exact source artifact was not found.");
     await writeJson(value);
   } else if (action === "mcp-load") {
     const response = await fetch(payloadPathOrUrl, {

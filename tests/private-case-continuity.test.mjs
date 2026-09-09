@@ -12,6 +12,7 @@ import { assessContinuationSafety, CaseNotContinuationSafeError, createPrivateCa
 import { createPrivateCaseHandoff, validatePrivateCaseHandoff } from "../src/storage/private-case-handoff.mjs";
 import { deserializeVaultEnvelope } from "../src/storage/private-case-store.mjs";
 import { decryptVaultEnvelopeWithRecoverySecret } from "../src/storage/vault-crypto.mjs";
+import { chunkExactSourceText, reconstructExactSourceChunks } from "../src/storage/exact-source-artifact.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -19,6 +20,7 @@ const fixture = path.join(root, "tests/fixtures/private-case-session.mjs");
 const mcpCli = path.join(root, "src/cli/private-case-mcp.mjs");
 const CASE_ID = "synthetic-case-continuity";
 const CANDIDATE_ID = "candidate:pending:001";
+const SOURCE_ARTIFACT_ID = "source:human-approved:001";
 const TOKEN = "synthetic-authorized-session-token";
 const sha256Hex = (value) => createHash("sha256").update(value).digest("hex");
 let sessionSequence = 0;
@@ -112,6 +114,12 @@ async function makeEnvironment(t, { marker = `PRIVATE-${randomBytes(12).toString
     turn("E5", "user", "Synthetic episode latest user.", "episode:active", 5),
     turn("E5", "assistant", "Synthetic episode latest response.", "episode:active", 5)
   ];
+  const exactSourceText = [
+    `${marker}\r\nsynthetic private source opening — exact Unicode “text”`,
+    ...Array.from({ length: 950 }, (_, index) => `source-line-${String(index).padStart(4, "0")}: ${"bounded synthetic evidence ".repeat(2)}${index % 2 ? "\r\n" : "\n"}`),
+    "synthetic private source closing\r\n"
+  ].join("");
+  assert.ok(Buffer.byteLength(exactSourceText, "utf8") > 20_000);
   const payload = {
     case_state: syntheticState(),
     state_diff: { schema_version: 1, additions: ["evidence:older:conflict"], current_episode_changed: true },
@@ -120,7 +128,13 @@ async function makeEnvironment(t, { marker = `PRIVATE-${randomBytes(12).toString
     transcript_turns: transcript,
     candidate_id: CANDIDATE_ID,
     candidate_text: `${marker}\r\nexact pending candidate bytes — preserved “verbatim”`,
-    candidate_metadata: { status: "pending_audit", based_on_turn_id: "E5-user" }
+    candidate_metadata: { status: "pending_audit", based_on_turn_id: "E5-user" },
+    source_artifacts: [{
+      id: SOURCE_ARTIFACT_ID,
+      chunks: chunkExactSourceText(exactSourceText, { maximumChunkBytes: 997 }),
+      metadata: { authority: "synthetic-human-approved", scope: "test-only" }
+    }],
+    exact_source_text: exactSourceText
   };
   await fs.writeFile(credentialsPath, `${JSON.stringify(credentials)}\n`, { mode: 0o600 });
   await fs.chmod(credentialsPath, 0o600);
@@ -160,8 +174,33 @@ test("fresh authorized session reconstructs every continuation artifact exactly 
   assert.equal(context.constitution_ref.version, context.case_state.constitution_ref.version);
   assert.equal(context.candidate_response.id, CANDIDATE_ID);
   assert.equal(context.candidate_response.exact_text, environment.payload.candidate_text);
+  assert.deepEqual(context.source_artifact_refs.map((entry) => entry.id), [SOURCE_ARTIFACT_ID]);
   assert.deepEqual(context.recent_verbatim.turns, environment.payload.transcript_turns.slice(2));
   assert.equal(context.targeted_older_evidence.find((entry) => entry.turn_id === "E1-user")?.turn?.text, environment.payload.transcript_turns[0].text);
+  const source = JSON.parse((await runSession("source", environment, { fourthArg: SOURCE_ARTIFACT_ID })).stdout);
+  assert.equal(source.exact_text, environment.payload.exact_source_text);
+  assert.equal(source.utf8_bytes, Buffer.byteLength(environment.payload.exact_source_text, "utf8"));
+  assert.equal(source.chunks[0].start_byte, 0);
+  assert.equal(source.chunks.at(-1).end_byte, source.utf8_bytes);
+  const providers = await loadDevelopmentPrivateCaseProviders(environment.credentialsPath);
+  t.after(() => providers.close());
+  const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider, keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
+  const byStableSource = await service.retrieveCaseEvidence(CASE_ID, { provenanceIds: [SOURCE_ARTIFACT_ID] }, { bearerToken: TOKEN });
+  assert.equal(byStableSource.source_artifacts[0].exact_text, environment.payload.exact_source_text);
+});
+
+test("lossless chunk reconstruction detects omissions, duplication, and tampering", () => {
+  const exact = `header\r\n${"∆ exact boundary text\n".repeat(2_000)}tail`;
+  const chunks = chunkExactSourceText(exact, { maximumChunkBytes: 211 });
+  assert.deepEqual(chunks, chunkExactSourceText(exact, { maximumChunkBytes: 211 }));
+  const reconstructed = reconstructExactSourceChunks(chunks);
+  assert.equal(reconstructed.exact_text, exact);
+  assert.equal(reconstructed.utf8_bytes, Buffer.byteLength(exact, "utf8"));
+  assert.throws(() => reconstructExactSourceChunks(chunks.filter((_, index) => index !== 3)), /index is not contiguous|gap, overlap/);
+  assert.throws(() => reconstructExactSourceChunks([...chunks.slice(0, 3), chunks[2], ...chunks.slice(3)]), /index is not contiguous|gap, overlap/);
+  const tampered = structuredClone(chunks);
+  tampered[2].exact_text += "changed";
+  assert.throws(() => reconstructExactSourceChunks(tampered), /gap, overlap|integrity check/);
 });
 
 test("unauthorized or wrong-scope fresh session reveals no private content and does not create a case", async (t) => {
@@ -299,6 +338,7 @@ test("continuation acceptance fails with the required high-level message when an
   assert.equal(result.continuation_safe, false);
   assert.ok(result.failures.includes("last state diff is missing"));
   assert.ok(result.failures.includes("exact candidate response is missing"));
+  assert.ok(result.failures.includes("targeted older raw evidence has no retrievable private provenance source"));
   const error = new CaseNotContinuationSafeError(result.failures);
   assert.match(error.message, /^Case is not continuation-safe for a fresh session:/);
   assert.equal(error.code, "CASE_NOT_CONTINUATION_SAFE");
@@ -347,7 +387,7 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   }).then((response) => response.json());
   assert.deepEqual(
     listed.result.tools.map((tool) => tool.name),
-    ["load_case_context", "get_recent_verbatim", "retrieve_case_evidence", "get_candidate_response"]
+    ["load_case_context", "get_recent_verbatim", "retrieve_case_evidence", "get_candidate_response", "get_source_artifact"]
   );
   const { stdout } = await runSession("mcp-load", environment, { fourthArg: ready.mcpUrl });
   const result = JSON.parse(stdout);
@@ -355,6 +395,13 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   assert.equal(result.exactCandidateVerified, true);
   assert.equal(result.exactRecentVerbatimVerified, true);
   assert.equal(result.continuationSafe, true);
+
+  const sourceResult = await fetch(ready.mcpUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${TOKEN}` },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 5, method: "tools/call", params: { name: "get_source_artifact", arguments: { case_id: CASE_ID, source_artifact_id: SOURCE_ARTIFACT_ID } } })
+  }).then((response) => response.json());
+  assert.equal(sourceResult.result.structuredContent.exact_text, environment.payload.exact_source_text);
 
   const denied = await fetch(ready.mcpUrl, {
     method: "POST",

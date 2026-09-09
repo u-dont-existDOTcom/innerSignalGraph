@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "ownerOutcomeId": "OO-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909",
+  "epoch": 1,
+  "source": {
+    "kind": "private_owner_attachment",
+    "recordedAt": "2026-09-09",
+    "publicSafeProjectionOnly": true,
+    "privateContentExcluded": true
+  },
+  "normalizedResult": "Losslessly persist the owner-supplied private human-gold source, later corrections, exact transcript episode, and exact pending candidate in the encrypted private case store; verify restart-safe exact retrieval; then establish and verify the strongest actually available authorized MCP and fresh-ChatGPT path without publishing private content or overstating unavailable production controls.",
+  "requiredOutcomes": [
+    {"id":"RO-01","text":"Import the exact private baseline, corrections, transcript, and pending candidate without semantic regeneration.","terminalRequired":true},
+    {"id":"RO-02","text":"Preserve source provenance, later supersessions, contradictions, trajectory observability, answered questions, and current episode as separate private artifacts/state.","terminalRequired":true},
+    {"id":"RO-03","text":"Verify exact bytes, Unicode, newlines, chunk boundaries, hashes, encryption at rest, and fresh-process retrieval.","terminalRequired":true},
+    {"id":"RO-04","text":"Use case-scoped authorization before key acquisition and label the real assurance level truthfully.","terminalRequired":true},
+    {"id":"RO-05","text":"Expose a reachable authenticated MCP connection and prove a genuinely fresh authorized ChatGPT conversation can retrieve the real case using only stable IDs.","terminalRequired":true},
+    {"id":"RO-06","text":"Only after RO-05, audit the exact pending candidate using the repository framework.","terminalRequired":true},
+    {"id":"RO-07","text":"Publish only code, synthetic tests, public-safe receipts, and the explicitly authorized stable IDs; keep all private content and private-derived hashes outside Git.","terminalRequired":true},
+    {"id":"RO-08","text":"Create a new draft PR from current main and keep it open, draft, and unmerged.","terminalRequired":true}
+  ],
+  "nonSatisfyingProxies": [
+    "a source file exists but was not losslessly imported",
+    "encrypted local storage exists but restart retrieval fails",
+    "local MCP execution is green but ChatGPT is not connected",
+    "a tool schema is visible but a fresh chat did not execute it",
+    "a summary or hash substitutes for exact candidate or transcript text",
+    "green tests substitute for the real-case acceptance"
+  ]
+}

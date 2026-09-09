@@ -1,0 +1,15 @@
+docs/PRIVATE-CASE-CONTINUITY.md
+src/server/private-case-mcp.mjs
+src/storage/exact-source-artifact.mjs
+src/storage/private-case-access.mjs
+src/storage/private-case-store.mjs
+tasks/ACTIVE-TASK.json
+tasks/NEXT-CONVERSATION-HANDOFF-2026-09-07.md
+tasks/real-private-case-import-20260909/ACTIVE-LESSON-CONTRACT.json
+tasks/real-private-case-import-20260909/CHANGED-PATHS.txt
+tasks/real-private-case-import-20260909/COMPLETION-MATRIX.json
+tasks/real-private-case-import-20260909/EXECUTION-DIRECTIVE.json
+tasks/real-private-case-import-20260909/INTEGRATION.md
+tasks/real-private-case-import-20260909/OWNER-OUTCOME.json
+tests/fixtures/private-case-session.mjs
+tests/private-case-continuity.test.mjs

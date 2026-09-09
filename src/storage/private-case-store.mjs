@@ -6,10 +6,11 @@ import { appendTrackerEntry, validateTrackerEntry } from "../case-state/tracker.
 import { buildDurableCaseContext, CONTEXT_WINDOW_LIMITS, selectRecentVerbatimWindow, validateTranscriptEntries } from "../case-state/context-window.mjs";
 import { createVaultEnvelope, replaceVaultPayloadWithRoutineKek } from "./vault-crypto.mjs";
 import { openVaultWithDevelopmentAuthorization, openVaultWithRoutineAuthorization } from "./vault-routine-access.mjs";
+import { createExactSourceArtifact, EXACT_SOURCE_LIMITS, validateExactSourceArtifact } from "./exact-source-artifact.mjs";
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const ENVELOPE_FORMAT = "inner-signal-private-case-envelope-v1";
-const RECORD_VERSION = 2;
+const RECORD_VERSION = 3;
 const CANDIDATE_STATUSES = Object.freeze(["pending_audit", "audited", "superseded", "sent"]);
 const PRIVATE_RECORD_LIMITS = Object.freeze({
   tracker_entries: 20_000,
@@ -19,6 +20,7 @@ const PRIVATE_RECORD_LIMITS = Object.freeze({
   candidates: 2_000,
   candidate_text: 100_000,
   candidate_metadata_bytes: 40_000,
+  source_artifacts: EXACT_SOURCE_LIMITS.artifacts,
   evidence_results: 200
 });
 
@@ -125,16 +127,19 @@ function validateCandidateResponse(value, index) {
 
 function normalizePrivateCaseRecord(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  let migrated = structuredClone(value);
   if (value.schema_version === 1) {
-    const migrated = structuredClone(value);
-    migrated.schema_version = RECORD_VERSION;
+    migrated.schema_version = 2;
     migrated.state_diff_history = migrated.last_state_diff
       ? [{ id: "legacy-diff-1", turn_id: "legacy-unknown-turn", recorded_at: migrated.updated_at, diff: structuredClone(migrated.last_state_diff) }]
       : [];
     migrated.candidate_responses = [];
-    return migrated;
   }
-  return value;
+  if (migrated.schema_version === 2) {
+    migrated.schema_version = RECORD_VERSION;
+    migrated.source_artifacts = [];
+  }
+  return migrated;
 }
 
 export function validatePrivateCaseRecord(value) {
@@ -164,6 +169,13 @@ export function validatePrivateCaseRecord(value) {
   if (value.candidate_responses.filter((candidate) => candidate.status === "pending_audit").length > 1) {
     throw new ValidationError("Private case record may contain only one pending candidate response.");
   }
+  if (!Array.isArray(value.source_artifacts) || value.source_artifacts.length > PRIVATE_RECORD_LIMITS.source_artifacts) throw new ValidationError("source_artifacts exceeds the private-record limit or is invalid.");
+  const sourceArtifactIds = new Set();
+  value.source_artifacts.forEach((artifact, index) => {
+    validateExactSourceArtifact(artifact, index);
+    if (sourceArtifactIds.has(artifact.id)) throw new ValidationError(`Duplicate source artifact ${artifact.id}.`);
+    sourceArtifactIds.add(artifact.id);
+  });
   return value;
 }
 
@@ -179,7 +191,8 @@ function newRecord(caseId, now) {
     journal_entries: [],
     last_state_diff: null,
     state_diff_history: [],
-    candidate_responses: []
+    candidate_responses: [],
+    source_artifacts: []
   };
 }
 
@@ -187,6 +200,10 @@ function assertAppendOnly(previous, next) {
   if (next.raw_transcript.length < previous.raw_transcript.length) throw new ValidationError("Raw transcript is append-only.");
   for (let index = 0; index < previous.raw_transcript.length; index += 1) {
     if (JSON.stringify(previous.raw_transcript[index]) !== JSON.stringify(next.raw_transcript[index])) throw new ValidationError("Raw transcript is append-only and existing turns cannot be rewritten.");
+  }
+  if (next.source_artifacts.length < previous.source_artifacts.length) throw new ValidationError("Exact source artifacts are append-only.");
+  for (let index = 0; index < previous.source_artifacts.length; index += 1) {
+    if (JSON.stringify(previous.source_artifacts[index]) !== JSON.stringify(next.source_artifacts[index])) throw new ValidationError("Exact source artifacts are immutable and cannot be rewritten.");
   }
 }
 
@@ -319,19 +336,28 @@ export function createEncryptedPrivateCaseStore({
     if (query != null && (typeof query !== "string" || !query.trim() || query.length > 1_000)) throw new ValidationError("Evidence query must be bounded non-empty text.");
     if (!Array.isArray(provenanceIds) || provenanceIds.some((id) => typeof id !== "string" || !id.trim())) throw new ValidationError("provenanceIds must contain IDs.");
     const sourceTurnIds = new Set();
+    const sourceArtifactIds = new Set();
     const wanted = new Set(provenanceIds);
     for (const item of [...record.case_state.items, ...record.case_state.intervention_history]) {
       if (wanted.has(item.id) || wanted.has(item.source.ref) || wanted.has(item.source.turn_id)) {
         if (item.source.turn_id) sourceTurnIds.add(item.source.turn_id);
+        if (record.source_artifacts.some((artifact) => artifact.id === item.source.ref)) sourceArtifactIds.add(item.source.ref);
       }
     }
-    for (const id of wanted) sourceTurnIds.add(id);
+    for (const id of wanted) {
+      sourceTurnIds.add(id);
+      if (record.source_artifacts.some((artifact) => artifact.id === id)) sourceArtifactIds.add(id);
+    }
     const terms = query ? query.toLocaleLowerCase().split(/\s+/u).filter((term) => term.length > 1) : [];
     const querySourceTurnIds = new Set();
+    const querySourceArtifactIds = new Set();
     if (terms.length) {
       for (const item of [...record.case_state.items, ...record.case_state.intervention_history]) {
         const searchable = `${item.id} ${item.domain} ${item.statement}`.replaceAll("_", " ").toLocaleLowerCase();
-        if (terms.every((term) => searchable.includes(term)) && item.source.turn_id) querySourceTurnIds.add(item.source.turn_id);
+        if (terms.every((term) => searchable.includes(term))) {
+          if (item.source.turn_id) querySourceTurnIds.add(item.source.turn_id);
+          if (record.source_artifacts.some((artifact) => artifact.id === item.source.ref)) querySourceArtifactIds.add(item.source.ref);
+        }
       }
     }
     const from = timeRange?.from ? Date.parse(timeRange.from) : null;
@@ -347,12 +373,20 @@ export function createEncryptedPrivateCaseStore({
       return provenanceMatch || queryMatch || Boolean(timeOnly);
     });
     const turns = matches.slice(-limit);
+    const artifactMatches = record.source_artifacts.filter((artifact) => {
+      if (sourceArtifactIds.has(artifact.id) || querySourceArtifactIds.has(artifact.id)) return true;
+      if (!terms.length) return false;
+      const searchable = `${artifact.id} ${artifact.exact_text}`.replaceAll("_", " ").toLocaleLowerCase();
+      return terms.every((term) => searchable.includes(term));
+    });
+    const sourceArtifacts = artifactMatches.slice(-limit);
     return Object.freeze({
       query,
       provenance_ids: [...wanted],
       time_range: timeRange ? structuredClone(timeRange) : null,
       turns: structuredClone(turns),
-      truncated: matches.length > turns.length
+      source_artifacts: structuredClone(sourceArtifacts),
+      truncated: matches.length > turns.length || artifactMatches.length > sourceArtifacts.length
     });
   };
 
@@ -461,6 +495,19 @@ export function createEncryptedPrivateCaseStore({
         : record.candidate_responses.find((entry) => entry.id === selector);
       return candidate ? structuredClone(candidate) : null;
     },
+    async saveSourceArtifact(caseId, sourceArtifactId, chunks, metadata = {}) {
+      return mutate(caseId, (record) => {
+        if (record.source_artifacts.some((artifact) => artifact.id === sourceArtifactId)) throw new ValidationError(`Exact source artifact ${sourceArtifactId} already exists and exact bytes are immutable.`);
+        const artifact = createExactSourceArtifact({ id: sourceArtifactId, chunks, metadata, createdAt: now() });
+        record.source_artifacts.push(structuredClone(artifact));
+        return record;
+      });
+    },
+    async getSourceArtifact(caseId, sourceArtifactId) {
+      const record = await readRequired(caseId);
+      const artifact = record.source_artifacts.find((entry) => entry.id === sourceArtifactId);
+      return artifact ? structuredClone(artifact) : null;
+    },
     async retrieveCaseEvidence(caseId, { query = null, provenanceIds = [], timeRange = null, limit = 24 } = {}) {
       const record = await readRequired(caseId);
       return selectEvidence(record, { query, provenanceIds, timeRange, limit });
@@ -498,6 +545,12 @@ export function createEncryptedPrivateCaseStore({
         last_state_diff: record.state_diff_history.length ? structuredClone(record.state_diff_history.at(-1)) : null,
         recent_verbatim: structuredClone(recent),
         candidate_response: candidate ? structuredClone(candidate) : null,
+        source_artifact_refs: record.source_artifacts.map((artifact) => ({
+          id: artifact.id,
+          version: artifact.version,
+          created_at: artifact.created_at,
+          metadata: structuredClone(artifact.metadata)
+        })),
         targeted_older_evidence: structuredClone(context.targeted_older_evidence),
         queried_evidence: queriedEvidence,
         current_episode: structuredClone(record.case_state.current_episode),

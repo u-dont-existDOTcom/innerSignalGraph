@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "CD-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909-R1",
+  "taskId": "real-private-case-import-20260909",
+  "ownerOutcomeId": "OO-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909",
+  "ownerOutcomeEpoch": 1,
+  "reasoningSupervisorSurface": "owner_chat",
+  "strategyId": "LOSSLESS_PRIVATE_SOURCE_IMPORT_THEN_LAYERED_REMOTE_ACCEPTANCE",
+  "directiveRevision": 1,
+  "executionObjective": "Execute the exact private import and fresh-session access sequence supplied by the owner on a new branch from current main.",
+  "allowedActions": [
+    "read the owner-supplied private attachments and current repository authority",
+    "create encrypted private artifacts and credentials outside the checkout",
+    "add generic import/storage/MCP code and synthetic tests to the public repository",
+    "run local exactness, security, package, and publication gates",
+    "create and push a new task branch and draft pull request",
+    "use an approved secure MCP tunnel and register/connect it to ChatGPT when the required authentication path is available",
+    "create a genuinely fresh acceptance chat and run the exact pending-candidate audit only after retrieval succeeds"
+  ],
+  "forbiddenActions": [
+    "commit or print real private source text or private-derived hashes in public artifacts",
+    "re-summarize or reinterpret the private source during ingestion",
+    "treat the pending candidate as sent history",
+    "claim production authentication or fresh-ChatGPT success without direct evidence",
+    "merge the new pull request",
+    "deploy the public app or promote stable",
+    "claim clinical validation"
+  ],
+  "requiredEvidence": [
+    "private source and artifact manifests with exact lengths and hashes",
+    "ciphertext-only storage and authorization-before-key evidence",
+    "fresh-process exact round trip of source, transcript, and candidate",
+    "synthetic oversized-message chunk-ingestion regression",
+    "reachable MCP and fresh-chat execution receipt or a precise external blocker",
+    "public/private leak scan and exact-head hosted checks"
+  ],
+  "stopTriggers": [
+    "the supplied source is incomplete or ambiguous for exact persistence",
+    "a private payload would enter Git or public logs",
+    "external authentication, tunnel, registration, or workspace policy cannot be completed safely",
+    "remote branch movement creates a substantive conflict"
+  ]
+}

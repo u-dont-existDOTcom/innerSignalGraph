@@ -63,6 +63,9 @@ export function assessContinuationSafety(context, { minimumCompleteExchanges = 3
   if (!context?.constitution_ref?.version) failures.push("constitution reference is missing");
   if (!context?.candidate_response?.exact_text) failures.push("exact candidate response is missing");
   else if (context.candidate_response.status !== "pending_audit") failures.push("candidate response is not pending audit");
+  const olderTurnAvailable = (context?.targeted_older_evidence ?? []).some((entry) => entry?.turn?.text);
+  const olderSourceAvailable = (context?.source_artifact_refs ?? []).length > 0;
+  if (!olderTurnAvailable && !olderSourceAvailable) failures.push("targeted older raw evidence has no retrievable private provenance source");
   const turns = context?.recent_verbatim?.turns ?? [];
   const exchanges = new Map();
   for (const turn of turns) {
@@ -157,6 +160,10 @@ export function createPrivateCaseAccessService({
       return write(caseId, authContext, (store) => store.updateCandidateStatus(caseId, candidateId, status, metadataPatch));
     },
     async getCandidateResponse(caseId, selector, authContext) { return read(caseId, authContext, (store) => store.getCandidateResponse(caseId, selector)); },
+    async saveSourceArtifact(caseId, sourceArtifactId, chunks, metadata, authContext) {
+      return write(caseId, authContext, (store) => store.saveSourceArtifact(caseId, sourceArtifactId, chunks, metadata));
+    },
+    async getSourceArtifact(caseId, sourceArtifactId, authContext) { return read(caseId, authContext, (store) => store.getSourceArtifact(caseId, sourceArtifactId)); },
     async retrieveCaseEvidence(caseId, criteria, authContext) { return read(caseId, authContext, (store) => store.retrieveCaseEvidence(caseId, criteria)); },
     async getCurrentEpisode(caseId, authContext) { return read(caseId, authContext, (store) => store.getCurrentEpisode(caseId)); },
     async loadCaseContext(caseId, authContext, options = {}) {

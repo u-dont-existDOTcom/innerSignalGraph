@@ -1,6 +1,6 @@
 # Private case continuity and fresh-session access
 
-Status: repository implementation and synthetic fresh-process bridge are available on draft PR #46. A production ChatGPT connection is **not deployed, registered, or fresh-chat verified**.
+Status: the repository implementation from merged PR #46 is being extended on `codex/private-case-import-20260909`. The real owner-supplied source has passed exact local encrypted import and fresh-process round-trip, but the case is **not continuation-safe** because the supplied transcript contains only one complete user-assistant exchange and the contract requires three. A production ChatGPT connection is also **not deployed, registered, or fresh-chat verified**.
 
 ## Acceptance contract
 
@@ -18,7 +18,7 @@ A case is continuation-safe only when an authorized loader, starting with no pri
 
 ## Public/private boundary
 
-Public Git contains the schemas, code, tests, synthetic fixtures, constitution, and this operational contract. It must not contain real transcript text, exact real candidate replies, credentials, key bytes, bearer tokens, private case/candidate identifiers, or private-derived hashes.
+Public Git contains the schemas, code, tests, synthetic fixtures, constitution, and this operational contract. It must not contain real transcript text, exact real candidate replies, credentials, key bytes, bearer tokens, or private-derived hashes. Opaque stable case/candidate identifiers may appear in a handoff only when the owner explicitly authorizes that disclosure; an identifier never proves that its payload is available.
 
 The private store keeps separate fields for:
 
@@ -26,7 +26,8 @@ The private store keeps separate fields for:
 - provenance-aware structured state;
 - state-diff history;
 - tracker and journal data;
-- immutable exact candidate versions and their status; and
+- immutable exact candidate versions and their status;
+- immutable exact source artifacts plus a lossless byte-range/chunk integrity manifest; and
 - current episode state through the structured record.
 
 Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains an explicit operator choice and is not the private case persistence mechanism.
@@ -42,6 +43,7 @@ Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains
 | `appendTranscriptTurn` / `getRecentVerbatim` | Append-only raw turns and exact recent episode |
 | `saveCandidateResponse` / `getCandidateResponse` | Immutable exact candidate versions and `current_pending` resolution |
 | `updateCandidateStatus` | `pending_audit`, `audited`, `superseded`, or `sent` |
+| `saveSourceArtifact` / `getSourceArtifact` | Immutable exact private source plus a contiguous byte-range integrity manifest |
 | `retrieveCaseEvidence` | Raw older turns by query, stable provenance IDs, or time range |
 | `getCurrentEpisode` | Current therapeutic path/episode |
 | `loadCaseContext` | All-in-one fresh-session bootstrap and continuation-safety gate |
@@ -98,6 +100,7 @@ The process prints a local `/mcp` URL. Authentication is an HTTP bearer token su
 - `get_recent_verbatim`
 - `retrieve_case_evidence`
 - `get_candidate_response`
+- `get_source_artifact`
 
 A fresh client performs this exact bootstrap call after transport authentication:
 
@@ -111,7 +114,7 @@ A fresh client performs this exact bootstrap call after transport authentication
 }
 ```
 
-The full executable gate is `npm run private-case:acceptance`. It creates an external temporary private store in Session A, exits that process, and has independent Session B recover exact text using only the stable case ID and authorized test transport. It also tests denied authorization, missing/wrong keys, ciphertext at rest, full-episode retention, historical retrieval, exact candidate audit, private handoff validation, and public-path leak prevention.
+The full executable gate is `npm run private-case:acceptance`. It creates an external temporary private store in Session A, exits that process, and has independent Session B recover exact text using only the stable case ID and authorized test transport. It also tests denied authorization, missing/wrong keys, ciphertext at rest, full-episode retention, historical retrieval, exact candidate audit, private handoff validation, public-path leak prevention, and lossless Unicode/newline reconstruction for a synthetic source larger than the former single-read ceiling. Chunk manifests reject gaps, duplication, reordered chunks, altered byte ranges, and changed bytes.
 
 The ordinary loopback web server remains unsuitable as a private ChatGPT boundary because its development endpoints do not implement user authentication. It was intentionally not given raw transcript or candidate inspectors. The existing **Current saved state** and **What changed this turn** views remain structured/no-raw-content controls; exact **Recent Verbatim** and **Pending Candidate** inspection is available only through the authorized read-only MCP tools.
 
@@ -124,7 +127,7 @@ The ordinary loopback web server remains unsuitable as a private ChatGPT boundar
 - evidence that the continuation-safety gate passed; and
 - the concrete `load_case_context` tool call using those same identifiers.
 
-The validator rejects a handoff that claims availability without continuity evidence or embeds transcript/candidate payload. The current public canonical handoff does **not** contain the real identifiers because no real case was imported into an accessible private store in this repository task. Therefore the real case is not yet continuation-safe, even though the synthetic bridge is green.
+The validator rejects a handoff that claims availability without continuity evidence or embeds transcript/candidate payload. The owner-authorized opaque identifiers for the present import are `case-57a69465-4434-41cf-ad24-310b13a2cc81` and `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051`. The private payload exists locally and round-trips exactly, but no validated private handoff may yet claim continuation safety: only one supplied exchange is complete, two fewer than the fixed minimum. The local credential/key provider remains development-only, and ChatGPT registration is still absent.
 
 ## Blocking production/ChatGPT obligations
 
@@ -132,7 +135,7 @@ Repository-local success does not make the tool callable from a new ChatGPT conv
 
 1. Implement the production authorization provider with OAuth identity-to-case ACLs.
 2. Implement the production key provider using the approved OS credential store, KMS, or HSM and the owner-selected user-held recovery-secret flow.
-3. Import the real exact transcript/state/diffs/candidate under stable private IDs and pass the continuation gate for that case.
+3. Supply and append at least two additional complete exact historical user-assistant exchanges, then pass the continuation gate for the imported real case without inventing missing replies.
 4. Expose the MCP endpoint over public HTTPS, or use an approved secure MCP tunnel for development.
 5. Implement MCP OAuth 2.1 protected-resource metadata, authorization-server discovery, PKCE S256, and the chosen client-registration path.
 6. Register/connect the MCP server in ChatGPT.

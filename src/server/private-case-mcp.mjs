@@ -117,6 +117,21 @@ const TOOLS = Object.freeze([
       }
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
+    name: "get_source_artifact",
+    title: "Get exact private source artifact",
+    description: "Resolve an authorized exact private source artifact by stable source identifier, including its lossless byte-range manifest.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["case_id", "source_artifact_id"],
+      properties: {
+        case_id: { type: "string", pattern: "^[a-z0-9][a-z0-9_-]{0,79}$" },
+        source_artifact_id: { type: "string", pattern: "^[A-Za-z0-9:_-]{1,160}$" }
+      }
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }
 ]);
 
@@ -144,6 +159,11 @@ async function callTool(service, name, args, authContext) {
     const candidate = await service.getCandidateResponse(args.case_id, args.candidate_id ?? "current_pending", authContext);
     if (!candidate) throw Object.assign(new Error("Candidate response was not found."), { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
     return candidate;
+  }
+  if (name === "get_source_artifact") {
+    const artifact = await service.getSourceArtifact(args.case_id, args.source_artifact_id, authContext);
+    if (!artifact) throw Object.assign(new Error("Exact source artifact was not found."), { code: "PRIVATE_SOURCE_ARTIFACT_NOT_FOUND" });
+    return artifact;
   }
   throw Object.assign(new Error(`Unknown MCP tool ${name}.`), { code: "MCP_TOOL_NOT_FOUND" });
 }

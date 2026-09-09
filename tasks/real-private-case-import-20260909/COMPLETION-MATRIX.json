@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "real-private-case-import-matrix-20260909",
+  "taskId": "real-private-case-import-20260909",
+  "updatedAt": "2026-09-09",
+  "claimRule": "No layer inherits success from a proxy. In particular, encrypted import and a local MCP process do not prove continuation safety, production authentication, ChatGPT registration, or a fresh-chat tool call.",
+  "layers": [
+    {
+      "id": "PRIVATE_SOURCE_IMPORT",
+      "status": "PASS",
+      "evidence": "A separate authorized process recovered the complete approved source, human-gold baseline, later correction source, structured state, and correction diff exactly. Private hashes and lengths remain only in the external private receipt."
+    },
+    {
+      "id": "EXACT_RECENT_AND_CANDIDATE",
+      "status": "PASS",
+      "evidence": "All six owner-supplied recent turns and the exact pending candidate round-tripped without paraphrase; the candidate remains pending_audit and is not transcript history."
+    },
+    {
+      "id": "ENCRYPTION_AND_LOCAL_AUTH",
+      "status": "PASS_DEVELOPMENT_ONLY",
+      "evidence": "The real vault exposed no sampled plaintext and used mode-0600 files, a mode-0700 root, case-scoped bearer authorization before key acquisition, and the explicitly non-production development_external_file provider."
+    },
+    {
+      "id": "OVERSIZED_SOURCE_REGRESSION",
+      "status": "PASS",
+      "evidence": "Public synthetic tests cover a source larger than the previous single-read ceiling, mixed line endings, Unicode, deterministic chunk manifests, exact restart reconstruction, and gap/duplicate/tamper rejection."
+    },
+    {
+      "id": "LOCAL_MCP_REAL_CASE",
+      "status": "PASS_FAIL_CLOSED",
+      "evidence": "A separate local MCP process returned exact authorized source, candidate, recent episode, and provenance-targeted older source; unauthorized access returned no payload; bootstrap returned CASE_NOT_CONTINUATION_SAFE."
+    },
+    {
+      "id": "REAL_CASE_CONTINUATION_GATE",
+      "status": "BLOCKED_MISSING_EXACT_HISTORY",
+      "evidence": "The supplied material contains one complete user-assistant exchange. Three are required. Two additional genuine complete historical exchanges must be appended; absent replies must not be invented and the pending candidate must not be counted as sent."
+    },
+    {
+      "id": "FRESH_CHATGPT_ACCESS",
+      "status": "BLOCKED_EXTERNAL_ACTIVATION",
+      "evidence": "Production auth/key integration, HTTPS or an approved secure tunnel, OAuth registration, ChatGPT connection, and a newly created chat tool call are not verified."
+    },
+    {
+      "id": "REAL_CANDIDATE_AUDIT",
+      "status": "NOT_RUN_BY_GATE",
+      "evidence": "The audit is intentionally deferred until the real continuation gate and fresh-ChatGPT retrieval are both green."
+    },
+    {
+      "id": "PUBLIC_PRIVATE_SEPARATION",
+      "status": "PASS_LOCAL",
+      "evidence": "Only generic code, synthetic tests, public-safe operational receipts, and owner-authorized opaque IDs are in the candidate tree. Real source, secrets, private manifests, and private-derived hashes remain outside Git."
+    },
+    {
+      "id": "LOCAL_REPOSITORY_VERIFICATION",
+      "status": "PASS",
+      "evidence": "Focused private continuity passed 11/11; affected context, audit, UI, and private tests passed 34/34; the full Node 24 suite passed 1034/1034; graph regressions passed 29/29; therapy lessons passed 5/5; repository audit and publication audit passed; and npm run verify completed with PASS."
+    },
+    {
+      "id": "DRAFT_PULL_REQUEST",
+      "status": "PENDING",
+      "evidence": "Populate after final branch reconciliation, push, draft PR creation, and exact-head hosted checks."
+    }
+  ]
+}
