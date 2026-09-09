@@ -49,6 +49,7 @@ const DIAGNOSTIC_PATH = /^diagnostics\/[0-9a-f-]{36}\/[a-f0-9]{64}\.json$/i;
 const PROGRESS_PATH = /^progress\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/current\.json$/i;
 const PROGRESS_ASSESSMENT = /^(?:ADVANCING|LONG_RUNNING_STAGE|WAITING_FOR_HUMAN|BLOCKED|COMPLETE|IDLE|WORKER_NOT_RUNNING)$/;
 const SAFE_CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
+const SAFE_HANDOFF_ID = /^handoff:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 function readCaseId(value) {
   const caseId = typeof value === "string" && SAFE_CASE_ID.test(value) ? value : null;
@@ -58,6 +59,15 @@ function readCaseId(value) {
     throw error;
   }
   return caseId;
+}
+
+function readHandoffId(value) {
+  if (typeof value !== "string" || !SAFE_HANDOFF_ID.test(value)) {
+    const error = new Error("handoffId is invalid.");
+    error.code = "VALIDATION_ERROR";
+    throw error;
+  }
+  return value;
 }
 
 function safeEntryId(value, fallback) {
@@ -159,6 +169,16 @@ function sendZip(res, buffer, filename) {
   res.end(buffer);
 }
 
+function sendEncryptedHandoff(res, buffer, handoffId) {
+  const filename = `${handoffId.replace(/[^A-Za-z0-9._-]/g, "-")}.handoff.vault.json`;
+  res.writeHead(200, securityHeaders({
+    "content-type": "application/vnd.inner-signal.private-handoff+json",
+    "content-disposition": `attachment; filename="${filename}"`,
+    "content-length": String(buffer.length)
+  }));
+  res.end(buffer);
+}
+
 async function sendStatic(res, pathname) {
   const entry = STATIC[pathname];
   if (!entry) return false;
@@ -214,7 +234,7 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           },
           webClient: { available: true, path: "/", diagnosticExport: true },
           privateCaseStorage: { available: Boolean(privateCaseStore), plaintextFallback: false },
-          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
+          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/case/handoff", "/v1/case/handoff/export", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
       }
       if (req.method === "POST" && url.pathname === "/v1/plan") {
@@ -323,6 +343,20 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         const caseId = readCaseId(input.caseId);
         const record = await privateCaseStore.appendJournal(caseId, input.entry);
         return send(res, 200, { caseId, journalEntryCount: record.journal_entries.length, persisted: "encrypted" });
+      }
+      if (req.method === "POST" && url.pathname === "/v1/case/handoff") {
+        if (!privateCaseStore) return send(res, 503, { error: "Encrypted private case storage is not configured; a handoff cannot be created.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
+        const input = await readJson(req);
+        const caseId = readCaseId(input.caseId);
+        const result = await privateCaseStore.createHandoff(caseId);
+        return send(res, 200, result);
+      }
+      if (req.method === "GET" && url.pathname === "/v1/case/handoff/export") {
+        if (!privateCaseStore) return send(res, 503, { error: "Encrypted private case storage is not configured; a handoff cannot be exported.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
+        const caseId = readCaseId(url.searchParams.get("caseId"));
+        const handoffId = readHandoffId(url.searchParams.get("handoffId"));
+        const payload = await privateCaseStore.exportHandoff(caseId, handoffId);
+        return sendEncryptedHandoff(res, payload, handoffId);
       }
       if (req.method === "POST" && url.pathname === "/v1/hypnosis/compile") {
         const input = await readJson(req);

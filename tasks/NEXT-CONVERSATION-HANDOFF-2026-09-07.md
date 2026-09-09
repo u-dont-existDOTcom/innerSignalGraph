@@ -2,6 +2,16 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Current continuation — Universal Handoff Binding v1.0 on draft PR #49
+
+Read `tasks/universal-handoff-binding-20260909/INTEGRATION.md`, `docs/superpowers/specs/2026-09-09-inner-signal-universal-handoff-binding.md`, and `docs/PRIVATE-CASE-CONTINUITY.md` before acting. Fetch the current head of draft PR #49 on `codex/private-case-import-20260909`; keep it draft/open/unmerged. Do not deploy, install, or promote stable.
+
+The repository candidate now treats `load_handoff({"handoff_id":"<stable-private-handoff-id>"})` as the single normal recovery entry. The handoff is an immutable AES-256-GCM encrypted exact snapshot outside Git, not a public handoff summary. It includes canonical state, frozen diff, exact active episode, exact pending candidates, the private transcript archive, tracker/journal data, retrieval indexes, and constitution/runtime/audit version references. An authorized new process can resolve the opaque ID through a private locator, obtain case-scoped authorization and key material, decrypt it, validate deterministic chunk/component integrity, and recover the therapeutic steering state without Session A memory. `get_state_diff`, `get_recent_verbatim`, `get_pending_candidate`, `retrieve_case_evidence`, `get_tracker_window`, and `get_journal_entries` are the narrower retrieval tools.
+
+Synthetic acceptance is green for a history larger than 100,000 characters with a simulated 20,000-byte read boundary, exact Unicode text, contradictions, a superseded appraisal, settled answers, a failed path, tracker/journal history, and a vivid latest-turn distraction. A local encrypted round-trip is only `READY_FOR_FRESH_SESSION_TEST`; only a successful independent Session B load is `FRESH_SESSION_GREEN`. The ordinary local web UI exposes **Current Saved State**, **What Changed This Turn**, **Create Handoff**, and **Export Private Handoff**, but intentionally does not expose raw transcript or candidate text because that development server has no supervisor authentication.
+
+This does **not** make the real case or a new ChatGPT conversation continuation-safe. No stable real `handoff_id` has passed the gate. The private real case still lacks two genuine complete historical user-assistant exchanges, and production authorization/key integration, secure HTTPS/OAuth exposure, ChatGPT registration, and an actual post-registration fresh-chat tool call remain open. Never invent missing turns, put private content or private-derived hashes in Git, call the real candidate available, or audit/reinterpret it until both the real three-exchange gate and real fresh-ChatGPT retrieval are green.
+
 ## Current continuation — real private import and fresh-session gate
 
 Read `tasks/real-private-case-import-20260909/INTEGRATION.md` and `docs/PRIVATE-CASE-CONTINUITY.md`, then fetch the current task PR head. PR #46 is merged history; do not reopen it. Continue only on the new draft PR for `codex/private-case-import-20260909`. Do not merge, deploy the public app, install, or promote stable.

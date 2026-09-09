@@ -1,17 +1,30 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
 import { createEmptyCaseState, validateCaseState } from "../case-state/longitudinal-state.mjs";
-import { appendTrackerEntry, validateTrackerEntry } from "../case-state/tracker.mjs";
+import { appendTrackerEntry, summarizeTrackerWindow, validateTrackerEntry } from "../case-state/tracker.mjs";
 import { buildDurableCaseContext, CONTEXT_WINDOW_LIMITS, selectRecentVerbatimWindow, validateTranscriptEntries } from "../case-state/context-window.mjs";
+import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
+import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "../supervisor/private-candidate-audit.mjs";
 import { createVaultEnvelope, replaceVaultPayloadWithRoutineKek } from "./vault-crypto.mjs";
 import { openVaultWithDevelopmentAuthorization, openVaultWithRoutineAuthorization } from "./vault-routine-access.mjs";
 import { createExactSourceArtifact, EXACT_SOURCE_LIMITS, validateExactSourceArtifact } from "./exact-source-artifact.mjs";
+import { assessContinuationSafety } from "./private-case-continuity.mjs";
+import { compilePrivateHandoffArtifact, createHandoffId, openPrivateHandoffArtifact, validateHandoffId } from "./private-case-handoff.mjs";
+import { writePrivateArtifactLocator } from "./private-artifact-locator.mjs";
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const ENVELOPE_FORMAT = "inner-signal-private-case-envelope-v1";
 const RECORD_VERSION = 3;
 const CANDIDATE_STATUSES = Object.freeze(["pending_audit", "audited", "superseded", "sent"]);
+const TRACKER_QUERY_VARIABLES = Object.freeze([
+  "sleep_duration_hours", "sleep_quality", "pain_intensity", "pain_location", "pain_function_interference",
+  "anxiety", "depressed_mood", "stability", "unreality", "division", "social_contact_quality",
+  "rejection_impact", "shaking_minutes", "shaking_intensity", "shaking_timing", "thc_used", "thc_timing",
+  "substances_medications_supplements", "interventions", "food_exposures", "stressors_events", "activities",
+  "functioning", "journal_note", "dream_note"
+]);
 const PRIVATE_RECORD_LIMITS = Object.freeze({
   tracker_entries: 20_000,
   journal_entries: 20_000,
@@ -21,7 +34,8 @@ const PRIVATE_RECORD_LIMITS = Object.freeze({
   candidate_text: 100_000,
   candidate_metadata_bytes: 40_000,
   source_artifacts: EXACT_SOURCE_LIMITS.artifacts,
-  evidence_results: 200
+  evidence_results: 200,
+  handoff_export_bytes: 12_000_000
 });
 
 const bytes = (value, name) => {
@@ -37,6 +51,67 @@ const fromBase64 = (value) => {
   if (typeof value !== "string" || !/^[A-Za-z0-9+/]*={0,2}$/.test(value)) throw new ValidationError("Encrypted case envelope is invalid.");
   return Buffer.from(value, "base64");
 };
+const sha256Hex = (value) => createHash("sha256").update(value).digest("hex");
+
+function selectedTimeRange(timeRange) {
+  if (timeRange == null) return { from: null, to: null };
+  if (!timeRange || typeof timeRange !== "object" || Array.isArray(timeRange)) throw new ValidationError("timeRange must be an object.");
+  const from = timeRange.from == null ? null : Date.parse(timeRange.from);
+  const to = timeRange.to == null ? null : Date.parse(timeRange.to);
+  if ((timeRange.from != null && Number.isNaN(from)) || (timeRange.to != null && Number.isNaN(to)) || (from != null && to != null && from > to)) throw new ValidationError("timeRange is invalid.");
+  return { from, to };
+}
+
+function withinTimeRange(observedAt, range) {
+  const value = Date.parse(observedAt);
+  return (range.from == null || value >= range.from) && (range.to == null || value <= range.to);
+}
+
+function selectTrackerEntries(entries, { variables = [], timeRange = null, limit = 180 } = {}) {
+  if (!Array.isArray(variables) || variables.length > TRACKER_QUERY_VARIABLES.length || variables.some((name) => !TRACKER_QUERY_VARIABLES.includes(name))) throw new ValidationError("Tracker variables are invalid.");
+  if (!Number.isInteger(limit) || limit < 1 || limit > 180) throw new ValidationError("Tracker retrieval limit is invalid.");
+  const range = selectedTimeRange(timeRange);
+  const eligible = entries.filter((entry) => withinTimeRange(entry.observed_at, range));
+  const selected = eligible.slice(-limit);
+  const projected = variables.length
+    ? selected.map((entry) => Object.fromEntries([["id", entry.id], ["observed_at", entry.observed_at], ...variables.map((name) => [name, cloneValue(entry[name])])]))
+    : structuredClone(selected);
+  return Object.freeze({
+    schema_version: 1,
+    interpretation: "descriptive_only_no_causal_inference",
+    variables: [...variables],
+    time_range: timeRange ? structuredClone(timeRange) : null,
+    entries: projected,
+    summary: summarizeTrackerWindow(selected),
+    truncated: eligible.length > selected.length
+  });
+}
+
+function cloneValue(value) {
+  return value == null || typeof value !== "object" ? value : structuredClone(value);
+}
+
+function selectJournalEntries(entries, { query = null, timeRange = null, limit = 200 } = {}) {
+  if (query != null && (typeof query !== "string" || !query.trim() || query.length > 1_000)) throw new ValidationError("Journal query must be bounded non-empty text.");
+  if (!Number.isInteger(limit) || limit < 1 || limit > 200) throw new ValidationError("Journal retrieval limit is invalid.");
+  const range = selectedTimeRange(timeRange);
+  const terms = query ? query.toLocaleLowerCase().split(/\s+/u).filter((term) => term.length > 1) : [];
+  const eligible = entries.filter((entry) => {
+    if (!withinTimeRange(entry.observed_at, range)) return false;
+    if (!terms.length) return true;
+    const searchable = `${entry.kind ?? "journal"} ${entry.text}`.toLocaleLowerCase();
+    return terms.every((term) => searchable.includes(term));
+  });
+  const selected = eligible.slice(-limit);
+  return Object.freeze({
+    schema_version: 1,
+    query,
+    time_range: timeRange ? structuredClone(timeRange) : null,
+    entries: structuredClone(selected),
+    truncated: eligible.length > selected.length,
+    promoted_to_case_fact: false
+  });
+}
 
 export function serializeVaultEnvelope(envelope) {
   return {
@@ -251,21 +326,38 @@ export function createEncryptedPrivateCaseStore({
   };
 
   const fileFor = (caseId) => path.join(rootDir, `${safeCaseId(caseId)}.vault.json`);
+  const handoffDirectory = path.join(rootDir, ".handoffs");
+  const handoffFileFor = (handoffId) => path.join(handoffDirectory, `${sha256Hex(validateHandoffId(handoffId))}.vault.json`);
+  const openEnvelopePlaintext = async (envelope) => osBackedReauthenticated
+    ? (await openVaultWithRoutineAuthorization({ osBackedReauthenticated: true, envelope, routineKek: routineKey })).plaintextBytes
+    : (await openVaultWithDevelopmentAuthorization({ developmentExternalCredentialAuthorized: true, envelope, routineKek: routineKey })).plaintextBytes;
   const readExistingWithEnvelope = async (caseId) => {
     ensureOpen();
     let serialized;
     try { serialized = JSON.parse(await fs.readFile(fileFor(caseId), "utf8")); }
     catch (error) { if (error?.code === "ENOENT") return null; throw error; }
     const envelope = deserializeVaultEnvelope(serialized);
-    const plaintext = osBackedReauthenticated
-      ? (await openVaultWithRoutineAuthorization({ osBackedReauthenticated: true, envelope, routineKek: routineKey })).plaintextBytes
-      : (await openVaultWithDevelopmentAuthorization({ developmentExternalCredentialAuthorized: true, envelope, routineKek: routineKey })).plaintextBytes;
+    const plaintext = await openEnvelopePlaintext(envelope);
     try {
       const record = validatePrivateCaseRecord(JSON.parse(plaintext.toString("utf8")));
       if (record.case_id !== caseId) throw new ValidationError("Encrypted private case record identity mismatch.");
       return { record, envelope };
     }
     finally { plaintext.fill(0); }
+  };
+  const readHandoffArtifactWithEnvelope = async (handoffId, expectedCaseId = null) => {
+    ensureOpen();
+    let serialized;
+    try { serialized = JSON.parse(await fs.readFile(handoffFileFor(handoffId), "utf8")); }
+    catch (error) { if (error?.code === "ENOENT") return null; throw error; }
+    const envelope = deserializeVaultEnvelope(serialized);
+    const plaintext = await openEnvelopePlaintext(envelope);
+    try {
+      const artifact = validateExactSourceArtifact(JSON.parse(plaintext.toString("utf8")));
+      const packet = openPrivateHandoffArtifact(artifact);
+      if (packet.handoff_id !== handoffId || (expectedCaseId && packet.case_id !== expectedCaseId)) throw new ValidationError("Encrypted private handoff identity mismatch.");
+      return { artifact, packet, envelope };
+    } finally { plaintext.fill(0); }
   };
   const readExisting = async (caseId) => (await readExistingWithEnvelope(caseId))?.record ?? null;
   const write = async (caseId, record, previous = null, currentEnvelope = null) => {
@@ -448,7 +540,7 @@ export function createEncryptedPrivateCaseStore({
       });
     },
     async saveCandidateResponse(caseId, candidateId, exactText, metadata = {}) {
-      return mutate(caseId, (record) => {
+      const record = await mutate(caseId, (record) => {
         if (typeof candidateId !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/.test(candidateId)) throw new ValidationError("candidateId is invalid.");
         if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new ValidationError("Candidate response metadata must be an object.");
         if (record.candidate_responses.some((candidate) => candidate.id === candidateId)) throw new ValidationError(`Candidate response ${candidateId} already exists and exact bytes are immutable.`);
@@ -473,6 +565,8 @@ export function createEncryptedPrivateCaseStore({
         record.candidate_responses.push(candidate);
         return record;
       });
+      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
+      return record;
     },
     async updateCandidateStatus(caseId, candidateId, status, metadataPatch = {}) {
       return mutate(caseId, (record) => {
@@ -511,6 +605,14 @@ export function createEncryptedPrivateCaseStore({
     async retrieveCaseEvidence(caseId, { query = null, provenanceIds = [], timeRange = null, limit = 24 } = {}) {
       const record = await readRequired(caseId);
       return selectEvidence(record, { query, provenanceIds, timeRange, limit });
+    },
+    async getTrackerWindow(caseId, options = {}) {
+      const record = await readRequired(caseId);
+      return selectTrackerEntries(record.tracker_entries, options);
+    },
+    async getJournalEntries(caseId, options = {}) {
+      const record = await readRequired(caseId);
+      return selectJournalEntries(record.journal_entries, options);
     },
     async getCurrentEpisode(caseId) { return structuredClone((await readRequired(caseId)).case_state.current_episode); },
     async loadCaseContext(caseId, { candidateId = "current_pending", episodePolicy = {}, evidenceQuery = null } = {}) {
@@ -557,6 +659,109 @@ export function createEncryptedPrivateCaseStore({
         tracker_window: structuredClone(context.tracker_window),
         hidden_reasoning_included: false
       });
+    },
+    async createHandoff(caseId, {
+      handoffId = createHandoffId(),
+      runtimeVersion = RUNTIME_VERSION,
+      auditVersion = PRIVATE_CANDIDATE_AUDIT_VERSION,
+      minimumCompleteExchanges = 3
+    } = {}) {
+      const record = await readRequired(caseId);
+      const durableContext = buildDurableCaseContext({
+        caseId,
+        caseState: record.case_state,
+        transcriptEntries: record.raw_transcript,
+        trackerEntries: record.tracker_entries
+      });
+      const recentVerbatim = selectRecentVerbatimWindow(record.raw_transcript, {
+        minimumCompleteExchanges,
+        currentEpisodeId: record.case_state.current_episode?.id ?? null,
+        maximumSelectedTurns: CONTEXT_WINDOW_LIMITS.transcript_entries,
+        requireCompleteEpisode: true
+      });
+      const candidate = [...record.candidate_responses].reverse().find((entry) => entry.status === "pending_audit") ?? null;
+      const context = {
+        case_state: record.case_state,
+        last_state_diff: record.state_diff_history.at(-1) ?? null,
+        current_episode: record.case_state.current_episode,
+        constitution_ref: durableContext.constitution_ref,
+        candidate_response: candidate,
+        recent_verbatim: recentVerbatim,
+        source_artifact_refs: record.source_artifacts.map((artifact) => ({ id: artifact.id })),
+        targeted_older_evidence: durableContext.targeted_older_evidence
+      };
+      const continuationSafety = assessContinuationSafety(context, { minimumCompleteExchanges });
+      const createdAt = now();
+      const { artifact, packet } = compilePrivateHandoffArtifact({
+        handoffId,
+        record,
+        recentVerbatim,
+        continuationSafety,
+        runtimeVersion,
+        auditVersion,
+        createdAt
+      });
+      const file = handoffFileFor(handoffId);
+      if (await fs.access(file).then(() => true).catch((error) => error?.code === "ENOENT" ? false : Promise.reject(error))) {
+        throw new ValidationError(`Private handoff ${handoffId} already exists and is immutable.`);
+      }
+      if (!recoverySecret) throw new ValidationError("Recovery secret is required when creating a private handoff envelope.");
+      const plaintext = Buffer.from(JSON.stringify(artifact), "utf8");
+      try {
+        const envelope = await createVaultEnvelope({ plaintextBytes: plaintext, routineKek: routineKey, recoverySecretBytes: recoverySecret });
+        await fs.mkdir(handoffDirectory, { recursive: true, mode: 0o700 });
+        await fs.chmod(handoffDirectory, 0o700);
+        await durableEncryptedWrite(file, envelope);
+      } finally { plaintext.fill(0); }
+      await writePrivateArtifactLocator({ rootDir, kind: "handoff", artifactId: handoffId, caseId });
+      for (const pending of packet.pending_artifacts) {
+        await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: pending.id, caseId });
+      }
+      const reopened = await readHandoffArtifactWithEnvelope(handoffId, caseId);
+      if (!reopened || reopened.artifact.exact_text !== artifact.exact_text) throw new ValidationError("Private handoff encrypted round-trip verification failed.");
+      return Object.freeze({
+        handoff_id: handoffId,
+        case_id: caseId,
+        candidate_ids: packet.pending_artifacts.map((entry) => entry.id),
+        handoff_status: packet.handoff_status,
+        local_round_trip_verified: true,
+        fresh_session_status: "PENDING_FRESH_SESSION",
+        encrypted_export_available: true,
+        continuation_safety: cloneValue(packet.continuation_safety)
+      });
+    },
+    async loadHandoff(caseId, handoffId) {
+      const value = await readHandoffArtifactWithEnvelope(handoffId, safeCaseId(caseId));
+      if (!value) throw new ValidationError(`Private handoff ${handoffId} was not found.`, { code: "PRIVATE_HANDOFF_NOT_FOUND" });
+      return Object.freeze({
+        ...cloneValue(value.packet),
+        artifact_manifest: {
+          utf8_bytes: value.artifact.utf8_bytes,
+          sha256: value.artifact.sha256,
+          chunks: cloneValue(value.artifact.chunks)
+        },
+        encrypted_round_trip_verified: true
+      });
+    },
+    async exportHandoff(caseId, handoffId) {
+      const value = await readHandoffArtifactWithEnvelope(handoffId, safeCaseId(caseId));
+      if (!value) throw new ValidationError(`Private handoff ${handoffId} was not found.`, { code: "PRIVATE_HANDOFF_NOT_FOUND" });
+      const body = Buffer.from(`${JSON.stringify(serializeVaultEnvelope(value.envelope))}\n`, "utf8");
+      if (body.byteLength > PRIVATE_RECORD_LIMITS.handoff_export_bytes) {
+        body.fill(0);
+        throw new ValidationError("Encrypted private handoff export exceeds the portable-export limit.");
+      }
+      return body;
+    },
+    async getHandoffTrackerWindow(caseId, handoffId, options = {}) {
+      const value = await readHandoffArtifactWithEnvelope(handoffId, safeCaseId(caseId));
+      if (!value) throw new ValidationError(`Private handoff ${handoffId} was not found.`, { code: "PRIVATE_HANDOFF_NOT_FOUND" });
+      return selectTrackerEntries(value.packet.tracker_entries, options);
+    },
+    async getHandoffJournalEntries(caseId, handoffId, options = {}) {
+      const value = await readHandoffArtifactWithEnvelope(handoffId, safeCaseId(caseId));
+      if (!value) throw new ValidationError(`Private handoff ${handoffId} was not found.`, { code: "PRIVATE_HANDOFF_NOT_FOUND" });
+      return selectJournalEntries(value.packet.journal_entries, options);
     },
     async appendTracker(caseId, entry) {
       return mutate(caseId, (record) => {

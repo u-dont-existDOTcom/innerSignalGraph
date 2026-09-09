@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "universal-handoff-binding-matrix-20260909",
+  "taskId": "universal-handoff-binding-20260909",
+  "status": "LOCAL_FRESH_SESSION_VERIFIED_EXTERNAL_CHATGPT_BLOCKED",
+  "claimRule": "A stored or same-process handoff is not FRESH_SESSION_GREEN. Synthetic/local fresh-process success does not certify the real case, production auth, ChatGPT registration, or a real new-chat tool call.",
+  "layers": [
+    {"id":"HANDOFF_COMPILER","status":"PASS","evidence":"Canonical immutable packets freeze state, diff, exact episode, pending candidates, transcript archive, tracker/journal, retrieval indexes, and constitution/runtime/audit references with component and chunk integrity."},
+    {"id":"HANDOFF_ENCRYPTION","status":"PASS_DEVELOPMENT_ONLY","evidence":"Handoffs use separate AES-256-GCM dual-wrap envelopes, mode-0600 files, a mode-0700 private root, authorization-before-key access, and no plaintext fallback. The available credential/key provider is explicitly development-only."},
+    {"id":"HANDOFF_ID_BOOTSTRAP","status":"PASS_LOCAL_FRESH_PROCESS","evidence":"Independent Session B received only handoff_id plus normal test transport authorization and reconstructed the exact packet after Session A exited."},
+    {"id":"THERAPEUTIC_DECISION_EQUIVALENCE","status":"PASS_SYNTHETIC","evidence":"Session B preserved constitution version, target/path, stop/switch/stay conditions, contradictions, mixed trajectory, hypotheses, settled answers, failed paths, consent/method state, and an exact pending candidate; its deterministic decision projection equaled Session A."},
+    {"id":"OVERSIZED_HISTORY","status":"PASS","evidence":"Synthetic history exceeded 100,000 characters and the exact packet used deterministic contiguous chunks no larger than 20,000 UTF-8 bytes."},
+    {"id":"RETRIEVAL_SURFACE","status":"PASS_LOCAL","evidence":"Store/access/MCP operations cover handoff, live context, state diff, recent exact episode, pending candidate, targeted older evidence, tracker, journal, candidate, and exact source retrieval."},
+    {"id":"CANDIDATE_EXACTNESS_AND_AUDIT","status":"PASS_SYNTHETIC","evidence":"Candidate text round-tripped byte-exactly by handoff and stable candidate ID; the existing fresh-process audit adapter resolved exact private candidate text before audit."},
+    {"id":"UNAUTHORIZED_AND_WRONG_KEY","status":"PASS","evidence":"Wrong bearer and wrong routine key failed clearly without leaking the private synthetic marker or returning a public/de-identified substitute."},
+    {"id":"UI_AND_EXPORT","status":"PASS_LOCAL","evidence":"Current Saved State, What Changed This Turn, Create Handoff, and encrypted export are wired. UI language withholds completion before FRESH_SESSION_GREEN, and blocked packets show continuation failures."},
+    {"id":"PUBLIC_PRIVATE_SEPARATION","status":"PASS_LOCAL","evidence":"Local publication audit scanned 158,932 records with zero findings; synthetic payload markers were absent from tracked files and encrypted handoff exports."},
+    {"id":"COMPLETE_PACKAGE","status":"PASS","evidence":"Node 24.18.0 npm run verify passed 1035 automated tests, 29 graph regressions, 5 therapy lessons, and all package gates."},
+    {"id":"REAL_CASE_HANDOFF","status":"BLOCKED_MISSING_EXACT_HISTORY","evidence":"The real private import has one complete exchange; three are required. Two genuine complete historical exchanges remain missing and must never be invented."},
+    {"id":"FRESH_CHATGPT_ACCESS","status":"BLOCKED_EXTERNAL_ACTIVATION","evidence":"Production auth/key provider, HTTPS/OAuth exposure, ChatGPT registration, and an actual post-registration fresh-chat load_handoff call remain unverified."},
+    {"id":"FINAL_GITHUB_EVIDENCE","status":"PENDING_CONTAINING_COMMIT","evidence":"Exact-head required checks and hosted publication audit are run only after the containing commit is pushed; PR #49 must remain draft/open/unmerged."}
+  ]
+}

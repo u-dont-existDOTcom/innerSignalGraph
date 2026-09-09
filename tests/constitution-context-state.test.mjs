@@ -270,6 +270,21 @@ test("case-state endpoints fail closed without storage and expose only structure
     assert.equal((await store.load("case-one")).raw_transcript[0].text, "I want to approach the younger part with care, but I still do not trust the exercise.");
     assert.equal(Object.hasOwn(value, "journal_entries"), false);
     assert.equal(Object.hasOwn(value, "raw_transcript"), false);
+    const handoff = await fetch(`${base}/v1/case/handoff`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ caseId: "case-one" })
+    });
+    const handoffValue = await handoff.json();
+    assert.equal(handoff.status, 200);
+    assert.equal(handoffValue.handoff_status, "BLOCKED_CONTINUATION_UNSAFE");
+    assert.equal(handoffValue.local_round_trip_verified, true);
+    assert.equal(handoffValue.fresh_session_status, "PENDING_FRESH_SESSION");
+    assert.ok(handoffValue.continuation_safety.failures.some((failure) => /complete exchanges/.test(failure)));
+    const exported = await fetch(`${base}/v1/case/handoff/export?${new URLSearchParams({ caseId: "case-one", handoffId: handoffValue.handoff_id })}`);
+    const exportBytes = Buffer.from(await exported.arrayBuffer());
+    assert.equal(exported.status, 200);
+    assert.match(exported.headers.get("content-type"), /application\/vnd\.inner-signal\.private-handoff\+json/);
+    assert.equal(exportBytes.includes(Buffer.from("I want to approach the younger part with care")), false);
   } finally {
     await new Promise((resolve) => server.close(resolve));
     store.close();
@@ -277,7 +292,7 @@ test("case-state endpoints fail closed without storage and expose only structure
   }
 });
 
-test("web client persists only safe settings and exposes state, diff, tracker, and legacy-data controls", async () => {
+test("web client persists only safe settings and exposes state, diff, tracker, handoff, and legacy-data controls", async () => {
   const [script, html] = await Promise.all([
     readFile(path.join(root, "apps/web/app.js"), "utf8"),
     readFile(path.join(root, "apps/web/index.html"), "utf8")
@@ -285,8 +300,10 @@ test("web client persists only safe settings and exposes state, diff, tracker, a
   assert.match(script, /inner-signal-settings-v1/);
   assert.doesNotMatch(script, /setItem\(STORAGE_KEY, JSON\.stringify\(state\)\)/);
   assert.match(script, /JSON\.stringify\(\{ settings: state\.settings, caseId: state\.caseId \}\)/);
-  for (const label of ["Current saved state", "What changed this turn", "Trajectory entry", "Journal or dream note"]) assert.match(html, new RegExp(label));
+  for (const label of ["Current saved state", "What changed this turn", "Create Handoff", "Export Private Handoff", "Trajectory entry", "Journal or dream note"]) assert.match(html, new RegExp(label));
   assert.match(html, /Legacy browser-local therapy data was detected/);
+  assert.match(script, /not complete until FRESH_SESSION_GREEN/);
+  assert.doesNotMatch(script, /localStorage[^\n]*lastHandoffId/);
 });
 
 test("steering and compaction supplement remains synthetic and covers consent, route, telos, method identity, and poisoning", async () => {

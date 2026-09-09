@@ -32,11 +32,13 @@ function loadState() {
       lastStateDiff: null,
       trackerEntries: [],
       journalEntries: [],
+      lastHandoffId: null,
+      handoffStatus: null,
       privateStorageMode: "unknown",
       legacyPrivateDataDetected: LEGACY_STORAGE_KEYS.some((key) => localStorage.getItem(key))
     };
   } catch {
-    return { therapy: [], hypnosisHistory: [], settings: {}, caseId: `case-${crypto.randomUUID()}`, caseSnapshot: null, interventionContract: null, priorProcessingTier: "", durableCaseState: null, caseStateView: null, lastStateDiff: null, trackerEntries: [], journalEntries: [], privateStorageMode: "unknown", legacyPrivateDataDetected: false };
+    return { therapy: [], hypnosisHistory: [], settings: {}, caseId: `case-${crypto.randomUUID()}`, caseSnapshot: null, interventionContract: null, priorProcessingTier: "", durableCaseState: null, caseStateView: null, lastStateDiff: null, trackerEntries: [], journalEntries: [], lastHandoffId: null, handoffStatus: null, privateStorageMode: "unknown", legacyPrivateDataDetected: false };
   }
 }
 
@@ -208,6 +210,23 @@ function renderCaseState(mode = "state") {
   $("#case-storage-status").textContent = state.privateStorageMode === "encrypted"
     ? "Encrypted private storage is active. Raw transcript and journal content are not shown here."
     : "Session-only mode: sensitive case content is held in memory and will be lost when this page closes.";
+}
+
+function renderHandoffStatus() {
+  const root = $("#handoff-status");
+  const exportButton = $("#export-private-handoff");
+  if (!root || !exportButton) return;
+  exportButton.disabled = !state.lastHandoffId;
+  if (!state.handoffStatus) {
+    root.textContent = "No private handoff has been created in this session.";
+    return;
+  }
+  if (state.handoffStatus.handoff_status === "READY_FOR_FRESH_SESSION_TEST") {
+    root.textContent = `Encrypted handoff ${state.lastHandoffId} was stored and verified locally. It is ready for a clean-session test; it is not complete until FRESH_SESSION_GREEN.`;
+    return;
+  }
+  const failures = state.handoffStatus.continuation_safety?.failures ?? [];
+  root.textContent = `Encrypted handoff ${state.lastHandoffId} is blocked and not continuation-safe.${failures.length ? ` ${failures.join("; ")}` : ""}`;
 }
 
 function trackerNumber(selector) {
@@ -654,6 +673,7 @@ async function checkHealth() {
       } catch {}
     }
     renderCaseState();
+    renderHandoffStatus();
   } catch (error) {
     badge.className = "status error";
     badge.textContent = error.message;
@@ -835,9 +855,12 @@ $("#erase-data").addEventListener("click", () => {
   state.lastStateDiff = null;
   state.trackerEntries = [];
   state.journalEntries = [];
+  state.lastHandoffId = null;
+  state.handoffStatus = null;
   state.legacyPrivateDataDetected = false;
   renderTherapy();
   renderCaseState();
+  renderHandoffStatus();
   renderDataSummary();
 });
 
@@ -848,6 +871,30 @@ for (const id of ["#open-current-state", "#show-current-state"]) $(id)?.addEvent
 for (const id of ["#open-state-diff", "#show-state-diff"]) $(id)?.addEventListener("click", () => {
   activateTab("case-state");
   renderCaseState("diff");
+});
+
+$("#create-handoff")?.addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  setBusy(button, true, "Creating…");
+  try {
+    const result = await postJson("/v1/case/handoff", { caseId: state.caseId });
+    state.lastHandoffId = result.handoff_id;
+    state.handoffStatus = result;
+    renderHandoffStatus();
+  } catch (error) {
+    state.lastHandoffId = null;
+    state.handoffStatus = null;
+    renderHandoffStatus();
+    alert(`Could not create private handoff: ${error.message}`);
+  } finally {
+    setBusy(button, false);
+  }
+});
+
+$("#export-private-handoff")?.addEventListener("click", () => {
+  if (!state.lastHandoffId) return;
+  const query = new URLSearchParams({ caseId: state.caseId, handoffId: state.lastHandoffId });
+  downloadResponse(`/v1/case/handoff/export?${query}`, "inner-signal-private-handoff.vault.json").catch((error) => alert(`Could not export private handoff: ${error.message}`));
 });
 
 $("#tracker-form")?.addEventListener("submit", async (event) => {

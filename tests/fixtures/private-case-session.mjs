@@ -1,11 +1,13 @@
 import fs from "node:fs/promises";
 import assert from "node:assert/strict";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../../src/storage/private-case-access.mjs";
+import { projectHandoffTherapeuticContinuity } from "../../src/storage/private-case-handoff.mjs";
 import { runPrivateCandidateAudit } from "../../src/supervisor/private-candidate-audit.mjs";
 
-const [action, credentialsPath, caseId, payloadPathOrUrl = null, outputPath = null] = process.argv.slice(2);
+const [action, credentialsPath, primaryId, payloadPathOrUrl = null, outputPath = null] = process.argv.slice(2);
 const token = process.env.INNER_SIGNAL_PRIVATE_CASE_TEST_TOKEN;
-if (!action || !credentialsPath || !caseId || !token) throw new Error("Private case session fixture arguments are incomplete.");
+if (!action || !credentialsPath || !primaryId || !token) throw new Error("Private case session fixture arguments are incomplete.");
+const caseId = primaryId;
 
 const providers = await loadDevelopmentPrivateCaseProviders(credentialsPath);
 const service = createPrivateCaseAccessService({
@@ -30,7 +32,11 @@ try {
     await service.saveCaseState(caseId, payload.case_state, authContext);
     await service.saveCaseDiff(caseId, payload.state_diff, { turnId: payload.state_diff_turn_id, diffId: payload.state_diff_id }, authContext);
     for (const turn of payload.transcript_turns) await service.appendTranscriptTurn(caseId, turn, authContext);
-    await service.saveCandidateResponse(caseId, payload.candidate_id, payload.candidate_text, payload.candidate_metadata, authContext);
+    for (const candidate of payload.candidate_responses ?? [{ id: payload.candidate_id, exact_text: payload.candidate_text, metadata: payload.candidate_metadata }]) {
+      await service.saveCandidateResponse(caseId, candidate.id, candidate.exact_text, candidate.metadata, authContext);
+    }
+    for (const entry of payload.tracker_entries ?? []) await service.appendTracker(caseId, entry, authContext);
+    for (const entry of payload.journal_entries ?? []) await service.appendJournal(caseId, entry, authContext);
     for (const artifact of payload.source_artifacts ?? []) {
       await service.saveSourceArtifact(caseId, artifact.id, artifact.chunks, artifact.metadata, authContext);
     }
@@ -56,6 +62,25 @@ try {
     const value = await service.getSourceArtifact(caseId, payloadPathOrUrl, authContext);
     if (!value) throw new Error("Exact source artifact was not found.");
     await writeJson(value);
+  } else if (action === "handoff-create") {
+    const receipt = await service.createHandoff(caseId, {
+      handoffId: process.env.INNER_SIGNAL_PRIVATE_HANDOFF_ID,
+      runtimeVersion: "synthetic-runtime-v1",
+      auditVersion: "synthetic-audit-v1"
+    }, authContext);
+    const packet = await service.loadHandoff(receipt.handoff_id, authContext, { requireContinuationSafe: true });
+    await writeJson({ ...receipt, session_a_decision_projection: projectHandoffTherapeuticContinuity(packet) });
+  } else if (action === "handoff-load") {
+    const packet = await service.loadHandoff(primaryId, authContext, { requireContinuationSafe: true });
+    await writeJson({
+      fresh_session_status: "FRESH_SESSION_GREEN",
+      packet,
+      decision_projection: projectHandoffTherapeuticContinuity(packet)
+    });
+  } else if (action === "candidate-by-id") {
+    const candidate = await service.getPendingCandidateByReference({ candidateId: primaryId }, authContext);
+    if (!candidate) throw new Error("Candidate response was not found.");
+    await writeJson(candidate);
   } else if (action === "mcp-load") {
     const response = await fetch(payloadPathOrUrl, {
       method: "POST",

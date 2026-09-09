@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { createEncryptedPrivateCaseStore } from "./private-case-store.mjs";
+import { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
+import { resolvePrivateArtifactCaseId } from "./private-artifact-locator.mjs";
+
+export { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -27,16 +31,6 @@ export class PrivateCaseKeyUnavailableError extends RuntimeError {
   }
 }
 
-export class CaseNotContinuationSafeError extends RuntimeError {
-  constructor(failures) {
-    super(`Case is not continuation-safe for a fresh session: ${failures.join("; ")}`, {
-      code: "CASE_NOT_CONTINUATION_SAFE",
-      details: { failures: [...failures] }
-    });
-    this.name = "CaseNotContinuationSafeError";
-  }
-}
-
 const sha256 = (value) => createHash("sha256").update(value).digest();
 const nonBlank = (value, name, max = 1_000) => {
   if (typeof value !== "string" || !value.trim() || value.length > max) throw new ValidationError(`${name} must be bounded non-empty text.`);
@@ -53,35 +47,6 @@ const isWithin = (parent, candidate) => {
 
 function assertProvider(provider, method, name) {
   if (!provider || typeof provider[method] !== "function") throw new ValidationError(`${name} must implement ${method}().`);
-}
-
-export function assessContinuationSafety(context, { minimumCompleteExchanges = 3 } = {}) {
-  const failures = [];
-  if (!context?.case_state) failures.push("current structured case state is missing");
-  if (!context?.last_state_diff) failures.push("last state diff is missing");
-  if (!context?.current_episode) failures.push("current therapeutic episode is missing");
-  if (!context?.constitution_ref?.version) failures.push("constitution reference is missing");
-  if (!context?.candidate_response?.exact_text) failures.push("exact candidate response is missing");
-  else if (context.candidate_response.status !== "pending_audit") failures.push("candidate response is not pending audit");
-  const olderTurnAvailable = (context?.targeted_older_evidence ?? []).some((entry) => entry?.turn?.text);
-  const olderSourceAvailable = (context?.source_artifact_refs ?? []).length > 0;
-  if (!olderTurnAvailable && !olderSourceAvailable) failures.push("targeted older raw evidence has no retrievable private provenance source");
-  const turns = context?.recent_verbatim?.turns ?? [];
-  const exchanges = new Map();
-  for (const turn of turns) {
-    const roles = exchanges.get(turn.exchange_id) ?? new Set();
-    roles.add(turn.role);
-    exchanges.set(turn.exchange_id, roles);
-  }
-  const complete = [...exchanges.values()].filter((roles) => roles.has("user") && roles.has("assistant")).length;
-  if (complete < minimumCompleteExchanges) failures.push(`recent verbatim contains ${complete} complete exchanges; ${minimumCompleteExchanges} required`);
-  return Object.freeze({
-    continuation_safe: failures.length === 0,
-    failures: Object.freeze(failures),
-    exact_candidate_available: Boolean(context?.candidate_response?.exact_text),
-    exact_recent_verbatim_available: complete >= minimumCompleteExchanges,
-    hidden_reasoning_included: false
-  });
 }
 
 export function createPrivateCaseAccessService({
@@ -144,6 +109,12 @@ export function createPrivateCaseAccessService({
 
   const read = (caseId, authContext, operation) => withStore(caseId, authContext, PRIVATE_CASE_SCOPES.READ, operation);
   const write = (caseId, authContext, operation) => withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, operation);
+  const withResolvedArtifact = async (kind, artifactId, authContext, requiredScope, operation) => {
+    let caseId;
+    try { caseId = await resolvePrivateArtifactCaseId({ rootDir, kind, artifactId }); }
+    catch { throw new PrivateCaseAccessDeniedError(); }
+    return withStore(caseId, authContext, requiredScope, (store, authorization) => operation(store, caseId, authorization));
+  };
 
   return Object.freeze({
     rootDir,
@@ -165,7 +136,51 @@ export function createPrivateCaseAccessService({
     },
     async getSourceArtifact(caseId, sourceArtifactId, authContext) { return read(caseId, authContext, (store) => store.getSourceArtifact(caseId, sourceArtifactId)); },
     async retrieveCaseEvidence(caseId, criteria, authContext) { return read(caseId, authContext, (store) => store.retrieveCaseEvidence(caseId, criteria)); },
+    async getTrackerWindow(caseId, options, authContext) { return read(caseId, authContext, (store) => store.getTrackerWindow(caseId, options)); },
+    async getJournalEntries(caseId, options, authContext) { return read(caseId, authContext, (store) => store.getJournalEntries(caseId, options)); },
+    async appendTracker(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendTracker(caseId, entry)); },
+    async appendJournal(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendJournal(caseId, entry)); },
     async getCurrentEpisode(caseId, authContext) { return read(caseId, authContext, (store) => store.getCurrentEpisode(caseId)); },
+    async createHandoff(caseId, options, authContext) { return write(caseId, authContext, (store) => store.createHandoff(caseId, options)); },
+    async loadHandoff(handoffId, authContext, { requireContinuationSafe = true } = {}) {
+      const packet = await withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store, caseId) => store.loadHandoff(caseId, handoffId));
+      if (requireContinuationSafe && !packet.continuation_safety.continuation_safe) throw new CaseNotContinuationSafeError(packet.continuation_safety.failures);
+      return packet;
+    },
+    async exportHandoff(handoffId, authContext) {
+      return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store, caseId) => store.exportHandoff(caseId, handoffId));
+    },
+    async getStateDiffByReference({ caseId = null, handoffId = null } = {}, authContext) {
+      if (handoffId) return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.READ, async (store, resolvedCaseId) => (await store.loadHandoff(resolvedCaseId, handoffId)).state_diff);
+      return read(caseId, authContext, (store) => store.getCaseDiff(caseId));
+    },
+    async getRecentVerbatimByReference({ caseId = null, handoffId = null } = {}, authContext) {
+      if (handoffId) return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.READ, async (store, resolvedCaseId) => (await store.loadHandoff(resolvedCaseId, handoffId)).recent_verbatim);
+      return read(caseId, authContext, (store) => store.getRecentVerbatim(caseId, { minimumCompleteExchanges: 3, requireCompleteEpisode: true }));
+    },
+    async getPendingCandidateByReference({ candidateId = null, handoffId = null } = {}, authContext) {
+      if (handoffId) {
+        return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.AUDIT, async (store, resolvedCaseId) => {
+          const packet = await store.loadHandoff(resolvedCaseId, handoffId);
+          const candidate = candidateId
+            ? packet.pending_artifacts.find((entry) => entry.id === candidateId)
+            : packet.pending_artifacts.at(-1);
+          return candidate ? structuredClone(candidate) : null;
+        });
+      }
+      if (!candidateId) throw new ValidationError("candidateId or handoffId is required.");
+      return withResolvedArtifact("candidate", candidateId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store, resolvedCaseId) => store.getCandidateResponse(resolvedCaseId, candidateId));
+    },
+    async getTrackerWindowByReference({ caseId = null, handoffId = null, variables = [], timeRange = null, limit = 180 } = {}, authContext) {
+      const options = { variables, timeRange, limit };
+      if (handoffId) return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.READ, (store, resolvedCaseId) => store.getHandoffTrackerWindow(resolvedCaseId, handoffId, options));
+      return read(caseId, authContext, (store) => store.getTrackerWindow(caseId, options));
+    },
+    async getJournalEntriesByReference({ caseId = null, handoffId = null, query = null, timeRange = null, limit = 200 } = {}, authContext) {
+      const options = { query, timeRange, limit };
+      if (handoffId) return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.READ, (store, resolvedCaseId) => store.getHandoffJournalEntries(resolvedCaseId, handoffId, options));
+      return read(caseId, authContext, (store) => store.getJournalEntries(caseId, options));
+    },
     async loadCaseContext(caseId, authContext, options = {}) {
       const requiredScope = options.requireAuditScope === false ? PRIVATE_CASE_SCOPES.READ : PRIVATE_CASE_SCOPES.AUDIT;
       const effectiveOptions = {

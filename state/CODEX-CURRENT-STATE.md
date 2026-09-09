@@ -2,6 +2,16 @@
 
 Updated: 2026-09-09
 
+## Universal Handoff Binding v1.0 (draft PR #49)
+
+Task `universal-handoff-binding-20260909` continues the exact-source/private-case work on `codex/private-case-import-20260909`. Its sole recovery ledger is `tasks/universal-handoff-binding-20260909/INTEGRATION.md`; the owner outcome, execution directive, lesson contract, and public binding are in that task directory and `docs/superpowers/specs/2026-09-09-inner-signal-universal-handoff-binding.md`.
+
+The candidate adds a first-class immutable encrypted handoff compiled from the private case record, an opaque private locator for handoff/candidate ID recovery, `load_handoff(handoff_id)` as the normal single-entry fresh-session bootstrap, narrower state-diff/recent-verbatim/pending-candidate/tracker/journal reads, and encrypted portable export. The local UI exposes Current Saved State, What Changed This Turn, Create Handoff, and Export Private Handoff with an explicit rule that local storage/round-trip is not complete before `FRESH_SESSION_GREEN`. It exposes no hidden reasoning and no raw transcript/candidate inspector on the unauthenticated local development server.
+
+Synthetic acceptance covers more than 100,000 characters, deterministic 20,000-byte-or-smaller chunks, separate Session A/B processes, exact Unicode/candidate/recent-turn reconstruction, contradictions, trajectory observability, settled answers, failed/superseded paths, historical evidence, tracker/journal retrieval, denied auth, wrong/missing keys, encrypted export, and public/private separation. This is repository-local synthetic evidence only.
+
+The real imported case remains blocked because its owner-supplied transcript has only one complete exchange, two fewer than the fixed minimum. Production auth/key integration, secure HTTPS/OAuth exposure, ChatGPT registration, and a successful tool call from a genuinely new post-registration ChatGPT conversation remain open. Do not create a public/private availability claim, invent missing exchanges, or audit/reinterpret the real pending candidate. Keep draft PR #49 open/unmerged; do not deploy, install, or promote stable.
+
 ## Fresh-session private case continuity repair (PR #46)
 
 Task `fresh-session-private-case-continuity-20260909` corrects the prior storage-without-access failure. The authoritative recovery ledger is `tasks/fresh-session-private-case-continuity-20260909/INTEGRATION.md`, its requirement evidence is `COMPLETION-MATRIX.json`, and `docs/PRIVATE-CASE-CONTINUITY.md` defines the runtime, key/auth, MCP, private handoff, and production boundaries.

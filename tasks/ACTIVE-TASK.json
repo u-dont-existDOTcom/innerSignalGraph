@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "taskId": "real-private-case-import-20260909",
-  "title": "Import the approved private longitudinal case and verify fresh-session access",
-  "status": "blocked_missing_exact_history_and_external_activation",
+  "taskId": "universal-handoff-binding-20260909",
+  "title": "Implement InnerSignal Universal Handoff Binding v1.0",
+  "status": "repository_candidate_verified_external_activation_blocked",
   "exclusive": false,
   "startedAt": "2026-09-09",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
@@ -10,13 +10,19 @@
   "pullRequest": 49,
   "ownerAuthorized": true,
   "startingMainHead": "fabc5b582e8b725248c37b44e5189e51653c9d82",
-  "ownerOutcomePath": "tasks/real-private-case-import-20260909/OWNER-OUTCOME.json",
-  "directivePath": "tasks/real-private-case-import-20260909/EXECUTION-DIRECTIVE.json",
-  "statePath": "tasks/real-private-case-import-20260909/INTEGRATION.md",
-  "activeLessonContractPath": "tasks/real-private-case-import-20260909/ACTIVE-LESSON-CONTRACT.json",
-  "completionClaimRule": "Private import, local fresh-process continuity, reachable MCP, ChatGPT registration, fresh-chat retrieval, and candidate audit are distinct evidence layers. No later layer may be claimed from an earlier proxy.",
+  "startingTaskHead": "44819602ad147b1ee670d46b4d1672ce05951871",
+  "ownerOutcomePath": "tasks/universal-handoff-binding-20260909/OWNER-OUTCOME.json",
+  "directivePath": "tasks/universal-handoff-binding-20260909/EXECUTION-DIRECTIVE.json",
+  "statePath": "tasks/universal-handoff-binding-20260909/INTEGRATION.md",
+  "activeLessonContractPath": "tasks/universal-handoff-binding-20260909/ACTIVE-LESSON-CONTRACT.json",
+  "completionClaimRule": "A stored or locally round-tripped handoff is not FRESH_SESSION_GREEN. Completion requires a new authorized process with only handoff_id to recover and verify the exact compiled packet; real ChatGPT availability remains a separate external layer.",
+  "parentOpenTask": {
+    "taskId": "real-private-case-import-20260909",
+    "status": "blocked_missing_exact_history_and_external_activation",
+    "statePath": "tasks/real-private-case-import-20260909/INTEGRATION.md"
+  },
   "suspendedTaskSources": [
-    "merged PR 46 continuation instructions",
+    "real private-case import and remote ChatGPT activation",
     "provider-backed guide-fidelity and audit-architecture experiments",
     "stable promotion and release queues",
     "unrelated task branches and pull requests"

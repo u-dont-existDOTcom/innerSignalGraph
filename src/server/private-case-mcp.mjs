@@ -4,6 +4,8 @@ import { CaseNotContinuationSafeError, PrivateCaseAccessDeniedError, PrivateCase
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const MAX_BODY_BYTES = 1_000_000;
+const CASE_ID_SCHEMA = Object.freeze({ type: "string", pattern: "^[a-z0-9][a-z0-9_-]{0,79}$" });
+const HANDOFF_ID_SCHEMA = Object.freeze({ type: "string", pattern: "^handoff:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" });
 
 const headers = (extra = {}) => ({
   "cache-control": "no-store",
@@ -53,6 +55,18 @@ function toolResult(value) {
 
 const TOOLS = Object.freeze([
   {
+    name: "load_handoff",
+    title: "Load private InnerSignal handoff",
+    description: "Primary fresh-session bootstrap. Resolve and verify an authorized immutable encrypted handoff using only its stable handoff identifier.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["handoff_id"],
+      properties: { handoff_id: HANDOFF_ID_SCHEMA }
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
     name: "load_case_context",
     title: "Load private InnerSignal case context",
     description: "Load a continuation-safe private case bundle for an authorized fresh supervisor session, including exact recent verbatim turns and the exact pending candidate response.",
@@ -68,16 +82,26 @@ const TOOLS = Object.freeze([
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   },
   {
+    name: "get_state_diff",
+    title: "Get private case state diff",
+    description: "Load the current case diff or the exact diff frozen into a private handoff.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: { case_id: CASE_ID_SCHEMA, handoff_id: HANDOFF_ID_SCHEMA },
+      oneOf: [{ required: ["case_id"] }, { required: ["handoff_id"] }]
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
     name: "get_recent_verbatim",
     title: "Inspect exact recent private episode",
     description: "Load exact authorized recent user-assistant turns, with at least three complete exchanges and the complete active therapeutic episode.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
-      required: ["case_id"],
-      properties: {
-        case_id: { type: "string", pattern: "^[a-z0-9][a-z0-9_-]{0,79}$" }
-      }
+      properties: { case_id: CASE_ID_SCHEMA, handoff_id: HANDOFF_ID_SCHEMA },
+      oneOf: [{ required: ["case_id"] }, { required: ["handoff_id"] }]
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   },
@@ -100,6 +124,57 @@ const TOOLS = Object.freeze([
         },
         limit: { type: "integer", minimum: 1, maximum: 200, default: 24 }
       }
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
+    name: "get_pending_candidate",
+    title: "Get exact pending private candidate",
+    description: "Resolve an exact pending candidate by candidate identifier or from an immutable handoff; never returns a summary or hash substitute.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        candidate_id: { type: "string", pattern: "^[A-Za-z0-9:_-]{1,160}$" },
+        handoff_id: HANDOFF_ID_SCHEMA
+      },
+      oneOf: [{ required: ["candidate_id"] }, { required: ["handoff_id"] }]
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
+    name: "get_tracker_window",
+    title: "Get private tracker window",
+    description: "Load exact authorized tracker entries and a descriptive, non-causal summary from a case or frozen handoff.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        case_id: CASE_ID_SCHEMA,
+        handoff_id: HANDOFF_ID_SCHEMA,
+        variables: { type: "array", items: { type: "string" }, maxItems: 26 },
+        time_range: { type: "object", additionalProperties: false, properties: { from: { type: "string" }, to: { type: "string" } } },
+        limit: { type: "integer", minimum: 1, maximum: 180, default: 180 }
+      },
+      oneOf: [{ required: ["case_id"] }, { required: ["handoff_id"] }]
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
+    name: "get_journal_entries",
+    title: "Get private journal entries",
+    description: "Search exact authorized journal or dream entries by query and time range without promoting them into settled case facts.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        case_id: CASE_ID_SCHEMA,
+        handoff_id: HANDOFF_ID_SCHEMA,
+        query: { type: "string" },
+        time_range: { type: "object", additionalProperties: false, properties: { from: { type: "string" }, to: { type: "string" } } },
+        limit: { type: "integer", minimum: 1, maximum: 200, default: 200 }
+      },
+      oneOf: [{ required: ["case_id"] }, { required: ["handoff_id"] }]
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   },
@@ -136,6 +211,7 @@ const TOOLS = Object.freeze([
 ]);
 
 async function callTool(service, name, args, authContext) {
+  if (name === "load_handoff") return service.loadHandoff(args.handoff_id, authContext, { requireContinuationSafe: true });
   if (name === "load_case_context") {
     return service.loadCaseContext(args.case_id, authContext, {
       candidateId: args.candidate_id ?? "current_pending",
@@ -152,8 +228,34 @@ async function callTool(service, name, args, authContext) {
       limit: args.limit ?? 24
     }, authContext);
   }
+  if (name === "get_state_diff") {
+    return service.getStateDiffByReference({ caseId: args.case_id ?? null, handoffId: args.handoff_id ?? null }, authContext);
+  }
   if (name === "get_recent_verbatim") {
-    return service.getRecentVerbatim(args.case_id, { minimumCompleteExchanges: 3, requireCompleteEpisode: true }, authContext);
+    return service.getRecentVerbatimByReference({ caseId: args.case_id ?? null, handoffId: args.handoff_id ?? null }, authContext);
+  }
+  if (name === "get_pending_candidate") {
+    const candidate = await service.getPendingCandidateByReference({ candidateId: args.candidate_id ?? null, handoffId: args.handoff_id ?? null }, authContext);
+    if (!candidate) throw Object.assign(new Error("Candidate response was not found."), { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
+    return candidate;
+  }
+  if (name === "get_tracker_window") {
+    return service.getTrackerWindowByReference({
+      caseId: args.case_id ?? null,
+      handoffId: args.handoff_id ?? null,
+      variables: args.variables ?? [],
+      timeRange: args.time_range ?? null,
+      limit: args.limit ?? 180
+    }, authContext);
+  }
+  if (name === "get_journal_entries") {
+    return service.getJournalEntriesByReference({
+      caseId: args.case_id ?? null,
+      handoffId: args.handoff_id ?? null,
+      query: args.query ?? null,
+      timeRange: args.time_range ?? null,
+      limit: args.limit ?? 200
+    }, authContext);
   }
   if (name === "get_candidate_response") {
     const candidate = await service.getCandidateResponse(args.case_id, args.candidate_id ?? "current_pending", authContext);

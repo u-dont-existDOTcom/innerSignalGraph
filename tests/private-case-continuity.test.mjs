@@ -9,10 +9,11 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { applyCaseStatePatch, createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
 import { assessContinuationSafety, CaseNotContinuationSafeError, createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
-import { createPrivateCaseHandoff, validatePrivateCaseHandoff } from "../src/storage/private-case-handoff.mjs";
+import { createPrivateCaseHandoff, openPrivateHandoffArtifact, validatePrivateCaseHandoff } from "../src/storage/private-case-handoff.mjs";
 import { deserializeVaultEnvelope } from "../src/storage/private-case-store.mjs";
 import { decryptVaultEnvelopeWithRecoverySecret } from "../src/storage/vault-crypto.mjs";
 import { chunkExactSourceText, reconstructExactSourceChunks } from "../src/storage/exact-source-artifact.mjs";
+import { validateTrackerEntry } from "../src/case-state/tracker.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -21,6 +22,7 @@ const mcpCli = path.join(root, "src/cli/private-case-mcp.mjs");
 const CASE_ID = "synthetic-case-continuity";
 const CANDIDATE_ID = "candidate:pending:001";
 const SOURCE_ARTIFACT_ID = "source:human-approved:001";
+const HANDOFF_ID = "handoff:00000000-0000-4000-8000-000000000001";
 const TOKEN = "synthetic-authorized-session-token";
 const sha256Hex = (value) => createHash("sha256").update(value).digest("hex");
 let sessionSequence = 0;
@@ -31,6 +33,13 @@ function turn(exchange, role, text, episode = null, day = 1) {
 
 function syntheticState() {
   return applyCaseStatePatch(createEmptyCaseState({ caseId: CASE_ID }), {
+    trajectory_observability: {
+      overall: "mixed",
+      note: "Synthetic global appraisal conflicts with functional observations.",
+      domains: {
+        mood: { observability: "mixed", intensity: "variable", function: "partly reduced", duration: "unclear", timing: "short-term", delayed_effects: "not yet observed", external_observation: "synthetic observer reports mixed function", note: "Do not infer a clean trend." }
+      }
+    },
     items: [
       {
         id: "evidence:older:critical",
@@ -53,15 +62,93 @@ function syntheticState() {
         still_current: true,
         supersedes: [],
         decision_relevance: "high"
+      },
+      {
+        id: "hypothesis:synthetic-mechanism",
+        domain: "mechanism",
+        statement: "A synthetic mechanism remains only a hypothesis.",
+        status: "hypothesis",
+        confidence: "low",
+        source: { kind: "synthetic_turn", ref: "E2-user", turn_id: "E2-user", recorded_at: "2026-09-02T12:00:00.000Z" },
+        still_current: null,
+        supersedes: [],
+        decision_relevance: "medium"
+      },
+      {
+        id: "state:global-better-superseded",
+        domain: "trajectory",
+        statement: "A vivid global better claim was later corrected by mixed functional evidence.",
+        status: "direct_report",
+        confidence: "high",
+        source: { kind: "synthetic_turn", ref: "E1-user", turn_id: "E1-user", recorded_at: "2026-09-01T12:00:00.000Z" },
+        still_current: false,
+        supersedes: [],
+        decision_relevance: "high"
+      },
+      {
+        id: "state:function-mixed-current",
+        domain: "trajectory",
+        statement: "Function remains mixed despite the latest vivid appraisal.",
+        status: "unresolved_conflict",
+        confidence: "medium",
+        source: { kind: "synthetic_turn", ref: "E2-user", turn_id: "E2-user", recorded_at: "2026-09-02T12:00:00.000Z" },
+        still_current: true,
+        supersedes: ["state:global-better-superseded"],
+        decision_relevance: "high"
+      },
+      {
+        id: "state:consent-contract",
+        domain: "consent",
+        statement: "The synthetic client consented to the current bounded method and may decline it.",
+        status: "direct_report",
+        confidence: "high",
+        source: { kind: "synthetic_turn", ref: "E2-user", turn_id: "E2-user", recorded_at: "2026-09-02T12:00:00.000Z" },
+        still_current: true,
+        supersedes: [],
+        decision_relevance: "high"
+      },
+      {
+        id: "state:vivid-latest-distraction",
+        domain: "latest_turn",
+        statement: "A vivid synthetic latest-turn distraction must not replace the active target.",
+        status: "direct_report",
+        confidence: "high",
+        source: { kind: "synthetic_turn", ref: "E5-user", turn_id: "E5-user", recorded_at: "2026-09-05T12:00:00.000Z" },
+        still_current: true,
+        supersedes: [],
+        decision_relevance: "medium"
       }
     ],
-    contradiction_clusters: [{
-      id: "conflict:target",
-      item_ids: ["evidence:older:critical", "evidence:older:conflict"],
-      question: "Which synthetic target remains current?",
-      status: "open",
-      decision_relevance: "high"
-    }],
+    contradiction_clusters: [
+      {
+        id: "conflict:target",
+        item_ids: ["evidence:older:critical", "evidence:older:conflict"],
+        question: "Which synthetic target remains current?",
+        status: "open",
+        decision_relevance: "high"
+      },
+      {
+        id: "conflict:global-versus-function",
+        item_ids: ["state:global-better-superseded", "state:function-mixed-current"],
+        question: "Does the global appraisal match durable functional change?",
+        status: "open",
+        decision_relevance: "high"
+      }
+    ],
+    answered_questions: [{ id: "answered:preferred-method", question: "Was the bounded developmental method acceptable?", answer: "Yes, with continuing consent and a right to decline.", source_item_ids: ["state:consent-contract"], still_current: true }],
+    intervention_history: [
+      {
+        id: "path:failed-probe",
+        domain: "intervention_adverse",
+        statement: "A synthetic probe failed and must not be retried blindly.",
+        status: "observed_pattern",
+        confidence: "high",
+        source: { kind: "synthetic_turn", ref: "E1-user", turn_id: "E1-user", recorded_at: "2026-09-01T12:00:00.000Z" },
+        still_current: false,
+        supersedes: [],
+        decision_relevance: "high"
+      }
+    ],
     current_episode: {
       id: "episode:active",
       target: "Continue the synthetic developmental episode.",
@@ -79,7 +166,7 @@ function syntheticState() {
   });
 }
 
-async function makeEnvironment(t, { marker = `PRIVATE-${randomBytes(12).toString("hex")}`, wrongKey = false } = {}) {
+async function makeEnvironment(t, { marker = `PRIVATE-${randomBytes(12).toString("hex")}`, wrongKey = false, largeHistory = false } = {}) {
   const privateRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-private-continuity-"));
   const credentialsPath = path.join(privateRoot, "bridge-credentials.json");
   const payloadPath = path.join(privateRoot, "seed-payload.json");
@@ -102,7 +189,14 @@ async function makeEnvironment(t, { marker = `PRIVATE-${randomBytes(12).toString
       }
     }
   };
+  const archivedHistory = largeHistory
+    ? Array.from({ length: 28 }, (_, index) => [
+        turn(`ARCHIVE-${index}`, "user", `${marker} archived Unicode evidence ${index} — ${"longitudinal synthetic history ".repeat(150)}`, null, 1),
+        turn(`ARCHIVE-${index}`, "assistant", `Synthetic archived response ${index}.`, null, 1)
+      ]).flat()
+    : [];
   const transcript = [
+    ...archivedHistory,
     turn("E1", "user", `${marker} older critical raw evidence`, null, 1),
     turn("E1", "assistant", "Synthetic older response.", null, 1),
     turn("E2", "user", "Synthetic episode starts exactly here.", "episode:active", 2),
@@ -114,6 +208,7 @@ async function makeEnvironment(t, { marker = `PRIVATE-${randomBytes(12).toString
     turn("E5", "user", "Synthetic episode latest user.", "episode:active", 5),
     turn("E5", "assistant", "Synthetic episode latest response.", "episode:active", 5)
   ];
+  if (largeHistory) assert.ok(transcript.reduce((total, entry) => total + entry.text.length, 0) > 100_000);
   const exactSourceText = [
     `${marker}\r\nsynthetic private source opening — exact Unicode “text”`,
     ...Array.from({ length: 950 }, (_, index) => `source-line-${String(index).padStart(4, "0")}: ${"bounded synthetic evidence ".repeat(2)}${index % 2 ? "\r\n" : "\n"}`),
@@ -129,6 +224,27 @@ async function makeEnvironment(t, { marker = `PRIVATE-${randomBytes(12).toString
     candidate_id: CANDIDATE_ID,
     candidate_text: `${marker}\r\nexact pending candidate bytes — preserved “verbatim”`,
     candidate_metadata: { status: "pending_audit", based_on_turn_id: "E5-user" },
+    candidate_responses: [
+      { id: "candidate:superseded:000", exact_text: `${marker} exact superseded candidate`, metadata: { status: "pending_audit", based_on_turn_id: "E4-user" } },
+      { id: CANDIDATE_ID, exact_text: `${marker}\r\nexact pending candidate bytes — preserved “verbatim”`, metadata: { status: "pending_audit", based_on_turn_id: "E5-user" } }
+    ],
+    tracker_entries: [{
+      schema_version: 1,
+      id: "tracker:synthetic:001",
+      observed_at: "2026-09-04T08:00:00.000Z",
+      sleep_duration_hours: 6.5,
+      sleep_quality: 5,
+      pain_intensity: 4,
+      anxiety: 6,
+      stability: 5,
+      unreality: 3,
+      social_contact_quality: 4,
+      rejection_impact: 7,
+      interventions: ["synthetic bounded practice"],
+      activities: ["synthetic meaningful activity"],
+      functioning: 5
+    }],
+    journal_entries: [{ id: "journal:synthetic:001", observed_at: "2026-09-03T09:00:00.000Z", kind: "journal", text: `${marker} exact older journal evidence` }],
     source_artifacts: [{
       id: SOURCE_ARTIFACT_ID,
       chunks: chunkExactSourceText(exactSourceText, { maximumChunkBytes: 997 }),
@@ -144,18 +260,34 @@ async function makeEnvironment(t, { marker = `PRIVATE-${randomBytes(12).toString
   return { privateRoot, credentialsPath, payloadPath, vaultRoot, marker, payload, credentials };
 }
 
-async function runSession(action, environment, { token = TOKEN, candidateId = CANDIDATE_ID, fourthArg = environment.payloadPath } = {}) {
+async function runSession(action, environment, { token = TOKEN, candidateId = CANDIDATE_ID, handoffId = null, primaryId = CASE_ID, fourthArg = environment.payloadPath } = {}) {
   sessionSequence += 1;
   const outputPath = path.join(environment.privateRoot, `session-output-${sessionSequence}.json`);
-  const result = await execFileAsync(process.execPath, [fixture, action, environment.credentialsPath, CASE_ID, fourthArg, outputPath], {
+  const result = await execFileAsync(process.execPath, [fixture, action, environment.credentialsPath, primaryId, fourthArg, outputPath], {
     cwd: root,
     env: {
       ...process.env,
       INNER_SIGNAL_PRIVATE_CASE_TEST_TOKEN: token,
       INNER_SIGNAL_PRIVATE_CASE_CANDIDATE_ID: candidateId,
+      ...(handoffId ? { INNER_SIGNAL_PRIVATE_HANDOFF_ID: handoffId } : {}),
       INNER_SIGNAL_PRIVATE_CASE_EXPECTED_PATH: environment.payloadPath
     },
     maxBuffer: 4_000_000
+  });
+  return { ...result, stdout: await fs.readFile(outputPath, "utf8") };
+}
+
+async function runFreshHandoffSession(environment, handoffId, { token = TOKEN } = {}) {
+  sessionSequence += 1;
+  const outputPath = path.join(environment.privateRoot, `fresh-handoff-output-${sessionSequence}.json`);
+  const childEnv = { ...process.env, INNER_SIGNAL_PRIVATE_CASE_TEST_TOKEN: token };
+  delete childEnv.INNER_SIGNAL_PRIVATE_CASE_CANDIDATE_ID;
+  delete childEnv.INNER_SIGNAL_PRIVATE_CASE_EXPECTED_PATH;
+  delete childEnv.INNER_SIGNAL_PRIVATE_HANDOFF_ID;
+  const result = await execFileAsync(process.execPath, [fixture, "handoff-load", environment.credentialsPath, handoffId, "", outputPath], {
+    cwd: root,
+    env: childEnv,
+    maxBuffer: 16_000_000
   });
   return { ...result, stdout: await fs.readFile(outputPath, "utf8") };
 }
@@ -203,6 +335,91 @@ test("lossless chunk reconstruction detects omissions, duplication, and tamperin
   assert.throws(() => reconstructExactSourceChunks(tampered), /gap, overlap|integrity check/);
 });
 
+test("Universal Handoff Binding recovers a >100k case in Session B using only handoff_id", async (t) => {
+  const environment = await makeEnvironment(t, { largeHistory: true });
+  await runSession("seed", environment);
+  const created = JSON.parse((await runSession("handoff-create", environment, { handoffId: HANDOFF_ID })).stdout);
+  assert.equal(created.handoff_id, HANDOFF_ID);
+  assert.equal(created.case_id, CASE_ID);
+  assert.deepEqual(created.candidate_ids, [CANDIDATE_ID]);
+  assert.equal(created.handoff_status, "READY_FOR_FRESH_SESSION_TEST");
+  assert.equal(created.local_round_trip_verified, true);
+  assert.equal(created.fresh_session_status, "PENDING_FRESH_SESSION");
+
+  const fresh = JSON.parse((await runFreshHandoffSession(environment, HANDOFF_ID)).stdout);
+  assert.equal(fresh.fresh_session_status, "FRESH_SESSION_GREEN");
+  assert.deepEqual(fresh.decision_projection, created.session_a_decision_projection);
+  assert.equal(fresh.packet.handoff_id, HANDOFF_ID);
+  assert.equal(fresh.packet.case_id, CASE_ID);
+  assert.equal(fresh.packet.encrypted_round_trip_verified, true);
+  assert.equal(fresh.packet.versions.constitution, environment.payload.case_state.constitution_ref.version);
+  assert.equal(fresh.packet.versions.runtime, "synthetic-runtime-v1");
+  assert.equal(fresh.packet.versions.audit, "synthetic-audit-v1");
+  assert.ok(fresh.packet.transcript_archive.reduce((total, entry) => total + entry.text.length, 0) > 100_000);
+  assert.ok(fresh.packet.artifact_manifest.chunks.length > 5);
+  assert.ok(fresh.packet.artifact_manifest.chunks.every((chunk) => chunk.utf8_bytes <= 20_000));
+  assert.equal(fresh.packet.artifact_manifest.chunks.at(-1).end_byte, fresh.packet.artifact_manifest.utf8_bytes);
+  const transcriptComponent = fresh.packet.manifest.components.find((entry) => entry.name === "transcript_archive");
+  assert.ok(transcriptComponent.chunks.length > 5);
+  assert.ok(transcriptComponent.chunks.every((chunk) => Buffer.byteLength(chunk.exact_text, "utf8") <= 20_000));
+  assert.deepEqual(JSON.parse(reconstructExactSourceChunks(transcriptComponent.chunks).exact_text), fresh.packet.transcript_archive);
+  assert.equal(fresh.packet.pending_artifacts[0].exact_text, environment.payload.candidate_text);
+  assert.equal(Buffer.from(fresh.packet.pending_artifacts[0].exact_text, "utf8").equals(Buffer.from(environment.payload.candidate_text, "utf8")), true);
+  const recentStart = environment.payload.transcript_turns.findIndex((entry) => entry.id === "E2-user");
+  assert.deepEqual(fresh.packet.recent_verbatim.turns, environment.payload.transcript_turns.slice(recentStart));
+  assert.equal(fresh.packet.transcript_archive.find((entry) => entry.id === "E1-user").text, environment.payload.transcript_turns.find((entry) => entry.id === "E1-user").text);
+  assert.deepEqual(fresh.packet.tracker_entries, environment.payload.tracker_entries.map(validateTrackerEntry));
+  assert.deepEqual(fresh.packet.journal_entries, environment.payload.journal_entries);
+  assert.deepEqual(fresh.packet.canonical_state.contradiction_clusters, environment.payload.case_state.contradiction_clusters);
+  assert.deepEqual(fresh.packet.canonical_state.trajectory_observability, environment.payload.case_state.trajectory_observability);
+  assert.deepEqual(fresh.packet.canonical_state.answered_questions, environment.payload.case_state.answered_questions);
+  assert.equal(fresh.packet.canonical_state.items.find((entry) => entry.id === "hypothesis:synthetic-mechanism").status, "hypothesis");
+  assert.equal(fresh.packet.canonical_state.items.find((entry) => entry.id === "state:global-better-superseded").still_current, false);
+  assert.equal(fresh.decision_projection.current_target, environment.payload.case_state.current_episode.target);
+  assert.equal(fresh.decision_projection.current_path, "IC.PROTECTOR_ACTION");
+  assert.deepEqual(fresh.decision_projection.failed_or_superseded_path_ids, ["path:failed-probe"]);
+  assert.deepEqual(fresh.decision_projection.settled_answer_ids, ["answered:preferred-method"]);
+  assert.ok(fresh.decision_projection.open_contradiction_ids.includes("conflict:global-versus-function"));
+
+  const candidateById = JSON.parse((await runSession("candidate-by-id", environment, { primaryId: CANDIDATE_ID })).stdout);
+  assert.equal(candidateById.exact_text, environment.payload.candidate_text);
+
+  const providers = await loadDevelopmentPrivateCaseProviders(environment.credentialsPath);
+  t.after(() => providers.close());
+  const service = createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider, keyProvider: providers.keyProvider, allowDevelopmentFileProvider: true });
+  const auth = { bearerToken: TOKEN };
+  const tracker = await service.getTrackerWindowByReference({ handoffId: HANDOFF_ID, variables: ["sleep_quality", "functioning"] }, auth);
+  assert.deepEqual(tracker.entries, [{ id: "tracker:synthetic:001", observed_at: "2026-09-04T08:00:00.000Z", sleep_quality: 5, functioning: 5 }]);
+  assert.equal(tracker.interpretation, "descriptive_only_no_causal_inference");
+  const journal = await service.getJournalEntriesByReference({ handoffId: HANDOFF_ID, query: "older journal" }, auth);
+  assert.equal(journal.entries[0].text, environment.payload.journal_entries[0].text);
+  assert.equal(journal.promoted_to_case_fact, false);
+  const encryptedExport = await service.exportHandoff(HANDOFF_ID, auth);
+  assert.equal(encryptedExport.includes(Buffer.from(environment.marker)), false);
+  const recovered = await decryptVaultEnvelopeWithRecoverySecret({
+    envelope: deserializeVaultEnvelope(JSON.parse(encryptedExport.toString("utf8"))),
+    recoverySecretBytes: Buffer.from(environment.credentials.case_keys[CASE_ID].recovery_secret_base64, "base64")
+  });
+  try {
+    const artifact = JSON.parse(recovered.toString("utf8"));
+    assert.equal(openPrivateHandoffArtifact(artifact).pending_artifacts[0].exact_text, environment.payload.candidate_text);
+  } finally { recovered.fill(0); }
+
+  await assert.rejects(() => runFreshHandoffSession(environment, HANDOFF_ID, { token: "wrong-token" }), (error) => {
+    assert.doesNotMatch(`${error.stdout}\n${error.stderr}`, new RegExp(environment.marker));
+    assert.match(error.stderr, /Private case access was denied/);
+    return true;
+  });
+  const wrongCredentials = structuredClone(environment.credentials);
+  wrongCredentials.case_keys[CASE_ID].routine_kek_base64 = Buffer.alloc(32, 99).toString("base64");
+  await fs.writeFile(environment.credentialsPath, `${JSON.stringify(wrongCredentials)}\n`, { mode: 0o600 });
+  await assert.rejects(() => runFreshHandoffSession(environment, HANDOFF_ID), (error) => {
+    assert.doesNotMatch(`${error.stdout}\n${error.stderr}`, new RegExp(environment.marker));
+    assert.match(error.stderr, /Vault envelope is unreadable|Private case tool failed|unavailable/i);
+    return true;
+  });
+});
+
 test("unauthorized or wrong-scope fresh session reveals no private content and does not create a case", async (t) => {
   const environment = await makeEnvironment(t);
   await runSession("seed", environment);
@@ -237,7 +454,7 @@ test("unauthorized or wrong-scope fresh session reveals no private content and d
     }
   );
   const files = await fs.readdir(environment.vaultRoot);
-  assert.deepEqual(files, [`${CASE_ID}.vault.json`]);
+  assert.deepEqual(files.sort(), [".artifact-locators", `${CASE_ID}.vault.json`]);
 });
 
 test("ciphertext round trip survives restart and wrong or missing key fails without fallback", async (t) => {
@@ -363,6 +580,7 @@ test("private handoff requires stable identifiers and executable retrieval evide
 test("separate read-only MCP process executes load_case_context from a fresh client process", async (t) => {
   const environment = await makeEnvironment(t);
   await runSession("seed", environment);
+  await runSession("handoff-create", environment, { handoffId: HANDOFF_ID });
   const readyPath = path.join(environment.privateRoot, "mcp-ready.json");
   const child = spawn(process.execPath, [mcpCli, "--credentials", environment.credentialsPath, "--port", "0", "--ready-file", readyPath], {
     cwd: root,
@@ -387,7 +605,7 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   }).then((response) => response.json());
   assert.deepEqual(
     listed.result.tools.map((tool) => tool.name),
-    ["load_case_context", "get_recent_verbatim", "retrieve_case_evidence", "get_candidate_response", "get_source_artifact"]
+    ["load_handoff", "load_case_context", "get_state_diff", "get_recent_verbatim", "retrieve_case_evidence", "get_pending_candidate", "get_tracker_window", "get_journal_entries", "get_candidate_response", "get_source_artifact"]
   );
   const { stdout } = await runSession("mcp-load", environment, { fourthArg: ready.mcpUrl });
   const result = JSON.parse(stdout);
@@ -395,6 +613,21 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   assert.equal(result.exactCandidateVerified, true);
   assert.equal(result.exactRecentVerbatimVerified, true);
   assert.equal(result.continuationSafe, true);
+
+  const handoffResult = await fetch(ready.mcpUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${TOKEN}` },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "load_handoff", arguments: { handoff_id: HANDOFF_ID } } })
+  }).then((response) => response.json());
+  assert.equal(handoffResult.result.structuredContent.handoff_id, HANDOFF_ID);
+  assert.equal(handoffResult.result.structuredContent.pending_artifacts[0].exact_text, environment.payload.candidate_text);
+
+  const candidateResult = await fetch(ready.mcpUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${TOKEN}` },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "get_pending_candidate", arguments: { candidate_id: CANDIDATE_ID } } })
+  }).then((response) => response.json());
+  assert.equal(candidateResult.result.structuredContent.exact_text, environment.payload.candidate_text);
 
   const sourceResult = await fetch(ready.mcpUrl, {
     method: "POST",

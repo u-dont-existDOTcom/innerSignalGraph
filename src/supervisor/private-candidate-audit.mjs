@@ -1,5 +1,7 @@
 import { ValidationError } from "../core/errors.mjs";
 
+export const PRIVATE_CANDIDATE_AUDIT_VERSION = "private-candidate-audit-v1";
+
 export async function buildPrivateCandidateAuditInput({ caseAccessService, caseId, candidateId = "current_pending", authContext } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function") throw new ValidationError("caseAccessService is required.");
   const context = await caseAccessService.loadCaseContext(caseId, authContext, {

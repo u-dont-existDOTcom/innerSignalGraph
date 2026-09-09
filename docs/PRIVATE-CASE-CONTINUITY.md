@@ -1,6 +1,6 @@
 # Private case continuity and fresh-session access
 
-Status: the repository implementation from merged PR #46 is being extended on `codex/private-case-import-20260909`. The real owner-supplied source has passed exact local encrypted import and fresh-process round-trip, but the case is **not continuation-safe** because the supplied transcript contains only one complete user-assistant exchange and the contract requires three. A production ChatGPT connection is also **not deployed, registered, or fresh-chat verified**.
+Status: draft PR #49 extends the encrypted case store with the InnerSignal Universal Handoff Binding v1.0. Synthetic acceptance proves an immutable encrypted handoff can be created in Session A and loaded in a separate Session B using only `handoff_id` plus authorized transport context, including a history larger than 100,000 characters split into deterministic chunks no larger than 20,000 bytes. The real owner-supplied source has passed exact local encrypted import and fresh-process case-ID round-trip, but the real case is **not continuation-safe** because the supplied transcript contains only one complete user-assistant exchange and the contract requires three. A production ChatGPT connection is also **not deployed, registered, or fresh-chat verified**.
 
 ## Acceptance contract
 
@@ -14,7 +14,7 @@ A case is continuation-safe only when an authorized loader, starting with no pri
 6. the current therapeutic episode; and
 7. the constitution version/reference, without copying the constitution into the case.
 
-`loadCaseContext` and the MCP `load_case_context` tool enforce this gate. They fail with `CASE_NOT_CONTINUATION_SAFE` rather than returning a public fixture, a summary, a hash, or regenerated prose when a required artifact is absent. Neither API returns hidden model reasoning.
+`loadCaseContext`, `loadHandoff`, and the MCP `load_case_context` / `load_handoff` tools enforce this gate. They fail with `CASE_NOT_CONTINUATION_SAFE` rather than returning a public fixture, a summary, a hash, or regenerated prose when a required artifact is absent. `Create Handoff` may still freeze an incomplete snapshot, but it is labeled `BLOCKED_CONTINUATION_UNSAFE`; local encrypted round-trip alone remains `PENDING_FRESH_SESSION`, never `FRESH_SESSION_GREEN`. None of these APIs returns hidden model reasoning.
 
 ## Public/private boundary
 
@@ -29,6 +29,8 @@ The private store keeps separate fields for:
 - immutable exact candidate versions and their status;
 - immutable exact source artifacts plus a lossless byte-range/chunk integrity manifest; and
 - current episode state through the structured record.
+
+Each immutable handoff is stored separately as a mode-`0600` encrypted envelope below the private root. The handoff contains a canonical snapshot, component hashes, exact deterministic component chunks with contiguous byte ranges, and a retrieval index. An authorized loader can therefore reconstruct an oversized component without treating one source read larger than the 20,000-byte handoff ceiling as available. Private mode-`0600` locator records map opaque handoff or candidate IDs to the case required for authorization; they contain routing metadata only, never therapy text, candidate text, state, journal/tracker content, secrets, or private-derived payload hashes. A production implementation should place this locator mapping in its authenticated private database rather than a public or client-controlled store.
 
 Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains an explicit operator choice and is not the private case persistence mechanism.
 
@@ -47,6 +49,11 @@ Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains
 | `retrieveCaseEvidence` | Raw older turns by query, stable provenance IDs, or time range |
 | `getCurrentEpisode` | Current therapeutic path/episode |
 | `loadCaseContext` | All-in-one fresh-session bootstrap and continuation-safety gate |
+| `createHandoff` / `loadHandoff` | Freeze and retrieve an immutable exact private continuation snapshot; the loader needs only `handoff_id` |
+| `getStateDiffByReference` / `getRecentVerbatimByReference` | Read current or handoff-frozen state diff and exact recent episode |
+| `getPendingCandidateByReference` | Resolve exact text using only `candidate_id` or `handoff_id` |
+| `getTrackerWindowByReference` / `getJournalEntriesByReference` | Query current or handoff-frozen longitudinal records without causal promotion |
+| `exportHandoff` | Export the already-encrypted handoff envelope as a portable private fallback |
 
 Candidate audit code in `src/supervisor/private-candidate-audit.mjs` accepts a candidate ID, resolves the exact private text through `loadCaseContext`, and only then invokes an auditor.
 
@@ -96,38 +103,52 @@ npm run private-case:mcp -- --credentials /absolute/private/bridge-credentials.j
 
 The process prints a local `/mcp` URL. Authentication is an HTTP bearer token supplied by the transport, never a tool argument. Its read-only tools are:
 
+- `load_handoff`
 - `load_case_context`
+- `get_state_diff`
 - `get_recent_verbatim`
 - `retrieve_case_evidence`
+- `get_pending_candidate`
+- `get_tracker_window`
+- `get_journal_entries`
 - `get_candidate_response`
 - `get_source_artifact`
 
-A fresh client performs this exact bootstrap call after transport authentication:
+A fresh client normally performs this exact bootstrap call after transport authentication:
 
 ```json
 {
-  "name": "load_case_context",
+  "name": "load_handoff",
   "arguments": {
-    "case_id": "<stable-case-id>",
-    "candidate_id": "<stable-candidate-id>"
+    "handoff_id": "<stable-handoff-id>"
   }
 }
 ```
 
-The full executable gate is `npm run private-case:acceptance`. It creates an external temporary private store in Session A, exits that process, and has independent Session B recover exact text using only the stable case ID and authorized test transport. It also tests denied authorization, missing/wrong keys, ciphertext at rest, full-episode retention, historical retrieval, exact candidate audit, private handoff validation, public-path leak prevention, and lossless Unicode/newline reconstruction for a synthetic source larger than the former single-read ceiling. Chunk manifests reject gaps, duplication, reordered chunks, altered byte ranges, and changed bytes.
+The returned packet includes its `case_id`, pending candidate IDs and exact text, canonical state, frozen diff, exact recent episode, complete transcript archive, tracker/journal records, version references, retrieval index, and continuation evidence. The caller can then use the narrower tools. `load_case_context` remains available for live case-ID bootstrap and `retrieve_case_evidence` can query the returned `case_id` by text, provenance IDs, or time range.
+
+The full executable gate is `npm run private-case:acceptance`. It creates an external temporary private store in Session A, compiles an immutable handoff, exits that process, deletes candidate/case expectations from the child environment, and has independent Session B recover exact text using only the stable handoff ID and authorized test transport. Its synthetic longitudinal history exceeds 100,000 characters; Session B reconstructs the transcript component from contiguous exact chunks, each no larger than 20,000 UTF-8 bytes. The test compares the decision-relevant continuation projection as well as exact candidate/recent-turn content. It also tests denied authorization, missing/wrong keys, ciphertext at rest, full-episode retention, historical retrieval, exact candidate audit, blocked acceptance, public-path leak prevention, and lossless Unicode/newline reconstruction. Chunk manifests reject gaps, duplication, reordered chunks, altered byte ranges, and changed bytes.
 
 The ordinary loopback web server remains unsuitable as a private ChatGPT boundary because its development endpoints do not implement user authentication. It was intentionally not given raw transcript or candidate inspectors. The existing **Current saved state** and **What changed this turn** views remain structured/no-raw-content controls; exact **Recent Verbatim** and **Pending Candidate** inspection is available only through the authorized read-only MCP tools.
 
-## Private handoff format
+## First-class private handoff format
 
-`createPrivateCaseHandoff` in `src/storage/private-case-handoff.mjs` creates the private, do-not-commit handoff record. It requires:
+`compilePrivateHandoffArtifact` in `src/storage/private-case-handoff.mjs` canonicalizes one immutable packet containing:
 
-- the real stable `case_id`;
-- the real stable `candidate_id`;
-- evidence that the continuation-safety gate passed; and
-- the concrete `load_case_context` tool call using those same identifiers.
+- canonical state and current episode/path;
+- the last state diff, or explicit `null` when the handoff is blocked;
+- exact recent turns selected directly from the private transcript;
+- every currently pending exact candidate version;
+- the full private transcript archive and tracker/journal snapshot;
+- constitution, runtime, and audit version references;
+- indexes for transcript, tracker, journal, intervention, adverse-event, historical-decision, and source-artifact IDs; and
+- component byte counts/hashes plus contiguous 20,000-byte-or-smaller artifact chunks.
 
-The validator rejects a handoff that claims availability without continuity evidence or embeds transcript/candidate payload. The owner-authorized opaque identifiers for the present import are `case-57a69465-4434-41cf-ad24-310b13a2cc81` and `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051`. The private payload exists locally and round-trips exactly, but no validated private handoff may yet claim continuation safety: only one supplied exchange is complete, two fewer than the fixed minimum. The local credential/key provider remains development-only, and ChatGPT registration is still absent.
+The packet is wrapped as an exact artifact, encrypted with the existing dual-wrap case keys, stored outside Git, reopened, and compared byte-for-byte before `local_round_trip_verified` can be true. `load_handoff(handoff_id)` resolves the private locator, authorizes the resolved case before obtaining key material, decrypts and validates every identity/integrity relationship, and then applies the continuation gate. A missing or incorrect grant/key fails without falling back to a public or de-identified substitute.
+
+The older `createPrivateCaseHandoff` reference-only record remains for compatibility, but it is not the Universal Handoff artifact or its fresh-session evidence.
+
+The owner-authorized opaque identifiers for the present import are `case-57a69465-4434-41cf-ad24-310b13a2cc81` and `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051`. The private payload exists locally and round-trips exactly, but no real `handoff_id` may claim continuation safety: only one supplied exchange is complete, two fewer than the fixed minimum. The local credential/key provider remains development-only, and ChatGPT registration is still absent.
 
 ## Blocking production/ChatGPT obligations
 
