@@ -2,6 +2,18 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Current continuation — fresh-session private continuity correction
+
+The owner-authorized repair is recorded in `tasks/fresh-session-private-case-continuity-20260909/INTEGRATION.md` and `COMPLETION-MATRIX.json`; the executable architecture and remaining external boundary are in `docs/PRIVATE-CASE-CONTINUITY.md`. Fetch the current draft PR #46 head before acting. Keep the PR draft/open/unmerged and do not deploy, install, or promote stable.
+
+The repository now has an explicit authorization/key-provider service over the encrypted private record, first-class exact candidate versions and diff history, full active-episode verbatim retrieval, targeted older raw-evidence retrieval, a continuation-safety bootstrap, a candidate-ID audit adapter, and a separate read-only MCP interface. The synthetic acceptance gate destroys Session A and has Session B reconstruct exact text from only a case ID plus authorized transport. Missing/wrong auth or keys fail closed, routine payload updates preserve the user-held recovery wrap, and ordinary decision ledgers default to redacted.
+
+The repository bridge is concrete: start `npm run private-case:mcp -- --credentials /absolute/private/bridge-credentials.json --port 0`, authenticate at the transport, then call `load_case_context` with the stable `case_id` and `candidate_id`. The development credential file and encrypted storage root must remain outside Git. `get_recent_verbatim`, `retrieve_case_evidence`, and `get_candidate_response` are authorized read-only supervisor inspectors. The ordinary loopback web UI retains **Current saved state** and **What changed this turn** but intentionally does not expose raw transcript/candidate content through its unauthenticated development endpoints.
+
+**Real-case continuation remains BLOCKED, not solved.** No accessible private store currently contains a verified import of the real exact transcript/candidate, so there is no truthful real `case_id` or `candidate_id` to place in this public handoff. The new private handoff format requires those stable identifiers plus continuation-test evidence and emits the exact `load_case_context` arguments; do not invent or publish them. Production authorization/key providers, HTTPS or an approved secure tunnel, MCP OAuth metadata/PKCE/client registration, ChatGPT connection, and a successful tool call from a newly created post-registration chat also remain unperformed. A public handoff, local MCP process, or visible tool schema is not evidence that a fresh ChatGPT conversation can retrieve the real case.
+
+Only after those blockers are completed and the private handoff validates should the next supervisor task below run: load the exact pending candidate by its stable private ID and audit it before choosing any new therapeutic direction. Until then, do not reconstruct the candidate from the synthetic fixture, structured summaries, hashes, or remembered chat text.
+
 ## Current continuation — PR #46 handoff completion is evidence-audited
 
 The owner-requested cross-chat completion audit is recorded in `tasks/pr46-completion-audit-20260909/INTEGRATION.md` and its machine-readable `COMPLETION-MATRIX.json`. It began from freshly fetched PR head `4a6883a396188cad8604d6223d3ddba34dd3074f`, whose hosted workflow-policy, deterministic-package, and CodeQL checks were green. Fetch again before acting; the immutable PR receipt records the final containing head and exact-head hosted result.

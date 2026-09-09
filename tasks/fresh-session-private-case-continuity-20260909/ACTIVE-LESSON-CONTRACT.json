@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "taskId": "fresh-session-private-case-continuity-20260909",
+  "status": "CURRENT",
+  "activatedAt": "2026-09-09",
+  "lessons": [
+    {
+      "id": "github-first-and-context-durability",
+      "source": "universal-dev-architecture@origin/main:patterns/github-first-agent-bootstrap.md + patterns/context-compaction-resilience.md",
+      "trigger": "A fresh session must continue without prior-chat memory while PR 46 has concurrent history.",
+      "requiredBehavior": "Fetch the live PR head, reconcile exact Git state, and persist one public-safe recovery entry point while private conversational bytes stay in the private store.",
+      "failureCondition": "A stale chat/handoff is required to recover code state or private continuation depends on chat memory.",
+      "repairAction": "Reconcile live Git and require loadCaseContext(caseId, authContext) to reconstruct the private continuation bundle.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "mcp-execution-not-discovery",
+      "source": "universal-dev-architecture@origin/main:patterns/chatgpt-developer-mcp-chat-lifecycle.md + official OpenAI plugin MCP/auth/testing documentation",
+      "trigger": "A new ChatGPT conversation must call the private context tool.",
+      "requiredBehavior": "Test direct MCP execution locally, document OAuth/public-HTTPS or secure-tunnel requirements, and require an actual fresh post-registration ChatGPT call before claiming ChatGPT availability.",
+      "failureCondition": "Tool schemas, local tests, or an older chat are presented as fresh-ChatGPT execution evidence.",
+      "repairAction": "Keep the external availability gate BLOCKED and run the minimal read-only tool in a newly created post-registration chat.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "owner-outcome-no-proxy-completion",
+      "source": "universal-dev-architecture@origin/main:patterns/owner-outcome-invariant-and-contract-laundering-prevention.md",
+      "trigger": "The prior attempt claimed persistence despite missing retrieval.",
+      "requiredBehavior": "Trace RO-01 through RO-09 to direct evidence; distinguish synthetic continuity, real-case import, deployed auth, registration, and fresh-chat execution.",
+      "failureCondition": "Storage, encryption, tests, or documentation are used as a proxy for real fresh-session availability.",
+      "repairAction": "Keep the exact unmet layer open and state the concrete required next action.",
+      "enforcement": "mechanical_and_semantic"
+    },
+    {
+      "id": "public-private-and-exact-byte-separation",
+      "source": "project AGENTS.md + current owner directive",
+      "trigger": "The public repo implements access to exact private transcript and candidate bytes.",
+      "requiredBehavior": "Commit only code, schemas, docs, and synthetic fixtures; keep exact private bytes encrypted and return no plaintext on failed auth/key lookup.",
+      "failureCondition": "Private payload or private-derived hash enters Git, or unauthorized access returns a summary/fallback.",
+      "repairAction": "Block publication, remove the leak from new objects, and rerun the private-content separation gate.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "platform-native-before-new-infrastructure",
+      "source": "universal-dev-architecture@origin/main:patterns/platform-native-deployment-before-new-infrastructure.md",
+      "trigger": "The task requires a ChatGPT-callable service boundary.",
+      "requiredBehavior": "Extend the existing loopback/private-store architecture and add the smallest standard MCP adapter; do not introduce an unrelated database or host without a concrete unmet requirement.",
+      "failureCondition": "A parallel backend duplicates the repository's store/server/auth seams.",
+      "repairAction": "Replace it with an adapter over the existing service interfaces.",
+      "enforcement": "semantic"
+    },
+    {
+      "id": "test-efficiency-and-assurance-lanes",
+      "source": "universal-dev-architecture@origin/main:patterns/test-efficiency-and-verification-budget.md + patterns/development-assurance-lanes.md",
+      "trigger": "Critical-risk repo with a large package gate and hosted release controls.",
+      "requiredBehavior": "Use focused tests during implementation, one changed-state full package gate before push, then exact-head hosted checks; do not rerun unchanged full suites.",
+      "failureCondition": "Repeated full runs add no evidence or final hosted evidence is for another commit.",
+      "repairAction": "Return to focused tests and bind final assurance to the exact pushed head.",
+      "enforcement": "mechanical"
+    }
+  ],
+  "preAttemptAdmission": {
+    "status": "PASS",
+    "evidence": [
+      "PR 46 was fetched and fast-forwarded to live head b4eee54e6ed3b8e0b18fa5ca8f1cfb365362dbc1 before edits.",
+      "The branch was clean and the fetched head was a direct descendant of the local checkout.",
+      "The canonical handoff, repository authority files, current state, prior constitution/context task receipt, existing private store, and current OpenAI MCP authentication/testing requirements were read.",
+      "The previous completion proxy is explicitly rejected in OWNER-OUTCOME.json."
+    ]
+  }
+}

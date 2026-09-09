@@ -12,6 +12,12 @@ Inner Signal now has three deliberately separate forms of memory:
 
 This separation prevents a recent topic or lossy summary from redefining the therapeutic purpose. It also prevents the public repository from becoming a client record.
 
+## 2026-09-09 fresh-session correction
+
+The original candidate proved encrypted storage but did not give a new supervisor session an authorized, callable retrieval path. `docs/PRIVATE-CASE-CONTINUITY.md` now governs that missing boundary. The private store has first-class immutable candidate versions, diff history, exact episode retrieval, targeted historical retrieval, and an all-in-one continuation-safety bootstrap. Authorization and key acquisition are injected provider contracts, and a separate read-only MCP service exposes the bootstrap plus exact recent/candidate inspection for the repository bridge.
+
+This closes the failure in synthetic fresh-process and direct MCP-client tests. It does **not** establish availability for the real case or for a new ChatGPT conversation: real-data import, production key/auth providers, HTTPS or secure tunneling, OAuth metadata/PKCE/client registration, ChatGPT connection, and an actual post-registration fresh-chat tool call remain blocking external evidence.
+
 ## Global constitution
 
 `src/therapy/constitution.mjs` is immutable, versioned, and injected through the common therapy prompt rules. It fixes seven therapeutic ends: care; leadership; protection; integration and vitality; connection and participation; transcendence and mortality; and growth, learning, and achievement.
@@ -36,7 +42,7 @@ Trajectory observability is explicit per domain across intensity, function, dura
 - the durable structured case state;
 - the current episode contract;
 - at least the last three complete exchanges verbatim;
-- current-episode turns when it began earlier, capped at the latest 120 exact turns with visible truncation metadata;
+- current-episode turns when it began earlier; ordinary bounded context remains capped at the latest 120 exact turns with visible truncation metadata, while the authorized continuation bootstrap can require the complete episode up to the encrypted record limit;
 - up to 24 contradiction-first, stable-ID retrieval requests for older high-relevance evidence;
 - a descriptive tracker summary capped at the latest 180 eligible entries with visible omission counts.
 
@@ -44,13 +50,13 @@ Lossy summaries are never marked authoritative. Exact recent text preserves corr
 
 ## Encrypted private storage
 
-`src/storage/private-case-store.mjs` composes the repository's existing AES-GCM dual-wrap vault and OS-backed routine-authorization boundary. It stores append-only raw transcript, structured case state, tracker entries, journal/dream entries, and the last state diff in one encrypted envelope per safe case ID. The write is atomic, files are mode `0600`, directories are mode `0700`, plaintext buffers are cleared after use, and access keys are cleared when the adapter closes.
+`src/storage/private-case-store.mjs` composes the repository's existing AES-GCM dual-wrap vault and routine-authorization boundary. It stores append-only raw transcript, structured case state, tracker entries, journal/dream entries, versioned state-diff history, and immutable exact candidate responses in one encrypted envelope per safe case ID. Ordinary payload updates use the authorized routine key and preserve the recovery wrap; the recovery secret is required for initial creation. Writes are atomic, files are mode `0600`, directories are mode `0700`, plaintext buffers are cleared after use, and access keys are cleared when the adapter closes.
 
-There is no plaintext fallback. If an authenticated OS credential-store adapter is not supplied, the browser keeps sensitive state in memory for the current page session. The implementation accepts injected key material and evidence that OS reauthentication occurred; it does not invent a platform keychain integration or read secrets from environment variables. Selecting and packaging a concrete operating-system credential adapter remains release work, not an owner decision hidden inside this candidate.
+There is no plaintext fallback. `src/storage/private-case-access.mjs` checks principal/case/scope authorization before asking an injected key provider for routine key material. The external mode-`0600` development credential adapter makes restart and MCP tests executable but is explicitly `productionReady: false`; it is not represented as an OS keychain. Selecting and packaging a concrete operating-system credential adapter remains release work. The ordinary reasoning ledger default is redacted so it does not silently become a second plaintext continuity store.
 
 New browser storage persists only safe settings and a random case ID. Earlier browser-local records are detected, left untouched, and shown to the owner; they are neither silently migrated nor deleted. Explicit browser backup remains readable and is labeled as sensitive portable data. The erase control removes browser settings and legacy browser records, but does not claim to delete an encrypted server vault.
 
-The loopback service exposes encrypted state, tracker, and journal endpoints only when the private store is injected. The state endpoint returns structured inspection data and counts, never transcript text, journal text, or chain-of-thought. Therapy responses return a structured state projection and exact diff for the UI.
+The ordinary loopback service exposes encrypted state, tracker, and journal endpoints only when the private store is injected. The state endpoint returns structured inspection data and counts, never transcript text, journal text, or chain-of-thought. Therapy responses return a structured state projection and exact diff for the UI. A separate read-only MCP service owns authorized fresh-session context, recent-verbatim, candidate, and historical-evidence reads; it is not wired into the unauthenticated browser-development endpoint.
 
 ## Tracker and user inspection
 
@@ -70,7 +76,7 @@ The semantic instrument changed. Historical calibration remains preserved as a s
 
 Deterministic tests cover constitution injection, state validation and diffs, the complete contradiction registry, contradiction poisoning, compacted-state decision equivalence, exact recent-window and current-episode retention, explicit context limits, targeted older retrieval, tracker missingness and noncausal summaries, ciphertext-only private storage, append-only transcript preservation, end-to-end encrypted therapy-turn persistence, key clearing, endpoint fail-closed behavior, browser persistence boundaries, public synthetic privacy, steering coverage, and the existing audit scorer.
 
-The reference response is a behavioral rubric, not objective ground truth. Human review remains necessary before choosing an audit architecture or adopting prompts. Clinical usefulness, harm, concrete OS credential-store packaging, migration UX, retention policy, deletion of server-side encrypted cases, and behavior under authorized live models remain unresolved.
+The reference response is a behavioral rubric, not objective ground truth. Human review remains necessary before choosing an audit architecture or adopting prompts. Clinical usefulness, harm, concrete OS credential-store packaging, real-case import, production OAuth/ACLs, HTTPS exposure, ChatGPT registration and fresh-chat execution, migration UX, retention policy, deletion of server-side encrypted cases, and behavior under authorized live models remain unresolved.
 
 ## Research-before-reinvention disposition
 

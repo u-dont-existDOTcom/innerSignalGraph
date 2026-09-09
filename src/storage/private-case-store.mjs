@@ -3,14 +3,24 @@ import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
 import { createEmptyCaseState, validateCaseState } from "../case-state/longitudinal-state.mjs";
 import { appendTrackerEntry, validateTrackerEntry } from "../case-state/tracker.mjs";
-import { validateTranscriptEntries } from "../case-state/context-window.mjs";
-import { createVaultEnvelope } from "./vault-crypto.mjs";
-import { openVaultWithRoutineAuthorization } from "./vault-routine-access.mjs";
+import { buildDurableCaseContext, CONTEXT_WINDOW_LIMITS, selectRecentVerbatimWindow, validateTranscriptEntries } from "../case-state/context-window.mjs";
+import { createVaultEnvelope, replaceVaultPayloadWithRoutineKek } from "./vault-crypto.mjs";
+import { openVaultWithDevelopmentAuthorization, openVaultWithRoutineAuthorization } from "./vault-routine-access.mjs";
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const ENVELOPE_FORMAT = "inner-signal-private-case-envelope-v1";
-const RECORD_VERSION = 1;
-const PRIVATE_RECORD_LIMITS = Object.freeze({ tracker_entries: 20_000, journal_entries: 20_000, journal_text: 40_000 });
+const RECORD_VERSION = 2;
+const CANDIDATE_STATUSES = Object.freeze(["pending_audit", "audited", "superseded", "sent"]);
+const PRIVATE_RECORD_LIMITS = Object.freeze({
+  tracker_entries: 20_000,
+  journal_entries: 20_000,
+  journal_text: 40_000,
+  state_diffs: 20_000,
+  candidates: 2_000,
+  candidate_text: 100_000,
+  candidate_metadata_bytes: 40_000,
+  evidence_results: 200
+});
 
 const bytes = (value, name) => {
   if (!(value instanceof Uint8Array) || value.byteLength === 0) throw new ValidationError(`${name} must be non-empty bytes.`);
@@ -86,7 +96,49 @@ function validateJournalEntry(value, index) {
   return value;
 }
 
+function validateStateDiffEntry(value, index) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError(`state_diff_history[${index}] must be an object.`);
+  for (const field of ["id", "turn_id", "recorded_at"]) {
+    if (typeof value[field] !== "string" || !value[field].trim() || value[field].length > 160) throw new ValidationError(`state_diff_history[${index}].${field} is invalid.`);
+  }
+  if (!value.diff || typeof value.diff !== "object" || Array.isArray(value.diff)) throw new ValidationError(`state_diff_history[${index}].diff must be an object.`);
+  return value;
+}
+
+function validateCandidateResponse(value, index) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError(`candidate_responses[${index}] must be an object.`);
+  for (const field of ["id", "exact_text", "created_at", "updated_at"]) {
+    if (typeof value[field] !== "string" || !value[field].trim()) throw new ValidationError(`candidate_responses[${index}].${field} is required.`);
+  }
+  if (value.id.length > 160 || value.created_at.length > 80 || value.updated_at.length > 80 || value.exact_text.length > PRIVATE_RECORD_LIMITS.candidate_text) {
+    throw new ValidationError(`candidate_responses[${index}] exceeds a bounded field limit.`);
+  }
+  if (!Number.isSafeInteger(value.version) || value.version < 1) throw new ValidationError(`candidate_responses[${index}].version is invalid.`);
+  if (!CANDIDATE_STATUSES.includes(value.status)) throw new ValidationError(`candidate_responses[${index}].status is invalid.`);
+  if (!value.metadata || typeof value.metadata !== "object" || Array.isArray(value.metadata)) throw new ValidationError(`candidate_responses[${index}].metadata must be an object.`);
+  let metadataBytes;
+  try { metadataBytes = Buffer.byteLength(JSON.stringify(value.metadata), "utf8"); }
+  catch { throw new ValidationError(`candidate_responses[${index}].metadata must be JSON serializable.`); }
+  if (metadataBytes > PRIVATE_RECORD_LIMITS.candidate_metadata_bytes) throw new ValidationError(`candidate_responses[${index}].metadata exceeds the bounded limit.`);
+  return value;
+}
+
+function normalizePrivateCaseRecord(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  if (value.schema_version === 1) {
+    const migrated = structuredClone(value);
+    migrated.schema_version = RECORD_VERSION;
+    migrated.state_diff_history = migrated.last_state_diff
+      ? [{ id: "legacy-diff-1", turn_id: "legacy-unknown-turn", recorded_at: migrated.updated_at, diff: structuredClone(migrated.last_state_diff) }]
+      : [];
+    migrated.candidate_responses = [];
+    return migrated;
+  }
+  return value;
+}
+
 export function validatePrivateCaseRecord(value) {
+  value = normalizePrivateCaseRecord(value);
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError("Private case record must be an object.");
   if (value.schema_version !== RECORD_VERSION) throw new ValidationError("Private case record version is invalid.");
   safeCaseId(value.case_id);
@@ -100,6 +152,18 @@ export function validatePrivateCaseRecord(value) {
   if (value.journal_entries.length > PRIVATE_RECORD_LIMITS.journal_entries) throw new ValidationError("journal_entries exceeds the private-record limit.");
   value.journal_entries.forEach(validateJournalEntry);
   if (value.last_state_diff != null && (typeof value.last_state_diff !== "object" || Array.isArray(value.last_state_diff))) throw new ValidationError("last_state_diff must be an object or null.");
+  if (!Array.isArray(value.state_diff_history) || value.state_diff_history.length > PRIVATE_RECORD_LIMITS.state_diffs) throw new ValidationError("state_diff_history exceeds the private-record limit or is invalid.");
+  value.state_diff_history.forEach(validateStateDiffEntry);
+  if (!Array.isArray(value.candidate_responses) || value.candidate_responses.length > PRIVATE_RECORD_LIMITS.candidates) throw new ValidationError("candidate_responses exceeds the private-record limit or is invalid.");
+  const candidateIds = new Set();
+  value.candidate_responses.forEach((candidate, index) => {
+    validateCandidateResponse(candidate, index);
+    if (candidateIds.has(candidate.id)) throw new ValidationError(`Duplicate candidate response ${candidate.id}.`);
+    candidateIds.add(candidate.id);
+  });
+  if (value.candidate_responses.filter((candidate) => candidate.status === "pending_audit").length > 1) {
+    throw new ValidationError("Private case record may contain only one pending candidate response.");
+  }
   return value;
 }
 
@@ -113,7 +177,9 @@ function newRecord(caseId, now) {
     case_state: createEmptyCaseState({ caseId }),
     tracker_entries: [],
     journal_entries: [],
-    last_state_diff: null
+    last_state_diff: null,
+    state_diff_history: [],
+    candidate_responses: []
   };
 }
 
@@ -144,30 +210,48 @@ async function durableEncryptedWrite(file, envelope) {
   }
 }
 
-export function createEncryptedPrivateCaseStore({ rootDir, routineKek, recoverySecretBytes, osBackedReauthenticated = false, now = () => new Date().toISOString() } = {}) {
+export function createEncryptedPrivateCaseStore({
+  rootDir,
+  routineKek,
+  recoverySecretBytes,
+  osBackedReauthenticated = false,
+  developmentExternalCredentialAuthorized = false,
+  now = () => new Date().toISOString()
+} = {}) {
   if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw new ValidationError("rootDir must be an absolute private storage path.");
+  if (osBackedReauthenticated !== true && developmentExternalCredentialAuthorized !== true) {
+    throw new ValidationError("OS-backed reauthentication or an explicit development credential authorization is required before opening the private case store.");
+  }
+  if (osBackedReauthenticated === true && developmentExternalCredentialAuthorized === true) {
+    throw new ValidationError("Private case access must use exactly one authorization assurance mode.");
+  }
   const routineKey = bytes(routineKek, "routineKek");
-  const recoverySecret = bytes(recoverySecretBytes, "recoverySecretBytes");
+  const recoverySecret = recoverySecretBytes == null ? null : bytes(recoverySecretBytes, "recoverySecretBytes");
   let closed = false;
-  if (osBackedReauthenticated !== true) throw new ValidationError("OS-backed reauthentication evidence is required before opening the private case store.");
 
   const ensureOpen = () => {
     if (closed) throw new ValidationError("Private case store is closed.");
   };
 
   const fileFor = (caseId) => path.join(rootDir, `${safeCaseId(caseId)}.vault.json`);
-  const readExisting = async (caseId) => {
+  const readExistingWithEnvelope = async (caseId) => {
     ensureOpen();
     let serialized;
     try { serialized = JSON.parse(await fs.readFile(fileFor(caseId), "utf8")); }
     catch (error) { if (error?.code === "ENOENT") return null; throw error; }
     const envelope = deserializeVaultEnvelope(serialized);
-    const opened = await openVaultWithRoutineAuthorization({ osBackedReauthenticated: true, envelope, routineKek: routineKey });
-    const plaintext = opened.plaintextBytes;
-    try { return validatePrivateCaseRecord(JSON.parse(plaintext.toString("utf8"))); }
+    const plaintext = osBackedReauthenticated
+      ? (await openVaultWithRoutineAuthorization({ osBackedReauthenticated: true, envelope, routineKek: routineKey })).plaintextBytes
+      : (await openVaultWithDevelopmentAuthorization({ developmentExternalCredentialAuthorized: true, envelope, routineKek: routineKey })).plaintextBytes;
+    try {
+      const record = validatePrivateCaseRecord(JSON.parse(plaintext.toString("utf8")));
+      if (record.case_id !== caseId) throw new ValidationError("Encrypted private case record identity mismatch.");
+      return { record, envelope };
+    }
     finally { plaintext.fill(0); }
   };
-  const write = async (caseId, record, previous = null) => {
+  const readExisting = async (caseId) => (await readExistingWithEnvelope(caseId))?.record ?? null;
+  const write = async (caseId, record, previous = null, currentEnvelope = null) => {
     ensureOpen();
     safeCaseId(caseId);
     const candidate = validatePrivateCaseRecord(structuredClone(record));
@@ -175,8 +259,15 @@ export function createEncryptedPrivateCaseStore({ rootDir, routineKek, recoveryS
     if (previous) assertAppendOnly(previous, candidate);
     const plaintext = Buffer.from(JSON.stringify(candidate), "utf8");
     try {
-      const envelope = await createVaultEnvelope({ plaintextBytes: plaintext, routineKek: routineKey, recoverySecretBytes: recoverySecret });
+      let envelope;
+      if (currentEnvelope) {
+        envelope = await replaceVaultPayloadWithRoutineKek({ envelope: currentEnvelope, plaintextBytes: plaintext, routineKek: routineKey });
+      } else {
+        if (!recoverySecret) throw new ValidationError("Recovery secret is required when creating a new private case envelope.");
+        envelope = await createVaultEnvelope({ plaintextBytes: plaintext, routineKek: routineKey, recoverySecretBytes: recoverySecret });
+      }
       await fs.mkdir(rootDir, { recursive: true, mode: 0o700 });
+      await fs.chmod(rootDir, 0o700);
       await durableEncryptedWrite(fileFor(caseId), envelope);
     } finally { plaintext.fill(0); }
     return structuredClone(candidate);
@@ -189,10 +280,80 @@ export function createEncryptedPrivateCaseStore({ rootDir, routineKek, recoveryS
     return write(id, newRecord(id, timestamp));
   };
   const mutate = async (caseId, operation) => {
-    const previous = await loadOrCreate(caseId);
+    const existing = await readExistingWithEnvelope(safeCaseId(caseId));
+    let previous;
+    let currentEnvelope = null;
+    if (existing) {
+      previous = structuredClone(existing.record);
+      currentEnvelope = existing.envelope;
+    } else {
+      const timestamp = now();
+      previous = await write(caseId, newRecord(caseId, timestamp));
+      const created = await readExistingWithEnvelope(caseId);
+      currentEnvelope = created.envelope;
+    }
     const next = await operation(structuredClone(previous));
     next.updated_at = now();
-    return write(caseId, next, previous);
+    return write(caseId, next, previous, currentEnvelope);
+  };
+  const readRequired = async (caseId) => {
+    const record = await readExisting(safeCaseId(caseId));
+    if (!record) throw new ValidationError(`Private case ${caseId} was not found.`, { code: "PRIVATE_CASE_NOT_FOUND" });
+    return record;
+  };
+  const appendDiff = (record, diff, { turnId = "unknown-turn", diffId = null, recordedAt = now() } = {}) => {
+    if (!diff || typeof diff !== "object" || Array.isArray(diff)) throw new ValidationError("stateDiff must be an object.");
+    const entry = {
+      id: diffId ?? `diff-${record.state_diff_history.length + 1}`,
+      turn_id: turnId,
+      recorded_at: recordedAt,
+      diff: structuredClone(diff)
+    };
+    validateStateDiffEntry(entry, record.state_diff_history.length);
+    if (record.state_diff_history.some((candidate) => candidate.id === entry.id)) throw new ValidationError(`Duplicate state diff ${entry.id}.`);
+    record.state_diff_history.push(entry);
+    record.last_state_diff = structuredClone(diff);
+  };
+  const selectEvidence = (record, { query = null, provenanceIds = [], timeRange = null, limit = 24 } = {}) => {
+    if (!Number.isInteger(limit) || limit < 1 || limit > PRIVATE_RECORD_LIMITS.evidence_results) throw new ValidationError("Evidence retrieval limit is invalid.");
+    if (query != null && (typeof query !== "string" || !query.trim() || query.length > 1_000)) throw new ValidationError("Evidence query must be bounded non-empty text.");
+    if (!Array.isArray(provenanceIds) || provenanceIds.some((id) => typeof id !== "string" || !id.trim())) throw new ValidationError("provenanceIds must contain IDs.");
+    const sourceTurnIds = new Set();
+    const wanted = new Set(provenanceIds);
+    for (const item of [...record.case_state.items, ...record.case_state.intervention_history]) {
+      if (wanted.has(item.id) || wanted.has(item.source.ref) || wanted.has(item.source.turn_id)) {
+        if (item.source.turn_id) sourceTurnIds.add(item.source.turn_id);
+      }
+    }
+    for (const id of wanted) sourceTurnIds.add(id);
+    const terms = query ? query.toLocaleLowerCase().split(/\s+/u).filter((term) => term.length > 1) : [];
+    const querySourceTurnIds = new Set();
+    if (terms.length) {
+      for (const item of [...record.case_state.items, ...record.case_state.intervention_history]) {
+        const searchable = `${item.id} ${item.domain} ${item.statement}`.replaceAll("_", " ").toLocaleLowerCase();
+        if (terms.every((term) => searchable.includes(term)) && item.source.turn_id) querySourceTurnIds.add(item.source.turn_id);
+      }
+    }
+    const from = timeRange?.from ? Date.parse(timeRange.from) : null;
+    const to = timeRange?.to ? Date.parse(timeRange.to) : null;
+    if ((timeRange?.from && Number.isNaN(from)) || (timeRange?.to && Number.isNaN(to)) || (from != null && to != null && from > to)) throw new ValidationError("Evidence timeRange is invalid.");
+    const matches = record.raw_transcript.filter((turn) => {
+      const at = Date.parse(turn.at);
+      if (from != null && at < from) return false;
+      if (to != null && at > to) return false;
+      const provenanceMatch = wanted.size > 0 && (sourceTurnIds.has(turn.id) || wanted.has(turn.exchange_id));
+      const queryMatch = terms.length > 0 && (querySourceTurnIds.has(turn.id) || terms.every((term) => turn.text.toLocaleLowerCase().includes(term)));
+      const timeOnly = wanted.size === 0 && terms.length === 0 && timeRange;
+      return provenanceMatch || queryMatch || Boolean(timeOnly);
+    });
+    const turns = matches.slice(-limit);
+    return Object.freeze({
+      query,
+      provenance_ids: [...wanted],
+      time_range: timeRange ? structuredClone(timeRange) : null,
+      turns: structuredClone(turns),
+      truncated: matches.length > turns.length
+    });
   };
 
   return Object.freeze({
@@ -200,15 +361,148 @@ export function createEncryptedPrivateCaseStore({ rootDir, routineKek, recoveryS
     rootDir,
     async load(caseId) { const value = await readExisting(safeCaseId(caseId)); return value ? structuredClone(value) : null; },
     loadOrCreate,
-    async commitTurn(caseId, { transcript_entries, case_state, state_diff }) {
+    async commitTurn(caseId, { transcript_entries, case_state, state_diff, diff_id = null, diff_turn_id = null }) {
       return mutate(caseId, (record) => {
         const additions = validateTranscriptEntries(transcript_entries);
         const existingIds = new Set(record.raw_transcript.map((turn) => turn.id));
         if (additions.some((turn) => existingIds.has(turn.id))) throw new ValidationError("Transcript turn IDs must be append-only and unique.");
         record.raw_transcript.push(...structuredClone(additions));
         record.case_state = validateCaseState(structuredClone(case_state));
-        record.last_state_diff = state_diff == null ? null : structuredClone(state_diff);
+        if (state_diff != null) appendDiff(record, state_diff, {
+          turnId: diff_turn_id ?? additions.find((turn) => turn.role === "user")?.id ?? additions.at(-1)?.id ?? "unknown-turn",
+          diffId: diff_id
+        });
         return record;
+      });
+    },
+    async saveCaseState(caseId, caseState) {
+      return mutate(caseId, (record) => {
+        const state = validateCaseState(structuredClone(caseState));
+        if (state.case_id !== caseId) throw new ValidationError("Case state identity mismatch.");
+        record.case_state = state;
+        return record;
+      });
+    },
+    async getCaseState(caseId) { return structuredClone((await readRequired(caseId)).case_state); },
+    async saveCaseDiff(caseId, stateDiff, options = {}) {
+      return mutate(caseId, (record) => {
+        appendDiff(record, stateDiff, options);
+        return record;
+      });
+    },
+    async getCaseDiff(caseId, { turnId = null, diffId = null } = {}) {
+      const record = await readRequired(caseId);
+      if (!turnId && !diffId) return record.state_diff_history.length ? structuredClone(record.state_diff_history.at(-1)) : null;
+      const found = [...record.state_diff_history].reverse().find((entry) => (diffId ? entry.id === diffId : entry.turn_id === turnId));
+      return found ? structuredClone(found) : null;
+    },
+    async appendTranscriptTurn(caseId, turn) {
+      return mutate(caseId, (record) => {
+        const [validated] = validateTranscriptEntries([structuredClone(turn)]);
+        if (record.raw_transcript.some((entry) => entry.id === validated.id)) throw new ValidationError(`Duplicate transcript turn ${validated.id}.`);
+        record.raw_transcript.push(validated);
+        return record;
+      });
+    },
+    async getRecentVerbatim(caseId, episodePolicy = {}) {
+      const record = await readRequired(caseId);
+      return selectRecentVerbatimWindow(record.raw_transcript, {
+        minimumCompleteExchanges: episodePolicy.minimumCompleteExchanges ?? 3,
+        currentEpisodeId: episodePolicy.currentEpisodeId ?? record.case_state.current_episode?.id ?? null,
+        maximumSelectedTurns: episodePolicy.maximumSelectedTurns ?? CONTEXT_WINDOW_LIMITS.selected_turns,
+        requireCompleteEpisode: episodePolicy.requireCompleteEpisode === true
+      });
+    },
+    async saveCandidateResponse(caseId, candidateId, exactText, metadata = {}) {
+      return mutate(caseId, (record) => {
+        if (typeof candidateId !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/.test(candidateId)) throw new ValidationError("candidateId is invalid.");
+        if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new ValidationError("Candidate response metadata must be an object.");
+        if (record.candidate_responses.some((candidate) => candidate.id === candidateId)) throw new ValidationError(`Candidate response ${candidateId} already exists and exact bytes are immutable.`);
+        const timestamp = now();
+        const candidate = {
+          id: candidateId,
+          version: record.candidate_responses.length + 1,
+          exact_text: exactText,
+          status: metadata.status ?? "pending_audit",
+          created_at: timestamp,
+          updated_at: timestamp,
+          metadata: Object.fromEntries(Object.entries(structuredClone(metadata)).filter(([key]) => key !== "status"))
+        };
+        validateCandidateResponse(candidate, record.candidate_responses.length);
+        if (candidate.status === "pending_audit") {
+          for (const previousCandidate of record.candidate_responses.filter((entry) => entry.status === "pending_audit")) {
+            previousCandidate.status = "superseded";
+            previousCandidate.updated_at = timestamp;
+            previousCandidate.metadata = { ...previousCandidate.metadata, superseded_by_candidate_id: candidateId };
+          }
+        }
+        record.candidate_responses.push(candidate);
+        return record;
+      });
+    },
+    async updateCandidateStatus(caseId, candidateId, status, metadataPatch = {}) {
+      return mutate(caseId, (record) => {
+        if (!CANDIDATE_STATUSES.includes(status)) throw new ValidationError("Candidate response status is invalid.");
+        if (!metadataPatch || typeof metadataPatch !== "object" || Array.isArray(metadataPatch)) throw new ValidationError("Candidate response metadata patch must be an object.");
+        const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
+        if (!candidate) throw new ValidationError(`Candidate response ${candidateId} was not found.`, { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
+        if (status === "pending_audit" && candidate.status !== "pending_audit") throw new ValidationError("A completed candidate cannot be reactivated; save a new candidate version.");
+        candidate.status = status;
+        candidate.updated_at = now();
+        candidate.metadata = { ...candidate.metadata, ...structuredClone(metadataPatch) };
+        validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+        return record;
+      });
+    },
+    async getCandidateResponse(caseId, selector = "current_pending") {
+      const record = await readRequired(caseId);
+      const candidate = selector === "current_pending"
+        ? [...record.candidate_responses].reverse().find((entry) => entry.status === "pending_audit")
+        : record.candidate_responses.find((entry) => entry.id === selector);
+      return candidate ? structuredClone(candidate) : null;
+    },
+    async retrieveCaseEvidence(caseId, { query = null, provenanceIds = [], timeRange = null, limit = 24 } = {}) {
+      const record = await readRequired(caseId);
+      return selectEvidence(record, { query, provenanceIds, timeRange, limit });
+    },
+    async getCurrentEpisode(caseId) { return structuredClone((await readRequired(caseId)).case_state.current_episode); },
+    async loadCaseContext(caseId, { candidateId = "current_pending", episodePolicy = {}, evidenceQuery = null } = {}) {
+      const record = await readRequired(caseId);
+      const context = buildDurableCaseContext({
+        caseId,
+        caseState: record.case_state,
+        transcriptEntries: record.raw_transcript,
+        trackerEntries: record.tracker_entries
+      });
+      const candidate = candidateId === "current_pending"
+        ? [...record.candidate_responses].reverse().find((entry) => entry.status === "pending_audit")
+        : record.candidate_responses.find((entry) => entry.id === candidateId);
+      const recent = Object.keys(episodePolicy).length
+        ? selectRecentVerbatimWindow(record.raw_transcript, {
+            minimumCompleteExchanges: episodePolicy.minimumCompleteExchanges ?? 3,
+            currentEpisodeId: episodePolicy.currentEpisodeId ?? record.case_state.current_episode?.id ?? null,
+            maximumSelectedTurns: episodePolicy.maximumSelectedTurns ?? CONTEXT_WINDOW_LIMITS.selected_turns,
+            requireCompleteEpisode: episodePolicy.requireCompleteEpisode !== false
+          })
+        : context.recent_verbatim_window;
+      let queriedEvidence = null;
+      if (evidenceQuery) {
+        const { query = null, provenanceIds = [], timeRange = null, limit = 24 } = evidenceQuery;
+        queriedEvidence = selectEvidence(record, { query, provenanceIds, timeRange, limit });
+      }
+      return Object.freeze({
+        schema_version: 1,
+        case_id: caseId,
+        constitution_ref: structuredClone(context.constitution_ref),
+        case_state: structuredClone(record.case_state),
+        last_state_diff: record.state_diff_history.length ? structuredClone(record.state_diff_history.at(-1)) : null,
+        recent_verbatim: structuredClone(recent),
+        candidate_response: candidate ? structuredClone(candidate) : null,
+        targeted_older_evidence: structuredClone(context.targeted_older_evidence),
+        queried_evidence: queriedEvidence,
+        current_episode: structuredClone(record.case_state.current_episode),
+        tracker_window: structuredClone(context.tracker_window),
+        hidden_reasoning_included: false
       });
     },
     async appendTracker(caseId, entry) {
@@ -228,7 +522,7 @@ export function createEncryptedPrivateCaseStore({ rootDir, routineKek, recoveryS
     close() {
       if (!closed) {
         routineKey.fill(0);
-        recoverySecret.fill(0);
+        recoverySecret?.fill(0);
         closed = true;
       }
     }

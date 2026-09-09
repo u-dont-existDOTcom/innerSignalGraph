@@ -14,6 +14,8 @@ npm test
 npm run verify
 ```
 
+Encrypted private case continuity and its separate read-only fresh-session MCP bridge are documented in `docs/PRIVATE-CASE-CONTINUITY.md`. The repository implementation has a synthetic fresh-process acceptance gate; it does not claim that the real private case is imported or that a production ChatGPT connection is deployed, authenticated, registered, or fresh-chat verified.
+
 The local publication gate is `npm run audit:publication`. The authenticated hosted-surface gate is `npm run audit:publication:hosted`; it is required before the visibility transition and is not a hermetic ordinary-CI substitute. Provider checks are explicit opt-in live evidence and do not run in ordinary CI. `main` is development authority, `stable` is the sole installation/release source, and `runtime-diagnostics` is generated allowlisted status data that must never merge into source. Release promotion follows `docs/RELEASE-EVIDENCE.md` and remains distinct from merging development work to `main`.
 
 ## Hermetic Git updates, safe diagnostics, and remote progress

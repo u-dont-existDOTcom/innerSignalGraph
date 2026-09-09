@@ -33,9 +33,15 @@ export function validateTranscriptEntries(entries) {
   return entries;
 }
 
-export function selectRecentVerbatimWindow(entries, { minimumCompleteExchanges = 3, currentEpisodeId = null, maximumSelectedTurns = CONTEXT_WINDOW_LIMITS.selected_turns } = {}) {
+export function selectRecentVerbatimWindow(entries, {
+  minimumCompleteExchanges = 3,
+  currentEpisodeId = null,
+  maximumSelectedTurns = CONTEXT_WINDOW_LIMITS.selected_turns,
+  requireCompleteEpisode = false
+} = {}) {
   if (!Number.isInteger(minimumCompleteExchanges) || minimumCompleteExchanges < 0 || minimumCompleteExchanges > 20) throw new ValidationError("minimumCompleteExchanges must be an integer from 0 to 20.");
-  if (!Number.isInteger(maximumSelectedTurns) || maximumSelectedTurns < minimumCompleteExchanges * 2 || maximumSelectedTurns > CONTEXT_WINDOW_LIMITS.selected_turns) throw new ValidationError("maximumSelectedTurns is outside the bounded context policy.");
+  const maximumAllowed = requireCompleteEpisode ? CONTEXT_WINDOW_LIMITS.transcript_entries : CONTEXT_WINDOW_LIMITS.selected_turns;
+  if (!Number.isInteger(maximumSelectedTurns) || maximumSelectedTurns < minimumCompleteExchanges * 2 || maximumSelectedTurns > maximumAllowed) throw new ValidationError("maximumSelectedTurns is outside the bounded context policy.");
   const transcript = structuredClone(validateTranscriptEntries(entries));
   const exchanges = new Map();
   transcript.forEach((turn, index) => {
@@ -52,11 +58,17 @@ export function selectRecentVerbatimWindow(entries, { minimumCompleteExchanges =
     if (episodeIndexes.length) start = Math.min(start, Math.min(...episodeIndexes));
   }
   const episodeExtended = transcript.slice(start);
-  const selected = episodeExtended.slice(-maximumSelectedTurns);
+  const effectiveMaximum = requireCompleteEpisode && episodeExtended.length > maximumSelectedTurns
+    ? Math.min(episodeExtended.length, CONTEXT_WINDOW_LIMITS.transcript_entries)
+    : maximumSelectedTurns;
+  const selected = episodeExtended.slice(-effectiveMaximum);
   return Object.freeze({
-    policy: "minimum-last-3-complete-exchanges-extended-to-current-episode-with-explicit-turn-bound",
+    policy: requireCompleteEpisode
+      ? "minimum-last-3-complete-exchanges-extended-to-complete-current-episode"
+      : "minimum-last-3-complete-exchanges-extended-to-current-episode-with-explicit-turn-bound",
     minimum_complete_exchanges: minimumCompleteExchanges,
     maximum_selected_turns: maximumSelectedTurns,
+    complete_episode_required: requireCompleteEpisode,
     selected_complete_exchange_ids: required.map((exchange) => exchange.id),
     extended_for_current_episode: Boolean(currentEpisodeId && selected.some((turn) => turn.episode_id === currentEpisodeId) && start < (required[0]?.indexes[0] ?? transcript.length)),
     truncated_for_bound: selected.length < episodeExtended.length,

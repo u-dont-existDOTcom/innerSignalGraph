@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "fresh-session-private-case-continuity-matrix-20260909",
+  "status": "LOCAL_CONTINUITY_VERIFIED_EXTERNAL_CHATGPT_BLOCKED",
+  "startingHead": "b4eee54e6ed3b8e0b18fa5ca8f1cfb365362dbc1",
+  "proofRuns": [
+    {
+      "id": "RUN-FOCUSED",
+      "result": "PASS",
+      "summary": "Fresh-session acceptance passed 10/10; affected storage, context, audit, configuration, server, and UI tests passed 99/99."
+    },
+    {
+      "id": "RUN-FULL",
+      "result": "PASS",
+      "summary": "Node 24.18.0 package verification passed 1017/1017 tests, 29/29 graph regressions, 5/5 therapy lessons, and every deterministic package gate."
+    },
+    {
+      "id": "RUN-PUBLICATION",
+      "result": "PENDING_CONTAINING_COMMIT",
+      "summary": "The all-history audit must run on the containing commit and will be included in the immutable PR receipt."
+    },
+    {
+      "id": "RUN-HOSTED",
+      "result": "PENDING_PUSHED_HEAD",
+      "summary": "Exact-head workflow-policy, deterministic-package, and CodeQL results will be included in the immutable PR receipt."
+    }
+  ],
+  "rows": [
+    {
+      "id": "RO-01",
+      "status": "VERIFIED_LOCAL",
+      "anchors": ["src/storage/private-case-store.mjs", "src/storage/private-case-access.mjs"],
+      "evidence": "Versioned APIs persist and retrieve state, diff history, exact turns, exact candidates, raw evidence, current episode, and one-call context."
+    },
+    {
+      "id": "RO-02",
+      "status": "VERIFIED_LOCAL_PRODUCTION_PROVIDER_OPEN",
+      "anchors": ["src/storage/vault-crypto.mjs", "src/storage/private-case-access.mjs"],
+      "evidence": "Injected authorization/key providers fail closed; ciphertext round-trips; wrong/missing key and scope reveal no content. The bundled external-file provider uses a distinct explicit opt-in assurance and never claims production OS-backed reauthentication."
+    },
+    {
+      "id": "RO-03",
+      "status": "VERIFIED_LOCAL",
+      "anchors": ["src/storage/private-case-store.mjs", "src/case-state/context-window.mjs"],
+      "evidence": "Candidate bytes are immutable/versioned/statused; exact recent turns survive restart and extend through the complete active episode."
+    },
+    {
+      "id": "RO-04",
+      "status": "VERIFIED_LOCAL",
+      "anchors": ["src/supervisor/private-candidate-audit.mjs", "tests/private-case-continuity.test.mjs"],
+      "evidence": "A fresh audit process resolves a stable pending candidate ID to exact text before invoking the auditor."
+    },
+    {
+      "id": "RO-05",
+      "status": "LOCAL_MCP_VERIFIED_EXTERNAL_CHATGPT_BLOCKED",
+      "anchors": ["src/server/private-case-mcp.mjs", "src/cli/private-case-mcp.mjs", "docs/PRIVATE-CASE-CONTINUITY.md"],
+      "evidence": "A separate authorized MCP client/server process executes exact reads. Public HTTPS, production OAuth, ChatGPT registration, and a new-chat tool call remain unperformed."
+    },
+    {
+      "id": "RO-06",
+      "status": "VERIFIED_LOCAL",
+      "anchors": ["tests/private-case-continuity.test.mjs", "tests/fixtures/private-case-session.mjs"],
+      "evidence": "All eight requested acceptance classes are executable, including a high-level continuation-safety failure gate."
+    },
+    {
+      "id": "RO-07",
+      "status": "VERIFIED_LOCAL",
+      "anchors": ["apps/web/app.js", "src/server/create-server.mjs", "src/server/private-case-mcp.mjs"],
+      "evidence": "Existing state/diff controls remain green; supervisor-only exact-turn/candidate reads are available only through the separately authenticated private MCP."
+    },
+    {
+      "id": "RO-08",
+      "status": "TRUTHFUL_BLOCKER_RECORDED",
+      "anchors": ["tasks/NEXT-CONVERSATION-HANDOFF-2026-09-07.md", "src/storage/private-case-handoff.mjs"],
+      "evidence": "The handoff specifies the executable retrieval action but contains no invented real case/candidate IDs and blocks the audit until private import and fresh-chat retrieval are proven."
+    },
+    {
+      "id": "RO-09",
+      "status": "LOCAL_VERIFIED_GITHUB_CLOSEOUT_PENDING",
+      "anchors": ["tasks/fresh-session-private-case-continuity-20260909/INTEGRATION.md"],
+      "evidence": "Focused, affected, complete-package, and diff gates passed. Publication and exact-head hosted evidence are performed after the containing commit and recorded in the PR receipt."
+    }
+  ],
+  "availability": {
+    "syntheticFreshProcess": "VERIFIED",
+    "localAuthorizedMcp": "VERIFIED",
+    "realCaseImported": false,
+    "productionKeyAndAuthProvider": false,
+    "reachableMcpDeploymentOrSecureTunnel": false,
+    "chatgptRegistered": false,
+    "freshChatToolCallVerified": false,
+    "freshAuthorizedChatCanRetrieveRealPrivateCaseNow": false
+  }
+}

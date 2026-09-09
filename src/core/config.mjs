@@ -62,7 +62,7 @@ export function loadConfig(overrides = {}) {
     hypnosisRepairProvider: process.env.HYPNOSIS_REPAIR_PROVIDER ?? "anthropic",
     hypnosisFinalReviewerProvider: process.env.HYPNOSIS_FINAL_REVIEWER_PROVIDER ?? "openai",
     allowDegraded: booleanEnv("ALLOW_DEGRADED", false),
-    ledgerMode: process.env.LEDGER_MODE ?? (resolvedMode === "cli" ? "full" : "redacted"),
+    ledgerMode: process.env.LEDGER_MODE ?? "redacted",
     ledgerDir: path.resolve(projectRoot, process.env.LEDGER_DIR ?? "./ledgers"),
     requestTimeoutMs: integerEnv("REQUEST_TIMEOUT_MS", 900000, { min: 1000, max: 3600000 }),
     entitlementTimeoutMs: integerEnv("ENTITLEMENT_TIMEOUT_MS", 300000, { min: 1000, max: 3600000 }),

@@ -2,6 +2,16 @@
 
 Updated: 2026-09-09
 
+## Fresh-session private case continuity repair (PR #46)
+
+Task `fresh-session-private-case-continuity-20260909` corrects the prior storage-without-access failure. The authoritative recovery ledger is `tasks/fresh-session-private-case-continuity-20260909/INTEGRATION.md`, its requirement evidence is `COMPLETION-MATRIX.json`, and `docs/PRIVATE-CASE-CONTINUITY.md` defines the runtime, key/auth, MCP, private handoff, and production boundaries.
+
+The draft candidate extends the encrypted record with versioned state diffs and immutable exact candidates, provides explicit state/diff/transcript/candidate/evidence/episode/bootstrap interfaces behind case-scoped authorization and injected key material, preserves complete active-episode verbatim text for fresh continuation, updates encrypted payloads with the routine key while preserving both key wraps, supplies an exact candidate-ID audit adapter, and exposes a separate read-only MCP server for authorized context, recent-turn, older-evidence, and candidate inspection. The ordinary decision ledger default is redacted; the existing structured state/diff browser controls remain and raw private inspectors were not added to the unauthenticated development web service.
+
+Local synthetic fresh-process and direct MCP execution are repository evidence only. The real private case was not imported, no real stable case/candidate identifiers were created, and no production key provider, OAuth/ACL provider, HTTPS/tunnel, ChatGPT registration, or post-registration fresh-chat tool call was performed. Therefore a fresh ChatGPT conversation is **not yet able** to retrieve the real private case. Do not audit or reconstruct the pending real candidate until a private handoff containing actual stable IDs passes `load_case_context` and the continuation-safety gate.
+
+Keep PR #46 draft/open/unmerged. No deployment, installation, stable promotion, provider call, real-case re-summarization, or clinical claim is authorized by this task.
+
 ## PR #46 cross-handoff completion audit
 
 Task `pr46-completion-audit-20260909` audits the current draft PR rather than accepting prior Work handoffs as completion. Fresh admission head `4a6883a396188cad8604d6223d3ddba34dd3074f` was locally identical to the PR head, and its hosted workflow-policy, deterministic-package, and CodeQL checks were successful. The canonical current-tree evidence is `tasks/pr46-completion-audit-20260909/COMPLETION-MATRIX.json`; the execution and final-checkpoint ledger is `tasks/pr46-completion-audit-20260909/INTEGRATION.md`.

@@ -58,12 +58,12 @@ export async function prepareRuntimeEnvironment({
     updates.THERAPY_PROCESSING_MODE = "auto";
     env.THERAPY_PROCESSING_MODE = "auto";
   }
-  // This is a local development runtime. Keep complete reasoning ledgers for
-  // local continuity. Privacy-safe diagnostic bundles intentionally exclude
-  // those ledgers, browser chat, credentials, and .env.
-  if (String(env.LEDGER_MODE ?? "").trim() !== "full") {
-    updates.LEDGER_MODE = "full";
-    env.LEDGER_MODE = "full";
+  // Exact client content belongs in the encrypted private case store. Preserve
+  // an explicit valid owner choice, but repair a missing or stale value to the
+  // privacy-safe default rather than silently creating plaintext continuity.
+  if (!VALID_LEDGER_MODES.has(String(env.LEDGER_MODE ?? "").trim())) {
+    updates.LEDGER_MODE = "redacted";
+    env.LEDGER_MODE = "redacted";
   }
 
   for (const key of [

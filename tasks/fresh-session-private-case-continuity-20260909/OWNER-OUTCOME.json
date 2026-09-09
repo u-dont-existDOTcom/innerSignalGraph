@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "ownerOutcomeId": "OO-INNERSIGNAL-FRESH-PRIVATE-CONTINUITY-20260909",
+  "epoch": 1,
+  "source": {
+    "kind": "owner_chat_directive",
+    "recordedAt": "2026-09-09",
+    "publicSafeProjectionOnly": true,
+    "privateCaseContentExcluded": true
+  },
+  "normalizedResult": "On the current draft PR 46 head, make encrypted private case persistence continuation-safe: a fresh authorized process with only a stable case ID can recover structured state, last diff, exact recent episode turns, exact pending candidate, targeted older raw evidence, current episode, and constitution reference through explicit repository APIs and a ChatGPT-callable MCP boundary. Fail closed for missing authorization or key material; keep real private payloads out of public Git; distinguish locally verified continuity from deployment, registration, OAuth, and fresh-chat execution that remain unverified.",
+  "requiredOutcomes": [
+    {"id":"RO-01","text":"Provide explicit, durable, versioned private-store interfaces for state, diffs, transcript turns, exact candidate responses, historical evidence retrieval, current episode, and all-in-one context bootstrap.","terminalRequired":true},
+    {"id":"RO-02","text":"Obtain encryption keys and caller authorization through injected provider abstractions; never commit keys, read them implicitly from Git, or fall back to plaintext/de-identified substitutes.","terminalRequired":true},
+    {"id":"RO-03","text":"Make candidate response bytes and exact recent verbatim context first-class, addressable private artifacts, with at least three complete exchanges and episode extension.","terminalRequired":true},
+    {"id":"RO-04","text":"Make the audit harness resolve a candidate identifier from authorized private storage in a fresh process before auditing.","terminalRequired":true},
+    {"id":"RO-05","text":"Expose a minimal read-only MCP/service surface suitable for a newly authorized ChatGPT or supervisor session, with useful authentication failures and no hidden reasoning.","terminalRequired":true},
+    {"id":"RO-06","text":"Add fresh-session, unauthorized, encryption, candidate-audit, recent-window, historical-retrieval, public/private-separation, and continuation-safety acceptance tests.","terminalRequired":true},
+    {"id":"RO-07","text":"Preserve the state/diff UI and add supervisor-only recent-verbatim and pending-candidate inspection when authorized.","terminalRequired":true},
+    {"id":"RO-08","text":"Update the canonical handoff with stable private identifiers and an executable retrieval action, while truthfully blocking any real-case availability claim until data import plus deployed/registered authenticated MCP execution are verified in a fresh chat.","terminalRequired":true},
+    {"id":"RO-09","text":"Run focused, affected, complete package, publication, and exact-head hosted gates; push only after fresh remote-head reconciliation; keep PR 46 draft, open, and unmerged.","terminalRequired":true}
+  ],
+  "nonSatisfyingProxies": [
+    "encrypted bytes exist but no fresh authorized loader can decrypt them",
+    "tool schemas are visible but a fresh ChatGPT conversation has not executed the tool",
+    "candidate content is represented only by a summary or hash",
+    "recent turns are regenerated from structured state",
+    "synthetic fresh-process tests are green but real case data was never imported",
+    "an MCP server exists locally but is not deployed, registered, authorized, and fresh-chat tested",
+    "documentation says load the private vault without a callable path"
+  ],
+  "forbiddenTerminalClaims": [
+    "real private case migrated without direct evidence",
+    "fresh ChatGPT availability without a successful post-registration chat tool call",
+    "deployment",
+    "installation",
+    "stable promotion",
+    "merge",
+    "clinical validation"
+  ]
+}

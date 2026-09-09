@@ -355,6 +355,42 @@ export async function decryptVaultEnvelopeWithRoutineKek(input = {}) {
   }
 }
 
+export async function replaceVaultPayloadWithRoutineKek(input = {}) {
+  let routineKey;
+  let plaintext;
+  let dek;
+  try {
+    if (!isRecord(input)) throw invalidInput();
+    const current = readEnvelope(input.envelope);
+    routineKey = copyRoutineKek(input.routineKek);
+    plaintext = copyBytes(input.plaintextBytes);
+    dek = decryptGcm({
+      key: routineKey,
+      ...current.keyWraps.routine,
+      aad: frame([ROUTINE_WRAP_CONTEXT]),
+    });
+    const payload = encryptGcm({
+      key: dek,
+      iv: distinctIv([
+        Buffer.from(current.keyWraps.routine.iv),
+        Buffer.from(current.keyWraps.recovery.iv),
+      ]),
+      plaintext,
+      aad: payloadAad(current.keyWraps),
+    });
+    return {
+      version: current.version,
+      suiteId: current.suiteId,
+      payload,
+      keyWraps: current.keyWraps,
+    };
+  } catch {
+    throw new VaultCryptoUnreadableError();
+  } finally {
+    zero(routineKey, plaintext, dek);
+  }
+}
+
 export async function decryptVaultEnvelopeWithRecoverySecret(input = {}) {
   let recoverySecret;
   let recoveryKek;

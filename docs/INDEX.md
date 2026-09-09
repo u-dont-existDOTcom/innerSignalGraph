@@ -9,6 +9,7 @@
 - `../scripts/verify-package.sh`: complete deterministic package gate
 - `../package.json`: supported commands
 - `RELEASE-EVIDENCE.md`: stable-promotion evidence contract
+- `PRIVATE-CASE-CONTINUITY.md`: encrypted case APIs, fresh-session acceptance gate, repository MCP bridge, private handoff format, and blocking production/ChatGPT boundary
 
 ## Worker → Brave Pro review
 
