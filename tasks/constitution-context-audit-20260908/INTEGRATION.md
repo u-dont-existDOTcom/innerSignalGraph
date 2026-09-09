@@ -1,6 +1,6 @@
 # Constitution, longitudinal context, and audit-harness integration
 
-Status: implementation complete; verification and exact-head publication in progress on draft PR #46. The private source directive is not stored or hashed in this public repository.
+Status: COMPLETE as a verified candidate on draft PR #46. Implementation head `e32a16714e8d38b1903ec4c7e3f74e049486beac` is pushed to the PR branch. This closeout does not merge, deploy, install, promote `stable`, run the semantic experiment, select an audit architecture, or adopt runtime policy. The private source directive is not stored or hashed in this public repository.
 
 ## Baseline
 
@@ -42,7 +42,7 @@ Public Git contains only schemas, code, tests, and synthetic/de-identified fixtu
 | RO-06 | audit case/drafts/reference/rubric/supplements | audit harness validation and focused tests |
 | RO-07 | `tests/constitution-context-state.test.mjs` plus audit tests | focused/affected/full gates recorded below |
 | RO-08 | `tasks/NEXT-CONVERSATION-HANDOFF-2026-09-07.md` | audit-first private-load instructions, no private payload |
-| RO-09 | PR #46 | final head and hosted check evidence recorded after push |
+| RO-09 | PR #46 | pushed implementation head and exact-head hosted checks recorded below; the final closeout-only head is recorded in the immutable PR receipt |
 
 ## Research-before-reinvention
 
@@ -53,12 +53,14 @@ Disposition: COMPOSE / ADAPT. The implementation reuses the existing vault crypt
 - Focused audit harness: 36/36 passing after semantic fixture correction.
 - Constitution/context/storage/UI/endpoint suite: 13/13 passing at the loopback-capable host boundary, including compacted-state decision equivalence, explicit context limits, complete contradiction coverage, and encrypted therapy-turn persistence.
 - Affected prompt/runtime/browser/vault/audit suite: 177/177 passing before the final gold-state expansion; the final full gate supersedes this checkpoint.
-- Graph regressions: 29/29 passing. Therapy lesson gate: 5/5 passing. Repository audit: green with one known hosted-enforcement warning. Local Git publication audit: green across 278,717 historical records before the final containing commit.
+- Graph regressions: 29/29 passing. Therapy lesson gate: 5/5 passing. Repository audit: green with one known hosted-enforcement warning. The complete local Git publication audit on pushed implementation head `e32a16714e8d38b1903ec4c7e3f74e049486beac` passed with zero findings across 279,763 records (58 refs, 520 commits, 9,637 objects, and 6,370 unique blobs).
 - Endpoint tests require the host boundary because the workspace sandbox blocks loopback sockets; this is an execution-boundary condition, not a product failure.
 - Complete package verification under repository-required Node `24.18.0`: PASS, including 1007/1007 automated tests, 29/29 graph regressions, 5/5 therapy lessons, guide/archive integrity, mock therapy and hypnosis replays, web smoke, autopilot smoke, runtime fingerprint, package hygiene, and the development-loop checks.
 - The first full attempt was correctly rejected: the host's Node 26 wrapper outranked the initially requested runtime and exposed one stale historical test that treated a completed Obsidian task as the permanent active lock. The historical test now validates the immutable closeout receipt independently; all 12 affected release/autopilot tests passed under Node 24 before the complete green run.
-- Remaining: acceptance/publication audit on the containing commit, refreshed-PR-head reconciliation, exact-head push, and hosted required-check readback.
+- Source acceptance passed. Refreshed-PR-head reconciliation proved the prior PR head `32d714855bb327b0d49fbb73662f9ee9d212dd38` is an ancestor, and the candidate was pushed by fast-forward only.
+- Exact implementation-head hosted evidence is green: `workflow-policy` ([run 34291836954](https://github.com/u-dont-existDOTcom/innerSignalGraph/actions/runs/34291836954)), `deterministic-package` ([run 34291836888](https://github.com/u-dont-existDOTcom/innerSignalGraph/actions/runs/34291836888)), and `codeql-javascript` ([run 34291836944](https://github.com/u-dont-existDOTcom/innerSignalGraph/actions/runs/34291836944)). PR #46 remained OPEN, DRAFT, and unmerged at readback.
+- An additional all-history hosted publication audit was attempted and failed closed at `actions-run:209:log`. The record resolves to Actions run `34060739398`, which completed as `action_required`; GitHub returns `log not found`. This is incomplete historical-log coverage, not a leak finding, and is not represented as a pass. It does not replace or weaken the required zero-finding local publication audit or the exact-head hosted checks above.
 
 ## Unresolved owner/release decisions
 
-No decision blocks this candidate push. Before runtime release, the owner must still review the concrete OS credential-store adapter and packaging, encrypted-case retention and deletion UX, legacy migration UX, human privacy usability, and later frozen semantic experiment results. The experiment cannot select or adopt an architecture without explicit owner review.
+No decision blocks candidate completion. Before runtime release, the owner must still review the concrete OS credential-store adapter and packaging, encrypted-case retention and deletion UX, legacy migration UX, human privacy usability, and later frozen semantic experiment results. The corrected semantic instrument requires a new freeze and complete calibration before any architecture or `Latest` calls; the experiment cannot select or adopt an architecture without explicit owner review. Separately, restoring a fully green all-history hosted publication audit would require either GitHub to expose the never-started historical run log or a future, explicitly reviewed compliance-contract change; this task does not weaken that fail-closed policy.

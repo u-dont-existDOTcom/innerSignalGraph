@@ -1,14 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-08
+Updated: 2026-09-09
 
-## Active owner-authorized constitution/context/harness integration (PR #46)
+## Completed owner-authorized constitution/context/harness integration (PR #46)
 
-Task `constitution-context-audit-20260908` is exclusive on local branch `codex/audit-architecture-eval-20260908-v2`, targeting draft PR #46 without merge, deployment, installation, or stable promotion. The public-safe outcome record, exact execution boundary, active lesson contract, and sole task ledger are under `tasks/constitution-context-audit-20260908/`. The private owner source is intentionally neither copied nor hashed in this public repository.
+Task `constitution-context-audit-20260908` is complete as a verified candidate on local branch `codex/audit-architecture-eval-20260908-v2`, targeting draft PR #46 without merge, deployment, installation, or stable promotion. Implementation head `e32a16714e8d38b1903ec4c7e3f74e049486beac` is pushed; the final closeout-only head and check receipt belong in the immutable PR comment. The public-safe outcome record, exact execution boundary, active lesson contract, and sole task ledger are under `tasks/constitution-context-audit-20260908/`. The private owner source is intentionally neither copied nor hashed in this public repository.
 
 Fresh GitHub source head before implementation is `32d714855bb327b0d49fbb73662f9ee9d212dd38`; it is an ancestor of preserved local head `734a23b750181d554346ba52708a27af14ff2760`. The composed candidate now includes a separate always-loaded constitution, encrypted private case-store service with no plaintext fallback, provenance/contradiction/compaction and tracker state, state/diff inspection UI, a 42-item/13-cluster synthetic gold state covering the complete required contradiction registry, steering fidelity dimensions, deterministic compaction/poisoning/privacy tests, and an audit-first next-conversation handoff. Recent exact turns, older retrieval, structured-state arrays, and tracker context have explicit limits with visible omission metadata. The browser stores only safe settings and a random case ID; without an injected OS-authenticated encrypted store, sensitive state remains session-only. Concrete OS credential-store packaging and server-side deletion UX remain future release work. Any semantic harness change invalidates the prior calibration for current certification and requires a new freeze plus all controls before live experiment calls.
 
-First commands after interruption: fetch PR #46, run `npm run constitution-context:preflight`, read `tasks/constitution-context-audit-20260908/INTEGRATION.md`, and reconcile actual Git status. Ordinary green tests are not completion; exact-head push and hosted readback are required.
+Future work must fetch PR #46 and read `tasks/constitution-context-audit-20260908/INTEGRATION.md` before modifying this surface. Do not rerun the active-task preflight after closeout: the exclusive lock is intentionally released. Source acceptance remains the deterministic task-local gate. Any semantic harness change requires a new instrument freeze and complete calibration before live ChatGPT experiment calls.
 
 ## Current owner-authorized audit-architecture evaluation (PR #46)
 

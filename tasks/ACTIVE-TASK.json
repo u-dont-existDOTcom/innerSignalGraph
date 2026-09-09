@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "taskId": "constitution-context-audit-20260908",
   "title": "Integrate the InnerSignal constitution, private longitudinal context architecture, state inspection, tracker, and audit-harness correction",
-  "status": "active",
-  "exclusive": true,
+  "status": "complete",
+  "exclusive": false,
   "repository": "u-dont-existDOTcom/innerSignalGraph",
   "requiredBranch": "codex/audit-architecture-eval-20260908-v2",
   "pullRequest": 46,
@@ -15,10 +15,9 @@
   "preflightCommand": "npm run constitution-context:preflight",
   "completionCommand": "npm run constitution-context:acceptance",
   "completionClaimRule": "Repository gates are prerequisites. This task is final only after exact-head push, hosted check readback, public privacy audit, and a durable handoff; it does not select an audit architecture or authorize runtime release.",
-  "suspendedTaskSources": [
-    "historical roadmap task selection",
-    "completed Obsidian authoring lock",
-    "unrelated worktrees and pull requests",
-    "stable promotion and deployment queues"
-  ]
+  "completedAt": "2026-09-09T00:04:19Z",
+  "implementationHead": "e32a16714e8d38b1903ec4c7e3f74e049486beac",
+  "completionReceipt": "tasks/constitution-context-audit-20260908/INTEGRATION.md",
+  "finalHostedReceipt": "the immutable PR #46 comment posted after the closeout-only commit",
+  "suspendedTaskSources": []
 }
