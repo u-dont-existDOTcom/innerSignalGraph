@@ -57,8 +57,8 @@
     },
     {
       "id": "DRAFT_PULL_REQUEST",
-      "status": "PENDING",
-      "evidence": "Populate after final branch reconciliation, push, draft PR creation, and exact-head hosted checks."
+      "status": "PASS_DRAFT_OPEN_UNMERGED",
+      "evidence": "PR #49 was created from codex/private-case-import-20260909 as draft, open, and unmerged. Exact-head hosted results are external evidence and must be read from the current GitHub head rather than self-attested by a commit."
     }
   ]
 }

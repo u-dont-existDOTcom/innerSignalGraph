@@ -1,6 +1,6 @@
 # Real private-case import and fresh-session continuity
 
-Status: IN PROGRESS on `codex/private-case-import-20260909`, starting from current `main` at `fabc5b582e8b725248c37b44e5189e51653c9d82`.
+Status: BLOCKED on draft, open, unmerged PR #49 from `codex/private-case-import-20260909`, starting from current `main` at `fabc5b582e8b725248c37b44e5189e51653c9d82`.
 
 The owner supplied the complete private human-gold baseline, later corrections, exact recent episode, exact pending candidate, and a bounded execution sequence through private task attachments. Those private bytes and their hashes must remain outside Git.
 
