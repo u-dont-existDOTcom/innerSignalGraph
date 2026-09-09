@@ -11,7 +11,6 @@ src/prompts/realize.mjs
 src/prompts/threat-pathway.mjs
 src/therapy/constitution.mjs
 state/CODEX-CURRENT-STATE.md
-tasks/ACTIVE-TASK.json
 tasks/audit-architecture-eval-20260907/INTEGRATION.md
 tasks/audit-architecture-eval-20260907/PROTOCOL.md
 tasks/audit-architecture-eval-20260907/THREAT-PATHWAY-AUDIT-SUPPLEMENT.json

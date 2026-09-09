@@ -9,6 +9,7 @@ Status: VERIFIED candidate ready for linear integration into draft PR #46. No me
 - Fresh fetched starting head: `b4eee54e6ed3b8e0b18fa5ca8f1cfb365362dbc1`.
 - Isolated task branch: `codex/risk-calibrated-engagement-20260909`.
 - The original checkout contains an unrelated active private-case continuity task and remains untouched.
+- Before integration, PR #46 had advanced linearly to `5c361da06d7556e7ac75ea42acc645dcde65dc5d` with that private-case continuity work. The verified commit remained reachable on its original branch; a new integration branch was created directly from `5c361da`, and the one candidate commit was replayed there without rebasing, merging, or rewriting shared history. The context-window changes composed additively, the newer private-continuity task remained the canonical `tasks/ACTIVE-TASK.json`, and both task summaries were retained in the state index.
 
 ## Current implementation inventory before change
 
@@ -47,11 +48,13 @@ The fetched PR head already provided the constitution and political scale langua
 - Focused runtime: `tests/threat-pathway.test.mjs` passed 9/9.
 - Focused audit extension: `threat-pathway-lessons.test.mjs` passed 7/7; the existing audit score suite passed 29/29 and the longitudinal supplement remained green.
 - Affected integration: authoring proposal and guide-fidelity transport passed after retaining the unchanged planner projection and teaching the synthetic provider fixture the new explicit nullable fields.
-- Complete automated repository suite: 1023/1023 passed under Node 24.18.0 and npm 11.16.0.
-- Complete package gate: PASS, including 5/5 therapy lessons, 29/29 graph regressions, authoring validation/check/maps, immutable r01/r02 guide packets, syntax checks, mock A001/H001, web smoke, autopilot dry run, fake CLI smoke, runtime fingerprint, and package hygiene.
+- Complete automated repository suite before canonical-head composition: 1023/1023 passed under Node 24.18.0 and npm 11.16.0.
+- Post-composition affected integration suite: 63/63 passed, including threat state, audit lessons, authoring proposal integrity, guide-fidelity transport, constitution/compaction state, and the newly landed private-case continuity tests.
+- Final complete integrated repository suite: 1033/1033 passed.
+- Final complete integrated package gate: PASS, including 5/5 therapy lessons, 29/29 graph regressions, authoring validation/check/maps, immutable r01/r02 guide packets, syntax checks, mock A001/H001, web smoke, autopilot dry run, fake CLI smoke, runtime fingerprint, package hygiene, and the private-continuity additions from canonical `5c361da`.
 - Standalone workflow audit: PASS for all three workflows with no findings.
 - Standalone repository audit: PASS with zero errors and one inherited documented warning that repository-scoped GitHub App permissions remain unverified.
-- Local publication audit: PASS; 144,880 records scanned with zero findings.
+- Pre-integration local publication audit: PASS; 144,880 records scanned with zero findings. The exact integrated commit receives a fresh standalone publication audit after this self-referentially bounded receipt is committed.
 - `git diff --check`: PASS.
 
 The initial isolated standalone repository/workflow audit invocation lacked the temporary dependency symlink and failed before auditing. The same commands were rerun with the already-present dependency tree, without installing anything, and passed. The temporary link was removed afterward.
@@ -68,4 +71,4 @@ The public candidate contains no supplied real-person name, no verbatim private 
 
 ## Next safe action
 
-Fresh-fetch PR #46, require an unambiguous linear ancestry relationship, fast-forward the verified candidate to the existing PR branch, and read back required hosted checks on the exact pushed head. Keep the PR draft/open and unmerged.
+Commit this closeout-only receipt correction, rerun standalone audits on that exact integrated commit, fresh-fetch PR #46 once more, fast-forward the verified candidate to the existing PR branch, and read back required hosted checks on the exact pushed head. Keep the PR draft/open and unmerged.
