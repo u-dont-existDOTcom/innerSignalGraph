@@ -12,6 +12,14 @@ Local synthetic fresh-process and direct MCP execution are repository evidence o
 
 Keep PR #46 draft/open/unmerged. No deployment, installation, stable promotion, provider call, real-case re-summarization, or clinical claim is authorized by this task.
 
+## Completed owner-authorized risk-calibrated engagement task (PR #46)
+
+Task `risk-calibrated-engagement-20260909` is complete as a deterministic verified candidate on isolated branch `codex/risk-calibrated-engagement-20260909`, based on freshly fetched PR #46 head `b4eee54e6ed3b8e0b18fa5ca8f1cfb365362dbc1`. Its sole ledger is `tasks/risk-calibrated-engagement-20260909/INTEGRATION.md`; its owner outcome, execution directive, completed lesson contract, and prior-work scan are in the same directory. The original checkout and its unrelated private-case continuity work remained untouched.
+
+The candidate adds behavior-based violence-pathway state and risk-calibrated engagement: preserve direct therapeutic reasoning for grievance or ideation without established operational indicators, strengthen assessment and support during mobilization, and let external safety action outrank ordinary therapy for credible imminent danger. It also adds inverse audit failures, seven de-identified synthetic regression families, compaction-safe but revisable risk state, and the general invariant that external explanations must not erase internal agency while internal agency must not erase external reality. The complete automated suite passed 1023/1023 and the complete package, graph, lesson, workflow, repository, and local publication gates passed. The audit instrument change invalidates earlier prompt freezes/calibration for future semantic evaluation.
+
+Do not run provider/API/OpenRouter or live audit-architecture calls, reuse stale semantic calibration, merge, deploy, install, promote `stable`, publish private real-person material, or claim clinical validation. Fetch PR #46 again before any subsequent work. Exact final head and hosted-check evidence belong in the external Git/PR receipt because a commit cannot embed its own hash.
+
 ## PR #46 cross-handoff completion audit
 
 Task `pr46-completion-audit-20260909` audits the current draft PR rather than accepting prior Work handoffs as completion. Fresh admission head `4a6883a396188cad8604d6223d3ddba34dd3074f` was locally identical to the PR head, and its hosted workflow-policy, deterministic-package, and CodeQL checks were successful. The canonical current-tree evidence is `tasks/pr46-completion-audit-20260909/COMPLETION-MATRIX.json`; the execution and final-checkpoint ledger is `tasks/pr46-completion-audit-20260909/INTEGRATION.md`.

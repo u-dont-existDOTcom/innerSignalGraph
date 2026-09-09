@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "CD-INNERSIGNAL-RISK-CALIBRATED-ENGAGEMENT-20260909-R1",
+  "taskId": "risk-calibrated-engagement-20260909",
+  "ownerOutcomeId": "OO-INNERSIGNAL-RISK-CALIBRATED-ENGAGEMENT-20260909",
+  "ownerOutcomeEpoch": 1,
+  "reasoningSupervisorSurface": "owner_chat",
+  "strategyId": "COMPOSE_THREAT_PATHWAY_WITH_EXISTING_CASE_AUDIT_STATE_AND_PATH_CONTROLLER",
+  "directiveRevision": 1,
+  "executionObjective": "Implement, test, commit, reconcile, push, and verify the owner-specified risk-calibrated engagement and threat-pathway policy on draft PR 46.",
+  "reasoningSummary": "Use one behavior-based threat-pathway controller alongside the current case snapshot, adversarial audit, durable longitudinal state, Path Performance Controller, planner safety precedence, and realization contract. Keep ideation distinct from operational progression. Preserve rapport and substantive engagement at low risk, assess proportionately during mobilization, and prioritize least-disruptive effective external safety action for imminent danger. Compose political anti-bypass and scale-appropriate agency into the existing constitution rather than creating a political pathology label.",
+  "allowedActions": [
+    "read current repository, PR, task, and research authority",
+    "perform a bounded public evidence scan using official and primary sources",
+    "edit source, tests, public synthetic fixtures, task artifacts, and current-state documentation",
+    "run focused, affected, package, graph, lesson, repository, publication, and hosted verification",
+    "commit coherent reversible changes on the isolated task branch",
+    "re-fetch and linearly reconcile with the current PR 46 head",
+    "push the verified fast-forward head to the existing PR 46 branch",
+    "record an exact-head closeout receipt"
+  ],
+  "forbiddenActions": [
+    "copy, quote, name, identify, or hash a private real-person conversation in public Git",
+    "endorse or assist violent action",
+    "invent intent, plan, target, means, access, preparation, timing, or dangerousness",
+    "encode jurisdiction-specific reporting duties as universal",
+    "use false guardrail meta-language",
+    "run paid provider, API, OpenRouter, or live audit-architecture calls",
+    "select or adopt an audit architecture",
+    "merge PR 46",
+    "deploy or install",
+    "promote stable",
+    "claim clinical validation"
+  ],
+  "requiredEvidence": [
+    "independent conception and bounded COMPOSE/ADAPT prior-work scan",
+    "runtime controller and compaction-state regressions",
+    "seven de-identified synthetic case families plus good controls",
+    "audit error-class and prompt-stage coverage",
+    "focused and affected deterministic tests",
+    "complete package verification",
+    "local publication and repository audits",
+    "exact final Git head and fresh PR-head ancestry",
+    "hosted required-check readback on the exact pushed head",
+    "explicit public privacy confirmation"
+  ],
+  "stopTriggers": [
+    "substantive irreconcilable owner-policy conflict",
+    "private data would have to enter the public repository",
+    "ambiguous or substantive merge conflict",
+    "push authentication unavailable",
+    "hosted checks expose a new material defect"
+  ]
+}

@@ -36,7 +36,9 @@ test("global constitution is immutable and injected into every shared therapy pr
   assert.match(renderInnerSignalConstitution(), /Strong strategic persistence with high tactical flexibility/);
   assert.match(sharedClinicalRules, /INNER SIGNAL CONSTITUTION \(inner-signal-constitution-v1\)/);
   assert.match(sharedClinicalRules, /Literal inner-child ontology is optional/);
-  assert.match(sharedClinicalRules, /Concrete homicidal intent or plan/);
+  assert.match(sharedClinicalRules, /GRIEVANCE \/ IDEATION \/ MORAL CONSIDERATION/);
+  assert.match(sharedClinicalRules, /Concrete intent plus target plus feasible means or preparation and timeframe/);
+  assert.match(sharedClinicalRules, /External explanations must not erase internal agency; internal agency must not erase external reality/);
 });
 
 test("public synthetic gold state validates and exposes evidence without transcript or hidden reasoning", async () => {

@@ -1,5 +1,10 @@
 import { ValidationError } from "../core/errors.mjs";
 import { INNER_SIGNAL_CONSTITUTION_VERSION } from "../therapy/constitution.mjs";
+import {
+  threatPathwayDecision,
+  updateThreatPathwayState,
+  validateThreatPathwayState
+} from "../case-formulation/threat-pathway.mjs";
 
 export const CASE_STATE_VERSION = 1;
 export const CASE_STATE_STATUSES = Object.freeze(["direct_report", "supervisor_report", "observed_pattern", "hypothesis", "inference", "unresolved_conflict"]);
@@ -113,6 +118,7 @@ export function createEmptyCaseState({ caseId = "local-case" } = {}) {
     answered_questions: [],
     intervention_history: [],
     current_episode: null,
+    threat_pathway: null,
     retrieval_hints: []
   };
 }
@@ -151,6 +157,7 @@ export function validateCaseState(value) {
   value.intervention_history.forEach((item, index) => validateStateItem(item, `caseState.intervention_history[${index}]`));
   value.retrieval_hints.forEach((item, index) => bounded(item, `caseState.retrieval_hints[${index}]`, 240));
   validateEpisode(value.current_episode);
+  if (Object.hasOwn(value, "threat_pathway")) validateThreatPathwayState(value.threat_pathway);
   return value;
 }
 
@@ -179,7 +186,8 @@ export function applyCaseStatePatch(previous, patch = {}) {
     answered_questions: mergeById(before.answered_questions, patch.answered_questions, validateAnsweredQuestion, "caseStatePatch.answered_questions"),
     retrieval_hints: unique([...(before.retrieval_hints ?? []), ...(patch.retrieval_hints ?? [])]),
     trajectory_observability: patch.trajectory_observability ? clone(patch.trajectory_observability) : before.trajectory_observability,
-    current_episode: Object.hasOwn(patch, "current_episode") ? clone(patch.current_episode) : before.current_episode
+    current_episode: Object.hasOwn(patch, "current_episode") ? clone(patch.current_episode) : before.current_episode,
+    threat_pathway: Object.hasOwn(patch, "threat_pathway") ? clone(patch.threat_pathway) : (before.threat_pathway ?? null)
   };
   return validateCaseState(next);
 }
@@ -235,6 +243,7 @@ export function diffCaseStates(previous, next) {
     provenance_changes: updates.filter((item) => item.fields.includes("source")).map((item) => item.id),
     answered_question_changes: changedFields(before.answered_questions, after.answered_questions).length ? after.answered_questions.map((item) => item.id) : [],
     current_episode_changed: JSON.stringify(before.current_episode) !== JSON.stringify(after.current_episode),
+    threat_pathway_changed: JSON.stringify(before.threat_pathway ?? null) !== JSON.stringify(after.threat_pathway ?? null),
     trajectory_observability_changed: JSON.stringify(before.trajectory_observability) !== JSON.stringify(after.trajectory_observability)
   });
 }
@@ -245,6 +254,7 @@ export function projectCaseStateForInspection(state) {
     constitution: value.constitution_ref,
     trajectoryObservability: value.trajectory_observability,
     currentEpisode: value.current_episode,
+    threatPathway: value.threat_pathway ?? null,
     factsAndHypotheses: value.items,
     contradictions: value.contradiction_clusters,
     settledAnswers: value.answered_questions,
@@ -295,7 +305,8 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
       ...(safetyVariables.orientation === "disoriented" ? ["orientation is impaired"] : []),
       ...(safetyVariables.ability_to_stop === "no" ? ["ability to stop is lost"] : []),
       ...(safetyVariables.ability_to_return === "no" ? ["ability to return is lost"] : []),
-      ...(safetyVariables.present_safety === "unsafe" ? ["present safety becomes unsafe"] : [])
+      ...(safetyVariables.present_safety === "unsafe" ? ["present safety becomes unsafe"] : []),
+      ...(interventionContract?.threatPathway?.level === "IMMINENT_OPERATIONAL_DANGER" ? ["near-term operational violence risk is present"] : [])
     ];
     currentEpisode = {
       id: episodeId,
@@ -323,5 +334,9 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
       decision_relevance: "medium"
     });
   }
-  return applyCaseStatePatch(previous, { items, intervention_history: interventionHistory, current_episode: currentEpisode });
+  const assessment = snapshot?.threat_pathway ?? null;
+  const threatPathway = assessment
+    ? updateThreatPathwayState(previous.threat_pathway ?? null, assessment, threatPathwayDecision(assessment), { turnId, recordedAt })
+    : (previous.threat_pathway ?? null);
+  return applyCaseStatePatch(previous, { items, intervention_history: interventionHistory, current_episode: currentEpisode, threat_pathway: threatPathway });
 }

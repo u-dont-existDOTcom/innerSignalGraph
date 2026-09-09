@@ -69,6 +69,11 @@ function relationalPolicyMarkers(plan = {}) {
 }
 
 const ROMANCE_GUIDE_REFERENCE_MARKER = "POLICY.ROMANCE_GUIDE_REFERENCE";
+const THREAT_PATHWAY_MARKERS = Object.freeze([
+  "POLICY.THREAT_PATHWAY.ENGAGE",
+  "POLICY.THREAT_PATHWAY.ASSESS",
+  "POLICY.THREAT_PATHWAY.IMMINENT"
+]);
 const representationMarker = representation => representation?.mode && representation?.channel
   ? `POLICY.REPRESENTATION.${representation.mode}.${representation.channel}` : null;
 const SYMBOLIC_OVERCLAIM_PATTERNS = Object.freeze([
@@ -140,6 +145,9 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   }
   const realizedNodeIds = [...new Set(verifiedRealizations.map((item) => item.id))];
   const missingNodeIds = requiredNodeIds.filter((id) => !realizedNodeIds.includes(id));
+  const requiredThreatPathwayMarker = text(plan?.threatPathwayContract?.marker);
+  const missingThreatPathwayMarker = Boolean(requiredThreatPathwayMarker && !realizedNodeIds.includes(requiredThreatPathwayMarker));
+  const unexpectedThreatPathwayMarkers = realizedNodeIds.filter(id => THREAT_PATHWAY_MARKERS.includes(id) && id !== requiredThreatPathwayMarker);
   const pathContract = plan?.pathPerformanceContract;
   const prohibitedNodeIds = pathContract?.prohibit_prior_exercise
     ? reportedRealizations.map(item => text(item?.id)).filter(id => id && !id.startsWith("POLICY.") && !requiredNodeIds.includes(id)) : [];
@@ -179,7 +187,7 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const pathAdherence = (!pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0))
     && missingRelationalPolicyMarkers.length === 0 && forbiddenRelationalPolicyMarkers.length === 0
     && !missingRepresentationPolicyMarker && !forbiddenPriorRepresentationPolicyMarker && unexpectedRepresentationPolicyMarkers.length === 0 && symbolicOverclaims.length === 0
-    && romanceGuideAdherence;
+    && !missingThreatPathwayMarker && unexpectedThreatPathwayMarkers.length === 0 && romanceGuideAdherence;
 
   return {
     answer: userFacingAnswer,
@@ -197,6 +205,12 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
       rejectedRealizations,
       missingRealizationNodeIds: missingNodeIds,
       realizationCoveragePassed: missingNodeIds.length === 0,
+      ...(requiredThreatPathwayMarker ? {
+        requiredThreatPathwayMarker,
+        missingThreatPathwayMarker,
+        unexpectedThreatPathwayMarkers,
+        threatPathwaySemanticLimit: "GROUNDED_MARKER_REQUIRES_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW"
+      } : {}),
       ...(relationalTracked ? { relationalPolicyMarkersRequired: relational.required, missingRelationalPolicyMarkers, forbiddenRelationalPolicyMarkers } : {}),
       ...(representation ? {
         requiredRepresentationPolicyMarker,
@@ -215,7 +229,7 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
         forbiddenRomanceGuideReference,
         unsupportedRomanceGuideReferenceMarker
       } : {}),
-      ...(pathContract || relational.required.length || relational.forbidden.length || romanceGuide ? {
+      ...(pathContract || requiredThreatPathwayMarker || relational.required.length || relational.forbidden.length || romanceGuide ? {
         pathPerformanceAdherencePassed: pathAdherence,
         prohibitedRealizationNodeIds: [...new Set(prohibitedNodeIds)],
         semanticAdherence: relationalTracked ? "DECLARED_POLICY_MARKERS_ARE_VERBATIM_GROUNDED_BUT_REQUIRE_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW" : "REQUIRES_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW"

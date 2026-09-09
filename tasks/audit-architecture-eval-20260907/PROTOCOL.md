@@ -1,6 +1,6 @@
 # Audit-architecture experiment protocol
 
-Status: frozen deterministic design plus owner-authorized ChatGPT-UI smoke plan. The prior run stopped at calibration with `STRUCTURED_OUTPUT_SYNTAX_FAILURE`; the owner approved the new `AE-GRADER-SEGMENT-EVIDENCE-V2` contract, which requires a new frozen run and complete recalibration before the smoke. Provider/API/OpenRouter calls remain prohibited and zero; subscription ChatGPT conversations are authorized only through the bounded plan in `execution-plan.json`.
+Status: deterministic design extended on 2026-09-09 with the owner-authorized threat-pathway rubric and synthetic regressions. That semantic change invalidates every earlier prompt freeze and calibration for future execution. It requires a new frozen run and complete recalibration before any new smoke; freeze the new effective prompts, repeat all grader controls, and include the threat-pathway fixtures under a newly preregistered run. Provider/API/OpenRouter calls remain prohibited and zero; this implementation performs no subscription ChatGPT evaluation.
 
 ## Purpose
 

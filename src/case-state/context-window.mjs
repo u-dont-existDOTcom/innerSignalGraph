@@ -85,6 +85,15 @@ export function targetedRetrievalRequests(caseState, recentTurnIds = []) {
   const state = validateCaseState(structuredClone(caseState));
   const recent = new Set(recentTurnIds);
   const refs = [];
+  const threat = state.threat_pathway?.current;
+  if (threat?.assessed_turn_id && !recent.has(threat.assessed_turn_id)
+      && threat.level !== "NO_CURRENT_VIOLENCE_EVIDENCE") {
+    refs.push({
+      reason: `current-threat-pathway-${threat.level.toLowerCase()}`,
+      turn_id: threat.assessed_turn_id,
+      item_id: "threat_pathway.current"
+    });
+  }
   for (const cluster of state.contradiction_clusters) {
     if (cluster.status !== "open" || cluster.decision_relevance !== "high") continue;
     for (const itemId of cluster.item_ids) {
@@ -139,6 +148,15 @@ export function decisionRelevantProjection(context) {
     open_high_relevance_contradictions: state.contradiction_clusters.filter((item) => item.status === "open" && item.decision_relevance === "high").map((item) => item.id),
     answered_questions: state.answered_questions.filter((item) => item.still_current !== false).map((item) => item.id),
     current_episode: state.current_episode ? { id: state.current_episode.id, target: state.current_episode.target, route: state.current_episode.route, next_question: state.current_episode.next_question } : null,
+    threat_pathway: state.threat_pathway?.current ? {
+      issue: state.threat_pathway.current.issue,
+      level: state.threat_pathway.current.level,
+      route: state.threat_pathway.current.route,
+      assessed_turn_id: state.threat_pathway.current.assessed_turn_id,
+      present_signal_kinds: state.threat_pathway.current.present_signal_kinds,
+      denied_signal_kinds: state.threat_pathway.current.denied_signal_kinds,
+      unknown_signal_kinds: state.threat_pathway.current.unknown_signal_kinds
+    } : null,
     retrieval_item_ids: context.targeted_retrieval_requests.map((item) => item.item_id)
   };
 }

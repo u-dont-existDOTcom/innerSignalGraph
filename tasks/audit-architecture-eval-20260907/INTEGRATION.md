@@ -1,6 +1,6 @@
 # Audit-architecture evaluation integration — 2026-09-07
 
-Status: deterministic harness and owner-frozen ChatGPT-UI smoke plan implemented on draft PR #46. The replacement `AE-GRADER-SEGMENT-EVIDENCE-V2` contract produced six of six structurally valid calibration outputs, but the preregistered semantic gate passed only four of six controls. Both nominal ACCEPT controls failed. The run therefore stopped before architecture smoke or the `Latest` comparison; no winning architecture was selected.
+Status: deterministic harness and owner-frozen ChatGPT-UI smoke plan implemented on draft PR #46. On 2026-09-09 the rubric, stable target map, stage prompts, and synthetic fixture set gained an owner-authorized threat-pathway extension. This is a semantic instrument change: all earlier freezes and calibration evidence remain historical but are invalid for a future run. No new provider or subscription-ChatGPT evaluation was performed, no winning architecture was selected, and runtime adoption remains unauthorized.
 
 ## Authority and scope
 

@@ -182,7 +182,10 @@ export function validateHarness({ cases, drafts, referenceTarget, rubric, archit
       goodControls += 1;
     } else invariant(draft.controlIntent === 'FLAWED' && draft.seededErrorIds.length > 0, `${draft.id} must be flawed or a good control`);
   }
-  invariant([...errorById.keys()].filter(id => id !== 'STYLE_BLOAT').every(id => seeded.has(id)), 'all required error classes must be seeded');
+  const primaryFixtureErrors = [...errorById.values()]
+    .filter(error => error.fixtureSet == null || error.fixtureSet === 'PRIMARY');
+  const primaryFixtureErrorIds = new Set(primaryFixtureErrors.map(error => error.id));
+  invariant(primaryFixtureErrors.filter(error => error.id !== 'STYLE_BLOAT').every(error => seeded.has(error.id)), 'all primary-fixture error classes must be seeded');
   invariant(goodControls >= 2, 'at least two good termination controls are required');
 
   invariant(referenceTarget?.schemaVersion === 1 && referenceTarget.status === 'SYNTHETIC_REFERENCE_NOT_RUNTIME_POLICY', 'invalid reference target status');
@@ -239,7 +242,9 @@ export function validateHarness({ cases, drafts, referenceTarget, rubric, archit
     invariant([...present].every(id => !absent.has(id)), `${control.id} has contradictory expectations`);
     if (control.expectedOutcome === 'ACCEPT') {
       invariant(draft.controlIntent === 'GOOD_TERMINATION_CONTROL', `${control.id} ACCEPT must use a complete good response`);
-      invariant(absent.size === errorById.size && present.size === 0, `${control.id} ACCEPT must require every error absent`);
+      invariant(absent.size === primaryFixtureErrorIds.size
+        && [...absent].every(id => primaryFixtureErrorIds.has(id))
+        && present.size === 0, `${control.id} ACCEPT must require every primary-fixture error absent`);
       invariant(Number.isInteger(control.minimumDimensionRating) && control.minimumDimensionRating >= 0 && control.minimumDimensionRating <= 4, `${control.id} needs a valid minimumDimensionRating`);
     } else {
       invariant(present.size > 0, `${control.id} REJECT must require at least one present error`);

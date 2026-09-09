@@ -2,7 +2,8 @@ import { durableCaseContextBlock, sharedClinicalRules } from "./common.mjs";
 
 function deterministicSafetyTrigger(plan) {
   const v = plan?.variables ?? {};
-  return v.present_safety === "unsafe"
+  return plan?.threatPathway?.level === "IMMINENT_OPERATIONAL_DANGER"
+    || v.present_safety === "unsafe"
     || v.orientation === "disoriented"
     || v.ability_to_stop === "no"
     || v.ability_to_return === "no"
@@ -29,6 +30,7 @@ REALIZATION RULES
 8. Use concrete relational language before abstractions. A sentence such as "answer it with evidence" is preferable to several paragraphs explaining credibility in theory.
 9. When the plan calls for repeated real-world follow-through, make the repetition visible: one act, no demand for trust, then show up again.
 10. Safety copy is controlled by the deterministic case variables, not by generic caution. ${safetyRequired ? "A concrete safety trigger is present; include only the minimum safety language needed for it." : "No deterministic safety trigger is present. Do not append generic crisis, grounding, dissociation, recovered-memory, or functioning boilerplate."}
+10a. When threatPathwayContract is present, it independently controls risk-calibrated engagement. Follow its level, route, actual claim, and guidance exactly. At GRIEVANCE_IDEATION_MORAL_CONSIDERATION, engage the actual argument and its intended function, test the causal model, widen toward effective nonviolent leverage, and ask only the supplied discriminator; do not call it a specific threat or abandon the conversation for canned emergency instructions. At ESCALATING_MOBILIZING_RISK, concrete assessment and proportionate human support outrank abstract political or philosophical exploration. At IMMINENT_OPERATIONAL_DANGER, external safety action may outrank ordinary therapy; use the least disruptive effective intervention supported by current evidence. Never endorse or assist violence, invent operational facts, infer psychosis/dangerousness/depravity from a thought alone, state a universal reporting duty, or claim hidden guardrails. Preserve rapport and the disclosure channel. Include the exact supplied POLICY.THREAT_PATHWAY.* marker in realized_nodes with a short exact answer quote that demonstrates the corresponding engagement, assessment, or safety action; the marker is internal trace evidence, not user-facing text.
 11. Do not add new psychological assignments or diagnoses. Do not upgrade a hypothesis into a fact.
 12. Do not mention the graph, planner, formulation, adversarial models, adjudication, benchmark, or internal machinery.
 13. Keep the user's intelligence intact. Do not soothe away a legitimate accusation merely because it is emotionally harsh.
