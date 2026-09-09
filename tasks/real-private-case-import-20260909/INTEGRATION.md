@@ -30,6 +30,8 @@ The imported episode has six exact supplied turns but only one complete user-ass
 
 Even after those exact historical exchanges are supplied, fresh ChatGPT availability still requires production authorization/key integration or an explicitly accepted development tunnel, HTTPS/OAuth registration, connection in ChatGPT, and a tool call from a newly created conversation. The repository-native call remains `load_case_context` with the stable case and candidate IDs; it must continue to fail closed until the real case passes the gate.
 
+The separate all-hosted-history publication audit is also incomplete: GitHub returns `log not found` for pre-existing failed CodeQL run `34060739398` from 2026-09-06, identified by the auditor as `actions-run:234:log`. The auditor therefore fails closed with zero certified hosted records. This is not a detected private-content finding and does not replace the required exact-head PR checks, which must be read directly from the current PR head.
+
 ## Safety boundary
 
 Do not commit private source, credentials, tokens, private manifests, or private-derived hashes. Do not treat the pending candidate as sent history. Do not merge, deploy the public app, promote stable, or claim clinical validation.

@@ -56,6 +56,11 @@
       "evidence": "Focused private continuity passed 11/11; affected context, audit, UI, and private tests passed 34/34; the full Node 24 suite passed 1034/1034; graph regressions passed 29/29; therapy lessons passed 5/5; repository audit and publication audit passed; and npm run verify completed with PASS."
     },
     {
+      "id": "HOSTED_PUBLICATION_AUDIT",
+      "status": "BLOCKED_HISTORICAL_LOG_UNAVAILABLE",
+      "evidence": "The separate all-hosted-history audit failed closed because GitHub returned 'log not found' for pre-existing failed CodeQL run 34060739398 from 2026-09-06 (audit index actions-run:234:log). It produced no completed hosted scan and is not a detected private-content finding. Current-head required CI contexts remain separate evidence."
+    },
+    {
       "id": "DRAFT_PULL_REQUEST",
       "status": "PASS_DRAFT_OPEN_UNMERGED",
       "evidence": "PR #49 was created from codex/private-case-import-20260909 as draft, open, and unmerged. Exact-head hosted results are external evidence and must be read from the current GitHub head rather than self-attested by a commit."
