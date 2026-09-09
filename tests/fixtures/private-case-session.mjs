@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import assert from "node:assert/strict";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../../src/storage/private-case-access.mjs";
 import { runPrivateCandidateAudit } from "../../src/supervisor/private-candidate-audit.mjs";
 
@@ -60,7 +61,14 @@ try {
       })
     });
     const value = await response.json();
-    await writeJson({ status: response.status, value });
+    const expectedPath = process.env.INNER_SIGNAL_PRIVATE_CASE_EXPECTED_PATH;
+    if (!expectedPath) throw new Error("Expected private case fixture path is required for MCP verification.");
+    const expected = JSON.parse(await fs.readFile(expectedPath, "utf8"));
+    assert.equal(response.status, 200);
+    assert.equal(value.result.structuredContent.candidate_response.exact_text, expected.candidate_text);
+    assert.deepEqual(value.result.structuredContent.recent_verbatim.turns, expected.transcript_turns.slice(2));
+    assert.equal(value.result.structuredContent.continuation_safety.continuation_safe, true);
+    await writeJson({ status: 200, exactCandidateVerified: true, exactRecentVerbatimVerified: true, continuationSafe: true });
   } else {
     throw new Error(`Unknown private case fixture action ${action}.`);
   }

@@ -1,8 +1,8 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
+import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { createEncryptedPrivateCaseStore } from "./private-case-store.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -206,9 +206,10 @@ function validateDevelopmentCredentialFile(value, credentialsPath) {
 export async function loadDevelopmentPrivateCaseProviders(credentialsPath) {
   if (typeof credentialsPath !== "string" || !path.isAbsolute(credentialsPath)) throw new ValidationError("credentialsPath must be an absolute path outside public repository fixtures.");
   if (isWithin(repositoryRoot, path.resolve(credentialsPath))) throw new ValidationError("Development private-case credentials must be outside the public repository.");
-  const info = await fs.lstat(credentialsPath);
-  if (!info.isFile() || info.isSymbolicLink() || (info.mode & 0o077) !== 0) throw new ValidationError("Development private-case credential file must be a non-symlink regular file with mode 0600 or stricter.");
-  const parsed = validateDevelopmentCredentialFile(JSON.parse(await fs.readFile(credentialsPath, "utf8")), credentialsPath);
+  const parsed = await withOpenedRegularFile(credentialsPath, async (handle, info) => {
+    if ((info.mode & 0o077) !== 0) throw new ValidationError("Development private-case credential file must have mode 0600 or stricter.");
+    return validateDevelopmentCredentialFile(JSON.parse(await handle.readFile("utf8")), credentialsPath);
+  });
   if (isWithin(repositoryRoot, path.resolve(parsed.rootDir))) throw new ValidationError("Development private-case storage root must be outside the public repository.");
   let closed = false;
   const authorizationProvider = Object.freeze({

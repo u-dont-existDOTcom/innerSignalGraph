@@ -36,9 +36,8 @@ export function makeOpenRouterProvider(role, {id='openai', execute, fetchImpl=fe
         // This evaluation-only sink intentionally sends schema-validated synthetic
         // fixtures to one fixed endpoint after explicit retention and budget gates.
         // It cannot select an endpoint or read arbitrary file bytes at this layer.
-        // codeql[js/file-access-to-http]
         const result=await fetchImpl('https://openrouter.ai/api/v1/chat/completions',{
-          method:'POST',headers:{'Authorization':`Bearer ${env[role.api_key_env]}`,'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.timeout(900000)
+          method:'POST',headers:{'Authorization':`Bearer ${env[role.api_key_env]}`,'Content-Type':'application/json'},body:JSON.stringify(request),signal:AbortSignal.timeout(900000) // codeql[js/file-access-to-http] synthetic evaluation data intentionally sent to the fixed provider endpoint
         });
         if (!result.ok) throw new Error(`Provider HTTP ${result.status}`); // do not echo credential-bearing error payloads
         const data=await result.json();

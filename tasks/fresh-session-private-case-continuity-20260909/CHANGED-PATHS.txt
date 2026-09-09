@@ -27,6 +27,7 @@ tasks/fresh-session-private-case-continuity-20260909/COMPLETION-MATRIX.json
 tasks/fresh-session-private-case-continuity-20260909/EXECUTION-DIRECTIVE.json
 tasks/fresh-session-private-case-continuity-20260909/INTEGRATION.md
 tasks/fresh-session-private-case-continuity-20260909/OWNER-OUTCOME.json
+tasks/guide-fidelity-20260906/openrouter-adapter.mjs
 tests/config.test.mjs
 tests/fixtures/private-case-session.mjs
 tests/prepare-environment.test.mjs

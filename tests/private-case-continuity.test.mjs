@@ -138,7 +138,8 @@ async function runSession(action, environment, { token = TOKEN, candidateId = CA
     env: {
       ...process.env,
       INNER_SIGNAL_PRIVATE_CASE_TEST_TOKEN: token,
-      INNER_SIGNAL_PRIVATE_CASE_CANDIDATE_ID: candidateId
+      INNER_SIGNAL_PRIVATE_CASE_CANDIDATE_ID: candidateId,
+      INNER_SIGNAL_PRIVATE_CASE_EXPECTED_PATH: environment.payloadPath
     },
     maxBuffer: 4_000_000
   });
@@ -351,8 +352,9 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   const { stdout } = await runSession("mcp-load", environment, { fourthArg: ready.mcpUrl });
   const result = JSON.parse(stdout);
   assert.equal(result.status, 200);
-  assert.equal(result.value.result.structuredContent.candidate_response.exact_text, environment.payload.candidate_text);
-  assert.equal(result.value.result.structuredContent.continuation_safety.continuation_safe, true);
+  assert.equal(result.exactCandidateVerified, true);
+  assert.equal(result.exactRecentVerbatimVerified, true);
+  assert.equal(result.continuationSafe, true);
 
   const denied = await fetch(ready.mcpUrl, {
     method: "POST",
@@ -378,5 +380,13 @@ test("synthetic private payload is not emitted into repository or public fixture
   await assert.rejects(
     () => loadDevelopmentPrivateCaseProviders(path.join(root, "synthetic-private-credentials.json")),
     /credentials must be outside the public repository/
+  );
+  const credentialLink = path.join(environment.privateRoot, "credential-link.json");
+  await fs.symlink(environment.credentialsPath, credentialLink);
+  await assert.rejects(() => loadDevelopmentPrivateCaseProviders(credentialLink));
+  await fs.chmod(environment.credentialsPath, 0o644);
+  await assert.rejects(
+    () => loadDevelopmentPrivateCaseProviders(environment.credentialsPath),
+    /mode 0600 or stricter/
   );
 });
