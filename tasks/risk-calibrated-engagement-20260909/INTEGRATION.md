@@ -10,6 +10,7 @@ Status: VERIFIED candidate ready for linear integration into draft PR #46. No me
 - Isolated task branch: `codex/risk-calibrated-engagement-20260909`.
 - The original checkout contains an unrelated active private-case continuity task and remains untouched.
 - Before integration, PR #46 had advanced linearly to `5c361da06d7556e7ac75ea42acc645dcde65dc5d` with that private-case continuity work. The verified commit remained reachable on its original branch; a new integration branch was created directly from `5c361da`, and the one candidate commit was replayed there without rebasing, merging, or rewriting shared history. The context-window changes composed additively, the newer private-continuity task remained the canonical `tasks/ACTIVE-TASK.json`, and both task summaries were retained in the state index.
+- A final pre-push fetch found a further linear hardening commit, `35c23ea3c343f26bd9ba8bcb924c2b588017ba98`, affecting private credential reads, its tests, and the existing OpenRouter adapter. It had no path overlap with this task. A second fresh integration branch was created directly from `35c23ea`, both reachable candidate commits were replayed without conflict, and the combined affected set passed before closeout.
 
 ## Current implementation inventory before change
 
@@ -52,6 +53,7 @@ The fetched PR head already provided the constitution and political scale langua
 - Post-composition affected integration suite: 63/63 passed, including threat state, audit lessons, authoring proposal integrity, guide-fidelity transport, constitution/compaction state, and the newly landed private-case continuity tests.
 - Final complete integrated repository suite: 1033/1033 passed.
 - Final complete integrated package gate: PASS, including 5/5 therapy lessons, 29/29 graph regressions, authoring validation/check/maps, immutable r01/r02 guide packets, syntax checks, mock A001/H001, web smoke, autopilot dry run, fake CLI smoke, runtime fingerprint, package hygiene, and the private-continuity additions from canonical `5c361da`.
+- Post-`35c23ea` affected integration suite: 72/72 passed, adding the hardened credential/config paths to the threat, audit, guide-fidelity, authoring, constitution/compaction, and private-continuity checks. The required hosted deterministic-package workflow remains the full exact-pushed-head gate.
 - Standalone workflow audit: PASS for all three workflows with no findings.
 - Standalone repository audit: PASS with zero errors and one inherited documented warning that repository-scoped GitHub App permissions remain unverified.
 - Pre-integration local publication audit: PASS; 144,880 records scanned with zero findings. The exact integrated commit receives a fresh standalone publication audit after this self-referentially bounded receipt is committed.
