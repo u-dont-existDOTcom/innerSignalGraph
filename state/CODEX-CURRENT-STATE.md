@@ -2,6 +2,16 @@
 
 Updated: 2026-09-09
 
+## PR #46 cross-handoff completion audit
+
+Task `pr46-completion-audit-20260909` audits the current draft PR rather than accepting prior Work handoffs as completion. Fresh admission head `4a6883a396188cad8604d6223d3ddba34dd3074f` was locally identical to the PR head, and its hosted workflow-policy, deterministic-package, and CodeQL checks were successful. The canonical current-tree evidence is `tasks/pr46-completion-audit-20260909/COMPLETION-MATRIX.json`; the execution and final-checkpoint ledger is `tasks/pr46-completion-audit-20260909/INTEGRATION.md`.
+
+All requested workstreams have current implementation plus direct regression evidence: Path Performance, top-level revisable relational readiness, romance source/runtime/optional reference, synthetic public fixtures plus encrypted private case storage, process-specific CLEAR/EXPERIENTIAL/BRIDGE delivery, external-only evidence-calibrated Butoh/ecstatic movement guidance, and the separated latency baseline/current policy fingerprint. Focused tests passed 11/11 file processes, the two sandbox-restricted affected files passed 26/26 tests at the host boundary after seven other affected files passed in the sandbox, graph regressions passed 29/29, therapy lessons passed 5/5, and the complete Node 24.18.0 package passed 1007/1007 automated tests plus all package gates. A lost output-session handle caused one unnecessary duplicate complete run; both completed green, and the task receipt records that execution inefficiency. No missing therapy/runtime implementation was found, so working policy was preserved.
+
+One public-receipt privacy defect was repaired: private ChatGPT routing identifiers in an older source-synchronization receipt and this handoff were removed while preserving source hashes and provenance. No private payload or private-derived hash was introduced. A pre-existing named anecdote in owner-published somatic source prose is inherited from `main`, is not a private case record, and was not rewritten; de-identifying that source and regenerating its frozen packets is a separate owner content/history decision.
+
+Keep PR #46 draft/open/unmerged. No paid/provider call, architecture winner, runtime adoption, deployment, installation, stable promotion, human-usefulness claim, or clinical-efficacy claim follows from this audit. The final exact head and hosted results belong in the immutable PR closeout receipt after fast-forward publication.
+
 ## Completed owner-authorized constitution/context/harness integration (PR #46)
 
 Task `constitution-context-audit-20260908` is complete as a verified candidate on local branch `codex/audit-architecture-eval-20260908-v2`, targeting draft PR #46 without merge, deployment, installation, or stable promotion. Implementation head `e32a16714e8d38b1903ec4c7e3f74e049486beac` is pushed; the final closeout-only head and check receipt belong in the immutable PR comment. The public-safe outcome record, exact execution boundary, active lesson contract, and sole task ledger are under `tasks/constitution-context-audit-20260908/`. The private owner source is intentionally neither copied nor hashed in this public repository.

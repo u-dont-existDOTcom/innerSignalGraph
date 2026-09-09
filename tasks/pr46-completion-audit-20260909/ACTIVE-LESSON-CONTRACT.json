@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "taskId": "pr46-completion-audit-20260909",
+  "activatedAt": "2026-09-09",
+  "universalRef": "u-dont-existDOTcom/universal-dev-architecture@b7bab6be84cc42c188fbd701c57d670b09759db1",
+  "status": "COMPLETE",
+  "lessons": [
+    {
+      "id": "fresh-authority-and-durable-state",
+      "trigger": "resumed cross-chat work on a long-lived public PR",
+      "requiredBehavior": "Fetch first, reconcile Git with the current checkpoint, and update one durable task ledger.",
+      "failureCondition": "Work relies on remembered or stale handoff state.",
+      "repair": "Refetch and rebuild the evidence matrix from current source and tests.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "owner-outcome-invariant",
+      "trigger": "the owner explicitly requires a completion audit of several prior handoffs",
+      "requiredBehavior": "Trace every requested outcome to implementation and direct evidence; plans and generic green status are non-satisfying proxies.",
+      "failureCondition": "Any requested row is omitted or marked complete from prose/file presence alone.",
+      "repair": "Keep the task active and add the missing implementation or evidence.",
+      "enforcement": "semantic-and-mechanical"
+    },
+    {
+      "id": "chat-led-bounded-execution",
+      "trigger": "the current owner message provides the architecture and decision boundary",
+      "requiredBehavior": "Execute that directive without independently changing therapy semantics or selecting a new strategy.",
+      "failureCondition": "Codex invents a policy, architecture choice, efficacy verdict, or completion boundary.",
+      "repair": "Stop the unauthorized change and return the evidence or ambiguity to the owner.",
+      "enforcement": "semantic"
+    },
+    {
+      "id": "research-before-reinvention",
+      "trigger": "the task asks whether an unfamiliar external movement practice is a recognized modality",
+      "requiredBehavior": "Reuse the bounded existing-work scan, verify its load-bearing sources, preserve not-found versus disproven, and keep the external hybrid evidence-calibrated.",
+      "failureCondition": "The coined label is treated as standardized, or adjacent evidence is transferred to it.",
+      "repair": "Correct the classification and source mapping before delivery.",
+      "enforcement": "semantic"
+    },
+    {
+      "id": "privacy-publication-boundary",
+      "trigger": "public repository work structurally derived from private therapy conversations",
+      "requiredBehavior": "Use only synthetic/public-safe records and run privacy/publication gates before push.",
+      "failureCondition": "A real identity, transcript excerpt, private source ID, exact private detail, or private-derived hash enters Git.",
+      "repair": "Remove it before commit and rerun the complete publication scan.",
+      "enforcement": "mechanical-and-semantic"
+    },
+    {
+      "id": "test-efficiency",
+      "trigger": "the repository has a long full suite and the current head is already green",
+      "requiredBehavior": "Use telemetry, run focused/affected tests first, and rerun the full suite only after a material final-tree change or explicit final boundary.",
+      "failureCondition": "Unchanged full suites are repeated without a decision-relevant reason, or relevant safety tests are skipped.",
+      "repair": "Return to focused testing and record the justified final-suite trigger.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "draft-candidate-boundary",
+      "trigger": "the owner requests work on draft PR 46 but forbids release actions",
+      "requiredBehavior": "Keep the PR draft/open and make no merge, deploy, install, stable-promotion, paid-call, or efficacy claim.",
+      "failureCondition": "Any forbidden external boundary is crossed or implied.",
+      "repair": "Stop before the boundary and record the exact remaining decision.",
+      "enforcement": "mechanical"
+    }
+  ]
+}

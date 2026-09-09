@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "PR46-COMPLETION-AUDIT-EXEC-R1",
+  "taskId": "pr46-completion-audit-20260909",
+  "ownerOutcomeId": "OO-PR46-COMPLETION-AUDIT-20260909",
+  "directiveRevision": 1,
+  "reasoningSource": "current owner-authored ChatGPT request; private source reference intentionally not persisted",
+  "strategyId": "VERIFY-PRESERVE-REPAIR-DEMONSTRATED-GAPS",
+  "executionObjective": "Audit the current PR 46 tree against every public-safe required outcome, preserve completed work, repair only concrete missing or failing behavior without weakening tests, create machine-checkable and human-readable completion evidence, verify the final candidate, and push only a fast-forward update to the existing draft PR branch.",
+  "allowedActions": [
+    "fetch and inspect PR 46 and repository authority",
+    "inspect Git history, source, tests, research evidence, and hosted checks",
+    "perform a bounded public-source readback for the already-scoped external-movement evidence",
+    "add or repair public-safe code, tests, task controls, and completion receipts within the requested scope",
+    "run focused, affected, graph, lesson, repository, publication, and package verification as justified",
+    "create reversible local commits",
+    "reconcile a newly advanced PR head without force or shared-history rewriting",
+    "push a verified fast-forward head to the existing PR 46 branch",
+    "post an immutable public-safe PR receipt"
+  ],
+  "forbiddenActions": [
+    "store real-person identifiers, private transcript text, private conversation identifiers, exact private personal details, or private-derived hashes",
+    "make provider, API, OpenRouter, or paid model calls",
+    "invent or select new therapy policy beyond the owner-authored requirements",
+    "treat deterministic coverage as clinical efficacy or human usefulness evidence",
+    "weaken a failing test or safety boundary to obtain green status",
+    "merge PR 46 or any other pull request",
+    "deploy, install, publish a release, or promote stable",
+    "rewrite or force-push shared history"
+  ],
+  "requiredEvidence": [
+    "fresh PR head and hosted-state readback",
+    "implementation anchors and directly relevant regressions for every completion-matrix row",
+    "source-provenance and evidence-quality readback for the external-movement note",
+    "focused affected safety and privacy test results",
+    "current-head full verification when the final changed state requires it",
+    "exact final Git head and current hosted checks",
+    "clean worktree and public-safe publication scan",
+    "unresolved owner decisions and unvalidated claims"
+  ],
+  "stopTriggers": [
+    "a substantive contradiction between current owner requirements and an existing owner lock",
+    "a required product-policy choice not determined by the current directive",
+    "private source material would have to enter public Git",
+    "a non-fast-forward or substantive merge conflict",
+    "a paid-call, release, deployment, installation, or stable-promotion boundary"
+  ]
+}

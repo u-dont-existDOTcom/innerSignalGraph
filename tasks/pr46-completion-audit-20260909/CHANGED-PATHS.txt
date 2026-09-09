@@ -1,0 +1,13 @@
+docs/research/2026-09-08-butoh-ecstatic-enactment-scan.md
+scripts/pr46-completion-audit-acceptance.mjs
+scripts/pr46-completion-audit-preflight.mjs
+state/CODEX-CURRENT-STATE.md
+tasks/ACTIVE-TASK.json
+tasks/NEXT-CONVERSATION-HANDOFF-2026-09-07.md
+tasks/guide-source-sync-20260907/SOURCE-SYNC.json
+tasks/pr46-completion-audit-20260909/ACTIVE-LESSON-CONTRACT.json
+tasks/pr46-completion-audit-20260909/CHANGED-PATHS.txt
+tasks/pr46-completion-audit-20260909/COMPLETION-MATRIX.json
+tasks/pr46-completion-audit-20260909/EXECUTION-DIRECTIVE.json
+tasks/pr46-completion-audit-20260909/INTEGRATION.md
+tasks/pr46-completion-audit-20260909/OWNER-OUTCOME.json

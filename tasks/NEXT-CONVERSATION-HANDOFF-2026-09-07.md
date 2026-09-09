@@ -2,6 +2,16 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Current continuation — PR #46 handoff completion is evidence-audited
+
+The owner-requested cross-chat completion audit is recorded in `tasks/pr46-completion-audit-20260909/INTEGRATION.md` and its machine-readable `COMPLETION-MATRIX.json`. It began from freshly fetched PR head `4a6883a396188cad8604d6223d3ddba34dd3074f`, whose hosted workflow-policy, deterministic-package, and CodeQL checks were green. Fetch again before acting; the immutable PR receipt records the final containing head and exact-head hosted result.
+
+Do not recreate or relitigate the verified workstreams from plans alone. Current source plus direct regressions establish the candidate implementation of Path Performance; revisable relational readiness; romance source/runtime/optional link; public-synthetic/private-encrypted case boundaries; process-specific CLEAR/EXPERIENTIAL/BRIDGE delivery and its symbol/reality/decline safeguards; external-only, evidence-labeled Butoh/ecstatic movement guidance; and the separated latency baseline/current-policy invariant. The completion audit's focused suite passed 11/11 file processes, host-boundary follow-up passed 26/26 individual tests after isolating two sandbox restrictions, graph regressions passed 29/29, therapy lessons passed 5/5, and the complete Node 24.18.0 package passed 1007/1007 automated tests plus all package gates. A lost output-session handle caused one unnecessary duplicate complete run; both completed green, and the task receipt records that execution inefficiency.
+
+The audit removed private ChatGPT routing identifiers that an older source-synchronization receipt and this handoff had retained. It added no private payload or private-derived hash. A pre-existing named anecdote in owner-published somatic source prose is inherited from `main` and was not silently rewritten; changing it and regenerating frozen packet artifacts is a separate owner content/history decision, not evidence of a private case-state record.
+
+Keep PR #46 draft/open/unmerged. No provider/API spend, semantic architecture selection, runtime adoption, deployment, installation, stable promotion, human-usefulness conclusion, or efficacy claim is authorized by this receipt.
+
 ## Current continuation — audit the last proposed reply before new therapy direction
 
 The owner-authorized constitution/context candidate is recorded in `tasks/constitution-context-audit-20260908/INTEGRATION.md` and `docs/superpowers/specs/2026-09-08-constitution-context-state-architecture.md`. Fetch draft PR #46 first, then read those files, `tasks/ACTIVE-TASK.json`, and the current state file before acting.
@@ -79,7 +89,7 @@ The separate 2026-09-07 owner request authorizes the [external-support routing c
 
 ## Latest continuation — source synchronization completed
 
-The next bounded content task below is now complete. The full owner article was recovered from message `a56688c2-1f9b-4692-8ac4-1ab007347897` in conversation `6a9b75e2-15c4-83ea-9232-4b1b33e58a37`. Original: `guides/snapshots/inner-child-guide-owner-2026-09-06.txt`; revised active source: `guides/inner-child-guide-2026-09-07.txt`. All E01-E12 were applied exactly and independently checked, with zero unrelated changes.
+The next bounded content task below is now complete. The full owner article was recovered through the authenticated private-source boundary without retaining private message or conversation routing identifiers. Original: `guides/snapshots/inner-child-guide-owner-2026-09-06.txt`; revised active source: `guides/inner-child-guide-2026-09-07.txt`. All E01-E12 were applied exactly and independently checked, with zero unrelated changes.
 
 Read `tasks/guide-source-sync-20260907/SOURCE-SYNC.json` and `FIDELITY-SOURCE-PIN.json` in that directory. Runtime and fidelity readers now follow the manifest; stale file/span hashes are rejected. The old article, original cases/evidence and packet archives remain unchanged. Current complete package: **730/730 tests, 29/29 graph regressions**, 53 nodes, 70 edges, **89 source sections**, 26 amendments, **301 generated files**.
 

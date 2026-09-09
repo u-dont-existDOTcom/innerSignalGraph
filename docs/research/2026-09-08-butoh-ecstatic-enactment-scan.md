@@ -45,3 +45,14 @@ InnerSignal may explain the category and help someone evaluate an external offer
 
 Intensity, catharsis, trembling, trance, “freakiness,” or boundary transgression is not evidence of processing. Post-session panic, sleep disruption, functional decline, confusion, reality-testing loss, fragmentation, coercion, shame, unwanted sexual contact, or sustained dysregulation is adverse evidence and must not be reframed as “deep work.”
 
+## Completion-audit source readback — 2026-09-09
+
+The current PR completion audit reopened the load-bearing public sources rather than treating this note as proof of itself. The current readback found no evidence that changes the disposition:
+
+- ADTA still defines dance/movement therapy as a psychotherapeutic profession; that professional identity cannot be transferred to an independently named local hybrid.
+- The DMT/dance meta-analysis remains a heterogeneous adjacent evidence base, not evidence for this exact hybrid.
+- The psychodrama review still describes a distinct guided role-play psychotherapy and a methodologically limited intervention literature; spontaneous event enactment is not thereby psychodrama.
+- The located Butoh neuroscience study still concerns five experienced dancers and cannot establish therapeutic efficacy.
+- The local Butoh workshop page still presents an “Ecstatic Dance of Darkness” format as a new local practice, supporting LOCAL / EXPERIMENTAL existence rather than recognized-modality status.
+
+This was a bounded classification readback, not a new efficacy review. `SOM.BUTOH_EXTERNAL`, its external-only scope, and all consent/destabilization limits remain unchanged.
