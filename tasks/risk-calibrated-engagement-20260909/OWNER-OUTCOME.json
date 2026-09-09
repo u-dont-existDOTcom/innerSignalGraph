@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "ownerOutcomeId": "OO-INNERSIGNAL-RISK-CALIBRATED-ENGAGEMENT-20260909",
+  "ownerOutcomeEpoch": 1,
+  "taskId": "risk-calibrated-engagement-20260909",
+  "targetPullRequest": 46,
+  "targetBranch": "companion/foundations-2026-09-05",
+  "normalizedOutcome": "Implement a first-class, behavior-based threat-pathway policy that preserves direct therapeutic engagement for grievance, violent ideation, fantasy, or moral consideration without established operational indicators; proportionately strengthens assessment and support as fixation, planning, preparation, means, rehearsal, surveillance, communicated intent, narrowing alternatives, willingness to die, or loss of inhibition emerge; and lets external safety action outrank ordinary therapy for credible imminent or operational danger.",
+  "requiredOutcomes": [
+    "Represent grievance or ideation, escalating or mobilizing risk, and imminent or operational danger without inventing threat details.",
+    "Keep the person's actual argument and meaning in view when safe, while refusing endorsement or assistance for violence.",
+    "Detect crisis-script overreach and operational-risk underreaction as inverse failures.",
+    "Apply the invariant that external explanations must not erase internal agency and internal agency must not erase external reality.",
+    "Distinguish distributed systems and scale-appropriate leverage from scapegoating a symbolic individual without dismissing genuine systemic harm.",
+    "Detect identity capture or bypass across politics, sports, religion, and ideology without pathologizing healthy participation.",
+    "Persist a current, evidence-bound, revisable threat-pathway state across context compaction without permanently stigmatizing the person.",
+    "Add de-identified synthetic multi-turn regressions, audit failure classes, good controls, and focused deterministic tests.",
+    "Complete repository verification, privacy/publication checks, exact-head and hosted-check receipts without merge, deployment, installation, stable promotion, provider execution, or clinical-validation claims."
+  ],
+  "privacy": {
+    "publicArtifactsSyntheticOnly": true,
+    "realPersonIdentifiersAllowed": false,
+    "verbatimPrivateTranscriptAllowed": false,
+    "privateConversationIdentifiersAllowed": false,
+    "privateDerivedHashesAllowed": false
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "id": "G014",
+  "description": "Ordinary social danger keeps practical safety above love, relational interpretation, and inward processing.",
+  "variables": {
+    "present_safety": "unsafe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "other_person_central": "yes",
+    "influence_domain": "ordinary_social",
+    "actionable_problem": "present",
+    "unresolved_inner_material": "present"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.SAFETY_ORIENTATION",
+    "selectedIncludes": [
+      "ROUTE.INFLUENCE_SOCIAL_PROTECTION"
+    ],
+    "selectedExcludes": [
+      "ROUTE.RELATIONAL_REALITY_CHECK",
+      "ROUTE.ACT_OUTWARD",
+      "ROUTE.GO_INWARD",
+      "ROUTE.LEAVE_ALONE"
+    ],
+    "matchedIncludes": [
+      "IC.SAFETY_ORIENTATION",
+      "ROUTE.INFLUENCE_SOCIAL_PROTECTION"
+    ],
+    "deferredIncludes": [],
+    "blockedIncludes": [],
+    "requiredNuancePatterns": [
+      "spiritual aspiration",
+      "not ordinary safety advice"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "practical protection",
+      "outside help unnecessary"
+    ]
+  }
+}

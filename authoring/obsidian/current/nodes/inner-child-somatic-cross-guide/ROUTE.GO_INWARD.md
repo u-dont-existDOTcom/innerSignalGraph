@@ -1,0 +1,122 @@
+---
+authoring_contract: inner-signal-authoring-node-current-v1
+entity_type: graph-node
+projection_mode: current
+generated: true
+graph_id: inner-child-somatic-cross-guide
+node_id: ROUTE.GO_INWARD
+title: Go inward only for material that is actually there
+kind: decision-node
+tier: 3
+priority: 97
+authority: owner-approved-extension
+graph_tags:
+  - three-way-routing
+  - inward-processing
+  - inner-child
+  - somatic
+source_refs:
+  - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
+  - AMEND.SOM.EARLY_INNER_CHILD_PARALLEL
+  - AMEND.SOM.PREP_MODALITIES
+  - AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL
+  - AMEND.SOM.ADVANCED_RELEASE_PARALLEL
+regression_refs:
+  - G013
+  - G014
+  - G015
+  - G017
+  - G027
+base_record_sha256: 1c26cf6ac1f2e2726cc71ad942ac05bb06ac23b969ea3cd27c39ad1ea7ca3ae0
+base_graph_sha256: beb05b08a340cf9bd62efacaab7619a3dd4f6adf6bedabb4927cfe4e3a329560
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+---
+
+# Go inward only for material that is actually there
+
+> [!warning] Generated current-state projection — do not edit. Create a proposal from this node.
+
+## Structured graph payload
+
+<!-- inner-signal:payload:start -->
+```json
+{
+  "activation": {
+    "all": [
+      {
+        "field": "unresolved_inner_material",
+        "op": "eq",
+        "value": "present"
+      }
+    ],
+    "none": [
+      {
+        "field": "present_safety",
+        "op": "eq",
+        "value": "unsafe"
+      },
+      {
+        "field": "orientation",
+        "op": "eq",
+        "value": "disoriented"
+      },
+      {
+        "field": "suicidal_state",
+        "op": "in",
+        "value": [
+          "ideation",
+          "intent",
+          "imminent"
+        ]
+      },
+      {
+        "field": "inward_attention_effect",
+        "op": "eq",
+        "value": "worsens"
+      }
+    ]
+  },
+  "avoid": [
+    "Do not use a generic instruction to 'go deeper' when the person cannot name what is unresolved or when repeated inward attention is making them worse.",
+    "Do not force a rigid somatic ladder or assume the most intense modality is the most therapeutic."
+  ],
+  "defaultQuestion": "What exactly seems unfinished or avoided here, and what changes when you contact it rather than merely think about it?",
+  "effects": {
+    "blockNodes": [],
+    "deferNodes": [],
+    "forbiddenOverclaims": [
+      "Do not infer recovered memories, hidden trauma, or a coherent inner child from symptoms alone."
+    ],
+    "requiredNuance": [
+      "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order."
+    ]
+  },
+  "questionPolicy": {
+    "purpose": "discriminate",
+    "unresolvedFields": []
+  },
+  "recommendations": [
+    "Contact only material that is actually present rather than assuming that distress always hides another layer of trauma.",
+    "Route relational, part-level, credibility, trust, or developmental conflict toward the relevant Nurturer, Protector, Guide, guard, or inner-child function; route bodily activation or freeze toward low-dose somatic regulation, EFT, movement or shaking, and titrated body work according to response.",
+    "For a stable discrete memory target, EMDR can be considered without forcing a long preparatory ladder; for diffuse or developmental body-held material, resource-oriented or deeper Brainspotting and developmental EMDR remain conditional on capacity.",
+    "Advanced release remains optional and parallel; a dramatic state change does not establish readiness for deep processing."
+  ],
+  "successSignals": [
+    "Contact with inner material produces new emotional information, greater integration, a changed relationship to a part or memory, or more behavioral freedom rather than only more description.",
+    "Somatic work increases regulation, range, or integration without prolonged destabilization."
+  ]
+}
+```
+<!-- inner-signal:payload:end -->
+
+## Source navigation
+
+[[current/governance/amendments/AMEND.CROSS.THREE_WAY_THERAPY_ROUTING]]
+
+[[current/governance/amendments/AMEND.SOM.EARLY_INNER_CHILD_PARALLEL]]
+
+[[current/governance/amendments/AMEND.SOM.PREP_MODALITIES]]
+
+[[current/governance/amendments/AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL]]
+
+[[current/governance/amendments/AMEND.SOM.ADVANCED_RELEASE_PARALLEL]]

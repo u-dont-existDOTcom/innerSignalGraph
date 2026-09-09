@@ -16,10 +16,14 @@ graph_tags:
 source_refs:
   - IC.BEFORE_DEEP
   - IC.REGULATION_BEFORE_DIALOGUE
-regression_refs: []
-base_record_sha256: 9e83e56f6ec8c4992858d1ae666290ea161c0b01675269545dc1b2e44657b8d3
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+regression_refs:
+  - G014
+  - G025
+  - G031
+  - G035
+base_record_sha256: b1e65d2504260a9a984e57eccfe96057e0116ab9e8b7aeba5957e00552b94344
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Outside safety and present orientation first
@@ -52,6 +56,11 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
         "field": "ability_to_return",
         "op": "eq",
         "value": "no"
+      },
+      {
+        "field": "suicidal_state",
+        "op": "eq",
+        "value": "imminent"
       }
     ]
   },
@@ -64,7 +73,9 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
     "deferNodes": [
       "IC.DEEP_CHILD_DIALOGUE",
       "IC.GUIDE_LATER",
-      "IC.FORGIVENESS_LATER"
+      "IC.FORGIVENESS_LATER",
+      "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+      "IC.PRECIOUS_HUMAN_OPPORTUNITY"
     ],
     "forbiddenOverclaims": [
       "Do not claim a hidden adult capacity or hidden progress."
@@ -75,7 +86,8 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
   },
   "recommendations": [
     "Pause deeper dialogue; orient to the actual room, body, time, and available human support.",
-    "Use eyes-open, present-focused contact and the smallest reversible action."
+    "Use eyes-open, present-focused contact and the smallest reversible action.",
+    "When self-harm action is imminent, prioritize distance from means, immediate human contact and urgent in-person help. Defer deeper or metaphysical inquiry until immediate safety and reflective capacity are restored."
   ],
   "successSignals": [
     "The person can stop, orient, and return to ordinary life."

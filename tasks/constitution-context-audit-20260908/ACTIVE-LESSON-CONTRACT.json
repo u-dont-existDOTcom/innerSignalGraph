@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "taskId": "constitution-context-audit-20260908",
+  "status": "CURRENT",
+  "activatedAt": "2026-09-08",
+  "lessons": [
+    {
+      "id": "github-first-context-durability",
+      "source": "universal-dev-architecture@origin/main:patterns/github-first-agent-bootstrap.md + patterns/context-compaction-resilience.md",
+      "trigger": "long-running PR with concurrent historical task sources",
+      "requiredBehavior": "Reconcile fetched PR head, actual Git state, one canonical checkpoint, and exact artifacts before resuming or handing off.",
+      "failureCondition": "Chat memory or a stale handoff becomes the sole authority.",
+      "repairAction": "Re-read exact Git artifacts and repair the checkpoint.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "owner-outcome-no-contract-laundering",
+      "source": "universal-dev-architecture@origin/main:patterns/owner-outcome-invariant-and-contract-laundering-prevention.md",
+      "trigger": "large directive with many independently losable outcomes",
+      "requiredBehavior": "Trace every required outcome to an implementation artifact and direct evidence; do not substitute green tests or PR readiness for delivery.",
+      "failureCondition": "Any RO-01 through RO-09 is omitted, weakened, or replaced by a proxy.",
+      "repairAction": "Keep the task open and implement or explicitly report the exact unmet outcome.",
+      "enforcement": "mechanical_and_semantic"
+    },
+    {
+      "id": "transformation-preservation-and-public-privacy",
+      "source": "universal-dev-architecture@origin/main:patterns/transformation-preservation-proof.md",
+      "trigger": "private human gold source is transformed into a public synthetic fixture",
+      "requiredBehavior": "Preserve required causal/chronological structure while excluding identifiers, verbatim private text, exact private details, and private-derived hashes; test forward coverage and reverse unexplained additions.",
+      "failureCondition": "A required reasoning challenge is lost or private material enters Git.",
+      "repairAction": "Block publication, remove the leak from all new objects, and rerun privacy plus requirement coverage checks.",
+      "enforcement": "mechanical_and_semantic"
+    },
+    {
+      "id": "research-before-reinvention",
+      "source": "universal-dev-architecture@origin/main:patterns/research-before-reinvention.md",
+      "trigger": "case-state, tracker, and evaluation architecture extension",
+      "requiredBehavior": "Compose the repository's vault, incremental snapshot, path controller, UI, and audit harness; invent only the missing state/compaction/tracker remainder and name the simple baselines.",
+      "failureCondition": "A parallel monolith duplicates an existing mechanism without a stated incompatibility.",
+      "repairAction": "Replace duplication with an adapter or document the exact incompatible requirement.",
+      "enforcement": "semantic"
+    },
+    {
+      "id": "independent-evaluation-and-reproducibility",
+      "source": "universal-dev-architecture@origin/main:patterns/independent-evaluation-separation.md + patterns/external-evaluation-reproducibility.md",
+      "trigger": "audit-architecture and model-comparison harness",
+      "requiredBehavior": "Preserve architecture blinding, fresh-context graders, exact prompt/output hashes, controls, and historical failed-run status; changes force a new freeze/calibration.",
+      "failureCondition": "Prior rationale leaks to graders, labels unblind early, or stale grades certify a changed instrument.",
+      "repairAction": "Invalidate the affected run and establish a new source-bound baseline.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "structured-output-failure-boundary",
+      "source": "universal-dev-architecture@origin/main:patterns/structured-output-failure-boundary.md",
+      "trigger": "historical malformed grader output and strict admission contract",
+      "requiredBehavior": "Keep the stopped result classified as serialization failure, preserve it, never repair or retry it, and block dependent scoring.",
+      "failureCondition": "Malformed output is semantically scored, silently repaired, or retroactively retried.",
+      "repairAction": "Restore the stopped boundary and require a new version, hashes, and calibration.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "test-efficiency",
+      "source": "universal-dev-architecture@origin/main:patterns/test-efficiency-and-verification-budget.md",
+      "trigger": "critical repository with a large full suite",
+      "requiredBehavior": "Use focused and affected tests during implementation and run the full package once at the final changed-state checkpoint, with telemetry.",
+      "failureCondition": "Repeated identical-state full suites add no decision-relevant evidence.",
+      "repairAction": "Return to focused tests and defer the next full run until state changes materially.",
+      "enforcement": "mechanical"
+    }
+  ],
+  "preAttemptAdmission": {
+    "status": "PASS",
+    "evidence": [
+      "PR 46 head fetched at 32d714855bb327b0d49fbb73662f9ee9d212dd38.",
+      "PR head is an ancestor of local head 734a23b750181d554346ba52708a27af14ff2760.",
+      "Project authority, current state, audit harness, vault boundary, canonical handoff, and selected universal patterns were read before product edits.",
+      "Test-efficiency telemetry was started in the ignored task-local development directory."
+    ]
+  }
+}

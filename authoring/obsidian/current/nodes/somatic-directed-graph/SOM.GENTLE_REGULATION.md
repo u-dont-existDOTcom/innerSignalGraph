@@ -20,6 +20,7 @@ source_refs:
   - SOM.SE
   - SOM.YOGA
   - AMEND.SOM.PREP_MODALITIES
+  - AMEND.CROSS.LITERATURE_TASK_PROGRESS
 regression_refs:
   - G001
   - G002
@@ -27,9 +28,14 @@ regression_refs:
   - G005
   - G011
   - G012
-base_record_sha256: c3f791e80587029c64a7840c02972042059ac60365993c1ffabbc8a9fe811d6c
-base_graph_sha256: f7acff85e9d11d38c1fd47830f4fad4998cc1fb1580f641223a6d92538e30140
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+  - G013
+  - G015
+  - G016
+  - G018
+  - G033
+base_record_sha256: 3d196d52c0dce8edef13b2006d5ce50103396b946f775778eed6e8eb8e233d77
+base_graph_sha256: 6b31d4e5d0e6dc2ab838aae714fe59c2c1c2ab21607409c9b1a25b2d5769dd2d
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Gentle regulation and embodiment
@@ -60,8 +66,7 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
         "field": "body_capacity",
         "op": "in",
         "value": [
-          "low",
-          "unknown"
+          "low"
         ]
       }
     ],
@@ -108,3 +113,5 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
 [[current/sources/somatic-sequencing-guide/SOM.YOGA]]
 
 [[current/governance/amendments/AMEND.SOM.PREP_MODALITIES]]
+
+[[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]

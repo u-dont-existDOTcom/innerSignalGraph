@@ -37,6 +37,11 @@
             "field": "dissociation",
             "op": "eq",
             "value": "high"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
           }
         ]
       },
@@ -102,8 +107,7 @@
             "field": "body_capacity",
             "op": "in",
             "value": [
-              "low",
-              "unknown"
+              "low"
             ]
           }
         ],
@@ -124,7 +128,8 @@
         "SOM.PHASE1",
         "SOM.SE",
         "SOM.YOGA",
-        "AMEND.SOM.PREP_MODALITIES"
+        "AMEND.SOM.PREP_MODALITIES",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -929,5 +934,7 @@
       "relation": "followed-by"
     }
   ],
+  "taskPolicyVersion": 1,
+  "pathPerformancePolicyVersion": 1,
   "bundleVersion": "inner-child-somatic-pilot-2026-08-09-r5"
 }

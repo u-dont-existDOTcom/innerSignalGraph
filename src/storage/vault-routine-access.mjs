@@ -42,3 +42,30 @@ export async function openVaultWithRoutineAuthorization(input = {}) {
     throw new VaultCryptoUnreadableError();
   }
 }
+
+export async function openVaultWithDevelopmentAuthorization(input = {}) {
+  let allowed = false;
+  try {
+    allowed = input !== null
+      && typeof input === 'object'
+      && !Array.isArray(input)
+      && input.developmentExternalCredentialAuthorized === true;
+  } catch {
+    allowed = false;
+  }
+  if (!allowed) return Object.freeze({ allowed: false, reason: 'DEVELOPMENT_CREDENTIAL_AUTHORIZATION_REQUIRED' });
+
+  try {
+    const plaintextBytes = await decryptVaultEnvelopeWithRoutineKek({
+      envelope: input.envelope,
+      routineKek: input.routineKek,
+    });
+    return Object.freeze({
+      allowed: true,
+      reason: 'DEVELOPMENT_EXTERNAL_CREDENTIAL_AUTHORIZED',
+      plaintextBytes,
+    });
+  } catch {
+    throw new VaultCryptoUnreadableError();
+  }
+}

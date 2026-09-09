@@ -13,7 +13,9 @@ const CRITICAL_DELTA_FIELDS = [
   "present_safety", "orientation", "ability_to_stop", "ability_to_return", "activation", "dissociation", "altered_state",
   "memory_source_risk", "current_intent", "credibility_conflict", "age_agency_ambiguity", "resentment_toward_younger_self",
   "inner_adult_access", "witness_capacity", "protective_response", "self_directed_love", "credibility_evidence_state",
-  "internal_speaker_relation", "target_type"
+  "internal_speaker_relation", "target_type", "other_person_central", "relational_capacity_evidence",
+  "emotional_takeover_pressure", "realistic_interaction_outcome", "influence_domain", "metta_access", "spiritual_support_access",
+  "relational_check_status", "loop_target_relation", "guard_engagement", "spiritual_struggle"
 ];
 
 function criticalDeltaCount(snapshot, priorSnapshot) {
@@ -25,7 +27,8 @@ function criticalDeltaCount(snapshot, priorSnapshot) {
 
 export function classifyTherapyTier(snapshot, requested = "auto", session = {}) {
   const v = snapshot?.variables ?? {};
-  const safetyHard = v.present_safety === "unsafe"
+  const performanceDanger = snapshot?.path_update?.signals?.some(s => ["dissociation", "fragmentation", "destabilization", "reality_testing_instability"].includes(s.kind) && s.severity === "significant");
+  const safetyHard = performanceDanger || v.present_safety === "unsafe"
     || v.orientation === "disoriented"
     || v.ability_to_stop === "no"
     || v.ability_to_return === "no"
@@ -42,9 +45,12 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
     && ["same", "distinct", "blend", "unresolved"].includes(v.internal_speaker_relation);
   const intentHard = HARD_INTENTS.has(v.current_intent);
   const importantUnknown = Math.max(0, ...(snapshot?.unknowns ?? []).map((item) => item.importance ?? 0));
-  const reviewedSignal = v.protective_response === "present"
+  const reviewedSignal = Boolean(snapshot?.path_update || snapshot?._path_prior) || Boolean(snapshot?.turn_task) || v.spiritual_struggle === "present" || v.protective_response === "present"
     || v.self_directed_love === "unsafe"
     || v.credibility_conflict === "present"
+    || v.emotional_takeover_pressure === "present"
+    || ["experienced_other_than_self", "uncertain_ontology"].includes(v.influence_domain)
+    || ["limited", "mixed"].includes(v.relational_capacity_evidence)
     || ["low", "partial"].includes(v.inner_adult_access)
     || ["moderate", "high"].includes(v.activation)
     || v.dissociation === "mild"
@@ -56,7 +62,13 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
   if (requested === "forensic") return { tier: "forensic", reason: "user-selected forensic council", forced: false, deltaCount };
   if (["deep", "adversarial"].includes(requested)) return { tier: "deep", reason: "user-selected deep review", forced: false, deltaCount };
   if (requested === "reviewed") return { tier: "reviewed", reason: "user-selected reviewed mode", forced: false, deltaCount };
-  if (requested === "fast" && !intentHard && !ambiguityHard) return { tier: "fast", reason: "user-selected fast mode", forced: false, deltaCount };
+  const readinessReviewRequired = Boolean(snapshot?.relational_readiness);
+  const romanceGuideReviewRequired = Boolean(snapshot?.romance_guide_context);
+  const deliveryReviewRequired = Boolean(snapshot?.path_update?.delivery_review || snapshot?._path_prior?.active?.delivery_assessment_key);
+  const representation = snapshot?.path_update?.representation ?? snapshot?._path_prior?.active?.representation ?? null;
+  const representationReviewRequired = Boolean(representation && (representation.mode !== "CLEAR" || ["SWITCH", "STAY_SYMBOLIC", "TRANSLATE_TO_PLAIN"].includes(representation.transition)));
+  if (requested === "fast" && !intentHard && !ambiguityHard && !deliveryReviewRequired
+      && !readinessReviewRequired && !romanceGuideReviewRequired && !representationReviewRequired) return { tier: "fast", reason: "user-selected fast mode", forced: false, deltaCount };
 
   if (intentHard) return { tier: "deep", reason: "deep/high-stakes intent", forced: false, deltaCount };
   if (ambiguityHard) {
@@ -68,6 +80,10 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
     }
     return { tier: "deep", reason: "unresolved responsibility and speaker ambiguity", forced: false, deltaCount };
   }
+  if (readinessReviewRequired) return { tier: "reviewed", reason: "relational readiness and foreseeable harm require case audit", forced: true, deltaCount };
+  if (romanceGuideReviewRequired) return { tier: "reviewed", reason: "source-bound romance context requires case audit", forced: true, deltaCount };
+  if (deliveryReviewRequired) return { tier: "reviewed", reason: "evidence-bound delivery and practitioner trust review", forced: requested === "fast", deltaCount };
+  if (representationReviewRequired) return { tier: "reviewed", reason: "process-scoped experiential or bridge representation requires epistemic audit", forced: requested === "fast", deltaCount };
   if (reviewedSignal) return { tier: "reviewed", reason: "moderate ambiguity or protective conflict", forced: false, deltaCount };
   return { tier: "fast", reason: "low-ambiguity graph-following", forced: false, deltaCount };
 }
@@ -131,7 +147,7 @@ async function simpleResult({ context, formulation, routing, extractor, tier, co
     guidePacketVersion: context.guidePacketVersion ?? null,
     caseFormulation: formulation.snapshot,
     interventionContract: formulation.plan,
-    next_question: realization.value.next_question || formulation.plan.nextQuestion || "",
+    next_question: realization.value.next_question ?? formulation.plan.nextQuestion ?? "",
     safety_flags: formulation.snapshot.audit?.safety_flags ?? [],
     rendererProvider: extractor.id,
     rendererModel: extractor.model,
@@ -161,13 +177,18 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
   });
 
   if (routing.tier !== "fast") {
-    await preflightGraphPlanningAvailability({ loadGraphBundle: instrumentation.loadGraphBundle });
+    await preflightGraphPlanningAvailability({
+      loadPreflightGraphBundle: instrumentation.loadPreflightGraphBundle
+    });
   }
   onProgress?.({ stage: "therapy-routing", status: "completed", detail: `${routing.tier}: ${routing.reason}` });
 
   if (routing.tier === "fast") {
     const planningStarted = Date.now();
-    const planned = await planCaseSnapshot(initial.snapshot, { onPlanningPass: instrumentation.onPlanningPass });
+    const planned = await planCaseSnapshot(initial.snapshot, {
+      onPlanningPass: instrumentation.onPlanningPass,
+      loadPlanningGraphBundle: instrumentation.loadPlanningGraphBundle
+    });
     const planningMs = Date.now() - planningStarted;
     const formulation = {
       ...initial,
@@ -183,7 +204,10 @@ export async function runTieredTherapyPipeline({ context, providers, config, pro
   const audit = await runCaseAuditWithRecovery({ context, snapshot: initial.snapshot, provider: providers.openai, onProgress, recovery: caseRecovery });
   const auditedSnapshot = applyCaseAudit(initial.snapshot, audit.value);
   const planningStarted = Date.now();
-  const planned = await planCaseSnapshot(auditedSnapshot, { onPlanningPass: instrumentation.onPlanningPass });
+  const planned = await planCaseSnapshot(auditedSnapshot, {
+    onPlanningPass: instrumentation.onPlanningPass,
+    loadPlanningGraphBundle: instrumentation.loadPlanningGraphBundle
+  });
   const planningMs = Date.now() - planningStarted;
   const formulation = {
     snapshot: auditedSnapshot,

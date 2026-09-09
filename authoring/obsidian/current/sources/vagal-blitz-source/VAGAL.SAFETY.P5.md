@@ -13,7 +13,7 @@ locator_kind: pdf-pages
 cited_by_node_ids:
   - SOM.ADVANCED_RELEASE_BLOCK
   - SOM.ADVANCED_RELEASE_OPTIONAL
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # VAGAL.SAFETY.P5

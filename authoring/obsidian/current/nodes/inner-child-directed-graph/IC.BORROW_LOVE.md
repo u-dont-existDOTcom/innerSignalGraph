@@ -19,14 +19,15 @@ source_refs:
   - IC.HEART_SOLAR_LOOP
   - AMEND.IC.BORROW_LOVE_EXTERNAL
   - AMEND.IC.WELLBEING_HORIZON
+  - AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 regression_refs:
   - G003
   - G005
   - G008
   - G011
-base_record_sha256: 671e2be3f1b5e2db155f668a0b222101179c83304e2a7a0d6207fadf23e136d9
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+base_record_sha256: b1da1baee8218e0a56ffb6ba0f607a9baa516dc04146a74d0f961ac13bc1d067
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Borrow already-accessible love without flattening its depth
@@ -87,7 +88,8 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
   "recommendations": [
     "First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.",
     "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.",
-    "Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love."
+    "Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love.",
+    "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image."
   ],
   "successSignals": [
     "The capacity for love becomes experientially available without coercion."
@@ -105,3 +107,5 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
 [[current/governance/amendments/AMEND.IC.BORROW_LOVE_EXTERNAL]]
 
 [[current/governance/amendments/AMEND.IC.WELLBEING_HORIZON]]
+
+[[current/governance/amendments/AMEND.IC.EMOTIONAL_TASK_GUIDANCE]]

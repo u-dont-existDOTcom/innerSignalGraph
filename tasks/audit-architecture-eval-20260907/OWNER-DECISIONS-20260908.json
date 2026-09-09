@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "status": "OWNER_DECISIONS_ACTIVE",
+  "decidedAt": "2026-09-08",
+  "developmentExecution": {
+    "paidApiSpendAuthorized": false,
+    "providerApiCallsAuthorized": false,
+    "orchestration": "CHATGPT_TABS_VIA_CODEX_AND_MISSION_CONTROL",
+    "note": "Provider/API calls are reserved for the eventual public application unless separately authorized. Current audit experiments should use authenticated ChatGPT UI sessions orchestrated through Codex/Mission Control."
+  },
+  "auditCandidateModel": {
+    "label": "GPT-5.6 Sol Extra High",
+    "exactBackendIdentityRequired": false,
+    "role": "candidate_generation_and_audit_architectures"
+  },
+  "semanticEvaluation": {
+    "deterministicScoringRequired": true,
+    "primaryGraders": [
+      {"label": "GPT-5.6 Sol Extra High", "freshContext": true, "blinded": true},
+      {"label": "GPT-5.6 Sol Extra High", "freshContext": true, "blinded": true}
+    ],
+    "primaryGraderCount": 2,
+    "proRole": "OPTIONAL_DISSENTING_SPECIALIST_ONLY",
+    "proFocus": ["information_gain", "wrong_path_persistence", "missed_alternatives"],
+    "proOnlyFindingPolicy": "ADJUDICATE_WITH_FRESH_EXTRA_HIGH_WITHOUT_REVEALING_SOURCE_MODEL",
+    "behavioralTargetAuthority": "REFERENCE_RUBRIC_NOT_UNIQUE_GROUND_TRUTH"
+  },
+  "smoke": {
+    "caseCount": 4,
+    "includeGoodResponseControl": true,
+    "selection": "MAXIMALLY_DISCRIMINATING",
+    "pruneClearlyInferiorArchitecturesBeforeFullCorpus": true,
+    "budgetReductionOrder": ["REDUCE_REPEATS", "PRESERVE_CORPUS_COVERAGE"]
+  },
+  "latestModelComparison": {
+    "enabled": true,
+    "scope": "SMALL_SEPARATE_SMOKE_ONLY",
+    "baseline": "GPT-5.6 Sol Extra High",
+    "comparisonLabel": "Latest",
+    "inferBackendIdentity": false,
+    "recordVisibleSelectorLabelAndTimestamp": true,
+    "sameFourSmokeFixtures": true,
+    "blindAndRandomizeOutputs": true,
+    "grading": ["DETERMINISTIC_SCORING", "SAME_FRESH_EXTRA_HIGH_GRADING", "OWNER_HUMAN_REVIEW"],
+    "stopIfNoMeaningfulAdvantage": true,
+    "flagIfClearlyBetterOrMateriallyDifferent": true
+  },
+  "adoption": {
+    "automaticRuntimeAdoption": false,
+    "freezeBeforeOwnerReview": ["prompts", "cases", "outputs", "scores", "audit_findings"],
+    "ownerHumanReviewRequired": true
+  },
+  "graderOutputContract": {
+    "approvedAt": "2026-09-08",
+    "decision": "SMALL_MACHINE_ONLY_GATING_CONTRACT",
+    "version": "AE-GRADER-SEGMENT-EVIDENCE-V2",
+    "gatingFields": ["verdict_or_rating", "source_segment_ids_or_target_omission_id"],
+    "freeFormProseInsideGatingJson": false,
+    "nonGatingRationale": "ARCHIVE_EXACTLY_OUTSIDE_GATING_JSON",
+    "silentRepairAuthorized": false,
+    "retryStoppedRunAuthorized": false,
+    "newRunRequired": true,
+    "repeatAllCalibrationControls": true
+  },
+  "overAuditPenalties": [
+    "false_positive_critique",
+    "safety_inflation",
+    "repetition",
+    "response_length_inflation_without_information_gain",
+    "unnecessary_rewrite_of_good_response",
+    "repair_introduced_errors"
+  ]
+}

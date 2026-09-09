@@ -32,6 +32,11 @@
             "field": "ability_to_return",
             "op": "eq",
             "value": "no"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
           }
         ]
       },
@@ -42,7 +47,8 @@
       "authority": "author-framework",
       "recommendations": [
         "Pause deeper dialogue; orient to the actual room, body, time, and available human support.",
-        "Use eyes-open, present-focused contact and the smallest reversible action."
+        "Use eyes-open, present-focused contact and the smallest reversible action.",
+        "When self-harm action is imminent, prioritize distance from means, immediate human contact and urgent in-person help. Defer deeper or metaphysical inquiry until immediate safety and reflective capacity are restored."
       ],
       "avoid": [
         "Do not deepen, interpret memories, or require an inner-child response."
@@ -58,7 +64,9 @@
         "deferNodes": [
           "IC.DEEP_CHILD_DIALOGUE",
           "IC.GUIDE_LATER",
-          "IC.FORGIVENESS_LATER"
+          "IC.FORGIVENESS_LATER",
+          "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+          "IC.PRECIOUS_HUMAN_OPPORTUNITY"
         ],
         "blockNodes": [],
         "requiredNuance": [
@@ -82,8 +90,7 @@
             "field": "inner_adult_access",
             "op": "in",
             "value": [
-              "low",
-              "unknown"
+              "low"
             ]
           },
           {
@@ -91,8 +98,7 @@
             "op": "in",
             "value": [
               "unclear",
-              "absent",
-              "unknown"
+              "absent"
             ]
           },
           {
@@ -129,7 +135,8 @@
       },
       "sourceRefs": [
         "IC.NEUTRAL_WITNESS",
-        "IC.BORROW_ADULT"
+        "IC.BORROW_ADULT",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -268,13 +275,15 @@
         "IC.LOVE_MISSING",
         "IC.HEART_SOLAR_LOOP",
         "AMEND.IC.BORROW_LOVE_EXTERNAL",
-        "AMEND.IC.WELLBEING_HORIZON"
+        "AMEND.IC.WELLBEING_HORIZON",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
       ],
       "authority": "author-framework",
       "recommendations": [
         "First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.",
         "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.",
-        "Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love."
+        "Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love.",
+        "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image."
       ],
       "avoid": [
         "Do not manufacture warmth or make the loved being responsible for the session."
@@ -369,8 +378,7 @@
             "op": "in",
             "value": [
               "low",
-              "partial",
-              "unknown"
+              "partial"
             ]
           },
           {
@@ -407,13 +415,16 @@
       "sourceRefs": [
         "IC.BORROW_ONE_FUNCTION",
         "IC.ADULT_APPRENTICE",
-        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.",
         "Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.",
-        "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness."
+        "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness.",
+        "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image."
       ],
       "avoid": [
         "Do not demand an ideal parent image or let the helper become authority over memories, medicine, relationships, spiritual conclusions, or future.",
@@ -483,12 +494,15 @@
       "sourceRefs": [
         "IC.ADULT_APPRENTICE",
         "IC.RELATIONSHIP",
-        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Name what the helper did, choose five percent to do personally, and test one action in ordinary life.",
-        "Gradually hand the role and the judgment behind it back to the person so they become more able to check, disagree, revise, and act without the helper."
+        "Gradually hand the role and the judgment behind it back to the person so they become more able to check, disagree, revise, and act without the helper.",
+        "Name what capacity the person exercised, what help remained useful, and what the real-world attempt taught them; independence does not require refusing appropriate support. Care includes interest and delight, not duty alone, and should support exploration outside the exercise."
       ],
       "avoid": [
         "Do not create permanent practical or epistemic authority dependency."
@@ -543,12 +557,14 @@
         "IC.START_WHATEVER",
         "IC.GUARDS",
         "IC.BOTTOM_UP_SEQUENCE",
-        "IC.ESCAPE_URGE"
+        "IC.ESCAPE_URGE",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
-        "Ask what the part predicts will happen if it steps back; acknowledge before answering."
+        "Ask what the part predicts will happen if it steps back; acknowledge before answering.",
+        "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking."
       ],
       "avoid": [
         "Do not classify the voice more confidently than the transcript supports or push past it."
@@ -571,6 +587,13 @@
         ],
         "forbiddenOverclaims": [
           "Do not definitively label a cynical voice as a guard."
+        ],
+        "deferralUnless": [
+          {
+            "field": "guard_engagement",
+            "op": "eq",
+            "value": "willing_to_allow"
+          }
         ]
       },
       "defaultQuestion": ""
@@ -681,7 +704,11 @@
         "requiredNuance": [],
         "forbiddenOverclaims": []
       },
-      "defaultQuestion": "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?"
+      "defaultQuestion": "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
     },
     {
       "id": "IC.PROTECTOR_ACTION",
@@ -713,7 +740,8 @@
       },
       "sourceRefs": [
         "IC.PROTECTOR_VISIBLE",
-        "IC.ADULT_APPRENTICE"
+        "IC.ADULT_APPRENTICE",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -724,7 +752,8 @@
         "Do not choose an action so large that failure becomes new evidence of unreliability."
       ],
       "successSignals": [
-        "One small promise is kept."
+        "One small promise is kept.",
+        "The action or its review provides truthful information about what supports protection and follow-through, including when a reasonable plan needs changing."
       ],
       "tags": [
         "protector",
@@ -842,12 +871,14 @@
       "sourceRefs": [
         "IC.BEFORE_DEEP",
         "IC.ALTERED_STATES",
-        "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL"
+        "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Use deeper dialogue only when the person can remain present, stop voluntarily, and recover afterward.",
-        "Keep memory-source distinctions explicit."
+        "Keep memory-source distinctions explicit.",
+        "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift."
       ],
       "avoid": [
         "Do not interrogate imagery or imply emotional truth proves historical fact."
@@ -894,12 +925,14 @@
       "sourceRefs": [
         "IC.NO_CLEAR_CHILD",
         "IC.IDENTITY_PLAY",
-        "IC.CHILD_BAD_THINGS"
+        "IC.CHILD_BAD_THINGS",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Use private journaling, time without external cues, nature, preference recovery, and low-stakes experiments.",
-        "Protect the beginner from immediate talent judgments."
+        "Protect the beginner from immediate talent judgments.",
+        "Make room for being interested in and enjoying the child, not only correcting or protecting them. A secure base supports safe exploration; outward competence alone does not demonstrate warmth or vitality."
       ],
       "avoid": [
         "Do not assume a fully formed true self is merely hidden and waiting to be uncovered."
@@ -1672,7 +1705,11 @@
           "The adult position first protects the body and listens. It does not need to convince the suicidal state that life is good before the self/death inquiry can begin."
         ]
       },
-      "defaultQuestion": "Before we decide anything, can we invite any part of you that can observe, protect the body, or simply postpone the decision to sit beside the part that wants to die—even if we have to borrow that adult position from someone you trust?"
+      "defaultQuestion": "Before we decide anything, can we invite any part of you that can observe, protect the body, or simply postpone the decision to sit beside the part that wants to die—even if we have to borrow that adult position from someone you trust?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
     },
     {
       "id": "IC.SUICIDAL_SELF_DEATH_INQUIRY",
@@ -1772,7 +1809,11 @@
           "Every reflective suicidal route also presents human birth as an extraordinarily rare and precious opportunity to investigate dukkha and liberation, not merely as a life that might possibly become worthwhile."
         ]
       },
-      "defaultQuestion": "What exactly is the self you want to kill, and what makes you think killing this body ends that self or the suffering you are trying to escape?"
+      "defaultQuestion": "What exactly is the self you want to kill, and what makes you think killing this body ends that self or the suffering you are trying to escape?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
     },
     {
       "id": "IC.INTUITION_TRUST_CALIBRATION",
@@ -1868,7 +1909,11 @@
           "Trust is domain-specific and corrigible: what matters is whether track record, contradictions, boundaries, response to disagreement or no, and new evidence can still update the conclusion."
         ]
       },
-      "defaultQuestion": "What exactly is your intuition telling you, what evidence supports or contradicts that conclusion, and what evidence would actually lower your trust?"
+      "defaultQuestion": "What exactly is your intuition telling you, what evidence supports or contradicts that conclusion, and what evidence would actually lower your trust?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
     },
     {
       "id": "IC.PRECIOUS_HUMAN_OPPORTUNITY",
@@ -1984,6 +2029,85 @@
         ]
       },
       "defaultQuestion": ""
+    },
+    {
+      "id": "IC.SPIRITUAL_STRUGGLE",
+      "title": "Work with spiritual struggle or sacred loss",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 100,
+      "activation": {
+        "all": [
+          {
+            "field": "spiritual_struggle",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.SPIRITUAL_STRUGGLE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Find out what turning toward this spiritual source currently evokes and what has been lost or violated. Support the user’s wish to preserve, mourn, reconsider or change that relationship without requiring stronger belief or abandonment of the tradition.",
+        "Do not prescribe more borrowing from a source that is itself distressing without examining the mismatch. Discussing spiritual distress is not consent to prayer or imagery."
+      ],
+      "avoid": [
+        "Do not infer divine condemnation or certify an external spiritual cause.",
+        "Do not automatically reduce spiritual struggle to a parent projection, bypass, or inability to love.",
+        "Do not treat continued devotion, uncertainty, or declining an exercise as pathology."
+      ],
+      "successSignals": [
+        "The concern is heard in its own terms and the person can choose a fitting next step without surrendering practical safety or judgment."
+      ],
+      "tags": [
+        "spiritual-struggle",
+        "sacred-loss",
+        "choice"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "A valued spiritual source may help in one respect and hurt in another; spiritual struggle and unavailable support are different."
+        ],
+        "forbiddenOverclaims": [
+          "No guarantee of metaphysical truth, protection or clinical efficacy follows from this route."
+        ]
+      },
+      "defaultQuestion": ""
     }
   ],
   "edges": [
@@ -2096,6 +2220,23 @@
       "from": "IC.SUICIDAL_SELF_DEATH_INQUIRY",
       "relation": "requires-reality-check",
       "to": "IC.PRECIOUS_HUMAN_OPPORTUNITY"
+    },
+    {
+      "from": "IC.SPIRITUAL_STRUGGLE",
+      "to": "IC.BORROW_ONE_FUNCTION",
+      "relation": "may-connect-to"
+    },
+    {
+      "from": "IC.SPIRITUAL_STRUGGLE",
+      "to": "IC.DIFFERENTIATION",
+      "relation": "may-connect-to"
+    },
+    {
+      "from": "IC.SPIRITUAL_STRUGGLE",
+      "to": "IC.EXISTENTIAL_NOURISHMENT",
+      "relation": "may-connect-to"
     }
-  ]
+  ],
+  "taskPolicyVersion": 1,
+  "pathPerformancePolicyVersion": 1
 }

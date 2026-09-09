@@ -18,11 +18,12 @@ source_refs:
   - IC.NO_CLEAR_CHILD
   - IC.IDENTITY_PLAY
   - IC.CHILD_BAD_THINGS
+  - AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 regression_refs:
   - G008
-base_record_sha256: a3f664a1d31dbb6edf617e99375627df647d0c7afa7fb64d363f417503cb197d
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+base_record_sha256: 9b8b14532a85240dad58a4d4cba65a487ec8894e7221122463998e05393a4aa1
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Build identity through private preference and experimental play
@@ -63,7 +64,8 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
   },
   "recommendations": [
     "Use private journaling, time without external cues, nature, preference recovery, and low-stakes experiments.",
-    "Protect the beginner from immediate talent judgments."
+    "Protect the beginner from immediate talent judgments.",
+    "Make room for being interested in and enjoying the child, not only correcting or protecting them. A secure base supports safe exploration; outward competence alone does not demonstrate warmth or vitality."
   ],
   "successSignals": [
     "Preferences become more stable across relationships and settings."
@@ -79,3 +81,5 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
 [[current/sources/inner-child-guide/IC.IDENTITY_PLAY]]
 
 [[current/sources/inner-child-guide/IC.CHILD_BAD_THINGS]]
+
+[[current/governance/amendments/AMEND.IC.EMOTIONAL_TASK_GUIDANCE]]

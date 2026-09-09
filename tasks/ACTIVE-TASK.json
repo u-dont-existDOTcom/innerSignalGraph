@@ -1,54 +1,29 @@
 {
   "schemaVersion": 1,
-  "taskId": "obsidian-authoring-architecture-v1",
-  "title": "Implement the graph-authoritative Obsidian authoring and mapping architecture",
-  "status": "complete",
+  "taskId": "fresh-session-private-case-continuity-20260909",
+  "title": "Make encrypted private case persistence retrievable by fresh authorized supervisor sessions",
+  "status": "blocked_external_activation",
   "exclusive": false,
+  "startedAt": "2026-09-09",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
-  "requiredBranch": "codex/obsidian-authoring-architecture-20260829",
-  "pullRequest": 13,
+  "requiredBranch": "companion/foundations-2026-09-05",
+  "pullRequest": 46,
   "ownerAuthorized": true,
-  "source": {
-    "repository": "u-dont-existDOTcom/innerSignalGraph",
-    "mainSha": "82b12b20c4a401b5e60999f981292c36fbaa8a53",
-    "evidenceCommit": "060a9e17d7a7094ffad96741e3c37e8ca2866cd7"
-  },
-  "statePath": "tasks/obsidian-authoring-architecture-v1/CURRENT-STATE.md",
-  "preflightCommand": "npm run authoring:task:preflight",
-  "completionCommand": "npm run authoring:task:acceptance",
-  "completionClaimRule": "Ordinary tests and green CI are prerequisites only. Readiness requires the task-specific acceptance command; completion additionally requires protected integration and an immutable receipt.",
-  "suspendedTaskSources": [],
-  "terminal": {
-    "mergedHead": "534a7f71cae35ee3df77ac88782879d02fcc3376",
-    "mergeCommit": "20c2387e0c200893a20d9b4d562fed96d7c39920",
-    "mergedTree": "7b2be66cc001264dbcc2564e3163d2eba418b4aa",
-    "mergedAt": "2026-08-29T16:33:53Z",
-    "closeoutRecordedAt": "2026-08-31T15:39:17Z",
-    "closeoutReceipt": "tasks/obsidian-authoring-architecture-v1/CLOSEOUT-RECEIPT.json"
-  },
-  "acceptance": {
-    "requiredArtifacts": [
-      "authoring/obsidian/current/manifest.json",
-      "authoring/obsidian/current/maps/development-graph.canvas",
-      "docs/INNER-CHILD-THERAPY-MAP.md",
-      "docs/OBSIDIAN-AUTHORING-IMPLEMENTATION-REPORT-2026-08-29.md"
-    ],
-    "requiredDocumentation": [
-      "docs/superpowers/specs/2026-08-29-obsidian-authoring-architecture.md",
-      "docs/superpowers/plans/2026-08-29-obsidian-authoring-architecture.md",
-      "docs/AUTHORING-ARCHITECTURE.md",
-      "authoring/README.md",
-      "authoring/obsidian/HOME.md",
-      "authoring/obsidian/VAULT-SETUP.md"
-    ],
-    "requiredCommands": [
-      "npm run authoring:validate",
-      "npm run authoring:check",
-      "npm run authoring:maps:check",
-      "npm run graph:compile",
-      "npm run graph:test",
-      "npm test",
-      "npm run verify"
-    ]
-  }
+  "localImplementationStatus": "verified",
+  "freshAuthorizedChatStatus": "blocked_until_real_case_import_production_auth_deployment_registration_and_new_chat_tool_call_are_verified",
+  "closedAt": "2026-09-09",
+  "ownerOutcomePath": "tasks/fresh-session-private-case-continuity-20260909/OWNER-OUTCOME.json",
+  "directivePath": "tasks/fresh-session-private-case-continuity-20260909/EXECUTION-DIRECTIVE.json",
+  "statePath": "tasks/fresh-session-private-case-continuity-20260909/INTEGRATION.md",
+  "activeLessonContractPath": "tasks/fresh-session-private-case-continuity-20260909/ACTIVE-LESSON-CONTRACT.json",
+  "completionEvidencePath": "tasks/fresh-session-private-case-continuity-20260909/COMPLETION-MATRIX.json",
+  "completionClaimRule": "A case is not continuation-safe unless a fresh authorized process with only case_id can recover every required exact artifact. Local storage or MCP schemas do not prove fresh ChatGPT availability; deployed authentication, registration, and a successful newly created chat tool call are separate required evidence for that claim.",
+  "suspendedTaskSources": [
+    "historical handoff next-actions outside this owner request",
+    "provider-backed guide-fidelity and audit-architecture experiments",
+    "DEV-R005 continuation",
+    "stable promotion and deployment queues",
+    "unrelated worktrees and pull requests",
+    "real private-case reinterpretation or public migration"
+  ]
 }

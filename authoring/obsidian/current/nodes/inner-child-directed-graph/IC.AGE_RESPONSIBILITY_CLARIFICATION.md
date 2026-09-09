@@ -20,9 +20,9 @@ source_refs:
 regression_refs:
   - G001
   - G012
-base_record_sha256: 510a5e1423d3ad16cf60cabdeb651804a08d12ea5cdff76c8bde40b6196e4dca
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+base_record_sha256: 79edfb36dffb16c2670c7d479094e371bf7be00629a56637843006eaa46ad943
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Separate developmental ages and responsibility
@@ -57,6 +57,10 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
     "deferNodes": [],
     "forbiddenOverclaims": [],
     "requiredNuance": []
+  },
+  "questionPolicy": {
+    "purpose": "discriminate",
+    "unresolvedFields": []
   },
   "recommendations": [
     "Identify which age or version is being blamed and what opportunity it supposedly failed to use.",

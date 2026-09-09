@@ -19,9 +19,17 @@ source_refs:
   - IC.BORROW_ONE_FUNCTION
 regression_refs:
   - G008
+  - G026
+  - G027
+  - G028
+  - G031
+  - G032
+  - G033
+  - G034
+  - G035
 base_record_sha256: 2094b53095b0213ede115a8db91bb4aab513f48ed727a16853da008dee1a192c
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Borrow the best-friend standard of care

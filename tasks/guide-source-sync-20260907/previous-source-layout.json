@@ -1,0 +1,72 @@
+{
+  "version": "source-layout-v1",
+  "textGuides": [
+    {
+      "guideId": "inner-child-guide",
+      "file": "inner-child-guide.txt",
+      "sections": [
+        {"id":"IC.CHICKEN_EGG","heading":"The Chicken-and-Egg Problem"},
+        {"id":"IC.BEFORE_DEEP","heading":"Before You Try to Go Deep"},
+        {"id":"IC.REGULATION_BEFORE_DIALOGUE","heading":"Regulation May Come Before Dialogue"},
+        {"id":"IC.BORROW_ADULT","heading":"Borrow the Adult Before You Can Be the Adult"},
+        {"id":"IC.NEUTRAL_WITNESS","heading":"A Witness Is Enough to Begin"},
+        {"id":"IC.BORROW_ONE_FUNCTION","heading":"Borrow One Function at a Time"},
+        {"id":"IC.ADULT_APPRENTICE","heading":"Become the Adult Apprentice"},
+        {"id":"IC.THREE_FUNCTIONS","heading":"The Three Adult Functions"},
+        {"id":"IC.PROTECTOR_VISIBLE","heading":"Make the Protector Visible"},
+        {"id":"IC.VOW","heading":"Make a Simple Vow"},
+        {"id":"IC.ADULT_VOICE_FAKE","heading":"When the Adult Voice Feels Fake"},
+        {"id":"IC.INHERITED_PARENT","heading":"The Parent You Inherited"},
+        {"id":"IC.START_WHATEVER","heading":"Start With Whatever Showed Up"},
+        {"id":"IC.GUARDS","heading":"The Two Common Guards"},
+        {"id":"IC.BOTTOM_UP_SEQUENCE","heading":"A Bottom-Up Sequence"},
+        {"id":"IC.ESCAPE_URGE","heading":"When the Urge to Escape Arrives"},
+        {"id":"IC.NO_CLEAR_CHILD","heading":"Sometimes There Isn’t a Clear Child Yet"},
+        {"id":"IC.IDENTITY_PLAY","heading":"From Survival to Experimental Play"},
+        {"id":"IC.DIFFERENTIATION","heading":"Untangling the Belonging Bargains"},
+        {"id":"IC.CHILD_BAD_THINGS","heading":"Let the Child Be Bad at Things"},
+        {"id":"IC.GUIDE_LATER","heading":"The Inner Guide Comes Later"},
+        {"id":"IC.HEART_SOLAR_LOOP","heading":"A Heart-to-Child Loop"},
+        {"id":"IC.PHOTOS","heading":"Use Childhood Photographs Without Interrogating Them"},
+        {"id":"IC.LOVE_MISSING","heading":"When Love Still Feels Missing"},
+        {"id":"IC.ALTERED_STATES","heading":"Altered States Can Deepen the Therapy"},
+        {"id":"IC.FORGIVENESS","heading":"How to Forgive Without Forgetting"},
+        {"id":"IC.RELATIONSHIP","heading":"Borrowed Adulthood in Relationship"},
+        {"id":"IC.IFS","heading":"How This Relates to IFS"}
+      ]
+    },
+    {
+      "guideId": "somatic-sequencing-guide",
+      "file": "somatic-sequencing-guide.txt",
+      "sections": [
+        {"id":"SOM.INTRO","heading":"Introduction"},
+        {"id":"SOM.MAP_NOT_LADDER","heading":"This is a Map, But You Are the Explorer"},
+        {"id":"SOM.MAP_GLANCE","heading":"The Map at a Glance"},
+        {"id":"SOM.PHASE1","heading":"Phase 1: Build Enough Safety to Stay Present"},
+        {"id":"SOM.SE","heading":"Primary Modality: Somatic Experiencing"},
+        {"id":"SOM.YOGA","heading":"Trauma-Sensitive / Restorative Yoga"},
+        {"id":"SOM.GENTLE_SHAKING","heading":"Secondary Support: Gentle Shaking / TRE"},
+        {"id":"SOM.PHASE2","heading":"Phase 2: Daily Regulation and Discharge — Keep the Pressure Low"},
+        {"id":"SOM.EFT","heading":"EFT / Tapping"},
+        {"id":"SOM.SHAKING_QIGONG","heading":"Shaking Qigong / Shaking Medicine"},
+        {"id":"SOM.STACK","heading":"The Discharge → Settle Stack"},
+        {"id":"SOM.PHASE3","heading":"Phase 3: Deep Subcortical Reprocessing"},
+        {"id":"SOM.BRAINSPOTTING","heading":"Primary Modality: Brainspotting"},
+        {"id":"SOM.POST_BRAINSPOTTING","heading":"Post-Brainspotting Integration"},
+        {"id":"SOM.PHASE4","heading":"Phase 4: Targeted Memory Reconsolidation"},
+        {"id":"SOM.EMDR","heading":"Primary Modality: EMDR"},
+        {"id":"SOM.POST_EMDR","heading":"After EMDR"},
+        {"id":"SOM.PHASE5","heading":"Phase 5: Meaning-Making and Life Integration"},
+        {"id":"SOM.INTEGRATION","heading":"Light CBT / Narrative Integration"},
+        {"id":"SOM.JUDGE_HELP","heading":"How to Judge What Is Helping"},
+        {"id":"SOM.ADVANCED_RELEASE_SOURCE","heading":"For Fun & Advanced Release try sky hypnosis and vagal blitz breathwork (sky hypnosis transcript here, then vagal blitz post attached as pdf):"}
+      ]
+    }
+  ],
+  "pdfSections": [
+    {"id":"VAGAL.CLAIMS.P1_4","sourceId":"vagal-blitz-source","pages":[1,2,3,4]},
+    {"id":"VAGAL.SAFETY.P5","sourceId":"vagal-blitz-source","pages":[5]},
+    {"id":"VAGAL.MAINTENANCE.P6_7","sourceId":"vagal-blitz-source","pages":[6,7]},
+    {"id":"VAGAL.PROTOCOL.P7_8","sourceId":"vagal-blitz-source","pages":[7,8]}
+  ]
+}

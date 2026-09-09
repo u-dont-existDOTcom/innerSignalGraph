@@ -7,13 +7,14 @@ source_id: SOM.SE
 guide_id: somatic-sequencing-guide
 heading: "Primary Modality: Somatic Experiencing"
 source_role: primary-framework
-source_hash: f865c8d93221cccd8e49f49adbf0961051f0c0775603e785420ee89509acb419
+source_hash: 5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267
 section_hash: 80ac63ed6ab0417d5ff5f2115856420c4c1c9a9d6af73165b9f490c87fcbcc40
 locator_kind: text-lines
 cited_by_node_ids:
+  - ROUTE.EXTERNAL_EMBODIMENT
   - SOM.GENTLE_REGULATION
   - SOM.SAFETY_STABILIZATION
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Primary Modality: Somatic Experiencing

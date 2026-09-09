@@ -1,14 +1,26 @@
 import { loadGuide, loadSomaticGuide, selectGuideExcerpts } from "../guide/load-guide.mjs";
 import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
 import { ValidationError } from "../core/errors.mjs";
+import { buildDurableCaseContext, formatVerbatimWindow } from "../case-state/context-window.mjs";
+import { constitutionReference } from "../therapy/constitution.mjs";
 
 export async function buildContext(input, config) {
   if (!input || typeof input !== "object") throw new ValidationError("Input must be an object.");
   if (typeof input.userMessage !== "string" || !input.userMessage.trim()) {
     throw new ValidationError("userMessage is required.");
   }
-  const recentTranscript = typeof input.recentTranscript === "string" ? input.recentTranscript.trim() : "";
+  const suppliedTranscript = typeof input.recentTranscript === "string" ? input.recentTranscript.trim() : "";
   const userFacts = Array.isArray(input.userFacts) ? input.userFacts.filter((fact) => typeof fact === "string") : [];
+  const durableContext = buildDurableCaseContext({
+    caseId: input.caseId,
+    transcriptEntries: input.recentTranscriptEntries,
+    caseState: input.durableCaseState,
+    trackerEntries: input.trackerEntries,
+    currentUserMessage: input.userMessage
+  });
+  const recentTranscript = durableContext.recent_verbatim_window.turns.length
+    ? formatVerbatimWindow(durableContext.recent_verbatim_window)
+    : suppliedTranscript;
   const guide = await loadGuide(config);
   const somaticText = await loadSomaticGuide(config);
   const graphBundle = await loadCompiledGuideGraphBundle({ packetRoot: config.guidePacketRoot });
@@ -23,11 +35,20 @@ export async function buildContext(input, config) {
     userMessage: input.userMessage.trim(),
     recentTranscript,
     userFacts,
+    constitution: constitutionReference(),
+    durableCaseState: durableContext.case_state,
+    currentTherapeuticEpisode: durableContext.current_episode,
+    targetedRetrievalRequests: durableContext.targeted_retrieval_requests,
+    targetedOlderEvidence: durableContext.targeted_older_evidence,
+    trackerWindow: durableContext.tracker_window,
+    recentTranscriptEntries: durableContext.recent_verbatim_window.turns,
     priorCaseSnapshot: input.priorCaseSnapshot && typeof input.priorCaseSnapshot === "object" ? input.priorCaseSnapshot : null,
     priorInterventionContract: input.priorInterventionContract && typeof input.priorInterventionContract === "object" ? input.priorInterventionContract : null,
     priorProcessingTier: typeof input.priorProcessingTier === "string" ? input.priorProcessingTier : "",
     guideManifest: guide.manifest,
     graphBundleVersion: graphBundle.version,
+    pathPerformanceNodes: graphBundle.graphs.flatMap(g => g.nodes.map(({ id, title, successSignals }) => ({ id, title, successSignals }))),
+    pathPerformanceEnabled: graphBundle.graphs.length > 0 && graphBundle.graphs.every(g => g.pathPerformancePolicyVersion === 1),
     guidePacketVersion: guide.manifest.guidePacketVersion ?? null,
     guideSources: guide.manifest.sources?.map((source) => ({ id: source.id, version: source.version })) ?? [],
     guideExcerpts

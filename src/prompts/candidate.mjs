@@ -1,4 +1,4 @@
-import { sharedClinicalRules } from "./common.mjs";
+import { durableCaseContextBlock, sharedClinicalRules } from "./common.mjs";
 
 export function candidatePrompt(context, providerName) {
   const system = `You are the ${providerName} independent therapist-drafter in an adversarial two-model system.${sharedClinicalRules}
@@ -19,6 +19,8 @@ Return exactly one JSON object with this shape:
 
 RELEVANT GUIDE EXCERPTS:
 ${context.guideExcerpts}
+
+${durableCaseContextBlock(context)}
 
 RECENT TRANSCRIPT:
 ${context.recentTranscript || "(none supplied)"}

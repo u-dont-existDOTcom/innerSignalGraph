@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "pr46-completion-audit-matrix-20260909",
+  "status": "READY_FOR_FINAL_GITHUB_CLOSEOUT",
+  "baseline": {
+    "head": "4a6883a396188cad8604d6223d3ddba34dd3074f",
+    "pullRequest": 46,
+    "state": "OPEN_DRAFT_UNMERGED",
+    "hostedChecks": "SUCCESS"
+  },
+  "completionStandard": "Every requested workstream has current-tree implementation anchors and directly relevant executable evidence. A handoff, plan, historical claim, or general green check is not sufficient.",
+  "proofRuns": [
+    {
+      "id": "RUN-FOCUSED-01",
+      "kind": "current-tree-focused",
+      "result": "PASS",
+      "summary": "11 focused test-file processes passed, covering path performance, readiness, romance source/runtime/realization, representation delivery, the external-movement source boundary, audit-fixture privacy/scoring, longitudinal audit lessons, and the latency benchmark."
+    },
+    {
+      "id": "RUN-AFFECTED-01",
+      "kind": "current-tree-affected",
+      "result": "PASS_WITH_HOST_BOUNDARY_RERUN",
+      "summary": "Seven affected files passed in the workspace sandbox. Two files reached only sandbox EPERM restrictions on localhost binding and a read-only Git child process; their 26 individual tests then passed at the host boundary."
+    },
+    {
+      "id": "RUN-PRIVACY-DELTA-01",
+      "kind": "ephemeral-private-literal-scan",
+      "result": "PASS",
+      "summary": "Operator-supplied private identity and source-reference literals had zero matches in the PR delta and task-local public artifacts. The literals and derived hashes are not retained."
+    },
+    {
+      "id": "RUN-HOSTED-BASELINE-01",
+      "kind": "github-current-baseline",
+      "result": "PASS",
+      "summary": "Repository workflow policy, deterministic package, and CodeQL were successful on the freshly fetched baseline head."
+    },
+    {
+      "id": "RUN-GRAPH-01",
+      "kind": "current-tree-graph-regressions",
+      "result": "PASS",
+      "summary": "29 of 29 compiled graph regression cases passed."
+    },
+    {
+      "id": "RUN-THERAPY-LESSONS-01",
+      "kind": "current-tree-therapy-lessons",
+      "result": "PASS",
+      "summary": "Five of five substantive therapy prompt lessons passed; four active runtime lessons remain documented."
+    },
+    {
+      "id": "RUN-REPOSITORY-AUDIT-01",
+      "kind": "current-tree-repository-audit",
+      "result": "PASS",
+      "summary": "Repository audit returned zero errors and one known warning that hosted GitHub App permissions cannot be proven from repository files."
+    },
+    {
+      "id": "RUN-FULL-PACKAGE-01",
+      "kind": "final-boundary-complete-package",
+      "result": "PASS",
+      "summary": "The Node 24.18.0 complete package passed: 1007 of 1007 automated tests, 29 of 29 graph regressions, 5 of 5 therapy lessons, authoring projections, immutable packet hashes, syntax, mocks, runtime fingerprint, package hygiene, and development-loop gates. A lost output-session handle caused one unnecessary duplicate complete run; both complete runs passed, and this receipt does not conceal that execution inefficiency."
+    }
+  ],
+  "rows": [
+    {
+      "id": "PATH_PERFORMANCE",
+      "requiredOutcomeIds": ["RO-02"],
+      "status": "VERIFIED_CURRENT_TREE",
+      "implementationAnchors": [
+        "src/case-formulation/path-performance.mjs",
+        "src/case-formulation/run.mjs",
+        "src/orchestrator/run-tiered-pipeline.mjs",
+        "src/orchestrator/response-contract.mjs"
+      ],
+      "directTestAnchors": ["tests/path-performance.test.mjs"],
+      "proofRunIds": ["RUN-FOCUSED-01", "RUN-AFFECTED-01", "RUN-GRAPH-01", "RUN-THERAPY-LESSONS-01"],
+      "provenanceCommits": ["a55c6c0c725e8104f5efe1504d1d7077befafada", "e20b053c5677218abddb3c1bd5f35cb643985546"],
+      "observedCompletion": "Current runtime retains strategy predictions and evidence across turns, distinguishes movement from adverse/low-information response, and switches, probes, closes, or de-escalates according to observed trajectory rather than surface agreement."
+    },
+    {
+      "id": "RELATIONAL_READINESS",
+      "requiredOutcomeIds": ["RO-03"],
+      "status": "VERIFIED_CURRENT_TREE",
+      "implementationAnchors": [
+        "src/case-formulation/relational-readiness.mjs",
+        "src/prompts/relational-readiness.mjs",
+        "src/orchestrator/run-tiered-pipeline.mjs",
+        "src/orchestrator/response-contract.mjs"
+      ],
+      "directTestAnchors": [
+        "tests/romance-readiness-composition.test.mjs",
+        "tests/romance-readiness-response-scope.test.mjs"
+      ],
+      "proofRunIds": ["RUN-FOCUSED-01", "RUN-AFFECTED-01", "RUN-GRAPH-01", "RUN-THERAPY-LESSONS-01"],
+      "provenanceCommits": ["ffacf9b64495dfd009fbbfa372333289ac45469b", "eaa758ff7dd3e66bc89d43328da0ca54caccb241", "a005e0f3bc94814642ece218295ceff22adf338d"],
+      "observedCompletion": "Readiness is a current, observation-bound, revisable safety judgment. It distinguishes romance from non-romantic support, can pause foreseeable-harm escalation, does not block a stable person from dating, and reopens only on fresh audited evidence."
+    },
+    {
+      "id": "ROMANCE_SOURCE",
+      "requiredOutcomeIds": ["RO-04"],
+      "status": "VERIFIED_CURRENT_TREE",
+      "implementationAnchors": [
+        "tasks/romance-guide-20260907/SOURCE.json",
+        "tasks/romance-guide-20260907/SUPPLEMENT.json",
+        "tasks/romance-guide-20260907/context.mjs"
+      ],
+      "directTestAnchors": ["tests/romance-guide-supplement.test.mjs"],
+      "proofRunIds": ["RUN-FOCUSED-01"],
+      "provenanceCommits": ["f1bf391f81d6fa0646c90ac341ef38b233ae02e3", "48204b1dcae424434bec2859dda72e3b109d3027"],
+      "observedCompletion": "The selected owner-authored material is source-addressable, bounded by explicit adaptation limits, and separated from excluded medical, autobiographical, and unreviewed claims."
+    },
+    {
+      "id": "ROMANCE_RUNTIME",
+      "requiredOutcomeIds": ["RO-04"],
+      "status": "VERIFIED_CURRENT_TREE",
+      "implementationAnchors": [
+        "src/case-formulation/romance-guide.mjs",
+        "src/case-formulation/run.mjs",
+        "src/prompts/realize.mjs",
+        "src/orchestrator/response-contract.mjs"
+      ],
+      "directTestAnchors": [
+        "tests/romance-guide-runtime-composition.test.mjs",
+        "tests/romance-guide-realization-policy.test.mjs"
+      ],
+      "proofRunIds": ["RUN-FOCUSED-01", "RUN-AFFECTED-01"],
+      "provenanceCommits": ["48204b1dcae424434bec2859dda72e3b109d3027", "fd70a9b93ab7bf45e7490ca9bd5a1060965148fd"],
+      "observedCompletion": "A current-issue selector is audited before ordinary planning, composes source trace and transfer checks into path performance, routes coercion outward, and fails closed at realization."
+    },
+    {
+      "id": "ROMANCE_OPTIONAL_REFERENCE",
+      "requiredOutcomeIds": ["RO-04"],
+      "status": "VERIFIED_CURRENT_TREE",
+      "implementationAnchors": [
+        "tasks/romance-guide-20260907/OWNER-LINK-CONFIRMATION.json",
+        "src/core/romance-reference.mjs",
+        "src/orchestrator/response-contract.mjs"
+      ],
+      "directTestAnchors": [
+        "tests/romance-guide-runtime-composition.test.mjs",
+        "tests/romance-guide-realization-policy.test.mjs"
+      ],
+      "proofRunIds": ["RUN-FOCUSED-01"],
+      "provenanceCommits": ["c34bfab95ecc8d4c67921c59f40b4a38c781c0fa", "fd70a9b93ab7bf45e7490ca9bd5a1060965148fd"],
+      "observedCompletion": "The owner-confirmed canonical reference is optional and context-bound, never an automatic footer, and is suppressed by safety, stabilization, pause, audience, decline, repetition, completion, and unsafe-practice boundaries."
+    },
+    {
+      "id": "PRIVATE_CASE_BOUNDARY",
+      "requiredOutcomeIds": ["RO-05"],
+      "status": "VERIFIED_CURRENT_TREE",
+      "implementationAnchors": [
+        "tasks/audit-architecture-eval-20260907/cases.json",
+        "tasks/audit-architecture-eval-20260907/score.mjs",
+        "src/storage/private-case-store.mjs",
+        "tasks/audit-architecture-eval-20260907/STEERING-CONTEXT-SUPPLEMENT.json"
+      ],
+      "directTestAnchors": [
+        "tasks/audit-architecture-eval-20260907/score.test.mjs",
+        "tasks/audit-architecture-eval-20260907/longitudinal-lessons.test.mjs",
+        "tests/constitution-context-state.test.mjs"
+      ],
+      "proofRunIds": ["RUN-FOCUSED-01", "RUN-AFFECTED-01", "RUN-PRIVACY-DELTA-01", "RUN-REPOSITORY-AUDIT-01"],
+      "provenanceCommits": ["b68e231b6305402e224dca9c72eec48a6b7e1b48", "e32a16714e8d38b1903ec4c7e3f74e049486beac"],
+      "observedCompletion": "Public evaluation and state fixtures are synthetic and structurally privacy-validated; real transcript persistence is encrypted; this PR adds no private case record, real-person identifier, private transcript, source conversation identifier, or private-derived hash.",
+      "scopeLimit": "This verifies private-case handling and the PR delta. It does not reclassify or rewrite pre-existing owner-published source prose or shared Git history."
+    },
+    {
+      "id": "REPRESENTATION_DELIVERY",
+      "requiredOutcomeIds": ["RO-06"],
+      "status": "VERIFIED_CURRENT_TREE",
+      "implementationAnchors": [
+        "src/case-formulation/path-performance.mjs",
+        "src/prompts/common.mjs",
+        "src/prompts/realize.mjs",
+        "src/orchestrator/response-contract.mjs"
+      ],
+      "directTestAnchors": ["tests/representation-delivery.test.mjs"],
+      "proofRunIds": ["RUN-FOCUSED-01", "RUN-AFFECTED-01", "RUN-GRAPH-01", "RUN-THERAPY-LESSONS-01"],
+      "provenanceCommits": ["e20b053c5677218abddb3c1bd5f35cb643985546"],
+      "observedCompletion": "CLEAR, EXPERIENTIAL, and BRIDGE are process-specific delivery modes across prose, felt sense, image/drawing, metaphor/story/poem, role dialogue, and movement/gesture. The same truth system remains in force; symbols stay user-owned; metaphor is hypothesis; consequential claims retain reality checks; plain translation, decline, and instability-to-CLEAR behavior are regression-covered."
+    },
+    {
+      "id": "EXTERNAL_MOVEMENT_SOURCE_AND_SCOPE",
+      "requiredOutcomeIds": ["RO-07"],
+      "status": "VERIFIED_CURRENT_TREE",
+      "implementationAnchors": [
+        "docs/research/2026-09-08-butoh-ecstatic-enactment-scan.md",
+        "guides/somatic-sequencing-guide.txt",
+        "guides/source-layout.json"
+      ],
+      "directTestAnchors": ["tests/butoh-external-source.test.mjs"],
+      "proofRunIds": ["RUN-FOCUSED-01", "RUN-GRAPH-01"],
+      "provenanceCommits": ["e20b053c5677218abddb3c1bd5f35cb643985546"],
+      "observedCompletion": "The exact hybrid is labeled not found as a standardized therapy and retained only as an optional external, loose/experimental practice. Adjacent evidence is not transferred. Sexualized content is not treated as intrinsic; consent, opt-out/leave, sober contact consent, trauma-aware facilitation, destabilization-as-adverse, and the AI physical/contact/sexual/coercive scope boundary are explicit."
+    },
+    {
+      "id": "LATENCY_VERIFY_BLOCKER",
+      "requiredOutcomeIds": ["RO-08"],
+      "status": "VERIFIED_CURRENT_TREE",
+      "implementationAnchors": [
+        "src/autopilot/therapy-latency-benchmark.mjs",
+        "src/case-formulation/run.mjs",
+        "src/orchestrator/run-tiered-pipeline.mjs"
+      ],
+      "directTestAnchors": ["tests/therapy-latency-benchmark.test.mjs"],
+      "proofRunIds": ["RUN-FOCUSED-01", "RUN-HOSTED-BASELINE-01", "RUN-FULL-PACKAGE-01"],
+      "provenanceCommits": ["4f364bc3d28d7a0332f3446363d88876dd3c0408"],
+      "observedCompletion": "The historical performance baseline is separated from the current therapy-policy fingerprint. The exact focused benchmark passes and the freshly fetched PR baseline has a successful hosted deterministic-package check; no test was weakened in this audit."
+    },
+    {
+      "id": "CANONICAL_HANDOFF_COMPLETION_RECEIPT",
+      "requiredOutcomeIds": ["RO-01", "RO-09", "RO-10", "RO-11", "RO-12"],
+      "status": "VERIFIED_CURRENT_TREE",
+      "implementationAnchors": [
+        "tasks/pr46-completion-audit-20260909/OWNER-OUTCOME.json",
+        "tasks/pr46-completion-audit-20260909/EXECUTION-DIRECTIVE.json",
+        "tasks/pr46-completion-audit-20260909/COMPLETION-MATRIX.json",
+        "tasks/pr46-completion-audit-20260909/INTEGRATION.md"
+      ],
+      "directTestAnchors": ["scripts/pr46-completion-audit-acceptance.mjs"],
+      "proofRunIds": ["RUN-FOCUSED-01", "RUN-AFFECTED-01", "RUN-PRIVACY-DELTA-01", "RUN-HOSTED-BASELINE-01", "RUN-GRAPH-01", "RUN-THERAPY-LESSONS-01", "RUN-REPOSITORY-AUDIT-01", "RUN-FULL-PACKAGE-01"],
+      "provenanceCommits": [],
+      "observedCompletion": "The owner outcomes, execution boundary, current-tree evidence, and remaining exact-head GitHub closeout are bound into one machine-checkable receipt. The PR remains draft; no paid calls, merge, deployment, installation, stable promotion, or efficacy claim occurred."
+    }
+  ],
+  "additionalPreservedChatWork": [
+    {
+      "id": "REASONING_SELECTION_POLICY",
+      "status": "PRESERVED_CURRENT_TREE",
+      "anchors": ["docs/REASONING-SELECTION.md", "AUTOPILOT.md", "tasks/reasoning-selection-20260907/INTEGRATION.md"],
+      "note": "The earlier bounded reasoning-selection policy remains present and referenced by the development authority path. It was not a missing runtime workstream in the current owner checklist."
+    }
+  ],
+  "finalCloseout": {
+    "exactFinalHead": "RECORDED_IN_GIT_AND_IMMUTABLE_PR_RECEIPT_AFTER_PUSH",
+    "requiredBeforeComplete": [
+      "final all-history publication audit on the containing commit",
+      "fresh remote-head reconciliation and fast-forward push",
+      "exact-head hosted check readback",
+      "public-safe PR receipt"
+    ],
+    "releaseBoundary": "No runtime adoption, clinical validation, merge, deployment, installation, or stable promotion follows from this audit."
+  }
+}

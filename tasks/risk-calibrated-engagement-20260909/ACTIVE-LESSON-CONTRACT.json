@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "taskId": "risk-calibrated-engagement-20260909",
+  "status": "COMPLETE",
+  "activatedAt": "2026-09-09",
+  "lessons": [
+    {
+      "id": "exclusive-task-isolation",
+      "source": "universal-dev-architecture@origin/main:patterns/exclusive-active-task-locks.md",
+      "trigger": "the PR checkout has an unrelated active exclusive task and uncommitted work",
+      "requiredBehavior": "Work from an isolated branch at the fetched PR head, keep one task-local lock and ledger, and serialize later integration.",
+      "failureCondition": "The active private-case task, its files, or its working copy are overwritten or staged.",
+      "repairAction": "Stop, preserve both trees, and restore isolation before continuing.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "research-before-reinvention",
+      "source": "universal-dev-architecture@origin/main:patterns/research-before-reinvention.md + patterns/existing-work-scan-and-scholarly-discovery.md",
+      "trigger": "a first-class threat taxonomy and policy controller overlap established behavior-based threat assessment",
+      "requiredBehavior": "Preserve the independent conception, scan official and primary sources, then compose established pathway concepts with existing runtime mechanisms and invent only the local adapter.",
+      "failureCondition": "The runtime encodes a homegrown threat label system without mapping or limits, or literature silently replaces the owner lesson.",
+      "repairAction": "Reconcile the design against the strongest primary source and narrow the bespoke remainder.",
+      "enforcement": "semantic"
+    },
+    {
+      "id": "risk-calibration-owner-correction",
+      "source": "current owner directive",
+      "trigger": "violent or threat-adjacent content can produce both safety overreach and dangerous underreaction",
+      "requiredBehavior": "Keep ideation distinct from mobilization and imminence; preserve engagement at low risk, assess proportionately during escalation, and prioritize external safety action only when evidence supports it.",
+      "failureCondition": "Violent words alone trigger generic emergency prose, or concrete operational progression remains an abstract discussion.",
+      "repairAction": "Correct the state, route, prompt, and regression so both inverse failures are mechanically represented.",
+      "enforcement": "mechanical_and_semantic"
+    },
+    {
+      "id": "longitudinal-revisable-state",
+      "source": "project task tasks/constitution-context-audit-20260908/INTEGRATION.md + universal context-compaction-resilience",
+      "trigger": "risk evidence must survive compaction but later evidence may lower concern",
+      "requiredBehavior": "Persist current evidence and level as a structured revisable value with provenance; keep historical evidence without freezing the present level.",
+      "failureCondition": "Compaction drops an unresolved risk or a past high-risk state permanently controls later routing after current evidence changes.",
+      "repairAction": "Restore evidence-bound state projection and explicit supersession/reassessment tests.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "audit-good-control-preservation",
+      "source": "project audit architecture protocol + universal independent evaluation separation",
+      "trigger": "the audit harness can itself overcorrect a well-calibrated response",
+      "requiredBehavior": "Add inverse error classes and good controls; semantic harness edits invalidate prior calibration and require a new freeze before live calls.",
+      "failureCondition": "A good engagement can be rewritten into generic emergency prose without penalty, or stale calibration is reused.",
+      "repairAction": "Block live evaluation, repair the instrument, and require complete recalibration.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "test-efficiency-and-assurance",
+      "source": "universal-dev-architecture@origin/main:patterns/test-efficiency-and-verification-budget.md + patterns/development-assurance-lanes.md",
+      "trigger": "critical safety logic with a large repository suite and an owner-required PR verification boundary",
+      "requiredBehavior": "Use focused/affected tests in the inner loop, one full package checkpoint after the final changed state, and the required privacy/hosted checks at closeout.",
+      "failureCondition": "Repeated unchanged full suites waste time or focused safety evidence is skipped.",
+      "repairAction": "Return to focused tests; run the complete gate only at a meaningful changed-state checkpoint.",
+      "enforcement": "mechanical"
+    }
+  ],
+  "preAttemptAdmission": {
+    "status": "PASS",
+    "evidence": [
+      "PR 46 head fetched at b4eee54e6ed3b8e0b18fa5ca8f1cfb365362dbc1 and matched the source checkout head before isolation.",
+      "Root authority/read-order documents, required task ledgers, current implementation surfaces, and selected universal patterns were read before product edits.",
+      "An isolated worktree and branch were created from the fetched PR head; the unrelated active checkout remains untouched.",
+      "The owner message supplies a bounded chat-authored implementation directive and explicitly forbids merge, deployment, installation, stable promotion, provider execution, and clinical-validation claims."
+    ]
+  },
+  "closeout": {
+    "status": "PASS",
+    "evidence": [
+      "The unrelated active checkout remained untouched; all implementation and verification occurred in the isolated task worktree.",
+      "The candidate composes one evidence-bound threat-pathway controller with existing extraction, adversarial audit, graph safety precedence, Path Performance, longitudinal state, and response enforcement.",
+      "Focused threat and audit regressions, the 1023-test repository suite, the complete package gate, graph and lesson gates, and repository/workflow/publication audits passed.",
+      "The public delta contains only general policy, code, public citations, and de-identified synthetic fixtures; no private real-person transcript, identity, conversation identifier, or private-derived hash was published.",
+      "No provider experiment, live semantic evaluation, merge, deployment, installation, stable promotion, or clinical-validation claim occurred."
+    ]
+  }
+}

@@ -7,12 +7,12 @@ source_id: SOM.PHASE4
 guide_id: somatic-sequencing-guide
 heading: "Phase 4: Targeted Memory Reconsolidation"
 source_role: primary-framework
-source_hash: f865c8d93221cccd8e49f49adbf0961051f0c0775603e785420ee89509acb419
+source_hash: 5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267
 section_hash: 7c61e6f0959d433e4d03b17a16251439bfb6690bc65df8a4cf0b7a18a656d878
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.EMDR_DISCRETE
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Phase 4: Targeted Memory Reconsolidation
@@ -21,7 +21,7 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
 
 Authority path: `guides/somatic-sequencing-guide.txt`
 
-Locator: Lines 249–249
+Locator: Lines 266–266
 
 ```text
 Phase 4: Targeted Memory Reconsolidation

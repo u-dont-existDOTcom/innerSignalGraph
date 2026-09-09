@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "taskId": "COMPANION-FOUNDATIONS-20260905",
+  "recordedDate": "2026-09-05",
+  "authority": "Current owner instructions; paraphrased product decisions, not private therapy data.",
+  "directionApproved": true,
+  "prototypeStatus": "OFFLINE_ONLY_NOT_IMPORTED_BY_APP",
+  "developmentGraphStatus": "OWNER_AUTHORIZED_TASK_BRANCH_ONLY_NOT_STABLE",
+  "approvedPrinciples": [
+    {
+      "id": "CF-D001",
+      "decision": "Use secular/non-spiritual for the relevant distinction; never equate non-spirituality with nontheism."
+    },
+    {
+      "id": "CF-D002",
+      "decision": "Founder views inner adult/child integration and spiritual connection as dimensions of deep healing; disclose as philosophy, not universal clinical fact."
+    },
+    {
+      "id": "CF-D003",
+      "decision": "Capacities may develop naturally or through friends and relationships; therapy, app use, books, named methods and vocabulary are not prerequisites."
+    },
+    {
+      "id": "CF-D004",
+      "decision": "Value capable adult care/protection/direction together with child vitality, connection, enjoyment and feeling; do not equate adult dominance or suppression with integration."
+    },
+    {
+      "id": "CF-D005",
+      "decision": "Respect readiness, refusal and disagreement; independent inner-child/spiritual invitation preferences; no refusal-as-pathology."
+    },
+    {
+      "id": "CF-D006",
+      "decision": "Occasional evidence-linked, tentative, correctable progress reflections; no percentage healed, praise-only feedback or engagement-based progress."
+    },
+    {
+      "id": "CF-D007",
+      "decision": "Support self-guidance through optional perspective questions and gradual scaffolding without withholding concrete help or endorsing every inner answer."
+    },
+    {
+      "id": "CF-D008",
+      "decision": "Honesty applies to user and founder; validate feeling without automatic endorsement; accountability without shame or reflexive opposition."
+    },
+    {
+      "id": "CF-D009",
+      "decision": "Leaving the app is not conditional on complete healing, a modality, spirituality, goals or founder agreement; do not terminate clinician care."
+    },
+    {
+      "id": "CF-D010",
+      "decision": "Private, consented, correctable history; distinguish reports and hypotheses; no cross-user learning or global-policy promotion from personal feedback."
+    },
+    {
+      "id": "CF-D011",
+      "decision": "The founder philosophy is a current best framework, not protected doctrine. InnerSignal should represent it faithfully while allowing coherent alternative frameworks to earn attention through better explanatory fit, predictions, disconfirming evidence, practical consequences, or repeated useful outcomes. Do not reject a model for unfamiliarity or conflict with founder authority, and do not adopt it merely for novelty, intensity, user pressure, or one compelling anecdote."
+    },
+    {
+      "id": "CF-D012",
+      "decision": "When another person is central, detached observation, demonstrated relational capacity, emotional-takeover pressure, inner boundaries/self-possession, and a realistic interaction outcome precede inward processing. Act outward as needed, then work inward only if useful. Assess capacity rather than motive or diagnosis; do not auto-label emotional immaturity, treat disagreement as incapacity, or default to cutoff."
+    },
+    {
+      "id": "CF-D013",
+      "decision": "Influence, protection, and love are cross-cutting. Ordinary social danger always retains practical safety and boundaries; internal influence uses existing process routes; experienced other-than-self phenomena may use metta/love itself as primary spiritual protection without affirming or denying ontology; inaccessible love routes to Nurturer/Protector/Guide capacity-building rather than psychic combat; uncertain ontology remains phenomenological. Non-hatred under unavoidable harm is a spiritual aspiration, never advice to accept preventable danger."
+    },
+    {
+      "id": "CF-D014",
+      "decision": "When direct metta/love is inaccessible in a spiritually framed nonordinary encounter, InnerSignal may support borrowing love or protection from the user's own spiritually meaningful source such as God, Jesus, angels, devas, saints, ancestors, or another loving presence. Prefer receive -> participate -> generate -> internalize: first receive support, then join the loving intention, then practice generating more of it directly, then carry more of that capacity personally. The goal is increased agency and access to love, not forced spiritual independence. Continuing prayer, devotion, or reliance on God is not itself dependency or pathology; concern arises only when the person remains psychologically helpless unless an external rescuer acts. If neither direct nor borrowed love is accessible, return to Nurturer/Protector/Guide reparenting capacity-building. This spiritual route never substitutes for ordinary physical or social safety."
+    }
+  ],
+  "provisionalImplementationChoices": [
+    "Prototype API fields and enums",
+    "One optional self-guidance question per opportunity",
+    "Evidence comparison shape and episode sufficiency predicates",
+    "Founder-copy wording",
+    "Review cadence and cooldown",
+    "Exact UI design",
+    "Evidence threshold and governance process for promoting a competing framework into product policy"
+  ],
+  "notAuthorizedByThisSlice": [
+    "stable promotion",
+    "deployment",
+    "public or real-user pilot",
+    "real history storage",
+    "vault or crypto implementation",
+    "plugin creation",
+    "provider changes or paid model calls",
+    "community policy promotion",
+    "automatic monitoring",
+    "claims of clinical or model-level validation"
+  ],
+  "publication": "Only generalized owner-approved product direction and wholly synthetic fixtures; omit real friend names, attendance anecdotes, transcripts and private identifiers."
+}

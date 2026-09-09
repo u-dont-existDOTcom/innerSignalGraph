@@ -4,6 +4,8 @@ export const GRAPH_SEMANTIC_FIELDS = Object.freeze({
   guideId: "provenance-policy",
   version: "generated-prohibited",
   description: "reviewed-metadata",
+  taskPolicyVersion: "substantive-routing-safety",
+  pathPerformancePolicyVersion: "substantive-routing-safety",
   bundleVersion: "generated-prohibited",
   sourceRevision: "generated-prohibited"
 });
@@ -25,6 +27,8 @@ export const NODE_SEMANTIC_FIELDS = Object.freeze({
   "effects.blockNodes": "substantive-gating-safety",
   "effects.requiredNuance": "response-semantics",
   "effects.forbiddenOverclaims": "response-safety",
+  "effects.deferralUnless": "substantive-gating-safety",
+  questionPolicy: "substantive-response-routing",
   defaultQuestion: "substantive-response-routing"
 });
 
@@ -41,11 +45,11 @@ export const BUNDLE_SEMANTIC_FIELDS = Object.freeze({
   sourceMaps: "generated-prohibited"
 });
 
-export const GRAPH_KEYS = Object.freeze(["contractVersion", "graphId", "guideId", "version", "description", "nodes", "edges", "bundleVersion", "sourceRevision"]);
-export const NODE_KEYS = Object.freeze(["id", "title", "kind", "tier", "priority", "activation", "sourceRefs", "authority", "recommendations", "avoid", "successSignals", "tags", "effects", "defaultQuestion"]);
+export const GRAPH_KEYS = Object.freeze(["contractVersion", "graphId", "guideId", "version", "description", "taskPolicyVersion", "pathPerformancePolicyVersion", "nodes", "edges", "bundleVersion", "sourceRevision"]);
+export const NODE_KEYS = Object.freeze(["id", "title", "kind", "tier", "priority", "activation", "sourceRefs", "authority", "recommendations", "avoid", "successSignals", "tags", "effects", "defaultQuestion", "questionPolicy"]);
 export const ACTIVATION_KEYS = Object.freeze(["all", "any", "none"]);
 export const CONDITION_KEYS = Object.freeze(["field", "op", "value"]);
-export const EFFECT_KEYS = Object.freeze(["deferNodes", "blockNodes", "requiredNuance", "forbiddenOverclaims"]);
+export const EFFECT_KEYS = Object.freeze(["deferNodes", "blockNodes", "requiredNuance", "forbiddenOverclaims", "deferralUnless"]);
 export const EDGE_KEYS = Object.freeze(["from", "relation", "to"]);
 export const BUNDLE_KEYS = Object.freeze(["contractVersion", "version", "sourceManifestVersion", "sourceMaps", "graphs", "stats"]);
 export const BUNDLE_STATS_KEYS = Object.freeze(["graphCount", "nodeCount", "edgeCount", "sourceSectionCount", "ownerAmendmentCount"]);

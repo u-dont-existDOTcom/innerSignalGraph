@@ -22,9 +22,9 @@ source_refs:
   - IC.NEUTRAL_WITNESS
   - IC.BORROW_ONE_FUNCTION
 regression_refs: []
-base_record_sha256: 8e669d972ca5c6f402a37f752c7f1491ae8a13dde9502b76f0071f0b25c9c73f
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+base_record_sha256: 5e78ce47d2eb8608ffc30c1e4117ca2a7e745a559d76c96291c9d5a0de95957a
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Bring a second adult or witness seat into the room
@@ -121,6 +121,10 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
       "A neutral witness, partial inner adult, or borrowed adult function can be enough to begin; adult identity may form after protective behavior.",
       "The adult position first protects the body and listens. It does not need to convince the suicidal state that life is good before the self/death inquiry can begin."
     ]
+  },
+  "questionPolicy": {
+    "purpose": "discriminate",
+    "unresolvedFields": []
   },
   "recommendations": [
     "First discriminate fusion: ask whether the wish to die feels like the whole self right now or whether any observing/protective position can sit beside it.",

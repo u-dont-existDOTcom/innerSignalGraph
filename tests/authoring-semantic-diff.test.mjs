@@ -170,3 +170,15 @@ test("coverage policy requires exact questions and response realization assertio
     assert.equal(assessRegressionCoverage(diff, [coverageRow({ id: "R", nodeId, expected: { [expectation]: ["exact pattern"] } })]).ok, true);
   }
 });
+
+
+test("new task-policy and authored-question metadata remain substantive and classified", async () => {
+ const { compileGuideGraphs } = await import("../src/guide-graph/compiler.mjs");
+ const { buildCompleteSemanticDiff } = await import("../src/guide-graph/semantic-diff.mjs");
+ const base=await compileGuideGraphs({write:false});const next=structuredClone(base);
+ next.graphs[0].taskPolicyVersion=2;
+ next.graphs[0].nodes[0].questionPolicy={purpose:"safety",unresolvedFields:["present_safety"]};
+ const diff=buildCompleteSemanticDiff(base,next);
+ assert.ok(diff.changes.some(c=>c.fieldPath==="taskPolicyVersion" && c.substantive));
+ assert.ok(diff.changes.some(c=>c.fieldPath==="questionPolicy" && c.substantive));
+});

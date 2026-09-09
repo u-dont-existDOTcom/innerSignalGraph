@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "CD-INNERSIGNAL-FRESH-PRIVATE-CONTINUITY-20260909-R1",
+  "taskId": "fresh-session-private-case-continuity-20260909",
+  "ownerOutcomeId": "OO-INNERSIGNAL-FRESH-PRIVATE-CONTINUITY-20260909",
+  "ownerOutcomeEpoch": 1,
+  "reasoningSupervisorSurface": "owner_chat",
+  "strategyId": "EXTEND_EXISTING_ENCRYPTED_STORE_AND_LOOPBACK_SERVER_WITH_PROVIDER_BACKED_BOOTSTRAP_AND_MCP",
+  "directiveRevision": 1,
+  "executionObjective": "Implement and verify the public-safe private continuity system requested by the owner on the existing PR 46 branch, without deploying, installing, merging, promoting stable, spending provider calls, or publishing real private case content.",
+  "allowedActions": [
+    "read current repository, PR, official OpenAI MCP guidance, and task-relevant universal lessons",
+    "edit public source, tests, documentation, handoff format, task receipts, and synthetic fixtures",
+    "run local processes and loopback/MCP clients using synthetic private data",
+    "commit and push coherent reversible changes to the existing PR branch after remote-head reconciliation",
+    "read exact hosted check results for the final pushed head"
+  ],
+  "forbiddenActions": [
+    "put real private case content or a private-derived hash in Git",
+    "invent or print production secrets",
+    "silently import or reinterpret the real case",
+    "deploy or register a production MCP endpoint",
+    "claim old-chat tool visibility proves execution",
+    "run provider/API/OpenRouter therapy calls",
+    "merge PR 46",
+    "install or promote stable"
+  ],
+  "requiredEvidence": [
+    "exact fresh-process synthetic continuity round trip",
+    "wrong and missing authorization/key failures",
+    "ciphertext-only at-rest evidence",
+    "candidate-ID audit resolution from private storage",
+    "exact recent episode and targeted older raw retrieval",
+    "public/private leak gate",
+    "direct MCP tool calls from a fresh client process",
+    "truthful deployment/registration/fresh-ChatGPT status",
+    "focused, full, publication, and hosted exact-head results"
+  ],
+  "stopTriggers": [
+    "real case import requires unavailable private source or owner credential action",
+    "production deployment, OAuth configuration, plugin registration, or fresh ChatGPT execution requires external authority or infrastructure not already available",
+    "concurrent remote changes cannot be reconciled without a substantive conflict",
+    "a proposed public artifact contains private case data"
+  ]
+}

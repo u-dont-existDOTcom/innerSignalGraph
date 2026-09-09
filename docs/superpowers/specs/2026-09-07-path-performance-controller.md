@@ -1,0 +1,44 @@
+# Adaptive therapeutic path performance
+
+Status: owner-authorized candidate implementation on draft PR #46. The direct 2026-09-07 task request authorizes the behavior below and its synthetic case policy. It does not authorize installation, stable promotion, merging, deployment or claims of clinical efficacy.
+
+## Placement and authority
+
+Compose the existing incremental case formulation, graph router, turn task, realization contract and private local ledger. `path_update` is evidence extraction; `path_performance` is deterministic session state. Models propose hypotheses and report signals, but do not write episode identifiers, counters, status or decisions. Actual non-mock candidate extraction must declare tracking; missing proposals receive assessment rather than untracked inward exercises. Existing mock snapshots retain their historical compatibility shape. `pathPerformancePolicyVersion: 1` is explicit substantive policy on the three candidate graphs. Legacy graphs without it retain their prior routing. Semantic diff and Guide Packet decision cards treat the field as owner-gated routing/safety, not metadata. No packet archive, installed packet, stable branch or guide article is rewritten.
+
+The controller is not another memory/progress backend. Existing session snapshots carry its bounded records and existing local decision ledgers retain the actual plan and evidence. Private session evidence follows existing privacy/consent/correction controls and is not part of remote diagnostic or progress schemas. Public fixtures contain only synthetic statements. No client identity, real transcript, diagnosis or personal history is included.
+
+## Episode and observation contract
+
+A strategy records the process ID, current target, provisional formulation, family and existing path node, selection reason, observation references, prospective proximal predictions, and adverse signs. Predictions have stable IDs and an immediate or durable observation horizon. Actual records include signal kind, source observation ID, prediction ID, timing and severity. Observation IDs identify distinct events, including repeated words at a later time; replayed IDs cannot count again. Outcome credit requires matching actual required-node delivery at the previous review boundary. A changed route clears that delivery; later unbound reports remain observations rather than falsely credited outcomes. Reported experience, causal interpretation and provisional failure attribution remain distinct.
+
+Supported movement includes specificity, new information, agency, emotion/need access, functional change and durable movement. Praise, cooperation, relief and completed surface behavior do not by themselves validate a mechanism. A meaningful observation opportunity is needed to falsify a prediction; missing evidence is initially UNCLEAR. Immediate evidence cannot confirm or disconfirm a durable prediction. Contradiction takes precedence over support for the same prediction.
+
+Failures are provisional attributions, not diagnoses: formulation, target, method, pacing, delivery, state constraint and process completion. Existing infrastructure/extraction/routing/delivery fidelity failure classes remain separate; this controller does not duplicate or replace those stage-error enums.
+
+## Decisions
+
+- MOVING: observed useful movement matches a prediction at its declared horizon; continue when higher-priority constraints permit.
+- UNCLEAR: evidence is missing or ambiguous. Use one cheap discriminating probe with outcomes that imply different actions. A new strategy begins without claiming movement.
+- STALLED: two failed meaningful opportunities, two unresolved follow-ups, a twice-failed key prediction, complexity rising without client information, or supported formulation/target/method mismatch requires reconsideration. These are transparent candidate engineering thresholds, not validated clinical cutoffs.
+- ADVERSE: harmful response interrupts the strategy. Significant destabilization immediately stops processing and uses the existing protection route. An ordinary adverse response stops and reconsiders the exercise; it does not by itself establish a need for residential or supervised care. External stabilization requires relevant state constraints or explicit evidence.
+
+Retain original predictions and evidence during delivery/pacing adjustments. Only independent mechanism/target support warrants such an adjustment; it cannot clear accumulated failure. A switch reconsiders process, formulation, target, external conditions, mechanism, pacing/delivery and whether the process is complete/checking. An adjacent graph edge never chooses the replacement automatically. Another material strategy requires evidence for the alternative after the switch decision. Stable identity uses process ID and graph path, so free-text formulation, target or family changes cannot reset counters. A same-path conceptual refinement retains its evidence; a new path is admitted only with supporting evidence. Explicit evidence of a different process starts a separate episode; returning restores the retained history. At most twelve historical episodes and 512 observation IDs per active episode are retained in the snapshot; reaching a bound fails closed instead of dropping failed evidence.
+
+Preserve precedence: safety → concrete external action → external embodiment/stabilization when inward attention worsens state → inward processing → leave the specific completed/checking process alone. A task, secondary node or stale question must not covertly continue the interrupted exercise. A completed checking operation can be closed while other unresolved feelings remain.
+
+## Goal substitution and structured support
+
+The synthetic case policy requires the conjunction of significant current instability, dependence on external regulation, loneliness, relapse/dissociation risk and using romance as regulator/rescuer/proof-of-worth. Recommend a case-level, revisable pause in active romance-seeking and increase structured, supervised, non-romantic support and mentoring. The rationale is risk, load and dependency. It is not a moral judgment, a universal relationship prerequisite or advice to isolate.
+
+This case-level constraint survives topic or process changes. Silence and relief do not clear it; evidence withdrawal or an explicit reassessment with durable movement and agency is required. Consumed case-risk evidence IDs survive clearing and withdrawal: only new observations can reactivate the constraint, and replayed reassessment cannot clear newly observed risk. The case history is bounded at 512 IDs and fails closed without forgetting. Withdrawing case-only evidence recomputes the constraint without invalidating an unrelated episode; actual strategy/prediction dependencies still require reassessment. Do not repeatedly announce it during unrelated work. Distinguish supportive community from social contact primarily instrumentalized to find a partner. Track purpose and downstream response, not attendance alone. A superficially completed social activity can therefore conflict with the stabilization prediction.
+
+Potential local support discussions may include a therapeutic community, supported residential setting, care-farm/green-care, Soteria-like or another supervised non-carceral environment. These are examples to assess for local suitability/availability, not globally available services or proven solutions. Do not infer that all inpatient care or medication is harmful, and do not change medication through this routing policy.
+
+## Enforcement and evaluation boundary
+
+A deterministic trace connects episode → prospective prediction → observation reference/signal → prediction result → status → decision → selected graph node. The execution contract removes the previous task and context interventions when switching, owns the next question, and passes the causal decision and case guidance to realization. Explicitly reported prohibited interventions or missing required route realization trigger one bounded repair; continued violation blocks that response.
+
+Quote/node coverage cannot prove semantic fidelity: a model could misclassify evidence or mislabel its own prose. Separate human usefulness/harm evaluation must examine the actual sequence, extraction, formulation, response and functional consequences. Tests prove behavior on supplied synthetic observations, not that a live model reliably identifies those observations or that this policy helps people. Use the existing guide-fidelity evaluation architecture with an additive path-performance suite; do not rewrite frozen evidence or claim a live run occurred.
+
+Research disposition and baseline: `tasks/path-performance-20260907/INTEGRATION.md`. Adversarial checks: `tests/path-performance.test.mjs`.

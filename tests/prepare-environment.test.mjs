@@ -52,7 +52,7 @@ test("prepare environment repairs other strict bootstrap fields without overridi
   const { values } = await readEnvFile(envPath);
   assert.equal(values.INNER_SIGNAL_MODE, "cli");
   assert.equal(values.THERAPY_PROCESSING_MODE, "fast");
-  assert.equal(values.LEDGER_MODE, "full");
+  assert.equal(values.LEDGER_MODE, "redacted");
   assert.equal(values.ADJUDICATOR_PROVIDER, "openai");
   assert.equal(values.HYPNOSIS_WRITER_PROVIDER, "anthropic");
   assert.equal(values.PORT, "8787");

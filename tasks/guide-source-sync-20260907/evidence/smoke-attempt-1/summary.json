@@ -1,0 +1,11 @@
+{
+  "status": "BLOCKED_OR_INCOMPLETE",
+  "reason": "Grade cites unavailable source",
+  "liveCalls": 4,
+  "completedCalls": 4,
+  "responderOutputs": 0,
+  "independentGrades": 0,
+  "clinicalEvaluation": false,
+  "releaseApproved": false,
+  "passRate": null
+}

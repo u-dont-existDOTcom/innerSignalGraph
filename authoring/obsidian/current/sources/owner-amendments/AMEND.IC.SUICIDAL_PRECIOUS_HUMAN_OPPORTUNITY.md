@@ -7,13 +7,13 @@ source_id: AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY
 guide_id: owner-amendments
 heading: AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY
 source_role: owner-approved-extension
-source_hash: b490f1b5802671cb9bde9c66fdabd02fe8753a18e980d7ec08104e3a06f71764
+source_hash: 1d1d78a359df20cddf3aac6f5f93bb3badda84b7bcf7bcff085d8ee9f75e0dd1
 section_hash: 668b83dcf0b98ffe55de9bafca1119de1464b0d46ee2069506167c94df3fa55a
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.PRECIOUS_HUMAN_OPPORTUNITY
   - IC.SUICIDAL_SELF_DEATH_INQUIRY
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY

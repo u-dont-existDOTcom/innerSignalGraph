@@ -7,23 +7,23 @@ source_id: IC.ADULT_APPRENTICE
 guide_id: inner-child-guide
 heading: Become the Adult Apprentice
 source_role: primary-framework
-source_hash: a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3
+source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
 section_hash: ea2e2684a070282d0cb145868d828548fdaf1b5caa2b0ff19cab12e6020ea2a0
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.ADULT_APPRENTICE
   - IC.BORROW_ONE_FUNCTION
   - IC.PROTECTOR_ACTION
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Become the Adult Apprentice
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide.txt`
+Authority path: `guides/inner-child-guide-2026-09-07.txt`
 
-Locator: Lines 101–119
+Locator: Lines 221–239
 
 ```text
 Become the Adult Apprentice

@@ -12,7 +12,7 @@ anchors:
   - IC.MEET_GUARD
 reconciled_nodes: []
 base_record_sha256: 93c03bbaac8f055a38d045e3ec653f5d356ecf689ba98387e8449bcb077cac3f
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Pause and orient before interpretation

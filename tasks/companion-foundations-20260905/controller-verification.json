@@ -1,0 +1,42 @@
+{
+  "kind": "synthetic-companion-reflection-controller-v1",
+  "date": "2026-09-05",
+  "local": {
+    "node": "v22.16.0",
+    "command": "node --test reflection-handoff.test.mjs reflection-controller.test.mjs mock/model.test.mjs mock/revision.test.mjs",
+    "testsPassed": 77,
+    "testsFailed": 0,
+    "originalPolicySuiteIncludedInThisCount": false
+  },
+  "controller": {
+    "syntheticSnapshotsOnly": true,
+    "semanticApprovalDefault": "denied",
+    "freshnessRecheckedAfterDraft": true,
+    "freshnessRecheckedAfterSemanticReview": true,
+    "boundApprovalRequiresExactCandidateVersionAndReviewBinding": true,
+    "productionImported": false,
+    "modelCalls": 0,
+    "persistence": false,
+    "network": false,
+    "hashing": false,
+    "vaultAccess": false
+  },
+  "revision2BrowserEvidence": {
+    "inheritedForUnchangedUiSource": true,
+    "assertionsPassed": 64,
+    "browser": "144.0.7559.96",
+    "viewports": ["1400x1100", "390x844", "320x720"],
+    "networkRequests": 0,
+    "pageErrors": 0,
+    "cspConsoleErrors": 0
+  },
+  "semanticEvaluation": {
+    "behaviorCases": 16,
+    "modelRuns": 0,
+    "status": "UNEVALUATED"
+  },
+  "hosted": {
+    "status": "PENDING_EXACT_HEAD_AFTER_BRANCH_ADVANCE",
+    "historicalVerifyFailurePreserved": true
+  }
+}

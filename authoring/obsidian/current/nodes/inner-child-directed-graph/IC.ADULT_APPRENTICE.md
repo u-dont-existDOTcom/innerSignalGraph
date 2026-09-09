@@ -18,10 +18,12 @@ source_refs:
   - IC.ADULT_APPRENTICE
   - IC.RELATIONSHIP
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
+  - AMEND.CROSS.LITERATURE_ACTION_REVIEW
+  - AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 regression_refs: []
-base_record_sha256: 2654262d6c489b46f8f9eedc1b42bc316c21b8f6ddb646ca11ac1205f725f907
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+base_record_sha256: e7fcbbd83cbe5878a3d032e7ebeb3f5ee8d04197c4f5c16ec4c663690bde4eac
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Move from receiving care to doing five percent
@@ -76,7 +78,8 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
   },
   "recommendations": [
     "Name what the helper did, choose five percent to do personally, and test one action in ordinary life.",
-    "Gradually hand the role and the judgment behind it back to the person so they become more able to check, disagree, revise, and act without the helper."
+    "Gradually hand the role and the judgment behind it back to the person so they become more able to check, disagree, revise, and act without the helper.",
+    "Name what capacity the person exercised, what help remained useful, and what the real-world attempt taught them; independence does not require refusing appropriate support. Care includes interest and delight, not duty alone, and should support exploration outside the exercise."
   ],
   "successSignals": [
     "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission."
@@ -92,3 +95,7 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
 [[current/sources/inner-child-guide/IC.RELATIONSHIP]]
 
 [[current/governance/amendments/AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION]]
+
+[[current/governance/amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW]]
+
+[[current/governance/amendments/AMEND.IC.EMOTIONAL_TASK_GUIDANCE]]

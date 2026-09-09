@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "status": "OWNER_AUTHORIZED_AUDIT_SUPPLEMENT",
+  "modelRuns": 0,
+  "purpose": "Add longitudinal reasoning failure detection to every audit architecture without changing the underlying A-E topology.",
+  "sharedRules": [
+    "Treat client first-person reports as privileged evidence about phenomenology and appraisal, but not as dispositive authority over cause, mechanism, importance, risk, or therapeutic centrality.",
+    "Keep salience, importance, and centrality separate. Do not drop a supported concern because the client calls it minor, and do not make a vivid recent event the organizing topic merely because it is salient.",
+    "Preserve established longitudinal targets across turns. New details update or challenge the target; they do not silently replace it unless evidence shows the goal changed.",
+    "Failure of one probe is not failure of the target. A nonverbal critic or presence must not receive invented dialogue; switch to triggers, body experience, action tendencies, avoidance, predictions, and consequences.",
+    "For divided or real/fake-self experiences, preserve differentiation or increased awareness that may integrate versus increasing alienation or expulsion as distinct hypotheses. Do not force healing, pathology, internal ontology, or external ontology.",
+    "When a later mundane example weakly fits an earlier high-stakes description, clarify why it counts and whether it is representative instead of resolving the earlier claim in either direction.",
+    "Before asking a high-information question, check the chronology and settled history. Re-asking known information is an audit finding unless the new comparison is genuinely different and necessary.",
+    "Give client-generated functional hypotheses priority as grounded hypotheses, not facts. Test concrete function, predicted protective outcome, and evidence that could disconfirm them.",
+    "If self-support or reduced self-rejection is an established target, preserve it without claiming it causes every symptom. Consider whether a less self-attacking capacity could perform any useful protective function only when that question advances the case.",
+    "Penalize both over-audit and under-audit: unnecessary alarm, blanket safety restrictions, irrelevant warnings, verbosity, needless rewriting of good responses, and failure to retain important uncertainty are all errors.",
+    "Preserve the constitutional therapeutic ends across topic changes while changing route when evidence, consent, ineffectiveness, or destabilization warrants it.",
+    "Respect technique refusal; method-level rejection is a treatment-contract mismatch or decline, not permission for covert persistence.",
+    "Preserve developmental-integration method identity while allowing literal, symbolic, somatic, relational, or plain-language representation to change.",
+    "Use client reports as privileged evidence for phenomenology, preference, consent, and remembered events without making client interpretation dispositive for causality, risk, importance, or method purpose."
+  ],
+  "newErrorIds": [
+    "CLIENT_APPRAISAL_OVERDEFERENCE",
+    "LONGITUDINAL_TARGET_LOSS",
+    "PROBE_FAILURE_TARGET_ABANDONMENT",
+    "INADEQUATE_EXAMPLE_OVERUPDATE",
+    "HISTORY_OBLIVIOUS_REQUESTIONING",
+    "CLIENT_HYPOTHESIS_MISHANDLING",
+    "SALIENCE_CENTRALITY_COLLAPSE",
+    "INTEGRATION_FRAGMENTATION_BINARY",
+    "TELOS_ABANDONMENT",
+    "ROUTE_RIGIDITY",
+    "CONSENT_OVERRIDE",
+    "METHOD_IDENTITY_DRIFT",
+    "CLIENT_EVIDENCE_STEERING_FAILURE"
+  ],
+  "stageCoverage": {
+    "A1_HOLISTIC_AUDIT_AND_REPAIR": ["ALL_NEW_ERROR_IDS"],
+    "B1_EVIDENCE_HISTORY": ["CLIENT_APPRAISAL_OVERDEFERENCE", "PROBE_FAILURE_TARGET_ABANDONMENT", "INADEQUATE_EXAMPLE_OVERUPDATE", "HISTORY_OBLIVIOUS_REQUESTIONING", "CLIENT_HYPOTHESIS_MISHANDLING", "METHOD_IDENTITY_DRIFT", "CLIENT_EVIDENCE_STEERING_FAILURE"],
+    "B2_SAFETY_MIXED_TRAJECTORY": ["CLIENT_APPRAISAL_OVERDEFERENCE", "SALIENCE_CENTRALITY_COLLAPSE", "INTEGRATION_FRAGMENTATION_BINARY", "ROUTE_RIGIDITY", "CONSENT_OVERRIDE"],
+    "B3_INTERACTION_INFORMATION_GAIN": ["LONGITUDINAL_TARGET_LOSS", "INADEQUATE_EXAMPLE_OVERUPDATE", "HISTORY_OBLIVIOUS_REQUESTIONING", "CLIENT_HYPOTHESIS_MISHANDLING", "SALIENCE_CENTRALITY_COLLAPSE", "TELOS_ABANDONMENT", "ROUTE_RIGIDITY", "CONSENT_OVERRIDE", "METHOD_IDENTITY_DRIFT"],
+    "B4_REPAIR": ["ALL_FINDINGS_FROM_B1_B3"],
+    "C1_EPISTEMIC_CRITIC": ["CLIENT_APPRAISAL_OVERDEFERENCE", "PROBE_FAILURE_TARGET_ABANDONMENT", "INADEQUATE_EXAMPLE_OVERUPDATE", "CLIENT_HYPOTHESIS_MISHANDLING", "INTEGRATION_FRAGMENTATION_BINARY", "TELOS_ABANDONMENT", "METHOD_IDENTITY_DRIFT", "CLIENT_EVIDENCE_STEERING_FAILURE"],
+    "C2_SAFETY_CRITIC": ["CLIENT_APPRAISAL_OVERDEFERENCE", "SALIENCE_CENTRALITY_COLLAPSE", "INTEGRATION_FRAGMENTATION_BINARY", "ROUTE_RIGIDITY", "CONSENT_OVERRIDE"],
+    "C3_INTERACTION_CRITIC": ["LONGITUDINAL_TARGET_LOSS", "HISTORY_OBLIVIOUS_REQUESTIONING", "INADEQUATE_EXAMPLE_OVERUPDATE", "CLIENT_HYPOTHESIS_MISHANDLING", "SALIENCE_CENTRALITY_COLLAPSE", "TELOS_ABANDONMENT", "ROUTE_RIGIDITY", "CONSENT_OVERRIDE", "METHOD_IDENTITY_DRIFT"],
+    "C4_SYNTHESIZE_AND_RECONSTRUCT": ["ALL_FINDINGS_FROM_C1_C3"],
+    "D1_ADVERSARIAL_CRITIC": ["ALL_NEW_ERROR_IDS"],
+    "D2_RECONSTRUCT": ["ALL_FINDINGS_FROM_D1"],
+    "E1_SELF_CRITIQUE": ["ALL_NEW_ERROR_IDS"],
+    "E2_SELF_PATCH": ["ALL_FINDINGS_FROM_E1"]
+  },
+  "application": "The experiment executor must append sharedRules to the generic audit taxonomy/rules visible to each applicable stage. This supplement does not reveal seeded truth, reference wording, architecture labels, or hidden open-question keys."
+}

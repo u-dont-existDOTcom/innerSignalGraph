@@ -31,6 +31,10 @@ async function fixtureRoot(t) {
     "authoring/obsidian/current"
   ]) await copyTree(directory, path.join(root, directory));
   for (const file of [
+    "src/case-formulation/path-performance.mjs",
+  "src/case-formulation/delivery-system-assessment.mjs",
+  "src/case-formulation/bounded-schema.mjs",
+    "src/case-formulation/turn-task.mjs",
     "src/guide-graph/compiler.mjs",
     "src/guide-graph/contract.mjs",
     "src/guide-graph/planner.mjs",
@@ -116,14 +120,16 @@ test("proposal build emits an exact per-field decision card with regression evid
   assert.equal(built.packetVerification.manifest.candidateOnly, true);
 });
 
-test("stale proposal base fails before writing build output", async (t) => {
+for (const dependency of ["src/guide-graph/planner.mjs", "src/case-formulation/path-performance.mjs",
+  "src/case-formulation/delivery-system-assessment.mjs",
+  "src/case-formulation/bounded-schema.mjs", "src/case-formulation/turn-task.mjs"]) test(`stale proposal base fails before writing build output: ${dependency}`, async (t) => {
   const root = await fixtureRoot(t);
   await createProposal({ root, id: "neutral-stale-r1", nodeIds: ["IC.NEUTRAL_WITNESS"] });
-  const semanticInput = path.join(root, "src", "guide-graph", "planner.mjs");
+  const semanticInput = path.join(root, dependency);
   await fs.appendFile(semanticInput, "\n// synthetic stale-base change\n", "utf8");
   await assert.rejects(() => buildProposal({ root, id: "neutral-stale-r1" }), (error) => {
     assert.equal(error.code, "STALE_AUTHORING_BASE");
-    assert.deepEqual(error.details.changedInputs.map((item) => item.path), ["src/guide-graph/planner.mjs"]);
+    assert.deepEqual(error.details.changedInputs.map((item) => item.path), [dependency]);
     return true;
   });
   await assert.rejects(() => fs.access(path.join(root, "authoring", ".build", "neutral-stale-r1")));

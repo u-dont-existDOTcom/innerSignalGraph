@@ -80,7 +80,8 @@ async function makeHostedWrapperHarness(context) {
     path.join(fakeBin, "curl"),
     "#!/usr/bin/env bash\nwhile (( $# )); do if [[ \"$1\" == \"--output\" ]]; then shift; : > \"$1\"; exit 0; fi; shift; done\nexit 2\n"
   );
-  await writeExecutable(path.join(fakeBin, "sha256sum"), "#!/usr/bin/env bash\nexit 0\n");
+  // Consume the checksum pipe like the real tool; an early exit races the writer under pipefail.
+  await writeExecutable(path.join(fakeBin, "sha256sum"), "#!/usr/bin/env bash\ncat >/dev/null\nexit 0\n");
   await writeExecutable(
     path.join(fakeBin, "tar"),
     "#!/usr/bin/env bash\nwhile (( $# )); do if [[ \"$1\" == \"-C\" ]]; then shift; tool_root=\"$1\"; fi; shift; done\nprintf '#!/usr/bin/env bash\\nexit 0\\n' > \"$tool_root/gitleaks\"\nchmod 700 \"$tool_root/gitleaks\"\n"
@@ -1508,7 +1509,7 @@ test("hosted wrapper rejects absent or invalid audit results and preserves valid
         }
       }),
       (error) => {
-        assert.equal(error.code, 2, fixture.name);
+        assert.equal(error.code, 2, `${fixture.name}: ${error.stderr}`);
         assert.equal(error.stdout, "", fixture.name);
         assert.match(error.stderr, /invalid-hosted-audit-result/, fixture.name);
         return true;
@@ -1568,7 +1569,7 @@ test("hosted wrapper rejects absent or invalid audit results and preserves valid
         }),
         (error) => {
           assert.equal(error.code, fixture.exitCode);
-          assert.equal(error.stdout, expected);
+          assert.equal(error.stdout, expected, `child exit ${error.code}: ${error.stderr}`);
           assert.equal(error.stderr, "");
           return true;
         }

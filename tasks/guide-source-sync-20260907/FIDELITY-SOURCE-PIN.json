@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "sourceSyncReceipt": "tasks/guide-source-sync-20260907/SOURCE-SYNC.json",
+  "sourceSha256": "5d724a5c1d0158769cc577d065caca75b36da0e6ce76deb23add05b71db1efcf",
+  "sourceCharacters": 125967,
+  "sourceFiles": {
+    "guides/manifest.json": "17f8fc5e99c1f72ffa94d7724fdbe06e89130b46ee2149e01673b21f3e175d4f",
+    "guides/inner-child-guide-2026-09-07.txt": "00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f",
+    "guide-graphs/source-maps/inner-child-guide.json": "9a7940a5ca9374c74f130c003681f0f8aab0efcb5367c5758874325b492b5858",
+    "guides/somatic-sequencing-guide.txt": "f865c8d93221cccd8e49f49adbf0961051f0c0775603e785420ee89509acb419",
+    "guide-graphs/source-maps/somatic-sequencing-guide.json": "0c19782d2d7716cca19d74718a01f3d9e8142405be6db64c09197863fd54d3d9",
+    "guides/owner-amendments.json": "1d1d78a359df20cddf3aac6f5f93bb3badda84b7bcf7bcff085d8ee9f75e0dd1"
+  },
+  "evaluationInputs": {
+    "tasks/guide-fidelity-20260906/cases.json": "2c23fe7ff3f3dc8c9c9723870484a05bfbd4f79e0af699d88fb12e03b329df09",
+    "tasks/guide-fidelity-20260906/grader-controls.json": "93e01058b84c3da87b20d4e24faa5d330eba7cfaab952bb905c825b6755b09d0",
+    "tasks/guide-fidelity-20260906/case-source-bindings-2026-09-07.json": "23f116778794af69da33cc08c4bf17de1a8c9a8b661c2d2d316c0f19de054ad7"
+  },
+  "status": "PINNED_SOURCE_NOT_LIVE_EVIDENCE"
+}

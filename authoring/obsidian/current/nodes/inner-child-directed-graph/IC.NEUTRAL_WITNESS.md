@@ -16,6 +16,7 @@ graph_tags:
 source_refs:
   - IC.NEUTRAL_WITNESS
   - IC.BORROW_ADULT
+  - AMEND.CROSS.LITERATURE_TASK_PROGRESS
 regression_refs:
   - G001
   - G002
@@ -23,9 +24,11 @@ regression_refs:
   - G008
   - G011
   - G012
-base_record_sha256: b14122b3e2b27c418d0ccdf67a83190bda71621c6952eecd14a17882b4e5f3a9
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+  - G017
+  - G033
+base_record_sha256: bb389ac48bbc66d4d012f917c4819207bd94731c1c2e11c4ef53494ea7bce14c
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Begin with a neutral witness
@@ -43,8 +46,7 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
         "field": "inner_adult_access",
         "op": "in",
         "value": [
-          "low",
-          "unknown"
+          "low"
         ]
       },
       {
@@ -52,8 +54,7 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
         "op": "in",
         "value": [
           "unclear",
-          "absent",
-          "unknown"
+          "absent"
         ]
       },
       {
@@ -120,3 +121,5 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
 [[current/sources/inner-child-guide/IC.NEUTRAL_WITNESS]]
 
 [[current/sources/inner-child-guide/IC.BORROW_ADULT]]
+
+[[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]

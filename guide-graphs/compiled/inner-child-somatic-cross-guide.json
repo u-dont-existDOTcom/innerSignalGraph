@@ -3,8 +3,806 @@
   "graphId": "inner-child-somatic-cross-guide",
   "guideId": "cross-guide",
   "version": "2026-08-09-r5",
-  "description": "Cross-guide dependencies and sequencing decisions approved for the pilot.",
-  "nodes": [],
+  "description": "Cross-guide dependencies and sequencing decisions approved for the pilot, including three-way routing, relational reality checking, and distinct influence/protection/love routes.",
+  "nodes": [
+    {
+      "id": "ROUTE.RELATIONAL_REALITY_CHECK",
+      "title": "Reality-check the relationship before self-analysis",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 100,
+      "activation": {
+        "any": [
+          {
+            "field": "other_person_central",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "emotional_takeover_pressure",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "influence_domain",
+            "op": "eq",
+            "value": "ordinary_social"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          },
+          {
+            "field": "relational_check_status",
+            "op": "in",
+            "value": [
+              "completed",
+              "not_needed"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Before analyzing the user's trigger, use detached observation: state what the other person actually did, in sequence, without filling in motive or diagnosis.",
+        "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
+        "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
+        "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
+        "Act outward where the situation can be changed, then route inward only if inner processing adds useful information or freedom rather than substituting for external judgment and action.",
+        "Invest in relationships according to demonstrated reciprocity, empathy, accountability, and repair rather than repeatedly trying to extract capacities another person has not shown.",
+        "Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive."
+      ],
+      "avoid": [
+        "Do not diagnose or automatically label another person emotionally immature, manipulative, narcissistic, or unsafe from a disagreement or a single frustrating interaction.",
+        "Do not infer motive, moral worth, or global personality from a capacity assessment.",
+        "Do not recommend cutoff by default; calibrate trust, access, distance, requests, and investment to the actual evidence and safety needs.",
+        "Do not make the user responsible for managing, educating, soothing, or developing the other person's missing capacities."
+      ],
+      "successSignals": [
+        "Observable behavior, demonstrated capacity, interpersonal pressure, and the user's own internal reaction remain distinguishable.",
+        "The chosen interaction has a realistic outcome and preserves the user's position, boundaries, and practical options.",
+        "Inward work, when used, follows rather than erases the external reality check."
+      ],
+      "tags": [
+        "three-way-routing",
+        "relational-capacity",
+        "detached-observation",
+        "inner-boundaries",
+        "self-possession"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Relational capacity is not motive or diagnosis. The relevant evidence is what the person has demonstrated in the domain at issue, especially under disagreement, limits, accountability, and repair.",
+          "A person trained to internalize blame, manage adults, or take on forced adulthood may reflexively analyze themselves or caretake first; use that linkage only when their history supports it, not as a universal explanation.",
+          "Selecting for reciprocal maturity means calibrating closeness and investment toward demonstrated reciprocity; it does not require automatic cutoff or contempt for limited people."
+        ],
+        "forbiddenOverclaims": [
+          "Do not treat disagreement, emotional intensity, one mistake, a diagnosis, or the user's disappointment as proof of emotional immaturity.",
+          "Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character."
+        ]
+      },
+      "defaultQuestion": "What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
+    },
+    {
+      "id": "ROUTE.INFLUENCE_SOCIAL_PROTECTION",
+      "title": "Keep ordinary social influence answerable to practical protection",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 98,
+      "activation": {
+        "all": [
+          {
+            "field": "influence_domain",
+            "op": "eq",
+            "value": "ordinary_social"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
+        "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Let love, compassion, or goodwill remain an ethical orientation if authentic, while using physical and social facts to choose boundaries, refusal, distance, support, documentation, or other concrete action.",
+        "Use the relational reality check before turning another person's behavior into an inward-processing assignment for the user.",
+        "When harm cannot be fully prevented, non-hatred may remain a spiritual aspiration; it is separate from the practical decision about exposure and safety."
+      ],
+      "avoid": [
+        "Do not use love, forgiveness, compassion, spiritual aspiration, or the wish not to hate as a substitute for physical or social safety.",
+        "Do not advise the person to approach, tolerate, remain with, or reopen access to danger in order to prove love."
+      ],
+      "successSignals": [
+        "Care and practical protection can coexist without one canceling the other.",
+        "The person retains boundaries, distance, refusal, and concrete action as live options."
+      ],
+      "tags": [
+        "influence-protection-love",
+        "ordinary-social",
+        "boundaries",
+        "safety"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Remaining loving or refusing hatred under unavoidable harm is a spiritual aspiration, not ordinary safety advice and not a reason to accept preventable exposure."
+        ],
+        "forbiddenOverclaims": [
+          "Do not say or imply that sufficient love makes practical protection, boundaries, distance, refusal, or outside help unnecessary."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.INFLUENCE_INTERNAL",
+      "title": "Route internal influence through existing process maps",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 96,
+      "activation": {
+        "all": [
+          {
+            "field": "influence_domain",
+            "op": "eq",
+            "value": "internal"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "For parts, compulsions, urges, or loops, use the least elaborate existing inner-child, somatic, or metacognitive route that fits the maintaining process.",
+        "Meet a coherent protective position relationally, regulate embodied activation by dose and response, and leave repetitive no-output loops unanswered instead of manufacturing an external agent."
+      ],
+      "avoid": [
+        "Do not convert an internal part, compulsion, urge, thought loop, or somatic pattern into an entity claim without the user's evidence.",
+        "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model."
+      ],
+      "successSignals": [
+        "The selected route matches the actual internal process and produces more choice, useful information, or disengagement from a maintenance loop."
+      ],
+      "tags": [
+        "influence-protection-love",
+        "internal-influence",
+        "parts",
+        "compulsions",
+        "metacognitive"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Internal influence is a route into the existing inner-child, somatic, and metacognitive architecture, not a new modality department."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that every internal influence is an inner child, Protector, trauma memory, or psychiatric symptom."
+        ]
+      },
+      "defaultQuestion": "Does this behave more like a coherent inner position, an urge or compulsion, or the same thought loop running again without new output?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
+    },
+    {
+      "id": "ROUTE.INFLUENCE_NONORDINARY_METTA",
+      "title": "Allow love itself to protect in nonordinary experience",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 99,
+      "activation": {
+        "all": [
+          {
+            "field": "influence_domain",
+            "op": "eq",
+            "value": "experienced_other_than_self"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
+        "AMEND.IC.WELLBEING_HORIZON"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Mirror the person's own language—such as presence, jinn, spirit, entity, unattached burden, or astral attack—and describe it as experienced other-than-self without deciding what it ultimately is.",
+        "Within the spiritual framework, allow metta or love itself to be the primary protective response, not merely kindness added after a psychic boundary or visualization.",
+        "Keep physical and social safety independent: if an ordinary-world danger is also present, leave, refuse, seek support, or take concrete protective action regardless of the spiritual practice."
+      ],
+      "avoid": [
+        "Do not affirm a literal entity, jinn, spirit, unattached burden, or astral attack as established fact, and do not deny or ridicule the person's experienced frame.",
+        "Do not prescribe psychic combat, escalation, retaliatory imagery, or stronger occult technique when love is inaccessible.",
+        "Do not use spiritual love to bypass medical assessment, sleep, orientation, physical protection, or human support when those are needed."
+      ],
+      "successSignals": [
+        "The person can meet the experience with less hatred, panic, or compelled combat while retaining orientation, agency, and ordinary safety choices.",
+        "The response remains useful without requiring agreement about ontology."
+      ],
+      "tags": [
+        "influence-protection-love",
+        "nonordinary-experience",
+        "metta",
+        "ontology-humility"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Metta or love may itself be practiced as protection within nonordinary or spiritual experience; this is distinct from treating love as a substitute for practical safety in physical or social danger.",
+          "Phenomenological respect neither certifies nor disproves an external spiritual ontology."
+        ],
+        "forbiddenOverclaims": [
+          "Do not present the spiritual protection route as proof of metaphysical truth, clinical efficacy, or immunity from harm.",
+          "Do not say that failure to access love means the person is spiritually weak, consenting to harm, or responsible for the experience."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.INFLUENCE_LOVE_CAPACITY",
+      "title": "Build the capacities that make protective love accessible",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 98,
+      "activation": {
+        "all": [
+          {
+            "field": "influence_domain",
+            "op": "eq",
+            "value": "experienced_other_than_self"
+          },
+          {
+            "field": "metta_access",
+            "op": "in",
+            "value": [
+              "limited",
+              "inaccessible"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
+        "AMEND.IC.BORROW_LOVE_EXTERNAL",
+        "AMEND.IC.BEST_FRIEND_PROMPT",
+        "AMEND.IC.SPIRITUAL_STRUGGLE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Do not demand love on cue. When direct metta is inaccessible but a spiritually meaningful source of loving support is accessible, invite borrowed spiritual love or protection in the user's own tradition and language—for example through God, Jesus, angels, devas, saints, ancestors, or another loving presence.",
+        "Use receive -> participate -> generate -> internalize as a developmental movement: first receive the loving support, then join its loving intention, then practice generating some love directly, then carry more love, courage, discernment, and agency personally over time.",
+        "Treat continuing prayer, devotion, surrender to God, reliance on grace, or ongoing relationship with a spiritual source as compatible with mature capacity. The transfer target is increased love, courage, discernment, and agency, not spiritual independence from the divine.",
+        "If neither direct nor borrowed spiritual love is accessible, build the smallest believable Nurturer, Protector, or Guide function rather than escalating to psychic combat; ordinary adult or human support may supply one bounded function while authority returns to the person.",
+        "Use ordinary grounding, rest, human support, boundaries, and practical protection alongside capacity-building whenever they are needed.",
+        "Capacity includes acting where action is possible and relinquishing control that is not the person’s to exercise. Continued devotion or entrusting outcomes is not failed transfer. When the spiritual source itself evokes distress, attend to that struggle rather than automatically prescribe more borrowing; identity is not consent."
+      ],
+      "avoid": [
+        "Do not replace inaccessible love with psychic combat, adversarial entity techniques, or pressure to perform spiritual fearlessness.",
+        "Do not force affection, forgiveness, or compassion while the person's available protective capacity is saying no.",
+        "Do not pathologize continuing prayer or devotion, and do not confuse spiritual relationship with psychological helplessness that displaces the person's agency or judgment."
+      ],
+      "successSignals": [
+        "A believable caring or non-hating response becomes more accessible without surrendering agency, judgment, or practical protection.",
+        "Spiritual relationship and growing personal capacity coexist: ongoing devotion may continue while love, courage, discernment, and agency increase."
+      ],
+      "tags": [
+        "influence-protection-love",
+        "borrowed-spiritual-love",
+        "capacity-building",
+        "devotion",
+        "agency",
+        "nurturer",
+        "protector",
+        "guide"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Love that is not presently accessible must be built toward through believable caring, protective, and guiding functions rather than treated as a moral or spiritual performance demand.",
+          "When direct metta is inaccessible and spiritually meaningful loving support is accessible, borrowed spiritual love follows receive -> participate -> generate -> internalize in the user's own tradition or language.",
+          "Continuing prayer, devotion, reliance on God, grace, or an ongoing spiritual relationship is not itself dependency or failed transfer; the transfer target is increased love, courage, discernment, and agency rather than spiritual independence from the divine.",
+          "If neither direct nor borrowed spiritual love is accessible, return to believable Nurturer, Protector, or Guide capacity-building rather than psychic combat.",
+          "Borrowed spiritual love never replaces practical physical or social safety, and the user's spiritual language is mirrored without affirming or denying metaphysical fact."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that capacity-building confirms the experience was internal or that spiritual language was mistaken.",
+          "Do not treat continuing prayer, devotion, reliance on God, grace, or relationship with a spiritual source as dependency or failed transfer merely because it continues."
+        ]
+      },
+      "defaultQuestion": "Which capacity is missing right now: warmth and non-cruelty, protection and a firm no, or guidance about the next sane action?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
+    },
+    {
+      "id": "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
+      "title": "Work phenomenologically while ontology remains open",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 98,
+      "activation": {
+        "all": [
+          {
+            "field": "influence_domain",
+            "op": "eq",
+            "value": "uncertain_ontology"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
+        "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Leave the cause unresolved and work with directly reportable features: sensations, images, felt agency, triggers, timing, sleep, orientation, urges, effects of attention, and what increases or decreases choice.",
+        "Use practical safety, metta, inner-child or somatic work, and metacognitive non-engagement according to their observable effects without requiring an ontological verdict first.",
+        "Keep competing explanations corrigible by later evidence rather than using either spiritual certainty or reflexive dismissal to end inquiry."
+      ],
+      "avoid": [
+        "Do not collapse uncertainty into either a literal external entity or a purely internal pathology.",
+        "Do not postpone ordinary safety or functioning until the cause is metaphysically settled."
+      ],
+      "successSignals": [
+        "The person gains orientation, choice, protection, or relief while remaining free to leave the cause unresolved.",
+        "New evidence can update the working explanation without invalidating the person's experience."
+      ],
+      "tags": [
+        "influence-protection-love",
+        "uncertain-ontology",
+        "phenomenology",
+        "epistemic-humility"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "A useful intervention can be selected from phenomenology and observed effects while the causal ontology remains explicitly unresolved."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that symptom response to metta, grounding, boundaries, medication, sleep, or inner work proves what caused the experience."
+        ]
+      },
+      "defaultQuestion": "Without deciding the cause yet, what exactly happens in your body, attention, sense of agency, and behavior—and what reliably gives you more choice?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
+    },
+    {
+      "id": "ROUTE.LEAVE_ALONE",
+      "title": "Leave the loop alone and re-enter ordinary life",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 100,
+      "activation": {
+        "all": [
+          {
+            "field": "leave_alone_eligibility",
+            "op": "eq",
+            "value": "eligible"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Notice the thought, sensation, or urge to solve without suppressing it and without answering the same question again; then re-engage ordinary life.",
+        "Stop repeated reassurance, symptom checking, healing-method searching, and therapeutic interpretation when they are producing no new information, decision, or action.",
+        "If a concrete problem or clearly avoided inner issue later appears, route back to outward action or inward processing rather than preserving non-engagement as a dogma."
+      ],
+      "avoid": [
+        "Do not call thought suppression, denial, emotional numbing, or ignoring a medical, safety, relational, or practical problem 'leaving it alone'.",
+        "Do not treat reduced attention to symptoms as proof that the underlying condition is cured."
+      ],
+      "successSignals": [
+        "Checking and reassurance decrease while flexible attention, ordinary activity, relationships, and functioning increase.",
+        "The person can let an unanswered thought exist without immediately converting it into another healing task."
+      ],
+      "tags": [
+        "three-way-routing",
+        "rumination",
+        "metacognitive",
+        "ordinary-life"
+      ],
+      "effects": {
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE",
+          "SOM.RESOURCE_BRAINSPOTTING",
+          "SOM.DEEP_BRAINSPOTTING",
+          "SOM.EMDR_DISCRETE",
+          "SOM.EMDR_DEVELOPMENTAL",
+          "SOM.ADVANCED_RELEASE_OPTIONAL"
+        ],
+        "blockNodes": [],
+        "requiredNuance": [
+          "For some people, the imagined need to keep finding or performing therapy can itself become part of the maintaining attention loop.",
+          "Low-dose regulation is not forbidden when it is needed for functioning; the stop rule targets repetitive processing and checking rather than every form of support.",
+          "Non-engagement concerns this repetitive operation, not a declaration that background grief, a relationship, or all developmental work is resolved. A completed reality check reopens for new relevant evidence, not every renewed reassurance urge."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that rumination or attention caused all symptoms, or that every persistent symptom should simply be ignored."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.ACT_OUTWARD",
+      "title": "Act on the concrete problem",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 99,
+      "activation": {
+        "all": [
+          {
+            "field": "actionable_problem",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Extract one concrete problem that can be changed and choose the next observable decision or action.",
+        "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
+        "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.",
+        "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again."
+      ],
+      "avoid": [
+        "Do not wait for complete emotional certainty before taking a reversible necessary action.",
+        "Do not use action as a way to deny clearly unresolved inner material that continues to drive the problem.",
+        "Do not treat noncompletion as lack of motivation or a protective part before examining practical barriers; do not treat task completion or immediate mood improvement as the sole evidence of benefit."
+      ],
+      "successSignals": [
+        "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
+        "Thinking becomes shorter and more specific because it terminates in action or a defined wait for new information."
+      ],
+      "tags": [
+        "three-way-routing",
+        "outward-action",
+        "protector",
+        "guide"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job."
+        ],
+        "forbiddenOverclaims": [
+          "Do not reduce every emotional problem to productivity or behavioral execution."
+        ]
+      },
+      "defaultQuestion": "What is the next observable action that could actually change this situation?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
+    },
+    {
+      "id": "ROUTE.EXTERNAL_EMBODIMENT",
+      "title": "Shift from inward monitoring to external embodiment",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 98,
+      "activation": {
+        "all": [
+          {
+            "field": "inward_attention_effect",
+            "op": "eq",
+            "value": "worsens"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          },
+          {
+            "field": "actionable_problem",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "SOM.MAP_NOT_LADDER",
+        "SOM.SE",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Prefer eyes-open orientation and ordinary embodied activity that requires contact with the environment: walking, gym, sport, swimming, cycling, chores, social contact, or another tolerable activity.",
+        "Treat this as embodiment without symptom-scanning: attention can be in movement, coordination, effort, surroundings, and ordinary life rather than repeatedly checking the internal state.",
+        "If inward attention later becomes tolerable or clearly useful, reassess rather than permanently banning somatic or contemplative work."
+      ],
+      "avoid": [
+        "Do not repeatedly body-scan to test whether the external activity is working.",
+        "Do not infer that all somatic therapy is contraindicated merely because introspective attention is destabilizing right now."
+      ],
+      "successSignals": [
+        "Derealization, panic, or hypermonitoring is no longer being amplified by repeated inward checking.",
+        "The person spends more time engaged in ordinary embodied life and can flex attention inward or outward with more choice."
+      ],
+      "tags": [
+        "three-way-routing",
+        "external-orientation",
+        "embodiment",
+        "derealization"
+      ],
+      "effects": {
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE",
+          "SOM.DEEP_BRAINSPOTTING",
+          "SOM.EMDR_DISCRETE",
+          "SOM.EMDR_DEVELOPMENTAL"
+        ],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Interoceptive attention and embodied activity are different attentional operations; difficulty with one does not imply inability to benefit from the other."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that external activity proves the symptoms are psychological or that exercise is sufficient treatment for every cause of derealization or panic."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.GO_INWARD",
+      "title": "Go inward only for material that is actually there",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 97,
+      "activation": {
+        "all": [
+          {
+            "field": "unresolved_inner_material",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          },
+          {
+            "field": "inward_attention_effect",
+            "op": "eq",
+            "value": "worsens"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
+        "AMEND.SOM.PREP_MODALITIES",
+        "AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL",
+        "AMEND.SOM.ADVANCED_RELEASE_PARALLEL"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Contact only material that is actually present rather than assuming that distress always hides another layer of trauma.",
+        "Route relational, part-level, credibility, trust, or developmental conflict toward the relevant Nurturer, Protector, Guide, guard, or inner-child function; route bodily activation or freeze toward low-dose somatic regulation, EFT, movement or shaking, and titrated body work according to response.",
+        "For a stable discrete memory target, EMDR can be considered without forcing a long preparatory ladder; for diffuse or developmental body-held material, resource-oriented or deeper Brainspotting and developmental EMDR remain conditional on capacity.",
+        "Advanced release remains optional and parallel; a dramatic state change does not establish readiness for deep processing."
+      ],
+      "avoid": [
+        "Do not use a generic instruction to 'go deeper' when the person cannot name what is unresolved or when repeated inward attention is making them worse.",
+        "Do not force a rigid somatic ladder or assume the most intense modality is the most therapeutic."
+      ],
+      "successSignals": [
+        "Contact with inner material produces new emotional information, greater integration, a changed relationship to a part or memory, or more behavioral freedom rather than only more description.",
+        "Somatic work increases regulation, range, or integration without prolonged destabilization."
+      ],
+      "tags": [
+        "three-way-routing",
+        "inward-processing",
+        "inner-child",
+        "somatic"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order."
+        ],
+        "forbiddenOverclaims": [
+          "Do not infer recovered memories, hidden trauma, or a coherent inner child from symptoms alone."
+        ]
+      },
+      "defaultQuestion": "What exactly seems unfinished or avoided here, and what changes when you contact it rather than merely think about it?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
+    },
+    {
+      "id": "ROUTE.THREE_WAY_GATE",
+      "title": "Discriminate processing, action, and non-engagement",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 96,
+      "activation": {
+        "all": [
+          {
+            "field": "attention_loop",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "any": [
+          {
+            "field": "thinking_yield",
+            "op": "in",
+            "value": [
+              "mixed",
+              "unknown"
+            ]
+          },
+          {
+            "field": "actionable_problem",
+            "op": "eq",
+            "value": "unknown"
+          },
+          {
+            "field": "unresolved_inner_material",
+            "op": "eq",
+            "value": "unknown"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Before prescribing another technique, discriminate whether the next useful movement is inward processing, outward action, or leaving a self-maintaining loop unanswered.",
+        "Use output rather than intensity as the stop rule: useful thinking should yield new information, a decision, an action, or genuinely changed contact with previously avoided material."
+      ],
+      "avoid": [
+        "Do not assume repeated analysis is problem-solving merely because the topic is important.",
+        "Do not label refusal to process as healthy non-engagement until concrete problems and clearly avoided material have been checked."
+      ],
+      "successSignals": [
+        "The case can be classified into one primary movement without forcing every difficulty into a therapy technique."
+      ],
+      "tags": [
+        "three-way-routing",
+        "discrimination",
+        "stop-rule"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "The three movements can alternate over time; this is a routing decision for the current maintaining process, not a permanent personality classification."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that one branch is universally superior to the others."
+        ]
+      },
+      "defaultQuestion": "Is this thinking giving you genuinely new information, a decision, or an action—or are we running the same computation again; and is there a concrete problem to act on or clearly avoided material to contact?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
+    }
+  ],
   "edges": [
     {
       "from": "SOM.GENTLE_REGULATION",
@@ -55,7 +853,144 @@
       "from": "IC.GENTLE_SELF_HYPNOSIS",
       "to": "IC.DEEP_CHILD_DIALOGUE",
       "relation": "does-not-imply-readiness"
+    },
+    {
+      "from": "ROUTE.THREE_WAY_GATE",
+      "to": "ROUTE.ACT_OUTWARD",
+      "relation": "routes-to"
+    },
+    {
+      "from": "ROUTE.THREE_WAY_GATE",
+      "to": "ROUTE.GO_INWARD",
+      "relation": "routes-to"
+    },
+    {
+      "from": "ROUTE.THREE_WAY_GATE",
+      "to": "ROUTE.LEAVE_ALONE",
+      "relation": "routes-to"
+    },
+    {
+      "from": "ROUTE.ACT_OUTWARD",
+      "to": "IC.PROTECTOR_ACTION",
+      "relation": "acts-through"
+    },
+    {
+      "from": "ROUTE.ACT_OUTWARD",
+      "to": "IC.GUIDE_LATER",
+      "relation": "organizes-through"
+    },
+    {
+      "from": "ROUTE.GO_INWARD",
+      "to": "IC.MEET_GUARD",
+      "relation": "may-route-to"
+    },
+    {
+      "from": "ROUTE.GO_INWARD",
+      "to": "IC.DEEP_CHILD_DIALOGUE",
+      "relation": "conditional-deep-route"
+    },
+    {
+      "from": "ROUTE.GO_INWARD",
+      "to": "SOM.GENTLE_REGULATION",
+      "relation": "may-route-to"
+    },
+    {
+      "from": "ROUTE.GO_INWARD",
+      "to": "SOM.EFT_PORTABLE",
+      "relation": "may-route-to"
+    },
+    {
+      "from": "ROUTE.GO_INWARD",
+      "to": "SOM.GENTLE_SHAKING",
+      "relation": "may-route-to"
+    },
+    {
+      "from": "ROUTE.GO_INWARD",
+      "to": "SOM.RESOURCE_BRAINSPOTTING",
+      "relation": "may-route-to"
+    },
+    {
+      "from": "ROUTE.GO_INWARD",
+      "to": "SOM.DEEP_BRAINSPOTTING",
+      "relation": "conditional-deep-route"
+    },
+    {
+      "from": "ROUTE.GO_INWARD",
+      "to": "SOM.EMDR_DISCRETE",
+      "relation": "conditional-memory-route"
+    },
+    {
+      "from": "ROUTE.GO_INWARD",
+      "to": "SOM.EMDR_DEVELOPMENTAL",
+      "relation": "conditional-memory-route"
+    },
+    {
+      "from": "ROUTE.GO_INWARD",
+      "to": "SOM.ADVANCED_RELEASE_OPTIONAL",
+      "relation": "optional-parallel-not-readiness"
+    },
+    {
+      "from": "ROUTE.LEAVE_ALONE",
+      "to": "ROUTE.EXTERNAL_EMBODIMENT",
+      "relation": "preferred-when-inward-attention-worsens"
+    },
+    {
+      "from": "ROUTE.THREE_WAY_GATE",
+      "to": "ROUTE.RELATIONAL_REALITY_CHECK",
+      "relation": "checks-relationship-before-inward-routing"
+    },
+    {
+      "from": "ROUTE.RELATIONAL_REALITY_CHECK",
+      "to": "ROUTE.ACT_OUTWARD",
+      "relation": "routes-outward-as-needed"
+    },
+    {
+      "from": "ROUTE.RELATIONAL_REALITY_CHECK",
+      "to": "ROUTE.GO_INWARD",
+      "relation": "only-then-routes-inward-if-useful"
+    },
+    {
+      "from": "ROUTE.INFLUENCE_SOCIAL_PROTECTION",
+      "to": "ROUTE.RELATIONAL_REALITY_CHECK",
+      "relation": "requires-capacity-and-pressure-check"
+    },
+    {
+      "from": "ROUTE.INFLUENCE_SOCIAL_PROTECTION",
+      "to": "ROUTE.ACT_OUTWARD",
+      "relation": "keeps-practical-protection-primary"
+    },
+    {
+      "from": "ROUTE.INFLUENCE_INTERNAL",
+      "to": "ROUTE.GO_INWARD",
+      "relation": "uses-existing-inner-routes"
+    },
+    {
+      "from": "ROUTE.INFLUENCE_NONORDINARY_METTA",
+      "to": "ROUTE.INFLUENCE_LOVE_CAPACITY",
+      "relation": "builds-capacity-when-love-inaccessible"
+    },
+    {
+      "from": "ROUTE.INFLUENCE_NONORDINARY_METTA",
+      "to": "ROUTE.ACT_OUTWARD",
+      "relation": "never-replaces-ordinary-safety"
+    },
+    {
+      "from": "ROUTE.INFLUENCE_LOVE_CAPACITY",
+      "to": "ROUTE.GO_INWARD",
+      "relation": "builds-nurturer-protector-guide"
+    },
+    {
+      "from": "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
+      "to": "ROUTE.ACT_OUTWARD",
+      "relation": "may-use-practical-protection-without-verdict"
+    },
+    {
+      "from": "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
+      "to": "ROUTE.GO_INWARD",
+      "relation": "may-use-phenomenological-inner-work-without-verdict"
     }
   ],
+  "taskPolicyVersion": 1,
+  "pathPerformancePolicyVersion": 1,
   "bundleVersion": "inner-child-somatic-pilot-2026-08-09-r5"
 }

@@ -40,13 +40,18 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
   // model-contract miss, not a reason to silently misrepresent the route.
   // Retry the renderer once with the exact missing node IDs. This adds no
   // latency when the first realization faithfully covers the plan.
-  if (!enforced.responseContract.realizationCoveragePassed && !String(provider.model || "").startsWith("mock-")) {
+  if ((!enforced.responseContract.realizationCoveragePassed || enforced.responseContract.pathPerformanceAdherencePassed === false) && !String(provider.model || "").startsWith("mock-")) {
     const retryContext = {
       ...context,
       autopilotFeedback: {
         type: "realization-coverage-retry",
         missingNodeIds: enforced.responseContract.missingRealizationNodeIds,
-        instruction: "Rewrite the response so every missing selected intervention is materially realized. Preserve the canonical question and all prior epistemic constraints."
+        requiredRepresentationPolicyMarker: enforced.responseContract.requiredRepresentationPolicyMarker ?? null,
+        missingRepresentationPolicyMarker: enforced.responseContract.missingRepresentationPolicyMarker ?? false,
+        unexpectedRepresentationPolicyMarkers: enforced.responseContract.unexpectedRepresentationPolicyMarkers ?? [],
+        prohibitedNodeIds: enforced.responseContract.prohibitedRealizationNodeIds ?? [],
+        romanceGuideReferenceDecision: enforced.responseContract.romanceGuideReferenceDecision ?? null,
+        instruction: "Rewrite the response so every missing selected intervention and required representation marker is materially realized, obvious symbolic overclaims and prohibited interventions are removed, and every marker has a verbatim answer quote. Follow the path-performance switch/stop decision and deterministic romance-guide reference decision; do not paraphrase the old exercise or add an unauthorized link. Preserve the canonical question and all prior epistemic constraints."
       }
     };
     rawResult = await structuredCall(
@@ -64,6 +69,17 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
     });
   }
 
+  if (enforced.responseContract.pathPerformanceAdherencePassed === false) {
+    throw new RuntimeError("The response did not satisfy the candidate path, readiness, or romance-reference realization contract.", { code: "PATH_PERFORMANCE_REALIZATION_BLOCKED" });
+  }
+  const episode = context.caseFormulation?.path_performance?.active;
+  const contract = context.interventionContract;
+  if (episode) episode.delivery = null;
+  if (episode && enforced.responseContract.pathPerformanceAdherencePassed === true
+      && ["CONTINUE", "ADJUST_DELIVERY", "SWITCH_REPRESENTATION"].includes(contract.pathPerformanceContract.decision)
+      && contract.primaryJob?.id === episode.strategy.node_id) {
+    episode.delivery = { node_id: contract.primaryJob.id, review: episode.review_count, representation: contract.pathPerformanceContract.representation?.selected ?? null, evidence: "realization_contract_passed_semantics_unverified" };
+  }
   return {
     ...rawResult,
     value: { ...rawResult.value, ...enforced },

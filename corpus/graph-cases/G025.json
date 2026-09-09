@@ -1,0 +1,51 @@
+{
+  "id": "G025",
+  "description": "Direct metta is inaccessible, spiritually meaningful loving support is accessible, and an ordinary-world danger keeps practical safety primary while borrowed spiritual love remains available without treating continuing devotion as failed transfer.",
+  "variables": {
+    "present_safety": "unsafe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "influence_domain": "experienced_other_than_self",
+    "metta_access": "inaccessible",
+    "spiritual_support_access": "accessible",
+    "actionable_problem": "present",
+    "unresolved_inner_material": "present",
+    "inward_attention_effect": "neutral"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.SAFETY_ORIENTATION",
+    "selectedIncludes": [
+      "ROUTE.INFLUENCE_NONORDINARY_METTA",
+      "ROUTE.INFLUENCE_LOVE_CAPACITY"
+    ],
+    "selectedExcludes": [
+      "ROUTE.INFLUENCE_INTERNAL",
+      "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN"
+    ],
+    "matchedIncludes": [
+      "IC.SAFETY_ORIENTATION",
+      "ROUTE.INFLUENCE_NONORDINARY_METTA",
+      "ROUTE.INFLUENCE_LOVE_CAPACITY"
+    ],
+    "deferredIncludes": [],
+    "blockedIncludes": [],
+    "requiredNuancePatterns": [
+      "receive -> participate -> generate -> internalize",
+      "not itself dependency or failed transfer",
+      "transfer target is increased love, courage, discernment, and agency",
+      "never replaces practical physical or social safety",
+      "without affirming or denying metaphysical fact"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "metaphysical truth",
+      "continuing prayer, devotion",
+      "dependency or failed transfer"
+    ]
+  }
+}

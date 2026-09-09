@@ -7,26 +7,26 @@ source_id: IC.REGULATION_BEFORE_DIALOGUE
 guide_id: inner-child-guide
 heading: Regulation May Come Before Dialogue
 source_role: primary-framework
-source_hash: a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3
-section_hash: 25def706df704c84749949a8a0448d6e72f8db1fdbe1b8a19fa742541c9645e9
+source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
+section_hash: 6a3adf9a455d4ca433fdcfb019424c1dcd218107f711ab60300b99f1a4973208
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.SAFETY_ORIENTATION
   - IC.SOLAR_PLEXUS_RELAXATION
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Regulation May Come Before Dialogue
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide.txt`
+Authority path: `guides/inner-child-guide-2026-09-07.txt`
 
-Locator: Lines 62–77
+Locator: Lines 80–121
 
 ```text
 Regulation May Come Before Dialogue
 If you notice tension in your solar plexus or abdomen or other areas that seem to be blocking your ability to relax and access that heart chakra love, try some relaxation techniques, like non-forced, slower exhales, and gentle self-massage. I love using one foot to massage the other foot like a Ying/Yang symbol, but you can start with some nice circular or spiral massage on the area of tension.
 
-For deeper somatic therapy, look into Shaking, EFT, EMDR, Brainsp
+For deeper somatic therapy, look into Shaking, tapping (Emotional
 ```

@@ -104,7 +104,8 @@ export function nodeRecordFromAuthoringNote(text, options = {}) {
     successSignals: parsed.payload.successSignals,
     tags: parsed.data.graph_tags,
     effects: parsed.payload.effects,
-    defaultQuestion: parsed.payload.defaultQuestion
+    defaultQuestion: parsed.payload.defaultQuestion,
+    ...(parsed.payload.questionPolicy ? { questionPolicy: parsed.payload.questionPolicy } : {})
   };
 }
 

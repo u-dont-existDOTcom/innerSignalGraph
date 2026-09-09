@@ -27,14 +27,14 @@ function closeServer(server) {
  * interface. `localhost` and `127.0.0.1` therefore both work on normal Linux
  * configurations without exposing therapy traffic to the local network.
  */
-export async function listenInnerSignalLoopback({ config, providers, port = config.port }) {
-  const ipv4 = createInnerSignalServer({ config, providers });
+export async function listenInnerSignalLoopback({ config, providers, privateCaseStore = null, port = config.port }) {
+  const ipv4 = createInnerSignalServer({ config, providers, privateCaseStore });
   await listen(ipv4, port, "127.0.0.1");
   const actualPort = ipv4.address().port;
 
   let ipv6 = null;
   try {
-    ipv6 = createInnerSignalServer({ config, providers });
+    ipv6 = createInnerSignalServer({ config, providers, privateCaseStore });
     await listen(ipv6, actualPort, "::1");
   } catch (error) {
     await closeServer(ipv6).catch(() => {});

@@ -23,9 +23,9 @@ source_refs:
   - AMEND.IC.WELLBEING_HORIZON
   - ASSET.IC.SUICIDE.COSMIC_JACKPOT
 regression_refs: []
-base_record_sha256: 041b2a85dcd478b6c644c5c047b3d468f0acc790395f6cf8a6bd68093821a607
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+base_record_sha256: cd1e500d04f6a9dab711e0ee036536b391a8a7598d118819fa2efb8e99d2d2f9
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Examine the self/death assumption before an irreversible act
@@ -101,6 +101,10 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
       "A Buddhist warning may explicitly include rebirth, hellish states, and severe postmortem suffering without claiming certainty about this individual’s destination or suppressing the warning merely because it is frightening.",
       "Every reflective suicidal route also presents human birth as an extraordinarily rare and precious opportunity to investigate dukkha and liberation, not merely as a life that might possibly become worthwhile."
     ]
+  },
+  "questionPolicy": {
+    "purpose": "discriminate",
+    "unresolvedFields": []
   },
   "recommendations": [
     "Ask what the person is trying to end or obtain through death—annihilation, escape, punishment, love or reunion, God or spiritual contact, liberation or release, or something else—without using motive to predict a postmortem outcome.",

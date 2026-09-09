@@ -24,12 +24,14 @@ test("CLI mode requires no API keys or retention acknowledgment", () => {
   withEnv({
     OPENAI_API_KEY: null,
     ANTHROPIC_API_KEY: null,
-    ACKNOWLEDGE_PROVIDER_RETENTION: "false"
+    ACKNOWLEDGE_PROVIDER_RETENTION: "false",
+    LEDGER_MODE: null
   }, () => {
     const config = loadConfig({ mode: "cli" });
     assert.equal(config.mode, "cli");
     assert.equal(config.openaiApiKey, "");
     assert.equal(config.anthropicApiKey, "");
+    assert.equal(config.ledgerMode, "redacted");
   });
 });
 

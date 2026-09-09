@@ -5,12 +5,13 @@ import { planFromGraphs } from "../guide-graph/planner.mjs";
 
 export const CHECKPOINT_VERSION = "inner-signal-checkpoints-v6";
 export const H001_PIPELINE_REVISION = "hypnosis-compiler-v1";
-export const A001_PIPELINE_REVISION = "tiered-therapy-v6-realization-v4";
-export const PRIOR_A001_PIPELINE_REVISION = "formulated-therapy-v5-realization-v3";
+export const A001_PIPELINE_REVISION = "tiered-therapy-v7-representation-v1";
+export const PRIOR_A001_PIPELINE_REVISION = "tiered-therapy-v6-realization-v4";
 
 // Compatible prior bundles use the same byte-pinned guide sources and hypnosis
-// compiler. H001 may therefore be reused, while pre-realization A001 reasoning
-// is migrated by running only the new response-realization stage.
+// compiler. H001 may therefore be reused. A001 formulations are not migrated
+// across the representation-schema revision because rerendering cannot supply
+// the missing process-scoped selection and audit evidence.
 const COMPATIBLE_PRIOR_GUIDE_VERSIONS = new Set([
   "inner-child-somatic-pilot-2026-08-06-r1",
   "inner-child-somatic-pilot-2026-08-09-r2",
@@ -59,7 +60,9 @@ function replanA001Result(result, graphs, guideVersion) {
   const plan = planFromGraphs({
     variables: result.caseFormulation.variables,
     unknowns: result.caseFormulation.unknowns ?? [],
-    graphs
+    graphs,
+    turnTask: result.caseFormulation.turn_task ?? null,
+    pathPerformance: result.caseFormulation.path_performance ?? null
   });
   return {
     ...result,
@@ -97,33 +100,14 @@ export async function loadCheckpointCache({ stateDir, selectedModels, guideVersi
     : null;
   let A001 = a001Valid ? { ...cache.A001, ...a001Valid } : null;
 
-  // v0.9.2 can preserve compatible prior formulation/adversarial reasoning
-  // and run only the new realization stage. The old final prose is NOT accepted
-  // as the new benchmark result; it is carried forward only as an adjudication
-  // packet to be re-rendered under response-realization-v4.
-  if (!A001 && cache.A001?.pipelineRevision === PRIOR_A001_PIPELINE_REVISION) {
-    const raw = cache.A001?.result ?? cache.A001;
-    if (raw?.caseFormulation?.variables && guideVersionCompatible(raw.guideVersion, guideVersion)) {
-      const migrated = replanA001Result(raw, graphs, guideVersion);
-      A001 = {
-        ...cache.A001,
-        result: migrated,
-        needsRealizationUpgrade: true,
-        priorPipelineRevision: PRIOR_A001_PIPELINE_REVISION
-      };
-    }
-  }
-
   if (!H001 && !A001) return null;
   return { source: "resume-cache", H001, A001 };
 }
 
 /**
- * Imports the immediately preceding blocked A001 run and replays only the
- * deterministic planning layer against the current graph.  This is deliberately
- * bounded to a compatible source-pinned guide version and exact model pair.
- * It lets a substantively cautious prior answer survive a benchmark-contract fix
- * without repeating expensive model calls.
+ * Imports the independently compatible H001 result from an immediately preceding
+ * blocked run. A001 must be regenerated across the representation-schema revision;
+ * deterministic replanning cannot manufacture its missing process-scoped evidence.
  */
 export async function loadLegacyA001BlockedRun({ stateDir, selectedModels, guideVersion, a001Definition, graphs = [] }) {
   const latest = await readJson(path.join(stateDir, "latest.json"));
@@ -137,9 +121,7 @@ export async function loadLegacyA001BlockedRun({ stateDir, selectedModels, guide
   if (!modelsMatch(priorModels, selectedModels)) return null;
 
   const h001Wrapper = await readJson(path.join(latest.runDir, "H001-autopilot-result.json"));
-  const a001Wrapper = await readJson(path.join(latest.runDir, "A001-autopilot-result.json"));
   if (!validH001Result(h001Wrapper, guideVersion)) return null;
-  const a001Valid = validA001Result(a001Wrapper, a001Definition, guideVersion, graphs);
 
   return {
     source: "legacy-a001-blocked-run-replanned",
@@ -151,15 +133,9 @@ export async function loadLegacyA001BlockedRun({ stateDir, selectedModels, guide
       attempts: h001Wrapper.attempts ?? [],
       escalated: Boolean(h001Wrapper.escalated)
     },
-    A001: a001Wrapper?.result?.caseFormulation?.variables ? {
-      pipelineRevision: PRIOR_A001_PIPELINE_REVISION,
-      acceptanceVersion: a001Wrapper.acceptanceVersion ?? "legacy",
-      ok: true,
-      result: replanA001Result(a001Wrapper.result, graphs, guideVersion),
-      acceptance: a001Wrapper.acceptance ?? null,
-      escalated: Boolean(a001Wrapper.escalated),
-      needsRealizationUpgrade: true
-    } : null
+    // A prior A001 formulation lacks the process-scoped representation contract
+    // and must be regenerated. Preserve only independently compatible H001 work.
+    A001: null
   };
 }
 

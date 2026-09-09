@@ -124,7 +124,8 @@ export const NODE_PAYLOAD_FIELDS = Object.freeze([
   "avoid",
   "successSignals",
   "effects",
-  "defaultQuestion"
+  "defaultQuestion",
+  "questionPolicy"
 ]);
 
 export const NODE_FRONTMATTER_TO_RECORD = Object.freeze({
@@ -154,6 +155,9 @@ export const SEMANTIC_FIELD_POLICY = Object.freeze({
   tags: "reviewed-metadata",
   effects: "substantive-effects",
   defaultQuestion: "substantive-response-routing",
+  questionPolicy: "substantive-response-routing",
+  taskPolicyVersion: "substantive-routing-safety",
+  pathPerformancePolicyVersion: "substantive-routing-safety",
   description: "reviewed-metadata",
   edges: "substantive-topology",
   contractVersion: "immutable",

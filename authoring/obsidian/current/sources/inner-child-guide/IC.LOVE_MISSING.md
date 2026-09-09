@@ -7,21 +7,21 @@ source_id: IC.LOVE_MISSING
 guide_id: inner-child-guide
 heading: When Love Still Feels Missing
 source_role: primary-framework
-source_hash: a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3
-section_hash: 2b8ae2593246e97cb80355125290e036c298772baf5ecbfaae55ce5c32a2d863
+source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
+section_hash: 31af9450949fa667357e0efb2d71533d975ce98c0fc4bd7530b9da5f205ba2ac
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.BORROW_LOVE
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # When Love Still Feels Missing
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide.txt`
+Authority path: `guides/inner-child-guide-2026-09-07.txt`
 
-Locator: Lines 350–385
+Locator: Lines 612–643
 
 ```text
 When Love Still Feels Missing
@@ -29,5 +29,5 @@ If you weren’t well-loved as a child, “love your inner child” may sound li
 
 Begin with smaller recognitions:
 
-Love may already be familiar in another form. Most people have felt some form of it: warmth with a friend, care for a pet, or deep appreciation of beauty. Self-love can begin by turning an existing
+Love may already be familiar in another form—or only imaginable as a direction. If care for a friend, child, animal, place, or beauty feels real, borrow from that. If nobody usable comes to mind, im
 ```

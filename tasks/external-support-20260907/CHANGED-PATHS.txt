@@ -1,0 +1,9 @@
+docs/research/2026-09-07-external-support-owner-delta-scan.md
+docs/research/2026-09-07-external-support-routing-candidate.md
+docs/superpowers/specs/2026-09-07-external-support-owner-delta.md
+state/CODEX-CURRENT-STATE.md
+tasks/NEXT-CONVERSATION-HANDOFF-2026-09-07.md
+tasks/external-support-20260907/CHANGED-PATHS.txt
+tasks/external-support-20260907/INTEGRATION.md
+tasks/external-support-20260907/support-contract.mjs
+tasks/external-support-20260907/support-contract.test.mjs

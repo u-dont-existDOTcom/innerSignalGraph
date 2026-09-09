@@ -46,6 +46,7 @@
       <button class="tab active" data-tab="therapy" type="button">Therapy dialogue</button>
       <button class="tab" data-tab="hypnosis" type="button">Structured hypnosis</button>
       <button class="tab" data-tab="guides" type="button">Guide Packet</button>
+      <button class="tab" data-tab="case-state" type="button">State &amp; tracker</button>
       <button class="tab" data-tab="data" type="button">Local data</button>
     </nav>
 
@@ -56,8 +57,10 @@
           <h2 id="therapy-heading">Therapy dialogue</h2>
         </div>
         <div class="actions wrap">
+          <button id="open-current-state" class="secondary" type="button">Current saved state</button>
+          <button id="open-state-diff" class="secondary" type="button">What changed this turn</button>
           <button id="export-diagnostic" class="secondary" type="button">Export recovery ZIP</button>
-          <button id="clear-therapy" class="secondary" type="button">Clear transcript</button>
+          <button id="clear-therapy" class="secondary" type="button">Clear session view</button>
         </div>
       </div>
       <p class="notice">This is a reflective companion, not emergency care. Ordinary low-ambiguity turns use a fast Sonnet + decision-graph path. The runtime automatically adds Codex review or the full Opus + GPT adversarial pipeline when ambiguity, depth, or safety makes that worthwhile.</p>
@@ -174,14 +177,54 @@
       </div>
     </section>
 
+    <section id="case-state" class="panel" aria-labelledby="case-state-heading" hidden>
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow">LONGITUDINAL EVIDENCE</p>
+          <h2 id="case-state-heading">State &amp; trajectory tracker</h2>
+        </div>
+        <div class="actions wrap">
+          <button id="show-current-state" type="button">Current saved state</button>
+          <button id="show-state-diff" class="secondary" type="button">What changed this turn</button>
+        </div>
+      </div>
+      <p id="case-storage-status" class="notice">Checking encrypted private storage…</p>
+      <pre id="case-state-output" class="data-summary">No structured case-state evidence is available yet.</pre>
+
+      <h3>Trajectory entry</h3>
+      <p class="small">Tracking is descriptive. Co-occurrence does not prove that one item caused another.</p>
+      <form id="tracker-form" class="settings-grid">
+        <label>Sleep hours<input id="tracker-sleep-hours" type="number" min="0" max="24" step="0.25"></label>
+        <label>Sleep quality (0–10)<input id="tracker-sleep-quality" type="number" min="0" max="10"></label>
+        <label>Pain (0–10)<input id="tracker-pain" type="number" min="0" max="10"></label>
+        <label>Anxiety (0–10)<input id="tracker-anxiety" type="number" min="0" max="10"></label>
+        <label>Stability (0–10)<input id="tracker-stability" type="number" min="0" max="10"></label>
+        <label>Unreality (0–10)<input id="tracker-unreality" type="number" min="0" max="10"></label>
+        <label>Division (0–10)<input id="tracker-division" type="number" min="0" max="10"></label>
+        <label>Functioning (0–10)<input id="tracker-functioning" type="number" min="0" max="10"></label>
+        <label>Shaking minutes<input id="tracker-shaking-minutes" type="number" min="0" max="1440"></label>
+        <label>THC used<select id="tracker-thc"><option value="">Not recorded</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+        <label class="wide">Events, exposures, and observations<textarea id="tracker-note" rows="3" placeholder="Timing, social contact, rejection, food, substances, activities, or other events."></textarea></label>
+        <div class="actions wide"><button id="tracker-save" type="submit">Save trajectory entry</button></div>
+      </form>
+
+      <h3>Journal or dream note</h3>
+      <form id="journal-form" class="settings-grid">
+        <label>Kind<select id="journal-kind"><option value="journal">Journal</option><option value="dream">Dream</option></select></label>
+        <label class="wide">Private note<textarea id="journal-text" rows="4" required></textarea></label>
+        <div class="actions wide"><button id="journal-save" type="submit">Save note</button></div>
+      </form>
+    </section>
+
     <section id="data" class="panel" aria-labelledby="data-heading" hidden>
       <div class="panel-heading">
         <div>
-          <p class="eyebrow">BROWSER-LOCAL</p>
+          <p class="eyebrow">PRIVACY &amp; PORTABILITY</p>
           <h2 id="data-heading">Local data</h2>
         </div>
       </div>
-      <p class="notice">Transcript and settings are stored only in this browser profile. Export a browser backup for restoration. The recovery ZIP contains deterministic runtime, Guide Packet, model-entitlement, gate, and supervisor evidence; it excludes chat, therapy reasoning, development-case payloads, .env, and credentials.</p>
+      <p class="notice">Sensitive session content is not newly written to browser storage. When encrypted private storage is configured, the server stores the raw transcript and case record only as an encrypted vault. Otherwise sensitive content is session-only. A browser backup is an explicit readable export: protect it accordingly. Legacy browser records are never silently deleted or migrated. The separate recovery ZIP excludes chat, therapy reasoning, development-case payloads, environment files, and credentials.</p>
+      <p id="legacy-data-notice" class="notice" hidden>Legacy browser-local therapy data was detected. It remains untouched until you explicitly export or erase it.</p>
       <div class="actions wrap">
         <button id="export-data" type="button">Export backup</button>
         <button id="export-diagnostic-data" class="secondary" type="button">Export recovery ZIP</button>

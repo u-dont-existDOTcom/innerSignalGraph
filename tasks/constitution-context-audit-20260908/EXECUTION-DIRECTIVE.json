@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "CD-INNERSIGNAL-20260908-R1",
+  "taskId": "constitution-context-audit-20260908",
+  "ownerOutcomeId": "OO-INNERSIGNAL-CONSTITUTION-CONTEXT-AUDIT-20260908",
+  "ownerOutcomeEpoch": 1,
+  "reasoningSupervisorSurface": "owner_chat",
+  "strategyId": "COMPOSE_EXISTING_RUNTIME_VAULT_AND_AUDIT_HARNESS",
+  "directiveRevision": 1,
+  "executionObjective": "Implement, test, commit, push, and verify the owner-specified public-safe constitution, longitudinal context, encrypted case-state provenance and contradiction handling, encrypted recent verbatim-window and targeted retrieval, tracker, inspection UI, corrected audit fixtures, and audit-first handoff on PR 46.",
+  "reasoningSummary": "Compose the existing vault envelope, incremental case formulation, path-performance state, browser UI, and audit harness. Keep constitution and case state separate. Preserve contradictory evidence and source status. Never let a lossy summary carry steering-critical state. Store any durable private payload only through encryption. The public repo contains schemas, code, tests, and synthetic fixtures only.",
+  "allowedActions": [
+    "read current repository and PR authority",
+    "edit source, tests, task artifacts, docs, and public synthetic fixtures",
+    "run focused, affected, package, graph, lesson, repository, publication, and hosted verification",
+    "commit coherent reversible changes",
+    "push the verified head to the existing PR 46 branch",
+    "update the draft PR with a concise exact-head receipt"
+  ],
+  "forbiddenActions": [
+    "copy or hash private real-person content into Git",
+    "provider API or OpenRouter spending",
+    "run the audit architecture or model-comparison experiment as part of this implementation",
+    "select or adopt an audit architecture",
+    "merge PR 46",
+    "deploy or install",
+    "promote stable",
+    "claim clinical validation"
+  ],
+  "requiredEvidence": [
+    "requirement-to-artifact traceability",
+    "focused deterministic tests",
+    "complete package verification",
+    "local publication audit",
+    "exact final Git head",
+    "hosted required-check readback on that head",
+    "public privacy scan",
+    "canonical next-conversation handoff"
+  ],
+  "stopTriggers": [
+    "substantive irreconcilable product-policy conflict",
+    "private data would have to enter the public repository",
+    "push authentication unavailable",
+    "hosted checks expose a new material defect"
+  ]
+}

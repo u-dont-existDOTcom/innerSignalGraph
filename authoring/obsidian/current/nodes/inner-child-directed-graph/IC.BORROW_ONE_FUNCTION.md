@@ -20,6 +20,8 @@ source_refs:
   - IC.BORROW_ONE_FUNCTION
   - IC.ADULT_APPRENTICE
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
+  - AMEND.CROSS.LITERATURE_TASK_PROGRESS
+  - AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 regression_refs:
   - G001
   - G002
@@ -28,9 +30,11 @@ regression_refs:
   - G008
   - G011
   - G012
-base_record_sha256: 2f50064b0f852caadf685fb63244ff82fb18e00e5e9b7f1fa9406dda6374c24f
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+  - G017
+  - G033
+base_record_sha256: 94f6ba7684c351849622447532f54e9f234f106bee02470d6301d37178ca7e02
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Borrow one bounded adult function
@@ -49,8 +53,7 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
         "op": "in",
         "value": [
           "low",
-          "partial",
-          "unknown"
+          "partial"
         ]
       },
       {
@@ -106,7 +109,8 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
   "recommendations": [
     "Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.",
     "Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.",
-    "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness."
+    "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness.",
+    "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image."
   ],
   "successSignals": [
     "The person can perform one adult function without pretending the whole role or the source’s wider authority is available."
@@ -122,3 +126,7 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
 [[current/sources/inner-child-guide/IC.ADULT_APPRENTICE]]
 
 [[current/governance/amendments/AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION]]
+
+[[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]
+
+[[current/governance/amendments/AMEND.IC.EMOTIONAL_TASK_GUIDANCE]]

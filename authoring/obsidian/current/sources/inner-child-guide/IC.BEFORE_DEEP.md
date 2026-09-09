@@ -7,31 +7,30 @@ source_id: IC.BEFORE_DEEP
 guide_id: inner-child-guide
 heading: Before You Try to Go Deep
 source_role: primary-framework
-source_hash: a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3
-section_hash: 96763c2fcc38114a45a7a2690e651f16723535cc3208bbec519cf05687b1950d
+source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
+section_hash: 5c5b9eea756409ebe53cea81be31586812ff09765ba83bf018e1e674b330d5f6
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.DEEP_CHILD_DIALOGUE
   - IC.SAFETY_ORIENTATION
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Before You Try to Go Deep
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide.txt`
+Authority path: `guides/inner-child-guide-2026-09-07.txt`
 
-Locator: Lines 50–61
+Locator: Lines 68–79
 
 ```text
 Before You Try to Go Deep
 Reparenting needs enough adult capacity to pause, compare options, remain in the present, and act. When somebody is flooded or identified almost completely with a frightened child-state, those capacities can be hard to reach. The immediate task may be outside support and regulation. Deeper dialogue can wait.
 
 Spirit and Mind Health
-Bottom-up Healing for Trauma & Addiction: "Neurological De-Armoring" + Brainstem Relaxation
+Bottom-up Healing for Trauma & Addiction: "Neurological De-Armoring" + Brainstem Relaxation v5 (July 7, 2026)
 u-dont-exist.com
 ·
-15 décembre 2025
-Bottom-up He
+15 décembre
 ```

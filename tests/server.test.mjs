@@ -11,7 +11,8 @@ test("local runtime health endpoint starts on an ephemeral port and reports plan
   const result = await runRuntimeSmoke({ config, providers });
   assert.equal(result.ok, true);
   assert.equal(result.health.version, RUNTIME_VERSION);
-  assert.deepEqual(result.health.endpoints, ["/v1/plan", "/v1/therapy/respond", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]);
+  assert.deepEqual(result.health.endpoints, ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]);
+  assert.deepEqual(result.health.privateCaseStorage, { available: false, plaintextFallback: false });
 });
 
 import { createInnerSignalServer } from "../src/server/create-server.mjs";
@@ -38,7 +39,7 @@ test("planning endpoint returns an audited case snapshot and deterministic graph
     const result = await response.json();
     assert.equal(response.status, 200);
     assert.equal(result.graphBundleVersion, "inner-child-somatic-pilot-2026-08-09-r5");
-    assert.equal(result.plan.contractVersion, "case-plan-v4");
+    assert.equal(result.plan.contractVersion, "case-plan-v5");
     assert.ok(result.plan.primaryJob);
     assert.ok(result.snapshot.audit);
   } finally {

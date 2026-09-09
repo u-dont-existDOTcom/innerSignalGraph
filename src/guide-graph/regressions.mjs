@@ -28,7 +28,7 @@ export async function runGraphRegressionSuite({ root = projectRoot, bundle = nul
   const selectedBundle = bundle === null ? await loadCompiledGuideGraphBundle({ root }) : structuredClone(bundle);
   const results = [];
   for (const definition of definitions) {
-    const plan = planFromGraphs({ variables: definition.variables, unknowns: definition.unknowns, graphs: selectedBundle.graphs });
+    const plan = planFromGraphs({ variables: definition.variables, unknowns: definition.unknowns, turnTask: definition.turn_task ?? null, graphs: selectedBundle.graphs });
     const selected = plan.selectedNodes.map((node) => node.id);
     const matched = plan.trace.filter((item) => item.matched).map((item) => item.id);
     const deferred = plan.deferredNodes.map((node) => node.id);
@@ -40,7 +40,9 @@ export async function runGraphRegressionSuite({ root = projectRoot, bundle = nul
       matchedIncludes: includesAll(matched, definition.expected.matchedIncludes),
       deferredIncludes: includesAll(deferred, definition.expected.deferredIncludes),
       blockedIncludes: includesAll(blocked, definition.expected.blockedIncludes),
-      nextQuestion: !definition.expected.nextQuestion || plan.nextQuestion === definition.expected.nextQuestion,
+      nextQuestion: !Object.hasOwn(definition.expected, "nextQuestion") || plan.nextQuestion === definition.expected.nextQuestion,
+      requiredExecutionIncludes: includesAll(plan.executionContract?.requiredNodeIds ?? [], definition.expected.requiredExecutionIncludes),
+      requiredExecutionExcludes: excludesAll(plan.executionContract?.requiredNodeIds ?? [], definition.expected.requiredExecutionExcludes),
       requiredNuancePatterns: includesPatterns(plan.requiredNuance, definition.expected.requiredNuancePatterns),
       forbiddenOverclaimPatterns: includesPatterns(plan.forbiddenOverclaims, definition.expected.forbiddenOverclaimPatterns)
     };

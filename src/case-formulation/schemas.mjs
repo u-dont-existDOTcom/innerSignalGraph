@@ -1,3 +1,8 @@
+import { pathUpdateSchema, representationSchema } from "./path-performance.mjs";
+import { turnTaskSchema } from "./turn-task.mjs";
+import { relationalReadinessSchema } from "./relational-readiness.mjs";
+import { romanceGuideContextSchema } from "./romance-guide.mjs";
+import { threatPathwaySchema } from "./threat-pathway.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 
 const observationSchema = {
@@ -21,6 +26,11 @@ export const caseSnapshotSchema = {
   properties: {
     user_goal: { type: "string" },
     current_issue: { type: "string" },
+    turn_task: turnTaskSchema,
+    path_update: pathUpdateSchema,
+    relational_readiness: relationalReadinessSchema,
+    romance_guide_context: romanceGuideContextSchema,
+    threat_pathway: threatPathwaySchema,
     direct_observations: { type: "array", items: observationSchema },
     variables: {
       type: "object",
@@ -57,13 +67,31 @@ export const caseSnapshotSchema = {
       }
     }
   },
-  required: ["user_goal", "current_issue", "direct_observations", "variables", "hypotheses", "unknowns"]
+  // relational_readiness is optional for historical/mock compatibility. The live
+  // candidate extractor is required separately to emit it explicitly as null/object.
+  required: ["user_goal", "current_issue", "turn_task", "path_update", "direct_observations", "variables", "hypotheses", "unknowns"]
 };
+
+// Provider generation requires all properties declared, with null for optional
+// semantics. The historical runtime validator still accepts omitted delivery_review.
+export const caseSnapshotGenerationSchema = structuredClone(caseSnapshotSchema);
+caseSnapshotGenerationSchema.required.push("relational_readiness", "romance_guide_context", "threat_pathway");
+caseSnapshotGenerationSchema.properties.path_update.anyOf[1].required.push("delivery_review", "representation");
 
 export const caseAuditSchema = {
   type: "object",
   additionalProperties: false,
   properties: {
+    corrected_turn_task: turnTaskSchema,
+    invalidate_turn_task: { type: "boolean" },
+    corrected_path_representation: { anyOf: [{ type: "null" }, representationSchema] },
+    invalidate_path_representation: { type: "boolean" },
+    corrected_relational_readiness: relationalReadinessSchema,
+    invalidate_relational_readiness: { type: "boolean" },
+    corrected_romance_guide_context: romanceGuideContextSchema,
+    invalidate_romance_guide_context: { type: "boolean" },
+    corrected_threat_pathway: threatPathwaySchema,
+    invalidate_threat_pathway: { type: "boolean" },
     remove_observation_ids: { type: "array", items: { type: "string" } },
     remove_hypothesis_ids: { type: "array", items: { type: "string" } },
     variable_corrections: {
@@ -96,5 +124,18 @@ export const caseAuditSchema = {
     verdict: { type: "string", enum: ["accept", "revise", "reject"] },
     summary: { type: "string" }
   },
-  required: ["remove_observation_ids", "remove_hypothesis_ids", "variable_corrections", "add_unknowns", "safety_flags", "verdict", "summary"]
+  required: ["corrected_turn_task", "invalidate_turn_task", "remove_observation_ids", "remove_hypothesis_ids", "variable_corrections", "add_unknowns", "safety_flags", "verdict", "summary"]
 };
+
+// Keep historical audit omission compatibility while requiring explicit provider output.
+export const caseAuditGenerationSchema = structuredClone(caseAuditSchema);
+caseAuditGenerationSchema.required.push(
+  "corrected_path_representation",
+  "invalidate_path_representation",
+  "corrected_relational_readiness",
+  "invalidate_relational_readiness",
+  "corrected_romance_guide_context",
+  "invalidate_romance_guide_context",
+  "corrected_threat_pathway",
+  "invalidate_threat_pathway"
+);

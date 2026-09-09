@@ -19,13 +19,16 @@ source_refs:
   - IC.GUARDS
   - IC.BOTTOM_UP_SEQUENCE
   - IC.ESCAPE_URGE
+  - AMEND.CROSS.LITERATURE_TASK_PROGRESS
 regression_refs:
   - G001
   - G002
   - G012
-base_record_sha256: 5081f590139bf4cd47892199051f1003a1d2f9a36dd313c18f502fe3fb3fff63
-base_graph_sha256: 55b079263bc6ced7c1cf9b1ed3d1a786fa0b191dde1ad700485294ac72804c92
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+  - G029
+  - G030
+base_record_sha256: 3cd5ff6f433b3ce1c22c2e5c35c94b5cb1e8595096dc9082d58e2a31eb6e622f
+base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Meet the protective response before pushing deeper
@@ -68,6 +71,13 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
     "deferNodes": [
       "IC.DEEP_CHILD_DIALOGUE"
     ],
+    "deferralUnless": [
+      {
+        "field": "guard_engagement",
+        "op": "eq",
+        "value": "willing_to_allow"
+      }
+    ],
     "forbiddenOverclaims": [
       "Do not definitively label a cynical voice as a guard."
     ],
@@ -77,7 +87,8 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
   },
   "recommendations": [
     "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
-    "Ask what the part predicts will happen if it steps back; acknowledge before answering."
+    "Ask what the part predicts will happen if it steps back; acknowledge before answering.",
+    "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking."
   ],
   "successSignals": [
     "The protective response can be heard without running the session or being exiled."
@@ -95,3 +106,5 @@ projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d
 [[current/sources/inner-child-guide/IC.BOTTOM_UP_SEQUENCE]]
 
 [[current/sources/inner-child-guide/IC.ESCAPE_URGE]]
+
+[[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]

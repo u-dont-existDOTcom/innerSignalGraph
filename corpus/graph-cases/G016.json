@@ -1,0 +1,41 @@
+{
+  "id": "G016",
+  "description": "An experienced other-than-self presence with accessible metta allows love itself as the spiritual protection route without ontology claims.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "influence_domain": "experienced_other_than_self",
+    "metta_access": "accessible",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "absent"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "ROUTE.INFLUENCE_NONORDINARY_METTA",
+    "selectedIncludes": [],
+    "selectedExcludes": [
+      "ROUTE.INFLUENCE_LOVE_CAPACITY",
+      "ROUTE.INFLUENCE_INTERNAL",
+      "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN"
+    ],
+    "matchedIncludes": [
+      "ROUTE.INFLUENCE_NONORDINARY_METTA"
+    ],
+    "deferredIncludes": [],
+    "blockedIncludes": [],
+    "requiredNuancePatterns": [
+      "Metta or love may itself be practiced as protection",
+      "neither certifies nor disproves"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "metaphysical truth",
+      "failure to access love"
+    ]
+  }
+}

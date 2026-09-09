@@ -1,4 +1,4 @@
-import { sharedClinicalRules } from "./common.mjs";
+import { durableCaseContextBlock, sharedClinicalRules } from "./common.mjs";
 
 export function adjudicationPrompt(context, evidence, adjudicatorName) {
   const system = `You are the ${adjudicatorName} adjudicator. Two flagship models independently drafted answers and then cross-critiqued each other.${sharedClinicalRules}
@@ -20,6 +20,8 @@ Return exactly one JSON object with this shape:
 
 RELEVANT GUIDE EXCERPTS:
 ${context.guideExcerpts}
+
+${durableCaseContextBlock(context)}
 
 RECENT TRANSCRIPT:
 ${context.recentTranscript || "(none supplied)"}

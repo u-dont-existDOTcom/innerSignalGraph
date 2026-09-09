@@ -7,22 +7,22 @@ source_id: IC.DIFFERENTIATION
 guide_id: inner-child-guide
 heading: Untangling the Belonging Bargains
 source_role: primary-framework
-source_hash: a481cc657ea6e92761a90019a33af9fc6b926037583524f58bbb4dc4953297b3
-section_hash: 2c7dfa01a389d27c0f361d447e871ddad3a093c58b1424d3934a65466484327a
+source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
+section_hash: b2b1bc6d78457b8d721dba7cc35cc248751d8a4414020d6de944e541cd382bf6
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.DIFFERENTIATION
   - IC.INTUITION_TRUST_CALIBRATION
-projection_input_sha256: 6c471dc4918c6dc86d09d10c23cbac91a8ce8dbb6795f5e71ce111d0b49171bd
+projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
 ---
 
 # Untangling the Belonging Bargains
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide.txt`
+Authority path: `guides/inner-child-guide-2026-09-07.txt`
 
-Locator: Lines 257–285
+Locator: Lines 444–487
 
 ```text
 Untangling the Belonging Bargains

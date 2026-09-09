@@ -1,0 +1,33 @@
+{
+  "kind": "synthetic-companion-continuation-v2",
+  "baseCommit": "2a638d9089922380fc111898882d6f002c3c9b15",
+  "local": {
+    "node": "v22.16.0",
+    "testsPassed": 58,
+    "testsFailed": 0,
+    "originalPolicySuiteRerunLocally": false
+  },
+  "browser": {
+    "passed": 64,
+    "browser": "144.0.7559.96",
+    "rendering": "set_content(exact_generated_html)",
+    "fileSchemeNavigationTested": false,
+    "networkRequests": [],
+    "pageErrors": [],
+    "consoleErrors": [],
+    "viewports": ["1400x1100", "390x844", "320x720"]
+  },
+  "artifactSha256": "77c610e5b0e8956e3973b71a5b9a353dfe44b6a22ba10b84707962c34355460f",
+  "historicalPublicationAttempt": {
+    "statusAtVerificationTime": "blocked-local-only",
+    "unchangedPrHeadThen": "2a638d9089922380fc111898882d6f002c3c9b15",
+    "commitCreatedThen": false,
+    "branchAdvancedThen": false,
+    "blockedAction": "GitHub.create_tree"
+  },
+  "publishedLater": true,
+  "productionIntegrated": false,
+  "modelRuns": 0,
+  "semanticEvaluationPerformed": false,
+  "independentReviewPerformed": false
+}

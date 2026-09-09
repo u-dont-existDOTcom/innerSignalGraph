@@ -259,7 +259,7 @@ node --input-type=module - "$auto_tmp/runtime/.inner-signal-autopilot/latest.jso
 import fs from "node:fs";
 const latest = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 if (latest.details?.graphRegressions?.ok !== true) throw new Error("Fake autopilot did not record the graph regression gate.");
-if (latest.details?.graphBundle?.stats?.nodeCount !== 41) throw new Error("Fake autopilot did not record the compiled graph bundle.");
+if (latest.details?.graphBundle?.stats?.nodeCount !== 53) throw new Error("Fake autopilot did not record the compiled graph bundle.");
 NODE
 test ! -e "$auto_tmp/runtime"/inner-signal-evidence-*.zip
 echo "PASS evidence remains local and no transfer bundle is created."
@@ -311,7 +311,7 @@ echo "PASS browser exposes a compact guide-graph route trace."
 grep -q '/v1/debug/export' apps/web/app.js || { echo "FAIL browser lacks one-click diagnostic export"; exit 1; }
 grep -q 'Export recovery ZIP' apps/web/index.html || { echo "FAIL browser lacks recovery ZIP button"; exit 1; }
 grep -q '/v1/debug/feedback' apps/web/app.js || { echo "FAIL browser feedback is not persisted to the development queue"; exit 1; }
-grep -q '^LEDGER_MODE=full$' .env.cli.example || { echo "FAIL local development runtime does not retain local continuity ledgers"; exit 1; }
+grep -q '^LEDGER_MODE=redacted$' .env.cli.example || { echo "FAIL local runtime does not default to privacy-safe redacted ledgers"; exit 1; }
 grep -q 'includesChatContent: false' src/export/diagnostic-bundle.mjs || { echo "FAIL recovery diagnostic does not explicitly exclude chat"; exit 1; }
 grep -q 'includesReasoningLedgers: false' src/export/diagnostic-bundle.mjs || { echo "FAIL recovery diagnostic does not explicitly exclude reasoning ledgers"; exit 1; }
 if grep -q 'chat/browser-state.json\|chat/transcript.txt\|reasoning/' src/export/diagnostic-bundle.mjs; then

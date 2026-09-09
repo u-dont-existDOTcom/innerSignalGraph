@@ -88,7 +88,7 @@ async function writeLegacyRun({ stateDir, a001Wrapper, h001Wrapper = h001() }) {
   return runDir;
 }
 
-test("prior v0.7 A001 preserves formulation and plan for a realization-only upgrade", async () => {
+test("prior A001 is invalidated across representation schema while compatible H001 is preserved", async () => {
   const { bundle, a001Definition, g001 } = await fixtures();
   const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-resume-"));
   await writeLegacyRun({ stateDir, a001Wrapper: a001({ variables: g001.variables }) });
@@ -102,12 +102,7 @@ test("prior v0.7 A001 preserves formulation and plan for a realization-only upgr
   });
   assert.equal(resumed.source, "legacy-a001-blocked-run-replanned");
   assert.equal(resumed.H001.ok, true);
-  assert.equal(resumed.A001.ok, true);
-  assert.equal(resumed.A001.needsRealizationUpgrade, true);
-  assert.equal(resumed.A001.result.guideVersion, currentGuideVersion);
-  assert.equal(resumed.A001.result.migratedFromGuideVersion, priorCompatibleGuideVersion);
-  assert.ok(resumed.A001.result.interventionContract.selectedNodes.some((item) => item.id === "IC.BORROW_ONE_FUNCTION"));
-  assert.ok(resumed.A001.result.interventionContract.requiredNuance.some((item) => /not only the younger state/i.test(item)));
+  assert.equal(resumed.A001, null);
 });
 
 test("checkpoint cache is atomic and requires matching models while accepting the bounded prior guide version", async () => {
@@ -152,7 +147,7 @@ test("checkpoint cache is atomic and requires matching models while accepting th
   assert.equal(wrongModel, null);
 });
 
-test("legacy import preserves A001 reasoning even when old prose lacks the new realization contract", async () => {
+test("legacy import does not preserve stale A001 reasoning without the representation contract", async () => {
   const { bundle, a001Definition, g001 } = await fixtures();
   const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-h001-only-"));
   await writeLegacyRun({ stateDir, a001Wrapper: a001({ variables: g001.variables, includeCoreText: false }) });
@@ -165,6 +160,5 @@ test("legacy import preserves A001 reasoning even when old prose lacks the new r
     graphs: bundle.graphs
   });
   assert.equal(resumed.H001.ok, true);
-  assert.equal(resumed.A001.needsRealizationUpgrade, true);
-  assert.equal(resumed.A001.result.answer, "A cautious but incomplete answer.");
+  assert.equal(resumed.A001, null);
 });

@@ -1,0 +1,30 @@
+{
+  "id": "G027",
+  "title": "grief and separate checking",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "coherent_child_state": "present",
+    "body_capacity": "adequate",
+    "current_intent": "conversation",
+    "other_person_central": "no",
+    "influence_domain": "none",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "present",
+    "attention_loop": "present",
+    "inward_attention_effect": "neutral",
+    "thinking_yield": "repetitive_no_new_output",
+    "loop_target_relation": "distinct_repetitive_process"
+  },
+  "expected": {
+    "primary": "ROUTE.LEAVE_ALONE"
+  }
+}
