@@ -44,6 +44,7 @@ const ACTIVE_STATUSES = new Set(PRIVATE_CANDIDATE_STATUSES.filter((status) => ![
 const AUDITABLE_STATUSES = new Set(["pending_audit", "reconstructed_pending_audit"]);
 const BLOCKING_SEVERITIES = new Set(["substantive", "high"]);
 const FINDING_SEVERITIES = new Set(["low", "medium", ...BLOCKING_SEVERITIES]);
+const AVAILABILITY_STATUSES = new Set(["known", "unavailable"]);
 const sha256Hex = (value) => createHash("sha256").update(value).digest("hex");
 
 function bounded(value, name, maximum = 500) {
@@ -77,6 +78,19 @@ export function validateCandidateAuditFinding(value, index = 0) {
   return value;
 }
 
+function validateExternalAuditProvenance(value, candidate, recordedAt) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError("Externally supplied audit provenance is required.");
+  if (value.kind !== "externally_supplied_fresh_independent_audit") throw new ValidationError("External audit provenance kind is invalid.");
+  if (value.supplied_by !== "owner") throw new ValidationError("External audit provenance supplier is invalid.");
+  bounded(value.received_at, "external audit provenance received_at", 80);
+  bounded(value.reported_independence_from_producer_context_id, "external audit provenance producer context", 160);
+  if (recordedAt != null && value.received_at !== recordedAt) throw new ValidationError("External audit provenance receipt time must match the audit recording time.");
+  if (candidate?.producer_context_id && value.reported_independence_from_producer_context_id !== candidate.producer_context_id) {
+    throw new ValidationError("External audit provenance does not identify the exact candidate producer context.");
+  }
+  return value;
+}
+
 export function validateCandidateAuditEvidence(value, candidate) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError("Candidate audit evidence must be an object.");
   if (value.schema_version !== 1) throw new ValidationError("Candidate audit evidence version is invalid.");
@@ -84,8 +98,15 @@ export function validateCandidateAuditEvidence(value, candidate) {
   bounded(value.candidate_id, "candidate audit candidate_id", 160);
   if (typeof value.candidate_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(value.candidate_sha256)) throw new ValidationError("Candidate audit candidate_sha256 is invalid.");
   bounded(value.audit_version, "candidate audit version", 160);
-  bounded(value.completed_at, "candidate audit completed_at", 80);
-  bounded(value.auditor_context_id, "candidate audit auditor_context_id", 160);
+  const auditorContextIdStatus = value.auditor_context_id_status ?? "known";
+  const completedAtStatus = value.completed_at_status ?? "known";
+  if (!AVAILABILITY_STATUSES.has(auditorContextIdStatus)) throw new ValidationError("Candidate audit auditor_context_id_status is invalid.");
+  if (!AVAILABILITY_STATUSES.has(completedAtStatus)) throw new ValidationError("Candidate audit completed_at_status is invalid.");
+  if (auditorContextIdStatus === "known") bounded(value.auditor_context_id, "candidate audit auditor_context_id", 160);
+  else if (value.auditor_context_id !== null) throw new ValidationError("An unavailable auditor context identifier must be stored as null.");
+  if (completedAtStatus === "known") bounded(value.completed_at, "candidate audit completed_at", 80);
+  else if (value.completed_at !== null) throw new ValidationError("An unavailable audit completion time must be stored as null.");
+  if (value.recorded_at != null) bounded(value.recorded_at, "candidate audit recorded_at", 80);
   if (!Number.isSafeInteger(value.candidate_version) || value.candidate_version < 1) throw new ValidationError("Candidate audit candidate_version is invalid.");
   if (!["independent", "self_critique"].includes(value.auditor_kind)) throw new ValidationError("Candidate audit auditor_kind is invalid.");
   if (typeof value.independent_auditor_available !== "boolean" || typeof value.independent !== "boolean" || typeof value.sufficient_for_approval !== "boolean") {
@@ -102,12 +123,23 @@ export function validateCandidateAuditEvidence(value, candidate) {
   const expectedVerdict = blockingIds.length ? "fail" : "pass";
   if (value.verdict !== expectedVerdict) throw new ValidationError("Candidate audit verdict is inconsistent with its findings.");
   if (value.independent !== (value.auditor_kind === "independent")) throw new ValidationError("Candidate audit independence classification is inconsistent.");
-  if (value.sufficient_for_approval !== (value.independent && value.verdict === "pass")) throw new ValidationError("Candidate audit approval sufficiency is inconsistent.");
+  const externallyUnbound = auditorContextIdStatus === "unavailable" || completedAtStatus === "unavailable";
+  if (externallyUnbound) {
+    if (value.auditor_kind !== "independent" || value.independent_auditor_available !== true || value.verdict !== "fail") {
+      throw new ValidationError("Identity- or time-unavailable external audit evidence may preserve only a blocking independent FAIL.");
+    }
+    if (value.recorded_at == null) throw new ValidationError("Externally supplied audit evidence requires a recording time.");
+    validateExternalAuditProvenance(value.external_provenance, candidate, value.recorded_at);
+  } else if (value.external_provenance != null) {
+    validateExternalAuditProvenance(value.external_provenance, candidate, value.recorded_at ?? value.completed_at);
+  }
+  const expectedApprovalSufficiency = value.independent && value.verdict === "pass" && !externallyUnbound;
+  if (value.sufficient_for_approval !== expectedApprovalSufficiency) throw new ValidationError("Candidate audit approval sufficiency is inconsistent.");
 
   if (candidate) {
     if (value.candidate_id !== candidate.id || value.candidate_version !== candidate.version) throw new ValidationError("Audit evidence belongs to a different candidate ID/version.");
     if (value.candidate_sha256 !== sha256Hex(candidate.exact_text)) throw new ValidationError("Audit evidence belongs to different exact candidate bytes.");
-    if (value.independent && candidate.producer_context_id && value.auditor_context_id === candidate.producer_context_id) {
+    if (value.independent && auditorContextIdStatus === "known" && candidate.producer_context_id && value.auditor_context_id === candidate.producer_context_id) {
       throw new ValidationError("The candidate producer cannot certify its own reconstruction as an independent auditor.");
     }
     if (candidate.parent_candidate_id != null) {
@@ -127,12 +159,20 @@ export function createCandidateAuditEvidence({
   findings = [],
   repairInducedChecks = [],
   independentAuditorAvailable = true,
-  completedAt = new Date().toISOString()
+  completedAt,
+  completedAtStatus,
+  recordedAt = completedAt ?? new Date().toISOString(),
+  externalProvenance = null
 } = {}) {
   if (!candidate || !AUDITABLE_STATUSES.has(candidate.status)) throw new ValidationError("Only the current pending candidate version can be audited.");
   if (!auditorContext || typeof auditorContext !== "object" || Array.isArray(auditorContext)) throw new ValidationError("auditorContext is required.");
+  const auditorContextIdStatus = auditorContext.context_id_status ?? (auditorContext.context_id == null ? "unavailable" : "known");
+  const isExternallySupplied = externalProvenance != null || auditorContextIdStatus === "unavailable";
+  const resolvedCompletedAtStatus = completedAtStatus ?? (completedAt == null && isExternallySupplied ? "unavailable" : "known");
+  const resolvedCompletedAt = resolvedCompletedAtStatus === "known" ? (completedAt ?? recordedAt) : null;
   const normalizedFindings = structuredClone(findings).map((finding) => ({ unresolved: true, ...finding }));
   const independent = auditorContext.kind === "independent";
+  const hasBlockingFinding = normalizedFindings.some(isSubstantiveAuditFinding);
   const evidence = {
     schema_version: 1,
     id: auditId,
@@ -140,16 +180,20 @@ export function createCandidateAuditEvidence({
     candidate_version: candidate.version,
     candidate_sha256: sha256Hex(candidate.exact_text),
     audit_version: auditVersion,
-    completed_at: completedAt,
+    completed_at: resolvedCompletedAt,
+    completed_at_status: resolvedCompletedAtStatus,
+    recorded_at: recordedAt,
     auditor_kind: auditorContext.kind,
-    auditor_context_id: auditorContext.context_id,
+    auditor_context_id: auditorContextIdStatus === "known" ? auditorContext.context_id : null,
+    auditor_context_id_status: auditorContextIdStatus,
     independent_auditor_available: independentAuditorAvailable === true,
     independent,
     findings: normalizedFindings,
     unresolved_substantive_finding_ids: normalizedFindings.filter(isSubstantiveAuditFinding).map((finding) => finding.id),
-    verdict: normalizedFindings.some(isSubstantiveAuditFinding) ? "fail" : "pass",
-    sufficient_for_approval: independent && !normalizedFindings.some(isSubstantiveAuditFinding),
-    repair_induced_checks: candidate.parent_candidate_id == null ? [] : [...repairInducedChecks]
+    verdict: hasBlockingFinding ? "fail" : "pass",
+    sufficient_for_approval: independent && !hasBlockingFinding && auditorContextIdStatus === "known" && resolvedCompletedAtStatus === "known",
+    repair_induced_checks: candidate.parent_candidate_id == null ? [] : [...repairInducedChecks],
+    ...(externalProvenance == null ? {} : { external_provenance: structuredClone(externalProvenance) })
   };
   return Object.freeze(validateCandidateAuditEvidence(evidence, candidate));
 }

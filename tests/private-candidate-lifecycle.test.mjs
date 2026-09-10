@@ -181,6 +181,70 @@ test("self_critique_alone_not_sufficient_when_independent_auditor_available", as
   await assert.rejects(() => store.approveCandidateForDelivery(CASE_ID, candidate.id, selfCritique.id), /fresh independent audit/i);
 });
 
+test("externally supplied failed audit preserves unavailable identity without becoming approval evidence", async (t) => {
+  const store = await makeStore(t);
+  const { candidate } = await firstReconstruction(store);
+  const recordedAt = "2026-09-10T13:00:00.000Z";
+  const externalProvenance = {
+    kind: "externally_supplied_fresh_independent_audit",
+    supplied_by: "owner",
+    received_at: recordedAt,
+    reported_independence_from_producer_context_id: candidate.producer_context_id
+  };
+  const failedAudit = createCandidateAuditEvidence({
+    auditId: "audit:external:repair-1:failed",
+    candidate,
+    auditVersion: "private-candidate-audit-v3",
+    auditorContext: { kind: "independent", context_id: null, context_id_status: "unavailable" },
+    completedAt: null,
+    completedAtStatus: "unavailable",
+    recordedAt,
+    externalProvenance,
+    findings: [finding("finding:external:repair-induced")],
+    repairInducedChecks: REPAIR_INDUCED_ERROR_CHECKS
+  });
+
+  assert.equal(failedAudit.auditor_context_id, null);
+  assert.equal(failedAudit.auditor_context_id_status, "unavailable");
+  assert.equal(failedAudit.completed_at, null);
+  assert.equal(failedAudit.completed_at_status, "unavailable");
+  assert.equal(failedAudit.verdict, "fail");
+  assert.equal(failedAudit.independent, true);
+  assert.equal(failedAudit.sufficient_for_approval, false);
+  assert.deepEqual(failedAudit.external_provenance, externalProvenance);
+
+  assert.throws(() => createCandidateAuditEvidence({
+    auditId: "audit:external:repair-1:passing-without-identity",
+    candidate,
+    auditVersion: "private-candidate-audit-v3",
+    auditorContext: { kind: "independent", context_id: null, context_id_status: "unavailable" },
+    completedAt: null,
+    completedAtStatus: "unavailable",
+    recordedAt,
+    externalProvenance,
+    findings: [],
+    repairInducedChecks: REPAIR_INDUCED_ERROR_CHECKS
+  }), /may preserve only a blocking independent FAIL/i);
+
+  assert.throws(() => createCandidateAuditEvidence({
+    auditId: "audit:external:repair-1:wrong-producer",
+    candidate,
+    auditVersion: "private-candidate-audit-v3",
+    auditorContext: { kind: "independent", context_id: null, context_id_status: "unavailable" },
+    completedAt: null,
+    completedAtStatus: "unavailable",
+    recordedAt,
+    externalProvenance: { ...externalProvenance, reported_independence_from_producer_context_id: "producer:other" },
+    findings: [finding("finding:external:wrong-producer")],
+    repairInducedChecks: REPAIR_INDUCED_ERROR_CHECKS
+  }), /exact candidate producer context/i);
+
+  await store.recordCandidateAudit(CASE_ID, candidate.id, failedAudit);
+  const failed = await store.getCandidateResponse(CASE_ID, candidate.id);
+  assert.equal(failed.status, "audit_failed");
+  await assert.rejects(() => store.approveCandidateForDelivery(CASE_ID, candidate.id, failedAudit.id), /fresh independent audit/i);
+});
+
 test("max_two_repair_cycles_then_discriminator_or_block", async (t) => {
   const store = await makeStore(t);
   const { candidate: repairOne } = await firstReconstruction(store);

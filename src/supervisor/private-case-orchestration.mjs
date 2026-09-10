@@ -110,15 +110,24 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
         requiredId(request.candidate_id, "candidate_id");
         requiredId(request.audit_id, "audit_id");
         requiredObject(request.auditor_context, "auditor_context");
-        requiredText(request.completed_at, "completed_at", 80);
+        const auditorContextIdStatus = request.auditor_context.context_id_status ?? (request.auditor_context.context_id == null ? "unavailable" : "known");
+        const completedAtStatus = request.completed_at_status ?? (request.completed_at == null ? "unavailable" : "known");
+        if (!["known", "unavailable"].includes(auditorContextIdStatus)) throw new ValidationError("auditor_context.context_id_status is invalid.");
+        if (!["known", "unavailable"].includes(completedAtStatus)) throw new ValidationError("completed_at_status is invalid.");
+        if (auditorContextIdStatus === "known") requiredId(request.auditor_context.context_id, "auditor_context.context_id");
+        else if (request.auditor_context.context_id !== null) throw new ValidationError("An unavailable auditor context identifier must be null.");
+        if (completedAtStatus === "known") requiredText(request.completed_at, "completed_at", 80);
+        else if (request.completed_at !== null) throw new ValidationError("An unavailable audit completion time must be null.");
+        const recordedAt = request.recorded_at ?? request.completed_at;
+        if (auditorContextIdStatus === "unavailable" || completedAtStatus === "unavailable") requiredText(recordedAt, "recorded_at", 80);
         requiredObject(request.result, "result");
         if (!Array.isArray(request.result.findings)) throw new ValidationError("result.findings must be an array.");
         const candidate = await currentCandidate(caseAccessService, caseId, request.candidate_id, authContext);
         const existing = candidate.audit_history.find((entry) => entry.id === request.audit_id);
         if (existing) {
           assertReplayEqual(
-            [existing.auditor_kind, existing.auditor_context_id, existing.completed_at, existing.independent_auditor_available, existing.findings, existing.repair_induced_checks],
-            [request.auditor_context.kind, request.auditor_context.context_id, request.completed_at, request.independent_auditor_available !== false, request.result.findings.map((finding) => ({ unresolved: true, ...finding })), request.result.repair_induced_checks ?? []],
+            [existing.auditor_kind, existing.auditor_context_id, existing.auditor_context_id_status ?? "known", existing.completed_at, existing.completed_at_status ?? "known", existing.recorded_at ?? existing.completed_at, existing.independent_auditor_available, existing.external_provenance ?? null, existing.findings, existing.repair_induced_checks],
+            [request.auditor_context.kind, auditorContextIdStatus === "known" ? request.auditor_context.context_id : null, auditorContextIdStatus, completedAtStatus === "known" ? request.completed_at : null, completedAtStatus, recordedAt, request.independent_auditor_available !== false, request.external_provenance ?? null, request.result.findings.map((finding) => ({ unresolved: true, ...finding })), request.result.repair_induced_checks ?? []],
             `Candidate audit ${request.audit_id}`
           );
           return publicCandidateReceipt(caseId, candidate, { reused: true });
@@ -132,6 +141,9 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
           auditorContext: request.auditor_context,
           independentAuditorAvailable: request.independent_auditor_available !== false,
           completedAt: request.completed_at,
+          completedAtStatus,
+          recordedAt,
+          externalProvenance: request.external_provenance,
           result: request.result
         });
         return publicCandidateReceipt(caseId, await currentCandidate(caseAccessService, caseId, persisted.candidate_id, authContext));

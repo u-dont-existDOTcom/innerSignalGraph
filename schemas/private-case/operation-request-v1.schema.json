@@ -35,8 +35,9 @@
         "required": ["schema_version", "operation", "case_id", "candidate_id", "audit_id", "auditor_context", "completed_at", "result"],
         "properties": {
           "schema_version": { "const": 1 }, "operation": { "const": "record_candidate_audit" }, "case_id": { "$ref": "#/$defs/caseId" }, "candidate_id": { "$ref": "#/$defs/id" }, "audit_id": { "$ref": "#/$defs/id" },
-          "auditor_context": { "type": "object", "additionalProperties": false, "required": ["kind", "context_id"], "properties": { "kind": { "enum": ["independent", "self_critique"] }, "context_id": { "$ref": "#/$defs/id" } } },
-          "completed_at": { "type": "string", "format": "date-time" }, "independent_auditor_available": { "type": "boolean" },
+          "auditor_context": { "type": "object", "additionalProperties": false, "required": ["kind", "context_id"], "properties": { "kind": { "enum": ["independent", "self_critique"] }, "context_id": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] }, "context_id_status": { "enum": ["known", "unavailable"] } } },
+          "completed_at": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] }, "completed_at_status": { "enum": ["known", "unavailable"] }, "recorded_at": { "type": "string", "format": "date-time" }, "independent_auditor_available": { "type": "boolean" },
+          "external_provenance": { "$ref": "#/$defs/externalProvenance" },
           "result": { "type": "object", "required": ["findings"], "properties": { "findings": { "type": "array" }, "repair_induced_checks": { "type": "array", "items": { "type": "string" } } } }
         }
       }]
@@ -65,6 +66,16 @@
         "required": ["schema_version", "operation", "case_id", "candidate_id", "audit_id"],
         "properties": { "schema_version": { "const": 1 }, "operation": { "const": "approve_candidate_for_delivery" }, "case_id": { "$ref": "#/$defs/caseId" }, "candidate_id": { "$ref": "#/$defs/id" }, "audit_id": { "$ref": "#/$defs/id" } }
       }]
+    },
+    "externalProvenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "supplied_by", "received_at", "reported_independence_from_producer_context_id"],
+      "properties": {
+        "kind": { "const": "externally_supplied_fresh_independent_audit" },
+        "supplied_by": { "const": "owner" },
+        "received_at": { "type": "string", "format": "date-time" },
+        "reported_independence_from_producer_context_id": { "$ref": "#/$defs/id" }
+      }
     },
     "markSent": {
       "allOf": [{ "$ref": "#/$defs/base" }, {

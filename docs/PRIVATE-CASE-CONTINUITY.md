@@ -72,6 +72,8 @@ Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains
 
 Candidate audit code in `src/supervisor/private-candidate-audit.mjs` accepts a candidate ID, resolves the exact private text through `loadCaseContext`, invokes the configured independent auditor, derives rather than trusts the pass/fail status, and persists the resulting evidence against that exact candidate version.
 
+An externally supplied fresh-audit FAIL may be ingested when the external auditor/session identifier or exact completion time is unavailable. Those facts are stored explicitly as unavailable, never as fabricated identifiers or timestamps. Separate structured provenance records the owner-authorized source, receipt time, and the exact producer context from which independence was reported. This exception is fail-closed: it requires a blocking finding, can never be sufficient for approval, and cannot authorize delivery. A passing approval audit still requires a known context distinct from the candidate producer and a known completion time.
+
 The public schemas for transcript amendments, candidate versions, candidate audits, and backend operation requests are in `schemas/private-case/`. Schemas describe transport/storage shape; runtime validators additionally enforce cross-record integrity, exact byte digests, lineage, independence, and allowed state transitions.
 
 ## Encryption and key-provider model

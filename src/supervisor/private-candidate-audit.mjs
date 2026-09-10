@@ -6,7 +6,7 @@ import {
   createCandidateAuditEvidence
 } from "./private-candidate-lifecycle.mjs";
 
-export const PRIVATE_CANDIDATE_AUDIT_VERSION = "private-candidate-audit-v2";
+export const PRIVATE_CANDIDATE_AUDIT_VERSION = "private-candidate-audit-v3";
 
 export async function buildPrivateCandidateAuditInput({ caseAccessService, caseId, candidateId = "current_pending", authContext } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function") throw new ValidationError("caseAccessService is required.");
@@ -57,6 +57,9 @@ export async function runPrivateCandidateAudit({
   auditorContext,
   independentAuditorAvailable = true,
   completedAt,
+  completedAtStatus,
+  recordedAt,
+  externalProvenance,
   ...input
 } = {}) {
   if (typeof auditor !== "function") throw new ValidationError("auditor must be a function.");
@@ -72,6 +75,9 @@ export async function runPrivateCandidateAudit({
     auditorContext,
     independentAuditorAvailable,
     completedAt,
+    completedAtStatus,
+    recordedAt,
+    externalProvenance,
     auditInput,
     result
   });
@@ -86,6 +92,9 @@ export async function persistPrivateCandidateAuditResult({
   auditorContext,
   independentAuditorAvailable = true,
   completedAt,
+  completedAtStatus,
+  recordedAt,
+  externalProvenance,
   result,
   auditInput = null
 } = {}) {
@@ -110,7 +119,10 @@ export async function persistPrivateCandidateAuditResult({
     findings: result.findings,
     repairInducedChecks: result.repair_induced_checks ?? [],
     independentAuditorAvailable,
-    ...(completedAt ? { completedAt } : {})
+    ...(completedAt !== undefined ? { completedAt } : {}),
+    ...(completedAtStatus !== undefined ? { completedAtStatus } : {}),
+    ...(recordedAt !== undefined ? { recordedAt } : {}),
+    ...(externalProvenance !== undefined ? { externalProvenance } : {})
   });
   const updatedRecord = await caseAccessService.recordCandidateAudit(caseId, resolvedInput.candidate_id, evidence, authContext);
   const updatedCandidate = updatedRecord.candidate_responses.find((entry) => entry.id === resolvedInput.candidate_id);
