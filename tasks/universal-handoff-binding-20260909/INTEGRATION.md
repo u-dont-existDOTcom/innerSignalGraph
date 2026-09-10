@@ -1,6 +1,6 @@
 # InnerSignal Universal Handoff Binding v1.0
 
-Status: REPOSITORY CANDIDATE VERIFIED; REAL HANDOFF READY; EXTERNAL CHATGPT ACTIVATION IN PROGRESS. Draft PR #49 remains open, draft, and unmerged on `codex/private-case-import-20260909`, starting from `44819602ad147b1ee670d46b4d1672ce05951871` after exact local/remote reconciliation.
+Status: `FRESH_SESSION_GREEN`; exact candidate audit remains next. Draft PR #49 remains open, draft, and unmerged on `codex/private-case-import-20260909`, starting from `44819602ad147b1ee670d46b4d1672ce05951871` after exact local/remote reconciliation.
 
 ## Owner outcome
 
@@ -32,8 +32,8 @@ Implement the owner-supplied public binding as a GitHub-independent private encr
 - Local publication audit: PASS, 158,932 records scanned, zero findings.
 - Final exact-head GitHub checks and the separate hosted publication-history scan must be recorded after the containing commit is pushed. Earlier hosted history remained fail-closed because GitHub no longer served one old CodeQL run log; this was not a detected leak.
 
-## 2026-09-10 semantic-gate and activation correction
+## 2026-09-10 semantic gate and hosted fresh-session acceptance
 
-The owner superseded the fixed three-exchange quota with semantic active-episode completeness. The real exact episode is contiguous from its declared start through the latest supplied turn, so immutable handoff `handoff:92f179eb-299a-47cf-87de-43791d95bf70` now passes the local continuation gate and an independent process loaded its exact recent episode and exact pending candidate using only that ID plus ambient authorization. Hosted OAuth JWT verification, subject-to-case ACL, managed-secret case-key access, RFC 9728 metadata, per-tool OAuth schemes, and MCP reauthorization challenges are implemented and synthetically verified.
+The owner superseded the fixed three-exchange quota with semantic active-episode completeness. The real exact episode is contiguous from its declared start through the latest supplied turn, so immutable handoff `handoff:92f179eb-299a-47cf-87de-43791d95bf70` passes the continuation gate. The owner-controlled Netcup deployment now hosts the encrypted read-only vault and private MCP behind Keycloak OAuth. The live path validates JWT signature, issuer, exact resource audience, expiration, `case:read`/`case:audit`, and a subject-to-case ACL before managed key release. Protected-resource discovery, PKCE S256, per-tool OAuth schemes, and uniform fail-closed challenges passed live verification.
 
-No `FRESH_SESSION_GREEN` claim is made. A live identity-provider/hosted secret deployment, ChatGPT registration, and the actual brand-new-chat `load_handoff` call remain required. The candidate has not been audited or reinterpreted.
+ChatGPT plugin `InnerSignal Private Continuity` is OAuth-connected. Brand-new conversation `6aa28621-3a20-83e9-93b8-640d6054cdf3` received only the handoff ID, invoked `load_handoff`, and reported the saved state, later corrections, complete six-turn active episode, and exact unsent pending response rather than a reconstructed summary. A separate hosted OAuth call against the same immutable handoff independently compared the candidate and every recent turn to the private source exactly; unauthorized access returned no private content. The real handoff is `FRESH_SESSION_GREEN`. The candidate remains unsent and `pending_audit`; its exact audit is the next supervisor task.

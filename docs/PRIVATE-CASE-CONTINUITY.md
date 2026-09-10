@@ -1,6 +1,6 @@
 # Private case continuity and fresh-session access
 
-Status: draft PR #49 extends the encrypted case store with the InnerSignal Universal Handoff Binding v1.0. Synthetic acceptance proves an immutable encrypted handoff can be created in Session A and loaded in a separate Session B using only `handoff_id` plus authorized transport context, including a history larger than 100,000 characters split into deterministic chunks no larger than 20,000 bytes. The real owner-supplied source has passed exact local encrypted import, semantic active-episode completeness, immutable handoff creation, and a separate-process exact `load_handoff` round trip. A production ChatGPT connection is still **not registered or fresh-chat verified**, so the handoff remains `READY_FOR_FRESH_SESSION_TEST`, never `FRESH_SESSION_GREEN`.
+Status: draft PR #49 extends the encrypted case store with the InnerSignal Universal Handoff Binding v1.0. Synthetic acceptance proves an immutable encrypted handoff can be created in Session A and loaded in a separate Session B using only `handoff_id` plus authorized transport context, including a history larger than 100,000 characters split into deterministic chunks no larger than 20,000 bytes. The real owner-supplied source passed exact encrypted import, semantic active-episode completeness, immutable handoff creation, separate-process exact round trip, hosted OAuth/ACL/key retrieval, and an actual brand-new ChatGPT `load_handoff` call given only its stable handoff ID. Independent comparison against the same immutable hosted packet matched the exact candidate and complete recent episode, so this real handoff is `FRESH_SESSION_GREEN`.
 
 ## Acceptance contract
 
@@ -161,17 +161,17 @@ The packet is wrapped as an exact artifact, encrypted with the existing dual-wra
 
 The older `createPrivateCaseHandoff` reference-only record remains for compatibility, but it is not the Universal Handoff artifact or its fresh-session evidence.
 
-The owner-authorized opaque identifiers for the present import are `case-57a69465-4434-41cf-ad24-310b13a2cc81`, `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051`, and `handoff:92f179eb-299a-47cf-87de-43791d95bf70`. The private payload and immutable handoff round-trip exactly from a separate process using only the handoff ID plus ambient authorization. Its active episode is complete from the declared semantic start through the latest supplied turn. ChatGPT registration and an actual new-chat call are still absent, so the handoff must not be labeled `FRESH_SESSION_GREEN`.
+The owner-authorized opaque identifiers for the present import are `case-57a69465-4434-41cf-ad24-310b13a2cc81`, `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051`, and `handoff:92f179eb-299a-47cf-87de-43791d95bf70`. The private payload and immutable handoff round-trip exactly from a separate process using only the handoff ID plus ambient authorization. Its active episode is complete from the declared semantic start through the latest supplied turn. The hosted read-only service is `https://private-mcp.185-233-106-15.sslip.io/mcp`; ChatGPT plugin `InnerSignal Private Continuity` connects through Keycloak OAuth with PKCE S256, exact issuer/resource audience, `case:read` and `case:audit`, subject-to-case ACL enforcement before managed key release, and no plaintext fallback. Fresh ChatGPT conversation `6aa28621-3a20-83e9-93b8-640d6054cdf3` received only the handoff ID, invoked `load_handoff`, and reported the complete six-turn episode plus the exact unsent pending candidate. Private receipts retain the independent exactness comparison without publishing private bytes or private-derived hashes. This handoff is `FRESH_SESSION_GREEN`; candidate audit remains pending.
 
-## Blocking production/ChatGPT obligations
+## Hosted production/ChatGPT acceptance evidence
 
-Repository-local success does not make the tool callable from a new ChatGPT conversation. Before making that claim, all of these must happen and be evidenced:
+Repository-local success alone does not make a tool callable from a new ChatGPT conversation. The real handoff passed every external layer on 2026-09-10:
 
-1. Deploy hosted mode behind stable HTTPS or an approved Secure MCP Tunnel and a publicly reachable established identity provider.
-2. Configure OAuth issuer/audience/JWKS, authorization-code + PKCE S256, issuer identification, resource echo, and ChatGPT client registration.
-3. Place the case key secret and subject-to-case ACL in the host's managed secret boundary and the ciphertext vault/handoff on a persistent private volume.
-4. Register/connect the MCP server in ChatGPT.
-5. Create a new post-registration ChatGPT conversation, give it only the real `handoff_id`, and successfully execute `load_handoff`.
-6. Independently compare the returned exact candidate and recent turns with the private source, then and only then mark the private handoff `FRESH_SESSION_GREEN`.
+1. Hosted mode runs behind stable HTTPS with a publicly reachable dedicated Keycloak identity provider.
+2. OAuth discovery exposes the exact issuer, authorization/token/JWKS endpoints, PKCE S256, resource audience, and the pre-registered ChatGPT CIMD client identifier and redirect URI.
+3. The owner-controlled host injects the case key and subject-to-case ACL from a mode-`0600` secret environment outside Git; the provider removes raw key JSON from the child environment after construction and zeroizes its in-memory copies on close. The ciphertext vault/handoff is mounted read-only from mode-`0600` files. A future platform secret-manager migration can harden host operations further without changing the provider contract.
+4. ChatGPT plugin `InnerSignal Private Continuity` is registered, OAuth-connected, and scoped to `case:read` plus `case:audit`.
+5. A new post-registration ChatGPT conversation received only the real `handoff_id` and executed `load_handoff`.
+6. A separate hosted OAuth loader compared the same immutable response's exact candidate and recent turns with the private source; both matched and an unauthorized request returned no private content.
 
-The current owner task authorizes these activation steps, but they remain incomplete until direct hosted and new-chat evidence exists. Official OpenAI references: [Build an MCP server](https://developers.openai.com/plugins/concepts/mcp-server), [MCP authentication](https://developers.openai.com/plugins/build/auth), [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels), and [Connect from ChatGPT](https://developers.openai.com/plugins/deploy/connect-chatgpt).
+The pending candidate remains unsent and awaiting its substantive audit. Official OpenAI references: [Build an MCP server](https://developers.openai.com/plugins/concepts/mcp-server), [MCP authentication](https://developers.openai.com/plugins/build/auth), [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels), and [Connect from ChatGPT](https://developers.openai.com/plugins/deploy/connect-chatgpt).

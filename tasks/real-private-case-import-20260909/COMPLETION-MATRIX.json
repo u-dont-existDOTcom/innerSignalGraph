@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "matrixId": "real-private-case-import-matrix-20260909",
   "taskId": "real-private-case-import-20260909",
-  "updatedAt": "2026-09-09",
+  "updatedAt": "2026-09-10",
   "claimRule": "No layer inherits success from a proxy. In particular, encrypted import and a local MCP process do not prove continuation safety, production authentication, ChatGPT registration, or a fresh-chat tool call.",
   "layers": [
     {
@@ -32,18 +32,18 @@
     },
     {
       "id": "REAL_CASE_CONTINUATION_GATE",
-      "status": "BLOCKED_MISSING_EXACT_HISTORY",
-      "evidence": "The supplied material contains one complete user-assistant exchange. Three are required. Two additional genuine complete historical exchanges must be appended; absent replies must not be invented and the pending candidate must not be counted as sent."
+      "status": "PASS_SEMANTIC_EPISODE_COMPLETE",
+      "evidence": "The arbitrary three-exchange quota was removed. The exact supplied episode is contiguous from its declared semantic start through the latest user turn, and the unsent candidate remains a separate pending artifact."
     },
     {
       "id": "FRESH_CHATGPT_ACCESS",
-      "status": "BLOCKED_EXTERNAL_ACTIVATION",
-      "evidence": "Production auth/key integration, HTTPS or an approved secure tunnel, OAuth registration, ChatGPT connection, and a newly created chat tool call are not verified."
+      "status": "PASS_FRESH_SESSION_GREEN",
+      "evidence": "The HTTPS private MCP is connected to ChatGPT through Keycloak OAuth, exact audience and scopes, subject-to-case ACL, and managed key access. Brand-new ChatGPT conversation 6aa28621-3a20-83e9-93b8-640d6054cdf3 received only the stable handoff ID, invoked load_handoff, and reported the complete six-turn episode plus the exact unsent pending candidate. Independent hosted comparison of the same immutable handoff matched both artifacts exactly."
     },
     {
       "id": "REAL_CANDIDATE_AUDIT",
-      "status": "NOT_RUN_BY_GATE",
-      "evidence": "The audit is intentionally deferred until the real continuation gate and fresh-ChatGPT retrieval are both green."
+      "status": "READY_NEXT",
+      "evidence": "The continuation and fresh-ChatGPT gates are green. The next supervisor task is to audit the exact pending candidate before any new therapeutic direction; the candidate remains unsent and pending_audit."
     },
     {
       "id": "PUBLIC_PRIVATE_SEPARATION",
@@ -53,12 +53,12 @@
     {
       "id": "LOCAL_REPOSITORY_VERIFICATION",
       "status": "PASS",
-      "evidence": "Focused private continuity passed 11/11; affected context, audit, UI, and private tests passed 34/34; the full Node 24 suite passed 1034/1034; graph regressions passed 29/29; therapy lessons passed 5/5; repository audit and publication audit passed; and npm run verify completed with PASS."
+      "evidence": "Focused hosted authorization/MCP checks passed, including uniform fail-closed OAuth challenges. The full Node 24 suite passed 1038/1038; graph regressions passed 29/29; therapy lessons passed 5/5; repository and publication gates passed; and npm run verify completed with PASS at the public-safe closeout state."
     },
     {
       "id": "HOSTED_PUBLICATION_AUDIT",
-      "status": "BLOCKED_HISTORICAL_LOG_UNAVAILABLE",
-      "evidence": "The separate all-hosted-history audit failed closed because GitHub returned 'log not found' for pre-existing failed CodeQL run 34060739398 from 2026-09-06 (audit index actions-run:234:log). It produced no completed hosted scan and is not a detected private-content finding. Current-head required CI contexts remain separate evidence."
+      "status": "PASS_CURRENT_HEAD_REQUIRED_CHECKS",
+      "evidence": "At pre-closeout head 1359470b45290d372a9a2c5d876ec046b2860e99, deterministic-package Verify, workflow-policy, CodeQL, and codeql-javascript passed. The separate all-history auditor still cannot retrieve one pre-existing 2026-09-06 CodeQL run log; that is not a detected private-content finding. Exact checks must be re-read after the containing closeout commit."
     },
     {
       "id": "DRAFT_PULL_REQUEST",

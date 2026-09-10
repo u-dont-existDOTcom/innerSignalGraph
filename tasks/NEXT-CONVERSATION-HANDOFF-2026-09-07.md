@@ -2,7 +2,7 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
-## Current continuation — Universal Handoff Binding v1.0 on draft PR #49
+## Current continuation — Universal Handoff Binding v1.0 is `FRESH_SESSION_GREEN` on draft PR #49
 
 Read `tasks/real-private-case-import-20260909/ACTIVE-LESSON-CONTRACT.json`, `tasks/real-private-case-import-20260909/INTEGRATION.md`, `docs/superpowers/specs/2026-09-09-inner-signal-universal-handoff-binding.md`, and `docs/PRIVATE-CASE-CONTINUITY.md` before acting. Fetch the current head of draft PR #49 on `codex/private-case-import-20260909`; keep it draft/open/unmerged. The owner authorized deployment of the private continuity service only; do not deploy the public app, install/promote stable, or merge.
 
@@ -10,7 +10,7 @@ The repository candidate now treats `load_handoff({"handoff_id":"<stable-private
 
 Synthetic acceptance is green for a history larger than 100,000 characters with a simulated 20,000-byte read boundary, exact Unicode text, contradictions, a superseded appraisal, settled answers, a failed path, tracker/journal history, and a vivid latest-turn distraction. The fixed three-exchange quota is superseded: continuity requires the exact contiguous active episode from its declared semantic start through the latest turn. A pending candidate may answer a final user turn without being misclassified as missing transcript history. A local encrypted round-trip is only `READY_FOR_FRESH_SESSION_TEST`; only an actual new-ChatGPT `load_handoff` call plus private exactness comparison is `FRESH_SESSION_GREEN`.
 
-The real encrypted handoff now passes semantic episode completeness and an independent local process loads its exact recent episode and exact pending candidate using only `handoff_id` plus ambient authorization. Its stable ID is `handoff:92f179eb-299a-47cf-87de-43791d95bf70`. This does **not** yet prove ChatGPT access: hosted OAuth/ACL/key activation, ChatGPT registration, and an actual post-registration fresh-chat tool call remain open until directly evidenced. Never put private content or private-derived hashes in Git or call the handoff `FRESH_SESSION_GREEN` before that real fresh-chat result.
+The real encrypted handoff passes semantic episode completeness and exact separate-process round trip. Its stable ID is `handoff:92f179eb-299a-47cf-87de-43791d95bf70`. The owner-controlled HTTPS service now uses Keycloak OAuth, PKCE S256, exact resource audience, `case:read`/`case:audit`, a subject-to-case ACL, and managed runtime key access. ChatGPT plugin `InnerSignal Private Continuity` is connected. Brand-new ChatGPT conversation `6aa28621-3a20-83e9-93b8-640d6054cdf3` received only that handoff ID, invoked `load_handoff`, and reported the complete six-turn active episode plus the exact unsent pending candidate rather than a reconstructed summary. Independent hosted comparison of the same immutable handoff matched the private source exactly; unauthorized access failed closed. The handoff is `FRESH_SESSION_GREEN`.
 
 ## Current continuation — real private import and fresh-session gate
 
@@ -26,9 +26,9 @@ The owner-authorized stable IDs are:
 
 The normal executable bootstrap is `load_handoff` with arguments `{ "handoff_id": "handoff:92f179eb-299a-47cf-87de-43791d95bf70" }` and transport-owned authorization. The handoff resolves its own case and candidate identifiers. External credential paths, raw bearer tokens, OAuth secrets, and key material are intentionally not in Git.
 
-**Do not claim the private candidate is fresh-ChatGPT available yet.** The exact supplied transcript is semantically complete for the active episode and the local handoff gate is green. Hosted OAuth JWT verification, subject-to-case ACL, managed-secret key access, RFC 9728 discovery, and MCP authentication challenges exist in the repository candidate, but an actual hosted identity-provider/secret configuration, ChatGPT connection, and successful call from a newly created post-registration chat remain unverified until direct evidence is recorded.
+**The private candidate is now fresh-ChatGPT retrievable, but it remains unsent and pending audit.** The exact supplied transcript is semantically complete for the active episode. Hosted OAuth JWT verification, subject-to-case ACL, managed-secret key access, RFC 9728 discovery, MCP authentication challenges, ChatGPT connection, and an actual newly created post-registration chat call are directly evidenced. Private proof receipts remain outside Git; public records contain only stable opaque identifiers and non-content facts.
 
-Only after the actual fresh-ChatGPT call and private exactness comparison are green may the next supervisor audit load and evaluate the exact pending candidate before choosing any new therapeutic direction. Until then, do not reconstruct or audit it from public summaries, hashes, fixtures, or remembered chat text.
+The next supervisor must load this handoff and audit the exact pending candidate before choosing any new therapeutic direction. Do not reconstruct or audit it from public summaries, hashes, fixtures, remembered chat text, or the acceptance chat's observations. The acceptance chat made no private-store mutation; supervisor-defined gold state remains canonical until an authorized correction is applied.
 
 ## Current continuation — PR #46 handoff completion is evidence-audited
 

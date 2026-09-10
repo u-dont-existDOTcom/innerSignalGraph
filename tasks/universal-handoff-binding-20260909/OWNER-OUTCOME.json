@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "ownerOutcomeId": "OO-INNERSIGNAL-UNIVERSAL-HANDOFF-BINDING-20260909",
-  "epoch": 1,
+  "epoch": 2,
   "source": {
     "kind": "owner_supplied_public_protocol",
     "recordedAt": "2026-09-09",
     "canonicalPath": "docs/superpowers/specs/2026-09-09-inner-signal-universal-handoff-binding.md"
   },
-  "normalizedResult": "Implement Universal Handoff Binding v1.0 as a GitHub-independent private encrypted handoff compiler, loader, retrieval surface, fresh-process acceptance gate, portable encrypted export, and truthful user-facing Create Handoff flow.",
+  "normalizedResult": "Implement Universal Handoff Binding v1.0 as a GitHub-independent private encrypted handoff compiler, loader, retrieval surface, fresh-process acceptance gate, portable encrypted export, truthful Create Handoff flow, hosted OAuth/ACL/key boundary, and actual new-ChatGPT handoff verification.",
   "requiredOutcomes": [
     {"id":"RO-01","text":"Create Handoff snapshots state, diff, exact active episode, pending candidates, tracker/journal references, and constitution/runtime/audit versions into a manifest-backed encrypted private artifact.","terminalRequired":true},
     {"id":"RO-02","text":"A new authorized process can recover the handoff using only handoff_id and no Session A memory.","terminalRequired":true},
@@ -16,7 +16,8 @@
     {"id":"RO-05","text":"Pass the >100k-character, simulated-20k-read-limit, fresh-process decision-equivalence regression.","terminalRequired":true},
     {"id":"RO-06","text":"Expose Current Saved State, What Changed This Turn, Create Handoff, and Export Private Handoff without hidden reasoning or premature completion language.","terminalRequired":true},
     {"id":"RO-07","text":"Keep runtime continuity independent of GitHub and keep all real case payloads outside public Git.","terminalRequired":true},
-    {"id":"RO-08","text":"Preserve the parent real-case and fresh-ChatGPT blockers; do not claim external availability from repository or local-process evidence.","terminalRequired":true}
+    {"id":"RO-08","text":"Preserve the parent real-case evidence layers; do not claim external availability from repository or local-process evidence alone.","terminalRequired":true},
+    {"id":"RO-09","text":"Connect the hosted private MCP to ChatGPT and require a brand-new conversation given only handoff_id to call load_handoff before FRESH_SESSION_GREEN.","terminalRequired":true}
   ],
   "nonSatisfyingProxies": [
     "an encrypted handoff file exists",

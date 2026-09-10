@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "directiveId": "CD-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909-R2",
+  "directiveId": "CD-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909-R3",
   "taskId": "real-private-case-import-20260909",
   "ownerOutcomeId": "OO-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909",
-  "ownerOutcomeEpoch": 2,
+  "ownerOutcomeEpoch": 3,
   "reasoningSupervisorSurface": "owner_chat",
   "strategyId": "LOSSLESS_PRIVATE_SOURCE_IMPORT_THEN_LAYERED_REMOTE_ACCEPTANCE",
-  "directiveRevision": 2,
+  "directiveRevision": 3,
   "executionObjective": "Replace the fixed exchange gate with semantic active-episode completeness, create the real immutable handoff, activate hosted OAuth/case ACL/managed key access, and prove exact retrieval from a brand-new ChatGPT conversation given only handoff_id.",
   "allowedActions": [
     "read the owner-supplied private attachments and current repository authority",
@@ -18,6 +18,7 @@
     "deploy the private MCP and its encrypted private data to an owner-authorized production host with managed secrets and persistent storage",
     "configure an established OAuth identity provider and subject-to-case ACL",
     "create a genuinely fresh acceptance chat and run the exact pending-candidate audit only after retrieval succeeds"
+    ,"treat the owner's explicit history-transfer instruction as authorization for the specified transfer without redundant mid-task reconfirmation"
   ],
   "forbiddenActions": [
     "commit or print real private source text or private-derived hashes in public artifacts",

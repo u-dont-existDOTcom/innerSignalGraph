@@ -1,6 +1,8 @@
 # Fresh-session private case continuity
 
-Status: LOCAL IMPLEMENTATION VERIFIED; EXTERNAL CHATGPT ACTIVATION BLOCKED on draft PR #46. Starting head: `b4eee54e6ed3b8e0b18fa5ca8f1cfb365362dbc1`.
+Status: HISTORICAL LOCAL IMPLEMENTATION SLICE; its external blocker was resolved by the follow-on real import and hosted acceptance on draft PR #49. Starting head: `b4eee54e6ed3b8e0b18fa5ca8f1cfb365362dbc1`.
+
+Supersession, 2026-09-10: `tasks/real-private-case-import-20260909/INTEGRATION.md` and `tasks/universal-handoff-binding-20260909/INTEGRATION.md` are current. They record the real encrypted import, semantic episode completeness, hosted OAuth/ACL/key boundary, connected ChatGPT plugin, and actual new-conversation `load_handoff` result. The historical local-only evidence below remains accurate for its earlier slice but is not the current availability status.
 
 ## Outcome boundary
 
@@ -39,10 +41,10 @@ A separate read-only MCP endpoint exposes `load_case_context`, `get_recent_verba
 - `git diff --check`: PASS.
 - One earlier complete-suite attempt exposed execution-environment Node 26 inheritance, a five-second loaded-process readiness budget, and two reviewed posture digests. Those were repaired; the authoritative Node 24 package run above is green. The later app context rollover lost a completed process handle, so the authoritative package was run again rather than treating incomplete output as evidence.
 
-## Blocking obligations
+## Historical blocking obligations — resolved by the PR #49 follow-on
 
-The real private case was not imported and no stable real case/candidate IDs were created because this repository slice did not contain an authorized canonical private source or production credential boundary. The local development MCP is not deployed over reachable HTTPS, protected by production OAuth 2.1/resource metadata/PKCE, registered in ChatGPT, or executed from a newly created authorized ChatGPT conversation. Therefore a fresh authorized ChatGPT session is **not yet genuinely able to retrieve the real private case**, and the current audit must remain blocked.
+At this earlier checkpoint the real private case was not imported and no stable real case/candidate IDs had been created because that repository slice did not contain an authorized canonical private source or production credential boundary. The local development MCP had not yet been deployed over reachable HTTPS, protected by production OAuth/resource metadata/PKCE, registered in ChatGPT, or executed from a newly created authorized ChatGPT conversation. Those obligations are now resolved by the current PR #49 ledgers named above; a fresh authorized ChatGPT session is genuinely able to retrieve the real handoff.
 
-The exact remaining order is: provision a production secret/key provider and case-scoped authorization; import the real record through the private writer and produce the private handoff; deploy or securely tunnel the read-only MCP; configure and verify OAuth; register it in ChatGPT; then create a new chat and execute `load_case_context` with the stable case ID. Only that final successful read permits an availability claim or the pending-response audit.
+The completed follow-on order was: provision the hosted key provider and case-scoped authorization; import the real record and compile the immutable handoff; deploy the read-only MCP over HTTPS; configure and verify OAuth; register/connect it in ChatGPT; then create a new chat and execute `load_handoff` with only the stable handoff ID. The pending-response audit is now the next task.
 
 The final all-history publication audit, reconciled pushed head, hosted workflow/CodeQL readback, and public-safe PR receipt are recorded externally against the containing commit so adding the receipt cannot change the head it attests to.

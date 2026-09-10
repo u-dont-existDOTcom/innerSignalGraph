@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "taskId": "universal-handoff-binding-20260909",
   "title": "Implement InnerSignal Universal Handoff Binding v1.0",
-  "status": "repository_candidate_verified_external_activation_blocked",
+  "status": "fresh_chatgpt_verified_candidate_audit_pending",
   "exclusive": false,
   "startedAt": "2026-09-09",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
@@ -15,10 +15,10 @@
   "directivePath": "tasks/universal-handoff-binding-20260909/EXECUTION-DIRECTIVE.json",
   "statePath": "tasks/universal-handoff-binding-20260909/INTEGRATION.md",
   "activeLessonContractPath": "tasks/universal-handoff-binding-20260909/ACTIVE-LESSON-CONTRACT.json",
-  "completionClaimRule": "A stored or locally round-tripped handoff is not FRESH_SESSION_GREEN. Completion requires a new authorized process with only handoff_id to recover and verify the exact compiled packet; real ChatGPT availability remains a separate external layer.",
+  "completionClaimRule": "A stored or locally round-tripped handoff is not FRESH_SESSION_GREEN. The real handoff is green only because a brand-new authorized ChatGPT conversation received only handoff_id, called the hosted load_handoff tool, and the same immutable packet independently passed exact candidate and active-episode comparison.",
   "parentOpenTask": {
     "taskId": "real-private-case-import-20260909",
-    "status": "blocked_missing_exact_history_and_external_activation",
+    "status": "fresh_chatgpt_verified_candidate_audit_pending",
     "statePath": "tasks/real-private-case-import-20260909/INTEGRATION.md"
   },
   "suspendedTaskSources": [

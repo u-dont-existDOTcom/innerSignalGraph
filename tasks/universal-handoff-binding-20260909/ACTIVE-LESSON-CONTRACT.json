@@ -60,12 +60,12 @@
     ]
   },
   "closeout": {
-    "status": "PASS_WITH_EXTERNAL_BOUNDARY_OPEN",
+    "status": "PASS",
     "evidence": [
       "An independent Session B recovered the immutable synthetic packet with only handoff_id and authorized transport context; its exact candidate bytes and therapeutic decision projection matched Session A.",
       "The >100k history, 20k-byte chunk ceiling, denied authorization, wrong key, encrypted export, blocked-continuation state, UI wording, and public/private separation regressions passed.",
-      "The complete Node 24.18.0 package gate passed 1035 automated tests, 29 graph regressions, 5 therapy lessons, and all repository package checks.",
-      "The real case and external ChatGPT layer remain explicitly blocked rather than inheriting synthetic/local success."
+      "The complete Node 24.18.0 package gate passed 1038 automated tests, 29 graph regressions, 5 therapy lessons, and all repository package checks.",
+      "The real case passed semantic episode completeness, hosted OAuth/ACL/key exactness, and an actual brand-new ChatGPT load_handoff call given only the stable handoff ID; its pending candidate remains unsent and awaiting audit."
     ]
   }
 }

@@ -1,6 +1,6 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-09
+Updated: 2026-09-10
 
 ## Universal Handoff Binding v1.0 (draft PR #49)
 
@@ -10,7 +10,7 @@ The candidate adds a first-class immutable encrypted handoff compiled from the p
 
 Synthetic acceptance covers more than 100,000 characters, deterministic 20,000-byte-or-smaller chunks, separate Session A/B processes, exact Unicode/candidate/recent-turn reconstruction, contradictions, trajectory observability, settled answers, failed/superseded paths, historical evidence, tracker/journal retrieval, denied auth, wrong/missing keys, encrypted export, and public/private separation. This is repository-local synthetic evidence only.
 
-The real imported case remains blocked because its owner-supplied transcript has only one complete exchange, two fewer than the fixed minimum. Production auth/key integration, secure HTTPS/OAuth exposure, ChatGPT registration, and a successful tool call from a genuinely new post-registration ChatGPT conversation remain open. Do not create a public/private availability claim, invent missing exchanges, or audit/reinterpret the real pending candidate. Keep draft PR #49 open/unmerged; do not deploy, install, or promote stable.
+The fixed exchange quota is superseded by semantic active-episode completeness. The real episode is exact and contiguous from its declared start through the latest turn. The private service is hosted over HTTPS with Keycloak OAuth, PKCE S256, exact resource audience, `case:read`/`case:audit` scopes, a server-side subject-to-case ACL, and managed runtime key access. A brand-new ChatGPT conversation received only `handoff:92f179eb-299a-47cf-87de-43791d95bf70`, invoked the connected `load_handoff` tool, and reported the complete six-turn episode plus the exact unsent pending candidate rather than a reconstructed summary. Independent hosted retrieval against the same immutable handoff matched the private source exactly and unauthorized access failed closed. The handoff is `FRESH_SESSION_GREEN`; the exact candidate audit remains the next task. Keep draft PR #49 open/unmerged; do not deploy the public app, install, promote stable, or publish private content.
 
 ## Fresh-session private case continuity repair (PR #46)
 
@@ -18,9 +18,9 @@ Task `fresh-session-private-case-continuity-20260909` corrects the prior storage
 
 The draft candidate extends the encrypted record with versioned state diffs and immutable exact candidates, provides explicit state/diff/transcript/candidate/evidence/episode/bootstrap interfaces behind case-scoped authorization and injected key material, preserves complete active-episode verbatim text for fresh continuation, updates encrypted payloads with the routine key while preserving both key wraps, supplies an exact candidate-ID audit adapter, and exposes a separate read-only MCP server for authorized context, recent-turn, older-evidence, and candidate inspection. The ordinary decision ledger default is redacted; the existing structured state/diff browser controls remain and raw private inspectors were not added to the unauthenticated development web service.
 
-Local synthetic fresh-process and direct MCP execution are repository evidence only. The real private case was not imported, no real stable case/candidate identifiers were created, and no production key provider, OAuth/ACL provider, HTTPS/tunnel, ChatGPT registration, or post-registration fresh-chat tool call was performed. Therefore a fresh ChatGPT conversation is **not yet able** to retrieve the real private case. Do not audit or reconstruct the pending real candidate until a private handoff containing actual stable IDs passes `load_case_context` and the continuation-safety gate.
+The earlier local-only limitation is superseded by the hosted PR #49 result above. The real case, candidate, and handoff remain private and are addressable by their stable opaque identifiers. A fresh authorized ChatGPT conversation can now retrieve the exact private handoff through the connected read-only MCP. The next supervisor must use `load_handoff` and audit the exact pending candidate before proposing a new therapeutic direction; it must not reconstruct the candidate from public summaries.
 
-Keep PR #46 draft/open/unmerged. No deployment, installation, stable promotion, provider call, real-case re-summarization, or clinical claim is authorized by this task.
+PR #46 is merged history and is not the active continuation branch. Keep PR #49 draft/open/unmerged. No public-app deployment, installation, stable promotion, real-case re-summarization, or clinical claim is authorized by this task.
 
 ## Completed owner-authorized risk-calibrated engagement task (PR #46)
 
