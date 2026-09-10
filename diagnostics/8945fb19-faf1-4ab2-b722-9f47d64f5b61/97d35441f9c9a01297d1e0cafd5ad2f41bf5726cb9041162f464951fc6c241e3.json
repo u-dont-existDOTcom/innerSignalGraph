@@ -1,0 +1,40 @@
+{
+  "format": "inner-signal-remote-diagnostic-v1",
+  "incidentId": "97d35441f9c9a01297d1e0cafd5ad2f41bf5726cb9041162f464951fc6c241e3",
+  "machineId": "8945fb19-faf1-4ab2-b722-9f47d64f5b61",
+  "createdAt": "2026-09-10T23:25:18.876Z",
+  "runtime": {
+    "version": "0.15.2",
+    "installedCommit": null,
+    "nodeVersion": "v24.18.0"
+  },
+  "update": {
+    "status": "fetch-failed",
+    "candidateCommit": null
+  },
+  "failure": {
+    "stage": "fetch",
+    "classification": "UPDATE_FAILURE",
+    "actionCode": "KEEP_CURRENT_RUNTIME",
+    "retryable": true,
+    "exitCode": null
+  },
+  "tests": {
+    "format": "inner-signal-test-failure-v1",
+    "command": "package tests",
+    "exitCode": null,
+    "counts": {},
+    "failures": []
+  },
+  "integrity": {
+    "runtimeTreeSha256": null,
+    "graphBundleSha256": null
+  },
+  "privacy": {
+    "identity": "random-local-uuid",
+    "includesChatContent": false,
+    "includesCredentials": false,
+    "includesModelOutput": false,
+    "includesRawLogs": false
+  }
+}
