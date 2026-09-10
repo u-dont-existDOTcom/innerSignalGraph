@@ -2,7 +2,19 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Current continuation — private v2 is retrievable and pending a fresh independent audit on draft PR #49
+
+Fetch the current head of draft PR #49 on `codex/private-case-import-20260909`, then read `tasks/private-case-mutation-orchestration-20260910/INTEGRATION.md`, its content-free `PRIVATE-OPERATION-RECEIPT.json`, `docs/PRIVATE-CASE-CONTINUITY.md`, and the current state file. The complementary backend/controller mutation path is implemented and deployed. `InnerSignal Private Continuity` deliberately remains the same ten-tool read-only MCP.
+
+The private completion was appended as an immutable exact source artifact plus a provenance-bearing amendment; the original raw turn was not overwritten. Candidate v1 `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051` preserves its exact bytes and failed version-bound audit, and is superseded. Candidate v2 `candidate:repair:f45e8a19-47b5-49fb-8a14-c5c66482875c` is immutable version 2, repair cycle 1, `reconstructed_pending_audit`, with an empty audit history, no approval, and no sent marker. The v1 audit session produced v2 and therefore cannot independently certify it.
+
+In a fresh authorized ChatGPT session, call `load_handoff` with only `handoff:e9338ec6-94de-49a7-9179-208684ca2cf9`. The schema-v2 handoff is continuation-safe and exposes the exact v2 plus its raw/amendment/effective transcript provenance through Private Continuity. A separate newly created ChatGPT conversation has already verified this read-only retrieval and the v2 lifecycle metadata without quoting private content or mutating the case. Audit the returned exact version—not a public summary—against the constitution and every repair-induced-error check. If it passes, persist its exact-version audit through the separate controller, then perform explicit approval and sent transitions separately. Do not approve or send before that audit, and do not use the v2 producer context as auditor.
+
+Keep PR #49 draft/open/unmerged. Do not publish private material or private-derived hashes, weaken the read-only MCP, deploy the public app, install/promote stable, or claim clinical validation.
+
 ## Current continuation — post-reconstruction audit gate on draft PR #49
+
+This section is historical for the real case and is superseded by the v2 continuation above; its lifecycle rules remain binding.
 
 Read `tasks/post-reconstruction-audit-gate-20260910/INTEGRATION.md`, its owner outcome/directive/active lesson contract, `docs/PRIVATE-CASE-CONTINUITY.md`, and `src/supervisor/private-candidate-lifecycle.mjs` after fetching the current PR #49 head. The binding lifecycle makes audit approval exact-candidate-version-specific: substantive repair creates a new immutable child, clears approval, supersedes the parent, and requires a fresh independent audit of the new ID/version/bytes before delivery. The reconstruction writer cannot self-certify, self-critique cannot create delivery approval, and a third repair is rejected after two failed cycles in favor of the smallest discriminator, explicit uncertainty, or blocked delivery.
 

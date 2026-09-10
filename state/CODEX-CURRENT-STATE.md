@@ -2,7 +2,17 @@
 
 Updated: 2026-09-10
 
+## Private mutation orchestration complete; v2 awaits a fresh independent audit (draft PR #49)
+
+Task `private-case-mutation-orchestration-20260910` is complete on `codex/private-case-import-20260909`. Its implementation checkpoint is `c70224714fa3d53164fe03f1bf674813c0582c7f`; its recovery/verification ledger and content-free private-operation receipt are under `tasks/private-case-mutation-orchestration-20260910/`. The separate backend/controller now owns append-only transcript completion, exact-version audit persistence, reconstruction plus immutable handoff creation, approval, and sent transitions. `InnerSignal Private Continuity` remains the same ten-tool read-only MCP.
+
+The private raw target was not rewritten. An immutable exact source artifact and completion amendment were appended and independently verified against the preserved raw bytes. Candidate v1 `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051` retains its exact bytes and version-bound failed audit, and is now superseded. Candidate v2 `candidate:repair:f45e8a19-47b5-49fb-8a14-c5c66482875c` is immutable version 2, repair cycle 1, `reconstructed_pending_audit`, with zero v2 audits, no approval, and no sent marker. Its producer is the v1 audit session, so that context cannot certify v2.
+
+The authoritative fresh-session bootstrap is now `load_handoff({"handoff_id":"handoff:e9338ec6-94de-49a7-9179-208684ca2cf9"})`. Handoff schema v2 separately preserves the raw transcript, provenance-bearing amendments, effective transcript, candidate lineage, and delivery gate. It is continuation-safe and returns exact v2 through the deployed read-only service; a newly created ChatGPT conversation received only this ID and confirmed exact-text retrievability, version 2, repair cycle 1, `reconstructed_pending_audit`, zero v2 audits, and the fresh-audit gate without quoting private content or performing a mutation. The next action is `FRESH_INDEPENDENT_AUDIT` and delivery is blocked. A fresh authorized ChatGPT session whose context differs from the producer must audit the exact returned bytes and every repair-induced-error check before any approval. Do not audit from public summaries, approve, send, reconstruct again, merge PR #49, deploy the public app, install/promote stable, publish private content, or claim clinical validation.
+
 ## Post-reconstruction audit gate (draft PR #49)
+
+This section is superseded for the real case by the private mutation-orchestration section above; its runtime contract remains authoritative.
 
 Task `post-reconstruction-audit-gate-20260910` is active on `codex/private-case-import-20260909`, starting from freshly fetched PR #49 head `808bb113268136a15ecc325b849cfec7a5581b65`. Its sole recovery ledger is `tasks/post-reconstruction-audit-gate-20260910/INTEGRATION.md`; the owner outcome, execution directive, and active lesson contract are in the same directory.
 
