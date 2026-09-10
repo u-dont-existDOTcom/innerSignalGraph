@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -47,7 +48,18 @@ const ready = {
   productionReady: providers.productionReady
 };
 const readyFile = valueAfter("--ready-file");
-if (readyFile) await fs.writeFile(path.resolve(readyFile), `${JSON.stringify(ready)}\n`, { mode: 0o600 });
+if (readyFile) {
+  const resolvedReadyFile = path.resolve(readyFile);
+  const temporaryReadyFile = `${resolvedReadyFile}.${process.pid}.${randomUUID()}.tmp`;
+  try {
+    await fs.writeFile(temporaryReadyFile, `${JSON.stringify(ready)}\n`, { mode: 0o600, flag: "wx" });
+    await fs.rename(temporaryReadyFile, resolvedReadyFile);
+  } finally {
+    await fs.unlink(temporaryReadyFile).catch((error) => {
+      if (error?.code !== "ENOENT") throw error;
+    });
+  }
+}
 console.log(JSON.stringify(ready));
 
 async function shutdown() {
