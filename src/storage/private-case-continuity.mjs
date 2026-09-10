@@ -17,7 +17,7 @@ export function assessContinuationSafety(context) {
   if (!context?.current_episode) failures.push("current therapeutic episode is missing");
   if (!context?.constitution_ref?.version) failures.push("constitution reference is missing");
   if (!context?.candidate_response?.exact_text) failures.push("exact candidate response is missing");
-  else if (context.candidate_response.status !== "pending_audit") failures.push("candidate response is not pending audit");
+  else if (["superseded", "sent"].includes(context.candidate_response.status)) failures.push("candidate response is not the current unsent candidate");
   const olderTurnAvailable = (context?.targeted_older_evidence ?? []).some((entry) => entry?.turn?.text);
   const olderSourceAvailable = (context?.source_artifact_refs ?? []).length > 0;
   if (!olderTurnAvailable && !olderSourceAvailable) failures.push("targeted older raw evidence has no retrievable private provenance source");

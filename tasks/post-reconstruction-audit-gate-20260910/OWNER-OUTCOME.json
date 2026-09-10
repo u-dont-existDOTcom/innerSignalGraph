@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "ownerOutcomeId": "OO-INNERSIGNAL-POST-RECONSTRUCTION-AUDIT-GATE-20260910",
+  "epoch": 1,
+  "source": {
+    "kind": "owner_supplied_task",
+    "recordedAt": "2026-09-10"
+  },
+  "normalizedResult": "Persist a binding runtime and private-handoff lifecycle in which every substantive repair or reconstruction creates a new immutable candidate version and delivery remains blocked until that exact version passes a fresh independent audit.",
+  "requiredOutcomes": [
+    {"id":"RO-01","text":"Audit evidence and delivery approval are bound to an exact candidate ID, version, and exact-byte digest.","terminalRequired":true},
+    {"id":"RO-02","text":"Every substantive reconstruction creates a new immutable child candidate with no inherited audit or delivery approval.","terminalRequired":true},
+    {"id":"RO-03","text":"A fresh independent post-reconstruction audit explicitly checks repair-induced errors before delivery.","terminalRequired":true},
+    {"id":"RO-04","text":"Self-critique cannot be the sole reconstructed-candidate approval gate and the reconstruction producer cannot certify its own output.","terminalRequired":true},
+    {"id":"RO-05","text":"After at most two repair cycles, unresolved substantive/high findings route to the smallest discriminator, explicit uncertainty, or blocked delivery.","terminalRequired":true},
+    {"id":"RO-06","text":"Private handoffs preserve current candidate identity, lineage, status, version-bound audit status, prior findings, and the fresh-audit delivery block while keeping handoff, candidate-audit, and reconstruction-audit fidelity distinct.","terminalRequired":true},
+    {"id":"RO-07","text":"The de-identified rejection/shame repair regression fails audit-old then reconstruct then deliver, and passes only after a fresh audit of each reconstructed candidate.","terminalRequired":true}
+  ],
+  "nonSatisfyingProxies": [
+    "the parent candidate passed an audit",
+    "the reconstruction writer self-critiqued its own output",
+    "handoff fidelity passed",
+    "a reconstructed candidate reused a parent audit ID",
+    "tests pass without runtime delivery enforcement"
+  ]
+}

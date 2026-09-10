@@ -3,6 +3,7 @@ import { validateCaseState } from "../case-state/longitudinal-state.mjs";
 import { validateTrackerEntry } from "../case-state/tracker.mjs";
 import { validateTranscriptEntries } from "../case-state/context-window.mjs";
 import { ValidationError } from "../core/errors.mjs";
+import { candidateDeliveryGate, isActivePrivateCandidate, projectCandidateLifecycle, validateCandidateLifecycleFields } from "../supervisor/private-candidate-lifecycle.mjs";
 import { chunkExactSourceText, createExactSourceArtifact, validateExactSourceArtifact } from "./exact-source-artifact.mjs";
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
@@ -46,9 +47,39 @@ function validateCandidate(candidate, index) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) throw new ValidationError(`pending_artifacts[${index}] must be an object.`);
   bounded(candidate.id, `pending_artifacts[${index}].id`, CANDIDATE_ID);
   bounded(candidate.exact_text, `pending_artifacts[${index}].exact_text`, null, 100_000);
-  if (candidate.status !== "pending_audit") throw new ValidationError(`pending_artifacts[${index}] must be pending_audit.`);
+  if (!isActivePrivateCandidate(candidate)) throw new ValidationError(`pending_artifacts[${index}] must be the active unsent candidate.`);
   if (!Number.isSafeInteger(candidate.version) || candidate.version < 1) throw new ValidationError(`pending_artifacts[${index}].version is invalid.`);
+  const legacyCandidate = candidate.status === "pending_audit"
+    && candidate.parent_candidate_id === undefined
+    && candidate.audit_history === undefined;
+  if (!legacyCandidate) validateCandidateLifecycleFields(candidate);
   return candidate;
+}
+
+function validateCandidateLifecycleProjection(value, candidate) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || value.schema_version !== 1) throw new ValidationError("Private handoff candidate_lifecycle is invalid.");
+  if (!candidate) {
+    const gate = candidateDeliveryGate(null);
+    if (value.current_candidate_id !== null || value.current_candidate_version !== null || JSON.stringify(value.delivery_gate) !== JSON.stringify(gate)) {
+      throw new ValidationError("Private handoff empty candidate lifecycle is inconsistent.");
+    }
+    return value;
+  }
+  if (value.current_candidate_id !== candidate.id || value.current_candidate_version !== candidate.version || value.parent_candidate_id !== candidate.parent_candidate_id || value.candidate_status !== candidate.status) {
+    throw new ValidationError("Private handoff candidate lifecycle does not identify the exact current candidate version.");
+  }
+  const latestAudit = candidate.audit_history.at(-1) ?? null;
+  if (value.current_audit_id !== (latestAudit?.id ?? null) || value.current_audit_candidate_id !== (latestAudit?.candidate_id ?? null) || value.current_audit_candidate_version !== (latestAudit?.candidate_version ?? null)) {
+    throw new ValidationError("Private handoff audit status is not tied to the exact current candidate version.");
+  }
+  const gate = candidateDeliveryGate(candidate);
+  if (JSON.stringify(value.delivery_gate) !== JSON.stringify(gate)) throw new ValidationError("Private handoff candidate delivery gate is inconsistent.");
+  const expectedReconstructionStatus = candidate.parent_candidate_id == null
+    ? "not_applicable"
+    : (latestAudit?.sufficient_for_approval ? "fresh_independent_pass" : "pending_fresh_independent_audit");
+  if (value.reconstruction_audit_fidelity_status !== expectedReconstructionStatus) throw new ValidationError("Private handoff reconstruction audit status is inconsistent.");
+  if (value.delivery_blocked_pending_fresh_audit !== (gate.action === "FRESH_INDEPENDENT_AUDIT")) throw new ValidationError("Private handoff fresh-audit delivery block is inconsistent.");
+  return value;
 }
 
 function componentManifest(components) {
@@ -79,6 +110,7 @@ function validateComponentManifest(packet) {
     journal_entries: packet.journal_entries,
     retrieval_index: packet.retrieval_index
   };
+  if (Object.hasOwn(packet, "candidate_lifecycle")) components.candidate_lifecycle = packet.candidate_lifecycle;
   const expected = componentManifest(components);
   if (canonicalJson(packet.manifest.components) !== canonicalJson(expected)) throw new ValidationError("Private handoff component manifest failed its integrity check.");
 }
@@ -107,6 +139,8 @@ export function validatePrivateHandoffPacket(value) {
   validateTranscriptEntries(value.recent_verbatim.turns);
   if (!Array.isArray(value.pending_artifacts)) throw new ValidationError("Private handoff pending_artifacts is invalid.");
   value.pending_artifacts.forEach(validateCandidate);
+  if (value.pending_artifacts.length > 1) throw new ValidationError("Private handoff may contain only one current candidate version.");
+  if (Object.hasOwn(value, "candidate_lifecycle")) validateCandidateLifecycleProjection(value.candidate_lifecycle, value.pending_artifacts.at(-1) ?? null);
   if (!Array.isArray(value.transcript_archive)) throw new ValidationError("Private handoff transcript_archive is invalid.");
   validateTranscriptEntries(value.transcript_archive);
   if (!Array.isArray(value.tracker_entries)) throw new ValidationError("Private handoff tracker_entries is invalid.");
@@ -146,7 +180,8 @@ export function compilePrivateHandoffArtifact({ handoffId, record, recentVerbati
   bounded(runtimeVersion, "runtimeVersion");
   bounded(auditVersion, "auditVersion");
   bounded(createdAt, "createdAt");
-  const pendingArtifacts = record.candidate_responses.filter((candidate) => candidate.status === "pending_audit").map(clone);
+  const pendingArtifacts = record.candidate_responses.filter(isActivePrivateCandidate).map(clone);
+  const candidateLifecycle = projectCandidateLifecycle(record.candidate_responses);
   const stateDiff = record.state_diff_history.at(-1) ?? null;
   const retrievalIndex = {
     transcript_turn_ids: record.raw_transcript.map((turn) => turn.id),
@@ -170,7 +205,8 @@ export function compilePrivateHandoffArtifact({ handoffId, record, recentVerbati
     transcript_archive: clone(record.raw_transcript),
     tracker_entries: clone(record.tracker_entries),
     journal_entries: clone(record.journal_entries),
-    retrieval_index: retrievalIndex
+    retrieval_index: retrievalIndex,
+    candidate_lifecycle: candidateLifecycle
   };
   const packet = validatePrivateHandoffPacket({
     schema_version: PRIVATE_HANDOFF_PACKET_VERSION,
@@ -232,6 +268,7 @@ export function projectHandoffTherapeuticContinuity(packet) {
     current_hypothesis_ids: state.items.filter((entry) => entry.status === "hypothesis" && entry.still_current !== false).map((entry) => entry.id),
     failed_or_superseded_path_ids: state.intervention_history.filter((entry) => entry.still_current === false).map((entry) => entry.id),
     exact_pending_candidate_ids: value.pending_artifacts.map((entry) => entry.id),
+    candidate_lifecycle: value.candidate_lifecycle ? clone(value.candidate_lifecycle) : null,
     hidden_reasoning_included: false
   });
 }

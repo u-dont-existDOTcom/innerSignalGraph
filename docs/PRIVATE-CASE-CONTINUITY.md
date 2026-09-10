@@ -16,6 +16,14 @@ A case is continuation-safe only when an authorized loader, starting with no pri
 
 `loadCaseContext`, `loadHandoff`, and the MCP `load_case_context` / `load_handoff` tools enforce this gate. They fail with `CASE_NOT_CONTINUATION_SAFE` rather than returning a public fixture, a summary, a hash, or regenerated prose when a required artifact is absent. `Create Handoff` may still freeze an incomplete snapshot, but it is labeled `BLOCKED_CONTINUATION_UNSAFE`; local encrypted round-trip alone remains `PENDING_FRESH_SESSION`, never `FRESH_SESSION_GREEN`. None of these APIs returns hidden model reasoning.
 
+## Candidate audit and reconstruction gate
+
+`src/supervisor/private-candidate-lifecycle.mjs` is the binding runtime rule. Audit approval is tied to the exact candidate ID, version, and encrypted exact-byte digest. Any substantive repair or reconstruction creates a new immutable child candidate in `reconstructed_pending_audit`, supersedes its parent, starts with no audit evidence or approval, and blocks delivery until that exact version passes a fresh independent audit and receives exact-version delivery approval. A parent audit never certifies changed bytes. The reconstruction producer cannot serve as its independent auditor, and a same-context self-critique cannot create delivery approval.
+
+The independent audit of a reconstructed candidate must explicitly check causal overclaim, leading presuppositions, overly specific homework/tracking, verbosity/repetition, reduced information gain, safety inflation or underreaction, telos/steering drift, history omissions, hypothesis rigidification, unjustified treatment or behavior recommendations, and replacement of one problem with another. After two repair cycles, unresolved substantive/high findings route to the smallest discriminating question, explicit uncertainty, or blocked delivery; a third reconstruction is rejected.
+
+Handoff fidelity remains separate from candidate-audit and reconstruction-audit fidelity. Newly compiled private handoffs include a `candidate_lifecycle` component with the current candidate ID/version, parent and lineage, status, current version-bound audit status, previous findings, reconstruction-audit status, and delivery block. Pre-binding immutable handoffs remain readable but carry no inferred approval; their pending candidate must pass the current fresh audit gate.
+
 ## Public/private boundary
 
 Public Git contains the schemas, code, tests, synthetic fixtures, constitution, and this operational contract. It must not contain real transcript text, exact real candidate replies, credentials, key bytes, bearer tokens, or private-derived hashes. Opaque stable case/candidate identifiers may appear in a handoff only when the owner explicitly authorizes that disclosure; an identifier never proves that its payload is available.
@@ -43,8 +51,11 @@ Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains
 | `saveCaseState` / `getCaseState` | Structured case state only |
 | `saveCaseDiff` / `getCaseDiff` | Versioned turn-associated diffs |
 | `appendTranscriptTurn` / `getRecentVerbatim` | Append-only raw turns and exact recent episode |
-| `saveCandidateResponse` / `getCandidateResponse` | Immutable exact candidate versions and `current_pending` resolution |
-| `updateCandidateStatus` | `pending_audit`, `audited`, `superseded`, or `sent` |
+| `saveCandidateResponse` / `getCandidateResponse` | Immutable original candidate versions and `current_pending` / `current_candidate` resolution |
+| `recordCandidateAudit` / `getCandidateLifecycle` | Persist exact-version audit evidence and expose the current version-bound gate |
+| `reconstructCandidateResponse` | Create an immutable child version in `reconstructed_pending_audit`; never edit or reactivate the parent |
+| `approveCandidateForDelivery` / `markCandidateSent` | Enforce fresh exact-version approval before delivery |
+| `updateCandidateStatus` | Legacy/manual surface restricted to explicit supersession; it cannot bypass audit, approval, or delivery gates |
 | `saveSourceArtifact` / `getSourceArtifact` | Immutable exact private source plus a contiguous byte-range integrity manifest |
 | `retrieveCaseEvidence` | Raw older turns by query, stable provenance IDs, or time range |
 | `getCurrentEpisode` | Current therapeutic path/episode |
@@ -55,7 +66,7 @@ Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains
 | `getTrackerWindowByReference` / `getJournalEntriesByReference` | Query current or handoff-frozen longitudinal records without causal promotion |
 | `exportHandoff` | Export the already-encrypted handoff envelope as a portable private fallback |
 
-Candidate audit code in `src/supervisor/private-candidate-audit.mjs` accepts a candidate ID, resolves the exact private text through `loadCaseContext`, and only then invokes an auditor.
+Candidate audit code in `src/supervisor/private-candidate-audit.mjs` accepts a candidate ID, resolves the exact private text through `loadCaseContext`, invokes the configured independent auditor, derives rather than trusts the pass/fail status, and persists the resulting evidence against that exact candidate version.
 
 ## Encryption and key-provider model
 
@@ -152,6 +163,7 @@ The ordinary loopback web server remains unsuitable as a private ChatGPT boundar
 - the last state diff, or explicit `null` when the handoff is blocked;
 - exact recent turns selected directly from the private transcript;
 - every currently pending exact candidate version;
+- exact current candidate lineage, audit state, previous findings, and delivery block;
 - the full private transcript archive and tracker/journal snapshot;
 - constitution, runtime, and audit version references;
 - indexes for transcript, tracker, journal, intervention, adverse-event, historical-decision, and source-artifact IDs; and

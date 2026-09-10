@@ -113,3 +113,11 @@ Supervisor/development mode may additionally expose the recent exact episode, pe
 ## 11. Standalone requirement
 
 InnerSignal continuity must remain functional if GitHub is entirely absent from runtime. GitHub may define the software. It must not be required to remember the client.
+
+## 12. Post-reconstruction candidate binding
+
+Handoff fidelity, candidate-audit fidelity, and reconstruction-audit fidelity are separate gates. A correct handoff proves that the exact candidate and required context were recovered; it does not prove that later auditing or reconstruction is sound.
+
+Every substantive repair or reconstruction creates a new immutable candidate ID/version with its parent and repair cycle recorded. Audit findings and approval belong only to the exact candidate ID/version/bytes that were inspected. A reconstructed candidate starts at `reconstructed_pending_audit`, inherits no audit or delivery approval, and cannot be delivered until a fresh independent auditor inspects that exact version, explicitly checks for repair-induced errors, reports no unresolved substantive/high finding, and the exact-version approval gate passes. The reconstruction writer cannot silently certify its own output; self-critique may supplement but cannot replace the independent post-reconstruction gate.
+
+Allow at most two repair cycles. If substantive/high findings remain after the second fresh audit, stop rewriting and use the smallest discriminating question, explicit uncertainty, or blocked delivery. The binding runtime authority is `src/supervisor/private-candidate-lifecycle.mjs`; private handoffs carry the current candidate identity, lineage, status, exact-version audit status, previous findings, and whether delivery is blocked pending fresh audit.

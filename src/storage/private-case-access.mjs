@@ -132,7 +132,20 @@ export function createPrivateCaseAccessService({
     async updateCandidateStatus(caseId, candidateId, status, metadataPatch, authContext) {
       return write(caseId, authContext, (store) => store.updateCandidateStatus(caseId, candidateId, status, metadataPatch));
     },
+    async recordCandidateAudit(caseId, candidateId, evidence, authContext) {
+      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store) => store.recordCandidateAudit(caseId, candidateId, evidence));
+    },
+    async reconstructCandidateResponse(caseId, parentCandidateId, candidateId, exactText, metadata, authContext) {
+      return write(caseId, authContext, (store) => store.reconstructCandidateResponse(caseId, parentCandidateId, candidateId, exactText, metadata));
+    },
+    async approveCandidateForDelivery(caseId, candidateId, auditId, authContext) {
+      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store) => store.approveCandidateForDelivery(caseId, candidateId, auditId));
+    },
+    async markCandidateSent(caseId, candidateId, authContext) {
+      return write(caseId, authContext, (store) => store.markCandidateSent(caseId, candidateId));
+    },
     async getCandidateResponse(caseId, selector, authContext) { return read(caseId, authContext, (store) => store.getCandidateResponse(caseId, selector)); },
+    async getCandidateLifecycle(caseId, authContext) { return read(caseId, authContext, (store) => store.getCandidateLifecycle(caseId)); },
     async saveSourceArtifact(caseId, sourceArtifactId, chunks, metadata, authContext) {
       return write(caseId, authContext, (store) => store.saveSourceArtifact(caseId, sourceArtifactId, chunks, metadata));
     },

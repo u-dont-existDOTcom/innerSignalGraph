@@ -2,6 +2,12 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Current continuation — post-reconstruction audit gate on draft PR #49
+
+Read `tasks/post-reconstruction-audit-gate-20260910/INTEGRATION.md`, its owner outcome/directive/active lesson contract, `docs/PRIVATE-CASE-CONTINUITY.md`, and `src/supervisor/private-candidate-lifecycle.mjs` after fetching the current PR #49 head. The binding lifecycle makes audit approval exact-candidate-version-specific: substantive repair creates a new immutable child, clears approval, supersedes the parent, and requires a fresh independent audit of the new ID/version/bytes before delivery. The reconstruction writer cannot self-certify, self-critique cannot create delivery approval, and a third repair is rejected after two failed cycles in favor of the smallest discriminator, explicit uncertainty, or blocked delivery.
+
+Keep these statuses separate from handoff correctness. Current public-safe state for the real unsent candidate is: ID `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051`; version lineage root with no parent; status `pending_audit`; audit status `not_audited`; delivery blocked pending a fresh independent audit. This task changes the runtime/harness only and does not inspect, reconstruct, approve, or send the real private candidate. Keep PR #49 draft/open/unmerged; do not deploy the public app, install/promote stable, publish private content, or claim clinical validation.
+
 ## Current continuation — Universal Handoff Binding v1.0 is `FRESH_SESSION_GREEN` on draft PR #49
 
 Read `tasks/real-private-case-import-20260909/ACTIVE-LESSON-CONTRACT.json`, `tasks/real-private-case-import-20260909/INTEGRATION.md`, `docs/superpowers/specs/2026-09-09-inner-signal-universal-handoff-binding.md`, and `docs/PRIVATE-CASE-CONTINUITY.md` before acting. Fetch the current head of draft PR #49 on `codex/private-case-import-20260909`; keep it draft/open/unmerged. The owner authorized deployment of the private continuity service only; do not deploy the public app, install/promote stable, or merge.

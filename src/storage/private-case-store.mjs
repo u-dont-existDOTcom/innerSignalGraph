@@ -7,6 +7,15 @@ import { appendTrackerEntry, summarizeTrackerWindow, validateTrackerEntry } from
 import { buildDurableCaseContext, CONTEXT_WINDOW_LIMITS, selectRecentVerbatimWindow, validateTranscriptEntries } from "../case-state/context-window.mjs";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "../supervisor/private-candidate-audit.mjs";
+import {
+  MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES,
+  PRIVATE_CANDIDATE_STATUSES,
+  candidateDeliveryGate,
+  isActivePrivateCandidate,
+  projectCandidateLifecycle,
+  validateCandidateAuditEvidence,
+  validateCandidateLifecycleFields
+} from "../supervisor/private-candidate-lifecycle.mjs";
 import { createVaultEnvelope, replaceVaultPayloadWithRoutineKek } from "./vault-crypto.mjs";
 import { openVaultWithDevelopmentAuthorization, openVaultWithManagedSecretAuthorization, openVaultWithRoutineAuthorization } from "./vault-routine-access.mjs";
 import { createExactSourceArtifact, EXACT_SOURCE_LIMITS, validateExactSourceArtifact } from "./exact-source-artifact.mjs";
@@ -16,8 +25,7 @@ import { writePrivateArtifactLocator } from "./private-artifact-locator.mjs";
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const ENVELOPE_FORMAT = "inner-signal-private-case-envelope-v1";
-const RECORD_VERSION = 3;
-const CANDIDATE_STATUSES = Object.freeze(["pending_audit", "audited", "superseded", "sent"]);
+const RECORD_VERSION = 4;
 const TRACKER_QUERY_VARIABLES = Object.freeze([
   "sleep_duration_hours", "sleep_quality", "pain_intensity", "pain_location", "pain_function_interference",
   "anxiety", "depressed_mood", "stability", "unreality", "division", "social_contact_quality",
@@ -191,12 +199,13 @@ function validateCandidateResponse(value, index) {
     throw new ValidationError(`candidate_responses[${index}] exceeds a bounded field limit.`);
   }
   if (!Number.isSafeInteger(value.version) || value.version < 1) throw new ValidationError(`candidate_responses[${index}].version is invalid.`);
-  if (!CANDIDATE_STATUSES.includes(value.status)) throw new ValidationError(`candidate_responses[${index}].status is invalid.`);
+  if (!PRIVATE_CANDIDATE_STATUSES.includes(value.status)) throw new ValidationError(`candidate_responses[${index}].status is invalid.`);
   if (!value.metadata || typeof value.metadata !== "object" || Array.isArray(value.metadata)) throw new ValidationError(`candidate_responses[${index}].metadata must be an object.`);
   let metadataBytes;
   try { metadataBytes = Buffer.byteLength(JSON.stringify(value.metadata), "utf8"); }
   catch { throw new ValidationError(`candidate_responses[${index}].metadata must be JSON serializable.`); }
   if (metadataBytes > PRIVATE_RECORD_LIMITS.candidate_metadata_bytes) throw new ValidationError(`candidate_responses[${index}].metadata exceeds the bounded limit.`);
+  validateCandidateLifecycleFields(value);
   return value;
 }
 
@@ -211,8 +220,30 @@ function normalizePrivateCaseRecord(value) {
     migrated.candidate_responses = [];
   }
   if (migrated.schema_version === 2) {
-    migrated.schema_version = RECORD_VERSION;
+    migrated.schema_version = 3;
     migrated.source_artifacts = [];
+  }
+  if (migrated.schema_version === 3) {
+    migrated.schema_version = RECORD_VERSION;
+    const latestUnsentIndex = migrated.candidate_responses.findLastIndex((candidate) => !["superseded", "sent"].includes(candidate.status));
+    migrated.candidate_responses = migrated.candidate_responses.map((candidate, index) => {
+      const legacyAudited = candidate.status === "audited";
+      const legacyActiveButNotCurrent = !["superseded", "sent"].includes(candidate.status) && index !== latestUnsentIndex;
+      return {
+        ...candidate,
+        status: legacyActiveButNotCurrent ? "superseded" : (legacyAudited ? "pending_audit" : candidate.status),
+        parent_candidate_id: candidate.parent_candidate_id ?? candidate.metadata?.parent_candidate_id ?? null,
+        root_candidate_id: candidate.root_candidate_id ?? candidate.metadata?.root_candidate_id ?? candidate.id,
+        repair_cycle: candidate.repair_cycle ?? candidate.metadata?.repair_cycle ?? 0,
+        producer_context_id: candidate.producer_context_id ?? candidate.metadata?.producer_context_id ?? null,
+        audit_history: candidate.audit_history ?? [],
+        metadata: {
+          ...candidate.metadata,
+          ...(legacyAudited ? { legacy_unbound_audit_invalidated: true } : {}),
+          ...(legacyActiveButNotCurrent ? { superseded_during_lifecycle_migration: true } : {})
+        }
+      };
+    });
   }
   return migrated;
 }
@@ -240,9 +271,19 @@ export function validatePrivateCaseRecord(value) {
     validateCandidateResponse(candidate, index);
     if (candidateIds.has(candidate.id)) throw new ValidationError(`Duplicate candidate response ${candidate.id}.`);
     candidateIds.add(candidate.id);
+    if (candidate.version !== index + 1) throw new ValidationError("Candidate versions must be contiguous and immutable.");
+    if (candidate.parent_candidate_id != null) {
+      const parent = value.candidate_responses.slice(0, index).find((entry) => entry.id === candidate.parent_candidate_id);
+      if (!parent) throw new ValidationError(`Candidate ${candidate.id} has a missing or forward parent.`);
+      if (candidate.root_candidate_id !== parent.root_candidate_id || candidate.repair_cycle !== parent.repair_cycle + 1) {
+        throw new ValidationError(`Candidate ${candidate.id} lineage is inconsistent with its parent.`);
+      }
+    } else if (candidate.root_candidate_id !== candidate.id) {
+      throw new ValidationError(`Original candidate ${candidate.id} must be its own lineage root.`);
+    }
   });
-  if (value.candidate_responses.filter((candidate) => candidate.status === "pending_audit").length > 1) {
-    throw new ValidationError("Private case record may contain only one pending candidate response.");
+  if (value.candidate_responses.filter(isActivePrivateCandidate).length > 1) {
+    throw new ValidationError("Private case record may contain only one active candidate version.");
   }
   if (!Array.isArray(value.source_artifacts) || value.source_artifacts.length > PRIVATE_RECORD_LIMITS.source_artifacts) throw new ValidationError("source_artifacts exceeds the private-record limit or is invalid.");
   const sourceArtifactIds = new Set();
@@ -548,23 +589,29 @@ export function createEncryptedPrivateCaseStore({
         if (typeof candidateId !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/.test(candidateId)) throw new ValidationError("candidateId is invalid.");
         if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new ValidationError("Candidate response metadata must be an object.");
         if (record.candidate_responses.some((candidate) => candidate.id === candidateId)) throw new ValidationError(`Candidate response ${candidateId} already exists and exact bytes are immutable.`);
+        if ((metadata.status ?? "pending_audit") !== "pending_audit") throw new ValidationError("A new original candidate must begin pending_audit.");
+        const activeCandidate = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+        if (activeCandidate?.status === "audit_failed") throw new ValidationError("An audit-failed candidate must be repaired through reconstruction so its lineage and repair cycle cannot be bypassed.");
         const timestamp = now();
         const candidate = {
           id: candidateId,
           version: record.candidate_responses.length + 1,
           exact_text: exactText,
-          status: metadata.status ?? "pending_audit",
+          status: "pending_audit",
           created_at: timestamp,
           updated_at: timestamp,
-          metadata: Object.fromEntries(Object.entries(structuredClone(metadata)).filter(([key]) => key !== "status"))
+          parent_candidate_id: null,
+          root_candidate_id: candidateId,
+          repair_cycle: 0,
+          producer_context_id: metadata.producer_context_id ?? null,
+          audit_history: [],
+          metadata: Object.fromEntries(Object.entries(structuredClone(metadata)).filter(([key]) => !["status", "producer_context_id"].includes(key)))
         };
         validateCandidateResponse(candidate, record.candidate_responses.length);
-        if (candidate.status === "pending_audit") {
-          for (const previousCandidate of record.candidate_responses.filter((entry) => entry.status === "pending_audit")) {
-            previousCandidate.status = "superseded";
-            previousCandidate.updated_at = timestamp;
-            previousCandidate.metadata = { ...previousCandidate.metadata, superseded_by_candidate_id: candidateId };
-          }
+        for (const previousCandidate of record.candidate_responses.filter(isActivePrivateCandidate)) {
+          previousCandidate.metadata = { ...previousCandidate.metadata, superseded_from_status: previousCandidate.status, superseded_by_candidate_id: candidateId };
+          previousCandidate.status = "superseded";
+          previousCandidate.updated_at = timestamp;
         }
         record.candidate_responses.push(candidate);
         return record;
@@ -574,11 +621,11 @@ export function createEncryptedPrivateCaseStore({
     },
     async updateCandidateStatus(caseId, candidateId, status, metadataPatch = {}) {
       return mutate(caseId, (record) => {
-        if (!CANDIDATE_STATUSES.includes(status)) throw new ValidationError("Candidate response status is invalid.");
+        if (status !== "superseded") throw new ValidationError("Candidate audit, approval, and delivery statuses are managed by the binding lifecycle gates.");
         if (!metadataPatch || typeof metadataPatch !== "object" || Array.isArray(metadataPatch)) throw new ValidationError("Candidate response metadata patch must be an object.");
         const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
         if (!candidate) throw new ValidationError(`Candidate response ${candidateId} was not found.`, { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
-        if (status === "pending_audit" && candidate.status !== "pending_audit") throw new ValidationError("A completed candidate cannot be reactivated; save a new candidate version.");
+        if (!isActivePrivateCandidate(candidate)) throw new ValidationError("Only the current active candidate can be superseded.");
         candidate.status = status;
         candidate.updated_at = now();
         candidate.metadata = { ...candidate.metadata, ...structuredClone(metadataPatch) };
@@ -586,12 +633,113 @@ export function createEncryptedPrivateCaseStore({
         return record;
       });
     },
+    async recordCandidateAudit(caseId, candidateId, evidence) {
+      return mutate(caseId, (record) => {
+        const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
+        if (!candidate) throw new ValidationError(`Candidate response ${candidateId} was not found.`, { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
+        const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+        if (current?.id !== candidateId || !["pending_audit", "reconstructed_pending_audit"].includes(candidate.status)) {
+          throw new ValidationError("Only the exact current pending candidate version can receive new audit evidence.");
+        }
+        const audit = structuredClone(validateCandidateAuditEvidence(evidence, candidate));
+        if (record.candidate_responses.some((entry) => entry.audit_history.some((prior) => prior.id === audit.id))) throw new ValidationError(`Candidate audit ${audit.id} already exists.`);
+        candidate.audit_history.push(audit);
+        if (audit.verdict === "fail") candidate.status = "audit_failed";
+        else if (audit.sufficient_for_approval) candidate.status = "audited";
+        candidate.updated_at = now();
+        validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+        return record;
+      });
+    },
+    async reconstructCandidateResponse(caseId, parentCandidateId, candidateId, exactText, metadata = {}) {
+      const record = await mutate(caseId, (record) => {
+        if (typeof candidateId !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/.test(candidateId)) throw new ValidationError("candidateId is invalid.");
+        if (record.candidate_responses.some((candidate) => candidate.id === candidateId)) throw new ValidationError(`Candidate response ${candidateId} already exists and exact bytes are immutable.`);
+        if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new ValidationError("Candidate reconstruction metadata must be an object.");
+        const parent = record.candidate_responses.find((entry) => entry.id === parentCandidateId);
+        const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+        if (!parent || current?.id !== parentCandidateId) throw new ValidationError("Reconstruction must name the exact current candidate as its parent.");
+        if (parent.status !== "audit_failed") throw new ValidationError("A substantive reconstruction requires unresolved substantive/high audit findings on its parent.");
+        if (parent.repair_cycle >= MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES) {
+          throw new ValidationError("Maximum two repair cycles reached; use the smallest discriminating question, explicit uncertainty, or block delivery.", { code: "PRIVATE_CANDIDATE_REPAIR_LIMIT" });
+        }
+        if (exactText === parent.exact_text) throw new ValidationError("A substantive reconstruction must create different immutable candidate bytes.");
+        if (typeof metadata.producer_context_id !== "string" || !metadata.producer_context_id.trim()) throw new ValidationError("A reconstruction producer_context_id is required.");
+        const sourceAudit = [...parent.audit_history].reverse().find((audit) => audit.verdict === "fail");
+        if (!sourceAudit) throw new ValidationError("A reconstruction requires version-bound failed audit evidence.");
+        if (metadata.based_on_audit_id != null && metadata.based_on_audit_id !== sourceAudit.id) throw new ValidationError("Reconstruction based_on_audit_id must identify the current parent audit.");
+        const timestamp = now();
+        const candidate = {
+          id: candidateId,
+          version: record.candidate_responses.length + 1,
+          exact_text: exactText,
+          status: "reconstructed_pending_audit",
+          created_at: timestamp,
+          updated_at: timestamp,
+          parent_candidate_id: parent.id,
+          root_candidate_id: parent.root_candidate_id,
+          repair_cycle: parent.repair_cycle + 1,
+          producer_context_id: metadata.producer_context_id,
+          audit_history: [],
+          metadata: {
+            ...Object.fromEntries(Object.entries(structuredClone(metadata)).filter(([key]) => !["producer_context_id", "based_on_audit_id"].includes(key))),
+            based_on_audit_id: sourceAudit.id,
+            substantive_reconstruction: true
+          }
+        };
+        validateCandidateResponse(candidate, record.candidate_responses.length);
+        parent.metadata = { ...parent.metadata, superseded_from_status: parent.status, superseded_by_candidate_id: candidateId };
+        parent.status = "superseded";
+        parent.updated_at = timestamp;
+        record.candidate_responses.push(candidate);
+        return record;
+      });
+      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
+      return record;
+    },
+    async approveCandidateForDelivery(caseId, candidateId, auditId) {
+      return mutate(caseId, (record) => {
+        const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
+        const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+        if (!candidate || current?.id !== candidateId) throw new ValidationError("Delivery approval must target the exact current candidate version.");
+        if (candidate.status !== "audited") throw new ValidationError("Candidate must pass a fresh independent audit before delivery approval.");
+        const audit = candidate.audit_history.find((entry) => entry.id === auditId);
+        if (!audit?.sufficient_for_approval || audit.candidate_id !== candidate.id || audit.candidate_version !== candidate.version) {
+          throw new ValidationError("Delivery approval audit does not certify the exact current candidate ID/version.");
+        }
+        candidate.status = "approved_for_delivery";
+        candidate.updated_at = now();
+        candidate.metadata = { ...candidate.metadata, approval_audit_id: audit.id };
+        validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+        return record;
+      });
+    },
+    async markCandidateSent(caseId, candidateId) {
+      return mutate(caseId, (record) => {
+        const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
+        const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+        if (!candidate || current?.id !== candidateId) throw new ValidationError("Delivery must target the exact current candidate version.");
+        const gate = candidateDeliveryGate(candidate);
+        if (!gate.delivery_allowed) throw new ValidationError(`Candidate delivery is blocked: ${gate.reason}`, { code: "PRIVATE_CANDIDATE_DELIVERY_BLOCKED" });
+        candidate.status = "sent";
+        candidate.updated_at = now();
+        candidate.metadata = { ...candidate.metadata, sent_with_audit_id: gate.audit_id };
+        validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+        return record;
+      });
+    },
     async getCandidateResponse(caseId, selector = "current_pending") {
       const record = await readRequired(caseId);
       const candidate = selector === "current_pending"
-        ? [...record.candidate_responses].reverse().find((entry) => entry.status === "pending_audit")
+        ? [...record.candidate_responses].reverse().find((entry) => ["pending_audit", "reconstructed_pending_audit"].includes(entry.status))
+        : selector === "current_candidate"
+          ? [...record.candidate_responses].reverse().find(isActivePrivateCandidate)
         : record.candidate_responses.find((entry) => entry.id === selector);
       return candidate ? structuredClone(candidate) : null;
+    },
+    async getCandidateLifecycle(caseId) {
+      const record = await readRequired(caseId);
+      return projectCandidateLifecycle(record.candidate_responses);
     },
     async saveSourceArtifact(caseId, sourceArtifactId, chunks, metadata = {}) {
       return mutate(caseId, (record) => {
@@ -682,7 +830,7 @@ export function createEncryptedPrivateCaseStore({
         maximumSelectedTurns: CONTEXT_WINDOW_LIMITS.transcript_entries,
         requireCompleteEpisode: true
       });
-      const candidate = [...record.candidate_responses].reverse().find((entry) => entry.status === "pending_audit") ?? null;
+      const candidate = [...record.candidate_responses].reverse().find(isActivePrivateCandidate) ?? null;
       const context = {
         case_state: record.case_state,
         last_state_diff: record.state_diff_history.at(-1) ?? null,

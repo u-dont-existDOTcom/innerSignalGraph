@@ -55,7 +55,9 @@ try {
       caseId,
       candidateId: process.env.INNER_SIGNAL_PRIVATE_CASE_CANDIDATE_ID ?? "current_pending",
       authContext,
-      auditor: async (input) => ({ audited_exact_text: input.candidate_response, recent_turn_ids: input.recent_verbatim.turns.map((turn) => turn.id) })
+      auditId: "audit:synthetic:fresh-session",
+      auditorContext: { kind: "independent", context_id: "synthetic-fresh-auditor" },
+      auditor: async (input) => ({ findings: [], audited_exact_text: input.candidate_response, recent_turn_ids: input.recent_verbatim.turns.map((turn) => turn.id) })
     });
     await writeJson(value);
   } else if (action === "source") {
