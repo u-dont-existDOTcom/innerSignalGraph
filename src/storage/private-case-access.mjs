@@ -77,10 +77,11 @@ export function createPrivateCaseAccessService({
     try {
       material = await keyProvider.getCaseKeyMaterial({ caseId, authorization, authContext });
       const osBackedReauthenticated = material?.accessAssurance === "os_backed_reauthenticated" && material.osBackedReauthenticated === true;
+      const managedSecretAuthorized = material?.accessAssurance === "managed_secret_provider" && material.managedSecretProvider === true;
       const developmentExternalCredentialAuthorized = allowDevelopmentFileProvider === true
         && material?.accessAssurance === "development_external_file"
         && material.provider === "development-file-provider";
-      if (!osBackedReauthenticated && !developmentExternalCredentialAuthorized) {
+      if (!osBackedReauthenticated && !managedSecretAuthorized && !developmentExternalCredentialAuthorized) {
         throw new PrivateCaseKeyUnavailableError("Key provider did not supply an accepted access assurance.");
       }
       routineKek = copyBytes(material.routineKek, "routineKek");
@@ -90,6 +91,7 @@ export function createPrivateCaseAccessService({
         routineKek,
         recoverySecretBytes,
         osBackedReauthenticated,
+        managedSecretAuthorized,
         developmentExternalCredentialAuthorized,
         now
       });
@@ -156,7 +158,7 @@ export function createPrivateCaseAccessService({
     },
     async getRecentVerbatimByReference({ caseId = null, handoffId = null } = {}, authContext) {
       if (handoffId) return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.READ, async (store, resolvedCaseId) => (await store.loadHandoff(resolvedCaseId, handoffId)).recent_verbatim);
-      return read(caseId, authContext, (store) => store.getRecentVerbatim(caseId, { minimumCompleteExchanges: 3, requireCompleteEpisode: true }));
+      return read(caseId, authContext, (store) => store.getRecentVerbatim(caseId, { requireCompleteEpisode: true }));
     },
     async getPendingCandidateByReference({ candidateId = null, handoffId = null } = {}, authContext) {
       if (handoffId) {
@@ -186,14 +188,14 @@ export function createPrivateCaseAccessService({
       const effectiveOptions = {
         ...options,
         episodePolicy: {
-          minimumCompleteExchanges: options.episodePolicy?.minimumCompleteExchanges ?? 3,
           requireCompleteEpisode: options.episodePolicy?.requireCompleteEpisode !== false,
           ...(options.episodePolicy?.maximumSelectedTurns != null ? { maximumSelectedTurns: options.episodePolicy.maximumSelectedTurns } : {}),
-          ...(options.episodePolicy?.currentEpisodeId ? { currentEpisodeId: options.episodePolicy.currentEpisodeId } : {})
+          ...(options.episodePolicy?.currentEpisodeId ? { currentEpisodeId: options.episodePolicy.currentEpisodeId } : {}),
+          ...(options.episodePolicy?.currentEpisodeStartTurnId ? { currentEpisodeStartTurnId: options.episodePolicy.currentEpisodeStartTurnId } : {})
         }
       };
       const context = await withStore(caseId, authContext, requiredScope, (store) => store.loadCaseContext(caseId, effectiveOptions));
-      const continuationSafety = assessContinuationSafety(context, { minimumCompleteExchanges: effectiveOptions.episodePolicy.minimumCompleteExchanges });
+      const continuationSafety = assessContinuationSafety(context);
       const result = Object.freeze({ ...context, continuation_safety: continuationSafety });
       if (options.requireContinuationSafe !== false && !continuationSafety.continuation_safe) throw new CaseNotContinuationSafeError(continuationSafety.failures);
       return result;

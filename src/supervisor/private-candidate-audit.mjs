@@ -8,7 +8,7 @@ export async function buildPrivateCandidateAuditInput({ caseAccessService, caseI
     candidateId,
     requireContinuationSafe: true,
     requireAuditScope: true,
-    episodePolicy: { minimumCompleteExchanges: 3, requireCompleteEpisode: true }
+    episodePolicy: { requireCompleteEpisode: true }
   });
   const candidate = context.candidate_response;
   if (!candidate?.exact_text) throw new ValidationError("Exact private candidate response is required for audit.", { code: "PRIVATE_CANDIDATE_NOT_FOUND" });

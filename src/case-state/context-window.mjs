@@ -34,43 +34,62 @@ export function validateTranscriptEntries(entries) {
 }
 
 export function selectRecentVerbatimWindow(entries, {
-  minimumCompleteExchanges = 3,
   currentEpisodeId = null,
+  currentEpisodeStartTurnId = null,
   maximumSelectedTurns = CONTEXT_WINDOW_LIMITS.selected_turns,
   requireCompleteEpisode = false
 } = {}) {
-  if (!Number.isInteger(minimumCompleteExchanges) || minimumCompleteExchanges < 0 || minimumCompleteExchanges > 20) throw new ValidationError("minimumCompleteExchanges must be an integer from 0 to 20.");
   const maximumAllowed = requireCompleteEpisode ? CONTEXT_WINDOW_LIMITS.transcript_entries : CONTEXT_WINDOW_LIMITS.selected_turns;
-  if (!Number.isInteger(maximumSelectedTurns) || maximumSelectedTurns < minimumCompleteExchanges * 2 || maximumSelectedTurns > maximumAllowed) throw new ValidationError("maximumSelectedTurns is outside the bounded context policy.");
+  if (!Number.isInteger(maximumSelectedTurns) || maximumSelectedTurns < 1 || maximumSelectedTurns > maximumAllowed) throw new ValidationError("maximumSelectedTurns is outside the bounded context policy.");
+  if (currentEpisodeId != null && (typeof currentEpisodeId !== "string" || !currentEpisodeId.trim())) throw new ValidationError("currentEpisodeId is invalid.");
+  if (currentEpisodeStartTurnId != null && (typeof currentEpisodeStartTurnId !== "string" || !currentEpisodeStartTurnId.trim())) throw new ValidationError("currentEpisodeStartTurnId is invalid.");
   const transcript = structuredClone(validateTranscriptEntries(entries));
-  const exchanges = new Map();
-  transcript.forEach((turn, index) => {
-    const exchange = exchanges.get(turn.exchange_id) ?? { id: turn.exchange_id, indexes: [], roles: new Set() };
-    exchange.indexes.push(index);
-    exchange.roles.add(turn.role);
-    exchanges.set(turn.exchange_id, exchange);
-  });
-  const complete = [...exchanges.values()].filter((exchange) => exchange.roles.has("user") && exchange.roles.has("assistant"));
-  const required = complete.slice(-Math.max(0, minimumCompleteExchanges));
-  let start = required.length ? Math.min(...required.flatMap((exchange) => exchange.indexes)) : transcript.length;
-  if (currentEpisodeId) {
-    const episodeIndexes = transcript.map((turn, index) => turn.episode_id === currentEpisodeId ? index : -1).filter((index) => index >= 0);
-    if (episodeIndexes.length) start = Math.min(start, Math.min(...episodeIndexes));
-  }
+  const declaredStart = currentEpisodeStartTurnId == null
+    ? -1
+    : transcript.findIndex((turn) => turn.id === currentEpisodeStartTurnId);
+  const firstEpisodeTurn = currentEpisodeId == null
+    ? -1
+    : transcript.findIndex((turn) => turn.episode_id === currentEpisodeId);
+  const start = declaredStart >= 0
+    ? declaredStart
+    : firstEpisodeTurn >= 0
+      ? firstEpisodeTurn
+      : Math.max(0, transcript.length - maximumSelectedTurns);
   const episodeExtended = transcript.slice(start);
   const effectiveMaximum = requireCompleteEpisode && episodeExtended.length > maximumSelectedTurns
     ? Math.min(episodeExtended.length, CONTEXT_WINDOW_LIMITS.transcript_entries)
     : maximumSelectedTurns;
   const selected = episodeExtended.slice(-effectiveMaximum);
+  const episodeFailures = [];
+  if (requireCompleteEpisode) {
+    if (!currentEpisodeId) episodeFailures.push("current episode identifier is missing");
+    if (!currentEpisodeStartTurnId) episodeFailures.push("current episode start turn is missing");
+    else if (declaredStart < 0) episodeFailures.push("current episode start turn is absent from the exact transcript");
+    if (declaredStart >= 0 && transcript[declaredStart]?.episode_id !== currentEpisodeId) episodeFailures.push("current episode start turn has the wrong episode identifier");
+    if (declaredStart >= 0 && transcript.slice(declaredStart).some((turn) => turn.episode_id !== currentEpisodeId)) episodeFailures.push("current episode turns are not a contiguous exact transcript suffix");
+    if (selected.length !== episodeExtended.length || selected.some((turn, index) => turn.id !== episodeExtended[index]?.id)) episodeFailures.push("current episode was truncated or reordered");
+    if (!selected.some((turn) => turn.role === "user")) episodeFailures.push("current episode has no exact user turn");
+  }
+  const episodeCompleteness = Object.freeze({
+    required: requireCompleteEpisode,
+    complete: requireCompleteEpisode ? episodeFailures.length === 0 : null,
+    failures: Object.freeze(episodeFailures),
+    episode_id: currentEpisodeId,
+    started_turn_id: currentEpisodeStartTurnId,
+    captured_turn_count: selected.length,
+    expected_turn_count: episodeExtended.length,
+    first_captured_turn_id: selected[0]?.id ?? null,
+    last_captured_turn_id: selected.at(-1)?.id ?? null,
+    pending_reply_tail: selected.at(-1)?.role === "user"
+  });
   return Object.freeze({
     policy: requireCompleteEpisode
-      ? "minimum-last-3-complete-exchanges-extended-to-complete-current-episode"
-      : "minimum-last-3-complete-exchanges-extended-to-current-episode-with-explicit-turn-bound",
-    minimum_complete_exchanges: minimumCompleteExchanges,
+      ? "semantic-active-episode-from-declared-start-through-latest-turn"
+      : "bounded-recent-context-extended-to-current-episode",
     maximum_selected_turns: maximumSelectedTurns,
     complete_episode_required: requireCompleteEpisode,
-    selected_complete_exchange_ids: required.map((exchange) => exchange.id),
-    extended_for_current_episode: Boolean(currentEpisodeId && selected.some((turn) => turn.episode_id === currentEpisodeId) && start < (required[0]?.indexes[0] ?? transcript.length)),
+    episode_completeness: episodeCompleteness,
+    extended_for_current_episode: Boolean(currentEpisodeId && firstEpisodeTurn >= 0 && firstEpisodeTurn < Math.max(0, transcript.length - maximumSelectedTurns)),
     truncated_for_bound: selected.length < episodeExtended.length,
     omitted_turn_count: episodeExtended.length - selected.length,
     turns: selected
@@ -110,7 +129,11 @@ export function targetedRetrievalRequests(caseState, recentTurnIds = []) {
 
 export function buildDurableCaseContext({ caseId = "local-case", caseState = null, transcriptEntries = [], trackerEntries = [], currentUserMessage = "" } = {}) {
   const state = caseState ? validateCaseState(structuredClone(caseState)) : createEmptyCaseState({ caseId });
-  const recent = selectRecentVerbatimWindow(transcriptEntries, { currentEpisodeId: state.current_episode?.id ?? null });
+  const recent = selectRecentVerbatimWindow(transcriptEntries, {
+    currentEpisodeId: state.current_episode?.id ?? null,
+    currentEpisodeStartTurnId: state.current_episode?.started_turn_id ?? null,
+    requireCompleteEpisode: Boolean(state.current_episode)
+  });
   const retrieval = targetedRetrievalRequests(state, recent.turns.map((turn) => turn.id));
   const transcriptById = new Map(validateTranscriptEntries(transcriptEntries).map((turn) => [turn.id, turn]));
   const requestsByTurn = new Map();

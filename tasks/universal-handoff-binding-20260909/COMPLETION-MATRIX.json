@@ -16,8 +16,9 @@
     {"id":"UI_AND_EXPORT","status":"PASS_LOCAL","evidence":"Current Saved State, What Changed This Turn, Create Handoff, and encrypted export are wired. UI language withholds completion before FRESH_SESSION_GREEN, and blocked packets show continuation failures."},
     {"id":"PUBLIC_PRIVATE_SEPARATION","status":"PASS_LOCAL","evidence":"Local publication audit scanned 158,932 records with zero findings; synthetic payload markers were absent from tracked files and encrypted handoff exports."},
     {"id":"COMPLETE_PACKAGE","status":"PASS","evidence":"Node 24.18.0 npm run verify passed 1035 automated tests, 29 graph regressions, 5 therapy lessons, and all package gates."},
-    {"id":"REAL_CASE_HANDOFF","status":"BLOCKED_MISSING_EXACT_HISTORY","evidence":"The real private import has one complete exchange; three are required. Two genuine complete historical exchanges remain missing and must never be invented."},
-    {"id":"FRESH_CHATGPT_ACCESS","status":"BLOCKED_EXTERNAL_ACTIVATION","evidence":"Production auth/key provider, HTTPS/OAuth exposure, ChatGPT registration, and an actual post-registration fresh-chat load_handoff call remain unverified."},
+    {"id":"REAL_CASE_HANDOFF","status":"READY_FOR_FRESH_SESSION_TEST","evidence":"The real private episode is exact and complete from its declared semantic start through the latest turn. The immutable handoff was loaded in a separate process using only handoff_id plus ambient authorization, with exact recent and candidate text."},
+    {"id":"HOSTED_AUTH_KEY_BOUNDARY","status":"PASS_IMPLEMENTATION_PENDING_LIVE_CONFIG","evidence":"Hosted mode verifies OAuth JWT signature, issuer, audience, expiration, token scope, and server-side subject-to-case ACL before managed-secret key release; live IdP/host secrets remain to be configured."},
+    {"id":"FRESH_CHATGPT_ACCESS","status":"BLOCKED_EXTERNAL_ACTIVATION","evidence":"Live OAuth/host activation, ChatGPT registration, and an actual post-registration fresh-chat load_handoff call remain unverified."},
     {"id":"FINAL_GITHUB_EVIDENCE","status":"PENDING_CONTAINING_COMMIT","evidence":"Exact-head required checks and hosted publication audit are run only after the containing commit is pushed; PR #49 must remain draft/open/unmerged."}
   ]
 }

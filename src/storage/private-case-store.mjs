@@ -8,7 +8,7 @@ import { buildDurableCaseContext, CONTEXT_WINDOW_LIMITS, selectRecentVerbatimWin
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "../supervisor/private-candidate-audit.mjs";
 import { createVaultEnvelope, replaceVaultPayloadWithRoutineKek } from "./vault-crypto.mjs";
-import { openVaultWithDevelopmentAuthorization, openVaultWithRoutineAuthorization } from "./vault-routine-access.mjs";
+import { openVaultWithDevelopmentAuthorization, openVaultWithManagedSecretAuthorization, openVaultWithRoutineAuthorization } from "./vault-routine-access.mjs";
 import { createExactSourceArtifact, EXACT_SOURCE_LIMITS, validateExactSourceArtifact } from "./exact-source-artifact.mjs";
 import { assessContinuationSafety } from "./private-case-continuity.mjs";
 import { compilePrivateHandoffArtifact, createHandoffId, openPrivateHandoffArtifact, validateHandoffId } from "./private-case-handoff.mjs";
@@ -307,14 +307,16 @@ export function createEncryptedPrivateCaseStore({
   routineKek,
   recoverySecretBytes,
   osBackedReauthenticated = false,
+  managedSecretAuthorized = false,
   developmentExternalCredentialAuthorized = false,
   now = () => new Date().toISOString()
 } = {}) {
   if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw new ValidationError("rootDir must be an absolute private storage path.");
-  if (osBackedReauthenticated !== true && developmentExternalCredentialAuthorized !== true) {
-    throw new ValidationError("OS-backed reauthentication or an explicit development credential authorization is required before opening the private case store.");
+  const assuranceModes = [osBackedReauthenticated, managedSecretAuthorized, developmentExternalCredentialAuthorized].filter((value) => value === true).length;
+  if (assuranceModes === 0) {
+    throw new ValidationError("OS-backed reauthentication, managed secret authorization, or an explicit development credential authorization is required before opening the private case store.");
   }
-  if (osBackedReauthenticated === true && developmentExternalCredentialAuthorized === true) {
+  if (assuranceModes !== 1) {
     throw new ValidationError("Private case access must use exactly one authorization assurance mode.");
   }
   const routineKey = bytes(routineKek, "routineKek");
@@ -328,9 +330,11 @@ export function createEncryptedPrivateCaseStore({
   const fileFor = (caseId) => path.join(rootDir, `${safeCaseId(caseId)}.vault.json`);
   const handoffDirectory = path.join(rootDir, ".handoffs");
   const handoffFileFor = (handoffId) => path.join(handoffDirectory, `${sha256Hex(validateHandoffId(handoffId))}.vault.json`);
-  const openEnvelopePlaintext = async (envelope) => osBackedReauthenticated
-    ? (await openVaultWithRoutineAuthorization({ osBackedReauthenticated: true, envelope, routineKek: routineKey })).plaintextBytes
-    : (await openVaultWithDevelopmentAuthorization({ developmentExternalCredentialAuthorized: true, envelope, routineKek: routineKey })).plaintextBytes;
+  const openEnvelopePlaintext = async (envelope) => {
+    if (osBackedReauthenticated) return (await openVaultWithRoutineAuthorization({ osBackedReauthenticated: true, envelope, routineKek: routineKey })).plaintextBytes;
+    if (managedSecretAuthorized) return (await openVaultWithManagedSecretAuthorization({ managedSecretAuthorized: true, envelope, routineKek: routineKey })).plaintextBytes;
+    return (await openVaultWithDevelopmentAuthorization({ developmentExternalCredentialAuthorized: true, envelope, routineKek: routineKey })).plaintextBytes;
+  };
   const readExistingWithEnvelope = async (caseId) => {
     ensureOpen();
     let serialized;
@@ -533,8 +537,8 @@ export function createEncryptedPrivateCaseStore({
     async getRecentVerbatim(caseId, episodePolicy = {}) {
       const record = await readRequired(caseId);
       return selectRecentVerbatimWindow(record.raw_transcript, {
-        minimumCompleteExchanges: episodePolicy.minimumCompleteExchanges ?? 3,
         currentEpisodeId: episodePolicy.currentEpisodeId ?? record.case_state.current_episode?.id ?? null,
+        currentEpisodeStartTurnId: episodePolicy.currentEpisodeStartTurnId ?? record.case_state.current_episode?.started_turn_id ?? null,
         maximumSelectedTurns: episodePolicy.maximumSelectedTurns ?? CONTEXT_WINDOW_LIMITS.selected_turns,
         requireCompleteEpisode: episodePolicy.requireCompleteEpisode === true
       });
@@ -628,8 +632,8 @@ export function createEncryptedPrivateCaseStore({
         : record.candidate_responses.find((entry) => entry.id === candidateId);
       const recent = Object.keys(episodePolicy).length
         ? selectRecentVerbatimWindow(record.raw_transcript, {
-            minimumCompleteExchanges: episodePolicy.minimumCompleteExchanges ?? 3,
             currentEpisodeId: episodePolicy.currentEpisodeId ?? record.case_state.current_episode?.id ?? null,
+            currentEpisodeStartTurnId: episodePolicy.currentEpisodeStartTurnId ?? record.case_state.current_episode?.started_turn_id ?? null,
             maximumSelectedTurns: episodePolicy.maximumSelectedTurns ?? CONTEXT_WINDOW_LIMITS.selected_turns,
             requireCompleteEpisode: episodePolicy.requireCompleteEpisode !== false
           })
@@ -663,8 +667,7 @@ export function createEncryptedPrivateCaseStore({
     async createHandoff(caseId, {
       handoffId = createHandoffId(),
       runtimeVersion = RUNTIME_VERSION,
-      auditVersion = PRIVATE_CANDIDATE_AUDIT_VERSION,
-      minimumCompleteExchanges = 3
+      auditVersion = PRIVATE_CANDIDATE_AUDIT_VERSION
     } = {}) {
       const record = await readRequired(caseId);
       const durableContext = buildDurableCaseContext({
@@ -674,8 +677,8 @@ export function createEncryptedPrivateCaseStore({
         trackerEntries: record.tracker_entries
       });
       const recentVerbatim = selectRecentVerbatimWindow(record.raw_transcript, {
-        minimumCompleteExchanges,
         currentEpisodeId: record.case_state.current_episode?.id ?? null,
+        currentEpisodeStartTurnId: record.case_state.current_episode?.started_turn_id ?? null,
         maximumSelectedTurns: CONTEXT_WINDOW_LIMITS.transcript_entries,
         requireCompleteEpisode: true
       });
@@ -690,7 +693,7 @@ export function createEncryptedPrivateCaseStore({
         source_artifact_refs: record.source_artifacts.map((artifact) => ({ id: artifact.id })),
         targeted_older_evidence: durableContext.targeted_older_evidence
       };
-      const continuationSafety = assessContinuationSafety(context, { minimumCompleteExchanges });
+      const continuationSafety = assessContinuationSafety(context);
       const createdAt = now();
       const { artifact, packet } = compilePrivateHandoffArtifact({
         handoffId,

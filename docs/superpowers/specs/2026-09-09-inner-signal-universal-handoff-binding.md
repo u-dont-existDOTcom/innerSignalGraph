@@ -16,7 +16,7 @@ The global InnerSignal constitution is referenced by version, not copied into ea
 
 ### `recent_verbatim`
 
-Contains the exact active therapy episode. The default minimum is three complete user-assistant exchanges and expands backwards when the current reasoning episode began earlier. These turns must never be recreated from case state.
+Contains the exact active therapy episode from its declared semantic start through the latest turn. Completeness is determined by the episode boundary and transcript continuity, not an arbitrary exchange count. These turns must never be recreated from case state.
 
 ### `pending_artifacts`
 

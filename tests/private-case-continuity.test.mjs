@@ -14,6 +14,7 @@ import { deserializeVaultEnvelope } from "../src/storage/private-case-store.mjs"
 import { decryptVaultEnvelopeWithRecoverySecret } from "../src/storage/vault-crypto.mjs";
 import { chunkExactSourceText, reconstructExactSourceChunks } from "../src/storage/exact-source-artifact.mjs";
 import { validateTrackerEntry } from "../src/case-state/tracker.mjs";
+import { selectRecentVerbatimWindow } from "../src/case-state/context-window.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -496,7 +497,7 @@ test("fresh candidate audit resolves exact candidate bytes by stable identifier"
   assert.deepEqual(audit.audit_result.recent_turn_ids, environment.payload.transcript_turns.slice(2).map((entry) => entry.id));
 });
 
-test("recent verbatim extends past the minimum to the complete active episode and older evidence is queryable", async (t) => {
+test("recent verbatim preserves the complete active episode and older evidence is queryable", async (t) => {
   const environment = await makeEnvironment(t);
   await runSession("seed", environment);
   const providers = await loadDevelopmentPrivateCaseProviders(environment.credentialsPath);
@@ -506,6 +507,7 @@ test("recent verbatim extends past the minimum to the complete active episode an
   const recent = await service.getRecentVerbatim(CASE_ID, { requireCompleteEpisode: true }, auth);
   assert.deepEqual(recent.turns, environment.payload.transcript_turns.slice(2));
   assert.equal(recent.complete_episode_required, true);
+  assert.equal(recent.episode_completeness.complete, true);
   assert.equal(recent.truncated_for_bound, false);
   const byProvenance = await service.retrieveCaseEvidence(CASE_ID, { provenanceIds: ["evidence:older:critical"] }, auth);
   assert.equal(byProvenance.turns[0].text, environment.payload.transcript_turns[0].text);
@@ -513,6 +515,36 @@ test("recent verbatim extends past the minimum to the complete active episode an
   assert.equal(byQuery.turns[0].id, "E1-user");
   const byTime = await service.retrieveCaseEvidence(CASE_ID, { timeRange: { from: "2026-09-01T00:00:00.000Z", to: "2026-09-01T23:59:59.999Z" } }, auth);
   assert.deepEqual(byTime.turns.map((entry) => entry.id), ["E1-user", "E1-assistant"]);
+});
+
+test("continuation safety uses semantic active-episode completeness rather than an exchange count", () => {
+  const recent = selectRecentVerbatimWindow([
+    turn("E1", "user", "one exact user turn awaiting the pending candidate", "episode:single", 1)
+  ], {
+    currentEpisodeId: "episode:single",
+    currentEpisodeStartTurnId: "E1-user",
+    requireCompleteEpisode: true
+  });
+  const result = assessContinuationSafety({
+    case_state: createEmptyCaseState({ caseId: CASE_ID }),
+    last_state_diff: { id: "diff:single" },
+    current_episode: { id: "episode:single" },
+    constitution_ref: { version: "inner-signal-constitution-v1" },
+    candidate_response: { id: CANDIDATE_ID, status: "pending_audit", exact_text: "exact reply" },
+    recent_verbatim: recent,
+    source_artifact_refs: [{ id: "source:older" }],
+    targeted_older_evidence: []
+  });
+  assert.equal(result.continuation_safe, true);
+  assert.equal(result.exact_recent_verbatim_available, true);
+
+  const missingStart = selectRecentVerbatimWindow(recent.turns, {
+    currentEpisodeId: "episode:single",
+    currentEpisodeStartTurnId: "missing-turn",
+    requireCompleteEpisode: true
+  });
+  assert.equal(missingStart.episode_completeness.complete, false);
+  assert.match(missingStart.episode_completeness.failures.join("\n"), /start turn is absent/);
 });
 
 test("candidate artifacts are immutable and a newer pending candidate atomically supersedes the prior pending version", async (t) => {

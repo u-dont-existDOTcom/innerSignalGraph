@@ -1,6 +1,6 @@
 import http from "node:http";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
-import { CaseNotContinuationSafeError, PrivateCaseAccessDeniedError, PrivateCaseKeyUnavailableError } from "../storage/private-case-access.mjs";
+import { CaseNotContinuationSafeError, PRIVATE_CASE_SCOPES, PrivateCaseAccessDeniedError, PrivateCaseKeyUnavailableError } from "../storage/private-case-access.mjs";
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const MAX_BODY_BYTES = 1_000_000;
@@ -53,7 +53,7 @@ function toolResult(value) {
   };
 }
 
-const TOOLS = Object.freeze([
+const TOOL_DEFINITIONS = Object.freeze([
   {
     name: "load_handoff",
     title: "Load private InnerSignal handoff",
@@ -96,7 +96,7 @@ const TOOLS = Object.freeze([
   {
     name: "get_recent_verbatim",
     title: "Inspect exact recent private episode",
-    description: "Load exact authorized recent user-assistant turns, with at least three complete exchanges and the complete active therapeutic episode.",
+    description: "Load the exact authorized active therapy episode from its declared start through the latest turn, without a fixed exchange-count threshold.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
@@ -210,6 +210,70 @@ const TOOLS = Object.freeze([
   }
 ]);
 
+const AUDIT_TOOLS = new Set(["load_handoff", "load_case_context", "get_pending_candidate", "get_candidate_response", "get_source_artifact"]);
+
+function advertisedTools(oauthEnabled) {
+  if (!oauthEnabled) return TOOL_DEFINITIONS;
+  return TOOL_DEFINITIONS.map((tool) => Object.freeze({
+    ...tool,
+    securitySchemes: Object.freeze([Object.freeze({
+      type: "oauth2",
+      scopes: Object.freeze(AUDIT_TOOLS.has(tool.name)
+        ? [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT]
+        : [PRIVATE_CASE_SCOPES.READ])
+    })])
+  }));
+}
+
+function normalizeOauth(value) {
+  if (value == null) return null;
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("oauth must be an object.");
+  const resource = new URL(value.resource);
+  if (resource.protocol !== "https:") throw new TypeError("oauth.resource must use HTTPS.");
+  resource.hash = "";
+  resource.search = "";
+  resource.pathname = resource.pathname.replace(/\/$/u, "");
+  if (!Array.isArray(value.authorizationServers) || value.authorizationServers.length === 0) throw new TypeError("oauth.authorizationServers is required.");
+  const authorizationServers = value.authorizationServers.map((entry) => {
+    const url = new URL(entry);
+    if (url.protocol !== "https:") throw new TypeError("OAuth authorization servers must use HTTPS.");
+    return url.toString().replace(/\/$/u, "");
+  });
+  const scopesSupported = Array.isArray(value.scopesSupported) && value.scopesSupported.length
+    ? [...new Set(value.scopesSupported)]
+    : [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT];
+  if (scopesSupported.some((scope) => !Object.values(PRIVATE_CASE_SCOPES).includes(scope))) throw new TypeError("OAuth scopes are invalid.");
+  return Object.freeze({
+    resource: resource.toString().replace(/\/$/u, ""),
+    authorizationServers: Object.freeze(authorizationServers),
+    scopesSupported: Object.freeze(scopesSupported),
+    resourceDocumentation: value.resourceDocumentation == null ? null : new URL(value.resourceDocumentation).toString()
+  });
+}
+
+function protectedResourceMetadata(oauth) {
+  return {
+    resource: oauth.resource,
+    authorization_servers: oauth.authorizationServers,
+    scopes_supported: oauth.scopesSupported,
+    ...(oauth.resourceDocumentation ? { resource_documentation: oauth.resourceDocumentation } : {})
+  };
+}
+
+function oauthChallenge(oauth, error = "invalid_token", description = "Authenticate to access the authorized private case.") {
+  if (!oauth) return "Bearer realm=\"inner-signal-private-case\"";
+  const metadataUrl = new URL("/.well-known/oauth-protected-resource", `${oauth.resource}/`).toString();
+  return `Bearer resource_metadata="${metadataUrl}", scope="${oauth.scopesSupported.join(" ")}", error="${error}", error_description="${description}"`;
+}
+
+function authenticationRequiredResult(challenge) {
+  return {
+    content: [{ type: "text", text: "Authentication required for this private case tool." }],
+    _meta: { "mcp/www_authenticate": [challenge] },
+    isError: true
+  };
+}
+
 async function callTool(service, name, args, authContext) {
   if (name === "load_handoff") return service.loadHandoff(args.handoff_id, authContext, { requireContinuationSafe: true });
   if (name === "load_case_context") {
@@ -217,7 +281,7 @@ async function callTool(service, name, args, authContext) {
       candidateId: args.candidate_id ?? "current_pending",
       requireContinuationSafe: true,
       requireAuditScope: true,
-      episodePolicy: { minimumCompleteExchanges: 3, requireCompleteEpisode: true }
+      episodePolicy: { requireCompleteEpisode: true }
     });
   }
   if (name === "retrieve_case_evidence") {
@@ -270,12 +334,18 @@ async function callTool(service, name, args, authContext) {
   throw Object.assign(new Error(`Unknown MCP tool ${name}.`), { code: "MCP_TOOL_NOT_FOUND" });
 }
 
-export function createPrivateCaseMcpServer({ caseAccessService } = {}) {
+export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, productionAuthReady = false } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function") throw new TypeError("caseAccessService is required.");
+  const normalizedOauth = normalizeOauth(oauth);
+  if (productionAuthReady === true && !normalizedOauth) throw new TypeError("Production auth readiness requires OAuth metadata.");
+  const tools = advertisedTools(Boolean(normalizedOauth));
   return http.createServer(async (req, res) => {
     const url = new URL(req.url || "/", "http://127.0.0.1");
     if (req.method === "GET" && url.pathname === "/health") {
-      return send(res, 200, { ok: true, service: "inner-signal-private-case-mcp", runtimeVersion: RUNTIME_VERSION, productionAuthReady: false });
+      return send(res, 200, { ok: true, service: "inner-signal-private-case-mcp", runtimeVersion: RUNTIME_VERSION, productionAuthReady: productionAuthReady === true });
+    }
+    if (req.method === "GET" && normalizedOauth && ["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"].includes(url.pathname)) {
+      return send(res, 200, protectedResourceMetadata(normalizedOauth));
     }
     if (url.pathname !== "/mcp") return send(res, 404, { error: "Not found." });
     if (req.method !== "POST") return send(res, 405, { error: "Method not allowed." }, { allow: "POST" });
@@ -293,13 +363,14 @@ export function createPrivateCaseMcpServer({ caseAccessService } = {}) {
         instructions: "Read-only private InnerSignal continuation tools. Authorization is transport-owned; never put bearer tokens or key material in tool arguments."
       }));
     }
-    if (request.method === "tools/list") return send(res, 200, success(request.id, { tools: TOOLS }));
+    if (request.method === "tools/list") return send(res, 200, success(request.id, { tools }));
     if (request.method !== "tools/call") return send(res, 200, failure(request.id, -32601, "Method not found."));
 
     const token = bearerToken(req);
     if (!token) {
-      return send(res, 401, failure(request.id, -32001, "Authorization required."), {
-        "www-authenticate": "Bearer realm=\"inner-signal-private-case\""
+      const challenge = oauthChallenge(normalizedOauth);
+      return send(res, 401, success(request.id, authenticationRequiredResult(challenge)), {
+        "www-authenticate": challenge
       });
     }
     try {
@@ -309,8 +380,9 @@ export function createPrivateCaseMcpServer({ caseAccessService } = {}) {
       return send(res, 200, success(request.id, toolResult(value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
-        return send(res, 401, failure(request.id, -32001, "Authorization required."), {
-          "www-authenticate": "Bearer realm=\"inner-signal-private-case\""
+        const challenge = oauthChallenge(normalizedOauth, "insufficient_scope", "The access token is invalid or is not authorized for this case and scope.");
+        return send(res, 401, success(request.id, authenticationRequiredResult(challenge)), {
+          "www-authenticate": challenge
         });
       }
       const safeCode = error instanceof PrivateCaseKeyUnavailableError
@@ -323,8 +395,8 @@ export function createPrivateCaseMcpServer({ caseAccessService } = {}) {
   });
 }
 
-export async function listenPrivateCaseMcp({ caseAccessService, port = 0, host = "127.0.0.1" } = {}) {
-  const server = createPrivateCaseMcpServer({ caseAccessService });
+export async function listenPrivateCaseMcp({ caseAccessService, oauth = null, productionAuthReady = false, port = 0, host = "127.0.0.1" } = {}) {
+  const server = createPrivateCaseMcpServer({ caseAccessService, oauth, productionAuthReady });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, resolve);

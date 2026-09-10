@@ -10,7 +10,7 @@ export class CaseNotContinuationSafeError extends RuntimeError {
   }
 }
 
-export function assessContinuationSafety(context, { minimumCompleteExchanges = 3 } = {}) {
+export function assessContinuationSafety(context) {
   const failures = [];
   if (!context?.case_state) failures.push("current structured case state is missing");
   if (!context?.last_state_diff) failures.push("last state diff is missing");
@@ -21,20 +21,18 @@ export function assessContinuationSafety(context, { minimumCompleteExchanges = 3
   const olderTurnAvailable = (context?.targeted_older_evidence ?? []).some((entry) => entry?.turn?.text);
   const olderSourceAvailable = (context?.source_artifact_refs ?? []).length > 0;
   if (!olderTurnAvailable && !olderSourceAvailable) failures.push("targeted older raw evidence has no retrievable private provenance source");
-  const turns = context?.recent_verbatim?.turns ?? [];
-  const exchanges = new Map();
-  for (const turn of turns) {
-    const roles = exchanges.get(turn.exchange_id) ?? new Set();
-    roles.add(turn.role);
-    exchanges.set(turn.exchange_id, roles);
+  const episodeCompleteness = context?.recent_verbatim?.episode_completeness;
+  if (episodeCompleteness?.required !== true || episodeCompleteness?.complete !== true) {
+    const reasons = episodeCompleteness?.failures?.length
+      ? `: ${episodeCompleteness.failures.join(", ")}`
+      : "";
+    failures.push(`exact active therapy episode is incomplete${reasons}`);
   }
-  const complete = [...exchanges.values()].filter((roles) => roles.has("user") && roles.has("assistant")).length;
-  if (complete < minimumCompleteExchanges) failures.push(`recent verbatim contains ${complete} complete exchanges; ${minimumCompleteExchanges} required`);
   return Object.freeze({
     continuation_safe: failures.length === 0,
     failures: Object.freeze(failures),
     exact_candidate_available: Boolean(context?.candidate_response?.exact_text),
-    exact_recent_verbatim_available: complete >= minimumCompleteExchanges,
+    exact_recent_verbatim_available: episodeCompleteness?.complete === true,
     hidden_reasoning_included: false
   });
 }

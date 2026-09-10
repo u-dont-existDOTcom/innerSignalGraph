@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "directiveId": "CD-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909-R1",
+  "directiveId": "CD-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909-R2",
   "taskId": "real-private-case-import-20260909",
   "ownerOutcomeId": "OO-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909",
-  "ownerOutcomeEpoch": 1,
+  "ownerOutcomeEpoch": 2,
   "reasoningSupervisorSurface": "owner_chat",
   "strategyId": "LOSSLESS_PRIVATE_SOURCE_IMPORT_THEN_LAYERED_REMOTE_ACCEPTANCE",
-  "directiveRevision": 1,
-  "executionObjective": "Execute the exact private import and fresh-session access sequence supplied by the owner on a new branch from current main.",
+  "directiveRevision": 2,
+  "executionObjective": "Replace the fixed exchange gate with semantic active-episode completeness, create the real immutable handoff, activate hosted OAuth/case ACL/managed key access, and prove exact retrieval from a brand-new ChatGPT conversation given only handoff_id.",
   "allowedActions": [
     "read the owner-supplied private attachments and current repository authority",
     "create encrypted private artifacts and credentials outside the checkout",
@@ -15,6 +15,8 @@
     "run local exactness, security, package, and publication gates",
     "create and push a new task branch and draft pull request",
     "use an approved secure MCP tunnel and register/connect it to ChatGPT when the required authentication path is available",
+    "deploy the private MCP and its encrypted private data to an owner-authorized production host with managed secrets and persistent storage",
+    "configure an established OAuth identity provider and subject-to-case ACL",
     "create a genuinely fresh acceptance chat and run the exact pending-candidate audit only after retrieval succeeds"
   ],
   "forbiddenActions": [
@@ -30,6 +32,8 @@
     "private source and artifact manifests with exact lengths and hashes",
     "ciphertext-only storage and authorization-before-key evidence",
     "fresh-process exact round trip of source, transcript, and candidate",
+    "semantic active-episode completeness without a fixed exchange count",
+    "OAuth signature, issuer, audience, expiration, scope, case ACL, and managed-key verification",
     "synthetic oversized-message chunk-ingestion regression",
     "reachable MCP and fresh-chat execution receipt or a precise external blocker",
     "public/private leak scan and exact-head hosted checks"
@@ -37,7 +41,7 @@
   "stopTriggers": [
     "the supplied source is incomplete or ambiguous for exact persistence",
     "a private payload would enter Git or public logs",
-    "external authentication, tunnel, registration, or workspace policy cannot be completed safely",
+    "external authentication, tunnel, registration, or workspace policy cannot be completed safely after all authorized paths are exhausted",
     "remote branch movement creates a substantive conflict"
   ]
 }

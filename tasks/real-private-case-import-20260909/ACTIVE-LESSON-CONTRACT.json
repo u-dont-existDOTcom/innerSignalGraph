@@ -39,6 +39,24 @@
       "failureCondition": "Codex adds unsupported case interpretation or performs the therapy audit before the retrieval gate.",
       "repairAction": "Stop and return the exact execution evidence to the reasoning chat.",
       "enforcement": "semantic"
+    },
+    {
+      "id": "semantic-active-episode-completeness",
+      "source": "owner correction 2026-09-10 + context-compaction-resilience",
+      "trigger": "A continuation gate decides whether exact recent therapy context is complete.",
+      "requiredBehavior": "Require the exact contiguous transcript from the current episode's declared semantic start through the latest supplied turn; allow a pending candidate to answer a user-tail turn and do not impose a fixed exchange count.",
+      "failureCondition": "A fixed count blocks an otherwise complete active episode, or an absent/truncated/reordered episode passes.",
+      "repairAction": "Rebuild the window from the declared episode boundary and fail closed on any semantic completeness defect.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "hosted-oauth-is-not-fresh-chat-proof",
+      "source": "owner correction 2026-09-10 + official OpenAI MCP authentication and ChatGPT connection guidance",
+      "trigger": "Hosted OAuth, MCP registration, or fresh-chat status is reported.",
+      "requiredBehavior": "Verify issuer, audience, expiration, scope, case ACL and key access; then require a brand-new ChatGPT conversation to call load_handoff using only the stable handoff ID before FRESH_SESSION_GREEN.",
+      "failureCondition": "Code, a local MCP, a reachable endpoint, OAuth discovery, registration, or tool visibility is reported as the new-chat result.",
+      "repairAction": "Keep the handoff at READY_FOR_FRESH_SESSION_TEST and name the exact unverified boundary.",
+      "enforcement": "mechanical_and_external"
     }
   ],
   "preAttemptAdmission": {
@@ -47,7 +65,8 @@
       "Current main was fetched at fabc5b582e8b725248c37b44e5189e51653c9d82.",
       "The new task branch was created directly from that head.",
       "The owner supplied the complete private baseline, corrections, transcript, candidate, and exact import sequence in private attachments.",
-      "Repository authority, the merged continuity implementation, and current official OpenAI connection guidance were read before implementation."
+      "Repository authority, the merged continuity implementation, and current official OpenAI connection guidance were read before implementation.",
+      "The 2026-09-10 owner correction explicitly authorizes hosted OAuth/ACL/key activation and makes actual new-chat load_handoff execution the terminal acceptance boundary."
     ]
   }
 }

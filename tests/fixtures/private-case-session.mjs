@@ -46,7 +46,7 @@ try {
       candidateId: process.env.INNER_SIGNAL_PRIVATE_CASE_CANDIDATE_ID ?? "current_pending",
       requireContinuationSafe: true,
       requireAuditScope: true,
-      episodePolicy: { minimumCompleteExchanges: 3, requireCompleteEpisode: true }
+      episodePolicy: { requireCompleteEpisode: true }
     });
     await writeJson(value);
   } else if (action === "audit") {

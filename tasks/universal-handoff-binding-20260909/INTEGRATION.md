@@ -1,6 +1,6 @@
 # InnerSignal Universal Handoff Binding v1.0
 
-Status: REPOSITORY CANDIDATE VERIFIED; REAL CASE AND EXTERNAL CHATGPT ACTIVATION BLOCKED. Draft PR #49 remains open, draft, and unmerged on `codex/private-case-import-20260909`, starting from `44819602ad147b1ee670d46b4d1672ce05951871` after exact local/remote reconciliation.
+Status: REPOSITORY CANDIDATE VERIFIED; REAL HANDOFF READY; EXTERNAL CHATGPT ACTIVATION IN PROGRESS. Draft PR #49 remains open, draft, and unmerged on `codex/private-case-import-20260909`, starting from `44819602ad147b1ee670d46b4d1672ce05951871` after exact local/remote reconciliation.
 
 ## Owner outcome
 
@@ -32,6 +32,8 @@ Implement the owner-supplied public binding as a GitHub-independent private encr
 - Local publication audit: PASS, 158,932 records scanned, zero findings.
 - Final exact-head GitHub checks and the separate hosted publication-history scan must be recorded after the containing commit is pushed. Earlier hosted history remained fail-closed because GitHub no longer served one old CodeQL run log; this was not a detected leak.
 
-## Preserved parent blockers
+## 2026-09-10 semantic-gate and activation correction
 
-The real imported case still lacks two genuine complete historical exchanges. No real handoff was created or called `FRESH_SESSION_GREEN`. Production authentication/key integration, secure HTTPS/OAuth exposure, ChatGPT registration, and a real new-chat tool call remain external blockers. The local development credential file/provider is deliberately `productionReady: false`. This task did not deploy, register, audit, or reinterpret the real pending candidate.
+The owner superseded the fixed three-exchange quota with semantic active-episode completeness. The real exact episode is contiguous from its declared start through the latest supplied turn, so immutable handoff `handoff:92f179eb-299a-47cf-87de-43791d95bf70` now passes the local continuation gate and an independent process loaded its exact recent episode and exact pending candidate using only that ID plus ambient authorization. Hosted OAuth JWT verification, subject-to-case ACL, managed-secret case-key access, RFC 9728 metadata, per-tool OAuth schemes, and MCP reauthorization challenges are implemented and synthetically verified.
+
+No `FRESH_SESSION_GREEN` claim is made. A live identity-provider/hosted secret deployment, ChatGPT registration, and the actual brand-new-chat `load_handoff` call remain required. The candidate has not been audited or reinterpreted.

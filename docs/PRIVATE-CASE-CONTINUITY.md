@@ -1,6 +1,6 @@
 # Private case continuity and fresh-session access
 
-Status: draft PR #49 extends the encrypted case store with the InnerSignal Universal Handoff Binding v1.0. Synthetic acceptance proves an immutable encrypted handoff can be created in Session A and loaded in a separate Session B using only `handoff_id` plus authorized transport context, including a history larger than 100,000 characters split into deterministic chunks no larger than 20,000 bytes. The real owner-supplied source has passed exact local encrypted import and fresh-process case-ID round-trip, but the real case is **not continuation-safe** because the supplied transcript contains only one complete user-assistant exchange and the contract requires three. A production ChatGPT connection is also **not deployed, registered, or fresh-chat verified**.
+Status: draft PR #49 extends the encrypted case store with the InnerSignal Universal Handoff Binding v1.0. Synthetic acceptance proves an immutable encrypted handoff can be created in Session A and loaded in a separate Session B using only `handoff_id` plus authorized transport context, including a history larger than 100,000 characters split into deterministic chunks no larger than 20,000 bytes. The real owner-supplied source has passed exact local encrypted import, semantic active-episode completeness, immutable handoff creation, and a separate-process exact `load_handoff` round trip. A production ChatGPT connection is still **not registered or fresh-chat verified**, so the handoff remains `READY_FOR_FRESH_SESSION_TEST`, never `FRESH_SESSION_GREEN`.
 
 ## Acceptance contract
 
@@ -8,7 +8,7 @@ A case is continuation-safe only when an authorized loader, starting with no pri
 
 1. current structured case state;
 2. the last state diff;
-3. at least three complete exact user-assistant exchanges, extended to the complete active episode when required;
+3. the exact active therapy episode from its declared semantic start through the latest turn, with no missing, reordered, foreign-episode, or truncated turns;
 4. the exact versioned candidate response selected by stable candidate ID or `current_pending`;
 5. older raw turns by query, provenance/item ID, or time range;
 6. the current therapeutic episode; and
@@ -66,7 +66,9 @@ The access service accepts two injected boundaries:
 - `authorizationProvider.authorize({ caseId, authContext, requiredScope })` returns an authenticated principal and case-scoped `case:read`, `case:write`, or `case:audit` grants.
 - `keyProvider.getCaseKeyMaterial(...)` returns routine key material only after the provider's unlock/reauthentication policy succeeds. A recovery secret may additionally be returned when a case is created.
 
-The bundled development provider is deliberately not production security. It reads one non-symlink mode-`0600` JSON file outside the repository, matches SHA-256 bearer-token digests in constant time, scopes grants by case, and loads per-case test keys. It reports `productionReady: false` and returns the explicit `development_external_file` assurance. The access service rejects that assurance unless its local-only `allowDevelopmentFileProvider` switch was deliberately enabled; it never presents the file as OS-backed reauthentication. A production provider must instead return `os_backed_reauthenticated` evidence from an OS keychain, HSM/KMS, or equivalent secret manager.
+The bundled development provider is deliberately not production security. It reads one non-symlink mode-`0600` JSON file outside the repository, matches SHA-256 bearer-token digests in constant time, scopes grants by case, and loads per-case test keys. It reports `productionReady: false` and returns the explicit `development_external_file` assurance. The access service rejects that assurance unless its local-only `allowDevelopmentFileProvider` switch was deliberately enabled; it never presents the file as OS-backed reauthentication.
+
+Hosted mode uses `src/storage/hosted-private-case-providers.mjs`. It verifies every JWT signature against the configured JWKS and requires the exact issuer, resource audience, expiration, requested OAuth scope, authenticated subject, and a server-side subject-to-case ACL before key acquisition. Case keys are supplied by the host's managed secret boundary through `INNER_SIGNAL_CASE_KEYS_JSON`, copied only after authorization, zeroized on close, and removed from the child process environment after provider construction. The encrypted vault itself resides at the volume-backed absolute `INNER_SIGNAL_PRIVATE_ROOT`; it must remain outside the public checkout. This is a production-capable resource-server/key-provider boundary, not evidence that any particular host or identity-provider configuration is live.
 
 Its external credential file has this shape; placeholder values are not usable secrets:
 
@@ -92,6 +94,17 @@ Its external credential file has this shape; placeholder values are not usable s
 ```
 
 Do not put this file beneath the checkout. The loader rejects repository-contained credentials and storage roots.
+
+For hosted mode, configure the deployment platform's secret manager rather than a repository `.env` file:
+
+- `INNER_SIGNAL_PRIVATE_ROOT`: absolute mounted private volume path;
+- `INNER_SIGNAL_MCP_RESOURCE`: canonical public HTTPS resource identifier;
+- `INNER_SIGNAL_OAUTH_ISSUER`, `INNER_SIGNAL_OAUTH_AUDIENCE`, and `INNER_SIGNAL_OAUTH_JWKS_URI`: established identity-provider values;
+- `INNER_SIGNAL_CASE_ACL_JSON`: subject-to-case/scopes grants;
+- `INNER_SIGNAL_CASE_KEYS_JSON`: secret per-case routine/recovery key material; and
+- `PORT`: host-assigned listening port.
+
+Run `npm run private-case:mcp:hosted`. The server binds on `0.0.0.0`, publishes RFC 9728 protected-resource metadata, advertises per-tool OAuth schemes, emits MCP authentication challenges, and reports production auth ready only in hosted provider mode. The identity provider must independently provide OAuth 2.1 authorization-code flow, PKCE S256, issuer identification, resource/audience echo, and CIMD, DCR, or a pre-registered ChatGPT client.
 
 ## Executable repository bridge
 
@@ -148,18 +161,17 @@ The packet is wrapped as an exact artifact, encrypted with the existing dual-wra
 
 The older `createPrivateCaseHandoff` reference-only record remains for compatibility, but it is not the Universal Handoff artifact or its fresh-session evidence.
 
-The owner-authorized opaque identifiers for the present import are `case-57a69465-4434-41cf-ad24-310b13a2cc81` and `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051`. The private payload exists locally and round-trips exactly, but no real `handoff_id` may claim continuation safety: only one supplied exchange is complete, two fewer than the fixed minimum. The local credential/key provider remains development-only, and ChatGPT registration is still absent.
+The owner-authorized opaque identifiers for the present import are `case-57a69465-4434-41cf-ad24-310b13a2cc81`, `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051`, and `handoff:92f179eb-299a-47cf-87de-43791d95bf70`. The private payload and immutable handoff round-trip exactly from a separate process using only the handoff ID plus ambient authorization. Its active episode is complete from the declared semantic start through the latest supplied turn. ChatGPT registration and an actual new-chat call are still absent, so the handoff must not be labeled `FRESH_SESSION_GREEN`.
 
 ## Blocking production/ChatGPT obligations
 
 Repository-local success does not make the tool callable from a new ChatGPT conversation. Before making that claim, all of these must happen and be evidenced:
 
-1. Implement the production authorization provider with OAuth identity-to-case ACLs.
-2. Implement the production key provider using the approved OS credential store, KMS, or HSM and the owner-selected user-held recovery-secret flow.
-3. Supply and append at least two additional complete exact historical user-assistant exchanges, then pass the continuation gate for the imported real case without inventing missing replies.
-4. Expose the MCP endpoint over public HTTPS, or use an approved secure MCP tunnel for development.
-5. Implement MCP OAuth 2.1 protected-resource metadata, authorization-server discovery, PKCE S256, and the chosen client-registration path.
-6. Register/connect the MCP server in ChatGPT.
-7. Create a new post-registration ChatGPT conversation and successfully execute `load_case_context` with the real IDs.
+1. Deploy hosted mode behind stable HTTPS or an approved Secure MCP Tunnel and a publicly reachable established identity provider.
+2. Configure OAuth issuer/audience/JWKS, authorization-code + PKCE S256, issuer identification, resource echo, and ChatGPT client registration.
+3. Place the case key secret and subject-to-case ACL in the host's managed secret boundary and the ciphertext vault/handoff on a persistent private volume.
+4. Register/connect the MCP server in ChatGPT.
+5. Create a new post-registration ChatGPT conversation, give it only the real `handoff_id`, and successfully execute `load_handoff`.
+6. Independently compare the returned exact candidate and recent turns with the private source, then and only then mark the private handoff `FRESH_SESSION_GREEN`.
 
-These are external deployment/authentication actions and were not authorized by this task. Official OpenAI references: [Build an MCP server](https://developers.openai.com/plugins/concepts/mcp-server), [MCP authentication](https://developers.openai.com/plugins/build/auth), and [Connect from ChatGPT](https://developers.openai.com/plugins/deploy/connect-chatgpt).
+The current owner task authorizes these activation steps, but they remain incomplete until direct hosted and new-chat evidence exists. Official OpenAI references: [Build an MCP server](https://developers.openai.com/plugins/concepts/mcp-server), [MCP authentication](https://developers.openai.com/plugins/build/auth), [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels), and [Connect from ChatGPT](https://developers.openai.com/plugins/deploy/connect-chatgpt).

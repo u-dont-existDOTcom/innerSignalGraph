@@ -12,7 +12,7 @@
   "requiredOutcomes": [
     {"id":"RO-01","text":"Provide explicit, durable, versioned private-store interfaces for state, diffs, transcript turns, exact candidate responses, historical evidence retrieval, current episode, and all-in-one context bootstrap.","terminalRequired":true},
     {"id":"RO-02","text":"Obtain encryption keys and caller authorization through injected provider abstractions; never commit keys, read them implicitly from Git, or fall back to plaintext/de-identified substitutes.","terminalRequired":true},
-    {"id":"RO-03","text":"Make candidate response bytes and exact recent verbatim context first-class, addressable private artifacts, with at least three complete exchanges and episode extension.","terminalRequired":true},
+    {"id":"RO-03","text":"Make candidate response bytes and exact recent verbatim context first-class, addressable private artifacts, preserving the complete active episode from its declared semantic boundary.","terminalRequired":true},
     {"id":"RO-04","text":"Make the audit harness resolve a candidate identifier from authorized private storage in a fresh process before auditing.","terminalRequired":true},
     {"id":"RO-05","text":"Expose a minimal read-only MCP/service surface suitable for a newly authorized ChatGPT or supervisor session, with useful authentication failures and no hidden reasoning.","terminalRequired":true},
     {"id":"RO-06","text":"Add fresh-session, unauthorized, encryption, candidate-audit, recent-window, historical-retrieval, public/private-separation, and continuation-safety acceptance tests.","terminalRequired":true},

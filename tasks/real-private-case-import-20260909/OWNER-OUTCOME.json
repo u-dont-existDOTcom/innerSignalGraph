@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "ownerOutcomeId": "OO-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909",
-  "epoch": 1,
+  "epoch": 2,
   "source": {
     "kind": "private_owner_attachment",
     "recordedAt": "2026-09-09",
     "publicSafeProjectionOnly": true,
     "privateContentExcluded": true
   },
-  "normalizedResult": "Losslessly persist the owner-supplied private human-gold source, later corrections, exact transcript episode, and exact pending candidate in the encrypted private case store; verify restart-safe exact retrieval; then establish and verify the strongest actually available authorized MCP and fresh-ChatGPT path without publishing private content or overstating unavailable production controls.",
+  "normalizedResult": "Treat exact semantic active-episode completeness—not a three-exchange quota—as the continuity gate; create the real immutable Louka handoff; securely host the private MCP with OAuth subject-to-case ACL and managed key access; then prove a brand-new ChatGPT conversation given only handoff_id calls load_handoff and receives the exact recent episode and pending candidate.",
   "requiredOutcomes": [
     {"id":"RO-01","text":"Import the exact private baseline, corrections, transcript, and pending candidate without semantic regeneration.","terminalRequired":true},
     {"id":"RO-02","text":"Preserve source provenance, later supersessions, contradictions, trajectory observability, answered questions, and current episode as separate private artifacts/state.","terminalRequired":true},
@@ -18,6 +18,8 @@
     {"id":"RO-06","text":"Only after RO-05, audit the exact pending candidate using the repository framework.","terminalRequired":true},
     {"id":"RO-07","text":"Publish only code, synthetic tests, public-safe receipts, and the explicitly authorized stable IDs; keep all private content and private-derived hashes outside Git.","terminalRequired":true},
     {"id":"RO-08","text":"Create a new draft PR from current main and keep it open, draft, and unmerged.","terminalRequired":true}
+    ,{"id":"RO-09","text":"Replace the fixed exchange-count gate with exact contiguous active-episode completeness from the declared semantic start through the latest turn.","terminalRequired":true}
+    ,{"id":"RO-10","text":"Do not mark the real handoff FRESH_SESSION_GREEN or complete until the actual new-ChatGPT load_handoff call and independent exactness comparison pass.","terminalRequired":true}
   ],
   "nonSatisfyingProxies": [
     "a source file exists but was not losslessly imported",
