@@ -124,7 +124,7 @@ test("hosted OAuth metadata, per-tool schemes, JWT verification, case ACL, and m
     .sign(environment.privateKey);
   const denied = await rpc(listener.url, "retrieve_case_evidence", { case_id: CASE_ID, query: "oauth" }, wrongSubjectToken);
   assert.equal(denied.response.status, 401);
-  assert.match(denied.body.result._meta["mcp/www_authenticate"][0], /error="insufficient_scope"/);
+  assert.match(denied.body.result._meta["mcp/www_authenticate"][0], /error="invalid_token"/);
   assert.equal(JSON.stringify(denied.body).includes(PRIVATE_MARKER), false);
 
   const wrongAudienceToken = await new SignJWT({ scope: "case:read case:audit" })

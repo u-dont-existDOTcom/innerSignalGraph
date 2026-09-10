@@ -374,9 +374,7 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
       return send(res, 200, success(request.id, toolResult(value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
-        const challenge = token == null
-          ? oauthChallenge(normalizedOauth)
-          : oauthChallenge(normalizedOauth, "insufficient_scope", "The access token is invalid or is not authorized for this case and scope.");
+        const challenge = oauthChallenge(normalizedOauth, "invalid_token", "The access token is missing, invalid, or is not authorized for this case and scope.");
         return send(res, 401, success(request.id, authenticationRequiredResult(challenge)), {
           "www-authenticate": challenge
         });
