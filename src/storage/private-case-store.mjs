@@ -18,14 +18,20 @@ import {
 } from "../supervisor/private-candidate-lifecycle.mjs";
 import { createVaultEnvelope, replaceVaultPayloadWithRoutineKek } from "./vault-crypto.mjs";
 import { openVaultWithDevelopmentAuthorization, openVaultWithManagedSecretAuthorization, openVaultWithRoutineAuthorization } from "./vault-routine-access.mjs";
-import { createExactSourceArtifact, EXACT_SOURCE_LIMITS, validateExactSourceArtifact } from "./exact-source-artifact.mjs";
+import { chunkExactSourceText, createExactSourceArtifact, EXACT_SOURCE_LIMITS, validateExactSourceArtifact } from "./exact-source-artifact.mjs";
 import { assessContinuationSafety } from "./private-case-continuity.mjs";
 import { compilePrivateHandoffArtifact, createHandoffId, openPrivateHandoffArtifact, validateHandoffId } from "./private-case-handoff.mjs";
 import { writePrivateArtifactLocator } from "./private-artifact-locator.mjs";
+import {
+  TRANSCRIPT_AMENDMENT_LIMITS,
+  applyTranscriptAmendments,
+  createTranscriptCompletionAmendment,
+  validateTranscriptAmendments
+} from "./transcript-amendments.mjs";
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const ENVELOPE_FORMAT = "inner-signal-private-case-envelope-v1";
-const RECORD_VERSION = 4;
+const RECORD_VERSION = 5;
 const TRACKER_QUERY_VARIABLES = Object.freeze([
   "sleep_duration_hours", "sleep_quality", "pain_intensity", "pain_location", "pain_function_interference",
   "anxiety", "depressed_mood", "stability", "unreality", "division", "social_contact_quality",
@@ -38,6 +44,7 @@ const PRIVATE_RECORD_LIMITS = Object.freeze({
   journal_entries: 20_000,
   journal_text: 40_000,
   state_diffs: 20_000,
+  transcript_amendments: TRANSCRIPT_AMENDMENT_LIMITS.amendments,
   candidates: 2_000,
   candidate_text: 100_000,
   candidate_metadata_bytes: 40_000,
@@ -224,7 +231,7 @@ function normalizePrivateCaseRecord(value) {
     migrated.source_artifacts = [];
   }
   if (migrated.schema_version === 3) {
-    migrated.schema_version = RECORD_VERSION;
+    migrated.schema_version = 4;
     const latestUnsentIndex = migrated.candidate_responses.findLastIndex((candidate) => !["superseded", "sent"].includes(candidate.status));
     migrated.candidate_responses = migrated.candidate_responses.map((candidate, index) => {
       const legacyAudited = candidate.status === "audited";
@@ -245,6 +252,10 @@ function normalizePrivateCaseRecord(value) {
       };
     });
   }
+  if (migrated.schema_version === 4) {
+    migrated.schema_version = RECORD_VERSION;
+    migrated.transcript_amendments = [];
+  }
   return migrated;
 }
 
@@ -255,6 +266,17 @@ export function validatePrivateCaseRecord(value) {
   safeCaseId(value.case_id);
   for (const field of ["created_at", "updated_at"]) if (typeof value[field] !== "string" || !value[field].trim()) throw new ValidationError(`Private case record ${field} is required.`);
   validateTranscriptEntries(value.raw_transcript);
+  if (!Array.isArray(value.source_artifacts) || value.source_artifacts.length > PRIVATE_RECORD_LIMITS.source_artifacts) throw new ValidationError("source_artifacts exceeds the private-record limit or is invalid.");
+  const sourceArtifactIds = new Set();
+  value.source_artifacts.forEach((artifact, index) => {
+    validateExactSourceArtifact(artifact, index);
+    if (sourceArtifactIds.has(artifact.id)) throw new ValidationError(`Duplicate source artifact ${artifact.id}.`);
+    sourceArtifactIds.add(artifact.id);
+  });
+  validateTranscriptAmendments(value.transcript_amendments, {
+    rawTranscript: value.raw_transcript,
+    sourceArtifacts: value.source_artifacts
+  });
   validateCaseState(value.case_state);
   if (!Array.isArray(value.tracker_entries)) throw new ValidationError("tracker_entries must be an array.");
   if (value.tracker_entries.length > PRIVATE_RECORD_LIMITS.tracker_entries) throw new ValidationError("tracker_entries exceeds the private-record limit.");
@@ -285,13 +307,6 @@ export function validatePrivateCaseRecord(value) {
   if (value.candidate_responses.filter(isActivePrivateCandidate).length > 1) {
     throw new ValidationError("Private case record may contain only one active candidate version.");
   }
-  if (!Array.isArray(value.source_artifacts) || value.source_artifacts.length > PRIVATE_RECORD_LIMITS.source_artifacts) throw new ValidationError("source_artifacts exceeds the private-record limit or is invalid.");
-  const sourceArtifactIds = new Set();
-  value.source_artifacts.forEach((artifact, index) => {
-    validateExactSourceArtifact(artifact, index);
-    if (sourceArtifactIds.has(artifact.id)) throw new ValidationError(`Duplicate source artifact ${artifact.id}.`);
-    sourceArtifactIds.add(artifact.id);
-  });
   return value;
 }
 
@@ -302,6 +317,7 @@ function newRecord(caseId, now) {
     created_at: now,
     updated_at: now,
     raw_transcript: [],
+    transcript_amendments: [],
     case_state: createEmptyCaseState({ caseId }),
     tracker_entries: [],
     journal_entries: [],
@@ -316,6 +332,25 @@ function assertAppendOnly(previous, next) {
   if (next.raw_transcript.length < previous.raw_transcript.length) throw new ValidationError("Raw transcript is append-only.");
   for (let index = 0; index < previous.raw_transcript.length; index += 1) {
     if (JSON.stringify(previous.raw_transcript[index]) !== JSON.stringify(next.raw_transcript[index])) throw new ValidationError("Raw transcript is append-only and existing turns cannot be rewritten.");
+  }
+  if (next.transcript_amendments.length < previous.transcript_amendments.length) throw new ValidationError("Transcript amendments are append-only.");
+  for (let index = 0; index < previous.transcript_amendments.length; index += 1) {
+    if (JSON.stringify(previous.transcript_amendments[index]) !== JSON.stringify(next.transcript_amendments[index])) {
+      throw new ValidationError("Transcript amendments are immutable and cannot be rewritten.");
+    }
+  }
+  if (next.candidate_responses.length < previous.candidate_responses.length) throw new ValidationError("Candidate versions are append-only.");
+  const immutableCandidateFields = ["id", "version", "exact_text", "created_at", "parent_candidate_id", "root_candidate_id", "repair_cycle", "producer_context_id"];
+  for (let index = 0; index < previous.candidate_responses.length; index += 1) {
+    const before = previous.candidate_responses[index];
+    const after = next.candidate_responses[index];
+    if (!after || immutableCandidateFields.some((field) => JSON.stringify(before[field]) !== JSON.stringify(after[field]))) {
+      throw new ValidationError("Candidate versions are immutable and cannot be rewritten or reordered.");
+    }
+    if (after.audit_history.length < before.audit_history.length
+        || before.audit_history.some((audit, auditIndex) => JSON.stringify(audit) !== JSON.stringify(after.audit_history[auditIndex]))) {
+      throw new ValidationError("Candidate audit records are append-only and immutable.");
+    }
   }
   if (next.source_artifacts.length < previous.source_artifacts.length) throw new ValidationError("Exact source artifacts are append-only.");
   for (let index = 0; index < previous.source_artifacts.length; index += 1) {
@@ -468,6 +503,9 @@ export function createEncryptedPrivateCaseStore({
     record.state_diff_history.push(entry);
     record.last_state_diff = structuredClone(diff);
   };
+  const effectiveTranscript = (record) => applyTranscriptAmendments(record.raw_transcript, record.transcript_amendments, {
+    sourceArtifacts: record.source_artifacts
+  });
   const selectEvidence = (record, { query = null, provenanceIds = [], timeRange = null, limit = 24 } = {}) => {
     if (!Number.isInteger(limit) || limit < 1 || limit > PRIVATE_RECORD_LIMITS.evidence_results) throw new ValidationError("Evidence retrieval limit is invalid.");
     if (query != null && (typeof query !== "string" || !query.trim() || query.length > 1_000)) throw new ValidationError("Evidence query must be bounded non-empty text.");
@@ -500,7 +538,8 @@ export function createEncryptedPrivateCaseStore({
     const from = timeRange?.from ? Date.parse(timeRange.from) : null;
     const to = timeRange?.to ? Date.parse(timeRange.to) : null;
     if ((timeRange?.from && Number.isNaN(from)) || (timeRange?.to && Number.isNaN(to)) || (from != null && to != null && from > to)) throw new ValidationError("Evidence timeRange is invalid.");
-    const matches = record.raw_transcript.filter((turn) => {
+    const transcript = effectiveTranscript(record);
+    const matches = transcript.filter((turn) => {
       const at = Date.parse(turn.at);
       if (from != null && at < from) return false;
       if (to != null && at > to) return false;
@@ -522,6 +561,7 @@ export function createEncryptedPrivateCaseStore({
       provenance_ids: [...wanted],
       time_range: timeRange ? structuredClone(timeRange) : null,
       turns: structuredClone(turns),
+      transcript_amendments: structuredClone(record.transcript_amendments.filter((amendment) => turns.some((turn) => turn.id === amendment.target_turn_id))),
       source_artifacts: structuredClone(sourceArtifacts),
       truncated: matches.length > turns.length || artifactMatches.length > sourceArtifacts.length
     });
@@ -575,9 +615,51 @@ export function createEncryptedPrivateCaseStore({
         return record;
       });
     },
+    async appendTranscriptCompletionAmendment(caseId, {
+      amendmentId,
+      targetTurnId,
+      completionText,
+      sourceArtifactId,
+      sourceMetadata = {},
+      producerContextId
+    } = {}) {
+      return mutate(caseId, (record) => {
+        if (record.transcript_amendments.some((entry) => entry.id === amendmentId)) throw new ValidationError(`Transcript amendment ${amendmentId} already exists.`);
+        if (record.source_artifacts.some((entry) => entry.id === sourceArtifactId)) throw new ValidationError(`Exact source artifact ${sourceArtifactId} already exists and exact bytes are immutable.`);
+        const targetTurn = record.raw_transcript.find((entry) => entry.id === targetTurnId);
+        if (!targetTurn) throw new ValidationError(`Transcript amendment target ${targetTurnId} was not found.`);
+        if (!sourceMetadata || typeof sourceMetadata !== "object" || Array.isArray(sourceMetadata)) throw new ValidationError("Transcript amendment source metadata must be an object.");
+        const timestamp = now();
+        const sourceArtifact = createExactSourceArtifact({
+          id: sourceArtifactId,
+          chunks: chunkExactSourceText(completionText),
+          metadata: {
+            ...structuredClone(sourceMetadata),
+            kind: "transcript-completion-source",
+            target_turn_id: targetTurnId,
+            amendment_id: amendmentId
+          },
+          createdAt: timestamp
+        });
+        const amendment = createTranscriptCompletionAmendment({
+          id: amendmentId,
+          targetTurn,
+          completionText,
+          sourceArtifact,
+          producerContextId,
+          createdAt: timestamp
+        });
+        record.source_artifacts.push(structuredClone(sourceArtifact));
+        record.transcript_amendments.push(structuredClone(amendment));
+        return record;
+      });
+    },
+    async getTranscriptAmendments(caseId) {
+      return structuredClone((await readRequired(caseId)).transcript_amendments);
+    },
     async getRecentVerbatim(caseId, episodePolicy = {}) {
       const record = await readRequired(caseId);
-      return selectRecentVerbatimWindow(record.raw_transcript, {
+      return selectRecentVerbatimWindow(effectiveTranscript(record), {
         currentEpisodeId: episodePolicy.currentEpisodeId ?? record.case_state.current_episode?.id ?? null,
         currentEpisodeStartTurnId: episodePolicy.currentEpisodeStartTurnId ?? record.case_state.current_episode?.started_turn_id ?? null,
         maximumSelectedTurns: episodePolicy.maximumSelectedTurns ?? CONTEXT_WINDOW_LIMITS.selected_turns,
@@ -592,6 +674,7 @@ export function createEncryptedPrivateCaseStore({
         if ((metadata.status ?? "pending_audit") !== "pending_audit") throw new ValidationError("A new original candidate must begin pending_audit.");
         const activeCandidate = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
         if (activeCandidate?.status === "audit_failed") throw new ValidationError("An audit-failed candidate must be repaired through reconstruction so its lineage and repair cycle cannot be bypassed.");
+        if (typeof metadata.producer_context_id !== "string" || !metadata.producer_context_id.trim()) throw new ValidationError("A new candidate producer_context_id is required.");
         const timestamp = now();
         const candidate = {
           id: candidateId,
@@ -769,17 +852,18 @@ export function createEncryptedPrivateCaseStore({
     async getCurrentEpisode(caseId) { return structuredClone((await readRequired(caseId)).case_state.current_episode); },
     async loadCaseContext(caseId, { candidateId = "current_pending", episodePolicy = {}, evidenceQuery = null } = {}) {
       const record = await readRequired(caseId);
+      const transcript = effectiveTranscript(record);
       const context = buildDurableCaseContext({
         caseId,
         caseState: record.case_state,
-        transcriptEntries: record.raw_transcript,
+        transcriptEntries: transcript,
         trackerEntries: record.tracker_entries
       });
       const candidate = candidateId === "current_pending"
-        ? [...record.candidate_responses].reverse().find((entry) => entry.status === "pending_audit")
+        ? [...record.candidate_responses].reverse().find((entry) => ["pending_audit", "reconstructed_pending_audit"].includes(entry.status))
         : record.candidate_responses.find((entry) => entry.id === candidateId);
       const recent = Object.keys(episodePolicy).length
-        ? selectRecentVerbatimWindow(record.raw_transcript, {
+        ? selectRecentVerbatimWindow(transcript, {
             currentEpisodeId: episodePolicy.currentEpisodeId ?? record.case_state.current_episode?.id ?? null,
             currentEpisodeStartTurnId: episodePolicy.currentEpisodeStartTurnId ?? record.case_state.current_episode?.started_turn_id ?? null,
             maximumSelectedTurns: episodePolicy.maximumSelectedTurns ?? CONTEXT_WINDOW_LIMITS.selected_turns,
@@ -798,6 +882,7 @@ export function createEncryptedPrivateCaseStore({
         case_state: structuredClone(record.case_state),
         last_state_diff: record.state_diff_history.length ? structuredClone(record.state_diff_history.at(-1)) : null,
         recent_verbatim: structuredClone(recent),
+        transcript_amendments: structuredClone(record.transcript_amendments),
         candidate_response: candidate ? structuredClone(candidate) : null,
         source_artifact_refs: record.source_artifacts.map((artifact) => ({
           id: artifact.id,
@@ -818,13 +903,14 @@ export function createEncryptedPrivateCaseStore({
       auditVersion = PRIVATE_CANDIDATE_AUDIT_VERSION
     } = {}) {
       const record = await readRequired(caseId);
+      const transcript = effectiveTranscript(record);
       const durableContext = buildDurableCaseContext({
         caseId,
         caseState: record.case_state,
-        transcriptEntries: record.raw_transcript,
+        transcriptEntries: transcript,
         trackerEntries: record.tracker_entries
       });
-      const recentVerbatim = selectRecentVerbatimWindow(record.raw_transcript, {
+      const recentVerbatim = selectRecentVerbatimWindow(transcript, {
         currentEpisodeId: record.case_state.current_episode?.id ?? null,
         currentEpisodeStartTurnId: record.case_state.current_episode?.started_turn_id ?? null,
         maximumSelectedTurns: CONTEXT_WINDOW_LIMITS.transcript_entries,

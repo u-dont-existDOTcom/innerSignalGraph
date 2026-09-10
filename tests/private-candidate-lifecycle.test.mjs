@@ -269,7 +269,8 @@ test("pre-binding audited records migrate without inheriting unbound approval", 
     ],
     source_artifacts: []
   });
-  assert.equal(migrated.schema_version, 4);
+  assert.equal(migrated.schema_version, 5);
+  assert.deepEqual(migrated.transcript_amendments, []);
   assert.equal(migrated.candidate_responses[0].status, "superseded");
   assert.equal(migrated.candidate_responses[0].metadata.superseded_during_lifecycle_migration, true);
   assert.equal(migrated.candidate_responses[1].status, "pending_audit");

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inner-signal.local/schemas/private-case/operation-request-v1.schema.json",
+  "title": "Backend-only private case mutation operation",
+  "oneOf": [
+    { "$ref": "#/$defs/appendCompletion" },
+    { "$ref": "#/$defs/recordAudit" },
+    { "$ref": "#/$defs/reconstructAndHandoff" },
+    { "$ref": "#/$defs/createHandoff" },
+    { "$ref": "#/$defs/approve" },
+    { "$ref": "#/$defs/markSent" }
+  ],
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,200}$" },
+    "caseId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,79}$" },
+    "base": {
+      "type": "object",
+      "required": ["schema_version", "operation", "case_id"],
+      "properties": { "schema_version": { "const": 1 }, "operation": { "type": "string" }, "case_id": { "$ref": "#/$defs/caseId" } }
+    },
+    "appendCompletion": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "amendment_id", "target_turn_id", "completion_text", "source_artifact_id", "producer_context_id"],
+        "properties": {
+          "schema_version": { "const": 1 }, "operation": { "const": "append_transcript_completion" }, "case_id": { "$ref": "#/$defs/caseId" },
+          "amendment_id": { "$ref": "#/$defs/id" }, "target_turn_id": { "$ref": "#/$defs/id" }, "completion_text": { "type": "string", "minLength": 1, "maxLength": 80000 },
+          "source_artifact_id": { "$ref": "#/$defs/id" }, "producer_context_id": { "$ref": "#/$defs/id" }, "source_metadata": { "type": "object" }
+        }
+      }]
+    },
+    "recordAudit": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "candidate_id", "audit_id", "auditor_context", "completed_at", "result"],
+        "properties": {
+          "schema_version": { "const": 1 }, "operation": { "const": "record_candidate_audit" }, "case_id": { "$ref": "#/$defs/caseId" }, "candidate_id": { "$ref": "#/$defs/id" }, "audit_id": { "$ref": "#/$defs/id" },
+          "auditor_context": { "type": "object", "additionalProperties": false, "required": ["kind", "context_id"], "properties": { "kind": { "enum": ["independent", "self_critique"] }, "context_id": { "$ref": "#/$defs/id" } } },
+          "completed_at": { "type": "string", "format": "date-time" }, "independent_auditor_available": { "type": "boolean" },
+          "result": { "type": "object", "required": ["findings"], "properties": { "findings": { "type": "array" }, "repair_induced_checks": { "type": "array", "items": { "type": "string" } } } }
+        }
+      }]
+    },
+    "reconstructAndHandoff": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "parent_candidate_id", "candidate_id", "exact_text", "producer_context_id", "based_on_audit_id", "handoff_id", "runtime_version", "audit_version"],
+        "properties": {
+          "schema_version": { "const": 1 }, "operation": { "const": "reconstruct_candidate_and_create_handoff" }, "case_id": { "$ref": "#/$defs/caseId" },
+          "parent_candidate_id": { "$ref": "#/$defs/id" }, "candidate_id": { "$ref": "#/$defs/id" }, "exact_text": { "type": "string", "minLength": 1 }, "producer_context_id": { "$ref": "#/$defs/id" },
+          "based_on_audit_id": { "$ref": "#/$defs/id" }, "handoff_id": { "$ref": "#/$defs/id" }, "runtime_version": { "type": "string", "minLength": 1, "maxLength": 160 }, "audit_version": { "type": "string", "minLength": 1, "maxLength": 160 }, "metadata": { "type": "object" }
+        }
+      }]
+    },
+    "createHandoff": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "handoff_id", "runtime_version", "audit_version"],
+        "properties": { "schema_version": { "const": 1 }, "operation": { "const": "create_handoff" }, "case_id": { "$ref": "#/$defs/caseId" }, "handoff_id": { "$ref": "#/$defs/id" }, "runtime_version": { "type": "string", "minLength": 1, "maxLength": 160 }, "audit_version": { "type": "string", "minLength": 1, "maxLength": 160 } }
+      }]
+    },
+    "approve": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "candidate_id", "audit_id"],
+        "properties": { "schema_version": { "const": 1 }, "operation": { "const": "approve_candidate_for_delivery" }, "case_id": { "$ref": "#/$defs/caseId" }, "candidate_id": { "$ref": "#/$defs/id" }, "audit_id": { "$ref": "#/$defs/id" } }
+      }]
+    },
+    "markSent": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "candidate_id"],
+        "properties": { "schema_version": { "const": 1 }, "operation": { "const": "mark_candidate_sent" }, "case_id": { "$ref": "#/$defs/caseId" }, "candidate_id": { "$ref": "#/$defs/id" } }
+      }]
+    }
+  }
+}

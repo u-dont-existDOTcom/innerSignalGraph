@@ -11,7 +11,8 @@
   "scripts": {
     "private-case:mcp": "node src/cli/private-case-mcp.mjs",
     "private-case:mcp:hosted": "node src/cli/private-case-mcp.mjs --hosted-env",
-    "private-case:acceptance": "node --test tests/private-case-continuity.test.mjs tests/private-candidate-lifecycle.test.mjs",
+    "private-case:operations": "node src/cli/private-case-operations.mjs",
+    "private-case:acceptance": "node --test tests/private-case-continuity.test.mjs tests/private-candidate-lifecycle.test.mjs tests/private-case-orchestration.test.mjs",
     "constitution-context:preflight": "node scripts/constitution-context-preflight.mjs",
     "constitution-context:acceptance": "node scripts/constitution-context-acceptance.mjs",
     "authoring:task:preflight": "node scripts/authoring-task-preflight.mjs",

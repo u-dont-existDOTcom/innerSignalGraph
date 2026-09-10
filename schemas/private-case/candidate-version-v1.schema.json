@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inner-signal.local/schemas/private-case/candidate-version-v1.schema.json",
+  "title": "Immutable private candidate version",
+  "type": "object",
+  "required": ["id", "version", "exact_text", "status", "created_at", "updated_at", "parent_candidate_id", "root_candidate_id", "repair_cycle", "producer_context_id", "audit_history", "metadata"],
+  "properties": {
+    "id": { "$ref": "#/$defs/id" },
+    "version": { "type": "integer", "minimum": 1 },
+    "exact_text": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["pending_audit", "audit_failed", "reconstructed_pending_audit", "audited", "approved_for_delivery", "superseded", "sent"] },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "parent_candidate_id": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "root_candidate_id": { "$ref": "#/$defs/id" },
+    "repair_cycle": { "type": "integer", "minimum": 0, "maximum": 2 },
+    "producer_context_id": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "audit_history": { "type": "array", "items": { "$ref": "candidate-audit-v1.schema.json" } },
+    "metadata": { "type": "object" }
+  },
+  "$defs": { "id": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,200}$" } }
+}

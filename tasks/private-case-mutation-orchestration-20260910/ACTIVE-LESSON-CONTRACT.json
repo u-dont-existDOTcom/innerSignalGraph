@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "taskId": "private-case-mutation-orchestration-20260910",
+  "status": "CURRENT",
+  "activatedAt": "2026-09-10",
+  "lessons": [
+    {
+      "id": "read-write-security-role-separation",
+      "source": "current owner instruction + repository private continuity contract",
+      "trigger": "A fresh auditor needs exact private reads while the app needs mutations.",
+      "requiredBehavior": "Keep InnerSignal Private Continuity read-only and implement mutations in a separate backend/controller boundary with write/audit scopes.",
+      "failureCondition": "The continuity MCP advertises or executes a write, or the writer bypasses case-scoped authorization.",
+      "repairAction": "Remove the mutation from continuity and route it through the separate authorized controller.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "append-only-source-provenance",
+      "source": "universal source-interpretation-provenance + transformation-preservation-proof",
+      "trigger": "A supplied completion changes the effective meaning of a previously truncated raw turn.",
+      "requiredBehavior": "Preserve the raw turn exactly, append an immutable completion source artifact and amendment with exact source range/context provenance, and derive the effective view.",
+      "failureCondition": "The raw turn changes, the completion lacks provenance, or a downstream handoff omits the amendment/effective distinction.",
+      "repairAction": "Restore the original bytes and rebuild the effective view from the append-only amendment.",
+      "enforcement": "mechanical_and_semantic"
+    },
+    {
+      "id": "exact-version-independent-audit",
+      "source": "current owner instruction + universal independent-evaluation-separation",
+      "trigger": "A candidate is failed, reconstructed, audited, approved, or sent.",
+      "requiredBehavior": "Bind audit evidence to exact immutable candidate bytes/version and mechanically reject producer-context certification of that version.",
+      "failureCondition": "A stale audit or producer session can approve changed bytes.",
+      "repairAction": "Block delivery, restore pending-audit state, and require a fresh session to audit the exact version.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "bounded-repair-and-repair-induced-audit",
+      "source": "current owner instruction + PR 49 lifecycle authority",
+      "trigger": "A substantive audit finding causes reconstruction.",
+      "requiredBehavior": "Create an immutable child, require all repair-induced-error checks on its fresh audit, and reject a third repair cycle.",
+      "failureCondition": "Approval is inherited, repair-induced checks are absent, or repair_cycle exceeds two.",
+      "repairAction": "Invalidate the transition and route to fresh audit or DISCRIMINATE_OR_BLOCK.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "private-material-never-enters-public-git",
+      "source": "repository AGENTS.md + current owner instruction",
+      "trigger": "The real completion, audit, candidate, and case state are private while the repository is public.",
+      "requiredBehavior": "Keep real payloads and private-derived hashes in mode-0600 files/encrypted storage outside the checkout; commit only generic/synthetic material and safe opaque IDs.",
+      "failureCondition": "Tracked files, Git metadata, PR text, CI, or terminal receipts expose private content or a private-derived digest.",
+      "repairAction": "Block push, remove the disclosure from candidate history, and rerun publication audits.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "fresh-handoff-is-a-versioned-transformation",
+      "source": "universal transformation-preservation-proof + PR 49 handoff binding",
+      "trigger": "The amended transcript and v2 are projected into a new immutable handoff.",
+      "requiredBehavior": "Preserve raw transcript, amendment provenance, effective transcript, v1 failed audit, v2 lineage/status, and distinct handoff/audit gates with zero unexplained delta.",
+      "failureCondition": "The handoff rewrites history, omits v2, loses the failed audit, or presents v2 as approved.",
+      "repairAction": "Reject the handoff and compile a new immutable version from the canonical encrypted record.",
+      "enforcement": "mechanical"
+    }
+  ],
+  "preAttemptAdmission": {
+    "status": "PASS",
+    "evidence": [
+      "PR 49 was freshly cloned and reconciled at e544c1bc1089b144c0a3e6e36668e98fc0c06597 before editing.",
+      "The unrelated older checkout and its private task changes were left untouched.",
+      "Repository authority, current checkpoint, active lock, continuity/storage/access/audit/handoff code, tests, current audit conversation, and the relevant live universal patterns were inspected.",
+      "The owner explicitly authorized the private source amendment, failed-audit persistence, v2 reconstruction, and GitHub update while forbidding v2 approval and public case material."
+    ]
+  }
+}

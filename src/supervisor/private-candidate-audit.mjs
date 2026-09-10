@@ -66,13 +66,41 @@ export async function runPrivateCandidateAudit({
   if (!result || typeof result !== "object" || Array.isArray(result) || !Array.isArray(result.findings)) {
     throw new ValidationError("Private candidate auditor must return a structured findings array.");
   }
+  return persistPrivateCandidateAuditResult({
+    ...input,
+    auditId,
+    auditorContext,
+    independentAuditorAvailable,
+    completedAt,
+    auditInput,
+    result
+  });
+}
+
+export async function persistPrivateCandidateAuditResult({
+  caseAccessService,
+  caseId,
+  candidateId = "current_pending",
+  authContext,
+  auditId = `audit:${randomUUID()}`,
+  auditorContext,
+  independentAuditorAvailable = true,
+  completedAt,
+  result,
+  auditInput = null
+} = {}) {
+  if (!caseAccessService || typeof caseAccessService.recordCandidateAudit !== "function") throw new ValidationError("caseAccessService must persist version-bound candidate audits.");
+  if (!result || typeof result !== "object" || Array.isArray(result) || !Array.isArray(result.findings)) {
+    throw new ValidationError("Private candidate audit result must contain a structured findings array.");
+  }
+  const resolvedInput = auditInput ?? await buildPrivateCandidateAuditInput({ caseAccessService, caseId, candidateId, authContext });
   const candidate = {
-    id: auditInput.candidate_id,
-    version: auditInput.candidate_version,
-    status: auditInput.candidate_status,
-    exact_text: auditInput.candidate_response,
-    parent_candidate_id: auditInput.candidate_parent_candidate_id,
-    producer_context_id: auditInput.candidate_producer_context_id
+    id: resolvedInput.candidate_id,
+    version: resolvedInput.candidate_version,
+    status: resolvedInput.candidate_status,
+    exact_text: resolvedInput.candidate_response,
+    parent_candidate_id: resolvedInput.candidate_parent_candidate_id,
+    producer_context_id: resolvedInput.candidate_producer_context_id
   };
   const evidence = createCandidateAuditEvidence({
     auditId,
@@ -84,12 +112,12 @@ export async function runPrivateCandidateAudit({
     independentAuditorAvailable,
     ...(completedAt ? { completedAt } : {})
   });
-  const updatedRecord = await input.caseAccessService.recordCandidateAudit(input.caseId, auditInput.candidate_id, evidence, input.authContext);
-  const updatedCandidate = updatedRecord.candidate_responses.find((entry) => entry.id === auditInput.candidate_id);
+  const updatedRecord = await caseAccessService.recordCandidateAudit(caseId, resolvedInput.candidate_id, evidence, authContext);
+  const updatedCandidate = updatedRecord.candidate_responses.find((entry) => entry.id === resolvedInput.candidate_id);
   return Object.freeze({
-    case_id: auditInput.case_id,
-    candidate_id: auditInput.candidate_id,
-    candidate_version: auditInput.candidate_version,
+    case_id: resolvedInput.case_id,
+    candidate_id: resolvedInput.candidate_id,
+    candidate_version: resolvedInput.candidate_version,
     candidate_status: updatedCandidate.status,
     exact_candidate_resolved: true,
     audit_evidence: evidence,

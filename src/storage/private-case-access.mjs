@@ -125,6 +125,10 @@ export function createPrivateCaseAccessService({
     async saveCaseDiff(caseId, diff, options, authContext) { return write(caseId, authContext, (store) => store.saveCaseDiff(caseId, diff, options)); },
     async getCaseDiff(caseId, options, authContext) { return read(caseId, authContext, (store) => store.getCaseDiff(caseId, options)); },
     async appendTranscriptTurn(caseId, turn, authContext) { return write(caseId, authContext, (store) => store.appendTranscriptTurn(caseId, turn)); },
+    async appendTranscriptCompletionAmendment(caseId, amendment, authContext) {
+      return write(caseId, authContext, (store) => store.appendTranscriptCompletionAmendment(caseId, amendment));
+    },
+    async getTranscriptAmendments(caseId, authContext) { return read(caseId, authContext, (store) => store.getTranscriptAmendments(caseId)); },
     async getRecentVerbatim(caseId, episodePolicy, authContext) { return read(caseId, authContext, (store) => store.getRecentVerbatim(caseId, episodePolicy)); },
     async saveCandidateResponse(caseId, candidateId, exactText, metadata, authContext) {
       return write(caseId, authContext, (store) => store.saveCandidateResponse(caseId, candidateId, exactText, metadata));

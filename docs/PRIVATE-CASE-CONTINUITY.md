@@ -1,6 +1,6 @@
 # Private case continuity and fresh-session access
 
-Status: draft PR #49 extends the encrypted case store with the InnerSignal Universal Handoff Binding v1.0. Synthetic acceptance proves an immutable encrypted handoff can be created in Session A and loaded in a separate Session B using only `handoff_id` plus authorized transport context, including a history larger than 100,000 characters split into deterministic chunks no larger than 20,000 bytes. The real owner-supplied source passed exact encrypted import, semantic active-episode completeness, immutable handoff creation, separate-process exact round trip, hosted OAuth/ACL/key retrieval, and an actual brand-new ChatGPT `load_handoff` call given only its stable handoff ID. Independent comparison against the same immutable hosted packet matched the exact candidate and complete recent episode, so this real handoff is `FRESH_SESSION_GREEN`.
+Status: draft PR #49 extends the encrypted case store with the InnerSignal Universal Handoff Binding and its complementary private mutation/audit orchestration path. `InnerSignal Private Continuity` remains deliberately read-only. Synthetic acceptance proves an immutable encrypted handoff can be created in Session A and loaded in a separate Session B using only `handoff_id` plus authorized transport context, including a history larger than 100,000 characters split into deterministic chunks no larger than 20,000 bytes. It also proves append-only transcript completions, immutable candidate versions, exact-version audits, bounded reconstruction, independent-auditor separation, and explicit approval/sent transitions. The real owner-supplied source remains outside Git.
 
 ## Acceptance contract
 
@@ -22,6 +22,8 @@ A case is continuation-safe only when an authorized loader, starting with no pri
 
 The independent audit of a reconstructed candidate must explicitly check causal overclaim, leading presuppositions, overly specific homework/tracking, verbosity/repetition, reduced information gain, safety inflation or underreaction, telos/steering drift, history omissions, hypothesis rigidification, unjustified treatment or behavior recommendations, and replacement of one problem with another. After two repair cycles, unresolved substantive/high findings route to the smallest discriminating question, explicit uncertainty, or blocked delivery; a third reconstruction is rejected.
 
+Structured audit output produced by an independent auditor can be persisted later by the backend through `persistPrivateCandidateAuditResult`; the auditor-facing continuity service itself receives no mutation tool. `src/supervisor/private-case-orchestration.mjs` owns the retry-safe append/audit/reconstruction/handoff/approval/sent sequence. Its operator CLI accepts only protected files outside the checkout and a transport-owned token from the environment. See `docs/superpowers/specs/2026-09-10-private-case-mutation-orchestration.md`.
+
 Handoff fidelity remains separate from candidate-audit and reconstruction-audit fidelity. Newly compiled private handoffs include a `candidate_lifecycle` component with the current candidate ID/version, parent and lineage, status, current version-bound audit status, previous findings, reconstruction-audit status, and delivery block. Pre-binding immutable handoffs remain readable but carry no inferred approval; their pending candidate must pass the current fresh audit gate.
 
 ## Public/private boundary
@@ -31,6 +33,7 @@ Public Git contains the schemas, code, tests, synthetic fixtures, constitution, 
 The private store keeps separate fields for:
 
 - append-only exact transcript turns (`id`, `exchange_id`, `role`, `text`, `at`, and optional `episode_id`);
+- immutable completion amendments that bind a preserved raw turn to an exact source-artifact byte range and produce a deterministic effective transcript;
 - provenance-aware structured state;
 - state-diff history;
 - tracker and journal data;
@@ -51,6 +54,7 @@ Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains
 | `saveCaseState` / `getCaseState` | Structured case state only |
 | `saveCaseDiff` / `getCaseDiff` | Versioned turn-associated diffs |
 | `appendTranscriptTurn` / `getRecentVerbatim` | Append-only raw turns and exact recent episode |
+| `appendTranscriptCompletionAmendment` / `getTranscriptAmendments` | Persist an immutable completion source plus provenance-bound amendment; read the amendment ledger |
 | `saveCandidateResponse` / `getCandidateResponse` | Immutable original candidate versions and `current_pending` / `current_candidate` resolution |
 | `recordCandidateAudit` / `getCandidateLifecycle` | Persist exact-version audit evidence and expose the current version-bound gate |
 | `reconstructCandidateResponse` | Create an immutable child version in `reconstructed_pending_audit`; never edit or reactivate the parent |
@@ -67,6 +71,8 @@ Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains
 | `exportHandoff` | Export the already-encrypted handoff envelope as a portable private fallback |
 
 Candidate audit code in `src/supervisor/private-candidate-audit.mjs` accepts a candidate ID, resolves the exact private text through `loadCaseContext`, invokes the configured independent auditor, derives rather than trusts the pass/fail status, and persists the resulting evidence against that exact candidate version.
+
+The public schemas for transcript amendments, candidate versions, candidate audits, and backend operation requests are in `schemas/private-case/`. Schemas describe transport/storage shape; runtime validators additionally enforce cross-record integrity, exact byte digests, lineage, independence, and allowed state transitions.
 
 ## Encryption and key-provider model
 
@@ -138,6 +144,8 @@ The process prints a local `/mcp` URL. Authentication is an HTTP bearer token su
 - `get_candidate_response`
 - `get_source_artifact`
 
+No private mutation operation is registered as an MCP tool. Backend/operator mutation runs separately through `npm run private-case:operations` and requires `case:write` or `case:audit` at the existing access boundary.
+
 A fresh client normally performs this exact bootstrap call after transport authentication:
 
 ```json
@@ -165,6 +173,7 @@ The ordinary loopback web server remains unsuitable as a private ChatGPT boundar
 - every currently pending exact candidate version;
 - exact current candidate lineage, audit state, previous findings, and delivery block;
 - the full private transcript archive and tracker/journal snapshot;
+- the preserved raw transcript archive, immutable completion-amendment ledger, and deterministic effective transcript;
 - constitution, runtime, and audit version references;
 - indexes for transcript, tracker, journal, intervention, adverse-event, historical-decision, and source-artifact IDs; and
 - component byte counts/hashes plus contiguous 20,000-byte-or-smaller artifact chunks.

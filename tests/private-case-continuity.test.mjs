@@ -224,10 +224,10 @@ async function makeEnvironment(t, { marker = `PRIVATE-${randomBytes(12).toString
     transcript_turns: transcript,
     candidate_id: CANDIDATE_ID,
     candidate_text: `${marker}\r\nexact pending candidate bytes — preserved “verbatim”`,
-    candidate_metadata: { status: "pending_audit", based_on_turn_id: "E5-user" },
+    candidate_metadata: { status: "pending_audit", based_on_turn_id: "E5-user", producer_context_id: "producer:synthetic:current" },
     candidate_responses: [
-      { id: "candidate:superseded:000", exact_text: `${marker} exact superseded candidate`, metadata: { status: "pending_audit", based_on_turn_id: "E4-user" } },
-      { id: CANDIDATE_ID, exact_text: `${marker}\r\nexact pending candidate bytes — preserved “verbatim”`, metadata: { status: "pending_audit", based_on_turn_id: "E5-user" } }
+      { id: "candidate:superseded:000", exact_text: `${marker} exact superseded candidate`, metadata: { status: "pending_audit", based_on_turn_id: "E4-user", producer_context_id: "producer:synthetic:older" } },
+      { id: CANDIDATE_ID, exact_text: `${marker}\r\nexact pending candidate bytes — preserved “verbatim”`, metadata: { status: "pending_audit", based_on_turn_id: "E5-user", producer_context_id: "producer:synthetic:current" } }
     ],
     tracker_entries: [{
       schema_version: 1,
@@ -557,7 +557,7 @@ test("candidate artifacts are immutable and a newer pending candidate atomically
   const vaultPath = path.join(environment.vaultRoot, `${CASE_ID}.vault.json`);
   const envelopeBefore = JSON.parse(await fs.readFile(vaultPath, "utf8"));
   await assert.rejects(() => service.saveCandidateResponse(CASE_ID, CANDIDATE_ID, "replacement", {}, auth), /exact bytes are immutable/);
-  await service.saveCandidateResponse(CASE_ID, "candidate:pending:002", "second exact response", { status: "pending_audit" }, auth);
+  await service.saveCandidateResponse(CASE_ID, "candidate:pending:002", "second exact response", { status: "pending_audit", producer_context_id: "producer:synthetic:second" }, auth);
   const envelopeAfter = JSON.parse(await fs.readFile(vaultPath, "utf8"));
   assert.deepEqual(envelopeAfter.keyWraps, envelopeBefore.keyWraps);
   assert.notDeepEqual(envelopeAfter.payload, envelopeBefore.payload);

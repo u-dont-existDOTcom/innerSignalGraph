@@ -5,6 +5,7 @@ import { validateTranscriptEntries } from "../case-state/context-window.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { candidateDeliveryGate, isActivePrivateCandidate, projectCandidateLifecycle, validateCandidateLifecycleFields } from "../supervisor/private-candidate-lifecycle.mjs";
 import { chunkExactSourceText, createExactSourceArtifact, validateExactSourceArtifact } from "./exact-source-artifact.mjs";
+import { applyTranscriptAmendments, validateTranscriptAmendments } from "./transcript-amendments.mjs";
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const CANDIDATE_ID = /^[A-Za-z0-9:_-]{1,160}$/;
@@ -13,7 +14,7 @@ const HANDOFF_STATUS = Object.freeze({
   BLOCKED: "BLOCKED_CONTINUATION_UNSAFE",
   READY: "READY_FOR_FRESH_SESSION_TEST"
 });
-export const PRIVATE_HANDOFF_PACKET_VERSION = 1;
+export const PRIVATE_HANDOFF_PACKET_VERSION = 2;
 export const PRIVATE_HANDOFF_CHUNK_BYTES = 20_000;
 
 function bounded(value, name, pattern = null, maximumLength = 500) {
@@ -110,6 +111,8 @@ function validateComponentManifest(packet) {
     journal_entries: packet.journal_entries,
     retrieval_index: packet.retrieval_index
   };
+  if (Object.hasOwn(packet, "raw_transcript_archive")) components.raw_transcript_archive = packet.raw_transcript_archive;
+  if (Object.hasOwn(packet, "transcript_amendments")) components.transcript_amendments = packet.transcript_amendments;
   if (Object.hasOwn(packet, "candidate_lifecycle")) components.candidate_lifecycle = packet.candidate_lifecycle;
   const expected = componentManifest(components);
   if (canonicalJson(packet.manifest.components) !== canonicalJson(expected)) throw new ValidationError("Private handoff component manifest failed its integrity check.");
@@ -127,7 +130,7 @@ export function validateHandoffId(value) {
 
 export function validatePrivateHandoffPacket(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError("Private handoff packet must be an object.");
-  if (value.schema_version !== PRIVATE_HANDOFF_PACKET_VERSION || value.kind !== "inner-signal-private-handoff-packet") throw new ValidationError("Private handoff packet version is invalid.");
+  if (![1, PRIVATE_HANDOFF_PACKET_VERSION].includes(value.schema_version) || value.kind !== "inner-signal-private-handoff-packet") throw new ValidationError("Private handoff packet version is invalid.");
   bounded(value.handoff_id, "handoff_id", HANDOFF_ID);
   bounded(value.case_id, "case_id", CASE_ID);
   bounded(value.created_at, "created_at");
@@ -143,12 +146,23 @@ export function validatePrivateHandoffPacket(value) {
   if (Object.hasOwn(value, "candidate_lifecycle")) validateCandidateLifecycleProjection(value.candidate_lifecycle, value.pending_artifacts.at(-1) ?? null);
   if (!Array.isArray(value.transcript_archive)) throw new ValidationError("Private handoff transcript_archive is invalid.");
   validateTranscriptEntries(value.transcript_archive);
+  if (value.schema_version >= 2) {
+    if (!Array.isArray(value.raw_transcript_archive)) throw new ValidationError("Private handoff raw_transcript_archive is invalid.");
+    validateTranscriptEntries(value.raw_transcript_archive);
+    validateTranscriptAmendments(value.transcript_amendments, { rawTranscript: value.raw_transcript_archive });
+    const effectiveTranscript = applyTranscriptAmendments(value.raw_transcript_archive, value.transcript_amendments);
+    if (canonicalJson(effectiveTranscript) !== canonicalJson(value.transcript_archive)) {
+      throw new ValidationError("Private handoff effective transcript does not match its raw archive and amendments.");
+    }
+  }
   if (!Array.isArray(value.tracker_entries)) throw new ValidationError("Private handoff tracker_entries is invalid.");
   value.tracker_entries.forEach(validateTrackerEntry);
   if (!Array.isArray(value.journal_entries)) throw new ValidationError("Private handoff journal_entries is invalid.");
   value.journal_entries.forEach(validateJournalEntry);
   if (!value.retrieval_index || typeof value.retrieval_index !== "object" || Array.isArray(value.retrieval_index)) throw new ValidationError("Private handoff retrieval_index is invalid.");
-  for (const field of ["transcript_turn_ids", "tracker_entry_ids", "journal_entry_ids", "intervention_ids", "significant_adverse_event_ids", "historical_decision_ids", "source_artifact_ids"]) {
+  const retrievalFields = ["transcript_turn_ids", "tracker_entry_ids", "journal_entry_ids", "intervention_ids", "significant_adverse_event_ids", "historical_decision_ids", "source_artifact_ids"];
+  if (value.schema_version >= 2) retrievalFields.push("transcript_amendment_ids");
+  for (const field of retrievalFields) {
     if (!Array.isArray(value.retrieval_index[field]) || value.retrieval_index[field].some((id) => typeof id !== "string" || !id.trim())) throw new ValidationError(`Private handoff retrieval_index.${field} is invalid.`);
   }
   const expectedTranscriptIds = value.transcript_archive.map((entry) => entry.id);
@@ -159,6 +173,14 @@ export function validatePrivateHandoffPacket(value) {
   if (canonicalJson(value.retrieval_index.tracker_entry_ids) !== canonicalJson(expectedTrackerIds)) throw new ValidationError("Private handoff tracker retrieval index is inconsistent.");
   if (canonicalJson(value.retrieval_index.journal_entry_ids) !== canonicalJson(expectedJournalIds)) throw new ValidationError("Private handoff journal retrieval index is inconsistent.");
   if (canonicalJson(value.retrieval_index.intervention_ids) !== canonicalJson(expectedInterventionIds)) throw new ValidationError("Private handoff intervention retrieval index is inconsistent.");
+  if (value.schema_version >= 2) {
+    const expectedAmendmentIds = value.transcript_amendments.map((entry) => entry.id);
+    if (canonicalJson(value.retrieval_index.transcript_amendment_ids) !== canonicalJson(expectedAmendmentIds)) throw new ValidationError("Private handoff transcript amendment retrieval index is inconsistent.");
+    const sourceIds = new Set(value.retrieval_index.source_artifact_ids);
+    if (value.transcript_amendments.some((entry) => !sourceIds.has(entry.provenance.source_artifact_id))) {
+      throw new ValidationError("Private handoff transcript amendment source is absent from the retrieval index.");
+    }
+  }
   const archivedTurns = new Map(value.transcript_archive.map((entry) => [entry.id, entry]));
   for (const turn of value.recent_verbatim.turns) {
     if (!archivedTurns.has(turn.id) || canonicalJson(archivedTurns.get(turn.id)) !== canonicalJson(turn)) throw new ValidationError("Private handoff recent verbatim is not an exact transcript subset.");
@@ -183,8 +205,12 @@ export function compilePrivateHandoffArtifact({ handoffId, record, recentVerbati
   const pendingArtifacts = record.candidate_responses.filter(isActivePrivateCandidate).map(clone);
   const candidateLifecycle = projectCandidateLifecycle(record.candidate_responses);
   const stateDiff = record.state_diff_history.at(-1) ?? null;
+  const rawTranscript = clone(record.raw_transcript);
+  const transcriptAmendments = clone(record.transcript_amendments ?? []);
+  const effectiveTranscript = clone(applyTranscriptAmendments(rawTranscript, transcriptAmendments, { sourceArtifacts: record.source_artifacts }));
   const retrievalIndex = {
-    transcript_turn_ids: record.raw_transcript.map((turn) => turn.id),
+    transcript_turn_ids: effectiveTranscript.map((turn) => turn.id),
+    transcript_amendment_ids: transcriptAmendments.map((entry) => entry.id),
     tracker_entry_ids: record.tracker_entries.map((entry) => entry.id),
     journal_entry_ids: record.journal_entries.map((entry) => entry.id),
     intervention_ids: record.case_state.intervention_history.map((entry) => entry.id),
@@ -202,10 +228,12 @@ export function compilePrivateHandoffArtifact({ handoffId, record, recentVerbati
     state_diff: clone(stateDiff),
     recent_verbatim: clone(recentVerbatim),
     pending_artifacts: pendingArtifacts,
-    transcript_archive: clone(record.raw_transcript),
+    transcript_archive: effectiveTranscript,
     tracker_entries: clone(record.tracker_entries),
     journal_entries: clone(record.journal_entries),
     retrieval_index: retrievalIndex,
+    raw_transcript_archive: rawTranscript,
+    transcript_amendments: transcriptAmendments,
     candidate_lifecycle: candidateLifecycle
   };
   const packet = validatePrivateHandoffPacket({
