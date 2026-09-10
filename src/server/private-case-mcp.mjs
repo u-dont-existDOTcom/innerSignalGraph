@@ -367,12 +367,6 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
     if (request.method !== "tools/call") return send(res, 200, failure(request.id, -32601, "Method not found."));
 
     const token = bearerToken(req);
-    if (!token) {
-      const challenge = oauthChallenge(normalizedOauth);
-      return send(res, 401, success(request.id, authenticationRequiredResult(challenge)), {
-        "www-authenticate": challenge
-      });
-    }
     try {
       const name = request.params?.name;
       const args = request.params?.arguments ?? {};
@@ -380,7 +374,9 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
       return send(res, 200, success(request.id, toolResult(value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
-        const challenge = oauthChallenge(normalizedOauth, "insufficient_scope", "The access token is invalid or is not authorized for this case and scope.");
+        const challenge = token == null
+          ? oauthChallenge(normalizedOauth)
+          : oauthChallenge(normalizedOauth, "insufficient_scope", "The access token is invalid or is not authorized for this case and scope.");
         return send(res, 401, success(request.id, authenticationRequiredResult(challenge)), {
           "www-authenticate": challenge
         });
