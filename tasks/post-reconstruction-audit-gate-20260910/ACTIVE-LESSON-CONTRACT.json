@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "taskId": "post-reconstruction-audit-gate-20260910",
-  "status": "CURRENT",
+  "status": "COMPLETE",
   "activatedAt": "2026-09-10",
   "lessons": [
     {
@@ -66,6 +66,16 @@
       "The dirty older checkout was preserved and an isolated worktree was created from the exact remote head.",
       "Repository authority, current state, active task, universal lesson index, candidate store, audit adapter, handoff compiler, continuity gate, repair harness, and termination rules were inspected.",
       "The current task directly authorizes the new post-reconstruction audit policy while preserving the existing provider-role policy and public/private boundary."
+    ]
+  },
+  "closeout": {
+    "status": "PASS",
+    "evidence": [
+      "All eight required lifecycle regressions pass in the 22/22 private candidate and continuity acceptance suite.",
+      "The constitution/context and audit-harness set passes 56/56; therapy lesson verification passes 5/5.",
+      "The complete Node 24.18.0 package gate passes 1,047/1,047 tests and all repository/publication hygiene checks.",
+      "Implementation head 41c0e0f07aa0c42086ca69ddb3bac1804f7b9b76 passed workflow-policy, deterministic-package, codeql-javascript, and CodeQL before the documentation-only closeout commit.",
+      "No real private candidate was read, audited, reconstructed, approved, or delivered."
     ]
   }
 }

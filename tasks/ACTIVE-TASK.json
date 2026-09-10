@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "taskId": "post-reconstruction-audit-gate-20260910",
   "title": "Persist the post-reconstruction audit gate",
-  "status": "candidate_verified_pending_hosted",
+  "status": "complete",
   "exclusive": false,
   "startedAt": "2026-09-10",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
