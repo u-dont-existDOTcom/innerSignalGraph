@@ -7,6 +7,7 @@ import { applyCaseAudit } from "../src/case-formulation/run.mjs";
 import { caseSnapshotGenerationSchema, caseAuditGenerationSchema } from "../src/case-formulation/schemas.mjs";
 import { caseExtractionPrompt } from "../src/prompts/case-extract.mjs";
 import { caseAuditPrompt } from "../src/prompts/case-audit.mjs";
+import { longitudinalClinicalRules } from "../src/prompts/common.mjs";
 
 function observation(id, evidence) {
   return { id, statement: evidence, evidence };
@@ -135,6 +136,12 @@ test("target invalidation preserves true observations while withdrawing the symp
   assert.deepEqual(audited.direct_observations, snapshot.direct_observations);
 });
 
+test("shared longitudinal rules no longer force functional-hypothesis pursuit", () => {
+  assert.match(longitudinalClinicalRules, /Do not automatically turn it into the therapeutic agenda/i);
+  assert.match(longitudinalClinicalRules, /If no, preserve it as background and continue upstream/i);
+  assert.match(longitudinalClinicalRules, /eligible only when plausible answers could change the needed Adult protection/i);
+});
+
 test("prompt contract contains both downstream-tangent failure and the discriminating control case", () => {
   const context = {
     priorCaseSnapshot: null,
@@ -145,8 +152,7 @@ test("prompt contract contains both downstream-tangent failure and the discrimin
     priorInterventionContract: null,
     recentTranscript: "Synthetic transcript.",
     userMessage: "I feel shame after rejection.",
-    userFacts: [],
-    durableCaseContext: null
+    userFacts: []
   };
 
   const extraction = caseExtractionPrompt(context).system;
