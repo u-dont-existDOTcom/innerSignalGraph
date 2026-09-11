@@ -2,6 +2,12 @@
 
 Updated: 2026-09-11
 
+## Hypnosis / current inner-child synchronization — r03 candidate
+
+Task `hypnosis-ic-sync-r03-20260911` on `task/hypnosis-ic-sync-r03-20260911` synchronizes the new owner-pasted hypnosis source with the current inner-child guide and repairs PR #51’s source/behavior deficiencies identified in draft PR #53. Read its task README and IMPLEMENTATION before interpreting the new map. Article authority remains in joel-articles; the exact binding and actual text index are `reference/hypnosis/source-binding.json` and `knowledge.json`.
+
+The v2 hypothesis is a source-linked educational/consultation layer plus explicit evidence-bearing phase control, not another flat priority list. Actual JS tests cover the prior failures. No installed graph, compiled IC/SOM bundle, private case, stable release or live voice service changed. Independent semantic and real model/voice acceptance are still required before promotion. The other task checkpoints below retain their own authority and scope.
+
 ## Automatic private-turn runtime orchestration (merged PR #49)
 
 Task `automatic-runtime-orchestration-20260910` remains active on branch `codex/automatic-runtime-orchestration-20260910`. Generic implementation `a2689b6` and the completed nested Louka v3 checkpoint `5564a2d` are combined by owner-approved merge `b97362d1b9948d0cbe7d07cfc443c73146b810d8`; a later content-free Louka receipt correction was integrated at containing head `49cacebff33bb99aa525a38bf8af6811991ac935`. Its recovery ledger is `tasks/automatic-runtime-orchestration-20260910/INTEGRATION.md`; the owner outcome, execution directive, and active lesson contract are in the same directory. No real case mutation or model audit was performed by the runtime-development task.
