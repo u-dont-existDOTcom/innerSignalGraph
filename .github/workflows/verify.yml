@@ -35,6 +35,22 @@ jobs:
       - name: Audit repository policy
         run: npm run audit:repository
 
+      - name: Generate canonical authoring projection artifact
+        run: |
+          npm run authoring:project
+          tar -czf /tmp/reparenting-authoring-projection.tar.gz authoring/obsidian/current docs/INNER-CHILD-THERAPY-MAP.md
+
+      - name: Upload canonical authoring projection artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: reparenting-authoring-projection
+          path: /tmp/reparenting-authoring-projection.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Restore generated projection before normal verification
+        run: git restore authoring/obsidian/current docs/INNER-CHILD-THERAPY-MAP.md
+
       - name: Run deterministic package gate
         run: npm run verify
 
