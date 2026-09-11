@@ -1,8 +1,8 @@
 # InnerSignal next-conversation handoff — 2026-09-07
 
-Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
+Use this packet to resume without relying on chat memory. **First read the current `main` head and PR state from GitHub**, because later commits may advance beyond the baseline recorded here.
 
-## Current continuation — automatic private-turn orchestration is locally verified for draft PR #49
+## Current continuation — automatic private-turn orchestration is merged from PR #49
 
 Task `automatic-runtime-orchestration-20260910` remains active, with the completed Louka-v3 checkpoint nested beneath it. Generic implementation `a2689b6` and Louka checkpoint `5564a2d` are combined by the explicitly owner-approved merge `b97362d1b9948d0cbe7d07cfc443c73146b810d8`. Read `tasks/automatic-runtime-orchestration-20260910/INTEGRATION.md`, `state/CODEX-CURRENT-STATE.md`, and `docs/superpowers/specs/2026-09-10-automatic-private-turn-orchestration.md` before changing the runtime.
 
@@ -10,11 +10,11 @@ One ordinary `/v1/therapy/respond` request now persists exact intake and authori
 
 External identity/time-unavailable audit evidence remains eligible only to preserve a blocking FAIL and can never approve. PASS requires a known, actually available independent auditor whose context differs from every producer/modifier context. Sealed Claude CLI auditing forces tool, filesystem-capable integration, persistence, Chrome, extra-turn, safe-mode, and MCP isolation even when ordinary CLI isolation is disabled; incompatible clients fail closed. `InnerSignal Private Continuity` remains unchanged and read-only.
 
-The exact merge commit passes the complete Node 24.18.0 package gate with 1,074/1,074 tests, graph regressions 29/29, therapy lessons 5/5, repository audit with zero errors, and publication audit with zero findings. Implementation-containing PR head `49cacebff33bb99aa525a38bf8af6811991ac935` passed workflow-policy run `34551551419`, deterministic-package run `34551551392`, codeql-javascript run `34551551480`, and nested CodeQL check `103115634808`. GitHub is authoritative for any later containing head and its checks. Keep PR #49 draft/open/unmerged. Do not use real Louka material for runtime development; the separately authorized v3 audit and delivery are complete as described below.
+The exact composition passes the complete Node 24.18.0 package gate with 1,074/1,074 tests, graph regressions 29/29, therapy lessons 5/5, repository audit with zero errors, and publication audit with zero findings. Exact PR head `b8721062de98f754d3d672167088de65ba97354e` passed workflow-policy, deterministic-package, codeql-javascript, and nested CodeQL. Owner-authorized PR #49 was squash-merged to `main` as `853235a00f2cc8fee599fd6214fbbfcbd2e4a8bf`; its tree exactly matches the verified PR head, and the merge-triggered Repository workflow policy, Verify, and CodeQL workflows all passed. Do not use real Louka material for runtime development; the separately authorized v3 audit and delivery are complete as described below.
 
-## Current continuation — maximum-cycle private v3 passed independent audit and was delivered on draft PR #49
+## Current continuation — maximum-cycle private v3 passed independent audit and was delivered
 
-Fetch the current head of draft PR #49 on `codex/private-case-import-20260909`, then read `tasks/private-case-v3-repair-cycle2-20260910/INTEGRATION.md`, its content-free `PRIVATE-OPERATION-RECEIPT.json`, `docs/PRIVATE-CASE-CONTINUITY.md`, and the current state file. The complementary backend/controller mutation path is implemented and deployed. `InnerSignal Private Continuity` deliberately remains the same ten-tool read-only MCP.
+Read merged PR #49 commit `853235a00f2cc8fee599fd6214fbbfcbd2e4a8bf`, `tasks/private-case-v3-repair-cycle2-20260910/INTEGRATION.md`, its content-free `PRIVATE-OPERATION-RECEIPT.json`, `docs/PRIVATE-CASE-CONTINUITY.md`, and the current state file. The complementary backend/controller mutation path is implemented and deployed. `InnerSignal Private Continuity` deliberately remains the same ten-tool read-only MCP.
 
 The private completion remains an immutable exact source artifact plus a provenance-bearing amendment; the original raw turn was not overwritten. Candidate v1 `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051` and candidate v2 `candidate:repair:f45e8a19-47b5-49fb-8a14-c5c66482875c` preserve their exact bytes. The externally supplied fresh-independent v2 FAIL is persisted as audit `audit:993b2180-c6e2-4dce-8e51-6d613fa731a2`, bound specifically to v2 version 2 and its exact text, with unavailable auditor identity/time represented explicitly rather than invented; it can never be approval-sufficient. V2 is superseded, not approved, and not sent.
 
@@ -22,19 +22,19 @@ Candidate v3 `candidate:repair:abdd6d89-68fa-4e4e-bb89-96b7d206327b` remains imm
 
 The prior schema-v2 handoff is immutable historical evidence. A new private schema-v3 handoff contains zero pending artifacts and binds the sent response to the candidate ID/version/digest, approving audit, exact assistant turn, replied-to user turn, and delivery time. Its identifier is intentionally excluded from Git and was returned only in the owner closeout. The next action is `AWAIT_NEXT_USER_TURN`; do not reconstruct, re-audit, or redeliver v3.
 
-Keep PR #49 draft/open/unmerged. Do not publish private material or private-derived hashes, weaken the read-only MCP, deploy the public app, install/promote stable, or claim clinical validation.
+PR #49 is merged. Do not publish private material or private-derived hashes, weaken the read-only MCP, deploy the public app, install/promote stable, or claim clinical validation.
 
-## Historical contract — post-reconstruction audit gate on draft PR #49
+## Historical contract — post-reconstruction audit gate from PR #49
 
 This section is historical for the real case and is superseded by the completed v3 continuation above; its lifecycle rules remain binding.
 
 Read `tasks/post-reconstruction-audit-gate-20260910/INTEGRATION.md`, its owner outcome/directive/active lesson contract, `docs/PRIVATE-CASE-CONTINUITY.md`, and `src/supervisor/private-candidate-lifecycle.mjs` after fetching the current PR #49 head. The binding lifecycle makes audit approval exact-candidate-version-specific: substantive repair creates a new immutable child, clears approval, supersedes the parent, and requires a fresh independent audit of the new ID/version/bytes before delivery. The reconstruction writer cannot self-certify, self-critique cannot create delivery approval, and a third repair is rejected after two failed cycles in favor of the smallest discriminator, explicit uncertainty, or blocked delivery.
 
-Keep these statuses separate from handoff correctness. The original candidate state documented by this historical task was later superseded through the bounded v2/v3 lifecycle and completed delivery described above. Keep PR #49 draft/open/unmerged; do not deploy the public app, install/promote stable, publish private content, or claim clinical validation.
+Keep these statuses separate from handoff correctness. The original candidate state documented by this historical task was later superseded through the bounded v2/v3 lifecycle and completed delivery described above. PR #49 is merged; do not deploy the public app, install/promote stable, publish private content, or claim clinical validation.
 
-## Historical checkpoint — Universal Handoff Binding v1.0 is `FRESH_SESSION_GREEN` on draft PR #49
+## Historical checkpoint — Universal Handoff Binding v1.0 is `FRESH_SESSION_GREEN` from PR #49
 
-Read `tasks/real-private-case-import-20260909/ACTIVE-LESSON-CONTRACT.json`, `tasks/real-private-case-import-20260909/INTEGRATION.md`, `docs/superpowers/specs/2026-09-09-inner-signal-universal-handoff-binding.md`, and `docs/PRIVATE-CASE-CONTINUITY.md` before acting. Fetch the current head of draft PR #49 on `codex/private-case-import-20260909`; keep it draft/open/unmerged. The owner authorized deployment of the private continuity service only; do not deploy the public app, install/promote stable, or merge.
+Read `tasks/real-private-case-import-20260909/ACTIVE-LESSON-CONTRACT.json`, `tasks/real-private-case-import-20260909/INTEGRATION.md`, `docs/superpowers/specs/2026-09-09-inner-signal-universal-handoff-binding.md`, and `docs/PRIVATE-CASE-CONTINUITY.md` before acting. PR #49 is merged. The owner authorized deployment of the private continuity service only; do not deploy the public app, install/promote stable, or publish private content.
 
 The repository candidate now treats `load_handoff({"handoff_id":"<stable-private-handoff-id>"})` as the single normal recovery entry. The handoff is an immutable AES-256-GCM encrypted exact snapshot outside Git, not a public handoff summary. It includes canonical state, frozen diff, exact active episode, exact pending candidates, the private transcript archive, tracker/journal data, retrieval indexes, and constitution/runtime/audit version references. An authorized new process can resolve the opaque ID through a private locator, obtain case-scoped authorization and key material, decrypt it, validate deterministic chunk/component integrity, and recover the therapeutic steering state without Session A memory. `get_state_diff`, `get_recent_verbatim`, `get_pending_candidate`, `retrieve_case_evidence`, `get_tracker_window`, and `get_journal_entries` are the narrower retrieval tools.
 
@@ -44,7 +44,7 @@ The real encrypted handoff passes semantic episode completeness and exact separa
 
 ## Historical checkpoint — real private import and fresh-session gate
 
-Read `tasks/real-private-case-import-20260909/INTEGRATION.md` and `docs/PRIVATE-CASE-CONTINUITY.md`, then fetch the current task PR head. PR #46 is merged history; do not reopen it. Continue only on the new draft PR for `codex/private-case-import-20260909`. Do not merge, deploy the public app, install, or promote stable.
+Read `tasks/real-private-case-import-20260909/INTEGRATION.md` and `docs/PRIVATE-CASE-CONTINUITY.md`, then fetch current `main`. PR #46 and PR #49 are merged history; do not reopen them. Do not deploy the public app, install, or promote stable.
 
 The real owner-approved source has been imported into an encrypted private store outside Git. A separate process verified exact round-trip of the complete source, the human-gold baseline, later Correction B state/diff, the six supplied recent turns, the exact pending candidate, current episode, and older source retrieval by stable provenance. Public code now supports immutable exact source artifacts with contiguous byte-range manifests and an authorized `get_source_artifact` MCP read. Private source, credentials, hashes, and payload receipts remain outside Git.
 

@@ -1,6 +1,6 @@
 # Automatic private-turn runtime orchestration
 
-Status: active on branch `codex/automatic-runtime-orchestration-20260910`. The generic implementation checkpoint `a2689b6` and completed Louka v3 checkpoint `5564a2d` were combined in the owner-approved two-parent merge `b97362d1b9948d0cbe7d07cfc443c73146b810d8`. The later content-free Louka receipt correction was integrated without runtime overlap, and implementation-containing PR head `49cacebff33bb99aa525a38bf8af6811991ac935` passed the complete local and hosted gates. PR #49 remains draft/open/unmerged.
+Status: active after merged PR #49. The generic implementation checkpoint `a2689b6` and completed Louka v3 checkpoint `5564a2d` were combined in the owner-approved two-parent merge `b97362d1b9948d0cbe7d07cfc443c73146b810d8`. Exact final PR head `b8721062de98f754d3d672167088de65ba97354e` passed all hosted gates and was owner-authorized for merge. Protected `main` rejected a merge commit, so GitHub squash-merged the exact tree as `853235a00f2cc8fee599fd6214fbbfcbd2e4a8bf`; all merge-triggered workflows passed. The task remains active, with the completed Louka checkpoint nested beneath it, as explicitly directed by the owner.
 
 ## Objective
 
@@ -8,13 +8,13 @@ Make an ordinary InnerSignal message automatically traverse private intake persi
 
 ## Coordination boundary
 
-The separate authorized Louka task completed and published only its public-safe state at `5564a2d`. This task did not read, write, audit, or reconstruct that case. It implements and tests only generic code with synthetic fixtures and preserves the separately completed v3 state: maximum repair cycle 2, pending a fresh independent audit, unapproved, and unsent.
+The separate authorized Louka task completed and published only its public-safe state at `5564a2d`. This runtime-development task did not read, write, audit, or reconstruct that case. It implements and tests only generic code with synthetic fixtures. A separate authorized session later completed the exact v3 independent audit, approval, transcript-bound delivery, and private schema-v3 handoff; no private content entered Git.
 
 ## Current authority resolution
 
 An older supplied note requested a 48-call A/B/C discovery experiment before making multi-model behavior mandatory. The owner's later direct instruction now explicitly requires this production runtime path. That newer instruction controls this task; the older experiment remains optional future evaluation and is neither a completion prerequisite nor authorization for paid calls or real-case development traffic.
 
-## Recovery frontier
+## Completed recovery path
 
 1. Inspect the existing private store, lifecycle controller, provider/session seam, and server route.
 2. Write the architecture and persisted state contract.
@@ -22,7 +22,7 @@ An older supplied note requested a 48-call A/B/C discovery experiment before mak
 4. Wire the production therapy route while preserving the read-only continuity service.
 5. Add the required synthetic end-to-end, failure, isolation, persistence, and no-GitHub tests.
 6. Integrate the separately completed Louka v3 durable result without exposing private material.
-7. Run focused and full verification, publication audit, update this handoff, commit, and update draft PR #49.
+7. Run focused and full verification, publication audit, update this handoff, and merge PR #49 through the protected branch.
 
 No completion claim is valid until all seven steps have evidence.
 
@@ -54,5 +54,5 @@ No completion claim is valid until all seven steps have evidence.
 ## Remaining frontier
 
 1. Keep the automatic-runtime task active with the completed Louka checkpoint nested beneath it, as explicitly approved by the owner.
-2. Keep PR #49 draft/open/unmerged. GitHub is authoritative for the final documentation-only containing head and its checks.
-3. The real v3 remains outside this task's audit/delivery scope and still requires a fresh independent audit before approval or delivery.
+2. PR #49 is merged at `853235a00f2cc8fee599fd6214fbbfcbd2e4a8bf`; GitHub is authoritative for later `main` state.
+3. The real v3 remains outside this runtime-development task's mutation scope; its separately authorized audit, approval, and exact delivery are complete.
