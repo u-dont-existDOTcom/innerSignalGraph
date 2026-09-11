@@ -31,7 +31,8 @@ test("longitudinal rules detect inadequate examples, repeated questions, and cli
   assert.match(longitudinalClinicalRules, /Do not re-ask known information/u);
   assert.match(longitudinalClinicalRules, /client-generated functional hypothesis more evidential priority/u);
   assert.match(longitudinalClinicalRules, /what observation would count against the hypothesis/u);
-  assert.match(longitudinalClinicalRules, /self-love, self-respect, or reduced self-rejection/u);
+  assert.match(longitudinalClinicalRules, /self-love, self-respect, reduced self-rejection, or reparenting/u);
+  assert.match(longitudinalClinicalRules, /If no, preserve it as background and continue upstream/u);
 });
 
 test("case audit receives the longitudinal invariants before routing", () => {
