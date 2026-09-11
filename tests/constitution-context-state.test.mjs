@@ -52,9 +52,10 @@ test("public synthetic gold state validates and exposes evidence without transcr
   assert.equal(state.constitution_ref.version, "inner-signal-constitution-v1");
 });
 
-test("recent context preserves at least three exact exchanges and extends through the current episode", async () => {
+test("recent context preserves the exact active episode from its declared semantic boundary", async () => {
   const state = await loadJson("tasks/constitution-context-audit-20260908/synthetic-case-state.json");
   state.items.find((item) => item.id === "CS-001").source = { kind: "synthetic_turn", ref: "E1-user", turn_id: "E1-user" };
+  state.current_episode.started_turn_id = "E2-user";
   const transcript = [
     turn("E1", "user", "old goal"), turn("E1", "assistant", "old answer"),
     turn("E2", "user", "episode starts", "EP-001"), turn("E2", "assistant", "first episode answer", "EP-001"),
@@ -62,9 +63,14 @@ test("recent context preserves at least three exact exchanges and extends throug
     turn("E4", "user", "fourth user", "EP-001"), turn("E4", "assistant", "fourth answer", "EP-001"),
     turn("E5", "user", "latest user", "EP-001"), turn("E5", "assistant", "latest answer", "EP-001")
   ];
-  const selected = selectRecentVerbatimWindow(transcript, { currentEpisodeId: "EP-001" });
+  const selected = selectRecentVerbatimWindow(transcript, {
+    currentEpisodeId: "EP-001",
+    currentEpisodeStartTurnId: "E2-user",
+    requireCompleteEpisode: true
+  });
   assert.equal(selected.turns[0].id, "E2-user");
-  assert.equal(selected.extended_for_current_episode, true);
+  assert.equal(selected.episode_completeness.complete, true);
+  assert.equal(selected.episode_completeness.expected_turn_count, 8);
   assert.match(formatVerbatimWindow(selected), /^USER: episode starts/);
   const context = buildDurableCaseContext({ caseId: state.case_id, caseState: state, transcriptEntries: transcript, currentUserMessage: "now" });
   assert.equal(context.lossy_summary_is_authority, false);
@@ -113,7 +119,7 @@ test("compacted context preserves the same steering-critical decision projection
   const compactedContext = buildDurableCaseContext({ caseState: state, transcriptEntries: compactedVerbatim });
 
   assert.deepEqual(decisionRelevantProjection(compactedContext), decisionRelevantProjection(fullContext));
-  assert.equal(compactedContext.recent_verbatim_window.turns.length, 6);
+  assert.deepEqual(compactedContext.recent_verbatim_window.turns.map((entry) => entry.id), ["T09-user", "T09-assistant"]);
   assert.ok(compactedContext.targeted_retrieval_requests.some((item) => item.turn_id === "T01"));
   const requiredDomains = new Set(state.items.map((item) => item.domain));
   for (const domain of ["long_term_target", "care_history", "delivery", "probe_history", "sleep", "thc_sleep", "romance_readiness", "pain_hypothesis", "family_safety", "connection"]) assert.ok(requiredDomains.has(domain));
@@ -270,6 +276,21 @@ test("case-state endpoints fail closed without storage and expose only structure
     assert.equal((await store.load("case-one")).raw_transcript[0].text, "I want to approach the younger part with care, but I still do not trust the exercise.");
     assert.equal(Object.hasOwn(value, "journal_entries"), false);
     assert.equal(Object.hasOwn(value, "raw_transcript"), false);
+    const handoff = await fetch(`${base}/v1/case/handoff`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ caseId: "case-one" })
+    });
+    const handoffValue = await handoff.json();
+    assert.equal(handoff.status, 200, JSON.stringify(handoffValue));
+    assert.equal(handoffValue.handoff_status, "BLOCKED_CONTINUATION_UNSAFE");
+    assert.equal(handoffValue.local_round_trip_verified, true);
+    assert.equal(handoffValue.fresh_session_status, "PENDING_FRESH_SESSION");
+    assert.ok(handoffValue.continuation_safety.failures.some((failure) => /candidate response|older raw evidence|active therapy episode/.test(failure)));
+    const exported = await fetch(`${base}/v1/case/handoff/export?${new URLSearchParams({ caseId: "case-one", handoffId: handoffValue.handoff_id })}`);
+    const exportBytes = Buffer.from(await exported.arrayBuffer());
+    assert.equal(exported.status, 200);
+    assert.match(exported.headers.get("content-type"), /application\/vnd\.inner-signal\.private-handoff\+json/);
+    assert.equal(exportBytes.includes(Buffer.from("I want to approach the younger part with care")), false);
   } finally {
     await new Promise((resolve) => server.close(resolve));
     store.close();
@@ -277,7 +298,7 @@ test("case-state endpoints fail closed without storage and expose only structure
   }
 });
 
-test("web client persists only safe settings and exposes state, diff, tracker, and legacy-data controls", async () => {
+test("web client persists only safe settings and exposes state, diff, tracker, handoff, and legacy-data controls", async () => {
   const [script, html] = await Promise.all([
     readFile(path.join(root, "apps/web/app.js"), "utf8"),
     readFile(path.join(root, "apps/web/index.html"), "utf8")
@@ -285,8 +306,10 @@ test("web client persists only safe settings and exposes state, diff, tracker, a
   assert.match(script, /inner-signal-settings-v1/);
   assert.doesNotMatch(script, /setItem\(STORAGE_KEY, JSON\.stringify\(state\)\)/);
   assert.match(script, /JSON\.stringify\(\{ settings: state\.settings, caseId: state\.caseId \}\)/);
-  for (const label of ["Current saved state", "What changed this turn", "Trajectory entry", "Journal or dream note"]) assert.match(html, new RegExp(label));
+  for (const label of ["Current saved state", "What changed this turn", "Create Handoff", "Export Private Handoff", "Trajectory entry", "Journal or dream note"]) assert.match(html, new RegExp(label));
   assert.match(html, /Legacy browser-local therapy data was detected/);
+  assert.match(script, /not complete until FRESH_SESSION_GREEN/);
+  assert.doesNotMatch(script, /localStorage[^\n]*lastHandoffId/);
 });
 
 test("steering and compaction supplement remains synthetic and covers consent, route, telos, method identity, and poisoning", async () => {

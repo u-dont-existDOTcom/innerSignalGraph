@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "CD-INNERSIGNAL-PRIVATE-CASE-MUTATION-ORCHESTRATION-20260910-R1",
+  "taskId": "private-case-mutation-orchestration-20260910",
+  "ownerOutcomeId": "OO-INNERSIGNAL-PRIVATE-CASE-MUTATION-ORCHESTRATION-20260910",
+  "ownerOutcomeEpoch": 1,
+  "strategyId": "SEPARATE_READ_ONLY_CONTINUITY_FROM_PRIVATE_MUTATION_CONTROLLER",
+  "executionObjective": "Add append-only transcript amendments, a schema-validated private mutation controller, retry-safe candidate/audit/handoff orchestration, and complete synthetic enforcement; then apply the authorized real private sequence outside Git and publish only its safe state projection.",
+  "allowedActions": [
+    "extend draft PR 49 on codex/private-case-import-20260909",
+    "read the owner-authorized private audit conversation and existing encrypted private store",
+    "write private operation payloads, receipts, and encrypted case artifacts outside the public checkout",
+    "add generic code, schemas, synthetic fixtures/tests, architecture documentation, and public-safe recovery state",
+    "deploy or run only the complementary private mutation/controller path needed to apply this case update",
+    "push verified commits to the existing draft PR branch"
+  ],
+  "forbiddenActions": [
+    "add mutation tools to InnerSignal Private Continuity",
+    "commit or print private source, candidate text, audit prose, credentials, tokens, or private-derived hashes",
+    "overwrite the original raw transcript turn or candidate v1",
+    "audit or approve candidate v2 in the producer context",
+    "mark candidate v2 sent",
+    "merge PR 49, deploy the public app, install, promote stable, or claim clinical validation"
+  ],
+  "requiredEvidence": [
+    "read-only continuity tool-list non-regression",
+    "schema validation and append-only transcript-amendment tests",
+    "candidate byte immutability and exact-version audit binding tests",
+    "producer/auditor separation, repair-induced audit, approval/sent, and two-cycle limit tests",
+    "retry-safe private mutation orchestration and fresh-handoff tests",
+    "private receipt proving raw turn and v1 preservation plus v2 pending-audit retrieval",
+    "focused and complete package verification, publication audit, and exact-head hosted checks"
+  ]
+}

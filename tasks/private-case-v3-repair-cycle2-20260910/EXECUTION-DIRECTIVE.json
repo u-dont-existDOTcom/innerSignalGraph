@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "CD-INNERSIGNAL-PRIVATE-CASE-V3-REPAIR-CYCLE2-20260910-R1",
+  "taskId": "private-case-v3-repair-cycle2-20260910",
+  "ownerOutcomeId": "OO-INNERSIGNAL-PRIVATE-CASE-V3-REPAIR-CYCLE2-20260910",
+  "ownerOutcomeEpoch": 1,
+  "strategyId": "TRUTHFUL_EXTERNAL_FAIL_THEN_MAXIMUM_CYCLE_RECONSTRUCTION",
+  "executionObjective": "Extend the audit evidence contract to truthfully accept an externally supplied failed audit when the external auditor identifier and completion time are unavailable, while keeping approval fail-closed; then perform the exact private v2-fail and v3-reconstruction sequence and publish only a content-free receipt and handoff pointer.",
+  "allowedActions": [
+    "extend draft PR 49 on codex/private-case-import-20260909",
+    "add backward-compatible generic audit provenance schema and lifecycle enforcement",
+    "add synthetic tests for unavailable external auditor identity and cycle-2 reconstruction",
+    "write authorized private operation payloads in mode-0600 files outside the public checkout",
+    "persist the owner-supplied exact audit result and exact candidate in encrypted private storage",
+    "deploy the complementary private controller and unchanged read-only continuity service",
+    "push verified commits to the existing draft PR branch"
+  ],
+  "forbiddenActions": [
+    "add a mutation operation to InnerSignal Private Continuity",
+    "invent an external auditor or session identifier or an audit-completion time",
+    "let unknown-identity external evidence approve a candidate",
+    "commit, print, comment, or log private text, private audit prose, or private-derived hashes publicly",
+    "audit, approve, or send v3 from its producer context",
+    "create a further repair candidate beyond repair cycle 2",
+    "merge PR 49 or deploy the public app"
+  ],
+  "requiredEvidence": [
+    "backward-compatible schema and focused lifecycle tests",
+    "synthetic external-FAIL provenance plus approval fail-closed test",
+    "synthetic cycle-2 reconstruction and third-repair rejection test",
+    "exact private v2 binding and immutable v3 lineage verification",
+    "private narrow-delta and unchanged-state verification",
+    "read-only continuity tool-list and exact-v3 retrieval verification",
+    "focused and complete package verification, publication audit, and exact-head GitHub checks"
+  ]
+}

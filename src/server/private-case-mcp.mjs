@@ -1,9 +1,11 @@
 import http from "node:http";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
-import { CaseNotContinuationSafeError, PrivateCaseAccessDeniedError, PrivateCaseKeyUnavailableError } from "../storage/private-case-access.mjs";
+import { CaseNotContinuationSafeError, PRIVATE_CASE_SCOPES, PrivateCaseAccessDeniedError, PrivateCaseKeyUnavailableError } from "../storage/private-case-access.mjs";
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const MAX_BODY_BYTES = 1_000_000;
+const CASE_ID_SCHEMA = Object.freeze({ type: "string", pattern: "^[a-z0-9][a-z0-9_-]{0,79}$" });
+const HANDOFF_ID_SCHEMA = Object.freeze({ type: "string", pattern: "^handoff:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" });
 
 const headers = (extra = {}) => ({
   "cache-control": "no-store",
@@ -51,7 +53,19 @@ function toolResult(value) {
   };
 }
 
-const TOOLS = Object.freeze([
+const TOOL_DEFINITIONS = Object.freeze([
+  {
+    name: "load_handoff",
+    title: "Load private InnerSignal handoff",
+    description: "Primary fresh-session bootstrap. Resolve and verify an authorized immutable encrypted handoff using only its stable handoff identifier.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["handoff_id"],
+      properties: { handoff_id: HANDOFF_ID_SCHEMA }
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
   {
     name: "load_case_context",
     title: "Load private InnerSignal case context",
@@ -68,16 +82,26 @@ const TOOLS = Object.freeze([
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   },
   {
-    name: "get_recent_verbatim",
-    title: "Inspect exact recent private episode",
-    description: "Load exact authorized recent user-assistant turns, with at least three complete exchanges and the complete active therapeutic episode.",
+    name: "get_state_diff",
+    title: "Get private case state diff",
+    description: "Load the current case diff or the exact diff frozen into a private handoff.",
     inputSchema: {
       type: "object",
       additionalProperties: false,
-      required: ["case_id"],
-      properties: {
-        case_id: { type: "string", pattern: "^[a-z0-9][a-z0-9_-]{0,79}$" }
-      }
+      properties: { case_id: CASE_ID_SCHEMA, handoff_id: HANDOFF_ID_SCHEMA },
+      oneOf: [{ required: ["case_id"] }, { required: ["handoff_id"] }]
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
+    name: "get_recent_verbatim",
+    title: "Inspect exact recent private episode",
+    description: "Load the exact authorized active therapy episode from its declared start through the latest turn, without a fixed exchange-count threshold.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: { case_id: CASE_ID_SCHEMA, handoff_id: HANDOFF_ID_SCHEMA },
+      oneOf: [{ required: ["case_id"] }, { required: ["handoff_id"] }]
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   },
@@ -104,6 +128,57 @@ const TOOLS = Object.freeze([
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   },
   {
+    name: "get_pending_candidate",
+    title: "Get exact pending private candidate",
+    description: "Resolve an exact pending candidate by candidate identifier or from an immutable handoff; never returns a summary or hash substitute.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        candidate_id: { type: "string", pattern: "^[A-Za-z0-9:_-]{1,160}$" },
+        handoff_id: HANDOFF_ID_SCHEMA
+      },
+      oneOf: [{ required: ["candidate_id"] }, { required: ["handoff_id"] }]
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
+    name: "get_tracker_window",
+    title: "Get private tracker window",
+    description: "Load exact authorized tracker entries and a descriptive, non-causal summary from a case or frozen handoff.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        case_id: CASE_ID_SCHEMA,
+        handoff_id: HANDOFF_ID_SCHEMA,
+        variables: { type: "array", items: { type: "string" }, maxItems: 26 },
+        time_range: { type: "object", additionalProperties: false, properties: { from: { type: "string" }, to: { type: "string" } } },
+        limit: { type: "integer", minimum: 1, maximum: 180, default: 180 }
+      },
+      oneOf: [{ required: ["case_id"] }, { required: ["handoff_id"] }]
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
+    name: "get_journal_entries",
+    title: "Get private journal entries",
+    description: "Search exact authorized journal or dream entries by query and time range without promoting them into settled case facts.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        case_id: CASE_ID_SCHEMA,
+        handoff_id: HANDOFF_ID_SCHEMA,
+        query: { type: "string" },
+        time_range: { type: "object", additionalProperties: false, properties: { from: { type: "string" }, to: { type: "string" } } },
+        limit: { type: "integer", minimum: 1, maximum: 200, default: 200 }
+      },
+      oneOf: [{ required: ["case_id"] }, { required: ["handoff_id"] }]
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
     name: "get_candidate_response",
     title: "Get exact private candidate response",
     description: "Resolve an authorized exact candidate response by stable candidate ID or current_pending; never returns a summary or hash substitute.",
@@ -117,16 +192,96 @@ const TOOLS = Object.freeze([
       }
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
+    name: "get_source_artifact",
+    title: "Get exact private source artifact",
+    description: "Resolve an authorized exact private source artifact by stable source identifier, including its lossless byte-range manifest.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["case_id", "source_artifact_id"],
+      properties: {
+        case_id: { type: "string", pattern: "^[a-z0-9][a-z0-9_-]{0,79}$" },
+        source_artifact_id: { type: "string", pattern: "^[A-Za-z0-9:_-]{1,160}$" }
+      }
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }
 ]);
 
+const AUDIT_TOOLS = new Set(["load_handoff", "load_case_context", "get_pending_candidate", "get_candidate_response", "get_source_artifact"]);
+
+function advertisedTools(oauthEnabled) {
+  if (!oauthEnabled) return TOOL_DEFINITIONS;
+  return TOOL_DEFINITIONS.map((tool) => Object.freeze({
+    ...tool,
+    securitySchemes: Object.freeze([Object.freeze({
+      type: "oauth2",
+      scopes: Object.freeze(AUDIT_TOOLS.has(tool.name)
+        ? [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT]
+        : [PRIVATE_CASE_SCOPES.READ])
+    })])
+  }));
+}
+
+function normalizeOauth(value) {
+  if (value == null) return null;
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("oauth must be an object.");
+  const resource = new URL(value.resource);
+  if (resource.protocol !== "https:") throw new TypeError("oauth.resource must use HTTPS.");
+  resource.hash = "";
+  resource.search = "";
+  resource.pathname = resource.pathname.replace(/\/$/u, "");
+  if (!Array.isArray(value.authorizationServers) || value.authorizationServers.length === 0) throw new TypeError("oauth.authorizationServers is required.");
+  const authorizationServers = value.authorizationServers.map((entry) => {
+    const url = new URL(entry);
+    if (url.protocol !== "https:") throw new TypeError("OAuth authorization servers must use HTTPS.");
+    return url.toString().replace(/\/$/u, "");
+  });
+  const scopesSupported = Array.isArray(value.scopesSupported) && value.scopesSupported.length
+    ? [...new Set(value.scopesSupported)]
+    : [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT];
+  if (scopesSupported.some((scope) => !Object.values(PRIVATE_CASE_SCOPES).includes(scope))) throw new TypeError("OAuth scopes are invalid.");
+  return Object.freeze({
+    resource: resource.toString().replace(/\/$/u, ""),
+    authorizationServers: Object.freeze(authorizationServers),
+    scopesSupported: Object.freeze(scopesSupported),
+    resourceDocumentation: value.resourceDocumentation == null ? null : new URL(value.resourceDocumentation).toString()
+  });
+}
+
+function protectedResourceMetadata(oauth) {
+  return {
+    resource: oauth.resource,
+    authorization_servers: oauth.authorizationServers,
+    scopes_supported: oauth.scopesSupported,
+    ...(oauth.resourceDocumentation ? { resource_documentation: oauth.resourceDocumentation } : {})
+  };
+}
+
+function oauthChallenge(oauth, error = "invalid_token", description = "Authenticate to access the authorized private case.") {
+  if (!oauth) return "Bearer realm=\"inner-signal-private-case\"";
+  const metadataUrl = new URL("/.well-known/oauth-protected-resource", `${oauth.resource}/`).toString();
+  return `Bearer resource_metadata="${metadataUrl}", scope="${oauth.scopesSupported.join(" ")}", error="${error}", error_description="${description}"`;
+}
+
+function authenticationRequiredResult(challenge) {
+  return {
+    content: [{ type: "text", text: "Authentication required for this private case tool." }],
+    _meta: { "mcp/www_authenticate": [challenge] },
+    isError: true
+  };
+}
+
 async function callTool(service, name, args, authContext) {
+  if (name === "load_handoff") return service.loadHandoff(args.handoff_id, authContext, { requireContinuationSafe: true });
   if (name === "load_case_context") {
     return service.loadCaseContext(args.case_id, authContext, {
       candidateId: args.candidate_id ?? "current_pending",
       requireContinuationSafe: true,
       requireAuditScope: true,
-      episodePolicy: { minimumCompleteExchanges: 3, requireCompleteEpisode: true }
+      episodePolicy: { requireCompleteEpisode: true }
     });
   }
   if (name === "retrieve_case_evidence") {
@@ -137,23 +292,60 @@ async function callTool(service, name, args, authContext) {
       limit: args.limit ?? 24
     }, authContext);
   }
+  if (name === "get_state_diff") {
+    return service.getStateDiffByReference({ caseId: args.case_id ?? null, handoffId: args.handoff_id ?? null }, authContext);
+  }
   if (name === "get_recent_verbatim") {
-    return service.getRecentVerbatim(args.case_id, { minimumCompleteExchanges: 3, requireCompleteEpisode: true }, authContext);
+    return service.getRecentVerbatimByReference({ caseId: args.case_id ?? null, handoffId: args.handoff_id ?? null }, authContext);
+  }
+  if (name === "get_pending_candidate") {
+    const candidate = await service.getPendingCandidateByReference({ candidateId: args.candidate_id ?? null, handoffId: args.handoff_id ?? null }, authContext);
+    if (!candidate) throw Object.assign(new Error("Candidate response was not found."), { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
+    return candidate;
+  }
+  if (name === "get_tracker_window") {
+    return service.getTrackerWindowByReference({
+      caseId: args.case_id ?? null,
+      handoffId: args.handoff_id ?? null,
+      variables: args.variables ?? [],
+      timeRange: args.time_range ?? null,
+      limit: args.limit ?? 180
+    }, authContext);
+  }
+  if (name === "get_journal_entries") {
+    return service.getJournalEntriesByReference({
+      caseId: args.case_id ?? null,
+      handoffId: args.handoff_id ?? null,
+      query: args.query ?? null,
+      timeRange: args.time_range ?? null,
+      limit: args.limit ?? 200
+    }, authContext);
   }
   if (name === "get_candidate_response") {
     const candidate = await service.getCandidateResponse(args.case_id, args.candidate_id ?? "current_pending", authContext);
     if (!candidate) throw Object.assign(new Error("Candidate response was not found."), { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
     return candidate;
   }
+  if (name === "get_source_artifact") {
+    const artifact = await service.getSourceArtifact(args.case_id, args.source_artifact_id, authContext);
+    if (!artifact) throw Object.assign(new Error("Exact source artifact was not found."), { code: "PRIVATE_SOURCE_ARTIFACT_NOT_FOUND" });
+    return artifact;
+  }
   throw Object.assign(new Error(`Unknown MCP tool ${name}.`), { code: "MCP_TOOL_NOT_FOUND" });
 }
 
-export function createPrivateCaseMcpServer({ caseAccessService } = {}) {
+export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, productionAuthReady = false } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function") throw new TypeError("caseAccessService is required.");
+  const normalizedOauth = normalizeOauth(oauth);
+  if (productionAuthReady === true && !normalizedOauth) throw new TypeError("Production auth readiness requires OAuth metadata.");
+  const tools = advertisedTools(Boolean(normalizedOauth));
   return http.createServer(async (req, res) => {
     const url = new URL(req.url || "/", "http://127.0.0.1");
     if (req.method === "GET" && url.pathname === "/health") {
-      return send(res, 200, { ok: true, service: "inner-signal-private-case-mcp", runtimeVersion: RUNTIME_VERSION, productionAuthReady: false });
+      return send(res, 200, { ok: true, service: "inner-signal-private-case-mcp", runtimeVersion: RUNTIME_VERSION, productionAuthReady: productionAuthReady === true });
+    }
+    if (req.method === "GET" && normalizedOauth && ["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"].includes(url.pathname)) {
+      return send(res, 200, protectedResourceMetadata(normalizedOauth));
     }
     if (url.pathname !== "/mcp") return send(res, 404, { error: "Not found." });
     if (req.method !== "POST") return send(res, 405, { error: "Method not allowed." }, { allow: "POST" });
@@ -171,15 +363,10 @@ export function createPrivateCaseMcpServer({ caseAccessService } = {}) {
         instructions: "Read-only private InnerSignal continuation tools. Authorization is transport-owned; never put bearer tokens or key material in tool arguments."
       }));
     }
-    if (request.method === "tools/list") return send(res, 200, success(request.id, { tools: TOOLS }));
+    if (request.method === "tools/list") return send(res, 200, success(request.id, { tools }));
     if (request.method !== "tools/call") return send(res, 200, failure(request.id, -32601, "Method not found."));
 
     const token = bearerToken(req);
-    if (!token) {
-      return send(res, 401, failure(request.id, -32001, "Authorization required."), {
-        "www-authenticate": "Bearer realm=\"inner-signal-private-case\""
-      });
-    }
     try {
       const name = request.params?.name;
       const args = request.params?.arguments ?? {};
@@ -187,8 +374,9 @@ export function createPrivateCaseMcpServer({ caseAccessService } = {}) {
       return send(res, 200, success(request.id, toolResult(value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
-        return send(res, 401, failure(request.id, -32001, "Authorization required."), {
-          "www-authenticate": "Bearer realm=\"inner-signal-private-case\""
+        const challenge = oauthChallenge(normalizedOauth, "invalid_token", "The access token is missing, invalid, or is not authorized for this case and scope.");
+        return send(res, 401, success(request.id, authenticationRequiredResult(challenge)), {
+          "www-authenticate": challenge
         });
       }
       const safeCode = error instanceof PrivateCaseKeyUnavailableError
@@ -201,8 +389,8 @@ export function createPrivateCaseMcpServer({ caseAccessService } = {}) {
   });
 }
 
-export async function listenPrivateCaseMcp({ caseAccessService, port = 0, host = "127.0.0.1" } = {}) {
-  const server = createPrivateCaseMcpServer({ caseAccessService });
+export async function listenPrivateCaseMcp({ caseAccessService, oauth = null, productionAuthReady = false, port = 0, host = "127.0.0.1" } = {}) {
+  const server = createPrivateCaseMcpServer({ caseAccessService, oauth, productionAuthReady });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, resolve);

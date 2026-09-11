@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "CD-INNERSIGNAL-AUTOMATIC-RUNTIME-ORCHESTRATION-20260910-R1",
+  "taskId": "automatic-runtime-orchestration-20260910",
+  "ownerOutcomeId": "OO-INNERSIGNAL-AUTOMATIC-RUNTIME-ORCHESTRATION-20260910",
+  "ownerOutcomeEpoch": 1,
+  "strategyId": "PRIVATE_RESTART_SAFE_INDEPENDENT_AUDIT_CONTROLLER",
+  "executionObjective": "Implement an explicit private runtime state machine and production composition boundary that completes candidate production, blind independent exact-version audit, bounded repair, re-audit, exact delivery, or final discrimination within one user request.",
+  "allowedActions": [
+    "work in an isolated branch and worktree based on the exact current PR 49 head",
+    "add generic runtime code, private-record schemas and migrations, synthetic fixtures and tests, architecture documentation, and public-safe recovery state",
+    "use injected synthetic providers to prove independent sessions and restart behavior",
+    "integrate the other task's durable Louka v3 commit after it finishes",
+    "commit and push the verified result to existing draft PR 49"
+  ],
+  "forbiddenActions": [
+    "modify InnerSignal Private Continuity's read-only contract",
+    "touch the real Louka record while its v3 task is active",
+    "copy real case messages, candidate text, audit findings, private-derived hashes, or credentials into Git, tests, logs, command output, or PR prose",
+    "reuse a producer context as auditor or pass producer hidden reasoning into an audit packet",
+    "deliver unaudited or stale-approved candidate text",
+    "perform repair cycle 3",
+    "make GitHub calls from an ordinary therapy turn",
+    "run the older paid A/B/C experiment merely as a prerequisite for the newer explicit production instruction",
+    "merge PR 49, deploy the public app, install, promote stable, or claim clinical validation"
+  ],
+  "requiredEvidence": [
+    "state-transition and restart/resume tests",
+    "one-inbound-turn approved-and-delivered end-to-end test",
+    "automatic repair with distinct producer and auditor context tests",
+    "self-certification and exact-version binding rejection tests",
+    "two-cycle maximum and discriminator routing tests",
+    "bounded operational retry and fail-closed tests",
+    "private-boundary and no-GitHub-runtime tests",
+    "complete package verification and publication audit",
+    "public-safe integration receipt for the separately completed Louka lifecycle"
+  ],
+  "authorityResolution": "The owner's current direct production-runtime instruction supersedes the older experiment-first note as a prerequisite. The A/B/C experiment remains optional future evaluation and does not authorize private-case use or paid calls in this task."
+}

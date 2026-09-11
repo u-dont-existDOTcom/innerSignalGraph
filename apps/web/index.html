@@ -186,9 +186,12 @@
         <div class="actions wrap">
           <button id="show-current-state" type="button">Current saved state</button>
           <button id="show-state-diff" class="secondary" type="button">What changed this turn</button>
+          <button id="create-handoff" class="secondary" type="button">Create Handoff</button>
+          <button id="export-private-handoff" class="secondary" type="button" disabled>Export Private Handoff</button>
         </div>
       </div>
       <p id="case-storage-status" class="notice">Checking encrypted private storage…</p>
+      <p id="handoff-status" class="notice">No private handoff has been created in this session.</p>
       <pre id="case-state-output" class="data-summary">No structured case-state evidence is available yet.</pre>
 
       <h3>Trajectory entry</h3>
@@ -223,7 +226,7 @@
           <h2 id="data-heading">Local data</h2>
         </div>
       </div>
-      <p class="notice">Sensitive session content is not newly written to browser storage. When encrypted private storage is configured, the server stores the raw transcript and case record only as an encrypted vault. Otherwise sensitive content is session-only. A browser backup is an explicit readable export: protect it accordingly. Legacy browser records are never silently deleted or migrated. The separate recovery ZIP excludes chat, therapy reasoning, development-case payloads, environment files, and credentials.</p>
+      <p class="notice">Sensitive session content is not newly written to browser storage. When encrypted private storage is configured, the server stores the raw transcript, case record, and private handoff only as encrypted vaults. Otherwise sensitive content is session-only. A browser backup is an explicit readable export: protect it accordingly. Export Private Handoff is the encrypted portable fallback. Legacy browser records are never silently deleted or migrated. The separate recovery ZIP excludes chat, therapy reasoning, development-case payloads, environment files, and credentials.</p>
       <p id="legacy-data-notice" class="notice" hidden>Legacy browser-local therapy data was detected. It remains untouched until you explicitly export or erase it.</p>
       <div class="actions wrap">
         <button id="export-data" type="button">Export backup</button>

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "kind": "deidentified-post-reconstruction-audit-regression",
+  "case_summary": "A fictional client is exploring whether rejection reliably activates shame while preserving the client's own unfinished observation as the highest-information lead.",
+  "original_candidate": {
+    "id": "candidate:synthetic:original",
+    "text": "This rejection brought back the shame you learned early, so track when that wound takes over and answer three questions about it now."
+  },
+  "original_audit_findings": [
+    {"id":"finding:causal-overreach","code":"CAUSAL_OVERCLAIM","severity":"substantive","summary":"The response turns a rejection/shame hypothesis into an established developmental cause."},
+    {"id":"finding:question-sequence","code":"POOR_QUESTION_SEQUENCING","severity":"substantive","summary":"Several lower-information questions displace the client's unfinished high-information statement."},
+    {"id":"finding:longitudinal-state","code":"MISSING_LONGITUDINAL_STATE_TRACKING","severity":"substantive","summary":"The response does not preserve how the rejection/shame hypothesis could be tested across relevant events."}
+  ],
+  "first_reconstruction": {
+    "id": "candidate:synthetic:repair-1",
+    "text": "Rejection may be one context in which shame appears; it is not yet clear why. For the next three days, record this once daily with the trigger, shame intensity from 0–10, body location, automatic thought, action urge, what you did, and the result. Before that, finish the sentence you started about what felt unfinished."
+  },
+  "repair_induced_findings": [
+    {"id":"finding:arbitrary-tracker","code":"OVER_SPECIFIC_TRACKING","severity":"substantive","summary":"The once-daily three-day tracker is more specific and burdensome than the evidence supports."},
+    {"id":"finding:tracking-dominates","code":"VERBOSITY_REPETITION","severity":"substantive","summary":"Tracking instructions occupy too much of the therapeutic reply."},
+    {"id":"finding:unfinished-statement-demoted","code":"REDUCED_INFORMATION_GAIN","severity":"substantive","summary":"The client's unfinished high-information statement is acknowledged but still receives too little emphasis."}
+  ],
+  "final_candidate": {
+    "id": "candidate:synthetic:repair-2",
+    "text": "You were in the middle of saying what felt unfinished. Could you finish that thought first? If shame shows up around another rejection, a brief note about what happened and what you felt may help us test the pattern without assuming its cause."
+  }
+}

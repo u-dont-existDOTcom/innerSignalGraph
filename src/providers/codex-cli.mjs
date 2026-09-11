@@ -40,6 +40,7 @@ export class CodexCliProvider {
     this.isolateConfig = isolateConfig;
     this.detectCapabilities = detectCapabilities;
     this.capabilitiesPromise = null;
+    this.privateInferenceIsolation = Object.freeze({ packetOnly: false, freshContextPerGenerate: true, tools: true, filesystem: true, sessionPersistence: false, transport: "codex-cli-agent" });
   }
 
   async capabilities() {

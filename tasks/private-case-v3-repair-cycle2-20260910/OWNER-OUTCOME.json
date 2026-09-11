@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "ownerOutcomeId": "OO-INNERSIGNAL-PRIVATE-CASE-V3-REPAIR-CYCLE2-20260910",
+  "epoch": 1,
+  "source": {
+    "kind": "owner_supplied_audit_result_and_exact_private_candidate",
+    "recordedAt": "2026-09-10",
+    "publicSafeProjectionOnly": true,
+    "privateContentExcluded": true,
+    "verbatimLocation": "current private owner conversation; intentionally not copied into public Git"
+  },
+  "normalizedResult": "Persist the externally supplied exact-v2 failed audit without fabricating an unavailable auditor identifier, supersede v2, create the maximum-cycle immutable v3 child from the owner-supplied exact private text, and expose v3 only through a new read-only continuation-safe handoff for a fresh independent audit.",
+  "requiredOutcomes": [
+    {"id":"RO-01","text":"The v2 FAIL is immutable, bound to exact v2 identity/version/bytes, and preserves externally supplied provenance plus the reported producer-context separation without an invented auditor identifier.","terminalRequired":true},
+    {"id":"RO-02","text":"An unavailable auditor identifier can record an externally supplied FAIL but can never establish approval sufficiency.","terminalRequired":true},
+    {"id":"RO-03","text":"v2 becomes failed and superseded while remaining not approved and not sent.","terminalRequired":true},
+    {"id":"RO-04","text":"v3 is a new immutable candidate at version 3 and repair cycle 2, parented to exact v2 and rooted at v1, with status reconstructed_pending_audit.","terminalRequired":true},
+    {"id":"RO-05","text":"The v2-to-v3 change is limited to the owner-authorized interpersonal-attunement safeguard and preserves every unaffected obligation and unresolved case-state field.","terminalRequired":true},
+    {"id":"RO-06","text":"v3 remains unaudited, unapproved, and unsent in the producer context and is exactly retrievable through the unchanged read-only Private Continuity surface.","terminalRequired":true},
+    {"id":"RO-07","text":"A new immutable continuation-safe handoff points to exact v3 with next action FRESH_INDEPENDENT_AUDIT.","terminalRequired":true},
+    {"id":"RO-08","text":"Public Git contains only generic code, schema, synthetic tests, architecture guidance, and content-free state receipts; private text and private-derived hashes remain outside GitHub and CI.","terminalRequired":true},
+    {"id":"RO-09","text":"Verified changes are committed and pushed to existing draft PR 49, which remains open, draft, and unmerged.","terminalRequired":true}
+  ],
+  "nonSatisfyingProxies": [
+    "using a made-up external auditor or session identifier",
+    "allowing an identity-unavailable PASS to approve a candidate",
+    "editing v2 instead of creating v3",
+    "creating repair cycle 3",
+    "auditing or approving v3 in its producer context",
+    "placing private candidate text or a private-derived digest in GitHub"
+  ]
+}

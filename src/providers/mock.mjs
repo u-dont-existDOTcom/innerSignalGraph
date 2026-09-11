@@ -7,6 +7,8 @@ export class MockProvider {
     this.model = model;
     this.fixturePath = fixturePath;
     this.fixture = null;
+    this.responseSequence = 0;
+    this.privateInferenceIsolation = Object.freeze({ packetOnly: true, freshContextPerGenerate: true, tools: false, filesystem: false, sessionPersistence: false, transport: "synthetic" });
   }
 
   async generate({ metadata = {} }) {
@@ -23,7 +25,7 @@ export class MockProvider {
       model: this.model,
       text: typeof value === "string" ? value : JSON.stringify(value),
       requestId: `mock-${this.id}-${key}`,
-      responseId: `mock-${this.id}-${key}`,
+      responseId: `mock-${this.id}-${key}-${++this.responseSequence}`,
       usage: { input_tokens: 0, output_tokens: 0 }
     };
   }

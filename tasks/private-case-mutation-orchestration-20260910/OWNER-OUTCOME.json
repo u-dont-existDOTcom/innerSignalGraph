@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "ownerOutcomeId": "OO-INNERSIGNAL-PRIVATE-CASE-MUTATION-ORCHESTRATION-20260910",
+  "epoch": 1,
+  "source": {
+    "kind": "owner_supplied_task",
+    "recordedAt": "2026-09-10",
+    "publicSafeProjectionOnly": true,
+    "privateContentExcluded": true
+  },
+  "normalizedResult": "Preserve InnerSignal Private Continuity as a read-only auditor surface while restoring the separate encrypted writer and candidate-audit controller, then privately append the supplied transcript completion, persist the existing failed v1 audit, create repair-cycle-1 candidate v2, and publish an immutable read-only handoff for a fresh independent audit without approving v2.",
+  "requiredOutcomes": [
+    {"id":"RO-01","text":"The existing InnerSignal Private Continuity MCP remains read-only and advertises no mutation tool.","terminalRequired":true},
+    {"id":"RO-02","text":"Transcript corrections are immutable provenance-bearing amendments over preserved raw turns, never in-place rewrites.","terminalRequired":true},
+    {"id":"RO-03","text":"Candidate text, lineage, exact-version audit evidence, producer/auditor context separation, two-repair maximum, repair-induced checks, approval, and sent state are enforced by backend code.","terminalRequired":true},
+    {"id":"RO-04","text":"A separate private writer/controller can apply idempotent, schema-validated mutation commands without placing private payloads in arguments, logs, Git, or public receipts.","terminalRequired":true},
+    {"id":"RO-05","text":"The supplied private completion, failed v1 audit, and repair-cycle-1 v2 are persisted in the encrypted private store; the original raw turn and v1 bytes remain unchanged.","terminalRequired":true},
+    {"id":"RO-06","text":"v2 remains reconstructed_pending_audit and unapproved, and a new immutable handoff makes its exact bytes available through Private Continuity to a fresh independent session.","terminalRequired":true},
+    {"id":"RO-07","text":"Public Git contains only generic code, schemas, synthetic tests, architecture documentation, and public-safe opaque identifiers/receipts.","terminalRequired":true},
+    {"id":"RO-08","text":"The verified changes are committed and pushed to existing draft PR 49, which remains open, draft, and unmerged.","terminalRequired":true}
+  ],
+  "nonSatisfyingProxies": [
+    "making the read-only continuity MCP writable",
+    "editing the truncated raw turn in place",
+    "describing v1 as failed without persisting exact-version audit evidence",
+    "saving v2 outside the canonical encrypted store",
+    "letting the v2 producer audit v2",
+    "approving v2 before its fresh independent audit",
+    "committing private text or private-derived hashes"
+  ]
+}

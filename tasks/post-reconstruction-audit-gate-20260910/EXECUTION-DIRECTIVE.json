@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "CD-INNERSIGNAL-POST-RECONSTRUCTION-AUDIT-GATE-20260910-R1",
+  "taskId": "post-reconstruction-audit-gate-20260910",
+  "ownerOutcomeId": "OO-INNERSIGNAL-POST-RECONSTRUCTION-AUDIT-GATE-20260910",
+  "ownerOutcomeEpoch": 1,
+  "strategyId": "VERSION_BOUND_AUDIT_RECONSTRUCTION_STATE_MACHINE",
+  "executionObjective": "Extend the existing encrypted candidate store, audit adapter, and immutable handoff packet with exact-version audit evidence, reconstruction lineage, independent post-repair audit, bounded repair termination, and fail-closed delivery.",
+  "allowedActions": [
+    "extend draft PR 49 on codex/private-case-import-20260909",
+    "add public runtime, private-store schema migration, synthetic fixtures, tests, and public-safe handoff documentation",
+    "run focused, complete, publication, and exact-head hosted verification",
+    "push the verified task commit to the existing draft PR branch"
+  ],
+  "forbiddenActions": [
+    "commit private case text, audit findings, credentials, tokens, or private-derived hashes",
+    "alter or send the real pending therapy candidate",
+    "merge the pull request, deploy the public app, install, or promote stable",
+    "claim clinical validation"
+  ],
+  "requiredEvidence": [
+    "eight named deterministic lifecycle regressions",
+    "focused private continuity and audit-harness tests",
+    "therapy lesson regressions",
+    "complete Node 24 package verification",
+    "fresh remote-head reconciliation and exact pushed-head hosted checks"
+  ]
+}

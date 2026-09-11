@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { createEncryptedPrivateCaseStore } from "./private-case-store.mjs";
+import { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
+import { resolvePrivateArtifactCaseId } from "./private-artifact-locator.mjs";
+
+export { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -27,16 +31,6 @@ export class PrivateCaseKeyUnavailableError extends RuntimeError {
   }
 }
 
-export class CaseNotContinuationSafeError extends RuntimeError {
-  constructor(failures) {
-    super(`Case is not continuation-safe for a fresh session: ${failures.join("; ")}`, {
-      code: "CASE_NOT_CONTINUATION_SAFE",
-      details: { failures: [...failures] }
-    });
-    this.name = "CaseNotContinuationSafeError";
-  }
-}
-
 const sha256 = (value) => createHash("sha256").update(value).digest();
 const nonBlank = (value, name, max = 1_000) => {
   if (typeof value !== "string" || !value.trim() || value.length > max) throw new ValidationError(`${name} must be bounded non-empty text.`);
@@ -55,32 +49,6 @@ function assertProvider(provider, method, name) {
   if (!provider || typeof provider[method] !== "function") throw new ValidationError(`${name} must implement ${method}().`);
 }
 
-export function assessContinuationSafety(context, { minimumCompleteExchanges = 3 } = {}) {
-  const failures = [];
-  if (!context?.case_state) failures.push("current structured case state is missing");
-  if (!context?.last_state_diff) failures.push("last state diff is missing");
-  if (!context?.current_episode) failures.push("current therapeutic episode is missing");
-  if (!context?.constitution_ref?.version) failures.push("constitution reference is missing");
-  if (!context?.candidate_response?.exact_text) failures.push("exact candidate response is missing");
-  else if (context.candidate_response.status !== "pending_audit") failures.push("candidate response is not pending audit");
-  const turns = context?.recent_verbatim?.turns ?? [];
-  const exchanges = new Map();
-  for (const turn of turns) {
-    const roles = exchanges.get(turn.exchange_id) ?? new Set();
-    roles.add(turn.role);
-    exchanges.set(turn.exchange_id, roles);
-  }
-  const complete = [...exchanges.values()].filter((roles) => roles.has("user") && roles.has("assistant")).length;
-  if (complete < minimumCompleteExchanges) failures.push(`recent verbatim contains ${complete} complete exchanges; ${minimumCompleteExchanges} required`);
-  return Object.freeze({
-    continuation_safe: failures.length === 0,
-    failures: Object.freeze(failures),
-    exact_candidate_available: Boolean(context?.candidate_response?.exact_text),
-    exact_recent_verbatim_available: complete >= minimumCompleteExchanges,
-    hidden_reasoning_included: false
-  });
-}
-
 export function createPrivateCaseAccessService({
   rootDir,
   authorizationProvider,
@@ -91,6 +59,7 @@ export function createPrivateCaseAccessService({
   if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw new ValidationError("rootDir must be an absolute private storage path.");
   assertProvider(authorizationProvider, "authorize", "authorizationProvider");
   assertProvider(keyProvider, "getCaseKeyMaterial", "keyProvider");
+  const mutationTails = new Map();
 
   const withStore = async (caseId, authContext, requiredScope, operation) => {
     let authorization;
@@ -109,10 +78,11 @@ export function createPrivateCaseAccessService({
     try {
       material = await keyProvider.getCaseKeyMaterial({ caseId, authorization, authContext });
       const osBackedReauthenticated = material?.accessAssurance === "os_backed_reauthenticated" && material.osBackedReauthenticated === true;
+      const managedSecretAuthorized = material?.accessAssurance === "managed_secret_provider" && material.managedSecretProvider === true;
       const developmentExternalCredentialAuthorized = allowDevelopmentFileProvider === true
         && material?.accessAssurance === "development_external_file"
         && material.provider === "development-file-provider";
-      if (!osBackedReauthenticated && !developmentExternalCredentialAuthorized) {
+      if (!osBackedReauthenticated && !managedSecretAuthorized && !developmentExternalCredentialAuthorized) {
         throw new PrivateCaseKeyUnavailableError("Key provider did not supply an accepted access assurance.");
       }
       routineKek = copyBytes(material.routineKek, "routineKek");
@@ -122,6 +92,7 @@ export function createPrivateCaseAccessService({
         routineKek,
         recoverySecretBytes,
         osBackedReauthenticated,
+        managedSecretAuthorized,
         developmentExternalCredentialAuthorized,
         now
       });
@@ -140,15 +111,68 @@ export function createPrivateCaseAccessService({
   };
 
   const read = (caseId, authContext, operation) => withStore(caseId, authContext, PRIVATE_CASE_SCOPES.READ, operation);
-  const write = (caseId, authContext, operation) => withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, operation);
+  const mutate = async (caseId, authContext, requiredScope, operation) => {
+    const previousTail = mutationTails.get(caseId) ?? Promise.resolve();
+    let release;
+    const currentTail = new Promise((resolve) => { release = resolve; });
+    mutationTails.set(caseId, currentTail);
+    await previousTail;
+    try { return await withStore(caseId, authContext, requiredScope, operation); }
+    finally {
+      release();
+      if (mutationTails.get(caseId) === currentTail) mutationTails.delete(caseId);
+    }
+  };
+  const write = (caseId, authContext, operation) => mutate(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, operation);
+  const auditWrite = (caseId, authContext, operation) => mutate(caseId, authContext, PRIVATE_CASE_SCOPES.AUDIT, operation);
+  const withResolvedArtifact = async (kind, artifactId, authContext, requiredScope, operation) => {
+    let caseId;
+    try { caseId = await resolvePrivateArtifactCaseId({ rootDir, kind, artifactId }); }
+    catch { throw new PrivateCaseAccessDeniedError(); }
+    return withStore(caseId, authContext, requiredScope, (store, authorization) => operation(store, caseId, authorization));
+  };
 
   return Object.freeze({
     rootDir,
+    async loadPrivateRuntimeCase(caseId, authContext) {
+      return read(caseId, authContext, async (store) => {
+        const record = await store.load(caseId);
+        if (!record) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        return record;
+      });
+    },
+    async beginPrivateRuntimeTurn(caseId, input, authContext) { return write(caseId, authContext, (store) => store.beginPrivateRuntimeTurn(caseId, input)); },
+    async getPrivateRuntimeTurn(caseId, runtimeTurnId, authContext) { return read(caseId, authContext, (store) => store.getPrivateRuntimeTurn(caseId, runtimeTurnId)); },
+    async recordPrivateRuntimeInvocationEvent(caseId, runtimeTurnId, event, authContext) {
+      const scope = event.stage === "audit" ? PRIVATE_CASE_SCOPES.AUDIT : PRIVATE_CASE_SCOPES.WRITE;
+      return mutate(caseId, authContext, scope, (store) => store.recordPrivateRuntimeInvocationEvent(caseId, runtimeTurnId, event));
+    },
+    async transitionPrivateRuntimeTurn(caseId, runtimeTurnId, transition, authContext) {
+      const scope = transition.toState === "AUDITING" || transition.toState === "APPROVED" ? PRIVATE_CASE_SCOPES.AUDIT : PRIVATE_CASE_SCOPES.WRITE;
+      return mutate(caseId, authContext, scope, (store) => store.transitionPrivateRuntimeTurn(caseId, runtimeTurnId, transition));
+    },
+    async commitPrivateRuntimeCandidate(caseId, input, authContext) { return write(caseId, authContext, (store) => store.commitPrivateRuntimeCandidate(caseId, input)); },
+    async commitPrivateRuntimeAudit(caseId, runtimeTurnId, evidence, options, authContext) {
+      return auditWrite(caseId, authContext, (store) => store.commitPrivateRuntimeAudit(caseId, runtimeTurnId, evidence, options));
+    },
+    async savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, input));
+    },
+    async deliverPrivateRuntimeCandidate(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.deliverPrivateRuntimeCandidate(caseId, runtimeTurnId, input));
+    },
+    async deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input));
+    },
     async saveCaseState(caseId, state, authContext) { return write(caseId, authContext, (store) => store.saveCaseState(caseId, state)); },
     async getCaseState(caseId, authContext) { return read(caseId, authContext, (store) => store.getCaseState(caseId)); },
     async saveCaseDiff(caseId, diff, options, authContext) { return write(caseId, authContext, (store) => store.saveCaseDiff(caseId, diff, options)); },
     async getCaseDiff(caseId, options, authContext) { return read(caseId, authContext, (store) => store.getCaseDiff(caseId, options)); },
     async appendTranscriptTurn(caseId, turn, authContext) { return write(caseId, authContext, (store) => store.appendTranscriptTurn(caseId, turn)); },
+    async appendTranscriptCompletionAmendment(caseId, amendment, authContext) {
+      return write(caseId, authContext, (store) => store.appendTranscriptCompletionAmendment(caseId, amendment));
+    },
+    async getTranscriptAmendments(caseId, authContext) { return read(caseId, authContext, (store) => store.getTranscriptAmendments(caseId)); },
     async getRecentVerbatim(caseId, episodePolicy, authContext) { return read(caseId, authContext, (store) => store.getRecentVerbatim(caseId, episodePolicy)); },
     async saveCandidateResponse(caseId, candidateId, exactText, metadata, authContext) {
       return write(caseId, authContext, (store) => store.saveCandidateResponse(caseId, candidateId, exactText, metadata));
@@ -156,22 +180,86 @@ export function createPrivateCaseAccessService({
     async updateCandidateStatus(caseId, candidateId, status, metadataPatch, authContext) {
       return write(caseId, authContext, (store) => store.updateCandidateStatus(caseId, candidateId, status, metadataPatch));
     },
+    async recordCandidateAudit(caseId, candidateId, evidence, authContext) {
+      return auditWrite(caseId, authContext, (store) => store.recordCandidateAudit(caseId, candidateId, evidence));
+    },
+    async reconstructCandidateResponse(caseId, parentCandidateId, candidateId, exactText, metadata, authContext) {
+      return write(caseId, authContext, (store) => store.reconstructCandidateResponse(caseId, parentCandidateId, candidateId, exactText, metadata));
+    },
+    async approveCandidateForDelivery(caseId, candidateId, auditId, authContext) {
+      return auditWrite(caseId, authContext, (store) => store.approveCandidateForDelivery(caseId, candidateId, auditId));
+    },
+    async markCandidateSent(caseId, candidateId, authContext) {
+      return write(caseId, authContext, (store) => store.markCandidateSent(caseId, candidateId));
+    },
+    async deliverCandidateResponse(caseId, candidateId, input, authContext) {
+      return write(caseId, authContext, (store) => store.deliverCandidateResponse(caseId, candidateId, input));
+    },
     async getCandidateResponse(caseId, selector, authContext) { return read(caseId, authContext, (store) => store.getCandidateResponse(caseId, selector)); },
+    async getCandidateLifecycle(caseId, authContext) { return read(caseId, authContext, (store) => store.getCandidateLifecycle(caseId)); },
+    async saveSourceArtifact(caseId, sourceArtifactId, chunks, metadata, authContext) {
+      return write(caseId, authContext, (store) => store.saveSourceArtifact(caseId, sourceArtifactId, chunks, metadata));
+    },
+    async getSourceArtifact(caseId, sourceArtifactId, authContext) { return read(caseId, authContext, (store) => store.getSourceArtifact(caseId, sourceArtifactId)); },
     async retrieveCaseEvidence(caseId, criteria, authContext) { return read(caseId, authContext, (store) => store.retrieveCaseEvidence(caseId, criteria)); },
+    async getTrackerWindow(caseId, options, authContext) { return read(caseId, authContext, (store) => store.getTrackerWindow(caseId, options)); },
+    async getJournalEntries(caseId, options, authContext) { return read(caseId, authContext, (store) => store.getJournalEntries(caseId, options)); },
+    async appendTracker(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendTracker(caseId, entry)); },
+    async appendJournal(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendJournal(caseId, entry)); },
     async getCurrentEpisode(caseId, authContext) { return read(caseId, authContext, (store) => store.getCurrentEpisode(caseId)); },
+    async createHandoff(caseId, options, authContext) { return write(caseId, authContext, (store) => store.createHandoff(caseId, options)); },
+    async loadHandoff(handoffId, authContext, { requireContinuationSafe = true } = {}) {
+      const packet = await withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store, caseId) => store.loadHandoff(caseId, handoffId));
+      if (requireContinuationSafe && !packet.continuation_safety.continuation_safe) throw new CaseNotContinuationSafeError(packet.continuation_safety.failures);
+      return packet;
+    },
+    async exportHandoff(handoffId, authContext) {
+      return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store, caseId) => store.exportHandoff(caseId, handoffId));
+    },
+    async getStateDiffByReference({ caseId = null, handoffId = null } = {}, authContext) {
+      if (handoffId) return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.READ, async (store, resolvedCaseId) => (await store.loadHandoff(resolvedCaseId, handoffId)).state_diff);
+      return read(caseId, authContext, (store) => store.getCaseDiff(caseId));
+    },
+    async getRecentVerbatimByReference({ caseId = null, handoffId = null } = {}, authContext) {
+      if (handoffId) return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.READ, async (store, resolvedCaseId) => (await store.loadHandoff(resolvedCaseId, handoffId)).recent_verbatim);
+      return read(caseId, authContext, (store) => store.getRecentVerbatim(caseId, { requireCompleteEpisode: true }));
+    },
+    async getPendingCandidateByReference({ candidateId = null, handoffId = null } = {}, authContext) {
+      if (handoffId) {
+        return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.AUDIT, async (store, resolvedCaseId) => {
+          const packet = await store.loadHandoff(resolvedCaseId, handoffId);
+          const candidate = candidateId
+            ? packet.pending_artifacts.find((entry) => entry.id === candidateId)
+            : packet.pending_artifacts.at(-1);
+          return candidate ? structuredClone(candidate) : null;
+        });
+      }
+      if (!candidateId) throw new ValidationError("candidateId or handoffId is required.");
+      return withResolvedArtifact("candidate", candidateId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store, resolvedCaseId) => store.getCandidateResponse(resolvedCaseId, candidateId));
+    },
+    async getTrackerWindowByReference({ caseId = null, handoffId = null, variables = [], timeRange = null, limit = 180 } = {}, authContext) {
+      const options = { variables, timeRange, limit };
+      if (handoffId) return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.READ, (store, resolvedCaseId) => store.getHandoffTrackerWindow(resolvedCaseId, handoffId, options));
+      return read(caseId, authContext, (store) => store.getTrackerWindow(caseId, options));
+    },
+    async getJournalEntriesByReference({ caseId = null, handoffId = null, query = null, timeRange = null, limit = 200 } = {}, authContext) {
+      const options = { query, timeRange, limit };
+      if (handoffId) return withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.READ, (store, resolvedCaseId) => store.getHandoffJournalEntries(resolvedCaseId, handoffId, options));
+      return read(caseId, authContext, (store) => store.getJournalEntries(caseId, options));
+    },
     async loadCaseContext(caseId, authContext, options = {}) {
       const requiredScope = options.requireAuditScope === false ? PRIVATE_CASE_SCOPES.READ : PRIVATE_CASE_SCOPES.AUDIT;
       const effectiveOptions = {
         ...options,
         episodePolicy: {
-          minimumCompleteExchanges: options.episodePolicy?.minimumCompleteExchanges ?? 3,
           requireCompleteEpisode: options.episodePolicy?.requireCompleteEpisode !== false,
           ...(options.episodePolicy?.maximumSelectedTurns != null ? { maximumSelectedTurns: options.episodePolicy.maximumSelectedTurns } : {}),
-          ...(options.episodePolicy?.currentEpisodeId ? { currentEpisodeId: options.episodePolicy.currentEpisodeId } : {})
+          ...(options.episodePolicy?.currentEpisodeId ? { currentEpisodeId: options.episodePolicy.currentEpisodeId } : {}),
+          ...(options.episodePolicy?.currentEpisodeStartTurnId ? { currentEpisodeStartTurnId: options.episodePolicy.currentEpisodeStartTurnId } : {})
         }
       };
       const context = await withStore(caseId, authContext, requiredScope, (store) => store.loadCaseContext(caseId, effectiveOptions));
-      const continuationSafety = assessContinuationSafety(context, { minimumCompleteExchanges: effectiveOptions.episodePolicy.minimumCompleteExchanges });
+      const continuationSafety = assessContinuationSafety(context);
       const result = Object.freeze({ ...context, continuation_safety: continuationSafety });
       if (options.requireContinuationSafe !== false && !continuationSafety.continuation_safe) throw new CaseNotContinuationSafeError(continuationSafety.failures);
       return result;

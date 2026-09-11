@@ -2,6 +2,15 @@ import { spawn } from "node:child_process";
 import { ProviderError } from "./errors.mjs";
 
 const MAX_CAPTURE_BYTES = 20 * 1024 * 1024;
+const SEALED_INFERENCE_ENV_KEYS = new Set([
+  "PATH", "HOME", "LANG", "LC_ALL", "LC_CTYPE", "TERM", "TMPDIR",
+  "XDG_CONFIG_HOME", "XDG_DATA_HOME", "DBUS_SESSION_BUS_ADDRESS",
+  "SSL_CERT_FILE", "SSL_CERT_DIR", "NODE_EXTRA_CA_CERTS", "CLAUDE_CONFIG_DIR"
+]);
+
+export function sealedInferenceEnvironment(environment = process.env) {
+  return Object.fromEntries(Object.entries(environment).filter(([key]) => SEALED_INFERENCE_ENV_KEYS.has(key)));
+}
 
 function appendLimited(current, chunk, label) {
   const next = current + chunk.toString("utf8");

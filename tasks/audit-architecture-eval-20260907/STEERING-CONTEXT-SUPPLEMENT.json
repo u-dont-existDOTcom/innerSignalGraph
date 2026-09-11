@@ -71,7 +71,7 @@
     {
       "id": "AE-K003",
       "hazard": "A lossy summary paraphrases the current episode and changes its prediction.",
-      "durableTruth": "The episode contract and the last three complete exchanges remain exact structured/verbatim evidence.",
+      "durableTruth": "The episode contract and the exact active episode from its declared semantic boundary remain structured/verbatim evidence.",
       "requiredBehavior": "Prefer durable state and exact recent turns over the lossy summary."
     }
   ]

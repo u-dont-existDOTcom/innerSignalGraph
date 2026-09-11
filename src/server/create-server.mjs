@@ -32,6 +32,8 @@ import {
   validateCaseState
 } from "../case-state/longitudinal-state.mjs";
 import { summarizeTrackerWindow } from "../case-state/tracker.mjs";
+import { createPrivateTherapyModelRuntime } from "../supervisor/private-therapy-model-runtime.mjs";
+import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = path.resolve(here, "../../apps/web");
@@ -49,6 +51,7 @@ const DIAGNOSTIC_PATH = /^diagnostics\/[0-9a-f-]{36}\/[a-f0-9]{64}\.json$/i;
 const PROGRESS_PATH = /^progress\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/current\.json$/i;
 const PROGRESS_ASSESSMENT = /^(?:ADVANCING|LONG_RUNNING_STAGE|WAITING_FOR_HUMAN|BLOCKED|COMPLETE|IDLE|WORKER_NOT_RUNNING)$/;
 const SAFE_CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
+const SAFE_HANDOFF_ID = /^handoff:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 function readCaseId(value) {
   const caseId = typeof value === "string" && SAFE_CASE_ID.test(value) ? value : null;
@@ -58,6 +61,15 @@ function readCaseId(value) {
     throw error;
   }
   return caseId;
+}
+
+function readHandoffId(value) {
+  if (typeof value !== "string" || !SAFE_HANDOFF_ID.test(value)) {
+    const error = new Error("handoffId is invalid.");
+    error.code = "VALIDATION_ERROR";
+    throw error;
+  }
+  return value;
 }
 
 function safeEntryId(value, fallback) {
@@ -159,6 +171,16 @@ function sendZip(res, buffer, filename) {
   res.end(buffer);
 }
 
+function sendEncryptedHandoff(res, buffer, handoffId) {
+  const filename = `${handoffId.replace(/[^A-Za-z0-9._-]/g, "-")}.handoff.vault.json`;
+  res.writeHead(200, securityHeaders({
+    "content-type": "application/vnd.inner-signal.private-handoff+json",
+    "content-disposition": `attachment; filename="${filename}"`,
+    "content-length": String(buffer.length)
+  }));
+  res.end(buffer);
+}
+
 async function sendStatic(res, pathname) {
   const entry = STATIC[pathname];
   if (!entry) return false;
@@ -185,7 +207,22 @@ async function readJson(req, maxBytes = 2_000_000) {
   return JSON.parse(body.toString("utf8"));
 }
 
-export function createInnerSignalServer({ config, providers, privateCaseStore = null }) {
+export function createInnerSignalServer({ config, providers, privateCaseStore = null, privateCaseAccessService = null, privateAuthContext = null, privateTherapyController = null }) {
+  const privateCaseSource = privateCaseAccessService ?? privateCaseStore;
+  const automaticPrivateTherapy = privateTherapyController ?? (privateCaseSource
+    ? createPrivateTherapyTurnController({
+        privateCaseSource,
+        modelRuntime: createPrivateTherapyModelRuntime({ privateCaseSource, providers, config }),
+        maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? 2
+      })
+    : null);
+  const requestAuthContext = (req) => ({
+    ...(privateAuthContext ?? {}),
+    ...(typeof req.headers.authorization === "string" ? { bearerToken: req.headers.authorization.replace(/^Bearer\s+/iu, "") } : {})
+  });
+  const loadPrivateRecord = (caseId, authContext) => typeof privateCaseSource?.loadPrivateRuntimeCase === "function"
+    ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext)
+    : privateCaseSource.loadOrCreate(caseId);
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url || "/", "http://127.0.0.1");
@@ -213,8 +250,8 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
             candidateStatus: (await readGuidePacketStatus(config)).candidate?.status ?? null
           },
           webClient: { available: true, path: "/", diagnosticExport: true },
-          privateCaseStorage: { available: Boolean(privateCaseStore), plaintextFallback: false },
-          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
+          privateCaseStorage: { available: Boolean(privateCaseSource), plaintextFallback: false, automaticOrchestration: Boolean(automaticPrivateTherapy) },
+          endpoints: ["/v1/plan", "/v1/therapy/respond", "/v1/case/state", "/v1/case/tracker", "/v1/case/journal", "/v1/case/handoff", "/v1/case/handoff/export", "/v1/hypnosis/compile", "/v1/debug/export", "/v1/debug/feedback", "/v1/dev/status", "/v1/dev/decision", "/v1/guides/status", "/v1/guides/import", "/v1/guides/decision", "/v1/guides/install", "/v1/guides/rollback", "/v1/guides/export"]
         });
       }
       if (req.method === "POST" && url.pathname === "/v1/plan") {
@@ -226,6 +263,47 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
       if (req.method === "POST" && url.pathname === "/v1/therapy/respond") {
         const input = await readJson(req);
         const caseId = readCaseId(input.caseId ?? "local-case");
+        const exchangeId = safeEntryId(input.exchangeId, `exchange-${randomUUID()}`);
+        const userTurnId = safeEntryId(input.userTurnId, `${exchangeId}-user`);
+        const assistantTurnId = safeEntryId(input.assistantTurnId, `${exchangeId}-assistant`);
+        if (automaticPrivateTherapy) {
+          const runtimeTurnId = safeEntryId(input.runtimeTurnId, `runtime:${exchangeId}`);
+          const result = await automaticPrivateTherapy.run({
+            caseId,
+            runtimeTurnId,
+            exchangeId,
+            userTurnId,
+            assistantTurnId,
+            userMessage: input.userMessage,
+            userInput: input,
+            authContext: requestAuthContext(req)
+          });
+          const metadata = result.runtimeMetadata ?? {};
+          return send(res, 200, {
+            answer: result.answer,
+            mode: metadata.mode ?? "private-runtime",
+            processingTier: metadata.processingTier ?? metadata.mode ?? "private-runtime",
+            routingReason: metadata.routingReason ?? "automatic exact-version audit lifecycle",
+            graphBundleVersion: metadata.graphBundleVersion ?? null,
+            caseFormulation: metadata.caseFormulation ?? null,
+            interventionContract: metadata.interventionContract ?? null,
+            responseContract: metadata.responseContract ?? null,
+            processingMs: metadata.processingMs ?? null,
+            durableCaseState: result.durableCaseState,
+            caseState: projectCaseStateForInspection(result.durableCaseState),
+            caseStateDiff: result.caseStateDiff,
+            privateCaseStorage: "encrypted",
+            orchestration: {
+              state: result.runtimeTurn.state,
+              deliveryKind: result.deliveryKind,
+              repairCycle: result.runtimeTurn.repair_cycle,
+              lifecycleOwner: "server"
+            }
+          });
+        }
+        if (config.mode !== "mock") {
+          return send(res, 503, { error: "Encrypted automatic therapy orchestration is not configured.", code: "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE" });
+        }
         const stored = privateCaseStore ? await privateCaseStore.loadOrCreate(caseId) : null;
         const previousCaseState = stored?.case_state
           ?? (input.durableCaseState ? validateCaseState(structuredClone(input.durableCaseState)) : createEmptyCaseState({ caseId }));
@@ -245,9 +323,6 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
           processingMode: input.processingMode ?? config.therapyProcessingMode ?? "auto"
         });
         const timestamp = new Date().toISOString();
-        const exchangeId = safeEntryId(input.exchangeId, `exchange-${randomUUID()}`);
-        const userTurnId = safeEntryId(input.userTurnId, `${exchangeId}-user`);
-        const assistantTurnId = safeEntryId(input.assistantTurnId, `${exchangeId}-assistant`);
         const nextCaseState = mergeRuntimeSnapshotIntoCaseState(previousCaseState, result.caseFormulation, {
           turnId: userTurnId,
           recordedAt: timestamp,
@@ -296,9 +371,9 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         });
       }
       if (req.method === "GET" && url.pathname === "/v1/case/state") {
-        if (!privateCaseStore) return send(res, 503, { error: "Encrypted private case storage is not configured; state remains session-only.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
+        if (!privateCaseSource) return send(res, 503, { error: "Encrypted private case storage is not configured; state remains session-only.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
         const caseId = readCaseId(url.searchParams.get("caseId"));
-        const record = await privateCaseStore.loadOrCreate(caseId);
+        const record = await loadPrivateRecord(caseId, requestAuthContext(req));
         return send(res, 200, {
           caseId,
           durableCaseState: record.case_state,
@@ -311,18 +386,34 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
         });
       }
       if (req.method === "POST" && url.pathname === "/v1/case/tracker") {
-        if (!privateCaseStore) return send(res, 503, { error: "Encrypted private case storage is not configured; tracker entry was not persisted.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
+        if (!privateCaseSource) return send(res, 503, { error: "Encrypted private case storage is not configured; tracker entry was not persisted.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
         const input = await readJson(req);
         const caseId = readCaseId(input.caseId);
-        const record = await privateCaseStore.appendTracker(caseId, input.entry);
+        const record = await privateCaseSource.appendTracker(caseId, input.entry, requestAuthContext(req));
         return send(res, 200, { caseId, trackerWindow: summarizeTrackerWindow(record.tracker_entries), persisted: "encrypted" });
       }
       if (req.method === "POST" && url.pathname === "/v1/case/journal") {
-        if (!privateCaseStore) return send(res, 503, { error: "Encrypted private case storage is not configured; journal entry was not persisted.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
+        if (!privateCaseSource) return send(res, 503, { error: "Encrypted private case storage is not configured; journal entry was not persisted.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
         const input = await readJson(req);
         const caseId = readCaseId(input.caseId);
-        const record = await privateCaseStore.appendJournal(caseId, input.entry);
+        const record = await privateCaseSource.appendJournal(caseId, input.entry, requestAuthContext(req));
         return send(res, 200, { caseId, journalEntryCount: record.journal_entries.length, persisted: "encrypted" });
+      }
+      if (req.method === "POST" && url.pathname === "/v1/case/handoff") {
+        if (!privateCaseSource) return send(res, 503, { error: "Encrypted private case storage is not configured; a handoff cannot be created.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
+        const input = await readJson(req);
+        const caseId = readCaseId(input.caseId);
+        const result = await privateCaseSource.createHandoff(caseId, {}, requestAuthContext(req));
+        return send(res, 200, result);
+      }
+      if (req.method === "GET" && url.pathname === "/v1/case/handoff/export") {
+        if (!privateCaseSource) return send(res, 503, { error: "Encrypted private case storage is not configured; a handoff cannot be exported.", code: "PRIVATE_CASE_STORAGE_UNAVAILABLE" });
+        const caseId = readCaseId(url.searchParams.get("caseId"));
+        const handoffId = readHandoffId(url.searchParams.get("handoffId"));
+        const payload = typeof privateCaseSource.loadPrivateRuntimeCase === "function"
+          ? await privateCaseSource.exportHandoff(handoffId, requestAuthContext(req))
+          : await privateCaseSource.exportHandoff(caseId, handoffId);
+        return sendEncryptedHandoff(res, payload, handoffId);
       }
       if (req.method === "POST" && url.pathname === "/v1/hypnosis/compile") {
         const input = await readJson(req);
@@ -453,10 +544,16 @@ export function createInnerSignalServer({ config, providers, privateCaseStore = 
       }
       return send(res, 404, { error: "Not found" });
     } catch (error) {
-      return send(res, error.code === "VALIDATION_ERROR" ? 400 : 500, {
-        error: error.message,
-        code: error.code ?? "UNEXPECTED_ERROR",
-        details: error.details
+      const code = error.code ?? "UNEXPECTED_ERROR";
+      const status = code === "VALIDATION_ERROR" ? 400
+        : code === "PRIVATE_CASE_ACCESS_DENIED" ? 403
+          : code === "PRIVATE_CASE_NOT_FOUND" ? 404
+          : ["THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_THERAPY_RUNTIME_UNAVAILABLE", "PRIVATE_CASE_KEY_UNAVAILABLE"].includes(code) ? 503
+            : 500;
+      const privateFailure = /^(?:PRIVATE_|THERAPY_RUNTIME_|PROVIDER_)/u.test(code);
+      return send(res, status, {
+        error: privateFailure ? "InnerSignal could not safely complete this request." : error.message,
+        code
       });
     }
   });

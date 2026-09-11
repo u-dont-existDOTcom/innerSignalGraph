@@ -41,8 +41,8 @@ Trajectory observability is explicit per domain across intensity, function, dura
 - the immutable constitution reference;
 - the durable structured case state;
 - the current episode contract;
-- at least the last three complete exchanges verbatim;
-- current-episode turns when it began earlier; ordinary bounded context remains capped at the latest 120 exact turns with visible truncation metadata, while the authorized continuation bootstrap can require the complete episode up to the encrypted record limit;
+- the exact active episode from its declared semantic start through the latest turn;
+- ordinary bounded context remains capped at the latest 120 exact turns with visible truncation metadata, while the authorized continuation bootstrap requires the complete episode up to the encrypted record limit;
 - up to 24 contradiction-first, stable-ID retrieval requests for older high-relevance evidence;
 - a descriptive tracker summary capped at the latest 180 eligible entries with visible omission counts.
 

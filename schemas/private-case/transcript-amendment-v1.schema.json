@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inner-signal.local/schemas/private-case/transcript-amendment-v1.schema.json",
+  "title": "Private transcript completion amendment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "kind", "target_turn_id", "target_original_sha256", "completion_text", "completion_sha256", "effective_text_sha256", "producer_context_id", "created_at", "provenance"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "id": { "$ref": "#/$defs/id" },
+    "kind": { "const": "completion" },
+    "target_turn_id": { "$ref": "#/$defs/id" },
+    "target_original_sha256": { "$ref": "#/$defs/sha256" },
+    "completion_text": { "type": "string", "minLength": 1, "maxLength": 80000 },
+    "completion_sha256": { "$ref": "#/$defs/sha256" },
+    "effective_text_sha256": { "$ref": "#/$defs/sha256" },
+    "producer_context_id": { "$ref": "#/$defs/id" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "source_artifact_id", "start_byte", "end_byte"],
+      "properties": {
+        "kind": { "const": "exact_source_artifact_range" },
+        "source_artifact_id": { "$ref": "#/$defs/id" },
+        "start_byte": { "type": "integer", "minimum": 0 },
+        "end_byte": { "type": "integer", "minimum": 1 }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,200}$" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  }
+}

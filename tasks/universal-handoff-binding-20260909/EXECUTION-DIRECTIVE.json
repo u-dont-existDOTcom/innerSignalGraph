@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "CD-INNERSIGNAL-UNIVERSAL-HANDOFF-BINDING-20260909-R2",
+  "taskId": "universal-handoff-binding-20260909",
+  "ownerOutcomeId": "OO-INNERSIGNAL-UNIVERSAL-HANDOFF-BINDING-20260909",
+  "ownerOutcomeEpoch": 2,
+  "strategyId": "COMPOSE_CASE_VAULT_WITH_FIRST_CLASS_ENCRYPTED_HANDOFF_ARTIFACTS",
+  "executionObjective": "Extend the existing encrypted private-case access layer rather than replace it: compile immutable handoff snapshots, resolve them by handoff_id, expose authorized reads, add portable encrypted export and UI controls, host OAuth/ACL/key access, and prove both Session B and a brand-new ChatGPT conversation can continue with only handoff_id.",
+  "allowedActions": [
+    "add public schemas, storage/access code, local UI controls, MCP tools, synthetic tests, and public-safe documentation",
+    "extend the existing draft PR 49 branch",
+    "run local and exact-head hosted verification",
+    "deploy the owner-authorized encrypted private service and identity provider",
+    "connect the read-only MCP to ChatGPT and execute the actual fresh-chat acceptance"
+  ],
+  "forbiddenActions": [
+    "publish real private case content, credentials, locators, manifests, or private-derived hashes",
+    "mark a handoff complete before fresh-process acceptance",
+    "claim real ChatGPT availability from a local MCP or test process",
+    "merge, deploy the public app, install, or promote stable",
+    "audit or reinterpret the real pending therapy candidate"
+  ],
+  "requiredEvidence": [
+    "separate-process Session B receives only handoff_id plus authorized transport context",
+    "exact Unicode and candidate text equality across restart",
+    "more than 100k characters and simulated 20k source-read boundary",
+    "unauthorized and wrong-key fail-closed behavior",
+    "encrypted export contains no plaintext probes",
+    "UI language and endpoint regressions",
+    "complete repository and exact-head hosted gates",
+    "actual new-ChatGPT load_handoff execution with independent exactness comparison"
+  ]
+}

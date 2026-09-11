@@ -26,6 +26,14 @@ for (const required of ["-p", "--output-format", "--json-schema", "--system-prom
     process.exit(3);
   }
 }
+if (args.includes("--fake-require-sealed")) {
+  for (const required of ["--tools", "--max-turns", "--no-session-persistence", "--permission-mode", "--no-chrome", "--safe-mode", "--strict-mcp-config"]) {
+    if (!args.includes(required)) {
+      console.error(`missing sealed inference flag: ${required}`);
+      process.exit(6);
+    }
+  }
+}
 let input = "";
 for await (const chunk of process.stdin) input += chunk;
 if (!input.trim()) {

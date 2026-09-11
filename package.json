@@ -10,7 +10,9 @@
   },
   "scripts": {
     "private-case:mcp": "node src/cli/private-case-mcp.mjs",
-    "private-case:acceptance": "node --test tests/private-case-continuity.test.mjs",
+    "private-case:mcp:hosted": "node src/cli/private-case-mcp.mjs --hosted-env",
+    "private-case:operations": "node src/cli/private-case-operations.mjs",
+    "private-case:acceptance": "node --test tests/private-case-continuity.test.mjs tests/private-candidate-lifecycle.test.mjs tests/private-case-orchestration.test.mjs tests/private-therapy-runtime.test.mjs tests/private-runtime-environment.test.mjs tests/private-therapy-model-runtime.test.mjs tests/therapy-ledger-privacy.test.mjs",
     "constitution-context:preflight": "node scripts/constitution-context-preflight.mjs",
     "constitution-context:acceptance": "node scripts/constitution-context-acceptance.mjs",
     "authoring:task:preflight": "node scripts/authoring-task-preflight.mjs",
@@ -62,6 +64,7 @@
     "guide-packet:status": "node --env-file=.env src/cli/guide-packet.mjs status"
   },
   "dependencies": {
+    "jose": "6.2.12",
     "yaml": "2.9.0"
   },
   "devDependencies": {

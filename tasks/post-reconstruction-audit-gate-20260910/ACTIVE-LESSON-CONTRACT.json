@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "taskId": "post-reconstruction-audit-gate-20260910",
+  "status": "COMPLETE",
+  "activatedAt": "2026-09-10",
+  "lessons": [
+    {
+      "id": "exact-candidate-version-is-the-approval-boundary",
+      "source": "current owner task + universal external-evaluation-reproducibility",
+      "trigger": "A repaired response differs substantively from the response previously audited.",
+      "requiredBehavior": "Create a new immutable ID/version and bind every audit/approval receipt to that ID, version, and exact bytes.",
+      "failureCondition": "A parent or stale audit authorizes a changed candidate.",
+      "repairAction": "Invalidate delivery state and require a fresh audit of the exact current candidate.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "independence-must-be-real",
+      "source": "universal independent-evaluation-separation",
+      "trigger": "A reconstruction may introduce defects normalized by its producer.",
+      "requiredBehavior": "Use a fresh-context independent auditor; self-critique may supplement but never certify a reconstructed candidate, and the producer context cannot be the auditor context.",
+      "failureCondition": "The reconstruction writer or same-context self-critique creates delivery approval.",
+      "repairAction": "Return the candidate to reconstructed_pending_audit and dispatch a fresh independent audit.",
+      "enforcement": "mechanical_and_semantic"
+    },
+    {
+      "id": "fidelity-gates-remain-distinct",
+      "source": "current owner task + private continuity authority",
+      "trigger": "The same handoff packet carries both context and candidate state.",
+      "requiredBehavior": "Represent handoff fidelity, candidate-audit fidelity, and reconstruction-audit fidelity separately.",
+      "failureCondition": "A green handoff or parent audit is reported as approval of the current reconstruction.",
+      "repairAction": "Block delivery and restore distinct gate state in the handoff projection.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "bounded-repair-termination",
+      "source": "current owner task",
+      "trigger": "Substantive/high findings survive repeated repairs.",
+      "requiredBehavior": "Allow no more than two repair cycles, then prefer the smallest discriminating question, explicit uncertainty, or blocked delivery.",
+      "failureCondition": "A third repair loop starts or serious uncertainty is silently delivered.",
+      "repairAction": "Return DISCRIMINATE_OR_BLOCK and prohibit another reconstruction.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "public-private-separation",
+      "source": "repository AGENTS.md and private continuity contract",
+      "trigger": "Candidate text and audit findings can contain private therapy material.",
+      "requiredBehavior": "Keep real candidate/audit bytes encrypted outside Git; commit only generic code and de-identified synthetic evidence.",
+      "failureCondition": "Public Git or CI contains real private content or a private-derived digest.",
+      "repairAction": "Block push, remove the content from candidate history, and rerun publication audits.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "verification-budget",
+      "source": "universal test-efficiency-and-verification-budget",
+      "trigger": "The change affects critical encrypted persistence and delivery gates.",
+      "requiredBehavior": "Iterate with focused lifecycle/continuity/harness tests, then run therapy lessons, one complete package gate, and exact-head hosted checks.",
+      "failureCondition": "A final claim relies on partial or stale verification.",
+      "repairAction": "Run the missing final-boundary gate against the exact candidate head.",
+      "enforcement": "mechanical"
+    }
+  ],
+  "preAttemptAdmission": {
+    "status": "PASS",
+    "evidence": [
+      "Draft PR 49 was fetched and reconciled at 808bb113268136a15ecc325b849cfec7a5581b65 before editing.",
+      "The dirty older checkout was preserved and an isolated worktree was created from the exact remote head.",
+      "Repository authority, current state, active task, universal lesson index, candidate store, audit adapter, handoff compiler, continuity gate, repair harness, and termination rules were inspected.",
+      "The current task directly authorizes the new post-reconstruction audit policy while preserving the existing provider-role policy and public/private boundary."
+    ]
+  },
+  "closeout": {
+    "status": "PASS",
+    "evidence": [
+      "All eight required lifecycle regressions pass in the 22/22 private candidate and continuity acceptance suite.",
+      "The constitution/context and audit-harness set passes 56/56; therapy lesson verification passes 5/5.",
+      "The complete Node 24.18.0 package gate passes 1,047/1,047 tests and all repository/publication hygiene checks.",
+      "Implementation head 41c0e0f07aa0c42086ca69ddb3bac1804f7b9b76 passed workflow-policy, deterministic-package, codeql-javascript, and CodeQL before the documentation-only closeout commit.",
+      "No real private candidate was read, audited, reconstructed, approved, or delivered."
+    ]
+  }
+}

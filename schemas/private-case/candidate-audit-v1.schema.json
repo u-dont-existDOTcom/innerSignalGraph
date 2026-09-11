@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inner-signal.local/schemas/private-case/candidate-audit-v1.schema.json",
+  "title": "Exact-version-bound private candidate audit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "id", "candidate_id", "candidate_version", "candidate_sha256", "audit_version", "completed_at", "auditor_kind", "auditor_context_id", "independent_auditor_available", "independent", "findings", "unresolved_substantive_finding_ids", "verdict", "sufficient_for_approval", "repair_induced_checks"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "id": { "$ref": "#/$defs/id" },
+    "candidate_id": { "$ref": "#/$defs/id" },
+    "candidate_version": { "type": "integer", "minimum": 1 },
+    "candidate_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "audit_version": { "$ref": "#/$defs/id" },
+    "completed_at": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+    "completed_at_status": { "enum": ["known", "unavailable"] },
+    "recorded_at": { "type": "string", "format": "date-time" },
+    "auditor_kind": { "enum": ["independent", "self_critique"] },
+    "auditor_context_id": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "auditor_context_id_status": { "enum": ["known", "unavailable"] },
+    "independent_auditor_available": { "type": "boolean" },
+    "independent": { "type": "boolean" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "code", "severity", "summary", "unresolved"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "code": { "$ref": "#/$defs/id" },
+          "severity": { "enum": ["low", "medium", "substantive", "high"] },
+          "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "unresolved": { "type": "boolean" },
+          "evidence_turn_ids": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true }
+        }
+      }
+    },
+    "unresolved_substantive_finding_ids": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
+    "verdict": { "enum": ["pass", "fail"] },
+    "sufficient_for_approval": { "type": "boolean" },
+    "repair_induced_checks": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
+    "external_provenance": { "$ref": "#/$defs/externalProvenance" }
+  },
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,200}$" },
+    "externalProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "supplied_by", "received_at", "reported_independence_from_producer_context_id"],
+      "properties": {
+        "kind": { "const": "externally_supplied_fresh_independent_audit" },
+        "supplied_by": { "const": "owner" },
+        "received_at": { "type": "string", "format": "date-time" },
+        "reported_independence_from_producer_context_id": { "$ref": "#/$defs/id" }
+      }
+    }
+  }
+}

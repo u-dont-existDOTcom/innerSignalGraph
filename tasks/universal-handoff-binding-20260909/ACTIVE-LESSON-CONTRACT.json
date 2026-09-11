@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "taskId": "universal-handoff-binding-20260909",
+  "status": "COMPLETED",
+  "activatedAt": "2026-09-09",
+  "lessons": [
+    {
+      "id": "owner-binding-is-terminal-authority",
+      "source": "owner-supplied InnerSignal Universal Handoff Binding v1.0 + universal owner-outcome invariant",
+      "trigger": "The new binding adds terminal requirements beyond the prior case bootstrap.",
+      "requiredBehavior": "Trace every binding section to implementation or an explicit still-open external layer; do not rename supporting evidence as completion.",
+      "failureCondition": "Stored or same-process evidence is reported as fresh-session or real-ChatGPT success.",
+      "repairAction": "Return the affected layer to blocked and add the missing direct acceptance evidence.",
+      "enforcement": "mechanical_and_semantic"
+    },
+    {
+      "id": "exact-private-payload-public-code-only",
+      "source": "binding sections 1 and 8 + repository publication policy",
+      "trigger": "Handoff packets contain therapy state, transcript, journal, tracker, and candidates.",
+      "requiredBehavior": "Keep payloads and private manifests encrypted outside Git; commit only implementation, public protocol, and synthetic fixtures.",
+      "failureCondition": "Any real payload, secret, locator, private manifest, or private-derived hash reaches Git or hosted metadata.",
+      "repairAction": "Block publication, remove the material from candidate history, and rerun publication audits.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "lossless-handoff-compilation",
+      "source": "binding sections 2, 3, 5, and 9 + universal transformation-preservation principle",
+      "trigger": "A large mutable case record becomes an immutable continuation snapshot.",
+      "requiredBehavior": "Use deterministic canonical serialization and contiguous integrity-checked chunks; compare exact text and decision-relevant state after a true process restart.",
+      "failureCondition": "A chunk is omitted/reordered/changed, recent turns are regenerated, or Session B loses steering state.",
+      "repairAction": "Reject the handoff and rebuild it from the exact encrypted case record.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "one-obvious-recovery-entry",
+      "source": "universal durable-chat-learning and context-compaction-resilience",
+      "trigger": "A future session must resume with one stable handoff identifier.",
+      "requiredBehavior": "Make load_handoff(handoff_id) the primary private recovery entry and update the canonical repository checkpoint with exact remaining blockers.",
+      "failureCondition": "The next session needs the prior chat, GitHub, both case and candidate IDs, or undocumented local knowledge.",
+      "repairAction": "Repair the locator/bootstrap surface and checkpoint before delivery.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "verification-budget",
+      "source": "universal development-assurance and test-efficiency patterns",
+      "trigger": "The task affects encrypted persistence, auth, retrieval, and public UI.",
+      "requiredBehavior": "Use focused tests while iterating, then run affected security/UI tests and one complete final package gate plus exact-head hosted checks.",
+      "failureCondition": "Only unit tests or stale earlier checks support the final claim.",
+      "repairAction": "Run the missing proportional verification at the final candidate boundary.",
+      "enforcement": "mechanical"
+    }
+  ],
+  "preAttemptAdmission": {
+    "status": "PASS",
+    "evidence": [
+      "The owner binding was read in full and normalized without weakening its completion conditions.",
+      "Draft PR 49 remote and local heads matched at 44819602ad147b1ee670d46b4d1672ce05951871 before changes.",
+      "Repository authority, current state, exact validation commands, and the current universal lesson index were read.",
+      "Existing case vault, exact-source, MCP, tracker/journal, state/diff, UI, and synthetic continuity seams were inspected for composition."
+    ]
+  },
+  "closeout": {
+    "status": "PASS",
+    "evidence": [
+      "An independent Session B recovered the immutable synthetic packet with only handoff_id and authorized transport context; its exact candidate bytes and therapeutic decision projection matched Session A.",
+      "The >100k history, 20k-byte chunk ceiling, denied authorization, wrong key, encrypted export, blocked-continuation state, UI wording, and public/private separation regressions passed.",
+      "The complete Node 24.18.0 package gate passed 1038 automated tests, 29 graph regressions, 5 therapy lessons, and all repository package checks.",
+      "The real case passed semantic episode completeness, hosted OAuth/ACL/key exactness, and an actual brand-new ChatGPT load_handoff call given only the stable handoff ID; its pending candidate remains unsent and awaiting audit."
+    ]
+  }
+}

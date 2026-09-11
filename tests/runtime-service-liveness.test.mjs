@@ -275,7 +275,11 @@ test("validation failure leaves health, status, and recovery ZIP available", { t
     INNER_SIGNAL_GH_COMMAND: poison.command
   }, contaminatedParentEnv);
   try {
-    await waitFor(async () => fs.access(marker).then(() => true, () => false), "validation attempt");
+    await waitFor(async () => {
+      assert.equal(running.child.exitCode, null, `launcher exited before validation:\n${running.output()}`);
+      assert.equal(running.child.signalCode, null, `launcher was signaled before validation:\n${running.output()}`);
+      return fs.access(marker).then(() => true, () => false);
+    }, "validation attempt");
     await assertRecoverySurface({ port, ...running });
   } finally {
     await stopWrapper(running.child);
@@ -297,7 +301,11 @@ test("promotion failure restarts health, status, and recovery ZIP instead of aba
   const { bin, marker, recoveryWaiting, releaseRecovery } = await installFailingPromotionNodeWrapper(root);
   const running = startWrapper(root, bin);
   try {
-    await waitFor(async () => fs.access(marker).then(() => true, () => false), "promotion attempt");
+    await waitFor(async () => {
+      assert.equal(running.child.exitCode, null, `launcher exited before promotion:\n${running.output()}`);
+      assert.equal(running.child.signalCode, null, `launcher was signaled before promotion:\n${running.output()}`);
+      return fs.access(marker).then(() => true, () => false);
+    }, "promotion attempt");
     await waitFor(async () => fs.access(recoveryWaiting).then(() => true, () => false), "delayed recovery server");
     assert.equal(running.child.exitCode, null);
     assert.equal(running.child.signalCode, null);

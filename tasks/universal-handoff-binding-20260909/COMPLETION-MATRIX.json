@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "matrixId": "universal-handoff-binding-matrix-20260909",
+  "taskId": "universal-handoff-binding-20260909",
+  "status": "FRESH_SESSION_GREEN_CANDIDATE_AUDIT_PENDING",
+  "claimRule": "A stored or same-process handoff is not FRESH_SESSION_GREEN. The real handoff is green only because hosted exactness, production auth, ChatGPT connection, and an actual new-chat load_handoff call all passed independently.",
+  "layers": [
+    {"id":"HANDOFF_COMPILER","status":"PASS","evidence":"Canonical immutable packets freeze state, diff, exact episode, pending candidates, transcript archive, tracker/journal, retrieval indexes, and constitution/runtime/audit references with component and chunk integrity."},
+    {"id":"HANDOFF_ENCRYPTION","status":"PASS_HOSTED_BOUNDARY","evidence":"Handoffs use separate AES-256-GCM dual-wrap envelopes, mode-0600 files, a mode-0700 private root, authorization-before-key access, and no plaintext fallback. Hosted keys come from a protected runtime secret provider after OAuth and case ACL authorization."},
+    {"id":"HANDOFF_ID_BOOTSTRAP","status":"PASS_LOCAL_FRESH_PROCESS","evidence":"Independent Session B received only handoff_id plus normal test transport authorization and reconstructed the exact packet after Session A exited."},
+    {"id":"THERAPEUTIC_DECISION_EQUIVALENCE","status":"PASS_SYNTHETIC","evidence":"Session B preserved constitution version, target/path, stop/switch/stay conditions, contradictions, mixed trajectory, hypotheses, settled answers, failed paths, consent/method state, and an exact pending candidate; its deterministic decision projection equaled Session A."},
+    {"id":"OVERSIZED_HISTORY","status":"PASS","evidence":"Synthetic history exceeded 100,000 characters and the exact packet used deterministic contiguous chunks no larger than 20,000 UTF-8 bytes."},
+    {"id":"RETRIEVAL_SURFACE","status":"PASS_HOSTED_AND_CHATGPT","evidence":"Store/access/MCP operations cover handoff, live context, state diff, recent exact episode, pending candidate, targeted older evidence, tracker, journal, candidate, and exact source retrieval. The primary load_handoff path was executed by a brand-new connected ChatGPT conversation."},
+    {"id":"CANDIDATE_EXACTNESS_AND_AUDIT","status":"PASS_SYNTHETIC","evidence":"Candidate text round-tripped byte-exactly by handoff and stable candidate ID; the existing fresh-process audit adapter resolved exact private candidate text before audit."},
+    {"id":"UNAUTHORIZED_AND_WRONG_KEY","status":"PASS","evidence":"Wrong bearer and wrong routine key failed clearly without leaking the private synthetic marker or returning a public/de-identified substitute."},
+    {"id":"UI_AND_EXPORT","status":"PASS_LOCAL","evidence":"Current Saved State, What Changed This Turn, Create Handoff, and encrypted export are wired. UI language withholds completion before FRESH_SESSION_GREEN, and blocked packets show continuation failures."},
+    {"id":"PUBLIC_PRIVATE_SEPARATION","status":"PASS_LOCAL","evidence":"Local publication audit scanned 158,932 records with zero findings; synthetic payload markers were absent from tracked files and encrypted handoff exports."},
+    {"id":"COMPLETE_PACKAGE","status":"PASS","evidence":"Node 24 npm run verify passed 1038 automated tests, 29 graph regressions, 5 therapy lessons, and all package gates at the public-safe closeout state."},
+    {"id":"REAL_CASE_HANDOFF","status":"FRESH_SESSION_GREEN","evidence":"The real private episode is exact and complete from its declared semantic start through the latest turn. The same immutable handoff passed separate-process, hosted OAuth, and actual new-ChatGPT retrieval using only handoff_id, with exact recent and candidate text independently verified."},
+    {"id":"HOSTED_AUTH_KEY_BOUNDARY","status":"PASS_LIVE_CONFIG","evidence":"The live Keycloak/MCP path verifies JWT signature, issuer, exact resource audience, expiration, token scope, and server-side subject-to-case ACL before managed-secret key release. Unauthorized requests fail closed."},
+    {"id":"FRESH_CHATGPT_ACCESS","status":"PASS","evidence":"ChatGPT plugin InnerSignal Private Continuity connected over OAuth. New conversation 6aa28621-3a20-83e9-93b8-640d6054cdf3 received only the stable handoff ID, invoked load_handoff, and reported the exact unsent candidate and complete six-turn active episode."},
+    {"id":"FINAL_GITHUB_EVIDENCE","status":"PENDING_CONTAINING_COMMIT","evidence":"Exact-head required checks and hosted publication audit are run only after the containing commit is pushed; PR #49 must remain draft/open/unmerged."}
+  ]
+}

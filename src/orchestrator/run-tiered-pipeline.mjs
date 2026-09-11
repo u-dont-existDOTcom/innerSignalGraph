@@ -151,6 +151,7 @@ async function simpleResult({ context, formulation, routing, extractor, tier, co
     safety_flags: formulation.snapshot.audit?.safety_flags ?? [],
     rendererProvider: extractor.id,
     rendererModel: extractor.model,
+    producerContextId: realization.raw.responseId ?? realization.raw.requestId,
     realizationContractVersion: "response-realization-v5",
     responseContract: realization.value.responseContract,
     performance: { ...stageTimings, realizationMs, totalMs: Date.now() - Date.parse(startedAt) },

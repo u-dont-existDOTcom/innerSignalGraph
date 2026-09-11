@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "CD-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909-R3",
+  "taskId": "real-private-case-import-20260909",
+  "ownerOutcomeId": "OO-INNERSIGNAL-REAL-PRIVATE-IMPORT-20260909",
+  "ownerOutcomeEpoch": 3,
+  "reasoningSupervisorSurface": "owner_chat",
+  "strategyId": "LOSSLESS_PRIVATE_SOURCE_IMPORT_THEN_LAYERED_REMOTE_ACCEPTANCE",
+  "directiveRevision": 3,
+  "executionObjective": "Replace the fixed exchange gate with semantic active-episode completeness, create the real immutable handoff, activate hosted OAuth/case ACL/managed key access, and prove exact retrieval from a brand-new ChatGPT conversation given only handoff_id.",
+  "allowedActions": [
+    "read the owner-supplied private attachments and current repository authority",
+    "create encrypted private artifacts and credentials outside the checkout",
+    "add generic import/storage/MCP code and synthetic tests to the public repository",
+    "run local exactness, security, package, and publication gates",
+    "create and push a new task branch and draft pull request",
+    "use an approved secure MCP tunnel and register/connect it to ChatGPT when the required authentication path is available",
+    "deploy the private MCP and its encrypted private data to an owner-authorized production host with managed secrets and persistent storage",
+    "configure an established OAuth identity provider and subject-to-case ACL",
+    "create a genuinely fresh acceptance chat and run the exact pending-candidate audit only after retrieval succeeds"
+    ,"treat the owner's explicit history-transfer instruction as authorization for the specified transfer without redundant mid-task reconfirmation"
+  ],
+  "forbiddenActions": [
+    "commit or print real private source text or private-derived hashes in public artifacts",
+    "re-summarize or reinterpret the private source during ingestion",
+    "treat the pending candidate as sent history",
+    "claim production authentication or fresh-ChatGPT success without direct evidence",
+    "merge the new pull request",
+    "deploy the public app or promote stable",
+    "claim clinical validation"
+  ],
+  "requiredEvidence": [
+    "private source and artifact manifests with exact lengths and hashes",
+    "ciphertext-only storage and authorization-before-key evidence",
+    "fresh-process exact round trip of source, transcript, and candidate",
+    "semantic active-episode completeness without a fixed exchange count",
+    "OAuth signature, issuer, audience, expiration, scope, case ACL, and managed-key verification",
+    "synthetic oversized-message chunk-ingestion regression",
+    "reachable MCP and fresh-chat execution receipt or a precise external blocker",
+    "public/private leak scan and exact-head hosted checks"
+  ],
+  "stopTriggers": [
+    "the supplied source is incomplete or ambiguous for exact persistence",
+    "a private payload would enter Git or public logs",
+    "external authentication, tunnel, registration, or workspace policy cannot be completed safely after all authorized paths are exhausted",
+    "remote branch movement creates a substantive conflict"
+  ]
+}

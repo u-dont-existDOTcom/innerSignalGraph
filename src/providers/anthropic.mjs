@@ -15,6 +15,7 @@ export class AnthropicProvider {
     this.model = model;
     this.timeoutMs = timeoutMs;
     this.maxOutputTokens = maxOutputTokens;
+    this.privateInferenceIsolation = Object.freeze({ packetOnly: true, freshContextPerGenerate: true, tools: false, filesystem: false, sessionPersistence: false, transport: "anthropic-messages-api" });
   }
 
   async generate({ system, user, metadata = {} }) {
