@@ -36,6 +36,8 @@ REALIZATION RULES
 13. Keep the user's intelligence intact. Do not soothe away a legitimate accusation merely because it is emotionally harsh.
 14. Prefer cohesive conversational prose over headings unless the response truly needs structure.
 15. If a chronological older voice and an actual adult function are not established as the same thing, do not casually merge them. Describe the adult function as a role or capacity being attempted when that distinction matters.
+15a. Adult, inner parent, Nurturer, Protector, Leader and Guide are functional role labels, not proof of literal internal entities. Use parts language only when it matches the client's language; otherwise name observable capacities. Never instruct an assumed role to act before the contract has established the relevant capacity.
+15b. When developmentalCapacityContract selects one or two developmental questions, preserve the supplied semantic question kind(s). Render them naturally in the language and register of this user; the supplied English question text is a default semantic template, not canonical wording. Return each realized question in developmental_questions with its exact kind and exact rendered text, and make next_question the same text or the two texts joined in the supplied order. When questionContract.mode is canonical-pair, this is one authorized discriminating comparison and the ordinary one-question heuristic yields. Briefly acknowledge the client's reported mixed result, keep both questions in the same reply, add no substantive question in answer, add no tangent, then stop. Do not reorder the pair; the planner may choose successful-exception first or breakdown-under-distress first from context. Include the supplied POLICY.DEVELOPMENTAL_PAIRED_CONTRAST marker in realized_nodes with an exact answer quote.
 16. Distinguish an empty credibility record from an adverse one. If the user says the younger position is looking at how adult life actually went and finding that evidence unconvincing, do not write that the source "has no track record yet." Say that it has an adverse track record that now needs counterevidence.
 17. If the case formulation shows witness capacity is already present, do not recommend neutral-witness bootstrap as though the user cannot observe their own internal positions.
 18. The answer field must end in declarative prose, not a question. The runtime will append the canonical next_question deterministically after realization.
@@ -59,7 +61,10 @@ REALIZATION RULES
 Return exactly one JSON object with this shape:
 {
   "answer": "complete user-facing answer body with no final substantive question",
-  "next_question": "one discriminating question or empty string",
+  "next_question": "one discriminating question unit (including an authorized canonical pair) or empty string",
+  "developmental_questions": [
+    { "kind": "successful-exception or breakdown-under-distress", "text": "exact localized question text used in next_question" }
+  ],
   "realized_nodes": [
     { "id": "graph node ID or required POLICY.* marker materially realized in the answer", "evidence_quote": "short exact quote copied verbatim from answer" }
   ]

@@ -79,6 +79,77 @@
       "defaultQuestion": ""
     },
     {
+      "id": "IC.DEVELOPMENTAL_CAPACITY_CONTRAST",
+      "title": "Establish the developmental function before assigning it",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 99,
+      "activation": {
+        "all": [
+          {
+            "field": "developmental_inquiry_route",
+            "op": "in",
+            "value": [
+              "successful_exception",
+              "breakdown_state",
+              "paired"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.BORROW_ADULT",
+        "IC.ADULT_APPRENTICE",
+        "IC.THREE_FUNCTIONS",
+        "AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use the successful-exception inquiry, the breakdown-state inquiry, or their context-ordered comparison exactly as supplied by the developmental capacity contract.",
+        "Ask both only when each resolves a distinct action-changing uncertainty and the client can tolerate the pair; otherwise ask only the unresolved side.",
+        "Use the resulting evidence to identify observable caregiving or leadership functions without treating role language as proof of a literal internal entity."
+      ],
+      "avoid": [
+        "Do not assign an unestablished Adult, Nurturer, Protector, Leader, or Guide another task.",
+        "Do not add symptom-function, rejection, false-self, substance, shaking, or generic consent and boundary tangents to this comparison."
+      ],
+      "successSignals": [
+        "The selected inquiry identifies an emerging function, what disappears under distress, or both when the comparison is justified."
+      ],
+      "tags": [
+        "developmental-prerequisite",
+        "context-sensitive-assessment",
+        "reparenting"
+      ],
+      "effects": {
+        "deferNodes": [
+          "IC.CREDIBILITY_REPAIR",
+          "IC.PROTECTOR_ACTION",
+          "IC.GUIDE_LATER"
+        ],
+        "blockNodes": [],
+        "requiredNuance": [
+          "When both questions are selected, their evidence-selected order forms one discriminating comparison rather than two competing agendas; when one side is already known, ask only the unresolved side."
+        ],
+        "forbiddenOverclaims": [
+          "Do not infer capacity, trust, or a coherent inner Adult from vocabulary alone."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
       "id": "IC.NEUTRAL_WITNESS",
       "title": "Begin with a neutral witness",
       "kind": "decision-node",
@@ -397,9 +468,19 @@
               "unsafe",
               "inaccessible"
             ]
+          },
+          {
+            "field": "developmental_capacity_state",
+            "op": "eq",
+            "value": "absent_inaccessible"
           }
         ],
         "none": [
+          {
+            "field": "developmental_capacity_state",
+            "op": "eq",
+            "value": "partial_intermittent_state_dependent"
+          },
           {
             "field": "present_safety",
             "op": "eq",
@@ -417,7 +498,8 @@
         "IC.ADULT_APPRENTICE",
         "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
-        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+        "AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -471,6 +553,13 @@
               "low",
               "partial"
             ]
+          }
+        ],
+        "any": [
+          {
+            "field": "developmental_capacity_state",
+            "op": "eq",
+            "value": "partial_intermittent_state_dependent"
           },
           {
             "field": "support_available",
@@ -605,6 +694,13 @@
       "tier": 3,
       "priority": 96,
       "activation": {
+        "all": [
+          {
+            "field": "inner_adult_reliability",
+            "op": "eq",
+            "value": "reliable"
+          }
+        ],
         "any": [
           {
             "field": "credibility_conflict",
@@ -621,7 +717,8 @@
       "sourceRefs": [
         "IC.PROTECTOR_VISIBLE",
         "IC.VOW",
-        "IC.BOTTOM_UP_SEQUENCE"
+        "IC.BOTTOM_UP_SEQUENCE",
+        "AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -719,17 +816,9 @@
       "activation": {
         "any": [
           {
-            "field": "credibility_conflict",
+            "field": "developmental_missing_function",
             "op": "eq",
-            "value": "present"
-          },
-          {
-            "field": "inner_adult_access",
-            "op": "in",
-            "value": [
-              "low",
-              "partial"
-            ]
+            "value": "protector"
           },
           {
             "field": "protective_response",
@@ -741,7 +830,8 @@
       "sourceRefs": [
         "IC.PROTECTOR_VISIBLE",
         "IC.ADULT_APPRENTICE",
-        "AMEND.CROSS.LITERATURE_ACTION_REVIEW"
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+        "AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE"
       ],
       "authority": "author-framework",
       "recommendations": [

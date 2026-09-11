@@ -13,7 +13,7 @@ anchors:
   - IC.PROTECTOR_ACTION
 reconciled_nodes: []
 base_record_sha256: cf4ad974e1ef89b50dabb9c17f91d60c27d215b890ccb91eb9ac7629adc41803
-projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76c7cf11778
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Review without holding a trial

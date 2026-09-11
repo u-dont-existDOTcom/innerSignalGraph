@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "directiveId": "CD-INNERSIGNAL-DEVELOPMENTAL-PREREQUISITE-20260911-R1",
+  "taskId": "reparenting-developmental-prerequisite-20260911",
+  "ownerOutcomeId": "OO-INNERSIGNAL-DEVELOPMENTAL-PREREQUISITE-20260911",
+  "ownerOutcomeEpoch": 1,
+  "strategyId": "EVIDENCE_BOUND_CAPACITY_AND_CONTEXT_SENSITIVE_CONTRAST",
+  "executionObjective": "Complete PR 52 by adding an auditable developmental-capacity prerequisite gate and deterministic context-sensitive selection of a successful-exception inquiry, breakdown-state inquiry, or justified ordered pair across extraction, audit, planning, graph selection, realization, response enforcement, and longitudinal state.",
+  "allowedActions": [
+    "work on the existing PR 52 branch in an isolated local workspace",
+    "modify public runtime code, prompts, candidate graph sources, generated authoring projections, synthetic regressions, task records, and therapy lessons within this scope",
+    "use exact Node 24.18.0 and npm 11.16.0 for focused and full verification",
+    "obtain fresh independent exact-head review, push the verified branch, mark PR 52 ready, merge it to main when all checks and findings are clear, and perform post-merge verification"
+  ],
+  "forbiddenActions": [
+    "access, mutate, summarize, or publish a real private case or transcript",
+    "run paid provider or semantic-evaluation calls",
+    "invent literal internal entities or diagnose from role language",
+    "weaken safety, consent, external-action, epistemic, or privacy controls",
+    "deploy, install, release, promote stable, or claim clinical validation",
+    "rewrite shared history, force-push, or delete unmerged work"
+  ],
+  "requiredEvidence": [
+    "R-ADULT-01 through R-ADULT-12 synthetic regressions",
+    "graph compilation and all canonical graph cases",
+    "official authoring projection, validation, drift, and map checks",
+    "therapy lesson verification",
+    "repository and publication audits",
+    "complete exact-runtime package verification",
+    "fresh independent review bound to exact candidate head and reconciled findings",
+    "hosted exact-head checks and post-merge main verification"
+  ]
+}

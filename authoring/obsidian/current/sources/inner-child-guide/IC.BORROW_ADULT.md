@@ -11,8 +11,9 @@ source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
 section_hash: bbe3987ef92f3b14ffc9183ca8b88b6e00b8ec65743062c6c3dbb3f000d3be16
 locator_kind: text-lines
 cited_by_node_ids:
+  - IC.DEVELOPMENTAL_CAPACITY_CONTRAST
   - IC.NEUTRAL_WITNESS
-projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76c7cf11778
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Borrow the Adult Before You Can Be the Adult

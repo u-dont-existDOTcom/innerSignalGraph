@@ -105,6 +105,19 @@ export const realizationSchema = {
   properties: {
     answer: { type: "string" },
     next_question: { type: "string" },
+    developmental_questions: {
+      type: "array",
+      maxItems: 2,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          kind: { type: "string", enum: ["successful-exception", "breakdown-under-distress"] },
+          text: { type: "string" }
+        },
+        required: ["kind", "text"]
+      }
+    },
     realized_nodes: {
       type: "array",
       items: {

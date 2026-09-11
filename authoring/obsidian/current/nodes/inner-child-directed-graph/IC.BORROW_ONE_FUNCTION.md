@@ -22,6 +22,7 @@ source_refs:
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
   - AMEND.CROSS.LITERATURE_TASK_PROGRESS
   - AMEND.IC.EMOTIONAL_TASK_GUIDANCE
+  - AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE
 regression_refs:
   - G001
   - G002
@@ -32,9 +33,9 @@ regression_refs:
   - G012
   - G017
   - G033
-base_record_sha256: 94f6ba7684c351849622447532f54e9f234f106bee02470d6301d37178ca7e02
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76c7cf11778
+base_record_sha256: ef19106afadb5dab07093e89eaae07863d2319e82e40ee3dc2ac546d5968e837
+base_graph_sha256: 4a25d27086c6ec2f11a67ec6592d058e3ad3bb63d37be10a78e9a8f48f1cf206
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Borrow one bounded adult function
@@ -72,9 +73,19 @@ projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76
           "unsafe",
           "inaccessible"
         ]
+      },
+      {
+        "field": "developmental_capacity_state",
+        "op": "eq",
+        "value": "absent_inaccessible"
       }
     ],
     "none": [
+      {
+        "field": "developmental_capacity_state",
+        "op": "eq",
+        "value": "partial_intermittent_state_dependent"
+      },
       {
         "field": "present_safety",
         "op": "eq",
@@ -130,3 +141,5 @@ projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]
 
 [[current/governance/amendments/AMEND.IC.EMOTIONAL_TASK_GUIDANCE]]
+
+[[current/governance/amendments/AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE]]

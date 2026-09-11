@@ -175,9 +175,9 @@
       ]
     },
     "plan": {
-      "primary": "IC.CREDIBILITY_REPAIR",
+      "primary": "IC.ADULT_APPRENTICE",
       "selectedIncludes": [
-        "IC.BORROW_ONE_FUNCTION",
+        "IC.MEET_GUARD",
         "IC.AGE_RESPONSIBILITY_CLARIFICATION"
       ],
       "deferredIncludes": [],
@@ -186,11 +186,12 @@
       ],
       "nextQuestion": "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?",
       "requiredNuancePatterns": [
-        "existing adverse track record",
+        "observable adult-life outcome",
         "Chronological adulthood does not establish",
-        "already demonstrates witness capacity"
+        "already demonstrates witness capacity",
+        "Capacity exists in some states"
       ]
     }
   },
-  "acceptanceVersion": "A001-plan-response-realization-v6"
+  "acceptanceVersion": "A001-plan-response-realization-v7"
 }

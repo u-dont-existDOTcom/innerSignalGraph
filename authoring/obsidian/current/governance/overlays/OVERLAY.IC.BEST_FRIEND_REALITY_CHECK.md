@@ -12,7 +12,7 @@ anchors:
   - IC.BORROW_ONE_FUNCTION
 reconciled_nodes: []
 base_record_sha256: c6144f2337899cc13d89971b0433ce4e85e20cbe307c16421ffa01ab75fa6cf9
-projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76c7cf11778
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Reality-check borrowed best-friend advice

@@ -170,6 +170,24 @@
     "case_extraction": {
       "user_goal": "Understand and change the internal war between a skeptical younger state, an angry blaming voice, and an attempted protective adult role.",
       "current_issue": "Love is accessible but feels unsafe because the younger state finds the adult outcome and promises unconvincing; relaxation has not resolved the standoff.",
+      "developmental_capacity": {
+        "issue": "Love is accessible but feels unsafe because the younger state finds the adult outcome and promises unconvincing; relaxation has not resolved the standoff.",
+        "language_mode": "CLIENT_PARTS_LANGUAGE",
+        "status": "PARTIAL_INTERMITTENT_STATE_DEPENDENT",
+        "access": "PARTIAL",
+        "reliability": "INTERMITTENT",
+        "younger_state_trust": "LOW",
+        "observation_ids": ["O1", "O2", "O3", "O4"],
+        "practice": null,
+        "contrast": null,
+        "functions": [
+          {
+            "kind": "CARING",
+            "access": "PARTIAL",
+            "observation_ids": ["O1"]
+          }
+        ]
+      },
       "direct_observations": [
         {
           "id": "O1",
@@ -290,6 +308,10 @@
         {
           "id": "IC.BORROW_ONE_FUNCTION",
           "evidence_quote": "that is a good place to borrow adulthood for that side too"
+        },
+        {
+          "id": "IC.ADULT_APPRENTICE",
+          "evidence_quote": "practice five percent of that response"
         }
       ]
     }

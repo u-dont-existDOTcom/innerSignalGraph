@@ -1,4 +1,4 @@
-# Reparenting Telos / Target-Utility Gate
+# Reparenting Telos, Target-Utility, and Developmental-Prerequisite Gates
 
 Date: 2026-09-11
 Status: owner-authorized development candidate; not installed or released
@@ -8,9 +8,34 @@ Branch: `codex/reparenting-telos-target-gate-20260911`
 
 Inner Signal can preserve a relevant presenting emotion or episode so aggressively that salience becomes agenda. In reparenting work, a client may name shame, rejection, inhibition, a false-self feeling, or another painful event; the formulation can then promote that presentation into the active therapeutic bottleneck and spend turns asking what the emotion does, why it exists, or exactly how the episode hurt. Those questions can be coherent and still be therapeutically downstream.
 
-The failure is not solved by simply following the client's current topic less or by asking fewer questions. The therapy has a defined telos: develop an inner adult the younger state can increasingly trust through Nurturer, Protector, and Guide/Leader capacities plus observable follow-through. Presenting symptoms and episodes are evidence about that developmental relationship; they are not automatically treatment targets.
+The failure is not solved by simply following the client's current topic less or by asking fewer questions. The therapy has a defined telos: develop self-directed Nurturer, Protector, and Guide/Leader functions plus observable follow-through. Presenting symptoms and episodes are evidence about that developmental process; they are not automatically treatment targets. Role language is not proof that a coherent inner Adult or any particular capacity already exists.
 
 The existing response realizer cannot reliably repair this mistake downstream because it is intentionally told that formulation is complete and must follow the deterministic intervention contract. The correction therefore belongs upstream in extraction, audit, target selection, and question eligibility.
+
+## Governing developmental-prerequisite amendment
+
+Every developmental question must independently pass both of these gates:
+
+1. **Treatment utility:** plausible answers can materially change target, route, or intervention.
+2. **Developmental prerequisite validity:** the question does not presuppose a caregiving/leadership function or internal relationship that current evidence has not established.
+
+Gate 2 fails as `DEVELOPMENTAL_PREREQUISITE_VIOLATION`. Invalidating the question or strategy must preserve true source observations.
+
+Adult, inner parent, Nurturer, Protector, Leader, Guide, child, and similar labels remain functional shorthand. The evidence-bearing units are observable capacities: noticing, staying present, caring, soothing without abandoning reality, protecting, orienting, deciding, guiding, tolerating affect, following through, and repairing after a miss. Client-supplied parts language may be used when helpful, but it does not establish a literal entity or adequate capacity.
+
+The developmental route distinguishes `UNKNOWN`, `ABSENT_OR_INACCESSIBLE`, `PARTIAL_INTERMITTENT_STATE_DEPENDENT`, `AVAILABLE`, `AVAILABLE_LOW_CREDIBILITY`, and `INCREASINGLY_RELIABLE_CREDIBLE`. Unknown remains valid. Absence routes to bounded borrowed scaffolding and capacity construction; partial or state-dependent access routes to strengthening/generalization; available but distrusted capacity routes to credibility through observable follow-through; sufficiently reliable capacity permits role-specific reparenting and later ordinary-life transfer. “Adult acts first” is a credibility rule after enough function exists, not an existence assumption.
+
+### Context-sensitive developmental inquiry
+
+Successful-exception and breakdown-state questions are separate question classes. The planner selects from the current information gap:
+
+- A successful-exception inquiry discovers what the client actually does differently when reparenting or self-love helps and which functions may already be emerging.
+- A breakdown-state inquiry discovers what happens internally under shame, rejection, confusion, overwhelm, or loss of control and which functions disappear under load.
+- Both may appear in the same reply only when each resolves a distinct unresolved action-changing uncertainty, neither repeats recent evidence, the client can likely tolerate two questions without losing focus, and no safety, stabilization, or external-action priority overrides them.
+
+When both are justified, they are one discriminating comparison and may outrank a generic one-question heuristic. Their order is selected from context: successful-exception first is often useful for locating nascent capacity, while breakdown first may better attune to an acutely described distress state. When one side is already established or load argues for less, ask only the other. The planner must not manufacture a pair or ordering from a global template.
+
+The selected inquiry must remain focused. Do not automatically bundle rejection meaning, shame-function theory, false-self ontology, substances, shaking, or generic consent/boundary teaching. These may remain background evidence unless they change the developmental route.
 
 ## Independent conception snapshot
 
@@ -157,10 +182,13 @@ Expected:
 
 The candidate is ready for owner/reviewer consideration when:
 
-1. extraction and audit prompts encode the target-utility invariant;
-2. auditor can invalidate a path strategy without deleting valid observations;
-3. planner does not choose explicitly non-action-changing fallback unknowns;
-4. realization defines the live knot as treatment-relevant rather than salient;
-5. both positive and negative/control regressions are present;
-6. targeted tests, graph tests, therapy-lesson verification, and full package gate pass on the exact candidate commit;
-7. the public task ledger records verification without private case data.
+1. extraction and audit prompts encode both independent gates and the exact prerequisite-violation code;
+2. auditor can invalidate a path strategy or ineligible question without deleting valid observations;
+3. planner does not choose explicitly non-action-changing fallback unknowns or a question that presupposes unestablished capacity;
+4. evidence-bound state distinguishes absence, partial/state-dependent access, availability, credibility, and increasingly reliable follow-through;
+5. successful-exception and breakdown-state inquiries are independently selectable, a justified pair preserves context-selected order as one unit, and one sufficient question is not expanded into a pair;
+6. realization defines the live knot as treatment-relevant rather than salient, preserves safety/external precedence, and rejects tangent bundling;
+7. all `R-ADULT-01` through `R-ADULT-12` synthetic regressions and the earlier positive/negative target-utility controls are present;
+8. targeted tests, graph compilation/regressions, therapy-lesson verification, authoring projection/checks, repository/publication audits, and the full package gate pass on the exact candidate commit;
+9. fresh independent exact-head review and hosted exact-head checks are green before merge;
+10. the public task ledger records verification without private case data.

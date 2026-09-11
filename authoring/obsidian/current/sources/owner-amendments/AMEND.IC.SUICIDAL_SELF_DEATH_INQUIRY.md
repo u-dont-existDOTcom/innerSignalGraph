@@ -7,14 +7,14 @@ source_id: AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY
 guide_id: owner-amendments
 heading: AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY
 source_role: owner-approved-extension
-source_hash: 1d1d78a359df20cddf3aac6f5f93bb3badda84b7bcf7bcff085d8ee9f75e0dd1
+source_hash: b9142c7cc0361cfebaf8a908a61dfd800b6ec6184a2244e4ac839b36210f7520
 section_hash: 59b5186c39ee4caadc93b37d138dcda7c94fa450f6254e02ae3997eee485e992
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.PRECIOUS_HUMAN_OPPORTUNITY
   - IC.SUICIDAL_ADULT_SEAT
   - IC.SUICIDAL_SELF_DEATH_INQUIRY
-projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76c7cf11778
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY

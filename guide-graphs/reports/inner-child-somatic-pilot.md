@@ -4,13 +4,13 @@ Bundle: `inner-child-somatic-pilot-2026-08-09-r5`
 
 ## Compiled graphs
 
-- inner-child-directed-graph: 28 nodes, 25 edges
+- inner-child-directed-graph: 29 nodes, 25 edges
 - somatic-directed-graph: 14 nodes, 8 edges
 - inner-child-somatic-cross-guide: 11 nodes, 37 edges
 
 ## Authority labels
 
-- author-framework: 41
+- author-framework: 42
 - owner-approved-extension: 12
 
 ## Owner-approved extensions applied
@@ -41,6 +41,7 @@ Bundle: `inner-child-somatic-pilot-2026-08-09-r5`
 - AMEND.CROSS.LITERATURE_ACTION_REVIEW: Use the existing outward, Protector and apprentice routes for agreed feasible actions. Establish only useful details of cue, size, resources, purpose and review. Review actual attempts and their consequences; check opportunity, practical constraints, skill, safety and competing consequences before inferring resistance. Completion or immediate relief is not the sole criterion. Rest, connection, flexibility, grief and appropriate relinquishment may be useful; activity does not mean productivity or forced exposure. Return capacity and judgment without requiring refusal of help.
 - AMEND.IC.EMOTIONAL_TASK_GUIDANCE: Carry bounded original emotional-task guidance and change signals into the response path: unclear feeling, reported self-treatment, interruption, unmet relational need or care for anguish, without imposing a part or history. Use the reported marker, an agreed small step, the person’s response and a partial change point. Preserve justified emotion and valid accountability; do not assume all anger hides sadness or that tears mean improvement. Adapt intrusive care instead of intensifying it. Non-cruelty may begin love, not replace it; include attunement, delight and supported exploration. Stop or reduce depth when orientation or stopping capacity is lost. Emotion-focused therapy is not tapping EFT.
 - AMEND.IC.SPIRITUAL_STRUGGLE: Treat distress within a valued sacred relationship, practice or community as a possible current therapeutic job in its own right. Follow what the person wants to preserve, mourn, reconsider or change. Neither stronger belief nor rejection of the tradition is required. Do not infer spiritual failure, divine judgment, a literal entity or a parental projection. Do not send the person back into a distressing spiritual resource without examining its fit and willingness. Mature capacity can include action where possible and surrender of control that is not theirs; ongoing prayer is not failed development. Ordinary safety and human support remain independent.
+- AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE: Before a reparenting, inner-child, or self-love intervention asks an Adult, inner parent, Nurturer, Protector, Leader, or Guide to act, independently establish the observable function the question presupposes. Functional labels do not prove literal internal entities or sufficient capacity. Distinguish absence, partial or state-dependent access, available capacity, credibility, and increasingly reliable follow-through. Successful-exception and breakdown-state inquiries are separate options, not a mandatory pair or fixed sequence. Use both in the same reply only when each answers a distinct unresolved, action-changing uncertainty, neither is redundant with recent evidence, the client is likely to tolerate two questions without losing focus, and no higher-priority route applies. Preserve the context-selected order. A justified pair is one discriminating unit and outranks ordinary one-question minimization, but safety and external protection remain first. Do not add tangential investigation. Borrowed support should build internal capacity, and credibility repair begins only after the relevant capacity exists.
 
 ## Cross-guide decisions encoded
 

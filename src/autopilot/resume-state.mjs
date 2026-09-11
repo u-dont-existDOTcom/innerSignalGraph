@@ -2,6 +2,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { evaluateStructuredBenchmark } from "./benchmark-acceptance.mjs";
 import { planFromGraphs } from "../guide-graph/planner.mjs";
+import {
+  applyDevelopmentalCapacityToVariables,
+  decoratePlanWithDevelopmentalCapacity,
+  developmentalCapacityDecision
+} from "../case-formulation/developmental-capacity.mjs";
 
 export const CHECKPOINT_VERSION = "inner-signal-checkpoints-v6";
 export const H001_PIPELINE_REVISION = "hypnosis-compiler-v1";
@@ -57,13 +62,21 @@ function validH001Result(wrapper, guideVersion) {
 
 function replanA001Result(result, graphs, guideVersion) {
   if (!result?.caseFormulation?.variables || !Array.isArray(graphs) || graphs.length === 0) return result;
-  const plan = planFromGraphs({
-    variables: result.caseFormulation.variables,
+  const developmentalDecision = developmentalCapacityDecision(result.caseFormulation.developmental_capacity ?? null);
+  const variables = applyDevelopmentalCapacityToVariables(
+    result.caseFormulation.variables,
+    result.caseFormulation.developmental_capacity ?? null,
+    developmentalDecision
+  );
+  const rawPlan = planFromGraphs({
+    variables,
     unknowns: result.caseFormulation.unknowns ?? [],
     graphs,
     turnTask: result.caseFormulation.turn_task ?? null,
-    pathPerformance: result.caseFormulation.path_performance ?? null
+    pathPerformance: result.caseFormulation.path_performance ?? null,
+    preferredNodeId: developmentalDecision?.recommendedNodeId ?? null
   });
+  const plan = decoratePlanWithDevelopmentalCapacity(rawPlan, developmentalDecision);
   return {
     ...result,
     migratedFromGuideVersion: result.guideVersion === guideVersion ? null : result.guideVersion,

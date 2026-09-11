@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "ownerOutcomeId": "OO-INNERSIGNAL-DEVELOPMENTAL-PREREQUISITE-20260911",
+  "epoch": 1,
+  "source": {
+    "kind": "owner_supplied_task",
+    "recordedAt": "2026-09-11",
+    "publicSafeProjectionOnly": true,
+    "privateContentExcluded": true
+  },
+  "normalizedResult": "Inner Signal independently verifies that a reparenting question's required caregiving or leadership capacity exists before assigning the Adult role an action, selects a successful-exception inquiry, breakdown-state inquiry, or justified context-ordered pair from the unresolved information need, preserves safety precedence and functional language, then routes follow-up to the function actually missing.",
+  "requiredOutcomes": [
+    {"id":"RO-ADULT-01","text":"Keep treatment utility and developmental prerequisite validity as independent question gates.","terminalRequired":true},
+    {"id":"RO-ADULT-02","text":"Persist an evidence-bound capacity assessment that distinguishes absence, state-dependent access, availability, credibility, and reliable follow-through.","terminalRequired":true},
+    {"id":"RO-ADULT-03","text":"Emit and retain exact audit code DEVELOPMENTAL_PREREQUISITE_VIOLATION while preserving true observations.","terminalRequired":true},
+    {"id":"RO-ADULT-04","text":"Treat successful-exception and breakdown-state inquiries as independent options; ask both only when each resolves a distinct unresolved action-changing uncertainty, neither is redundant, the pair is tolerable, and no higher-priority route applies; preserve the context-selected order.","terminalRequired":true},
+    {"id":"RO-ADULT-05","text":"Let operational safety and external protection outrank developmental inquiry and reject every extra tangent question.","terminalRequired":true},
+    {"id":"RO-ADULT-06","text":"Use functional role language without imposing literal parts and without inferring capacity from vocabulary.","terminalRequired":true},
+    {"id":"RO-ADULT-07","text":"Route absence to bounded borrowed scaffolding, partial access to generalization, available but distrusted capacity to credibility repair, and observed role gaps to the matching existing function route.","terminalRequired":true},
+    {"id":"RO-ADULT-08","text":"Carry current capacity evidence and the selected single-or-paired question shape through longitudinal state and response enforcement.","terminalRequired":true},
+    {"id":"RO-ADULT-09","text":"Pass all twelve named synthetic regressions plus repository gates, independent review, hosted exact-head checks, merge, and post-merge verification.","terminalRequired":true}
+  ],
+  "nonSatisfyingProxies": [
+    "prompt wording without schema, audit, planner, response-contract, and longitudinal enforcement",
+    "treating Adult or parts vocabulary as proof that the needed function exists",
+    "forcing two questions when one side is already established or the pair is not tolerable",
+    "forcing successful-exception-first ordering when acute distress supports breakdown-first",
+    "adding rejection, shame-function, false-self, substance, shaking, or generic boundary tangents to the selected developmental inquiry",
+    "claiming clinical efficacy from deterministic tests"
+  ]
+}

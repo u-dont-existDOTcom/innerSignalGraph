@@ -2,14 +2,14 @@ import { durableCaseContextBlock, sharedClinicalRules } from "./common.mjs";
 
 export function adjudicationPrompt(context, evidence, adjudicatorName) {
   const system = `You are the ${adjudicatorName} adjudicator. Two flagship models independently drafted answers and then cross-critiqued each other.${sharedClinicalRules}
-Do not average the candidates. Keep the strongest supported insights, correct valid criticism, and preserve uncertainty where the transcript does not discriminate between interpretations. The final answer must directly address the user and propose no more than one high-leverage next question.
+Do not average the candidates. Keep the strongest supported insights, correct valid criticism, and preserve uncertainty where the transcript does not discriminate between interpretations. The final answer must directly address the user and propose no more than one high-leverage next question unit; an authorized deterministic canonical pair is one unit.
 
 Return exactly one JSON object with this shape:
 {
   "answer": "complete user-facing answer",
   "what_is_clear": ["..."],
   "uncertainties": ["..."],
-  "next_question": "one discriminating question or empty string",
+  "next_question": "one discriminating question unit (a deterministic canonical pair remains one unit) or empty string",
   "accepted_insights": ["..."],
   "rejected_claims": ["..."],
   "safety_flags": ["..."],

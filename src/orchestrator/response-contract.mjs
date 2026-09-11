@@ -2,6 +2,7 @@ import {
   romanceReferenceMentions,
   isCanonicalRomanceReferenceToken
 } from "../core/romance-reference.mjs";
+import { DEVELOPMENTAL_BREAKDOWN_QUESTION, DEVELOPMENTAL_SUCCESS_QUESTION } from "../case-formulation/developmental-capacity.mjs";
 
 function text(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -106,13 +107,23 @@ export function requiredRealizationNodeIds(plan = {}) {
 export function canonicalQuestion({ plan, adjudication } = {}) {
   if (plan?.questionContract?.mode === "none") return "";
   if (plan?.questionContract?.mode === "canonical") return text(plan.questionContract.question);
+  if (plan?.questionContract?.mode === "canonical-pair") {
+    const questions = plan.questionContract.questions;
+    if (!Array.isArray(questions) || questions.length !== 2 || questions.some(item => !text(item))) {
+      throw new TypeError("A canonical-pair question contract requires exactly two non-empty ordered questions.");
+    }
+    const joined = questions.map(text).join("\n\n");
+    if (text(plan.questionContract.question) !== joined) throw new TypeError("Canonical-pair question text must preserve the ordered question unit exactly.");
+    return joined;
+  }
   return text(plan?.questionContract?.question)
     || text(plan?.nextQuestion)
     || text(adjudication?.next_question);
 }
 
 export function enforceResponseContract(realization, { plan, adjudication } = {}) {
-  const question = canonicalQuestion({ plan, adjudication });
+  const plannedQuestion = canonicalQuestion({ plan, adjudication });
+  const originalAnswer = text(realization?.answer);
   const paragraphs = splitParagraphs(realization?.answer);
   let strippedQuestion = "";
 
@@ -126,9 +137,8 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
     }
   }
 
-  const answerBody = paragraphs.join("\n\n").trim();
-  const userFacingAnswer = [answerBody, question].filter(Boolean).join("\n\n");
   const rendererQuestion = text(realization?.next_question);
+  const answerBody = paragraphs.join("\n\n").trim();
   const requiredNodeIds = requiredRealizationNodeIds(plan);
   const normalizedAnswer = answerBody.replace(/\s+/g, " ").trim();
   const reportedRealizations = Array.isArray(realization?.realized_nodes) ? realization.realized_nodes : [];
@@ -147,6 +157,48 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const missingNodeIds = requiredNodeIds.filter((id) => !realizedNodeIds.includes(id));
   const requiredThreatPathwayMarker = text(plan?.threatPathwayContract?.marker);
   const missingThreatPathwayMarker = Boolean(requiredThreatPathwayMarker && !realizedNodeIds.includes(requiredThreatPathwayMarker));
+  const developmentalContract = plan?.developmentalCapacityContract ?? null;
+  const developmentalQuestionRoute = Boolean(developmentalContract
+    && ["canonical", "canonical-pair"].includes(plan?.questionContract?.mode)
+    && developmentalContract.questionOrder?.length);
+  const reportedDevelopmentalQuestions = Array.isArray(realization?.developmental_questions)
+    ? realization.developmental_questions.map(item => ({ kind: text(item?.kind), text: text(item?.text) })) : null;
+  const expectedDevelopmentalOrder = developmentalContract?.questionOrder ?? [];
+  const reportedDevelopmentalQuestion = reportedDevelopmentalQuestions?.map(item => item.text).join("\n\n") ?? "";
+  const developmentalQuestionShapePassed = !developmentalQuestionRoute || reportedDevelopmentalQuestions == null || (
+    reportedDevelopmentalQuestions.length === expectedDevelopmentalOrder.length
+    && reportedDevelopmentalQuestions.every((item, index) => item.kind === expectedDevelopmentalOrder[index] && Boolean(item.text))
+    && normalizeQuestion(rendererQuestion) === normalizeQuestion(reportedDevelopmentalQuestion)
+  );
+  // Historical/mock realizations may omit the structured semantic-question
+  // report and use the deterministic English default. Live realizations can
+  // supply localized wording while preserving the selected semantic kinds.
+  const question = developmentalQuestionRoute && reportedDevelopmentalQuestions?.length && developmentalQuestionShapePassed
+    ? reportedDevelopmentalQuestion : plannedQuestion;
+  const userFacingAnswer = [answerBody, question].filter(Boolean).join("\n\n");
+  const pairedDevelopmentalRoute = developmentalContract?.pairedContrastRequired === true
+    && plan?.questionContract?.mode === "canonical-pair";
+  const requiredDevelopmentalPolicyMarker = text(developmentalContract?.requiredPolicyMarker);
+  const missingDevelopmentalPolicyMarker = Boolean(requiredDevelopmentalPolicyMarker
+    && !realizedNodeIds.includes(requiredDevelopmentalPolicyMarker));
+  const unexpectedDevelopmentalRouteQuestionCount = developmentalQuestionRoute
+    ? (originalAnswer.match(/\?/g) ?? []).length : 0;
+  const unexpectedPairedRouteQuestionCount = pairedDevelopmentalRoute
+    ? unexpectedDevelopmentalRouteQuestionCount : 0;
+  const orderedQuestionByKind = {
+    "successful-exception": DEVELOPMENTAL_SUCCESS_QUESTION,
+    "breakdown-under-distress": DEVELOPMENTAL_BREAKDOWN_QUESTION
+  };
+  const pairedOrder = plan?.questionContract?.order ?? [];
+  const expectedPairedQuestions = pairedOrder.map(kind => orderedQuestionByKind[kind]);
+  const pairedContrastOrderPassed = !pairedDevelopmentalRoute || (
+    pairedOrder.length === 2
+    && new Set(pairedOrder).size === 2
+    && expectedPairedQuestions.every(Boolean)
+    && JSON.stringify(plan.questionContract.questions) === JSON.stringify(expectedPairedQuestions)
+    && plannedQuestion === expectedPairedQuestions.join("\n\n")
+    && developmentalQuestionShapePassed
+  );
   const unexpectedThreatPathwayMarkers = realizedNodeIds.filter(id => THREAT_PATHWAY_MARKERS.includes(id) && id !== requiredThreatPathwayMarker);
   const pathContract = plan?.pathPerformanceContract;
   const prohibitedNodeIds = pathContract?.prohibit_prior_exercise
@@ -187,14 +239,16 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const pathAdherence = (!pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0))
     && missingRelationalPolicyMarkers.length === 0 && forbiddenRelationalPolicyMarkers.length === 0
     && !missingRepresentationPolicyMarker && !forbiddenPriorRepresentationPolicyMarker && unexpectedRepresentationPolicyMarkers.length === 0 && symbolicOverclaims.length === 0
-    && !missingThreatPathwayMarker && unexpectedThreatPathwayMarkers.length === 0 && romanceGuideAdherence;
+    && !missingThreatPathwayMarker && unexpectedThreatPathwayMarkers.length === 0 && romanceGuideAdherence
+    && !missingDevelopmentalPolicyMarker && unexpectedDevelopmentalRouteQuestionCount === 0
+    && developmentalQuestionShapePassed && pairedContrastOrderPassed;
 
   return {
     answer: userFacingAnswer,
     answer_body: answerBody,
     next_question: question,
     responseContract: {
-      version: "response-question-contract-v3",
+      version: "response-question-contract-v4",
       canonicalQuestion: question,
       rendererQuestion,
       rendererQuestionMatched: normalizeQuestion(rendererQuestion) === normalizeQuestion(question),
@@ -210,6 +264,18 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
         missingThreatPathwayMarker,
         unexpectedThreatPathwayMarkers,
         threatPathwaySemanticLimit: "GROUNDED_MARKER_REQUIRES_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW"
+      } : {}),
+      ...(developmentalContract ? {
+        requiredDevelopmentalPolicyMarker,
+        missingDevelopmentalPolicyMarker,
+        pairedContrastRequired: pairedDevelopmentalRoute,
+        pairedContrastOrderPassed,
+        developmentalQuestionShapePassed,
+        reportedDevelopmentalQuestions: reportedDevelopmentalQuestions ?? [],
+        unexpectedDevelopmentalRouteQuestionCount,
+        unexpectedPairedRouteQuestionCount,
+        prohibitedDevelopmentalTangentTopics: developmentalContract.prohibitedTangentTopics ?? [],
+        developmentalSemanticLimit: "GROUNDED_MARKER_AND_QUESTION_SHAPE_REQUIRE_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW"
       } : {}),
       ...(relationalTracked ? { relationalPolicyMarkersRequired: relational.required, missingRelationalPolicyMarkers, forbiddenRelationalPolicyMarkers } : {}),
       ...(representation ? {
@@ -229,7 +295,7 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
         forbiddenRomanceGuideReference,
         unsupportedRomanceGuideReferenceMarker
       } : {}),
-      ...(pathContract || requiredThreatPathwayMarker || relational.required.length || relational.forbidden.length || romanceGuide ? {
+      ...(pathContract || requiredThreatPathwayMarker || relational.required.length || relational.forbidden.length || romanceGuide || developmentalContract ? {
         pathPerformanceAdherencePassed: pathAdherence,
         prohibitedRealizationNodeIds: [...new Set(prohibitedNodeIds)],
         semanticAdherence: relationalTracked ? "DECLARED_POLICY_MARKERS_ARE_VERBATIM_GROUNDED_BUT_REQUIRE_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW" : "REQUIRES_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW"

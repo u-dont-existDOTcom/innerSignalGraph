@@ -18,8 +18,8 @@ source_refs:
   - IC.FORGIVENESS
 regression_refs: []
 base_record_sha256: 003ae2954c5b90662580813ea8156252c51249fb9d3793fa74e12588a6b1a107
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76c7cf11778
+base_graph_sha256: 4a25d27086c6ec2f11a67ec6592d058e3ad3bb63d37be10a78e9a8f48f1cf206
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Approach forgiveness without bypassing accountability

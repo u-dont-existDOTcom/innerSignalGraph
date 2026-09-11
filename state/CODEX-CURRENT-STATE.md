@@ -2,6 +2,16 @@
 
 Updated: 2026-09-11
 
+## Reparenting target and developmental-prerequisite repair (PR #52 candidate)
+
+Task `reparenting-developmental-prerequisite-20260911` continues draft PR #52 on branch `codex/reparenting-telos-target-gate-20260911`. Its recovery ledger is `tasks/reparenting-telos-target-gate-20260911/INTEGRATION.md`; the owner outcome, execution directive, active lesson contract, and completion matrix are in the same directory. This public task contains synthetic/de-identified fixtures only and does not access or mutate a real private case.
+
+The candidate preserves the earlier target-utility rule (`salience != therapeutic target`) and adds an independent developmental-prerequisite rule (`therapeutic relevance != established capacity`). Adult, inner-parent, Nurturer, Protector, Leader, Guide, and child terms are treated as functional shorthand, with evidence-bound state for access, state dependence, reliability, trust, practice, concrete functions, and the unresolved developmental contrast. Unsupported role assignment is auditable as `DEVELOPMENTAL_PREREQUISITE_VIOLATION` without deleting true observations.
+
+Successful-exception and breakdown-state inquiries are independent options. The deterministic planner selects one from the unresolved information need, or both as one context-ordered comparison only when each remains distinct and action-changing, neither repeats known evidence, the pair is likely tolerable, and no safety or external-action priority overrides it. The system does not impose a mandatory pair or universal successful-exception-first sequence. The selected evidence then routes to bounded capacity scaffold, state-dependent access/generalization, credibility through follow-through, or the observed missing Nurturer/Protector/Leader function.
+
+Implementation, synthetic regressions, the regenerated graph, and the authoring projection are present. The final pre-review Node 24.18.0/npm 11.16.0 package gate passed 1,095/1,095 automated tests, 29/29 graph cases, all authoring checks over 305 generated files, A001/H001 replay, runtime/web/autopilot checks, repository audit, publication audit, and package hygiene. Fresh independent exact-head review, hosted PR-head checks, merge, and post-merge verification remain pending. This candidate is not installed, deployed, promoted to `stable`, released, clinically validated, or evidence of human usefulness.
+
 ## Automatic private-turn runtime orchestration (merged PR #49)
 
 Task `automatic-runtime-orchestration-20260910` remains active on branch `codex/automatic-runtime-orchestration-20260910`. Generic implementation `a2689b6` and the completed nested Louka v3 checkpoint `5564a2d` are combined by owner-approved merge `b97362d1b9948d0cbe7d07cfc443c73146b810d8`; a later content-free Louka receipt correction was integrated at containing head `49cacebff33bb99aa525a38bf8af6811991ac935`. Its recovery ledger is `tasks/automatic-runtime-orchestration-20260910/INTEGRATION.md`; the owner outcome, execution directive, and active lesson contract are in the same directory. No real case mutation or model audit was performed by the runtime-development task.

@@ -19,12 +19,13 @@ const priorCompatibleGuideVersion = "inner-child-somatic-pilot-2026-08-06-r1";
 const selectedModels = { openai: "gpt-5.6-sol", anthropicPrimary: "claude-opus-5" };
 
 async function fixtures() {
-  const [bundle, a001Definition, g001] = await Promise.all([
+  const [bundle, a001Definition, g001, a001Fixture] = await Promise.all([
     compileGuideGraphs({ write: false }),
     fs.readFile(path.join(projectRoot, "corpus/difficult-cases/A001-inner-child-credibility/case.json"), "utf8").then(JSON.parse),
-    fs.readFile(path.join(projectRoot, "corpus/graph-cases/G001.json"), "utf8").then(JSON.parse)
+    fs.readFile(path.join(projectRoot, "corpus/graph-cases/G001.json"), "utf8").then(JSON.parse),
+    fs.readFile(path.join(projectRoot, "fixtures/mock-responses/A001.json"), "utf8").then(JSON.parse)
   ]);
-  return { bundle, a001Definition, g001 };
+  return { bundle, a001Definition, g001, a001Extraction: a001Fixture.anthropic.case_extraction };
 }
 
 function h001(guideVersion = priorCompatibleGuideVersion) {
@@ -43,7 +44,7 @@ function h001(guideVersion = priorCompatibleGuideVersion) {
   };
 }
 
-function a001({ guideVersion = priorCompatibleGuideVersion, variables, includeCoreText = true } = {}) {
+function a001({ guideVersion = priorCompatibleGuideVersion, variables, developmentalCapacity = null, includeCoreText = true } = {}) {
   return {
     ok: false,
     escalated: true,
@@ -66,6 +67,7 @@ function a001({ guideVersion = priorCompatibleGuideVersion, variables, includeCo
         current_issue: "Credibility conflict.",
         direct_observations: [],
         variables,
+        developmental_capacity: developmentalCapacity,
         hypotheses: [],
         unknowns: []
       }
@@ -106,10 +108,14 @@ test("prior A001 is invalidated across representation schema while compatible H0
 });
 
 test("checkpoint cache is atomic and requires matching models while accepting the bounded prior guide version", async () => {
-  const { bundle, a001Definition, g001 } = await fixtures();
+  const { bundle, a001Definition, a001Extraction } = await fixtures();
   const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-cache-"));
-  const currentPlan = planFromGraphs({ variables: g001.variables, unknowns: [], graphs: bundle.graphs });
-  const currentA001 = a001({ guideVersion: currentGuideVersion, variables: g001.variables });
+  const currentPlan = planFromGraphs({ variables: a001Extraction.variables, unknowns: [], graphs: bundle.graphs });
+  const currentA001 = a001({
+    guideVersion: currentGuideVersion,
+    variables: a001Extraction.variables,
+    developmentalCapacity: a001Extraction.developmental_capacity
+  });
   currentA001.ok = true;
   currentA001.result.interventionContract = currentPlan;
 

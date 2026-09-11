@@ -51,7 +51,12 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
         unexpectedRepresentationPolicyMarkers: enforced.responseContract.unexpectedRepresentationPolicyMarkers ?? [],
         prohibitedNodeIds: enforced.responseContract.prohibitedRealizationNodeIds ?? [],
         romanceGuideReferenceDecision: enforced.responseContract.romanceGuideReferenceDecision ?? null,
-        instruction: "Rewrite the response so every missing selected intervention and required representation marker is materially realized, obvious symbolic overclaims and prohibited interventions are removed, and every marker has a verbatim answer quote. Follow the path-performance switch/stop decision and deterministic romance-guide reference decision; do not paraphrase the old exercise or add an unauthorized link. Preserve the canonical question and all prior epistemic constraints."
+        requiredDevelopmentalPolicyMarker: enforced.responseContract.requiredDevelopmentalPolicyMarker ?? null,
+        missingDevelopmentalPolicyMarker: enforced.responseContract.missingDevelopmentalPolicyMarker ?? false,
+        unexpectedDevelopmentalRouteQuestionCount: enforced.responseContract.unexpectedDevelopmentalRouteQuestionCount ?? 0,
+        pairedContrastOrderPassed: enforced.responseContract.pairedContrastOrderPassed ?? true,
+        developmentalQuestionShapePassed: enforced.responseContract.developmentalQuestionShapePassed ?? true,
+        instruction: "Rewrite the response so every missing selected intervention and required policy marker is materially realized, obvious symbolic overclaims and prohibited interventions are removed, and every marker has a verbatim answer quote. Follow the path-performance switch/stop decision and deterministic romance-guide reference decision; do not paraphrase the old exercise or add an unauthorized link. Preserve the selected semantic question kind or question unit and its supplied order. Render developmental questions naturally in the user's language, report their exact kinds and texts in developmental_questions, keep a selected pair in the same reply, add no other question or tangent, then stop. Preserve all prior epistemic constraints."
       }
     };
     rawResult = await structuredCall(
@@ -70,7 +75,7 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
   }
 
   if (enforced.responseContract.pathPerformanceAdherencePassed === false) {
-    throw new RuntimeError("The response did not satisfy the candidate path, readiness, or romance-reference realization contract.", { code: "PATH_PERFORMANCE_REALIZATION_BLOCKED" });
+    throw new RuntimeError("The response did not satisfy the candidate path, readiness, developmental-prerequisite, or romance-reference realization contract.", { code: "PATH_PERFORMANCE_REALIZATION_BLOCKED" });
   }
   const episode = context.caseFormulation?.path_performance?.active;
   const contract = context.interventionContract;

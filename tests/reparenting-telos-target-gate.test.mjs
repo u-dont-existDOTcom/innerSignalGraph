@@ -113,7 +113,7 @@ test("target invalidation preserves true observations while withdrawing the symp
         predictions: [
           { id: "p1", sign: "new_information", description: "More detail about the function of shame.", horizon: "immediate" }
         ],
-        adverse_signs: ["low_information"]
+        adverse_signs: ["confusion"]
       },
       response: "not_observed",
       signals: [],
@@ -154,7 +154,7 @@ test("semantic strategy invalidation does not masquerade as evidence withdrawal"
         predictions: [
           { id: "p1", sign: "new_information", description: "The symptom theory yields new treatment-relevant information.", horizon: "immediate" }
         ],
-        adverse_signs: ["low_information"]
+        adverse_signs: ["confusion"]
       },
       response: "not_observed",
       signals: [],

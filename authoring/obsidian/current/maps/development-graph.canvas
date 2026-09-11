@@ -450,6 +450,15 @@
       "y": 220
     },
     {
+      "file": "current/nodes/inner-child-directed-graph/IC.DEVELOPMENTAL_CAPACITY_CONTRAST.md",
+      "height": 140,
+      "id": "08ac9a37aa42ce5e5abd56f780c9c1d181f7212fe33476071870f3f0e101703d",
+      "type": "file",
+      "width": 300,
+      "x": 440,
+      "y": 220
+    },
+    {
       "file": "current/nodes/inner-child-directed-graph/IC.GUIDE_LATER.md",
       "height": 140,
       "id": "0ad12526759ac2032a6df506212c0f90ebce3a7d603e935db86d1d680a0a6052",
@@ -483,7 +492,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 1100
+      "y": 1320
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.GENTLE_SELF_HYPNOSIS.md",
@@ -546,7 +555,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 880
+      "y": 1100
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.MEET_GUARD.md",
@@ -573,7 +582,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 660
+      "y": 880
     },
     {
       "color": "3",
@@ -851,7 +860,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 440
+      "y": 660
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.BYPASS_AUDIT.md",
@@ -952,7 +961,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 220
+      "y": 440
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.BORROW_LOVE.md",

@@ -11,9 +11,9 @@ test("inner-child and somatic sources compile into a validated directed-graph bu
   assert.equal(bundle.contractVersion, "guide-graph-v1");
   assert.equal(bundle.version, "inner-child-somatic-pilot-2026-08-09-r5");
   assert.equal(bundle.stats.graphCount, 3);
-  assert.equal(bundle.stats.nodeCount, 53);
+  assert.equal(bundle.stats.nodeCount, 54);
   assert.equal(bundle.stats.edgeCount, 70);
-  assert.equal(bundle.stats.ownerAmendmentCount, 26);
+  assert.equal(bundle.stats.ownerAmendmentCount, 27);
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "inner-child-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "somatic-sequencing-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "vagal-blitz-source"));
@@ -119,7 +119,8 @@ test("credibility planning keeps unrelated future goals out of Deferred and pref
     graphs: bundle.graphs,
     variables: {
       present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
-      activation: "moderate", dissociation: "none", altered_state: "sober", inner_adult_access: "partial",
+      activation: "moderate", dissociation: "none", altered_state: "sober", inner_adult_access: "available",
+      developmental_capacity_state: "available_low_credibility", inner_adult_reliability: "reliable", younger_state_trust: "low",
       love_access: "accessible", self_directed_love: "unsafe", protective_response: "present",
       witness_capacity: "present", credibility_conflict: "present", credibility_evidence_state: "adverse", internal_speaker_relation: "unresolved",
       age_agency_ambiguity: "present", resentment_toward_younger_self: "present",

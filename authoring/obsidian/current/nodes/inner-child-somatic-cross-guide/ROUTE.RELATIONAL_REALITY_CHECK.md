@@ -26,7 +26,7 @@ regression_refs:
   - G028
 base_record_sha256: 523c9902bcb088207a45d792169d995c6b09cfd994343c3681d65bd3044e46b2
 base_graph_sha256: beb05b08a340cf9bd62efacaab7619a3dd4f6adf6bedabb4927cfe4e3a329560
-projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76c7cf11778
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Reality-check the relationship before self-analysis

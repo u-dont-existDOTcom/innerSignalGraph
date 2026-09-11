@@ -24,7 +24,7 @@ regression_refs:
   - G035
 base_record_sha256: e89d236a5e416e45a6e8a909a2c70bcde7a48e74c6e06d29e26eff011966b92b
 base_graph_sha256: 6b31d4e5d0e6dc2ab838aae714fe59c2c1c2ab21607409c9b1a25b2d5769dd2d
-projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76c7cf11778
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Safety, orientation, and stopping capacity

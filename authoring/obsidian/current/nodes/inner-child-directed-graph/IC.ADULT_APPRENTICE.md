@@ -20,10 +20,11 @@ source_refs:
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
   - AMEND.CROSS.LITERATURE_ACTION_REVIEW
   - AMEND.IC.EMOTIONAL_TASK_GUIDANCE
-regression_refs: []
-base_record_sha256: e7fcbbd83cbe5878a3d032e7ebeb3f5ee8d04197c4f5c16ec4c663690bde4eac
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76c7cf11778
+regression_refs:
+  - G008
+base_record_sha256: fa3ca1c6bc2ba7a33c87ba764950776a734d43bb487c1421792ead58e9aa80f0
+base_graph_sha256: 4a25d27086c6ec2f11a67ec6592d058e3ad3bb63d37be10a78e9a8f48f1cf206
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Move from receiving care to doing five percent
@@ -44,6 +45,13 @@ projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76
           "low",
           "partial"
         ]
+      }
+    ],
+    "any": [
+      {
+        "field": "developmental_capacity_state",
+        "op": "eq",
+        "value": "partial_intermittent_state_dependent"
       },
       {
         "field": "support_available",

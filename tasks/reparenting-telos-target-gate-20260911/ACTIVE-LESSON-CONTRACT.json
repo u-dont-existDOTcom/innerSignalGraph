@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "taskId": "reparenting-developmental-prerequisite-20260911",
+  "status": "ACTIVE",
+  "activatedAt": "2026-09-11",
+  "lessons": [
+    {"id":"independent-question-gates","source":"current owner correction","trigger":"Any therapeutic question, task, or strategy is proposed in reparenting work.","requiredBehavior":"Check both whether plausible answers change treatment and whether the question presupposes a caregiving or leadership function not established by evidence.","failureCondition":"Treatment utility is used to excuse an unsupported Adult-role assumption.","repairAction":"Record DEVELOPMENTAL_PREREQUISITE_VIOLATION and withdraw the offending question or route without deleting true observations.","enforcement":"mechanical"},
+    {"id":"functional-not-literal-roles","source":"current owner correction + existing Inner Signal guide","trigger":"Adult, inner-parent, Nurturer, Protector, Leader, Guide, or parts language appears.","requiredBehavior":"Treat the labels as shorthand for observable functions and use the client's ontology only when it helps.","failureCondition":"Vocabulary is treated as proof of a literal entity or available capacity.","repairAction":"Return to observable access, reliability, follow-through, and repair evidence.","enforcement":"schema+prompt+audit"},
+    {"id":"context-sensitive-developmental-contrast","source":"current owner correction","trigger":"Reparenting, inner-child, or self-love work helps sometimes but is difficult or inconsistent and reliable access remains unestablished.","requiredBehavior":"Treat successful-exception and breakdown-state inquiries as separate options. Select one from the unresolved information need, or both in one context-ordered unit only when each is distinct, action-changing, nonredundant, and tolerable.","failureCondition":"A pair or its ordering is imposed by template, an established side is re-asked, a justified pair is split or reordered, or a tangent becomes a competing agenda.","repairAction":"Restore the evidence-selected single question or exact context-ordered pair and remove unrelated questions.","enforcement":"planner+response-contract+independent-audit"},
+    {"id":"capacity-before-credibility","source":"current owner correction","trigger":"A credibility or younger-state trust problem is considered.","requiredBehavior":"Establish the relevant capacity and reliability before routing to credibility repair; otherwise bootstrap or strengthen access first.","failureCondition":"A missing or state-dependent function is framed primarily as distrust of a capable Adult.","repairAction":"Route to bounded borrowed function or access generalization until availability is evidenced.","enforcement":"decision+graph"},
+    {"id":"safety-precedence","source":"existing safety contracts + current owner correction","trigger":"A developmental inquiry coincides with operational safety or external protection needs.","requiredBehavior":"Keep safety or external protection first and defer the developmental inquiry.","failureCondition":"Developmental inquiry displaces an urgent safety question or action.","repairAction":"Restore the higher-priority deterministic route.","enforcement":"planner+decorator"}
+  ],
+  "preAttemptAdmission": {
+    "status": "PASS",
+    "evidence": [
+      "PR 52 source/base/head and exact runtime were resolved before edits.",
+      "The stale PR 49 active lock was identified as merged history and replaced by this task-scoped lock.",
+      "Relevant universal guidance, repository authority, existing graph primitives, and the required review protocol were inspected.",
+      "A failing prerequisite regression was observed before implementation and the pre-existing PR test fixture defect was reproduced independently."
+    ]
+  }
+}

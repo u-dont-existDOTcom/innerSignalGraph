@@ -91,7 +91,17 @@ export function deriveCaseVariables(input = {}) {
   ].every(Boolean);
   variables.deep_work_readiness = unsafeForDeep ? "no" : clearlyReadyForDeep ? "yes" : "unknown";
 
-  if (["available", "partial"].includes(variables.inner_adult_access)) {
+  if (variables.developmental_capacity_state !== "unknown") {
+    if (variables.inner_adult_access === "available" && variables.inner_adult_reliability === "reliable") {
+      variables.basic_reparenting_capacity = "yes";
+    } else if (variables.developmental_capacity_state === "absent_inaccessible" && variables.support_available === "absent") {
+      variables.basic_reparenting_capacity = "no";
+    } else {
+      variables.basic_reparenting_capacity = "unknown";
+    }
+  } else if (["available", "partial"].includes(variables.inner_adult_access)) {
+    // Backward compatibility for persisted snapshots created before the
+    // evidence-bound developmental-capacity contract existed.
     variables.basic_reparenting_capacity = "yes";
   } else if (variables.inner_adult_access === "low" && variables.support_available === "absent") {
     variables.basic_reparenting_capacity = "no";
@@ -132,7 +142,7 @@ function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
-export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs, turnTask = null, pathPerformance = null }) {
+export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs, turnTask = null, pathPerformance = null, preferredNodeId = null }) {
   const variables = deriveCaseVariables(rawVariables);
   const taskPolicy = graphs.every(graph => graph.taskPolicyVersion === 1);
   const control = graphs.length > 0 && graphs.every(g => g.pathPerformancePolicyVersion === 1) ? pathPerformance : null;
@@ -228,6 +238,15 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     }
     // Prior task, secondary jobs and their questions cannot smuggle the old exercise back in.
     eligible = [controlNode];
+  }
+  // A first-class evidence-bound formulation may select an existing graph
+  // primitive more specifically than generic graph priority. Preserve safety,
+  // external-action, and active path-controller precedence, but otherwise let
+  // that supported target own the turn.
+  if (preferredNodeId && !emergency && !control && !interrupt) {
+    const preferred = eligible.find(node => node.id === preferredNodeId);
+    const precedence = eligible.find(node => (higherRoutes.has(node.id) || node.tier === 1) && node.id !== preferred?.id);
+    if (preferred && !precedence) eligible = [preferred, ...eligible.filter(node => node.id !== preferred.id)];
   }
   const primary = eligible[0] ?? null;
   const secondary = eligible.slice(1, 5);

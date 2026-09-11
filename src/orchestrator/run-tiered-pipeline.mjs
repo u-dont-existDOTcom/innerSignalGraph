@@ -15,7 +15,9 @@ const CRITICAL_DELTA_FIELDS = [
   "inner_adult_access", "witness_capacity", "protective_response", "self_directed_love", "credibility_evidence_state",
   "internal_speaker_relation", "target_type", "other_person_central", "relational_capacity_evidence",
   "emotional_takeover_pressure", "realistic_interaction_outcome", "influence_domain", "metta_access", "spiritual_support_access",
-  "relational_check_status", "loop_target_relation", "guard_engagement", "spiritual_struggle"
+  "relational_check_status", "loop_target_relation", "guard_engagement", "spiritual_struggle",
+  "developmental_capacity_state", "inner_adult_reliability", "younger_state_trust",
+  "self_care_practice_helpfulness", "self_care_practice_consistency", "developmental_pair_route", "developmental_inquiry_route", "developmental_missing_function"
 ];
 
 function criticalDeltaCount(snapshot, priorSnapshot) {
@@ -67,8 +69,9 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
   const deliveryReviewRequired = Boolean(snapshot?.path_update?.delivery_review || snapshot?._path_prior?.active?.delivery_assessment_key);
   const representation = snapshot?.path_update?.representation ?? snapshot?._path_prior?.active?.representation ?? null;
   const representationReviewRequired = Boolean(representation && (representation.mode !== "CLEAR" || ["SWITCH", "STAY_SYMBOLIC", "TRANSLATE_TO_PLAIN"].includes(representation.transition)));
+  const developmentalReviewRequired = Boolean(snapshot?.developmental_capacity);
   if (requested === "fast" && !intentHard && !ambiguityHard && !deliveryReviewRequired
-      && !readinessReviewRequired && !romanceGuideReviewRequired && !representationReviewRequired) return { tier: "fast", reason: "user-selected fast mode", forced: false, deltaCount };
+      && !readinessReviewRequired && !romanceGuideReviewRequired && !representationReviewRequired && !developmentalReviewRequired) return { tier: "fast", reason: "user-selected fast mode", forced: false, deltaCount };
 
   if (intentHard) return { tier: "deep", reason: "deep/high-stakes intent", forced: false, deltaCount };
   if (ambiguityHard) {
@@ -84,6 +87,7 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
   if (romanceGuideReviewRequired) return { tier: "reviewed", reason: "source-bound romance context requires case audit", forced: true, deltaCount };
   if (deliveryReviewRequired) return { tier: "reviewed", reason: "evidence-bound delivery and practitioner trust review", forced: requested === "fast", deltaCount };
   if (representationReviewRequired) return { tier: "reviewed", reason: "process-scoped experiential or bridge representation requires epistemic audit", forced: requested === "fast", deltaCount };
+  if (developmentalReviewRequired) return { tier: "reviewed", reason: "developmental prerequisites require independent case audit", forced: requested === "fast", deltaCount };
   if (reviewedSignal) return { tier: "reviewed", reason: "moderate ambiguity or protective conflict", forced: false, deltaCount };
   return { tier: "fast", reason: "low-ambiguity graph-following", forced: false, deltaCount };
 }
