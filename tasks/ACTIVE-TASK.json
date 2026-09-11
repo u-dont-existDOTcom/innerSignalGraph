@@ -2,9 +2,10 @@
   "schemaVersion": 1,
   "taskId": "private-case-v3-repair-cycle2-20260910",
   "title": "Persist v2 external failure and reconstruct maximum-cycle v3",
-  "status": "active",
-  "exclusive": true,
+  "status": "complete",
+  "exclusive": false,
   "startedAt": "2026-09-10",
+  "completedAt": "2026-09-10",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
   "requiredBranch": "codex/private-case-import-20260909",
   "pullRequest": 49,
@@ -15,12 +16,14 @@
   "directivePath": "tasks/private-case-v3-repair-cycle2-20260910/EXECUTION-DIRECTIVE.json",
   "statePath": "tasks/private-case-v3-repair-cycle2-20260910/INTEGRATION.md",
   "activeLessonContractPath": "tasks/private-case-v3-repair-cycle2-20260910/ACTIVE-LESSON-CONTRACT.json",
+  "outcomeReceiptPath": "tasks/private-case-v3-repair-cycle2-20260910/PRIVATE-OPERATION-RECEIPT.json",
   "completionClaimRule": "Completion requires truthful externally supplied v2 FAIL provenance without an invented auditor identifier, exact maximum-cycle v3 lineage and narrow-delta proof, zero v3 audits with closed approval/sent gates, a fresh immutable read-only handoff, public-safe Git evidence, and exact-head hosted checks.",
   "parentOpenTask": {
     "taskId": "private-case-mutation-orchestration-20260910",
     "status": "complete",
     "statePath": "tasks/private-case-mutation-orchestration-20260910/INTEGRATION.md"
   },
+  "nextAction": "FRESH_INDEPENDENT_AUDIT",
   "suspendedTaskSources": [
     "fresh independent v3 audit, approval, repair, or delivery",
     "provider-backed guide-fidelity and audit-architecture experiments",

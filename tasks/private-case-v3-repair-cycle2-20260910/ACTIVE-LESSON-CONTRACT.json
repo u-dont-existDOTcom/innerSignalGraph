@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "taskId": "private-case-v3-repair-cycle2-20260910",
-  "status": "ACTIVE",
+  "status": "COMPLETE",
   "activatedAt": "2026-09-10",
   "lessons": [
     {
@@ -75,6 +75,16 @@
       "The owner supplied exact v2 identity/version/hash, the substantive fresh-audit finding, the reported producer-context separation, and the exact private v3 target.",
       "The owner explicitly prohibited inventing an unavailable auditor/session identifier and prohibited v3 audit, approval, sent state, and public case material.",
       "Repository authority, prior handoff state, candidate/audit orchestration, relevant live universal lessons, and the verified AskRigor universal protocol were inspected before implementation."
+    ]
+  },
+  "completionEvidence": {
+    "status": "PASS",
+    "evidence": [
+      "Externally supplied v2 failure provenance was persisted without inventing unavailable auditor identity or completion time, and the evidence remains ineligible for approval.",
+      "The encrypted private record preserves exact v1/v2 bytes, binds the new audit to v2, supersedes v2, and stores v3 as immutable version 3 at repair cycle 2 with zero audits and closed delivery gates.",
+      "A private preservation check proved the authorized v2-to-v3 safeguard was the only candidate-text delta and every unaffected case and handoff-state surface remained unchanged.",
+      "A new ChatGPT conversation used the unchanged read-only Continuity tool and reported the exact v3 lifecycle metadata and fresh-audit gate without quoting content or mutating the case.",
+      "Focused, complete-package, hosted-service, and publication checks passed before closeout."
     ]
   }
 }
