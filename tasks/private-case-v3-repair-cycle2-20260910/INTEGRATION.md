@@ -27,7 +27,7 @@ The real candidate and audit material remains outside Git. This ledger may recor
 - Private persistence, immutable-lineage, narrow-delta, unchanged-state, continuation-safety, and delivery-gate assertions: passed.
 - Hosted service health and production authentication readiness: passed.
 - Fresh ChatGPT read-only retrieval: passed; no audit, approval, repair, sent transition, or private-content quotation occurred.
-- Local and hosted publication audits: passed with zero private-material findings.
+- Local publication audit: 41,463 records scanned with zero findings. The stricter hosted audit failed closed as incomplete because historical failed CodeQL run `34060739398` has no jobs and GitHub returns no log; this is a missing historical surface, not a private-material finding. The audit contract was not weakened or bypassed.
 - Exact-final-head GitHub checks are recorded outside the commit that cannot name itself.
 
 ## Continuation boundary
