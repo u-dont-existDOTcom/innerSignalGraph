@@ -7,7 +7,7 @@ source_id: AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL
 guide_id: owner-amendments
 heading: AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL
 source_role: owner-approved-extension
-source_hash: 1d1d78a359df20cddf3aac6f5f93bb3badda84b7bcf7bcff085d8ee9f75e0dd1
+source_hash: b9142c7cc0361cfebaf8a908a61dfd800b6ec6184a2244e4ac839b36210f7520
 section_hash: ebaee19e563beacf42c81170e430e165a328df5ee76ae19968da8656cc98b785
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -15,7 +15,7 @@ cited_by_node_ids:
   - SOM.EMDR_DEVELOPMENTAL
   - SOM.EMDR_DEVELOPMENTAL_DEFER
   - SOM.EMDR_DISCRETE
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # AMEND.SOM.EMDR_AFTER_REPARENTING_CONDITIONAL

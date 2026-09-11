@@ -24,7 +24,7 @@ regression_refs:
   - G018
 base_record_sha256: 362d523fb3bdb6c7f8786345f6a2169a33ff07dc6bda641a578109fe15f1be5e
 base_graph_sha256: 6b31d4e5d0e6dc2ab838aae714fe59c2c1c2ab21607409c9b1a25b2d5769dd2d
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Gentle shaking or qigong as regulation or discharge

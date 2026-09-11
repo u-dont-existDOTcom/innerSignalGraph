@@ -108,7 +108,7 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   const significantHarm = signals.some(s => HARM_SIGNALS.includes(s.kind) && s.severity === "significant");
   const harm = signals.some(s => HARM_SIGNALS.includes(s.kind));
   const old = state.active;
-  // Evidence withdrawal invalidates conclusions; it never silently restarts the old exercise.
+  // Strategy invalidation requires reassessment; it never silently restarts the old exercise.
   if (invalidated && old) old.invalidated = true;
   const candidate = update?.strategy;
   const canReplace = old && candidate && key(candidate) !== key(old.strategy)
@@ -202,7 +202,7 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   let status = "UNCLEAR", decision = "PROBE", route = "reconsider", reason = "Prospective movement is not yet observed; one bounded fit/response probe is useful.";
   const hypotheses = update?.failure_hypotheses ?? [];
   const failures = hypotheses.map(h => ({ ...h, attribution: "provisional" }));
-  const addFailure = kind => { if (!failures.some(h => h.kind === kind)) failures.push({ kind, observation_ids: unique([...(kind === "REPRESENTATION_MISMATCH" ? active?.representation_evidence_ids ?? [] : active?.failure_evidence_ids ?? []), ...signals.filter(s => HARM_SIGNALS.includes(s.kind) || s.kind === "external_stabilization_needed" || kind === "REPRESENTATION_MISMATCH" && ["repetition", "low_information", "complexity_without_information", "verbosity_without_information", "expressiveness_without_information", "representation_mismatch", "representation_declined", "representation_switch_requested"].includes(s.kind)).map(s => s.observation_id)]), attribution: active?.invalidated ? "evidence_withdrawn_reassessment_required" : "controller_review_required_not_diagnosis" }); };
+  const addFailure = kind => { if (!failures.some(h => h.kind === kind)) failures.push({ kind, observation_ids: unique([...(kind === "REPRESENTATION_MISMATCH" ? active?.representation_evidence_ids ?? [] : active?.failure_evidence_ids ?? []), ...signals.filter(s => HARM_SIGNALS.includes(s.kind) || s.kind === "external_stabilization_needed" || kind === "REPRESENTATION_MISMATCH" && ["repetition", "low_information", "complexity_without_information", "verbosity_without_information", "expressiveness_without_information", "representation_mismatch", "representation_declined", "representation_switch_requested"].includes(s.kind)).map(s => s.observation_id)]), attribution: active?.invalidated ? "strategy_invalidated_reassessment_required" : "controller_review_required_not_diagnosis" }); };
   if (!active) {
     status = state.untracked_reviews >= 2 ? "STALLED" : "UNCLEAR";
     decision = state.untracked_reviews >= 2 ? "SWITCH" : "PROBE";
@@ -215,7 +215,7 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   const causalStalled = active && (active.misses >= 2 || repeatedPredictionFailure || active.unclear >= 2 || !representationTracked && (hasFresh("complexity_without_information") || hasFresh("expressiveness_without_information")) || active.switch_pending || active.invalidated);
   const representationStalled = active && representationTracked && ((active.representation_misses ?? 0) >= 2 || hasFresh("complexity_without_information") || hasFresh("expressiveness_without_information"));
   const stalled = Boolean(causalStalled || representationStalled);
-  if (causalStalled) { status = "STALLED"; decision = "SWITCH"; route = "reconsider"; reason = active.invalidated ? "Supporting evidence was withdrawn; reassess before further intervention." : "Repeated prediction failure or unresolved causal measurement requires a material reconsideration."; addFailure("FORMULATION_MISMATCH"); }
+  if (causalStalled) { status = "STALLED"; decision = "SWITCH"; route = "reconsider"; reason = active.invalidated ? "The current strategy was invalidated; reassess its target or formulation before further intervention." : "Repeated prediction failure or unresolved causal measurement requires a material reconsideration."; addFailure("FORMULATION_MISMATCH"); }
   if (!causalStalled && representationStalled) { status = "STALLED"; decision = "PROBE"; route = "continue"; reason = "The delivered representation remained low-information or expressive without useful discrimination; change its form without resetting the causal episode."; }
   if (hypotheses.some(h => ["FORMULATION_MISMATCH", "TARGET_MISMATCH", "METHOD_MISMATCH"].includes(h.kind))) {
     status = "STALLED"; decision = "SWITCH"; route = "reconsider";

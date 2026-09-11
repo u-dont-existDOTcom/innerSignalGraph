@@ -22,11 +22,12 @@ async function a001Setup() {
   return { definition, config, context, providers };
 }
 
-test("audited A001 case formulation routes credibility repair before generic relaxation", async () => {
+test("audited A001 case formulation strengthens partial adult capacity before credibility repair", async () => {
   const { context, providers } = await a001Setup();
   const result = await runCaseFormulation({ context, providers });
   assert.equal(result.graphBundleVersion, "inner-child-somatic-pilot-2026-08-09-r5");
-  assert.equal(result.plan.primaryJob.id, "IC.CREDIBILITY_REPAIR");
+  assert.equal(result.plan.primaryJob.id, "IC.ADULT_APPRENTICE");
+  assert.equal(result.plan.developmentalCapacityContract.route, "STRENGTHEN_ACCESS_GENERALIZATION");
   assert.ok(result.plan.selectedNodes.some((item) => item.id === "IC.AGE_RESPONSIBILITY_CLARIFICATION"));
   assert.ok(result.plan.requiredNuance.some((item) => /relaxation/i.test(item)));
   assert.ok(result.plan.graphTrace.activeEdges.length > 0);
@@ -90,7 +91,8 @@ test("full formulated pipeline preserves the deterministic plan in the final res
   const { definition, config, context, providers } = await a001Setup();
   const result = await runFormulatedPipeline({ context, providers, config, caseId: definition.id });
   assert.equal(result.mode, "adversarial");
-  assert.equal(result.interventionContract.primaryJob.id, "IC.CREDIBILITY_REPAIR");
+  assert.equal(result.interventionContract.primaryJob.id, "IC.ADULT_APPRENTICE");
+  assert.equal(result.interventionContract.developmentalCapacityContract.route, "STRENGTHEN_ACCESS_GENERALIZATION");
   assert.equal(result.graphBundleVersion, "inner-child-somatic-pilot-2026-08-09-r5");
   assert.match(result.answer, /credibility/i);
 });

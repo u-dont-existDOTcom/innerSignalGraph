@@ -39,6 +39,14 @@ import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
 import { planFromGraphs } from "../guide-graph/planner.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
 import { asCaseStageError, safeCaseStageFailure } from "./stage-failure.mjs";
+import {
+  applyDevelopmentalCapacityToVariables,
+  decoratePlanWithDevelopmentalCapacity,
+  developmentalCapacityDecision,
+  developmentalCapacityObservationIds,
+  validateDevelopmentalCapacity,
+  validateQuestionEligibilityFindings
+} from "./developmental-capacity.mjs";
 
 async function structuredCall(provider, prompt, metadata, validator, outputSchema, onProgress) {
   const started = Date.now();
@@ -92,7 +100,7 @@ export function applyCaseAudit(snapshot, audit) {
     ...episode.reviews.flatMap(r => r.observed_signals.filter(episodeSignal).map(s => s.observation_id))
   ] : [];
   const activeWithdrawn = episodeRefs(priorState?.active).some(id => removeObservations.has(id));
-  const pathInvalidated = Boolean(snapshot._path_invalidated || activeWithdrawn || (pathUpdate && [
+  const pathInvalidated = Boolean(snapshot._path_invalidated || audit.invalidate_path_strategy === true || activeWithdrawn || (pathUpdate && [
     ...(pathUpdate.strategy?.observation_ids ?? []), ...pathUpdate.signals.filter(episodeSignal).map(s => s.observation_id),
     ...pathUpdate.failure_hypotheses.flatMap(h => h.observation_ids)
   ].some(id => removeObservations.has(id))));
@@ -134,6 +142,10 @@ export function applyCaseAudit(snapshot, audit) {
     pathUpdate.failure_hypotheses = pathUpdate.failure_hypotheses.filter(h => !h.observation_ids.some(id => removeObservations.has(id)));
     if (pathUpdate.strategy?.observation_ids.some(id => removeObservations.has(id))) pathUpdate.strategy = null;
     if (pathUpdate.representation?.observation_ids.some(id => removeObservations.has(id))) pathUpdate.representation = null;
+    if (audit.invalidate_path_strategy === true) {
+      pathUpdate.strategy = null;
+      pathUpdate.representation = null;
+    }
   }
 
   const remainingObservations = snapshot.direct_observations.filter(item => !removeObservations.has(item.id));
@@ -151,7 +163,7 @@ export function applyCaseAudit(snapshot, audit) {
   }
   const priorRepresentationIsCurrent = Boolean(priorState?.active && (!pathUpdate || currentRepresentationProcess === priorState.active.strategy.process_id));
   if (priorRepresentationIsCurrent && representationWasTracked) {
-    if (audit.invalidate_path_representation === true) {
+    if (audit.invalidate_path_representation === true || audit.invalidate_path_strategy === true) {
       priorState.active.representation = null;
       priorState.active.delivery = null;
     } else if (correctedRepresentationProvided) {
@@ -196,6 +208,30 @@ export function applyCaseAudit(snapshot, audit) {
   }
   const threatPathwayWasTracked = Object.hasOwn(snapshot, "threat_pathway")
     || correctedThreatPathwayProvided || audit.invalidate_threat_pathway === true;
+  const originalDevelopmentalCapacity = snapshot.developmental_capacity ?? null;
+  const originalDevelopmentalCapacityWithdrawn = developmentalCapacityObservationIds(originalDevelopmentalCapacity)
+    .some(id => removeObservations.has(id));
+  const correctedDevelopmentalCapacityProvided = audit.corrected_developmental_capacity != null;
+  let developmentalCapacity = correctedDevelopmentalCapacityProvided
+    ? audit.corrected_developmental_capacity : originalDevelopmentalCapacity;
+  if (audit.invalidate_developmental_capacity === true
+      || (!correctedDevelopmentalCapacityProvided && originalDevelopmentalCapacityWithdrawn)) developmentalCapacity = null;
+  if (developmentalCapacity) {
+    developmentalCapacity = validateDevelopmentalCapacity(developmentalCapacity, {
+      issue: snapshot.current_issue,
+      observationIds: remainingIds
+    });
+  }
+  const developmentalCapacityWasTracked = Object.hasOwn(snapshot, "developmental_capacity")
+    || correctedDevelopmentalCapacityProvided || audit.invalidate_developmental_capacity === true;
+  const questionEligibilityFindings = validateQuestionEligibilityFindings(audit.question_eligibility_findings ?? [], {
+    observationIds: remainingIds
+  });
+  const ineligibleVariables = new Set(questionEligibilityFindings.map(item => item.variable));
+  const auditedUnknowns = [...snapshot.unknowns, ...audit.add_unknowns]
+    .filter(item => item.changes_next_action !== false
+      && item.developmental_prerequisite_valid !== false
+      && !ineligibleVariables.has(item.variable));
 
   return {
     ...snapshot,
@@ -209,18 +245,22 @@ export function applyCaseAudit(snapshot, audit) {
     ...(readinessWasTracked ? { relational_readiness: readiness } : {}),
     ...(romanceContextWasTracked ? { romance_guide_context: romanceGuideContext } : {}),
     ...(threatPathwayWasTracked ? { threat_pathway: threatPathway } : {}),
+    ...(developmentalCapacityWasTracked ? { developmental_capacity: developmentalCapacity } : {}),
     hypotheses: snapshot.hypotheses.filter((item) => !removeHypotheses.has(item.id)),
     variables: validateCaseVariables(variables),
-    unknowns: [...snapshot.unknowns, ...audit.add_unknowns],
+    unknowns: auditedUnknowns,
     audit: {
       verdict: audit.verdict,
       summary: audit.summary,
       safety_flags: audit.safety_flags,
       variable_corrections: audit.variable_corrections,
+      question_eligibility_findings: questionEligibilityFindings,
+      ...(audit.invalidate_path_strategy === true ? { path_strategy_invalidated: true } : {}),
       ...(readinessWasTracked ? { relational_readiness_reviewed: true } : {}),
       ...(representationWasTracked ? { path_representation_reviewed: true } : {}),
       ...(romanceContextWasTracked ? { romance_guide_context_reviewed: true } : {}),
-      ...(threatPathwayWasTracked ? { threat_pathway_reviewed: true } : {})
+      ...(threatPathwayWasTracked ? { threat_pathway_reviewed: true } : {}),
+      ...(developmentalCapacityWasTracked ? { developmental_capacity_reviewed: true } : {})
     }
   };
 }
@@ -233,10 +273,12 @@ async function planSnapshot(snapshot, {
   onPlanningPass?.();
   const bundle = await loadPlanningGraphBundle();
   const enabled = bundle.graphs.length > 0 && bundle.graphs.every(g => g.pathPerformancePolicyVersion === 1);
+  const developmentalDecision = developmentalCapacityDecision(snapshot.developmental_capacity ?? null);
+  const capacityVariables = applyDevelopmentalCapacityToVariables(snapshot.variables, snapshot.developmental_capacity ?? null, developmentalDecision);
   const threatDecision = threatPathwayDecision(snapshot.threat_pathway ?? null);
   const plannedVariables = threatDecision.level === "IMMINENT_OPERATIONAL_DANGER"
-    ? { ...snapshot.variables, present_safety: "unsafe" }
-    : snapshot.variables;
+    ? { ...capacityVariables, present_safety: "unsafe" }
+    : capacityVariables;
   const derivedVariables = deriveCaseVariables(plannedVariables);
   const readinessDecision = relationalReadinessDecision(snapshot.relational_readiness ?? null, {
     immediateProtection: immediateProtectionNeeded(derivedVariables) || derivedVariables.suicidal_state === "intent"
@@ -265,7 +307,8 @@ async function planSnapshot(snapshot, {
     unknowns: snapshot.unknowns,
     graphs: bundle.graphs,
     turnTask: snapshot.turn_task ?? null,
-    pathPerformance: routingControl
+    pathPerformance: routingControl,
+    preferredNodeId: developmentalDecision?.recommendedNodeId ?? null
   });
   const readinessPlan = decoratePlanWithRelationalReadiness(rawPlan, routingControl, readinessDecision);
   const { plan: romancePlan, composition } = composeRomanceGuidePlan(readinessPlan, snapshot.romance_guide_context ?? null, {
@@ -274,7 +317,8 @@ async function planSnapshot(snapshot, {
   });
   if (!composition.canRealize) throw new ValidationError(`Romance guide context requires replanning before realization: ${composition.action}.`);
   const threatPlan = decoratePlanWithThreatPathway(romancePlan, snapshot.threat_pathway ?? null, threatDecision);
-  const plan = decoratePlanWithAntiBypass(threatPlan, snapshot.variables);
+  const developmentalPlan = decoratePlanWithDevelopmentalCapacity(threatPlan, developmentalDecision);
+  const plan = decoratePlanWithAntiBypass(developmentalPlan, plannedVariables);
   return { plan, graphBundleVersion: bundle.version };
 }
 
@@ -295,9 +339,12 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
         if (!Object.hasOwn(value, "path_update")) throw new ValidationError("Candidate extraction must declare path_update; missing strategy tracking cannot silently bypass monitoring.");
         if (value.path_update && !Object.hasOwn(value.path_update, "representation")) throw new ValidationError("Candidate path update must declare representation as null or a process-scoped selection.");
         if (value.path_update?.strategy && value.path_update.representation == null) throw new ValidationError("A new candidate strategy requires an explicit process-scoped representation selection.");
+        if (value.unknowns.some(item => !Object.hasOwn(item, "changes_next_action"))) throw new ValidationError("Candidate extraction unknowns must declare whether resolving them can change the next therapeutic action.");
+        if (value.unknowns.some(item => !Object.hasOwn(item, "developmental_prerequisite_valid"))) throw new ValidationError("Candidate extraction unknowns must independently declare developmental prerequisite validity.");
         if (!Object.hasOwn(value, "relational_readiness")) throw new ValidationError("Candidate extraction must declare relational_readiness as null or an evidenced current assessment.");
         if (!Object.hasOwn(value, "romance_guide_context")) throw new ValidationError("Candidate extraction must declare romance_guide_context as null or an evidenced current-turn selector.");
         if (!Object.hasOwn(value, "threat_pathway")) throw new ValidationError("Candidate extraction must declare threat_pathway as null or a complete evidence-bound current assessment.");
+        if (!Object.hasOwn(value, "developmental_capacity")) throw new ValidationError("Candidate extraction must declare developmental_capacity as null or a complete evidence-bound current assessment.");
       }
       return validateCaseSnapshot(value);
     },
@@ -320,6 +367,7 @@ export async function resolveCaseExtraction({ context, provider, onProgress, rec
   if (resumed && (!context.pathPerformanceEnabled || (Object.hasOwn(resumed.value, "relational_readiness")
       && Object.hasOwn(resumed.value, "romance_guide_context")
       && Object.hasOwn(resumed.value, "threat_pathway")
+      && Object.hasOwn(resumed.value, "developmental_capacity")
       && (!resumed.value.path_update || Object.hasOwn(resumed.value.path_update, "representation"))))) {
     onProgress?.({
       stage: "case_extraction",
@@ -350,11 +398,25 @@ export async function runCaseAudit({ context, snapshot, provider, onProgress }) 
     { stage: "case_audit", fixtureKey: "case_audit" },
     value => {
       if (context.pathPerformanceEnabled && !String(provider.model).startsWith("mock-")) {
+        if (!Object.hasOwn(value, "invalidate_path_strategy")) {
+          throw new ValidationError("Candidate audit must explicitly review whether the active/proposed path strategy target remains valid.");
+        }
+        if (value.add_unknowns.some(item => !Object.hasOwn(item, "changes_next_action"))) {
+          throw new ValidationError("Candidate audit unknowns must declare whether resolving them can change the next therapeutic action.");
+        }
+        if (value.add_unknowns.some(item => !Object.hasOwn(item, "developmental_prerequisite_valid"))) {
+          throw new ValidationError("Candidate audit unknowns must independently declare developmental prerequisite validity.");
+        }
         if (!Object.hasOwn(value, "corrected_romance_guide_context") || !Object.hasOwn(value, "invalidate_romance_guide_context")) {
           throw new ValidationError("Candidate audit must explicitly review romance_guide_context.");
         }
         if (!Object.hasOwn(value, "corrected_threat_pathway") || !Object.hasOwn(value, "invalidate_threat_pathway")) {
           throw new ValidationError("Candidate audit must explicitly review threat_pathway.");
+        }
+        if (!Object.hasOwn(value, "corrected_developmental_capacity")
+            || !Object.hasOwn(value, "invalidate_developmental_capacity")
+            || !Object.hasOwn(value, "question_eligibility_findings")) {
+          throw new ValidationError("Candidate audit must explicitly review developmental capacity and question prerequisites.");
         }
       }
       return validateCaseAudit(value);

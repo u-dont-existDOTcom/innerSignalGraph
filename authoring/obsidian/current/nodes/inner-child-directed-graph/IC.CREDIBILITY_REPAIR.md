@@ -18,12 +18,13 @@ source_refs:
   - IC.PROTECTOR_VISIBLE
   - IC.VOW
   - IC.BOTTOM_UP_SEQUENCE
+  - AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE
 regression_refs:
   - G001
   - G012
-base_record_sha256: feff1a99edf74330f480df74c64d641813452d7eddb299e6b8e3c4a32a86ff23
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+base_record_sha256: d1dcae0621b127fd5c1583e8afee299d448cf03b71af0afaf1d9797bd3307b7f
+base_graph_sha256: 4a25d27086c6ec2f11a67ec6592d058e3ad3bb63d37be10a78e9a8f48f1cf206
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Repair credibility through non-defensive follow-through
@@ -36,6 +37,13 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
 ```json
 {
   "activation": {
+    "all": [
+      {
+        "field": "inner_adult_reliability",
+        "op": "eq",
+        "value": "reliable"
+      }
+    ],
     "any": [
       {
         "field": "credibility_conflict",
@@ -88,3 +96,5 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
 [[current/sources/inner-child-guide/IC.VOW]]
 
 [[current/sources/inner-child-guide/IC.BOTTOM_UP_SEQUENCE]]
+
+[[current/governance/amendments/AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE]]

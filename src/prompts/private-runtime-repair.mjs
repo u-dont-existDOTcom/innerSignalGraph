@@ -8,7 +8,9 @@ Work in this fresh, tool-free inference context. Repair the exact failed candida
 Return exactly one JSON object and no other text:
 {"exact_text":"complete repaired user-facing response"}
 
-The exact_text must differ from the failed candidate. Do not include analysis, hidden reasoning, provider traces, audit metadata, or extra fields.`;
+The exact_text must differ from the failed candidate. Do not include analysis, hidden reasoning, provider traces, audit metadata, or extra fields.
+
+If the authorized packet contains a developmental prerequisite finding, do not assign a role whose observable function is unestablished. Treat Adult, inner-parent, Nurturer, Protector, Leader and Guide as functional labels rather than literal internal entities. A successful-exception question and breakdown-state question are not a mandatory pair. If the packet authorizes both, preserve both exact questions in their supplied context-selected order in the same response, remove every other question and tangent, then stop. Safety and external protection remain higher priority.`;
 
   const user = `AUTHORIZED REPAIR PACKET\n${JSON.stringify(packet, null, 2)}`;
   return Object.freeze({ system, user });

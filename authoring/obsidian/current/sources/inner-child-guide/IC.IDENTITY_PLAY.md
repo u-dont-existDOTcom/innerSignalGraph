@@ -12,7 +12,7 @@ section_hash: 7a386e7f171aa320d2b1e9324c29b6925b921389069b114b098ca27a51290efb
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.IDENTITY_FORMATION
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # From Survival to Experimental Play

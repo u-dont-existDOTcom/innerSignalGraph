@@ -133,8 +133,8 @@ if (!result.answer || result.degraded !== false || result.mode !== "adversarial"
 if (result.graphBundleVersion !== "inner-child-somatic-pilot-2026-08-09-r5") {
   throw new Error("Mock A001 lacks the current graph bundle.");
 }
-if (result.interventionContract?.primaryJob?.id !== "IC.CREDIBILITY_REPAIR") {
-  throw new Error("Mock A001 did not route credibility repair first.");
+if (result.interventionContract?.primaryJob?.id !== "IC.ADULT_APPRENTICE") {
+  throw new Error("Mock A001 did not strengthen partial developmental capacity before credibility repair.");
 }
 if (!result.caseFormulation?.audit) throw new Error("Mock A001 lacks adversarial formulation audit.");
 if (result.realizationContractVersion !== "response-realization-v5" || !/show up again/i.test(result.answer)) {
@@ -259,7 +259,7 @@ node --input-type=module - "$auto_tmp/runtime/.inner-signal-autopilot/latest.jso
 import fs from "node:fs";
 const latest = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 if (latest.details?.graphRegressions?.ok !== true) throw new Error("Fake autopilot did not record the graph regression gate.");
-if (latest.details?.graphBundle?.stats?.nodeCount !== 53) throw new Error("Fake autopilot did not record the compiled graph bundle.");
+if (latest.details?.graphBundle?.stats?.nodeCount !== 54) throw new Error("Fake autopilot did not record the compiled graph bundle.");
 NODE
 test ! -e "$auto_tmp/runtime"/inner-signal-evidence-*.zip
 echo "PASS evidence remains local and no transfer bundle is created."

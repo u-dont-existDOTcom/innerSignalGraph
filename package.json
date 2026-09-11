@@ -17,6 +17,8 @@
     "constitution-context:acceptance": "node scripts/constitution-context-acceptance.mjs",
     "authoring:task:preflight": "node scripts/authoring-task-preflight.mjs",
     "authoring:task:acceptance": "node scripts/authoring-task-acceptance.mjs",
+    "reparenting-developmental:preflight": "node scripts/reparenting-developmental-prerequisite-preflight.mjs",
+    "reparenting-developmental:acceptance": "node scripts/reparenting-developmental-prerequisite-acceptance.mjs",
     "authoring:project": "node src/cli/authoring.mjs project",
     "authoring:check": "node src/cli/authoring.mjs check",
     "authoring:validate": "node src/cli/authoring.mjs validate",

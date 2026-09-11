@@ -24,7 +24,9 @@ export const REPAIR_INDUCED_ERROR_CHECKS = Object.freeze([
   "context_or_history_omission",
   "hypothesis_rigidification",
   "unjustified_treatment_or_behavior_recommendation",
-  "problem_replacement"
+  "problem_replacement",
+  "developmental_prerequisite_violation",
+  "paired_question_order_or_tangent"
 ]);
 
 // Binding runtime rule: audit approval is candidate-version-specific. Any

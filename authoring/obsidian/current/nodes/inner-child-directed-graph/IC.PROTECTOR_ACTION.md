@@ -18,15 +18,13 @@ source_refs:
   - IC.PROTECTOR_VISIBLE
   - IC.ADULT_APPRENTICE
   - AMEND.CROSS.LITERATURE_ACTION_REVIEW
+  - AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE
 regression_refs:
-  - G003
-  - G008
-  - G011
   - G029
   - G030
-base_record_sha256: 84133c7495f9d44ef5e76862f9d6e821e2514fc806b149764990ecdc56486d75
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+base_record_sha256: 30617dfcfcd5d899e26427c4e77aebb4e0b02e2e44cb75b3b2e9cdd2fc7de11f
+base_graph_sha256: 4a25d27086c6ec2f11a67ec6592d058e3ad3bb63d37be10a78e9a8f48f1cf206
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Make the Protector visible in ordinary life
@@ -41,17 +39,9 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
   "activation": {
     "any": [
       {
-        "field": "credibility_conflict",
+        "field": "developmental_missing_function",
         "op": "eq",
-        "value": "present"
-      },
-      {
-        "field": "inner_adult_access",
-        "op": "in",
-        "value": [
-          "low",
-          "partial"
-        ]
+        "value": "protector"
       },
       {
         "field": "protective_response",
@@ -89,3 +79,5 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
 [[current/sources/inner-child-guide/IC.ADULT_APPRENTICE]]
 
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW]]
+
+[[current/governance/amendments/AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE]]

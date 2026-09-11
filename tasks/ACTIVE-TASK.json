@@ -1,36 +1,30 @@
 {
   "schemaVersion": 1,
-  "taskId": "automatic-runtime-orchestration-20260910",
-  "title": "Automate private candidate-audit runtime orchestration",
+  "taskId": "reparenting-developmental-prerequisite-20260911",
+  "title": "Add developmental prerequisites to reparenting target selection",
   "status": "active",
   "exclusive": true,
-  "startedAt": "2026-09-10",
+  "startedAt": "2026-09-11",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
-  "requiredBranch": "codex/automatic-runtime-orchestration-20260910",
-  "pullRequest": 49,
+  "requiredBranch": "codex/reparenting-telos-target-gate-20260911",
+  "pullRequest": 52,
   "ownerAuthorized": true,
-  "startingTaskHead": "a98f9f7d46ed8233cf638b76121d7b293ccef9b4",
-  "ownerOutcomePath": "tasks/automatic-runtime-orchestration-20260910/OWNER-OUTCOME.json",
-  "directivePath": "tasks/automatic-runtime-orchestration-20260910/EXECUTION-DIRECTIVE.json",
-  "statePath": "tasks/automatic-runtime-orchestration-20260910/INTEGRATION.md",
-  "activeLessonContractPath": "tasks/automatic-runtime-orchestration-20260910/ACTIVE-LESSON-CONTRACT.json",
-  "completionClaimRule": "Completion requires a production-wired, restart-safe, fail-closed one-message controller; mechanically independent exact-version audits and bounded repairs; persisted delivery; public/private isolation; synthetic end-to-end tests; canonical handoff; and a verified commit on draft PR 49.",
+  "startingTaskHead": "a49ac0bef1091ec348f4ac88a27fbb9619ec58ab",
+  "ownerOutcomePath": "tasks/reparenting-telos-target-gate-20260911/OWNER-OUTCOME.json",
+  "directivePath": "tasks/reparenting-telos-target-gate-20260911/EXECUTION-DIRECTIVE.json",
+  "statePath": "tasks/reparenting-telos-target-gate-20260911/INTEGRATION.md",
+  "activeLessonContractPath": "tasks/reparenting-telos-target-gate-20260911/ACTIVE-LESSON-CONTRACT.json",
+  "completionClaimRule": "Completion requires an evidence-bound developmental-capacity gate independent from treatment utility, exact auditable prerequisite violations, context-sensitive selection of a successful-exception inquiry, breakdown-state inquiry, or justified context-ordered pair, all R-ADULT-01 through R-ADULT-12 regressions, generated graph/authoring outputs, independent exact-head review, hosted checks, merge to main, and post-merge verification.",
   "coordination": {
-    "isolatedFrom": "completed Louka v3 private lifecycle work",
-    "rule": "Do not mutate or audit the real Louka case; preserve and integrate only the completed task's durable public-safe state.",
-    "integratedTask": {
-      "taskId": "private-case-v3-repair-cycle2-20260910",
-      "status": "complete",
-      "commit": "5564a2d",
-      "statePath": "tasks/private-case-v3-repair-cycle2-20260910/INTEGRATION.md",
-      "outcomeReceiptPath": "tasks/private-case-v3-repair-cycle2-20260910/PRIVATE-OPERATION-RECEIPT.json"
-    }
+    "supersedesTaskId": "automatic-runtime-orchestration-20260910",
+    "supersededTaskStatus": "merged-complete",
+    "supersededTaskMerge": "853235a00f2cc8fee599fd6214fbbfcbd2e4a8bf",
+    "rule": "Work only on the public-safe PR 52 developmental-prerequisite scope; do not mutate private case data or reopen merged PR 49 work."
   },
-  "currentPrivateCaseNextAction": "FRESH_INDEPENDENT_AUDIT",
   "suspendedTaskSources": [
-    "fresh independent Louka v3 audit, approval, repair, or delivery",
-    "the older 48-call A/B/C discovery experiment unless separately re-authorized",
     "unrelated task branches and pull requests",
-    "public deployment, installation, stable promotion, or merge"
+    "private-case mutation or private transcript access",
+    "provider/API or paid semantic evaluation",
+    "deployment, installation, release, or stable promotion"
   ]
 }

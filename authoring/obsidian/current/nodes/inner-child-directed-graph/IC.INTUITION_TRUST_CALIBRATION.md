@@ -23,8 +23,8 @@ source_refs:
   - IC.DIFFERENTIATION
 regression_refs: []
 base_record_sha256: 654eb69e423d9615aa46e5ef73b5cd983a75e816f471fecdca2dbdb09ffb031a
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+base_graph_sha256: 4a25d27086c6ec2f11a67ec6592d058e3ad3bb63d37be10a78e9a8f48f1cf206
+projection_input_sha256: be76479fe2e7eaa61ebee5c045123130a833c1a288a90fdaa786006e63026932
 ---
 
 # Make intuition and analysis correct each other before trust transfers

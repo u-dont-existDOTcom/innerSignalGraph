@@ -21,9 +21,10 @@ test("A001 formulated adversarial pipeline preserves plan and response obligatio
   assert.deepEqual(acceptance.response.missingRequired, []);
   assert.deepEqual(acceptance.response.presentForbidden, []);
   assert.deepEqual(acceptance.plan.missing, []);
-  assert.equal(result.interventionContract.primaryJob.id, "IC.CREDIBILITY_REPAIR");
-  assert.ok(result.interventionContract.selectedNodes.some((item) => item.id === "IC.BORROW_ONE_FUNCTION"));
-  assert.ok(result.interventionContract.requiredNuance.some((item) => /not only the younger state/i.test(item)));
+  assert.equal(result.interventionContract.primaryJob.id, "IC.ADULT_APPRENTICE");
+  assert.equal(result.interventionContract.developmentalCapacityContract.route, "STRENGTHEN_ACCESS_GENERALIZATION");
+  assert.ok(result.interventionContract.selectedNodes.some((item) => item.id === "IC.MEET_GUARD"));
+  assert.ok(result.interventionContract.requiredNuance.some((item) => /Capacity exists in some states/i.test(item)));
   assert.equal(result.mode, "adversarial");
   assert.equal(result.degraded, false);
   assert.deepEqual(result.providersCompleted, ["openai", "anthropic"]);

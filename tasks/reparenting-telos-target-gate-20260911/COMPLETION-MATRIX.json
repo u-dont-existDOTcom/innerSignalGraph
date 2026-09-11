@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "taskId": "reparenting-developmental-prerequisite-20260911",
+  "status": "local-verification-complete-independent-review-pending",
+  "rows": [
+    {"id":"R-ADULT-01","requirement":"Unsupported direct Adult action is rejected with the exact audit code.","evidence":["tests/developmental-prerequisite.test.mjs","src/case-formulation/developmental-capacity.mjs","src/case-formulation/run.mjs"]},
+    {"id":"R-ADULT-02","requirement":"Reliable established capacity permits direct role-specific action.","evidence":["tests/developmental-prerequisite.test.mjs"]},
+    {"id":"R-ADULT-03","requirement":"Calm-only capacity routes to access generalization.","evidence":["tests/developmental-prerequisite.test.mjs","src/case-formulation/developmental-capacity.mjs"]},
+    {"id":"R-ADULT-04","requirement":"No-parts language remains functional and non-literal.","evidence":["tests/developmental-prerequisite.test.mjs","src/prompts/realize.mjs"]},
+    {"id":"R-ADULT-05","requirement":"Recent capacity evidence persists and suppresses generic re-checking.","evidence":["tests/developmental-prerequisite.test.mjs","src/case-state/longitudinal-state.mjs"]},
+    {"id":"R-ADULT-06","requirement":"Absent capacity uses a temporary borrowed scaffold directed toward internal capacity.","evidence":["tests/developmental-prerequisite.test.mjs","guide-graphs/candidates/inner-child.graph.json"]},
+    {"id":"R-ADULT-07","requirement":"Credibility repair cannot precede available reliable capacity.","evidence":["tests/developmental-prerequisite.test.mjs","guide-graphs/candidates/inner-child.graph.json"]},
+    {"id":"R-ADULT-08","requirement":"Operational safety outranks developmental inquiry.","evidence":["tests/developmental-prerequisite.test.mjs"]},
+    {"id":"R-ADULT-09","requirement":"Successful-exception and breakdown-state inquiries are independently selected; a justified pair preserves the context-selected order and an established or intolerable side is not forced.","evidence":["tests/developmental-prerequisite.test.mjs","src/orchestrator/response-contract.mjs"]},
+    {"id":"R-ADULT-10","requirement":"Information value permits a justified pair to outrank generic one-question minimization without forcing two questions when one is sufficient.","evidence":["tests/developmental-prerequisite.test.mjs","guide-graphs/candidates/inner-child.graph.json"]},
+    {"id":"R-ADULT-11","requirement":"Tangent-question mutation fails response adherence.","evidence":["tests/developmental-prerequisite.test.mjs","src/orchestrator/response-contract.mjs"]},
+    {"id":"R-ADULT-12","requirement":"Follow-up targets the observed missing function rather than a fixed role order.","evidence":["tests/developmental-prerequisite.test.mjs","src/case-formulation/developmental-capacity.mjs"]}
+  ]
+}

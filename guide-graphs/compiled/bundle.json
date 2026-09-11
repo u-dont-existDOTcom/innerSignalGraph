@@ -750,6 +750,16 @@
           "excerpt": "Treat distress within a valued sacred relationship, practice or community as a possible current therapeutic job in its own right. Follow what the person wants to preserve, mourn, reconsider or change. Neither stronger belief nor rejection of the tradition is required. Do not infer spiritual failure, divine judgment, a literal entity or a parental projection. Do not send the person back into a distressing spiritual resource without examining its fit and willingness. Mature capacity can include action where possible and surrender of control that is not theirs; ongoing prayer is not failed development. Ordinary safety and human support remain independent.",
           "status": "owner-approved",
           "domain": "inner-child"
+        },
+        {
+          "id": "AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE",
+          "heading": "AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "f8c3bbe0288c7b893a2d57e188de36ca8dd07e99094f968033854c396c5e62c2",
+          "excerpt": "Before a reparenting, inner-child, or self-love intervention asks an Adult, inner parent, Nurturer, Protector, Leader, or Guide to act, independently establish the observable function the question presupposes. Functional labels do not prove literal internal entities or sufficient capacity. Distinguish absence, partial or state-dependent access, available capacity, credibility, and increasingly reliable follow-through. Successful-exception and breakdown-state inquiries are separate options, not a mandatory pair or fixed sequence. Use both in the same reply only when each answers a distinct unresolved, action-changing uncertainty, neither is redundant with recent evidence, the client is likely to tolerate two questions without losing focus, and no higher-priority route applies. Preserve the context-selected order. A justified pair is one discriminating unit and outranks ordinary one-question minimization, but safety and external protection remain first. Do not add tangential investigation. Borrowed support should build internal capacity, and credibility repair begins only after the relevant capacity exists.",
+          "status": "owner-approved",
+          "domain": "inner-child"
         }
       ]
     },
@@ -898,6 +908,77 @@
             ],
             "forbiddenOverclaims": [
               "Do not claim a hidden adult capacity or hidden progress."
+            ]
+          },
+          "defaultQuestion": ""
+        },
+        {
+          "id": "IC.DEVELOPMENTAL_CAPACITY_CONTRAST",
+          "title": "Establish the developmental function before assigning it",
+          "kind": "decision-node",
+          "tier": 2,
+          "priority": 99,
+          "activation": {
+            "all": [
+              {
+                "field": "developmental_inquiry_route",
+                "op": "in",
+                "value": [
+                  "successful_exception",
+                  "breakdown_state",
+                  "paired"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "IC.BORROW_ADULT",
+            "IC.ADULT_APPRENTICE",
+            "IC.THREE_FUNCTIONS",
+            "AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Use the successful-exception inquiry, the breakdown-state inquiry, or their context-ordered comparison exactly as supplied by the developmental capacity contract.",
+            "Ask both only when each resolves a distinct action-changing uncertainty and the client can tolerate the pair; otherwise ask only the unresolved side.",
+            "Use the resulting evidence to identify observable caregiving or leadership functions without treating role language as proof of a literal internal entity."
+          ],
+          "avoid": [
+            "Do not assign an unestablished Adult, Nurturer, Protector, Leader, or Guide another task.",
+            "Do not add symptom-function, rejection, false-self, substance, shaking, or generic consent and boundary tangents to this comparison."
+          ],
+          "successSignals": [
+            "The selected inquiry identifies an emerging function, what disappears under distress, or both when the comparison is justified."
+          ],
+          "tags": [
+            "developmental-prerequisite",
+            "context-sensitive-assessment",
+            "reparenting"
+          ],
+          "effects": {
+            "deferNodes": [
+              "IC.CREDIBILITY_REPAIR",
+              "IC.PROTECTOR_ACTION",
+              "IC.GUIDE_LATER"
+            ],
+            "blockNodes": [],
+            "requiredNuance": [
+              "When both questions are selected, their evidence-selected order forms one discriminating comparison rather than two competing agendas; when one side is already known, ask only the unresolved side."
+            ],
+            "forbiddenOverclaims": [
+              "Do not infer capacity, trust, or a coherent inner Adult from vocabulary alone."
             ]
           },
           "defaultQuestion": ""
@@ -1221,9 +1302,19 @@
                   "unsafe",
                   "inaccessible"
                 ]
+              },
+              {
+                "field": "developmental_capacity_state",
+                "op": "eq",
+                "value": "absent_inaccessible"
               }
             ],
             "none": [
+              {
+                "field": "developmental_capacity_state",
+                "op": "eq",
+                "value": "partial_intermittent_state_dependent"
+              },
               {
                 "field": "present_safety",
                 "op": "eq",
@@ -1241,7 +1332,8 @@
             "IC.ADULT_APPRENTICE",
             "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
             "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
-            "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
+            "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+            "AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE"
           ],
           "authority": "author-framework",
           "recommendations": [
@@ -1295,6 +1387,13 @@
                   "low",
                   "partial"
                 ]
+              }
+            ],
+            "any": [
+              {
+                "field": "developmental_capacity_state",
+                "op": "eq",
+                "value": "partial_intermittent_state_dependent"
               },
               {
                 "field": "support_available",
@@ -1429,6 +1528,13 @@
           "tier": 3,
           "priority": 96,
           "activation": {
+            "all": [
+              {
+                "field": "inner_adult_reliability",
+                "op": "eq",
+                "value": "reliable"
+              }
+            ],
             "any": [
               {
                 "field": "credibility_conflict",
@@ -1445,7 +1551,8 @@
           "sourceRefs": [
             "IC.PROTECTOR_VISIBLE",
             "IC.VOW",
-            "IC.BOTTOM_UP_SEQUENCE"
+            "IC.BOTTOM_UP_SEQUENCE",
+            "AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE"
           ],
           "authority": "author-framework",
           "recommendations": [
@@ -1543,17 +1650,9 @@
           "activation": {
             "any": [
               {
-                "field": "credibility_conflict",
+                "field": "developmental_missing_function",
                 "op": "eq",
-                "value": "present"
-              },
-              {
-                "field": "inner_adult_access",
-                "op": "in",
-                "value": [
-                  "low",
-                  "partial"
-                ]
+                "value": "protector"
               },
               {
                 "field": "protective_response",
@@ -1565,7 +1664,8 @@
           "sourceRefs": [
             "IC.PROTECTOR_VISIBLE",
             "IC.ADULT_APPRENTICE",
-            "AMEND.CROSS.LITERATURE_ACTION_REVIEW"
+            "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+            "AMEND.IC.DEVELOPMENTAL_PREREQUISITE_GATE"
           ],
           "authority": "author-framework",
           "recommendations": [
@@ -5004,9 +5104,9 @@
   ],
   "stats": {
     "graphCount": 3,
-    "nodeCount": 53,
+    "nodeCount": 54,
     "edgeCount": 70,
-    "sourceSectionCount": 90,
-    "ownerAmendmentCount": 26
+    "sourceSectionCount": 91,
+    "ownerAmendmentCount": 27
   }
 }

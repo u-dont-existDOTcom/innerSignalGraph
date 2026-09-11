@@ -80,6 +80,18 @@ export function validateRealization(value) {
   object(value, "realization");
   string(value.answer, "realization.answer");
   string(value.next_question, "realization.next_question", { allowEmpty: true });
+  if (value.developmental_questions !== undefined) {
+    if (!Array.isArray(value.developmental_questions) || value.developmental_questions.length > 2) {
+      throw new ValidationError("realization.developmental_questions must be an array of at most two questions.");
+    }
+    for (const [index, item] of value.developmental_questions.entries()) {
+      object(item, `realization.developmental_questions[${index}]`);
+      if (!["successful-exception", "breakdown-under-distress"].includes(item.kind)) {
+        throw new ValidationError(`realization.developmental_questions[${index}].kind is invalid.`);
+      }
+      string(item.text, `realization.developmental_questions[${index}].text`);
+    }
+  }
   if (!Array.isArray(value.realized_nodes)) throw new ValidationError("realization.realized_nodes must be an array.");
   for (const [index, item] of value.realized_nodes.entries()) {
     object(item, `realization.realized_nodes[${index}]`);

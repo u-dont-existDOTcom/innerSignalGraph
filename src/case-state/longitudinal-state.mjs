@@ -5,6 +5,10 @@ import {
   updateThreatPathwayState,
   validateThreatPathwayState
 } from "../case-formulation/threat-pathway.mjs";
+import {
+  developmentalCapacityObservationIds,
+  validateDevelopmentalCapacity
+} from "../case-formulation/developmental-capacity.mjs";
 
 export const CASE_STATE_VERSION = 1;
 export const CASE_STATE_STATUSES = Object.freeze(["direct_report", "supervisor_report", "observed_pattern", "hypothesis", "inference", "unresolved_conflict"]);
@@ -80,6 +84,14 @@ function validateEpisode(episode, name = "caseState.current_episode") {
   if (episode == null) return null;
   record(episode, name);
   for (const field of ["id", "target", "route", "prediction", "next_question", "started_turn_id"]) bounded(episode[field], `${name}.${field}`, 2400, { empty: field === "next_question" });
+  if (episode.question_mode != null && !["none", "canonical", "canonical-pair"].includes(episode.question_mode)) throw new ValidationError(`${name}.question_mode is invalid.`);
+  if (episode.ordered_questions != null) {
+    if (!Array.isArray(episode.ordered_questions) || episode.ordered_questions.length > 2
+        || episode.ordered_questions.some(value => typeof value !== "string" || !value.trim())) {
+      throw new ValidationError(`${name}.ordered_questions must contain at most two non-empty questions.`);
+    }
+    if (episode.question_mode === "canonical-pair" && episode.ordered_questions.length !== 2) throw new ValidationError(`${name}.canonical-pair requires two ordered questions.`);
+  }
   for (const field of ["constitutional_aim_ids", "adverse_signs", "stay_conditions", "switch_conditions", "stop_conditions", "source_item_ids"]) {
     if (!Array.isArray(episode[field]) || episode[field].length > CASE_STATE_LIMITS.episode_list || episode[field].some((value) => typeof value !== "string" || !value.trim())) throw new ValidationError(`${name}.${field} must contain bounded strings.`);
   }
@@ -119,6 +131,7 @@ export function createEmptyCaseState({ caseId = "local-case" } = {}) {
     intervention_history: [],
     current_episode: null,
     threat_pathway: null,
+    developmental_capacity: null,
     retrieval_hints: []
   };
 }
@@ -158,6 +171,10 @@ export function validateCaseState(value) {
   value.retrieval_hints.forEach((item, index) => bounded(item, `caseState.retrieval_hints[${index}]`, 240));
   validateEpisode(value.current_episode);
   if (Object.hasOwn(value, "threat_pathway")) validateThreatPathwayState(value.threat_pathway);
+  if (Object.hasOwn(value, "developmental_capacity") && value.developmental_capacity) {
+    const ids = new Set(developmentalCapacityObservationIds(value.developmental_capacity));
+    validateDevelopmentalCapacity(value.developmental_capacity, { issue: value.developmental_capacity.issue, observationIds: ids });
+  }
   return value;
 }
 
@@ -187,7 +204,8 @@ export function applyCaseStatePatch(previous, patch = {}) {
     retrieval_hints: unique([...(before.retrieval_hints ?? []), ...(patch.retrieval_hints ?? [])]),
     trajectory_observability: patch.trajectory_observability ? clone(patch.trajectory_observability) : before.trajectory_observability,
     current_episode: Object.hasOwn(patch, "current_episode") ? clone(patch.current_episode) : before.current_episode,
-    threat_pathway: Object.hasOwn(patch, "threat_pathway") ? clone(patch.threat_pathway) : (before.threat_pathway ?? null)
+    threat_pathway: Object.hasOwn(patch, "threat_pathway") ? clone(patch.threat_pathway) : (before.threat_pathway ?? null),
+    developmental_capacity: Object.hasOwn(patch, "developmental_capacity") ? clone(patch.developmental_capacity) : (before.developmental_capacity ?? null)
   };
   return validateCaseState(next);
 }
@@ -244,6 +262,7 @@ export function diffCaseStates(previous, next) {
     answered_question_changes: changedFields(before.answered_questions, after.answered_questions).length ? after.answered_questions.map((item) => item.id) : [],
     current_episode_changed: JSON.stringify(before.current_episode) !== JSON.stringify(after.current_episode),
     threat_pathway_changed: JSON.stringify(before.threat_pathway ?? null) !== JSON.stringify(after.threat_pathway ?? null),
+    developmental_capacity_changed: JSON.stringify(before.developmental_capacity ?? null) !== JSON.stringify(after.developmental_capacity ?? null),
     trajectory_observability_changed: JSON.stringify(before.trajectory_observability) !== JSON.stringify(after.trajectory_observability)
   });
 }
@@ -255,6 +274,7 @@ export function projectCaseStateForInspection(state) {
     trajectoryObservability: value.trajectory_observability,
     currentEpisode: value.current_episode,
     threatPathway: value.threat_pathway ?? null,
+    developmentalCapacity: value.developmental_capacity ?? null,
     factsAndHypotheses: value.items,
     contradictions: value.contradiction_clusters,
     settledAnswers: value.answered_questions,
@@ -314,6 +334,10 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
       route: primary.id,
       prediction: successSignals[0] || `The selected route should produce observable movement toward ${primary.title.toLowerCase()}.`,
       next_question: interventionContract.nextQuestion ?? "",
+      question_mode: interventionContract.questionContract?.mode ?? (interventionContract.nextQuestion ? "canonical" : "none"),
+      ordered_questions: interventionContract.questionContract?.mode === "canonical-pair"
+        ? [...interventionContract.questionContract.questions]
+        : (interventionContract.nextQuestion ? [interventionContract.nextQuestion] : []),
       started_turn_id: continuing ? previous.current_episode.started_turn_id : turnId,
       constitutional_aim_ids: continuing ? previous.current_episode.constitutional_aim_ids : ["CARE", "LEADERSHIP", "PROTECTION", "INTEGRATION_VITALITY"],
       adverse_signs: continuing ? previous.current_episode.adverse_signs : ["reduced choice", "destabilization", "increasing alienation"],
@@ -338,5 +362,14 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
   const threatPathway = assessment
     ? updateThreatPathwayState(previous.threat_pathway ?? null, assessment, threatPathwayDecision(assessment), { turnId, recordedAt })
     : (previous.threat_pathway ?? null);
-  return applyCaseStatePatch(previous, { items, intervention_history: interventionHistory, current_episode: currentEpisode, threat_pathway: threatPathway });
+  const currentDevelopmentalCapacity = snapshot?.developmental_capacity
+    ? clone(snapshot.developmental_capacity)
+    : (previous.developmental_capacity ?? null);
+  return applyCaseStatePatch(previous, {
+    items,
+    intervention_history: interventionHistory,
+    current_episode: currentEpisode,
+    threat_pathway: threatPathway,
+    developmental_capacity: currentDevelopmentalCapacity
+  });
 }
