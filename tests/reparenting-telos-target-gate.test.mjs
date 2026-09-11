@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { blankCaseVariables } from "../src/guide-graph/contract.mjs";
 import { validateCaseSnapshot, validateCaseAudit } from "../src/case-formulation/validators.mjs";
 import { applyCaseAudit } from "../src/case-formulation/run.mjs";
+import { evaluatePathPerformance } from "../src/case-formulation/path-performance.mjs";
 import { caseSnapshotGenerationSchema, caseAuditGenerationSchema } from "../src/case-formulation/schemas.mjs";
 import { caseExtractionPrompt } from "../src/prompts/case-extract.mjs";
 import { caseAuditPrompt } from "../src/prompts/case-audit.mjs";
@@ -134,6 +135,49 @@ test("target invalidation preserves true observations while withdrawing the symp
   assert.equal(audited._path_invalidated, true);
   assert.equal(audited.audit.path_strategy_invalidated, true);
   assert.deepEqual(audited.direct_observations, snapshot.direct_observations);
+});
+
+test("semantic strategy invalidation does not masquerade as evidence withdrawal", () => {
+  const observationIds = new Set(["obs-1"]);
+  const first = evaluatePathPerformance({
+    variables: blankCaseVariables(),
+    observationIds,
+    update: {
+      strategy: {
+        process_id: "reparenting-1",
+        target: "Downstream symptom theory",
+        formulation: "A symptom-level function may explain the presentation.",
+        family: "functional-analysis",
+        node_id: "IC.CREDIBILITY_REPAIR",
+        selection_reason: "Synthetic target for invalidation regression.",
+        observation_ids: ["obs-1"],
+        predictions: [
+          { id: "p1", sign: "new_information", description: "The symptom theory yields new treatment-relevant information.", horizon: "immediate" }
+        ],
+        adverse_signs: ["low_information"]
+      },
+      response: "not_observed",
+      signals: [],
+      failure_hypotheses: [],
+      probe: null,
+      delivery_review: null,
+      representation: null
+    }
+  });
+
+  const invalidated = evaluatePathPerformance({
+    prior: first,
+    update: null,
+    variables: blankCaseVariables(),
+    observationIds,
+    invalidated: true
+  });
+
+  assert.equal(invalidated.latest.decision, "SWITCH");
+  assert.match(invalidated.latest.reason, /current strategy was invalidated/i);
+  assert.doesNotMatch(invalidated.latest.reason, /evidence was withdrawn/i);
+  const failure = invalidated.latest.failure_sources.find(item => item.kind === "FORMULATION_MISMATCH");
+  assert.equal(failure?.attribution, "strategy_invalidated_reassessment_required");
 });
 
 test("shared longitudinal rules no longer force functional-hypothesis pursuit", () => {
