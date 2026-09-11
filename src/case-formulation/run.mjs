@@ -92,7 +92,7 @@ export function applyCaseAudit(snapshot, audit) {
     ...episode.reviews.flatMap(r => r.observed_signals.filter(episodeSignal).map(s => s.observation_id))
   ] : [];
   const activeWithdrawn = episodeRefs(priorState?.active).some(id => removeObservations.has(id));
-  const pathInvalidated = Boolean(snapshot._path_invalidated || activeWithdrawn || (pathUpdate && [
+  const pathInvalidated = Boolean(snapshot._path_invalidated || audit.invalidate_path_strategy === true || activeWithdrawn || (pathUpdate && [
     ...(pathUpdate.strategy?.observation_ids ?? []), ...pathUpdate.signals.filter(episodeSignal).map(s => s.observation_id),
     ...pathUpdate.failure_hypotheses.flatMap(h => h.observation_ids)
   ].some(id => removeObservations.has(id))));
@@ -134,6 +134,10 @@ export function applyCaseAudit(snapshot, audit) {
     pathUpdate.failure_hypotheses = pathUpdate.failure_hypotheses.filter(h => !h.observation_ids.some(id => removeObservations.has(id)));
     if (pathUpdate.strategy?.observation_ids.some(id => removeObservations.has(id))) pathUpdate.strategy = null;
     if (pathUpdate.representation?.observation_ids.some(id => removeObservations.has(id))) pathUpdate.representation = null;
+    if (audit.invalidate_path_strategy === true) {
+      pathUpdate.strategy = null;
+      pathUpdate.representation = null;
+    }
   }
 
   const remainingObservations = snapshot.direct_observations.filter(item => !removeObservations.has(item.id));
@@ -151,7 +155,7 @@ export function applyCaseAudit(snapshot, audit) {
   }
   const priorRepresentationIsCurrent = Boolean(priorState?.active && (!pathUpdate || currentRepresentationProcess === priorState.active.strategy.process_id));
   if (priorRepresentationIsCurrent && representationWasTracked) {
-    if (audit.invalidate_path_representation === true) {
+    if (audit.invalidate_path_representation === true || audit.invalidate_path_strategy === true) {
       priorState.active.representation = null;
       priorState.active.delivery = null;
     } else if (correctedRepresentationProvided) {
@@ -217,6 +221,7 @@ export function applyCaseAudit(snapshot, audit) {
       summary: audit.summary,
       safety_flags: audit.safety_flags,
       variable_corrections: audit.variable_corrections,
+      ...(audit.invalidate_path_strategy === true ? { path_strategy_invalidated: true } : {}),
       ...(readinessWasTracked ? { relational_readiness_reviewed: true } : {}),
       ...(representationWasTracked ? { path_representation_reviewed: true } : {}),
       ...(romanceContextWasTracked ? { romance_guide_context_reviewed: true } : {}),
@@ -295,6 +300,7 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
         if (!Object.hasOwn(value, "path_update")) throw new ValidationError("Candidate extraction must declare path_update; missing strategy tracking cannot silently bypass monitoring.");
         if (value.path_update && !Object.hasOwn(value.path_update, "representation")) throw new ValidationError("Candidate path update must declare representation as null or a process-scoped selection.");
         if (value.path_update?.strategy && value.path_update.representation == null) throw new ValidationError("A new candidate strategy requires an explicit process-scoped representation selection.");
+        if (value.unknowns.some(item => !Object.hasOwn(item, "changes_next_action"))) throw new ValidationError("Candidate extraction unknowns must declare whether resolving them can change the next therapeutic action.");
         if (!Object.hasOwn(value, "relational_readiness")) throw new ValidationError("Candidate extraction must declare relational_readiness as null or an evidenced current assessment.");
         if (!Object.hasOwn(value, "romance_guide_context")) throw new ValidationError("Candidate extraction must declare romance_guide_context as null or an evidenced current-turn selector.");
         if (!Object.hasOwn(value, "threat_pathway")) throw new ValidationError("Candidate extraction must declare threat_pathway as null or a complete evidence-bound current assessment.");
@@ -350,6 +356,12 @@ export async function runCaseAudit({ context, snapshot, provider, onProgress }) 
     { stage: "case_audit", fixtureKey: "case_audit" },
     value => {
       if (context.pathPerformanceEnabled && !String(provider.model).startsWith("mock-")) {
+        if (!Object.hasOwn(value, "invalidate_path_strategy")) {
+          throw new ValidationError("Candidate audit must explicitly review whether the active/proposed path strategy target remains valid.");
+        }
+        if (value.add_unknowns.some(item => !Object.hasOwn(item, "changes_next_action"))) {
+          throw new ValidationError("Candidate audit unknowns must declare whether resolving them can change the next therapeutic action.");
+        }
         if (!Object.hasOwn(value, "corrected_romance_guide_context") || !Object.hasOwn(value, "invalidate_romance_guide_context")) {
           throw new ValidationError("Candidate audit must explicitly review romance_guide_context.");
         }
