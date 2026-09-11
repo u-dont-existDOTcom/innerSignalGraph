@@ -1,4 +1,6 @@
 import { createInnerSignalServer } from "./create-server.mjs";
+import { createPrivateTherapyModelRuntime } from "../supervisor/private-therapy-model-runtime.mjs";
+import { createPrivateTherapyTurnController } from "../supervisor/private-therapy-turn-controller.mjs";
 
 function listen(server, port, host) {
   return new Promise((resolve, reject) => {
@@ -27,14 +29,38 @@ function closeServer(server) {
  * interface. `localhost` and `127.0.0.1` therefore both work on normal Linux
  * configurations without exposing therapy traffic to the local network.
  */
-export async function listenInnerSignalLoopback({ config, providers, privateCaseStore = null, port = config.port }) {
-  const ipv4 = createInnerSignalServer({ config, providers, privateCaseStore });
+export async function listenInnerSignalLoopback({
+  config,
+  providers,
+  privateCaseStore = null,
+  privateCaseAccessService = null,
+  privateAuthContext = null,
+  privateTherapyController = null,
+  port = config.port
+}) {
+  const privateCaseSource = privateCaseAccessService ?? privateCaseStore;
+  const sharedPrivateTherapyController = privateTherapyController ?? (privateCaseSource
+    ? createPrivateTherapyTurnController({
+        privateCaseSource,
+        modelRuntime: createPrivateTherapyModelRuntime({ privateCaseSource, providers, config }),
+        maximumInvocationAttempts: config.privateRuntimeInvocationAttempts ?? 2
+      })
+    : null);
+  const serverOptions = {
+    config,
+    providers,
+    privateCaseStore,
+    privateCaseAccessService,
+    privateAuthContext,
+    privateTherapyController: sharedPrivateTherapyController
+  };
+  const ipv4 = createInnerSignalServer(serverOptions);
   await listen(ipv4, port, "127.0.0.1");
   const actualPort = ipv4.address().port;
 
   let ipv6 = null;
   try {
-    ipv6 = createInnerSignalServer({ config, providers, privateCaseStore });
+    ipv6 = createInnerSignalServer(serverOptions);
     await listen(ipv6, actualPort, "::1");
   } catch (error) {
     await closeServer(ipv6).catch(() => {});

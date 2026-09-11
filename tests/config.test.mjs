@@ -80,6 +80,15 @@ test("development review recovery has separate normal and extended timeouts", ()
   });
 });
 
+test("private runtime inference retries are bounded independently", () => {
+  withEnv({ PRIVATE_RUNTIME_INVOCATION_ATTEMPTS: null }, () => {
+    assert.equal(loadConfig({ mode: "mock" }).privateRuntimeInvocationAttempts, 2);
+  });
+  withEnv({ PRIVATE_RUNTIME_INVOCATION_ATTEMPTS: "4" }, () => {
+    assert.throws(() => loadConfig({ mode: "mock" }), /one to three|1 to 3|from 1 to 3/u);
+  });
+});
+
 test("development live regression has a dedicated timeout independent of ordinary request timeout", () => {
   withEnv({ REQUEST_TIMEOUT_MS: "180000", DEV_LIVE_REGRESSION_TIMEOUT_MS: null }, () => {
     const config = loadConfig({ mode: "mock" });

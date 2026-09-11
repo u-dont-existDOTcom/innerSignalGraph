@@ -102,7 +102,7 @@ export function validateCandidateAuditEvidence(value, candidate) {
   const expectedVerdict = blockingIds.length ? "fail" : "pass";
   if (value.verdict !== expectedVerdict) throw new ValidationError("Candidate audit verdict is inconsistent with its findings.");
   if (value.independent !== (value.auditor_kind === "independent")) throw new ValidationError("Candidate audit independence classification is inconsistent.");
-  if (value.sufficient_for_approval !== (value.independent && value.verdict === "pass")) throw new ValidationError("Candidate audit approval sufficiency is inconsistent.");
+  if (value.sufficient_for_approval !== (value.independent && value.independent_auditor_available && value.verdict === "pass")) throw new ValidationError("Candidate audit approval sufficiency is inconsistent.");
 
   if (candidate) {
     if (value.candidate_id !== candidate.id || value.candidate_version !== candidate.version) throw new ValidationError("Audit evidence belongs to a different candidate ID/version.");
@@ -148,7 +148,7 @@ export function createCandidateAuditEvidence({
     findings: normalizedFindings,
     unresolved_substantive_finding_ids: normalizedFindings.filter(isSubstantiveAuditFinding).map((finding) => finding.id),
     verdict: normalizedFindings.some(isSubstantiveAuditFinding) ? "fail" : "pass",
-    sufficient_for_approval: independent && !normalizedFindings.some(isSubstantiveAuditFinding),
+    sufficient_for_approval: independent && independentAuditorAvailable === true && !normalizedFindings.some(isSubstantiveAuditFinding),
     repair_induced_checks: candidate.parent_candidate_id == null ? [] : [...repairInducedChecks]
   };
   return Object.freeze(validateCandidateAuditEvidence(evidence, candidate));
@@ -168,8 +168,15 @@ export function validateCandidateLifecycleFields(candidate) {
   candidate.audit_history.forEach((audit) => validateCandidateAuditEvidence(audit, candidate));
   const auditIds = candidate.audit_history.map((audit) => audit.id);
   if (new Set(auditIds).size !== auditIds.length) throw new ValidationError("Candidate audit IDs must be unique per candidate.");
-  if (["audited", "approved_for_delivery"].includes(candidate.status) && !candidate.audit_history.some((audit) => audit.sufficient_for_approval)) {
+  const sufficientAudit = [...candidate.audit_history].reverse().find((audit) => audit.sufficient_for_approval) ?? null;
+  if (["audited", "approved_for_delivery", "sent"].includes(candidate.status) && !sufficientAudit) {
     throw new ValidationError("Candidate audit approval is not tied to this exact candidate version.");
+  }
+  if (["approved_for_delivery", "sent"].includes(candidate.status) && candidate.metadata?.approval_audit_id !== sufficientAudit?.id) {
+    throw new ValidationError("Candidate approval metadata is not tied to its exact sufficient audit.");
+  }
+  if (candidate.status === "sent" && candidate.metadata?.sent_with_audit_id !== sufficientAudit?.id) {
+    throw new ValidationError("Candidate sent metadata is not tied to its exact sufficient audit.");
   }
   return candidate;
 }

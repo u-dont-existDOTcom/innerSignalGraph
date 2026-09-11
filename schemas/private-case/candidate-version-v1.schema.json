@@ -3,6 +3,7 @@
   "$id": "https://inner-signal.local/schemas/private-case/candidate-version-v1.schema.json",
   "title": "Immutable private candidate version",
   "type": "object",
+  "additionalProperties": false,
   "required": ["id", "version", "exact_text", "status", "created_at", "updated_at", "parent_candidate_id", "root_candidate_id", "repair_cycle", "producer_context_id", "audit_history", "metadata"],
   "properties": {
     "id": { "$ref": "#/$defs/id" },

@@ -16,6 +16,14 @@ import {
   validateCandidateAuditEvidence,
   validateCandidateLifecycleFields
 } from "../supervisor/private-candidate-lifecycle.mjs";
+import {
+  appendPrivateRuntimeInvocationEvent,
+  appendPrivateRuntimeTransition,
+  createPrivateRuntimeDiscriminator,
+  createPrivateRuntimeTurn,
+  sha256ExactText,
+  validatePrivateRuntimeTurn
+} from "../supervisor/private-runtime-turn-lifecycle.mjs";
 import { createVaultEnvelope, replaceVaultPayloadWithRoutineKek } from "./vault-crypto.mjs";
 import { openVaultWithDevelopmentAuthorization, openVaultWithManagedSecretAuthorization, openVaultWithRoutineAuthorization } from "./vault-routine-access.mjs";
 import { chunkExactSourceText, createExactSourceArtifact, EXACT_SOURCE_LIMITS, validateExactSourceArtifact } from "./exact-source-artifact.mjs";
@@ -31,7 +39,7 @@ import {
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const ENVELOPE_FORMAT = "inner-signal-private-case-envelope-v1";
-const RECORD_VERSION = 5;
+const RECORD_VERSION = 6;
 const TRACKER_QUERY_VARIABLES = Object.freeze([
   "sleep_duration_hours", "sleep_quality", "pain_intensity", "pain_location", "pain_function_interference",
   "anxiety", "depressed_mood", "stability", "unreality", "division", "social_contact_quality",
@@ -46,6 +54,7 @@ const PRIVATE_RECORD_LIMITS = Object.freeze({
   state_diffs: 20_000,
   transcript_amendments: TRANSCRIPT_AMENDMENT_LIMITS.amendments,
   candidates: 2_000,
+  runtime_turns: 20_000,
   candidate_text: 100_000,
   candidate_metadata_bytes: 40_000,
   source_artifacts: EXACT_SOURCE_LIMITS.artifacts,
@@ -253,8 +262,12 @@ function normalizePrivateCaseRecord(value) {
     });
   }
   if (migrated.schema_version === 4) {
-    migrated.schema_version = RECORD_VERSION;
+    migrated.schema_version = 5;
     migrated.transcript_amendments = [];
+  }
+  if (migrated.schema_version === 5) {
+    migrated.schema_version = RECORD_VERSION;
+    migrated.runtime_turns = [];
   }
   return migrated;
 }
@@ -307,6 +320,38 @@ export function validatePrivateCaseRecord(value) {
   if (value.candidate_responses.filter(isActivePrivateCandidate).length > 1) {
     throw new ValidationError("Private case record may contain only one active candidate version.");
   }
+  if (!Array.isArray(value.runtime_turns) || value.runtime_turns.length > PRIVATE_RECORD_LIMITS.runtime_turns) {
+    throw new ValidationError("runtime_turns exceeds the private-record limit or is invalid.");
+  }
+  const runtimeTurnIds = new Set();
+  for (const runtimeTurn of value.runtime_turns) {
+    validatePrivateRuntimeTurn(runtimeTurn);
+    if (runtimeTurnIds.has(runtimeTurn.id)) throw new ValidationError(`Duplicate private runtime turn ${runtimeTurn.id}.`);
+    runtimeTurnIds.add(runtimeTurn.id);
+    const userTurn = value.raw_transcript.find((entry) => entry.id === runtimeTurn.user_turn_id);
+    if (runtimeTurn.state !== "RECEIVED" && (!userTurn || userTurn.role !== "user" || userTurn.exchange_id !== runtimeTurn.exchange_id
+        || userTurn.text !== runtimeTurn.inbound.exact_text)) {
+      throw new ValidationError(`Private runtime turn ${runtimeTurn.id} has an invalid exact user transcript binding.`);
+    }
+    if (runtimeTurn.current_candidate_id != null && !value.candidate_responses.some((entry) => entry.id === runtimeTurn.current_candidate_id)) {
+      throw new ValidationError(`Private runtime turn ${runtimeTurn.id} has a missing current candidate.`);
+    }
+    if (runtimeTurn.delivery) {
+      const assistantTurn = value.raw_transcript.find((entry) => entry.id === runtimeTurn.assistant_turn_id);
+      if (!assistantTurn || assistantTurn.role !== "assistant" || assistantTurn.exchange_id !== runtimeTurn.exchange_id || assistantTurn.text !== runtimeTurn.delivery.exact_text) {
+        throw new ValidationError(`Private runtime turn ${runtimeTurn.id} has an invalid exact delivery transcript binding.`);
+      }
+      if (runtimeTurn.delivery.kind === "candidate") {
+        const candidate = value.candidate_responses.find((entry) => entry.id === runtimeTurn.delivery.candidate_id);
+        const audit = candidate?.audit_history.find((entry) => entry.id === runtimeTurn.delivery.audit_id);
+        if (!candidate || candidate.status !== "sent" || candidate.version !== runtimeTurn.delivery.candidate_version
+            || candidate.exact_text !== runtimeTurn.delivery.exact_text || !audit?.sufficient_for_approval
+            || audit.candidate_sha256 !== runtimeTurn.delivery.sha256) {
+          throw new ValidationError(`Private runtime turn ${runtimeTurn.id} delivery is not bound to an exact independently approved candidate.`);
+        }
+      }
+    }
+  }
   return value;
 }
 
@@ -324,6 +369,7 @@ function newRecord(caseId, now) {
     last_state_diff: null,
     state_diff_history: [],
     candidate_responses: [],
+    runtime_turns: [],
     source_artifacts: []
   };
 }
@@ -351,6 +397,19 @@ function assertAppendOnly(previous, next) {
         || before.audit_history.some((audit, auditIndex) => JSON.stringify(audit) !== JSON.stringify(after.audit_history[auditIndex]))) {
       throw new ValidationError("Candidate audit records are append-only and immutable.");
     }
+  }
+  if (next.runtime_turns.length < previous.runtime_turns.length) throw new ValidationError("Private runtime turns are append-only.");
+  for (let index = 0; index < previous.runtime_turns.length; index += 1) {
+    const before = previous.runtime_turns[index];
+    const after = next.runtime_turns[index];
+    for (const field of ["id", "exchange_id", "user_turn_id", "inbound", "created_at"]) {
+      if (!after || JSON.stringify(before[field]) !== JSON.stringify(after[field])) throw new ValidationError("Private runtime turn identities are immutable.");
+    }
+    if (after.events.length < before.events.length || before.events.some((event, eventIndex) => JSON.stringify(event) !== JSON.stringify(after.events[eventIndex]))) {
+      throw new ValidationError("Private runtime turn events are append-only and immutable.");
+    }
+    if (before.discriminator != null && JSON.stringify(before.discriminator) !== JSON.stringify(after.discriminator)) throw new ValidationError("Private runtime discriminator is immutable.");
+    if (before.delivery != null && JSON.stringify(before.delivery) !== JSON.stringify(after.delivery)) throw new ValidationError("Private runtime delivery is immutable.");
   }
   if (next.source_artifacts.length < previous.source_artifacts.length) throw new ValidationError("Exact source artifacts are append-only.");
   for (let index = 0; index < previous.source_artifacts.length; index += 1) {
@@ -398,6 +457,7 @@ export function createEncryptedPrivateCaseStore({
   const routineKey = bytes(routineKek, "routineKek");
   const recoverySecret = recoverySecretBytes == null ? null : bytes(recoverySecretBytes, "recoverySecretBytes");
   let closed = false;
+  const caseMutationTails = new Map();
 
   const ensureOpen = () => {
     if (closed) throw new ValidationError("Private case store is closed.");
@@ -461,29 +521,35 @@ export function createEncryptedPrivateCaseStore({
     } finally { plaintext.fill(0); }
     return structuredClone(candidate);
   };
-  const loadOrCreate = async (caseId) => {
-    const id = safeCaseId(caseId);
-    const existing = await readExisting(id);
-    if (existing) return structuredClone(existing);
-    const timestamp = now();
-    return write(id, newRecord(id, timestamp));
-  };
+  const loadOrCreate = async (caseId) => mutate(safeCaseId(caseId), () => null);
   const mutate = async (caseId, operation) => {
-    const existing = await readExistingWithEnvelope(safeCaseId(caseId));
-    let previous;
-    let currentEnvelope = null;
-    if (existing) {
-      previous = structuredClone(existing.record);
-      currentEnvelope = existing.envelope;
-    } else {
-      const timestamp = now();
-      previous = await write(caseId, newRecord(caseId, timestamp));
-      const created = await readExistingWithEnvelope(caseId);
-      currentEnvelope = created.envelope;
+    const id = safeCaseId(caseId);
+    const previousTail = caseMutationTails.get(id) ?? Promise.resolve();
+    let release;
+    const currentTail = new Promise((resolve) => { release = resolve; });
+    caseMutationTails.set(id, currentTail);
+    await previousTail;
+    try {
+      const existing = await readExistingWithEnvelope(id);
+      let previous;
+      let currentEnvelope = null;
+      if (existing) {
+        previous = structuredClone(existing.record);
+        currentEnvelope = existing.envelope;
+      } else {
+        const timestamp = now();
+        previous = await write(id, newRecord(id, timestamp));
+        const created = await readExistingWithEnvelope(id);
+        currentEnvelope = created.envelope;
+      }
+      const next = await operation(structuredClone(previous));
+      if (next === null) return structuredClone(previous);
+      next.updated_at = now();
+      return write(id, next, previous, currentEnvelope);
+    } finally {
+      release();
+      if (caseMutationTails.get(id) === currentTail) caseMutationTails.delete(id);
     }
-    const next = await operation(structuredClone(previous));
-    next.updated_at = now();
-    return write(caseId, next, previous, currentEnvelope);
   };
   const readRequired = async (caseId) => {
     const record = await readExisting(safeCaseId(caseId));
@@ -506,6 +572,12 @@ export function createEncryptedPrivateCaseStore({
   const effectiveTranscript = (record) => applyTranscriptAmendments(record.raw_transcript, record.transcript_amendments, {
     sourceArtifacts: record.source_artifacts
   });
+  const runtimeTurnIn = (record, runtimeTurnId) => {
+    const runtimeTurn = record.runtime_turns.find((entry) => entry.id === runtimeTurnId);
+    if (!runtimeTurn) throw new ValidationError(`Private runtime turn ${runtimeTurnId} was not found.`, { code: "PRIVATE_RUNTIME_TURN_NOT_FOUND" });
+    return runtimeTurn;
+  };
+  const sameJson = (left, right) => JSON.stringify(left) === JSON.stringify(right);
   const selectEvidence = (record, { query = null, provenanceIds = [], timeRange = null, limit = 24 } = {}) => {
     if (!Number.isInteger(limit) || limit < 1 || limit > PRIVATE_RECORD_LIMITS.evidence_results) throw new ValidationError("Evidence retrieval limit is invalid.");
     if (query != null && (typeof query !== "string" || !query.trim() || query.length > 1_000)) throw new ValidationError("Evidence query must be bounded non-empty text.");
@@ -572,6 +644,313 @@ export function createEncryptedPrivateCaseStore({
     rootDir,
     async load(caseId) { const value = await readExisting(safeCaseId(caseId)); return value ? structuredClone(value) : null; },
     loadOrCreate,
+    async beginPrivateRuntimeTurn(caseId, { runtimeTurnId, exchangeId, userTurnId, exactText }) {
+      return mutate(caseId, (record) => {
+        const existing = record.runtime_turns.find((entry) => entry.id === runtimeTurnId);
+        if (existing) {
+          if (!sameJson([existing.exchange_id, existing.user_turn_id, existing.inbound.exact_text], [exchangeId, userTurnId, exactText])) {
+            throw new ValidationError(`Private runtime turn ${runtimeTurnId} conflicts with an existing immutable inbound record.`);
+          }
+          return null;
+        }
+        const unfinished = record.runtime_turns.find((entry) => entry.state !== "DELIVERED");
+        if (unfinished) throw new ValidationError(`Private case already has unfinished runtime turn ${unfinished.id}.`, { code: "PRIVATE_RUNTIME_CASE_BUSY" });
+        if (record.runtime_turns.some((entry) => entry.exchange_id === exchangeId || entry.user_turn_id === userTurnId)
+            || record.raw_transcript.some((entry) => entry.id === userTurnId)) {
+          throw new ValidationError("Private runtime inbound identifiers must be unique.");
+        }
+        record.runtime_turns.push(createPrivateRuntimeTurn({
+          id: runtimeTurnId,
+          exchangeId,
+          userTurnId,
+          exactText,
+          createdAt: now()
+        }));
+        return record;
+      });
+    },
+    async getPrivateRuntimeTurn(caseId, runtimeTurnId) {
+      return structuredClone(runtimeTurnIn(await readRequired(caseId), runtimeTurnId));
+    },
+    async recordPrivateRuntimeInvocationEvent(caseId, runtimeTurnId, event) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        const existing = runtimeTurn.events.find((entry) => entry.id === event.eventId);
+        if (existing) {
+          const expectedFields = {
+            event_type: event.eventType,
+            stage: event.stage,
+            context_id: event.contextId,
+            attempt: event.attempt,
+            input_sha256: event.inputSha256,
+            details: event.details ?? {}
+          };
+          if (!sameJson(
+            Object.fromEntries(Object.keys(expectedFields).map((key) => [key, existing[key]])),
+            expectedFields
+          )) throw new ValidationError(`Private runtime event ${event.eventId} conflicts with immutable evidence.`);
+          return null;
+        }
+        const updated = appendPrivateRuntimeInvocationEvent(runtimeTurn, { ...event, at: event.at ?? now() });
+        Object.assign(runtimeTurn, updated);
+        return record;
+      });
+    },
+    async transitionPrivateRuntimeTurn(caseId, runtimeTurnId, transition) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        const existing = runtimeTurn.events.find((entry) => entry.id === transition.eventId);
+        if (existing) {
+          if (existing.event_type !== "STATE_TRANSITION" || existing.to_state !== transition.toState) {
+            throw new ValidationError(`Private runtime transition ${transition.eventId} conflicts with immutable evidence.`);
+          }
+          return null;
+        }
+        const updated = appendPrivateRuntimeTransition(runtimeTurn, { ...transition, at: transition.at ?? now() });
+        Object.assign(runtimeTurn, updated);
+        return record;
+      });
+    },
+    async commitPrivateRuntimeCandidate(caseId, {
+      runtimeTurnId,
+      candidateId,
+      exactText,
+      producerContextId,
+      parentCandidateId = null,
+      basedOnAuditId = null,
+      caseState = null,
+      stateDiff = null,
+      diffId = null,
+      metadata = {},
+      eventId
+    }) {
+      const record = await mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        const existing = record.candidate_responses.find((entry) => entry.id === candidateId);
+        if (existing) {
+          if (!sameJson(
+            [existing.exact_text, existing.producer_context_id, existing.parent_candidate_id, existing.metadata.runtime_turn_id],
+            [exactText, producerContextId, parentCandidateId, runtimeTurnId]
+          )) throw new ValidationError(`Candidate response ${candidateId} conflicts with immutable bytes or provenance.`);
+          if (runtimeTurn.current_candidate_id === candidateId && runtimeTurn.state === "CANDIDATE_PENDING_AUDIT") return null;
+          throw new ValidationError(`Candidate response ${candidateId} exists outside the expected runtime frontier.`);
+        }
+        if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) throw new ValidationError("Candidate runtime metadata must be an object.");
+        const timestamp = now();
+        let candidate;
+        if (parentCandidateId == null) {
+          if (runtimeTurn.state !== "RECEIVED" || runtimeTurn.repair_cycle !== 0) throw new ValidationError("Original runtime candidate requires RECEIVED state.");
+          if (typeof producerContextId !== "string" || !producerContextId.trim()) throw new ValidationError("A runtime candidate producer context is required.");
+          const state = validateCaseState(structuredClone(caseState));
+          if (state.case_id !== caseId) throw new ValidationError("Case state identity mismatch.");
+          if (record.raw_transcript.some((entry) => entry.id === runtimeTurn.user_turn_id)) throw new ValidationError("Runtime inbound transcript turn already exists outside its candidate commit.");
+          record.raw_transcript.push({
+            id: runtimeTurn.user_turn_id,
+            exchange_id: runtimeTurn.exchange_id,
+            role: "user",
+            text: runtimeTurn.inbound.exact_text,
+            at: runtimeTurn.inbound.received_at,
+            episode_id: state.current_episode?.id ?? null
+          });
+          record.case_state = state;
+          if (stateDiff != null) appendDiff(record, stateDiff, { turnId: runtimeTurn.user_turn_id, diffId });
+          for (const previousCandidate of record.candidate_responses.filter(isActivePrivateCandidate)) {
+            previousCandidate.metadata = { ...previousCandidate.metadata, superseded_from_status: previousCandidate.status, superseded_by_candidate_id: candidateId };
+            previousCandidate.status = "superseded";
+            previousCandidate.updated_at = timestamp;
+          }
+          candidate = {
+            id: candidateId,
+            version: record.candidate_responses.length + 1,
+            exact_text: exactText,
+            status: "pending_audit",
+            created_at: timestamp,
+            updated_at: timestamp,
+            parent_candidate_id: null,
+            root_candidate_id: candidateId,
+            repair_cycle: 0,
+            producer_context_id: producerContextId,
+            audit_history: [],
+            metadata: { ...structuredClone(metadata), runtime_turn_id: runtimeTurnId }
+          };
+        } else {
+          if (runtimeTurn.state !== "RECONSTRUCTING") throw new ValidationError("Runtime repair candidate requires RECONSTRUCTING state.");
+          const parent = record.candidate_responses.find((entry) => entry.id === parentCandidateId);
+          const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+          if (!parent || current?.id !== parent.id || parent.status !== "audit_failed" || runtimeTurn.current_candidate_id !== parent.id) {
+            throw new ValidationError("Runtime reconstruction must name the exact current failed candidate.");
+          }
+          if (parent.repair_cycle >= MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES) throw new ValidationError("Maximum two repair cycles reached.", { code: "PRIVATE_CANDIDATE_REPAIR_LIMIT" });
+          if (exactText === parent.exact_text) throw new ValidationError("Runtime reconstruction must create different exact bytes.");
+          const sourceAudit = parent.audit_history.at(-1);
+          if (!sourceAudit || sourceAudit.verdict !== "fail" || sourceAudit.id !== basedOnAuditId) throw new ValidationError("Runtime reconstruction requires the exact current failed audit.");
+          const forbiddenContexts = new Set([parent.producer_context_id, ...parent.audit_history.map((entry) => entry.auditor_context_id)]);
+          if (typeof producerContextId !== "string" || !producerContextId.trim() || forbiddenContexts.has(producerContextId)) {
+            throw new ValidationError("Runtime repair must use a separate producer context.");
+          }
+          candidate = {
+            id: candidateId,
+            version: record.candidate_responses.length + 1,
+            exact_text: exactText,
+            status: "reconstructed_pending_audit",
+            created_at: timestamp,
+            updated_at: timestamp,
+            parent_candidate_id: parent.id,
+            root_candidate_id: parent.root_candidate_id,
+            repair_cycle: parent.repair_cycle + 1,
+            producer_context_id: producerContextId,
+            audit_history: [],
+            metadata: { ...structuredClone(metadata), runtime_turn_id: runtimeTurnId, based_on_audit_id: sourceAudit.id, substantive_reconstruction: true }
+          };
+          parent.metadata = { ...parent.metadata, superseded_from_status: parent.status, superseded_by_candidate_id: candidateId };
+          parent.status = "superseded";
+          parent.updated_at = timestamp;
+        }
+        validateCandidateResponse(candidate, record.candidate_responses.length);
+        record.candidate_responses.push(candidate);
+        const updatedRuntime = appendPrivateRuntimeTransition(runtimeTurn, {
+          eventId,
+          toState: "CANDIDATE_PENDING_AUDIT",
+          at: timestamp,
+          candidateId: candidate.id,
+          repairCycle: candidate.repair_cycle,
+          details: { candidate_id: candidate.id, candidate_version: candidate.version, candidate_sha256: sha256ExactText(candidate.exact_text) }
+        });
+        Object.assign(runtimeTurn, updatedRuntime);
+        return record;
+      });
+      await writePrivateArtifactLocator({ rootDir, kind: "candidate", artifactId: candidateId, caseId });
+      return record;
+    },
+    async commitPrivateRuntimeAudit(caseId, runtimeTurnId, evidence, { eventId }) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.state !== "AUDITING") throw new ValidationError("Runtime audit result requires AUDITING state.");
+        const candidate = record.candidate_responses.find((entry) => entry.id === runtimeTurn.current_candidate_id);
+        const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+        if (!candidate || current?.id !== candidate.id || !["pending_audit", "reconstructed_pending_audit"].includes(candidate.status)) {
+          throw new ValidationError("Runtime audit must target the exact current pending candidate.");
+        }
+        const audit = structuredClone(validateCandidateAuditEvidence(evidence, candidate));
+        const sealedAttempt = [...runtimeTurn.events].reverse().find((entry) => entry.event_type === "INVOCATION_COMPLETED"
+          && entry.stage === "audit" && entry.details?.actual_context_id === audit.auditor_context_id);
+        if (!sealedAttempt) throw new ValidationError("Runtime audit context is not backed by a sealed controller invocation.");
+        if (candidate.audit_history.some((entry) => entry.id === audit.id)) throw new ValidationError(`Candidate audit ${audit.id} already exists.`);
+        candidate.audit_history.push(audit);
+        let nextState;
+        if (audit.verdict === "fail") {
+          candidate.status = "audit_failed";
+          nextState = candidate.repair_cycle < MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES ? "REPAIR_REQUIRED" : "DISCRIMINATING_QUESTION_REQUIRED";
+        } else {
+          if (!audit.sufficient_for_approval) throw new ValidationError("Runtime PASS requires an available fresh independent auditor.");
+          candidate.status = "approved_for_delivery";
+          candidate.metadata = { ...candidate.metadata, approval_audit_id: audit.id };
+          nextState = "APPROVED";
+        }
+        candidate.updated_at = now();
+        validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+        const updatedRuntime = appendPrivateRuntimeTransition(runtimeTurn, {
+          eventId,
+          toState: nextState,
+          at: now(),
+          details: { audit_id: audit.id, candidate_id: candidate.id, candidate_version: candidate.version, candidate_sha256: audit.candidate_sha256, verdict: audit.verdict }
+        });
+        Object.assign(runtimeTurn, updatedRuntime);
+        return record;
+      });
+    },
+    async savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, { exactText, producerContextId }) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.state !== "DISCRIMINATING_QUESTION_REQUIRED") throw new ValidationError("Runtime discriminator requires its explicit terminal-uncertainty state.");
+        const discriminator = createPrivateRuntimeDiscriminator({ exactText, producerContextId, createdAt: now() });
+        if (runtimeTurn.discriminator) {
+          if (!sameJson(runtimeTurn.discriminator, discriminator)) throw new ValidationError("Private runtime discriminator conflicts with immutable bytes.");
+          return null;
+        }
+        const candidate = record.candidate_responses.find((entry) => entry.id === runtimeTurn.current_candidate_id);
+        const forbiddenContexts = new Set([candidate?.producer_context_id, ...(candidate?.audit_history ?? []).map((entry) => entry.auditor_context_id)]);
+        const sealedAttempt = [...runtimeTurn.events].reverse().find((entry) => entry.event_type === "INVOCATION_COMPLETED"
+          && entry.stage === "discriminator" && entry.details?.actual_context_id === producerContextId);
+        if (!sealedAttempt || forbiddenContexts.has(producerContextId)) throw new ValidationError("Runtime discriminator requires a separate sealed producer context.");
+        runtimeTurn.discriminator = structuredClone(discriminator);
+        runtimeTurn.updated_at = now();
+        return record;
+      });
+    },
+    async deliverPrivateRuntimeCandidate(caseId, runtimeTurnId, { candidateId, assistantTurnId, eventId }) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.state === "DELIVERED") {
+          if (runtimeTurn.delivery?.kind === "candidate" && runtimeTurn.delivery.candidate_id === candidateId && runtimeTurn.assistant_turn_id === assistantTurnId) return null;
+          throw new ValidationError("Private runtime delivery conflicts with an existing immutable delivery.");
+        }
+        if (runtimeTurn.state !== "APPROVED" || runtimeTurn.current_candidate_id !== candidateId) throw new ValidationError("Runtime candidate delivery requires exact APPROVED state.");
+        const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
+        const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+        const gate = candidateDeliveryGate(candidate);
+        if (!candidate || current?.id !== candidate.id || !gate.delivery_allowed) throw new ValidationError("Runtime candidate delivery is not exact-version approved.");
+        if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError("Runtime assistant turn identifier already exists.");
+        const timestamp = now();
+        record.raw_transcript.push({ id: assistantTurnId, exchange_id: runtimeTurn.exchange_id, role: "assistant", text: candidate.exact_text, at: timestamp, episode_id: record.case_state.current_episode?.id ?? null });
+        candidate.status = "sent";
+        candidate.updated_at = timestamp;
+        candidate.metadata = { ...candidate.metadata, sent_with_audit_id: gate.audit_id };
+        const delivery = {
+          kind: "candidate",
+          assistant_turn_id: assistantTurnId,
+          exact_text: candidate.exact_text,
+          sha256: sha256ExactText(candidate.exact_text),
+          candidate_id: candidate.id,
+          candidate_version: candidate.version,
+          audit_id: gate.audit_id,
+          delivered_at: timestamp
+        };
+        const updatedRuntime = appendPrivateRuntimeTransition(runtimeTurn, {
+          eventId,
+          toState: "DELIVERED",
+          at: timestamp,
+          details: { kind: "candidate", candidate_id: candidate.id, candidate_version: candidate.version, audit_id: gate.audit_id },
+          projectionPatch: { assistant_turn_id: assistantTurnId, delivery }
+        });
+        Object.assign(runtimeTurn, updatedRuntime);
+        return record;
+      });
+    },
+    async deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, { assistantTurnId, eventId }) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.state === "DELIVERED") {
+          if (runtimeTurn.delivery?.kind === "discriminator" && runtimeTurn.assistant_turn_id === assistantTurnId) return null;
+          throw new ValidationError("Private runtime delivery conflicts with an existing immutable delivery.");
+        }
+        if (runtimeTurn.state !== "DISCRIMINATING_QUESTION_REQUIRED" || !runtimeTurn.discriminator) throw new ValidationError("Runtime discriminator delivery is not ready.");
+        if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError("Runtime assistant turn identifier already exists.");
+        const candidate = record.candidate_responses.find((entry) => entry.id === runtimeTurn.current_candidate_id);
+        if (!candidate || candidate.status !== "audit_failed" || candidate.repair_cycle !== MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES) throw new ValidationError("Runtime discriminator requires the exact final failed candidate.");
+        const timestamp = now();
+        record.raw_transcript.push({ id: assistantTurnId, exchange_id: runtimeTurn.exchange_id, role: "assistant", text: runtimeTurn.discriminator.exact_text, at: timestamp, episode_id: record.case_state.current_episode?.id ?? null });
+        candidate.metadata = { ...candidate.metadata, superseded_from_status: candidate.status, superseded_by_discriminator_runtime_turn_id: runtimeTurn.id };
+        candidate.status = "superseded";
+        candidate.updated_at = timestamp;
+        const delivery = {
+          kind: "discriminator",
+          assistant_turn_id: assistantTurnId,
+          exact_text: runtimeTurn.discriminator.exact_text,
+          sha256: runtimeTurn.discriminator.sha256,
+          delivered_at: timestamp
+        };
+        const updatedRuntime = appendPrivateRuntimeTransition(runtimeTurn, {
+          eventId,
+          toState: "DELIVERED",
+          at: timestamp,
+          details: { kind: "discriminator" },
+          projectionPatch: { assistant_turn_id: assistantTurnId, delivery }
+        });
+        Object.assign(runtimeTurn, updatedRuntime);
+        return record;
+      });
+    },
     async commitTurn(caseId, { transcript_entries, case_state, state_diff, diff_id = null, diff_turn_id = null }) {
       return mutate(caseId, (record) => {
         const additions = validateTranscriptEntries(transcript_entries);
@@ -751,6 +1130,8 @@ export function createEncryptedPrivateCaseStore({
         const sourceAudit = [...parent.audit_history].reverse().find((audit) => audit.verdict === "fail");
         if (!sourceAudit) throw new ValidationError("A reconstruction requires version-bound failed audit evidence.");
         if (metadata.based_on_audit_id != null && metadata.based_on_audit_id !== sourceAudit.id) throw new ValidationError("Reconstruction based_on_audit_id must identify the current parent audit.");
+        const forbiddenProducerContexts = new Set([parent.producer_context_id, ...parent.audit_history.map((audit) => audit.auditor_context_id)]);
+        if (forbiddenProducerContexts.has(metadata.producer_context_id)) throw new ValidationError("A reconstruction must use a separate producer context from the parent producer and auditor.");
         const timestamp = now();
         const candidate = {
           id: candidateId,

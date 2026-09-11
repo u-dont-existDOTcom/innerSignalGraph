@@ -131,7 +131,7 @@ test("failed v1 audit, v2 reconstruction, handoff retrieval, and delivery gates 
     parent_candidate_id: ORIGINAL_ID,
     candidate_id: REPAIR_ID,
     exact_text: "Synthetic candidate version two.",
-    producer_context_id: "session:auditor:version-1",
+    producer_context_id: "session:producer:repair-version-2",
     based_on_audit_id: AUDIT_ID,
     handoff_id: HANDOFF_ID,
     runtime_version: "synthetic-runtime-v2",
@@ -181,7 +181,7 @@ test("failed v1 audit, v2 reconstruction, handoff retrieval, and delivery gates 
 
 test("published private operation schemas compile strictly", async () => {
   const schemaDir = path.join(root, "schemas/private-case");
-  const names = ["transcript-amendment-v1.schema.json", "candidate-audit-v1.schema.json", "candidate-version-v1.schema.json", "operation-request-v1.schema.json"];
+  const names = ["transcript-amendment-v1.schema.json", "candidate-audit-v1.schema.json", "candidate-version-v1.schema.json", "therapy-turn-lifecycle-v1.schema.json", "operation-request-v1.schema.json"];
   const schemas = await Promise.all(names.map(async (name) => JSON.parse(await fs.readFile(path.join(schemaDir, name), "utf8"))));
   const ajv = new Ajv2020({ strict: true, validateFormats: false });
   for (const schema of schemas) ajv.addSchema(schema);

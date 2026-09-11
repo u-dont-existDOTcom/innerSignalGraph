@@ -37,6 +37,22 @@ function redactContext(context) {
   };
 }
 
+function redactTherapyResult(result = {}) {
+  return {
+    mode: result.mode ?? null,
+    processingTier: result.processingTier ?? null,
+    degraded: result.degraded === true,
+    graphBundleVersion: result.graphBundleVersion ?? null,
+    guideVersion: result.guideVersion ?? null,
+    realizationContractVersion: result.realizationContractVersion ?? null,
+    rendererProvider: result.rendererProvider ?? null,
+    rendererModel: result.rendererModel ?? null,
+    safetyFlagCount: Array.isArray(result.safety_flags) ? result.safety_flags.length : 0,
+    uncertaintyCount: Array.isArray(result.uncertainties) ? result.uncertainties.length : 0,
+    answerPresent: typeof result.answer === "string" && result.answer.length > 0
+  };
+}
+
 export async function writeLedger(config, payload) {
   const id = randomUUID();
   if (config.ledgerMode === "off") return { id, path: null };
@@ -82,14 +98,17 @@ export async function writeLedger(config, payload) {
     };
   } else {
     safePayload = {
-      ...payload,
+      caseId: payload.caseId ?? null,
+      startedAt: payload.startedAt,
+      completedAt: payload.completedAt,
       context: redactContext(payload.context),
       evidence: {
-        providerMetadata: payload.evidence.providerMetadata,
-        acceptedInsights: payload.result.accepted_insights,
-        rejectedClaims: payload.result.rejected_claims,
-        safetyFlags: payload.result.safety_flags
-      }
+        providerMetadata: payload.evidence.providerMetadata ?? null,
+        acceptedInsightCount: Array.isArray(payload.result.accepted_insights) ? payload.result.accepted_insights.length : 0,
+        rejectedClaimCount: Array.isArray(payload.result.rejected_claims) ? payload.result.rejected_claims.length : 0,
+        safetyFlagCount: Array.isArray(payload.result.safety_flags) ? payload.result.safety_flags.length : 0
+      },
+      result: redactTherapyResult(payload.result)
     };
   }
   await fs.writeFile(filePath, `${JSON.stringify({ ledgerId: id, ...safePayload }, null, 2)}\n`, "utf8");

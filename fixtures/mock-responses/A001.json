@@ -264,6 +264,13 @@
         }
       ]
     },
+    "private_candidate_audit": {
+      "findings": [],
+      "repair_induced_checks": []
+    },
+    "private_candidate_repair": {
+      "exact_text": "Synthetic repaired response."
+    },
     "realization": {
       "answer": "The \u2018big fuckity whoopty doo\u2019 is giving you the right question: what are you going to do for me? That is the credibility problem in one sentence. I would not argue with it. The younger-facing position already has an adverse track record in front of it\u2014the adult outcome itself\u2014while another part of you is blaming some younger version for how that outcome happened. So another vow is almost beside the point.\n\nBefore deciding that either side is right, make the accusation specific: separate the literal child, adolescent, younger adult, and present child-state, and identify what you believe the relevant version actually should have done differently with the options it had then. Those versions did not have the same agency.\n\nThen answer \u2018what are you gonna do for me?\u2019 literally. Pick one thing in the actual life that makes the relationship more credible and do it. Do not ask the younger side to be impressed. If it says \u2018big whoop,\u2019 the adult job may simply be \u2018fair\u2019\u2014and then show up again. Relaxation can still lower the charge, but it cannot by itself change an adverse track record or settle responsibility.\n\nAnd if hearing the sarcasm makes the part attempting the adult role retaliate, that is a good place to borrow adulthood for that side too: model how a decent adult would hear an unimpressed kid without defending its goodness, and practice five percent of that response.",
       "next_question": "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?",

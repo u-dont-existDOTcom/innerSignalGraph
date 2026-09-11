@@ -65,6 +65,7 @@ export function loadConfig(overrides = {}) {
     ledgerMode: process.env.LEDGER_MODE ?? "redacted",
     ledgerDir: path.resolve(projectRoot, process.env.LEDGER_DIR ?? "./ledgers"),
     requestTimeoutMs: integerEnv("REQUEST_TIMEOUT_MS", 900000, { min: 1000, max: 3600000 }),
+    privateRuntimeInvocationAttempts: integerEnv("PRIVATE_RUNTIME_INVOCATION_ATTEMPTS", 2, { min: 1, max: 3 }),
     entitlementTimeoutMs: integerEnv("ENTITLEMENT_TIMEOUT_MS", 300000, { min: 1000, max: 3600000 }),
     guidePacketHeartbeatMs: integerEnv("GUIDE_PACKET_HEARTBEAT_MS", 5000, { min: 250, max: 60000 }),
     guidePacketStaleMs: integerEnv("GUIDE_PACKET_STALE_MS", 30000, { min: 1000, max: 3600000 }),

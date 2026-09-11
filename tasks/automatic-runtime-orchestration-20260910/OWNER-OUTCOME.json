@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "ownerOutcomeId": "OO-INNERSIGNAL-AUTOMATIC-RUNTIME-ORCHESTRATION-20260910",
+  "epoch": 1,
+  "source": {"kind":"owner_supplied_task","recordedAt":"2026-09-10","publicSafeProjectionOnly":true,"privateContentExcluded":true},
+  "normalizedResult": "One ordinary InnerSignal message automatically and privately traverses intake persistence, immutable candidate production, independent exact-version audit, at most two repair-and-re-audit cycles, approval and exact delivery, or a final smallest discriminating question, with no owner lifecycle shuttling or GitHub mutation.",
+  "requiredOutcomes": [
+    {"id":"RO-01","text":"Persist the exact incoming turn before inference and retrieve only authorized longitudinal context.","terminalRequired":true},
+    {"id":"RO-02","text":"Persist every candidate as an immutable version with producer context identity and lineage.","terminalRequired":true},
+    {"id":"RO-03","text":"Invoke every audit in a genuinely separate inference context that receives only an authorized audit packet and cannot approve producer- or auditor-modified text.","terminalRequired":true},
+    {"id":"RO-04","text":"Bind every audit, approval, and delivery mechanically to exact candidate ID, version, and text bytes; text changes invalidate prior approval.","terminalRequired":true},
+    {"id":"RO-05","text":"On substantive failure, persist the audit, produce a separate repair candidate, and independently re-audit it automatically, with no more than two repair cycles and repair-induced-error coverage.","terminalRequired":true},
+    {"id":"RO-06","text":"After the final allowed substantive failure, stop reconstruction and deliver the smallest permitted discriminating client question rather than create repair cycle 3.","terminalRequired":true},
+    {"id":"RO-07","text":"Retry transient invocation failures within a fixed budget and fail closed without delivering unaudited candidate text when recovery is exhausted.","terminalRequired":true},
+    {"id":"RO-08","text":"Persist the actually delivered exact response and lifecycle state so interrupted turns resume coherently after restart.","terminalRequired":true},
+    {"id":"RO-09","text":"Keep InnerSignal Private Continuity read-only and keep all real case material, candidate text, audits, and runtime state out of Git, CI output, and logs.","terminalRequired":true},
+    {"id":"RO-10","text":"Ordinary runtime turns use no GitHub operation and require no owner intervention to move candidates, audits, or state.","terminalRequired":true},
+    {"id":"RO-11","text":"Preserve and later integrate the separately produced real Louka v3 lifecycle result without mutating that case during public runtime development.","terminalRequired":true},
+    {"id":"RO-12","text":"Commit verified generic code, schemas, synthetic tests, architecture documentation, and an updated canonical handoff to draft PR 49 without merging it.","terminalRequired":true}
+  ],
+  "nonSatisfyingProxies": [
+    "requiring the owner to open or copy between ChatGPT conversations",
+    "treating same-context role prompting as independent audit",
+    "delivering pipeline output before exact-version approval",
+    "approving a changed candidate from an audit of an older version",
+    "attempting a third repair",
+    "using GitHub as the runtime case store or ordinary-turn transport",
+    "placing private material or private-derived hashes in public artifacts"
+  ]
+}

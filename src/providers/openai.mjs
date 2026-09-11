@@ -18,6 +18,7 @@ export class OpenAIProvider {
     this.model = model;
     this.timeoutMs = timeoutMs;
     this.maxOutputTokens = maxOutputTokens;
+    this.privateInferenceIsolation = Object.freeze({ packetOnly: true, freshContextPerGenerate: true, tools: false, filesystem: false, sessionPersistence: false, transport: "openai-responses-api" });
   }
 
   async generate({ system, user, metadata = {} }) {

@@ -59,6 +59,7 @@ export function createPrivateCaseAccessService({
   if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw new ValidationError("rootDir must be an absolute private storage path.");
   assertProvider(authorizationProvider, "authorize", "authorizationProvider");
   assertProvider(keyProvider, "getCaseKeyMaterial", "keyProvider");
+  const mutationTails = new Map();
 
   const withStore = async (caseId, authContext, requiredScope, operation) => {
     let authorization;
@@ -110,7 +111,20 @@ export function createPrivateCaseAccessService({
   };
 
   const read = (caseId, authContext, operation) => withStore(caseId, authContext, PRIVATE_CASE_SCOPES.READ, operation);
-  const write = (caseId, authContext, operation) => withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, operation);
+  const mutate = async (caseId, authContext, requiredScope, operation) => {
+    const previousTail = mutationTails.get(caseId) ?? Promise.resolve();
+    let release;
+    const currentTail = new Promise((resolve) => { release = resolve; });
+    mutationTails.set(caseId, currentTail);
+    await previousTail;
+    try { return await withStore(caseId, authContext, requiredScope, operation); }
+    finally {
+      release();
+      if (mutationTails.get(caseId) === currentTail) mutationTails.delete(caseId);
+    }
+  };
+  const write = (caseId, authContext, operation) => mutate(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, operation);
+  const auditWrite = (caseId, authContext, operation) => mutate(caseId, authContext, PRIVATE_CASE_SCOPES.AUDIT, operation);
   const withResolvedArtifact = async (kind, artifactId, authContext, requiredScope, operation) => {
     let caseId;
     try { caseId = await resolvePrivateArtifactCaseId({ rootDir, kind, artifactId }); }
@@ -120,6 +134,36 @@ export function createPrivateCaseAccessService({
 
   return Object.freeze({
     rootDir,
+    async loadPrivateRuntimeCase(caseId, authContext) {
+      return read(caseId, authContext, async (store) => {
+        const record = await store.load(caseId);
+        if (!record) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        return record;
+      });
+    },
+    async beginPrivateRuntimeTurn(caseId, input, authContext) { return write(caseId, authContext, (store) => store.beginPrivateRuntimeTurn(caseId, input)); },
+    async getPrivateRuntimeTurn(caseId, runtimeTurnId, authContext) { return read(caseId, authContext, (store) => store.getPrivateRuntimeTurn(caseId, runtimeTurnId)); },
+    async recordPrivateRuntimeInvocationEvent(caseId, runtimeTurnId, event, authContext) {
+      const scope = event.stage === "audit" ? PRIVATE_CASE_SCOPES.AUDIT : PRIVATE_CASE_SCOPES.WRITE;
+      return mutate(caseId, authContext, scope, (store) => store.recordPrivateRuntimeInvocationEvent(caseId, runtimeTurnId, event));
+    },
+    async transitionPrivateRuntimeTurn(caseId, runtimeTurnId, transition, authContext) {
+      const scope = transition.toState === "AUDITING" || transition.toState === "APPROVED" ? PRIVATE_CASE_SCOPES.AUDIT : PRIVATE_CASE_SCOPES.WRITE;
+      return mutate(caseId, authContext, scope, (store) => store.transitionPrivateRuntimeTurn(caseId, runtimeTurnId, transition));
+    },
+    async commitPrivateRuntimeCandidate(caseId, input, authContext) { return write(caseId, authContext, (store) => store.commitPrivateRuntimeCandidate(caseId, input)); },
+    async commitPrivateRuntimeAudit(caseId, runtimeTurnId, evidence, options, authContext) {
+      return auditWrite(caseId, authContext, (store) => store.commitPrivateRuntimeAudit(caseId, runtimeTurnId, evidence, options));
+    },
+    async savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, input));
+    },
+    async deliverPrivateRuntimeCandidate(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.deliverPrivateRuntimeCandidate(caseId, runtimeTurnId, input));
+    },
+    async deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store) => store.deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input));
+    },
     async saveCaseState(caseId, state, authContext) { return write(caseId, authContext, (store) => store.saveCaseState(caseId, state)); },
     async getCaseState(caseId, authContext) { return read(caseId, authContext, (store) => store.getCaseState(caseId)); },
     async saveCaseDiff(caseId, diff, options, authContext) { return write(caseId, authContext, (store) => store.saveCaseDiff(caseId, diff, options)); },
@@ -137,13 +181,13 @@ export function createPrivateCaseAccessService({
       return write(caseId, authContext, (store) => store.updateCandidateStatus(caseId, candidateId, status, metadataPatch));
     },
     async recordCandidateAudit(caseId, candidateId, evidence, authContext) {
-      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store) => store.recordCandidateAudit(caseId, candidateId, evidence));
+      return auditWrite(caseId, authContext, (store) => store.recordCandidateAudit(caseId, candidateId, evidence));
     },
     async reconstructCandidateResponse(caseId, parentCandidateId, candidateId, exactText, metadata, authContext) {
       return write(caseId, authContext, (store) => store.reconstructCandidateResponse(caseId, parentCandidateId, candidateId, exactText, metadata));
     },
     async approveCandidateForDelivery(caseId, candidateId, auditId, authContext) {
-      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store) => store.approveCandidateForDelivery(caseId, candidateId, auditId));
+      return auditWrite(caseId, authContext, (store) => store.approveCandidateForDelivery(caseId, candidateId, auditId));
     },
     async markCandidateSent(caseId, candidateId, authContext) {
       return write(caseId, authContext, (store) => store.markCandidateSent(caseId, candidateId));

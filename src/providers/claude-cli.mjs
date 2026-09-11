@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { ProviderError } from "../core/errors.mjs";
-import { runSubprocess } from "../core/subprocess.mjs";
+import { runSubprocess, sealedInferenceEnvironment } from "../core/subprocess.mjs";
 import { detectClaudeCapabilities } from "../core/cli-capabilities.mjs";
 
 export class ClaudeCliProvider {
@@ -27,6 +27,7 @@ export class ClaudeCliProvider {
     this.isolateConfig = isolateConfig;
     this.detectCapabilities = detectCapabilities;
     this.capabilitiesPromise = null;
+    this.privateInferenceIsolation = Object.freeze({ packetOnly: true, freshContextPerGenerate: true, tools: false, filesystem: false, sessionPersistence: false, environment: "allowlisted", requiresSealedFlag: true, transport: "claude-cli-print" });
   }
 
   async capabilities() {
@@ -35,7 +36,7 @@ export class ClaudeCliProvider {
     return await this.capabilitiesPromise;
   }
 
-  async generate({ system, user, outputSchema, metadata = {} }) {
+  async generate({ system, user, outputSchema, metadata = {}, sealed = false }) {
     if (!outputSchema) throw new ProviderError("Claude CLI requires an output schema.");
 
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-claude-"));
@@ -50,6 +51,16 @@ export class ClaudeCliProvider {
           code: "CLI_INCOMPATIBLE",
           details: { required: ["-p/--print", "--output-format", "--json-schema"], detected: flags }
         });
+      }
+      if (sealed && flags) {
+        const requiredIsolationFlags = ["tools", "maxTurns", "noSessionPersistence", "permissionMode", "noChrome", "safeMode", "strictMcpConfig"];
+        const missingIsolationFlags = requiredIsolationFlags.filter((name) => !flags[name]);
+        if (missingIsolationFlags.length) {
+          throw new ProviderError("Installed Claude CLI cannot guarantee packet-only private inference isolation.", {
+            code: "PRIVATE_INFERENCE_ISOLATION_UNAVAILABLE",
+            details: { missingIsolationFlags }
+          });
+        }
       }
 
       const args = [...this.baseArgs, "-p"];
@@ -78,6 +89,7 @@ export class ClaudeCliProvider {
         args,
         stdin,
         cwd: this.cwd,
+        env: sealed ? sealedInferenceEnvironment() : process.env,
         timeoutMs: this.timeoutMs,
         label: `Claude CLI ${metadata.stage ?? "generation"}`
       });

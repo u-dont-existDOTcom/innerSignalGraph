@@ -1,30 +1,28 @@
 {
   "schemaVersion": 1,
-  "taskId": "private-case-mutation-orchestration-20260910",
-  "title": "Restore private case mutation and audit orchestration",
-  "status": "complete",
-  "exclusive": false,
+  "taskId": "automatic-runtime-orchestration-20260910",
+  "title": "Automate private candidate-audit runtime orchestration",
+  "status": "active",
+  "exclusive": true,
   "startedAt": "2026-09-10",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
-  "requiredBranch": "codex/private-case-import-20260909",
+  "requiredBranch": "codex/automatic-runtime-orchestration-20260910",
   "pullRequest": 49,
   "ownerAuthorized": true,
-  "startingMainHead": "fabc5b582e8b725248c37b44e5189e51653c9d82",
-  "startingTaskHead": "e544c1bc1089b144c0a3e6e36668e98fc0c06597",
-  "ownerOutcomePath": "tasks/private-case-mutation-orchestration-20260910/OWNER-OUTCOME.json",
-  "directivePath": "tasks/private-case-mutation-orchestration-20260910/EXECUTION-DIRECTIVE.json",
-  "statePath": "tasks/private-case-mutation-orchestration-20260910/INTEGRATION.md",
-  "activeLessonContractPath": "tasks/private-case-mutation-orchestration-20260910/ACTIVE-LESSON-CONTRACT.json",
-  "completionClaimRule": "Completion requires the read-only continuity contract to remain unchanged, append-only transcript provenance, exact-version state-machine enforcement, a private preservation receipt, v2 pending independent audit through a new immutable handoff, public-safe Git evidence, and exact-head hosted checks.",
-  "parentOpenTask": {
-    "taskId": "post-reconstruction-audit-gate-20260910",
-    "status": "complete",
-    "statePath": "tasks/post-reconstruction-audit-gate-20260910/INTEGRATION.md"
+  "startingTaskHead": "a98f9f7d46ed8233cf638b76121d7b293ccef9b4",
+  "ownerOutcomePath": "tasks/automatic-runtime-orchestration-20260910/OWNER-OUTCOME.json",
+  "directivePath": "tasks/automatic-runtime-orchestration-20260910/EXECUTION-DIRECTIVE.json",
+  "statePath": "tasks/automatic-runtime-orchestration-20260910/INTEGRATION.md",
+  "activeLessonContractPath": "tasks/automatic-runtime-orchestration-20260910/ACTIVE-LESSON-CONTRACT.json",
+  "completionClaimRule": "Completion requires a production-wired, restart-safe, fail-closed one-message controller; mechanically independent exact-version audits and bounded repairs; persisted delivery; public/private isolation; synthetic end-to-end tests; canonical handoff; and a verified commit on draft PR 49.",
+  "coordination": {
+    "isolatedFrom": "concurrent Louka v3 private lifecycle work",
+    "rule": "Do not mutate the real Louka case or the other task's checkout; integrate only its durable result after that task finishes."
   },
   "suspendedTaskSources": [
-    "fresh independent v2 audit, approval, or delivery",
-    "provider-backed guide-fidelity and audit-architecture experiments",
-    "stable promotion and release queues",
-    "unrelated task branches and pull requests"
+    "real Louka v3 creation or audit",
+    "the older 48-call A/B/C discovery experiment unless separately re-authorized",
+    "unrelated task branches and pull requests",
+    "public deployment, installation, stable promotion, or merge"
   ]
 }
