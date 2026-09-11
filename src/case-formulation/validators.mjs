@@ -16,6 +16,13 @@ function string(value, label, allowEmpty = false) {
 function stringArray(value, label) {
   if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) throw new ValidationError(`${label} must be an array of strings.`);
 }
+function validateUnknown(item, label) {
+  object(item, label);
+  string(item.variable, `${label}.variable`);
+  string(item.question, `${label}.question`);
+  if (!Number.isInteger(item.importance) || item.importance < 1 || item.importance > 5) throw new ValidationError(`${label}.importance is invalid.`);
+  if (item.changes_next_action != null && typeof item.changes_next_action !== "boolean") throw new ValidationError(`${label}.changes_next_action must be boolean when supplied.`);
+}
 
 export function validateCaseSnapshot(value) {
   object(value, "caseSnapshot");
@@ -52,12 +59,7 @@ export function validateCaseSnapshot(value) {
     hypothesisIds.add(item.id);
   }
   if (!Array.isArray(value.unknowns)) throw new ValidationError("caseSnapshot.unknowns must be an array.");
-  for (const [index, item] of value.unknowns.entries()) {
-    object(item, `caseSnapshot.unknowns[${index}]`);
-    string(item.variable, `caseSnapshot.unknowns[${index}].variable`);
-    string(item.question, `caseSnapshot.unknowns[${index}].question`);
-    if (!Number.isInteger(item.importance) || item.importance < 1 || item.importance > 5) throw new ValidationError(`caseSnapshot.unknowns[${index}].importance is invalid.`);
-  }
+  for (const [index, item] of value.unknowns.entries()) validateUnknown(item, `caseSnapshot.unknowns[${index}]`);
   return value;
 }
 
@@ -65,6 +67,7 @@ export function validateCaseAudit(value) {
   object(value, "caseAudit");
   if (Object.hasOwn(value, "corrected_turn_task")) value.corrected_turn_task = validateTurnTask(value.corrected_turn_task);
   if (value.invalidate_turn_task != null && typeof value.invalidate_turn_task !== "boolean") throw new ValidationError("invalidate_turn_task must be boolean.");
+  if (value.invalidate_path_strategy != null && typeof value.invalidate_path_strategy !== "boolean") throw new ValidationError("invalidate_path_strategy must be boolean.");
   if (Object.hasOwn(value, "corrected_path_representation")) value.corrected_path_representation = validateRepresentationSelection(value.corrected_path_representation);
   if (value.invalidate_path_representation != null && typeof value.invalidate_path_representation !== "boolean") throw new ValidationError("invalidate_path_representation must be boolean.");
   if (Object.hasOwn(value, "corrected_relational_readiness") && value.corrected_relational_readiness !== null) object(value.corrected_relational_readiness, "caseAudit.corrected_relational_readiness");
@@ -83,12 +86,7 @@ export function validateCaseAudit(value) {
     string(correction.reason, `caseAudit.variable_corrections[${index}].reason`);
   }
   if (!Array.isArray(value.add_unknowns)) throw new ValidationError("caseAudit.add_unknowns must be an array.");
-  for (const [index, item] of value.add_unknowns.entries()) {
-    object(item, `caseAudit.add_unknowns[${index}]`);
-    string(item.variable, `caseAudit.add_unknowns[${index}].variable`);
-    string(item.question, `caseAudit.add_unknowns[${index}].question`);
-    if (!Number.isInteger(item.importance) || item.importance < 1 || item.importance > 5) throw new ValidationError(`caseAudit.add_unknowns[${index}].importance is invalid.`);
-  }
+  for (const [index, item] of value.add_unknowns.entries()) validateUnknown(item, `caseAudit.add_unknowns[${index}]`);
   stringArray(value.safety_flags, "caseAudit.safety_flags");
   if (!["accept","revise","reject"].includes(value.verdict)) throw new ValidationError("caseAudit.verdict is invalid.");
   string(value.summary, "caseAudit.summary");
