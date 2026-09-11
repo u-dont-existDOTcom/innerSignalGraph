@@ -1,6 +1,6 @@
 # Automatic private-turn runtime orchestration
 
-Status: active on branch `codex/automatic-runtime-orchestration-20260910`. The generic implementation checkpoint `a2689b6` and completed Louka v3 checkpoint `5564a2d` were combined in the owner-approved two-parent merge `b97362d1b9948d0cbe7d07cfc443c73146b810d8`. The exact merge tree passed the complete local gate and is ready to update draft PR #49.
+Status: active on branch `codex/automatic-runtime-orchestration-20260910`. The generic implementation checkpoint `a2689b6` and completed Louka v3 checkpoint `5564a2d` were combined in the owner-approved two-parent merge `b97362d1b9948d0cbe7d07cfc443c73146b810d8`. The later content-free Louka receipt correction was integrated without runtime overlap, and implementation-containing PR head `49cacebff33bb99aa525a38bf8af6811991ac935` passed the complete local and hosted gates. PR #49 remains draft/open/unmerged.
 
 ## Objective
 
@@ -46,11 +46,13 @@ No completion claim is valid until all seven steps have evidence.
 - Final complete package verification: PASS, including 1,074/1,074 automated tests, immutable packet checks, formulated A001 and H001 replay, web smoke, fake-CLI autopilot smoke, runtime fingerprint, package hygiene, and clean-tree restoration.
 - Pre-merge repository audit: zero errors and one pre-existing hosted-enforcement warning. Pre-merge Git publication audit: zero findings across 45,982 scanned records.
 - Post-merge verification of exact commit `b97362d1b9948d0cbe7d07cfc443c73146b810d8`: complete package PASS with 1,074/1,074 tests and all subordinate gates; repository audit zero errors with the same pre-existing hosted-enforcement warning; Git publication audit zero findings across 47,126 scanned records (4 refs, 71 commits, 2,948 objects, 2,211 blobs).
+- Content-free remote receipt reconciliation produced containing head `49cacebff33bb99aa525a38bf8af6811991ac935`; its repository audit had zero errors and publication audit had zero findings across 49,414 scanned records.
+- Exact-head hosted checks passed on `49cacebff33bb99aa525a38bf8af6811991ac935`: workflow-policy run `34551551419` / job `103115344707`; deterministic-package run `34551551392` / job `103115344574`; codeql-javascript run `34551551480` / job `103115345084`; nested CodeQL check `103115634808`.
 - The complete gate initially detected two regressions introduced at the runtime seam: producer session provenance was counted as therapeutic semantics, and an eager hosted-JWT import broke the dependency-free recovery copy when private runtime was disabled. Operational provenance is now excluded from the therapy-policy fingerprint and the hosted provider is imported only after explicit hosted-mode selection. Focused recovery/runtime/benchmark regressions pass 9/9 and the complete gate passes after both repairs.
 - Synthetic coverage includes one-message approved delivery, automatic FAIL/repair/re-audit, unavailable-independent-auditor denial, exact-version binding, two-cycle cutoff and discriminator, transient retry and exhausted fail-closed behavior, restart recovery, concurrent replay idempotence, authorization before key/inference access, strict audit output, information-firewall inspection, ciphertext-at-rest, and no Git/GitHub dependency in the ordinary path.
 
 ## Remaining frontier
 
-1. Update the draft PR branch without changing draft status, then verify the exact pushed head and hosted checks.
-2. Record the hosted exact-head result here if a documentation-only closeout is needed. Keep the automatic-runtime task active with the completed Louka checkpoint nested beneath it, as explicitly approved by the owner.
-3. The real v3 remains outside this task's audit/delivery scope.
+1. Keep the automatic-runtime task active with the completed Louka checkpoint nested beneath it, as explicitly approved by the owner.
+2. Keep PR #49 draft/open/unmerged. GitHub is authoritative for the final documentation-only containing head and its checks.
+3. The real v3 remains outside this task's audit/delivery scope and still requires a fresh independent audit before approval or delivery.
