@@ -1,0 +1,307 @@
+{
+  "format": "external-guide-source-map-v1",
+  "guideId": "inner-signal-hypnosis-guide",
+  "sourceAuthority": {
+    "repository": "u-dont-existDOTcom/joel-articles",
+    "branch": "research/hypnosis-bottom-up-six-books-20260910",
+    "path": "articles/inner-signal/master.html",
+    "masterSha256": "06987f70e7264a5ac72d132e4b8420cf75cda60f33bbb430c83a0146e612adf9",
+    "snapshotSha256": "35532449c0bccb2de357c35f675a7a48c4a5ba8ba322456bdd1924e204aef678",
+    "snapshotMethod": "reader-visible text extraction from exact hash-bound HTML master; native-object markup excluded from graph source text"
+  },
+  "readerProjection": {
+    "sha256": "35532449c0bccb2de357c35f675a7a48c4a5ba8ba322456bdd1924e204aef678",
+    "lineCount": 723,
+    "wordCount": 18420,
+    "method": "reader-visible text extraction from exact hash-bound HTML master; native-object markup excluded from graph source text"
+  },
+  "sections": [
+    {
+      "id": "HYP.ORIENTATION",
+      "heading": "Quick start: do this first",
+      "lineStart": 16,
+      "lineEnd": 20,
+      "sha256": "bf3c740e8e8c7b0ae295c698f14e889227293470b5f9fcd1b66082892af849c3"
+    },
+    {
+      "id": "HYP.HYPNOSIS_MODEL",
+      "heading": "What I mean by hypnosis",
+      "lineStart": 21,
+      "lineEnd": 48,
+      "sha256": "f3372d00b58e81dca56bdb5de9f26f2ba3dbe6795c15f5185bb0892b1c619e45"
+    },
+    {
+      "id": "HYP.SELF_HYPNOSIS",
+      "heading": "Why doing it myself worked better for me",
+      "lineStart": 49,
+      "lineEnd": 57,
+      "sha256": "4e9f54bfb61f29598fa559b3d7151a3abcd6923b2c8e4983e1e357b132fc470d"
+    },
+    {
+      "id": "HYP.MIND_MAP",
+      "heading": "A useful map of the mind",
+      "lineStart": 58,
+      "lineEnd": 75,
+      "sha256": "6199c2ed55774e782677e6008c0fa04b2d298ee7f865d70642487c987816dc81"
+    },
+    {
+      "id": "HYP.INNER_CHILD",
+      "heading": "The inner child, the guards, and the three inner adults",
+      "lineStart": 76,
+      "lineEnd": 144,
+      "sha256": "289ded17db1946aa64fb839faaa6e464d37690d1fd6d4c3d9e31e1b19bed070f"
+    },
+    {
+      "id": "HYP.SOCIAL_VOICE",
+      "heading": "When “your voice” is everybody else’s voice",
+      "lineStart": 145,
+      "lineEnd": 163,
+      "sha256": "82ef5f5b108242c346a4d23c57be85f7141456c2cbc1dd9994febc4e8989fedf"
+    },
+    {
+      "id": "HYP.DEHYPNOSIS",
+      "heading": "De-hypnosis: wake up inside the influence",
+      "lineStart": 164,
+      "lineEnd": 185,
+      "sha256": "a3fccab783cc3dd6998c1e73064888535058df0157a9f95541cc163233e4ca0b"
+    },
+    {
+      "id": "HYP.INDUCTION",
+      "heading": "Induction: gathering attention without disappearing",
+      "lineStart": 186,
+      "lineEnd": 228,
+      "sha256": "69052bc90fa57e2d64a74dbcf054e0ff6e26e855e9ee806fbdc7f3f1456d474e"
+    },
+    {
+      "id": "HYP.REENTRY_CUE",
+      "heading": "A shortcut back into hypnosis",
+      "lineStart": 229,
+      "lineEnd": 236,
+      "sha256": "96d90a946afce3bf0826dc024f8288f3e3d8f310dd74ce95680a26eb6c691e20"
+    },
+    {
+      "id": "HYP.RETURN",
+      "heading": "Come all the way back",
+      "lineStart": 237,
+      "lineEnd": 242,
+      "sha256": "d998052c47a2bc82230e0b0fc89f92da6eefcbc77047b852e2a8b1acfb9f26c6"
+    },
+    {
+      "id": "HYP.INNER_MEETING",
+      "heading": "The actual inner meeting",
+      "lineStart": 243,
+      "lineEnd": 252,
+      "sha256": "deec5bde336177fb323e8b975896b70b4c8851a660ba1889bae1be37d281ec26"
+    },
+    {
+      "id": "HYP.RESPONSIVE",
+      "heading": "Let the next response guide you",
+      "lineStart": 253,
+      "lineEnd": 264,
+      "sha256": "08c7935e8cda1e60aabeeed20c5f0c744033941f18db55e1a238e2529541cf74"
+    },
+    {
+      "id": "HYP.CONTACT_DOSE",
+      "heading": "Change the amount of contact",
+      "lineStart": 265,
+      "lineEnd": 269,
+      "sha256": "12e1747c9c52fceaa503352e3986825a2d9a393609da06db0dcf22006399d7fb"
+    },
+    {
+      "id": "HYP.CARE",
+      "heading": "Offer the care that is actually wanted",
+      "lineStart": 270,
+      "lineEnd": 276,
+      "sha256": "9f78b8688714603fe8c8c8edf14a4a06486065cbdfe135cd8fc977c63995bd29"
+    },
+    {
+      "id": "HYP.FINISH",
+      "heading": "Finish without forcing a revelation",
+      "lineStart": 277,
+      "lineEnd": 280,
+      "sha256": "a26ee114f732d411f552f787a165b1381919c44651239f37c85794c793dd5da9"
+    },
+    {
+      "id": "HYP.DAILY",
+      "heading": "The 15-minute daily practice",
+      "lineStart": 281,
+      "lineEnd": 285,
+      "sha256": "8de5eaa98ef74d46367589b8cabfb1da8f7e1212268efa23b897c28d54095144"
+    },
+    {
+      "id": "HYP.WEEKLY",
+      "heading": "The weekly deeper practice",
+      "lineStart": 286,
+      "lineEnd": 288,
+      "sha256": "a87ec7ff7ee61e1155bf081c9958e988eb43a42841527e93243e4e3291d2a94a"
+    },
+    {
+      "id": "HYP.CAPACITY",
+      "heading": "Capacity before content",
+      "lineStart": 289,
+      "lineEnd": 299,
+      "sha256": "c2fec34136bb0ea482b2dc3303513e84416f40bc195d347a4bcb4fdd0202782d"
+    },
+    {
+      "id": "HYP.TROUBLESHOOT",
+      "heading": "Troubleshooting",
+      "lineStart": 300,
+      "lineEnd": 320,
+      "sha256": "fcdce015bf9c6aca6d7b289e89991b39a16a438d384246bd82ec7070a0061578"
+    },
+    {
+      "id": "HYP.DISSOCIATION",
+      "heading": "You dissociate or feel unreal",
+      "lineStart": 321,
+      "lineEnd": 322,
+      "sha256": "fc4ea4922d046ae42539780accb8df3589294def79fe78b2b018f1513253a45f"
+    },
+    {
+      "id": "HYP.GRANDIOSITY",
+      "heading": "You become grandiose",
+      "lineStart": 323,
+      "lineEnd": 325,
+      "sha256": "0cdb594ac06c657de04bdbf1e94f8af5cc7e718ba5c7bf1426549545bc1d6e76"
+    },
+    {
+      "id": "HYP.ANALYTICAL",
+      "heading": "You become too analytical",
+      "lineStart": 326,
+      "lineEnd": 332,
+      "sha256": "c995b7154d6b47c5761e23b214c0a046ddd9ad91bc682991aa05fb786b65bf8d"
+    },
+    {
+      "id": "HYP.HIDDEN_TRUTH",
+      "heading": "You want the hidden truth immediately",
+      "lineStart": 333,
+      "lineEnd": 345,
+      "sha256": "b8b64f0dc00ee4a1f3008c1fe29748f813ea9648e127801d63663ca32366df2a"
+    },
+    {
+      "id": "HYP.WHAT_NOT",
+      "heading": "What not to do",
+      "lineStart": 346,
+      "lineEnd": 360,
+      "sha256": "9a007ac166afd1186831f0bb6b4e100ad1f6adf26d05cf1fe64f69d66ef7c6ea"
+    },
+    {
+      "id": "HYP.SUPPORT",
+      "heading": "When this needs more support than a guide can provide",
+      "lineStart": 361,
+      "lineEnd": 365,
+      "sha256": "63d6d490b44f85708b4648f2a4e51d3d6a0a50d615b191d13c543490e8056ba1"
+    },
+    {
+      "id": "HYP.TRAINED_METHODS",
+      "heading": "Methods to explore with a trained person present",
+      "lineStart": 366,
+      "lineEnd": 374,
+      "sha256": "68a13bfcddd7395303c0ff1daba1408cd8cb11b75a0b70e35bf4e78d7ea5e634"
+    },
+    {
+      "id": "HYP.APP",
+      "heading": "Try it in the Inner Signal app",
+      "lineStart": 375,
+      "lineEnd": 382,
+      "sha256": "b6309409d2eea0a24e0a412760674fa53b92e8f73b107ebaa8f848adea3d93b7"
+    },
+    {
+      "id": "HYP.QUESTIONS",
+      "heading": "Appendix A: How to ask the subconscious a useful question",
+      "lineStart": 383,
+      "lineEnd": 419,
+      "sha256": "f2bac0c750ede4afb114d5f47ab29ece59fe67f9975c4319ed665598466fb95c"
+    },
+    {
+      "id": "HYP.NLP",
+      "heading": "Appendix B: NLP without turning yourself into a sales seminar",
+      "lineStart": 420,
+      "lineEnd": 529,
+      "sha256": "a796161a8baf5dd1729079586e00c9f4bcc0ef7d73b775ce0350fb28f288349b"
+    },
+    {
+      "id": "HYP.DEHYPNOSIS_CHECKLIST",
+      "heading": "Appendix C: The extended de-hypnosis checklist",
+      "lineStart": 530,
+      "lineEnd": 559,
+      "sha256": "2d96b275ab911a82d0c0f12c3c0dc6e454e65a1158ff8ef1893d97c55e58d989"
+    },
+    {
+      "id": "HYP.ANXIETY_BODY_FIRST",
+      "heading": "Appendix D: Anxiety — body first",
+      "lineStart": 560,
+      "lineEnd": 595,
+      "sha256": "27c2c13532a3f3948478dc199a55f49ffc3e65f058d51b1e3bd8cfd69ed5101f"
+    },
+    {
+      "id": "HYP.OUTSIDE_GUIDANCE",
+      "heading": "Appendix F: Self-trust, outside guidance, and oracle-like states",
+      "lineStart": 596,
+      "lineEnd": 599,
+      "sha256": "c0eeb543bb1afefa435ee06496513eab0a0409b5a4bb49afee042c31f5f6c8cd"
+    },
+    {
+      "id": "HYP.PRACTITIONER",
+      "heading": "Finding a hypnotist who can work with you",
+      "lineStart": 600,
+      "lineEnd": 603,
+      "sha256": "7c83717005f9dd874298871c54e055650665d2a9f2afd90fd355b51464e19537"
+    },
+    {
+      "id": "HYP.ORACLE",
+      "heading": "When the subconscious speaks like an oracle",
+      "lineStart": 604,
+      "lineEnd": 615,
+      "sha256": "88af2fc960ec045a5d8c2f6557121eaf62de7175ee52ef82aea6e55d026ff7c8"
+    },
+    {
+      "id": "HYP.ALTERED_STATES",
+      "heading": "Appendix G: Altered states",
+      "lineStart": 616,
+      "lineEnd": 622,
+      "sha256": "c210eefaaec6f12f5bb880f946b74358a06ad333458443ccdd34f1b16cba3e7a"
+    },
+    {
+      "id": "HYP.STABILIZE_INTERPRET",
+      "heading": "Stabilize before you interpret",
+      "lineStart": 623,
+      "lineEnd": 651,
+      "sha256": "65d713eef979e13e8c3560b2cabbeeaaecaecd104394b4222d19aff6d66a81a7"
+    },
+    {
+      "id": "HYP.NONORDINARY",
+      "heading": "Appendix H: Demons, jinn, hostile presences, and “Unattached Burdens”",
+      "lineStart": 652,
+      "lineEnd": 660,
+      "sha256": "959daaa540703367af68708de1f16ac1a5a50f701959fe36e9b8cef5ed0812b8"
+    },
+    {
+      "id": "HYP.RESPONSE_CHECK",
+      "heading": "A response check, not a verdict about what it is",
+      "lineStart": 661,
+      "lineEnd": 681,
+      "sha256": "d805914a1242c8e8e35c8825b7b33685dee09636465205e0898d44095a3051c6"
+    },
+    {
+      "id": "HYP.SLEEP",
+      "heading": "Appendix I: Sleep hypnosis",
+      "lineStart": 682,
+      "lineEnd": 690,
+      "sha256": "a745cc2691b7c925b25eec1cc4d7cca57e3289970caa24132f2dd2afff864a76"
+    },
+    {
+      "id": "HYP.INDUCTION_LIBRARY",
+      "heading": "Appendix K: A practical induction library",
+      "lineStart": 691,
+      "lineEnd": 711,
+      "sha256": "68a7d0b4c3fd3792ca0c16d57e937df804fd594ab9e43b5be224b6fc3e357442"
+    },
+    {
+      "id": "HYP.SOURCES",
+      "heading": "Appendix L: Sources and further reading",
+      "lineStart": 712,
+      "lineEnd": 723,
+      "sha256": "05a14c71396c10d5930a47d20b8ea946985ebd5fac659d8f00e1b664ab84a64d"
+    }
+  ]
+}
