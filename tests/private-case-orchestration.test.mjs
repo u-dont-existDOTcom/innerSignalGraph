@@ -17,6 +17,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CASE_ID = "synthetic-private-orchestration";
 const ORIGINAL_ID = "candidate:synthetic:version-1";
 const REPAIR_ID = "candidate:synthetic:version-2";
+const FINAL_REPAIR_ID = "candidate:synthetic:version-3";
 const AUDIT_ID = "audit:synthetic:version-1";
 const HANDOFF_ID = "handoff:00000000-0000-4000-8000-000000000222";
 const NOW = "2026-09-10T14:00:00.000Z";
@@ -179,6 +180,89 @@ test("failed v1 audit, v2 reconstruction, handoff retrieval, and delivery gates 
   assert.equal((await orchestrator.execute(operation("mark_candidate_sent", { candidate_id: REPAIR_ID }), {})).reused, true);
 });
 
+test("external v2 FAIL with unavailable auditor identity reconstructs maximum-cycle v3 with an empty audit history", async (t) => {
+  const { store, orchestrator } = await makeHarness(t);
+  const v1Failure = operation("record_candidate_audit", {
+    candidate_id: ORIGINAL_ID,
+    audit_id: "audit:synthetic:external-path:v1",
+    auditor_context: { kind: "independent", context_id: "session:auditor:synthetic:v1" },
+    completed_at: NOW,
+    result: { findings: [{ id: "finding:synthetic:external-path:v1", code: "CAUSAL_OVERCLAIM", severity: "substantive", summary: "Synthetic v1 failure." }] }
+  });
+  await orchestrator.execute(v1Failure, {});
+  const v2Producer = "session:producer:synthetic:v2";
+  await orchestrator.execute(operation("reconstruct_candidate_and_create_handoff", {
+    parent_candidate_id: ORIGINAL_ID,
+    candidate_id: REPAIR_ID,
+    exact_text: "Synthetic candidate version two before the narrow safeguard.",
+    producer_context_id: v2Producer,
+    based_on_audit_id: v1Failure.audit_id,
+    handoff_id: "handoff:00000000-0000-4000-8000-000000000223",
+    runtime_version: "synthetic-runtime-v3",
+    audit_version: "private-candidate-audit-v3"
+  }), {});
+
+  const externalV2Failure = operation("record_candidate_audit", {
+    candidate_id: REPAIR_ID,
+    audit_id: "audit:synthetic:external-path:v2",
+    auditor_context: { kind: "independent", context_id: null, context_id_status: "unavailable" },
+    completed_at: null,
+    completed_at_status: "unavailable",
+    recorded_at: NOW,
+    independent_auditor_available: true,
+    external_provenance: {
+      kind: "externally_supplied_fresh_independent_audit",
+      supplied_by: "owner",
+      received_at: NOW,
+      reported_independence_from_producer_context_id: v2Producer
+    },
+    result: {
+      findings: [{ id: "finding:synthetic:external-path:v2", code: "REPAIR_INDUCED_CONTEXT_OMISSION", severity: "substantive", summary: "Synthetic v2 needs one narrow safeguard." }],
+      repair_induced_checks: [...REPAIR_INDUCED_ERROR_CHECKS]
+    }
+  });
+  const failure = await orchestrator.execute(externalV2Failure, {});
+  assert.equal(failure.candidate_status, "audit_failed");
+  assert.equal(failure.next_action, "RECONSTRUCT");
+  assert.equal((await orchestrator.execute(externalV2Failure, {})).reused, true);
+
+  const failedV2 = await store.getCandidateResponse(CASE_ID, REPAIR_ID);
+  assert.equal(failedV2.audit_history.length, 1);
+  assert.equal(failedV2.audit_history[0].auditor_context_id, null);
+  assert.equal(failedV2.audit_history[0].auditor_context_id_status, "unavailable");
+  assert.equal(failedV2.audit_history[0].sufficient_for_approval, false);
+
+  const v3Handoff = "handoff:00000000-0000-4000-8000-000000000224";
+  const v3Receipt = await orchestrator.execute(operation("reconstruct_candidate_and_create_handoff", {
+    parent_candidate_id: REPAIR_ID,
+    candidate_id: FINAL_REPAIR_ID,
+    exact_text: "Synthetic candidate version three with only the narrow safeguard added.",
+    producer_context_id: "session:producer:synthetic:v3",
+    based_on_audit_id: externalV2Failure.audit_id,
+    handoff_id: v3Handoff,
+    runtime_version: "synthetic-runtime-v3",
+    audit_version: "private-candidate-audit-v3"
+  }), {});
+
+  assert.equal(v3Receipt.candidate_version, 3);
+  assert.equal(v3Receipt.repair_cycle, 2);
+  assert.equal(v3Receipt.candidate_status, "reconstructed_pending_audit");
+  assert.equal(v3Receipt.next_action, "FRESH_INDEPENDENT_AUDIT");
+  assert.equal(v3Receipt.delivery_allowed, false);
+  const supersededV2 = await store.getCandidateResponse(CASE_ID, REPAIR_ID);
+  const v3 = await store.getCandidateResponse(CASE_ID, FINAL_REPAIR_ID);
+  assert.equal(supersededV2.status, "superseded");
+  assert.equal(v3.parent_candidate_id, REPAIR_ID);
+  assert.equal(v3.root_candidate_id, ORIGINAL_ID);
+  assert.deepEqual(v3.audit_history, []);
+  const packet = await store.loadHandoff(CASE_ID, v3Handoff);
+  assert.equal(packet.pending_artifacts.at(-1).id, FINAL_REPAIR_ID);
+  assert.equal(packet.pending_artifacts.at(-1).exact_text, v3.exact_text);
+  assert.equal(packet.candidate_lifecycle.current_candidate_version, 3);
+  assert.equal(packet.candidate_lifecycle.repair_cycle, 2);
+  assert.equal(packet.candidate_lifecycle.audit_status, "not_audited");
+});
+
 test("published private operation schemas compile strictly", async () => {
   const schemaDir = path.join(root, "schemas/private-case");
   const names = ["transcript-amendment-v1.schema.json", "candidate-audit-v1.schema.json", "candidate-version-v1.schema.json", "therapy-turn-lifecycle-v1.schema.json", "operation-request-v1.schema.json"];
@@ -188,5 +272,20 @@ test("published private operation schemas compile strictly", async () => {
   for (const schema of schemas) assert.equal(typeof ajv.getSchema(schema.$id), "function");
   const validateOperation = ajv.getSchema(schemas.at(-1).$id);
   assert.equal(validateOperation(operation("mark_candidate_sent", { candidate_id: REPAIR_ID })), true);
+  assert.equal(validateOperation(operation("record_candidate_audit", {
+    candidate_id: REPAIR_ID,
+    audit_id: "audit:synthetic:schema:external",
+    auditor_context: { kind: "independent", context_id: null, context_id_status: "unavailable" },
+    completed_at: null,
+    completed_at_status: "unavailable",
+    recorded_at: NOW,
+    external_provenance: {
+      kind: "externally_supplied_fresh_independent_audit",
+      supplied_by: "owner",
+      received_at: NOW,
+      reported_independence_from_producer_context_id: "session:producer:synthetic:v2"
+    },
+    result: { findings: [] }
+  })), true);
   assert.equal(validateOperation({ schema_version: 1, operation: "mutate_everything", case_id: CASE_ID }), false);
 });

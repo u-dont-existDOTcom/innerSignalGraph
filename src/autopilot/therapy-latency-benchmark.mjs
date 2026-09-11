@@ -39,7 +39,8 @@ const OMITTED_SEMANTIC_KEYS = new Set([
   "decisionLedgerId",
   "decisionLedgerPath",
   "requestId",
-  "requestIds"
+  "requestIds",
+  "producerContextId"
 ]);
 
 const OPTIONAL_UNKNOWN_ROUTING_KEYS = new Set([

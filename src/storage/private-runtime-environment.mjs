@@ -1,7 +1,6 @@
 import path from "node:path";
 import { RuntimeError } from "../core/errors.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "./private-case-access.mjs";
-import { loadHostedPrivateCaseProvidersFromEnvironment } from "./hosted-private-case-providers.mjs";
 
 function optionalText(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -32,9 +31,12 @@ export async function loadPrivateRuntimeAccessFromEnvironment(environment = proc
 
   let providers;
   try {
-    providers = resolvedMode === "hosted"
-      ? loadHostedPrivateCaseProvidersFromEnvironment(environment)
-      : await loadDevelopmentPrivateCaseProviders(path.resolve(credentialsPath));
+    if (resolvedMode === "hosted") {
+      const { loadHostedPrivateCaseProvidersFromEnvironment } = await import("./hosted-private-case-providers.mjs");
+      providers = loadHostedPrivateCaseProvidersFromEnvironment(environment);
+    } else {
+      providers = await loadDevelopmentPrivateCaseProviders(path.resolve(credentialsPath));
+    }
     const privateCaseAccessService = createPrivateCaseAccessService({
       rootDir: providers.rootDir,
       authorizationProvider: providers.authorizationProvider,

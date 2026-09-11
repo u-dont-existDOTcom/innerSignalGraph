@@ -25,8 +25,8 @@ async function listenServer(server) {
   return `http://127.0.0.1:${server.address().port}`;
 }
 
-function stateFor(userTurnId) {
-  return applyCaseStatePatch(createEmptyCaseState({ caseId: CASE_ID }), {
+function stateFor(userTurnId, caseId = CASE_ID) {
+  return applyCaseStatePatch(createEmptyCaseState({ caseId }), {
     current_episode: {
       id: "episode:runtime:synthetic",
       target: "Distinguish two synthetic possibilities.",
@@ -76,12 +76,12 @@ function scriptedRuntime({ verdicts = ["pass"], auditFailure = null, reuseContex
   let repairIndex = 0;
   const runtime = {
     calls,
-    async produceCandidate({ runtimeTurn, attemptContextId }) {
+    async produceCandidate({ caseId, runtimeTurn, attemptContextId }) {
       calls.push({ role: "candidate", attemptContextId });
       return {
         exactText: "Synthetic candidate v1.\n\nWhich part is most observable?",
         contextId: "context:producer:v1",
-        caseState: stateFor(runtimeTurn.user_turn_id),
+        caseState: stateFor(runtimeTurn.user_turn_id, caseId),
         stateDiff: { schema_version: 1, additions: [], current_episode_changed: true },
         result: { producerAttemptContextId: attemptContextId }
       };
@@ -284,6 +284,25 @@ test("concurrent duplicate requests share one per-case lifecycle execution", asy
   const record = await store.load(CASE_ID);
   assert.equal(record.runtime_turns.length, 1);
   assert.equal(record.raw_transcript.length, 2);
+});
+
+test("the same caller runtime ID in different cases cannot collide candidate artifact IDs", async (t) => {
+  const { store } = await makeStore(t);
+  const firstRuntime = scriptedRuntime();
+  const secondRuntime = scriptedRuntime();
+  const sharedRuntimeId = "runtime:caller-supplied:shared";
+  const firstInput = { ...input("case-one"), runtimeTurnId: sharedRuntimeId };
+  const secondCaseId = "synthetic-runtime-case-two";
+  const secondInput = {
+    ...input("case-two"),
+    caseId: secondCaseId,
+    runtimeTurnId: sharedRuntimeId
+  };
+  await createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: firstRuntime }).run(firstInput);
+  await createPrivateTherapyTurnController({ privateCaseSource: store, modelRuntime: secondRuntime }).run(secondInput);
+  const firstCandidate = (await store.load(CASE_ID)).candidate_responses[0];
+  const secondCandidate = (await store.load(secondCaseId)).candidate_responses[0];
+  assert.notEqual(firstCandidate.id, secondCandidate.id);
 });
 
 test("one HTTP user message completes the lifecycle without GitHub or owner handoff intervention", async (t) => {

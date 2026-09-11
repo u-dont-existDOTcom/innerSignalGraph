@@ -43,6 +43,18 @@ test("Claude CLI provider extracts structured_output from its JSON envelope", as
   assert.equal(result.transport, "cli");
 });
 
+test("sealed Claude CLI inference enforces isolation even when ordinary config isolation is disabled", async () => {
+  const provider = new ClaudeCliProvider({
+    command: process.execPath,
+    baseArgs: [path.join(here, "fixtures/fake-claude-cli.mjs"), "--fake-require-sealed"],
+    model: "fake-fable",
+    timeoutMs: 10000,
+    isolateConfig: false
+  });
+  const result = await provider.generate({ ...prompt, sealed: true });
+  assert.deepEqual(JSON.parse(result.text), { ok: true });
+});
+
 test("Codex CLI provider omits optional flags unsupported by the installed CLI", async () => {
   const provider = new CodexCliProvider({
     command: process.execPath,

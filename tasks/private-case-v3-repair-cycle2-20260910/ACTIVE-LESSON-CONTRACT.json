@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "taskId": "private-case-v3-repair-cycle2-20260910",
+  "status": "COMPLETE",
+  "activatedAt": "2026-09-10",
+  "lessons": [
+    {
+      "id": "truthful-external-audit-provenance",
+      "source": "current owner instruction + universal source-interpretation-provenance",
+      "trigger": "The owner supplies a fresh independent audit result but no auditor/session identifier or completion timestamp.",
+      "requiredBehavior": "Represent unavailable identity and time explicitly, preserve who supplied and when the result was received, and record the exact producer context from which independence was reported.",
+      "failureCondition": "A sentinel or fabricated auditor identity/time is stored as fact, or the result loses its external provenance.",
+      "repairAction": "Reject the operation and require the explicit unavailable representation plus external provenance.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "unknown-identity-fail-only",
+      "source": "current owner instruction + universal premise integrity",
+      "trigger": "An audit has no verifiable auditor context identifier.",
+      "requiredBehavior": "Permit only a blocking externally supplied FAIL and force sufficient_for_approval false; never allow that evidence to approve or send a candidate.",
+      "failureCondition": "Unknown-identity evidence passes, certifies, approves, or is treated as same-context proof.",
+      "repairAction": "Invalidate the evidence or transition and restore the closed delivery gate.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "exact-version-repair-lineage",
+      "source": "current owner instruction + universal independent-evaluation-separation",
+      "trigger": "The exact v2 failure drives a maximum-cycle reconstruction.",
+      "requiredBehavior": "Bind the FAIL to immutable v2 bytes, supersede v2, and create a new version-3 child at repair cycle 2 rooted at v1 with empty audit history.",
+      "failureCondition": "The audit binds stale bytes, v2 is edited, lineage changes, or v3 inherits approval/audit state.",
+      "repairAction": "Reject the transition and reconstruct only from the exact audited parent.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "narrow-delta-preservation-proof",
+      "source": "current owner instruction + universal transformation-preservation-proof",
+      "trigger": "v3 adds one substantive safeguard to v2.",
+      "requiredBehavior": "Prove the unchanged portions are byte-identical and separately audit the added paragraph against every owner-listed regression and unchanged-state constraint.",
+      "failureCondition": "Any unrelated candidate paragraph or canonical case-state surface changes.",
+      "repairAction": "Abort persistence or restore from the immutable parent and supplied exact target.",
+      "enforcement": "mechanical_and_semantic"
+    },
+    {
+      "id": "maximum-repair-cycle",
+      "source": "current owner instruction + existing lifecycle authority",
+      "trigger": "v3 reaches repair cycle 2.",
+      "requiredBehavior": "Allow this reconstruction but mechanically reject every further repair; require a fresh independent audit next.",
+      "failureCondition": "A repair cycle above two is created or v3 is audited by its producer.",
+      "repairAction": "Reject the operation and route to FRESH_INDEPENDENT_AUDIT or DISCRIMINATE_OR_BLOCK after failure.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "private-public-separation",
+      "source": "repository AGENTS.md + current owner instruction",
+      "trigger": "Exact candidate and audit material are private while PR 49 is public.",
+      "requiredBehavior": "Keep real payloads and content-derived hashes in encrypted storage or mode-0600 files outside the checkout; publish only generic implementation and content-free state facts.",
+      "failureCondition": "Private text, prose, or derived digest enters Git, GitHub, CI, or public fixtures.",
+      "repairAction": "Block publication and remove the disclosure before continuing.",
+      "enforcement": "mechanical"
+    },
+    {
+      "id": "read-only-continuity-handoff",
+      "source": "current owner instruction + repository continuity contract",
+      "trigger": "A fresh session must retrieve exact pending v3.",
+      "requiredBehavior": "Leave the ten-tool read-only surface unchanged and compile a new immutable handoff whose pending candidate is exact v3 and next action is FRESH_INDEPENDENT_AUDIT.",
+      "failureCondition": "Continuity gains a write, returns another version, or the handoff loses the closed delivery gate.",
+      "repairAction": "Reject the handoff/deployment and rebuild it from canonical private state.",
+      "enforcement": "mechanical"
+    }
+  ],
+  "preAttemptAdmission": {
+    "status": "PASS",
+    "evidence": [
+      "The existing draft PR branch is clean at exact head a98f9f7d46ed8233cf638b76121d7b293ccef9b4.",
+      "The owner supplied exact v2 identity/version/hash, the substantive fresh-audit finding, the reported producer-context separation, and the exact private v3 target.",
+      "The owner explicitly prohibited inventing an unavailable auditor/session identifier and prohibited v3 audit, approval, sent state, and public case material.",
+      "Repository authority, prior handoff state, candidate/audit orchestration, relevant live universal lessons, and the verified AskRigor universal protocol were inspected before implementation."
+    ]
+  },
+  "completionEvidence": {
+    "status": "PASS",
+    "evidence": [
+      "Externally supplied v2 failure provenance was persisted without inventing unavailable auditor identity or completion time, and the evidence remains ineligible for approval.",
+      "The encrypted private record preserves exact v1/v2 bytes, binds the new audit to v2, supersedes v2, and stores v3 as immutable version 3 at repair cycle 2 with zero audits and closed delivery gates.",
+      "A private preservation check proved the authorized v2-to-v3 safeguard was the only candidate-text delta and every unaffected case and handoff-state surface remained unchanged.",
+      "A new ChatGPT conversation used the unchanged read-only Continuity tool and reported the exact v3 lifecycle metadata and fresh-audit gate without quoting content or mutating the case.",
+      "Focused, complete-package, hosted-service, and publication checks passed before closeout."
+    ]
+  }
+}

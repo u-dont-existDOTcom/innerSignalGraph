@@ -39,6 +39,12 @@ A reconstruction supersedes its parent, increments the global version and lineag
 
 Audit, approval, and sent records are append-only. An earlier version's audit cannot approve changed bytes; a handoff that is continuation-safe cannot imply candidate approval.
 
+### Externally supplied failed audits with unavailable identity
+
+A fresh independent audit can sometimes arrive through an owner-authorized external channel without an auditor/session identifier or trustworthy audit-completion timestamp. The controller represents those fields as `null` with explicit `unavailable` statuses; it does not invent sentinel identities or treat the ingestion time as the audit-completion time. The immutable record instead carries a separate recording time and structured external provenance identifying the owner as supplier, the receipt time, and the exact candidate producer context from which the external auditor reported independence.
+
+This bounded path is failure-only. Runtime validation requires an independent classification, at least one unresolved substantive/high finding, the complete repair-induced checklist for a reconstructed candidate, and an exact match between the provenance's reported producer context and the candidate's stored producer context. Such evidence always has `sufficient_for_approval: false`. A PASS, approval, or sent transition requires a known fresh auditor context and known completion time, so unavailable identity can preserve a real blocking result without weakening producer/auditor separation.
+
 ## Backend operations and replay safety
 
 `src/supervisor/private-case-orchestration.mjs` implements the operation contract in `schemas/private-case/operation-request-v1.schema.json`:
@@ -76,8 +82,8 @@ The normal repair path is:
 6. persist the fresh v2 audit through the backend controller; and
 7. only after a sufficient exact-version pass, perform explicit approval and sent transitions.
 
-Steps 6 and 7 do not occur in the reconstruction producer context. The current task deliberately stops after step 4 for the real case so v2 remains unapproved and unsent pending fresh independent audit.
+Steps 6 and 7 do not occur in the reconstruction producer context. If step 6 returns a substantive failure, persist the exact-version FAIL, reconstruct a new immutable child if the repair-cycle limit allows it, and compile another handoff. At repair cycle 2, the child remains pending a fresh independent audit and no further repair is permitted unless the lifecycle contract is deliberately versioned.
 
 ## Verification contract
 
-Synthetic acceptance covers raw-turn preservation, exact source-range provenance, effective transcript construction, record migration, immutable candidate/audit history, failed-v1 to repair-cycle-1-v2 reconstruction, retry behavior, v2 handoff retrieval, producer/auditor separation, complete repair-induced checks, approval/sent transitions, the two-cycle maximum, strict JSON Schema compilation, and the unchanged read-only MCP tool list. The complete repository and publication gates remain required before publication.
+Synthetic acceptance covers raw-turn preservation, exact source-range provenance, effective transcript construction, record migration, immutable candidate/audit history, failed-v1 to repair-cycle-1-v2 reconstruction, truthful external-FAIL ingestion with unavailable auditor metadata, repair-cycle-2-v3 reconstruction, retry behavior, handoff retrieval, producer/auditor separation, complete repair-induced checks, approval/sent transitions, the two-cycle maximum, strict JSON Schema compilation, and the unchanged read-only MCP tool list. The complete repository and publication gates remain required before publication.

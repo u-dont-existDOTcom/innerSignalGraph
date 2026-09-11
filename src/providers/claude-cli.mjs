@@ -72,8 +72,8 @@ export class ClaudeCliProvider {
       if (!flags || flags.noSessionPersistence) args.push("--no-session-persistence");
       if (!flags || flags.permissionMode) args.push("--permission-mode", "dontAsk");
       if (!flags || flags.noChrome) args.push("--no-chrome");
-      if (this.isolateConfig && (!flags || flags.safeMode)) args.push("--safe-mode");
-      if (this.isolateConfig && (!flags || flags.strictMcpConfig)) args.push("--strict-mcp-config");
+      if ((sealed || this.isolateConfig) && (!flags || flags.safeMode)) args.push("--safe-mode");
+      if ((sealed || this.isolateConfig) && (!flags || flags.strictMcpConfig)) args.push("--strict-mcp-config");
 
       let stdin = user;
       if (!flags || flags.systemPromptFile) {
@@ -88,7 +88,7 @@ export class ClaudeCliProvider {
         command: this.command,
         args,
         stdin,
-        cwd: this.cwd,
+        cwd: sealed ? tempDir : this.cwd,
         env: sealed ? sealedInferenceEnvironment() : process.env,
         timeoutMs: this.timeoutMs,
         label: `Claude CLI ${metadata.stage ?? "generation"}`

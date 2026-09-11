@@ -152,7 +152,7 @@ export function createPrivateTherapyTurnController({
 
   async function executeRun({ caseId, runtimeTurnId, exchangeId, userTurnId, assistantTurnId, userMessage, userInput = {}, authContext }) {
     await call("beginPrivateRuntimeTurn", [caseId, { runtimeTurnId, exchangeId, userTurnId, exactText: userMessage }], authContext);
-    const operationKey = sha256(runtimeTurnId).slice(0, 24);
+    const operationKey = sha256(`${caseId}\u0000${runtimeTurnId}`).slice(0, 24);
 
     for (let step = 0; step < 40; step += 1) {
       const runtimeTurn = await call("getPrivateRuntimeTurn", [caseId, runtimeTurnId], authContext);

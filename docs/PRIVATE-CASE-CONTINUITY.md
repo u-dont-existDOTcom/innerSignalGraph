@@ -24,6 +24,10 @@ The independent audit of a reconstructed candidate must explicitly check causal 
 
 Structured audit output produced by an independent auditor can be persisted later by the backend through `persistPrivateCandidateAuditResult`; the auditor-facing continuity service itself receives no mutation tool. `src/supervisor/private-case-orchestration.mjs` owns the retry-safe append/audit/reconstruction/handoff/approval/sent sequence. Its operator CLI accepts only protected files outside the checkout and a transport-owned token from the environment. See `docs/superpowers/specs/2026-09-10-private-case-mutation-orchestration.md`.
 
+For ordinary app use, `src/supervisor/private-therapy-turn-controller.mjs` now owns the complete lifecycle behind the single `/v1/therapy/respond` request. It first persists an encrypted exact inbound record, produces an immutable candidate, starts a packet-only inference request whose actual provider response/session identity differs from the producer, binds the resulting audit to the exact candidate ID/version/digest, and atomically approves and delivers only a sufficient PASS. A substantive FAIL is persisted and automatically enters a separate repair context followed by another fresh audit. Two repair cycles are the hard maximum; a final substantive FAIL produces the current episode's one-line discriminating question and never creates a third repair. Operational invocation failures are retried only within `PRIVATE_RUNTIME_INVOCATION_ATTEMPTS` and otherwise return a concise failure without exposing or delivering the candidate.
+
+The controller is restart-safe because semantic transitions and invocation attempts live in the encrypted record. Completed invocation output needed for recovery remains inside that record, not in a public ledger or HTTP error. A replay of an already delivered runtime-turn ID returns the exact persisted delivery without another model call. This automatic path replaces owner-mediated movement of candidates, audits, and handoff IDs during ordinary therapy; the backend-only operator CLI remains available for explicit migration/recovery work.
+
 Handoff fidelity remains separate from candidate-audit and reconstruction-audit fidelity. Newly compiled private handoffs include a `candidate_lifecycle` component with the current candidate ID/version, parent and lineage, status, current version-bound audit status, previous findings, reconstruction-audit status, and delivery block. Pre-binding immutable handoffs remain readable but carry no inferred approval; their pending candidate must pass the current fresh audit gate.
 
 ## Public/private boundary
@@ -38,12 +42,13 @@ The private store keeps separate fields for:
 - state-diff history;
 - tracker and journal data;
 - immutable exact candidate versions and their status;
+- append-only automatic runtime-turn state, invocation evidence, discriminator, and exact delivery records;
 - immutable exact source artifacts plus a lossless byte-range/chunk integrity manifest; and
 - current episode state through the structured record.
 
 Each immutable handoff is stored separately as a mode-`0600` encrypted envelope below the private root. The handoff contains a canonical snapshot, component hashes, exact deterministic component chunks with contiguous byte ranges, and a retrieval index. An authorized loader can therefore reconstruct an oversized component without treating one source read larger than the 20,000-byte handoff ceiling as available. Private mode-`0600` locator records map opaque handoff or candidate IDs to the case required for authorization; they contain routing metadata only, never therapy text, candidate text, state, journal/tracker content, secrets, or private-derived payload hashes. A production implementation should place this locator mapping in its authenticated private database rather than a public or client-controlled store.
 
-Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains an explicit operator choice and is not the private case persistence mechanism.
+Ordinary reasoning ledgers now default to `redacted`; that form excludes user-facing response text, case formulation, audit prose, and reasoning evidence. The automatic private controller forces the underlying candidate pipeline ledger off and persists its recovery state only in the encrypted case record. `LEDGER_MODE=full` remains an explicit operator choice for non-private diagnostics and is not the private case persistence mechanism.
 
 ## Repository interfaces
 
@@ -51,6 +56,11 @@ Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains
 
 | Operation | Meaning |
 | --- | --- |
+| `beginPrivateRuntimeTurn` / `getPrivateRuntimeTurn` | Persist the exact encrypted inbound before inference and restore its executable lifecycle frontier |
+| `recordPrivateRuntimeInvocationEvent` / `transitionPrivateRuntimeTurn` | Append retry/restart evidence and enforce the explicit state graph |
+| `commitPrivateRuntimeCandidate` / `commitPrivateRuntimeAudit` | Atomically persist immutable candidate/state or exact-version audit plus approval/repair/discriminator transition |
+| `savePrivateRuntimeDiscriminator` | Freeze the final episode-permitted one-line discriminator after repair cycle 2 |
+| `deliverPrivateRuntimeCandidate` / `deliverPrivateRuntimeDiscriminator` | Atomically append exact assistant bytes and the terminal sent/delivery state |
 | `saveCaseState` / `getCaseState` | Structured case state only |
 | `saveCaseDiff` / `getCaseDiff` | Versioned turn-associated diffs |
 | `appendTranscriptTurn` / `getRecentVerbatim` | Append-only raw turns and exact recent episode |
@@ -72,7 +82,9 @@ Ordinary reasoning ledgers now default to `redacted`. `LEDGER_MODE=full` remains
 
 Candidate audit code in `src/supervisor/private-candidate-audit.mjs` accepts a candidate ID, resolves the exact private text through `loadCaseContext`, invokes the configured independent auditor, derives rather than trusts the pass/fail status, and persists the resulting evidence against that exact candidate version.
 
-The public schemas for transcript amendments, candidate versions, candidate audits, and backend operation requests are in `schemas/private-case/`. Schemas describe transport/storage shape; runtime validators additionally enforce cross-record integrity, exact byte digests, lineage, independence, and allowed state transitions.
+An externally supplied fresh-audit FAIL may be ingested when the external auditor/session identifier or exact completion time is unavailable. Those facts are stored explicitly as unavailable, never as fabricated identifiers or timestamps. Separate structured provenance records the owner-authorized source, receipt time, and the exact producer context from which independence was reported. This exception is fail-closed: it requires a blocking finding, can never be sufficient for approval, and cannot authorize delivery. A passing approval audit still requires a known context distinct from the candidate producer and a known completion time.
+
+The public schemas for transcript amendments, candidate versions, candidate audits, automatic therapy-turn lifecycles, and backend operation requests are in `schemas/private-case/`. Schemas describe transport/storage shape; runtime validators additionally enforce cross-record integrity, exact byte digests, lineage, independence, event replay, and allowed state transitions.
 
 ## Encryption and key-provider model
 
@@ -111,6 +123,14 @@ Its external credential file has this shape; placeholder values are not usable s
 ```
 
 Do not put this file beneath the checkout. The loader rejects repository-contained credentials and storage roots.
+
+The ordinary local app activates the encrypted automatic controller when these process-private settings are present:
+
+- `INNER_SIGNAL_PRIVATE_RUNTIME_MODE=development`;
+- `INNER_SIGNAL_PRIVATE_RUNTIME_CREDENTIALS=/absolute/outside-repository/credentials.json`; and
+- `INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN`, supplied through the process environment rather than a URL, request body, or Git-tracked file.
+
+Hosted app mode uses `INNER_SIGNAL_PRIVATE_RUNTIME_MODE=hosted` plus the managed private-root/OAuth/ACL/key settings below. Each request supplies its bearer token. Both modes compose the same authorization-first access service; the key provider is never consulted before case/scope authorization. The runtime needs `case:read`, `case:write`, and `case:audit`. This does not add mutation scopes or tools to the read-only MCP.
 
 For hosted mode, configure the deployment platform's secret manager rather than a repository `.env` file:
 
@@ -159,9 +179,9 @@ A fresh client normally performs this exact bootstrap call after transport authe
 
 The returned packet includes its `case_id`, pending candidate IDs and exact text, canonical state, frozen diff, exact recent episode, complete transcript archive, tracker/journal records, version references, retrieval index, and continuation evidence. The caller can then use the narrower tools. `load_case_context` remains available for live case-ID bootstrap and `retrieve_case_evidence` can query the returned `case_id` by text, provenance IDs, or time range.
 
-The full executable gate is `npm run private-case:acceptance`. It creates an external temporary private store in Session A, compiles an immutable handoff, exits that process, deletes candidate/case expectations from the child environment, and has independent Session B recover exact text using only the stable handoff ID and authorized test transport. Its synthetic longitudinal history exceeds 100,000 characters; Session B reconstructs the transcript component from contiguous exact chunks, each no larger than 20,000 UTF-8 bytes. The test compares the decision-relevant continuation projection as well as exact candidate/recent-turn content. It also tests denied authorization, missing/wrong keys, ciphertext at rest, full-episode retention, historical retrieval, exact candidate audit, blocked acceptance, public-path leak prevention, and lossless Unicode/newline reconstruction. Chunk manifests reject gaps, duplication, reordered chunks, altered byte ranges, and changed bytes.
+The full executable gate is `npm run private-case:acceptance`. It creates an external temporary private store in Session A, compiles an immutable handoff, exits that process, deletes candidate/case expectations from the child environment, and has independent Session B recover exact text using only the stable handoff ID and authorized test transport. Its synthetic longitudinal history exceeds 100,000 characters; Session B reconstructs the transcript component from contiguous exact chunks, each no larger than 20,000 UTF-8 bytes. The test compares the decision-relevant continuation projection as well as exact candidate/recent-turn content. It also tests denied authorization, missing/wrong keys, ciphertext at rest, full-episode retention, historical retrieval, exact candidate audit, blocked acceptance, public-path leak prevention, lossless Unicode/newline reconstruction, automatic one-message delivery, repair/re-audit, self-certification denial, maximum-cycle discrimination, bounded retry, and restart persistence. Chunk manifests reject gaps, duplication, reordered chunks, altered byte ranges, and changed bytes.
 
-The ordinary loopback web server remains unsuitable as a private ChatGPT boundary because its development endpoints do not implement user authentication. It was intentionally not given raw transcript or candidate inspectors. The existing **Current saved state** and **What changed this turn** views remain structured/no-raw-content controls; exact **Recent Verbatim** and **Pending Candidate** inspection is available only through the authorized read-only MCP tools.
+The loopback web server is not a replacement for the authenticated ChatGPT MCP boundary and intentionally has no raw transcript or candidate inspectors. When its private-runtime environment is configured, ordinary therapy requests do pass through the authorization-first encrypted mutation controller; without that configuration, non-mock therapy fails closed rather than silently using session-only storage. The existing **Current saved state** and **What changed this turn** views remain structured/no-raw-content controls; exact **Recent Verbatim** and **Pending Candidate** inspection remains available only through the authorized read-only MCP tools.
 
 ## First-class private handoff format
 
@@ -182,7 +202,7 @@ The packet is wrapped as an exact artifact, encrypted with the existing dual-wra
 
 The older `createPrivateCaseHandoff` reference-only record remains for compatibility, but it is not the Universal Handoff artifact or its fresh-session evidence.
 
-The owner-authorized opaque identifiers for the current private state are case `case-57a69465-4434-41cf-ad24-310b13a2cc81`, superseded v1 `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051`, current v2 `candidate:repair:f45e8a19-47b5-49fb-8a14-c5c66482875c`, and current handoff `handoff:e9338ec6-94de-49a7-9179-208684ca2cf9`. The raw target turn remains byte-identical; an immutable source artifact and provenance-bound completion amendment supply the effective transcript without overwriting it. The failed audit remains bound to exact v1. V2 is immutable version 2, repair cycle 1, `reconstructed_pending_audit`, with zero audits, no approval, no sent marker, and a producer context that cannot serve as its independent auditor. The schema-v2 handoff round-trips the raw transcript, amendment ledger, effective transcript, lineage, and exact v2 through the authorized read-only loader. A newly created ChatGPT conversation received only the new handoff ID and confirmed the same continuation-safe v2 lifecycle facts and exact-text retrievability without quoting content or performing a mutation. Private receipts retain exact comparisons without publishing private bytes or private-derived hashes. The next action is a fresh independent audit of exact v2; delivery remains blocked.
+The owner-authorized opaque identifiers for the current private state are case `case-57a69465-4434-41cf-ad24-310b13a2cc81`, superseded v1 `candidate:pending:50804229-a5b2-4760-b956-4e5926a56051`, superseded v2 `candidate:repair:f45e8a19-47b5-49fb-8a14-c5c66482875c`, current v3 `candidate:repair:abdd6d89-68fa-4e4e-bb89-96b7d206327b`, and current handoff `handoff:da297f25-1ae4-4494-b8e1-63591e438d88`. The raw target turn remains byte-identical; an immutable source artifact and provenance-bound completion amendment supply the effective transcript without overwriting it. Failed audits remain bound to their exact immutable candidate versions. The externally supplied v2 FAIL preserves unavailable auditor identity/time explicitly and cannot authorize approval. V2 is superseded, not approved, and not sent. V3 is immutable version 3 at maximum repair cycle 2, `reconstructed_pending_audit`, with zero audits, no approval, and no sent marker. The schema-v2 handoff round-trips the raw transcript, amendment ledger, effective transcript, lineage, and exact v3 through the authorized read-only loader. A newly created ChatGPT conversation received only the new handoff ID and confirmed the continuation-safe v3 lifecycle facts and exact-text retrievability without quoting content or performing a mutation. Private receipts retain exact comparisons without publishing private bytes or private-derived hashes. The next action is a fresh independent audit of exact v3; delivery remains blocked, and a substantive failure cannot create repair cycle 3.
 
 ## Hosted production/ChatGPT acceptance evidence
 
@@ -194,6 +214,7 @@ Repository-local success alone does not make a tool callable from a new ChatGPT 
 4. ChatGPT plugin `InnerSignal Private Continuity` is registered, OAuth-connected, and scoped to `case:read` plus `case:audit`.
 5. A new post-registration ChatGPT conversation received only the real `handoff_id` and executed `load_handoff`.
 6. A separate hosted OAuth loader compared the same immutable response's exact candidate and recent turns with the private source; both matched and an unauthorized request returned no private content.
-7. After the provenance amendment and v2 reconstruction, another newly created ChatGPT conversation received only the new handoff ID, called the read-only tool, and confirmed exact v2 retrievability plus the closed fresh-audit gate without quoting or mutating private material.
+7. After the provenance amendment and v2 reconstruction, another newly created ChatGPT conversation received only the v2 handoff ID, called the read-only tool, and confirmed exact v2 retrievability plus the closed fresh-audit gate without quoting or mutating private material.
+8. After the externally supplied v2 FAIL and maximum-cycle v3 reconstruction, a further new ChatGPT conversation received only the v3 handoff ID and confirmed exact v3 lifecycle metadata, zero audits, and the closed fresh-audit gate through the same read-only tool without quoting or mutating private material.
 
-Candidate v2 remains unapproved, unsent, and awaiting its fresh independent substantive audit. Official OpenAI references: [Build an MCP server](https://developers.openai.com/plugins/concepts/mcp-server), [MCP authentication](https://developers.openai.com/plugins/build/auth), [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels), and [Connect from ChatGPT](https://developers.openai.com/plugins/deploy/connect-chatgpt).
+Candidate v3 remains unaudited, unapproved, unsent, and awaiting its fresh independent substantive audit. Official OpenAI references: [Build an MCP server](https://developers.openai.com/plugins/concepts/mcp-server), [MCP authentication](https://developers.openai.com/plugins/build/auth), [Secure MCP Tunnel](https://developers.openai.com/api/docs/guides/secure-mcp-tunnels), and [Connect from ChatGPT](https://developers.openai.com/plugins/deploy/connect-chatgpt).

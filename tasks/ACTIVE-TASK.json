@@ -16,11 +16,19 @@
   "activeLessonContractPath": "tasks/automatic-runtime-orchestration-20260910/ACTIVE-LESSON-CONTRACT.json",
   "completionClaimRule": "Completion requires a production-wired, restart-safe, fail-closed one-message controller; mechanically independent exact-version audits and bounded repairs; persisted delivery; public/private isolation; synthetic end-to-end tests; canonical handoff; and a verified commit on draft PR 49.",
   "coordination": {
-    "isolatedFrom": "concurrent Louka v3 private lifecycle work",
-    "rule": "Do not mutate the real Louka case or the other task's checkout; integrate only its durable result after that task finishes."
+    "isolatedFrom": "completed Louka v3 private lifecycle work",
+    "rule": "Do not mutate or audit the real Louka case; preserve and integrate only the completed task's durable public-safe state.",
+    "integratedTask": {
+      "taskId": "private-case-v3-repair-cycle2-20260910",
+      "status": "complete",
+      "commit": "5564a2d",
+      "statePath": "tasks/private-case-v3-repair-cycle2-20260910/INTEGRATION.md",
+      "outcomeReceiptPath": "tasks/private-case-v3-repair-cycle2-20260910/PRIVATE-OPERATION-RECEIPT.json"
+    }
   },
+  "currentPrivateCaseNextAction": "FRESH_INDEPENDENT_AUDIT",
   "suspendedTaskSources": [
-    "real Louka v3 creation or audit",
+    "fresh independent Louka v3 audit, approval, repair, or delivery",
     "the older 48-call A/B/C discovery experiment unless separately re-authorized",
     "unrelated task branches and pull requests",
     "public deployment, installation, stable promotion, or merge"

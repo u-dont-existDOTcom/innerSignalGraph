@@ -1,7 +1,7 @@
 # Automatic private-turn orchestration
 
-**Status:** implementation contract for draft PR #49  
-**Scope:** ordinary InnerSignal therapy turns backed by the encrypted private case store  
+**Status:** implementation contract for draft PR #49
+**Scope:** ordinary InnerSignal therapy turns backed by the encrypted private case store
 **Privacy:** architecture and synthetic examples only; no real case content or private-derived digest belongs in Git
 
 ## Product boundary
@@ -46,8 +46,8 @@ Every model invocation receives a pre-persisted opaque `context_id`. Providers u
 
 - OpenAI API calls use independent Responses requests with `store: false`;
 - Anthropic API calls use independent Messages requests;
-- Codex CLI calls use ephemeral, isolated invocations;
-- Claude CLI calls use no session persistence and one turn; and
+- Codex CLI remains ineligible for packet-only auditing because its agent transport exposes filesystem/tools;
+- compatible Claude CLI calls disable tools, Chrome, session persistence, MCP inheritance, and extra turns, and fail closed when those flags are unavailable; and
 - synthetic providers declare and expose the same contract for tests.
 
 The controller rejects a provider that cannot promise isolated per-call context. It also rejects equal producer/auditor context IDs. A candidate records the context that produced or modified its exact bytes. An auditor receives only a sealed audit packet containing the exact candidate and the minimum authorized case/evaluation context. The packet excludes pipeline traces, draft alternatives, provider metadata, prior repair rationale, and any producer hidden reasoning. The audit result is derived and persisted against candidate ID, version, and SHA-256 of the exact text.
@@ -79,13 +79,15 @@ Candidate delivery is one private-store mutation. It verifies that:
 
 That mutation appends the assistant transcript entry, marks the candidate `sent`, records the exact delivery, and advances the runtime turn to `DELIVERED`. A replay returns the persisted delivery; it cannot create a different assistant response.
 
-For final unresolved uncertainty, no repair-cycle-3 candidate exists. A separate discriminator context creates one nonempty bounded question. Deterministic admission rejects multiple questions, advice disguised as a question, or text that is not a question. The store freezes it and atomically appends it as the delivered assistant turn.
+For final unresolved uncertainty, no repair-cycle-3 candidate exists. A separate deterministic context selects the current episode's already-authorized `next_question`; it cannot invent a new direction. Admission permits exactly one bounded line with one terminal question mark. The store freezes it and atomically appends it as the delivered assistant turn.
 
 ## Production and private boundary
 
-The runtime uses the existing case-scoped authorization/key-provider boundary. A server request supplies transport authentication, not private material in tool arguments. All runtime records are encrypted at rest beneath the configured private root outside the checkout. The controller imports no Git or GitHub module and ordinary-turn tests install a trap that fails if any GitHub mutation capability is invoked.
+The runtime uses the existing case-scoped authorization/key-provider boundary. A server request supplies transport authentication, not private material in tool arguments. All runtime records are encrypted at rest beneath the configured private root outside the checkout. The controller imports no Git or GitHub module; an ordinary-turn regression executes the HTTP lifecycle and rejects Git/GitHub mutation dependencies in the path's source boundary.
 
-Reasoning ledgers remain separate diagnostics and are not runtime persistence. Production composition must use redacted/off ledgers for private traffic unless the owner explicitly selects another private diagnostic policy.
+Reasoning ledgers remain separate diagnostics and are not runtime persistence. The private controller forces candidate-pipeline ledgers off; the general redacted ledger also omits response prose and reasoning evidence.
+
+`src/storage/private-runtime-environment.mjs` composes the ordinary server with the existing authorization-first case access service. Local development requires an absolute mode-`0600` credential file and private root outside the checkout plus a process-owned bearer token. Hosted mode uses signed OAuth bearer tokens, subject/case/scope ACLs, and managed key material. The runtime needs read/write/audit scopes, but none of these write operations is registered on `InnerSignal Private Continuity`.
 
 ## Acceptance gates
 

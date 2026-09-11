@@ -12,9 +12,12 @@
     "candidate_version": { "type": "integer", "minimum": 1 },
     "candidate_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "audit_version": { "$ref": "#/$defs/id" },
-    "completed_at": { "type": "string", "format": "date-time" },
+    "completed_at": { "oneOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }] },
+    "completed_at_status": { "enum": ["known", "unavailable"] },
+    "recorded_at": { "type": "string", "format": "date-time" },
     "auditor_kind": { "enum": ["independent", "self_critique"] },
-    "auditor_context_id": { "$ref": "#/$defs/id" },
+    "auditor_context_id": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "auditor_context_id_status": { "enum": ["known", "unavailable"] },
     "independent_auditor_available": { "type": "boolean" },
     "independent": { "type": "boolean" },
     "findings": {
@@ -36,7 +39,21 @@
     "unresolved_substantive_finding_ids": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
     "verdict": { "enum": ["pass", "fail"] },
     "sufficient_for_approval": { "type": "boolean" },
-    "repair_induced_checks": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true }
+    "repair_induced_checks": { "type": "array", "items": { "$ref": "#/$defs/id" }, "uniqueItems": true },
+    "external_provenance": { "$ref": "#/$defs/externalProvenance" }
   },
-  "$defs": { "id": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,200}$" } }
+  "$defs": {
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,200}$" },
+    "externalProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "supplied_by", "received_at", "reported_independence_from_producer_context_id"],
+      "properties": {
+        "kind": { "const": "externally_supplied_fresh_independent_audit" },
+        "supplied_by": { "const": "owner" },
+        "received_at": { "type": "string", "format": "date-time" },
+        "reported_independence_from_producer_context_id": { "$ref": "#/$defs/id" }
+      }
+    }
+  }
 }
