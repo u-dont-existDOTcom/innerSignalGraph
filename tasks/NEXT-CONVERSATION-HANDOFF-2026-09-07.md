@@ -2,6 +2,16 @@
 
 Use this packet to resume without relying on chat memory. **First read the current PR head from GitHub**, because later docs-only commits may advance beyond the baseline recorded here.
 
+## Current continuation — automatic private-turn orchestration is locally verified for draft PR #49
+
+Task `automatic-runtime-orchestration-20260910` remains active, with the completed Louka-v3 checkpoint nested beneath it. Generic implementation `a2689b6` and Louka checkpoint `5564a2d` are combined by the explicitly owner-approved merge `b97362d1b9948d0cbe7d07cfc443c73146b810d8`. Read `tasks/automatic-runtime-orchestration-20260910/INTEGRATION.md`, `state/CODEX-CURRENT-STATE.md`, and `docs/superpowers/specs/2026-09-10-automatic-private-turn-orchestration.md` before changing the runtime.
+
+One ordinary `/v1/therapy/respond` request now persists exact intake and authorized longitudinal context, creates an immutable candidate, invokes a fresh packet-only audit context, binds audit/approval/delivery to exact ID/version/text, automatically repairs and freshly re-audits at most twice, then uses the current episode's smallest authorized discriminator instead of repair cycle 3. Invocation failures retry within a fixed ceiling and fail closed. The delivered exact text and terminal state are encrypted and restart-safe. Ordinary turns contain no Git/GitHub mutation path and require no owner lifecycle shuttling.
+
+External identity/time-unavailable audit evidence remains eligible only to preserve a blocking FAIL and can never approve. PASS requires a known, actually available independent auditor whose context differs from every producer/modifier context. Sealed Claude CLI auditing forces tool, filesystem-capable integration, persistence, Chrome, extra-turn, safe-mode, and MCP isolation even when ordinary CLI isolation is disabled; incompatible clients fail closed. `InnerSignal Private Continuity` remains unchanged and read-only.
+
+The exact merge commit passes the complete Node 24.18.0 package gate with 1,074/1,074 tests, graph regressions 29/29, therapy lessons 5/5, repository audit with zero errors, and publication audit with zero findings across 47,126 records. The next repository action is to push the containing head to draft PR #49, keep it draft/open/unmerged, and verify the exact-head hosted checks. Do not use real Louka material for runtime development; v3 remains unapproved and unsent pending its separate fresh independent audit described below.
+
 ## Current continuation — maximum-cycle private v3 is retrievable and pending a fresh independent audit on draft PR #49
 
 Fetch the current head of draft PR #49 on `codex/private-case-import-20260909`, then read `tasks/private-case-v3-repair-cycle2-20260910/INTEGRATION.md`, its content-free `PRIVATE-OPERATION-RECEIPT.json`, `docs/PRIVATE-CASE-CONTINUITY.md`, and the current state file. The complementary backend/controller mutation path is implemented and deployed. `InnerSignal Private Continuity` deliberately remains the same ten-tool read-only MCP.
