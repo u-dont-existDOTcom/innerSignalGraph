@@ -21,7 +21,7 @@ An incomplete source turn is never edited. Record version 5 adds `transcript_ame
 - a producer context and creation time; and
 - an exact byte range in a separately persisted immutable source artifact.
 
-The effective transcript is a deterministic projection of raw turns plus validated amendments. Recent-verbatim selection, evidence retrieval, case context, and newly compiled handoffs use that projection while retaining the raw archive and amendment list. One target turn may have only one completion amendment. Existing version-1 handoffs remain readable; newly compiled packets use handoff schema version 2.
+The effective transcript is a deterministic projection of raw turns plus validated amendments. Recent-verbatim selection, evidence retrieval, case context, and newly compiled handoffs use that projection while retaining the raw archive and amendment list. One target turn may have only one completion amendment. Existing version-1 and version-2 handoffs remain readable; newly compiled packets use handoff schema version 3.
 
 ## Candidate state machine
 
@@ -37,7 +37,7 @@ approved_for_delivery --send--> sent
 
 A reconstruction supersedes its parent, increments the global version and lineage repair cycle, and starts with an empty audit history. Audits bind candidate ID, version, and exact-byte digest. An independent audit context must differ from the candidate producer context. Reconstructed candidates require the complete repair-induced-error checklist. A third reconstruction is rejected after repair cycle 2 and routes to discrimination or blocked delivery.
 
-Audit, approval, and sent records are append-only. An earlier version's audit cannot approve changed bytes; a handoff that is continuation-safe cannot imply candidate approval.
+Audit, approval, and delivery records are exact-version-bound. Delivery atomically appends the exact approved candidate bytes as an assistant transcript turn and marks that candidate sent with the approving audit and replied-to user-turn identifiers. An earlier version's audit cannot approve changed bytes; a handoff that is continuation-safe cannot imply candidate approval.
 
 ### Externally supplied failed audits with unavailable identity
 
@@ -54,9 +54,10 @@ This bounded path is failure-only. Runtime validation requires an independent cl
 - `reconstruct_candidate_and_create_handoff`
 - `create_handoff`
 - `approve_candidate_for_delivery`
+- `deliver_candidate_and_create_handoff`
 - `mark_candidate_sent`
 
-Stable amendment, audit, candidate, and handoff IDs make operations retry-safe. An exact replay returns `reused: true`; a replay with different immutable content fails closed. The combined reconstruction/handoff operation either reuses the matching immutable candidate and handoff or rejects an identity/content conflict. Receipts contain only opaque IDs, versions, statuses, repair cycles, and gate actions.
+Stable amendment, audit, candidate, transcript-turn, and handoff IDs make operations retry-safe. An exact replay returns `reused: true`; a replay with different immutable content fails closed. The combined reconstruction/handoff operation either reuses the matching immutable candidate and handoff or rejects an identity/content conflict. The combined delivery/handoff operation atomically persists the exact assistant response before compiling a continuation-safe post-delivery handoff whose `delivery_completion` projection is bound to the candidate ID/version/digest, approving audit, assistant turn, replied-to user turn, and delivery time. Receipts contain only opaque IDs, versions, statuses, repair cycles, and gate actions.
 
 Invoke the controller with protected paths outside the checkout:
 
@@ -80,10 +81,10 @@ The normal repair path is:
 4. compile immutable handoff v2 containing the raw transcript, amendment, effective transcript, failed v1 evidence in lineage, and exact v2 in `reconstructed_pending_audit`;
 5. let a fresh session retrieve that handoff through read-only Private Continuity;
 6. persist the fresh v2 audit through the backend controller; and
-7. only after a sufficient exact-version pass, perform explicit approval and sent transitions.
+7. only after a sufficient exact-version pass, perform explicit approval, transcript-bound delivery, and post-delivery handoff creation.
 
 Steps 6 and 7 do not occur in the reconstruction producer context. If step 6 returns a substantive failure, persist the exact-version FAIL, reconstruct a new immutable child if the repair-cycle limit allows it, and compile another handoff. At repair cycle 2, the child remains pending a fresh independent audit and no further repair is permitted unless the lifecycle contract is deliberately versioned.
 
 ## Verification contract
 
-Synthetic acceptance covers raw-turn preservation, exact source-range provenance, effective transcript construction, record migration, immutable candidate/audit history, failed-v1 to repair-cycle-1-v2 reconstruction, truthful external-FAIL ingestion with unavailable auditor metadata, repair-cycle-2-v3 reconstruction, retry behavior, handoff retrieval, producer/auditor separation, complete repair-induced checks, approval/sent transitions, the two-cycle maximum, strict JSON Schema compilation, and the unchanged read-only MCP tool list. The complete repository and publication gates remain required before publication.
+Synthetic acceptance covers raw-turn preservation, exact source-range provenance, effective transcript construction, record migration, immutable candidate/audit history, failed-v1 to repair-cycle-1-v2 reconstruction, truthful external-FAIL ingestion with unavailable auditor metadata, repair-cycle-2-v3 reconstruction, retry behavior, handoff retrieval, producer/auditor separation, complete repair-induced checks, exact transcript-bound delivery, tamper rejection, continuation-safe post-delivery handoffs, the two-cycle maximum, strict JSON Schema compilation, and the unchanged read-only MCP tool list. The complete repository and publication gates remain required before publication.

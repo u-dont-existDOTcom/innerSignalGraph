@@ -11,6 +11,7 @@ const OPERATIONS = new Set([
   "reconstruct_candidate_and_create_handoff",
   "create_handoff",
   "approve_candidate_for_delivery",
+  "deliver_candidate_and_create_handoff",
   "mark_candidate_sent"
 ]);
 
@@ -213,6 +214,32 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
           candidate = await currentCandidate(caseAccessService, caseId, request.candidate_id, authContext);
         }
         return publicCandidateReceipt(caseId, candidate, { reused });
+      }
+
+      if (request.operation === "deliver_candidate_and_create_handoff") {
+        for (const [name, value] of [["candidate_id", request.candidate_id], ["audit_id", request.audit_id], ["assistant_turn_id", request.assistant_turn_id], ["in_reply_to_turn_id", request.in_reply_to_turn_id], ["handoff_id", request.handoff_id]]) requiredId(value, name);
+        let candidate = await currentCandidate(caseAccessService, caseId, request.candidate_id, authContext);
+        const reusedDelivery = candidate.status === "sent";
+        if (typeof caseAccessService.deliverCandidateResponse !== "function") throw new ValidationError("caseAccessService must support transcript-bound candidate delivery.");
+        await caseAccessService.deliverCandidateResponse(caseId, request.candidate_id, {
+          auditId: request.audit_id,
+          assistantTurnId: request.assistant_turn_id,
+          inReplyToTurnId: request.in_reply_to_turn_id
+        }, authContext);
+        candidate = await currentCandidate(caseAccessService, caseId, request.candidate_id, authContext);
+        const existing = await loadOptionalHandoff(caseAccessService, request.handoff_id, authContext);
+        if (!existing) await caseAccessService.createHandoff(caseId, {
+          handoffId: request.handoff_id,
+          runtimeVersion: requiredText(request.runtime_version, "runtime_version", 160),
+          auditVersion: requiredText(request.audit_version, "audit_version", 160)
+        }, authContext);
+        const handoff = existing ?? await caseAccessService.loadHandoff(request.handoff_id, authContext, { requireContinuationSafe: true });
+        if (handoff.case_id !== caseId || handoff.delivery_completion?.candidate_id !== candidate.id
+            || handoff.delivery_completion?.candidate_version !== candidate.version || handoff.delivery_completion?.audit_id !== request.audit_id
+            || handoff.delivery_completion?.assistant_turn_id !== request.assistant_turn_id) {
+          throw new ValidationError(`Handoff ${request.handoff_id} conflicts with the exact persisted delivery.`);
+        }
+        return publicCandidateReceipt(caseId, candidate, { reused: reusedDelivery && Boolean(existing), handoffId: request.handoff_id });
       }
 
       requiredId(request.candidate_id, "candidate_id");

@@ -192,6 +192,9 @@ export function createPrivateCaseAccessService({
     async markCandidateSent(caseId, candidateId, authContext) {
       return write(caseId, authContext, (store) => store.markCandidateSent(caseId, candidateId));
     },
+    async deliverCandidateResponse(caseId, candidateId, input, authContext) {
+      return write(caseId, authContext, (store) => store.deliverCandidateResponse(caseId, candidateId, input));
+    },
     async getCandidateResponse(caseId, selector, authContext) { return read(caseId, authContext, (store) => store.getCandidateResponse(caseId, selector)); },
     async getCandidateLifecycle(caseId, authContext) { return read(caseId, authContext, (store) => store.getCandidateLifecycle(caseId)); },
     async saveSourceArtifact(caseId, sourceArtifactId, chunks, metadata, authContext) {

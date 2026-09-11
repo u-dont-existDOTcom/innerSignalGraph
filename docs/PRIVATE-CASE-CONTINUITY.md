@@ -9,7 +9,7 @@ A case is continuation-safe only when an authorized loader, starting with no pri
 1. current structured case state;
 2. the last state diff;
 3. the exact active therapy episode from its declared semantic start through the latest turn, with no missing, reordered, foreign-episode, or truncated turns;
-4. the exact versioned candidate response selected by stable candidate ID or `current_pending`;
+4. the exact versioned pending candidate response, or an exact transcript-bound delivery completion after the candidate is sent;
 5. older raw turns by query, provenance/item ID, or time range;
 6. the current therapeutic episode; and
 7. the constitution version/reference, without copying the constitution into the case.
@@ -28,7 +28,7 @@ For ordinary app use, `src/supervisor/private-therapy-turn-controller.mjs` now o
 
 The controller is restart-safe because semantic transitions and invocation attempts live in the encrypted record. Completed invocation output needed for recovery remains inside that record, not in a public ledger or HTTP error. A replay of an already delivered runtime-turn ID returns the exact persisted delivery without another model call. This automatic path replaces owner-mediated movement of candidates, audits, and handoff IDs during ordinary therapy; the backend-only operator CLI remains available for explicit migration/recovery work.
 
-Handoff fidelity remains separate from candidate-audit and reconstruction-audit fidelity. Newly compiled private handoffs include a `candidate_lifecycle` component with the current candidate ID/version, parent and lineage, status, current version-bound audit status, previous findings, reconstruction-audit status, and delivery block. Pre-binding immutable handoffs remain readable but carry no inferred approval; their pending candidate must pass the current fresh audit gate.
+Handoff fidelity remains separate from candidate-audit and reconstruction-audit fidelity. Newly compiled private handoffs include a `candidate_lifecycle` component with the current candidate ID/version, parent and lineage, status, current version-bound audit status, previous findings, reconstruction-audit status, and delivery block. Schema-v3 handoffs created after delivery also include a `delivery_completion` projection whose candidate digest, approving audit, assistant turn, replied-to user turn, and timestamp are validated against the exact persisted transcript. Pre-binding immutable handoffs remain readable but carry no inferred approval; their pending candidate must pass the current fresh audit gate.
 
 ## Public/private boundary
 
@@ -68,7 +68,8 @@ Ordinary reasoning ledgers now default to `redacted`; that form excludes user-fa
 | `saveCandidateResponse` / `getCandidateResponse` | Immutable original candidate versions and `current_pending` / `current_candidate` resolution |
 | `recordCandidateAudit` / `getCandidateLifecycle` | Persist exact-version audit evidence and expose the current version-bound gate |
 | `reconstructCandidateResponse` | Create an immutable child version in `reconstructed_pending_audit`; never edit or reactivate the parent |
-| `approveCandidateForDelivery` / `markCandidateSent` | Enforce fresh exact-version approval before delivery |
+| `approveCandidateForDelivery` / `deliverCandidateResponse` | Enforce fresh exact-version approval, append the exact assistant response, and bind sent state to the approving audit and user turn |
+| `markCandidateSent` | Retained legacy status-only transition for compatible operator recovery; ordinary and migrated deliveries use transcript-bound delivery |
 | `updateCandidateStatus` | Legacy/manual surface restricted to explicit supersession; it cannot bypass audit, approval, or delivery gates |
 | `saveSourceArtifact` / `getSourceArtifact` | Immutable exact private source plus a contiguous byte-range integrity manifest |
 | `retrieveCaseEvidence` | Raw older turns by query, stable provenance IDs, or time range |
@@ -190,13 +191,15 @@ The loopback web server is not a replacement for the authenticated ChatGPT MCP b
 - canonical state and current episode/path;
 - the last state diff, or explicit `null` when the handoff is blocked;
 - exact recent turns selected directly from the private transcript;
-- every currently pending exact candidate version;
-- exact current candidate lineage, audit state, previous findings, and delivery block;
+- every currently pending exact candidate version, or an exact persisted delivery completion after sending;
+- exact current candidate lineage, audit state, previous findings, and delivery/await-next-turn gate;
 - the full private transcript archive and tracker/journal snapshot;
 - the preserved raw transcript archive, immutable completion-amendment ledger, and deterministic effective transcript;
 - constitution, runtime, and audit version references;
 - indexes for transcript, tracker, journal, intervention, adverse-event, historical-decision, and source-artifact IDs; and
 - component byte counts/hashes plus contiguous 20,000-byte-or-smaller artifact chunks.
+
+For a sent candidate, schema-v3 packets carry no pending artifact. Instead, `delivery_completion` binds the exact transcript bytes to the sent candidate ID/version/digest, approval audit, assistant turn, replied-to user turn, and delivery time. A mismatch at any of these surfaces makes the packet invalid rather than continuation-safe.
 
 The packet is wrapped as an exact artifact, encrypted with the existing dual-wrap case keys, stored outside Git, reopened, and compared byte-for-byte before `local_round_trip_verified` can be true. `load_handoff(handoff_id)` resolves the private locator, authorizes the resolved case before obtaining key material, decrypts and validates every identity/integrity relationship, and then applies the continuation gate. A missing or incorrect grant/key fails without falling back to a public or de-identified substitute.
 

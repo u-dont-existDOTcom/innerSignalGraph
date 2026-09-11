@@ -10,6 +10,7 @@ import { PrivateCaseAccessDeniedError } from "../src/storage/private-case-access
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 import { chunkExactSourceText } from "../src/storage/exact-source-artifact.mjs";
 import { assessContinuationSafety } from "../src/storage/private-case-continuity.mjs";
+import { validatePrivateHandoffPacket } from "../src/storage/private-case-handoff.mjs";
 import { REPAIR_INDUCED_ERROR_CHECKS } from "../src/supervisor/private-candidate-lifecycle.mjs";
 import { createPrivateCaseOrchestrator } from "../src/supervisor/private-case-orchestration.mjs";
 
@@ -20,6 +21,7 @@ const REPAIR_ID = "candidate:synthetic:version-2";
 const FINAL_REPAIR_ID = "candidate:synthetic:version-3";
 const AUDIT_ID = "audit:synthetic:version-1";
 const HANDOFF_ID = "handoff:00000000-0000-4000-8000-000000000222";
+const DELIVERED_HANDOFF_ID = "handoff:00000000-0000-4000-8000-000000000223";
 const NOW = "2026-09-10T14:00:00.000Z";
 
 function turn(id, role, text) {
@@ -39,6 +41,7 @@ function serviceFor(store) {
     reconstructCandidateResponse: (caseId, parentId, candidateId, exactText, metadata) => store.reconstructCandidateResponse(caseId, parentId, candidateId, exactText, metadata),
     approveCandidateForDelivery: (caseId, candidateId, auditId) => store.approveCandidateForDelivery(caseId, candidateId, auditId),
     markCandidateSent: (caseId, candidateId) => store.markCandidateSent(caseId, candidateId),
+    deliverCandidateResponse: (caseId, candidateId, input) => store.deliverCandidateResponse(caseId, candidateId, input),
     createHandoff: (caseId, options) => store.createHandoff(caseId, options),
     async loadHandoff(handoffId) {
       try { return await store.loadHandoff(CASE_ID, handoffId); }
@@ -147,7 +150,7 @@ test("failed v1 audit, v2 reconstruction, handoff retrieval, and delivery gates 
   assert.equal((await orchestrator.execute(reconstruct, {})).reused, true);
 
   const packet = await store.loadHandoff(CASE_ID, HANDOFF_ID);
-  assert.equal(packet.schema_version, 2);
+  assert.equal(packet.schema_version, 3);
   assert.equal(packet.pending_artifacts.at(-1).id, REPAIR_ID);
   assert.equal(packet.pending_artifacts.at(-1).exact_text, reconstruct.exact_text);
   assert.equal(packet.candidate_lifecycle.current_candidate_version, 2);
@@ -175,9 +178,38 @@ test("failed v1 audit, v2 reconstruction, handoff retrieval, and delivery gates 
   const approval = await orchestrator.execute(operation("approve_candidate_for_delivery", { candidate_id: REPAIR_ID, audit_id: passingAuditId }), {});
   assert.equal(approval.candidate_status, "approved_for_delivery");
   assert.equal((await orchestrator.execute(operation("approve_candidate_for_delivery", { candidate_id: REPAIR_ID, audit_id: passingAuditId }), {})).reused, true);
-  const sent = await orchestrator.execute(operation("mark_candidate_sent", { candidate_id: REPAIR_ID }), {});
+  const deliveryRequest = operation("deliver_candidate_and_create_handoff", {
+    candidate_id: REPAIR_ID,
+    audit_id: passingAuditId,
+    assistant_turn_id: "turn:synthetic:assistant-delivered",
+    in_reply_to_turn_id: "turn:synthetic:user",
+    handoff_id: DELIVERED_HANDOFF_ID,
+    runtime_version: "synthetic-runtime-v3",
+    audit_version: "private-candidate-audit-v3"
+  });
+  const sent = await orchestrator.execute(deliveryRequest, {});
   assert.equal(sent.candidate_status, "sent");
-  assert.equal((await orchestrator.execute(operation("mark_candidate_sent", { candidate_id: REPAIR_ID }), {})).reused, true);
+  assert.equal(sent.next_action, "AWAIT_NEXT_USER_TURN");
+  assert.equal(sent.handoff_id, DELIVERED_HANDOFF_ID);
+  assert.equal((await orchestrator.execute(deliveryRequest, {})).reused, true);
+  const deliveredRecord = await store.load(CASE_ID);
+  const deliveredTurn = deliveredRecord.raw_transcript.at(-1);
+  assert.equal(deliveredTurn.id, deliveryRequest.assistant_turn_id);
+  assert.equal(deliveredTurn.text, reconstruct.exact_text);
+  assert.equal(deliveredTurn.exchange_id, deliveredRecord.raw_transcript[0].exchange_id);
+  assert.equal(deliveredTurn.episode_id, deliveredRecord.raw_transcript[0].episode_id);
+  const deliveredHandoff = await store.loadHandoff(CASE_ID, DELIVERED_HANDOFF_ID);
+  assert.equal(deliveredHandoff.schema_version, 3);
+  assert.deepEqual(deliveredHandoff.pending_artifacts, []);
+  assert.equal(deliveredHandoff.continuation_safety.continuation_safe, true);
+  assert.equal(deliveredHandoff.delivery_completion.candidate_id, REPAIR_ID);
+  assert.equal(deliveredHandoff.delivery_completion.audit_id, passingAuditId);
+  assert.equal(deliveredHandoff.delivery_completion.assistant_turn_id, deliveryRequest.assistant_turn_id);
+  assert.equal(deliveredHandoff.candidate_lifecycle.candidate_status, "sent");
+  assert.equal(deliveredHandoff.candidate_lifecycle.delivery_gate.action, "AWAIT_NEXT_USER_TURN");
+  const tamperedDelivery = structuredClone(deliveredHandoff);
+  tamperedDelivery.delivery_completion.assistant_turn_id = "turn:synthetic:assistant-forged";
+  assert.throws(() => validatePrivateHandoffPacket(tamperedDelivery), /exact transcript binding/);
 });
 
 test("external v2 FAIL with unavailable auditor identity reconstructs maximum-cycle v3 with an empty audit history", async (t) => {
@@ -272,6 +304,15 @@ test("published private operation schemas compile strictly", async () => {
   for (const schema of schemas) assert.equal(typeof ajv.getSchema(schema.$id), "function");
   const validateOperation = ajv.getSchema(schemas.at(-1).$id);
   assert.equal(validateOperation(operation("mark_candidate_sent", { candidate_id: REPAIR_ID })), true);
+  assert.equal(validateOperation(operation("deliver_candidate_and_create_handoff", {
+    candidate_id: REPAIR_ID,
+    audit_id: "audit:synthetic:fresh-version-2",
+    assistant_turn_id: "turn:synthetic:assistant-delivered",
+    in_reply_to_turn_id: "turn:synthetic:user",
+    handoff_id: DELIVERED_HANDOFF_ID,
+    runtime_version: "synthetic-runtime-v3",
+    audit_version: "private-candidate-audit-v3"
+  })), true);
   assert.equal(validateOperation(operation("record_candidate_audit", {
     candidate_id: REPAIR_ID,
     audit_id: "audit:synthetic:schema:external",

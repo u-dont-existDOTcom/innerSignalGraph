@@ -1192,6 +1192,58 @@ export function createEncryptedPrivateCaseStore({
         return record;
       });
     },
+    async deliverCandidateResponse(caseId, candidateId, { auditId, assistantTurnId, inReplyToTurnId } = {}) {
+      return mutate(caseId, (record) => {
+        const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
+        if (!candidate) throw new ValidationError(`Candidate response ${candidateId} was not found.`, { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
+        if (candidate.status === "sent") {
+          const assistantTurn = record.raw_transcript.find((entry) => entry.id === assistantTurnId);
+          if (candidate.metadata.sent_with_audit_id !== auditId || candidate.metadata.sent_turn_id !== assistantTurnId
+              || candidate.metadata.sent_in_reply_to_turn_id !== inReplyToTurnId || assistantTurn?.text !== candidate.exact_text) {
+            throw new ValidationError("Candidate delivery replay conflicts with the immutable sent response.");
+          }
+          return null;
+        }
+        const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
+        if (current?.id !== candidateId || candidate.status !== "approved_for_delivery") {
+          throw new ValidationError("Exact candidate must be current and approved before transcript-bound delivery.");
+        }
+        const gate = candidateDeliveryGate(candidate);
+        if (!gate.delivery_allowed || gate.audit_id !== auditId || candidate.metadata.approval_audit_id !== auditId) {
+          throw new ValidationError("Transcript-bound delivery audit does not approve the exact candidate.");
+        }
+        if (typeof assistantTurnId !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/.test(assistantTurnId)
+            || typeof inReplyToTurnId !== "string" || !/^[A-Za-z0-9:_-]{1,160}$/.test(inReplyToTurnId)) {
+          throw new ValidationError("Transcript-bound delivery identifiers are invalid.");
+        }
+        const userTurnIndex = record.raw_transcript.findIndex((entry) => entry.id === inReplyToTurnId);
+        const userTurn = record.raw_transcript[userTurnIndex];
+        if (!userTurn || userTurn.role !== "user" || userTurnIndex !== record.raw_transcript.length - 1) {
+          throw new ValidationError("Transcript-bound delivery must reply to the exact latest user turn.");
+        }
+        if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError(`Duplicate transcript turn ${assistantTurnId}.`);
+        const timestamp = now();
+        record.raw_transcript.push({
+          id: assistantTurnId,
+          exchange_id: userTurn.exchange_id,
+          role: "assistant",
+          text: candidate.exact_text,
+          at: timestamp,
+          episode_id: userTurn.episode_id ?? record.case_state.current_episode?.id ?? null
+        });
+        candidate.status = "sent";
+        candidate.updated_at = timestamp;
+        candidate.metadata = {
+          ...candidate.metadata,
+          sent_with_audit_id: auditId,
+          sent_turn_id: assistantTurnId,
+          sent_in_reply_to_turn_id: inReplyToTurnId
+        };
+        validateTranscriptEntries(record.raw_transcript);
+        validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+        return record;
+      });
+    },
     async getCandidateResponse(caseId, selector = "current_pending") {
       const record = await readRequired(caseId);
       const candidate = selector === "current_pending"
@@ -1297,13 +1349,24 @@ export function createEncryptedPrivateCaseStore({
         maximumSelectedTurns: CONTEXT_WINDOW_LIMITS.transcript_entries,
         requireCompleteEpisode: true
       });
-      const candidate = [...record.candidate_responses].reverse().find(isActivePrivateCandidate) ?? null;
+      const activeCandidate = [...record.candidate_responses].reverse().find(isActivePrivateCandidate) ?? null;
+      const candidate = activeCandidate ?? (record.candidate_responses.at(-1)?.status === "sent" ? record.candidate_responses.at(-1) : null);
+      const sentTurn = candidate?.status === "sent"
+        ? record.raw_transcript.find((turn) => turn.id === candidate.metadata.sent_turn_id)
+        : null;
+      const deliveryCompletion = sentTurn?.role === "assistant" && sentTurn.text === candidate.exact_text
+          && candidate.metadata.sent_with_audit_id && candidate.metadata.sent_in_reply_to_turn_id
+        ? {
+        candidate_id: candidate.id,
+        candidate_version: candidate.version
+        } : null;
       const context = {
         case_state: record.case_state,
         last_state_diff: record.state_diff_history.at(-1) ?? null,
         current_episode: record.case_state.current_episode,
         constitution_ref: durableContext.constitution_ref,
         candidate_response: candidate,
+        delivery_completion: deliveryCompletion,
         recent_verbatim: recentVerbatim,
         source_artifact_refs: record.source_artifacts.map((artifact) => ({ id: artifact.id })),
         targeted_older_evidence: durableContext.targeted_older_evidence

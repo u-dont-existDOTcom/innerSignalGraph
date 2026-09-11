@@ -281,7 +281,7 @@ test("case-state endpoints fail closed without storage and expose only structure
       body: JSON.stringify({ caseId: "case-one" })
     });
     const handoffValue = await handoff.json();
-    assert.equal(handoff.status, 200);
+    assert.equal(handoff.status, 200, JSON.stringify(handoffValue));
     assert.equal(handoffValue.handoff_status, "BLOCKED_CONTINUATION_UNSAFE");
     assert.equal(handoffValue.local_round_trip_verified, true);
     assert.equal(handoffValue.fresh_session_status, "PENDING_FRESH_SESSION");

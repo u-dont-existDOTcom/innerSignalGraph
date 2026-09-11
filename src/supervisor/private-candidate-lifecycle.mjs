@@ -226,7 +226,10 @@ export function validateCandidateLifecycleFields(candidate) {
 }
 
 function currentCandidate(candidates) {
-  return [...candidates].reverse().find(isActivePrivateCandidate) ?? null;
+  const active = [...candidates].reverse().find(isActivePrivateCandidate) ?? null;
+  if (active) return active;
+  const latest = candidates.at(-1) ?? null;
+  return latest?.status === "sent" ? latest : null;
 }
 
 function lineageFor(candidates, current) {
@@ -248,6 +251,9 @@ function lineageFor(candidates, current) {
 export function candidateDeliveryGate(candidate) {
   if (!candidate) return Object.freeze({ action: "BLOCK", delivery_allowed: false, reason: "current candidate is missing" });
   const exactPassingAudit = [...candidate.audit_history].reverse().find((audit) => audit.sufficient_for_approval) ?? null;
+  if (candidate.status === "sent" && exactPassingAudit) {
+    return Object.freeze({ action: "AWAIT_NEXT_USER_TURN", delivery_allowed: false, audit_id: exactPassingAudit.id, reason: "exact independently approved candidate was delivered and persisted" });
+  }
   if (candidate.status === "approved_for_delivery" && exactPassingAudit) {
     return Object.freeze({ action: "DELIVER", delivery_allowed: true, audit_id: exactPassingAudit.id, reason: "exact current candidate version has independent approval" });
   }
