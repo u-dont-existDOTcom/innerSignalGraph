@@ -1,0 +1,38 @@
+{
+  "archive_sha256": "0554699923108aa1e99b82c5f6bf0f7283c2f9829b7809ac8af16a94ac51c83b",
+  "archive_size": 24165,
+  "base_main_sha": "853235a00f2cc8fee599fd6214fbbfcbd2e4a8bf",
+  "branch": "task/inner-signal-hypnosis-guide-map-20260911",
+  "canonical_article": {
+    "path": "articles/inner-signal/master.html",
+    "ref": "research/hypnosis-bottom-up-six-books-20260910",
+    "repository": "u-dont-existDOTcom/joel-articles",
+    "sha256": "06987f70e7264a5ac72d132e4b8420cf75cda60f33bbb430c83a0146e612adf9"
+  },
+  "chunks": [
+    {
+      "git_blob_sha": "743b5d54eadf613d99dc2a865d3128a81570c0e7"
+    },
+    {
+      "git_blob_sha": "0fdd1ee6257880c62add01c0a7a505fbfa2424b7"
+    },
+    {
+      "git_blob_sha": "5c5056d9193fb6864f31b5c297ad301a9b9695c7"
+    },
+    {
+      "git_blob_sha": "31b420ba4f91bb51d367c8f24ac4c230f5518ec9"
+    },
+    {
+      "git_blob_sha": "49725a2fc7e51a6d278ad07f8e2628f17bf2c37d"
+    }
+  ],
+  "files": {
+    "docs/INNER-SIGNAL-HYPNOSIS-MAP.md": "932c95ee5222aab56e88b91dbe988fed7a1004864987b767baff5f79fadbc498",
+    "guide-graphs/candidates/inner-signal-hypnosis.graph.json": "7f75487ab6146e912b0d9c3fb3abff193d12c7f9196313302dde10cd94df3b5c",
+    "guide-graphs/source-maps/inner-signal-hypnosis-guide.json": "fd4b69d30720a2012f59ec63b39bd189bcd74d38b46e86bd0c07f9a5dd06475e",
+    "scripts/generate-guide-surface-map.mjs": "79bc4f205ff733a95cf5ba2f77fddcdde70616969284f9ae0ead7e6fecce08d4",
+    "tasks/inner-signal-hypnosis-guide-map-20260911/README.md": "6a1b3dd35e9492c170c1dbd3eb47319cdcc36b8ebd6deaf80d7427b6aa348c11",
+    "tests/inner-signal-hypnosis-surface.test.mjs": "967d0ca2888ff43b050db0a0bb23d383b0cc8ff9b8c8b522c25ec87d9b446f7f"
+  },
+  "format": "inner-signal-hypnosis-surface-import-v1"
+}
