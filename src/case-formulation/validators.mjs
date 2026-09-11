@@ -22,9 +22,6 @@ function validateUnknown(item, label) {
   string(item.question, `${label}.question`);
   if (!Number.isInteger(item.importance) || item.importance < 1 || item.importance > 5) throw new ValidationError(`${label}.importance is invalid.`);
   if (item.changes_next_action != null && typeof item.changes_next_action !== "boolean") throw new ValidationError(`${label}.changes_next_action must be boolean when supplied.`);
-  // Historical snapshots may omit the marker. Current generated unknowns declare it,
-  // and a question known not to change action is not planner material.
-  if (item.changes_next_action === false) throw new ValidationError(`${label} must not retain an explicitly non-action-changing question.`);
 }
 
 export function validateCaseSnapshot(value) {
@@ -63,6 +60,10 @@ export function validateCaseSnapshot(value) {
   }
   if (!Array.isArray(value.unknowns)) throw new ValidationError("caseSnapshot.unknowns must be an array.");
   for (const [index, item] of value.unknowns.entries()) validateUnknown(item, `caseSnapshot.unknowns[${index}]`);
+  // Historical unknowns without the marker remain valid. Current generated unknowns
+  // must declare it; explicitly non-action-changing curiosity is normalized out
+  // before deterministic planning can select it.
+  value.unknowns = value.unknowns.filter(item => item.changes_next_action !== false);
   return value;
 }
 
@@ -90,6 +91,7 @@ export function validateCaseAudit(value) {
   }
   if (!Array.isArray(value.add_unknowns)) throw new ValidationError("caseAudit.add_unknowns must be an array.");
   for (const [index, item] of value.add_unknowns.entries()) validateUnknown(item, `caseAudit.add_unknowns[${index}]`);
+  value.add_unknowns = value.add_unknowns.filter(item => item.changes_next_action !== false);
   stringArray(value.safety_flags, "caseAudit.safety_flags");
   if (!["accept","revise","reject"].includes(value.verdict)) throw new ValidationError("caseAudit.verdict is invalid.");
   string(value.summary, "caseAudit.summary");
