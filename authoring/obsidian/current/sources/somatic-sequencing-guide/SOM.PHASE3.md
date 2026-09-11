@@ -12,7 +12,7 @@ section_hash: b371489705eed42aeaa2e1554b39c4df808d3e1857d7d86d52689a1586fe835f
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.DEEP_BRAINSPOTTING
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76c7cf11778
 ---
 
 # Phase 3: Deep Subcortical Reprocessing

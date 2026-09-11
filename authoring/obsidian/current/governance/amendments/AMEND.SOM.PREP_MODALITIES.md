@@ -8,7 +8,7 @@ status: owner-approved
 domain: somatic
 base_record_sha256: a79a9913a2dd146a3c01ed375ec33630d2ffbfa5286fab85dc00767d5ca925d3
 source_file_sha256: 1d1d78a359df20cddf3aac6f5f93bb3badda84b7bcf7bcff085d8ee9f75e0dd1
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+projection_input_sha256: 57beb002b0750fd8df8adc9b5edc7d957f9398b619607a883ab9b76c7cf11778
 ---
 
 # AMEND.SOM.PREP_MODALITIES
