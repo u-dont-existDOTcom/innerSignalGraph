@@ -22,6 +22,9 @@ function validateUnknown(item, label) {
   string(item.question, `${label}.question`);
   if (!Number.isInteger(item.importance) || item.importance < 1 || item.importance > 5) throw new ValidationError(`${label}.importance is invalid.`);
   if (item.changes_next_action != null && typeof item.changes_next_action !== "boolean") throw new ValidationError(`${label}.changes_next_action must be boolean when supplied.`);
+  // Historical snapshots may omit the marker. Current generated unknowns declare it,
+  // and a question known not to change action is not planner material.
+  if (item.changes_next_action === false) throw new ValidationError(`${label} must not retain an explicitly non-action-changing question.`);
 }
 
 export function validateCaseSnapshot(value) {
