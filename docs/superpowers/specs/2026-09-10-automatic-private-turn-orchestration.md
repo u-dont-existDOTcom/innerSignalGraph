@@ -1,6 +1,6 @@
 # Automatic private-turn orchestration
 
-**Status:** implementation contract for draft PR #49
+**Status:** implementation contract merged by PR #49
 **Scope:** ordinary InnerSignal therapy turns backed by the encrypted private case store
 **Privacy:** architecture and synthetic examples only; no real case content or private-derived digest belongs in Git
 
@@ -104,4 +104,4 @@ Synthetic end-to-end tests must prove:
 - real/private markers cannot appear in the repository, CI-facing fixtures, or ordinary logs; and
 - no ordinary therapy turn invokes GitHub or creates a commit.
 
-The complete package gate and publication audit must pass before the branch updates PR #49. The PR remains draft, open, and unmerged.
+The complete package gate and publication audit passed before PR #49 was merged. The exact merge tree is on `main` at `853235a00f2cc8fee599fd6214fbbfcbd2e4a8bf`.
