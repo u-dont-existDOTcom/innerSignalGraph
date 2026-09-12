@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "pluginName": "Inner Signal Therapy",
+  "shortDescription": "Therapeutic responses guided by the Inner Signal map.",
+  "longDescription": "Uses the frozen Inner Signal therapy map as advisory architecture for inner-child and self-relationship responses.",
+  "category": "Wellness",
+  "developerIdentity": {
+    "displayName": "u-dont-existDOTcom",
+    "platformVerified": false,
+    "unresolvedReason": "No verified OpenAI Platform publisher-identity receipt is present in the reviewed package evidence."
+  },
+  "websiteURL": null,
+  "supportURL": null,
+  "privacyPolicyURL": null,
+  "termsURL": null,
+  "logo": {
+    "path": null,
+    "ready": false,
+    "unresolvedReason": "No owner-approved production logo asset is present in the plugin package."
+  },
+  "availability": {
+    "countriesOrRegions": [],
+    "chosen": false,
+    "unresolvedReason": "Public availability requires a later owner release decision after support and legal readiness."
+  },
+  "status": "externally-blocked"
+}

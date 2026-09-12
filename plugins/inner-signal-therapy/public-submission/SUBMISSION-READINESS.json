@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "internalPackageState": "package-ready",
+  "submissionState": "externally-blocked",
+  "releaseAuthority": "none",
+  "checks": {
+    "manifestValid": { "ready": true, "evidence": "Validated by the task verifier and plugin-creator validator." },
+    "skillsTreeFrozen": { "ready": true, "evidence": "Every pre/post SHA-256 is identical." },
+    "skillsOnly": { "ready": true, "evidence": "No MCP, app, hook, tool, authentication, endpoint, or storage component exists." },
+    "starterPromptsReady": { "ready": true, "evidence": "Three synthetic starter prompts are included." },
+    "fivePositiveTestsReady": { "ready": true, "evidence": "Five synthetic positive test cases are included." },
+    "threeNegativeTestsReady": { "ready": true, "evidence": "Three synthetic negative test cases are included." },
+    "privacyDraftReady": { "ready": true, "evidence": "A private non-published skills-only privacy draft is included." },
+    "termsDraftReady": { "ready": true, "evidence": "A private owner/legal-review terms draft is included." },
+    "releaseNotesReady": { "ready": true, "evidence": "Initial-submission release notes are drafted." },
+    "packageHashesReady": { "ready": true, "evidence": "Package hashes exclude only the self-referential hash file." },
+    "publisherIdentityVerified": { "ready": false, "reason": "No OpenAI Platform verification receipt is present." },
+    "websitePublic": { "ready": false, "reason": "No owner-approved public website URL is supplied." },
+    "supportURLPublic": { "ready": false, "reason": "No owner-approved public support URL is supplied." },
+    "privacyURLPublic": { "ready": false, "reason": "The privacy text is a private draft and has no public URL." },
+    "termsURLPublic": { "ready": false, "reason": "The terms text is a private draft and has no public URL." },
+    "logoReady": { "ready": false, "reason": "No owner-approved production logo is supplied." },
+    "availabilityChosen": { "ready": false, "reason": "No country or region availability decision is authorized." }
+  },
+  "nextAuthorizedAction": "owner-and-legal-readiness-review",
+  "portalDraftCreated": false,
+  "submittedForReview": false,
+  "published": false
+}

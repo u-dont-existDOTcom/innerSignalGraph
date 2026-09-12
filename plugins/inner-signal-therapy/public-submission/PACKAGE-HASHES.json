@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "sha256",
+  "generatedAt": "2026-08-31T21:55:33.000Z",
+  "baseCommit": "63b943f1c5d831fefc48eaa47a5df885aab4bb65",
+  "manifest": {
+    "path": "plugins/inner-signal-therapy/.codex-plugin/plugin.json",
+    "sha256": "1c923c0eb0e5615a41cb0142c77d191c5894b3418378921d9ef896972900d23b"
+  },
+  "skillsTreePrePostIdentical": true,
+  "skills": [
+    {
+      "path": "plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md",
+      "preSha256": "c6a6ae66930734c2276d8b3d5f930dd4ca22f5b1de17b347b08721d2fb2d379f",
+      "postSha256": "c6a6ae66930734c2276d8b3d5f930dd4ca22f5b1de17b347b08721d2fb2d379f",
+      "identical": true
+    },
+    {
+      "path": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/INNER-CHILD-THERAPY-MAP.md",
+      "preSha256": "29b2d9b02d7017e0c6f9143a2159ebc8bb478a260680d494b4fe0b7b7656700b",
+      "postSha256": "29b2d9b02d7017e0c6f9143a2159ebc8bb478a260680d494b4fe0b7b7656700b",
+      "identical": true
+    }
+  ],
+  "assets": [],
+  "publicSubmission": [
+    { "path": "plugins/inner-signal-therapy/public-submission/LISTING.json", "sha256": "ad3be5cfa40e92e159a397a9f0f141867a5da83df2d55385e7a7854e13688229" },
+    { "path": "plugins/inner-signal-therapy/public-submission/OFFICIAL-REQUIREMENTS.md", "sha256": "aaf2f29987f2da2a1c9de6194e26da81c86f26cd1d0dee1b517664a7defd92e7" },
+    { "path": "plugins/inner-signal-therapy/public-submission/PRIVACY-POLICY-DRAFT.md", "sha256": "e051243cecb141812f01777eaabee501a210e4170f96740acd8d319b2522655f" },
+    { "path": "plugins/inner-signal-therapy/public-submission/PUBLISHER-READINESS.md", "sha256": "b9618253c054a63ca7ba078961328569ed1233a7a6fd8f59d53a275b47f71e4c" },
+    { "path": "plugins/inner-signal-therapy/public-submission/README.md", "sha256": "a702222b489fa3ba78b04b1e6a63d56bf5b6befb2b273e2458a5e40edb13438e" },
+    { "path": "plugins/inner-signal-therapy/public-submission/RELEASE-NOTES.md", "sha256": "251aee2f8ba16c6dd63ac15de9fd0b26ca6096d53f93cd9b5fd91a25c92cb213" },
+    { "path": "plugins/inner-signal-therapy/public-submission/STARTER-PROMPTS.json", "sha256": "490c29230ecd4ef2b087757ffc911d6c5c4059faa8f9672ee3a5b826062ebf4b" },
+    { "path": "plugins/inner-signal-therapy/public-submission/SUBMISSION-READINESS.json", "sha256": "d05ed4a5e9b9e8b22e77123499241bdcf087a497f7cabef87e4f0181e6de28e2" },
+    { "path": "plugins/inner-signal-therapy/public-submission/SUPPORT-READINESS.md", "sha256": "fd69924cdc5b09d260876e37f4b1dd39dba52bc45ef313954ecc4bf7da050b67" },
+    { "path": "plugins/inner-signal-therapy/public-submission/TERMS-DRAFT.md", "sha256": "aeef193f283d0aa991bbab13dc7237daf465c93c74a5eb56a394440b416e2875" },
+    { "path": "plugins/inner-signal-therapy/public-submission/TEST-CASES.json", "sha256": "87b5ef799e1ac8d71acc183cd88a7f3502b375accd0fcb7ad5d90439fbc2c76b" }
+  ],
+  "excludedSelfPath": "plugins/inner-signal-therapy/public-submission/PACKAGE-HASHES.json"
+}
