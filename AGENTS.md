@@ -13,6 +13,12 @@
 9. Current code, tests, package verifier, and Git history
 10. Relevant current guidance from `u-dont-existDOTcom/universal-dev-architecture`
 
+## Developer and application instruction boundary
+
+For governed developer or supervisor work, load the current task-relevant Universal guidance from its live canonical repository; do not rely on remembered copies. Use `docs/INSTRUCTION-CONSUMER-MAP.md` to resolve which source each developer, application, therapy, review, realization, private-inference, hypnosis, and Guide Packet role must receive. Detailed routing stays selectively read in the map so the root remains a compact activation surface here.
+
+Repository governance and reasoning-selection documents control their named developer or supervisory consumers. They are not therapy content and must not be copied into runtime prompts or private case packets. Application roles receive only their role-specific prompt, authorized context, and executable contracts. A documented reasoning method or model effort is not evidence that a provider received or executed that setting; require the route's mechanical configuration or receipt.
+
 ## Validation
 
 - Runtime: Node 24.18.0 (`.nvmrc`)
