@@ -4,7 +4,7 @@ Updated: 2026-09-12
 
 ## Wisdom-practices executable candidate (approval pending)
 
-Task `wisdom-practices-20260912` is PREPARED, COMPILED and TESTED on isolated branch `task/wisdom-practices-20260912`, from clean `main` base `ad441affd378e06d6395e0ba4ec0760eaaea5d52`. The source packet was bound by manifest SHA-256 `e072eaee9357db85c129a9e28b571c5422c2cd68d68a9d3a94f8bad4410b1c80`. Other dirty branches/worktrees were preserved and no real private case was accessed.
+Task `wisdom-practices-20260912` is PREPARED, COMPILED and TESTED on isolated branch `task/wisdom-practices-20260912`, from clean `main` base `ad441affd378e06d6395e0ba4ec0760eaaea5d52`. PR #55 is open and intentionally unmerged. The source packet was bound by manifest SHA-256 `e072eaee9357db85c129a9e28b571c5422c2cd68d68a9d3a94f8bad4410b1c80`. Other dirty branches/worktrees were preserved and no real private case was accessed.
 
 The source authority now contains the ten owner-approved wisdom amendments, and the production integration derives eight optional practices only from a current observation-backed task. Raw variable spoofing cannot select them; incomplete or legacy graph sets do not load their prompt rules; safety, relationship assessment and trajectory gates retain precedence; outward action remains primary when the draft editor is necessary support; and realization must cover both required nodes. No send, scheduling, database or private-draft persistence capability was added.
 

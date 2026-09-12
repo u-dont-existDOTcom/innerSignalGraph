@@ -2,6 +2,7 @@
 
 - Task: `wisdom-practices-20260912`
 - Branch: `task/wisdom-practices-20260912`
+- Pull request: `#55` (open and intentionally unmerged)
 - Base commit: `ad441affd378e06d6395e0ba4ec0760eaaea5d52`
 - Assurance lane: iteration with targeted hard gates for therapy safety, privacy, provenance and exact approval
 - Source directive: `packet-source/EXECUTION-DIRECTIVE.md`

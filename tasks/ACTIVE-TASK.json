@@ -7,7 +7,7 @@
   "startedAt": "2026-09-12",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
   "requiredBranch": "task/wisdom-practices-20260912",
-  "pullRequest": null,
+  "pullRequest": 55,
   "ownerAuthorized": true,
   "startingTaskHead": "ad441affd378e06d6395e0ba4ec0760eaaea5d52",
   "ownerOutcomePath": "tasks/wisdom-practices-20260912/OWNER-OUTCOME.md",
