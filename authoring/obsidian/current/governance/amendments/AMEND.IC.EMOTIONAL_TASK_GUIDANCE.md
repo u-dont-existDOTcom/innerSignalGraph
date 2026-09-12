@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 status: owner-approved
 domain: inner-child
-base_record_sha256: 4bc3b5dc803b1e37483fbdf653cd8c386faee5f9fb86ad91cc51fa11eb01d6b5
-source_file_sha256: 1d1d78a359df20cddf3aac6f5f93bb3badda84b7bcf7bcff085d8ee9f75e0dd1
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+base_record_sha256: c1a3363d49da1686ab8e7a5bb5109adf48463bc1b91d7abef67d5e74510e0231
+source_file_sha256: eb0a4cfdd77465a3d3d34557e850976d689c51196d0b4054f51b59c8922ef491
+projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
 ---
 
 # AMEND.IC.EMOTIONAL_TASK_GUIDANCE
@@ -17,13 +17,13 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
 
 ```json
 {
-  "approvedAt": "2026-09-06",
+  "approvedAt": "2026-09-12",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
     "status": "owner-approved",
     "text": "Carry bounded original emotional-task guidance and change signals into the response path: unclear feeling, reported self-treatment, interruption, unmet relational need or care for anguish, without imposing a part or history. Use the reported marker, an agreed small step, the person’s response and a partial change point. Preserve justified emotion and valid accountability; do not assume all anger hides sadness or that tears mean improvement. Adapt intrusive care instead of intensifying it. Non-cruelty may begin love, not replace it; include attunement, delight and supported exploration. Stop or reduce depth when orientation or stopping capacity is lost. Emotion-focused therapy is not tapping EFT."
   },
-  "version": "2026-09-06-r7"
+  "version": "2026-09-12-wisdom-r1"
 }
 ```

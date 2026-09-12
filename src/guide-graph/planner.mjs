@@ -1,3 +1,4 @@
+import { perspectivePracticeForTask, eligibleDraftEditorSupport } from "./perspective-practices.mjs";
 import { pathPerformanceGuidance, performanceQuestion } from "../case-formulation/path-performance.mjs";
 import { blankCaseVariables, CASE_VARIABLE_ENUMS } from "./contract.mjs";
 import { validateCaseVariables } from "./validate.mjs";
@@ -138,6 +139,7 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   const control = graphs.length > 0 && graphs.every(g => g.pathPerformancePolicyVersion === 1) ? pathPerformance : null;
   let interrupt = control && control.latest.route !== "continue";
   let task = taskPolicy && !interrupt ? validateTurnTask(turnTask) : null;
+  variables.perspective_practice = perspectivePracticeForTask(task, graphs);
   const emergency = immediateProtectionNeeded(variables);
   const deferTargets = (node) => {
     if (taskPolicy && (node.effects?.deferralUnless ?? []).some(c => conditionMatches(c, variables))) return [];
@@ -230,7 +232,12 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     eligible = [controlNode];
   }
   const primary = eligible[0] ?? null;
-  const secondary = eligible.slice(1, 5);
+  const draftEditorSupport = eligibleDraftEditorSupport({
+    primary, eligible, task, variables, interrupt, emergency
+  });
+  const secondary = draftEditorSupport
+    ? [draftEditorSupport, ...eligible.filter(n => n.id !== primary?.id && n.id !== draftEditorSupport.id)].slice(0, 4)
+    : eligible.slice(1, 5);
   const deferredNodes = nodes
     .filter((node) => deferredIds.has(node.id))
     .filter((node) => !blockedIds.has(node.id))
@@ -275,9 +282,9 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   const usefulUnknowns = [...unknowns].filter(item => unknownIsStillUseful(item, variables))
     .filter(item => !taskPolicy || !emergency || ["present_safety", "orientation", "ability_to_stop", "ability_to_return", "support_available"].includes(item.variable))
     .sort((a,b) => (b.importance ?? 0) - (a.importance ?? 0));
-  const currentTaskQuestion = !emergency && task && task.node_id === primary?.id ? taskQuestion(task) : "";
+  const currentTaskQuestion = !emergency && task && (task.node_id === primary?.id || draftEditorSupport) ? taskQuestion(task) : "";
   const noQuestion = taskPolicy && ((!emergency && (task?.phase === "close" || task?.agreement === "declined" || primary?.id === "ROUTE.LEAVE_ALONE"))
-    || (task?.question_focus === "none" && task.node_id === primary?.id && !emergency));
+    || (task?.question_focus === "none" && (task.node_id === primary?.id || draftEditorSupport) && !emergency));
   let nextQuestion = noQuestion ? "" : currentTaskQuestion || questionNode?.defaultQuestion || usefulUnknowns[0]?.question || "";
   let nextQuestionSource = !nextQuestion ? null : currentTaskQuestion
     ? { type: "turn-task", phase: task.phase, focus: task.question_focus }
@@ -293,9 +300,10 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     nextQuestionSource = nextQuestion ? { type: "path-performance", episode: control.latest.episode_id } : null;
   }
   const requiredNodeIds = primary ? [primary.id] : [];
+  if (draftEditorSupport) requiredNodeIds.push(draftEditorSupport.id);
   if (taskPolicy && !emergency && primary?.id === "ROUTE.INFLUENCE_NONORDINARY_METTA"
       && selectedIds.has("ROUTE.INFLUENCE_LOVE_CAPACITY")) requiredNodeIds.push("ROUTE.INFLUENCE_LOVE_CAPACITY");
-  const taskApplies = task && (task.node_id === primary?.id || task.kind === "relationship_repair" || task.agreement === "declined" || task.phase === "close");
+  const taskApplies = task && (task.node_id === primary?.id || Boolean(draftEditorSupport) || task.kind === "relationship_repair" || task.agreement === "declined" || task.phase === "close");
   const execution = taskPolicy ? {
     version: 1, requiredNodeIds,
     contextNodeIds: selected.filter(n => !requiredNodeIds.includes(n.id)).map(n => n.id),

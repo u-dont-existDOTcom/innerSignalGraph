@@ -1,6 +1,16 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-11
+Updated: 2026-09-12
+
+## Wisdom-practices executable candidate (approval pending)
+
+Task `wisdom-practices-20260912` is PREPARED, COMPILED and TESTED on isolated branch `task/wisdom-practices-20260912`, from clean `main` base `ad441affd378e06d6395e0ba4ec0760eaaea5d52`. The source packet was bound by manifest SHA-256 `e072eaee9357db85c129a9e28b571c5422c2cd68d68a9d3a94f8bad4410b1c80`. Other dirty branches/worktrees were preserved and no real private case was accessed.
+
+The source authority now contains the ten owner-approved wisdom amendments, and the production integration derives eight optional practices only from a current observation-backed task. Raw variable spoofing cannot select them; incomplete or legacy graph sets do not load their prompt rules; safety, relationship assessment and trajectory gates retain precedence; outward action remains primary when the draft editor is necessary support; and realization must cover both required nodes. No send, scheduling, database or private-draft persistence capability was added.
+
+Proposal `wisdom-practices-20260912` generated packet `authoring-wisdom-practices-20260912`, exact SHA-256 `f2d67e1990ceadb4120955c4c46c65d95aed0ad0c0270f2e6d652f778fa4ab8c`. Candidate bundle SHA-256 is `cf8f7d7e0a4ff7f84996b31a066c32b22a0954b0b781ce3bd4018759fbfdc13b`: 3 graphs, 61 nodes and 82 edges versus the unreconciled canonical 53 nodes and 70 edges. All 62 proposal regressions pass. Focused production-path tests pass 8/8; the affected suite passes 112/112 with synthetic private-continuity and legacy-packet coverage; canonical graph regressions pass 29/29; source, projection, map, proposal, repository and publication gates pass. The single permitted complete local boundary run passed 1,113/1,116 and exposed only stale source/amendment inventory expectations plus the semantic benchmark fingerprint intentionally changed by the new contract field. Those exact expectations were updated and their focused rerun passed 22/22; the full local suite was not repeated. Final pushed-head completeness belongs to the hosted PR checks and the exact chronology is in the task validation receipt.
+
+Exact remaining blocker is `BLOCKED_EXACT_PACKET_APPROVAL`: 32 decision cards remain pending, `allApproved` is false, and the exact packet is not installable. The candidate is APPROVAL_PENDING, not RECONCILED, not MERGED and not INSTALLED. Do not copy its graphs into canonical authority, merge, deploy, install or promote stable. Model adherence, human usefulness and clinical efficacy are NOT ESTABLISHED by these engineering tests. Resume from `tasks/wisdom-practices-20260912/INTEGRATION.md` and `tasks/wisdom-practices-20260912/VALIDATION-RECEIPT.json`.
 
 ## Automatic private-turn runtime orchestration (merged PR #49)
 

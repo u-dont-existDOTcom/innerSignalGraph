@@ -1,7 +1,10 @@
+import { PERSPECTIVE_PRACTICE_VALUES } from "./perspective-practices.mjs";
+
 export const GUIDE_GRAPH_CONTRACT = "guide-graph-v1";
 export const GUIDE_GRAPH_BUNDLE_VERSION = "inner-child-somatic-pilot-2026-08-09-r5";
 
 export const CASE_VARIABLE_ENUMS = Object.freeze({
+  perspective_practice: PERSPECTIVE_PRACTICE_VALUES,
   present_safety: ["safe", "unsafe", "unknown"],
   orientation: ["oriented", "disoriented", "unknown"],
   ability_to_stop: ["yes", "no", "unknown"],

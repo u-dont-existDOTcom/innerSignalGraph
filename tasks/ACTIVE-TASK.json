@@ -1,36 +1,29 @@
 {
   "schemaVersion": 1,
-  "taskId": "automatic-runtime-orchestration-20260910",
-  "title": "Automate private candidate-audit runtime orchestration",
+  "taskId": "wisdom-practices-20260912",
+  "title": "Integrate owner-approved wisdom practices as an executable graph candidate",
   "status": "active",
   "exclusive": true,
-  "startedAt": "2026-09-10",
+  "startedAt": "2026-09-12",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
-  "requiredBranch": "codex/automatic-runtime-orchestration-20260910",
-  "pullRequest": 49,
+  "requiredBranch": "task/wisdom-practices-20260912",
+  "pullRequest": null,
   "ownerAuthorized": true,
-  "startingTaskHead": "a98f9f7d46ed8233cf638b76121d7b293ccef9b4",
-  "ownerOutcomePath": "tasks/automatic-runtime-orchestration-20260910/OWNER-OUTCOME.json",
-  "directivePath": "tasks/automatic-runtime-orchestration-20260910/EXECUTION-DIRECTIVE.json",
-  "statePath": "tasks/automatic-runtime-orchestration-20260910/INTEGRATION.md",
-  "activeLessonContractPath": "tasks/automatic-runtime-orchestration-20260910/ACTIVE-LESSON-CONTRACT.json",
-  "completionClaimRule": "Completion requires a production-wired, restart-safe, fail-closed one-message controller; mechanically independent exact-version audits and bounded repairs; persisted delivery; public/private isolation; synthetic end-to-end tests; canonical handoff; and a verified commit on draft PR 49.",
+  "startingTaskHead": "ad441affd378e06d6395e0ba4ec0760eaaea5d52",
+  "ownerOutcomePath": "tasks/wisdom-practices-20260912/OWNER-OUTCOME.md",
+  "directivePath": "tasks/wisdom-practices-20260912/packet-source/EXECUTION-DIRECTIVE.md",
+  "statePath": "tasks/wisdom-practices-20260912/INTEGRATION.md",
+  "activeLessonContractPath": "tasks/wisdom-practices-20260912/ACTIVE-LESSON-CONTRACT.json",
+  "completionClaimRule": "Report the exact achieved state only: the source/code/proposal candidate must be executable and tested; graph reconciliation requires a genuinely approved exact Guide Packet; merge, installation, deployment and stable promotion remain separate and unauthorized.",
   "coordination": {
-    "isolatedFrom": "completed Louka v3 private lifecycle work",
-    "rule": "Do not mutate or audit the real Louka case; preserve and integrate only the completed task's durable public-safe state.",
-    "integratedTask": {
-      "taskId": "private-case-v3-repair-cycle2-20260910",
-      "status": "complete",
-      "commit": "5564a2d",
-      "statePath": "tasks/private-case-v3-repair-cycle2-20260910/INTEGRATION.md",
-      "outcomeReceiptPath": "tasks/private-case-v3-repair-cycle2-20260910/PRIVATE-OPERATION-RECEIPT.json"
-    }
+    "supersedesForThisBranch": "automatic-runtime-orchestration-20260910",
+    "rule": "Work only on the public-safe wisdom-practices candidate in this isolated worktree. Preserve all other branches and worktrees; do not access or mutate a real private case."
   },
-  "currentPrivateCaseNextAction": "FRESH_INDEPENDENT_AUDIT",
   "suspendedTaskSources": [
-    "fresh independent Louka v3 audit, approval, repair, or delivery",
-    "the older 48-call A/B/C discovery experiment unless separately re-authorized",
-    "unrelated task branches and pull requests",
-    "public deployment, installation, stable promotion, or merge"
+    "all unrelated task branches and pull requests",
+    "real private-case access, audit, mutation or publication",
+    "new therapy research or semantic redesign",
+    "paid provider or model evaluation",
+    "merge, deployment, installation, release or stable promotion"
   ]
 }

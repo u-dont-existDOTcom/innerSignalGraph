@@ -22,7 +22,7 @@ regression_refs:
   - G005
 base_record_sha256: 24373e0a9caec3d2adb21905de2bed479103893100a91b4966aa792bfaff1339
 base_graph_sha256: 6b31d4e5d0e6dc2ab838aae714fe59c2c1c2ab21607409c9b1a25b2d5769dd2d
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
 ---
 
 # Developmental EMDR after basic reparenting capacity

@@ -1,0 +1,763 @@
+{
+  "affectedCases": [
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.CREDIBILITY_REPAIR",
+        "IC.MEET_GUARD",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING"
+      ],
+      "declared": true,
+      "id": "G001",
+      "passed": true,
+      "title": "Accessible love feels unsafe and the younger state disputes adult credibility."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.MEET_GUARD",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "IC.SOLAR_PLEXUS_RELAXATION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": false,
+      "id": "G002",
+      "passed": true,
+      "title": "Flooded person with critical parent imagery and little inner-adult access."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.PROTECTOR_ACTION",
+        "IC.SOLAR_PLEXUS_RELAXATION",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING"
+      ],
+      "declared": false,
+      "id": "G003",
+      "passed": true,
+      "title": "Solar-plexus holding blocks self-directed love while external love remains available."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.DEEP_CHILD_DIALOGUE",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.EMDR_DEVELOPMENTAL_DEFER",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING"
+      ],
+      "declared": false,
+      "id": "G005",
+      "passed": true,
+      "title": "Developmental trauma and EMDR interest without basic reparenting capacity."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.DIFFERENTIATION",
+        "IC.IDENTITY_FORMATION",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "declared": false,
+      "id": "G008",
+      "passed": true,
+      "title": "No clear child-self and unstable preferences across contexts."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.DEEP_CHILD_DIALOGUE",
+        "IC.GENTLE_SELF_HYPNOSIS",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": false,
+      "id": "G011",
+      "passed": true,
+      "title": "Gentle hypnosis requested without deep-work readiness."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.CREDIBILITY_REPAIR",
+        "IC.MEET_GUARD",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING"
+      ],
+      "declared": false,
+      "id": "G012",
+      "passed": true,
+      "title": "Credibility conflict with adverse track record, established witness capacity, and unresolved adult-side speaker identity."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.ACT_OUTWARD",
+        "ROUTE.GO_INWARD",
+        "ROUTE.INFLUENCE_SOCIAL_PROTECTION",
+        "ROUTE.LEAVE_ALONE",
+        "ROUTE.RELATIONAL_REALITY_CHECK",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": false,
+      "id": "G013",
+      "passed": true,
+      "title": "Another person is central, interpersonal pressure displaced self-possession, and both outward action and later inward work are relevant."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.SAFETY_ORIENTATION",
+        "ROUTE.ACT_OUTWARD",
+        "ROUTE.GO_INWARD",
+        "ROUTE.INFLUENCE_SOCIAL_PROTECTION",
+        "ROUTE.LEAVE_ALONE",
+        "ROUTE.RELATIONAL_REALITY_CHECK",
+        "SOM.SAFETY_STABILIZATION"
+      ],
+      "declared": false,
+      "id": "G014",
+      "passed": true,
+      "title": "Ordinary social danger keeps practical safety above love, relational interpretation, and inward processing."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "ROUTE.GO_INWARD",
+        "ROUTE.INFLUENCE_INTERNAL",
+        "ROUTE.INFLUENCE_LOVE_CAPACITY",
+        "ROUTE.INFLUENCE_NONORDINARY_METTA",
+        "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": false,
+      "id": "G017",
+      "passed": true,
+      "title": "An experienced other-than-self presence with inaccessible metta routes to Nurturer, Protector, and Guide capacity-building rather than psychic combat."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "ROUTE.LEAVE_ALONE"
+      ],
+      "declared": false,
+      "id": "G026",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "ROUTE.GO_INWARD",
+        "ROUTE.LEAVE_ALONE"
+      ],
+      "declared": false,
+      "id": "G027",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "ROUTE.LEAVE_ALONE",
+        "ROUTE.RELATIONAL_REALITY_CHECK"
+      ],
+      "declared": false,
+      "id": "G028",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.DEEP_CHILD_DIALOGUE",
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "declared": false,
+      "id": "G029",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.DEEP_CHILD_DIALOGUE",
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "declared": false,
+      "id": "G030",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.SAFETY_ORIENTATION",
+        "ROUTE.INFLUENCE_LOVE_CAPACITY",
+        "ROUTE.INFLUENCE_NONORDINARY_METTA",
+        "SOM.SAFETY_STABILIZATION"
+      ],
+      "declared": false,
+      "id": "G031",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "ROUTE.EXTERNAL_EMBODIMENT"
+      ],
+      "declared": false,
+      "id": "G032",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.NEUTRAL_WITNESS",
+        "ROUTE.ACT_OUTWARD",
+        "SOM.GENTLE_REGULATION"
+      ],
+      "declared": false,
+      "id": "G033",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.SPIRITUAL_STRUGGLE"
+      ],
+      "declared": false,
+      "id": "G034",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.SAFETY_ORIENTATION",
+        "IC.SPIRITUAL_STRUGGLE",
+        "SOM.SAFETY_STABILIZATION"
+      ],
+      "declared": false,
+      "id": "G035",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.WISER_SELF_PERSPECTIVE",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G930",
+      "passed": true,
+      "title": "Explicit bounded practice: wiser_self"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.WISER_SELF_PERSPECTIVE",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G931",
+      "passed": true,
+      "title": "Do not force wiser_self"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.WISER_SELF_PERSPECTIVE",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G932",
+      "passed": true,
+      "title": "Do not force wiser_self"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_EDITOR",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G933",
+      "passed": true,
+      "title": "Explicit bounded practice: draft_editor"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_EDITOR",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G934",
+      "passed": true,
+      "title": "Do not force draft_editor"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_EDITOR",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G935",
+      "passed": true,
+      "title": "Do not force draft_editor"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G936",
+      "passed": true,
+      "title": "Explicit bounded practice: return_to_care"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G937",
+      "passed": true,
+      "title": "Do not force return_to_care"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G938",
+      "passed": true,
+      "title": "Do not force return_to_care"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMPASSIONATE_STORY",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G939",
+      "passed": true,
+      "title": "Explicit bounded practice: story_punctuation"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMPASSIONATE_STORY",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G940",
+      "passed": true,
+      "title": "Do not force story_punctuation"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMPASSIONATE_STORY",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G941",
+      "passed": true,
+      "title": "Do not force story_punctuation"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.PAST_COMPETENCE",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G942",
+      "passed": true,
+      "title": "Explicit bounded practice: past_competence"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.PAST_COMPETENCE",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G943",
+      "passed": true,
+      "title": "Do not force past_competence"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.PAST_COMPETENCE",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G944",
+      "passed": true,
+      "title": "Do not force past_competence"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMMON_HUMANITY",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G945",
+      "passed": true,
+      "title": "Explicit bounded practice: common_humanity"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMMON_HUMANITY",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G946",
+      "passed": true,
+      "title": "Do not force common_humanity"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMMON_HUMANITY",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G947",
+      "passed": true,
+      "title": "Do not force common_humanity"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CRITICISM_KERNEL",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G948",
+      "passed": true,
+      "title": "Explicit bounded practice: criticism_kernel"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CRITICISM_KERNEL",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G949",
+      "passed": true,
+      "title": "Do not force criticism_kernel"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CRITICISM_KERNEL",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G950",
+      "passed": true,
+      "title": "Do not force criticism_kernel"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G951",
+      "passed": true,
+      "title": "Explicit bounded practice: caring_company"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G952",
+      "passed": true,
+      "title": "Do not force caring_company"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G953",
+      "passed": true,
+      "title": "Do not force caring_company"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.SAFETY_ORIENTATION",
+        "IC.WISER_SELF_PERSPECTIVE",
+        "SOM.SAFETY_STABILIZATION"
+      ],
+      "declared": true,
+      "id": "G954",
+      "passed": true,
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.SAFETY_ORIENTATION",
+        "IC.WISER_SELF_PERSPECTIVE",
+        "SOM.SAFETY_STABILIZATION"
+      ],
+      "declared": true,
+      "id": "G955",
+      "passed": true,
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.SAFETY_ORIENTATION",
+        "IC.WISER_SELF_PERSPECTIVE",
+        "ROUTE.GO_INWARD",
+        "SOM.SAFETY_STABILIZATION"
+      ],
+      "declared": true,
+      "id": "G956",
+      "passed": true,
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.SAFETY_ORIENTATION",
+        "IC.WISER_SELF_PERSPECTIVE",
+        "ROUTE.GO_INWARD",
+        "SOM.SAFETY_STABILIZATION"
+      ],
+      "declared": true,
+      "id": "G957",
+      "passed": true,
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.MEET_GUARD",
+        "IC.PAST_COMPETENCE",
+        "IC.WISER_SELF_PERSPECTIVE",
+        "ROUTE.GO_INWARD",
+        "SOM.SAFETY_STABILIZATION"
+      ],
+      "declared": true,
+      "id": "G958",
+      "passed": true,
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.PRECIOUS_HUMAN_OPPORTUNITY",
+        "IC.SAFETY_ORIENTATION",
+        "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+        "IC.WISER_SELF_PERSPECTIVE",
+        "SOM.SAFETY_STABILIZATION"
+      ],
+      "declared": true,
+      "id": "G959",
+      "passed": true,
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.WISER_SELF_PERSPECTIVE",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G960",
+      "passed": true,
+      "title": "Raw case-variable cannot choose a method"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_EDITOR",
+        "ROUTE.ACT_OUTWARD",
+        "ROUTE.GO_INWARD"
+      ],
+      "declared": true,
+      "id": "G961",
+      "passed": true,
+      "title": "Editing supports outward action without replacing it"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_EDITOR",
+        "ROUTE.ACT_OUTWARD",
+        "ROUTE.GO_INWARD",
+        "ROUTE.RELATIONAL_REALITY_CHECK"
+      ],
+      "declared": true,
+      "id": "G962",
+      "passed": true,
+      "title": "An unresolved relationship check is not bypassed"
+    }
+  ],
+  "contractVersion": "inner-signal-regression-impact-v1",
+  "declaredCaseIds": [
+    "G001",
+    "G930",
+    "G931",
+    "G932",
+    "G933",
+    "G934",
+    "G935",
+    "G936",
+    "G937",
+    "G938",
+    "G939",
+    "G940",
+    "G941",
+    "G942",
+    "G943",
+    "G944",
+    "G945",
+    "G946",
+    "G947",
+    "G948",
+    "G949",
+    "G950",
+    "G951",
+    "G952",
+    "G953",
+    "G954",
+    "G955",
+    "G956",
+    "G957",
+    "G958",
+    "G959",
+    "G960",
+    "G961",
+    "G962"
+  ],
+  "gaps": [],
+  "ok": true
+}

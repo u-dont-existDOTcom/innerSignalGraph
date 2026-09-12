@@ -1,0 +1,36 @@
+{
+  "baseProjectionInputSha256": "2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f",
+  "candidateBundleSha256": "cf8f7d7e0a4ff7f84996b31a066c32b22a0954b0b781ce3bd4018759fbfdc13b",
+  "candidateGraphHashes": [
+    {
+      "graphId": "inner-child-directed-graph",
+      "path": "candidate/graphs/inner-child.graph.json",
+      "sha256": "a82fe28e2917f3c301b588e770ee0e367ee56286abd94ed9cf4b37a34459fb08"
+    },
+    {
+      "graphId": "inner-child-somatic-cross-guide",
+      "path": "candidate/graphs/cross-guide.graph.json",
+      "sha256": "61db2ed53fe2c0eaa386328c1a52df3081f1c96c46771a327c431b16261a5396"
+    },
+    {
+      "graphId": "somatic-directed-graph",
+      "path": "candidate/graphs/somatic.graph.json",
+      "sha256": "6b31d4e5d0e6dc2ab838aae714fe59c2c1c2ab21607409c9b1a25b2d5769dd2d"
+    }
+  ],
+  "canvasSha256": "4ef5397511f2322023256a4a9048a4f60324c693f7ad9ab8aff47a5676642997",
+  "contractVersion": "inner-signal-authoring-receipt-v1",
+  "mapSha256": "4e84bea809d6f9d945a609be68be34e03ebdb812f06e3429767abebeb1fd79d6",
+  "ownerDecisionRequired": true,
+  "packetSha256": "f2d67e1990ceadb4120955c4c46c65d95aed0ad0c0270f2e6d652f778fa4ab8c",
+  "proposalEvidenceSha256": "20341f38d6fe73dcb925b47145cc33ecfc8029fb94bbfa1b88571b503aff6bc2",
+  "proposalId": "wisdom-practices-20260912",
+  "provenanceImpactSha256": "0f38e736953933b4b5004caab8020c33e4f8b86b1e869be322d5a3b1f3bd8508",
+  "regressionImpactSha256": "d63013a8a90eb051f1c30b560e3ecb75ca02d3ffe94c1ca0ef374252c72dcbd7",
+  "regressionStatus": {
+    "count": 62,
+    "ok": true,
+    "passed": 62
+  },
+  "semanticDiffSha256": "1f83c629bfdc40ddaf9ff9927b76a9aa3e1a77f445734593187b366095f6c9e0"
+}

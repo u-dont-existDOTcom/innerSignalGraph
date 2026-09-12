@@ -1,0 +1,217 @@
+{
+  "changes": [
+    {
+      "after": [
+        "AMEND.IC.BEST_FRIEND_PROMPT",
+        "IC.BORROW_ONE_FUNCTION",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "AMEND.IC.BEST_FRIEND_PROMPT",
+        "IC.BORROW_ONE_FUNCTION"
+      ],
+      "field": "sourceRefs",
+      "nodeId": "IC.BEST_FRIEND_PERSPECTIVE",
+      "resolvedSourceRefs": [
+        {
+          "id": "AMEND.IC.BEST_FRIEND_PROMPT",
+          "resolved": true
+        },
+        {
+          "id": "IC.BORROW_ONE_FUNCTION",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.WISDOM_CORE",
+          "resolved": true
+        }
+      ]
+    },
+    {
+      "after": [
+        "IC.LOVE_MISSING",
+        "IC.HEART_SOLAR_LOOP",
+        "AMEND.IC.BORROW_LOVE_EXTERNAL",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "IC.LOVE_MISSING",
+        "IC.HEART_SOLAR_LOOP",
+        "AMEND.IC.BORROW_LOVE_EXTERNAL",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
+      ],
+      "field": "sourceRefs",
+      "nodeId": "IC.BORROW_LOVE",
+      "resolvedSourceRefs": [
+        {
+          "id": "IC.LOVE_MISSING",
+          "resolved": true
+        },
+        {
+          "id": "IC.HEART_SOLAR_LOOP",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.BORROW_LOVE_EXTERNAL",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.WELLBEING_HORIZON",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.WISDOM_CORE",
+          "resolved": true
+        }
+      ]
+    },
+    {
+      "after": [
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.ADULT_APPRENTICE",
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.ADULT_APPRENTICE",
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
+      ],
+      "field": "sourceRefs",
+      "nodeId": "IC.BORROW_ONE_FUNCTION",
+      "resolvedSourceRefs": [
+        {
+          "id": "IC.BORROW_ONE_FUNCTION",
+          "resolved": true
+        },
+        {
+          "id": "IC.ADULT_APPRENTICE",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.WISDOM_CORE",
+          "resolved": true
+        }
+      ]
+    },
+    {
+      "after": [
+        "IC.PROTECTOR_VISIBLE",
+        "IC.ADULT_APPRENTICE",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "IC.PROTECTOR_VISIBLE",
+        "IC.ADULT_APPRENTICE",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW"
+      ],
+      "field": "sourceRefs",
+      "nodeId": "IC.PROTECTOR_ACTION",
+      "resolvedSourceRefs": [
+        {
+          "id": "IC.PROTECTOR_VISIBLE",
+          "resolved": true
+        },
+        {
+          "id": "IC.ADULT_APPRENTICE",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.WISDOM_CORE",
+          "resolved": true
+        }
+      ]
+    },
+    {
+      "after": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW"
+      ],
+      "field": "sourceRefs",
+      "nodeId": "ROUTE.ACT_OUTWARD",
+      "resolvedSourceRefs": [
+        {
+          "id": "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.WISDOM_CORE",
+          "resolved": true
+        }
+      ]
+    },
+    {
+      "after": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+      ],
+      "field": "sourceRefs",
+      "nodeId": "ROUTE.RELATIONAL_REALITY_CHECK",
+      "resolvedSourceRefs": [
+        {
+          "id": "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.WISDOM_CORE",
+          "resolved": true
+        }
+      ]
+    }
+  ],
+  "contractVersion": "inner-signal-provenance-impact-v1",
+  "ok": true,
+  "unresolved": []
+}
