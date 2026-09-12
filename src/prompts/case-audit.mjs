@@ -1,5 +1,6 @@
 import { CASE_VARIABLE_ENUMS } from "../guide-graph/contract.mjs";
 import { durableCaseContextBlock, longitudinalClinicalRules } from "./common.mjs";
+import { PERSPECTIVE_PRACTICES_AUDIT_RULES } from "./perspective-practices.mjs";
 
 export function caseAuditPrompt(context, snapshot) {
   const system = `You are the adversarial case-formulation auditor. Review a structured extraction before deterministic routing.
@@ -41,6 +42,7 @@ Use corrected_path_representation only for a fully evidence-bound replacement se
 Audit top-level relational_readiness independently when present. The question is current functional readiness and foreseeable serious harm, not whether the person is lovable, completely healed or has ever been hospitalized. Current versus historical risk must remain distinct. A diagnosis, psychiatric admission, loneliness, receiving support, spiritual intensity or a polished healing story cannot by itself establish either readiness or unfitness. Substantial harm must identify an affected party supported by current observations; do not invent children. Use recent ordinary functioning, self-care, conflict behavior, repair, boundaries, dependability and judgment as stronger evidence than affirmations or claims of healing. Worsening current dependency, relational preoccupation, escalating pursuit or using a partner as primary regulator/reality anchor/rescuer/proof-of-worth is adverse evidence when actually supported. partner_seeking or mixed social purpose means attendance alone cannot count as successful non-romantic support-building, but preserve any separately evidenced friendship or community gain. A pause must remain revisitable through explicit readiness_markers/review_when. If the readiness object is materially wrong, use corrected_relational_readiness with supported observation IDs or invalidate_relational_readiness; do not keep an unsupported readiness judgment merely because its source observations themselves are true. Do not erase evidence because the client is polite or disagreeing.
 
 For a task correction, return corrected_turn_task with supported observation IDs. Use invalidate_turn_task to drop stale, withdrawn or wrongly framed task state; otherwise return null and false. Removed supporting observations must not continue authorizing the task. Correct scoped enum fields as well when completion/permission is unsupported.
+${context.perspectivePracticesEnabled === true ? PERSPECTIVE_PRACTICES_AUDIT_RULES : ""}
 
 VARIABLE ENUMS:
 ${JSON.stringify(CASE_VARIABLE_ENUMS, null, 2)}

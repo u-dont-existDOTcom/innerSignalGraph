@@ -284,7 +284,10 @@ export async function preflightGraphPlanningAvailability({ loadPreflightGraphBun
 }
 
 export async function runCaseExtraction({ context, provider, onProgress }) {
-  const prompt = caseExtractionPrompt(context);
+  const prompt = caseExtractionPrompt({
+    ...context,
+    perspectivePracticesEnabled: context.perspectivePracticesEnabled === true
+  });
   prompt.system += relationalReadinessExtractionRules + romanceGuideContextExtractionRules + threatPathwayExtractionRules;
   const extraction = await structuredCall(
     provider,
@@ -342,7 +345,10 @@ export async function resolveCaseExtraction({ context, provider, onProgress, rec
 }
 
 export async function runCaseAudit({ context, snapshot, provider, onProgress }) {
-  const prompt = caseAuditPrompt(context, snapshot);
+  const prompt = caseAuditPrompt({
+    ...context,
+    perspectivePracticesEnabled: context.perspectivePracticesEnabled === true
+  }, snapshot);
   prompt.system += relationalReadinessAuditRules + romanceGuideContextAuditRules + threatPathwayAuditRules;
   return await structuredCall(
     provider,

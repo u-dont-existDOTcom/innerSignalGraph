@@ -1,0 +1,29 @@
+{
+  "repository": "u-dont-existDOTcom/innerSignalGraph",
+  "observedDefaultBranch": "main",
+  "observedTree": "ad441affd378e06d6395e0ba4ec0760eaaea5d52",
+  "observedTreeIsNotACommit": true,
+  "date": "2026-09-12",
+  "sourceDraftSha256": "9ee19eeb572213bbd8f1489d1ad833e85603d9f91a364fd11a44d1a0af25c731",
+  "gitBlobSha1": {
+    "AGENTS.md": "a1eca17f1ff4f42b7b5f6d32837681b3ec0411cf",
+    "docs/AUTHORING-ARCHITECTURE.md": "f0beff6e595983a8eb07e0e400b7a983b1605898",
+    "authoring/README.md": "751169c6ae87c0bc33ef21f271ed908e878f9627",
+    "guide-graphs/candidates/inner-child.graph.json": "dd5ad94c9ad7b40ddd722b3ef52b5190f365c49c",
+    "guide-graphs/candidates/cross-guide.graph.json": "5f3ba6da5d6b5647354d899d13f61e9125954073",
+    "guides/owner-amendments.json": "95528de6c1a3ee51da7cbcced844d5a20f64f8a9",
+    "src/guide-graph/contract.mjs": "ab8d573b4a7d4447584ad01b32abb3305d447323",
+    "src/guide-graph/planner.mjs": "e713a022fe1cb525521a463334e591600855d01c",
+    "src/guide-graph/validate.mjs": "e83b5bb5a83842abfed6198e9c40eb30fd0e0d3b",
+    "src/guide-graph/regressions.mjs": "a3948fb0b96919b1897cd3e20d1e6855902c1780",
+    "src/case-formulation/turn-task.mjs": "f55d682b1ffc7e2edf80bab963563c5daaa6c1f2",
+    "src/case-formulation/schemas.mjs": "9625e38967ae127c2018fd1bda55fb7716651796",
+    "src/case-formulation/run.mjs": "6cd27033a71049b08e9fbb0575a812b0e5b36e31",
+    "package.json": "83ffafdbbf666e7cc771c9c5279227f2d9c276e8"
+  },
+  "capabilityLimits": [
+    "Connected GitHub reads succeeded.",
+    "The current sandbox cannot fetch the repository through Git or DNS and has Node 22 rather than the required Node 24.",
+    "No repository graph compilation, complete suite, authoring reconciliation, GitHub write, merge, installation, or deployment was performed in preparing this packet."
+  ]
+}

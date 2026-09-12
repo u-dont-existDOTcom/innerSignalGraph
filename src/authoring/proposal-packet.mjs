@@ -68,11 +68,14 @@ function decisionCase(definition, affectedNodeIds) {
     affectedNodeIds,
     variables: definition.variables,
     unknowns: definition.unknowns,
+    turnTask: definition.turn_task ?? null,
     expectations: {
       ...(expected.primary ? { primaryJobId: expected.primary } : {}),
       ...(expected.selectedIncludes?.length ? { selectedNodeIds: expected.selectedIncludes } : {}),
       ...(expected.selectedExcludes?.length ? { excludedNodeIds: expected.selectedExcludes } : {}),
       ...(expected.deferredIncludes?.length ? { deferredNodeIds: expected.deferredIncludes } : {}),
+      ...(expected.requiredExecutionIncludes?.length ? { requiredNodeIds: expected.requiredExecutionIncludes } : {}),
+      ...(expected.requiredExecutionExcludes?.length ? { excludedRequiredNodeIds: expected.requiredExecutionExcludes } : {}),
       ...(expected.nextQuestion ? { nextQuestionIncludes: [expected.nextQuestion] } : {}),
       ...(expected.requiredNuancePatterns?.length ? { requiredNuanceIncludes: expected.requiredNuancePatterns } : {}),
       ...(expected.forbiddenOverclaimPatterns?.length ? { forbiddenOverclaimIncludes: expected.forbiddenOverclaimPatterns } : {})

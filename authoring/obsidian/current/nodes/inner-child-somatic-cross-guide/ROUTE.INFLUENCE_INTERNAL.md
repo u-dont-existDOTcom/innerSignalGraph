@@ -27,7 +27,7 @@ regression_refs:
   - G025
 base_record_sha256: e9f35463702464428be82df9a43623c3212fad8cb1136c81f2d7087492b0f16d
 base_graph_sha256: beb05b08a340cf9bd62efacaab7619a3dd4f6adf6bedabb4927cfe4e3a329560
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
 ---
 
 # Route internal influence through existing process maps

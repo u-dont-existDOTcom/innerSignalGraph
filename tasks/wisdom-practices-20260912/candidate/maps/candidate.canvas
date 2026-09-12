@@ -1,0 +1,1176 @@
+{
+  "edges": [
+    {
+      "fromNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527",
+      "id": "00f0d2f3ba62df96fbf07de5f7326b4af424eb99fcf2b7d4b67221de50d7bfe2",
+      "label": "embodies-through",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
+    },
+    {
+      "fromNode": "c717271c8c6a4a0a51cff7953fef5ef3b9ee210077dfcb951b4a448b04ef0f47",
+      "id": "06a8c74337e6989553f3f7fe5af46a3d98a47905ecb091903e390c5a3b5db729",
+      "label": "preferred-when-inward-attention-worsens",
+      "toNode": "66df413311b471f9480ef160717fa978aa4f82465dd84466e596df84ec39c358"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "0724cc98ceb9bdc4a46fe2af3bed14b899935f5904098be2ddbb6b937b255d9b",
+      "label": "conditional-deep-route",
+      "toNode": "c7f091253683d7953765dff2375050ea7fb25de8f44539b65505bb3d3f219851"
+    },
+    {
+      "fromNode": "8c867086a5b4754139d4e93679430b02676ab0e416e807efb70dfb505a338faa",
+      "id": "09358c495d7e7c096fd172344a88b8b58233f6a8413bc9abe87bf05930579816",
+      "label": "may-support",
+      "toNode": "79f9439ff30879abcb2d2348c617b66eb300dee2ef96e2b616e77110ad9809f5"
+    },
+    {
+      "fromNode": "27324d61a60f8178d929c2187521d2e92a7c73bd135de27b1f611b7b90a318db",
+      "id": "0fd4fe1ae59d9df061c193d5923a1c0d93b8922cc65b6329582d13e1c677bd27",
+      "label": "does-not-establish-readiness",
+      "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
+    },
+    {
+      "fromNode": "9a74110f276a95b18c15d4b29458f59b9bb0f62ed17596d3cdeaaf2365d64152",
+      "id": "12fae8be1798fa5d76dc53913fc3b665ff95c3cef97a92a8c3cb5dca9616625e",
+      "label": "may-precede",
+      "toNode": "c7f091253683d7953765dff2375050ea7fb25de8f44539b65505bb3d3f219851"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "139f0d7d0cce5f343c25d26015bfcacdf75516528e7559a9f0e42beb478234c5",
+      "label": "may-route-to",
+      "toNode": "683d11b72cfbe5e86dd8c881d2a3e43a5bf487a1def7a928eb5a3fd763cc44a5"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "14587a2cab2f9bb058f3c1bb3939b45db85e0c508cc239701659f3d315ae3f57",
+      "label": "may-route-to",
+      "toNode": "9a74110f276a95b18c15d4b29458f59b9bb0f62ed17596d3cdeaaf2365d64152"
+    },
+    {
+      "fromNode": "d9201eb93608aeec31488f96ee8fcc1ddcefc2068328bb44e94185bfd151e36c",
+      "id": "150cfa280639879716fa40de069e58ca810260c9663b50a3e6bf0d07418a5aaa",
+      "label": "may-support",
+      "toNode": "ee08be5c74513aaf90d3752dba119ed4e1a2ebe0efc102c658e964f3f00757d8"
+    },
+    {
+      "fromNode": "200ec919c1606cafe469a58f8f8b374c823874df9531d9aa94cea7c36cd81f3f",
+      "id": "15879508315cf0949a2b65b9dd7f7294e5b5f79dc0b5d598afc0dbdc41c67ed1",
+      "label": "may-support",
+      "toNode": "ee08be5c74513aaf90d3752dba119ed4e1a2ebe0efc102c658e964f3f00757d8"
+    },
+    {
+      "fromNode": "df987d0196b5385ad35a79b61c02b2f6c43bd7c1b5d1bbc3035c65abbfcfba41",
+      "id": "1908fe10a903af07a8828370b2bd0193303593d38b5fee58d54913496ed0e8d3",
+      "label": "enables",
+      "toNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80"
+    },
+    {
+      "fromNode": "22d926c1dcb916246e3c8ae5b17fbcf33d201f3d90b1c2efa0036da217a65037",
+      "id": "19c7e4f510c1bed6c637243873f8fa1ad226edd4c23f6d47b4fc4db5fe18fa03",
+      "label": "builds-nurturer-protector-guide",
+      "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
+    },
+    {
+      "fromNode": "9e8508abe48d12733d0ead0118cf1dbffc617269fbd96f0b4949d26b0a5c89f8",
+      "id": "1a7c15c34ca3eb6e7b674b2dc65abb195b8d014fa9c19dae0ad5c026671e35fb",
+      "label": "may-use",
+      "toNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323"
+    },
+    {
+      "fromNode": "1878e24a06cda4d7fdfa30a1271753f8212c656693d76734aec0d9f3ac59afe7",
+      "id": "1d31be36b310d9bd30cb0f6b73ae3542a2a6035964feefc772605b5dd90f70d4",
+      "label": "may-use-practical-protection-without-verdict",
+      "toNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff"
+    },
+    {
+      "fromNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96",
+      "id": "1d3f1e7b5698541bbdee94803b9f61c6ebf5e1b793ef9769578f4c50988a62a3",
+      "label": "enables",
+      "toNode": "be09f16ecf061641b15c4eecf76deafba418bcde2622eed99f82d7e33b796da2"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "202fb9356923a08c998f2ee69f00ef6bb5ce4ecc95deb64d7a3910f56ef7c359",
+      "label": "may-route-to",
+      "toNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323"
+    },
+    {
+      "fromNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96",
+      "id": "20fbb69347ec65147b3ed41ecf42bce2ef13bc98d78ffcdc44c4901c473c195c",
+      "label": "capacity-prerequisite",
+      "toNode": "64ebc6f168c2ea2af64a9a06e10dfa187d8119de082117a5d4430936c53ffbf6"
+    },
+    {
+      "fromNode": "c7f091253683d7953765dff2375050ea7fb25de8f44539b65505bb3d3f219851",
+      "id": "2533d0ac1c60ebd12c053e6c2b3d03436dba21d7dbf5956e1303ae1c0ec76310",
+      "label": "followed-by",
+      "toNode": "53a9ddb7f819388accd5566867c8c75ed46d2b49d317719666f40c6ad7e41879"
+    },
+    {
+      "fromNode": "dcd640cbd8161505f76ff16710136e7731e4f526baa74b0f09a04c3dd041d681",
+      "id": "27d2bfc0d80f2304acf12a716af7a686a6a11003bc56aacb458c1fc1c6a31f1e",
+      "label": "never-replaces-ordinary-safety",
+      "toNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff"
+    },
+    {
+      "fromNode": "bd2dbc298786d84c13a4f6f885126827fbab67b8af4cf3449b01acf938b3b2e8",
+      "id": "2917aa30ed169ecabd50cd2971be4c8dd2021a7a8b2ba95009dc5e2261744aaf",
+      "label": "supports-calibration",
+      "toNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38"
+    },
+    {
+      "fromNode": "86b13e3706d9b1c67a257886df73ab9bdba8988f952c483137e320a8abb93eef",
+      "id": "2995b8a0204e4f16ded3213014ca4c3dabbf1c1456c62e10066eda4fed926c42",
+      "label": "may-use",
+      "toNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96"
+    },
+    {
+      "fromNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff",
+      "id": "2c306b88920d5bb9c7f3c3eabb29f41067772e484c90bfea0d3dc22f51f17b6f",
+      "label": "acts-through",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
+    },
+    {
+      "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
+      "id": "31137bf17186f8b7d941530b5612447e2649d84c7415834211cc075c5bf4d9f7",
+      "label": "feeds-child-integration",
+      "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
+    },
+    {
+      "fromNode": "0b91e582b6ce736b73684b167fce07c2cf0aa838abef94d580f41111fca249f5",
+      "id": "379a3403a875b6e57fa1724c15c4a501c3f05cb6fe990ec42b2cd6f2c4947e91",
+      "label": "enables",
+      "toNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c"
+    },
+    {
+      "fromNode": "065a374a67c57d69f994c510bf64c2ec1800d4108a5a95816ebf904402fa7722",
+      "id": "3b4784649beec5d311e2460315fd119a1ac52ea5d07b5498dd6d0d352ed4967f",
+      "label": "defers-until-capacity",
+      "toNode": "64ebc6f168c2ea2af64a9a06e10dfa187d8119de082117a5d4430936c53ffbf6"
+    },
+    {
+      "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
+      "id": "3ca16b953ccf5107710444dc6f2c6f93f9cc798af89cc872501333f94beb116a",
+      "label": "does-not-certify-authority",
+      "toNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38"
+    },
+    {
+      "fromNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38",
+      "id": "407425a28f148560e64008f3c5a32f8007e3d87c166d54fa7b3f3b0078a0acc6",
+      "label": "slows-high-stakes-transfer",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
+    },
+    {
+      "fromNode": "38a66c980c1aed36d63f20d2720597f8073064448804593acdbbe7a57900f019",
+      "id": "4199a55d0566afa3356b56ab04ef2fd0199cb72092847239476fba70ac15919b",
+      "label": "clarifies",
+      "toNode": "d9201eb93608aeec31488f96ee8fcc1ddcefc2068328bb44e94185bfd151e36c"
+    },
+    {
+      "fromNode": "1878e24a06cda4d7fdfa30a1271753f8212c656693d76734aec0d9f3ac59afe7",
+      "id": "4ceb810e4d6e85b3261497eb7ea771338da02a96c92eda4e6fb299c22a081fb6",
+      "label": "may-use-phenomenological-inner-work-without-verdict",
+      "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "4d0886366d54fb51ae0440a0fabb2eb07bb4d06ce3bf298e6c8b672089a975e6",
+      "label": "may-route-to",
+      "toNode": "a0f00f17c6370918a5a671d1fba951be6ea1b30a90cdd44b40f23e539959cefc"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "4d41a1935ebeaacc417497d7b3cd27d1b9a26802d1150d96d15ebf9ec8fa57bd",
+      "label": "conditional-memory-route",
+      "toNode": "64ebc6f168c2ea2af64a9a06e10dfa187d8119de082117a5d4430936c53ffbf6"
+    },
+    {
+      "fromNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527",
+      "id": "500078a2c25f7bb6c81b2252b215f8dc2afd269d03b6cb7d76045ef947043643",
+      "label": "integrates-relationally",
+      "toNode": "be09f16ecf061641b15c4eecf76deafba418bcde2622eed99f82d7e33b796da2"
+    },
+    {
+      "fromNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef",
+      "id": "52b3fd3e8405c4f6387d555f2b549aba3e806022cc0ff3282fdd2b0e04221c81",
+      "label": "capacity-prerequisite",
+      "toNode": "64ebc6f168c2ea2af64a9a06e10dfa187d8119de082117a5d4430936c53ffbf6"
+    },
+    {
+      "fromNode": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
+      "id": "53d9b9a50ad926f22848fad78aba65691c5842b71522d571c3ca0a7f62f95ec3",
+      "label": "checks-relationship-before-inward-routing",
+      "toNode": "38a66c980c1aed36d63f20d2720597f8073064448804593acdbbe7a57900f019"
+    },
+    {
+      "fromNode": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
+      "id": "5560cac1685543c3e03eb7a5fdffc0017d7791e9e4a787e57b6ceaf56c32197b",
+      "label": "routes-to",
+      "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
+    },
+    {
+      "fromNode": "992ca77b91daf7f5aeee92909dadd17def5a6cf8a22514f8d5d5ed6870f3d91f",
+      "id": "64ed5766f37e762e6ebc698f7558c05c7382442fb74eb9b16422bf597ccfd1b5",
+      "label": "uses-existing-inner-routes",
+      "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "658ef849326bde99319e7d932a5421e4cf33af968a613edba156cf608139b8b6",
+      "label": "conditional-memory-route",
+      "toNode": "8e99c4a92a36a0f4b29b55982f0b83c450d61b0ebeba7e3b9b79893e061d21b6"
+    },
+    {
+      "fromNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff",
+      "id": "6c02b2ad03ea59d1249290ef26e0230c6d7df9e185f4c8583c2424ea1a9e8ede",
+      "label": "may-use-as-communication-support",
+      "toNode": "ee08be5c74513aaf90d3752dba119ed4e1a2ebe0efc102c658e964f3f00757d8"
+    },
+    {
+      "fromNode": "0b2becc508c2fc228c9b357bd4c30fa28986893e886e3cd0efa375710bae0a10",
+      "id": "6cc02fe08378d0fd582d6118f4f3047ab6af7f7e276cf0477ae307dfd232c994",
+      "label": "may-connect-to",
+      "toNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96"
+    },
+    {
+      "fromNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c",
+      "id": "6e83229592d968aa4a2f370de7dc10a8d50e3ac6f59706408b416f107dabcc07",
+      "label": "enables",
+      "toNode": "9a74110f276a95b18c15d4b29458f59b9bb0f62ed17596d3cdeaaf2365d64152"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "6fb9a21aa26c1dd65dba394f0cd7f5697d1e98f6570d3aac0e92a38077d63678",
+      "label": "optional-parallel-not-readiness",
+      "toNode": "27324d61a60f8178d929c2187521d2e92a7c73bd135de27b1f611b7b90a318db"
+    },
+    {
+      "fromNode": "9e8508abe48d12733d0ead0118cf1dbffc617269fbd96f0b4949d26b0a5c89f8",
+      "id": "70a28d7f2ad3f92ccb883852d9fc61986dd7d55ba03e714ae87b672649c032d5",
+      "label": "embodies-through",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
+    },
+    {
+      "fromNode": "df987d0196b5385ad35a79b61c02b2f6c43bd7c1b5d1bbc3035c65abbfcfba41",
+      "id": "7146ef1e2d1e596cc1a2a4c30d049602550c65fc6a5835f62bf373dea2968c4f",
+      "label": "may-enable",
+      "toNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80"
+    },
+    {
+      "fromNode": "b7ceeb009ad5f3b4952e96d25c9494a01fa8b280a1cddaf3ed4f3c207b45954c",
+      "id": "74cbae803f02649ae4e4a6397f9aaa11395c3f0bea23932ab6a401554c675b28",
+      "label": "clarifies",
+      "toNode": "a7544fa40f30aa4a52437359f14b02a5723e0360d56036d7f247f64683921fdd"
+    },
+    {
+      "fromNode": "3be9ef03cd8e21c387677f3c6476444199ba8823aabc856d8b0079aea25b4238",
+      "id": "80a67ed9a89e011b5042c574020aa39ee1d8a1e6455ff714a3b6cee438f5a044",
+      "label": "can-enable",
+      "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
+    },
+    {
+      "fromNode": "0b2becc508c2fc228c9b357bd4c30fa28986893e886e3cd0efa375710bae0a10",
+      "id": "818ced9e73c5558ba8f958569ed1fea1d7c52e463fa8f7916be6746099492885",
+      "label": "may-connect-to",
+      "toNode": "c007b9501bf18a172ff8ced765221d9b9f1b24ab2474cf5ededb59f510017773"
+    },
+    {
+      "fromNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff",
+      "id": "84d33992287c942100392870dc515e509f0e55e953350d5b7999be5ae2341793",
+      "label": "organizes-through",
+      "toNode": "0ad12526759ac2032a6df506212c0f90ebce3a7d603e935db86d1d680a0a6052"
+    },
+    {
+      "fromNode": "38a66c980c1aed36d63f20d2720597f8073064448804593acdbbe7a57900f019",
+      "id": "853dc6b33275bc1c5e43d86edc0942ea85cf5ff74e3db1c8ca9813cb34387c0d",
+      "label": "routes-outward-as-needed",
+      "toNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff"
+    },
+    {
+      "fromNode": "8e99c4a92a36a0f4b29b55982f0b83c450d61b0ebeba7e3b9b79893e061d21b6",
+      "id": "8a46740ce71a75e02213328a98b1f5df9babb0410f0fdc62d5edd1db90b4d4db",
+      "label": "followed-by",
+      "toNode": "53a9ddb7f819388accd5566867c8c75ed46d2b49d317719666f40c6ad7e41879"
+    },
+    {
+      "fromNode": "9a74110f276a95b18c15d4b29458f59b9bb0f62ed17596d3cdeaaf2365d64152",
+      "id": "8bda1ced7a10909fb92e0063464326004af771315e3004ea6523eb0d6e751269",
+      "label": "parallel-preparation",
+      "toNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323"
+    },
+    {
+      "fromNode": "8a4a8b14b42a648563b260ffe7b98bcfdd338a5882cd50fcce17afbef86e2aba",
+      "id": "90e8bf697a5cc2bb5dda14a13cb6ac528c0ac15456a584007faefee471e6b661",
+      "label": "offers-alternative",
+      "toNode": "200ec919c1606cafe469a58f8f8b374c823874df9531d9aa94cea7c36cd81f3f"
+    },
+    {
+      "fromNode": "d574e90790edf2cd322c9494132ff1daab32d9bf43a7e1cd4f40034f5245ed0d",
+      "id": "921743cb0634a7837dfc87f86806ef2590bf1a0017cbedf2476b02a36361024d",
+      "label": "enables",
+      "toNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96"
+    },
+    {
+      "fromNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80",
+      "id": "925905a3b57a86e5083b8a3652c0d0d6e0f5d20069f18551edb5973b61cd6fae",
+      "label": "offers-alternative",
+      "toNode": "79f9439ff30879abcb2d2348c617b66eb300dee2ef96e2b616e77110ad9809f5"
+    },
+    {
+      "fromNode": "13eb02280ef3e84ed421ff45275e1013c783a46f87eab87e106fd3deac4f5c82",
+      "id": "96b24ad5feb07a46dbaad8ddfc8058e69bfc81077214a7d7f30857c7263e9145",
+      "label": "does-not-imply-readiness",
+      "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
+    },
+    {
+      "fromNode": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38",
+      "id": "99d56077b4e97a9f5f60877bf3c300afe7a3af6a2a78663f5026cf6d05a8b2ac",
+      "label": "calibrates",
+      "toNode": "0ad12526759ac2032a6df506212c0f90ebce3a7d603e935db86d1d680a0a6052"
+    },
+    {
+      "fromNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323",
+      "id": "9d1f6834fd64c41ca20b5e69bd9b30fc1acc1229e8a2e2b0282424e3c48b313b",
+      "label": "precedes",
+      "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
+    },
+    {
+      "fromNode": "ee08be5c74513aaf90d3752dba119ed4e1a2ebe0efc102c658e964f3f00757d8",
+      "id": "9e7a5f52bc0bcaf0c7a63c820af137bd4e09397551cfc275581e4d43c46e1a8a",
+      "label": "returns-for-care",
+      "toNode": "9e8508abe48d12733d0ead0118cf1dbffc617269fbd96f0b4949d26b0a5c89f8"
+    },
+    {
+      "fromNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c",
+      "id": "a299f8873d2221b265f37f1e3ece9bd050c502c7ef5688f1a447242b30f4e9c5",
+      "label": "supports",
+      "toNode": "df987d0196b5385ad35a79b61c02b2f6c43bd7c1b5d1bbc3035c65abbfcfba41"
+    },
+    {
+      "fromNode": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
+      "id": "a967dfb563310f10596645fe1ce5b0454192965ae8ff36e2b971ace9a7a684ed",
+      "label": "routes-to",
+      "toNode": "c717271c8c6a4a0a51cff7953fef5ef3b9ee210077dfcb951b4a448b04ef0f47"
+    },
+    {
+      "fromNode": "683d11b72cfbe5e86dd8c881d2a3e43a5bf487a1def7a928eb5a3fd763cc44a5",
+      "id": "aa6f11fe4acf35288161e2d93bcd49115ee83e5889b19ede7b0cf76cfdab8331",
+      "label": "requires-aftercare",
+      "toNode": "f623c3a763dcce1056f2474536e5822476a1fee405ce6bede3a7eedbe654915b"
+    },
+    {
+      "fromNode": "dcd640cbd8161505f76ff16710136e7731e4f526baa74b0f09a04c3dd041d681",
+      "id": "acd46ba5498e916917e2940ba06833c2c388292f8bd55477c68cb2be7e3e6d51",
+      "label": "builds-capacity-when-love-inaccessible",
+      "toNode": "22d926c1dcb916246e3c8ae5b17fbcf33d201f3d90b1c2efa0036da217a65037"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "ae78549bf2cabb388aba773f55643dda84e7ec188b673de2956b3d307ad3a752",
+      "label": "may-route-to",
+      "toNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c"
+    },
+    {
+      "fromNode": "a0f00f17c6370918a5a671d1fba951be6ea1b30a90cdd44b40f23e539959cefc",
+      "id": "af571f49143202a989a5decdf4f6d392ec60385c3f8788f3c72f64c39899369a",
+      "label": "parallel-preparation",
+      "toNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96"
+    },
+    {
+      "fromNode": "45058a21b6c292a0222a259cd019ddd4bb7a7e10768f1478254cd291f271432e",
+      "id": "b631a1d25ec33e2c759bb20b31e010210c9c87e7a7d846d703a95e85c74294c1",
+      "label": "precedes",
+      "toNode": "0ad12526759ac2032a6df506212c0f90ebce3a7d603e935db86d1d680a0a6052"
+    },
+    {
+      "fromNode": "be09f16ecf061641b15c4eecf76deafba418bcde2622eed99f82d7e33b796da2",
+      "id": "b7f839687cc2737dd28d1ad6a929baad4405796ac417bff36794c80de4105559",
+      "label": "enables",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
+    },
+    {
+      "fromNode": "0baa8bcabf7232ce7a012a2797a04b3298649b64cca0c4ca5963006e078adad0",
+      "id": "b87b024a8f311a6b8e84cc313fa907084e39512a335c22034bdc53f37708e11f",
+      "label": "gates",
+      "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
+    },
+    {
+      "fromNode": "a7544fa40f30aa4a52437359f14b02a5723e0360d56036d7f247f64683921fdd",
+      "id": "c9321b0ae44d2b42f76ca70df3f741b13db5da8d33fac8994b9893e7e3f0fd4f",
+      "label": "requires-evidence",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
+    },
+    {
+      "fromNode": "683d11b72cfbe5e86dd8c881d2a3e43a5bf487a1def7a928eb5a3fd763cc44a5",
+      "id": "cbbd40873c5910350f678bf4141bb4deb795909b53a40fc775d31be252ea2113",
+      "label": "parallel-preparation",
+      "toNode": "d574e90790edf2cd322c9494132ff1daab32d9bf43a7e1cd4f40034f5245ed0d"
+    },
+    {
+      "fromNode": "1b46c1f38e020701f55256235a8d0fce98acfb96181a467d97a276e326ad0519",
+      "id": "ccb40506ccca7c38657c8b15a024f0889bacf7a343c9bebe8026327ee58e3a45",
+      "label": "requires-reality-check",
+      "toNode": "d162e5224e2d1b3b86c3871646337e27c6435b06998ee2f030fd86de810aec00"
+    },
+    {
+      "fromNode": "5b91fcf746965f269d73e86e17cffe794a7ccca7868a114606e3452e6d5cc337",
+      "id": "d09133224c15d81ae3d42d84a8979a691ddbbbc81f090d551de914d5eb59e1b5",
+      "label": "requires-capacity-and-pressure-check",
+      "toNode": "38a66c980c1aed36d63f20d2720597f8073064448804593acdbbe7a57900f019"
+    },
+    {
+      "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
+      "id": "d6f3913d7d34fecee202f467c9c976192a877dfe984cdf09a9447eae353caf66",
+      "label": "requires-embodiment",
+      "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
+    },
+    {
+      "fromNode": "5b91fcf746965f269d73e86e17cffe794a7ccca7868a114606e3452e6d5cc337",
+      "id": "d7e61f40566949db9f7116f7c9e819497886d68824c35a18a6ba86294fd81132",
+      "label": "keeps-practical-protection-primary",
+      "toNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff"
+    },
+    {
+      "fromNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527",
+      "id": "e30e4a7df657c186f85e4797f5bc887ccbe21ca858d3d7c46b83dc71f7972852",
+      "label": "routes-block-to",
+      "toNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323"
+    },
+    {
+      "fromNode": "27324d61a60f8178d929c2187521d2e92a7c73bd135de27b1f611b7b90a318db",
+      "id": "e5e41b401fe787facd147a6d04f564814ffbd94b6a572b660f0773f5da8e488a",
+      "label": "requires-audit",
+      "toNode": "c51271b9d9d6745b7d4bbc7d13ac42ba19f997d1c5b4ab372d63942037bb78b7"
+    },
+    {
+      "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "id": "e82744b5edb10b35c0b0dba5b5d7f8dfea7319f33f87be52704c309213687a35",
+      "label": "conditional-deep-route",
+      "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
+    },
+    {
+      "fromNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96",
+      "id": "ebd0ae015462b4ea5ad39ec17a5f187acdf2f279e31b8aa7bd4972f10d5d53e3",
+      "label": "offers-alternative",
+      "toNode": "f763464448a00410d382db2b7ce862f30144a29409c4707caacad3d78298cca8"
+    },
+    {
+      "fromNode": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
+      "id": "f00c27e8e9f9b9cc845b7b2a95a8f7c00905978176c00538c0bad19b7f8cb122",
+      "label": "routes-to",
+      "toNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff"
+    },
+    {
+      "fromNode": "38a66c980c1aed36d63f20d2720597f8073064448804593acdbbe7a57900f019",
+      "id": "f23e440e31c029abd4917a7aff14a13504e2f05c245bf777822c5fa841ced280",
+      "label": "only-then-routes-inward-if-useful",
+      "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
+    },
+    {
+      "fromNode": "0b2becc508c2fc228c9b357bd4c30fa28986893e886e3cd0efa375710bae0a10",
+      "id": "f444fb0c1458244b7b8de1d095fa7880314285deea3b7b60b45ea71fc443d1c0",
+      "label": "may-connect-to",
+      "toNode": "bd2dbc298786d84c13a4f6f885126827fbab67b8af4cf3449b01acf938b3b2e8"
+    },
+    {
+      "fromNode": "5d6a3b677041db6df91ff2b8e23d8f09503277106cb240b9d442b2f0a0cd6f3c",
+      "id": "f815620d3ea663acc9771afe0c3751d0fdb9d2d8c8a0929532075fd3e919dfc7",
+      "label": "enables",
+      "toNode": "d574e90790edf2cd322c9494132ff1daab32d9bf43a7e1cd4f40034f5245ed0d"
+    },
+    {
+      "fromNode": "c007b9501bf18a172ff8ced765221d9b9f1b24ab2474cf5ededb59f510017773",
+      "id": "fdd143415bf7c1c0506f387896b85f2a051a7f052c77768487feeafe9e56af45",
+      "label": "opens-when-curious",
+      "toNode": "3be9ef03cd8e21c387677f3c6476444199ba8823aabc856d8b0079aea25b4238"
+    },
+    {
+      "fromNode": "c51271b9d9d6745b7d4bbc7d13ac42ba19f997d1c5b4ab372d63942037bb78b7",
+      "id": "fe2c314c211219a7c00f11e9ebd315c6e1311f1173574d3bf01e12f3696c01da",
+      "label": "integration-check",
+      "toNode": "0ad12526759ac2032a6df506212c0f90ebce3a7d603e935db86d1d680a0a6052"
+    }
+  ],
+  "nodes": [
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.INTUITION_TRUST_CALIBRATION.md",
+      "height": 140,
+      "id": "0083882a475b9df335830141853fb3c07e76206bd8a18e6ea4eed94b5281bc38",
+      "type": "file",
+      "width": 300,
+      "x": 440,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.FORGIVENESS_LATER.md",
+      "height": 140,
+      "id": "02d06e2644860c652a49ca755511d551d8a8d446300c8b5f3ee3fc0502eb9822",
+      "type": "file",
+      "width": 300,
+      "x": 2640,
+      "y": 220
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.EMDR_DEVELOPMENTAL_DEFER.md",
+      "height": 140,
+      "id": "065a374a67c57d69f994c510bf64c2ec1800d4108a5a95816ebf904402fa7722",
+      "type": "file",
+      "width": 300,
+      "x": 9280,
+      "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.GUIDE_LATER.md",
+      "height": 140,
+      "id": "0ad12526759ac2032a6df506212c0f90ebce3a7d603e935db86d1d680a0a6052",
+      "type": "file",
+      "width": 300,
+      "x": 2640,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.SPIRITUAL_STRUGGLE.md",
+      "height": 140,
+      "id": "0b2becc508c2fc228c9b357bd4c30fa28986893e886e3cd0efa375710bae0a10",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.SAFETY_STABILIZATION.md",
+      "height": 140,
+      "id": "0b91e582b6ce736b73684b167fce07c2cf0aa838abef94d580f41111fca249f5",
+      "type": "file",
+      "width": 300,
+      "x": 8400,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.ALTERED_STATE_GATE.md",
+      "height": 140,
+      "id": "0baa8bcabf7232ce7a012a2797a04b3298649b64cca0c4ca5963006e078adad0",
+      "type": "file",
+      "width": 300,
+      "x": 440,
+      "y": 1100
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.GENTLE_SELF_HYPNOSIS.md",
+      "height": 140,
+      "id": "13eb02280ef3e84ed421ff45275e1013c783a46f87eab87e106fd3deac4f5c82",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 2640
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN.md",
+      "height": 140,
+      "id": "1878e24a06cda4d7fdfa30a1271753f8212c656693d76734aec0d9f3ac59afe7",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 1320
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.SUICIDAL_SELF_DEATH_INQUIRY.md",
+      "height": 140,
+      "id": "1b46c1f38e020701f55256235a8d0fce98acfb96181a467d97a276e326ad0519",
+      "type": "file",
+      "width": 300,
+      "x": 0,
+      "y": 440
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.WISER_SELF_PERSPECTIVE.md",
+      "height": 140,
+      "id": "200ec919c1606cafe469a58f8f8b374c823874df9531d9aa94cea7c36cd81f3f",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 2200
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_LOVE_CAPACITY.md",
+      "height": 140,
+      "id": "22d926c1dcb916246e3c8ae5b17fbcf33d201f3d90b1c2efa0036da217a65037",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 1100
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.ADVANCED_RELEASE_OPTIONAL.md",
+      "height": 140,
+      "id": "27324d61a60f8178d929c2187521d2e92a7c73bd135de27b1f611b7b90a318db",
+      "type": "file",
+      "width": 300,
+      "x": 10160,
+      "y": 440
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.BORROW_ONE_FUNCTION.md",
+      "height": 140,
+      "id": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 880
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.PHOTO_EPISTEMIC_CAUTION.md",
+      "height": 140,
+      "id": "34173fa4733b35ccf2feaa395ddc924ee490576afda4d015645dc83b29b96739",
+      "type": "file",
+      "width": 300,
+      "x": 440,
+      "y": 880
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.MEET_GUARD.md",
+      "height": 140,
+      "id": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 1100
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.RELATIONAL_REALITY_CHECK.md",
+      "height": 140,
+      "id": "38a66c980c1aed36d63f20d2720597f8073064448804593acdbbe7a57900f019",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.LOVE_HORIZON_EXPLORATION.md",
+      "height": 140,
+      "id": "3be9ef03cd8e21c387677f3c6476444199ba8823aabc856d8b0079aea25b4238",
+      "type": "file",
+      "width": 300,
+      "x": 440,
+      "y": 660
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "3f9b66d2b2406328e64e6b966b190fcb08135dfce505737aa2f91af93380acd8",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.COMMON_HUMANITY_MUTUAL_HEALING\nConnect common humanity with mutual peer healing\n\nCommon-humanity guidance is not optional: the person is not alone in suffering, and connection with others who are healing can support mutual peer healing. This must not minimize the person's particular trauma.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 440
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "400e8fa3121456c6d16ffea5cc61e63c83ef0d895397103dc3e01c201cfba5f2",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.TENTATIVE_CONCLUSIONS_REEVALUATE\nRe-evaluate tentative activated conclusions when calm\n\nTentative conclusions are allowed during activation when they create no safety issue, and must be re-evaluated when calm.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 1760
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.IDENTITY_FORMATION.md",
+      "height": 140,
+      "id": "45058a21b6c292a0222a259cd019ddd4bb7a7e10768f1478254cd291f271432e",
+      "type": "file",
+      "width": 300,
+      "x": 1760,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.GO_INWARD.md",
+      "height": 140,
+      "id": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 1760
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "52ff0b3f131b19801cc8645450589a96c597a17bb109699f877926dc8d7b2c45",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.PAUSE_ORIENT_BEFORE_INTERPRETATION\nPause and orient before interpretation\n\nWhen activation is high, pause and orient before deciding what it means. Use a proportionate pause rather than a fixed breath count.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 1540
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.MEANING_INTEGRATION.md",
+      "height": 140,
+      "id": "53a9ddb7f819388accd5566867c8c75ed46d2b49d317719666f40c6ad7e41879",
+      "type": "file",
+      "width": 300,
+      "x": 11040,
+      "y": 0
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "5a1222fe4722fff376088224b8f36ebef8db58fdc4054fc64f34ed77d8c89d1d",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.NONPUNITIVE_REVIEW\nReview without holding a trial\n\nReview is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into prosecution, grading, or a trial.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 1320
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_SOCIAL_PROTECTION.md",
+      "height": 140,
+      "id": "5b91fcf746965f269d73e86e17cffe794a7ccca7868a114606e3452e6d5cc337",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 1540
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.ADVANCED_RELEASE_BLOCK.md",
+      "height": 140,
+      "id": "5bc33c5ffc30866151468402a5a1468d93c5a3abdf1394b0f6bef151009be3a8",
+      "type": "file",
+      "width": 300,
+      "x": 8400,
+      "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.SAFETY_ORIENTATION.md",
+      "height": 140,
+      "id": "5d6a3b677041db6df91ff2b8e23d8f09503277106cb240b9d442b2f0a0cd6f3c",
+      "type": "file",
+      "width": 300,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.EMDR_DEVELOPMENTAL.md",
+      "height": 140,
+      "id": "64ebc6f168c2ea2af64a9a06e10dfa187d8119de082117a5d4430936c53ffbf6",
+      "type": "file",
+      "width": 300,
+      "x": 10600,
+      "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.EXTERNAL_EMBODIMENT.md",
+      "height": 140,
+      "id": "66df413311b471f9480ef160717fa978aa4f82465dd84466e596df84ec39c358",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 880
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.GENTLE_SHAKING.md",
+      "height": 140,
+      "id": "683d11b72cfbe5e86dd8c881d2a3e43a5bf487a1def7a928eb5a3fd763cc44a5",
+      "type": "file",
+      "width": 300,
+      "x": 9720,
+      "y": 440
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.CARING_COMPANY.md",
+      "height": 140,
+      "id": "79f9439ff30879abcb2d2348c617b66eb300dee2ef96e2b616e77110ad9809f5",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 660
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "856accaf7ecba784c3592e624cef18173d559a5cab648e8bedbbb9d4eaa1979b",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.UNSAFE_IMPULSE_PAUSE\nPause an immediately unsafe impulse\n\nThe Protector may pause an immediately unsafe impulse and seek support while the underlying feeling remains permitted.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 2200
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "867b86b265da3f3d53e6940ca5adbe713d361718c4540e419b9d7b4f93a706be",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.DYNAMIC_PARTS_MODEL\nUse parts modeling dynamically and only while useful\n\nDo not create parts unless that model is useful. Do not over-separate or over-integrate internal positions because a map depicts them that way. The useful model may change from one moment to the next.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 660
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.COMPASSIONATE_STORY.md",
+      "height": 140,
+      "id": "86b13e3706d9b1c67a257886df73ab9bdba8988f952c483137e320a8abb93eef",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 1100
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.BEST_FRIEND_PERSPECTIVE.md",
+      "height": 140,
+      "id": "8a4a8b14b42a648563b260ffe7b98bcfdd338a5882cd50fcce17afbef86e2aba",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 440
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.COMMON_HUMANITY.md",
+      "height": 140,
+      "id": "8c867086a5b4754139d4e93679430b02676ab0e416e807efb70dfb505a338faa",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 880
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.EMDR_DISCRETE.md",
+      "height": 140,
+      "id": "8e99c4a92a36a0f4b29b55982f0b83c450d61b0ebeba7e3b9b79893e061d21b6",
+      "type": "file",
+      "width": 300,
+      "x": 10600,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_INTERNAL.md",
+      "height": 140,
+      "id": "992ca77b91daf7f5aeee92909dadd17def5a6cf8a22514f8d5d5ed6870f3d91f",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 1980
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.RESOURCE_BRAINSPOTTING.md",
+      "height": 140,
+      "id": "9a74110f276a95b18c15d4b29458f59b9bb0f62ed17596d3cdeaaf2365d64152",
+      "type": "file",
+      "width": 300,
+      "x": 10160,
+      "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.DRAFT_RETURN_TO_CARE.md",
+      "height": 140,
+      "id": "9e8508abe48d12733d0ead0118cf1dbffc617269fbd96f0b4949d26b0a5c89f8",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 1760
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.GENTLE_REGULATION.md",
+      "height": 140,
+      "id": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c",
+      "type": "file",
+      "width": 300,
+      "x": 9280,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.EFT_PORTABLE.md",
+      "height": 140,
+      "id": "a0f00f17c6370918a5a671d1fba951be6ea1b30a90cdd44b40f23e539959cefc",
+      "type": "file",
+      "width": 300,
+      "x": 9720,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.CREDIBILITY_REPAIR.md",
+      "height": 140,
+      "id": "a7544fa40f30aa4a52437359f14b02a5723e0360d56036d7f247f64683921fdd",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 220
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "b0cb7ee50f0940c67faccade2f7bb44239999e45e4d1a462d37f7f1532d15368",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.BEST_FRIEND_REALITY_CHECK\nReality-check borrowed best-friend advice\n\nTreat best-friend advice as a draft and retain only what is compassionate, feasible, value-consistent, and compatible with the person's own judgment.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.AGE_RESPONSIBILITY_CLARIFICATION.md",
+      "height": 140,
+      "id": "b7ceeb009ad5f3b4952e96d25c9494a01fa8b280a1cddaf3ed4f3c207b45954c",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 1320
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "b86c59ec494fa29e2aa7a03366c78316439fa76f3314fbff878067a216e7ceba",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.FLEXIBLE_DELIBERATE_CLOSURE\nClose inner work deliberately and flexibly\n\nWhen possible, close inner work deliberately by reorienting, noticing the body, and naming the next ordinary action; do not impose a fixed ritual.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 880
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.PROTECTOR_ACTION.md",
+      "height": 140,
+      "id": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.DIFFERENTIATION.md",
+      "height": 140,
+      "id": "bd2dbc298786d84c13a4f6f885126827fbab67b8af4cf3449b01acf938b3b2e8",
+      "type": "file",
+      "width": 300,
+      "x": 2200,
+      "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.THREE_WAY_GATE.md",
+      "height": 140,
+      "id": "be04c0ef45dc0152f206761ea36eed7122f62e5a7379472d30313dd2b088f069",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 2200
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.ADULT_APPRENTICE.md",
+      "height": 140,
+      "id": "be09f16ecf061641b15c4eecf76deafba418bcde2622eed99f82d7e33b796da2",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 2420
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.EXISTENTIAL_NOURISHMENT.md",
+      "height": 140,
+      "id": "c007b9501bf18a172ff8ced765221d9b9f1b24ab2474cf5ededb59f510017773",
+      "type": "file",
+      "width": 300,
+      "x": 440,
+      "y": 440
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.BYPASS_AUDIT.md",
+      "height": 140,
+      "id": "c51271b9d9d6745b7d4bbc7d13ac42ba19f997d1c5b4ab372d63942037bb78b7",
+      "type": "file",
+      "width": 300,
+      "x": 9720,
+      "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.LEAVE_ALONE.md",
+      "height": 140,
+      "id": "c717271c8c6a4a0a51cff7953fef5ef3b9ee210077dfcb951b4a448b04ef0f47",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.DEEP_BRAINSPOTTING.md",
+      "height": 140,
+      "id": "c7f091253683d7953765dff2375050ea7fb25de8f44539b65505bb3d3f219851",
+      "type": "file",
+      "width": 300,
+      "x": 10600,
+      "y": 440
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "cc14557bdeea8b7f98c6a540acba70400a7783f4d7be94f3f1439c8f318d7a87",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.IDENTITY_BEFORE_DECONSTRUCTION\nDevelop enough identity before deconstructive practice when needed\n\nSome people whose identity is underdeveloped may need preference and selfhood development before no-self or surrender practices are useful. This is not a universal prerequisite.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 1100
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "cdfbaa43da9f7124e0981d994eeb5fa2b12564a26d2eaee66dbcd01b6baf208f",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.WORTH_CAPACITY_DISTINCTION\nSeparate intrinsic worth from developed adult capacity\n\nWorth is intrinsic. Adult capacities such as pausing, protecting, choosing, repairing, differentiating, and acting consistently develop through practice.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 2420
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ACT_OUTWARD.md",
+      "height": 140,
+      "id": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 440
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.PRECIOUS_HUMAN_OPPORTUNITY.md",
+      "height": 140,
+      "id": "d162e5224e2d1b3b86c3871646337e27c6435b06998ee2f030fd86de810aec00",
+      "type": "file",
+      "width": 300,
+      "x": 0,
+      "y": 660
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.NEUTRAL_WITNESS.md",
+      "height": 140,
+      "id": "d574e90790edf2cd322c9494132ff1daab32d9bf43a7e1cd4f40034f5245ed0d",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 660
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.CRITICISM_KERNEL.md",
+      "height": 140,
+      "id": "d9201eb93608aeec31488f96ee8fcc1ddcefc2068328bb44e94185bfd151e36c",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 1320
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_NONORDINARY_METTA.md",
+      "height": 140,
+      "id": "dcd640cbd8161505f76ff16710136e7731e4f526baa74b0f09a04c3dd041d681",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 660
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.SOLAR_PLEXUS_RELAXATION.md",
+      "height": 140,
+      "id": "df987d0196b5385ad35a79b61c02b2f6c43bd7c1b5d1bbc3035c65abbfcfba41",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 1540
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.REALIZATION_LOVE_INTEGRATION.md",
+      "height": 140,
+      "id": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
+      "type": "file",
+      "width": 300,
+      "x": 440,
+      "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.BORROW_LOVE.md",
+      "height": 140,
+      "id": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.DRAFT_EDITOR.md",
+      "height": 140,
+      "id": "ee08be5c74513aaf90d3752dba119ed4e1a2ebe0efc102c658e964f3f00757d8",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 1540
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "f0339fbe47bdbfff70d0ea1366549bb6b8c725d2913998699a62ff629981b1db",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.BOUNDED_TRUTHFUL_VOW\nMake a bounded truthful protection-and-repair promise\n\nPrefer truthful, bounded promises of protection and repair. After a lapse, return and repair rather than promising invulnerability.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 220
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.DISCHARGE_SETTLE_STACK.md",
+      "height": 140,
+      "id": "f623c3a763dcce1056f2474536e5822476a1fee405ce6bede3a7eedbe654915b",
+      "type": "file",
+      "width": 300,
+      "x": 10160,
+      "y": 0
+    },
+    {
+      "height": 2740,
+      "id": "f62509388abb23e598c9507a43310445e7d60033e78ff4e7f0811067c8f2146d",
+      "label": "Owner-approved, not compiled",
+      "type": "group",
+      "width": 380,
+      "x": 12560,
+      "y": -80
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.PAST_COMPETENCE.md",
+      "height": 140,
+      "id": "f763464448a00410d382db2b7ce862f30144a29409c4707caacad3d78298cca8",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 1980
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "faa94f5e35056a541e8d5671b0efc175d99cee245f4f9a1d9e35231f266d2835",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.TRANSITIONS_AND_ENDINGS\nName transitions, endings, and the uncertain gap\n\nDuring a meaningful transition or ending, name what ended, what remains unknown, and how adult and child remain together through the gap without forcing premature certainty.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 1980
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.DEEP_LOVE_TO_CHILD.md",
+      "height": 140,
+      "id": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527",
+      "type": "file",
+      "width": 300,
+      "x": 880,
+      "y": 440
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.DEEP_CHILD_DIALOGUE.md",
+      "height": 140,
+      "id": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401",
+      "type": "file",
+      "width": 300,
+      "x": 2200,
+      "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.SUICIDAL_ADULT_SEAT.md",
+      "height": 140,
+      "id": "fd6a208d609e55722a41fb0f773a4e5377d15f03832cba91f968a313138c235a",
+      "type": "file",
+      "width": 300,
+      "x": 0,
+      "y": 220
+    }
+  ]
+}

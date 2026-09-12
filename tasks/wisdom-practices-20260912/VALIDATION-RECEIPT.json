@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "taskId": "wisdom-practices-20260912",
+  "generatedAt": "2026-09-12",
+  "authority": {
+    "universalArchitectureCommit": "e8c127944b7b065cef039fb25a3939477e664605",
+    "repository": "u-dont-existDOTcom/innerSignalGraph",
+    "branch": "task/wisdom-practices-20260912",
+    "baseCommit": "ad441affd378e06d6395e0ba4ec0760eaaea5d52",
+    "baseTree": "65772b2c4d38291e271bfa63fcc662c5c12d5782",
+    "sourcePacketManifestSha256": "e072eaee9357db85c129a9e28b571c5422c2cd68d68a9d3a94f8bad4410b1c80"
+  },
+  "states": {
+    "PREPARED": true,
+    "COMPILED": true,
+    "TESTED": true,
+    "APPROVAL_PENDING": true,
+    "RECONCILED": false,
+    "MERGED": false,
+    "INSTALLED": false
+  },
+  "candidate": {
+    "proposalId": "wisdom-practices-20260912",
+    "packetId": "authoring-wisdom-practices-20260912",
+    "packetSha256": "f2d67e1990ceadb4120955c4c46c65d95aed0ad0c0270f2e6d652f778fa4ab8c",
+    "authoringReceiptSha256": "910bd4bb1ba97e11c88aff2f79450f9de78225b067af8de59748117868a27ad7",
+    "proposalEvidenceSha256": "20341f38d6fe73dcb925b47145cc33ecfc8029fb94bbfa1b88571b503aff6bc2",
+    "semanticDiffSha256": "1f83c629bfdc40ddaf9ff9927b76a9aa3e1a77f445734593187b366095f6c9e0",
+    "regressionImpactSha256": "d63013a8a90eb051f1c30b560e3ecb75ca02d3ffe94c1ca0ef374252c72dcbd7",
+    "provenanceImpactSha256": "0f38e736953933b4b5004caab8020c33e4f8b86b1e869be322d5a3b1f3bd8508",
+    "bundleSha256": "cf8f7d7e0a4ff7f84996b31a066c32b22a0954b0b781ce3bd4018759fbfdc13b",
+    "stats": {
+      "graphs": 3,
+      "nodes": 61,
+      "edges": 82,
+      "sourceSections": 100,
+      "ownerAmendments": 36,
+      "newNodes": 8,
+      "newEdges": 12,
+      "ownerDecisionCards": 32
+    },
+    "graphHashes": {
+      "inner-child-directed-graph": "a82fe28e2917f3c301b588e770ee0e367ee56286abd94ed9cf4b37a34459fb08",
+      "inner-child-somatic-cross-guide": "61db2ed53fe2c0eaa386328c1a52df3081f1c96c46771a327c431b16261a5396",
+      "somatic-directed-graph": "6b31d4e5d0e6dc2ab838aae714fe59c2c1c2ab21607409c9b1a25b2d5769dd2d"
+    },
+    "paths": {
+      "bundle": "tasks/wisdom-practices-20260912/candidate/candidate/bundle.json",
+      "proposalPacket": "tasks/wisdom-practices-20260912/candidate/packet/proposal.zip",
+      "authoringReceipt": "tasks/wisdom-practices-20260912/candidate/receipt.json",
+      "ownerDecisions": "tasks/wisdom-practices-20260912/candidate/audit/owner-decisions.json"
+    }
+  },
+  "sourceState": {
+    "canonicalCompiledBundleSha256": "b7a4b71f2d8d9b67e162f72da317523767cdcd91a996222dee7c4ac0457cebb9",
+    "ownerAmendmentsSha256": "eb0a4cfdd77465a3d3d34557e850976d689c51196d0b4054f51b59c8922ef491",
+    "projectionInputSha256": "2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f",
+    "projectionManifestSha256": "3c45a489f9c69a6bb2ea896726222fd89314395f429c4558e62bc417803bc4ea",
+    "canonicalGraphStats": {
+      "graphs": 3,
+      "nodes": 53,
+      "edges": 70,
+      "sourceSections": 100,
+      "ownerAmendments": 36
+    },
+    "canonicalCandidateGraphsReconciled": false
+  },
+  "changedPathScopes": [
+    "guides/owner-amendments.json and generated guide-graphs source maps, bundle and report",
+    "authoring/obsidian/current generated projection and wisdom-practices proposal",
+    "src/case-formulation, src/guide-graph, src/guide-packet, src/orchestrator and src/prompts bounded integration",
+    "tests/perspective-practices*.test.mjs",
+    "tasks/wisdom-practices-20260912 and tasks/ACTIVE-TASK.json",
+    "state/CODEX-CURRENT-STATE.md"
+  ],
+  "validation": {
+    "packetIntegrity": { "status": "PASS", "manifestFiles": 23, "stagedMembers": 36, "stagingTests": { "passed": 7, "total": 7 }, "helperCases": { "passed": 33, "total": 33 } },
+    "focusedProductionPath": { "status": "PASS", "passed": 8, "total": 8 },
+    "affectedNodeTests": { "status": "PASS", "passed": 112, "total": 112 },
+    "canonicalGraphRegressions": { "status": "PASS", "passed": 29, "total": 29 },
+    "proposalRegressions": { "status": "PASS", "passed": 62, "total": 62 },
+    "therapyLessons": { "status": "PASS", "passed": 5, "total": 5, "activeRuntimeLessonsDocumented": 4 },
+    "authoringValidate": { "status": "PASS", "generatedFiles": 322, "bases": 6, "maps": 1 },
+    "authoringCheck": { "status": "PASS", "generatedFiles": 322 },
+    "authoringMapsCheck": { "status": "PASS", "maps": 1, "canvas": true },
+    "proposalCheck": { "status": "PASS", "files": 13 },
+    "repositoryAudit": { "status": "PASS", "errors": 0, "warnings": 1, "warning": "hosted GitHub App permissions remain unverified by repository files" },
+    "publicationAudit": { "status": "PASS", "scannedRecords": 230481, "findings": 0 },
+    "completePackageVerify": {
+      "status": "FAIL_REPAIRED_BY_FOCUSED_CHECK",
+      "runtime": { "node": "24.18.0", "npm": "11.16.0" },
+      "passed": 1113,
+      "total": 1116,
+      "failed": 3,
+      "failureClasses": [
+        "two stale exact inventory assertions expected 90 source notes/26 amendments instead of 100/36",
+        "the intentional perspective_practice contract field changed the fast and reviewed semantic benchmark hashes"
+      ],
+      "repair": "Updated only the exact canonical inventory assertions and current semantic policy fingerprint/revision.",
+      "focusedRepairCheck": { "status": "PASS", "passed": 22, "total": 22 },
+      "repeatPolicy": "The complete local suite was not repeated; the packet and test-efficiency contract allow one boundary run. Hosted PR checks must verify the final pushed head."
+    }
+  },
+  "privacyAndCompatibility": {
+    "realPrivateDataAccessed": false,
+    "realPrivateCaseMutated": false,
+    "privateNonEffectEvidence": "Synthetic private-continuity/runtime tests passed inside the 112-test affected suite.",
+    "legacyCompatibilityEvidence": "Archived r01 and active r02 Guide Packet compatibility tests passed inside the 112-test affected suite.",
+    "providerOrPaidModelCalls": false
+  },
+  "testEfficiency": {
+    "observerTaskId": "wisdom-practices-20260912",
+    "fullRuns": 1,
+    "fullRunSeconds": 95.92,
+    "forcedRedundantGreenRuns": 0,
+    "focusedRepairPolicy": "Only the three failed test files were rerun after their exact mechanical expectations were repaired."
+  },
+  "approval": {
+    "status": "awaiting-owner",
+    "allApproved": false,
+    "pendingDecisionCards": 32,
+    "exactBlocker": "BLOCKED_EXACT_PACKET_APPROVAL",
+    "detail": "The exact candidate packet has not received owner decisions. Passing engineering checks cannot approve therapeutic semantics, so reconciliation is prohibited."
+  },
+  "nonClaims": {
+    "modelAdherence": "NOT_ESTABLISHED",
+    "humanUsefulness": "NOT_ESTABLISHED",
+    "clinicalEfficacy": "NOT_ESTABLISHED"
+  }
+}
