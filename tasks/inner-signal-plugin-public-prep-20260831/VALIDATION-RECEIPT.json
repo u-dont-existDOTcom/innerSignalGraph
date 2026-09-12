@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "validatedAt": "2026-09-02T20:42:32.000Z",
+  "taskId": "inner-signal-plugin-public-prep-20260831",
+  "directiveId": "ctc-innersignal-plugin-public-prep-20260831-001",
+  "baseCommit": "6e3e018a7e11a0c20ce9414af65ebcea93f722bd",
+  "result": "PASS",
+  "plugin": "inner-signal-therapy",
+  "skillsOnly": true,
+  "skillsTreeFrozen": true,
+  "skillEntryPointPreserved": true,
+  "referenceRefreshedFromCurrentMain": true,
+  "reference": {
+    "sourcePath": "docs/INNER-CHILD-THERAPY-MAP.md",
+    "sourceCommit": "6e3e018a7e11a0c20ce9414af65ebcea93f722bd",
+    "sha256": "ec001e4f740ab5bc82522ecf79891ca55831cc78a9d9a3d0b64e8e267283e071"
+  },
+  "submissionState": "externally-blocked",
+  "releaseAuthority": "none",
+  "counts": {
+    "starterPrompts": 3,
+    "positiveTestCases": 5,
+    "negativeTestCases": 3,
+    "skillFiles": 2,
+    "hashedSubmissionFiles": 11
+  },
+  "manifestSha256": "1c923c0eb0e5615a41cb0142c77d191c5894b3418378921d9ef896972900d23b",
+  "validators": [
+    {
+      "name": "task public-prep verifier",
+      "command": "node tasks/inner-signal-plugin-public-prep-20260831/verify-plugin-public-prep.mjs",
+      "result": "PASS"
+    },
+    {
+      "name": "plugin-creator ingestion validator",
+      "command": "plugin-creator scripts/validate_plugin.py plugins/inner-signal-therapy",
+      "result": "PASS"
+    },
+    {
+      "name": "skill-creator validator",
+      "command": "skill-creator scripts/quick_validate.py plugins/inner-signal-therapy/skills/inner-signal-therapy",
+      "result": "PASS"
+    },
+    {
+      "name": "current map focused tests",
+      "command": "node --test tests/authoring-mermaid.test.mjs tests/authoring-projection.test.mjs tests/intuition-calibration-proposal.test.mjs tests/love-horizon-proposal.test.mjs",
+      "result": "PASS",
+      "tests": 9
+    },
+    {
+      "name": "current map projection check",
+      "command": "npm run authoring:maps:check",
+      "result": "PASS"
+    }
+  ],
+  "portalDraftCreated": false,
+  "submittedForReview": false,
+  "published": false
+}
