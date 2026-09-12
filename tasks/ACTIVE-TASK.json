@@ -7,7 +7,7 @@
   "startedAt": "2026-09-12",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
   "requiredBranch": "task/wisdom-practices-reconcile-20260912",
-  "pullRequest": null,
+  "pullRequest": 56,
   "ownerAuthorized": true,
   "startingTaskHead": "e729632070e80c7ae3c545bf22a10c8aba9f26dc",
   "ownerOutcomePath": "tasks/wisdom-practices-20260912/OWNER-OUTCOME.md",

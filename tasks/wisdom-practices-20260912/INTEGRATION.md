@@ -3,7 +3,7 @@
 - Task: `wisdom-practices-20260912`
 - Branch: `task/wisdom-practices-reconcile-20260912`
 - Candidate pull request: `#55` (merged as `e729632070e80c7ae3c545bf22a10c8aba9f26dc`)
-- Reconciliation pull request: pending
+- Reconciliation pull request: `#56`
 - Reconciliation base commit: `e729632070e80c7ae3c545bf22a10c8aba9f26dc`
 - Assurance lane: iteration with targeted hard gates for therapy safety, privacy, provenance and exact approval
 - Source directive: `packet-source/EXECUTION-DIRECTIVE.md`

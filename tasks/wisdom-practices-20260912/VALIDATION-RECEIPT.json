@@ -6,6 +6,7 @@
     "universalArchitectureCommit": "e8c127944b7b065cef039fb25a3939477e664605",
     "repository": "u-dont-existDOTcom/innerSignalGraph",
     "branch": "task/wisdom-practices-reconcile-20260912",
+    "pullRequest": 56,
     "baseCommit": "e729632070e80c7ae3c545bf22a10c8aba9f26dc",
     "baseTree": "1956fff6213df70a9d96f2fb8b21e8743656ecf2",
     "sourcePacketManifestSha256": "e072eaee9357db85c129a9e28b571c5422c2cd68d68a9d3a94f8bad4410b1c80"
