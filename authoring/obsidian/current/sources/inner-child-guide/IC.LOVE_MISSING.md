@@ -12,7 +12,7 @@ section_hash: 31af9450949fa667357e0efb2d71533d975ce98c0fc4bd7530b9da5f205ba2ac
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.BORROW_LOVE
-projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
+projection_input_sha256: 1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169
 ---
 
 # When Love Still Feels Missing

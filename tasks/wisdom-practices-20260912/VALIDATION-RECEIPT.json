@@ -1,21 +1,22 @@
 {
   "schemaVersion": 1,
   "taskId": "wisdom-practices-20260912",
-  "generatedAt": "2026-09-12",
+  "generatedAt": "2026-09-12T15:05:48Z",
   "authority": {
     "universalArchitectureCommit": "e8c127944b7b065cef039fb25a3939477e664605",
     "repository": "u-dont-existDOTcom/innerSignalGraph",
-    "branch": "task/wisdom-practices-20260912",
-    "baseCommit": "ad441affd378e06d6395e0ba4ec0760eaaea5d52",
-    "baseTree": "65772b2c4d38291e271bfa63fcc662c5c12d5782",
+    "branch": "task/wisdom-practices-reconcile-20260912",
+    "pullRequest": 56,
+    "baseCommit": "e729632070e80c7ae3c545bf22a10c8aba9f26dc",
+    "baseTree": "1956fff6213df70a9d96f2fb8b21e8743656ecf2",
     "sourcePacketManifestSha256": "e072eaee9357db85c129a9e28b571c5422c2cd68d68a9d3a94f8bad4410b1c80"
   },
   "states": {
     "PREPARED": true,
     "COMPILED": true,
     "TESTED": true,
-    "APPROVAL_PENDING": true,
-    "RECONCILED": false,
+    "APPROVAL_PENDING": false,
+    "RECONCILED": true,
     "MERGED": false,
     "INSTALLED": false
   },
@@ -48,30 +49,32 @@
       "bundle": "tasks/wisdom-practices-20260912/candidate/candidate/bundle.json",
       "proposalPacket": "tasks/wisdom-practices-20260912/candidate/packet/proposal.zip",
       "authoringReceipt": "tasks/wisdom-practices-20260912/candidate/receipt.json",
-      "ownerDecisions": "tasks/wisdom-practices-20260912/candidate/audit/owner-decisions.json"
+      "ownerDecisions": "tasks/wisdom-practices-20260912/candidate/audit/owner-decisions.json",
+      "approvedPacket": "tasks/wisdom-practices-20260912/approval/authoring-wisdom-practices-20260912-approved.zip",
+      "approvalRecord": "tasks/wisdom-practices-20260912/approval/OWNER-APPROVAL.json",
+      "reconciliationReceipt": "tasks/wisdom-practices-20260912/reconciliation/RECONCILIATION-RECEIPT.json"
     }
   },
   "sourceState": {
-    "canonicalCompiledBundleSha256": "b7a4b71f2d8d9b67e162f72da317523767cdcd91a996222dee7c4ac0457cebb9",
+    "canonicalCompiledBundleSha256": "cf8f7d7e0a4ff7f84996b31a066c32b22a0954b0b781ce3bd4018759fbfdc13b",
     "ownerAmendmentsSha256": "eb0a4cfdd77465a3d3d34557e850976d689c51196d0b4054f51b59c8922ef491",
-    "projectionInputSha256": "2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f",
-    "projectionManifestSha256": "3c45a489f9c69a6bb2ea896726222fd89314395f429c4558e62bc417803bc4ea",
+    "projectionInputSha256": "1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169",
+    "projectionManifestSha256": "953a71b668a425710fa40659329e89d49f1bfa1103e1f8faac599152930d8faa",
     "canonicalGraphStats": {
       "graphs": 3,
-      "nodes": 53,
-      "edges": 70,
+      "nodes": 61,
+      "edges": 82,
       "sourceSections": 100,
       "ownerAmendments": 36
     },
-    "canonicalCandidateGraphsReconciled": false
+    "canonicalCandidateGraphsReconciled": true
   },
   "changedPathScopes": [
-    "guides/owner-amendments.json and generated guide-graphs source maps, bundle and report",
-    "authoring/obsidian/current generated projection and wisdom-practices proposal",
-    "src/case-formulation, src/guide-graph, src/guide-packet, src/orchestrator and src/prompts bounded integration",
-    "tests/perspective-practices*.test.mjs",
-    "tasks/wisdom-practices-20260912 and tasks/ACTIVE-TASK.json",
-    "state/CODEX-CURRENT-STATE.md"
+    "guide-graphs/candidates and generated compiled bundle/report",
+    "authoring/obsidian/current generated projection, map and reconciled proposal state",
+    "src/cli option parsing and deterministic reconciled-policy fingerprint",
+    "post-reconciliation graph, authoring and perspective-practice assertions",
+    "tasks/wisdom-practices-20260912 approval/reconciliation evidence and tasks/ACTIVE-TASK.json"
   ],
   "validation": {
     "packetIntegrity": { "status": "PASS", "manifestFiles": 23, "stagedMembers": 36, "stagingTests": { "passed": 7, "total": 7 }, "helperCases": { "passed": 33, "total": 33 } },
@@ -80,25 +83,28 @@
     "canonicalGraphRegressions": { "status": "PASS", "passed": 29, "total": 29 },
     "proposalRegressions": { "status": "PASS", "passed": 62, "total": 62 },
     "therapyLessons": { "status": "PASS", "passed": 5, "total": 5, "activeRuntimeLessonsDocumented": 4 },
-    "authoringValidate": { "status": "PASS", "generatedFiles": 322, "bases": 6, "maps": 1 },
-    "authoringCheck": { "status": "PASS", "generatedFiles": 322 },
+    "authoringValidate": { "status": "PASS", "generatedFiles": 342, "bases": 6, "maps": 1 },
+    "authoringCheck": { "status": "PASS", "generatedFiles": 342 },
     "authoringMapsCheck": { "status": "PASS", "maps": 1, "canvas": true },
     "proposalCheck": { "status": "PASS", "files": 13 },
     "repositoryAudit": { "status": "PASS", "errors": 0, "warnings": 1, "warning": "hosted GitHub App permissions remain unverified by repository files" },
-    "publicationAudit": { "status": "PASS", "scannedRecords": 230481, "findings": 0 },
+    "publicationAudit": { "status": "PASS", "scannedRecords": 234264, "findings": 0 },
     "completePackageVerify": {
-      "status": "FAIL_REPAIRED_BY_FOCUSED_CHECK",
+      "status": "PASS",
       "runtime": { "node": "24.18.0", "npm": "11.16.0" },
-      "passed": 1113,
-      "total": 1116,
-      "failed": 3,
-      "failureClasses": [
-        "two stale exact inventory assertions expected 90 source notes/26 amendments instead of 100/36",
-        "the intentional perspective_practice contract field changed the fast and reviewed semantic benchmark hashes"
+      "passed": 1117,
+      "total": 1117,
+      "failed": 0,
+      "repairedFailureClasses": [
+        "the CLI required --sha256 but rejected digits in option names",
+        "post-reconciliation inventory assertions still expected the former 53-node/70-edge authority",
+        "the historical pending packet test compared its diff against the newly reconciled baseline",
+        "the incomplete-graph compatibility test relied on the former canonical graph being incomplete",
+        "the deterministic mock benchmark fingerprint still represented the pre-reconciliation graph"
       ],
-      "repair": "Updated only the exact canonical inventory assertions and current semantic policy fingerprint/revision.",
-      "focusedRepairCheck": { "status": "PASS", "passed": 22, "total": 22 },
-      "repeatPolicy": "The complete local suite was not repeated; the packet and test-efficiency contract allow one boundary run. Hosted PR checks must verify the final pushed head."
+      "repair": "Repaired the CLI parser, updated exact canonical inventories, retained separate pending/approved packet assertions, made the incomplete fixture structurally explicit, and refreshed the deterministic mock-only policy fingerprint.",
+      "focusedRepairChecks": { "status": "PASS", "authoringProposal": { "passed": 12, "total": 12 }, "affectedReconciliation": { "passed": 48, "total": 48 }, "perspectivePractices": { "passed": 8, "total": 8 }, "therapyFingerprint": { "passed": 2, "total": 2 } },
+      "finalBoundary": "The existing reconciliation command ran the complete package gate successfully before retaining canonical writes."
     }
   },
   "privacyAndCompatibility": {
@@ -109,18 +115,30 @@
     "providerOrPaidModelCalls": false
   },
   "testEfficiency": {
-    "observerTaskId": "wisdom-practices-20260912",
-    "fullRuns": 1,
-    "fullRunSeconds": 95.92,
+    "observerTaskId": "wisdom-practices-reconcile-20260912",
+    "fullRuns": 4,
+    "fullRunSeconds": 427.86,
     "forcedRedundantGreenRuns": 0,
-    "focusedRepairPolicy": "Only the three failed test files were rerun after their exact mechanical expectations were repaired."
+    "failureDiscoveringFullRuns": 3,
+    "focusedRepairPolicy": "Each discovered failure was isolated with affected/focused checks before the mandatory final reconciliation boundary was rerun."
   },
   "approval": {
-    "status": "awaiting-owner",
-    "allApproved": false,
-    "pendingDecisionCards": 32,
-    "exactBlocker": "BLOCKED_EXACT_PACKET_APPROVAL",
-    "detail": "The exact candidate packet has not received owner decisions. Passing engineering checks cannot approve therapeutic semantics, so reconciliation is prohibited."
+    "status": "approved",
+    "allApproved": true,
+    "approvedDecisionCards": 32,
+    "pendingDecisionCards": 0,
+    "sourcePacketSha256": "f2d67e1990ceadb4120955c4c46c65d95aed0ad0c0270f2e6d652f778fa4ab8c",
+    "approvedPacketSha256": "892c0c1191c84c925874a3895f299e41da5e803b6832caa265cecfd8aa5fbfae",
+    "approvalDecisionSha256": "33477b474c35b7e8c1f90bff73e01ecdb1ed8f9f9977d85840935cebf656fac7",
+    "detail": "The owner explicitly approved all 32 cards bound to the immutable source packet. The approved derivative verified before reconciliation."
+  },
+  "reconciliation": {
+    "status": "PASS",
+    "receiptSha256": "71b09ff31cb027519897931a3e8315476b2100e00f53320d49a0bd0cc0cef267",
+    "canonicalBundleSha256": "cf8f7d7e0a4ff7f84996b31a066c32b22a0954b0b781ce3bd4018759fbfdc13b",
+    "projectionInputSha256": "1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169",
+    "installed": false,
+    "stableChanged": false
   },
   "nonClaims": {
     "modelAdherence": "NOT_ESTABLISHED",

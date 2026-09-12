@@ -25,8 +25,8 @@ source_refs:
 regression_refs:
   - G010
 base_record_sha256: 3323a432f5b11064188cfc3d971c1b4fbaddcb7125c77fa4c7db58e2a6d3a127
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
+base_graph_sha256: a82fe28e2917f3c301b588e770ee0e367ee56286abd94ed9cf4b37a34459fb08
+projection_input_sha256: 1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169
 ---
 
 # Bring in direction after warmth, safety, and a coherent child exist

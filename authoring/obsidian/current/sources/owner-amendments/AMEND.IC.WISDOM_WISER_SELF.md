@@ -10,8 +10,9 @@ source_role: owner-approved-extension
 source_hash: eb0a4cfdd77465a3d3d34557e850976d689c51196d0b4054f51b59c8922ef491
 section_hash: 7804d0a901b70546b98051c1a4d0c635e9986a7fe9fb9ac052996f3e76a8e126
 locator_kind: amendment-record
-cited_by_node_ids: []
-projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
+cited_by_node_ids:
+  - IC.WISER_SELF_PERSPECTIVE
+projection_input_sha256: 1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169
 ---
 
 # AMEND.IC.WISDOM_WISER_SELF

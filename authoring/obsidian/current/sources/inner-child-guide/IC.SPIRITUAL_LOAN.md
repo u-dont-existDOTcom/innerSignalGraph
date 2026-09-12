@@ -11,7 +11,7 @@ source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
 section_hash: ba095d9e4eaeb0368aa4aedc7600beaf05a3fb4b9ddb9f3a242cc8ad738445d6
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
+projection_input_sha256: 1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169
 ---
 
 # Ask God for a Loan

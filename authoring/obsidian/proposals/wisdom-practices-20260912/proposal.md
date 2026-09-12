@@ -2,7 +2,7 @@
 authoring_contract: inner-signal-authoring-proposal-v1
 entity_type: proposal
 proposal_id: wisdom-practices-20260912
-status: draft
+status: reconciled
 base_projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
 target_graph_ids:
   - inner-child-directed-graph

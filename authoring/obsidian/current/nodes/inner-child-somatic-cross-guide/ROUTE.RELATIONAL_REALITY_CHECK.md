@@ -20,13 +20,14 @@ source_refs:
   - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
   - AMEND.CROSS.RELATIONAL_REALITY_CHECK
   - AMEND.CROSS.LITERATURE_TASK_PROGRESS
+  - AMEND.IC.WISDOM_CORE
 regression_refs:
   - G013
   - G014
   - G028
-base_record_sha256: 523c9902bcb088207a45d792169d995c6b09cfd994343c3681d65bd3044e46b2
-base_graph_sha256: beb05b08a340cf9bd62efacaab7619a3dd4f6adf6bedabb4927cfe4e3a329560
-projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
+base_record_sha256: 0f2baaf7247fd1c828fdeeceacf80087b9d27860271a871187c49ac5a113ae33
+base_graph_sha256: 61db2ed53fe2c0eaa386328c1a52df3081f1c96c46771a327c431b16261a5396
+projection_input_sha256: 1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169
 ---
 
 # Reality-check the relationship before self-analysis
@@ -117,7 +118,8 @@ projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f
     "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
     "Act outward where the situation can be changed, then route inward only if inner processing adds useful information or freedom rather than substituting for external judgment and action.",
     "Invest in relationships according to demonstrated reciprocity, empathy, accountability, and repair rather than repeatedly trying to extract capacities another person has not shown.",
-    "Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive."
+    "Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive.",
+    "After the current assessment, an optional criticism-kernel practice can separate a genuinely supported point from contempt. The imagined wiser future of the other person never outranks their demonstrated behavior or the user's boundary."
   ],
   "successSignals": [
     "Observable behavior, demonstrated capacity, interpersonal pressure, and the user's own internal reaction remain distinguishable.",
@@ -135,3 +137,5 @@ projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f
 [[current/governance/amendments/AMEND.CROSS.RELATIONAL_REALITY_CHECK]]
 
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]
+
+[[current/governance/amendments/AMEND.IC.WISDOM_CORE]]
