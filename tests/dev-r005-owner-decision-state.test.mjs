@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -90,7 +90,17 @@ const expectedD004 = {
   source: 'explicit-owner-selection-in-active-chat',
 };
 
-const expectedDecisions = [expectedD001, expectedD002, expectedD003, expectedD004];
+const expectedD005 = {
+  decisionId: 'DEV-R005-D005',
+  status: 'owner-selected',
+  selection: 'DETERMINISTIC_CBOR',
+  source: 'explicit-owner-selection-in-active-chat',
+};
+
+const expectedPriorDecisionBytes = [expectedD001, expectedD002, expectedD003, expectedD004]
+  .map((decision) => JSON.stringify(decision, null, 2).replace(/^/gm, '    '))
+  .join(',\n');
+const expectedDecisions = [expectedD001, expectedD002, expectedD003, expectedD004, expectedD005];
 const expectedDecisionBytes = expectedDecisions
   .map((decision) => JSON.stringify(decision, null, 2).replace(/^/gm, '    '))
   .join(',\n');
@@ -123,7 +133,7 @@ const expectedS003AuthorizedPaths = [
   'tests/dev-r005-owner-decision-state.test.mjs',
 ];
 
-test('DEV-R005 checkpoint preserves D001 and records exact D002-D004 decisions', async () => {
+test('DEV-R005 checkpoint byte-preserves D001-D004 and records exact D005 decision', async () => {
   const ledgerSource = await readUtf8(`${taskDirectory}/OWNER-DECISIONS.json`);
   const ledger = JSON.parse(ledgerSource);
 
@@ -138,9 +148,12 @@ test('DEV-R005 checkpoint preserves D001 and records exact D002-D004 decisions',
 
   const d001Start = ledgerSource.indexOf('    {\n      "decisionId": "DEV-R005-D001"');
   const d002Start = ledgerSource.indexOf('    {\n      "decisionId": "DEV-R005-D002"');
+  const d005Start = ledgerSource.indexOf('    {\n      "decisionId": "DEV-R005-D005"');
   assert.notEqual(d001Start, -1);
   assert.notEqual(d002Start, -1);
+  assert.notEqual(d005Start, -1);
   assert.equal(ledgerSource.slice(d001Start, d002Start), `${expectedD001Bytes},\n`);
+  assert.equal(ledgerSource.slice(d001Start, d005Start), `${expectedPriorDecisionBytes},\n`);
 
   const decisionsEnd = ledgerSource.indexOf('\n  ],\n  "pendingDecisionIds"');
   assert.notEqual(decisionsEnd, -1);
@@ -154,6 +167,17 @@ test('DEV-R005 checkpoint preserves D001 and records exact D002-D004 decisions',
   assert.equal(expectedD004.boundary.recoveryFirst, true);
   assert.equal(expectedD004.boundary.explicitDestructiveConfirmationRequired, true);
   assert.equal(expectedD004.boundary.deleteOnlyOnExplicitUserChoice, true);
+  assert.deepEqual(
+    ledger.decisions.map(({ decisionId }) => decisionId),
+    ['DEV-R005-D001', 'DEV-R005-D002', 'DEV-R005-D003', 'DEV-R005-D004', 'DEV-R005-D005'],
+  );
+  assert.deepEqual(Object.keys(ledger.decisions[4]), [
+    'decisionId',
+    'status',
+    'selection',
+    'source',
+  ]);
+  assert.equal(Object.hasOwn(ledger.decisions[4], 'boundary'), false);
 
   const forbiddenDecisionKeys = new Set([
     'cryptographicAlgorithm',
@@ -167,6 +191,13 @@ test('DEV-R005 checkpoint preserves D001 and records exact D002-D004 decisions',
     'exactSessionHandoffSchema',
     'defaultInactivityDuration',
     'fallbackAuthentication',
+    'cborLibrary',
+    'deterministicEncodingProfile',
+    'cborFieldLayout',
+    'cborMapKeyLayout',
+    'cborTaggingScheme',
+    'persistenceBackend',
+    'filesystemLocation',
   ]);
   const visit = (value) => {
     if (Array.isArray(value)) {
@@ -184,11 +215,11 @@ test('DEV-R005 checkpoint preserves D001 and records exact D002-D004 decisions',
 
   assert.doesNotMatch(
     ledgerSource,
-    /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY|credentialValue|privateContentHash|recoverySecretValue|"transcript"\s*:/i,
+    /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY|credentialValue|privateContentHash|privateDerivedHash|recoverySecretValue|"transcript"\s*:/i,
   );
 });
 
-test('DEV-R005 checkpoints preserve S001/S002 and independently bind S003 only', async () => {
+test('DEV-R005 checkpoints preserve S001-S003 and leave S004 unauthorized', async () => {
   const [s001Source, s002Source, s003Source, taskState, repositoryState] = await Promise.all([
     readUtf8(`${taskDirectory}/IMPLEMENTATION-AUTHORIZATION.json`),
     readUtf8(`${taskDirectory}/S002-IMPLEMENTATION-AUTHORIZATION.json`),
@@ -297,26 +328,42 @@ test('DEV-R005 checkpoints preserve S001/S002 and independently bind S003 only',
   assert.match(repositoryState, new RegExp(exactS002Path.replaceAll('.', '\\.')));
   assert.match(taskState, new RegExp(exactS003Path.replaceAll('.', '\\.')));
   assert.match(repositoryState, new RegExp(exactS003Path.replaceAll('.', '\\.')));
-  assert.match(taskState, /All four currently defined DEV-R005 owner decisions.*are resolved/);
-  assert.match(repositoryState, /All four currently defined owner decisions are resolved/);
-  assert.match(taskState, /pendingDecisionIds` is empty for D001-D004 only/);
-  assert.match(repositoryState, /pendingDecisionIds` is empty for D001-D004 only/);
+  assert.match(taskState, /S001, S002, and S003 are complete/);
+  assert.match(repositoryState, /S001, S002, and S003 are complete/);
+  assert.match(taskState, /All five currently defined DEV-R005 owner decisions.*are resolved/);
+  assert.match(repositoryState, /All five currently defined owner decisions are resolved/);
+  assert.match(taskState, /pendingDecisionIds` is empty for D001-D005 only/);
+  assert.match(repositoryState, /pendingDecisionIds` is empty for D001-D005 only/);
+  assert.match(taskState, /D005.*deterministic CBOR direction only/);
+  assert.match(repositoryState, /D005.*deterministic CBOR direction only/);
   assert.match(taskState, /implementationAuthorized` is not blanket DEV-R005 authority/);
   assert.match(repositoryState, /implementationAuthorized` is not blanket DEV-R005 authority/);
   assert.match(taskState, /S002.*IN_MEMORY_DUAL_WRAP_CRYPTO_ENVELOPE_ONLY/);
   assert.match(repositoryState, /S002.*IN_MEMORY_DUAL_WRAP_CRYPTO_ENVELOPE_ONLY/);
   assert.match(taskState, /S003.*IN_MEMORY_ROUTINE_UNLOCK_POLICY_CRYPTO_COMPOSITION_ONLY/);
   assert.match(repositoryState, /S003.*IN_MEMORY_ROUTINE_UNLOCK_POLICY_CRYPTO_COMPOSITION_ONLY/);
+  assert.match(taskState, /PR #41.*parked.*pre-D005.*noncanonical/i);
+  assert.match(repositoryState, /PR #41.*parked.*pre-D005.*noncanonical/i);
   assert.match(taskState, /No implementation after S003 is authorized/);
   assert.match(repositoryState, /No implementation after S003 is authorized/);
+  assert.match(taskState, /S004.*not authorized/);
+  assert.match(repositoryState, /S004.*not authorized/);
+  assert.match(taskState, /No serializer is active/);
+  assert.match(repositoryState, /No serializer is active/);
+  assert.match(taskState, /CBOR library, deterministic encoding profile, and field layout remain unselected/);
+  assert.match(repositoryState, /CBOR library, deterministic encoding profile, and field layout remain unselected/);
+  assert.match(taskState, /separate S004 authorization/);
+  assert.match(repositoryState, /separate S004 authorization/);
   assert.equal(s003Authorization.laterSlicesAuthorized, false);
+  const taskFiles = await readdir(taskDirectory);
+  assert.deepEqual(taskFiles.filter((name) => /^S004.*IMPLEMENTATION-AUTHORIZATION\.json$/i.test(name)), []);
   assert.match(taskState, /does not persist, encrypt, decrypt, migrate, unlock, recover, delete, authenticate, transmit/);
   assert.match(repositoryState, /no browser wiring, persistence, cryptography, OS integration, migration execution/);
   assert.match(taskState, /No additional product-policy decision is inferred or encoded/);
   const taskFixtureText = `${await readUtf8(`${taskDirectory}/OWNER-DECISIONS.json`)}\n${s001Source}\n${s002Source}\n${s003Source}\n${taskState}`;
   assert.doesNotMatch(
     taskFixtureText,
-    /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY|credentialValue|privateContentHash|recoverySecretValue|"transcript"\s*:/i,
+    /BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY|credentialValue|privateContentHash|privateDerivedHash|recoverySecretValue|"transcript"\s*:/i,
   );
   assert.doesNotMatch(taskFixtureText, /\b[a-f0-9]{64}\b/i);
 });
