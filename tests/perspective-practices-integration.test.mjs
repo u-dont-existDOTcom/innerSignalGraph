@@ -20,7 +20,6 @@ import { realizationPrompt } from "../src/prompts/realize.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const candidateRoot = path.join(root, "tasks", "wisdom-practices-20260912", "candidate");
 const candidateBundle = JSON.parse(await fs.readFile(path.join(candidateRoot, "candidate", "bundle.json"), "utf8"));
-const canonicalBundle = JSON.parse(await fs.readFile(path.join(root, "guide-graphs", "compiled", "bundle.json"), "utf8"));
 const proposalCases = await Promise.all(
   (await fs.readdir(path.join(root, "authoring", "obsidian", "proposals", "wisdom-practices-20260912", "tests")))
     .filter((name) => name.endsWith(".json"))
@@ -47,7 +46,7 @@ test("all supplied graph cases pass against the actual compiled candidate", asyn
   assert.equal(result.results.every((item) => item.ok), true);
 });
 
-test("proposal packet preserves task-backed cases and remains exactly owner-gated", async () => {
+test("proposal packet preserves task-backed cases and its exact approval derivative", async () => {
   const packet = await fs.readFile(path.join(candidateRoot, "packet", "proposal.zip"));
   const regression = runGuidePacketRegressionSuite(packet);
   assert.equal(regression.ok, true, JSON.stringify(regression.results.filter((item) => item.status !== "pass"), null, 2));
@@ -55,7 +54,7 @@ test("proposal packet preserves task-backed cases and remains exactly owner-gate
   const draft = regression.results.find((item) => item.id === "G961");
   assert.deepEqual(draft.evidence.requiredNodeIds, ["ROUTE.ACT_OUTWARD", "IC.DRAFT_EDITOR"]);
 
-  const verified = verifyGuidePacket(packet, { installedBundle: canonicalBundle });
+  const verified = verifyGuidePacket(packet);
   assert.equal(verified.ok, true, verified.errors.join("\n"));
   assert.equal(verified.approved, false);
   assert.equal(verified.installable, false);
@@ -64,6 +63,12 @@ test("proposal packet preserves task-backed cases and remains exactly owner-gate
   const decisions = JSON.parse(entries.get("audit/owner-decisions.json").toString("utf8"));
   assert.equal(decisions.status, "awaiting-owner");
   assert.equal(decisions.allApproved, false);
+
+  const approvedPacket = await fs.readFile(path.join(root, "tasks", "wisdom-practices-20260912", "approval", "authoring-wisdom-practices-20260912-approved.zip"));
+  const approved = verifyGuidePacket(approvedPacket);
+  assert.equal(approved.ok, true, approved.errors.join("\n"));
+  assert.equal(approved.approved, true);
+  assert.equal(approved.decisionCards.length, 32);
 });
 
 test("production context enables prompt rules only from complete candidate membership", async () => {
@@ -125,6 +130,14 @@ test("production context enables prompt rules only from complete candidate membe
 
 test("legacy and incomplete graph sets keep the capability and prompt rules disabled", async () => {
   const config = loadConfig({ mode: "mock", ledgerMode: "off", autopilotStateDir: await fs.mkdtemp(path.join(os.tmpdir(), "wisdom-legacy-")) });
+  const incompleteBundle = structuredClone(candidateBundle);
+  for (const graph of incompleteBundle.graphs) {
+    graph.nodes = graph.nodes.filter((node) => node.id !== "IC.WISER_SELF_PERSPECTIVE");
+    graph.edges = graph.edges.filter((edge) => edge.from !== "IC.WISER_SELF_PERSPECTIVE" && edge.to !== "IC.WISER_SELF_PERSPECTIVE");
+  }
+  const installedGraphs = path.join(config.guidePacketRoot, "installed", "current", "contents", "graphs");
+  await fs.mkdir(installedGraphs, { recursive: true });
+  await fs.writeFile(path.join(installedGraphs, "bundle.json"), `${JSON.stringify(incompleteBundle, null, 2)}\n`);
   const context = await buildContext({
     userMessage: "Synthetic legacy request.",
     recentTranscript: "",

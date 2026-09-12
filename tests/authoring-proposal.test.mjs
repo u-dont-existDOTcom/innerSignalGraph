@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -76,6 +77,20 @@ function approvePacket(buffer) {
   entries.set("SHA256SUMS.txt", Buffer.from(sums));
   return createStoredZip([...entries.entries()].map(([name, data]) => ({ name, data })), new Date("1980-01-01T00:00:00.000Z"));
 }
+
+test("authoring CLI accepts the required digit-bearing --sha256 reconciliation option", () => {
+  const result = spawnSync(process.execPath, [
+    path.join(sourceRoot, "src/cli/authoring.mjs"),
+    "proposal-reconcile",
+    "--id", "parser-check-r1",
+    "--packet-id", "authoring-parser-check-r1",
+    "--packet", "missing-approved-packet.zip",
+    "--sha256", "invalid"
+  ], { cwd: sourceRoot, encoding: "utf8" });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /"code":"PACKET_SHA256_REQUIRED"/);
+  assert.doesNotMatch(result.stderr, /AUTHORING_ARGUMENT_INVALID/);
+});
 
 test("proposal-new copies exact hash-bound records without changing graph authority", async (t) => {
   const root = await fixtureRoot(t);

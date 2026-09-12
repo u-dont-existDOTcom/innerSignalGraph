@@ -9,8 +9,8 @@ graph_id: inner-child-directed-graph
 from_node_id: IC.EXISTENTIAL_NOURISHMENT
 to_node_id: IC.LOVE_HORIZON_EXPLORATION
 relation: opens-when-curious
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
+base_graph_sha256: a82fe28e2917f3c301b588e770ee0e367ee56286abd94ed9cf4b37a34459fb08
+projection_input_sha256: 1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169
 ---
 
 # IC.EXISTENTIAL_NOURISHMENT opens-when-curious IC.LOVE_HORIZON_EXPLORATION

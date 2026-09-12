@@ -62,7 +62,8 @@
       "sourceRefs": [
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
         "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
-        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.IC.WISDOM_CORE"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -72,7 +73,8 @@
         "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
         "Act outward where the situation can be changed, then route inward only if inner processing adds useful information or freedom rather than substituting for external judgment and action.",
         "Invest in relationships according to demonstrated reciprocity, empathy, accountability, and repair rather than repeatedly trying to extract capacities another person has not shown.",
-        "Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive."
+        "Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive.",
+        "After the current assessment, an optional criticism-kernel practice can separate a genuinely supported point from contempt. The imagined wiser future of the other person never outranks their demonstrated behavior or the user's boundary."
       ],
       "avoid": [
         "Do not diagnose or automatically label another person emotionally immature, manipulative, narcissistic, or unsafe from a disagreement or a single frustrating interaction.",
@@ -93,16 +95,16 @@
         "self-possession"
       ],
       "effects": {
-        "deferNodes": [],
         "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not treat disagreement, emotional intensity, one mistake, a diagnosis, or the user's disappointment as proof of emotional immaturity.",
+          "Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character."
+        ],
         "requiredNuance": [
           "Relational capacity is not motive or diagnosis. The relevant evidence is what the person has demonstrated in the domain at issue, especially under disagreement, limits, accountability, and repair.",
           "A person trained to internalize blame, manage adults, or take on forced adulthood may reflexively analyze themselves or caretake first; use that linkage only when their history supports it, not as a universal explanation.",
           "Selecting for reciprocal maturity means calibrating closeness and investment toward demonstrated reciprocity; it does not require automatic cutoff or contempt for limited people."
-        ],
-        "forbiddenOverclaims": [
-          "Do not treat disagreement, emotional intensity, one mistake, a diagnosis, or the user's disappointment as proof of emotional immaturity.",
-          "Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character."
         ]
       },
       "defaultQuestion": "What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?",
@@ -501,14 +503,16 @@
       },
       "sourceRefs": [
         "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
-        "AMEND.CROSS.LITERATURE_ACTION_REVIEW"
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+        "AMEND.IC.WISDOM_CORE"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
         "Extract one concrete problem that can be changed and choose the next observable decision or action.",
         "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
         "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.",
-        "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again."
+        "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.",
+        "For a chosen interpersonal response that the person wants help composing, offer the draft/editor method if useful. A brief sufficient response, firm boundary, apology, pause or nonresponse can be appropriate. Preserve the return to inward care separately from outward completion."
       ],
       "avoid": [
         "Do not wait for complete emotional certainty before taking a reversible necessary action.",
@@ -526,13 +530,13 @@
         "guide"
       ],
       "effects": {
-        "deferNodes": [],
         "blockNodes": [],
-        "requiredNuance": [
-          "A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job."
-        ],
+        "deferNodes": [],
         "forbiddenOverclaims": [
           "Do not reduce every emotional problem to productivity or behavioral execution."
+        ],
+        "requiredNuance": [
+          "A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job."
         ]
       },
       "defaultQuestion": "What is the next observable action that could actually change this situation?",

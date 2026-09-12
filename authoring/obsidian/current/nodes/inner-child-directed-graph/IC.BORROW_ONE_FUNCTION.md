@@ -22,6 +22,7 @@ source_refs:
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
   - AMEND.CROSS.LITERATURE_TASK_PROGRESS
   - AMEND.IC.EMOTIONAL_TASK_GUIDANCE
+  - AMEND.IC.WISDOM_CORE
 regression_refs:
   - G001
   - G002
@@ -32,9 +33,9 @@ regression_refs:
   - G012
   - G017
   - G033
-base_record_sha256: 94f6ba7684c351849622447532f54e9f234f106bee02470d6301d37178ca7e02
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
+base_record_sha256: f9d1fd931567a255866c3d5898256d782530f0c4e66ad613577f4cb857718b55
+base_graph_sha256: a82fe28e2917f3c301b588e770ee0e367ee56286abd94ed9cf4b37a34459fb08
+projection_input_sha256: 1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169
 ---
 
 # Borrow one bounded adult function
@@ -110,7 +111,8 @@ projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f
     "Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.",
     "Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.",
     "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness.",
-    "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image."
+    "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.",
+    "A real past occasion of responding well or a fallible compassionate future perspective may supply one bounded function. Offer the relevant alternative only if useful; do not demand past success or a perfect state."
   ],
   "successSignals": [
     "The person can perform one adult function without pretending the whole role or the source’s wider authority is available."
@@ -130,3 +132,5 @@ projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_TASK_PROGRESS]]
 
 [[current/governance/amendments/AMEND.IC.EMOTIONAL_TASK_GUIDANCE]]
+
+[[current/governance/amendments/AMEND.IC.WISDOM_CORE]]

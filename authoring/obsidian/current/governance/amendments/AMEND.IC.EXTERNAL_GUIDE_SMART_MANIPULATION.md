@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: 65ab3d34bb9e421a987968879c9ebf81e859de828be9ab4bde64b8da52e61324
 source_file_sha256: eb0a4cfdd77465a3d3d34557e850976d689c51196d0b4054f51b59c8922ef491
-projection_input_sha256: 2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f
+projection_input_sha256: 1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169
 ---
 
 # AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
