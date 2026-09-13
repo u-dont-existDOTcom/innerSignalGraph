@@ -235,6 +235,9 @@ export function validatePrivateHandoffPacket(value) {
     throw new ValidationError("A continuation-safe private handoff requires a state diff and either a pending candidate or exact persisted delivery.");
   }
   if (value.hidden_reasoning_included !== false) throw new ValidationError("Private handoff must not include hidden reasoning.");
+  if (value.manifest?.repository_instructions_included !== false && value.repository_instructions_included !== false) {
+    throw new ValidationError("Private handoff must mechanically exclude repository instructions.");
+  }
   validateComponentManifest(value);
   return value;
 }
@@ -318,9 +321,11 @@ export function compilePrivateHandoffArtifact({ handoffId, record, recentVerbati
       schema_version: 1,
       serialization: "canonical-json-utf8-v1",
       maximum_chunk_bytes: PRIVATE_HANDOFF_CHUNK_BYTES,
-      components: componentManifest(components)
+      components: componentManifest(components),
+      repository_instructions_included: false
     },
-    hidden_reasoning_included: false
+    hidden_reasoning_included: false,
+    repository_instructions_included: false
   });
   const exactText = canonicalJson(packet);
   const artifact = createExactSourceArtifact({
@@ -362,7 +367,8 @@ export function projectHandoffTherapeuticContinuity(packet) {
     exact_pending_candidate_ids: value.pending_artifacts.map((entry) => entry.id),
     candidate_lifecycle: value.candidate_lifecycle ? clone(value.candidate_lifecycle) : null,
     delivery_completion: value.delivery_completion ? clone(value.delivery_completion) : null,
-    hidden_reasoning_included: false
+    hidden_reasoning_included: false,
+    repository_instructions_included: false
   });
 }
 

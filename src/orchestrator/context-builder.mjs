@@ -53,7 +53,8 @@ export async function buildContext(input, config) {
     perspectivePracticesEnabled: perspectivePracticesEnabled(graphBundle.graphs),
     guidePacketVersion: guide.manifest.guidePacketVersion ?? null,
     guideSources: guide.manifest.sources?.map((source) => ({ id: source.id, version: source.version })) ?? [],
-    guideExcerpts
+    guideExcerpts,
+    repository_instructions_included: false
   };
 }
 

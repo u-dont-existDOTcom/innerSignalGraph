@@ -78,7 +78,8 @@ function sealAuditPacket(input) {
       repair_rationale_history_included: false,
       prior_verdicts_included: false,
       tools_available: false,
-      filesystem_available: false
+      filesystem_available: false,
+      repository_instructions_included: false
     })
   });
 }
@@ -196,7 +197,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         targeted_older_evidence: context.targeted_older_evidence,
         current_episode: context.current_episode,
         repair_induced_error_checks: REPAIR_INDUCED_ERROR_CHECKS,
-        disclosure_manifest: { producer_hidden_reasoning_included: false, provider_trace_included: false, tools_available: false, filesystem_available: false }
+        disclosure_manifest: { producer_hidden_reasoning_included: false, provider_trace_included: false, tools_available: false, filesystem_available: false, repository_instructions_included: false }
       });
       const generated = await generatePacketOnly(repairProvider, {
         prompt: privateRuntimeRepairPrompt(packet),

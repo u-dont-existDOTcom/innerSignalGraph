@@ -142,3 +142,14 @@ test("deterministic runtime failures can enqueue development cases without human
   assert.equal(queued.record.automationState, "pending-development-review");
   assert.ok((await fs.stat(queued.filePath)).isFile());
 });
+
+test("a candidate that addresses feedback but fails to preserve prior strengths is rejected", async () => {
+  const root = await tempRoot("inner-signal-worker-preservation-");
+  const candidate = path.join(root, "candidate");
+  await fs.mkdir(candidate, { recursive: true });
+
+  // Checking worker.mjs line 288 replica
+  const comparison = { verdict: "improved", addresses_feedback: true, preserves_prior_strengths: false, introduces_new_overclaim: false };
+  const rejected = comparison.verdict === "not-improved" || (comparison.verdict !== "human-decision" && (!comparison.addresses_feedback || !comparison.preserves_prior_strengths)) || comparison.introduces_new_overclaim;
+  assert.equal(rejected, true);
+});

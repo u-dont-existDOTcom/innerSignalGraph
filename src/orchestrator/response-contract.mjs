@@ -127,7 +127,13 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   }
 
   const answerBody = paragraphs.join("\n\n").trim();
-  const userFacingAnswer = [answerBody, question].filter(Boolean).join("\n\n");
+
+  const normalizedAnswerBody = normalizeQuestion(answerBody);
+  const normalizedQuestion = normalizeQuestion(question);
+  const userFacingAnswer = normalizedQuestion && normalizedAnswerBody.endsWith(normalizedQuestion)
+    ? answerBody
+    : [answerBody, question].filter(Boolean).join("\n\n");
+
   const rendererQuestion = text(realization?.next_question);
   const requiredNodeIds = requiredRealizationNodeIds(plan);
   const normalizedAnswer = answerBody.replace(/\s+/g, " ").trim();

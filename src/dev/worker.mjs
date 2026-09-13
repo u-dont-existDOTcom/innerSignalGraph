@@ -285,7 +285,7 @@ export async function processOneDevelopmentJob({ config, sourceRoot, onProgress 
       const replayReview = replayReviewRun.result;
       await writeJson(path.join(jobDir, `cycle-${cycle}-replay-review.json`), replayReview);
       latest = { cycle, model, candidateRoot, audit, changeInfo, gates, review, replay, replayReview };
-      if (replayReview.verdict === "not-improved" || (replayReview.verdict !== "human-decision" && !replayReview.addresses_feedback) || replayReview.introduces_new_overclaim) {
+      if (replayReview.verdict === "not-improved" || (replayReview.verdict !== "human-decision" && (!replayReview.addresses_feedback || !replayReview.preserves_prior_strengths)) || replayReview.introduces_new_overclaim) {
         priorFailure = { stage: "replay-review", failureClass: DEV_FAILURE.REVIEW_REJECTION, ...latest };
         resume = null;
         continue;

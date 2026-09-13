@@ -47,7 +47,8 @@ export async function buildPrivateCandidateAuditInput({ caseAccessService, caseI
       "If this is reconstructed, explicitly inspect every repair_induced_error_check and do not rely on the parent candidate's audit.",
       "Do not convert hypotheses into facts, repeat answered questions, expose hidden reasoning, or substitute a summary/hash for candidate_response."
     ],
-    hidden_reasoning_included: false
+    hidden_reasoning_included: false,
+    repository_instructions_included: false
   });
 }
 

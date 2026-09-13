@@ -115,3 +115,17 @@ test("response contract rejects a self-reported realization whose evidence quote
   assert.deepEqual(realized.responseContract.missingRealizationNodeIds, ["IC.BORROW_ONE_FUNCTION"]);
   assert.equal(realized.responseContract.rejectedRealizations[0].id, "IC.BORROW_ONE_FUNCTION");
 });
+
+test("response contract does not duplicate a question that is already present at the end of the answer body", () => {
+  const realized = enforceResponseContract({
+    answer: "The credibility problem needs evidence.\n\nWhich age or version of you is the resentment directed toward?",
+    next_question: "Which age or version of you is the resentment directed toward?"
+  }, {
+    plan: context.interventionContract,
+    adjudication
+  });
+
+  const questionMatches = realized.answer.match(/Which age or version of you is the resentment directed toward\?/g) ?? [];
+  assert.equal(questionMatches.length, 1);
+  assert.equal(realized.next_question, context.interventionContract.nextQuestion);
+});
