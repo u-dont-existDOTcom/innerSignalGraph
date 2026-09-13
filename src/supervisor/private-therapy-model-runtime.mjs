@@ -15,6 +15,7 @@ import {
 } from "../schemas/private-runtime.mjs";
 import { privateRuntimeAuditPrompt } from "../prompts/private-runtime-audit.mjs";
 import { privateRuntimeRepairPrompt } from "../prompts/private-runtime-repair.mjs";
+import { assembleCanonicalCandidateText } from "./canonical-candidate-text.mjs";
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -98,12 +99,6 @@ async function loadRuntimeCase(privateCaseSource, caseId, authContext) {
   return privateCaseSource.loadOrCreate(caseId);
 }
 
-function finalCandidateText(result) {
-  if (typeof result?.answer !== "string" || !result.answer.trim()) throw new ValidationError("Therapy pipeline did not return candidate response text.");
-  const question = typeof result.next_question === "string" ? result.next_question.trim() : "";
-  return question ? `${result.answer}\n\n${question}` : result.answer;
-}
-
 export function createPrivateTherapyModelRuntime({ privateCaseSource, providers, config } = {}) {
   if (!privateCaseSource || !providers || !config) throw new ValidationError("Private therapy model runtime requires case source, providers, and config.");
   const auditProvider = providers.privateAuditor ?? providers.anthropic;
@@ -134,7 +129,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         interventionContract: result.interventionContract
       });
       return {
-        exactText: finalCandidateText(result),
+        exactText: assembleCanonicalCandidateText(result),
         contextId: producerContextId,
         caseState,
         stateDiff: diffCaseStates(previousCaseState, caseState),

@@ -11,6 +11,7 @@ import { listPendingDevelopmentCases, writeJobState, readHumanDecision, readDeve
 import { markRoadmapTask } from "./roadmap-queue.mjs";
 import { runDeterministicDevelopmentGates } from "./verification.mjs";
 import { DEV_FAILURE, classifyDevelopmentFailure, normalizeImplementerResult } from "./failure-classification.mjs";
+import { replayReviewRequiresRetry } from "./replay-review-admission.mjs";
 
 async function exists(filePath) {
   try { await fs.access(filePath); return true; } catch { return false; }
@@ -285,7 +286,7 @@ export async function processOneDevelopmentJob({ config, sourceRoot, onProgress 
       const replayReview = replayReviewRun.result;
       await writeJson(path.join(jobDir, `cycle-${cycle}-replay-review.json`), replayReview);
       latest = { cycle, model, candidateRoot, audit, changeInfo, gates, review, replay, replayReview };
-      if (replayReview.verdict === "not-improved" || (replayReview.verdict !== "human-decision" && !replayReview.addresses_feedback) || replayReview.introduces_new_overclaim) {
+      if (replayReviewRequiresRetry(replayReview)) {
         priorFailure = { stage: "replay-review", failureClass: DEV_FAILURE.REVIEW_REJECTION, ...latest };
         resume = null;
         continue;
