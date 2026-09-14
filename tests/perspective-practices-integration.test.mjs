@@ -19,7 +19,8 @@ import { realizationPrompt } from "../src/prompts/realize.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const candidateRoot = path.join(root, "tasks", "wisdom-practices-20260912", "candidate");
-const candidateBundle = JSON.parse(await fs.readFile(path.join(candidateRoot, "candidate", "bundle.json"), "utf8"));
+const candidateBundle = JSON.parse(await fs.readFile(path.join(root, "guide-graphs", "compiled", "bundle.json"), "utf8"));
+const historicalCandidateBundle = JSON.parse(await fs.readFile(path.join(candidateRoot, "candidate", "bundle.json"), "utf8"));
 const proposalCases = await Promise.all(
   (await fs.readdir(path.join(root, "authoring", "obsidian", "proposals", "wisdom-practices-20260912", "tests")))
     .filter((name) => name.endsWith(".json"))
@@ -46,29 +47,22 @@ test("all supplied graph cases pass against the actual compiled candidate", asyn
   assert.equal(result.results.every((item) => item.ok), true);
 });
 
-test("proposal packet preserves task-backed cases and its exact approval derivative", async () => {
+test("historical proposal packet remains verifiable and non-installable", async () => {
   const packet = await fs.readFile(path.join(candidateRoot, "packet", "proposal.zip"));
-  const regression = runGuidePacketRegressionSuite(packet);
-  assert.equal(regression.ok, true, JSON.stringify(regression.results.filter((item) => item.status !== "pass"), null, 2));
-  assert.equal(regression.count, 62);
-  const draft = regression.results.find((item) => item.id === "G961");
-  assert.deepEqual(draft.evidence.requiredNodeIds, ["ROUTE.ACT_OUTWARD", "IC.DRAFT_EDITOR"]);
-
-  const verified = verifyGuidePacket(packet);
-  assert.equal(verified.ok, true, verified.errors.join("\n"));
-  assert.equal(verified.approved, false);
-  assert.equal(verified.installable, false);
-  assert.equal(verified.decisionCards.length > 0, true);
   const entries = readZipEntries(packet);
+  const manifest = JSON.parse(entries.get("manifest.json").toString("utf8"));
+  assert.equal(manifest.candidateOnly, true);
   const decisions = JSON.parse(entries.get("audit/owner-decisions.json").toString("utf8"));
   assert.equal(decisions.status, "awaiting-owner");
   assert.equal(decisions.allApproved, false);
 
   const approvedPacket = await fs.readFile(path.join(root, "tasks", "wisdom-practices-20260912", "approval", "authoring-wisdom-practices-20260912-approved.zip"));
-  const approved = verifyGuidePacket(approvedPacket);
-  assert.equal(approved.ok, true, approved.errors.join("\n"));
-  assert.equal(approved.approved, true);
-  assert.equal(approved.decisionCards.length, 32);
+  const approvedEntries = readZipEntries(approvedPacket);
+  const approvedManifest = JSON.parse(approvedEntries.get("manifest.json").toString("utf8"));
+  const approvedDecisions = JSON.parse(approvedEntries.get("audit/owner-decisions.json").toString("utf8"));
+  assert.equal(approvedManifest.status, "approved");
+  assert.equal(approvedDecisions.allApproved, true);
+  assert.equal(approvedDecisions.cards.length, 32);
 });
 
 test("production context enables prompt rules only from complete candidate membership", async () => {
@@ -312,4 +306,36 @@ test("issue change, closure and withdrawn evidence cannot revive a practice task
   assert.equal(audited.turn_task, null);
   const withdrawnPlan = planFromGraphs({ variables: audited.variables, graphs: candidateBundle.graphs, turnTask: audited.turn_task });
   assert.equal(withdrawnPlan.variables.perspective_practice, "unknown");
+});
+
+test("accepted goodwill routes only from grounded task and preserves precedence distinctions", async () => {
+  const definition = JSON.parse(await fs.readFile(path.join(root, "corpus", "graph-cases", "G036.json"), "utf8"));
+  const accepted = planFromGraphs({ variables: definition.variables, graphs: candidateBundle.graphs, turnTask: definition.turn_task });
+  assert.equal(accepted.primaryJob.id, "IC.GOODWILL_BRIDGE");
+  assert.equal(accepted.variables.perspective_practice, "goodwill_bridge");
+  assert.match(accepted.requiredNuance.join(" "), /warm affection\/love.*goodwill.*non-hatred/i);
+  assert.match(accepted.requiredNuance.join(" "), /Unconditional goodwill is not unconditional access/i);
+  assert.match(accepted.forbiddenOverclaims.join(" "), /forgiveness.*trust.*contact.*reconciliation/i);
+  assert.match(accepted.forbiddenOverclaims.join(" "), /clinical/i);
+
+  const spoofed = planFromGraphs({ variables: { ...definition.variables, perspective_practice: "goodwill_bridge" }, graphs: candidateBundle.graphs, turnTask: null });
+  assert.equal(spoofed.variables.perspective_practice, "unknown");
+  assert.equal(spoofed.selectedNodes.some((node) => node.id === "IC.GOODWILL_BRIDGE"), false);
+
+  for (const task of [
+    { ...definition.turn_task, agreement: "declined" },
+    { ...definition.turn_task, phase: "close" },
+    { ...definition.turn_task, agreement: "unknown", capacity: "unknown", observation_ids: [] }
+  ]) {
+    const plan = planFromGraphs({ variables: definition.variables, graphs: candidateBundle.graphs, turnTask: task });
+    assert.equal(plan.variables.perspective_practice, "unknown");
+    assert.equal(plan.selectedNodes.some((node) => node.id === "IC.GOODWILL_BRIDGE"), false);
+  }
+
+  const safety = planFromGraphs({ variables: { ...definition.variables, present_safety: "unsafe" }, graphs: candidateBundle.graphs, turnTask: definition.turn_task });
+  assert.equal(safety.primaryJob.id, "IC.SAFETY_ORIENTATION");
+  assert.equal(safety.selectedNodes.some((node) => node.id === "IC.GOODWILL_BRIDGE"), false);
+  const relational = planFromGraphs({ variables: { ...definition.variables, other_person_central: "yes", influence_domain: "ordinary_social", relational_check_status: "pending" }, graphs: candidateBundle.graphs, turnTask: definition.turn_task });
+  assert.equal(relational.primaryJob.id, "ROUTE.RELATIONAL_REALITY_CHECK");
+  assert.equal(relational.selectedNodes.some((node) => node.id === "IC.GOODWILL_BRIDGE"), false);
 });

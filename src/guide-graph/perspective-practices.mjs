@@ -9,7 +9,8 @@ export const PERSPECTIVE_NODE_BY_VALUE = Object.freeze({
   "past_competence": "IC.PAST_COMPETENCE",
   "common_humanity": "IC.COMMON_HUMANITY",
   "criticism_kernel": "IC.CRITICISM_KERNEL",
-  "caring_company": "IC.CARING_COMPANY"
+  "caring_company": "IC.CARING_COMPANY",
+  "goodwill_bridge": "IC.GOODWILL_BRIDGE"
 });
 export const PERSPECTIVE_PRACTICE_VALUES = Object.freeze([
   ...Object.keys(PERSPECTIVE_NODE_BY_VALUE), "unknown"

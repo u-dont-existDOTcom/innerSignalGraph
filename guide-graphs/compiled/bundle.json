@@ -850,6 +850,16 @@
           "excerpt": "Religious and philosophical variants are optional references attached to a practice function, not extra required graph stages or additions to the always-loaded constitution. Preserve textual provenance and distinguish original teaching from modern adaptation. The mustard-seed account is a commentarial story; ocean-of-tears and former-mother reflections retain their rebirth context. Bible, Quran, Buddhist and Stoic language depends on individual preference, not a presumed hierarchy of acceptability. Do not force forgiveness, minimize grief, make postmortem claims as fact, promise that kindness reforms an aggressor, or misattribute an unverified maxim. Keep full reference detail in the attached research source and reference cards, not every response.",
           "status": "owner-approved",
           "domain": "inner-child"
+        },
+        {
+          "id": "AMEND.IC.WISDOM_GOODWILL_BRIDGE",
+          "heading": "AMEND.IC.WISDOM_GOODWILL_BRIDGE",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "b91a238f9e8f44abda5928e11951436deb9d1bee074f88197cdde4e892deefbf",
+          "excerpt": "When warm affiliative love or affection is not honestly accessible toward oneself, a younger self, a difficult person or an enemy, offer the smallest sincere benevolent wish the person can endorse rather than requiring the feeling. 'May they be loving, peaceful, and free' is an exemplar and equivalent user-chosen wording is valid; 'may they be happy' is optional and must not be forced when it feels false or like rewarding harmful behavior. Warm affection/love, benevolent goodwill/intention and non-hatred/non-cruelty are related but non-identical, with no mandatory progression and no requirement to end at 'I love you'. Goodwill may open warmth as an optional reported effect, but does not prove warm love. If goodwill is unavailable, non-cruelty or refusal to feed hatred may be the lower-cost floor without renaming it love. For harmful behavior, goodwill may wish for capacities that reduce harm without approving the behavior. Unconditional goodwill is not unconditional access: it never implies forgiveness, trust, contact, reconciliation, reduced accountability, removed consequences, relaxed boundaries, exposure to danger or a prediction about the other person. Preserve proportionate anger, external reality checking, ordinary protection, refusal, distance, documentation, support, consequences and trust calibration. Use secular language by default; religious framing is preference-dependent and not clinical-efficacy evidence. This owner-approved proposed practice is informed by adjacent compassion/metta work; engineering tests do not establish clinical efficacy.",
+          "status": "owner-approved",
+          "domain": "inner-child"
         }
       ]
     },
@@ -3776,6 +3786,96 @@
             ]
           },
           "defaultQuestion": ""
+        },
+        {
+          "id": "IC.GOODWILL_BRIDGE",
+          "title": "Offer sincere goodwill without calling it warm love",
+          "kind": "decision-node",
+          "tier": 4,
+          "priority": 88,
+          "activation": {
+            "all": [
+              {
+                "field": "perspective_practice",
+                "op": "eq",
+                "value": "goodwill_bridge"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "ability_to_stop",
+                "op": "eq",
+                "value": "no"
+              },
+              {
+                "field": "ability_to_return",
+                "op": "eq",
+                "value": "no"
+              },
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              },
+              {
+                "field": "suicidal_state",
+                "op": "eq",
+                "value": "imminent"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.IC.WISDOM_CORE",
+            "AMEND.IC.WISDOM_GOODWILL_BRIDGE",
+            "AMEND.IC.WISDOM_SOURCES"
+          ],
+          "authority": "owner-approved-extension",
+          "recommendations": [
+            "Do not demand warm love or affection. Find the smallest benevolent wish the person can sincerely endorse toward the self, a younger self, a difficult person or an enemy.",
+            "Offer `May you be loving, peaceful, and free` as an exemplar, not mandatory wording. User-chosen wording is valid, and `may you be happy` is optional; do not force it when it feels false or rewarding of harm.",
+            "Keep warm affection/love, benevolent goodwill/intention and non-hatred/non-cruelty distinct. Goodwill may open some warmth, but warmth is optional and is not the success criterion or proof of love.",
+            "For harmful behavior, a wish for greater love, peace, wisdom, safety or freedom may support changed capacity without approving the behavior. Preserve accountability, consequences, boundaries, protection, proportionate anger, distance, documentation and trust calibration.",
+            "If goodwill is unavailable, non-cruelty or refusal to feed hatred can be the lower-cost floor without calling it love. Use secular language by default and keep spiritual framing preference-dependent."
+          ],
+          "avoid": [
+            "Unconditional goodwill is not unconditional access. Goodwill never implies forgiveness, trust, contact, reconciliation, safety, moral approval, reduced accountability, removed consequences, relaxed boundaries, exposure to danger or a prediction about the other person.",
+            "Do not treat inability to access goodwill as spiritual failure, pathology or responsibility for another person.",
+            "Do not claim clinical validation for these exact phrases or this graded bridge; engineering tests do not establish clinical efficacy.",
+            "Do not replace urgent protection, external reality checking, ordinary refusal, support or consequences with a benevolent wish."
+          ],
+          "successSignals": [
+            "A sincerely endorsable goodwill or non-cruelty floor is available without relabelling it warm love or weakening protection."
+          ],
+          "tags": [
+            "wisdom-practice",
+            "goodwill-bridge",
+            "optional"
+          ],
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [
+              "Goodwill does not prove warm love, forgiveness, trust, contact, reconciliation, safety or moral approval.",
+              "Inability to access goodwill is not spiritual failure, pathology or responsibility for another person.",
+              "The exact phrases and graded bridge are not clinically validated."
+            ],
+            "requiredNuance": [
+              "Warm affection/love, benevolent goodwill/intention and non-hatred/non-cruelty are distinct resources with no mandatory progression.",
+              "Unconditional goodwill is not unconditional access.",
+              "Accountability, consequences, boundaries, protection and trust calibration remain available."
+            ]
+          },
+          "defaultQuestion": ""
         }
       ],
       "edges": [
@@ -3963,6 +4063,16 @@
           "from": "IC.BORROW_ONE_FUNCTION",
           "relation": "offers-alternative",
           "to": "IC.PAST_COMPETENCE"
+        },
+        {
+          "from": "IC.BORROW_LOVE",
+          "relation": "offers-lower-cost-alternative",
+          "to": "IC.GOODWILL_BRIDGE"
+        },
+        {
+          "from": "ROUTE.RELATIONAL_REALITY_CHECK",
+          "relation": "preserves-boundaries",
+          "to": "IC.GOODWILL_BRIDGE"
         }
       ],
       "taskPolicyVersion": 1,
@@ -5912,9 +6022,9 @@
   ],
   "stats": {
     "graphCount": 3,
-    "nodeCount": 61,
-    "edgeCount": 82,
-    "sourceSectionCount": 100,
-    "ownerAmendmentCount": 36
+    "nodeCount": 62,
+    "edgeCount": 84,
+    "sourceSectionCount": 101,
+    "ownerAmendmentCount": 37
   }
 }

@@ -1,0 +1,48 @@
+{
+  "id": "G036",
+  "title": "accepted goodwill bridge task",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "partial",
+    "witness_capacity": "present",
+    "coherent_child_state": "present",
+    "body_capacity": "adequate",
+    "current_intent": "conversation",
+    "other_person_central": "no",
+    "influence_domain": "none",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "present",
+    "attention_loop": "absent",
+    "inward_attention_effect": "neutral",
+    "perspective_practice": "goodwill_bridge"
+  },
+  "turn_task": {
+    "version": 1,
+    "issue": "goodwill bridge",
+    "node_id": "IC.GOODWILL_BRIDGE",
+    "kind": "emotion",
+    "phase": "practice",
+    "agreement": "accepted",
+    "observation_ids": ["G036-OBS-1"],
+    "question_focus": "emotional_fit",
+    "emotion": { "process": "relational_hurt", "response": "", "change_point": "not_started" },
+    "marker": "The person explicitly accepted this bounded goodwill practice.",
+    "last_response": "",
+    "capacity": "adequate",
+    "action": null
+  },
+  "expected": {
+    "primary": "IC.GOODWILL_BRIDGE",
+    "selectedIncludes": ["IC.GOODWILL_BRIDGE"],
+    "requiredExecutionIncludes": ["IC.GOODWILL_BRIDGE"],
+    "forbiddenOverclaimPatterns": ["does not prove"],
+    "requiredNuancePatterns": ["unconditional goodwill is not unconditional access"]
+  }
+}

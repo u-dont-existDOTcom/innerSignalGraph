@@ -12,7 +12,7 @@ section_hash: c3b4774007f514e6db02340266945eb0fbfa6462e7c57d604fe1735ba189653e
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.CREDIBILITY_REPAIR
-projection_input_sha256: 1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169
+projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
 ---
 
 # Make a Simple Vow

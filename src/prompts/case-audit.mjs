@@ -1,6 +1,6 @@
 import { CASE_VARIABLE_ENUMS } from "../guide-graph/contract.mjs";
 import { durableCaseContextBlock, longitudinalClinicalRules } from "./common.mjs";
-import { PERSPECTIVE_PRACTICES_AUDIT_RULES } from "./perspective-practices.mjs";
+import { PERSPECTIVE_PRACTICES_AUDIT_RULES_V9 as PERSPECTIVE_PRACTICES_AUDIT_RULES } from "./perspective-practices.mjs";
 
 export function caseAuditPrompt(context, snapshot) {
   const system = `You are the adversarial case-formulation auditor. Review a structured extraction before deterministic routing.

@@ -7,6 +7,7 @@ for (const [value,id] of Object.entries(PERSPECTIVE_NODE_BY_VALUE)) {
   test('requested task routes: '+value,()=>assert.equal(perspectivePracticeForTask(task(id),graph),value));
   test('declined task does not route: '+value,()=>assert.equal(perspectivePracticeForTask(task(id,{agreement:'declined'}),graph),'unknown'));
 }
+test('goodwill bridge is part of the complete nine-node capability gate',()=>assert.equal(PERSPECTIVE_NODE_BY_VALUE.goodwill_bridge,'IC.GOODWILL_BRIDGE'));
 test('legacy graph disabled',()=>assert.equal(perspectivePracticesEnabled([{nodes:graph[0].nodes}]),false));
 test('partial installation disabled',()=>assert.equal(perspectivePracticesEnabled([{taskPolicyVersion:1,nodes:graph[0].nodes.slice(1)}]),false));
 test('closed task does not route',()=>assert.equal(perspectivePracticeForTask(task(PERSPECTIVE_NODE_BY_VALUE.draft_editor,{phase:'close'}),graph),'unknown'));

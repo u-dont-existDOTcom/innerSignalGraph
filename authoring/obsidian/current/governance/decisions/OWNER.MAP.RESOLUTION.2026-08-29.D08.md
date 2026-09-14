@@ -7,7 +7,7 @@ decision_id: OWNER.MAP.RESOLUTION.2026-08-29.D08
 status: approved-qualified
 future_guide_proposal_required: false
 base_record_sha256: 398d7ddb20fb781f4c00d0c28b8c48d2580835ae96faebbdb5424c278ba4823f
-projection_input_sha256: 1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169
+projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
 ---
 
 # OWNER.MAP.RESOLUTION.2026-08-29.D08
