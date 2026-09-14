@@ -1,6 +1,6 @@
 import { CASE_VARIABLE_ENUMS } from "../guide-graph/contract.mjs";
 import { durableCaseContextBlock } from "./common.mjs";
-import { PERSPECTIVE_PRACTICES_EXTRACTION_RULES } from "./perspective-practices.mjs";
+import { PERSPECTIVE_PRACTICES_EXTRACTION_RULES_V9 as PERSPECTIVE_PRACTICES_EXTRACTION_RULES } from "./perspective-practices.mjs";
 
 export function caseExtractionPrompt(context) {
   const hasPrior = Boolean(context.priorCaseSnapshot?.variables);

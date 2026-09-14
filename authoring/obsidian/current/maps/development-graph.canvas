@@ -25,6 +25,12 @@
       "toNode": "79f9439ff30879abcb2d2348c617b66eb300dee2ef96e2b616e77110ad9809f5"
     },
     {
+      "fromNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80",
+      "id": "09c3325863d15d4f19d0298908921bd8ad4ea96686b55a650bf6ef5866a670a2",
+      "label": "offers-lower-cost-alternative",
+      "toNode": "073eb31b7024f54f2542465aedd4d683cda42976fc5177cc2d53cc0f8d19d3b3"
+    },
+    {
       "fromNode": "27324d61a60f8178d929c2187521d2e92a7c73bd135de27b1f611b7b90a318db",
       "id": "0fd4fe1ae59d9df061c193d5923a1c0d93b8922cc65b6329582d13e1c677bd27",
       "label": "does-not-establish-readiness",
@@ -107,6 +113,12 @@
       "id": "2533d0ac1c60ebd12c053e6c2b3d03436dba21d7dbf5956e1303ae1c0ec76310",
       "label": "followed-by",
       "toNode": "53a9ddb7f819388accd5566867c8c75ed46d2b49d317719666f40c6ad7e41879"
+    },
+    {
+      "fromNode": "38a66c980c1aed36d63f20d2720597f8073064448804593acdbbe7a57900f019",
+      "id": "260939bab061a1d8918bd017e6ef590c4c87c241698ad7763ce1b7c63f31f24e",
+      "label": "preserves-boundaries",
+      "toNode": "073eb31b7024f54f2542465aedd4d683cda42976fc5177cc2d53cc0f8d19d3b3"
     },
     {
       "fromNode": "dcd640cbd8161505f76ff16710136e7731e4f526baa74b0f09a04c3dd041d681",
@@ -522,6 +534,15 @@
       "y": 220
     },
     {
+      "file": "current/nodes/inner-child-directed-graph/IC.GOODWILL_BRIDGE.md",
+      "height": 140,
+      "id": "073eb31b7024f54f2542465aedd4d683cda42976fc5177cc2d53cc0f8d19d3b3",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 1980
+    },
+    {
       "file": "current/nodes/inner-child-directed-graph/IC.GUIDE_LATER.md",
       "height": 140,
       "id": "0ad12526759ac2032a6df506212c0f90ebce3a7d603e935db86d1d680a0a6052",
@@ -564,7 +585,7 @@
       "type": "file",
       "width": 300,
       "x": 1320,
-      "y": 2640
+      "y": 2860
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN.md",
@@ -591,7 +612,7 @@
       "type": "file",
       "width": 300,
       "x": 1320,
-      "y": 2200
+      "y": 2420
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_LOVE_CAPACITY.md",
@@ -959,7 +980,7 @@
       "type": "file",
       "width": 300,
       "x": 1320,
-      "y": 2420
+      "y": 2640
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.EXISTENTIAL_NOURISHMENT.md",
@@ -1133,7 +1154,7 @@
       "type": "file",
       "width": 300,
       "x": 1320,
-      "y": 1980
+      "y": 2200
     },
     {
       "color": "3",
