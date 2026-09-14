@@ -74,7 +74,8 @@ test("auditor receives only the authorized packet and no producer context or hid
     repair_rationale_history_included: false,
     prior_verdicts_included: false,
     tools_available: false,
-    filesystem_available: false
+    filesystem_available: false,
+    repository_instructions_included: false
   });
 });
 
