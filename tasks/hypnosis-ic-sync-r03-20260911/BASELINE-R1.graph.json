@@ -1,0 +1,1604 @@
+{
+  "contractVersion": "guide-graph-v1",
+  "graphId": "inner-signal-hypnosis-directed-graph",
+  "guideId": "inner-signal-hypnosis-guide",
+  "version": "2026-09-11-r1-candidate",
+  "description": "Guide-specific executable candidate graph derived from the hash-bound Inner Signal r02 self-hypnosis guide; separate from the canonical production graph and existing inner-child/somatic bundle.",
+  "status": "candidate",
+  "sourceAuthority": {
+    "repository": "u-dont-existDOTcom/joel-articles",
+    "branch": "research/hypnosis-bottom-up-six-books-20260910",
+    "path": "articles/inner-signal/master.html",
+    "masterSha256": "06987f70e7264a5ac72d132e4b8420cf75cda60f33bbb430c83a0146e612adf9",
+    "snapshotSha256": "35532449c0bccb2de357c35f675a7a48c4a5ba8ba322456bdd1924e204aef678",
+    "snapshotMethod": "reader-visible text extraction from exact hash-bound HTML master; native-object markup excluded from graph source text"
+  },
+  "nodes": [
+    {
+      "id": "HYP.SAFETY_ORIENTATION",
+      "title": "Orient and preserve stopping/return capacity first",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 100,
+      "activation": {
+        "any": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.CAPACITY",
+        "HYP.SUPPORT",
+        "HYP.RETURN"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Pause inward work when present safety, orientation, stopping, or return capacity is not intact.",
+        "Use ordinary room/body/time orientation and available human support before deeper work."
+      ],
+      "avoid": [
+        "Do not deepen trance, interpret memories, or make consequential commitments while disoriented or unable to stop."
+      ],
+      "successSignals": [
+        "The person can identify the present setting, stop the exercise, and return to ordinary awareness."
+      ],
+      "tags": [
+        "safety",
+        "orientation",
+        "return"
+      ],
+      "effects": {
+        "deferNodes": [
+          "HYP.INNER_MEETING",
+          "HYP.WEEKLY_DEEPER",
+          "HYP.ALTERED_STATE_GATE"
+        ],
+        "blockNodes": [],
+        "requiredNuance": [
+          "A difficult feeling can be wanted and workable while orientation and choice remain intact."
+        ],
+        "forbiddenOverclaims": [
+          "Do not infer incapacity from a trauma label alone."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.CHOOSE_PURPOSE",
+      "title": "Choose the purpose and scope before entering",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 94,
+      "activation": {
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.ORIENTATION",
+        "HYP.INDUCTION",
+        "HYP.CAPACITY"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Choose a manageable purpose: exploration, positive resource development, rehearsal, or simple practice.",
+        "Match depth to current capacity rather than treating every session as trauma work."
+      ],
+      "avoid": [
+        "Do not make hidden-truth discovery the default goal."
+      ],
+      "successSignals": [
+        "The session has a bounded purpose and a known stopping/return route."
+      ],
+      "tags": [
+        "scope",
+        "intent",
+        "practice"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.DEHYPNOSIS",
+      "title": "Restore choice when outside or internal influence is steering",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 93,
+      "activation": {
+        "any": [
+          {
+            "field": "external_authority_pull",
+            "op": "in",
+            "value": [
+              "elevated",
+              "strong"
+            ]
+          },
+          {
+            "field": "influence_domain",
+            "op": "in",
+            "value": [
+              "ordinary_social",
+              "internal",
+              "experienced_other_than_self",
+              "uncertain_ontology"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.SOCIAL_VOICE",
+        "HYP.DEHYPNOSIS",
+        "HYP.DEHYPNOSIS_CHECKLIST"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Name the influence, separate observation from suggestion, and recover the ability to agree, disagree, or delay.",
+        "Use reality testing without assuming all influence is malicious."
+      ],
+      "avoid": [
+        "Do not confuse soft, spiritual, therapeutic, or loving language with proof that choice is intact."
+      ],
+      "successSignals": [
+        "The person can state their own position and compare it with the influence acting on them."
+      ],
+      "tags": [
+        "de-hypnosis",
+        "influence",
+        "agency"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.INDUCTION",
+      "title": "Gather attention without disappearing",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 92,
+      "activation": {
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "gentle_practice",
+              "hypnosis",
+              "deep_dialogue",
+              "integration"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.INDUCTION",
+        "HYP.INDUCTION_LIBRARY"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use a fitting induction style and let actual responses guide pacing.",
+        "Keep the person able to modify, reject, or end suggestions."
+      ],
+      "avoid": [
+        "Do not force a prescribed sensation, depth, metaphor, or relaxation response."
+      ],
+      "successSignals": [
+        "Attention becomes more absorbed while stopping and return remain available."
+      ],
+      "tags": [
+        "hypnosis",
+        "induction",
+        "agency"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.REENTRY_CUE",
+      "title": "Use a deliberate learned cue for easier future entry",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 78,
+      "activation": {
+        "all": [
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "hypnosis"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.REENTRY_CUE",
+        "HYP.NLP"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "After full entry and return are familiar, pair a user-chosen word or gesture with the familiar receptive state.",
+        "Test the cue only in separately chosen practice and retire it if it intrudes or stops fitting."
+      ],
+      "avoid": [
+        "Do not train or use a trance re-entry cue while driving, operating equipment, swimming, or responsible for someone needing attention.",
+        "Do not treat a cue as an irresistible command."
+      ],
+      "successSignals": [
+        "Deliberate use may shorten entry without reducing the person’s ability to decline, redirect, or return."
+      ],
+      "tags": [
+        "hypnosis",
+        "cue",
+        "anchor",
+        "learning"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "A trance-entry cue and an everyday alert-calming cue have different intended effects."
+        ],
+        "forbiddenOverclaims": [
+          "Do not promise instant induction or perfect deconditioning."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.FULL_RETURN",
+      "title": "Come all the way back and verify reorientation",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 99,
+      "activation": {
+        "any": [
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "in",
+            "value": [
+              "no",
+              "unknown"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.RETURN"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "End the session deliberately, restore room/body/time orientation, voluntary movement, open eyes, and alertness.",
+        "Treat the return as a demonstrated state change, not as words that automatically prove completion."
+      ],
+      "avoid": [
+        "Do not leave a vague or indefinite altered-state instruction active between sessions."
+      ],
+      "successSignals": [
+        "The person is oriented, voluntarily moving, eyes open when appropriate, and alert enough for ordinary activity."
+      ],
+      "tags": [
+        "return",
+        "orientation",
+        "closure"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.INNER_MEETING",
+      "title": "Hold the inner meeting without forcing a cast of characters",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 88,
+      "activation": {
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "gentle_practice",
+              "deep_dialogue",
+              "hypnosis",
+              "integration"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.MIND_MAP",
+        "HYP.INNER_CHILD",
+        "HYP.INNER_MEETING"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Let the younger state, protector, whole self, heart, or another useful frame appear if it actually fits.",
+        "Keep Nurturer, Protector, and Leader/Guide functions available without requiring role-play."
+      ],
+      "avoid": [
+        "Do not turn every sensation, urge, or silence into proof of a part."
+      ],
+      "successSignals": [
+        "A useful relationship with the present experience emerges without losing present-day adult choice."
+      ],
+      "tags": [
+        "inner-child",
+        "parts",
+        "communion"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.RESPONSIVE_INVITATION",
+      "title": "Let the next invitation grow from what actually happened",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 91,
+      "activation": {
+        "none": [
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.RESPONSIVE",
+        "HYP.QUESTIONS",
+        "HYP.NLP"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Notice one thing accurately, make one fitting invitation, then leave enough silence to receive the response.",
+        "Let explicit mismatch, new information, or a changed bodily response alter the next move."
+      ],
+      "avoid": [
+        "Do not keep following the script when the live response has changed the problem."
+      ],
+      "successSignals": [
+        "The next prompt is traceable to the actual response rather than the script’s expected trajectory."
+      ],
+      "tags": [
+        "responsive",
+        "hypnosis",
+        "investigation"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.BODY_SIGNAL_NOT_VERDICT",
+      "title": "Treat bodily response as information, not an explanation of itself",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 90,
+      "activation": {
+        "any": [
+          {
+            "field": "protective_response",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "solar_plexus_tension",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "activation",
+            "op": "in",
+            "value": [
+              "moderate",
+              "high"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.RESPONSIVE",
+        "HYP.CONTACT_DOSE",
+        "HYP.ANXIETY_BODY_FIRST"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Track tightening, softening, movement impulses, numbness, warmth, distance, or other changes as observations.",
+        "Ask what changed and whether the invitation fits before assigning meaning."
+      ],
+      "avoid": [
+        "Do not infer truth, falsity, a protector, a memory, or a cause from one bodily response alone."
+      ],
+      "successSignals": [
+        "The observation remains distinct from the interpretation."
+      ],
+      "tags": [
+        "body",
+        "bottom-up",
+        "epistemics"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Somatic authority can guide tolerance, readiness, preference, and response without settling external historical truth."
+        ],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.CONTACT_DOSE",
+      "title": "Change the amount of contact instead of forcing through",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 89,
+      "activation": {
+        "any": [
+          {
+            "field": "activation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "dissociation",
+            "op": "in",
+            "value": [
+              "mild",
+              "high"
+            ]
+          },
+          {
+            "field": "body_capacity",
+            "op": "eq",
+            "value": "low"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.CONTACT_DOSE",
+        "HYP.CAPACITY"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Move closer to, farther from, or between difficult and neutral/resource experience according to the actual response.",
+        "Use smaller contact when intensity rises faster than reflective capacity."
+      ],
+      "avoid": [
+        "Do not equate more intensity with more therapeutic depth."
+      ],
+      "successSignals": [
+        "The person can stay in workable contact without losing the ability to observe, choose, and return."
+      ],
+      "tags": [
+        "titration",
+        "pendulation",
+        "dose"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.WANTED_CARE",
+      "title": "Offer the care or distance that is actually wanted",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 84,
+      "activation": {
+        "any": [
+          {
+            "field": "coherent_child_state",
+            "op": "in",
+            "value": [
+              "present",
+              "unclear"
+            ]
+          },
+          {
+            "field": "protective_response",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.CARE",
+        "HYP.INNER_CHILD"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Let the Nurturer offer warmth, the Protector enact a boundary, and the Leader help with later action when those functions fit.",
+        "If a younger state says “don’t come closer,” respect the distance and notice what follows."
+      ],
+      "avoid": [
+        "Do not treat a correct-sounding nurturing speech as proof that the care was received."
+      ],
+      "successSignals": [
+        "The response shows whether the offered care, boundary, or distance is useful now."
+      ],
+      "tags": [
+        "care",
+        "inner-child",
+        "consent"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.POSITIVE_RESOURCE",
+      "title": "Use hypnosis for love, play, confidence, creativity, or rehearsal too",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 72,
+      "activation": {
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "gentle_practice",
+              "integration"
+            ]
+          },
+          {
+            "field": "love_access",
+            "op": "in",
+            "value": [
+              "accessible",
+              "limited"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.FINISH",
+        "HYP.INDUCTION_LIBRARY",
+        "HYP.NLP"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "A session may deliberately develop warmth, play, confidence, spiritual communion, creativity, or rehearsal of a chosen action.",
+        "Judge a resource by what it actually does for this person rather than by how positive it sounds."
+      ],
+      "avoid": [
+        "Do not require a wound, hidden cause, or child-state to justify practice."
+      ],
+      "successSignals": [
+        "The selected resource increases useful capacity or supports a chosen real-world action."
+      ],
+      "tags": [
+        "resource",
+        "positive-practice",
+        "rehearsal"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.DAILY_PRACTICE",
+      "title": "Use a short regular practice to build fluency",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 70,
+      "activation": {
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "gentle_practice"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.DAILY"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use the short practice to rehearse entry, responsive listening, return, and one grounded follow-through."
+      ],
+      "avoid": [
+        "Do not turn daily practice into compulsory deep processing."
+      ],
+      "successSignals": [
+        "Self-hypnosis becomes easier to conduct without a script or app."
+      ],
+      "tags": [
+        "practice",
+        "daily",
+        "skill-building"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.WEEKLY_DEEPER",
+      "title": "Use deeper practice only when current capacity supports it",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 66,
+      "activation": {
+        "all": [
+          {
+            "field": "deep_work_readiness",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "yes"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "yes"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.WEEKLY",
+        "HYP.CAPACITY"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use longer practice when orientation, stopping, return, and enough adult capacity are available.",
+        "Return to a smaller dose when deeper work destabilizes daily functioning."
+      ],
+      "avoid": [
+        "Do not treat the weekly format as permission to intensify automatically."
+      ],
+      "successSignals": [
+        "Depth increases while ordinary-life functioning and return capacity remain intact."
+      ],
+      "tags": [
+        "practice",
+        "deep-dialogue",
+        "capacity"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.CAPACITY_BEFORE_CONTENT",
+      "title": "Capacity before content",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 97,
+      "activation": {
+        "any": [
+          {
+            "field": "deep_work_readiness",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "body_capacity",
+            "op": "eq",
+            "value": "low"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "panic_instability",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.CAPACITY",
+        "HYP.SUPPORT"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Prioritize the ability to stay present, stop, return, and function over obtaining more content.",
+        "When current capacity narrows, reduce dose or move to support rather than treating the resistance as something to break."
+      ],
+      "avoid": [
+        "Do not make trauma disclosure, memory retrieval, or intensity a test of courage."
+      ],
+      "successSignals": [
+        "The work stays inside a range the person can actually metabolize and leave."
+      ],
+      "tags": [
+        "capacity",
+        "safety",
+        "pacing"
+      ],
+      "effects": {
+        "deferNodes": [
+          "HYP.WEEKLY_DEEPER",
+          "HYP.MEMORY_CAUTION",
+          "HYP.ALTERED_STATE_GATE"
+        ],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.DISSOCIATION_RESPONSE",
+      "title": "When you dissociate or feel unreal, restore contact before interpretation",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 96,
+      "activation": {
+        "any": [
+          {
+            "field": "dissociation",
+            "op": "in",
+            "value": [
+              "mild",
+              "high"
+            ]
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.DISSOCIATION",
+        "HYP.RETURN",
+        "HYP.CAPACITY"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Widen attention to the room and ordinary sensory contact; shorten or end the inner exercise as needed.",
+        "Use fractionation/return practice to strengthen voluntary movement into and out of internal focus."
+      ],
+      "avoid": [
+        "Do not treat loss of orientation as therapeutic depth."
+      ],
+      "successSignals": [
+        "Present-time orientation returns and the person can choose whether to continue."
+      ],
+      "tags": [
+        "dissociation",
+        "orientation",
+        "troubleshooting"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.ANALYSIS_BALANCE",
+      "title": "Let analysis and intuition correct each other",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 62,
+      "activation": {
+        "any": [
+          {
+            "field": "epistemic_mode_balance",
+            "op": "in",
+            "value": [
+              "analytic_overrides_intuitive",
+              "intuitive_overrides_analytic",
+              "oscillating"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.ANALYTICAL",
+        "HYP.DEHYPNOSIS_CHECKLIST"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "During the experience, keep enough judgment to reject implausible or unwelcome suggestions; do extended verification afterward.",
+        "If analysis is interrupting every moment, defer nonurgent fact-checking until after full return."
+      ],
+      "avoid": [
+        "Do not ask the person to switch off critical judgment."
+      ],
+      "successSignals": [
+        "The person can remain absorbed without surrendering the ability to question or later verify."
+      ],
+      "tags": [
+        "analysis",
+        "intuition",
+        "epistemics"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.GRANDIOSITY_BYPASS_CHECK",
+      "title": "Check grandiosity, bliss, and spiritual bypass against ordinary reality",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 85,
+      "activation": {
+        "any": [
+          {
+            "field": "bypass_risk",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "spiritual_bypass_pattern",
+            "op": "in",
+            "value": [
+              "attainment_outpaces_love",
+              "doctrine_outpaces_love",
+              "group_warmth_mismatch"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.GRANDIOSITY",
+        "HYP.ALTERED_STATES"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Compare expansive conclusions with ordinary functioning, relationships, evidence, sleep, and the ability to accept correction.",
+        "Preserve meaningful spiritual experience without making it automatic authority."
+      ],
+      "avoid": [
+        "Do not treat intensity, bliss, synchronicity, or a cosmic feeling as proof of external truth or special status."
+      ],
+      "successSignals": [
+        "The person can hold the experience while remaining corrigible and grounded."
+      ],
+      "tags": [
+        "grandiosity",
+        "spirituality",
+        "bypass"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.MEMORY_CAUTION",
+      "title": "Keep hypnotic memory vividness separate from historical certainty",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 98,
+      "activation": {
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "memory_processing",
+              "photo_work"
+            ]
+          },
+          {
+            "field": "memory_source_risk",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.HIDDEN_TRUTH",
+        "HYP.WHAT_NOT",
+        "HYP.ORACLE",
+        "HYP.SOURCES"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Treat images, impressions, bodily reactions, and apparent memories as experiences that may be meaningful without assuming they are historically exact.",
+        "Use external evidence and ordinary verification for historical claims."
+      ],
+      "avoid": [
+        "Do not use hypnosis, ideomotor signals, bodily yes/no responses, or confidence as a truth serum."
+      ],
+      "successSignals": [
+        "Experience, interpretation, and historical claim remain separable."
+      ],
+      "tags": [
+        "memory",
+        "epistemics",
+        "hypnosis"
+      ],
+      "effects": {
+        "deferNodes": [
+          "HYP.WEEKLY_DEEPER"
+        ],
+        "blockNodes": [],
+        "requiredNuance": [
+          "A vivid or emotionally convincing experience can still be inaccurate in detail or origin."
+        ],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.ALTERED_STATE_GATE",
+      "title": "Stabilize before interpreting an altered state",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 95,
+      "activation": {
+        "any": [
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "altered_state"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.ALTERED_STATES",
+        "HYP.STABILIZE_INTERPRET"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Check medical danger, environment, orientation, body overload, and ability to return before metaphysical interpretation.",
+        "Use the smallest intervention that restores present-time choice."
+      ],
+      "avoid": [
+        "Do not intensify an unstable altered state in order to learn what it “really” is."
+      ],
+      "successSignals": [
+        "The person is oriented enough to examine meaning without being driven by the state."
+      ],
+      "tags": [
+        "altered-state",
+        "triage",
+        "orientation"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.NONORDINARY_RESPONSE_CHECK",
+      "title": "Use response and boundaries without pretending to settle ontology",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 81,
+      "activation": {
+        "any": [
+          {
+            "field": "influence_domain",
+            "op": "in",
+            "value": [
+              "experienced_other_than_self",
+              "uncertain_ontology"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.NONORDINARY",
+        "HYP.RESPONSE_CHECK"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Start with room, body, basic safety, and the effect of different responses.",
+        "Compassion, distance, boundaries, or stopping can be practical choices without deciding what the experience ultimately is."
+      ],
+      "avoid": [
+        "Do not use a two-breath response pattern as a diagnostic test of internal part versus external presence."
+      ],
+      "successSignals": [
+        "A workable response is found while causal/metaphysical uncertainty remains explicit where unresolved."
+      ],
+      "tags": [
+        "nonordinary",
+        "ontology",
+        "boundary"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.ANXIETY_BODY_FIRST",
+      "title": "For anxiety, start with body and dose before explanation",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 83,
+      "activation": {
+        "any": [
+          {
+            "field": "panic_instability",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "activation",
+            "op": "eq",
+            "value": "high"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.ANXIETY_BODY_FIRST"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Orient, track activation, locate neutral or supportive contact, and adjust dose before asking for a story.",
+        "Use inner-child, breathing, tapping, SE-like tracking, Focusing, or body supports only when they fit the person."
+      ],
+      "avoid": [
+        "Do not assume anxiety proves a specific hidden cause."
+      ],
+      "successSignals": [
+        "Activation becomes more workable or the person identifies that another form of help is needed."
+      ],
+      "tags": [
+        "anxiety",
+        "body-first",
+        "regulation"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.NLP_LANGUAGE",
+      "title": "Use indirect language as a responsive tool, not a covert authority trick",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 64,
+      "activation": {
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "hypnosis",
+              "gentle_practice",
+              "deep_dialogue"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.NLP",
+        "HYP.INDUCTION"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use pacing, awareness verbs, presuppositions, gentle cause-effect bridges, embedded invitations, ethical binds, and other patterns to support absorption and choice.",
+        "Keep the wording answerable to the live response."
+      ],
+      "avoid": [
+        "Do not use confusion, hidden triggers, amnesia, involuntary identity effects, or covert influence as the point of the technique."
+      ],
+      "successSignals": [
+        "Language remains hypnotically rich while the person can correct, reject, or redirect it."
+      ],
+      "tags": [
+        "NLP",
+        "indirect-language",
+        "agency"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.SUPPORT_WITH_TRAINED_PERSON",
+      "title": "Move certain methods to trained, trauma-informed support when needed",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 86,
+      "activation": {
+        "any": [
+          {
+            "field": "support_available",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "deep_work_readiness",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "panic_instability",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "HYP.SUPPORT",
+        "HYP.TRAINED_METHODS"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "When the method, current response, or risk exceeds self-guided capacity, use a trauma-informed clinician trained in that method.",
+        "Keep educational explanation available even when unsupervised enactment is not appropriate."
+      ],
+      "avoid": [
+        "Do not use the clinician-present label to imply that coercion, overreach, or recovered-memory certainty becomes acceptable."
+      ],
+      "successSignals": [
+        "Support matches the actual procedure and current risk rather than the diagnostic label alone."
+      ],
+      "tags": [
+        "support",
+        "escalation",
+        "clinician"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.PRACTITIONER_VETTING",
+      "title": "Vet the practitioner by what they actually do, not the method name alone",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 76,
+      "activation": {},
+      "sourceRefs": [
+        "HYP.PRACTITIONER",
+        "HYP.OUTSIDE_GUIDANCE",
+        "HYP.SOURCES"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Ask about training, purpose, consent, pacing, memory claims, response to objection, boundaries, and how sessions end.",
+        "Distinguish credentials from demonstrated competence and from the conduct of one reported session."
+      ],
+      "avoid": [
+        "Do not approve or reject a practitioner solely because they use a named technique such as regression, ego-state work, or Ericksonian hypnosis."
+      ],
+      "successSignals": [
+        "The user can describe the actual procedure and evaluate it against consent, pacing, epistemic, and return criteria."
+      ],
+      "tags": [
+        "practitioner",
+        "vetting",
+        "consultation"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "HYP.APP_BRIDGE",
+      "title": "Use the app as teacher, consultant, and optional voice guide without pretending it has a body",
+      "kind": "decision-node",
+      "tier": 5,
+      "priority": 58,
+      "activation": {},
+      "sourceRefs": [
+        "HYP.APP",
+        "HYP.PRACTITIONER"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Text can teach self-hypnosis, script-writing, theory, and practitioner vetting; voice can optionally guide a user-directed hypnotic session.",
+        "The app should ask when information from the body is needed and acknowledge that it lacks embodied observation and human intuition."
+      ],
+      "avoid": [
+        "Do not position self-hypnosis as merely a temporary inferior substitute for a human hypnotist.",
+        "Do not claim the app can detect unreported bodily changes."
+      ],
+      "successSignals": [
+        "The user can become increasingly independent, or use the app to prepare for a suitable practitioner, without the app becoming the authority over their experience."
+      ],
+      "tags": [
+        "app",
+        "teaching",
+        "voice",
+        "bridge"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    }
+  ],
+  "edges": [
+    {
+      "from": "HYP.SAFETY_ORIENTATION",
+      "to": "HYP.CHOOSE_PURPOSE",
+      "relation": "enables"
+    },
+    {
+      "from": "HYP.CHOOSE_PURPOSE",
+      "to": "HYP.INDUCTION",
+      "relation": "routes-to"
+    },
+    {
+      "from": "HYP.CHOOSE_PURPOSE",
+      "to": "HYP.DEHYPNOSIS",
+      "relation": "routes-to"
+    },
+    {
+      "from": "HYP.CHOOSE_PURPOSE",
+      "to": "HYP.ANXIETY_BODY_FIRST",
+      "relation": "routes-to"
+    },
+    {
+      "from": "HYP.CHOOSE_PURPOSE",
+      "to": "HYP.ALTERED_STATE_GATE",
+      "relation": "routes-to"
+    },
+    {
+      "from": "HYP.INDUCTION",
+      "to": "HYP.INNER_MEETING",
+      "relation": "enables"
+    },
+    {
+      "from": "HYP.INDUCTION",
+      "to": "HYP.REENTRY_CUE",
+      "relation": "can-train"
+    },
+    {
+      "from": "HYP.INDUCTION",
+      "to": "HYP.FULL_RETURN",
+      "relation": "must-end-with"
+    },
+    {
+      "from": "HYP.NLP_LANGUAGE",
+      "to": "HYP.INDUCTION",
+      "relation": "supports"
+    },
+    {
+      "from": "HYP.NLP_LANGUAGE",
+      "to": "HYP.RESPONSIVE_INVITATION",
+      "relation": "supports"
+    },
+    {
+      "from": "HYP.INNER_MEETING",
+      "to": "HYP.RESPONSIVE_INVITATION",
+      "relation": "precedes"
+    },
+    {
+      "from": "HYP.RESPONSIVE_INVITATION",
+      "to": "HYP.BODY_SIGNAL_NOT_VERDICT",
+      "relation": "is-qualified-by"
+    },
+    {
+      "from": "HYP.RESPONSIVE_INVITATION",
+      "to": "HYP.CONTACT_DOSE",
+      "relation": "routes-to"
+    },
+    {
+      "from": "HYP.RESPONSIVE_INVITATION",
+      "to": "HYP.WANTED_CARE",
+      "relation": "routes-to"
+    },
+    {
+      "from": "HYP.RESPONSIVE_INVITATION",
+      "to": "HYP.POSITIVE_RESOURCE",
+      "relation": "routes-to"
+    },
+    {
+      "from": "HYP.CONTACT_DOSE",
+      "to": "HYP.RESPONSIVE_INVITATION",
+      "relation": "supports"
+    },
+    {
+      "from": "HYP.RESPONSIVE_INVITATION",
+      "to": "HYP.FULL_RETURN",
+      "relation": "precedes"
+    },
+    {
+      "from": "HYP.FULL_RETURN",
+      "to": "HYP.DAILY_PRACTICE",
+      "relation": "supports-practice"
+    },
+    {
+      "from": "HYP.FULL_RETURN",
+      "to": "HYP.WEEKLY_DEEPER",
+      "relation": "supports-practice"
+    },
+    {
+      "from": "HYP.CAPACITY_BEFORE_CONTENT",
+      "to": "HYP.WEEKLY_DEEPER",
+      "relation": "gates"
+    },
+    {
+      "from": "HYP.CAPACITY_BEFORE_CONTENT",
+      "to": "HYP.INNER_MEETING",
+      "relation": "gates"
+    },
+    {
+      "from": "HYP.DISSOCIATION_RESPONSE",
+      "to": "HYP.FULL_RETURN",
+      "relation": "routes-to"
+    },
+    {
+      "from": "HYP.DISSOCIATION_RESPONSE",
+      "to": "HYP.CAPACITY_BEFORE_CONTENT",
+      "relation": "routes-to"
+    },
+    {
+      "from": "HYP.ANALYSIS_BALANCE",
+      "to": "HYP.RESPONSIVE_INVITATION",
+      "relation": "supports"
+    },
+    {
+      "from": "HYP.GRANDIOSITY_BYPASS_CHECK",
+      "to": "HYP.ALTERED_STATE_GATE",
+      "relation": "routes-to"
+    },
+    {
+      "from": "HYP.MEMORY_CAUTION",
+      "to": "HYP.SUPPORT_WITH_TRAINED_PERSON",
+      "relation": "gates"
+    },
+    {
+      "from": "HYP.ALTERED_STATE_GATE",
+      "to": "HYP.NONORDINARY_RESPONSE_CHECK",
+      "relation": "precedes"
+    },
+    {
+      "from": "HYP.NONORDINARY_RESPONSE_CHECK",
+      "to": "HYP.DEHYPNOSIS",
+      "relation": "supports"
+    },
+    {
+      "from": "HYP.ANXIETY_BODY_FIRST",
+      "to": "HYP.INDUCTION",
+      "relation": "can-precede"
+    },
+    {
+      "from": "HYP.SUPPORT_WITH_TRAINED_PERSON",
+      "to": "HYP.PRACTITIONER_VETTING",
+      "relation": "includes"
+    },
+    {
+      "from": "HYP.APP_BRIDGE",
+      "to": "HYP.PRACTITIONER_VETTING",
+      "relation": "supports"
+    },
+    {
+      "from": "HYP.APP_BRIDGE",
+      "to": "HYP.DAILY_PRACTICE",
+      "relation": "supports-learning"
+    },
+    {
+      "from": "HYP.POSITIVE_RESOURCE",
+      "to": "HYP.DAILY_PRACTICE",
+      "relation": "supports"
+    },
+    {
+      "from": "HYP.POSITIVE_RESOURCE",
+      "to": "HYP.WEEKLY_DEEPER",
+      "relation": "supports"
+    },
+    {
+      "from": "HYP.DEHYPNOSIS",
+      "to": "HYP.ANALYSIS_BALANCE",
+      "relation": "supports"
+    }
+  ],
+  "surfaceGroups": [
+    {
+      "name": "Safety and agency",
+      "nodeIds": [
+        "HYP.SAFETY_ORIENTATION",
+        "HYP.CAPACITY_BEFORE_CONTENT",
+        "HYP.DISSOCIATION_RESPONSE",
+        "HYP.FULL_RETURN",
+        "HYP.DEHYPNOSIS"
+      ]
+    },
+    {
+      "name": "Core self-hypnosis path",
+      "nodeIds": [
+        "HYP.CHOOSE_PURPOSE",
+        "HYP.INDUCTION",
+        "HYP.REENTRY_CUE",
+        "HYP.INNER_MEETING",
+        "HYP.RESPONSIVE_INVITATION",
+        "HYP.BODY_SIGNAL_NOT_VERDICT",
+        "HYP.CONTACT_DOSE",
+        "HYP.WANTED_CARE",
+        "HYP.POSITIVE_RESOURCE",
+        "HYP.DAILY_PRACTICE",
+        "HYP.WEEKLY_DEEPER"
+      ]
+    },
+    {
+      "name": "Troubleshooting and epistemics",
+      "nodeIds": [
+        "HYP.ANALYSIS_BALANCE",
+        "HYP.GRANDIOSITY_BYPASS_CHECK",
+        "HYP.MEMORY_CAUTION",
+        "HYP.ANXIETY_BODY_FIRST",
+        "HYP.ALTERED_STATE_GATE",
+        "HYP.NONORDINARY_RESPONSE_CHECK"
+      ]
+    },
+    {
+      "name": "Language, support, and app bridge",
+      "nodeIds": [
+        "HYP.NLP_LANGUAGE",
+        "HYP.SUPPORT_WITH_TRAINED_PERSON",
+        "HYP.PRACTITIONER_VETTING",
+        "HYP.APP_BRIDGE"
+      ]
+    }
+  ],
+  "primaryJourneys": [
+    "Learn self-hypnosis: choose purpose → induction → responsive invitation → full return → daily practice; add the re-entry cue only after entry and return are familiar.",
+    "Inner-child / communion work: induction → inner meeting → responsive invitation → contact-dose adjustment and/or wanted care → full return.",
+    "Safety-first route: safety/orientation → capacity before content → dissociation response/full return when needed → trained support when the method or response exceeds self-guided capacity.",
+    "Influence / epistemic route: de-hypnosis → analysis/intuition balance → memory caution or nonordinary response check when relevant.",
+    "Practitioner bridge: trained support → practitioner vetting, with the app as teacher/consultant rather than a claim of embodied therapist intuition."
+  ],
+  "surfaceTitle": "Inner Signal self-hypnosis generated audit map"
+}
