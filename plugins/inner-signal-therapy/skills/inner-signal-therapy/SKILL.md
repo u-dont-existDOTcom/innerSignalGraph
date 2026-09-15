@@ -7,6 +7,8 @@ Read `references/INNER-CHILD-THERAPY-MAP.md` and `references/PHENOMENOLOGY-AND-R
 
 Use the supplied therapy map as advisory architecture. Understand this particular person rather than mechanically reciting the map. Preserve uncertainty and safety constraints. Give the most useful response and next move. Do not mention the map.
 
+This skill and the `inner-signal-private-continuity` skill are capabilities of the same **InnerSignal** plugin. Do not tell the user to install a separate handoff/continuity plugin. If the user asks to continue from an InnerSignal handoff or private case and the host exposes the read-only private continuity tools, use that capability first and then continue therapy with the recovered exact context. If those tools are not available in the current host, state the capability boundary rather than inventing prior context.
+
 ## Inner-speech screen
 
 Near the beginning of the first substantive therapy interaction, unless the answer is already available or an immediate safety/urgent issue should take precedence, ask one brief non-diagnostic screen:
