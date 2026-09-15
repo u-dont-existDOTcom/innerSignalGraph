@@ -1,0 +1,53 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches: [stable]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    name: deterministic-package
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.18.0
+
+      - name: Run stable package verifier
+        run: npm run verify
+
+      - name: Verify exact reviewed InnerSignal plugin blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_blob() {
+            local expected="$1" path="$2"
+            test "$(git hash-object "$path")" = "$expected"
+          }
+          check_blob 4a1f9b08b23da2facd85875c19cc3660a159938c plugins/inner-signal-therapy/.codex-plugin/plugin.json
+          check_blob 91e337e39f2fc2ea8bcea4ef415b3e7c06cd6f04 plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md
+          check_blob b7561064fdbf82e67a4edd1642bc79851e300b54 plugins/inner-signal-therapy/skills/inner-signal-private-continuity/SKILL.md
+          check_blob 1fb150a0a0c2a05188fa3acf35d0f564fde9395d plugins/inner-signal-therapy/skills/inner-signal-therapy/references/INNER-CHILD-THERAPY-MAP.md
+          check_blob 6b66a331042c6ce8470e8c5f63e80e4dbc195180 plugins/inner-signal-therapy/skills/inner-signal-therapy/references/PHENOMENOLOGY-AND-REPRESENTATION.md
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const m = JSON.parse(fs.readFileSync('plugins/inner-signal-therapy/.codex-plugin/plugin.json', 'utf8'));
+          if (m.version !== '0.2.0' || m.interface?.displayName !== 'InnerSignal') throw new Error('Wrong InnerSignal release manifest.');
+          if (!m.interface?.capabilities?.includes('Advisory') || !m.interface?.capabilities?.includes('Read')) throw new Error('Unified capabilities missing.');
+          NODE
