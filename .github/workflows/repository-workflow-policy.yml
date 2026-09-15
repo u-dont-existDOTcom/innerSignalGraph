@@ -31,8 +31,9 @@ jobs:
           test -f .github/workflows/verify.yml
           test -f .github/workflows/repository-workflow-policy.yml
           test -f .github/workflows/codeql.yml
-          if grep -R --line-number --fixed-strings 'pull_request_target' .github/workflows; then
-            echo 'pull_request_target is forbidden in stable workflows' >&2
+          forbidden_event='pull_request''_target'
+          if grep -R --line-number --fixed-strings "$forbidden_event" .github/workflows; then
+            echo 'Unsafe privileged PR event is forbidden in stable workflows' >&2
             exit 1
           fi
           while IFS= read -r use; do
