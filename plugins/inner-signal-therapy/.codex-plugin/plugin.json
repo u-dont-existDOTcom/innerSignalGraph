@@ -1,0 +1,24 @@
+{
+  "name": "inner-signal-therapy",
+  "version": "0.1.0",
+  "description": "Use the Inner Signal therapy map as advisory architecture for therapeutic responses.",
+  "author": {
+    "name": "u-dont-existDOTcom"
+  },
+  "repository": "https://github.com/u-dont-existDOTcom/innerSignalGraph",
+  "keywords": ["therapy", "inner-child", "self-relationship", "wellness"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Inner Signal Therapy",
+    "shortDescription": "Therapeutic responses guided by the Inner Signal map.",
+    "longDescription": "Uses the frozen Inner Signal therapy map as advisory architecture for inner-child and self-relationship responses.",
+    "developerName": "u-dont-existDOTcom",
+    "category": "Wellness",
+    "capabilities": ["Advisory"],
+    "defaultPrompt": [
+      "Help me work with an inner-child conflict.",
+      "Help me understand why care for a younger part of me feels unsafe.",
+      "Help me find one grounded next step in a self-relationship conflict."
+    ]
+  }
+}

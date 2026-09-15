@@ -3,6 +3,7 @@ import { validateTurnTask } from "./turn-task.mjs";
 import { validateRelationalEvidence } from "./relational-readiness.mjs";
 import { validateRomanceGuideContext } from "./romance-guide.mjs";
 import { validateThreatPathwayAssessment } from "./threat-pathway.mjs";
+import { validateInnerSpeechProfile, validateObservationPhenomenology } from "./phenomenology.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
@@ -26,9 +27,11 @@ export function validateCaseSnapshot(value) {
   for (const [index, item] of value.direct_observations.entries()) {
     object(item, `caseSnapshot.direct_observations[${index}]`);
     for (const key of ["id", "statement", "evidence"]) string(item[key], `caseSnapshot.direct_observations[${index}].${key}`);
+    if (Object.hasOwn(item, "phenomenology")) item.phenomenology = validateObservationPhenomenology(item.phenomenology);
     if (observationIds.has(item.id)) throw new ValidationError(`Duplicate observation id ${item.id}.`);
     observationIds.add(item.id);
   }
+  if (Object.hasOwn(value, "inner_speech_profile")) value.inner_speech_profile = validateInnerSpeechProfile(value.inner_speech_profile);
   if (Object.hasOwn(value, "turn_task")) value.turn_task = validateTurnTask(value.turn_task, { issue: value.current_issue, observationIds });
   if (Object.hasOwn(value, "path_update")) value.path_update = validatePathUpdate(value.path_update, observationIds);
   if (Object.hasOwn(value, "relational_readiness")) {
