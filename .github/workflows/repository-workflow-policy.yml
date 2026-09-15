@@ -39,7 +39,7 @@ jobs:
           while IFS= read -r use; do
             ref="${use##*@}"
             [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Unpinned action: $use" >&2; exit 1; }
-          done < <(grep -RhoE 'uses:[[:space:]]*[^[:space:]]+' .github/workflows | sed -E 's/^uses:[[:space:]]*//')
+          done < <(grep -RhE '^[[:space:]]+uses:[[:space:]]*[^[:space:]]+' .github/workflows | sed -E 's/^[[:space:]]*uses:[[:space:]]*//; s/[[:space:]]+#.*$//')
           for f in .github/workflows/verify.yml .github/workflows/repository-workflow-policy.yml .github/workflows/codeql.yml; do
             grep -q '^permissions:$' "$f"
             grep -q '^[[:space:]]*contents: read$' "$f"
