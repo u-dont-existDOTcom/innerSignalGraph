@@ -1,0 +1,66 @@
+name: Guide source snapshot
+
+on:
+  push:
+    branches: [task/somatic-altered-guide-sync-20260915-1643]
+    paths: [.github/workflows/guide-source-snapshot.yml]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guide-source-snapshot-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  snapshot:
+    if: github.repository == 'u-dont-existDOTcom/innerSignalGraph' && github.ref == 'refs/heads/task/somatic-altered-guide-sync-20260915-1643'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Read exact public development source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 5bc037327392eef45b3c0f7bf4e3be0a3f341245
+          path: source
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Read current public Universal tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: u-dont-existDOTcom/universal-dev-architecture
+          ref: main
+          path: universal
+          persist-credentials: false
+      - name: Set up repository-pinned Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: source/.nvmrc
+      - name: Bootstrap locked dependencies without lifecycle scripts
+        working-directory: source
+        run: npm ci --ignore-scripts
+      - name: Export public Git objects and offline tooling only
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/guide-source-snapshot"
+          mkdir -p "$out"
+          test "$(git -C source rev-parse HEAD)" = '5bc037327392eef45b3c0f7bf4e3be0a3f341245'
+          git -C source bundle create "$out/source.bundle" HEAD
+          git -C universal archive HEAD | gzip > "$out/universal.tar.gz"
+          tar -czf "$out/dependencies.tar.gz" -C source node_modules
+          cp "$(command -v node)" "$out/node"
+          node_root="$(dirname "$(dirname "$(command -v node)")")"
+          tar -czf "$out/npm.tar.gz" -C "$node_root/lib/node_modules" npm
+          git -C source rev-parse HEAD > "$out/SOURCE-COMMIT.txt"
+          git -C universal rev-parse HEAD > "$out/UNIVERSAL-COMMIT.txt"
+          node --version > "$out/NODE-VERSION.txt"
+          cd "$out"
+          sha256sum source.bundle universal.tar.gz dependencies.tar.gz node npm.tar.gz > SHA256SUMS
+      - name: Retain read-only bootstrap snapshot
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: guide-source-snapshot-5bc0373
+          path: ${{ runner.temp }}/guide-source-snapshot/
+          retention-days: 3
+          if-no-files-found: error
