@@ -1,0 +1,45 @@
+name: Repository workflow policy
+
+on:
+  pull_request:
+  push:
+    branches: [stable]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  workflow-policy:
+    name: workflow-policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Enforce stable workflow policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .github/workflows/verify.yml
+          test -f .github/workflows/repository-workflow-policy.yml
+          test -f .github/workflows/codeql.yml
+          if grep -R --line-number --fixed-strings 'pull_request_target' .github/workflows; then
+            echo 'pull_request_target is forbidden in stable workflows' >&2
+            exit 1
+          fi
+          while IFS= read -r use; do
+            ref="${use##*@}"
+            [[ "$ref" =~ ^[0-9a-f]{40}$ ]] || { echo "Unpinned action: $use" >&2; exit 1; }
+          done < <(grep -RhoE 'uses:[[:space:]]*[^[:space:]]+' .github/workflows | sed -E 's/^uses:[[:space:]]*//')
+          for f in .github/workflows/verify.yml .github/workflows/repository-workflow-policy.yml .github/workflows/codeql.yml; do
+            grep -q '^permissions:$' "$f"
+            grep -q '^[[:space:]]*contents: read$' "$f"
+          done
