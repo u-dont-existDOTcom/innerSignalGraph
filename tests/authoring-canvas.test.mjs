@@ -16,7 +16,7 @@ test("Canvas deterministically mirrors all graph records and separates overlays"
   const options = { bundle, registries };
   const canvas = buildCanvas(options);
   assert.equal(canvas.nodes.filter((node) => node.type === "file").length, 62);
-  assert.equal(canvas.nodes.filter((node) => node.type === "text").length, 12);
+  assert.equal(canvas.nodes.filter((node) => node.type === "text").length, 13);
   assert.equal(canvas.edges.length, 84);
   assert(canvas.nodes.every((node) => Number.isInteger(node.x) && Number.isInteger(node.y)));
   assert.equal(new Set(canvas.nodes.map((node) => node.id)).size, canvas.nodes.length);

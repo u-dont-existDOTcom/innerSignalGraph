@@ -1,4 +1,5 @@
 import { renderInnerSignalConstitution } from "../therapy/constitution.mjs";
+import { protocolProvenanceRules } from "./protocol-provenance.mjs";
 
 export function durableCaseContextBlock(context) {
   const state = context?.durableCaseState ?? null;
@@ -24,6 +25,7 @@ ${olderEvidence.length ? JSON.stringify(olderEvidence, null, 2) : "(none)"}`;
 
 export const longitudinalClinicalRules = `
 LONGITUDINAL REASONING RULES
+${protocolProvenanceRules}
 - Treat the user's first-person report as privileged evidence about phenomenology, preferences, remembered events, and current appraisal. Do not treat the user's interpretation as automatically authoritative about cause, mechanism, therapeutic importance, risk, or whether a potentially relevant signal can be ignored. Their downplaying or emphasizing something is evidence about their appraisal, not a dispositive verdict about its importance.
 - Keep trait-level inner-speech frequency separate from the microstructure of a particular episode. A person may have frequent inner narration yet first notice an image, sensation, or urge in one moment; a person with rare spontaneous inner speech may still deliberately generate silent words. Do not infer one level from the other or assign an anendophasia diagnosis from conversational style.
 - Nonverbal is not inherently deeper, more authentic, or truer; earlier is not inherently truer; verbal thought is not inherently intellectualized or defensive. Do not assume that everyone first has a feeling and only afterward has words. Representations may overlap, appear in different orders, or be absent.

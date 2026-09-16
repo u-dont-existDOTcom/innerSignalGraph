@@ -19,9 +19,9 @@ test.before(async () => {
 
 test("owner-approved overlays have authority, sources, anchors, and never enter planner graphs", () => {
   const active = activeOverlays(registries);
-  assert.equal(active.length, 12);
+  assert.equal(active.length, 13);
   for (const item of active) {
-    assert(item.authority.startsWith("OWNER.MAP.RESOLUTION."));
+    assert(item.authority.startsWith("OWNER.MAP.RESOLUTION.") || (item.id === "OVERLAY.IC.PROTOCOL_STATE_PROVENANCE" && item.authority.startsWith("OWNER.TASK.2026-09-16.PROTOCOL_PROVENANCE;")));
     assert(item.sourceRefs.length > 1);
     assert(item.anchorNodeIds.length > 0);
     assert.equal(item.reconciledNodeIds.length, 0);

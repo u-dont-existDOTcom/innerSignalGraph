@@ -1,0 +1,42 @@
+[
+  {
+    "id": "hypothetical",
+    "precedingPrompt": "What would a caring adult say to this imagined child?",
+    "reply": "I would say that they matter and I can stay beside them.",
+    "expectedEvidence": "wise/caring adult response available hypothetically",
+    "expectedNextMove": "Reuse their own words and invite actual imaginal enactment; no retrospective reception inquiry.",
+    "rejectedClaims": ["exercise performed", "care received", "trust improved"]
+  },
+  {
+    "id": "enacted",
+    "precedingPrompt": "What happened when you practiced the exercise?",
+    "reply": "I actually pictured the child beside me and said that they matter and I can stay beside them.",
+    "expectedEvidence": "actual imaginal enactment attempted",
+    "expectedNextMove": "Ask what happened in response if that remains unknown; do not assume care landed.",
+    "rejectedClaims": ["care received", "trust improved"]
+  },
+  {
+    "id": "hypothetical-past-tense",
+    "precedingPrompt": "Imagine what you would say if a child were here. What is your answer?",
+    "reply": "I told them they matter and I can stay beside them.",
+    "expectedEvidence": "hypothetical frame; enactment unconfirmed",
+    "expectedNextMove": "Do not infer enactment from tense; invite practice or clarify if necessary.",
+    "rejectedClaims": ["exercise performed", "child responded"]
+  },
+  {
+    "id": "enacted-no-response",
+    "precedingPrompt": "What happened when you practiced the exercise?",
+    "reply": "I pictured the child beside me and said my words. I waited and noticed no response.",
+    "expectedEvidence": "child reception observed: no noticeable response",
+    "expectedNextMove": "Use the reported observation without re-asking it or inventing distrust.",
+    "rejectedClaims": ["child refused care", "trust improved", "exercise not attempted"]
+  },
+  {
+    "id": "scripted-child",
+    "precedingPrompt": "What happened during the exercise?",
+    "reply": "I deliberately wrote both sides, including the child saying thank you. Nothing came spontaneously.",
+    "expectedEvidence": "deliberately authored dialogue; spontaneous reception not established",
+    "expectedNextMove": "Keep the scripted thanks distinct from an observed spontaneous response; do not require spontaneous words.",
+    "rejectedClaims": ["child spontaneously expressed gratitude", "trust improved"]
+  }
+]

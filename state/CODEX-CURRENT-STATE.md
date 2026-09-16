@@ -1,5 +1,9 @@
 # Inner Signal Codex current state
 
+## Protocol-state provenance correction — 2026-09-16
+
+The isolated `codex/reparenting-protocol-provenance-20260916` candidate starts from development main `5bc037327392eef45b3c0f7bf4e3be0a3f341245`. It adds the owner-requested distinction between hypothetical caring responses, reported imaginal enactment and observed reception to shared consumer prompts, the plugin reference and an explicitly uncompiled map overlay. Recovery and verification are in `tasks/reparenting-provenance-20260916/INTEGRATION.md`. Five synthetic contrast cases are retained in `corpus/protocol-provenance-cases.json`; they are evaluation inputs, not completed model evaluations. No real private case was read or changed. Current guide/source authority, compiled graph, wisdom-practices and phenomenology remain preserved. No installation, stable change or deployment occurred. The candidate is not merged; exact final verification and draft-review location are recorded in the task receipt and Git history.
+
 Updated: 2026-09-12
 
 ## Wisdom-practices owner-approved reconciliation

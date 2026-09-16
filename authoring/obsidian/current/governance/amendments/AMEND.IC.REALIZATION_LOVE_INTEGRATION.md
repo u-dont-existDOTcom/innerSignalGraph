@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: f3f24f298c5df2528f316d016411c2591846bce59794d209424bb85c4fca5854
 source_file_sha256: 669d81d9ce880962d1f7bcb040668cdc778408ea1c79b3f3c195e524c20053a9
-projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
+projection_input_sha256: ce5fd7dec1e1fbcdcc7e24160f41a60bdf9bc20ff7746c255d6dfe0b19e2d52c
 ---
 
 # AMEND.IC.REALIZATION_LOVE_INTEGRATION
