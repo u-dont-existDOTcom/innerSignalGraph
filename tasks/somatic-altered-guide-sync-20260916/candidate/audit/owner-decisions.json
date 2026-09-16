@@ -1,0 +1,825 @@
+{
+  "allApproved": false,
+  "cards": [
+    {
+      "affectedRegressions": [
+        "G041",
+        "G042"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"ROUTE.ALTERED_MEDICAL_SAFETY\",\n  \"relation\": \"safety-precedes-nonmedical-stabilization\",\n  \"to\": \"ROUTE.ALTERED_ACUTE_STABILIZATION\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-08b76b0a83709eff",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge fd16736a608243115a55b11d77558eb60e076998ea084a45b69715f038e7d0ae: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G014",
+        "G015",
+        "G017",
+        "G027",
+        "G036",
+        "G037",
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G046"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"ROUTE.ALTERED_AFTERMATH\",\n  \"relation\": \"may-process-trauma-material-after-stabilization\",\n  \"to\": \"ROUTE.GO_INWARD\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-105ccf405f4e3aa8",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 7f31dc9527fd670b42861c1f78003fc7f6f461028a012474288b11715e9548e7: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G044",
+        "G046"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"ROUTE.ALTERED_ACTION_LOCK\",\n  \"relation\": \"defers-consequential-meaning-to-sober-review\",\n  \"to\": \"ROUTE.ALTERED_AFTERMATH\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-2b244567e314666f",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge ccf7d8eb2abdf70e8e0a07a28eb1d9bb4cb7b6d132af1812fd443a53ffbb9da6: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G010",
+        "G038",
+        "G044",
+        "G046"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"ROUTE.ALTERED_AFTERMATH\",\n  \"relation\": \"may-use-cognitive-integration-after-stabilization\",\n  \"to\": \"SOM.MEANING_INTEGRATION\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-2d46146bdd005f6c",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 39d368045443fdb7d77c7a9ba0a32eae1954177404c5111aa042811446f14cdd: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G004",
+        "G005",
+        "G011",
+        "G029",
+        "G030",
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G045"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"ROUTE.ALTERED_STABLE_THERAPY\",\n  \"relation\": \"may-continue-when-deep-work-readiness-is-established\",\n  \"to\": \"IC.DEEP_CHILD_DIALOGUE\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-33abd147b842be0d",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge ca59f76bb193aa3a76cef543d0e6a126b31f4c21c4be4e071be1eab4f3e74084: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G009",
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G045"
+      ],
+      "behavioralEffect": "Changes priority under the explicit substantive-routing policy.",
+      "candidate": "78",
+      "classification": "substantive-routing",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "89",
+      "id": "decision-39bbf8681aa77c41",
+      "pros": [
+        "Approving lets the candidate priority control routing or questioning exactly as shown."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.ALTERED_STATE_GATE: priority",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G010",
+        "G038",
+        "G046"
+      ],
+      "behavioralEffect": "Changes effects.requiredNuance under the explicit response-semantics policy.",
+      "candidate": "[\n  \"Nonverbal is not deeper or truer, and verbal analysis is not merely intellectualization; the useful route is the combination that increases accuracy, agency, and integration.\"\n]",
+      "classification": "response-semantics",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[]",
+      "id": "decision-3dc760f82a96c1ce",
+      "pros": [
+        "Approving makes the candidate requiredNuance constraint available to the planner or response realization exactly as shown."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node SOM.MEANING_INTEGRATION: effects.requiredNuance",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G045"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"altered_phase\",\n        \"op\": \"eq\",\n        \"value\": \"planned\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not use ceremony planning once an acute crisis has started; return to acute triage instead.\",\n    \"Do not make a sitter, playlist, spiritual frame, or expected insight into an authority the person cannot stop or change.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [],\n    \"requiredNuance\": []\n  },\n  \"id\": \"ROUTE.ALTERED_PREPARATION\",\n  \"kind\": \"decision-node\",\n  \"priority\": 97,\n  \"recommendations\": [\n    \"Plan rest and timing, physical safety, environment, support, and what would require outside help before the session begins.\",\n    \"Use intention without demanding a particular revelation, memory, emotional arc, or spiritual result; support stays low-directivity and consent-based.\",\n    \"Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended.\"\n  ],\n  \"sourceRefs\": [\n    \"ALT.PREPARATION\"\n  ],\n  \"successSignals\": [\n    \"The session has clear safety, consent, stopping, closure, and integration boundaries before altered-state work begins.\"\n  ],\n  \"tags\": [\n    \"altered-state\",\n    \"preparation\",\n    \"consent\",\n    \"closure\"\n  ],\n  \"tier\": 3,\n  \"title\": \"Give planned altered-state work a beginning, support plan, and ending\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-44f1eb92279886a5",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node ROUTE.ALTERED_PREPARATION: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G010",
+        "G038",
+        "G040",
+        "G046"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"SOM.AQUATIC_BODYWORK\",\n  \"relation\": \"requires-aftercare-and-integration\",\n  \"to\": \"SOM.MEANING_INTEGRATION\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-4caae730d23dc8ea",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 117f5721ac674a2985000c96812a08f2930eccba4b1b0f8ddfab816a37dfb6b1: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G009",
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G045"
+      ],
+      "behavioralEffect": "Changes title under the explicit reviewed-substantive policy.",
+      "candidate": "\"Calibrate therapy depth during altered states instead of assuming incapacity\"",
+      "classification": "reviewed-substantive",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "\"Build sober capacity before using altered states to deepen\"",
+      "id": "decision-579f2c2453973cec",
+      "pros": [
+        "Approving records the exact candidate title value and makes the public graph description match that reviewed choice."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.ALTERED_STATE_GATE: title",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G010",
+        "G012",
+        "G013",
+        "G015",
+        "G017",
+        "G027",
+        "G036",
+        "G037",
+        "G038",
+        "G041",
+        "G042",
+        "G043",
+        "G046"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"SOM.SIBAM_TRACKING\",\n  \"relation\": \"keeps-meaning-connected\",\n  \"to\": \"SOM.MEANING_INTEGRATION\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-5f53bd69ae1b1001",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 1a4d95b4f00bbac58145a475ab99c74cfe34ddd00c9491f47d11ba9e05435f09: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G009",
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G045"
+      ],
+      "behavioralEffect": "Changes sourceRefs under the explicit provenance-policy policy.",
+      "candidate": "[\n  \"IC.ALTERED_STATES\",\n  \"IC.ESCAPE_URGE\",\n  \"AMEND.IC.EXISTENTIAL_LOVE_ROUTING\",\n  \"AMEND.IC.WELLBEING_HORIZON\",\n  \"ALT.CAPACITY\",\n  \"ALT.EPISTEMICS\",\n  \"ALT.GROUNDING\"\n]",
+      "classification": "provenance-policy",
+      "cons": [
+        "The proposed new provenance/authority value could overstate support or attach the behavior to the wrong source if approved without exact source review."
+      ],
+      "current": "[\n  \"IC.ALTERED_STATES\",\n  \"IC.ESCAPE_URGE\",\n  \"AMEND.IC.EXISTENTIAL_LOVE_ROUTING\",\n  \"AMEND.IC.WELLBEING_HORIZON\"\n]",
+      "id": "decision-635d14b6a4b26d52",
+      "pros": [
+        "Approving records the candidate sourceRefs as the explicit provenance/authority basis instead of leaving the current basis in place."
+      ],
+      "provenance": "source-and-authority-review",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.ALTERED_STATE_GATE: sourceRefs",
+      "worstPlausibleFailure": "The change could present unsupported material with stronger authority than its source permits."
+    },
+    {
+      "affectedRegressions": [
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G045"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"altered_state\",\n        \"op\": \"eq\",\n        \"value\": \"altered\"\n      },\n      {\n        \"field\": \"altered_capacity\",\n        \"op\": \"eq\",\n        \"value\": \"coherent\"\n      },\n      {\n        \"field\": \"altered_medical_status\",\n        \"op\": \"eq\",\n        \"value\": \"stable\"\n      },\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"safe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"oriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"yes\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not automatically substitute generic grounding for the user’s actual therapeutic question when capacity is demonstrably intact.\",\n    \"Do not use altered intensity as proof that a memory is historical, an ontology is true, or healing is complete.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not equate articulate writing with full medical stability or intact judgment in every domain.\"\n    ],\n    \"requiredNuance\": [\n      \"Altered state is a routing variable, not by itself evidence of incapacity. Coherence in text is still not a medical exam; explicit physical stability remains a separate requirement.\"\n    ]\n  },\n  \"id\": \"ROUTE.ALTERED_STABLE_THERAPY\",\n  \"kind\": \"decision-node\",\n  \"priority\": 99,\n  \"recommendations\": [\n    \"Do not terminate or flatten therapy merely because the person discloses an altered state; continue responsive therapeutic work at the depth their current orientation, stopping capacity, and agency support.\",\n    \"Keep altered-state insights, memories, symbols, intuitions, and metaphysical conclusions provisional where external truth matters; use ordinary evidence after the state when consequences depend on them.\",\n    \"Reduce depth immediately if orientation, stopping capacity, physical stability, reality testing, or ordinary agency begins to deteriorate.\"\n  ],\n  \"sourceRefs\": [\n    \"ALT.CAPACITY\",\n    \"ALT.EPISTEMICS\",\n    \"IC.ALTERED_STATES\"\n  ],\n  \"successSignals\": [\n    \"The person can engage meaningfully, retain choice, stop voluntarily, and return toward ordinary functioning without escalating intensity to keep therapy working.\"\n  ],\n  \"tags\": [\n    \"altered-state\",\n    \"capacity-led\",\n    \"substantive-therapy\",\n    \"epistemic\"\n  ],\n  \"tier\": 4,\n  \"title\": \"Continue substantive therapy when altered-state capacity remains coherent and safe\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-68f62eab14e9338a",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node ROUTE.ALTERED_STABLE_THERAPY: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G009",
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G045"
+      ],
+      "behavioralEffect": "Changes avoid under the explicit therapeutic-safety policy.",
+      "candidate": "[\n  \"Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.\",\n  \"Do not automatically end useful therapy or replace the user’s actual question with generic grounding merely because they disclose an altered state.\",\n  \"Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness.\"\n]",
+      "classification": "therapeutic-safety",
+      "cons": [
+        "The proposed new value could weaken or misplace a safety boundary if its conditions or wording are incomplete."
+      ],
+      "current": "[\n  \"Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.\",\n  \"Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness.\"\n]",
+      "id": "decision-69cfc60abc0bf87e",
+      "pros": [
+        "Approving lets responses use the exact candidate avoid rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.ALTERED_STATE_GATE: avoid",
+      "worstPlausibleFailure": "The change could weaken a safety boundary or produce an unsafe response under an untested condition."
+    },
+    {
+      "affectedRegressions": [
+        "G042"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"altered_state\",\n        \"op\": \"eq\",\n        \"value\": \"altered\"\n      }\n    ],\n    \"any\": [\n      {\n        \"field\": \"activation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"panic_instability\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      },\n      {\n        \"field\": \"altered_capacity\",\n        \"op\": \"eq\",\n        \"value\": \"limited\"\n      },\n      {\n        \"field\": \"support_available\",\n        \"op\": \"eq\",\n        \"value\": \"absent\"\n      },\n      {\n        \"field\": \"sleep_deprivation\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"altered_medical_status\",\n        \"op\": \"eq\",\n        \"value\": \"concerning\"\n      },\n      {\n        \"field\": \"altered_capacity\",\n        \"op\": \"eq\",\n        \"value\": \"impaired\"\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not force stillness, movement, touch, music, breathing exercises, prayer, imagery, or interpretation as the one correct response.\",\n    \"Do not turn acute stabilization into a metaphysical debate or a demand for insight.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [\n      \"ROUTE.GO_INWARD\",\n      \"ROUTE.ALTERED_STABLE_THERAPY\"\n    ],\n    \"deferNodes\": [\n      \"IC.DEEP_CHILD_DIALOGUE\",\n      \"SOM.DEEP_BRAINSPOTTING\",\n      \"SOM.EMDR_DISCRETE\",\n      \"SOM.EMDR_DEVELOPMENTAL\"\n    ],\n    \"forbiddenOverclaims\": [\n      \"Do not claim that a grounding response proves the experience was only anxiety or only psychological.\"\n    ],\n    \"requiredNuance\": [\n      \"Body → room → human → time → meaning is an acute support order, not a universal theory that body experience always precedes thought.\"\n    ]\n  },\n  \"id\": \"ROUTE.ALTERED_ACUTE_STABILIZATION\",\n  \"kind\": \"decision-node\",\n  \"priority\": 99,\n  \"recommendations\": [\n    \"Reduce unwanted light, sound, crowding, temperature discomfort, unsafe company, and uninvited touch before trying to explain the experience.\",\n    \"Test stillness versus contained gentle movement by whether it makes the person safer and clearer rather than more activated or impulsive; a small ordinary task can share attention with emotion when immobile introspection becomes a trap.\",\n    \"Use one calm human anchor when possible, re-establish place and time, protect sleep, and let meaning wait until the nervous system has somewhere to stand.\"\n  ],\n  \"sourceRefs\": [\n    \"ALT.GROUNDING\",\n    \"ALT.PANIC_LOOP\",\n    \"ALT.TOUCH\"\n  ],\n  \"successSignals\": [\n    \"The person becomes more oriented, less impulsive, more able to choose, and more able to engage with ordinary reality.\"\n  ],\n  \"tags\": [\n    \"altered-state\",\n    \"grounding\",\n    \"acute\",\n    \"human-anchor\",\n    \"sleep\"\n  ],\n  \"tier\": 2,\n  \"title\": \"Simplify the acute altered state before adding interpretation\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-6e17c8274cd33374",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node ROUTE.ALTERED_ACUTE_STABILIZATION: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G011",
+        "G012",
+        "G013",
+        "G015",
+        "G016",
+        "G017",
+        "G018",
+        "G027",
+        "G033",
+        "G036",
+        "G037",
+        "G038",
+        "G039",
+        "G040",
+        "G041",
+        "G042",
+        "G043",
+        "G046"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"SOM.GENTLE_REGULATION\",\n  \"relation\": \"supports-channel-tracking\",\n  \"to\": \"SOM.SIBAM_TRACKING\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-73c47fbdd30e9ea3",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 325e16bb988205c6db01c74186c37cc5d7e052a267a8f5c8ed5f97ae924cedef: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G044"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"altered_state\",\n        \"op\": \"eq\",\n        \"value\": \"altered\"\n      },\n      {\n        \"field\": \"altered_action_pressure\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not encourage driving, redosing, public posting, confrontation, accusation, confession, major purchases or gifts, sexual boundary changes, relationship endings, travel, or attempts to prove a revelation while judgment is altered.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not say the revelation is false merely because action is being postponed; the claim remains open to sober review.\"\n    ],\n    \"requiredNuance\": [\n      \"Euphoric certainty can carry more behavioral risk than fear because the person may feel no need to ground.\"\n    ]\n  },\n  \"id\": \"ROUTE.ALTERED_ACTION_LOCK\",\n  \"kind\": \"decision-node\",\n  \"priority\": 98,\n  \"recommendations\": [\n    \"Write consequential ideas down and postpone major or irreversible action until after sleep, food, and sober review with a grounded person.\",\n    \"Treat visions, entities, apparent memories, cosmic conclusions, and mission-like certainty as experience-content before treating them as fact-content or commands.\",\n    \"Keep non-harm and consent authoritative even when the experience feels blissful, sacred, urgent, or absolutely certain.\"\n  ],\n  \"sourceRefs\": [\n    \"ALT.ACTION_LOCK\",\n    \"ALT.EPISTEMICS\"\n  ],\n  \"successSignals\": [\n    \"The person preserves the insight for later review without converting urgency into an irreversible action.\"\n  ],\n  \"tags\": [\n    \"altered-state\",\n    \"action-lock\",\n    \"grandiosity\",\n    \"epistemic\"\n  ],\n  \"tier\": 2,\n  \"title\": \"Delay consequential action during intense certainty or pressure\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-7491ea3298849bce",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node ROUTE.ALTERED_ACTION_LOCK: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G039"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"touch_interest\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not treat touch aversion, freezing, pulling away, uncertainty, or a changed mind as resistance to push through.\",\n    \"Do not sexualize therapeutic touch or make the helper’s need for closeness part of the intervention.\"\n  ],\n  \"defaultQuestion\": \"Would touch help here, and if so would you prefer self-touch, consensual outside touch, or a no-touch option?\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not claim that where tension is felt proves where trauma is stored or what caused it.\"\n    ],\n    \"requiredNuance\": [\n      \"No-touch support is a complete valid option; self-touch and outside touch are not assumed equivalent.\"\n    ]\n  },\n  \"id\": \"SOM.CONSENSUAL_TOUCH\",\n  \"kind\": \"decision-node\",\n  \"priority\": 77,\n  \"questionPolicy\": {\n    \"purpose\": \"discriminate\",\n    \"unresolvedFields\": [\n      \"touch_interest\"\n    ]\n  },\n  \"recommendations\": [\n    \"Start with the least intrusive form the person actually wants: self-massage, consensual nonsexual touch from a trusted person or practitioner, or a non-touch alternative.\",\n    \"Keep pressure, location, duration, distance, clothing, and stopping under the person’s control; re-check consent when the response changes.\",\n    \"Judge the intervention by orientation, agency, comfort in the body, and later functioning rather than by intensity or emotional release.\"\n  ],\n  \"sourceRefs\": [\n    \"SOM.TOUCH\"\n  ],\n  \"successSignals\": [\n    \"The person retains choice and finishes at least as oriented and self-possessed as they began.\"\n  ],\n  \"tags\": [\n    \"touch\",\n    \"massage\",\n    \"consent\",\n    \"self-touch\"\n  ],\n  \"tier\": 5,\n  \"title\": \"Use touch or massage only as a wanted, revisable support\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-7ce1d10e48bcbba8",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node SOM.CONSENSUAL_TOUCH: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G010",
+        "G038",
+        "G046"
+      ],
+      "behavioralEffect": "Changes recommendations under the explicit therapeutic-response policy.",
+      "candidate": "[\n  \"Revisit beliefs, identity, boundaries, relationships, and the meaning of what happened once enough regulation exists to think without simply overriding the body.\",\n  \"Use language as an analytic tool even when the original experience was nonverbal: distinguish direct experience, later verbal translation, appraisal, evidence, alternatives, and present-day action.\",\n  \"Cognitive integration may follow bottom-up work or occur concurrently when it helps; do not require a universal body-first sequence.\"\n]",
+      "classification": "therapeutic-response",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"Use light cognitive or narrative work for beliefs, values, boundaries, agency, and a coherent life story.\"\n]",
+      "id": "decision-817f1681ccbe114f",
+      "pros": [
+        "Approving lets responses use the exact candidate recommendations rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node SOM.MEANING_INTEGRATION: recommendations",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G009",
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G045"
+      ],
+      "behavioralEffect": "Changes recommendations under the explicit therapeutic-response policy.",
+      "candidate": "[\n  \"Treat current altered state as a routing variable rather than an automatic stop: assess physical safety, orientation, capacity to communicate, stopping capacity, ordinary agency, and available support.\",\n  \"When those capacities remain coherent and stable, continue substantive inner-child or relational work at a depth the person can actually hold; when they deteriorate, shift toward room/body/human/time stabilization.\",\n  \"Prefer already-developed or borrowed Nurturer/Protector capacity for deeper altered-state work, and reduce depth rather than escalating intensity when the experience outruns that capacity.\"\n]",
+      "classification": "therapeutic-response",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"Prefer sober Nurturer and Protector capacity first or grounded support that does not seize authority.\",\n  \"Return to ordinary orientation when the state outruns the ability to hold what appears.\"\n]",
+      "id": "decision-8a4bc04aaf5ea7db",
+      "pros": [
+        "Approving lets responses use the exact candidate recommendations rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.ALTERED_STATE_GATE: recommendations",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G039"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"SOM.CONSENSUAL_TOUCH\",\n  \"relation\": \"may-support-settling\",\n  \"to\": \"SOM.DISCHARGE_SETTLE_STACK\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-92e03fa247eaf86b",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge a7ea9d703b28a8ac7e8a5c19e556e98f7329cdd4ae8f254e8e0b760edbc3a615: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G044",
+        "G046"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"altered_phase\",\n        \"op\": \"eq\",\n        \"value\": \"aftermath\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not recommend another psychedelic, cannabis, ketamine, intense breathwork, extreme fasting, sleep deprivation, extreme meditation/stretching, or another ceremony as the reflexive fix for ongoing destabilization.\",\n    \"Do not treat one night’s certainty as a diagnosis, recovered fact, or permanent metaphysical conclusion.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not call persistent or dangerous symptoms a normal integration process without appropriate assessment.\"\n    ],\n    \"requiredNuance\": [\n      \"The public bad-trips guide can provide fuller reading, but referral never replaces current safety, medical, or professional support when those are needed.\"\n    ]\n  },\n  \"id\": \"ROUTE.ALTERED_AFTERMATH\",\n  \"kind\": \"decision-node\",\n  \"priority\": 96,\n  \"recommendations\": [\n    \"Use sleep, food, water, warmth, routine, sober support, and ordinary contact before another ceremony or destabilizing practice.\",\n    \"Record facts first—what was taken or practiced, timing when known, setting, events, triggers, what helped, and what worsened the state—then consider emotional, relational, spiritual, or practical meaning.\",\n    \"Separate lingering anxiety, sleep disruption, derealization/depersonalization, visual symptoms, shame/social disconnection, existential shock, trauma material, psychosis-like beliefs, and somatic hyperarousal because they can require different support.\",\n    \"Translate useful insight into small behavioral changes rather than measuring integration by how cosmic the explanation sounds.\"\n  ],\n  \"sourceRefs\": [\n    \"ALT.AFTERMATH\",\n    \"ALT.EPISTEMICS\"\n  ],\n  \"successSignals\": [\n    \"Ordinary functioning and sleep recover, facts and interpretations remain distinguishable, and any retained insight produces proportionate behavior rather than escalating practice.\"\n  ],\n  \"tags\": [\n    \"altered-state\",\n    \"integration\",\n    \"aftermath\",\n    \"sleep\",\n    \"reality-testing\"\n  ],\n  \"tier\": 3,\n  \"title\": \"Integrate altered-state aftermath from facts toward meaning and small life changes\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-9ae0cc84b6f6713d",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node ROUTE.ALTERED_AFTERMATH: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G009",
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G045"
+      ],
+      "behavioralEffect": "Changes tier under the explicit substantive-routing policy.",
+      "candidate": "5",
+      "classification": "substantive-routing",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "2",
+      "id": "decision-a66801ebf0ffcf6a",
+      "pros": [
+        "Approving lets the candidate tier control routing or questioning exactly as shown."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.ALTERED_STATE_GATE: tier",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G009",
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G045"
+      ],
+      "behavioralEffect": "Changes effects.requiredNuance under the explicit response-semantics policy.",
+      "candidate": "[\n  \"A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration.\",\n  \"A current altered state and a lack of habitual inner speech are unrelated dimensions; neither establishes that the person cannot reason, use language, or engage therapy.\"\n]",
+      "classification": "response-semantics",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration.\"\n]",
+      "id": "decision-b16c683a2cc9c39d",
+      "pros": [
+        "Approving makes the candidate requiredNuance constraint available to the planner or response realization exactly as shown."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.ALTERED_STATE_GATE: effects.requiredNuance",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G045"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"ROUTE.ALTERED_PREPARATION\",\n  \"relation\": \"prepares-capacity-and-closure\",\n  \"to\": \"ROUTE.ALTERED_STABLE_THERAPY\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-b693f7fb4a84f860",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge b48b523af527cd1dfba63c21feed4737a56e08bca83f0f5cff3258062334f2f1: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G010",
+        "G038",
+        "G046"
+      ],
+      "behavioralEffect": "Changes avoid under the explicit therapeutic-safety policy.",
+      "candidate": "[\n  \"Do not try to think the body out of an active survival state.\",\n  \"Do not challenge a therapist-created sentence as though it were a literal automatic thought when the person reports that the original experience was not verbal.\",\n  \"Do not keep the person in sensation when analysis, evidence checking, boundary decisions, or practical action would add useful information.\"\n]",
+      "classification": "therapeutic-safety",
+      "cons": [
+        "The proposed new value could weaken or misplace a safety boundary if its conditions or wording are incomplete."
+      ],
+      "current": "[\n  \"Do not try to think the body out of an active survival state.\"\n]",
+      "id": "decision-c888314f798643bc",
+      "pros": [
+        "Approving lets responses use the exact candidate avoid rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node SOM.MEANING_INTEGRATION: avoid",
+      "worstPlausibleFailure": "The change could weaken a safety boundary or produce an unsafe response under an untested condition."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G012",
+        "G013",
+        "G015",
+        "G017",
+        "G027",
+        "G036",
+        "G037",
+        "G041",
+        "G042",
+        "G043",
+        "G046"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"any\": [\n      {\n        \"field\": \"current_intent\",\n        \"op\": \"eq\",\n        \"value\": \"gentle_practice\"\n      },\n      {\n        \"field\": \"target_type\",\n        \"op\": \"in\",\n        \"value\": [\n          \"developmental\",\n          \"diffuse\"\n        ]\n      },\n      {\n        \"field\": \"unresolved_inner_material\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not infer a hidden memory, diagnosis, or external fact from a bodily response, image, gesture, or felt gestalt.\",\n    \"Do not invent an automatic sentence when the person reports that no words were present.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not claim that nonverbal, somatic, earlier, intuitive, or intense material is inherently more authentic than language or analysis.\"\n    ],\n    \"requiredNuance\": [\n      \"SIBAM is an attention map, not a claim that sensation precedes words or has greater truth value.\"\n    ]\n  },\n  \"id\": \"SOM.SIBAM_TRACKING\",\n  \"kind\": \"decision-node\",\n  \"priority\": 79,\n  \"recommendations\": [\n    \"Use the SIBAM channels—sensation, image, behavior/action tendency, affect, and meaning—as an attention map when one channel is absent, disconnected, or monopolizing the experience.\",\n    \"Keep directly noticed phenomenology separate from the appraisal built from it; actual inner words, later verbal translation, imagery, bodily sensation, emotion, and action tendency may overlap without being interchangeable.\",\n    \"Bring language, evidence analysis, and present-day action back in whenever they improve clarity or agency rather than assuming bottom-up material is automatically deeper or truer.\"\n  ],\n  \"sourceRefs\": [\n    \"SOM.SIBAM\",\n    \"SOM.INTEGRATION\"\n  ],\n  \"successSignals\": [\n    \"Previously disconnected channels become more distinguishable and usable without forcing one representation to dominate.\",\n    \"The person can examine meaning and evidence while remaining in contact with embodied experience.\"\n  ],\n  \"tags\": [\n    \"SIBAM\",\n    \"multimodal-experience\",\n    \"meaning\",\n    \"epistemic\"\n  ],\n  \"tier\": 4,\n  \"title\": \"Track sensation, image, behavior, affect, and meaning without privileging one channel\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-cbeff8266e9b7499",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node SOM.SIBAM_TRACKING: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G041",
+        "G042",
+        "G043",
+        "G044",
+        "G045"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"ROUTE.ALTERED_ACUTE_STABILIZATION\",\n  \"relation\": \"may-enable-when-capacity-restored\",\n  \"to\": \"ROUTE.ALTERED_STABLE_THERAPY\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-cd199107afa08a8f",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 926114a20cf3bb6b91686a9edd3aa24beeb2cb29e1a30096a0c75c8e5b80747d: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G040"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"aquatic_bodywork_interest\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not drop somebody into an intense water session cold, treat crying or regression-like feelings as proof of therapeutic success, or infer womb/childhood facts from the experience.\"\n  ],\n  \"defaultQuestion\": \"If the session opens much more emotion than expected, what stopping, grounding, aftercare, and follow-up support will be available?\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not call emotional opening, crying, felt regression, or unusual bodily experience evidence of recovered history or completed trauma processing.\"\n    ],\n    \"requiredNuance\": [\n      \"A provider should be able to answer what happens if the client leaves the session much more emotionally open than they entered.\"\n    ]\n  },\n  \"id\": \"SOM.AQUATIC_BODYWORK\",\n  \"kind\": \"decision-node\",\n  \"priority\": 76,\n  \"questionPolicy\": {\n    \"purpose\": \"safety\",\n    \"unresolvedFields\": []\n  },\n  \"recommendations\": [\n    \"Before a water session, establish the person’s goal, comfort with water and touch, stopping signals, physical safety, and who can help if the session opens more emotion than expected.\",\n    \"Keep touch and movement continuously consensual; warmth, buoyancy, supported movement, stretching, and holding may feel unusually young or vulnerable without proving literal regression or memory.\",\n    \"Plan a deliberate return to ordinary body and present time afterward, with grounding, rest, gentle movement or massage if wanted, food or hydration when appropriate, and follow-up support for material that remains open.\"\n  ],\n  \"sourceRefs\": [\n    \"SOM.AQUATIC\"\n  ],\n  \"successSignals\": [\n    \"The person can enter and leave the experience with consent, orientation, and adequate support for what remains afterward.\"\n  ],\n  \"tags\": [\n    \"aquatic-bodywork\",\n    \"water-therapy\",\n    \"consent\",\n    \"aftercare\"\n  ],\n  \"tier\": 5,\n  \"title\": \"Use aquatic bodywork as an optional emotionally opening bridge with explicit aftercare\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-ce530db5e0b2bd8e",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node SOM.AQUATIC_BODYWORK: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G010",
+        "G038",
+        "G046"
+      ],
+      "behavioralEffect": "Changes sourceRefs under the explicit provenance-policy policy.",
+      "candidate": "[\n  \"SOM.PHASE5\",\n  \"SOM.INTEGRATION\",\n  \"SOM.JUDGE_HELP\",\n  \"SOM.SIBAM\"\n]",
+      "classification": "provenance-policy",
+      "cons": [
+        "The proposed new provenance/authority value could overstate support or attach the behavior to the wrong source if approved without exact source review."
+      ],
+      "current": "[\n  \"SOM.PHASE5\",\n  \"SOM.INTEGRATION\",\n  \"SOM.JUDGE_HELP\"\n]",
+      "id": "decision-d00437c44619c4ce",
+      "pros": [
+        "Approving records the candidate sourceRefs as the explicit provenance/authority basis instead of leaving the current basis in place."
+      ],
+      "provenance": "source-and-authority-review",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node SOM.MEANING_INTEGRATION: sourceRefs",
+      "worstPlausibleFailure": "The change could present unsupported material with stronger authority than its source permits."
+    },
+    {
+      "affectedRegressions": [
+        "G041"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"any\": [\n      {\n        \"field\": \"altered_medical_status\",\n        \"op\": \"eq\",\n        \"value\": \"concerning\"\n      },\n      {\n        \"field\": \"altered_capacity\",\n        \"op\": \"eq\",\n        \"value\": \"impaired\"\n      }\n    ]\n  },\n  \"authority\": \"author-framework\",\n  \"avoid\": [\n    \"Do not tell the person to breathe through, spiritually process, or continue therapy through signs of possible medical failure.\",\n    \"Do not prescribe experimental rescue substances, supplement doses, or home antidotes from the public guide as emergency treatment.\",\n    \"Do not dismiss a neurological or bodily complaint merely because the person is intoxicated or frightened.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [\n      \"ROUTE.GO_INWARD\",\n      \"ROUTE.ALTERED_STABLE_THERAPY\"\n    ],\n    \"deferNodes\": [\n      \"IC.DEEP_CHILD_DIALOGUE\",\n      \"SOM.DEEP_BRAINSPOTTING\",\n      \"SOM.EMDR_DISCRETE\",\n      \"SOM.EMDR_DEVELOPMENTAL\"\n    ],\n    \"forbiddenOverclaims\": [\n      \"Do not claim that the absence of reported red flags proves medical stability.\"\n    ],\n    \"requiredNuance\": [\n      \"Text chat cannot directly observe neurological or physiological signs; inability to establish stability is not the same as a reassuring screen.\"\n    ]\n  },\n  \"id\": \"ROUTE.ALTERED_MEDICAL_SAFETY\",\n  \"kind\": \"decision-node\",\n  \"priority\": 100,\n  \"recommendations\": [\n    \"Move from interpretation to urgent real-world assessment and the least disruptive effective outside help when medical danger, severe impairment, or inability to establish basic stability is reported.\",\n    \"Use ordinary first-aid and emergency/poison-support boundaries appropriate to the situation; missing nonverbal information in text chat remains unknown rather than reassuring.\",\n    \"Keep the author guide’s experimental remedies and field hierarchy separate from executable emergency instructions.\"\n  ],\n  \"sourceRefs\": [\n    \"ALT.TRIAGE\",\n    \"ALT.NO_RESCUE_IMPORT\"\n  ],\n  \"successSignals\": [\n    \"Immediate danger is reduced or transferred to appropriate human/medical support before interpretive work resumes.\"\n  ],\n  \"tags\": [\n    \"altered-state\",\n    \"medical-safety\",\n    \"capacity\",\n    \"triage\"\n  ],\n  \"tier\": 1,\n  \"title\": \"Treat medical danger or impaired capacity as a real-world safety problem\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-f4a71f71ce39fe57",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node ROUTE.ALTERED_MEDICAL_SAFETY: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    }
+  ],
+  "contractVersion": "guide-owner-decisions-v1",
+  "proposalEvidenceSha256": "26a7a09d917984cf4f6b9191b4e4902fa338e0129154ead8a08f699934872365",
+  "status": "awaiting-owner"
+}

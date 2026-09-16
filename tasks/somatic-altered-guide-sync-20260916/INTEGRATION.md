@@ -1,6 +1,6 @@
 # Somatic and altered-states guide integration
 
-Status: TESTED_ITERATION_CANDIDATE; draft PR only; not semantically owner-approved through the Guide Packet lifecycle, merged, installed, deployed, or promoted to `stable`.
+Status: OWNER_APPROVED_AND_RECONCILED; merge pending; not installed, deployed, or promoted to `stable`.
 
 ## Owner outcome
 
@@ -76,3 +76,13 @@ Local complete-suite attempts were externally cut off by this chat/container exe
 - Generated source maps, compiled graphs and authoring projections are regenerated outputs, not hand-edited authorities.
 - This branch is a proposal. Project architecture still requires semantic owner approval through the Guide Packet decision/reconciliation lifecycle before these graph changes can merge as canonical development authority.
 - `stable`, installation, deployment and clinical-efficacy claims remain outside this task.
+
+## Owner approval and reconciliation — 2026-09-16
+
+- At 2026-09-16T19:03:00.000Z, the owner explicitly approved all five grouped semantic decisions, covering all 31 exact Guide Packet decision cards.
+- Owner review was bound to graph candidate head `827e7f771aaf2b3ad9966f92be79e14b4c423772`; the three candidate graph files were verified unchanged before packet construction.
+- Candidate packet SHA-256: `77534066bead4d7f232a8d40064518acdaea118b06169b8065d8143bb803dba8`.
+- Approved packet SHA-256: `a548ed5e24c8e8f9f8f11fa3f56626053c9dce94b42eadbd8dfb474d3b09c16d`; deterministic verifier reports approved=true.
+- Reconciliation consumed that exact approved packet/hash and returned installed=false, stableChanged=false.
+- Reconciled bundle SHA-256: `fcdcf09d660faa95636adf948b90efcc2decb38ec5742cf08ca3b28012c27dfb`; canonical graph regressions: 30/30.
+- Merge into development `main` is authorized by the owner approval record. Installation, deployment, and `stable` promotion remain explicitly unauthorized.

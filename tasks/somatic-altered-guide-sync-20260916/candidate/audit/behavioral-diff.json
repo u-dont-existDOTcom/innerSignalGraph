@@ -1,0 +1,1309 @@
+{
+  "affectedCases": [
+    {
+      "affectedNodeIds": [
+        "SOM.GENTLE_REGULATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G001",
+      "title": "Accessible love feels unsafe and the younger state disputes adult credibility."
+    },
+    {
+      "affectedNodeIds": [
+        "SOM.GENTLE_REGULATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G002",
+      "title": "Flooded person with critical parent imagery and little inner-adult access."
+    },
+    {
+      "affectedNodeIds": [
+        "SOM.GENTLE_REGULATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G003",
+      "title": "Solar-plexus holding blocks self-directed love while external love remains available."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.DEEP_CHILD_DIALOGUE"
+      ],
+      "id": "G004",
+      "title": "Stable person with one discrete event seeks memory processing."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.DEEP_CHILD_DIALOGUE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G005",
+      "title": "Developmental trauma and EMDR interest without basic reparenting capacity."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE"
+      ],
+      "id": "G009",
+      "title": "Altered-state or photo material risks being treated as historical fact."
+    },
+    {
+      "affectedNodeIds": [
+        "SOM.MEANING_INTEGRATION"
+      ],
+      "id": "G010",
+      "title": "Stable integration phase with Guide readiness."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.DEEP_CHILD_DIALOGUE",
+        "SOM.GENTLE_REGULATION"
+      ],
+      "id": "G011",
+      "title": "Gentle hypnosis requested without deep-work readiness."
+    },
+    {
+      "affectedNodeIds": [
+        "SOM.GENTLE_REGULATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G012",
+      "title": "Credibility conflict with adverse track record, established witness capacity, and unresolved adult-side speaker identity."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.GO_INWARD",
+        "SOM.GENTLE_REGULATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G013",
+      "title": "Another person is central, interpersonal pressure displaced self-possession, and both outward action and later inward work are relevant."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.GO_INWARD"
+      ],
+      "id": "G014",
+      "title": "Ordinary social danger keeps practical safety above love, relational interpretation, and inward processing."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.GO_INWARD",
+        "SOM.GENTLE_REGULATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G015",
+      "title": "Internal influence routes through the existing inner-child, somatic, and metacognitive architecture."
+    },
+    {
+      "affectedNodeIds": [
+        "SOM.GENTLE_REGULATION"
+      ],
+      "id": "G016",
+      "title": "An experienced other-than-self presence with accessible metta allows love itself as the spiritual protection route without ontology claims."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.GO_INWARD",
+        "SOM.GENTLE_REGULATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G017",
+      "title": "An experienced other-than-self presence with inaccessible metta routes to Nurturer, Protector, and Guide capacity-building rather than psychic combat."
+    },
+    {
+      "affectedNodeIds": [
+        "SOM.GENTLE_REGULATION"
+      ],
+      "id": "G018",
+      "title": "Uncertain ontology stays phenomenological and corrigible while practical and inward routes remain available by observed effect."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.GO_INWARD",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G027"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.DEEP_CHILD_DIALOGUE"
+      ],
+      "id": "G029"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.DEEP_CHILD_DIALOGUE"
+      ],
+      "id": "G030"
+    },
+    {
+      "affectedNodeIds": [
+        "SOM.GENTLE_REGULATION"
+      ],
+      "id": "G033"
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.GO_INWARD",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G036"
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.GO_INWARD",
+        "SOM.GENTLE_REGULATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G037",
+      "title": "Gentle somatic work can use SIBAM without privileging nonverbal material."
+    },
+    {
+      "affectedNodeIds": [
+        "SOM.GENTLE_REGULATION",
+        "SOM.MEANING_INTEGRATION"
+      ],
+      "id": "G038",
+      "title": "Meaning integration preserves language and analysis without treating nonverbal material as truer."
+    },
+    {
+      "affectedNodeIds": [
+        "SOM.CONSENSUAL_TOUCH",
+        "SOM.GENTLE_REGULATION"
+      ],
+      "id": "G039",
+      "title": "Wanted touch can be selected with consent and a complete no-touch alternative."
+    },
+    {
+      "affectedNodeIds": [
+        "SOM.AQUATIC_BODYWORK",
+        "SOM.GENTLE_REGULATION"
+      ],
+      "id": "G040",
+      "title": "Wanted aquatic bodywork is optional and carries explicit aftercare boundaries."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "ROUTE.ALTERED_MEDICAL_SAFETY",
+        "ROUTE.ALTERED_STABLE_THERAPY",
+        "ROUTE.GO_INWARD",
+        "SOM.GENTLE_REGULATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G041",
+      "title": "Medical concern or impaired altered-state capacity takes precedence over inward therapy."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "ROUTE.ALTERED_ACUTE_STABILIZATION",
+        "ROUTE.ALTERED_STABLE_THERAPY",
+        "ROUTE.GO_INWARD",
+        "SOM.GENTLE_REGULATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G042",
+      "title": "Acute altered-state instability stabilizes before inward or stable substantive therapy."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "IC.DEEP_CHILD_DIALOGUE",
+        "ROUTE.ALTERED_STABLE_THERAPY",
+        "ROUTE.GO_INWARD",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G043",
+      "title": "Coherent stable altered participation can continue substantive and inner-child therapy at a calibrated depth."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "ROUTE.ALTERED_ACTION_LOCK",
+        "ROUTE.ALTERED_AFTERMATH",
+        "ROUTE.ALTERED_STABLE_THERAPY"
+      ],
+      "id": "G044",
+      "title": "Altered-state action pressure locks consequential action while preserving later review."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "ROUTE.ALTERED_PREPARATION",
+        "ROUTE.ALTERED_STABLE_THERAPY"
+      ],
+      "id": "G045",
+      "title": "Planned altered-state work can prepare capacity and closure without bypassing stable-therapy gates."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.ALTERED_AFTERMATH",
+        "ROUTE.GO_INWARD",
+        "SOM.GENTLE_REGULATION",
+        "SOM.MEANING_INTEGRATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "id": "G046",
+      "title": "Aftermath integrates facts, meaning, and inward material only after ordinary stability."
+    }
+  ],
+  "baselineVersion": "inner-child-somatic-pilot-2026-08-09-r5",
+  "candidateVersion": "inner-child-somatic-pilot-2026-08-09-r5",
+  "changedNodeIds": [
+    "IC.ALTERED_STATE_GATE",
+    "IC.DEEP_CHILD_DIALOGUE",
+    "ROUTE.ALTERED_ACTION_LOCK",
+    "ROUTE.ALTERED_ACUTE_STABILIZATION",
+    "ROUTE.ALTERED_AFTERMATH",
+    "ROUTE.ALTERED_MEDICAL_SAFETY",
+    "ROUTE.ALTERED_PREPARATION",
+    "ROUTE.ALTERED_STABLE_THERAPY",
+    "ROUTE.GO_INWARD",
+    "SOM.AQUATIC_BODYWORK",
+    "SOM.CONSENSUAL_TOUCH",
+    "SOM.DISCHARGE_SETTLE_STACK",
+    "SOM.GENTLE_REGULATION",
+    "SOM.MEANING_INTEGRATION",
+    "SOM.SIBAM_TRACKING"
+  ],
+  "changes": [
+    {
+      "after": [
+        "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.",
+        "Do not automatically end useful therapy or replace the user’s actual question with generic grounding merely because they disclose an altered state.",
+        "Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness."
+      ],
+      "before": [
+        "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.",
+        "Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness."
+      ],
+      "classification": "therapeutic-safety",
+      "entityId": "IC.ALTERED_STATE_GATE",
+      "entityType": "node",
+      "fieldPath": "avoid",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration.",
+        "A current altered state and a lack of habitual inner speech are unrelated dimensions; neither establishes that the person cannot reason, use language, or engage therapy."
+      ],
+      "before": [
+        "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration."
+      ],
+      "classification": "response-semantics",
+      "entityId": "IC.ALTERED_STATE_GATE",
+      "entityType": "node",
+      "fieldPath": "effects.requiredNuance",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": 78,
+      "before": 89,
+      "classification": "substantive-routing",
+      "entityId": "IC.ALTERED_STATE_GATE",
+      "entityType": "node",
+      "fieldPath": "priority",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Treat current altered state as a routing variable rather than an automatic stop: assess physical safety, orientation, capacity to communicate, stopping capacity, ordinary agency, and available support.",
+        "When those capacities remain coherent and stable, continue substantive inner-child or relational work at a depth the person can actually hold; when they deteriorate, shift toward room/body/human/time stabilization.",
+        "Prefer already-developed or borrowed Nurturer/Protector capacity for deeper altered-state work, and reduce depth rather than escalating intensity when the experience outruns that capacity."
+      ],
+      "before": [
+        "Prefer sober Nurturer and Protector capacity first or grounded support that does not seize authority.",
+        "Return to ordinary orientation when the state outruns the ability to hold what appears."
+      ],
+      "classification": "therapeutic-response",
+      "entityId": "IC.ALTERED_STATE_GATE",
+      "entityType": "node",
+      "fieldPath": "recommendations",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "IC.ALTERED_STATES",
+        "IC.ESCAPE_URGE",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "ALT.CAPACITY",
+        "ALT.EPISTEMICS",
+        "ALT.GROUNDING"
+      ],
+      "before": [
+        "IC.ALTERED_STATES",
+        "IC.ESCAPE_URGE",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON"
+      ],
+      "classification": "provenance-policy",
+      "entityId": "IC.ALTERED_STATE_GATE",
+      "entityType": "node",
+      "fieldPath": "sourceRefs",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": 5,
+      "before": 2,
+      "classification": "substantive-routing",
+      "entityId": "IC.ALTERED_STATE_GATE",
+      "entityType": "node",
+      "fieldPath": "tier",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": "Calibrate therapy depth during altered states instead of assuming incapacity",
+      "before": "Build sober capacity before using altered states to deepen",
+      "classification": "reviewed-substantive",
+      "entityId": "IC.ALTERED_STATE_GATE",
+      "entityType": "node",
+      "fieldPath": "title",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "ROUTE.ALTERED_AFTERMATH",
+        "relation": "may-use-cognitive-integration-after-stabilization",
+        "to": "SOM.MEANING_INTEGRATION"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "39d368045443fdb7d77c7a9ba0a32eae1954177404c5111aa042811446f14cdd",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "ROUTE.ALTERED_AFTERMATH",
+        "relation": "may-process-trauma-material-after-stabilization",
+        "to": "ROUTE.GO_INWARD"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "7f31dc9527fd670b42861c1f78003fc7f6f461028a012474288b11715e9548e7",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "ROUTE.ALTERED_ACUTE_STABILIZATION",
+        "relation": "may-enable-when-capacity-restored",
+        "to": "ROUTE.ALTERED_STABLE_THERAPY"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "926114a20cf3bb6b91686a9edd3aa24beeb2cb29e1a30096a0c75c8e5b80747d",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "ROUTE.ALTERED_PREPARATION",
+        "relation": "prepares-capacity-and-closure",
+        "to": "ROUTE.ALTERED_STABLE_THERAPY"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "b48b523af527cd1dfba63c21feed4737a56e08bca83f0f5cff3258062334f2f1",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "ROUTE.ALTERED_STABLE_THERAPY",
+        "relation": "may-continue-when-deep-work-readiness-is-established",
+        "to": "IC.DEEP_CHILD_DIALOGUE"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "ca59f76bb193aa3a76cef543d0e6a126b31f4c21c4be4e071be1eab4f3e74084",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "ROUTE.ALTERED_ACTION_LOCK",
+        "relation": "defers-consequential-meaning-to-sober-review",
+        "to": "ROUTE.ALTERED_AFTERMATH"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "ccf7d8eb2abdf70e8e0a07a28eb1d9bb4cb7b6d132af1812fd443a53ffbb9da6",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "ROUTE.ALTERED_MEDICAL_SAFETY",
+        "relation": "safety-precedes-nonmedical-stabilization",
+        "to": "ROUTE.ALTERED_ACUTE_STABILIZATION"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "fd16736a608243115a55b11d77558eb60e076998ea084a45b69715f038e7d0ae",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "altered_state",
+              "op": "eq",
+              "value": "altered"
+            },
+            {
+              "field": "altered_action_pressure",
+              "op": "eq",
+              "value": "present"
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not encourage driving, redosing, public posting, confrontation, accusation, confession, major purchases or gifts, sexual boundary changes, relationship endings, travel, or attempts to prove a revelation while judgment is altered."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not say the revelation is false merely because action is being postponed; the claim remains open to sober review."
+          ],
+          "requiredNuance": [
+            "Euphoric certainty can carry more behavioral risk than fear because the person may feel no need to ground."
+          ]
+        },
+        "id": "ROUTE.ALTERED_ACTION_LOCK",
+        "kind": "decision-node",
+        "priority": 98,
+        "recommendations": [
+          "Write consequential ideas down and postpone major or irreversible action until after sleep, food, and sober review with a grounded person.",
+          "Treat visions, entities, apparent memories, cosmic conclusions, and mission-like certainty as experience-content before treating them as fact-content or commands.",
+          "Keep non-harm and consent authoritative even when the experience feels blissful, sacred, urgent, or absolutely certain."
+        ],
+        "sourceRefs": [
+          "ALT.ACTION_LOCK",
+          "ALT.EPISTEMICS"
+        ],
+        "successSignals": [
+          "The person preserves the insight for later review without converting urgency into an irreversible action."
+        ],
+        "tags": [
+          "altered-state",
+          "action-lock",
+          "grandiosity",
+          "epistemic"
+        ],
+        "tier": 2,
+        "title": "Delay consequential action during intense certainty or pressure"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "ROUTE.ALTERED_ACTION_LOCK",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "altered_state",
+              "op": "eq",
+              "value": "altered"
+            }
+          ],
+          "any": [
+            {
+              "field": "activation",
+              "op": "eq",
+              "value": "high"
+            },
+            {
+              "field": "panic_instability",
+              "op": "eq",
+              "value": "present"
+            },
+            {
+              "field": "altered_capacity",
+              "op": "eq",
+              "value": "limited"
+            },
+            {
+              "field": "support_available",
+              "op": "eq",
+              "value": "absent"
+            },
+            {
+              "field": "sleep_deprivation",
+              "op": "eq",
+              "value": "present"
+            }
+          ],
+          "none": [
+            {
+              "field": "altered_medical_status",
+              "op": "eq",
+              "value": "concerning"
+            },
+            {
+              "field": "altered_capacity",
+              "op": "eq",
+              "value": "impaired"
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not force stillness, movement, touch, music, breathing exercises, prayer, imagery, or interpretation as the one correct response.",
+          "Do not turn acute stabilization into a metaphysical debate or a demand for insight."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [
+            "ROUTE.GO_INWARD",
+            "ROUTE.ALTERED_STABLE_THERAPY"
+          ],
+          "deferNodes": [
+            "IC.DEEP_CHILD_DIALOGUE",
+            "SOM.DEEP_BRAINSPOTTING",
+            "SOM.EMDR_DISCRETE",
+            "SOM.EMDR_DEVELOPMENTAL"
+          ],
+          "forbiddenOverclaims": [
+            "Do not claim that a grounding response proves the experience was only anxiety or only psychological."
+          ],
+          "requiredNuance": [
+            "Body → room → human → time → meaning is an acute support order, not a universal theory that body experience always precedes thought."
+          ]
+        },
+        "id": "ROUTE.ALTERED_ACUTE_STABILIZATION",
+        "kind": "decision-node",
+        "priority": 99,
+        "recommendations": [
+          "Reduce unwanted light, sound, crowding, temperature discomfort, unsafe company, and uninvited touch before trying to explain the experience.",
+          "Test stillness versus contained gentle movement by whether it makes the person safer and clearer rather than more activated or impulsive; a small ordinary task can share attention with emotion when immobile introspection becomes a trap.",
+          "Use one calm human anchor when possible, re-establish place and time, protect sleep, and let meaning wait until the nervous system has somewhere to stand."
+        ],
+        "sourceRefs": [
+          "ALT.GROUNDING",
+          "ALT.PANIC_LOOP",
+          "ALT.TOUCH"
+        ],
+        "successSignals": [
+          "The person becomes more oriented, less impulsive, more able to choose, and more able to engage with ordinary reality."
+        ],
+        "tags": [
+          "altered-state",
+          "grounding",
+          "acute",
+          "human-anchor",
+          "sleep"
+        ],
+        "tier": 2,
+        "title": "Simplify the acute altered state before adding interpretation"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "ROUTE.ALTERED_ACUTE_STABILIZATION",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "altered_phase",
+              "op": "eq",
+              "value": "aftermath"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not recommend another psychedelic, cannabis, ketamine, intense breathwork, extreme fasting, sleep deprivation, extreme meditation/stretching, or another ceremony as the reflexive fix for ongoing destabilization.",
+          "Do not treat one night’s certainty as a diagnosis, recovered fact, or permanent metaphysical conclusion."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not call persistent or dangerous symptoms a normal integration process without appropriate assessment."
+          ],
+          "requiredNuance": [
+            "The public bad-trips guide can provide fuller reading, but referral never replaces current safety, medical, or professional support when those are needed."
+          ]
+        },
+        "id": "ROUTE.ALTERED_AFTERMATH",
+        "kind": "decision-node",
+        "priority": 96,
+        "recommendations": [
+          "Use sleep, food, water, warmth, routine, sober support, and ordinary contact before another ceremony or destabilizing practice.",
+          "Record facts first—what was taken or practiced, timing when known, setting, events, triggers, what helped, and what worsened the state—then consider emotional, relational, spiritual, or practical meaning.",
+          "Separate lingering anxiety, sleep disruption, derealization/depersonalization, visual symptoms, shame/social disconnection, existential shock, trauma material, psychosis-like beliefs, and somatic hyperarousal because they can require different support.",
+          "Translate useful insight into small behavioral changes rather than measuring integration by how cosmic the explanation sounds."
+        ],
+        "sourceRefs": [
+          "ALT.AFTERMATH",
+          "ALT.EPISTEMICS"
+        ],
+        "successSignals": [
+          "Ordinary functioning and sleep recover, facts and interpretations remain distinguishable, and any retained insight produces proportionate behavior rather than escalating practice."
+        ],
+        "tags": [
+          "altered-state",
+          "integration",
+          "aftermath",
+          "sleep",
+          "reality-testing"
+        ],
+        "tier": 3,
+        "title": "Integrate altered-state aftermath from facts toward meaning and small life changes"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "ROUTE.ALTERED_AFTERMATH",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "any": [
+            {
+              "field": "altered_medical_status",
+              "op": "eq",
+              "value": "concerning"
+            },
+            {
+              "field": "altered_capacity",
+              "op": "eq",
+              "value": "impaired"
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not tell the person to breathe through, spiritually process, or continue therapy through signs of possible medical failure.",
+          "Do not prescribe experimental rescue substances, supplement doses, or home antidotes from the public guide as emergency treatment.",
+          "Do not dismiss a neurological or bodily complaint merely because the person is intoxicated or frightened."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [
+            "ROUTE.GO_INWARD",
+            "ROUTE.ALTERED_STABLE_THERAPY"
+          ],
+          "deferNodes": [
+            "IC.DEEP_CHILD_DIALOGUE",
+            "SOM.DEEP_BRAINSPOTTING",
+            "SOM.EMDR_DISCRETE",
+            "SOM.EMDR_DEVELOPMENTAL"
+          ],
+          "forbiddenOverclaims": [
+            "Do not claim that the absence of reported red flags proves medical stability."
+          ],
+          "requiredNuance": [
+            "Text chat cannot directly observe neurological or physiological signs; inability to establish stability is not the same as a reassuring screen."
+          ]
+        },
+        "id": "ROUTE.ALTERED_MEDICAL_SAFETY",
+        "kind": "decision-node",
+        "priority": 100,
+        "recommendations": [
+          "Move from interpretation to urgent real-world assessment and the least disruptive effective outside help when medical danger, severe impairment, or inability to establish basic stability is reported.",
+          "Use ordinary first-aid and emergency/poison-support boundaries appropriate to the situation; missing nonverbal information in text chat remains unknown rather than reassuring.",
+          "Keep the author guide’s experimental remedies and field hierarchy separate from executable emergency instructions."
+        ],
+        "sourceRefs": [
+          "ALT.TRIAGE",
+          "ALT.NO_RESCUE_IMPORT"
+        ],
+        "successSignals": [
+          "Immediate danger is reduced or transferred to appropriate human/medical support before interpretive work resumes."
+        ],
+        "tags": [
+          "altered-state",
+          "medical-safety",
+          "capacity",
+          "triage"
+        ],
+        "tier": 1,
+        "title": "Treat medical danger or impaired capacity as a real-world safety problem"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "ROUTE.ALTERED_MEDICAL_SAFETY",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "altered_phase",
+              "op": "eq",
+              "value": "planned"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not use ceremony planning once an acute crisis has started; return to acute triage instead.",
+          "Do not make a sitter, playlist, spiritual frame, or expected insight into an authority the person cannot stop or change."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [],
+          "requiredNuance": []
+        },
+        "id": "ROUTE.ALTERED_PREPARATION",
+        "kind": "decision-node",
+        "priority": 97,
+        "recommendations": [
+          "Plan rest and timing, physical safety, environment, support, and what would require outside help before the session begins.",
+          "Use intention without demanding a particular revelation, memory, emotional arc, or spiritual result; support stays low-directivity and consent-based.",
+          "Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended."
+        ],
+        "sourceRefs": [
+          "ALT.PREPARATION"
+        ],
+        "successSignals": [
+          "The session has clear safety, consent, stopping, closure, and integration boundaries before altered-state work begins."
+        ],
+        "tags": [
+          "altered-state",
+          "preparation",
+          "consent",
+          "closure"
+        ],
+        "tier": 3,
+        "title": "Give planned altered-state work a beginning, support plan, and ending"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "ROUTE.ALTERED_PREPARATION",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "altered_state",
+              "op": "eq",
+              "value": "altered"
+            },
+            {
+              "field": "altered_capacity",
+              "op": "eq",
+              "value": "coherent"
+            },
+            {
+              "field": "altered_medical_status",
+              "op": "eq",
+              "value": "stable"
+            },
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "safe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "oriented"
+            },
+            {
+              "field": "ability_to_stop",
+              "op": "eq",
+              "value": "yes"
+            }
+          ],
+          "none": [
+            {
+              "field": "dissociation",
+              "op": "eq",
+              "value": "high"
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not automatically substitute generic grounding for the user’s actual therapeutic question when capacity is demonstrably intact.",
+          "Do not use altered intensity as proof that a memory is historical, an ontology is true, or healing is complete."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not equate articulate writing with full medical stability or intact judgment in every domain."
+          ],
+          "requiredNuance": [
+            "Altered state is a routing variable, not by itself evidence of incapacity. Coherence in text is still not a medical exam; explicit physical stability remains a separate requirement."
+          ]
+        },
+        "id": "ROUTE.ALTERED_STABLE_THERAPY",
+        "kind": "decision-node",
+        "priority": 99,
+        "recommendations": [
+          "Do not terminate or flatten therapy merely because the person discloses an altered state; continue responsive therapeutic work at the depth their current orientation, stopping capacity, and agency support.",
+          "Keep altered-state insights, memories, symbols, intuitions, and metaphysical conclusions provisional where external truth matters; use ordinary evidence after the state when consequences depend on them.",
+          "Reduce depth immediately if orientation, stopping capacity, physical stability, reality testing, or ordinary agency begins to deteriorate."
+        ],
+        "sourceRefs": [
+          "ALT.CAPACITY",
+          "ALT.EPISTEMICS",
+          "IC.ALTERED_STATES"
+        ],
+        "successSignals": [
+          "The person can engage meaningfully, retain choice, stop voluntarily, and return toward ordinary functioning without escalating intensity to keep therapy working."
+        ],
+        "tags": [
+          "altered-state",
+          "capacity-led",
+          "substantive-therapy",
+          "epistemic"
+        ],
+        "tier": 4,
+        "title": "Continue substantive therapy when altered-state capacity remains coherent and safe"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "ROUTE.ALTERED_STABLE_THERAPY",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "SOM.AQUATIC_BODYWORK",
+        "relation": "requires-aftercare-and-integration",
+        "to": "SOM.MEANING_INTEGRATION"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "117f5721ac674a2985000c96812a08f2930eccba4b1b0f8ddfab816a37dfb6b1",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "somatic-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "SOM.SIBAM_TRACKING",
+        "relation": "keeps-meaning-connected",
+        "to": "SOM.MEANING_INTEGRATION"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "1a4d95b4f00bbac58145a475ab99c74cfe34ddd00c9491f47d11ba9e05435f09",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "somatic-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "SOM.GENTLE_REGULATION",
+        "relation": "supports-channel-tracking",
+        "to": "SOM.SIBAM_TRACKING"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "325e16bb988205c6db01c74186c37cc5d7e052a267a8f5c8ed5f97ae924cedef",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "somatic-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "SOM.CONSENSUAL_TOUCH",
+        "relation": "may-support-settling",
+        "to": "SOM.DISCHARGE_SETTLE_STACK"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "a7ea9d703b28a8ac7e8a5c19e556e98f7329cdd4ae8f254e8e0b760edbc3a615",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "somatic-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "aquatic_bodywork_interest",
+              "op": "eq",
+              "value": "present"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            },
+            {
+              "field": "dissociation",
+              "op": "eq",
+              "value": "high"
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not drop somebody into an intense water session cold, treat crying or regression-like feelings as proof of therapeutic success, or infer womb/childhood facts from the experience."
+        ],
+        "defaultQuestion": "If the session opens much more emotion than expected, what stopping, grounding, aftercare, and follow-up support will be available?",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not call emotional opening, crying, felt regression, or unusual bodily experience evidence of recovered history or completed trauma processing."
+          ],
+          "requiredNuance": [
+            "A provider should be able to answer what happens if the client leaves the session much more emotionally open than they entered."
+          ]
+        },
+        "id": "SOM.AQUATIC_BODYWORK",
+        "kind": "decision-node",
+        "priority": 76,
+        "questionPolicy": {
+          "purpose": "safety",
+          "unresolvedFields": []
+        },
+        "recommendations": [
+          "Before a water session, establish the person’s goal, comfort with water and touch, stopping signals, physical safety, and who can help if the session opens more emotion than expected.",
+          "Keep touch and movement continuously consensual; warmth, buoyancy, supported movement, stretching, and holding may feel unusually young or vulnerable without proving literal regression or memory.",
+          "Plan a deliberate return to ordinary body and present time afterward, with grounding, rest, gentle movement or massage if wanted, food or hydration when appropriate, and follow-up support for material that remains open."
+        ],
+        "sourceRefs": [
+          "SOM.AQUATIC"
+        ],
+        "successSignals": [
+          "The person can enter and leave the experience with consent, orientation, and adequate support for what remains afterward."
+        ],
+        "tags": [
+          "aquatic-bodywork",
+          "water-therapy",
+          "consent",
+          "aftercare"
+        ],
+        "tier": 5,
+        "title": "Use aquatic bodywork as an optional emotionally opening bridge with explicit aftercare"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "SOM.AQUATIC_BODYWORK",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "somatic-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "touch_interest",
+              "op": "eq",
+              "value": "present"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not treat touch aversion, freezing, pulling away, uncertainty, or a changed mind as resistance to push through.",
+          "Do not sexualize therapeutic touch or make the helper’s need for closeness part of the intervention."
+        ],
+        "defaultQuestion": "Would touch help here, and if so would you prefer self-touch, consensual outside touch, or a no-touch option?",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not claim that where tension is felt proves where trauma is stored or what caused it."
+          ],
+          "requiredNuance": [
+            "No-touch support is a complete valid option; self-touch and outside touch are not assumed equivalent."
+          ]
+        },
+        "id": "SOM.CONSENSUAL_TOUCH",
+        "kind": "decision-node",
+        "priority": 77,
+        "questionPolicy": {
+          "purpose": "discriminate",
+          "unresolvedFields": [
+            "touch_interest"
+          ]
+        },
+        "recommendations": [
+          "Start with the least intrusive form the person actually wants: self-massage, consensual nonsexual touch from a trusted person or practitioner, or a non-touch alternative.",
+          "Keep pressure, location, duration, distance, clothing, and stopping under the person’s control; re-check consent when the response changes.",
+          "Judge the intervention by orientation, agency, comfort in the body, and later functioning rather than by intensity or emotional release."
+        ],
+        "sourceRefs": [
+          "SOM.TOUCH"
+        ],
+        "successSignals": [
+          "The person retains choice and finishes at least as oriented and self-possessed as they began."
+        ],
+        "tags": [
+          "touch",
+          "massage",
+          "consent",
+          "self-touch"
+        ],
+        "tier": 5,
+        "title": "Use touch or massage only as a wanted, revisable support"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "SOM.CONSENSUAL_TOUCH",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "somatic-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Do not try to think the body out of an active survival state.",
+        "Do not challenge a therapist-created sentence as though it were a literal automatic thought when the person reports that the original experience was not verbal.",
+        "Do not keep the person in sensation when analysis, evidence checking, boundary decisions, or practical action would add useful information."
+      ],
+      "before": [
+        "Do not try to think the body out of an active survival state."
+      ],
+      "classification": "therapeutic-safety",
+      "entityId": "SOM.MEANING_INTEGRATION",
+      "entityType": "node",
+      "fieldPath": "avoid",
+      "graphId": "somatic-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Nonverbal is not deeper or truer, and verbal analysis is not merely intellectualization; the useful route is the combination that increases accuracy, agency, and integration."
+      ],
+      "before": [],
+      "classification": "response-semantics",
+      "entityId": "SOM.MEANING_INTEGRATION",
+      "entityType": "node",
+      "fieldPath": "effects.requiredNuance",
+      "graphId": "somatic-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Revisit beliefs, identity, boundaries, relationships, and the meaning of what happened once enough regulation exists to think without simply overriding the body.",
+        "Use language as an analytic tool even when the original experience was nonverbal: distinguish direct experience, later verbal translation, appraisal, evidence, alternatives, and present-day action.",
+        "Cognitive integration may follow bottom-up work or occur concurrently when it helps; do not require a universal body-first sequence."
+      ],
+      "before": [
+        "Use light cognitive or narrative work for beliefs, values, boundaries, agency, and a coherent life story."
+      ],
+      "classification": "therapeutic-response",
+      "entityId": "SOM.MEANING_INTEGRATION",
+      "entityType": "node",
+      "fieldPath": "recommendations",
+      "graphId": "somatic-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "SOM.PHASE5",
+        "SOM.INTEGRATION",
+        "SOM.JUDGE_HELP",
+        "SOM.SIBAM"
+      ],
+      "before": [
+        "SOM.PHASE5",
+        "SOM.INTEGRATION",
+        "SOM.JUDGE_HELP"
+      ],
+      "classification": "provenance-policy",
+      "entityId": "SOM.MEANING_INTEGRATION",
+      "entityType": "node",
+      "fieldPath": "sourceRefs",
+      "graphId": "somatic-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "any": [
+            {
+              "field": "current_intent",
+              "op": "eq",
+              "value": "gentle_practice"
+            },
+            {
+              "field": "target_type",
+              "op": "in",
+              "value": [
+                "developmental",
+                "diffuse"
+              ]
+            },
+            {
+              "field": "unresolved_inner_material",
+              "op": "eq",
+              "value": "present"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            }
+          ]
+        },
+        "authority": "author-framework",
+        "avoid": [
+          "Do not infer a hidden memory, diagnosis, or external fact from a bodily response, image, gesture, or felt gestalt.",
+          "Do not invent an automatic sentence when the person reports that no words were present."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not claim that nonverbal, somatic, earlier, intuitive, or intense material is inherently more authentic than language or analysis."
+          ],
+          "requiredNuance": [
+            "SIBAM is an attention map, not a claim that sensation precedes words or has greater truth value."
+          ]
+        },
+        "id": "SOM.SIBAM_TRACKING",
+        "kind": "decision-node",
+        "priority": 79,
+        "recommendations": [
+          "Use the SIBAM channels—sensation, image, behavior/action tendency, affect, and meaning—as an attention map when one channel is absent, disconnected, or monopolizing the experience.",
+          "Keep directly noticed phenomenology separate from the appraisal built from it; actual inner words, later verbal translation, imagery, bodily sensation, emotion, and action tendency may overlap without being interchangeable.",
+          "Bring language, evidence analysis, and present-day action back in whenever they improve clarity or agency rather than assuming bottom-up material is automatically deeper or truer."
+        ],
+        "sourceRefs": [
+          "SOM.SIBAM",
+          "SOM.INTEGRATION"
+        ],
+        "successSignals": [
+          "Previously disconnected channels become more distinguishable and usable without forcing one representation to dominate.",
+          "The person can examine meaning and evidence while remaining in contact with embodied experience."
+        ],
+        "tags": [
+          "SIBAM",
+          "multimodal-experience",
+          "meaning",
+          "epistemic"
+        ],
+        "tier": 4,
+        "title": "Track sensation, image, behavior, affect, and meaning without privileging one channel"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "SOM.SIBAM_TRACKING",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "somatic-directed-graph",
+      "substantive": true
+    }
+  ],
+  "contractVersion": "guide-behavioral-diff-v2",
+  "installedVersion": "inner-child-somatic-pilot-2026-08-09-r5",
+  "substantive": true
+}
