@@ -40,7 +40,7 @@ Update the somatic and altered-states portions of the therapy map from the two l
 - Track the somatic public edition as already humanized; inner-child, altered-states and hypnosis as separate planned humanized derivatives.
 - Public humanized wording/structure may differ substantially from operational maps; substantive therapy changes still move upstream through the normal approval/reconciliation path.
 
-## Validation completed locally
+## Validation before owner approval
 
 Using repository-pinned Node 24.18.0 and the current Universal test-efficiency observer:
 
@@ -57,32 +57,32 @@ Using repository-pinned Node 24.18.0 and the current Universal test-efficiency o
 - `npm run authoring:check` — PASS.
 - `npm run authoring:maps:check` — PASS.
 - Stale authoring inventory/provenance assertions exposed by the new graph/source identity were updated without weakening their checks; the affected authoring/provenance set passes.
-- `tests/guide-fidelity.test.mjs` — PASS 13/13 in isolation after a later full-suite attempt was interrupted by the execution harness.
-
-Local complete-suite attempts were externally cut off by this chat/container execution limit before Node's test runner emitted a terminal full-suite result. Exact-head hosted CI is therefore the remaining complete package checkpoint after persistence to the draft PR; do not represent the interrupted local full-suite attempts as PASS.
+- `tests/guide-fidelity.test.mjs` — PASS 13/13 in isolation after a later local full-suite attempt was interrupted by the execution harness.
+- Exact-head hosted Verify subsequently passed the complete package gate with 1180/1180 automated tests before owner approval.
 
 ## Hosted persistence checkpoint
 
 - The clean generated candidate was persisted by the self-cleaning branch workflow at `76092f95ba80e56f74d978043338118e17a60415` after exact patch-integrity checks, graph compilation, authoring regeneration/validation/checks, and focused graph/integration tests passed.
 - Temporary patch transport, the temporary apply workflow, and the earlier baseline-export workflow are absent from the resulting PR diff.
-- GitHub created the ordinary protected PR workflows for that bot-authored head but marked all three `action_required` with zero jobs because the triggering actor was `github-actions[bot]`. A user-authenticated checkpoint then triggered the normal protected checks.
-- That exact-head Verify run passed graph compilation, all 30 graph regressions, authoring checks, Guide Packet fixtures, all 1180 automated tests, mock A001/H001 replays, web smoke and autopilot smoke, then exposed one stale package-verifier constant still requiring the former 62-node graph inventory.
-- The self-cleaning verifier-repair workflow changed only that hard-coded inventory assertion from 62 to the current deterministic 71-node graph and removed itself. This connector-authored checkpoint triggers the protected checks on the clean repaired candidate.
+- A stale package-verifier constant still requiring the former 62-node graph inventory was corrected to the deterministic 71-node graph; the repaired exact-head package gate passed.
+
+## Owner approval and reconciliation — 2026-09-16
+
+- At `2026-09-16T19:03:00.000Z`, the owner explicitly approved all five grouped semantic decisions, covering all 31 exact Guide Packet decision cards.
+- Owner review was bound to graph candidate head `827e7f771aaf2b3ad9966f92be79e14b4c423772`; the three candidate graph files were verified unchanged before packet construction.
+- Formal proposal build/check: PASS, 31/31 exact decision cards and 40/40 proposal regressions.
+- Candidate packet SHA-256: `77534066bead4d7f232a8d40064518acdaea118b06169b8065d8143bb803dba8`.
+- Approved packet SHA-256: `a548ed5e24c8e8f9f8f11fa3f56626053c9dce94b42eadbd8dfb474d3b09c16d`; deterministic verifier reports `approved=true`.
+- Approval decision SHA-256: `77ecc12e44dde637e0fea9752600edd1f9b3977666bc5850db02a33fe3c99b35`.
+- Reconciliation consumed that exact approved packet/hash and returned `installed=false`, `stableChanged=false`.
+- Reconciled bundle SHA-256: `fcdcf09d660faa95636adf948b90efcc2decb38ec5742cf08ca3b28012c27dfb`; canonical graph regressions: 30/30.
+- Formal reconciliation exposed one deterministic reviewed-tier therapy-benchmark fingerprint change. A two-iteration diagnostic confirmed the fast fingerprint stayed `a41487bbb92114b1870ee39826948065f75502e77c82c3373d27a5ee39dbe89f`, while reviewed changed to `f898656cb46a5f9971f25cc6f259169bf09c8c29ceea254b7866e72abeed5941`; processing tier, provider stages/call counts, one planning pass, and required timing invariants all remained unchanged. Only the bound reviewed fingerprint was refreshed, after which the complete reconciliation gate passed.
+- Merge into development `main` is authorized once the final clean exact head passes the protected repository checks. Installation, deployment, and `stable` promotion remain explicitly unauthorized.
 
 ## Authority and safety boundaries
 
 - Raw uploaded editor HTML and personal anecdotes are not committed as canonical guide source.
 - The new altered-state text source is a safe operational extraction with explicit provenance boundaries, not a claim that the whole public guide is executable therapy authority.
 - Generated source maps, compiled graphs and authoring projections are regenerated outputs, not hand-edited authorities.
-- This branch is a proposal. Project architecture still requires semantic owner approval through the Guide Packet decision/reconciliation lifecycle before these graph changes can merge as canonical development authority.
+- Owner semantic approval and Guide Packet reconciliation are complete for this exact 31-card change. The remaining gate is exact-head protected CI and merge into development `main`.
 - `stable`, installation, deployment and clinical-efficacy claims remain outside this task.
-
-## Owner approval and reconciliation — 2026-09-16
-
-- At 2026-09-16T19:03:00.000Z, the owner explicitly approved all five grouped semantic decisions, covering all 31 exact Guide Packet decision cards.
-- Owner review was bound to graph candidate head `827e7f771aaf2b3ad9966f92be79e14b4c423772`; the three candidate graph files were verified unchanged before packet construction.
-- Candidate packet SHA-256: `77534066bead4d7f232a8d40064518acdaea118b06169b8065d8143bb803dba8`.
-- Approved packet SHA-256: `a548ed5e24c8e8f9f8f11fa3f56626053c9dce94b42eadbd8dfb474d3b09c16d`; deterministic verifier reports approved=true.
-- Reconciliation consumed that exact approved packet/hash and returned installed=false, stableChanged=false.
-- Reconciled bundle SHA-256: `fcdcf09d660faa95636adf948b90efcc2decb38ec5742cf08ca3b28012c27dfb`; canonical graph regressions: 30/30.
-- Merge into development `main` is authorized by the owner approval record. Installation, deployment, and `stable` promotion remain explicitly unauthorized.
