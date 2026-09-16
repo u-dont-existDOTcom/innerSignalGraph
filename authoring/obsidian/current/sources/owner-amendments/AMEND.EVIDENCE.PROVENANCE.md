@@ -12,7 +12,7 @@ section_hash: 46cdc7230f2544ca6051c547c883289e9d56afebe8b2d45cd7b9a85ba4f525bd
 locator_kind: amendment-record
 cited_by_node_ids:
   - SOM.ADVANCED_RELEASE_OPTIONAL
-projection_input_sha256: 0f33cdd5b8ebe797fd36d659e95434f6cd6d99ba4eaffb8e3ddb0284aa2ad521
+projection_input_sha256: b80b454b3d87206a7e6ffadb0102aceada3e801608421cbc12801b7c9b2597a4
 ---
 
 # AMEND.EVIDENCE.PROVENANCE

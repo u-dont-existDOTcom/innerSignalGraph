@@ -1,5 +1,6 @@
 import { CASE_VARIABLE_ENUMS } from "../guide-graph/contract.mjs";
 import { durableCaseContextBlock } from "./common.mjs";
+import { protocolProvenanceRules } from "./protocol-provenance.mjs";
 import { PERSPECTIVE_PRACTICES_EXTRACTION_RULES_V9 as PERSPECTIVE_PRACTICES_EXTRACTION_RULES } from "./perspective-practices.mjs";
 
 export function caseExtractionPrompt(context) {
@@ -14,6 +15,7 @@ ${hasPrior ? `INCREMENTAL SESSION MODE
 - Return a complete updated snapshot, not a patch.` : "This is the first case snapshot in the session."}
 
 Rules:
+${protocolProvenanceRules}
 - Record only direct observations that can be tied to exact user language.
 - Put psychological role assignments, causal stories, and speaker identity into hypotheses, never observations.
 - Preserve multiple alternatives when the transcript does not discriminate.

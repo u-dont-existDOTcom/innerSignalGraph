@@ -779,7 +779,7 @@
       "type": "text",
       "width": 300,
       "x": 12600,
-      "y": 1760
+      "y": 1980
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.IDENTITY_FORMATION.md",
@@ -935,7 +935,17 @@
       "type": "text",
       "width": 300,
       "x": 12600,
-      "y": 2200
+      "y": 2420
+    },
+    {
+      "color": "3",
+      "height": 140,
+      "id": "85ad463f59d632ca7609f7f1ccd44f34e7d8fb94154822e604b74ae12195d015",
+      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.PROTOCOL_STATE_PROVENANCE\nHypothetical care is not enacted reparenting\n\nKeep method not taught -> method taught -> wise/caring response available hypothetically -> actual imaginal enactment attempted -> child reception observed -> response pattern characterized separate and evidence-bound. Read each answer with its preceding prompt; past-tense shorthand in a hypothetical answer does not prove practice. Reuse the person's own caring words to invite actual enactment before retrospectively asking how care landed. Observe without scripting the child, and keep hypothetical content, deliberate imagery, spontaneous response and later interpretation distinct. Existing reported reception should not be re-queried. Prompt-level rules and audit failures are defined in src/prompts/protocol-provenance.mjs; this overlay is not a compiled state machine.",
+      "type": "text",
+      "width": 300,
+      "x": 12600,
+      "y": 1760
     },
     {
       "color": "3",
@@ -1165,7 +1175,7 @@
       "type": "text",
       "width": 300,
       "x": 12600,
-      "y": 2420
+      "y": 2640
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ACT_OUTWARD.md",
@@ -1286,7 +1296,7 @@
       "y": 0
     },
     {
-      "height": 2740,
+      "height": 2960,
       "id": "f62509388abb23e598c9507a43310445e7d60033e78ff4e7f0811067c8f2146d",
       "label": "Owner-approved, not compiled",
       "type": "group",
@@ -1311,7 +1321,7 @@
       "type": "text",
       "width": 300,
       "x": 12600,
-      "y": 1980
+      "y": 2200
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DEEP_LOVE_TO_CHILD.md",

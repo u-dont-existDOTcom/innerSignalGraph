@@ -8,6 +8,10 @@ The owner explicitly approved all five grouped semantic decisions, covering all 
 
 The reconciliation reports `installed=false` and `stableChanged=false`. The exact reconciled task branch must pass the protected hosted checks before merge to development `main`. Installation, deployment and `stable` promotion remain separate and unauthorized. Exact packet, approval and reconciliation hashes/receipts are in `tasks/somatic-altered-guide-sync-20260916/`.
 
+## Protocol-state provenance correction — merged to development main 2026-09-16
+
+Development `main` now includes the owner-requested distinction between hypothetical caring responses, reported imaginal enactment and observed reception in shared consumer prompts, the plugin reference and an explicitly uncompiled map overlay. Recovery and verification are in `tasks/reparenting-provenance-20260916/INTEGRATION.md`. Five synthetic contrast cases are retained in `corpus/protocol-provenance-cases.json`; they are evaluation inputs, not completed model evaluations. No real private case was read or changed. This work preserves guide/source authority, the compiled graph, wisdom-practices and phenomenology; no installation, stable change or deployment occurred.
+
 ## Wisdom-practices owner-approved reconciliation
 
 Task `wisdom-practices-20260912` is PREPARED, COMPILED, TESTED, APPROVED and RECONCILED on isolated branch `task/wisdom-practices-reconcile-20260912`, from merged candidate base `e729632070e80c7ae3c545bf22a10c8aba9f26dc` (PR #55). The source packet was bound by manifest SHA-256 `e072eaee9357db85c129a9e28b571c5422c2cd68d68a9d3a94f8bad4410b1c80`. Other branches/worktrees were preserved and no real private case was accessed.

@@ -11,7 +11,7 @@ source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
 section_hash: 7b154a680b10adf6680cf12cadfc056cef791e4f1c693e76d74d486bc38b33b9
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: 0f33cdd5b8ebe797fd36d659e95434f6cd6d99ba4eaffb8e3ddb0284aa2ad521
+projection_input_sha256: b80b454b3d87206a7e6ffadb0102aceada3e801608421cbc12801b7c9b2597a4
 ---
 
 # Don’t Give the Inner Adult Away
