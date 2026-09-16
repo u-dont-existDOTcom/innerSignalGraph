@@ -1,6 +1,6 @@
 # Somatic and altered-states guide integration
 
-Status: OWNER_APPROVED_AND_RECONCILED; merge pending; not installed, deployed, or promoted to `stable`.
+Status: COMPLETE; owner-approved reconciliation merged to development `main`; not installed, deployed, or promoted to `stable`.
 
 ## Owner outcome
 
@@ -77,12 +77,23 @@ Using repository-pinned Node 24.18.0 and the current Universal test-efficiency o
 - Reconciliation consumed that exact approved packet/hash and returned `installed=false`, `stableChanged=false`.
 - Reconciled bundle SHA-256: `fcdcf09d660faa95636adf948b90efcc2decb38ec5742cf08ca3b28012c27dfb`; canonical graph regressions: 30/30.
 - Formal reconciliation exposed one deterministic reviewed-tier therapy-benchmark fingerprint change. A two-iteration diagnostic confirmed the fast fingerprint stayed `a41487bbb92114b1870ee39826948065f75502e77c82c3373d27a5ee39dbe89f`, while reviewed changed to `f898656cb46a5f9971f25cc6f259169bf09c8c29ceea254b7866e72abeed5941`; processing tier, provider stages/call counts, one planning pass, and required timing invariants all remained unchanged. Only the bound reviewed fingerprint was refreshed, after which the complete reconciliation gate passed.
-- Merge into development `main` is authorized once the final clean exact head passes the protected repository checks. Installation, deployment, and `stable` promotion remain explicitly unauthorized.
+- Merge into development `main` completed after the final clean exact head passed the protected repository checks. Installation, deployment, and `stable` promotion remain explicitly unauthorized.
 
 ## Authority and safety boundaries
 
 - Raw uploaded editor HTML and personal anecdotes are not committed as canonical guide source.
 - The new altered-state text source is a safe operational extraction with explicit provenance boundaries, not a claim that the whole public guide is executable therapy authority.
 - Generated source maps, compiled graphs and authoring projections are regenerated outputs, not hand-edited authorities.
-- Owner semantic approval and Guide Packet reconciliation are complete for this exact 31-card change. The remaining gate is exact-head protected CI and merge into development `main`.
+- Owner semantic approval, Guide Packet reconciliation, exact-head protected CI, and merge into development `main` are complete for this exact 31-card change.
 - `stable`, installation, deployment and clinical-efficacy claims remain outside this task.
+
+
+## Terminal merge closeout — 2026-09-16
+
+- Verified review head: `e48c183a725c9d894a6f401f87ae6bea181068cc`.
+- Squash merge to development `main`: `0e132aa8b3826ff5cd57b70e07bd2591543087a2` at `2026-09-16T21:50:57Z`.
+- Verified review tree and merged tree are identical: `e3e86a0fbfa136dfed7924a9690713bfa8553630`.
+- Required protected checks on the exact review head: deterministic-package PASS, workflow-policy PASS, codeql-javascript PASS.
+- The newer protocol-state provenance work already on `main` was preserved during base reconciliation; canonical approved graph files and approval/reconciliation receipts did not drift.
+- `stable` remains `d74ae8b02d11b7edc72c70a753f6d93cf61e93b5`; installation, deployment, release, and stable promotion were not performed.
+- Closeout recorded at `2026-09-16T21:56:12Z`.

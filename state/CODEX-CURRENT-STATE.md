@@ -2,11 +2,11 @@
 
 Updated: 2026-09-16
 
-## Somatic + altered-states guide sync — owner approved and reconciled
+## Somatic + altered-states guide sync — owner approved, reconciled, and merged
 
 The owner explicitly approved all five grouped semantic decisions, covering all 31 exact Guide Packet cards. The approved packet verifies and reconciliation consumed its exact hash on the task branch. The reconciled development candidate preserves SIBAM-style whole-experience tracking without nonverbal privilege, consent-led touch/aquatic routes, capacity-led altered-state safety/therapy/integration, all thirteen owner-confirmed guide destinations, and separate public-humanization tracking. Experimental rescue substances/dosing remain outside executable emergency instructions.
 
-The reconciliation reports `installed=false` and `stableChanged=false`. The exact reconciled task branch must pass the protected hosted checks before merge to development `main`. Installation, deployment and `stable` promotion remain separate and unauthorized. Exact packet, approval and reconciliation hashes/receipts are in `tasks/somatic-altered-guide-sync-20260916/`.
+The reconciliation reports `installed=false` and `stableChanged=false`. The exact reconciled review head passed deterministic-package, workflow-policy, and CodeQL; PR #67 was squash-merged to development `main` as `0e132aa8b3826ff5cd57b70e07bd2591543087a2`, and the verified review tree exactly matches the merged tree. Installation, deployment and `stable` promotion remain separate and unauthorized. Exact packet, approval, reconciliation, and closeout receipts are in `tasks/somatic-altered-guide-sync-20260916/`.
 
 ## Protocol-state provenance correction — merged to development main 2026-09-16
 

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "somatic-altered-guide-sync-20260916-closeout-20260916",
+  "taskId": "somatic-altered-guide-sync-20260916",
+  "status": "COMPLETE",
+  "pullRequest": 67,
+  "reviewedHead": "e48c183a725c9d894a6f401f87ae6bea181068cc",
+  "squashMergeCommit": "0e132aa8b3826ff5cd57b70e07bd2591543087a2",
+  "sourceTree": "e3e86a0fbfa136dfed7924a9690713bfa8553630",
+  "mergedTree": "e3e86a0fbfa136dfed7924a9690713bfa8553630",
+  "treeMatch": true,
+  "mergedAt": "2026-09-16T21:50:57Z",
+  "closeoutRecordedAt": "2026-09-16T21:56:12Z",
+  "requiredChecks": [
+    {
+      "workflow": "Verify",
+      "name": "deterministic-package",
+      "conclusion": "SUCCESS",
+      "completedAt": "2026-09-16T21:48:58Z"
+    },
+    {
+      "workflow": "Repository workflow policy",
+      "name": "workflow-policy",
+      "conclusion": "SUCCESS",
+      "completedAt": "2026-09-16T21:47:55Z"
+    },
+    {
+      "workflow": "CodeQL",
+      "name": "codeql-javascript",
+      "conclusion": "SUCCESS",
+      "completedAt": "2026-09-16T21:49:11Z"
+    }
+  ],
+  "stable": {
+    "remoteRefBeforeCloseout": "d74ae8b02d11b7edc72c70a753f6d93cf61e93b5",
+    "remoteRefAfterCloseout": "d74ae8b02d11b7edc72c70a753f6d93cf61e93b5",
+    "changed": false
+  },
+  "taskWasExclusive": false,
+  "rootTaskTerminalized": true,
+  "rootLockPath": "tasks/ACTIVE-TASK.json",
+  "checkpointPath": "state/CODEX-CURRENT-STATE.md",
+  "integrationPath": "tasks/somatic-altered-guide-sync-20260916/INTEGRATION.md"
+}
