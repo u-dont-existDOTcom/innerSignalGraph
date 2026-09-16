@@ -1,0 +1,36 @@
+name: Guide sync baseline export
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/guide-sync-source-export.yml
+
+permissions:
+  contents: read
+
+jobs:
+  export-baseline:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'task/somatic-altered-guide-sync-20260916'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact existing public baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 5bc037327392eef45b3c0f7bf4e3be0a3f341245
+          persist-credentials: false
+      - name: Archive tracked public source only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 5bc037327392eef45b3c0f7bf4e3be0a3f341245
+          mkdir -p "$RUNNER_TEMP/guide-sync-baseline"
+          git archive --format=tar.gz HEAD > "$RUNNER_TEMP/guide-sync-baseline/baseline.tar.gz"
+          sha256sum "$RUNNER_TEMP/guide-sync-baseline/baseline.tar.gz"
+      - name: Export baseline for the isolated task
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: guide-sync-baseline-5bc0373
+          path: ${{ runner.temp }}/guide-sync-baseline/baseline.tar.gz
+          retention-days: 1
+          if-no-files-found: error
