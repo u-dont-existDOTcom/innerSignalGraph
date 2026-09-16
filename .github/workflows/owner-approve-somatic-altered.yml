@@ -33,7 +33,7 @@ jobs:
       - name: Bootstrap exact dependencies
         run: npm ci --ignore-scripts
 
-      - name: Diagnose exact post-reconciliation package gate without committing
+      - name: Extract exact reconciled benchmark fingerprint without committing
         env:
           BASE_SHA: 5bc037327392eef45b3c0f7bf4e3be0a3f341245
           PROPOSAL_ID: somatic-altered-guide-sync-20260916
@@ -51,13 +51,27 @@ jobs:
           p.write_text(s.replace(old, 'runCompleteGates: false'))
           PY
           node tasks/somatic-altered-guide-sync-20260916/approval/apply-owner-approved-reconciliation.mjs > "$RUNNER_TEMP/reconcile.out"
-          set +e
-          npm run verify > "$RUNNER_TEMP/post-reconcile-verify.log" 2>&1
-          status=$?
-          set -e
-          if (( status != 0 )); then
-            echo '=== exact post-reconciliation verify tail ==='
-            tail -n 240 "$RUNNER_TEMP/post-reconcile-verify.log"
-            exit "$status"
-          fi
-          echo 'POST_RECONCILIATION_VERIFY_PASS'
+          node --input-type=module <<'NODE'
+          import { runTherapyLatencyBenchmark } from './src/autopilot/therapy-latency-benchmark.mjs';
+          const result = await runTherapyLatencyBenchmark({ iterations: 2 });
+          const compact = {
+            acceptance: result.acceptance,
+            cases: result.cases.map((item) => ({
+              id: item.id,
+              semanticHashes: item.optimized.semanticHashes,
+              acceptance: item.acceptance,
+              providerStages: item.optimized.providerStages,
+              providerCallCounts: item.optimized.providerCallCounts,
+              planningPassCounts: item.optimized.planningPassCounts
+            }))
+          };
+          console.log(JSON.stringify(compact, null, 2));
+          const structural = result.cases.every((item) =>
+            item.acceptance.tierPreserved &&
+            item.acceptance.providerStagesPreserved &&
+            item.acceptance.providerCallCountPreserved &&
+            item.acceptance.onePlanningPassEveryIteration &&
+            item.acceptance.requiredTimingsRetained
+          );
+          if (!structural) process.exit(1);
+          NODE
