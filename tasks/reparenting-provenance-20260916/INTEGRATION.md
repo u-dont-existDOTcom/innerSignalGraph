@@ -36,4 +36,8 @@ Current step: implementation and focused verification. No live case, paid provid
 - No live semantic evaluation was run. The five paired/contrast fixtures retain expected evidence and rejected claims, while automated tests verify exact consumer prompt/context delivery. Model adherence and clinical benefit are not established.
 - One full package run took 309.20 seconds; focused checks took 2.74 seconds. No redundant green full/mutation runs occurred. Final telemetry remains in the task checkout's Git metadata.
 
-Next: retain this candidate on the task branch and open a draft review after publication scanning. Merge, deployment, plugin reinstall and stable promotion remain unperformed.
+## Owner publication and merge authorization
+
+On 2026-09-16, the owner explicitly authorized publishing this repair branch and merging it to development `main`. This authorization covers the already-reviewed public candidate and its required pull-request/check workflow. It does not authorize `stable` promotion, plugin installation, deployment, or unrelated deployment-architecture changes.
+
+Next: publish this candidate, open its pull request, wait for the required exact-head checks, and merge it to development `main`. Plugin reinstall, GitHub-managed marketplace adoption, deployment, and stable promotion remain separate.
