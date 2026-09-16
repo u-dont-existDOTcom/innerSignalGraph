@@ -314,176 +314,294 @@
           "heading": "Introduction",
           "lineStart": 1,
           "lineEnd": 24,
-          "sha256": "babeec19d803a1504401537a53868813526407fd3596763b7bf3b3e9d612b544",
-          "excerpt": "Introduction\nTrauma healing is rarely just a matter of revisiting painful memories. The body was involved in surviving what happened, and it may still brace, collapse, freeze, disconnect, scan for danger, or flood long after the danger is gone.\n\nFor many people, especially people with complex or developmental trauma, lasting recovery follows a sequence: establish safety and nervous-system regulation, release accumulated stress and survival responses, and only then move into deeper trauma process"
+          "sha256": "072ffc6941ab4cab9486cf510d4421d3e4b68470b03505a3ce4822312ea36c5b",
+          "excerpt": "Introduction\nTrauma healing is rarely just a matter of revisiting painful memories. The body was involved in surviving what happened, and it may still brace, collapse, freeze, disconnect, scan for danger, or flood long after the danger is gone.\n\nFor many people, especially people with complex or developmental trauma, it is useful to think in several layers that can support each other: understand body cues and capacity, regulate or discharge activation, explore feelings with compassion, work with"
+        },
+        {
+          "id": "SOM.SIBAM",
+          "heading": "SIBAM: Track the Whole Experience, Not Just the Story",
+          "lineStart": 25,
+          "lineEnd": 31,
+          "sha256": "a577a948110b65edda56059ebfa16a15be11ff9334692954e9ac6816cc4ab3e9",
+          "excerpt": "SIBAM: Track the Whole Experience, Not Just the Story\nThe latest public somatic guide uses Peter Levine's SIBAM frame as a useful way to keep several channels of experience visible at once: Sensation, Image, Behavior, Affect, and Meaning. A person may notice body sensation, imagery or memory fragments, action impulses, emotion, and interpretation in different proportions. Dissociation can look like channels becoming disconnected; hyperarousal can look like one channel rapidly recruiting the othe"
         },
         {
           "id": "SOM.MAP_NOT_LADDER",
           "heading": "This is a Map, But You Are the Explorer",
-          "lineStart": 25,
-          "lineEnd": 45,
+          "lineStart": 32,
+          "lineEnd": 52,
           "sha256": "be86763ca389d531d7cb28c834dc1fee6cf7a077b8afcc10ccf8ef5d7c7f9ff3",
           "excerpt": "This is a Map, But You Are the Explorer\nA phased approach makes intuitive and clinical sense for people who are repeatedly overwhelmed, severely dissociative, actively unsafe, unable to settle after activation, or missing the practical support needed to tolerate trauma work.\n\nThis five-stage map is built from first-principles reasoning and community signal, rather than a scientifically validated protocol.\n\nBut the evidence does not establish one universal sequence in which everyone must complete"
         },
         {
           "id": "SOM.MAP_GLANCE",
           "heading": "The Map at a Glance",
-          "lineStart": 46,
-          "lineEnd": 56,
+          "lineStart": 53,
+          "lineEnd": 63,
           "sha256": "243eb24a8b8b00b8e3e48e10051c09f964511b30b699c8a2b3e32b2ed52e9b56",
           "excerpt": "The Map at a Glance\nPhase 1: Safety and Stabilization — build the vagal brake and expand the window of tolerance.\n\nPhase 2: Daily Regulation and Discharge — keep the pressure low through regular emotional and autonomic release.\n\nPhase 3: Deep Subcortical Reprocessing — access deeper trauma networks once the system has more capacity.\n\nPhase 4: Targeted Memory Reconsolidation — clean up specific traumatic memories and residual triggers.\n\nPhase 5: Meaning-Making and Integration — rebuild the life n"
         },
         {
           "id": "SOM.PHASE1",
           "heading": "Phase 1: Build Enough Safety to Stay Present",
-          "lineStart": 57,
-          "lineEnd": 57,
+          "lineStart": 64,
+          "lineEnd": 64,
           "sha256": "bc33282a95c8d921494959ffb0d0033ef0abef3be1aea72b3e32bebae115c0d9",
           "excerpt": "Phase 1: Build Enough Safety to Stay Present"
         },
         {
           "id": "SOM.SE",
           "heading": "Primary Modality: Somatic Experiencing",
-          "lineStart": 58,
-          "lineEnd": 67,
+          "lineStart": 65,
+          "lineEnd": 74,
           "sha256": "80ac63ed6ab0417d5ff5f2115856420c4c1c9a9d6af73165b9f490c87fcbcc40",
           "excerpt": "Primary Modality: Somatic Experiencing\nGoal: Expand the window of tolerance and establish nervous-system safety.\n\nWhy first: If the autonomic nervous system cannot return to regulation, deeper trauma work often becomes destabilizing. Somatic Experiencing is useful here because it works with sensation, orientation, impulse, defensive response, and nervous-system pacing rather than forcing the person to narrate the trauma before the body can tolerate it.\n\nTypical duration: Often 3–6 months, someti"
         },
         {
           "id": "SOM.YOGA",
           "heading": "Trauma-Sensitive / Restorative Yoga",
-          "lineStart": 68,
-          "lineEnd": 96,
+          "lineStart": 75,
+          "lineEnd": 103,
           "sha256": "261f0674ef4ed297f0f6a48eea18a10beddd053328db9bee27c01f2befcf4e59",
           "excerpt": "Trauma-Sensitive / Restorative Yoga\nGoal: Gain body awareness, flexibility, enjoyment, and agency.\n\nYoga fits best early in the sequence. No power yoga. No hot yoga. Nobody announcing, “Open your hips and release your trauma.” The useful version is slow, choice-based, and non-invasive.\n\nBest forms:\n\nTrauma-sensitive yoga\n\nRestorative yoga\n\nGentle somatic yoga\n\nVery gentle yin yoga, only when propped, short, and choice-based\n\nGood trauma-sensitive instructions sound like:\n\n“You might try…”\n\n“You "
         },
         {
           "id": "SOM.GENTLE_SHAKING",
           "heading": "Secondary Support: Gentle Shaking / TRE",
-          "lineStart": 97,
-          "lineEnd": 112,
+          "lineStart": 104,
+          "lineEnd": 119,
           "sha256": "a16d84154ad741b35e18db84283d9b0b7e0bf9663518ea8d24c40bfd7358c00c",
           "excerpt": "Secondary Support: Gentle Shaking / TRE\nGentle shaking or basic trauma-release exercises can be introduced in Phase 1, but the dose should stay low. You should finish feeling more regulated, not blasted open.\n\n\nExamples:\n\nBasic Trauma Release Exercises, kept very mild\n\nLight neurogenic tremoring\n\nGentle shaking while standing\n\nShort, playful movement that can stop easily\n\nWarning: During Phase 1, the objective is regulation rather than catharsis. If shaking becomes compulsive, frightening, disso"
         },
         {
           "id": "SOM.PHASE2",
           "heading": "Phase 2: Daily Regulation and Discharge — Keep the Pressure Low",
-          "lineStart": 113,
-          "lineEnd": 115,
+          "lineStart": 120,
+          "lineEnd": 122,
           "sha256": "b76702aebe9ce4fd05d27be21352c488e15bf3ff6859f52320fa5ccc67ce7758",
           "excerpt": "Phase 2: Daily Regulation and Discharge — Keep the Pressure Low\nOnce the system has some basic safety, the next task is daily regulation. Trauma healing fails when you only do deep work occasionally but spend the rest of the week accumulating activation. Phase 2 creates a regular pressure-release system."
         },
         {
           "id": "SOM.EFT",
           "heading": "EFT / Tapping",
-          "lineStart": 116,
-          "lineEnd": 134,
+          "lineStart": 123,
+          "lineEnd": 141,
           "sha256": "1022d40f825e066651e928b9a5b367c04fb7584fbe28c7fabf9674b233986fb1",
           "excerpt": "EFT / Tapping\nGoal: Portable self-regulation for real-world triggers.\n\nEFT is useful because it can be done quickly, privately, and repeatedly. It gives you something concrete to do when old activation appears in ordinary life: conflict, shame spirals, social fear, abandonment panic, freeze, anger, or intrusive memory fragments.\n\nBest use:\n\nBefore difficult conversations\n\nAfter being triggered\n\nBefore or after therapy sessions\n\nWhen the mind is looping but the body is also activated\n\nAs a bridge"
         },
         {
+          "id": "SOM.TOUCH",
+          "heading": "Touch, Massage, and Consent",
+          "lineStart": 142,
+          "lineEnd": 148,
+          "sha256": "eae6bb3441a8d545b8f9439ab6eb63a715997b071138ad02d3a1bc2c2b26f1f7",
+          "excerpt": "Touch, Massage, and Consent\nTouch can be grounding, regulating, and informative for some people and aversive or activating for others. Massage belongs on the map as an optional body-based support rather than a mandatory trauma technique. Start with the least intrusive form that is actually wanted: self-massage, a weighted or textured object, consensual nonsexual touch from a trusted person or practitioner, or no touch at all.\n\nThe person keeps authority over pressure, location, duration, distanc"
+        },
+        {
           "id": "SOM.SHAKING_QIGONG",
           "heading": "Shaking Qigong / Shaking Medicine",
-          "lineStart": 135,
-          "lineEnd": 189,
+          "lineStart": 149,
+          "lineEnd": 203,
           "sha256": "bde47dcb013d11ad8862ebe6de9e89ae370ce9d62a5297ab4881835d777205c2",
           "excerpt": "Shaking Qigong / Shaking Medicine\nGoal: Daily autonomic discharge and energetic decompression.\n\nShaking Qigong is a creative fusion of shaking with qigong. The form I am linking to is a class for $10 per month on Skool which my friend Louka took. I am recommending this specific class because Louka tried many different healing and somatic modalities, including basic TRE, but nothing helped him much until he got into this class.\n\nThis is where shaking qigong fits better than in Phase 1. In Phase 1"
         },
         {
           "id": "SOM.STACK",
           "heading": "The Discharge → Settle Stack",
-          "lineStart": 190,
-          "lineEnd": 202,
+          "lineStart": 204,
+          "lineEnd": 216,
           "sha256": "6aa85ac3ba0a7633773a7ca57c7b49ae630f9a6917adb346b34b99789ad8206b",
           "excerpt": "The Discharge → Settle Stack\nA useful daily sequence is:\n\nShaking Qigong / TRE — discharge excess activation.\n\nRestorative or gentle yin yoga — let the system soften, settle, and rebalance energy flow.\n\nEFT tapping — re-establish emotional calm and cognitive orientation.\n\nThe point of the stack is to avoid opening a lot of activation through shaking and then walking away still raw.\n\nImportant yin yoga caveat: Yin yoga can be helpful, but only if it is gentle, propped, and non-coercive. In trauma"
         },
         {
           "id": "SOM.BUTOH_EXTERNAL",
           "heading": "Optional External Practice: Butoh-Informed Expressive Movement / Ecstatic Movement + Enactment — Experimental",
-          "lineStart": 203,
-          "lineEnd": 219,
+          "lineStart": 217,
+          "lineEnd": 233,
           "sha256": "92d64b258a467795afc578ff4c5ba29e906149a98354778cda96b0159cea341f",
           "excerpt": "Optional External Practice: Butoh-Informed Expressive Movement / Ecstatic Movement + Enactment — Experimental\nEvidence quality: loose, emerging, and not standardized as a clinical treatment.\n\nOwner-reported origin: A friend described attending something called “Butoh ecstatic dance” that combined ecstatic dance with spontaneous role-play or enactment and could sometimes become very intense or sexually/BDSM-coded. This is an anecdotal report about some events, not evidence that these elements are"
         },
         {
           "id": "SOM.PHASE3",
           "heading": "Phase 3: Deep Subcortical Reprocessing",
-          "lineStart": 220,
-          "lineEnd": 222,
+          "lineStart": 234,
+          "lineEnd": 236,
           "sha256": "b371489705eed42aeaa2e1554b39c4df808d3e1857d7d86d52689a1586fe835f",
           "excerpt": "Phase 3: Deep Subcortical Reprocessing\nI am using subcortical as shorthand for trauma material that shows up through body sensation, impulse, emotion, image, or fragments before it becomes a clear verbal story—not as a claim that one precise brain region contains it."
         },
         {
+          "id": "SOM.AQUATIC",
+          "heading": "Aquatic Bodywork / Water Therapy",
+          "lineStart": 237,
+          "lineEnd": 243,
+          "sha256": "2306c35a1665e1d9fdafe1f5cc24b51057b446dfa76721b09bb9ca7c25cd68db",
+          "excerpt": "Aquatic Bodywork / Water Therapy\nAquatic bodywork can combine warmth, buoyancy, supported movement, stretching, and consensual holding in a way that feels unusually young, vulnerable, or emotionally opening for some people. Treat that openness as an effect to care for, not proof of regression to a literal age, womb memory, or hidden event.\n\nDo not drop somebody cold into a potentially intense water session. Beforehand, establish what they want to work on, their comfort with water and touch, stop"
+        },
+        {
           "id": "SOM.BRAINSPOTTING",
           "heading": "Primary Modality: Brainspotting",
-          "lineStart": 223,
-          "lineEnd": 250,
+          "lineStart": 244,
+          "lineEnd": 271,
           "sha256": "5c073d043354e55a1dfcbe20d2e7565a70523949842ffa5e4894f70b396edfbb",
           "excerpt": "Primary Modality: Brainspotting\nGoal: Work with emotionally charged material through gaze position, focused attention, bodily awareness, and therapist attunement.\n\n\nWhy now: At this point, you ideally have:\n\nMore nervous-system safety from Somatic Experiencing\n\nSelf-regulation from EFT\n\nThe ability to discharge activation through shaking\n\nMore comfort noticing and staying with body sensations through yoga\n\nWith those foundations in place, Brainspotting can often go deeper without overwhelming yo"
         },
         {
           "id": "SOM.POST_BRAINSPOTTING",
           "heading": "Post-Brainspotting Integration",
-          "lineStart": 251,
-          "lineEnd": 265,
+          "lineStart": 272,
+          "lineEnd": 286,
           "sha256": "f813f1a9ee41babb041120f0753c9d2725709d5955d6bb72608c3b87ed923a46",
           "excerpt": "Post-Brainspotting Integration\nAfter Brainspotting, do not rush straight into analysis. Your body may need time to process whatever surfaced.\n\nUseful post-session options:\n\nAllow spontaneous shaking or tremoring if it arises naturally.\n\nUse gentle Shaking Qigong if your body wants discharge.\n\nUse walking meditation if you need orientation and grounding.\n\nUse restorative, gentle yin, or somatic yoga if your body wants rest, stretching, toning, or reconnection.\n\nUse EFT tapping if emotional activa"
         },
         {
           "id": "SOM.PHASE4",
           "heading": "Phase 4: Targeted Memory Reconsolidation",
-          "lineStart": 266,
-          "lineEnd": 266,
+          "lineStart": 287,
+          "lineEnd": 287,
           "sha256": "7c61e6f0959d433e4d03b17a16251439bfb6690bc65df8a4cf0b7a18a656d878",
           "excerpt": "Phase 4: Targeted Memory Reconsolidation"
         },
         {
           "id": "SOM.EMDR",
           "heading": "Primary Modality: EMDR",
-          "lineStart": 267,
-          "lineEnd": 293,
-          "sha256": "f835e00d48e80b4b3928256ce45b01b8466312b0770e588085056545a88e6af4",
+          "lineStart": 288,
+          "lineEnd": 314,
+          "sha256": "422fbaaf9fc4a0a4f7ce2d34e8df3ea8238cd6b0e546fb474fe075cc84e915a3",
           "excerpt": "Primary Modality: EMDR\nGoal: Resolve remaining discrete traumatic memories, flashbacks, and highly specific trigger networks.\n\n\nEMDR is best used after you have enough regulation, body capacity, and post-session integration skills. It can be highly effective, but it is not always the best first move for diffuse developmental trauma if your nervous system is still unstable.\n\nBest suited for:\n\nSpecific traumatic events\n\nAccident trauma\n\nAssault memories\n\nMilitary trauma\n\nDistinct flashback targets"
         },
         {
           "id": "SOM.POST_EMDR",
           "heading": "After EMDR",
-          "lineStart": 294,
-          "lineEnd": 310,
+          "lineStart": 315,
+          "lineEnd": 331,
           "sha256": "ace07680374c7c3be749e9add77e8455a549bb2c6b58b31d9b3b28870ac3d902",
           "excerpt": "After EMDR\nAfter EMDR, keep integration simple instead of piling on more processing:\n\nWalking\n\nRestorative yoga\n\nHealthy food and hydration\n\nJournaling only if it feels grounding\n\nEarly bedtime if your nervous system feels tired\n\nLight EFT if activation remains\n\nI would not stack Brainspotting, EMDR, intense shaking, and deep yin on the same day unless you already know your system can handle that much and you have skilled support. More processing is not always better. Often the missing piece is "
         },
         {
           "id": "SOM.PHASE5",
           "heading": "Phase 5: Meaning-Making and Life Integration",
-          "lineStart": 311,
-          "lineEnd": 311,
+          "lineStart": 332,
+          "lineEnd": 332,
           "sha256": "13f4847745acc33800e993f55143883ce1fe049e87a966b561091051a8b00330",
           "excerpt": "Phase 5: Meaning-Making and Life Integration"
         },
         {
           "id": "SOM.INTEGRATION",
           "heading": "Light CBT / Narrative Integration",
-          "lineStart": 312,
-          "lineEnd": 332,
-          "sha256": "6114c5f9d587adc034cb57b1f0cc67cbc7dade3a4d6a2171cf73f202e69b875c",
-          "excerpt": "Light CBT / Narrative Integration\nGoal: Rebuild the life narrative after the body is less trapped in survival mode.\n\nTop-down cognitive work often fails when introduced too early because the body still believes the threat is happening. But after regulation, discharge, and deeper processing, light cognitive work can become much more useful.\n\nBest use:\n\nReframing old beliefs\n\nBuilding a coherent life story\n\nSeparating past danger from present reality\n\nClarifying values and boundaries\n\nReclaiming a"
+          "lineStart": 333,
+          "lineEnd": 353,
+          "sha256": "5ecaa481207d1f33cb796382c3260e4d1a6a0e207cd62747c01917f1fc456735",
+          "excerpt": "Light CBT / Narrative Integration\nGoal: Rebuild the life narrative after the body is less trapped in survival mode.\n\nCognitive work can be mistimed when it asks someone to argue with a sentence that was never literally present or when the body is too activated to use analysis well. But language and analysis remain essential tools: they can clarify appraisals, test conclusions, update identity and boundaries, and turn implicit meaning into something inspectable. Some people benefit from this afte"
         },
         {
           "id": "SOM.JUDGE_HELP",
           "heading": "How to Judge What Is Helping",
-          "lineStart": 333,
-          "lineEnd": 345,
+          "lineStart": 354,
+          "lineEnd": 366,
           "sha256": "4feb8bc4ae8ac4c7318713afa4559ce0678ee093b5c405895d6f6adf7006e029",
           "excerpt": "How to Judge What Is Helping\nThe overall movement is:\n\nRegulation → discharge → processing → integration → meaning.\n\nYoga moves through the map: early for awareness, flexibility, enjoyment, and agency; after shaking to help the body settle and rebalance; or after deeper processing for stretching and reconnection. You do not need every modality or a fixed schedule.\n\nSome advanced shaking, qigong, breathwork, and somatic communities make very large claims about releasing decades of trauma, awakeni"
         },
         {
           "id": "SOM.ADVANCED_RELEASE_SOURCE",
           "heading": "For Fun & Advanced Release try sky hypnosis and vagal blitz breathwork (sky hypnosis transcript here, then vagal blitz post attached as pdf):",
-          "lineStart": 346,
-          "lineEnd": 428,
+          "lineStart": 367,
+          "lineEnd": 449,
           "sha256": "fe5989c2c7a3a8494bc5ea30919e7c940d72b2d28af0f1f4fffc92b9b28f6940",
           "excerpt": "For Fun & Advanced Release try sky hypnosis and vagal blitz breathwork (sky hypnosis transcript here, then vagal blitz post attached as pdf):\n\n(00:00:00.873):\nOh, hello, hello, hello.\n\n(00:00:02.573):\nSo this is the two-second sky hypnosis.\n\n(00:00:06.874):\nYou can search that and you'll see other videos on this one,\n\n(00:00:09.155):\nbut I turn it into more like a 10-second one and do it a little bit more advanced\n\n(00:00:14.096):\nversion.\n\n(00:00:14.496):\nSo the regular version, let me see if I"
+        }
+      ]
+    },
+    {
+      "guideId": "altered-states-map-source",
+      "file": "altered-states-map-source.txt",
+      "sections": [
+        {
+          "id": "ALT.INTRO",
+          "heading": "Altered States / Bad Trips — Operational Map Source",
+          "lineStart": 1,
+          "lineEnd": 3,
+          "sha256": "5ecc254e8003259016d22cbdf5ebd100c604b077c22fd90ddb27bb2e60fa018e",
+          "excerpt": "Altered States / Bad Trips — Operational Map Source\nThis is a safety-adapted semantic extraction of the owner-uploaded altered-states guide dated 2026-09-15. The complete reader-facing guide contains personal field methods, medical claims, and experimental substance/remedy material that are not automatically executable InnerSignal instructions. The runtime map preserves the guide's triage, capacity, consent, epistemic, support, and integration structure while keeping medical emergencies within o"
+        },
+        {
+          "id": "ALT.TRIAGE",
+          "heading": "Acute Triage Order",
+          "lineStart": 4,
+          "lineEnd": 6,
+          "sha256": "cd7bfd2bf395cdfa58dbb085f64ace7bce01d326fae5c11fb48470a598b1c755",
+          "excerpt": "Acute Triage Order\nWhen somebody is already in an intense altered state, use this order: medical and physical safety first; stop unsafe momentum; fix the room; help the body; establish one calm human anchor; protect sleep; then interpret meaning. Do not spiritually process a body that may be medically failing. Trouble breathing, prolonged or repeated seizure, collapse or inability to wake normally, dangerous overheating, severe or worsening chest pain, focal neurological signs, serious injury, r"
+        },
+        {
+          "id": "ALT.CAPACITY",
+          "heading": "Capacity-Led Altered-State Therapy",
+          "lineStart": 7,
+          "lineEnd": 9,
+          "sha256": "5c6038d471d8cfb8349057d8b2c5a0e1d556eea9b6f19866cd39654fd14bef31",
+          "excerpt": "Capacity-Led Altered-State Therapy\nAltered-state disclosure by itself does not end therapy. Distinguish a coherent person who is physically stable, oriented, able to communicate, able to stop, and able to retain choice from somebody whose capacity is limited or impaired. A coherent altered person may still receive substantive, responsive therapy at a depth their current capacity supports. Reduce depth or move to stabilization when orientation, stopping, reality testing, physical stability, or or"
+        },
+        {
+          "id": "ALT.GROUNDING",
+          "heading": "Room, Body, Human, Time",
+          "lineStart": 10,
+          "lineEnd": 12,
+          "sha256": "2c7d21c4084506a8ae84d325e684eb763effa1bed8f071fcbb1e04d06d3bd537",
+          "excerpt": "Room, Body, Human, Time\nFor an intense but non-emergency state, simplify before interpreting. Reduce unwanted light, sound, crowding, temperature discomfort, unsafe people, and uninvited touch. Ask whether stillness or contained movement makes the person safer and clearer; use the option that reduces impulsivity rather than making either stillness or movement ideological. A simple safe task can share attention with emotion when immobile introspection becomes a trap. Use one calm human as the mai"
+        },
+        {
+          "id": "ALT.TOUCH",
+          "heading": "Consent and Touch",
+          "lineStart": 13,
+          "lineEnd": 15,
+          "sha256": "dd8f81acbd3469e1f134db3e40fdada631623e1eae6948509d18dc040bee4fa7",
+          "excerpt": "Consent and Touch\nAltered-state support never creates blanket consent. Ask before touching. Stop when the person says stop, freezes, pulls away, seems unsure, or changes their mind. Touch stays nonsexual and serves the person rather than the helper. Silence, distance, and no-touch support are valid."
+        },
+        {
+          "id": "ALT.ACTION_LOCK",
+          "heading": "Action Lock and Euphoric Certainty",
+          "lineStart": 16,
+          "lineEnd": 18,
+          "sha256": "b6e1ba7b6408797292398dacb41fc0a21030f12a21aac4a2ac8d4d5d7dc9cd73",
+          "excerpt": "Action Lock and Euphoric Certainty\nFear is not the only dangerous state. Bliss, grandiosity, cosmic certainty, or a sense of mission can increase rash action while making grounding feel unnecessary. During an intense altered state, postpone major or irreversible actions: driving, redosing, public posting, confrontations, accusations, confessions, major purchases or gifts, sexual boundary changes, relationship endings, travel, and attempts to prove a revelation. Write important ideas down, sleep "
+        },
+        {
+          "id": "ALT.EPISTEMICS",
+          "heading": "Visions, Entities, Memories, and Commands",
+          "lineStart": 19,
+          "lineEnd": 21,
+          "sha256": "173ac5d7c566a1b06e583b2b85d586d59ba163f9ef21c1463098298995133de2",
+          "excerpt": "Visions, Entities, Memories, and Commands\nDo not win a metaphysical argument and do not validate harmful commands. Reflect the reported experience while returning authority to non-harm, the body, ordinary reality, and present-day choice. Treat visions, entity experiences, apparent memories, past-life narratives, and cosmic conclusions first as experience-content. They may be meaningful without establishing external facts or historical certainty. Do not confront or accuse somebody from intoxicate"
+        },
+        {
+          "id": "ALT.PREPARATION",
+          "heading": "Planned Altered-State Work",
+          "lineStart": 22,
+          "lineEnd": 24,
+          "sha256": "7398cfc4bc0bc72af51ad759044daa5034a86f881fb18e0367331dbf71944a97",
+          "excerpt": "Planned Altered-State Work\nFor planned work, establish a beginning and an end before starting: adequate rest and timing; physical-safety planning; a known environment and support plan; intention without demanding a particular revelation; low-directivity support; explicit consent; closure; food and hydration when safe; sleep; and protected integration time. Once somebody is already in trouble, abandon ceremony optimization and return to acute triage."
+        },
+        {
+          "id": "ALT.PANIC_LOOP",
+          "heading": "Fear and Panic Loop",
+          "lineStart": 25,
+          "lineEnd": 27,
+          "sha256": "7a837da77628c4a9c23d68ae65b3d8a31709fa0824b102fe17e47af54291705b",
+          "excerpt": "Fear and Panic Loop\nFear often tries to solve fear by generating diagnosis, metaphysics, certainty, or urgent action. Name the loop without arguing with it. Move down toward body, room, human, and time. The goal is not to suppress meaning forever; it is to postpone interpretation until the nervous system and judgment can use it."
+        },
+        {
+          "id": "ALT.AFTERMATH",
+          "heading": "Aftermath and Minimum Viable Integration",
+          "lineStart": 28,
+          "lineEnd": 30,
+          "sha256": "4c3c3de53377a0b8426f2da150f8c3eef157acff2dac05452e29f5a6ae788412",
+          "excerpt": "Aftermath and Minimum Viable Integration\nAfter the acute state, sleep, food, water, warmth, routine, and ordinary contact come before a new ceremony or another destabilizing practice. Record facts first: what was taken or practiced, timing when known, setting, events, triggers, what helped, and what worsened the state. Then consider emotional, relational, spiritual, or practical meaning. Last, choose small behavioral changes. Distinguish lingering anxiety, sleep disruption, derealization/deperso"
+        },
+        {
+          "id": "ALT.NO_RESCUE_IMPORT",
+          "heading": "No Rescue-Regimen Import",
+          "lineStart": 31,
+          "lineEnd": 33,
+          "sha256": "c1970d10b23d9fc45860ae0aa714b8de68a68f284c7553fd782943202c4ed511",
+          "excerpt": "No Rescue-Regimen Import\nThe full guide includes the author's evidence-labeled personal field hierarchy and experimental remedies. InnerSignal may point a reader to the complete guide as the author's longer account, but it must not transform personal field signals, preclinical mechanisms, or limited evidence into emergency-treatment instructions, dosing, or reassurance. A guide referral never replaces urgent medical help, poison-control advice where available, or standard first aid."
         }
       ]
     },
@@ -2079,10 +2197,10 @@
         },
         {
           "id": "IC.ALTERED_STATE_GATE",
-          "title": "Build sober capacity before using altered states to deepen",
+          "title": "Calibrate therapy depth during altered states instead of assuming incapacity",
           "kind": "decision-node",
-          "tier": 2,
-          "priority": 89,
+          "tier": 5,
+          "priority": 78,
           "activation": {
             "any": [
               {
@@ -2101,15 +2219,20 @@
             "IC.ALTERED_STATES",
             "IC.ESCAPE_URGE",
             "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
-            "AMEND.IC.WELLBEING_HORIZON"
+            "AMEND.IC.WELLBEING_HORIZON",
+            "ALT.CAPACITY",
+            "ALT.EPISTEMICS",
+            "ALT.GROUNDING"
           ],
           "authority": "author-framework",
           "recommendations": [
-            "Prefer sober Nurturer and Protector capacity first or grounded support that does not seize authority.",
-            "Return to ordinary orientation when the state outruns the ability to hold what appears."
+            "Treat current altered state as a routing variable rather than an automatic stop: assess physical safety, orientation, capacity to communicate, stopping capacity, ordinary agency, and available support.",
+            "When those capacities remain coherent and stable, continue substantive inner-child or relational work at a depth the person can actually hold; when they deteriorate, shift toward room/body/human/time stabilization.",
+            "Prefer already-developed or borrowed Nurturer/Protector capacity for deeper altered-state work, and reduce depth rather than escalating intensity when the experience outruns that capacity."
           ],
           "avoid": [
             "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.",
+            "Do not automatically end useful therapy or replace the user’s actual question with generic grounding merely because they disclose an altered state.",
             "Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness."
           ],
           "successSignals": [
@@ -2125,7 +2248,8 @@
             "deferNodes": [],
             "forbiddenOverclaims": [],
             "requiredNuance": [
-              "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration."
+              "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration.",
+              "A current altered state and a lack of habitual inner speech are unrelated dimensions; neither establishes that the person cannot reason, use language, or engage therapy."
             ]
           },
           "defaultQuestion": ""
@@ -4238,6 +4362,82 @@
           "defaultQuestion": ""
         },
         {
+          "id": "SOM.SIBAM_TRACKING",
+          "title": "Track sensation, image, behavior, affect, and meaning without privileging one channel",
+          "kind": "decision-node",
+          "tier": 4,
+          "priority": 79,
+          "activation": {
+            "any": [
+              {
+                "field": "current_intent",
+                "op": "eq",
+                "value": "gentle_practice"
+              },
+              {
+                "field": "target_type",
+                "op": "in",
+                "value": [
+                  "developmental",
+                  "diffuse"
+                ]
+              },
+              {
+                "field": "unresolved_inner_material",
+                "op": "eq",
+                "value": "present"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "SOM.SIBAM",
+            "SOM.INTEGRATION"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Use the SIBAM channels—sensation, image, behavior/action tendency, affect, and meaning—as an attention map when one channel is absent, disconnected, or monopolizing the experience.",
+            "Keep directly noticed phenomenology separate from the appraisal built from it; actual inner words, later verbal translation, imagery, bodily sensation, emotion, and action tendency may overlap without being interchangeable.",
+            "Bring language, evidence analysis, and present-day action back in whenever they improve clarity or agency rather than assuming bottom-up material is automatically deeper or truer."
+          ],
+          "avoid": [
+            "Do not infer a hidden memory, diagnosis, or external fact from a bodily response, image, gesture, or felt gestalt.",
+            "Do not invent an automatic sentence when the person reports that no words were present."
+          ],
+          "successSignals": [
+            "Previously disconnected channels become more distinguishable and usable without forcing one representation to dominate.",
+            "The person can examine meaning and evidence while remaining in contact with embodied experience."
+          ],
+          "tags": [
+            "SIBAM",
+            "multimodal-experience",
+            "meaning",
+            "epistemic"
+          ],
+          "effects": {
+            "deferNodes": [],
+            "blockNodes": [],
+            "requiredNuance": [
+              "SIBAM is an attention map, not a claim that sensation precedes words or has greater truth value."
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim that nonverbal, somatic, earlier, intuitive, or intense material is inherently more authentic than language or analysis."
+            ]
+          },
+          "defaultQuestion": ""
+        },
+        {
           "id": "SOM.EFT_PORTABLE",
           "title": "Portable EFT for real-world triggers",
           "kind": "decision-node",
@@ -4412,6 +4612,73 @@
           "defaultQuestion": ""
         },
         {
+          "id": "SOM.CONSENSUAL_TOUCH",
+          "title": "Use touch or massage only as a wanted, revisable support",
+          "kind": "decision-node",
+          "tier": 5,
+          "priority": 77,
+          "activation": {
+            "all": [
+              {
+                "field": "touch_interest",
+                "op": "eq",
+                "value": "present"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "SOM.TOUCH"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Start with the least intrusive form the person actually wants: self-massage, consensual nonsexual touch from a trusted person or practitioner, or a non-touch alternative.",
+            "Keep pressure, location, duration, distance, clothing, and stopping under the person’s control; re-check consent when the response changes.",
+            "Judge the intervention by orientation, agency, comfort in the body, and later functioning rather than by intensity or emotional release."
+          ],
+          "avoid": [
+            "Do not treat touch aversion, freezing, pulling away, uncertainty, or a changed mind as resistance to push through.",
+            "Do not sexualize therapeutic touch or make the helper’s need for closeness part of the intervention."
+          ],
+          "successSignals": [
+            "The person retains choice and finishes at least as oriented and self-possessed as they began."
+          ],
+          "tags": [
+            "touch",
+            "massage",
+            "consent",
+            "self-touch"
+          ],
+          "effects": {
+            "deferNodes": [],
+            "blockNodes": [],
+            "requiredNuance": [
+              "No-touch support is a complete valid option; self-touch and outside touch are not assumed equivalent."
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim that where tension is felt proves where trauma is stored or what caused it."
+            ]
+          },
+          "defaultQuestion": "Would touch help here, and if so would you prefer self-touch, consensual outside touch, or a no-touch option?",
+          "questionPolicy": {
+            "purpose": "discriminate",
+            "unresolvedFields": [
+              "touch_interest"
+            ]
+          }
+        },
+        {
           "id": "SOM.RESOURCE_BRAINSPOTTING",
           "title": "Resource-oriented or titrated Brainspotting",
           "kind": "decision-node",
@@ -4484,6 +4751,75 @@
             "forbiddenOverclaims": []
           },
           "defaultQuestion": ""
+        },
+        {
+          "id": "SOM.AQUATIC_BODYWORK",
+          "title": "Use aquatic bodywork as an optional emotionally opening bridge with explicit aftercare",
+          "kind": "decision-node",
+          "tier": 5,
+          "priority": 76,
+          "activation": {
+            "all": [
+              {
+                "field": "aquatic_bodywork_interest",
+                "op": "eq",
+                "value": "present"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "SOM.AQUATIC"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Before a water session, establish the person’s goal, comfort with water and touch, stopping signals, physical safety, and who can help if the session opens more emotion than expected.",
+            "Keep touch and movement continuously consensual; warmth, buoyancy, supported movement, stretching, and holding may feel unusually young or vulnerable without proving literal regression or memory.",
+            "Plan a deliberate return to ordinary body and present time afterward, with grounding, rest, gentle movement or massage if wanted, food or hydration when appropriate, and follow-up support for material that remains open."
+          ],
+          "avoid": [
+            "Do not drop somebody into an intense water session cold, treat crying or regression-like feelings as proof of therapeutic success, or infer womb/childhood facts from the experience."
+          ],
+          "successSignals": [
+            "The person can enter and leave the experience with consent, orientation, and adequate support for what remains afterward."
+          ],
+          "tags": [
+            "aquatic-bodywork",
+            "water-therapy",
+            "consent",
+            "aftercare"
+          ],
+          "effects": {
+            "deferNodes": [],
+            "blockNodes": [],
+            "requiredNuance": [
+              "A provider should be able to answer what happens if the client leaves the session much more emotionally open than they entered."
+            ],
+            "forbiddenOverclaims": [
+              "Do not call emotional opening, crying, felt regression, or unusual bodily experience evidence of recovered history or completed trauma processing."
+            ]
+          },
+          "defaultQuestion": "If the session opens much more emotion than expected, what stopping, grounding, aftercare, and follow-up support will be available?",
+          "questionPolicy": {
+            "purpose": "safety",
+            "unresolvedFields": []
+          }
         },
         {
           "id": "SOM.DEEP_BRAINSPOTTING",
@@ -4947,14 +5283,19 @@
           "sourceRefs": [
             "SOM.PHASE5",
             "SOM.INTEGRATION",
-            "SOM.JUDGE_HELP"
+            "SOM.JUDGE_HELP",
+            "SOM.SIBAM"
           ],
           "authority": "author-framework",
           "recommendations": [
-            "Use light cognitive or narrative work for beliefs, values, boundaries, agency, and a coherent life story."
+            "Revisit beliefs, identity, boundaries, relationships, and the meaning of what happened once enough regulation exists to think without simply overriding the body.",
+            "Use language as an analytic tool even when the original experience was nonverbal: distinguish direct experience, later verbal translation, appraisal, evidence, alternatives, and present-day action.",
+            "Cognitive integration may follow bottom-up work or occur concurrently when it helps; do not require a universal body-first sequence."
           ],
           "avoid": [
-            "Do not try to think the body out of an active survival state."
+            "Do not try to think the body out of an active survival state.",
+            "Do not challenge a therapist-created sentence as though it were a literal automatic thought when the person reports that the original experience was not verbal.",
+            "Do not keep the person in sensation when analysis, evidence checking, boundary decisions, or practical action would add useful information."
           ],
           "successSignals": [
             "Meaning-making improves life participation rather than becoming another processing project."
@@ -4967,7 +5308,9 @@
           "effects": {
             "deferNodes": [],
             "blockNodes": [],
-            "requiredNuance": [],
+            "requiredNuance": [
+              "Nonverbal is not deeper or truer, and verbal analysis is not merely intellectualization; the useful route is the combination that increases accuracy, agency, and integration."
+            ],
             "forbiddenOverclaims": []
           },
           "defaultQuestion": ""
@@ -5013,6 +5356,26 @@
           "from": "SOM.EMDR_DISCRETE",
           "to": "SOM.MEANING_INTEGRATION",
           "relation": "followed-by"
+        },
+        {
+          "from": "SOM.GENTLE_REGULATION",
+          "to": "SOM.SIBAM_TRACKING",
+          "relation": "supports-channel-tracking"
+        },
+        {
+          "from": "SOM.SIBAM_TRACKING",
+          "to": "SOM.MEANING_INTEGRATION",
+          "relation": "keeps-meaning-connected"
+        },
+        {
+          "from": "SOM.CONSENSUAL_TOUCH",
+          "to": "SOM.DISCHARGE_SETTLE_STACK",
+          "relation": "may-support-settling"
+        },
+        {
+          "from": "SOM.AQUATIC_BODYWORK",
+          "to": "SOM.MEANING_INTEGRATION",
+          "relation": "requires-aftercare-and-integration"
         }
       ],
       "taskPolicyVersion": 1,
@@ -5826,6 +6189,427 @@
             "purpose": "discriminate",
             "unresolvedFields": []
           }
+        },
+        {
+          "id": "ROUTE.ALTERED_MEDICAL_SAFETY",
+          "title": "Treat medical danger or impaired capacity as a real-world safety problem",
+          "kind": "decision-node",
+          "tier": 1,
+          "priority": 100,
+          "activation": {
+            "any": [
+              {
+                "field": "altered_medical_status",
+                "op": "eq",
+                "value": "concerning"
+              },
+              {
+                "field": "altered_capacity",
+                "op": "eq",
+                "value": "impaired"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "ALT.TRIAGE",
+            "ALT.NO_RESCUE_IMPORT"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Move from interpretation to urgent real-world assessment and the least disruptive effective outside help when medical danger, severe impairment, or inability to establish basic stability is reported.",
+            "Use ordinary first-aid and emergency/poison-support boundaries appropriate to the situation; missing nonverbal information in text chat remains unknown rather than reassuring.",
+            "Keep the author guide’s experimental remedies and field hierarchy separate from executable emergency instructions."
+          ],
+          "avoid": [
+            "Do not tell the person to breathe through, spiritually process, or continue therapy through signs of possible medical failure.",
+            "Do not prescribe experimental rescue substances, supplement doses, or home antidotes from the public guide as emergency treatment.",
+            "Do not dismiss a neurological or bodily complaint merely because the person is intoxicated or frightened."
+          ],
+          "successSignals": [
+            "Immediate danger is reduced or transferred to appropriate human/medical support before interpretive work resumes."
+          ],
+          "tags": [
+            "altered-state",
+            "medical-safety",
+            "capacity",
+            "triage"
+          ],
+          "effects": {
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE",
+              "SOM.DEEP_BRAINSPOTTING",
+              "SOM.EMDR_DISCRETE",
+              "SOM.EMDR_DEVELOPMENTAL"
+            ],
+            "blockNodes": [
+              "ROUTE.GO_INWARD",
+              "ROUTE.ALTERED_STABLE_THERAPY"
+            ],
+            "requiredNuance": [
+              "Text chat cannot directly observe neurological or physiological signs; inability to establish stability is not the same as a reassuring screen."
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim that the absence of reported red flags proves medical stability."
+            ]
+          },
+          "defaultQuestion": ""
+        },
+        {
+          "id": "ROUTE.ALTERED_ACUTE_STABILIZATION",
+          "title": "Simplify the acute altered state before adding interpretation",
+          "kind": "decision-node",
+          "tier": 2,
+          "priority": 99,
+          "activation": {
+            "all": [
+              {
+                "field": "altered_state",
+                "op": "eq",
+                "value": "altered"
+              }
+            ],
+            "any": [
+              {
+                "field": "activation",
+                "op": "eq",
+                "value": "high"
+              },
+              {
+                "field": "panic_instability",
+                "op": "eq",
+                "value": "present"
+              },
+              {
+                "field": "altered_capacity",
+                "op": "eq",
+                "value": "limited"
+              },
+              {
+                "field": "support_available",
+                "op": "eq",
+                "value": "absent"
+              },
+              {
+                "field": "sleep_deprivation",
+                "op": "eq",
+                "value": "present"
+              }
+            ],
+            "none": [
+              {
+                "field": "altered_medical_status",
+                "op": "eq",
+                "value": "concerning"
+              },
+              {
+                "field": "altered_capacity",
+                "op": "eq",
+                "value": "impaired"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "ALT.GROUNDING",
+            "ALT.PANIC_LOOP",
+            "ALT.TOUCH"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Reduce unwanted light, sound, crowding, temperature discomfort, unsafe company, and uninvited touch before trying to explain the experience.",
+            "Test stillness versus contained gentle movement by whether it makes the person safer and clearer rather than more activated or impulsive; a small ordinary task can share attention with emotion when immobile introspection becomes a trap.",
+            "Use one calm human anchor when possible, re-establish place and time, protect sleep, and let meaning wait until the nervous system has somewhere to stand."
+          ],
+          "avoid": [
+            "Do not force stillness, movement, touch, music, breathing exercises, prayer, imagery, or interpretation as the one correct response.",
+            "Do not turn acute stabilization into a metaphysical debate or a demand for insight."
+          ],
+          "successSignals": [
+            "The person becomes more oriented, less impulsive, more able to choose, and more able to engage with ordinary reality."
+          ],
+          "tags": [
+            "altered-state",
+            "grounding",
+            "acute",
+            "human-anchor",
+            "sleep"
+          ],
+          "effects": {
+            "deferNodes": [
+              "IC.DEEP_CHILD_DIALOGUE",
+              "SOM.DEEP_BRAINSPOTTING",
+              "SOM.EMDR_DISCRETE",
+              "SOM.EMDR_DEVELOPMENTAL"
+            ],
+            "blockNodes": [
+              "ROUTE.GO_INWARD",
+              "ROUTE.ALTERED_STABLE_THERAPY"
+            ],
+            "requiredNuance": [
+              "Body → room → human → time → meaning is an acute support order, not a universal theory that body experience always precedes thought."
+            ],
+            "forbiddenOverclaims": [
+              "Do not claim that a grounding response proves the experience was only anxiety or only psychological."
+            ]
+          },
+          "defaultQuestion": ""
+        },
+        {
+          "id": "ROUTE.ALTERED_ACTION_LOCK",
+          "title": "Delay consequential action during intense certainty or pressure",
+          "kind": "decision-node",
+          "tier": 2,
+          "priority": 98,
+          "activation": {
+            "all": [
+              {
+                "field": "altered_state",
+                "op": "eq",
+                "value": "altered"
+              },
+              {
+                "field": "altered_action_pressure",
+                "op": "eq",
+                "value": "present"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "ALT.ACTION_LOCK",
+            "ALT.EPISTEMICS"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Write consequential ideas down and postpone major or irreversible action until after sleep, food, and sober review with a grounded person.",
+            "Treat visions, entities, apparent memories, cosmic conclusions, and mission-like certainty as experience-content before treating them as fact-content or commands.",
+            "Keep non-harm and consent authoritative even when the experience feels blissful, sacred, urgent, or absolutely certain."
+          ],
+          "avoid": [
+            "Do not encourage driving, redosing, public posting, confrontation, accusation, confession, major purchases or gifts, sexual boundary changes, relationship endings, travel, or attempts to prove a revelation while judgment is altered."
+          ],
+          "successSignals": [
+            "The person preserves the insight for later review without converting urgency into an irreversible action."
+          ],
+          "tags": [
+            "altered-state",
+            "action-lock",
+            "grandiosity",
+            "epistemic"
+          ],
+          "effects": {
+            "deferNodes": [],
+            "blockNodes": [],
+            "requiredNuance": [
+              "Euphoric certainty can carry more behavioral risk than fear because the person may feel no need to ground."
+            ],
+            "forbiddenOverclaims": [
+              "Do not say the revelation is false merely because action is being postponed; the claim remains open to sober review."
+            ]
+          },
+          "defaultQuestion": ""
+        },
+        {
+          "id": "ROUTE.ALTERED_PREPARATION",
+          "title": "Give planned altered-state work a beginning, support plan, and ending",
+          "kind": "decision-node",
+          "tier": 3,
+          "priority": 97,
+          "activation": {
+            "all": [
+              {
+                "field": "altered_phase",
+                "op": "eq",
+                "value": "planned"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "ALT.PREPARATION"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Plan rest and timing, physical safety, environment, support, and what would require outside help before the session begins.",
+            "Use intention without demanding a particular revelation, memory, emotional arc, or spiritual result; support stays low-directivity and consent-based.",
+            "Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended."
+          ],
+          "avoid": [
+            "Do not use ceremony planning once an acute crisis has started; return to acute triage instead.",
+            "Do not make a sitter, playlist, spiritual frame, or expected insight into an authority the person cannot stop or change."
+          ],
+          "successSignals": [
+            "The session has clear safety, consent, stopping, closure, and integration boundaries before altered-state work begins."
+          ],
+          "tags": [
+            "altered-state",
+            "preparation",
+            "consent",
+            "closure"
+          ],
+          "effects": {
+            "deferNodes": [],
+            "blockNodes": [],
+            "requiredNuance": [],
+            "forbiddenOverclaims": []
+          },
+          "defaultQuestion": ""
+        },
+        {
+          "id": "ROUTE.ALTERED_STABLE_THERAPY",
+          "title": "Continue substantive therapy when altered-state capacity remains coherent and safe",
+          "kind": "decision-node",
+          "tier": 4,
+          "priority": 99,
+          "activation": {
+            "all": [
+              {
+                "field": "altered_state",
+                "op": "eq",
+                "value": "altered"
+              },
+              {
+                "field": "altered_capacity",
+                "op": "eq",
+                "value": "coherent"
+              },
+              {
+                "field": "altered_medical_status",
+                "op": "eq",
+                "value": "stable"
+              },
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "safe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "oriented"
+              },
+              {
+                "field": "ability_to_stop",
+                "op": "eq",
+                "value": "yes"
+              }
+            ],
+            "none": [
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "ALT.CAPACITY",
+            "ALT.EPISTEMICS",
+            "IC.ALTERED_STATES"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Do not terminate or flatten therapy merely because the person discloses an altered state; continue responsive therapeutic work at the depth their current orientation, stopping capacity, and agency support.",
+            "Keep altered-state insights, memories, symbols, intuitions, and metaphysical conclusions provisional where external truth matters; use ordinary evidence after the state when consequences depend on them.",
+            "Reduce depth immediately if orientation, stopping capacity, physical stability, reality testing, or ordinary agency begins to deteriorate."
+          ],
+          "avoid": [
+            "Do not automatically substitute generic grounding for the user’s actual therapeutic question when capacity is demonstrably intact.",
+            "Do not use altered intensity as proof that a memory is historical, an ontology is true, or healing is complete."
+          ],
+          "successSignals": [
+            "The person can engage meaningfully, retain choice, stop voluntarily, and return toward ordinary functioning without escalating intensity to keep therapy working."
+          ],
+          "tags": [
+            "altered-state",
+            "capacity-led",
+            "substantive-therapy",
+            "epistemic"
+          ],
+          "effects": {
+            "deferNodes": [],
+            "blockNodes": [],
+            "requiredNuance": [
+              "Altered state is a routing variable, not by itself evidence of incapacity. Coherence in text is still not a medical exam; explicit physical stability remains a separate requirement."
+            ],
+            "forbiddenOverclaims": [
+              "Do not equate articulate writing with full medical stability or intact judgment in every domain."
+            ]
+          },
+          "defaultQuestion": ""
+        },
+        {
+          "id": "ROUTE.ALTERED_AFTERMATH",
+          "title": "Integrate altered-state aftermath from facts toward meaning and small life changes",
+          "kind": "decision-node",
+          "tier": 3,
+          "priority": 96,
+          "activation": {
+            "all": [
+              {
+                "field": "altered_phase",
+                "op": "eq",
+                "value": "aftermath"
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "ALT.AFTERMATH",
+            "ALT.EPISTEMICS"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Use sleep, food, water, warmth, routine, sober support, and ordinary contact before another ceremony or destabilizing practice.",
+            "Record facts first—what was taken or practiced, timing when known, setting, events, triggers, what helped, and what worsened the state—then consider emotional, relational, spiritual, or practical meaning.",
+            "Separate lingering anxiety, sleep disruption, derealization/depersonalization, visual symptoms, shame/social disconnection, existential shock, trauma material, psychosis-like beliefs, and somatic hyperarousal because they can require different support.",
+            "Translate useful insight into small behavioral changes rather than measuring integration by how cosmic the explanation sounds."
+          ],
+          "avoid": [
+            "Do not recommend another psychedelic, cannabis, ketamine, intense breathwork, extreme fasting, sleep deprivation, extreme meditation/stretching, or another ceremony as the reflexive fix for ongoing destabilization.",
+            "Do not treat one night’s certainty as a diagnosis, recovered fact, or permanent metaphysical conclusion."
+          ],
+          "successSignals": [
+            "Ordinary functioning and sleep recover, facts and interpretations remain distinguishable, and any retained insight produces proportionate behavior rather than escalating practice."
+          ],
+          "tags": [
+            "altered-state",
+            "integration",
+            "aftermath",
+            "sleep",
+            "reality-testing"
+          ],
+          "effects": {
+            "deferNodes": [],
+            "blockNodes": [],
+            "requiredNuance": [
+              "The public bad-trips guide can provide fuller reading, but referral never replaces current safety, medical, or professional support when those are needed."
+            ],
+            "forbiddenOverclaims": [
+              "Do not call persistent or dangerous symptoms a normal integration process without appropriate assessment."
+            ]
+          },
+          "defaultQuestion": ""
         }
       ],
       "edges": [
@@ -6013,6 +6797,41 @@
           "from": "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
           "to": "ROUTE.GO_INWARD",
           "relation": "may-use-phenomenological-inner-work-without-verdict"
+        },
+        {
+          "from": "ROUTE.ALTERED_MEDICAL_SAFETY",
+          "to": "ROUTE.ALTERED_ACUTE_STABILIZATION",
+          "relation": "safety-precedes-nonmedical-stabilization"
+        },
+        {
+          "from": "ROUTE.ALTERED_ACUTE_STABILIZATION",
+          "to": "ROUTE.ALTERED_STABLE_THERAPY",
+          "relation": "may-enable-when-capacity-restored"
+        },
+        {
+          "from": "ROUTE.ALTERED_ACTION_LOCK",
+          "to": "ROUTE.ALTERED_AFTERMATH",
+          "relation": "defers-consequential-meaning-to-sober-review"
+        },
+        {
+          "from": "ROUTE.ALTERED_PREPARATION",
+          "to": "ROUTE.ALTERED_STABLE_THERAPY",
+          "relation": "prepares-capacity-and-closure"
+        },
+        {
+          "from": "ROUTE.ALTERED_STABLE_THERAPY",
+          "to": "IC.DEEP_CHILD_DIALOGUE",
+          "relation": "may-continue-when-deep-work-readiness-is-established"
+        },
+        {
+          "from": "ROUTE.ALTERED_AFTERMATH",
+          "to": "SOM.MEANING_INTEGRATION",
+          "relation": "may-use-cognitive-integration-after-stabilization"
+        },
+        {
+          "from": "ROUTE.ALTERED_AFTERMATH",
+          "to": "ROUTE.GO_INWARD",
+          "relation": "may-process-trauma-material-after-stabilization"
         }
       ],
       "taskPolicyVersion": 1,
@@ -6022,9 +6841,9 @@
   ],
   "stats": {
     "graphCount": 3,
-    "nodeCount": 62,
-    "edgeCount": 84,
-    "sourceSectionCount": 101,
+    "nodeCount": 71,
+    "edgeCount": 95,
+    "sourceSectionCount": 115,
     "ownerAmendmentCount": 37
   }
 }

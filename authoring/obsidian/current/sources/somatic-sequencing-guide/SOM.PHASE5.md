@@ -7,12 +7,12 @@ source_id: SOM.PHASE5
 guide_id: somatic-sequencing-guide
 heading: "Phase 5: Meaning-Making and Life Integration"
 source_role: primary-framework
-source_hash: 5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267
+source_hash: 952e1fd40afa00fd5c762bcc5c8cfbfa8811b66660a90f5495f41f50c69d2428
 section_hash: 13f4847745acc33800e993f55143883ce1fe049e87a966b561091051a8b00330
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.MEANING_INTEGRATION
-projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
+projection_input_sha256: d807775fcdfe2d3cd1ab0a040505f4c1e14aba98e39945a00dffa26a60306034
 ---
 
 # Phase 5: Meaning-Making and Life Integration
@@ -21,7 +21,7 @@ projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a
 
 Authority path: `guides/somatic-sequencing-guide.txt`
 
-Locator: Lines 311–311
+Locator: Lines 332–332
 
 ```text
 Phase 5: Meaning-Making and Life Integration

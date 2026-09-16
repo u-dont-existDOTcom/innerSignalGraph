@@ -34,5 +34,5 @@ test("the active somatic-source hash is exact", () => {
   const entry = manifest.sources.find(item => item.id === "somatic-sequencing-guide");
   const hash = crypto.createHash("sha256").update(source).digest("hex");
   assert.equal(entry.sha256, hash);
-  assert.match(entry.version, /external-modality-note-2026-09-08/);
+  assert.equal(entry.version, "owner-latest-humanized-2026-09-15");
 });

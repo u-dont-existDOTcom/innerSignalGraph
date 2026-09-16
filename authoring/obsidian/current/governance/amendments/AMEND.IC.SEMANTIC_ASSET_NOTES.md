@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: 2a3c7b9ee9c06f554cca112ca1ae87d4c01dc2828fbb6aab7782bcd4eb435254
 source_file_sha256: 669d81d9ce880962d1f7bcb040668cdc778408ea1c79b3f3c195e524c20053a9
-projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
+projection_input_sha256: d807775fcdfe2d3cd1ab0a040505f4c1e14aba98e39945a00dffa26a60306034
 ---
 
 # AMEND.IC.SEMANTIC_ASSET_NOTES

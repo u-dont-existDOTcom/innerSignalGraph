@@ -25,6 +25,12 @@
       "toNode": "79f9439ff30879abcb2d2348c617b66eb300dee2ef96e2b616e77110ad9809f5"
     },
     {
+      "fromNode": "e8c6139544702c22f5ffa554665735efcad394cc9d388a100d0febab3ae98eb2",
+      "id": "098185b2cbf2b449a80ac1530d929bb0520f2eb1ce86aea69c20932361b4267d",
+      "label": "safety-precedes-nonmedical-stabilization",
+      "toNode": "38e0f8927c5cb0ac3320dae5e770e71fbec4b16ad958947690d34b3ea9e56334"
+    },
+    {
       "fromNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80",
       "id": "09c3325863d15d4f19d0298908921bd8ad4ea96686b55a650bf6ef5866a670a2",
       "label": "offers-lower-cost-alternative",
@@ -85,6 +91,12 @@
       "toNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323"
     },
     {
+      "fromNode": "48d6869e1ebc73af23931f6198c10b63b6201008816da6653af8e99c123d381c",
+      "id": "1b8003dd65b0e475f0e1cf7e7e1d114298913a9fc5edcf767d00266ef4c70c1b",
+      "label": "may-process-trauma-material-after-stabilization",
+      "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
+    },
+    {
       "fromNode": "1878e24a06cda4d7fdfa30a1271753f8212c656693d76734aec0d9f3ac59afe7",
       "id": "1d31be36b310d9bd30cb0f6b73ae3542a2a6035964feefc772605b5dd90f70d4",
       "label": "may-use-practical-protection-without-verdict",
@@ -109,6 +121,12 @@
       "toNode": "64ebc6f168c2ea2af64a9a06e10dfa187d8119de082117a5d4430936c53ffbf6"
     },
     {
+      "fromNode": "a26f6301571424620b2a232d1cce8501433465bcd8f4f98d612f00a4aba72abf",
+      "id": "22b61e7855f64765db6d9c8bda0a163bdf870f3eefca90877c203b6607e4ebf8",
+      "label": "keeps-meaning-connected",
+      "toNode": "53a9ddb7f819388accd5566867c8c75ed46d2b49d317719666f40c6ad7e41879"
+    },
+    {
       "fromNode": "c7f091253683d7953765dff2375050ea7fb25de8f44539b65505bb3d3f219851",
       "id": "2533d0ac1c60ebd12c053e6c2b3d03436dba21d7dbf5956e1303ae1c0ec76310",
       "label": "followed-by",
@@ -121,10 +139,22 @@
       "toNode": "073eb31b7024f54f2542465aedd4d683cda42976fc5177cc2d53cc0f8d19d3b3"
     },
     {
+      "fromNode": "48d6869e1ebc73af23931f6198c10b63b6201008816da6653af8e99c123d381c",
+      "id": "26f67844ac7cfc9d72cae071b6593806f6688e3d70d4c3e790c19442f5223ad1",
+      "label": "may-use-cognitive-integration-after-stabilization",
+      "toNode": "53a9ddb7f819388accd5566867c8c75ed46d2b49d317719666f40c6ad7e41879"
+    },
+    {
       "fromNode": "dcd640cbd8161505f76ff16710136e7731e4f526baa74b0f09a04c3dd041d681",
       "id": "27d2bfc0d80f2304acf12a716af7a686a6a11003bc56aacb458c1fc1c6a31f1e",
       "label": "never-replaces-ordinary-safety",
       "toNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff"
+    },
+    {
+      "fromNode": "25dc25b5ff45482449e43cdd91dc5d508c2b94ba9f1d4afea7b9a9a24bbcc109",
+      "id": "290b4c73ef6f649ad925d573761e28d6e410ef75d9dda0dc7e8a07bd26ef67da",
+      "label": "may-continue-when-deep-work-readiness-is-established",
+      "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
     },
     {
       "fromNode": "bd2dbc298786d84c13a4f6f885126827fbab67b8af4cf3449b01acf938b3b2e8",
@@ -271,6 +301,12 @@
       "toNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80"
     },
     {
+      "fromNode": "4f4b62be51adda4c573d5fb9d5cb24803b9a31cd4f8baafec660a0550cac4611",
+      "id": "74c88e1dc7f74f3ec2c0758485d296203acc4efae48530f3507d4bb54bafcc05",
+      "label": "requires-aftercare-and-integration",
+      "toNode": "53a9ddb7f819388accd5566867c8c75ed46d2b49d317719666f40c6ad7e41879"
+    },
+    {
       "fromNode": "b7ceeb009ad5f3b4952e96d25c9494a01fa8b280a1cddaf3ed4f3c207b45954c",
       "id": "74cbae803f02649ae4e4a6397f9aaa11395c3f0bea23932ab6a401554c675b28",
       "label": "clarifies",
@@ -287,6 +323,12 @@
       "id": "818ced9e73c5558ba8f958569ed1fea1d7c52e463fa8f7916be6746099492885",
       "label": "may-connect-to",
       "toNode": "c007b9501bf18a172ff8ced765221d9b9f1b24ab2474cf5ededb59f510017773"
+    },
+    {
+      "fromNode": "7025583024ee61a2caf15aadaa235680a8e6125ba2a363e6e15180f5a1ecd470",
+      "id": "83e29e5e7e4e1685b8a2ce7dd912057d5da2055b4c720efad1c75b0de9b200ac",
+      "label": "may-support-settling",
+      "toNode": "f623c3a763dcce1056f2474536e5822476a1fee405ce6bede3a7eedbe654915b"
     },
     {
       "fromNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff",
@@ -433,6 +475,12 @@
       "toNode": "38a66c980c1aed36d63f20d2720597f8073064448804593acdbbe7a57900f019"
     },
     {
+      "fromNode": "a01732b6a74bf358ad03ea8d715f5e8c8ffd7f3b22f082b658e991105290f94c",
+      "id": "d463cef57d1f27f22d703e25f8f0f59db188cfdd692b754ba65f954c56a1a2cb",
+      "label": "supports-channel-tracking",
+      "toNode": "a26f6301571424620b2a232d1cce8501433465bcd8f4f98d612f00a4aba72abf"
+    },
+    {
       "fromNode": "e0afef82d747adc7f48e19d574b52b548eae6ab5da7f71c9d1f38771fb22d188",
       "id": "d6f3913d7d34fecee202f467c9c976192a877dfe984cdf09a9447eae353caf66",
       "label": "requires-embodiment",
@@ -455,6 +503,12 @@
       "id": "e5e41b401fe787facd147a6d04f564814ffbd94b6a572b660f0773f5da8e488a",
       "label": "requires-audit",
       "toNode": "c51271b9d9d6745b7d4bbc7d13ac42ba19f997d1c5b4ab372d63942037bb78b7"
+    },
+    {
+      "fromNode": "38e0f8927c5cb0ac3320dae5e770e71fbec4b16ad958947690d34b3ea9e56334",
+      "id": "e7b07e2487cbd669bd7e6041a780ed84fd2a38d08babc16b276584d3230bbd32",
+      "label": "may-enable-when-capacity-restored",
+      "toNode": "25dc25b5ff45482449e43cdd91dc5d508c2b94ba9f1d4afea7b9a9a24bbcc109"
     },
     {
       "fromNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
@@ -485,6 +539,18 @@
       "id": "f444fb0c1458244b7b8de1d095fa7880314285deea3b7b60b45ea71fc443d1c0",
       "label": "may-connect-to",
       "toNode": "bd2dbc298786d84c13a4f6f885126827fbab67b8af4cf3449b01acf938b3b2e8"
+    },
+    {
+      "fromNode": "eddac1f2c8c9c7471e630eb2350ef9873d0a5fb9579f013bcf2da3b91ddd52f9",
+      "id": "f56d7a53949d198a6393b1f57871f483f5b356ab18e6157b8d284cd0ec66568f",
+      "label": "prepares-capacity-and-closure",
+      "toNode": "25dc25b5ff45482449e43cdd91dc5d508c2b94ba9f1d4afea7b9a9a24bbcc109"
+    },
+    {
+      "fromNode": "46566758d4fea0355007738164d980127741b3bdaa4ad0514e86d83f6bab9e78",
+      "id": "f7a057f2e4ceca14d30a073c864f01bfee079325da1f2949b7ab863e10b9c534",
+      "label": "defers-consequential-meaning-to-sober-review",
+      "toNode": "48d6869e1ebc73af23931f6198c10b63b6201008816da6653af8e99c123d381c"
     },
     {
       "fromNode": "5d6a3b677041db6df91ff2b8e23d8f09503277106cb240b9d442b2f0a0cd6f3c",
@@ -575,8 +641,8 @@
       "id": "0baa8bcabf7232ce7a012a2797a04b3298649b64cca0c4ca5963006e078adad0",
       "type": "file",
       "width": 300,
-      "x": 440,
-      "y": 1100
+      "x": 1760,
+      "y": 220
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.GENTLE_SELF_HYPNOSIS.md",
@@ -624,13 +690,22 @@
       "y": 1100
     },
     {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STABLE_THERAPY.md",
+      "height": 140,
+      "id": "25dc25b5ff45482449e43cdd91dc5d508c2b94ba9f1d4afea7b9a9a24bbcc109",
+      "type": "file",
+      "width": 300,
+      "x": 5520,
+      "y": 0
+    },
+    {
       "file": "current/nodes/somatic-directed-graph/SOM.ADVANCED_RELEASE_OPTIONAL.md",
       "height": 140,
       "id": "27324d61a60f8178d929c2187521d2e92a7c73bd135de27b1f611b7b90a318db",
       "type": "file",
       "width": 300,
       "x": 10160,
-      "y": 440
+      "y": 880
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.BORROW_ONE_FUNCTION.md",
@@ -667,6 +742,15 @@
       "width": 300,
       "x": 5080,
       "y": 220
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_ACUTE_STABILIZATION.md",
+      "height": 140,
+      "id": "38e0f8927c5cb0ac3320dae5e770e71fbec4b16ad958947690d34b3ea9e56334",
+      "type": "file",
+      "width": 300,
+      "x": 4640,
+      "y": 0
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.LOVE_HORIZON_EXPLORATION.md",
@@ -707,13 +791,40 @@
       "y": 0
     },
     {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_ACTION_LOCK.md",
+      "height": 140,
+      "id": "46566758d4fea0355007738164d980127741b3bdaa4ad0514e86d83f6bab9e78",
+      "type": "file",
+      "width": 300,
+      "x": 4640,
+      "y": 220
+    },
+    {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.GO_INWARD.md",
       "height": 140,
       "id": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7",
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1760
+      "y": 1980
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_AFTERMATH.md",
+      "height": 140,
+      "id": "48d6869e1ebc73af23931f6198c10b63b6201008816da6653af8e99c123d381c",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 2200
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.AQUATIC_BODYWORK.md",
+      "height": 140,
+      "id": "4f4b62be51adda4c573d5fb9d5cb24803b9a31cd4f8baafec660a0550cac4611",
+      "type": "file",
+      "width": 300,
+      "x": 10160,
+      "y": 440
     },
     {
       "color": "3",
@@ -799,6 +910,15 @@
       "y": 440
     },
     {
+      "file": "current/nodes/somatic-directed-graph/SOM.CONSENSUAL_TOUCH.md",
+      "height": 140,
+      "id": "7025583024ee61a2caf15aadaa235680a8e6125ba2a363e6e15180f5a1ecd470",
+      "type": "file",
+      "width": 300,
+      "x": 10160,
+      "y": 220
+    },
+    {
       "file": "current/nodes/inner-child-directed-graph/IC.CARING_COMPANY.md",
       "height": 140,
       "id": "79f9439ff30879abcb2d2348c617b66eb300dee2ef96e2b616e77110ad9809f5",
@@ -870,7 +990,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1980
+      "y": 2420
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.RESOURCE_BRAINSPOTTING.md",
@@ -879,7 +999,7 @@
       "type": "file",
       "width": 300,
       "x": 10160,
-      "y": 220
+      "y": 660
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DRAFT_RETURN_TO_CARE.md",
@@ -907,6 +1027,15 @@
       "width": 300,
       "x": 9720,
       "y": 0
+    },
+    {
+      "file": "current/nodes/somatic-directed-graph/SOM.SIBAM_TRACKING.md",
+      "height": 140,
+      "id": "a26f6301571424620b2a232d1cce8501433465bcd8f4f98d612f00a4aba72abf",
+      "type": "file",
+      "width": 300,
+      "x": 9720,
+      "y": 660
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.CREDIBILITY_REPAIR.md",
@@ -971,7 +1100,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 2200
+      "y": 2640
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.ADULT_APPRENTICE.md",
@@ -1102,6 +1231,15 @@
       "y": 220
     },
     {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_MEDICAL_SAFETY.md",
+      "height": 140,
+      "id": "e8c6139544702c22f5ffa554665735efcad394cc9d388a100d0febab3ae98eb2",
+      "type": "file",
+      "width": 300,
+      "x": 4200,
+      "y": 0
+    },
+    {
       "file": "current/nodes/inner-child-directed-graph/IC.BORROW_LOVE.md",
       "height": 140,
       "id": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80",
@@ -1109,6 +1247,15 @@
       "width": 300,
       "x": 1320,
       "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_PREPARATION.md",
+      "height": 140,
+      "id": "eddac1f2c8c9c7471e630eb2350ef9873d0a5fb9579f013bcf2da3b91ddd52f9",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 1760
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DRAFT_EDITOR.md",

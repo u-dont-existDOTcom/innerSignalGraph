@@ -9,8 +9,8 @@ graph_id: inner-child-somatic-cross-guide
 from_node_id: ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN
 to_node_id: ROUTE.ACT_OUTWARD
 relation: may-use-practical-protection-without-verdict
-base_graph_sha256: 61db2ed53fe2c0eaa386328c1a52df3081f1c96c46771a327c431b16261a5396
-projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
+base_graph_sha256: 42e33e2f4ea33935847c6bd29b6e16edcd5a6d938d8ff59c6d02e09eb2177872
+projection_input_sha256: d807775fcdfe2d3cd1ab0a040505f4c1e14aba98e39945a00dffa26a60306034
 ---
 
 # ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN may-use-practical-protection-without-verdict ROUTE.ACT_OUTWARD

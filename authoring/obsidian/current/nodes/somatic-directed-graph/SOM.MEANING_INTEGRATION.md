@@ -18,11 +18,12 @@ source_refs:
   - SOM.PHASE5
   - SOM.INTEGRATION
   - SOM.JUDGE_HELP
+  - SOM.SIBAM
 regression_refs:
   - G010
-base_record_sha256: c4d28d1685a405c1293aa34e0d62198c6855a73e9ed2756cea2dd30d1e986341
-base_graph_sha256: 6b31d4e5d0e6dc2ab838aae714fe59c2c1c2ab21607409c9b1a25b2d5769dd2d
-projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
+base_record_sha256: f2ba3c47269444c5ea9d4860c14ecbc7f3c5a39c19faac80041ab5a64a39cbad
+base_graph_sha256: 5f2387789deec1cc04e6d7ff0f1a66b455472b1dccdf6cb3cb5afc0707ba47fc
+projection_input_sha256: d807775fcdfe2d3cd1ab0a040505f4c1e14aba98e39945a00dffa26a60306034
 ---
 
 # Meaning-making after the body is less trapped in survival mode
@@ -61,17 +62,23 @@ projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a
     ]
   },
   "avoid": [
-    "Do not try to think the body out of an active survival state."
+    "Do not try to think the body out of an active survival state.",
+    "Do not challenge a therapist-created sentence as though it were a literal automatic thought when the person reports that the original experience was not verbal.",
+    "Do not keep the person in sensation when analysis, evidence checking, boundary decisions, or practical action would add useful information."
   ],
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [],
-    "requiredNuance": []
+    "requiredNuance": [
+      "Nonverbal is not deeper or truer, and verbal analysis is not merely intellectualization; the useful route is the combination that increases accuracy, agency, and integration."
+    ]
   },
   "recommendations": [
-    "Use light cognitive or narrative work for beliefs, values, boundaries, agency, and a coherent life story."
+    "Revisit beliefs, identity, boundaries, relationships, and the meaning of what happened once enough regulation exists to think without simply overriding the body.",
+    "Use language as an analytic tool even when the original experience was nonverbal: distinguish direct experience, later verbal translation, appraisal, evidence, alternatives, and present-day action.",
+    "Cognitive integration may follow bottom-up work or occur concurrently when it helps; do not require a universal body-first sequence."
   ],
   "successSignals": [
     "Meaning-making improves life participation rather than becoming another processing project."
@@ -87,3 +94,5 @@ projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a
 [[current/sources/somatic-sequencing-guide/SOM.INTEGRATION]]
 
 [[current/sources/somatic-sequencing-guide/SOM.JUDGE_HELP]]
+
+[[current/sources/somatic-sequencing-guide/SOM.SIBAM]]

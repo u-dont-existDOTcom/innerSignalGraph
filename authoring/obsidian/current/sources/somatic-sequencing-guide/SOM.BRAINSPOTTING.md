@@ -7,13 +7,13 @@ source_id: SOM.BRAINSPOTTING
 guide_id: somatic-sequencing-guide
 heading: "Primary Modality: Brainspotting"
 source_role: primary-framework
-source_hash: 5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267
+source_hash: 952e1fd40afa00fd5c762bcc5c8cfbfa8811b66660a90f5495f41f50c69d2428
 section_hash: 5c073d043354e55a1dfcbe20d2e7565a70523949842ffa5e4894f70b396edfbb
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.DEEP_BRAINSPOTTING
   - SOM.RESOURCE_BRAINSPOTTING
-projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
+projection_input_sha256: d807775fcdfe2d3cd1ab0a040505f4c1e14aba98e39945a00dffa26a60306034
 ---
 
 # Primary Modality: Brainspotting
@@ -22,7 +22,7 @@ projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a
 
 Authority path: `guides/somatic-sequencing-guide.txt`
 
-Locator: Lines 223–250
+Locator: Lines 244–271
 
 ```text
 Primary Modality: Brainspotting

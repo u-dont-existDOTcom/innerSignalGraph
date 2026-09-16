@@ -7,12 +7,12 @@ source_id: SOM.SHAKING_QIGONG
 guide_id: somatic-sequencing-guide
 heading: Shaking Qigong / Shaking Medicine
 source_role: primary-framework
-source_hash: 5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267
+source_hash: 952e1fd40afa00fd5c762bcc5c8cfbfa8811b66660a90f5495f41f50c69d2428
 section_hash: bde47dcb013d11ad8862ebe6de9e89ae370ce9d62a5297ab4881835d777205c2
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.GENTLE_SHAKING
-projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
+projection_input_sha256: d807775fcdfe2d3cd1ab0a040505f4c1e14aba98e39945a00dffa26a60306034
 ---
 
 # Shaking Qigong / Shaking Medicine
@@ -21,7 +21,7 @@ projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a
 
 Authority path: `guides/somatic-sequencing-guide.txt`
 
-Locator: Lines 135–189
+Locator: Lines 149–203
 
 ```text
 Shaking Qigong / Shaking Medicine

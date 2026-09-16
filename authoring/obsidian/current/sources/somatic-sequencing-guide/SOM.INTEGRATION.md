@@ -7,12 +7,13 @@ source_id: SOM.INTEGRATION
 guide_id: somatic-sequencing-guide
 heading: Light CBT / Narrative Integration
 source_role: primary-framework
-source_hash: 5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267
-section_hash: 6114c5f9d587adc034cb57b1f0cc67cbc7dade3a4d6a2171cf73f202e69b875c
+source_hash: 952e1fd40afa00fd5c762bcc5c8cfbfa8811b66660a90f5495f41f50c69d2428
+section_hash: 5ecaa481207d1f33cb796382c3260e4d1a6a0e207cd62747c01917f1fc456735
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.MEANING_INTEGRATION
-projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
+  - SOM.SIBAM_TRACKING
+projection_input_sha256: d807775fcdfe2d3cd1ab0a040505f4c1e14aba98e39945a00dffa26a60306034
 ---
 
 # Light CBT / Narrative Integration
@@ -21,23 +22,11 @@ projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a
 
 Authority path: `guides/somatic-sequencing-guide.txt`
 
-Locator: Lines 312–332
+Locator: Lines 333–353
 
 ```text
 Light CBT / Narrative Integration
 Goal: Rebuild the life narrative after the body is less trapped in survival mode.
 
-Top-down cognitive work often fails when introduced too early because the body still believes the threat is happening. But after regulation, discharge, and deeper processing, light cognitive work can become much more useful.
-
-Best use:
-
-Reframing old beliefs
-
-Building a coherent life story
-
-Separating past danger from present reality
-
-Clarifying values and boundaries
-
-Reclaiming a
+Cognitive work can be mistimed when it asks someone to argue with a sentence that was never literally present or when the body is too activated to use analysis well. But language and analysis remain essential tools: they can clarify appraisals, test conclusions, update identity and boundaries, and turn implicit meaning into something inspectable. Some people benefit from this afte
 ```

@@ -1,0 +1,103 @@
+{
+  "version": "public-guide-registry-v1-2026-09-16",
+  "provenance": "owner-confirmed destinations; reachability is not inferred from tool access",
+  "rules": [
+    "Offer only the directly relevant guide, not a catalog dump.",
+    "A guide referral is optional reading and never substitutes for help required in the current turn.",
+    "Medical, substance, self-harm, abuse, legal, or other safety guardrails still govern even when a public guide discusses the topic.",
+    "Public reader wording may differ from operational maps; public humanization is not runtime authority."
+  ],
+  "guides": [
+    {
+      "id": "inner-child",
+      "label": "Inner-child reparenting",
+      "url": "https://innerchild.u-dont-exist.com",
+      "humanizationStatus": "planned-separate-humanized",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "somatic",
+      "label": "Somatic therapies",
+      "url": "https://somatic.u-dont-exist.com",
+      "humanizationStatus": "humanized-current",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "altered-states",
+      "label": "Altered states / bad trips",
+      "url": "https://badtrips.u-dont-exist.com",
+      "humanizationStatus": "planned-separate-humanized",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "hypnosis",
+      "label": "Self-hypnosis",
+      "url": "https://hypnosis.u-dont-exist.com",
+      "humanizationStatus": "planned-separate-humanized",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "nibbana",
+      "label": "Buddhist meditation / nibbana",
+      "url": "https://nibbana.u-dont-exist.com",
+      "humanizationStatus": "status-not-tracked",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "dearmor",
+      "label": "Neurological de-armoring supplements",
+      "url": "https://dearmor.u-dont-exist.com",
+      "humanizationStatus": "status-not-tracked",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "sleep",
+      "label": "Sleep",
+      "url": "https://sleep.u-dont-exist.com",
+      "humanizationStatus": "status-not-tracked",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "detox",
+      "label": "Physical-health detox",
+      "url": "https://detox.u-dont-exist.com",
+      "humanizationStatus": "status-not-tracked",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "metta",
+      "label": "Metta / loving-kindness meditation",
+      "url": "https://love.u-dont-exist.com",
+      "humanizationStatus": "status-not-tracked",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "anger",
+      "label": "Anger using metta meditation",
+      "url": "https://anger.u-dont-exist.com",
+      "humanizationStatus": "status-not-tracked",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "hearthwork",
+      "label": "Peer counseling / Hearthwork",
+      "url": "https://hearthwork.u-dont-exist.com",
+      "humanizationStatus": "status-not-tracked",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "community",
+      "label": "Communal living",
+      "url": "https://community.u-dont-exist.com",
+      "humanizationStatus": "status-not-tracked",
+      "reachability": "owner-confirmed"
+    },
+    {
+      "id": "goenka",
+      "label": "Spiritual bypassing / Goenka",
+      "url": "https://goenka.u-dont-exist.com",
+      "humanizationStatus": "status-not-tracked",
+      "reachability": "owner-confirmed"
+    }
+  ]
+}

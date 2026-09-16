@@ -157,6 +157,82 @@
       "defaultQuestion": ""
     },
     {
+      "id": "SOM.SIBAM_TRACKING",
+      "title": "Track sensation, image, behavior, affect, and meaning without privileging one channel",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 79,
+      "activation": {
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "gentle_practice"
+          },
+          {
+            "field": "target_type",
+            "op": "in",
+            "value": [
+              "developmental",
+              "diffuse"
+            ]
+          },
+          {
+            "field": "unresolved_inner_material",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "SOM.SIBAM",
+        "SOM.INTEGRATION"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use the SIBAM channels—sensation, image, behavior/action tendency, affect, and meaning—as an attention map when one channel is absent, disconnected, or monopolizing the experience.",
+        "Keep directly noticed phenomenology separate from the appraisal built from it; actual inner words, later verbal translation, imagery, bodily sensation, emotion, and action tendency may overlap without being interchangeable.",
+        "Bring language, evidence analysis, and present-day action back in whenever they improve clarity or agency rather than assuming bottom-up material is automatically deeper or truer."
+      ],
+      "avoid": [
+        "Do not infer a hidden memory, diagnosis, or external fact from a bodily response, image, gesture, or felt gestalt.",
+        "Do not invent an automatic sentence when the person reports that no words were present."
+      ],
+      "successSignals": [
+        "Previously disconnected channels become more distinguishable and usable without forcing one representation to dominate.",
+        "The person can examine meaning and evidence while remaining in contact with embodied experience."
+      ],
+      "tags": [
+        "SIBAM",
+        "multimodal-experience",
+        "meaning",
+        "epistemic"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "SIBAM is an attention map, not a claim that sensation precedes words or has greater truth value."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that nonverbal, somatic, earlier, intuitive, or intense material is inherently more authentic than language or analysis."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
       "id": "SOM.EFT_PORTABLE",
       "title": "Portable EFT for real-world triggers",
       "kind": "decision-node",
@@ -331,6 +407,73 @@
       "defaultQuestion": ""
     },
     {
+      "id": "SOM.CONSENSUAL_TOUCH",
+      "title": "Use touch or massage only as a wanted, revisable support",
+      "kind": "decision-node",
+      "tier": 5,
+      "priority": 77,
+      "activation": {
+        "all": [
+          {
+            "field": "touch_interest",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "SOM.TOUCH"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Start with the least intrusive form the person actually wants: self-massage, consensual nonsexual touch from a trusted person or practitioner, or a non-touch alternative.",
+        "Keep pressure, location, duration, distance, clothing, and stopping under the person’s control; re-check consent when the response changes.",
+        "Judge the intervention by orientation, agency, comfort in the body, and later functioning rather than by intensity or emotional release."
+      ],
+      "avoid": [
+        "Do not treat touch aversion, freezing, pulling away, uncertainty, or a changed mind as resistance to push through.",
+        "Do not sexualize therapeutic touch or make the helper’s need for closeness part of the intervention."
+      ],
+      "successSignals": [
+        "The person retains choice and finishes at least as oriented and self-possessed as they began."
+      ],
+      "tags": [
+        "touch",
+        "massage",
+        "consent",
+        "self-touch"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "No-touch support is a complete valid option; self-touch and outside touch are not assumed equivalent."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that where tension is felt proves where trauma is stored or what caused it."
+        ]
+      },
+      "defaultQuestion": "Would touch help here, and if so would you prefer self-touch, consensual outside touch, or a no-touch option?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": [
+          "touch_interest"
+        ]
+      }
+    },
+    {
       "id": "SOM.RESOURCE_BRAINSPOTTING",
       "title": "Resource-oriented or titrated Brainspotting",
       "kind": "decision-node",
@@ -403,6 +546,75 @@
         "forbiddenOverclaims": []
       },
       "defaultQuestion": ""
+    },
+    {
+      "id": "SOM.AQUATIC_BODYWORK",
+      "title": "Use aquatic bodywork as an optional emotionally opening bridge with explicit aftercare",
+      "kind": "decision-node",
+      "tier": 5,
+      "priority": 76,
+      "activation": {
+        "all": [
+          {
+            "field": "aquatic_bodywork_interest",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "SOM.AQUATIC"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Before a water session, establish the person’s goal, comfort with water and touch, stopping signals, physical safety, and who can help if the session opens more emotion than expected.",
+        "Keep touch and movement continuously consensual; warmth, buoyancy, supported movement, stretching, and holding may feel unusually young or vulnerable without proving literal regression or memory.",
+        "Plan a deliberate return to ordinary body and present time afterward, with grounding, rest, gentle movement or massage if wanted, food or hydration when appropriate, and follow-up support for material that remains open."
+      ],
+      "avoid": [
+        "Do not drop somebody into an intense water session cold, treat crying or regression-like feelings as proof of therapeutic success, or infer womb/childhood facts from the experience."
+      ],
+      "successSignals": [
+        "The person can enter and leave the experience with consent, orientation, and adequate support for what remains afterward."
+      ],
+      "tags": [
+        "aquatic-bodywork",
+        "water-therapy",
+        "consent",
+        "aftercare"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "A provider should be able to answer what happens if the client leaves the session much more emotionally open than they entered."
+        ],
+        "forbiddenOverclaims": [
+          "Do not call emotional opening, crying, felt regression, or unusual bodily experience evidence of recovered history or completed trauma processing."
+        ]
+      },
+      "defaultQuestion": "If the session opens much more emotion than expected, what stopping, grounding, aftercare, and follow-up support will be available?",
+      "questionPolicy": {
+        "purpose": "safety",
+        "unresolvedFields": []
+      }
     },
     {
       "id": "SOM.DEEP_BRAINSPOTTING",
@@ -866,14 +1078,19 @@
       "sourceRefs": [
         "SOM.PHASE5",
         "SOM.INTEGRATION",
-        "SOM.JUDGE_HELP"
+        "SOM.JUDGE_HELP",
+        "SOM.SIBAM"
       ],
       "authority": "author-framework",
       "recommendations": [
-        "Use light cognitive or narrative work for beliefs, values, boundaries, agency, and a coherent life story."
+        "Revisit beliefs, identity, boundaries, relationships, and the meaning of what happened once enough regulation exists to think without simply overriding the body.",
+        "Use language as an analytic tool even when the original experience was nonverbal: distinguish direct experience, later verbal translation, appraisal, evidence, alternatives, and present-day action.",
+        "Cognitive integration may follow bottom-up work or occur concurrently when it helps; do not require a universal body-first sequence."
       ],
       "avoid": [
-        "Do not try to think the body out of an active survival state."
+        "Do not try to think the body out of an active survival state.",
+        "Do not challenge a therapist-created sentence as though it were a literal automatic thought when the person reports that the original experience was not verbal.",
+        "Do not keep the person in sensation when analysis, evidence checking, boundary decisions, or practical action would add useful information."
       ],
       "successSignals": [
         "Meaning-making improves life participation rather than becoming another processing project."
@@ -886,7 +1103,9 @@
       "effects": {
         "deferNodes": [],
         "blockNodes": [],
-        "requiredNuance": [],
+        "requiredNuance": [
+          "Nonverbal is not deeper or truer, and verbal analysis is not merely intellectualization; the useful route is the combination that increases accuracy, agency, and integration."
+        ],
         "forbiddenOverclaims": []
       },
       "defaultQuestion": ""
@@ -932,6 +1151,26 @@
       "from": "SOM.EMDR_DISCRETE",
       "to": "SOM.MEANING_INTEGRATION",
       "relation": "followed-by"
+    },
+    {
+      "from": "SOM.GENTLE_REGULATION",
+      "to": "SOM.SIBAM_TRACKING",
+      "relation": "supports-channel-tracking"
+    },
+    {
+      "from": "SOM.SIBAM_TRACKING",
+      "to": "SOM.MEANING_INTEGRATION",
+      "relation": "keeps-meaning-connected"
+    },
+    {
+      "from": "SOM.CONSENSUAL_TOUCH",
+      "to": "SOM.DISCHARGE_SETTLE_STACK",
+      "relation": "may-support-settling"
+    },
+    {
+      "from": "SOM.AQUATIC_BODYWORK",
+      "to": "SOM.MEANING_INTEGRATION",
+      "relation": "requires-aftercare-and-integration"
     }
   ],
   "taskPolicyVersion": 1,

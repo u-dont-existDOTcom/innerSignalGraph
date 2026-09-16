@@ -7,13 +7,13 @@ source_id: SOM.EMDR
 guide_id: somatic-sequencing-guide
 heading: "Primary Modality: EMDR"
 source_role: primary-framework
-source_hash: 5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267
-section_hash: f835e00d48e80b4b3928256ce45b01b8466312b0770e588085056545a88e6af4
+source_hash: 952e1fd40afa00fd5c762bcc5c8cfbfa8811b66660a90f5495f41f50c69d2428
+section_hash: 422fbaaf9fc4a0a4f7ce2d34e8df3ea8238cd6b0e546fb474fe075cc84e915a3
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.EMDR_DEVELOPMENTAL
   - SOM.EMDR_DISCRETE
-projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
+projection_input_sha256: d807775fcdfe2d3cd1ab0a040505f4c1e14aba98e39945a00dffa26a60306034
 ---
 
 # Primary Modality: EMDR
@@ -22,7 +22,7 @@ projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a
 
 Authority path: `guides/somatic-sequencing-guide.txt`
 
-Locator: Lines 267–293
+Locator: Lines 288–314
 
 ```text
 Primary Modality: EMDR

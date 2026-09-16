@@ -29,7 +29,7 @@ No authoring command installs a Guide Packet or writes to `stable`.
 | Behavioral acceptance | `corpus/graph-cases/*.json` and existing realization tests | Regression index and impact reports |
 | Semantic approval | Guide Packet owner-decision artifact | Proposal decision preview |
 | Documentation-only concepts | schema-validated overlay registry | Dashed Mermaid/Canvas overlay layer |
-| Public humanized guide | no independent therapy authority; derives from canonical source and graph | reader-facing derivative tracked by `docs/PUBLIC-GUIDE-HUMANIZATION.md` |
+| Public humanized guides | no independent therapy authority; each derives from canonical source and graph | independent reader-facing derivatives tracked by `docs/PUBLIC-GUIDE-HUMANIZATION.md` and `authoring/public-guide-sync.json` |
 | Visual layout | generated Canvas | Obsidian display only |
 
 Canonical guide text is never round-tripped through Markdown. The current source family used by the existing runtime remains byte-authoritative.

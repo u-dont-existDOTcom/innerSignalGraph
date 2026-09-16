@@ -1,6 +1,12 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-12
+Updated: 2026-09-16
+
+## Somatic + altered-states guide sync — tested draft candidate
+
+The current draft integrates the owner’s latest somatic and altered-states uploads into a source-bound therapy-map candidate. It adds SIBAM-style whole-experience tracking, consent-based touch and aquatic-bodywork routes, capacity-led altered-state triage/therapy/integration, the owner-confirmed 13-guide reading registry, and separate humanized-public-edition bookkeeping. Altered-state disclosure alone no longer establishes incapacity; medical concern or impaired capacity retains safety precedence. Experimental rescue substances and dosing from the public bad-trips guide remain outside executable emergency instructions.
+
+Local focused/affected graph, routing, realization, plugin, phenomenology, therapy-lesson and authoring checks are green. Exact source hashes, behavior, and receipts are in `tasks/somatic-altered-guide-sync-20260916/INTEGRATION.md`. This is still a draft proposal: semantic owner approval through the Guide Packet lifecycle, reconciliation, merge, `stable` promotion, installation and deployment are not established.
 
 ## Wisdom-practices owner-approved reconciliation
 

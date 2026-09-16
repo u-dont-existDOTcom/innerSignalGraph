@@ -35,6 +35,11 @@ const DEFERRAL_PREREQUISITE_FIELDS = new Set([
   "activation",
   "dissociation",
   "altered_state",
+  "altered_phase",
+  "altered_capacity",
+  "altered_medical_status",
+  "altered_action_pressure",
+  "sleep_deprivation",
   "body_capacity",
   "deep_work_readiness",
   "basic_reparenting_capacity",
@@ -79,7 +84,8 @@ export function deriveCaseVariables(input = {}) {
     variables.ability_to_return === "no",
     variables.activation === "high",
     variables.dissociation === "high",
-    variables.altered_state === "altered"
+    variables.altered_medical_status === "concerning",
+    variables.altered_capacity === "impaired"
   ]);
   const clearlyReadyForDeep = [
     variables.present_safety === "safe",
@@ -88,7 +94,11 @@ export function deriveCaseVariables(input = {}) {
     variables.ability_to_return === "yes",
     variables.activation !== "high" && variables.activation !== "unknown",
     variables.dissociation !== "high" && variables.dissociation !== "unknown",
-    variables.altered_state === "sober"
+    variables.altered_state === "sober" || (
+      variables.altered_state === "altered"
+      && variables.altered_capacity === "coherent"
+      && variables.altered_medical_status === "stable"
+    )
   ].every(Boolean);
   variables.deep_work_readiness = unsafeForDeep ? "no" : clearlyReadyForDeep ? "yes" : "unknown";
 
@@ -196,7 +206,14 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   }
   // A controller switch is a causal routing decision, never adjacency traversal.
   // Keep graph safety and concrete external action ahead of the reconsideration route.
-  const safetyIds = new Set(["IC.SAFETY_ORIENTATION", "IC.ALTERED_STATE_GATE", "IC.PHOTO_EPISTEMIC_CAUTION"]);
+  const safetyIds = new Set([
+    "IC.SAFETY_ORIENTATION",
+    "IC.ALTERED_STATE_GATE",
+    "IC.PHOTO_EPISTEMIC_CAUTION",
+    "ROUTE.ALTERED_MEDICAL_SAFETY",
+    "ROUTE.ALTERED_ACUTE_STABILIZATION",
+    "ROUTE.ALTERED_ACTION_LOCK"
+  ]);
   const higherRoutes = new Set([...safetyIds, "ROUTE.ACT_OUTWARD", "ROUTE.EXTERNAL_EMBODIMENT", "ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.LEAVE_ALONE"]);
   if (control && !interrupt) {
     const wanted = eligible.find(n => n.id === control.active?.strategy.node_id);

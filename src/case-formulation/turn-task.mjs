@@ -48,7 +48,8 @@ export function validateTurnTask(input, { issue, observationIds } = {}) {
 
 export function immediateProtectionNeeded(v = {}) {
   return v.present_safety === "unsafe" || v.orientation === "disoriented" || v.ability_to_stop === "no"
-    || v.ability_to_return === "no" || v.dissociation === "high" || v.suicidal_state === "imminent";
+    || v.ability_to_return === "no" || v.dissociation === "high" || v.suicidal_state === "imminent"
+    || v.altered_medical_status === "concerning" || v.altered_capacity === "impaired";
 }
 
 export function taskQuestion(task) {
