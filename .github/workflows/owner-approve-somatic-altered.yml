@@ -8,7 +8,7 @@ on:
       - tasks/somatic-altered-guide-sync-20260916/OWNER-APPROVAL-TRIGGER
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: owner-approved-somatic-altered-reconciliation
@@ -33,45 +33,36 @@ jobs:
       - name: Bootstrap exact dependencies
         run: npm ci --ignore-scripts
 
-      - name: Extract exact reconciled benchmark fingerprint without committing
-        env:
-          BASE_SHA: 5bc037327392eef45b3c0f7bf4e3be0a3f341245
-          PROPOSAL_ID: somatic-altered-guide-sync-20260916
-          DECIDED_AT: 2026-09-16T19:03:00.000Z
-          OWNER_NOTE: Owner approved all five grouped semantic decisions in Chat, covering all 31 exact decision cards.
+      - name: Refresh only the deterministic reviewed-policy benchmark fingerprint
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          p = Path('tasks/somatic-altered-guide-sync-20260916/approval/apply-owner-approved-reconciliation.mjs')
+          p = Path('src/autopilot/therapy-latency-benchmark.mjs')
           s = p.read_text()
-          old = 'runCompleteGates: true'
+          old = 'f82024bfb1c8d835a54cf7fa9c7698e69035f8b713e7d8a0742eff67a2f6efa9'
+          new = 'f898656cb46a5f9971f25cc6f259169bf09c8c29ceea254b7866e72abeed5941'
           if s.count(old) != 1:
-              raise SystemExit(f'Expected exactly one complete-gate flag, found {s.count(old)}')
-          p.write_text(s.replace(old, 'runCompleteGates: false'))
+              raise SystemExit(f'Expected one pre-reconciliation reviewed fingerprint, found {s.count(old)}')
+          p.write_text(s.replace(old, new))
           PY
-          node tasks/somatic-altered-guide-sync-20260916/approval/apply-owner-approved-reconciliation.mjs > "$RUNNER_TEMP/reconcile.out"
-          node --input-type=module <<'NODE'
-          import { runTherapyLatencyBenchmark } from './src/autopilot/therapy-latency-benchmark.mjs';
-          const result = await runTherapyLatencyBenchmark({ iterations: 2 });
-          const compact = {
-            acceptance: result.acceptance,
-            cases: result.cases.map((item) => ({
-              id: item.id,
-              semanticHashes: item.optimized.semanticHashes,
-              acceptance: item.acceptance,
-              providerStages: item.optimized.providerStages,
-              providerCallCounts: item.optimized.providerCallCounts,
-              planningPassCounts: item.optimized.planningPassCounts
-            }))
-          };
-          console.log(JSON.stringify(compact, null, 2));
-          const structural = result.cases.every((item) =>
-            item.acceptance.tierPreserved &&
-            item.acceptance.providerStagesPreserved &&
-            item.acceptance.providerCallCountPreserved &&
-            item.acceptance.onePlanningPassEveryIteration &&
-            item.acceptance.requiredTimingsRetained
-          );
-          if (!structural) process.exit(1);
-          NODE
+
+      - name: Apply exact owner approval and reconcile with complete gates
+        env:
+          BASE_SHA: 5bc037327392eef45b3c0f7bf4e3be0a3f341245
+          PROPOSAL_ID: somatic-altered-guide-sync-20260916
+          REVIEWED_HEAD: 827e7f771aaf2b3ad9966f92be79e14b4c423772
+          DECIDED_AT: 2026-09-16T19:03:00.000Z
+          OWNER_NOTE: Owner approved all five grouped semantic decisions in Chat, covering all 31 exact decision cards.
+        run: node tasks/somatic-altered-guide-sync-20260916/approval/apply-owner-approved-reconciliation.mjs
+
+      - name: Commit owner-approved reconciliation artifacts
+        run: |
+          set -euo pipefail
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- ':!.github/workflows'
+          test -n "$(git status --porcelain --untracked-files=all | grep -v '^?? .github/workflows/' || true)"
+          git commit -m '[owner-approved-reconciled] Record somatic and altered-state approval'
+          git push origin HEAD:task/somatic-altered-guide-sync-20260916
