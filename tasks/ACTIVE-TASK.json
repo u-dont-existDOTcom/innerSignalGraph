@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "taskId": "somatic-altered-guide-sync-20260916",
   "title": "Integrate latest somatic and altered-states guides",
-  "status": "in_progress",
+  "status": "complete",
   "exclusive": false,
   "startedAt": "2026-09-16",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
@@ -11,5 +11,12 @@
   "ownerAuthorized": true,
   "startingTaskHead": "5bc037327392eef45b3c0f7bf4e3be0a3f341245",
   "statePath": "tasks/somatic-altered-guide-sync-20260916/INTEGRATION.md",
-  "completionClaimRule": "Report the exact achieved state: all 31 exact Guide Packet decision cards are owner-approved and reconciled; merge to development main is authorized after exact-head protected checks pass; stable promotion, installation and deployment remain separate and unauthorized."
+  "completionClaimRule": "Report the exact achieved state: all 31 exact Guide Packet decision cards are owner-approved, reconciled, and merged to development main; stable promotion, installation and deployment remain separate and unauthorized.",
+  "terminal": {
+    "mergedHead": "e48c183a725c9d894a6f401f87ae6bea181068cc",
+    "mergeCommit": "0e132aa8b3826ff5cd57b70e07bd2591543087a2",
+    "mergedAt": "2026-09-16T21:50:57Z",
+    "closeoutRecordedAt": "2026-09-16T21:56:12Z",
+    "closeoutBasis": "GitHub readback confirms PR 67 merged after exact-head protected checks; the verified review tree matches the merged development-main tree."
+  }
 }
