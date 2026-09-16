@@ -1,0 +1,70 @@
+name: Apply guide sync candidate
+
+on:
+  push:
+    branches:
+      - task/somatic-altered-guide-sync-20260916
+    paths:
+      - '.github/workflows/apply-guide-sync-candidate.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-candidate:
+    if: ${{ !contains(github.event.head_commit.message, '[guide-sync-applied]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out task branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: task/somatic-altered-guide-sync-20260916
+          fetch-depth: 0
+      - name: Set up repository-pinned Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .nvmrc
+      - name: Reconstruct and apply exact tested source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .github/guide-sync-transport/chunk-* > "$RUNNER_TEMP/candidate.patch.gz.b64"
+          base64 -d "$RUNNER_TEMP/candidate.patch.gz.b64" > "$RUNNER_TEMP/candidate.patch.gz"
+          test "$(sha256sum "$RUNNER_TEMP/candidate.patch.gz" | awk '{print $1}')" = "6bc8e8835408278cafa4eb19ef8554d73419b5d3defeed4d025071633da7ac8b"
+          gzip -dc "$RUNNER_TEMP/candidate.patch.gz" > "$RUNNER_TEMP/candidate.patch"
+          test "$(sha256sum "$RUNNER_TEMP/candidate.patch" | awk '{print $1}')" = "e7f4886f4b85d8066c4c975b2231a4fa2f9830ef7679204832a5c06833eb0366"
+          git apply --check "$RUNNER_TEMP/candidate.patch"
+          git apply "$RUNNER_TEMP/candidate.patch"
+      - name: Regenerate deterministic graph and authoring outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts
+          npm run graph:compile
+          npm run authoring:project
+          npm run authoring:validate
+          npm run authoring:check
+          npm run authoring:maps:check
+          node --test tests/somatic-altered-guide-sync.test.mjs tests/guide-graph.test.mjs
+      - name: Remove temporary transport and export scaffolding
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/guide-sync-transport
+          rm -f .github/workflows/apply-guide-sync-candidate.yml
+          rm -f .github/workflows/guide-sync-source-export.yml
+      - name: Commit exact candidate and generated projections
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No changes to commit' >&2
+            exit 1
+          fi
+          git commit -m '[guide-sync-applied] Apply tested somatic and altered-states candidate'
+          git push origin HEAD:task/somatic-altered-guide-sync-20260916
