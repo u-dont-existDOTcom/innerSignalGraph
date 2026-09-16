@@ -8,7 +8,7 @@ on:
       - tasks/somatic-altered-guide-sync-20260916/OWNER-APPROVAL-TRIGGER
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: owner-approved-somatic-altered-reconciliation
@@ -33,28 +33,31 @@ jobs:
       - name: Bootstrap exact dependencies
         run: npm ci --ignore-scripts
 
-      - name: Apply exact owner approval and reconcile
+      - name: Diagnose exact post-reconciliation package gate without committing
         env:
           BASE_SHA: 5bc037327392eef45b3c0f7bf4e3be0a3f341245
           PROPOSAL_ID: somatic-altered-guide-sync-20260916
           DECIDED_AT: 2026-09-16T19:03:00.000Z
           OWNER_NOTE: Owner approved all five grouped semantic decisions in Chat, covering all 31 exact decision cards.
         run: |
-          set -o pipefail
-          if ! node tasks/somatic-altered-guide-sync-20260916/approval/apply-owner-approved-reconciliation.mjs > "$RUNNER_TEMP/reconcile.out" 2> "$RUNNER_TEMP/reconcile.err"; then
-            echo '=== reconciliation error tail ==='
-            tail -c 30000 "$RUNNER_TEMP/reconcile.err"
-            exit 1
-          fi
-          cat "$RUNNER_TEMP/reconcile.out"
-
-      - name: Commit owner-approved reconciliation artifacts
-        run: |
           set -euo pipefail
-          git diff --check
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A -- ':!.github/workflows'
-          test -n "$(git status --porcelain --untracked-files=all | grep -v '^?? .github/workflows/' || true)"
-          git commit -m '[owner-approved-reconciled] Record somatic and altered-state approval'
-          git push origin HEAD:task/somatic-altered-guide-sync-20260916
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tasks/somatic-altered-guide-sync-20260916/approval/apply-owner-approved-reconciliation.mjs')
+          s = p.read_text()
+          old = 'runCompleteGates: true'
+          if s.count(old) != 1:
+              raise SystemExit(f'Expected exactly one complete-gate flag, found {s.count(old)}')
+          p.write_text(s.replace(old, 'runCompleteGates: false'))
+          PY
+          node tasks/somatic-altered-guide-sync-20260916/approval/apply-owner-approved-reconciliation.mjs > "$RUNNER_TEMP/reconcile.out"
+          set +e
+          npm run verify > "$RUNNER_TEMP/post-reconcile-verify.log" 2>&1
+          status=$?
+          set -e
+          if (( status != 0 )); then
+            echo '=== exact post-reconciliation verify tail ==='
+            tail -n 240 "$RUNNER_TEMP/post-reconcile-verify.log"
+            exit "$status"
+          fi
+          echo 'POST_RECONCILIATION_VERIFY_PASS'
