@@ -12,7 +12,7 @@ anchors:
   - IC.PROTECTOR_ACTION
 reconciled_nodes: []
 base_record_sha256: b8fb28af536bdd69f4ea1d7627cca49dc5c59ee243a4f6ab3f16777528ac54ef
-projection_input_sha256: 8c5810989cf6cd49591af99219e3955ac7468228121c0e2258ceb2a2f60e27d4
+projection_input_sha256: ce5fd7dec1e1fbcdcc7e24160f41a60bdf9bc20ff7746c255d6dfe0b19e2d52c
 ---
 
 # Make a bounded truthful protection-and-repair promise
