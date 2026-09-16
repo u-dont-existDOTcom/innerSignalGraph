@@ -39,7 +39,14 @@ jobs:
           PROPOSAL_ID: somatic-altered-guide-sync-20260916
           DECIDED_AT: 2026-09-16T19:03:00.000Z
           OWNER_NOTE: Owner approved all five grouped semantic decisions in Chat, covering all 31 exact decision cards.
-        run: node tasks/somatic-altered-guide-sync-20260916/approval/apply-owner-approved-reconciliation.mjs
+        run: |
+          set -o pipefail
+          if ! node tasks/somatic-altered-guide-sync-20260916/approval/apply-owner-approved-reconciliation.mjs > "$RUNNER_TEMP/reconcile.out" 2> "$RUNNER_TEMP/reconcile.err"; then
+            echo '=== reconciliation error tail ==='
+            tail -c 30000 "$RUNNER_TEMP/reconcile.err"
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/reconcile.out"
 
       - name: Commit owner-approved reconciliation artifacts
         run: |
