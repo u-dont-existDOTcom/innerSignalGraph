@@ -18,19 +18,37 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: 5bc037327392eef45b3c0f7bf4e3be0a3f341245
+          path: project
           persist-credentials: false
-      - name: Archive tracked public source only
+      - name: Check out current canonical measurement tool
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: u-dont-existDOTcom/universal-dev-architecture
+          ref: deef93b718af234d37bd2c2c04ccd26f9d2a0feb
+          path: universal
+          persist-credentials: false
+      - name: Set up repository-pinned Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: project/.nvmrc
+      - name: Export pinned public validation inputs
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = 5bc037327392eef45b3c0f7bf4e3be0a3f341245
-          mkdir -p "$RUNNER_TEMP/guide-sync-baseline"
-          git archive --format=tar.gz HEAD > "$RUNNER_TEMP/guide-sync-baseline/baseline.tar.gz"
-          sha256sum "$RUNNER_TEMP/guide-sync-baseline/baseline.tar.gz"
-      - name: Export baseline for the isolated task
+          test "$(git -C project rev-parse HEAD)" = 5bc037327392eef45b3c0f7bf4e3be0a3f341245
+          test "$(git -C universal rev-parse HEAD)" = deef93b718af234d37bd2c2c04ccd26f9d2a0feb
+          out="$RUNNER_TEMP/guide-sync-baseline"
+          mkdir -p "$out"
+          (cd project && npm ci --ignore-scripts)
+          tar -C project -czf "$out/dependencies.tar.gz" node_modules
+          runtime_root="$(dirname "$(dirname "$(command -v node)")")"
+          tar -C "$runtime_root" -czf "$out/node-runtime.tar.gz" bin lib include share LICENSE CHANGELOG.md README.md
+          git -C universal archive --format=tar.gz HEAD > "$out/universal.tar.gz"
+          (cd "$out" && sha256sum *.tar.gz > SHA256SUMS)
+      - name: Export isolated validation environment
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: guide-sync-baseline-5bc0373
-          path: ${{ runner.temp }}/guide-sync-baseline/baseline.tar.gz
+          name: guide-sync-validation-environment
+          path: ${{ runner.temp }}/guide-sync-baseline/
           retention-days: 1
           if-no-files-found: error
