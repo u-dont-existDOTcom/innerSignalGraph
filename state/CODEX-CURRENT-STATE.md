@@ -1,10 +1,16 @@
 # Inner Signal Codex current state
 
-## Protocol-state provenance correction — 2026-09-16
+Updated: 2026-09-16
 
-The isolated `codex/reparenting-protocol-provenance-20260916` candidate starts from development main `5bc037327392eef45b3c0f7bf4e3be0a3f341245`. It adds the owner-requested distinction between hypothetical caring responses, reported imaginal enactment and observed reception to shared consumer prompts, the plugin reference and an explicitly uncompiled map overlay. Recovery and verification are in `tasks/reparenting-provenance-20260916/INTEGRATION.md`. Five synthetic contrast cases are retained in `corpus/protocol-provenance-cases.json`; they are evaluation inputs, not completed model evaluations. No real private case was read or changed. Current guide/source authority, compiled graph, wisdom-practices and phenomenology remain preserved. No installation, stable change or deployment occurred. The candidate is not merged; exact final verification and draft-review location are recorded in the task receipt and Git history.
+## Somatic + altered-states guide sync — owner approved and reconciled
 
-Updated: 2026-09-12
+The owner explicitly approved all five grouped semantic decisions, covering all 31 exact Guide Packet cards. The approved packet verifies and reconciliation consumed its exact hash on the task branch. The reconciled development candidate preserves SIBAM-style whole-experience tracking without nonverbal privilege, consent-led touch/aquatic routes, capacity-led altered-state safety/therapy/integration, all thirteen owner-confirmed guide destinations, and separate public-humanization tracking. Experimental rescue substances/dosing remain outside executable emergency instructions.
+
+The reconciliation reports `installed=false` and `stableChanged=false`. The exact reconciled task branch must pass the protected hosted checks before merge to development `main`. Installation, deployment and `stable` promotion remain separate and unauthorized. Exact packet, approval and reconciliation hashes/receipts are in `tasks/somatic-altered-guide-sync-20260916/`.
+
+## Protocol-state provenance correction — merged to development main 2026-09-16
+
+Development `main` now includes the owner-requested distinction between hypothetical caring responses, reported imaginal enactment and observed reception in shared consumer prompts, the plugin reference and an explicitly uncompiled map overlay. Recovery and verification are in `tasks/reparenting-provenance-20260916/INTEGRATION.md`. Five synthetic contrast cases are retained in `corpus/protocol-provenance-cases.json`; they are evaluation inputs, not completed model evaluations. No real private case was read or changed. This work preserves guide/source authority, the compiled graph, wisdom-practices and phenomenology; no installation, stable change or deployment occurred.
 
 ## Wisdom-practices owner-approved reconciliation
 

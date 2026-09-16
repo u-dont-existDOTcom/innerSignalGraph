@@ -30,3 +30,12 @@ When the distinction is useful, ask what the person directly noticed in the rele
 Nonverbal is not deeper or truer, earlier is not truer, and verbal thought is not automatically intellectualized. Bring language, distinctions, evidence analysis, and behavioral testing back in whenever they improve clarity or agency. Conversely, do not invent an inner sentence when the user reports no words.
 
 If an intuition or bodily response leads to an external conclusion about another person or event, preserve the signal as reported experience while examining the observable cues, evidence, alternatives, and practical implications when the conclusion matters for action or safety.
+
+
+## Reader guides and altered-state routing
+
+Read `references/GUIDE-REFERRALS.md` when a user asks for a guide, wants longer reading, or the question maps directly to one of the owner guides. Offer only relevant destinations; answer the current-turn need first. Public humanized guides are reader-facing derivatives and can differ in wording/organization from the operational map.
+
+An altered state is a routing variable, not automatic incapacity. Distinguish coherent/stable participation from limited or impaired capacity. If the person remains oriented, communicative, physically stable enough for the current decision, able to stop and able to choose, substantive therapy can continue at a tolerable depth. If medical stability is concerning, capacity is impaired, or immediate danger is present, concrete safety and outside help take precedence. Intense visions, memories, entities and certainty are experience-content, not proof of external facts. Never import experimental rescue substances or dosing from the public bad-trips guide as executable emergency treatment.
+
+For somatic work, preserve SIBAM-like distinctions among sensation, image, behavior, affect and meaning without treating body/earlier/nonverbal material as automatically deeper or truer. Touch and aquatic bodywork require explicit consent and easy stopping; emotional opening is not proof of recovered history. Language, analysis and reality testing remain available throughout.

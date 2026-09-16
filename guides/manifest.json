@@ -13,10 +13,18 @@
     },
     {
       "id": "somatic-sequencing-guide",
-      "version": "owner-authorized-external-modality-note-2026-09-08",
+      "version": "owner-latest-humanized-2026-09-15",
       "file": "somatic-sequencing-guide.txt",
-      "sha256": "5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267",
+      "sha256": "952e1fd40afa00fd5c762bcc5c8cfbfa8811b66660a90f5495f41f50c69d2428",
       "role": "primary-framework",
+      "format": "text"
+    },
+    {
+      "id": "altered-states-map-source",
+      "version": "owner-upload-operational-extraction-2026-09-15",
+      "file": "altered-states-map-source.txt",
+      "sha256": "2c6435769931222afc125973b8e71bf88f94e099e0185c951ebce680c14f18ab",
+      "role": "primary-framework-safety-adapted-extraction",
       "format": "text"
     },
     {
@@ -44,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "The active inner-child article is the complete owner-pasted current guide with adopted E01-E12, recorded in tasks/guide-source-sync-20260907/SOURCE-SYNC.json. The somatic source includes the owner-authorized, evidence-labeled Butoh/ecstatic/enactment external-practice note; it is not a runtime intervention or efficacy claim. Earlier source snapshots are retained byte-for-byte. Owner amendments remain separately cited extensions; semantic assets retain instructional-visual provenance. The graph contract/bundle identity and installed Guide Packets are unchanged by this candidate source revision.",
+  "notes": "The active inner-child article is the complete owner-pasted current guide with adopted E01-E12, recorded in tasks/guide-source-sync-20260907/SOURCE-SYNC.json. The somatic source includes the owner-authorized, evidence-labeled Butoh/ecstatic/enactment external-practice note; it is not a runtime intervention or efficacy claim. Earlier source snapshots are retained byte-for-byte. Owner amendments remain separately cited extensions; semantic assets retain instructional-visual provenance. The graph contract/bundle identity and installed Guide Packets are unchanged by this candidate source revision. The latest somatic source incorporates the owner's humanized 2026-09-15 map semantics. The altered-states source is a safety-adapted operational extraction bound in the task record to the owner upload; experimental rescue regimens remain reader-guide material rather than executable emergency policy.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",

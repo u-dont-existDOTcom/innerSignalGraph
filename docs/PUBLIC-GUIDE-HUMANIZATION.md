@@ -6,6 +6,12 @@ Inner Signal may maintain a public, humanized guide whose prose is optimized for
 
 The public guide is a **derivative publication surface**. It may change voice, compression, examples, section order, pacing, jokes, memoir, transitions, citations, and layout. It may not silently create, remove, reverse, broaden, narrow, or weaken therapy semantics.
 
+## Multiple guide families
+
+Humanized editions are tracked independently rather than as one global public-guide state. `authoring/public-guide-sync.json` currently tracks inner-child, somatic, altered-states, and hypnosis as separate derivatives. The somatic edition is already humanized according to the owner; separate humanized inner-child, altered-states, and hypnosis editions may be produced later. A change in one derivative does not imply that another derivative or its operational map is synchronized.
+
+The public URL is a reading destination, not runtime authority. It is expected that a humanized article may no longer match internal map wording or section structure exactly. Semantic equivalence is the requirement; literal correspondence is not.
+
 ## Authority model
 
 The directional model is:

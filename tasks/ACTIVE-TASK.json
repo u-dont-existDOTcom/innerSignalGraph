@@ -1,26 +1,15 @@
 {
   "schemaVersion": 1,
-  "taskId": "wisdom-practices-20260912",
-  "title": "Reconcile the owner-approved wisdom practices graph candidate",
-  "status": "complete",
+  "taskId": "somatic-altered-guide-sync-20260916",
+  "title": "Integrate latest somatic and altered-states guides",
+  "status": "in_progress",
   "exclusive": false,
-  "startedAt": "2026-09-12",
+  "startedAt": "2026-09-16",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
-  "requiredBranch": "task/wisdom-practices-reconcile-20260912",
-  "pullRequest": 56,
+  "requiredBranch": "task/somatic-altered-guide-sync-20260916",
+  "pullRequest": 67,
   "ownerAuthorized": true,
-  "startingTaskHead": "e729632070e80c7ae3c545bf22a10c8aba9f26dc",
-  "ownerOutcomePath": "tasks/wisdom-practices-20260912/OWNER-OUTCOME.md",
-  "directivePath": "tasks/wisdom-practices-20260912/packet-source/EXECUTION-DIRECTIVE.md",
-  "statePath": "tasks/wisdom-practices-20260912/INTEGRATION.md",
-  "activeLessonContractPath": "tasks/wisdom-practices-20260912/ACTIVE-LESSON-CONTRACT.json",
-  "completionClaimRule": "Report the exact achieved state only: graph reconciliation and merge are complete; installation, deployment and stable promotion remain separate and unauthorized.",
-  "suspendedTaskSources": [],
-  "terminal": {
-    "mergedHead": "37920a8589f4b0b8133d27f16dcada9877a2b1b4",
-    "mergeCommit": "4a5be95b5ae44fee2b8ed6f4733b5db5bcf9a472",
-    "mergedAt": "2026-09-12T15:17:05Z",
-    "closeoutRecordedAt": "2026-09-14T23:03:00Z",
-    "closeoutBasis": "GitHub pull-request readback confirms PR 56 merged; the stale exclusive lock no longer reflects canonical repository state."
-  }
+  "startingTaskHead": "5bc037327392eef45b3c0f7bf4e3be0a3f341245",
+  "statePath": "tasks/somatic-altered-guide-sync-20260916/INTEGRATION.md",
+  "completionClaimRule": "Report the exact achieved state: all 31 exact Guide Packet decision cards are owner-approved and reconciled; merge to development main is authorized after exact-head protected checks pass; stable promotion, installation and deployment remain separate and unauthorized."
 }

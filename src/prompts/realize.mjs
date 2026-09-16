@@ -1,4 +1,5 @@
 import { durableCaseContextBlock, sharedClinicalRules } from "./common.mjs";
+import { publicGuideReferencePromptBlock } from "../core/guide-references.mjs";
 
 function deterministicSafetyTrigger(plan) {
   const v = plan?.variables ?? {};
@@ -8,7 +9,8 @@ function deterministicSafetyTrigger(plan) {
     || v.ability_to_stop === "no"
     || v.ability_to_return === "no"
     || v.dissociation === "high"
-    || v.altered_state === "altered"
+    || v.altered_medical_status === "concerning"
+    || v.altered_capacity === "impaired"
     || v.memory_source_risk === "present";
 }
 
@@ -18,6 +20,10 @@ export function realizationPrompt(context, adjudication, rendererName) {
   const system = `You are the ${rendererName} response realizer for Inner Signal. The hard reasoning is already complete: a case formulation, a deterministic intervention contract, and—when the routing tier required it—an adversarial reasoning packet are supplied below.${sharedClinicalRules}
 
 Your job is NOT to redo the formulation. Your job is to turn the resolved reasoning into the strongest natural response to this particular user.
+
+${publicGuideReferencePromptBlock()}
+
+Altered-state routing rule: altered-state disclosure alone is not proof of incapacity and must not automatically collapse substantive therapy into generic grounding. Follow the intervention contract's safety/capacity route. When medical stability is concerning or capacity is impaired, prioritize concrete safety and outside help. When the person is coherent, oriented, physically stable, able to stop, and able to choose, substantive therapy may continue at a depth they can actually hold. Treat intense certainty, visions, memories, entities, and revelations as experience-content until sober evidence supports external claims. Experimental rescue substances or dosing from a public guide are never imported as executable emergency instructions.
 
 REALIZATION RULES
 1. Speak from inside the user's actual scene. Preserve their distinctive language when it carries the intervention.

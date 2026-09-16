@@ -1,0 +1,32 @@
+{
+  "branch": "task/somatic-altered-guide-sync-20260916",
+  "candidateGraphs": [
+    {
+      "graphId": "inner-child-directed-graph",
+      "path": "guide-graphs/candidates/inner-child.graph.json",
+      "sha256": "2f31316bacb025352fbd0e2440aaa6607f50f2fc7cb38bc95263fbd807a3459f"
+    },
+    {
+      "graphId": "inner-child-somatic-cross-guide",
+      "path": "guide-graphs/candidates/cross-guide.graph.json",
+      "sha256": "527e801bcc54ee21aaf4b9ec5f4839a2183ef661a837e39a99b57a8b1c77a702"
+    },
+    {
+      "graphId": "somatic-directed-graph",
+      "path": "guide-graphs/candidates/somatic.graph.json",
+      "sha256": "5353c44e3a61ef4c93660b66fcf57ad87b064c417c8413c45213f68306a6dd18"
+    }
+  ],
+  "compiledBundleSha256": "fcdcf09d660faa95636adf948b90efcc2decb38ec5742cf08ca3b28012c27dfb",
+  "contractVersion": "inner-signal-authoring-reconciliation-v1",
+  "installed": false,
+  "packetId": "authoring-somatic-altered-guide-sync-20260916",
+  "packetSha256": "a548ed5e24c8e8f9f8f11fa3f56626053c9dce94b42eadbd8dfb474d3b09c16d",
+  "projectionInputSha256": "0f33cdd5b8ebe797fd36d659e95434f6cd6d99ba4eaffb8e3ddb0284aa2ad521",
+  "proposalId": "somatic-altered-guide-sync-20260916",
+  "regressionStatus": {
+    "count": 30,
+    "ok": true
+  },
+  "stableChanged": false
+}

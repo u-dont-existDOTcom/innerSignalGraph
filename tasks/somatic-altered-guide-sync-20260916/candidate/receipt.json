@@ -1,0 +1,36 @@
+{
+  "baseProjectionInputSha256": "2c8ca643504274023e49c647fbff143a6f02fe685ef935384c3c60c33b004fbb",
+  "candidateBundleSha256": "fcdcf09d660faa95636adf948b90efcc2decb38ec5742cf08ca3b28012c27dfb",
+  "candidateGraphHashes": [
+    {
+      "graphId": "inner-child-directed-graph",
+      "path": "candidate/graphs/inner-child.graph.json",
+      "sha256": "2f31316bacb025352fbd0e2440aaa6607f50f2fc7cb38bc95263fbd807a3459f"
+    },
+    {
+      "graphId": "inner-child-somatic-cross-guide",
+      "path": "candidate/graphs/cross-guide.graph.json",
+      "sha256": "527e801bcc54ee21aaf4b9ec5f4839a2183ef661a837e39a99b57a8b1c77a702"
+    },
+    {
+      "graphId": "somatic-directed-graph",
+      "path": "candidate/graphs/somatic.graph.json",
+      "sha256": "5353c44e3a61ef4c93660b66fcf57ad87b064c417c8413c45213f68306a6dd18"
+    }
+  ],
+  "canvasSha256": "11c596a21a27e0ed97e2d994ca42d5a34849bda425e89cac5f96320e775e63c3",
+  "contractVersion": "inner-signal-authoring-receipt-v1",
+  "mapSha256": "40fc393c711ffdadaefba73e729176d56a9078eb3da14af76457fe42e099479b",
+  "ownerDecisionRequired": true,
+  "packetSha256": "77534066bead4d7f232a8d40064518acdaea118b06169b8065d8143bb803dba8",
+  "proposalEvidenceSha256": "26a7a09d917984cf4f6b9191b4e4902fa338e0129154ead8a08f699934872365",
+  "proposalId": "somatic-altered-guide-sync-20260916",
+  "provenanceImpactSha256": "248700cda33a6d7042810ea9811112aa717bf26d0aca0219eb83a6203c95ac8d",
+  "regressionImpactSha256": "05108f84fb1e1b3f87f03cb98556f990b24bb9235cc988731ae8c411b122ac95",
+  "regressionStatus": {
+    "count": 40,
+    "ok": true,
+    "passed": 40
+  },
+  "semanticDiffSha256": "9c15ec528302bfe3ba03c22e36bf520478a039e6c439725404be1d0e5498f8d5"
+}

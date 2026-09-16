@@ -1,0 +1,94 @@
+{
+  "guideId": "altered-states-map-source",
+  "file": "altered-states-map-source.txt",
+  "sections": [
+    {
+      "id": "ALT.INTRO",
+      "heading": "Altered States / Bad Trips — Operational Map Source",
+      "lineStart": 1,
+      "lineEnd": 3,
+      "sha256": "5ecc254e8003259016d22cbdf5ebd100c604b077c22fd90ddb27bb2e60fa018e",
+      "excerpt": "Altered States / Bad Trips — Operational Map Source\nThis is a safety-adapted semantic extraction of the owner-uploaded altered-states guide dated 2026-09-15. The complete reader-facing guide contains personal field methods, medical claims, and experimental substance/remedy material that are not automatically executable InnerSignal instructions. The runtime map preserves the guide's triage, capacity, consent, epistemic, support, and integration structure while keeping medical emergencies within o"
+    },
+    {
+      "id": "ALT.TRIAGE",
+      "heading": "Acute Triage Order",
+      "lineStart": 4,
+      "lineEnd": 6,
+      "sha256": "cd7bfd2bf395cdfa58dbb085f64ace7bce01d326fae5c11fb48470a598b1c755",
+      "excerpt": "Acute Triage Order\nWhen somebody is already in an intense altered state, use this order: medical and physical safety first; stop unsafe momentum; fix the room; help the body; establish one calm human anchor; protect sleep; then interpret meaning. Do not spiritually process a body that may be medically failing. Trouble breathing, prolonged or repeated seizure, collapse or inability to wake normally, dangerous overheating, severe or worsening chest pain, focal neurological signs, serious injury, r"
+    },
+    {
+      "id": "ALT.CAPACITY",
+      "heading": "Capacity-Led Altered-State Therapy",
+      "lineStart": 7,
+      "lineEnd": 9,
+      "sha256": "5c6038d471d8cfb8349057d8b2c5a0e1d556eea9b6f19866cd39654fd14bef31",
+      "excerpt": "Capacity-Led Altered-State Therapy\nAltered-state disclosure by itself does not end therapy. Distinguish a coherent person who is physically stable, oriented, able to communicate, able to stop, and able to retain choice from somebody whose capacity is limited or impaired. A coherent altered person may still receive substantive, responsive therapy at a depth their current capacity supports. Reduce depth or move to stabilization when orientation, stopping, reality testing, physical stability, or or"
+    },
+    {
+      "id": "ALT.GROUNDING",
+      "heading": "Room, Body, Human, Time",
+      "lineStart": 10,
+      "lineEnd": 12,
+      "sha256": "2c7d21c4084506a8ae84d325e684eb763effa1bed8f071fcbb1e04d06d3bd537",
+      "excerpt": "Room, Body, Human, Time\nFor an intense but non-emergency state, simplify before interpreting. Reduce unwanted light, sound, crowding, temperature discomfort, unsafe people, and uninvited touch. Ask whether stillness or contained movement makes the person safer and clearer; use the option that reduces impulsivity rather than making either stillness or movement ideological. A simple safe task can share attention with emotion when immobile introspection becomes a trap. Use one calm human as the mai"
+    },
+    {
+      "id": "ALT.TOUCH",
+      "heading": "Consent and Touch",
+      "lineStart": 13,
+      "lineEnd": 15,
+      "sha256": "dd8f81acbd3469e1f134db3e40fdada631623e1eae6948509d18dc040bee4fa7",
+      "excerpt": "Consent and Touch\nAltered-state support never creates blanket consent. Ask before touching. Stop when the person says stop, freezes, pulls away, seems unsure, or changes their mind. Touch stays nonsexual and serves the person rather than the helper. Silence, distance, and no-touch support are valid."
+    },
+    {
+      "id": "ALT.ACTION_LOCK",
+      "heading": "Action Lock and Euphoric Certainty",
+      "lineStart": 16,
+      "lineEnd": 18,
+      "sha256": "b6e1ba7b6408797292398dacb41fc0a21030f12a21aac4a2ac8d4d5d7dc9cd73",
+      "excerpt": "Action Lock and Euphoric Certainty\nFear is not the only dangerous state. Bliss, grandiosity, cosmic certainty, or a sense of mission can increase rash action while making grounding feel unnecessary. During an intense altered state, postpone major or irreversible actions: driving, redosing, public posting, confrontations, accusations, confessions, major purchases or gifts, sexual boundary changes, relationship endings, travel, and attempts to prove a revelation. Write important ideas down, sleep "
+    },
+    {
+      "id": "ALT.EPISTEMICS",
+      "heading": "Visions, Entities, Memories, and Commands",
+      "lineStart": 19,
+      "lineEnd": 21,
+      "sha256": "173ac5d7c566a1b06e583b2b85d586d59ba163f9ef21c1463098298995133de2",
+      "excerpt": "Visions, Entities, Memories, and Commands\nDo not win a metaphysical argument and do not validate harmful commands. Reflect the reported experience while returning authority to non-harm, the body, ordinary reality, and present-day choice. Treat visions, entity experiences, apparent memories, past-life narratives, and cosmic conclusions first as experience-content. They may be meaningful without establishing external facts or historical certainty. Do not confront or accuse somebody from intoxicate"
+    },
+    {
+      "id": "ALT.PREPARATION",
+      "heading": "Planned Altered-State Work",
+      "lineStart": 22,
+      "lineEnd": 24,
+      "sha256": "7398cfc4bc0bc72af51ad759044daa5034a86f881fb18e0367331dbf71944a97",
+      "excerpt": "Planned Altered-State Work\nFor planned work, establish a beginning and an end before starting: adequate rest and timing; physical-safety planning; a known environment and support plan; intention without demanding a particular revelation; low-directivity support; explicit consent; closure; food and hydration when safe; sleep; and protected integration time. Once somebody is already in trouble, abandon ceremony optimization and return to acute triage."
+    },
+    {
+      "id": "ALT.PANIC_LOOP",
+      "heading": "Fear and Panic Loop",
+      "lineStart": 25,
+      "lineEnd": 27,
+      "sha256": "7a837da77628c4a9c23d68ae65b3d8a31709fa0824b102fe17e47af54291705b",
+      "excerpt": "Fear and Panic Loop\nFear often tries to solve fear by generating diagnosis, metaphysics, certainty, or urgent action. Name the loop without arguing with it. Move down toward body, room, human, and time. The goal is not to suppress meaning forever; it is to postpone interpretation until the nervous system and judgment can use it."
+    },
+    {
+      "id": "ALT.AFTERMATH",
+      "heading": "Aftermath and Minimum Viable Integration",
+      "lineStart": 28,
+      "lineEnd": 30,
+      "sha256": "4c3c3de53377a0b8426f2da150f8c3eef157acff2dac05452e29f5a6ae788412",
+      "excerpt": "Aftermath and Minimum Viable Integration\nAfter the acute state, sleep, food, water, warmth, routine, and ordinary contact come before a new ceremony or another destabilizing practice. Record facts first: what was taken or practiced, timing when known, setting, events, triggers, what helped, and what worsened the state. Then consider emotional, relational, spiritual, or practical meaning. Last, choose small behavioral changes. Distinguish lingering anxiety, sleep disruption, derealization/deperso"
+    },
+    {
+      "id": "ALT.NO_RESCUE_IMPORT",
+      "heading": "No Rescue-Regimen Import",
+      "lineStart": 31,
+      "lineEnd": 33,
+      "sha256": "c1970d10b23d9fc45860ae0aa714b8de68a68f284c7553fd782943202c4ed511",
+      "excerpt": "No Rescue-Regimen Import\nThe full guide includes the author's evidence-labeled personal field hierarchy and experimental remedies. InnerSignal may point a reader to the complete guide as the author's longer account, but it must not transform personal field signals, preclinical mechanisms, or limited evidence into emergency-treatment instructions, dosing, or reassurance. A guide referral never replaces urgent medical help, poison-control advice where available, or standard first aid."
+    }
+  ]
+}

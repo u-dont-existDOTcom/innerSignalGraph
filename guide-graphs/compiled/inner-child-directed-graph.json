@@ -1145,10 +1145,10 @@
     },
     {
       "id": "IC.ALTERED_STATE_GATE",
-      "title": "Build sober capacity before using altered states to deepen",
+      "title": "Calibrate therapy depth during altered states instead of assuming incapacity",
       "kind": "decision-node",
-      "tier": 2,
-      "priority": 89,
+      "tier": 5,
+      "priority": 78,
       "activation": {
         "any": [
           {
@@ -1167,15 +1167,20 @@
         "IC.ALTERED_STATES",
         "IC.ESCAPE_URGE",
         "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
-        "AMEND.IC.WELLBEING_HORIZON"
+        "AMEND.IC.WELLBEING_HORIZON",
+        "ALT.CAPACITY",
+        "ALT.EPISTEMICS",
+        "ALT.GROUNDING"
       ],
       "authority": "author-framework",
       "recommendations": [
-        "Prefer sober Nurturer and Protector capacity first or grounded support that does not seize authority.",
-        "Return to ordinary orientation when the state outruns the ability to hold what appears."
+        "Treat current altered state as a routing variable rather than an automatic stop: assess physical safety, orientation, capacity to communicate, stopping capacity, ordinary agency, and available support.",
+        "When those capacities remain coherent and stable, continue substantive inner-child or relational work at a depth the person can actually hold; when they deteriorate, shift toward room/body/human/time stabilization.",
+        "Prefer already-developed or borrowed Nurturer/Protector capacity for deeper altered-state work, and reduce depth rather than escalating intensity when the experience outruns that capacity."
       ],
       "avoid": [
         "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.",
+        "Do not automatically end useful therapy or replace the user’s actual question with generic grounding merely because they disclose an altered state.",
         "Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness."
       ],
       "successSignals": [
@@ -1191,7 +1196,8 @@
         "deferNodes": [],
         "forbiddenOverclaims": [],
         "requiredNuance": [
-          "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration."
+          "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration.",
+          "A current altered state and a lack of habitual inner speech are unrelated dimensions; neither establishes that the person cannot reason, use language, or engage therapy."
         ]
       },
       "defaultQuestion": ""

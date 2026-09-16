@@ -1,7 +1,7 @@
 Introduction
 Trauma healing is rarely just a matter of revisiting painful memories. The body was involved in surviving what happened, and it may still brace, collapse, freeze, disconnect, scan for danger, or flood long after the danger is gone.
 
-For many people, especially people with complex or developmental trauma, lasting recovery follows a sequence: establish safety and nervous-system regulation, release accumulated stress and survival responses, and only then move into deeper trauma processing.
+For many people, especially people with complex or developmental trauma, it is useful to think in several layers that can support each other: understand body cues and capacity, regulate or discharge activation, explore feelings with compassion, work with memories that can actually be identified, and integrate meaning, identity, boundaries, relationships, and direction. The order is flexible rather than a compulsory ladder.
 
 The core principle is simple:
 
@@ -21,6 +21,13 @@ Copy link
 
 
 Share
+
+SIBAM: Track the Whole Experience, Not Just the Story
+The latest public somatic guide uses Peter Levine's SIBAM frame as a useful way to keep several channels of experience visible at once: Sensation, Image, Behavior, Affect, and Meaning. A person may notice body sensation, imagery or memory fragments, action impulses, emotion, and interpretation in different proportions. Dissociation can look like channels becoming disconnected; hyperarousal can look like one channel rapidly recruiting the others.
+
+Use SIBAM as an attention map, not a diagnostic machine and not a rule that sensation is more authentic than meaning. A bodily contraction is directly reported phenomenology; the conclusion drawn from it is a separate appraisal that can still be examined. Words may have been present at the time, may be a later translation of nonverbal material, or may be one channel among several. Do not invent an inner sentence when none was experienced, and do not treat nonverbal material as deeper or truer merely because it appeared earlier.
+
+The practical aim is integration: make room for channels that are flattened or ignored, reduce channels that are monopolizing the whole system, and then use language, analysis, reality testing, and ordinary action when they add clarity or agency.
 
 This is a Map, But You Are the Explorer
 A phased approach makes intuitive and clinical sense for people who are repeatedly overwhelmed, severely dissociative, actively unsafe, unable to settle after activation, or missing the practical support needed to tolerate trauma work.
@@ -132,6 +139,13 @@ As a bridge between body-based and cognitive processing
 
 Not ideal as: The only treatment for severe trauma, or a way to bypass deeper body-based work.
 
+Touch, Massage, and Consent
+Touch can be grounding, regulating, and informative for some people and aversive or activating for others. Massage belongs on the map as an optional body-based support rather than a mandatory trauma technique. Start with the least intrusive form that is actually wanted: self-massage, a weighted or textured object, consensual nonsexual touch from a trusted person or practitioner, or no touch at all.
+
+The person keeps authority over pressure, location, duration, distance, clothing, and stopping. A freeze, pull-away, uncertainty, or changed mind means stop and re-check rather than interpreting the response as resistance. If outside touch is not welcome, self-touch or non-touch practices can serve the same broad regulatory function without pretending they are equivalent experiences.
+
+Judge touch by what happens afterward: more orientation, choice, comfort in the body, and ordinary functioning are useful signals; shame, confusion, dissociation, boundary pressure, unwanted sexualization, or prolonged activation are reasons to stop and reassess.
+
 Shaking Qigong / Shaking Medicine
 Goal: Daily autonomic discharge and energetic decompression.
 
@@ -220,6 +234,13 @@ Judge any external participation by agency, usable self-knowledge, regulation, c
 Phase 3: Deep Subcortical Reprocessing
 I am using subcortical as shorthand for trauma material that shows up through body sensation, impulse, emotion, image, or fragments before it becomes a clear verbal story—not as a claim that one precise brain region contains it.
 
+Aquatic Bodywork / Water Therapy
+Aquatic bodywork can combine warmth, buoyancy, supported movement, stretching, and consensual holding in a way that feels unusually young, vulnerable, or emotionally opening for some people. Treat that openness as an effect to care for, not proof of regression to a literal age, womb memory, or hidden event.
+
+Do not drop somebody cold into a potentially intense water session. Beforehand, establish what they want to work on, their comfort with water and touch, stopping signals, physical safety, and what support is available if the session opens more emotion than expected. During the session, consent remains continuous. Afterward, deliberately return to ordinary body and present time through rest, grounding, gentle movement or massage if wanted, food/hydration when appropriate, and follow-up support when something remains open.
+
+A practical question for a provider is: what happens if I come out much more emotionally open than I went in? A good answer should include consent, stopping, grounding, aftercare, and access to appropriate follow-up rather than treating intensity as proof that the session worked.
+
 Primary Modality: Brainspotting
 Goal: Work with emotionally charged material through gaze position, focused attention, bodily awareness, and therapist attunement.
 
@@ -287,7 +308,7 @@ Residual triggers that remain after deeper somatic work
 Less ideal than Brainspotting for: Highly diffuse developmental trauma when you cannot identify clear target memories, or when the material is primarily bodily, pre-verbal, or relational rather than event-specific.
 
 Neurological De-Armoring Support
-Sleep, substance use, medication effects, pain, nutrition, and general physiological stability can influence how well you tolerate therapy. I have a separate sleep guide at dearmor.u-dont-exist.com
+Sleep, substance use, medication effects, pain, nutrition, and general physiological stability can influence how well you tolerate therapy. The separate sleep guide is at sleep.u-dont-exist.com, while neurological de-armoring is at dearmor.u-dont-exist.com.
 
 This is also the stage where neurological de-armoring support may be most relevant. EMDR directly engages memory reprocessing, so anything that affects fear learning, inflammation, dissociation, glutamate/GABA balance, or autonomic tone may change how reconsolidation feels. See my de-armoring supplement guide here.
 
@@ -312,7 +333,7 @@ Phase 5: Meaning-Making and Life Integration
 Light CBT / Narrative Integration
 Goal: Rebuild the life narrative after the body is less trapped in survival mode.
 
-Top-down cognitive work often fails when introduced too early because the body still believes the threat is happening. But after regulation, discharge, and deeper processing, light cognitive work can become much more useful.
+Cognitive work can be mistimed when it asks someone to argue with a sentence that was never literally present or when the body is too activated to use analysis well. But language and analysis remain essential tools: they can clarify appraisals, test conclusions, update identity and boundaries, and turn implicit meaning into something inspectable. Some people benefit from this after bottom-up work; others use it concurrently.
 
 Best use:
 
@@ -328,7 +349,7 @@ Reclaiming agency
 
 Preparing for inner child reparenting therapy
 
-Trying to think your way out of trauma skips the sequence. The thinking mind can update once the body no longer has to keep proving that the past is still happening.
+Trying to think your way out of every bodily response can miss what is happening, but staying only with sensation can miss what language and analysis can change. The aim is integration: sensation, emotion, imagery, action tendency, memory, meaning, evidence, and present-day choices can correct one another.
 
 How to Judge What Is Helping
 The overall movement is:

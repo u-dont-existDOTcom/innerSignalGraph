@@ -699,13 +699,13 @@
         "somatic"
       ],
       "effects": {
-        "deferNodes": [],
         "blockNodes": [],
-        "requiredNuance": [
-          "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order."
-        ],
+        "deferNodes": [],
         "forbiddenOverclaims": [
           "Do not infer recovered memories, hidden trauma, or a coherent inner child from symptoms alone."
+        ],
+        "requiredNuance": [
+          "The somatic map remains flexible: gentle regulation, EFT, shaking or movement, resource work, deeper Brainspotting, EMDR, and optional advanced release are branches selected by function, target, capacity, and response rather than a mandatory phase order."
         ]
       },
       "defaultQuestion": "What exactly seems unfinished or avoided here, and what changes when you contact it rather than merely think about it?",
@@ -805,6 +805,427 @@
         "purpose": "discriminate",
         "unresolvedFields": []
       }
+    },
+    {
+      "id": "ROUTE.ALTERED_ACTION_LOCK",
+      "title": "Delay consequential action during intense certainty or pressure",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 98,
+      "activation": {
+        "all": [
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "altered_action_pressure",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "ALT.ACTION_LOCK",
+        "ALT.EPISTEMICS"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Write consequential ideas down and postpone major or irreversible action until after sleep, food, and sober review with a grounded person.",
+        "Treat visions, entities, apparent memories, cosmic conclusions, and mission-like certainty as experience-content before treating them as fact-content or commands.",
+        "Keep non-harm and consent authoritative even when the experience feels blissful, sacred, urgent, or absolutely certain."
+      ],
+      "avoid": [
+        "Do not encourage driving, redosing, public posting, confrontation, accusation, confession, major purchases or gifts, sexual boundary changes, relationship endings, travel, or attempts to prove a revelation while judgment is altered."
+      ],
+      "successSignals": [
+        "The person preserves the insight for later review without converting urgency into an irreversible action."
+      ],
+      "tags": [
+        "altered-state",
+        "action-lock",
+        "grandiosity",
+        "epistemic"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not say the revelation is false merely because action is being postponed; the claim remains open to sober review."
+        ],
+        "requiredNuance": [
+          "Euphoric certainty can carry more behavioral risk than fear because the person may feel no need to ground."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.ALTERED_ACUTE_STABILIZATION",
+      "title": "Simplify the acute altered state before adding interpretation",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 99,
+      "activation": {
+        "all": [
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          }
+        ],
+        "any": [
+          {
+            "field": "activation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "panic_instability",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "altered_capacity",
+            "op": "eq",
+            "value": "limited"
+          },
+          {
+            "field": "support_available",
+            "op": "eq",
+            "value": "absent"
+          },
+          {
+            "field": "sleep_deprivation",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "altered_medical_status",
+            "op": "eq",
+            "value": "concerning"
+          },
+          {
+            "field": "altered_capacity",
+            "op": "eq",
+            "value": "impaired"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "ALT.GROUNDING",
+        "ALT.PANIC_LOOP",
+        "ALT.TOUCH"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Reduce unwanted light, sound, crowding, temperature discomfort, unsafe company, and uninvited touch before trying to explain the experience.",
+        "Test stillness versus contained gentle movement by whether it makes the person safer and clearer rather than more activated or impulsive; a small ordinary task can share attention with emotion when immobile introspection becomes a trap.",
+        "Use one calm human anchor when possible, re-establish place and time, protect sleep, and let meaning wait until the nervous system has somewhere to stand."
+      ],
+      "avoid": [
+        "Do not force stillness, movement, touch, music, breathing exercises, prayer, imagery, or interpretation as the one correct response.",
+        "Do not turn acute stabilization into a metaphysical debate or a demand for insight."
+      ],
+      "successSignals": [
+        "The person becomes more oriented, less impulsive, more able to choose, and more able to engage with ordinary reality."
+      ],
+      "tags": [
+        "altered-state",
+        "grounding",
+        "acute",
+        "human-anchor",
+        "sleep"
+      ],
+      "effects": {
+        "blockNodes": [
+          "ROUTE.GO_INWARD",
+          "ROUTE.ALTERED_STABLE_THERAPY"
+        ],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE",
+          "SOM.DEEP_BRAINSPOTTING",
+          "SOM.EMDR_DISCRETE",
+          "SOM.EMDR_DEVELOPMENTAL"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that a grounding response proves the experience was only anxiety or only psychological."
+        ],
+        "requiredNuance": [
+          "Body → room → human → time → meaning is an acute support order, not a universal theory that body experience always precedes thought."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.ALTERED_AFTERMATH",
+      "title": "Integrate altered-state aftermath from facts toward meaning and small life changes",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 96,
+      "activation": {
+        "all": [
+          {
+            "field": "altered_phase",
+            "op": "eq",
+            "value": "aftermath"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "ALT.AFTERMATH",
+        "ALT.EPISTEMICS"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use sleep, food, water, warmth, routine, sober support, and ordinary contact before another ceremony or destabilizing practice.",
+        "Record facts first—what was taken or practiced, timing when known, setting, events, triggers, what helped, and what worsened the state—then consider emotional, relational, spiritual, or practical meaning.",
+        "Separate lingering anxiety, sleep disruption, derealization/depersonalization, visual symptoms, shame/social disconnection, existential shock, trauma material, psychosis-like beliefs, and somatic hyperarousal because they can require different support.",
+        "Translate useful insight into small behavioral changes rather than measuring integration by how cosmic the explanation sounds."
+      ],
+      "avoid": [
+        "Do not recommend another psychedelic, cannabis, ketamine, intense breathwork, extreme fasting, sleep deprivation, extreme meditation/stretching, or another ceremony as the reflexive fix for ongoing destabilization.",
+        "Do not treat one night’s certainty as a diagnosis, recovered fact, or permanent metaphysical conclusion."
+      ],
+      "successSignals": [
+        "Ordinary functioning and sleep recover, facts and interpretations remain distinguishable, and any retained insight produces proportionate behavior rather than escalating practice."
+      ],
+      "tags": [
+        "altered-state",
+        "integration",
+        "aftermath",
+        "sleep",
+        "reality-testing"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not call persistent or dangerous symptoms a normal integration process without appropriate assessment."
+        ],
+        "requiredNuance": [
+          "The public bad-trips guide can provide fuller reading, but referral never replaces current safety, medical, or professional support when those are needed."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.ALTERED_MEDICAL_SAFETY",
+      "title": "Treat medical danger or impaired capacity as a real-world safety problem",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 100,
+      "activation": {
+        "any": [
+          {
+            "field": "altered_medical_status",
+            "op": "eq",
+            "value": "concerning"
+          },
+          {
+            "field": "altered_capacity",
+            "op": "eq",
+            "value": "impaired"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "ALT.TRIAGE",
+        "ALT.NO_RESCUE_IMPORT"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Move from interpretation to urgent real-world assessment and the least disruptive effective outside help when medical danger, severe impairment, or inability to establish basic stability is reported.",
+        "Use ordinary first-aid and emergency/poison-support boundaries appropriate to the situation; missing nonverbal information in text chat remains unknown rather than reassuring.",
+        "Keep the author guide’s experimental remedies and field hierarchy separate from executable emergency instructions."
+      ],
+      "avoid": [
+        "Do not tell the person to breathe through, spiritually process, or continue therapy through signs of possible medical failure.",
+        "Do not prescribe experimental rescue substances, supplement doses, or home antidotes from the public guide as emergency treatment.",
+        "Do not dismiss a neurological or bodily complaint merely because the person is intoxicated or frightened."
+      ],
+      "successSignals": [
+        "Immediate danger is reduced or transferred to appropriate human/medical support before interpretive work resumes."
+      ],
+      "tags": [
+        "altered-state",
+        "medical-safety",
+        "capacity",
+        "triage"
+      ],
+      "effects": {
+        "blockNodes": [
+          "ROUTE.GO_INWARD",
+          "ROUTE.ALTERED_STABLE_THERAPY"
+        ],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE",
+          "SOM.DEEP_BRAINSPOTTING",
+          "SOM.EMDR_DISCRETE",
+          "SOM.EMDR_DEVELOPMENTAL"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that the absence of reported red flags proves medical stability."
+        ],
+        "requiredNuance": [
+          "Text chat cannot directly observe neurological or physiological signs; inability to establish stability is not the same as a reassuring screen."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.ALTERED_PREPARATION",
+      "title": "Give planned altered-state work a beginning, support plan, and ending",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 97,
+      "activation": {
+        "all": [
+          {
+            "field": "altered_phase",
+            "op": "eq",
+            "value": "planned"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "ALT.PREPARATION"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Plan rest and timing, physical safety, environment, support, and what would require outside help before the session begins.",
+        "Use intention without demanding a particular revelation, memory, emotional arc, or spiritual result; support stays low-directivity and consent-based.",
+        "Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended."
+      ],
+      "avoid": [
+        "Do not use ceremony planning once an acute crisis has started; return to acute triage instead.",
+        "Do not make a sitter, playlist, spiritual frame, or expected insight into an authority the person cannot stop or change."
+      ],
+      "successSignals": [
+        "The session has clear safety, consent, stopping, closure, and integration boundaries before altered-state work begins."
+      ],
+      "tags": [
+        "altered-state",
+        "preparation",
+        "consent",
+        "closure"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "ROUTE.ALTERED_STABLE_THERAPY",
+      "title": "Continue substantive therapy when altered-state capacity remains coherent and safe",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 99,
+      "activation": {
+        "all": [
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "altered_capacity",
+            "op": "eq",
+            "value": "coherent"
+          },
+          {
+            "field": "altered_medical_status",
+            "op": "eq",
+            "value": "stable"
+          },
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "safe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "oriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "none": [
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "ALT.CAPACITY",
+        "ALT.EPISTEMICS",
+        "IC.ALTERED_STATES"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Do not terminate or flatten therapy merely because the person discloses an altered state; continue responsive therapeutic work at the depth their current orientation, stopping capacity, and agency support.",
+        "Keep altered-state insights, memories, symbols, intuitions, and metaphysical conclusions provisional where external truth matters; use ordinary evidence after the state when consequences depend on them.",
+        "Reduce depth immediately if orientation, stopping capacity, physical stability, reality testing, or ordinary agency begins to deteriorate."
+      ],
+      "avoid": [
+        "Do not automatically substitute generic grounding for the user’s actual therapeutic question when capacity is demonstrably intact.",
+        "Do not use altered intensity as proof that a memory is historical, an ontology is true, or healing is complete."
+      ],
+      "successSignals": [
+        "The person can engage meaningfully, retain choice, stop voluntarily, and return toward ordinary functioning without escalating intensity to keep therapy working."
+      ],
+      "tags": [
+        "altered-state",
+        "capacity-led",
+        "substantive-therapy",
+        "epistemic"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not equate articulate writing with full medical stability or intact judgment in every domain."
+        ],
+        "requiredNuance": [
+          "Altered state is a routing variable, not by itself evidence of incapacity. Coherence in text is still not a medical exam; explicit physical stability remains a separate requirement."
+        ]
+      },
+      "defaultQuestion": ""
     }
   ],
   "edges": [
@@ -992,6 +1413,41 @@
       "from": "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
       "to": "ROUTE.GO_INWARD",
       "relation": "may-use-phenomenological-inner-work-without-verdict"
+    },
+    {
+      "from": "ROUTE.ALTERED_MEDICAL_SAFETY",
+      "relation": "safety-precedes-nonmedical-stabilization",
+      "to": "ROUTE.ALTERED_ACUTE_STABILIZATION"
+    },
+    {
+      "from": "ROUTE.ALTERED_AFTERMATH",
+      "relation": "may-process-trauma-material-after-stabilization",
+      "to": "ROUTE.GO_INWARD"
+    },
+    {
+      "from": "ROUTE.ALTERED_AFTERMATH",
+      "relation": "may-use-cognitive-integration-after-stabilization",
+      "to": "SOM.MEANING_INTEGRATION"
+    },
+    {
+      "from": "ROUTE.ALTERED_STABLE_THERAPY",
+      "relation": "may-continue-when-deep-work-readiness-is-established",
+      "to": "IC.DEEP_CHILD_DIALOGUE"
+    },
+    {
+      "from": "ROUTE.ALTERED_ACUTE_STABILIZATION",
+      "relation": "may-enable-when-capacity-restored",
+      "to": "ROUTE.ALTERED_STABLE_THERAPY"
+    },
+    {
+      "from": "ROUTE.ALTERED_PREPARATION",
+      "relation": "prepares-capacity-and-closure",
+      "to": "ROUTE.ALTERED_STABLE_THERAPY"
+    },
+    {
+      "from": "ROUTE.ALTERED_ACTION_LOCK",
+      "relation": "defers-consequential-meaning-to-sober-review",
+      "to": "ROUTE.ALTERED_AFTERMATH"
     }
   ],
   "taskPolicyVersion": 1,

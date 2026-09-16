@@ -1,0 +1,483 @@
+{
+  "affectedCases": [
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.CREDIBILITY_REPAIR",
+        "IC.MEET_GUARD",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": false,
+      "id": "G001",
+      "passed": true,
+      "title": "Accessible love feels unsafe and the younger state disputes adult credibility."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.MEET_GUARD",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "IC.SOLAR_PLEXUS_RELAXATION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": false,
+      "id": "G002",
+      "passed": true,
+      "title": "Flooded person with critical parent imagery and little inner-adult access."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.PROTECTOR_ACTION",
+        "IC.SOLAR_PLEXUS_RELAXATION",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": false,
+      "id": "G003",
+      "passed": true,
+      "title": "Solar-plexus holding blocks self-directed love while external love remains available."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.DEEP_CHILD_DIALOGUE",
+        "SOM.EMDR_DISCRETE"
+      ],
+      "declared": false,
+      "id": "G004",
+      "passed": true,
+      "title": "Stable person with one discrete event seeks memory processing."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.DEEP_CHILD_DIALOGUE",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.EMDR_DEVELOPMENTAL_DEFER",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": false,
+      "id": "G005",
+      "passed": true,
+      "title": "Developmental trauma and EMDR interest without basic reparenting capacity."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "IC.PHOTO_EPISTEMIC_CAUTION",
+        "SOM.BYPASS_AUDIT"
+      ],
+      "declared": false,
+      "id": "G009",
+      "passed": true,
+      "title": "Altered-state or photo material risks being treated as historical fact."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.GUIDE_LATER",
+        "SOM.MEANING_INTEGRATION"
+      ],
+      "declared": false,
+      "id": "G010",
+      "passed": true,
+      "title": "Stable integration phase with Guide readiness."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.DEEP_CHILD_DIALOGUE",
+        "IC.GENTLE_SELF_HYPNOSIS",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": false,
+      "id": "G011",
+      "passed": true,
+      "title": "Gentle hypnosis requested without deep-work readiness."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ADULT_APPRENTICE",
+        "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.CREDIBILITY_REPAIR",
+        "IC.MEET_GUARD",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "SOM.DEEP_BRAINSPOTTING",
+        "SOM.EFT_PORTABLE",
+        "SOM.EMDR_DEVELOPMENTAL",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": false,
+      "id": "G012",
+      "passed": true,
+      "title": "Credibility conflict with adverse track record, established witness capacity, and unresolved adult-side speaker identity."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.ACT_OUTWARD",
+        "ROUTE.GO_INWARD",
+        "ROUTE.INFLUENCE_SOCIAL_PROTECTION",
+        "ROUTE.LEAVE_ALONE",
+        "ROUTE.RELATIONAL_REALITY_CHECK",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": false,
+      "id": "G013",
+      "passed": true,
+      "title": "Another person is central, interpersonal pressure displaced self-possession, and both outward action and later inward work are relevant."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.SAFETY_ORIENTATION",
+        "ROUTE.ACT_OUTWARD",
+        "ROUTE.GO_INWARD",
+        "ROUTE.INFLUENCE_SOCIAL_PROTECTION",
+        "ROUTE.LEAVE_ALONE",
+        "ROUTE.RELATIONAL_REALITY_CHECK",
+        "SOM.SAFETY_STABILIZATION"
+      ],
+      "declared": false,
+      "id": "G014",
+      "passed": true,
+      "title": "Ordinary social danger keeps practical safety above love, relational interpretation, and inward processing."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.GO_INWARD",
+        "ROUTE.INFLUENCE_INTERNAL",
+        "ROUTE.INFLUENCE_NONORDINARY_METTA",
+        "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": false,
+      "id": "G015",
+      "passed": true,
+      "title": "Internal influence routes through the existing inner-child, somatic, and metacognitive architecture."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.INFLUENCE_INTERNAL",
+        "ROUTE.INFLUENCE_LOVE_CAPACITY",
+        "ROUTE.INFLUENCE_NONORDINARY_METTA",
+        "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": false,
+      "id": "G016",
+      "passed": true,
+      "title": "An experienced other-than-self presence with accessible metta allows love itself as the spiritual protection route without ontology claims."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.NEUTRAL_WITNESS",
+        "IC.PROTECTOR_ACTION",
+        "ROUTE.GO_INWARD",
+        "ROUTE.INFLUENCE_INTERNAL",
+        "ROUTE.INFLUENCE_LOVE_CAPACITY",
+        "ROUTE.INFLUENCE_NONORDINARY_METTA",
+        "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": false,
+      "id": "G017",
+      "passed": true,
+      "title": "An experienced other-than-self presence with inaccessible metta routes to Nurturer, Protector, and Guide capacity-building rather than psychic combat."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.INFLUENCE_INTERNAL",
+        "ROUTE.INFLUENCE_LOVE_CAPACITY",
+        "ROUTE.INFLUENCE_NONORDINARY_METTA",
+        "ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": false,
+      "id": "G018",
+      "passed": true,
+      "title": "Uncertain ontology stays phenomenological and corrigible while practical and inward routes remain available by observed effect."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "ROUTE.GO_INWARD",
+        "ROUTE.LEAVE_ALONE",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": false,
+      "id": "G027",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.DEEP_CHILD_DIALOGUE",
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "declared": false,
+      "id": "G029",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.DEEP_CHILD_DIALOGUE",
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "declared": false,
+      "id": "G030",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.NEUTRAL_WITNESS",
+        "ROUTE.ACT_OUTWARD",
+        "SOM.GENTLE_REGULATION"
+      ],
+      "declared": false,
+      "id": "G033",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.GOODWILL_BRIDGE",
+        "IC.PROTECTOR_ACTION",
+        "ROUTE.GO_INWARD",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": false,
+      "id": "G036",
+      "passed": true
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.GO_INWARD",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.RESOURCE_BRAINSPOTTING",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": true,
+      "id": "G037",
+      "passed": true,
+      "title": "Gentle somatic work can use SIBAM without privileging nonverbal material."
+    },
+    {
+      "affectedNodeIds": [
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.MEANING_INTEGRATION"
+      ],
+      "declared": true,
+      "id": "G038",
+      "passed": true,
+      "title": "Meaning integration preserves language and analysis without treating nonverbal material as truer."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "SOM.CONSENSUAL_TOUCH",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": true,
+      "id": "G039",
+      "passed": true,
+      "title": "Wanted touch can be selected with consent and a complete no-touch alternative."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "SOM.AQUATIC_BODYWORK",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING"
+      ],
+      "declared": true,
+      "id": "G040",
+      "passed": true,
+      "title": "Wanted aquatic bodywork is optional and carries explicit aftercare boundaries."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.NEUTRAL_WITNESS",
+        "IC.SOLAR_PLEXUS_RELAXATION",
+        "ROUTE.ALTERED_MEDICAL_SAFETY",
+        "ROUTE.ALTERED_STABLE_THERAPY",
+        "ROUTE.GO_INWARD",
+        "SOM.BYPASS_AUDIT",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": true,
+      "id": "G041",
+      "passed": true,
+      "title": "Medical concern or impaired altered-state capacity takes precedence over inward therapy."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.NEUTRAL_WITNESS",
+        "IC.SOLAR_PLEXUS_RELAXATION",
+        "ROUTE.ALTERED_ACUTE_STABILIZATION",
+        "ROUTE.ALTERED_STABLE_THERAPY",
+        "ROUTE.GO_INWARD",
+        "SOM.BYPASS_AUDIT",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": true,
+      "id": "G042",
+      "passed": true,
+      "title": "Acute altered-state instability stabilizes before inward or stable substantive therapy."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "IC.DEEP_CHILD_DIALOGUE",
+        "ROUTE.ALTERED_STABLE_THERAPY",
+        "ROUTE.GO_INWARD",
+        "SOM.BYPASS_AUDIT",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": true,
+      "id": "G043",
+      "passed": true,
+      "title": "Coherent stable altered participation can continue substantive and inner-child therapy at a calibrated depth."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "ROUTE.ALTERED_ACTION_LOCK",
+        "ROUTE.ALTERED_AFTERMATH",
+        "ROUTE.ALTERED_STABLE_THERAPY",
+        "SOM.BYPASS_AUDIT"
+      ],
+      "declared": true,
+      "id": "G044",
+      "passed": true,
+      "title": "Altered-state action pressure locks consequential action while preserving later review."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.ALTERED_STATE_GATE",
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "ROUTE.ALTERED_PREPARATION",
+        "ROUTE.ALTERED_STABLE_THERAPY",
+        "SOM.BYPASS_AUDIT"
+      ],
+      "declared": true,
+      "id": "G045",
+      "passed": true,
+      "title": "Planned altered-state work can prepare capacity and closure without bypassing stable-therapy gates."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.ALTERED_AFTERMATH",
+        "ROUTE.GO_INWARD",
+        "SOM.EFT_PORTABLE",
+        "SOM.GENTLE_REGULATION",
+        "SOM.GENTLE_SHAKING",
+        "SOM.MEANING_INTEGRATION",
+        "SOM.SIBAM_TRACKING"
+      ],
+      "declared": true,
+      "id": "G046",
+      "passed": true,
+      "title": "Aftermath integrates facts, meaning, and inward material only after ordinary stability."
+    }
+  ],
+  "contractVersion": "inner-signal-regression-impact-v1",
+  "declaredCaseIds": [
+    "G037",
+    "G038",
+    "G039",
+    "G040",
+    "G041",
+    "G042",
+    "G043",
+    "G044",
+    "G045",
+    "G046"
+  ],
+  "gaps": [],
+  "ok": true
+}

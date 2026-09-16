@@ -1,0 +1,33 @@
+{
+  "version": "public-guide-sync-v2-2026-09-16",
+  "authority": "non-authoritative publication bookkeeping; canonical guides/source maps/owner amendments and executable graph remain upstream authority",
+  "guides": [
+    {
+      "id": "inner-child",
+      "publicUrl": "https://innerchild.u-dont-exist.com",
+      "status": "PLANNED_SEPARATE_HUMANIZED",
+      "notes": "A humanized public edition may diverge substantially in voice/structure while preserving approved semantics."
+    },
+    {
+      "id": "somatic",
+      "publicUrl": "https://somatic.u-dont-exist.com",
+      "status": "HUMANIZED_PUBLIC",
+      "sourceUploadSha256": "ce1a14d3df8552ad444bcf0ee71fba3b3b56058397acf5ebd0e139af332041a0",
+      "notes": "Owner states the current somatic guide is already humanized; map/source changes remain explicit upstream work."
+    },
+    {
+      "id": "altered-states",
+      "publicUrl": "https://badtrips.u-dont-exist.com",
+      "status": "PLANNED_SEPARATE_HUMANIZED",
+      "sourceUploadSha256": "eda2ddf25b22c1bc8d9e2869661db59d893552f248bdfddf1b5c02bedd951d5c",
+      "notes": "Humanization may change prose, examples, and ordering; medical/experimental field material does not automatically become runtime policy."
+    },
+    {
+      "id": "hypnosis",
+      "publicUrl": "https://hypnosis.u-dont-exist.com",
+      "status": "PLANNED_SEPARATE_HUMANIZED",
+      "notes": "Track as an independent public derivative; changes to therapy semantics return upstream before runtime changes."
+    }
+  ],
+  "invariant": "Public humanized derivatives are one-way reader surfaces. Wording does not need literal map correspondence; substantive therapeutic changes require explicit upstream reconciliation."
+}
