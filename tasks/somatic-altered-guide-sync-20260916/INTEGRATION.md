@@ -61,6 +61,12 @@ Using repository-pinned Node 24.18.0 and the current Universal test-efficiency o
 
 Local complete-suite attempts were externally cut off by this chat/container execution limit before Node's test runner emitted a terminal full-suite result. Exact-head hosted CI is therefore the remaining complete package checkpoint after persistence to the draft PR; do not represent the interrupted local full-suite attempts as PASS.
 
+## Hosted persistence checkpoint
+
+- The clean generated candidate was persisted by the self-cleaning branch workflow at `76092f95ba80e56f74d978043338118e17a60415` after exact patch-integrity checks, graph compilation, authoring regeneration/validation/checks, and focused graph/integration tests passed.
+- Temporary patch transport, the temporary apply workflow, and the earlier baseline-export workflow are absent from the resulting PR diff.
+- GitHub created the ordinary protected PR workflows for that bot-authored head but marked all three `action_required` with zero jobs because the triggering actor was `github-actions[bot]`. This user-authenticated checkpoint commit exists to trigger the repository's normal protected checks without changing therapy behavior.
+
 ## Authority and safety boundaries
 
 - Raw uploaded editor HTML and personal anecdotes are not committed as canonical guide source.
