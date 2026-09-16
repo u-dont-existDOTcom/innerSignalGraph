@@ -11,5 +11,5 @@
   "ownerAuthorized": true,
   "startingTaskHead": "5bc037327392eef45b3c0f7bf4e3be0a3f341245",
   "statePath": "tasks/somatic-altered-guide-sync-20260916/INTEGRATION.md",
-  "completionClaimRule": "Report the exact achieved state: tested draft candidate only until Guide Packet semantic approval/reconciliation and merge occur; stable promotion, installation and deployment are separate."
+  "completionClaimRule": "Report the exact achieved state: all 31 exact Guide Packet decision cards are owner-approved and reconciled; merge to development main is authorized after exact-head protected checks pass; stable promotion, installation and deployment remain separate and unauthorized."
 }
