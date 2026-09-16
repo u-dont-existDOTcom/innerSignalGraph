@@ -1,0 +1,457 @@
+name: Owner-approved somatic altered reconciliation
+
+on:
+  push:
+    branches:
+      - task/somatic-altered-guide-sync-20260916
+
+permissions:
+  contents: write
+
+concurrency:
+  group: owner-approved-somatic-altered-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out task branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: task/somatic-altered-guide-sync-20260916
+          fetch-depth: 0
+
+      - name: Set up repository-pinned Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .nvmrc
+          check-latest: false
+
+      - name: Bootstrap exact dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Build exact proposal packet, record approval, and reconcile
+        env:
+          BASE_SHA: 5bc037327392eef45b3c0f7bf4e3be0a3f341245
+          PROPOSAL_ID: somatic-altered-guide-sync-20260916
+          DECIDED_AT: 2026-09-16T19:03:00.000Z
+          OWNER_NOTE: Owner approved all five grouped semantic decisions in Chat, covering all 31 exact decision cards.
+        run: |
+          set -euo pipefail
+          candidate_dir="$RUNNER_TEMP/owner-reviewed-candidate"
+          mkdir -p "$candidate_dir"
+          cp guide-graphs/candidates/inner-child.graph.json "$candidate_dir/inner-child.graph.json"
+          cp guide-graphs/candidates/somatic.graph.json "$candidate_dir/somatic.graph.json"
+          cp guide-graphs/candidates/cross-guide.graph.json "$candidate_dir/cross-guide.graph.json"
+          export CANDIDATE_DIR="$candidate_dir"
+
+          git checkout "$BASE_SHA" -- \
+            guide-graphs/candidates/inner-child.graph.json \
+            guide-graphs/candidates/somatic.graph.json \
+            guide-graphs/candidates/cross-guide.graph.json
+          npm run graph:compile
+          npm run authoring:project
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import { createProposal } from './src/authoring/proposal.mjs';
+          import { parseAuthoringNote } from './src/authoring/note-parser.mjs';
+          import { renderFrontmatterNote, renderNodeNote } from './src/authoring/note-renderer.mjs';
+          import { AUTHORING_CONTRACTS, NODE_PAYLOAD_FIELDS, edgeDigest, edgeId, validateSchema } from './src/authoring/contract.mjs';
+          import { blankCaseVariables } from './src/guide-graph/contract.mjs';
+
+          const root = process.cwd();
+          const id = process.env.PROPOSAL_ID;
+          const candidateDir = process.env.CANDIDATE_DIR;
+          const proposalRoot = path.join(root, 'authoring', 'obsidian', 'proposals', id);
+          await fs.rm(proposalRoot, { recursive: true, force: true });
+          await createProposal({
+            root,
+            id,
+            nodeIds: ['IC.ALTERED_STATE_GATE', 'SOM.MEANING_INTEGRATION', 'ROUTE.GO_INWARD']
+          });
+
+          const graphFiles = {
+            'inner-child-directed-graph': 'inner-child.graph.json',
+            'somatic-directed-graph': 'somatic.graph.json',
+            'inner-child-somatic-cross-guide': 'cross-guide.graph.json'
+          };
+          const anchorNodes = {
+            'inner-child-directed-graph': 'IC.ALTERED_STATE_GATE',
+            'somatic-directed-graph': 'SOM.MEANING_INTEGRATION',
+            'inner-child-somatic-cross-guide': 'ROUTE.GO_INWARD'
+          };
+          const candidateGraphs = new Map();
+          const baseGraphs = new Map();
+          const baseMeta = new Map();
+
+          for (const [graphId, filename] of Object.entries(graphFiles)) {
+            candidateGraphs.set(graphId, JSON.parse(await fs.readFile(path.join(candidateDir, filename), 'utf8')));
+            baseGraphs.set(graphId, JSON.parse(await fs.readFile(path.join(root, 'guide-graphs', 'candidates', filename), 'utf8')));
+            const anchor = parseAuthoringNote(await fs.readFile(path.join(proposalRoot, 'nodes', `${anchorNodes[graphId]}.md`), 'utf8'));
+            baseMeta.set(graphId, {
+              baseGraphSha256: anchor.data.base_graph_sha256,
+              baseProjectionInputSha256: anchor.data.base_projection_input_sha256
+            });
+          }
+
+          const expectedAddedNodes = new Set([
+            'SOM.SIBAM_TRACKING',
+            'SOM.CONSENSUAL_TOUCH',
+            'SOM.AQUATIC_BODYWORK',
+            'ROUTE.ALTERED_MEDICAL_SAFETY',
+            'ROUTE.ALTERED_ACUTE_STABILIZATION',
+            'ROUTE.ALTERED_ACTION_LOCK',
+            'ROUTE.ALTERED_PREPARATION',
+            'ROUTE.ALTERED_STABLE_THERAPY',
+            'ROUTE.ALTERED_AFTERMATH'
+          ]);
+          const actualAddedNodes = new Set();
+          for (const [graphId, candidate] of candidateGraphs) {
+            const baseIds = new Set(baseGraphs.get(graphId).nodes.map((node) => node.id));
+            for (const node of candidate.nodes) if (!baseIds.has(node.id)) actualAddedNodes.add(node.id);
+          }
+          if (JSON.stringify([...actualAddedNodes].sort()) !== JSON.stringify([...expectedAddedNodes].sort())) {
+            throw new Error(`Unexpected added-node set: ${[...actualAddedNodes].sort().join(', ')}`);
+          }
+
+          function payloadFor(node) {
+            return Object.fromEntries(NODE_PAYLOAD_FIELDS.filter((field) => Object.hasOwn(node, field)).map((field) => [field, node[field]]));
+          }
+          function frontmatterFor(node, graphId, operation, meta, baseRecordSha256 = undefined) {
+            const value = {
+              authoring_contract: AUTHORING_CONTRACTS.nodeProposal,
+              entity_type: 'graph-node-proposal',
+              proposal_id: id,
+              operation,
+              graph_id: graphId,
+              node_id: node.id,
+              title: node.title,
+              kind: node.kind,
+              tier: node.tier,
+              priority: node.priority,
+              authority: node.authority,
+              graph_tags: node.tags,
+              source_refs: node.sourceRefs,
+              base_graph_sha256: meta.baseGraphSha256,
+              base_projection_input_sha256: meta.baseProjectionInputSha256
+            };
+            if (baseRecordSha256) value.base_record_sha256 = baseRecordSha256;
+            validateSchema('nodeProposal', value, { label: `${id}/${node.id}` });
+            return value;
+          }
+          async function writeNodeProposal(node, graphId, operation, baseRecordSha256 = undefined) {
+            const text = renderNodeNote({
+              frontmatter: frontmatterFor(node, graphId, operation, baseMeta.get(graphId), baseRecordSha256),
+              payload: payloadFor(node),
+              heading: node.title,
+              warning: 'Editable proposal record. Building it never changes canonical graph files.',
+              rationaleTemplate: true
+            });
+            await fs.writeFile(path.join(proposalRoot, 'nodes', `${node.id}.md`), text);
+          }
+
+          for (const [graphId, nodeId] of [
+            ['inner-child-directed-graph', 'IC.ALTERED_STATE_GATE'],
+            ['somatic-directed-graph', 'SOM.MEANING_INTEGRATION']
+          ]) {
+            const currentProposal = parseAuthoringNote(await fs.readFile(path.join(proposalRoot, 'nodes', `${nodeId}.md`), 'utf8'));
+            const candidateNode = candidateGraphs.get(graphId).nodes.find((node) => node.id === nodeId);
+            await writeNodeProposal(candidateNode, graphId, 'replace', currentProposal.data.base_record_sha256);
+          }
+
+          for (const [graphId, graph] of candidateGraphs) {
+            for (const node of graph.nodes) {
+              if (expectedAddedNodes.has(node.id)) await writeNodeProposal(node, graphId, 'add');
+            }
+          }
+
+          const expectedAddedEdges = 11;
+          const addedEdges = [];
+          for (const [graphId, candidate] of candidateGraphs) {
+            const base = baseGraphs.get(graphId);
+            const key = (edge) => `${edge.from}\u0000${edge.relation}\u0000${edge.to}`;
+            const baseKeys = new Set(base.edges.map(key));
+            const candidateKeys = new Set(candidate.edges.map(key));
+            const removed = base.edges.filter((edge) => !candidateKeys.has(key(edge)));
+            if (removed.length) throw new Error(`Unexpected removed edges in ${graphId}: ${JSON.stringify(removed)}`);
+            for (const edge of candidate.edges) if (!baseKeys.has(key(edge))) addedEdges.push({ graphId, edge });
+          }
+          if (addedEdges.length !== expectedAddedEdges) throw new Error(`Expected ${expectedAddedEdges} added edges, found ${addedEdges.length}.`);
+          await fs.mkdir(path.join(proposalRoot, 'edges'), { recursive: true });
+          for (const { graphId, edge } of addedEdges) {
+            const tuple = { graphId, from: edge.from, relation: edge.relation, to: edge.to };
+            const frontmatter = {
+              authoring_contract: AUTHORING_CONTRACTS.edgeProposal,
+              entity_type: 'graph-edge-proposal',
+              proposal_id: id,
+              operation: 'add',
+              edge_id: edgeId(tuple),
+              edge_sha256: edgeDigest(tuple),
+              graph_id: graphId,
+              from_node_id: edge.from,
+              to_node_id: edge.to,
+              relation: edge.relation,
+              base_graph_sha256: baseMeta.get(graphId).baseGraphSha256,
+              base_projection_input_sha256: baseMeta.get(graphId).baseProjectionInputSha256
+            };
+            validateSchema('edgeProposal', frontmatter, { label: `${id}/${frontmatter.edge_id}` });
+            const text = renderFrontmatterNote({
+              frontmatter,
+              heading: `${edge.from} ${edge.relation} ${edge.to}`,
+              body: 'Owner-reviewed topology addition. The exact endpoint and relation are executable proposal content.'
+            });
+            await fs.writeFile(path.join(proposalRoot, 'edges', `${frontmatter.edge_id}.md`), text);
+          }
+
+          const safe = {
+            ...blankCaseVariables(),
+            present_safety: 'safe',
+            orientation: 'oriented',
+            ability_to_stop: 'yes',
+            ability_to_return: 'yes',
+            activation: 'moderate',
+            dissociation: 'none',
+            altered_state: 'sober',
+            suicidal_state: 'absent',
+            inner_adult_access: 'available',
+            support_available: 'present',
+            body_capacity: 'adequate',
+            current_intent: 'conversation',
+            actionable_problem: 'absent',
+            unresolved_inner_material: 'absent',
+            attention_loop: 'absent',
+            inward_attention_effect: 'neutral',
+            other_person_central: 'no',
+            influence_domain: 'none',
+            memory_source_risk: 'absent'
+          };
+          const cases = [
+            {
+              id: 'G037',
+              description: 'Gentle somatic work can use SIBAM without privileging nonverbal material.',
+              variables: { ...safe, current_intent: 'gentle_practice', unresolved_inner_material: 'present' },
+              unknowns: [],
+              expected: {
+                selectedIncludes: ['SOM.SIBAM_TRACKING'],
+                requiredNuancePatterns: ['attention map', 'greater truth value'],
+                forbiddenOverclaimPatterns: ['nonverbal, somatic, earlier, intuitive, or intense material']
+              }
+            },
+            {
+              id: 'G038',
+              description: 'Meaning integration preserves language and analysis without treating nonverbal material as truer.',
+              variables: { ...safe, current_intent: 'integration' },
+              unknowns: [],
+              expected: {
+                selectedIncludes: ['SOM.MEANING_INTEGRATION'],
+                requiredNuancePatterns: ['nonverbal is not deeper or truer']
+              }
+            },
+            {
+              id: 'G039',
+              description: 'Wanted touch can be selected with consent and a complete no-touch alternative.',
+              variables: { ...safe, touch_interest: 'present' },
+              unknowns: [],
+              expected: { selectedIncludes: ['SOM.CONSENSUAL_TOUCH'] }
+            },
+            {
+              id: 'G040',
+              description: 'Wanted aquatic bodywork is optional and carries explicit aftercare boundaries.',
+              variables: { ...safe, aquatic_bodywork_interest: 'present' },
+              unknowns: [],
+              expected: { selectedIncludes: ['SOM.AQUATIC_BODYWORK'] }
+            },
+            {
+              id: 'G041',
+              description: 'Medical concern or impaired altered-state capacity takes precedence over inward therapy.',
+              variables: { ...safe, altered_state: 'altered', altered_capacity: 'impaired', altered_medical_status: 'concerning', activation: 'high', unresolved_inner_material: 'present' },
+              unknowns: [],
+              expected: {
+                primary: 'ROUTE.ALTERED_MEDICAL_SAFETY',
+                selectedIncludes: ['ROUTE.ALTERED_MEDICAL_SAFETY'],
+                blockedIncludes: ['ROUTE.GO_INWARD', 'ROUTE.ALTERED_STABLE_THERAPY'],
+                deferredIncludes: ['IC.DEEP_CHILD_DIALOGUE', 'SOM.DEEP_BRAINSPOTTING', 'SOM.EMDR_DISCRETE', 'SOM.EMDR_DEVELOPMENTAL']
+              }
+            },
+            {
+              id: 'G042',
+              description: 'Acute altered-state instability stabilizes before inward or stable substantive therapy.',
+              variables: { ...safe, altered_state: 'altered', altered_capacity: 'limited', altered_medical_status: 'stable', activation: 'high', unresolved_inner_material: 'present' },
+              unknowns: [],
+              expected: {
+                primary: 'ROUTE.ALTERED_ACUTE_STABILIZATION',
+                selectedIncludes: ['ROUTE.ALTERED_ACUTE_STABILIZATION'],
+                blockedIncludes: ['ROUTE.GO_INWARD', 'ROUTE.ALTERED_STABLE_THERAPY'],
+                deferredIncludes: ['IC.DEEP_CHILD_DIALOGUE', 'SOM.DEEP_BRAINSPOTTING', 'SOM.EMDR_DISCRETE', 'SOM.EMDR_DEVELOPMENTAL']
+              }
+            },
+            {
+              id: 'G043',
+              description: 'Coherent stable altered participation can continue substantive and inner-child therapy at a calibrated depth.',
+              variables: { ...safe, altered_state: 'altered', altered_capacity: 'coherent', altered_medical_status: 'stable', activation: 'low', current_intent: 'deep_dialogue', deep_work_readiness: 'yes', unresolved_inner_material: 'present' },
+              unknowns: [],
+              expected: {
+                selectedIncludes: ['ROUTE.ALTERED_STABLE_THERAPY', 'IC.ALTERED_STATE_GATE', 'IC.DEEP_CHILD_DIALOGUE'],
+                requiredNuancePatterns: ['lack of habitual inner speech', 'articulate writing']
+              }
+            },
+            {
+              id: 'G044',
+              description: 'Altered-state action pressure locks consequential action while preserving later review.',
+              variables: { ...safe, altered_state: 'altered', altered_capacity: 'coherent', altered_medical_status: 'stable', activation: 'low', altered_action_pressure: 'present', altered_phase: 'aftermath' },
+              unknowns: [],
+              expected: { primary: 'ROUTE.ALTERED_ACTION_LOCK', selectedIncludes: ['ROUTE.ALTERED_ACTION_LOCK', 'ROUTE.ALTERED_AFTERMATH'] }
+            },
+            {
+              id: 'G045',
+              description: 'Planned altered-state work can prepare capacity and closure without bypassing stable-therapy gates.',
+              variables: { ...safe, altered_phase: 'planned', altered_state: 'altered', altered_capacity: 'coherent', altered_medical_status: 'stable', activation: 'low' },
+              unknowns: [],
+              expected: { selectedIncludes: ['ROUTE.ALTERED_PREPARATION', 'ROUTE.ALTERED_STABLE_THERAPY'] }
+            },
+            {
+              id: 'G046',
+              description: 'Aftermath integrates facts, meaning, and inward material only after ordinary stability.',
+              variables: { ...safe, altered_phase: 'aftermath', current_intent: 'integration', unresolved_inner_material: 'present' },
+              unknowns: [],
+              expected: { selectedIncludes: ['ROUTE.ALTERED_AFTERMATH', 'SOM.MEANING_INTEGRATION', 'ROUTE.GO_INWARD'] }
+            }
+          ];
+          await fs.mkdir(path.join(proposalRoot, 'tests'), { recursive: true });
+          for (const definition of cases) await fs.writeFile(path.join(proposalRoot, 'tests', `${definition.id}.json`), `${JSON.stringify(definition, null, 2)}\n`);
+          NODE
+
+          node src/cli/authoring.mjs proposal-build --id "$PROPOSAL_ID" > "$RUNNER_TEMP/proposal-build.json"
+          node src/cli/authoring.mjs proposal-check --id "$PROPOSAL_ID" > "$RUNNER_TEMP/proposal-check.json"
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const id = process.env.PROPOSAL_ID;
+          const decisions = JSON.parse(fs.readFileSync(`authoring/.build/${id}/audit/owner-decisions.json`, 'utf8'));
+          if (decisions.cards.length !== 31) throw new Error(`Expected 31 exact decision cards, found ${decisions.cards.length}.`);
+          if (!decisions.cards.every((card) => card.status === 'pending')) throw new Error('Candidate decision cards are not all pending before owner approval.');
+          const receipt = JSON.parse(fs.readFileSync(`authoring/.build/${id}/receipt.json`, 'utf8'));
+          if (!receipt.ownerDecisionRequired) throw new Error('Proposal did not preserve the owner decision gate.');
+          NODE
+
+          task_root="tasks/$PROPOSAL_ID"
+          rm -rf "$task_root/candidate" "$task_root/approval" "$task_root/reconciliation"
+          mkdir -p "$task_root/candidate" "$task_root/approval" "$task_root/reconciliation"
+          cp -a "authoring/.build/$PROPOSAL_ID/." "$task_root/candidate/"
+          source_sha="$(sha256sum "$task_root/candidate/packet/proposal.zip" | awk '{print $1}')"
+          export SOURCE_PACKET_SHA256="$source_sha"
+
+          cat > "$task_root/approval/record-owner-approval.mjs" <<'NODE'
+          import assert from 'node:assert/strict';
+          import { createHash } from 'node:crypto';
+          import fs from 'node:fs/promises';
+          import path from 'node:path';
+          import { fileURLToPath } from 'node:url';
+          import { createStoredZip, readZipEntries } from '../../../src/core/zip.mjs';
+          import { canonicalJson } from '../../../src/guide-packet/contract.mjs';
+          import { verifyGuidePacket } from '../../../src/guide-packet/verifier.mjs';
+
+          const taskRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+          const proposalId = process.env.PROPOSAL_ID;
+          const packetId = `authoring-${proposalId}`;
+          const sourceRelative = 'candidate/packet/proposal.zip';
+          const approvedRelative = `approval/${packetId}-approved.zip`;
+          const approvalRelative = 'approval/OWNER-APPROVAL.json';
+          const sourcePath = path.join(taskRoot, sourceRelative);
+          const approvedPath = path.join(taskRoot, approvedRelative);
+          const approvalPath = path.join(taskRoot, approvalRelative);
+          const sourcePacketSha256 = process.env.SOURCE_PACKET_SHA256;
+          const decidedAt = process.env.DECIDED_AT;
+          const ownerNote = process.env.OWNER_NOTE;
+          const sha256 = (value) => createHash('sha256').update(value).digest('hex');
+
+          const source = await fs.readFile(sourcePath);
+          assert.equal(sha256(source), sourcePacketSha256, 'Source proposal packet does not match the owner-approved SHA-256.');
+          const entries = readZipEntries(source);
+          const manifest = JSON.parse(entries.get('manifest.json').toString('utf8'));
+          const decisions = JSON.parse(entries.get('audit/owner-decisions.json').toString('utf8'));
+          assert.equal(manifest.packetId, packetId);
+          assert.equal(manifest.proposalId, proposalId);
+          assert.equal(manifest.status, 'candidate');
+          assert.equal(decisions.status, 'awaiting-owner');
+          assert.equal(decisions.allApproved, false);
+          assert.equal(decisions.cards.length, 31);
+          assert.ok(decisions.cards.every((card) => card.status === 'pending'));
+
+          decisions.cards = decisions.cards.map((card) => ({ ...card, status: 'approve', ownerNote, decidedAt }));
+          decisions.allApproved = true;
+          decisions.status = 'approved';
+          decisions.decidedAt = decidedAt;
+          manifest.status = 'approved';
+          manifest.candidateOnly = false;
+          manifest.approvalRequired = false;
+          manifest.approvedAt = decidedAt;
+          manifest.approvalDecisionHash = sha256(Buffer.from(canonicalJson(decisions)));
+          entries.set('manifest.json', Buffer.from(canonicalJson(manifest)));
+          entries.set('audit/owner-decisions.json', Buffer.from(canonicalJson(decisions)));
+          entries.delete('SHA256SUMS.txt');
+          const sums = [...entries.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([name, data]) => `${sha256(data)}  ${name}`).join('\n') + '\n';
+          entries.set('SHA256SUMS.txt', Buffer.from(sums));
+          const approved = createStoredZip([...entries.entries()].map(([name, data]) => ({ name, data })), new Date(decidedAt));
+          const verification = verifyGuidePacket(approved);
+          assert.equal(verification.ok, true, verification.errors.join('; '));
+          assert.equal(verification.approved, true, 'Approved packet did not satisfy the exact approval contract.');
+          const approvedPacketSha256 = sha256(approved);
+          const approvalDecisionSha256 = sha256(Buffer.from(canonicalJson(decisions)));
+          const approval = {
+            contractVersion: 'inner-signal-owner-approval-record-v1',
+            proposalId,
+            packetId,
+            sourcePacket: { path: sourceRelative, sha256: sourcePacketSha256, decisionCards: decisions.cards.length },
+            decision: { authority: 'owner-explicit-chat-approval', scope: 'approve-all-five-groups-and-all-31-exact-decision-cards', status: 'approved', allApproved: true, decidedAt, ownerNote, approvalDecisionSha256 },
+            approvedPacket: { path: approvedRelative, sha256: approvedPacketSha256, verified: verification.ok, approved: verification.approved },
+            boundaries: { reconciliationAuthorized: true, mergeAuthorized: true, installAuthorized: false, deployAuthorized: false, stablePromotionAuthorized: false }
+          };
+          await fs.writeFile(approvedPath, approved);
+          await fs.writeFile(approvalPath, canonicalJson(approval), 'utf8');
+          process.stdout.write(canonicalJson({ packetId, sourcePacketSha256, approvedPacketSha256, approvalDecisionSha256, decisionCards: decisions.cards.length, verified: verification.ok, approved: verification.approved }));
+          NODE
+
+          approval_json="$(node "$task_root/approval/record-owner-approval.mjs")"
+          printf '%s' "$approval_json" > "$RUNNER_TEMP/approval-result.json"
+          approved_sha="$(node -e "const x=require('$RUNNER_TEMP/approval-result.json'); process.stdout.write(x.approvedPacketSha256)")"
+          packet_id="authoring-$PROPOSAL_ID"
+          approved_packet="$task_root/approval/$packet_id-approved.zip"
+          node src/cli/authoring.mjs proposal-reconcile \
+            --id "$PROPOSAL_ID" \
+            --packet-id "$packet_id" \
+            --packet "$approved_packet" \
+            --sha256 "$approved_sha" > "$RUNNER_TEMP/reconcile-result.json"
+          cp "authoring/.build/$PROPOSAL_ID/reconciliation.json" "$task_root/reconciliation/RECONCILIATION-RECEIPT.json"
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs/promises';
+          const id = process.env.PROPOSAL_ID;
+          const decidedAt = process.env.DECIDED_AT;
+          const approval = JSON.parse(await fs.readFile(`tasks/${id}/approval/OWNER-APPROVAL.json`, 'utf8'));
+          const reconciliation = JSON.parse(await fs.readFile(`tasks/${id}/reconciliation/RECONCILIATION-RECEIPT.json`, 'utf8'));
+          const integrationFile = `tasks/${id}/INTEGRATION.md`;
+          let integration = await fs.readFile(integrationFile, 'utf8');
+          integration = integration.replace('Status: TESTED_ITERATION_CANDIDATE; draft PR only; not semantically owner-approved through the Guide Packet lifecycle, merged, installed, deployed, or promoted to `stable`.', 'Status: OWNER_APPROVED_AND_RECONCILED; merge pending; not installed, deployed, or promoted to `stable`.');
+          integration += `\n## Owner approval and reconciliation — 2026-09-16\n\n- At ${decidedAt}, the owner explicitly approved all five grouped semantic decisions, covering all 31 exact Guide Packet decision cards.\n- Candidate packet SHA-256: \`${approval.sourcePacket.sha256}\`.\n- Approved packet SHA-256: \`${approval.approvedPacket.sha256}\`; verifier reports approved=true.\n- Reconciliation consumed that exact approved packet/hash and returned installed=false, stableChanged=false.\n- Reconciled bundle SHA-256: \`${reconciliation.compiledBundleSha256}\`; graph regressions: ${reconciliation.regressionStatus.count}/${reconciliation.regressionStatus.count}.\n- Merge into development \`main\` is authorized by the owner approval record. Installation, deployment, and \`stable\` promotion remain explicitly unauthorized.\n`;
+          await fs.writeFile(integrationFile, integration);
+
+          const stateFile = 'state/CODEX-CURRENT-STATE.md';
+          let state = await fs.readFile(stateFile, 'utf8');
+          const marker = '\n## Wisdom-practices owner-approved reconciliation';
+          const split = state.indexOf(marker);
+          if (split < 0) throw new Error('Could not locate current-state section boundary.');
+          const remainder = state.slice(split);
+          const nextTop = `# Inner Signal Codex current state\n\nUpdated: 2026-09-16\n\n## Somatic + altered-states guide sync — owner approved and reconciled\n\nThe owner explicitly approved all five grouped semantic decisions, covering all 31 exact Guide Packet cards. The approved packet verifies and reconciliation consumed its exact hash on the task branch. The reconciled development candidate preserves SIBAM-style whole-experience tracking without nonverbal privilege, consent-led touch/aquatic routes, capacity-led altered-state safety/therapy/integration, all thirteen owner-confirmed guide destinations, and separate public-humanization tracking. Experimental rescue substances/dosing remain outside executable emergency instructions.\n\nThe reconciliation reports \`installed=false\` and \`stableChanged=false\`. The exact reconciled task branch must pass the protected hosted checks before merge to development \`main\`. Installation, deployment and \`stable\` promotion remain separate and unauthorized. Exact packet, approval and reconciliation hashes/receipts are in \`tasks/${id}/\`.\n`;
+          await fs.writeFile(stateFile, nextTop + remainder);
+          NODE
+
+          rm -f .github/workflows/owner-approve-somatic-altered.yml
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m '[owner-approved-reconciled] Record somatic and altered-state approval'
+          git push origin HEAD:task/somatic-altered-guide-sync-20260916
