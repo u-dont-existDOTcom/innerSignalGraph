@@ -135,7 +135,8 @@ test("plugin carries direct-guide referrals but forbids using them as a safety b
   const refs = await fs.readFile(new URL("../plugins/inner-signal-therapy/skills/inner-signal-therapy/references/GUIDE-REFERRALS.md", import.meta.url), "utf8");
   assert.match(skill, /GUIDE-REFERRALS\.md/);
   assert.match(skill, /altered state is a routing variable, not automatic incapacity/i);
-  assert.ok(refs.includes("https://badtrips.u-dont-exist.com"));
+  const referralLines = new Set(refs.split(/\r?\n/));
+  assert.equal(referralLines.has("- **Bad Trips / Altered States:** https://badtrips.u-dont-exist.com"), true);
   assert.match(refs, /never bypass/i);
   assert.match(refs, /humanized/i);
 });
