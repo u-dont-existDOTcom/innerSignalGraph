@@ -65,7 +65,9 @@ Local complete-suite attempts were externally cut off by this chat/container exe
 
 - The clean generated candidate was persisted by the self-cleaning branch workflow at `76092f95ba80e56f74d978043338118e17a60415` after exact patch-integrity checks, graph compilation, authoring regeneration/validation/checks, and focused graph/integration tests passed.
 - Temporary patch transport, the temporary apply workflow, and the earlier baseline-export workflow are absent from the resulting PR diff.
-- GitHub created the ordinary protected PR workflows for that bot-authored head but marked all three `action_required` with zero jobs because the triggering actor was `github-actions[bot]`. This user-authenticated checkpoint commit exists to trigger the repository's normal protected checks without changing therapy behavior.
+- GitHub created the ordinary protected PR workflows for that bot-authored head but marked all three `action_required` with zero jobs because the triggering actor was `github-actions[bot]`. A user-authenticated checkpoint then triggered the normal protected checks.
+- That exact-head Verify run passed graph compilation, all 30 graph regressions, authoring checks, Guide Packet fixtures, all 1180 automated tests, mock A001/H001 replays, web smoke and autopilot smoke, then exposed one stale package-verifier constant still requiring the former 62-node graph inventory.
+- The self-cleaning verifier-repair workflow changed only that hard-coded inventory assertion from 62 to the current deterministic 71-node graph and removed itself. This connector-authored checkpoint triggers the protected checks on the clean repaired candidate.
 
 ## Authority and safety boundaries
 
