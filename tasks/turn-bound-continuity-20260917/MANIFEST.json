@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "package": "InnerSignal turn-bound continuity architecture",
+  "version": "1.0",
+  "created_at": "2026-09-17T22:23:54.944822+00:00",
+  "scope": "public-safe architecture and isolated reference; not deployed runtime",
+  "files": [
+    {
+      "path": "00-READ-ME.md",
+      "bytes": 3077,
+      "sha256": "a41f0d650b4275eebd17f70bfb90142462f4a4598b6df3adc6de92ee65851fc2"
+    },
+    {
+      "path": "01-ARCHITECTURE.md",
+      "bytes": 34406,
+      "sha256": "083beee6e2449efa574cc165e77d4945e83675f42a946c62fac960588786b23f"
+    },
+    {
+      "path": "02-INTERFACES.md",
+      "bytes": 13098,
+      "sha256": "f2d3b99140914530c02c9547810853ad3cf786d221af5503e61b72ff7724369b"
+    },
+    {
+      "path": "03-WORK-INSTRUCTION.md",
+      "bytes": 15520,
+      "sha256": "c02a15afe527babf294b93364775e5fd6e285b3503265997240d631b87cd6c23"
+    },
+    {
+      "path": "04-VERIFICATION-PLAN.md",
+      "bytes": 7879,
+      "sha256": "6feb05f46f05f92b16d432196e746fb1245f86b5ec509134793c10a2a86cfb04"
+    },
+    {
+      "path": "05-PRIOR-WORK-AND-SOURCES.md",
+      "bytes": 7190,
+      "sha256": "47c88f42df0e1aeaf25c40132dc6d90433839b0b27dc18fe49db51d913fe207a"
+    },
+    {
+      "path": "CHATGPT-CONTINUITY-INSTRUCTION.md",
+      "bytes": 2553,
+      "sha256": "b9234d03d0c1baf4e87bd54c88f4f5f9ac7348143ae304d8f5e715c6b1d9adff"
+    },
+    {
+      "path": "contracts/README.md",
+      "bytes": 699,
+      "sha256": "fa8c593a4d7a047024767ff2ca6e77d0fc9fc50ff52a87607de204287070bf62"
+    },
+    {
+      "path": "contracts/continuity-v1.schema.json",
+      "bytes": 5979,
+      "sha256": "f2769987c02a0a80ea8f9be8f99f0b5de455d1a0d2fc99470dced533f8c0c6b8"
+    },
+    {
+      "path": "evals/gold.json",
+      "bytes": 4113,
+      "sha256": "1b3a966211096aa7e31c0a25d879257c1b3f934c133b4e9a1d4f5177f8f03bdf"
+    },
+    {
+      "path": "evals/prompts.json",
+      "bytes": 4467,
+      "sha256": "fbcdc1c53b7776cb3d74ac05aa14358d6d75193e99a8f658d0e8bdffa716b310"
+    },
+    {
+      "path": "evidence/BUILD-START.json",
+      "bytes": 295,
+      "sha256": "5dc8f5b72ebe55cd40cb976918b7a9a0e11b48e654f88d8e5ee7a4c7f0691904"
+    },
+    {
+      "path": "evidence/CONCEPTION.md",
+      "bytes": 1404,
+      "sha256": "855ead61070d09ab8b4fdda5f0b91ca631cd12be8a96eb33d154d667ad6bef12"
+    },
+    {
+      "path": "evidence/PACKAGE-STATUS.json",
+      "bytes": 1198,
+      "sha256": "e54076ff30b02bf3793ebdd6b6748264f2b0572c18e629af59f4d4926e412d88"
+    },
+    {
+      "path": "evidence/REFERENCE-VERIFICATION.json",
+      "bytes": 1574,
+      "sha256": "6d656da61ba575930e0a06408de1aa204d21305f44a6cc9c668d037978160bd0"
+    },
+    {
+      "path": "evidence/SOURCE-REGISTER.json",
+      "bytes": 4990,
+      "sha256": "44f750c929c6a7d8f289ffdb30f5923d30819ac9cf6c80f166f69cc1e21b1311"
+    },
+    {
+      "path": "evidence/artifact-validation.txt",
+      "bytes": 274,
+      "sha256": "8a9d5daf7b9d452cd304c5b3bbc4a4fbaee1ee17dee46ba27ce4ee755ab67b43"
+    },
+    {
+      "path": "evidence/reference-unit-tests.txt",
+      "bytes": 8339,
+      "sha256": "901d11763e25569a61919edc0c0caba0c2c86ee2a1fd2ef1de2de12e57b71a0a"
+    },
+    {
+      "path": "reference/README.md",
+      "bytes": 1882,
+      "sha256": "e4f8064154712ccd7e8cacc214d15be54babe41d72c25e901b8cc971efdb470c"
+    },
+    {
+      "path": "reference/continuity.mjs",
+      "bytes": 14493,
+      "sha256": "4cdae4149c7c96475dbca7f135437d59edec8e94a965808c829eea176f071226"
+    },
+    {
+      "path": "reference/continuity.test.mjs",
+      "bytes": 12611,
+      "sha256": "53785275e9c7d65746f1fe475274e0e37ab7c0f9a57d6251cf096cd7edd4cc33"
+    },
+    {
+      "path": "reference/run_checks.py",
+      "bytes": 3137,
+      "sha256": "568d6e93d657221feee8d77bf553d8c8b7ecbe3896303064b85a44a70da6572f"
+    },
+    {
+      "path": "reference/validate_artifacts.py",
+      "bytes": 2477,
+      "sha256": "ef344407da4bc39a31f284f958bd4a104cec60a3ebe935350a2c1336b0553661"
+    }
+  ]
+}

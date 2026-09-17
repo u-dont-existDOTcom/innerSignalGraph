@@ -1,0 +1,256 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:proposed-turn-continuity:1",
+  "title": "Proposed continuity transport definitions",
+  "description": "Shape only. Authorization, identity, source entailment, exact-text hashing and state transitions require server enforcement. Not installed repository schema.",
+  "$defs": {
+    "turnEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "turn_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "submitted_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attributed_speaker": {
+          "enum": [
+            "client",
+            "supervisor",
+            "unknown"
+          ]
+        },
+        "source_kind": {
+          "enum": [
+            "direct_report",
+            "supervisor_relay",
+            "supervisor_paraphrase",
+            "correction"
+          ]
+        },
+        "original_text": {
+          "type": "string",
+          "minLength": 1
+        },
+        "original_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "received_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "claimed_sent_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "record_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "profile": {
+          "enum": [
+            "native_advisory",
+            "native_controlled",
+            "api_controlled"
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "case_id",
+        "turn_id",
+        "submitted_by",
+        "attributed_speaker",
+        "source_kind",
+        "original_text",
+        "original_sha256",
+        "received_at",
+        "claimed_sent_at",
+        "idempotency_key",
+        "record_revision",
+        "evidence_revision",
+        "profile"
+      ]
+    },
+    "candidateBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "turn_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "exact_text_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "writer_packet_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "evidence_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "language": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "case_id",
+        "turn_id",
+        "candidate_id",
+        "candidate_version",
+        "exact_text_sha256",
+        "writer_packet_digest",
+        "evidence_revision",
+        "language"
+      ]
+    },
+    "auditBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "turn_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "candidate_version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "candidate_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "writer_packet_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "audit_packet_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "evidence_revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reviewer_context_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "identity_evidence_level": {
+          "enum": [
+            "provider_verified",
+            "accepted_external_provenance",
+            "host_correlated",
+            "self_reported",
+            "unknown"
+          ]
+        },
+        "verdict": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "INCONCLUSIVE",
+            "OPERATIONAL_ERROR"
+          ]
+        }
+      },
+      "required": [
+        "case_id",
+        "turn_id",
+        "candidate_id",
+        "candidate_version",
+        "candidate_sha256",
+        "writer_packet_digest",
+        "audit_packet_digest",
+        "evidence_revision",
+        "reviewer_context_id",
+        "identity_evidence_level",
+        "verdict"
+      ]
+    },
+    "capabilityObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "capability": {
+          "type": "string",
+          "minLength": 1
+        },
+        "surface": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "verified",
+            "documented_not_tested",
+            "unavailable",
+            "unknown"
+          ]
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tested_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "capability",
+        "surface",
+        "status",
+        "evidence",
+        "tested_at"
+      ]
+    }
+  }
+}

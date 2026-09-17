@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "scope": "ISOLATED_REFERENCE_ONLY",
+  "status": "PASS",
+  "checked_at": "2026-09-17T22:45:20.945699+00:00",
+  "node_version": "v24.18.0",
+  "python_version": "3.12.3",
+  "repository_runtime_required_at_baseline": "24.18.0",
+  "repository_integration_tested": false,
+  "native_host_tested": false,
+  "semantic_model_evaluation_run": false,
+  "private_case_accessed": false,
+  "paid_inference_calls": 0,
+  "design_and_reference_task_wall_seconds": 2163.834725,
+  "this_invocation_test_seconds": 0.06753496802411973,
+  "this_invocation_test_share_of_task_wall": 3.121077929097368e-05,
+  "checks": [
+    {
+      "name": "reference-unit-tests",
+      "tier": "focused",
+      "command": [
+        "node",
+        "--test",
+        "reference/continuity.test.mjs"
+      ],
+      "fingerprint": "b05aad6f5ca3324ff4e2ae45ff853b4d9bb380f18d58632a7fc051cda0cb1116",
+      "started_at": "2026-09-17T22:22:47.473637+00:00",
+      "duration_seconds": 0.3059811840000748,
+      "exit_code": 0,
+      "execution": "reused_unchanged_green",
+      "output": "evidence/reference-unit-tests.txt",
+      "reused_at": "2026-09-17T22:45:20.873657+00:00"
+    },
+    {
+      "name": "artifact-validation",
+      "tier": "artifact",
+      "command": [
+        "/usr/bin/python3",
+        "reference/validate_artifacts.py"
+      ],
+      "fingerprint": "3e4c6a182a3c72715236dc0e0809eaeac40ba10d480b08f9c7a8bf759456ad02",
+      "started_at": "2026-09-17T22:45:20.877411+00:00",
+      "duration_seconds": 0.06753496802411973,
+      "exit_code": 0,
+      "execution": "executed",
+      "output": "evidence/artifact-validation.txt"
+    }
+  ]
+}

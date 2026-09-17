@@ -147,6 +147,15 @@ export function validateCandidateAuditEvidence(value, candidate) {
         throw new ValidationError("A reconstructed candidate audit must explicitly cover every repair-induced error check.");
       }
     }
+    const continuityBinding = candidate.metadata?.continuity_binding ?? null;
+    if (continuityBinding) {
+      if (value.turn_id !== candidate.metadata.runtime_turn_id
+          || value.evidence_revision !== continuityBinding.evidence_revision
+          || value.writer_packet_digest !== continuityBinding.packet_digest
+          || typeof value.audit_packet_digest !== "string" || !/^[a-f0-9]{64}$/.test(value.audit_packet_digest)) {
+        throw new ValidationError("Candidate audit is not bound to the exact turn and prepared evidence packets.");
+      }
+    }
   }
   return value;
 }
@@ -162,7 +171,8 @@ export function createCandidateAuditEvidence({
   completedAt,
   completedAtStatus,
   recordedAt = completedAt ?? new Date().toISOString(),
-  externalProvenance = null
+  externalProvenance = null,
+  contextBinding = null
 } = {}) {
   if (!candidate || !AUDITABLE_STATUSES.has(candidate.status)) throw new ValidationError("Only the current pending candidate version can be audited.");
   if (!auditorContext || typeof auditorContext !== "object" || Array.isArray(auditorContext)) throw new ValidationError("auditorContext is required.");
@@ -193,6 +203,12 @@ export function createCandidateAuditEvidence({
     verdict: hasBlockingFinding ? "fail" : "pass",
     sufficient_for_approval: independent && independentAuditorAvailable === true && !hasBlockingFinding && auditorContextIdStatus === "known" && resolvedCompletedAtStatus === "known",
     repair_induced_checks: candidate.parent_candidate_id == null ? [] : [...repairInducedChecks],
+    ...(contextBinding == null ? {} : {
+      turn_id: contextBinding.turn_id,
+      evidence_revision: contextBinding.evidence_revision,
+      writer_packet_digest: contextBinding.writer_packet_digest,
+      audit_packet_digest: contextBinding.audit_packet_digest
+    }),
     ...(externalProvenance == null ? {} : { external_provenance: structuredClone(externalProvenance) })
   };
   return Object.freeze(validateCandidateAuditEvidence(evidence, candidate));

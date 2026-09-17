@@ -141,7 +141,20 @@ export function createPrivateCaseAccessService({
         return record;
       });
     },
-    async beginPrivateRuntimeTurn(caseId, input, authContext) { return write(caseId, authContext, (store) => store.beginPrivateRuntimeTurn(caseId, input)); },
+    async beginPrivateRuntimeTurn(caseId, input, authContext) {
+      return write(caseId, authContext, (store, authorization) => store.beginPrivateRuntimeTurn(caseId, {
+        ...input,
+        submittedBy: authorization.principalId ?? "unknown"
+      }));
+    },
+    async preparePrivateRuntimeTurn(caseId, runtimeTurnId, input, authContext) {
+      return write(caseId, authContext, (store, authorization) => store.preparePrivateRuntimeTurn(caseId, runtimeTurnId, {
+        ...input,
+        authorizationEpoch: authorization.grantEpoch ?? authorization.authorizationEpoch ?? `current:${authorization.principalId}`
+      }));
+    },
+    async getPreparedContext(caseId, packetId, authContext) { return read(caseId, authContext, (store) => store.getPreparedContext(caseId, packetId)); },
+    async getCandidateAuditBinding(caseId, candidateId, authContext) { return read(caseId, authContext, (store) => store.getCandidateAuditBinding(caseId, candidateId)); },
     async getPrivateRuntimeTurn(caseId, runtimeTurnId, authContext) { return read(caseId, authContext, (store) => store.getPrivateRuntimeTurn(caseId, runtimeTurnId)); },
     async recordPrivateRuntimeInvocationEvent(caseId, runtimeTurnId, event, authContext) {
       const scope = event.stage === "audit" ? PRIVATE_CASE_SCOPES.AUDIT : PRIVATE_CASE_SCOPES.WRITE;
@@ -159,7 +172,10 @@ export function createPrivateCaseAccessService({
       return write(caseId, authContext, (store) => store.savePrivateRuntimeDiscriminator(caseId, runtimeTurnId, input));
     },
     async deliverPrivateRuntimeCandidate(caseId, runtimeTurnId, input, authContext) {
-      return write(caseId, authContext, (store) => store.deliverPrivateRuntimeCandidate(caseId, runtimeTurnId, input));
+      return write(caseId, authContext, (store, authorization) => store.deliverPrivateRuntimeCandidate(caseId, runtimeTurnId, {
+        ...input,
+        authorizationEpoch: authorization.grantEpoch ?? authorization.authorizationEpoch ?? `current:${authorization.principalId}`
+      }));
     },
     async deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input, authContext) {
       return write(caseId, authContext, (store) => store.deliverPrivateRuntimeDiscriminator(caseId, runtimeTurnId, input));

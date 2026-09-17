@@ -7,6 +7,10 @@ export function durableCaseContextBlock(context) {
   const tracker = context?.trackerWindow ?? null;
   const retrieval = context?.targetedRetrievalRequests ?? [];
   const olderEvidence = context?.targetedOlderEvidence ?? [];
+  const retrievalCoverage = context?.retrievalCoverage ?? null;
+  const relevanceLinks = context?.relevanceLinks ?? [];
+  const fullHistory = context?.fullHistoryBaseline ?? null;
+  const preparation = context?.continuityPreparedContext ?? null;
   return `DURABLE CASE STATE (structured evidence; never hidden reasoning):
 ${state ? JSON.stringify(state, null, 2) : "(none supplied)"}
 
@@ -20,7 +24,25 @@ TARGETED OLDER-EVIDENCE RETRIEVAL REQUESTS:
 ${retrieval.length ? JSON.stringify(retrieval, null, 2) : "(none)"}
 
 TARGETED OLDER VERBATIM EVIDENCE (null means the referenced exact turn is not available in this context):
-${olderEvidence.length ? JSON.stringify(olderEvidence, null, 2) : "(none)"}`;
+${olderEvidence.length ? JSON.stringify(olderEvidence, null, 2) : "(none)"}
+
+TURN-BOUND PREPARATION BINDING (identity and coverage evidence, not proof of comprehension):
+${preparation ? JSON.stringify({
+    packet_id: preparation.packet_id,
+    manifest_digest: preparation.manifest_digest,
+    evidence_revision: preparation.evidence_revision,
+    inbound_sha256: preparation.inbound_sha256,
+    coverage: preparation.coverage
+  }, null, 2) : "(none supplied)"}
+
+RETRIEVAL COVERAGE:
+${retrievalCoverage ? JSON.stringify(retrievalCoverage, null, 2) : "(none supplied)"}
+
+PROPOSED HISTORICAL RELEVANCE LINKS (verify before use; do not convert them into facts):
+${relevanceLinks.length ? JSON.stringify(relevanceLinks, null, 2) : "(none)"}
+
+FULL AUTHORIZED HISTORY BASELINE WHEN IT FITS THE MEASURED LOCAL BUDGET:
+${fullHistory?.included ? fullHistory.text : `(not included: ${fullHistory?.reason ?? "not available"})`}`;
 }
 
 export const longitudinalClinicalRules = `

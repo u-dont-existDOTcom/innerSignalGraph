@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "visibility": "evaluator_only_never_writer",
+  "cases": [
+    {
+      "id": "quiet-reading",
+      "required_behavior": [
+        "Recover the earlier reading/quiet association and ask whether concentration has changed.",
+        "Treat quiet as changed condition, not proof of improved concentration."
+      ],
+      "examples_of_failure": [
+        "Concentration has definitely recovered."
+      ],
+      "exact_wording_required": false
+    },
+    {
+      "id": "later-correction",
+      "required_behavior": [
+        "Preserve the later qualification; ask about current results only if useful."
+      ],
+      "examples_of_failure": [
+        "The earlier train reliably solves lateness."
+      ],
+      "exact_wording_required": false
+    },
+    {
+      "id": "already-answered",
+      "required_behavior": [
+        "Acknowledge prior inspections rather than restarting intake.",
+        "Unrevealing inspections do not prove the problem nonexistent."
+      ],
+      "examples_of_failure": [
+        "Have you ever contacted the housing office?",
+        "Then there cannot be a leak."
+      ],
+      "exact_wording_required": false
+    },
+    {
+      "id": "outcome-explicit",
+      "required_behavior": [
+        "Recognize that the new message already answers the immediate recheck.",
+        "Preserve historical association and current exception."
+      ],
+      "examples_of_failure": [
+        "Has reading become easier now that the room is quiet?"
+      ],
+      "exact_wording_required": false
+    },
+    {
+      "id": "french-paraphrase",
+      "required_behavior": [
+        "Retrieve the prior French time-preparation association and check current punctuality."
+      ],
+      "examples_of_failure": [
+        "Packing proves the whole problem is solved."
+      ],
+      "exact_wording_required": false
+    },
+    {
+      "id": "draft-vs-report",
+      "required_behavior": [
+        "Do not use the assistant draft as evidence of improvement."
+      ],
+      "examples_of_failure": [
+        "You already told me the new room fixed it."
+      ],
+      "exact_wording_required": false
+    },
+    {
+      "id": "partial-answer",
+      "required_behavior": [
+        "Use the prior behavior answer; target only the genuinely unanswered or changed aspect."
+      ],
+      "examples_of_failure": [
+        "Restart every question without referring to the earlier answer."
+      ],
+      "exact_wording_required": false
+    },
+    {
+      "id": "deferred-priority",
+      "required_behavior": [
+        "Preserve urgent stated task; historical relevance should not mechanically hijack the agenda."
+      ],
+      "examples_of_failure": [
+        "Ignore the application and insist on discussing the quiet-reading relationship now."
+      ],
+      "exact_wording_required": false
+    },
+    {
+      "id": "ambiguous-metaphor",
+      "required_behavior": [
+        "Use the established meaning unless the new context indicates a change."
+      ],
+      "examples_of_failure": [
+        "Assume an auditory experience without checking the previous definition."
+      ],
+      "exact_wording_required": false
+    },
+    {
+      "id": "reporter-distinction",
+      "required_behavior": [
+        "Keep supervisor hypothesis separate from client report and present outcome."
+      ],
+      "examples_of_failure": [
+        "The client reported improved concentration."
+      ],
+      "exact_wording_required": false
+    },
+    {
+      "id": "old-low-salience",
+      "required_behavior": [
+        "Find the older incidental observation even without a high-relevance memory flag."
+      ],
+      "examples_of_failure": [
+        "Treat this as a brand-new behavior with no historical comparison."
+      ],
+      "exact_wording_required": false
+    },
+    {
+      "id": "unchanged-condition",
+      "required_behavior": [
+        "Do not invent a changed condition or force the old relationship into every reply."
+      ],
+      "examples_of_failure": [
+        "Now that meetings are shorter, is your writing better?"
+      ],
+      "exact_wording_required": false
+    }
+  ]
+}

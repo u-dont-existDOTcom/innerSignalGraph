@@ -24,6 +24,7 @@ const STATE_SET = new Set(PRIVATE_RUNTIME_TURN_STATES);
 const INVOCATION_EVENT_SET = new Set(PRIVATE_RUNTIME_INVOCATION_EVENT_TYPES);
 const ID = /^[A-Za-z0-9:_-]{1,200}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
+const RELAY_STATUSES = new Set(["direct", "relayed_exact", "paraphrase", "unknown"]);
 const TRANSITIONS = Object.freeze({
   RECEIVED: new Set(["CANDIDATE_PENDING_AUDIT"]),
   CANDIDATE_PENDING_AUDIT: new Set(["AUDITING"]),
@@ -90,6 +91,7 @@ export function validatePrivateRuntimeTurn(value) {
   if (value.schema_version !== 1) throw new ValidationError("Private runtime turn version is invalid.");
   for (const field of ["id", "exchange_id", "user_turn_id"]) requiredId(value[field], `runtime turn ${field}`);
   if (value.assistant_turn_id != null) requiredId(value.assistant_turn_id, "runtime turn assistant_turn_id");
+  if (value.preparation_id != null) requiredId(value.preparation_id, "runtime turn preparation_id");
   requiredTimestamp(value.created_at, "runtime turn created_at");
   requiredTimestamp(value.updated_at, "runtime turn updated_at");
   if (!STATE_SET.has(value.state)) throw new ValidationError("Private runtime turn state is invalid.");
@@ -99,6 +101,13 @@ export function validatePrivateRuntimeTurn(value) {
     throw new ValidationError("Private runtime inbound exact-text binding is invalid.");
   }
   requiredTimestamp(value.inbound.received_at, "runtime turn inbound.received_at");
+  for (const field of ["submitted_by", "attributed_speaker", "source_kind", "idempotency_key"]) {
+    if (typeof value.inbound[field] !== "string" || !value.inbound[field].trim() || value.inbound[field].length > 200) {
+      throw new ValidationError(`runtime turn inbound.${field} is invalid.`);
+    }
+  }
+  if (!RELAY_STATUSES.has(value.inbound.relay_status)) throw new ValidationError("runtime turn inbound.relay_status is invalid.");
+  if (value.inbound.claimed_sent_at != null) requiredTimestamp(value.inbound.claimed_sent_at, "runtime turn inbound.claimed_sent_at");
   if (!Number.isSafeInteger(value.repair_cycle) || value.repair_cycle < 0 || value.repair_cycle > MAX_PRIVATE_CANDIDATE_REPAIR_CYCLES) {
     throw new ValidationError("Private runtime turn repair_cycle is invalid.");
   }
@@ -156,7 +165,19 @@ export function validatePrivateRuntimeTurn(value) {
   return value;
 }
 
-export function createPrivateRuntimeTurn({ id, exchangeId, userTurnId, exactText, createdAt }) {
+export function createPrivateRuntimeTurn({
+  id,
+  exchangeId,
+  userTurnId,
+  exactText,
+  createdAt,
+  submittedBy = "unknown",
+  attributedSpeaker = "unknown",
+  sourceKind = "unknown",
+  relayStatus = "unknown",
+  claimedSentAt = null,
+  idempotencyKey = id
+}) {
   if (typeof exactText !== "string" || exactText.length === 0) throw new ValidationError("Private runtime inbound exact text is required.");
   const value = {
     schema_version: 1,
@@ -164,10 +185,17 @@ export function createPrivateRuntimeTurn({ id, exchangeId, userTurnId, exactText
     exchange_id: exchangeId,
     user_turn_id: userTurnId,
     assistant_turn_id: null,
+    preparation_id: null,
     inbound: {
       exact_text: exactText,
       sha256: sha256ExactText(exactText),
-      received_at: createdAt
+      received_at: createdAt,
+      submitted_by: submittedBy,
+      attributed_speaker: attributedSpeaker,
+      source_kind: sourceKind,
+      relay_status: relayStatus,
+      claimed_sent_at: claimedSentAt,
+      idempotency_key: idempotencyKey
     },
     state: "RECEIVED",
     repair_cycle: 0,

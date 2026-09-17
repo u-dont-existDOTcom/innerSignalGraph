@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "task_id": "turn-bound-continuity-20260917",
+  "observed_at": "2026-09-17T23:08:39+00:00",
+  "allowed_statuses": [
+    "verified",
+    "documented_not_tested",
+    "unavailable",
+    "unknown"
+  ],
+  "plugin": {
+    "server": {
+      "status": "verified",
+      "evidence": "Repository manifest identifies one inner-signal-therapy plugin version 0.2.0 with display name InnerSignal and Advisory/Read capabilities."
+    },
+    "host": {
+      "status": "documented_not_tested",
+      "evidence": "The connected catalog exposed the expected ten InnerSignal continuity tool names, but the host did not return plugin manifest identity metadata."
+    }
+  },
+  "host_tool_catalog": {
+    "status": "verified",
+    "tools": [
+      "load_handoff",
+      "load_case_context",
+      "get_state_diff",
+      "get_recent_verbatim",
+      "retrieve_case_evidence",
+      "get_pending_candidate",
+      "get_tracker_window",
+      "get_journal_entries",
+      "get_candidate_response",
+      "get_source_artifact"
+    ],
+    "evidence": "Live host catalog inspection; all exposed tools were read-only continuity operations."
+  },
+  "authentication": {
+    "server": {
+      "status": "verified",
+      "evidence": "Synthetic authorization-first access and wrong-scope tests passed in the affected suite."
+    },
+    "host": {
+      "status": "unavailable",
+      "evidence": "A synthetic load_case_context probe returned UNAUTHORIZED with action TRIGGER_REAUTHENTICATION and reason www_authenticate_reauth; no case payload was returned."
+    },
+    "fresh_host_session_required": {
+      "status": "unknown",
+      "evidence": "No host configuration change or post-reauth fresh-session test was performed."
+    }
+  },
+  "read_only_case_access": {
+    "server": {
+      "status": "verified",
+      "evidence": "Repository acceptance tests passed exact encrypted read-only continuity and separate-process MCP retrieval."
+    },
+    "host": {
+      "status": "unavailable",
+      "evidence": "The read-only tools were exposed, but authentication blocked the synthetic retrieval probe."
+    }
+  },
+  "application_write_scope": {
+    "server": {
+      "status": "verified",
+      "evidence": "Offline access-service and encrypted-store tests verified write/audit scope separation, exact intake, preparation, candidate submission, audit binding, and atomic release checks."
+    },
+    "host": {
+      "status": "unavailable",
+      "evidence": "No mutating application commands were exposed in the connected host catalog. The existing read-only MCP was not broadened."
+    }
+  },
+  "controlled_component_tool_calls": {
+    "server": {
+      "status": "documented_not_tested",
+      "evidence": "The native-controlled controller service is implemented and tested offline, but no MCP Apps component bridge is installed or exposed by this checkout."
+    },
+    "host": {
+      "status": "unavailable",
+      "evidence": "No controlled component command tools were exposed in the live catalog."
+    }
+  },
+  "component_to_native_chat_dispatch": {
+    "server": {
+      "status": "unknown",
+      "evidence": "No host bridge implementation is present in the repository surface exercised by this task."
+    },
+    "host": {
+      "status": "unknown",
+      "evidence": "No approved live component dispatch could be tested before authentication and tool-surface gates."
+    }
+  },
+  "native_exact_candidate_submission": {
+    "server": {
+      "status": "verified",
+      "evidence": "Synthetic native_controlled tests reached READY_FOR_DRAFT, persisted exact Unicode candidate bytes, remained pending review, rejected a later changed variant, and invoked zero provider methods."
+    },
+    "host": {
+      "status": "unavailable",
+      "evidence": "submit_case_candidate or an equivalent mutating host command was not exposed."
+    }
+  },
+  "independent_reviewer": {
+    "server_dispatch": {
+      "status": "verified",
+      "evidence": "The incumbent packet-only API reviewer path retains separate-context enforcement and passed its focused tests; it was not called by this task."
+    },
+    "native_host_dispatch": {
+      "status": "unavailable",
+      "evidence": "No automatic subscription-funded separate reviewer tool or route was exposed."
+    },
+    "actual_supported_model_and_effort": {
+      "status": "unknown",
+      "evidence": "No native therapeutic writer or reviewer invocation occurred. Executor selection was user-reported GPT-5.6 Sol; reasoning effort is not observable."
+    },
+    "genuinely_separate_native_context": {
+      "status": "unknown",
+      "evidence": "No native reviewer invocation occurred. A same-chat follow-up was not treated as independent review."
+    },
+    "accepted_provenance_returned": {
+      "status": "unknown",
+      "evidence": "No host reviewer evidence was returned. Existing accepted external provenance behavior remains covered by repository tests."
+    }
+  },
+  "billing_and_permission_boundary": {
+    "billing_route": {
+      "status": "verified",
+      "evidence": "Task execution used repository-local deterministic tests only; provider/API call count and monetary cost were both zero."
+    },
+    "permission_confirmation": {
+      "status": "verified",
+      "evidence": "The host stopped at its ordinary reauthentication boundary; no cookies, tokens, private endpoints, or bypasses were used."
+    }
+  },
+  "approved_artifact_output": {
+    "server_exact_renderable_artifact": {
+      "status": "verified",
+      "evidence": "Incumbent and affected tests verify exact candidate bytes, audit/version binding, persisted release, and restart recovery at the server boundary."
+    },
+    "host_component_rendering": {
+      "status": "unknown",
+      "evidence": "No eligible component was available for a live render/copy test."
+    },
+    "host_reconnect_behavior": {
+      "status": "unknown",
+      "evidence": "No controlled host operation existed to reconnect and restore a native component stage."
+    },
+    "durable_status": {
+      "status": "verified",
+      "evidence": "Offline encrypted runtime tests verify durable replay, current lifecycle state, and exact result recovery."
+    }
+  },
+  "privacy_and_cost": {
+    "private_case_content_accessed": false,
+    "synthetic_host_probe_returned_case_content": false,
+    "paid_inference_calls": 0,
+    "real_case_migrations": 0,
+    "deployments": 0,
+    "stable_promotions": 0
+  },
+  "completion_label_supported": "DESIGN_IMPLEMENTED_OFFLINE",
+  "unsupported_labels": [
+    "NATIVE_DRAFT_PATH_VERIFIED",
+    "AUDITED_NATIVE_FLOW_VERIFIED",
+    "OWNER_OUTCOME_VERIFIED"
+  ]
+}

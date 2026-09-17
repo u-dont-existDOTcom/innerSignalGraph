@@ -1,9 +1,11 @@
+import { createHash } from "node:crypto";
 import { loadGuide, loadSomaticGuide, selectGuideExcerpts } from "../guide/load-guide.mjs";
 import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
 import { perspectivePracticesEnabled } from "../guide-graph/perspective-practices.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { buildDurableCaseContext, formatVerbatimWindow } from "../case-state/context-window.mjs";
 import { constitutionReference } from "../therapy/constitution.mjs";
+import { validatePreparedContext } from "../case-state/turn-evidence.mjs";
 
 export async function buildContext(input, config) {
   if (!input || typeof input !== "object") throw new ValidationError("Input must be an object.");
@@ -19,6 +21,11 @@ export async function buildContext(input, config) {
     trackerEntries: input.trackerEntries,
     currentUserMessage: input.userMessage
   });
+  const preparedContext = input.preparedContext == null ? null : validatePreparedContext(structuredClone(input.preparedContext));
+  if (preparedContext && (preparedContext.case_id !== (input.caseId ?? preparedContext.case_id)
+      || preparedContext.inbound_sha256 !== createHash("sha256").update(input.userMessage).digest("hex"))) {
+    throw new ValidationError("Prepared context does not bind the exact case input.");
+  }
   const recentTranscript = durableContext.recent_verbatim_window.turns.length
     ? formatVerbatimWindow(durableContext.recent_verbatim_window)
     : suppliedTranscript;
@@ -41,6 +48,10 @@ export async function buildContext(input, config) {
     currentTherapeuticEpisode: durableContext.current_episode,
     targetedRetrievalRequests: durableContext.targeted_retrieval_requests,
     targetedOlderEvidence: durableContext.targeted_older_evidence,
+    retrievalCoverage: durableContext.retrieval_coverage,
+    relevanceLinks: durableContext.relevance_links,
+    fullHistoryBaseline: durableContext.full_history_baseline,
+    continuityPreparedContext: preparedContext,
     trackerWindow: durableContext.tracker_window,
     recentTranscriptEntries: durableContext.recent_verbatim_window.turns,
     priorCaseSnapshot: input.priorCaseSnapshot && typeof input.priorCaseSnapshot === "object" ? input.priorCaseSnapshot : null,

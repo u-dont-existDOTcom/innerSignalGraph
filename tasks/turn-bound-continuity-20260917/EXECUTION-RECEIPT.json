@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "task_id": "turn-bound-continuity-20260917",
+  "issue": 72,
+  "recorded_at": "2026-09-17T23:10:40+00:00",
+  "completion_label": "DESIGN_IMPLEMENTED_OFFLINE",
+  "repository": "u-dont-existDOTcom/innerSignalGraph",
+  "branch": "task/turn-bound-continuity-20260917",
+  "inspection_baseline": "bf35a23dc0146c21586108fed0f726c50db8c436",
+  "authoritative_base": "bf35a23dc0146c21586108fed0f726c50db8c436",
+  "recovered_task_checkpoint": "fbd12f2d260aaed053c721d2b915d6695775363f",
+  "implementation_head": "d07182579d79a904db3bd04bc42fb1e8d54caf6f",
+  "implementation_head_status": "committed implementation and evidence checkpoint; the later receipt-update commit and final PR head are external containing evidence",
+  "assurance_lane": "iteration",
+  "executor": {
+    "user_selected": "GPT-5.6 Sol",
+    "observed_model": "unavailable",
+    "configured_effort": "unknown",
+    "observed_effort": "LEVEL_UNOBSERVABLE",
+    "routing_note": "The user explicitly selected Sol because Astra credits were unavailable. No model substitution was made."
+  },
+  "implementation_areas": [
+    "incoming-message and raw-source retrieval",
+    "prepared-context manifest and coverage",
+    "effective transcript amendments and complete episode",
+    "record/evidence revision separation",
+    "inbound provenance and idempotency",
+    "writer/auditor packet binding",
+    "proposal-only candidate state",
+    "atomic current-evidence and authorization release",
+    "cross-process encrypted-store locking",
+    "native-controlled zero-provider path",
+    "per-turn private-continuity skill activation",
+    "synthetic consumer regressions"
+  ],
+  "changed_paths": {
+    "product": [
+      "src/case-state/context-window.mjs",
+      "src/case-state/turn-evidence.mjs",
+      "src/orchestrator/context-builder.mjs",
+      "src/prompts/common.mjs",
+      "src/storage/private-case-access.mjs",
+      "src/storage/private-case-store.mjs",
+      "src/supervisor/private-candidate-audit.mjs",
+      "src/supervisor/private-candidate-lifecycle.mjs",
+      "src/supervisor/private-runtime-turn-lifecycle.mjs",
+      "src/supervisor/private-therapy-model-runtime.mjs",
+      "src/supervisor/private-therapy-turn-controller.mjs"
+    ],
+    "tests": [
+      "tests/private-candidate-lifecycle.test.mjs",
+      "tests/turn-bound-continuity.test.mjs"
+    ],
+    "instructions_and_state": [
+      "plugins/inner-signal-therapy/skills/inner-signal-private-continuity/SKILL.md",
+      "docs/INSTRUCTION-CONSUMER-MAP.md",
+      "state/CODEX-CURRENT-STATE.md"
+    ],
+    "task_artifacts": "tasks/turn-bound-continuity-20260917/"
+  },
+  "verification": [
+    {
+      "name": "package reference reproducibility",
+      "command_fingerprint": "5799baa303077f8eb61ed85780ffb4b038a4cfe495ea3029c84a9a183dbe290c",
+      "result": "pass",
+      "count": "reference unit tests and artifact validation passed",
+      "scope_limit": "isolated reference only"
+    },
+    {
+      "name": "turn-bound continuity integrated consumers",
+      "command_fingerprint": "cd1b92ee03b456c928110b6db2d9c4fa802152d2b4d0bef0e55740431724964e",
+      "worktree_fingerprint": "3daefcf52de5c9d1318e5bbd19b07c8eb62be0d1fe686ca60da22ecee8a85c92",
+      "result": "pass",
+      "count": "6/6"
+    },
+    {
+      "name": "affected continuity and runtime consumers",
+      "command_fingerprint": "2e9a75c55fbe5164b8a68a978856019da509f72c6185392035fa32c0987832e3",
+      "worktree_fingerprint": "3daefcf52de5c9d1318e5bbd19b07c8eb62be0d1fe686ca60da22ecee8a85c92",
+      "result": "pass",
+      "count": "65/65"
+    },
+    {
+      "name": "private-case acceptance",
+      "command_fingerprint": "0d2b940e86ecee852e966f41b3c88857feed90aa6dcf386eae81e2cb8aa7f57d",
+      "worktree_fingerprint": "32d77b4656e81ab03c0d1c3feeab51ec92c8a58413353dc7bc776c4e425aea85",
+      "result": "pass",
+      "count": "47/47"
+    },
+    {
+      "name": "repository audit",
+      "result": "pass_with_known_warning",
+      "errors": 0,
+      "warnings": 1,
+      "warning": "hosted GitHub App permissions remain unverified"
+    },
+    {
+      "name": "private-continuity skill validation",
+      "result": "pass"
+    }
+  ],
+  "test_efficiency": {
+    "elapsed_wall_seconds": 1580.85,
+    "observed_test_seconds": 126.05,
+    "test_time_share_percent": 7.97,
+    "forced_redundant_green_seconds": 0.0,
+    "redundant_green_runs_skipped": 0
+  },
+  "capability_receipt": "CAPABILITY-RECEIPT.json",
+  "private_data": {
+    "real_case_accessed": false,
+    "real_case_content_in_fixtures": false,
+    "host_probe_content_returned": false
+  },
+  "cost_and_side_effects": {
+    "paid_inference_calls": 0,
+    "monetary_cost": 0,
+    "real_case_migrations": 0,
+    "deployments": 0,
+    "installations": 0,
+    "stable_promotions": 0,
+    "merges": 0
+  },
+  "root_gap": "The live ordinary ChatGPT host did not expose a controlled mutating component/candidate-submission surface or separate native reviewer, and the read-only connection required reauthentication.",
+  "next_executable_action": "Commit and open the draft PR. After review, reauthenticate the existing InnerSignal connection and rerun a synthetic fresh-session capability probe; attempt controlled native submission only if a supported mutating surface is exposed.",
+  "labels_not_established": [
+    "NATIVE_DRAFT_PATH_VERIFIED",
+    "AUDITED_NATIVE_FLOW_VERIFIED",
+    "OWNER_OUTCOME_VERIFIED"
+  ]
+}

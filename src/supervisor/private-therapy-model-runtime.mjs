@@ -16,6 +16,7 @@ import {
 import { privateRuntimeAuditPrompt } from "../prompts/private-runtime-audit.mjs";
 import { privateRuntimeRepairPrompt } from "../prompts/private-runtime-repair.mjs";
 import { assembleCanonicalCandidateText } from "./canonical-candidate-text.mjs";
+import { applyTranscriptAmendments } from "../storage/transcript-amendments.mjs";
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -61,6 +62,12 @@ function sealAuditPacket(input) {
       parent_candidate_id: input.candidate_parent_candidate_id
     }),
     candidate_response: input.candidate_response,
+    context_binding: Object.freeze({
+      turn_id: input.turn_id,
+      evidence_revision: input.evidence_revision,
+      writer_packet_digest: input.writer_packet_digest,
+      audit_packet_digest: input.audit_packet_digest
+    }),
     constitution_ref: input.constitution_ref,
     case_state: input.case_state,
     last_state_diff: input.last_state_diff,
@@ -108,12 +115,19 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
     async produceCandidate({ caseId, runtimeTurn, userInput, authContext, attemptContextId }) {
       const record = await loadRuntimeCase(privateCaseSource, caseId, authContext);
       const previousCaseState = record.case_state;
+      const preparedContext = record.prepared_contexts?.find((entry) => entry.packet_id === runtimeTurn.preparation_id) ?? null;
+      if (!preparedContext) throw new ValidationError("Private therapy candidate requires a server-recorded prepared context.", { code: "CONTEXT_REQUIRED" });
+      if (preparedContext.evidence_revision !== record.evidence_revision || preparedContext.inbound_sha256 !== runtimeTurn.inbound.sha256) {
+        throw new ValidationError("Private therapy prepared context is stale.", { code: "EVIDENCE_CHANGED" });
+      }
+      const effectiveTranscript = applyTranscriptAmendments(record.raw_transcript, record.transcript_amendments, { sourceArtifacts: record.source_artifacts });
       const context = await buildContext({
         caseId,
         userMessage: runtimeTurn.inbound.exact_text,
-        recentTranscriptEntries: record.raw_transcript,
+        recentTranscriptEntries: effectiveTranscript,
         durableCaseState: previousCaseState,
-        trackerEntries: record.tracker_entries
+        trackerEntries: record.tracker_entries,
+        preparedContext
       }, { ...config, ledgerMode: "off", devAutomationEnabled: false });
       const result = await runTieredTherapyPipeline({
         context,
@@ -133,6 +147,13 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         contextId: producerContextId,
         caseState,
         stateDiff: diffCaseStates(previousCaseState, caseState),
+        contextUse: {
+          source_ids: preparedContext.older_evidence.flatMap((entry) => entry.turn ? [entry.turn.id] : []),
+          historical_relationship_now_relevant: preparedContext.relevance_links,
+          uncertainty_and_currentness: preparedContext.relevance_links.length ? "historical links are proposed relevance and require current confirmation" : "no older relationship selected",
+          answered_question_disposition: preparedContext.question_state.map((entry) => ({ id: entry.id, still_current: entry.still_current !== false })),
+          next_focus_relation_to_agenda: previousCaseState.current_episode?.next_question ?? null
+        },
         result: {
           mode: result.mode,
           processingTier: result.processingTier,
@@ -165,7 +186,8 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         value: generated.value,
         contextId: generated.contextId,
         providerReceipt: generated.providerReceipt,
-        disclosureManifest: packet.disclosure_manifest
+        disclosureManifest: packet.disclosure_manifest,
+        contextBinding: packet.context_binding
       };
     },
 

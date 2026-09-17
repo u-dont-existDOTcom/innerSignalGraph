@@ -1,0 +1,8 @@
+{
+  "started_at": "2026-09-17T22:09:17.110974+00:00",
+  "scope": "isolated architecture reference and artifact validation only",
+  "baseline_commit": "bf35a23dc0146c21586108fed0f726c50db8c436",
+  "repository_checkout_available": false,
+  "private_case_read": false,
+  "paid_inference_calls": 0
+}
