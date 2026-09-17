@@ -1,6 +1,10 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-25
+Updated: 2026-09-26
+
+## Role and belief integrity — owner-approved, rebuilt on current `main`
+
+The owner requested long-conversation role/belief safeguards and approved rebuilding the original candidate (`task/role-belief-integrity-20260917`) on current `main`. Branch `claude/funny-heisenberg-lsbn3b-role-belief` carries shared consumer rules, source-based memory authority correction (model-extracted observations are stored as low-confidence inferences with provenance instead of `direct_report`/`high`, including restored legacy context), a targeted fallback guard, and seven synthetic trajectories totaling 89 exchanges. The 50-exchange trajectory reopens encrypted storage halfway through. Conflicts with the protective child-contact compatibility gate were resolved by keeping both behaviors, and the scripted providers were updated to the post-compatibility case-state format. No private case or live model was used. Scripted tests exercise the real runtime but do not establish semantic adherence. Exact scope, verification and continuation are in `tasks/role-belief-integrity-20260917/INTEGRATION.md`. No stable change, deployment or installation is authorized by this checkpoint.
 
 ## Claude connector: therapy protocol served over MCP — PR #81 on `claude/claude-protocol-mcp-20260925`
 

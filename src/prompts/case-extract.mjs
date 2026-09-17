@@ -1,3 +1,4 @@
+import { roleBeliefIntegrityRules } from "./role-belief-integrity.mjs";
 import { CASE_VARIABLE_ENUMS } from "../guide-graph/contract.mjs";
 import { durableCaseContextBlock } from "./common.mjs";
 import { protocolProvenanceRules } from "./protocol-provenance.mjs";
@@ -15,6 +16,7 @@ ${hasPrior ? `INCREMENTAL SESSION MODE
 - Return a complete updated snapshot, not a patch.` : "This is the first case snapshot in the session."}
 
 Rules:
+${roleBeliefIntegrityRules}
 ${protocolProvenanceRules}
 - Record only direct observations that can be tied to exact user language.
 - Put psychological role assignments, causal stories, and speaker identity into hypotheses, never observations.

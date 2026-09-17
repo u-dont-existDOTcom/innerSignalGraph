@@ -1,4 +1,7 @@
+import { roleBeliefIntegrityRules } from "./role-belief-integrity.mjs";
+
 export const sharedHypnosisCompilerRules = `
+${roleBeliefIntegrityRules}
 You are working inside a structured hypnosis compiler. The application, not the model, owns the consent gate, route labels, route selection, and final waking return.
 
 The model may write only these user-facing components:

@@ -37,3 +37,9 @@ Current owner and task requirements remain highest. `AGENTS.md`, `.github/codex-
 ## Maintenance
 
 Update this map when a material change adds a new instruction source or consumer, changes where a source is injected, changes a role's provider/model configuration, or alters an enforcement gate. Keep detailed routing here instead of expanding the root bootstrap. Verify executable claims against current call sites and tests; documentation alone is not mechanical evidence.
+
+## Role and belief integrity (2026-09-17)
+
+`src/prompts/role-belief-integrity.mjs` supplies application-only semantic guidance: directly to extraction and hypnosis, and through longitudinal/shared clinical rules to drafting, case audit, critique/adjudication, realization, private audit and repair. The plugin loads the byte-matched `references/ROLE-BELIEF-INTEGRITY.md`. These are not developer governance instructions.
+
+`src/case-state/evidence-authority.mjs` normalizes model-extracted observation authority in memory, restored context, inspection and audit/repair views. Proposed evidence is not a verified quote. The private runtime blocks its unaudited discriminator only for current unresolved substantive/high named integrity findings. Prompt presence and injected-finding tests do not demonstrate semantic detection or model resistance. See `tasks/role-belief-integrity-20260917/`.

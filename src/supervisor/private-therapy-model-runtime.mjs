@@ -1,3 +1,4 @@
+import { ROLE_BELIEF_BLOCKING_CODES } from "../prompts/role-belief-integrity.mjs";
 import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { parseModelJson } from "../core/json.mjs";
@@ -215,6 +216,15 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
 
     async produceDiscriminator({ caseId, runtimeTurn, authContext, attemptContextId }) {
       const record = await loadRuntimeCase(privateCaseSource, caseId, authContext);
+      const currentCandidate = record.candidate_responses?.find((candidate) => candidate.id === runtimeTurn.current_candidate_id);
+      const unresolved = currentCandidate?.audit_history?.at(-1)?.findings ?? [];
+      if (unresolved.some((finding) => finding.unresolved !== false
+          && ["substantive", "high"].includes(finding.severity)
+          && ROLE_BELIEF_BLOCKING_CODES.includes(finding.code))) {
+        throw new ValidationError("A role or belief integrity finding remains unresolved; unaudited fallback delivery is blocked.", {
+          code: "PRIVATE_DISCRIMINATOR_ROLE_BELIEF_BLOCKED"
+        });
+      }
       const compatibility = protectiveCompatibilityDecision(null, record.case_state.protective_compatibility ?? null);
       const currentQuestion = record.case_state.current_episode?.next_question;
       const question = compatibility.gate !== "NOT_BLOCKED" && childContactViolations(currentQuestion).length
