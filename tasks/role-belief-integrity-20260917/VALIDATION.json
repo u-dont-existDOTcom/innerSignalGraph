@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "task": "role-belief-integrity-20260917",
+  "baseline_commit": "a97a15ad6d0524916cd8e5d0e3642af17f155947",
+  "universal_activation_commit": "ad76fcac1aed29658dbdab6575f91965573e6c51",
+  "assurance_boundary": "development_candidate",
+  "node": "24.18.0",
+  "npm": "11.16.0",
+  "package_gate": {
+    "command": "npm run verify",
+    "exit_code": 0,
+    "tests": 1203,
+    "passed": 1203,
+    "failed": 0,
+    "elapsed_seconds": 317.9,
+    "generated_path_drift": false
+  },
+  "new_tests": 17,
+  "synthetic_scenarios": 7,
+  "synthetic_exchanges": 89,
+  "long_trajectory_exchanges": 50,
+  "encrypted_restart_before_exchange": 26,
+  "repository_audit": {
+    "command": "npm run audit:repository",
+    "exit_code": 0,
+    "errors": 0,
+    "warnings": [
+      "hosted-github_app_permissions unverified"
+    ]
+  },
+  "semantic_verdict": "NOT_EVALUATED",
+  "live_model_calls": 0,
+  "private_cases_accessed": 0,
+  "deployed": false,
+  "stable_changed": false,
+  "affected_source_sha256": {
+    "corpus/role-belief-trajectories.json": "0ee3799ba73ed9c0018c793a9c316d71d3acac2d20578c732ec0b819c2d18a95",
+    "package.json": "697c0e88e67626f4a38036543a8715f22ed99462db7b1a6f7932bfaa936a250c",
+    "plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md": "25f45d43b487fcdbd20a736520c26d727bfdabe529644811ffc3f1c44e3f593c",
+    "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/ROLE-BELIEF-INTEGRITY.md": "34552341801a2046b3f964f98a823831f3d39a5d9f299803f16e886f0f0d7add",
+    "src/case-state/context-window.mjs": "ce0120a9bf92b5d5f0d5940f47f76d08617ef13298d0826bb4f24ec9a981014a",
+    "src/case-state/evidence-authority.mjs": "e5b3a6483f4b411b466ebb1dd288a744b24d4be68bd7e3045876e38ae6c63ff9",
+    "src/case-state/longitudinal-state.mjs": "4830e8c96458c538996d241284ecdce8adc68dbe4be3c07711b32afceade3f04",
+    "src/prompts/case-extract.mjs": "6ec239301167288906f613f5bb395cfea4066fe2493c42bdedc7b6dd0809f338",
+    "src/prompts/common.mjs": "9217c8a9b922221d13fed8ae39f35a5fa0a06d4d7dc395f60d6f1f0cefe7b4af",
+    "src/prompts/hypnosis-common.mjs": "cc71145258e3f96005134f33209481a315b012e2ce9c952c9dce22806085654d",
+    "src/prompts/private-runtime-audit.mjs": "103f69d77d900c2d7305a69ba926b4b73c11549cf72750aa506932301d828f0a",
+    "src/prompts/private-runtime-repair.mjs": "e5d3270a2093e8842c2488f9e70a71333d891fbee26f77736cd9f2e346451ce4",
+    "src/prompts/role-belief-integrity.mjs": "b2986d4912e98dae932d16338f13c5eb02abd18040f5eb4e331d6b52118dcbce",
+    "src/supervisor/private-therapy-model-runtime.mjs": "e05419898a306c67a4b0c9e9c3f42c57f5eebbca190e5261aa5181fcfcc535b6",
+    "tests/role-belief-memory.test.mjs": "0e61e8c775a616b2fcdae85409679742d7956601eeb289949721d3ccea094ada",
+    "tests/role-belief-prompts.test.mjs": "c394b405bb4425b59dc810da43a1a2ccd5fcbf0b9ea60915dd1aca18b354df86",
+    "tests/role-belief-trajectories.test.mjs": "0dc81c561822c683a5bf922a1bf7a4dda5f62fc132e1ee627770b80d0a1a5e18"
+  },
+  "post_package_edits": "Task documentation and this evidence receipt only; affected executable source is hash-bound above."
+}
