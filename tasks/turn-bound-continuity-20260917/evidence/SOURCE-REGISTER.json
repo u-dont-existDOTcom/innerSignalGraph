@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "checked_on": "2026-09-17",
+  "repository_baseline": "bf35a23dc0146c21586108fed0f726c50db8c436",
+  "evidence_scope": "Primary documentation and repository source inspection, not live deployed verification. References are bibliographic, not runtime capability receipts.",
+  "sources": [
+    {
+      "id": "O1",
+      "title": "OpenAI: Add UI to your MCP server",
+      "url": "https://developers.openai.com/plugins/build/chatgpt-ui",
+      "use_and_limit": "Component-to-tool and follow-up message bridge; not evidence of universal ordinary-chat interception or fresh reviewer dispatch."
+    },
+    {
+      "id": "O2",
+      "title": "OpenAI: Plugin reference",
+      "url": "https://developers.openai.com/plugins/reference",
+      "use_and_limit": "Standard UI metadata, tool visibility, structured content and component-only metadata; actual host behavior remains a live test."
+    },
+    {
+      "id": "O3",
+      "title": "OpenAI: Managing billing for ChatGPT and the API platform",
+      "url": "https://help.openai.com/en/articles/9039756-billing-settings-in-chatgpt-vs-platform",
+      "use_and_limit": "ChatGPT and API billing are separate; no subscription-funded backend API assumption."
+    },
+    {
+      "id": "O4",
+      "title": "OpenAI: Hooks",
+      "url": "https://learn.chatgpt.com/docs/hooks",
+      "use_and_limit": "Codex hook surface; not assumed available in ordinary native ChatGPT."
+    },
+    {
+      "id": "O5",
+      "title": "OpenAI: Subagents",
+      "url": "https://learn.chatgpt.com/docs/agent-configuration/subagents",
+      "use_and_limit": "Work/Codex subagents; not proof of the requested ordinary-native reviewer route."
+    },
+    {
+      "id": "M1",
+      "title": "LongMemEval",
+      "url": "https://arxiv.org/html/2410.10813v1",
+      "use_and_limit": "Separate indexing, retrieval and reading; temporal updates and abstention. No current-model or clinical accuracy claim."
+    },
+    {
+      "id": "M2",
+      "title": "ConvoMem",
+      "url": "https://arxiv.org/html/2511.10523v1",
+      "use_and_limit": "Include full-context as a strong small-history baseline; do not turn reported scale boundaries into universal limits."
+    },
+    {
+      "id": "M3",
+      "title": "Mem2ActBench",
+      "url": "https://arxiv.org/html/2601.19935v1",
+      "use_and_limit": "Evaluate active memory use in subsequent behavior, not only passive fact retrieval."
+    },
+    {
+      "id": "M4",
+      "title": "Hindsight",
+      "url": "https://arxiv.org/html/2512.12818v1",
+      "use_and_limit": "Adapt evidence/belief separation and recall/reflection concepts; no adoption of another store or performance guarantee."
+    },
+    {
+      "id": "R1",
+      "title": "InnerSignal longitudinal-state module",
+      "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/blob/bf35a23dc0146c21586108fed0f726c50db8c436/src/case-state/longitudinal-state.mjs",
+      "use_and_limit": "Incumbent source-bearing state, epistemic statuses, question state and episode data. Reuse rather than replace."
+    },
+    {
+      "id": "R2",
+      "title": "InnerSignal context-window module",
+      "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/blob/bf35a23dc0146c21586108fed0f726c50db8c436/src/case-state/context-window.mjs",
+      "use_and_limit": "Verified incoming message is not an argument of targetedRetrievalRequests; current selector relies on high-relevance references."
+    },
+    {
+      "id": "R3",
+      "title": "InnerSignal runtime model/controller",
+      "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/blob/bf35a23dc0146c21586108fed0f726c50db8c436/src/supervisor/private-therapy-model-runtime.mjs",
+      "use_and_limit": "Existing provider generation path and sealed audit/repair assembly; inspect controller and store for final integration."
+    },
+    {
+      "id": "R4",
+      "title": "InnerSignal private continuity contract",
+      "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/blob/bf35a23dc0146c21586108fed0f726c50db8c436/docs/PRIVATE-CASE-CONTINUITY.md",
+      "use_and_limit": "Read-only retrieval separated from backend mutation/audit/delivery; authorization and private records."
+    },
+    {
+      "id": "R5",
+      "title": "InnerSignal private continuity skill",
+      "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/blob/bf35a23dc0146c21586108fed0f726c50db8c436/plugins/inner-signal-therapy/skills/inner-signal-private-continuity/SKILL.md",
+      "use_and_limit": "One user-facing plugin; read-only tools do not themselves persist/approve/send; truthful unavailable boundary."
+    },
+    {
+      "id": "R6",
+      "title": "InnerSignal instruction consumer map",
+      "url": "https://github.com/u-dont-existDOTcom/innerSignalGraph/blob/bf35a23dc0146c21586108fed0f726c50db8c436/docs/INSTRUCTION-CONSUMER-MAP.md",
+      "use_and_limit": "Developer, therapy, audit/repair, and delivery roles receive only their applicable instructions."
+    }
+  ]
+}

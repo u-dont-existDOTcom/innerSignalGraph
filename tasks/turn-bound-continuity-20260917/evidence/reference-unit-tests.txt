@@ -1,0 +1,286 @@
+TAP version 13
+# Subtest: exact text hashes distinguish whitespace and Unicode normalization
+ok 1 - exact text hashes distinguish whitespace and Unicode normalization
+  ---
+  duration_ms: 6.502219
+  type: 'test'
+  ...
+# Subtest: invalid Unicode is not silently replaced
+ok 2 - invalid Unicode is not silently replaced
+  ---
+  duration_ms: 0.55361
+  type: 'test'
+  ...
+# Subtest: canonical object ordering stable; array order preserved
+ok 3 - canonical object ordering stable; array order preserved
+  ---
+  duration_ms: 0.479747
+  type: 'test'
+  ...
+# Subtest: canonical JSON rejects undefined, cycles, nonfinite numbers and sparse arrays
+ok 4 - canonical JSON rejects undefined, cycles, nonfinite numbers and sparse arrays
+  ---
+  duration_ms: 0.247961
+  type: 'test'
+  ...
+# Subtest: authorization checked before malformed source inspection
+ok 5 - authorization checked before malformed source inspection
+  ---
+  duration_ms: 2.662322
+  type: 'test'
+  ...
+# Subtest: foreign-case source rejected before selection
+ok 6 - foreign-case source rejected before selection
+  ---
+  duration_ms: 0.198845
+  type: 'test'
+  ...
+# Subtest: unindexed old source found by new message, not state flags
+ok 7 - unindexed old source found by new message, not state flags
+  ---
+  duration_ms: 5.755816
+  type: 'test'
+  ...
+# Subtest: bilingual alias selects old source without translating its bytes
+ok 8 - bilingual alias selects old source without translating its bytes
+  ---
+  duration_ms: 2.007567
+  type: 'test'
+  ...
+# Subtest: relationship retrieves opposite-side source even without lexical overlap
+ok 9 - relationship retrieves opposite-side source even without lexical overlap
+  ---
+  duration_ms: 1.076331
+  type: 'test'
+  ...
+# Subtest: later linked correction survives even without query words
+ok 10 - later linked correction survives even without query words
+  ---
+  duration_ms: 1.821352
+  type: 'test'
+  ...
+# Subtest: source chain reaches earlier and later context transitively
+ok 11 - source chain reaches earlier and later context transitively
+  ---
+  duration_ms: 14.89496
+  type: 'test'
+  ...
+# Subtest: assistant draft not selected as independent report by keyword match
+ok 12 - assistant draft not selected as independent report by keyword match
+  ---
+  duration_ms: 0.48995
+  type: 'test'
+  ...
+# Subtest: required assistant draft remains marked as draft, not report
+ok 13 - required assistant draft remains marked as draft, not report
+  ---
+  duration_ms: 0.576275
+  type: 'test'
+  ...
+# Subtest: full-history baseline includes all authorized sources when requested and fitting
+ok 14 - full-history baseline includes all authorized sources when requested and fitting
+  ---
+  duration_ms: 0.333863
+  type: 'test'
+  ...
+# Subtest: required source absence rejected rather than summarized away
+ok 15 - required source absence rejected rather than summarized away
+  ---
+  duration_ms: 0.443498
+  type: 'test'
+  ...
+# Subtest: missing active episode turn rejected
+ok 16 - missing active episode turn rejected
+  ---
+  duration_ms: 0.138023
+  type: 'test'
+  ...
+# Subtest: incomplete active episode not labeled complete
+ok 17 - incomplete active episode not labeled complete
+  ---
+  duration_ms: 0.09998
+  type: 'test'
+  ...
+# Subtest: required sources that exceed budget cannot silently truncate
+ok 18 - required sources that exceed budget cannot silently truncate
+  ---
+  duration_ms: 0.18026
+  type: 'test'
+  ...
+# Subtest: stale index rejected; explicit authorized raw scan is an alternative
+ok 19 - stale index rejected; explicit authorized raw scan is an alternative
+  ---
+  duration_ms: 0.446364
+  type: 'test'
+  ...
+# Subtest: tampered source digest rejected
+ok 20 - tampered source digest rejected
+  ---
+  duration_ms: 0.128768
+  type: 'test'
+  ...
+# Subtest: duplicate source ID rejected even with identical bytes
+ok 21 - duplicate source ID rejected even with identical bytes
+  ---
+  duration_ms: 0.116716
+  type: 'test'
+  ...
+# Subtest: unresolved amendment does not leak old text as effective current evidence
+ok 22 - unresolved amendment does not leak old text as effective current evidence
+  ---
+  duration_ms: 0.098126
+  type: 'test'
+  ...
+# Subtest: effective corrected source used exactly once with retained metadata
+ok 23 - effective corrected source used exactly once with retained metadata
+  ---
+  duration_ms: 0.646531
+  type: 'test'
+  ...
+# Subtest: source citations resolve but do not certify semantic entailment
+ok 24 - source citations resolve but do not certify semantic entailment
+  ---
+  duration_ms: 0.678287
+  type: 'test'
+  ...
+# Subtest: packet content mutation detected
+ok 25 - packet content mutation detected
+  ---
+  duration_ms: 0.540428
+  type: 'test'
+  ...
+# Subtest: source metadata mutation detected, not just text changes
+ok 26 - source metadata mutation detected, not just text changes
+  ---
+  duration_ms: 0.552243
+  type: 'test'
+  ...
+# Subtest: valid exact bindings admitted without claiming clinical validity
+ok 27 - valid exact bindings admitted without claiming clinical validity
+  ---
+  duration_ms: 0.924311
+  type: 'test'
+  ...
+# Subtest: audit bookkeeping revision alone does not invalidate evidence
+ok 28 - audit bookkeeping revision alone does not invalidate evidence
+  ---
+  duration_ms: 0.466231
+  type: 'test'
+  ...
+# Subtest: new evidence invalidates pending release
+ok 29 - new evidence invalidates pending release
+  ---
+  duration_ms: 0.698328
+  type: 'test'
+  ...
+# Subtest: revoked grant epoch and revoked access rejected
+ok 30 - revoked grant epoch and revoked access rejected
+  ---
+  duration_ms: 1.635833
+  type: 'test'
+  ...
+# Subtest: changed guide invalidates release
+ok 31 - changed guide invalidates release
+  ---
+  duration_ms: 0.467858
+  type: 'test'
+  ...
+# Subtest: unregistered packet cannot be vouched for by writer
+ok 32 - unregistered packet cannot be vouched for by writer
+  ---
+  duration_ms: 0.350923
+  type: 'test'
+  ...
+# Subtest: candidate changed without new digest fails
+ok 33 - candidate changed without new digest fails
+  ---
+  duration_ms: 0.432619
+  type: 'test'
+  ...
+# Subtest: candidate changed with new digest still invalidates prior audit
+ok 34 - candidate changed with new digest still invalidates prior audit
+  ---
+  duration_ms: 0.702851
+  type: 'test'
+  ...
+# Subtest: changed candidate version invalidates old audit
+ok 35 - changed candidate version invalidates old audit
+  ---
+  duration_ms: 0.490328
+  type: 'test'
+  ...
+# Subtest: superseded candidate cannot release
+ok 36 - superseded candidate cannot release
+  ---
+  duration_ms: 0.501025
+  type: 'test'
+  ...
+# Subtest: same context cannot supply independent approval
+ok 37 - same context cannot supply independent approval
+  ---
+  duration_ms: 0.588863
+  type: 'test'
+  ...
+# Subtest: self-reported reviewer identity is not sufficient approval evidence
+ok 38 - self-reported reviewer identity is not sufficient approval evidence
+  ---
+  duration_ms: 0.617967
+  type: 'test'
+  ...
+# Subtest: accepted external provenance remains valid; new crypto attestation not imposed
+ok 39 - accepted external provenance remains valid; new crypto attestation not imposed
+  ---
+  duration_ms: 0.526832
+  type: 'test'
+  ...
+# Subtest: operational error is not a passing review
+ok 40 - operational error is not a passing review
+  ---
+  duration_ms: 0.4813
+  type: 'test'
+  ...
+# Subtest: approval requires known completion time
+ok 41 - approval requires known completion time
+  ---
+  duration_ms: 1.02258
+  type: 'test'
+  ...
+# Subtest: review evidence packet also must be registered
+ok 42 - review evidence packet also must be registered
+  ---
+  duration_ms: 0.452821
+  type: 'test'
+  ...
+# Subtest: translation after approval is not the approved variant
+ok 43 - translation after approval is not the approved variant
+  ---
+  duration_ms: 0.50682
+  type: 'test'
+  ...
+# Subtest: expired preparation rejected
+ok 44 - expired preparation rejected
+  ---
+  duration_ms: 0.360592
+  type: 'test'
+  ...
+# Subtest: cross-case audit rejected
+ok 45 - cross-case audit rejected
+  ---
+  duration_ms: 0.400176
+  type: 'test'
+  ...
+# Subtest: source-ready does not claim relevance comprehension
+ok 46 - source-ready does not claim relevance comprehension
+  ---
+  duration_ms: 0.210411
+  type: 'test'
+  ...
+1..46
+# tests 46
+# suites 0
+# pass 46
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 186.665303

@@ -352,7 +352,7 @@ test("pre-binding audited records migrate without inheriting unbound approval", 
     ],
     source_artifacts: []
   });
-  assert.equal(migrated.schema_version, 6);
+  assert.equal(migrated.schema_version, 7);
   assert.deepEqual(migrated.transcript_amendments, []);
   assert.deepEqual(migrated.runtime_turns, []);
   assert.equal(migrated.candidate_responses[0].status, "superseded");
@@ -362,7 +362,7 @@ test("pre-binding audited records migrate without inheriting unbound approval", 
   assert.deepEqual(migrated.candidate_responses[1].audit_history, []);
 });
 
-test("schema v5 migrates to v6 without changing exact Unicode candidate lineage or audits", async (t) => {
+test("schema v5 migrates through v7 without changing exact Unicode candidate lineage or audits", async (t) => {
   const store = await makeStore(t);
   await store.saveCandidateResponse(CASE_ID, "candidate:unicode:v1", "Exact Unicode candidate — café 🧭\nline two", { producer_context_id: "producer:unicode:v1" });
   const candidate = await store.getCandidateResponse(CASE_ID, "candidate:unicode:v1");
@@ -373,7 +373,7 @@ test("schema v5 migrates to v6 without changing exact Unicode candidate lineage 
   legacy.schema_version = 5;
   delete legacy.runtime_turns;
   const migrated = validatePrivateCaseRecord(legacy);
-  assert.equal(migrated.schema_version, 6);
+  assert.equal(migrated.schema_version, 7);
   assert.deepEqual(migrated.runtime_turns, []);
   assert.equal(migrated.candidate_responses[0].exact_text, before.candidate_responses[0].exact_text);
   assert.deepEqual(migrated.candidate_responses[0].audit_history, before.candidate_responses[0].audit_history);

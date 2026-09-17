@@ -4,7 +4,8 @@ import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
 import { createEmptyCaseState, validateCaseState } from "../case-state/longitudinal-state.mjs";
 import { appendTrackerEntry, summarizeTrackerWindow, validateTrackerEntry } from "../case-state/tracker.mjs";
-import { buildDurableCaseContext, CONTEXT_WINDOW_LIMITS, selectRecentVerbatimWindow, validateTranscriptEntries } from "../case-state/context-window.mjs";
+import { buildDurableCaseContext, CONTEXT_WINDOW_LIMITS, decisionRelevantProjection, selectRecentVerbatimWindow, validateTranscriptEntries } from "../case-state/context-window.mjs";
+import { createPreparedContext, digestJson, validatePreparedContext } from "../case-state/turn-evidence.mjs";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
 import { PRIVATE_CANDIDATE_AUDIT_VERSION } from "../supervisor/private-candidate-audit.mjs";
 import {
@@ -39,7 +40,7 @@ import {
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const ENVELOPE_FORMAT = "inner-signal-private-case-envelope-v1";
-const RECORD_VERSION = 6;
+const RECORD_VERSION = 7;
 const TRACKER_QUERY_VARIABLES = Object.freeze([
   "sleep_duration_hours", "sleep_quality", "pain_intensity", "pain_location", "pain_function_interference",
   "anxiety", "depressed_mood", "stability", "unreality", "division", "social_contact_quality",
@@ -54,6 +55,8 @@ const PRIVATE_RECORD_LIMITS = Object.freeze({
   state_diffs: 20_000,
   transcript_amendments: TRANSCRIPT_AMENDMENT_LIMITS.amendments,
   candidates: 2_000,
+  prepared_contexts: 2_000,
+  prepared_context_bytes: 2_000_000,
   runtime_turns: 20_000,
   candidate_text: 100_000,
   candidate_metadata_bytes: 40_000,
@@ -266,8 +269,26 @@ function normalizePrivateCaseRecord(value) {
     migrated.transcript_amendments = [];
   }
   if (migrated.schema_version === 5) {
-    migrated.schema_version = RECORD_VERSION;
+    migrated.schema_version = 6;
     migrated.runtime_turns = [];
+  }
+  if (migrated.schema_version === 6) {
+    migrated.schema_version = RECORD_VERSION;
+    migrated.record_revision = 1;
+    migrated.evidence_revision = Math.max(1, migrated.raw_transcript.length + migrated.transcript_amendments.length);
+    migrated.prepared_contexts = [];
+    migrated.runtime_turns = migrated.runtime_turns.map((runtimeTurn) => ({
+      ...runtimeTurn,
+      inbound: {
+        ...runtimeTurn.inbound,
+        submitted_by: runtimeTurn.inbound.submitted_by ?? "unknown",
+        attributed_speaker: runtimeTurn.inbound.attributed_speaker ?? "unknown",
+        source_kind: runtimeTurn.inbound.source_kind ?? "unknown",
+        relay_status: runtimeTurn.inbound.relay_status ?? "unknown",
+        claimed_sent_at: runtimeTurn.inbound.claimed_sent_at ?? null,
+        idempotency_key: runtimeTurn.inbound.idempotency_key ?? runtimeTurn.id
+      }
+    }));
   }
   return migrated;
 }
@@ -277,6 +298,8 @@ export function validatePrivateCaseRecord(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError("Private case record must be an object.");
   if (value.schema_version !== RECORD_VERSION) throw new ValidationError("Private case record version is invalid.");
   safeCaseId(value.case_id);
+  if (!Number.isSafeInteger(value.record_revision) || value.record_revision < 1) throw new ValidationError("Private case record_revision is invalid.");
+  if (!Number.isSafeInteger(value.evidence_revision) || value.evidence_revision < 1) throw new ValidationError("Private case evidence_revision is invalid.");
   for (const field of ["created_at", "updated_at"]) if (typeof value[field] !== "string" || !value[field].trim()) throw new ValidationError(`Private case record ${field} is required.`);
   validateTranscriptEntries(value.raw_transcript);
   if (!Array.isArray(value.source_artifacts) || value.source_artifacts.length > PRIVATE_RECORD_LIMITS.source_artifacts) throw new ValidationError("source_artifacts exceeds the private-record limit or is invalid.");
@@ -320,6 +343,16 @@ export function validatePrivateCaseRecord(value) {
   if (value.candidate_responses.filter(isActivePrivateCandidate).length > 1) {
     throw new ValidationError("Private case record may contain only one active candidate version.");
   }
+  if (!Array.isArray(value.prepared_contexts) || value.prepared_contexts.length > PRIVATE_RECORD_LIMITS.prepared_contexts) {
+    throw new ValidationError("prepared_contexts exceeds the private-record limit or is invalid.");
+  }
+  const preparedContextIds = new Set();
+  for (const prepared of value.prepared_contexts) {
+    validatePreparedContext(prepared);
+    if (prepared.case_id !== value.case_id || preparedContextIds.has(prepared.packet_id)) throw new ValidationError("Prepared context identity is invalid or duplicated.");
+    if (Buffer.byteLength(JSON.stringify(prepared), "utf8") > PRIVATE_RECORD_LIMITS.prepared_context_bytes) throw new ValidationError("Prepared context exceeds the private-record byte limit.");
+    preparedContextIds.add(prepared.packet_id);
+  }
   if (!Array.isArray(value.runtime_turns) || value.runtime_turns.length > PRIVATE_RECORD_LIMITS.runtime_turns) {
     throw new ValidationError("runtime_turns exceeds the private-record limit or is invalid.");
   }
@@ -328,6 +361,12 @@ export function validatePrivateCaseRecord(value) {
     validatePrivateRuntimeTurn(runtimeTurn);
     if (runtimeTurnIds.has(runtimeTurn.id)) throw new ValidationError(`Duplicate private runtime turn ${runtimeTurn.id}.`);
     runtimeTurnIds.add(runtimeTurn.id);
+    if (runtimeTurn.preparation_id != null) {
+      const prepared = value.prepared_contexts.find((entry) => entry.packet_id === runtimeTurn.preparation_id);
+      if (!prepared || prepared.turn_id !== runtimeTurn.id || prepared.inbound_sha256 !== runtimeTurn.inbound.sha256) {
+        throw new ValidationError(`Private runtime turn ${runtimeTurn.id} has an invalid prepared-context binding.`);
+      }
+    }
     const userTurn = value.raw_transcript.find((entry) => entry.id === runtimeTurn.user_turn_id);
     if (runtimeTurn.state !== "RECEIVED" && (!userTurn || userTurn.role !== "user" || userTurn.exchange_id !== runtimeTurn.exchange_id
         || userTurn.text !== runtimeTurn.inbound.exact_text)) {
@@ -370,7 +409,10 @@ function newRecord(caseId, now) {
     state_diff_history: [],
     candidate_responses: [],
     runtime_turns: [],
-    source_artifacts: []
+    source_artifacts: [],
+    record_revision: 1,
+    evidence_revision: 1,
+    prepared_contexts: []
   };
 }
 
@@ -405,11 +447,16 @@ function assertAppendOnly(previous, next) {
     for (const field of ["id", "exchange_id", "user_turn_id", "inbound", "created_at"]) {
       if (!after || JSON.stringify(before[field]) !== JSON.stringify(after[field])) throw new ValidationError("Private runtime turn identities are immutable.");
     }
+    if (before.preparation_id != null && before.preparation_id !== after.preparation_id) throw new ValidationError("Private runtime preparation identity is immutable.");
     if (after.events.length < before.events.length || before.events.some((event, eventIndex) => JSON.stringify(event) !== JSON.stringify(after.events[eventIndex]))) {
       throw new ValidationError("Private runtime turn events are append-only and immutable.");
     }
     if (before.discriminator != null && JSON.stringify(before.discriminator) !== JSON.stringify(after.discriminator)) throw new ValidationError("Private runtime discriminator is immutable.");
     if (before.delivery != null && JSON.stringify(before.delivery) !== JSON.stringify(after.delivery)) throw new ValidationError("Private runtime delivery is immutable.");
+  }
+  if (next.prepared_contexts.length < previous.prepared_contexts.length) throw new ValidationError("Prepared contexts are append-only.");
+  for (let index = 0; index < previous.prepared_contexts.length; index += 1) {
+    if (JSON.stringify(previous.prepared_contexts[index]) !== JSON.stringify(next.prepared_contexts[index])) throw new ValidationError("Prepared contexts are immutable and cannot be rewritten.");
   }
   if (next.source_artifacts.length < previous.source_artifacts.length) throw new ValidationError("Exact source artifacts are append-only.");
   for (let index = 0; index < previous.source_artifacts.length; index += 1) {
@@ -464,6 +511,7 @@ export function createEncryptedPrivateCaseStore({
   };
 
   const fileFor = (caseId) => path.join(rootDir, `${safeCaseId(caseId)}.vault.json`);
+  const lockFileFor = (caseId) => path.join(rootDir, `.${safeCaseId(caseId)}.write.lock`);
   const handoffDirectory = path.join(rootDir, ".handoffs");
   const handoffFileFor = (handoffId) => path.join(handoffDirectory, `${sha256Hex(validateHandoffId(handoffId))}.vault.json`);
   const openEnvelopePlaintext = async (envelope) => {
@@ -500,6 +548,31 @@ export function createEncryptedPrivateCaseStore({
     } finally { plaintext.fill(0); }
   };
   const readExisting = async (caseId) => (await readExistingWithEnvelope(caseId))?.record ?? null;
+  const acquireCaseWriteLock = async (caseId) => {
+    await fs.mkdir(rootDir, { recursive: true, mode: 0o700 });
+    await fs.chmod(rootDir, 0o700);
+    const lockFile = lockFileFor(caseId);
+    for (let attempt = 0; attempt < 500; attempt += 1) {
+      try {
+        const handle = await fs.open(lockFile, "wx", 0o600);
+        await handle.writeFile(`${process.pid}\n${Date.now()}\n`);
+        await handle.sync();
+        return async () => {
+          await handle.close().catch(() => {});
+          await fs.unlink(lockFile).catch((error) => { if (error?.code !== "ENOENT") throw error; });
+        };
+      } catch (error) {
+        if (error?.code !== "EEXIST") throw error;
+        const stat = await fs.stat(lockFile).catch((statError) => statError?.code === "ENOENT" ? null : Promise.reject(statError));
+        if (stat && Date.now() - stat.mtimeMs > 30_000) {
+          await fs.unlink(lockFile).catch((unlinkError) => { if (unlinkError?.code !== "ENOENT") throw unlinkError; });
+          continue;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+    }
+    throw new ValidationError("Private case write lock timed out.", { code: "PRIVATE_CASE_WRITE_LOCK_TIMEOUT" });
+  };
   const write = async (caseId, record, previous = null, currentEnvelope = null) => {
     ensureOpen();
     safeCaseId(caseId);
@@ -529,7 +602,9 @@ export function createEncryptedPrivateCaseStore({
     const currentTail = new Promise((resolve) => { release = resolve; });
     caseMutationTails.set(id, currentTail);
     await previousTail;
+    let releaseFileLock;
     try {
+      releaseFileLock = await acquireCaseWriteLock(id);
       const existing = await readExistingWithEnvelope(id);
       let previous;
       let currentEnvelope = null;
@@ -544,11 +619,15 @@ export function createEncryptedPrivateCaseStore({
       }
       const next = await operation(structuredClone(previous));
       if (next === null) return structuredClone(previous);
+      next.record_revision = previous.record_revision + 1;
       next.updated_at = now();
       return write(id, next, previous, currentEnvelope);
     } finally {
-      release();
-      if (caseMutationTails.get(id) === currentTail) caseMutationTails.delete(id);
+      try { await releaseFileLock?.(); }
+      finally {
+        release();
+        if (caseMutationTails.get(id) === currentTail) caseMutationTails.delete(id);
+      }
     }
   };
   const readRequired = async (caseId) => {
@@ -568,6 +647,10 @@ export function createEncryptedPrivateCaseStore({
     if (record.state_diff_history.some((candidate) => candidate.id === entry.id)) throw new ValidationError(`Duplicate state diff ${entry.id}.`);
     record.state_diff_history.push(entry);
     record.last_state_diff = structuredClone(diff);
+  };
+  const advanceEvidenceRevision = (record) => {
+    record.evidence_revision += 1;
+    return record.evidence_revision;
   };
   const effectiveTranscript = (record) => applyTranscriptAmendments(record.raw_transcript, record.transcript_amendments, {
     sourceArtifacts: record.source_artifacts
@@ -644,14 +727,33 @@ export function createEncryptedPrivateCaseStore({
     rootDir,
     async load(caseId) { const value = await readExisting(safeCaseId(caseId)); return value ? structuredClone(value) : null; },
     loadOrCreate,
-    async beginPrivateRuntimeTurn(caseId, { runtimeTurnId, exchangeId, userTurnId, exactText }) {
+    async beginPrivateRuntimeTurn(caseId, {
+      runtimeTurnId,
+      exchangeId,
+      userTurnId,
+      exactText,
+      submittedBy = "unknown",
+      attributedSpeaker = "unknown",
+      sourceKind = "unknown",
+      relayStatus = "unknown",
+      claimedSentAt = null,
+      idempotencyKey = runtimeTurnId
+    }) {
       return mutate(caseId, (record) => {
         const existing = record.runtime_turns.find((entry) => entry.id === runtimeTurnId);
         if (existing) {
-          if (!sameJson([existing.exchange_id, existing.user_turn_id, existing.inbound.exact_text], [exchangeId, userTurnId, exactText])) {
+          if (!sameJson(
+            [existing.exchange_id, existing.user_turn_id, existing.inbound.exact_text, existing.inbound.submitted_by,
+              existing.inbound.attributed_speaker, existing.inbound.source_kind, existing.inbound.relay_status,
+              existing.inbound.claimed_sent_at, existing.inbound.idempotency_key],
+            [exchangeId, userTurnId, exactText, submittedBy, attributedSpeaker, sourceKind, relayStatus, claimedSentAt, idempotencyKey]
+          )) {
             throw new ValidationError(`Private runtime turn ${runtimeTurnId} conflicts with an existing immutable inbound record.`);
           }
           return null;
+        }
+        if (record.runtime_turns.some((entry) => entry.inbound.idempotency_key === idempotencyKey)) {
+          throw new ValidationError("Private runtime idempotency key conflicts with an existing immutable inbound record.", { code: "IDEMPOTENCY_CONFLICT" });
         }
         const unfinished = record.runtime_turns.find((entry) => entry.state !== "DELIVERED");
         if (unfinished) throw new ValidationError(`Private case already has unfinished runtime turn ${unfinished.id}.`, { code: "PRIVATE_RUNTIME_CASE_BUSY" });
@@ -664,9 +766,108 @@ export function createEncryptedPrivateCaseStore({
           exchangeId,
           userTurnId,
           exactText,
-          createdAt: now()
+          createdAt: now(),
+          submittedBy,
+          attributedSpeaker,
+          sourceKind,
+          relayStatus,
+          claimedSentAt,
+          idempotencyKey
         }));
+        advanceEvidenceRevision(record);
         return record;
+      });
+    },
+    async preparePrivateRuntimeTurn(caseId, runtimeTurnId, {
+      packetId,
+      authorizationEpoch = "legacy-current-grant",
+      guideBundleRef = null,
+      expiresAt = null
+    } = {}) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        if (runtimeTurn.state !== "RECEIVED") throw new ValidationError("Turn preparation requires RECEIVED state.");
+        const existing = record.prepared_contexts.find((entry) => entry.turn_id === runtimeTurn.id);
+        if (existing) {
+          if (packetId != null && existing.packet_id !== packetId) throw new ValidationError("Turn preparation already exists under a different immutable packet identity.");
+          runtimeTurn.preparation_id = existing.packet_id;
+          return null;
+        }
+        const transcript = effectiveTranscript(record);
+        const durableContext = buildDurableCaseContext({
+          caseId,
+          caseState: record.case_state,
+          transcriptEntries: transcript,
+          trackerEntries: record.tracker_entries,
+          currentUserMessage: runtimeTurn.inbound.exact_text
+        });
+        const prepared = createPreparedContext({
+          packetId: packetId ?? `context:${runtimeTurn.id}:${runtimeTurn.inbound.sha256.slice(0, 12)}`,
+          caseId,
+          turnId: runtimeTurn.id,
+          inboundText: runtimeTurn.inbound.exact_text,
+          recordRevision: record.record_revision + 1,
+          evidenceRevision: record.evidence_revision,
+          sourceWatermark: record.evidence_revision,
+          indexWatermark: record.evidence_revision,
+          effectiveTranscript: transcript,
+          authorizationEpoch,
+          preparedAt: now(),
+          expiresAt,
+          guideBundleRef,
+          durableContext,
+          spine: decisionRelevantProjection(durableContext),
+          coverage: {
+            unresolved_source_ids: durableContext.retrieval_coverage.unresolved_source_ids,
+            omitted_required_source_ids: durableContext.retrieval_coverage.unresolved_source_ids
+          }
+        });
+        if (Buffer.byteLength(JSON.stringify(prepared), "utf8") > PRIVATE_RECORD_LIMITS.prepared_context_bytes) {
+          throw new ValidationError("Complete turn context exceeds the prepared-context budget; staged exact reading is required.", {
+            code: "CONTEXT_BUDGET_UNRESOLVED"
+          });
+        }
+        record.prepared_contexts.push(structuredClone(prepared));
+        runtimeTurn.preparation_id = prepared.packet_id;
+        runtimeTurn.updated_at = now();
+        return record;
+      });
+    },
+    async getPreparedContext(caseId, packetId) {
+      const record = await readRequired(caseId);
+      const prepared = record.prepared_contexts.find((entry) => entry.packet_id === packetId);
+      return prepared ? structuredClone(prepared) : null;
+    },
+    async getCandidateAuditBinding(caseId, candidateId) {
+      const record = await readRequired(caseId);
+      const candidate = record.candidate_responses.find((entry) => entry.id === candidateId);
+      if (!candidate) throw new ValidationError(`Candidate response ${candidateId} was not found.`, { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
+      const binding = candidate.metadata?.continuity_binding;
+      const runtimeTurn = record.runtime_turns.find((entry) => entry.id === candidate.metadata?.runtime_turn_id);
+      const prepared = record.prepared_contexts.find((entry) => entry.packet_id === binding?.packet_id);
+      if (!binding || !runtimeTurn || !prepared || binding.packet_digest !== prepared.manifest_digest) throw new ValidationError("Candidate continuity binding is unavailable.", { code: "CONTEXT_REQUIRED" });
+      const transcript = effectiveTranscript(record);
+      const auditContext = buildDurableCaseContext({
+        caseId,
+        caseState: record.case_state,
+        transcriptEntries: transcript,
+        trackerEntries: record.tracker_entries,
+        currentUserMessage: runtimeTurn.inbound.exact_text
+      });
+      return Object.freeze({
+        turn_id: runtimeTurn.id,
+        evidence_revision: binding.evidence_revision,
+        writer_packet_digest: binding.packet_digest,
+        audit_packet_digest: digestJson({
+          case_id: caseId,
+          turn_id: runtimeTurn.id,
+          original_inbound: runtimeTurn.inbound,
+          evidence_revision: record.evidence_revision,
+          case_state: record.case_state,
+          recent_verbatim: auditContext.recent_verbatim_window,
+          targeted_older_evidence: auditContext.targeted_older_evidence,
+          current_episode: record.case_state.current_episode
+        })
       });
     },
     async getPrivateRuntimeTurn(caseId, runtimeTurnId) {
@@ -721,6 +922,8 @@ export function createEncryptedPrivateCaseStore({
       caseState = null,
       stateDiff = null,
       diffId = null,
+      preparationId = null,
+      contextUse = null,
       metadata = {},
       eventId
     }) {
@@ -729,8 +932,8 @@ export function createEncryptedPrivateCaseStore({
         const existing = record.candidate_responses.find((entry) => entry.id === candidateId);
         if (existing) {
           if (!sameJson(
-            [existing.exact_text, existing.producer_context_id, existing.parent_candidate_id, existing.metadata.runtime_turn_id],
-            [exactText, producerContextId, parentCandidateId, runtimeTurnId]
+            [existing.exact_text, existing.producer_context_id, existing.parent_candidate_id, existing.metadata.runtime_turn_id, existing.metadata.continuity_binding?.packet_id],
+            [exactText, producerContextId, parentCandidateId, runtimeTurnId, preparationId]
           )) throw new ValidationError(`Candidate response ${candidateId} conflicts with immutable bytes or provenance.`);
           if (runtimeTurn.current_candidate_id === candidateId && runtimeTurn.state === "CANDIDATE_PENDING_AUDIT") return null;
           throw new ValidationError(`Candidate response ${candidateId} exists outside the expected runtime frontier.`);
@@ -741,6 +944,14 @@ export function createEncryptedPrivateCaseStore({
         if (parentCandidateId == null) {
           if (runtimeTurn.state !== "RECEIVED" || runtimeTurn.repair_cycle !== 0) throw new ValidationError("Original runtime candidate requires RECEIVED state.");
           if (typeof producerContextId !== "string" || !producerContextId.trim()) throw new ValidationError("A runtime candidate producer context is required.");
+          const prepared = record.prepared_contexts.find((entry) => entry.packet_id === (preparationId ?? runtimeTurn.preparation_id));
+          if (!prepared || prepared.turn_id !== runtimeTurn.id || prepared.inbound_sha256 !== runtimeTurn.inbound.sha256) {
+            throw new ValidationError("Runtime candidate requires the exact server-recorded preparation.", { code: "CONTEXT_REQUIRED" });
+          }
+          if (prepared.evidence_revision !== record.evidence_revision) throw new ValidationError("Runtime candidate preparation is stale.", { code: "EVIDENCE_CHANGED" });
+          if (!prepared.coverage.episode_complete || !prepared.coverage.index_current || prepared.coverage.omitted_required_source_ids.length) {
+            throw new ValidationError("Runtime candidate preparation has incomplete required coverage.", { code: "CONTEXT_BUDGET_UNRESOLVED" });
+          }
           const state = validateCaseState(structuredClone(caseState));
           if (state.case_id !== caseId) throw new ValidationError("Case state identity mismatch.");
           if (record.raw_transcript.some((entry) => entry.id === runtimeTurn.user_turn_id)) throw new ValidationError("Runtime inbound transcript turn already exists outside its candidate commit.");
@@ -752,8 +963,6 @@ export function createEncryptedPrivateCaseStore({
             at: runtimeTurn.inbound.received_at,
             episode_id: state.current_episode?.id ?? null
           });
-          record.case_state = state;
-          if (stateDiff != null) appendDiff(record, stateDiff, { turnId: runtimeTurn.user_turn_id, diffId });
           for (const previousCandidate of record.candidate_responses.filter(isActivePrivateCandidate)) {
             previousCandidate.metadata = { ...previousCandidate.metadata, superseded_from_status: previousCandidate.status, superseded_by_candidate_id: candidateId };
             previousCandidate.status = "superseded";
@@ -771,7 +980,20 @@ export function createEncryptedPrivateCaseStore({
             repair_cycle: 0,
             producer_context_id: producerContextId,
             audit_history: [],
-            metadata: { ...structuredClone(metadata), runtime_turn_id: runtimeTurnId }
+            metadata: {
+              ...structuredClone(metadata),
+              runtime_turn_id: runtimeTurnId,
+              continuity_binding: {
+                packet_id: prepared.packet_id,
+                packet_digest: prepared.manifest_digest,
+                evidence_revision: prepared.evidence_revision,
+                inbound_sha256: prepared.inbound_sha256
+              },
+              context_use: contextUse == null ? null : structuredClone(contextUse),
+              proposed_case_state: state,
+              proposed_state_diff: stateDiff == null ? null : structuredClone(stateDiff),
+              proposed_state_diff_id: diffId
+            }
           };
         } else {
           if (runtimeTurn.state !== "RECONSTRUCTING") throw new ValidationError("Runtime repair candidate requires RECONSTRUCTING state.");
@@ -800,7 +1022,17 @@ export function createEncryptedPrivateCaseStore({
             repair_cycle: parent.repair_cycle + 1,
             producer_context_id: producerContextId,
             audit_history: [],
-            metadata: { ...structuredClone(metadata), runtime_turn_id: runtimeTurnId, based_on_audit_id: sourceAudit.id, substantive_reconstruction: true }
+            metadata: {
+              ...structuredClone(metadata),
+              runtime_turn_id: runtimeTurnId,
+              based_on_audit_id: sourceAudit.id,
+              substantive_reconstruction: true,
+              continuity_binding: structuredClone(parent.metadata.continuity_binding),
+              context_use: structuredClone(parent.metadata.context_use ?? null),
+              proposed_case_state: structuredClone(parent.metadata.proposed_case_state ?? null),
+              proposed_state_diff: structuredClone(parent.metadata.proposed_state_diff ?? null),
+              proposed_state_diff_id: parent.metadata.proposed_state_diff_id ?? null
+            }
           };
           parent.metadata = { ...parent.metadata, superseded_from_status: parent.status, superseded_by_candidate_id: candidateId };
           parent.status = "superseded";
@@ -878,7 +1110,7 @@ export function createEncryptedPrivateCaseStore({
         return record;
       });
     },
-    async deliverPrivateRuntimeCandidate(caseId, runtimeTurnId, { candidateId, assistantTurnId, eventId }) {
+    async deliverPrivateRuntimeCandidate(caseId, runtimeTurnId, { candidateId, assistantTurnId, eventId, authorizationEpoch = null }) {
       return mutate(caseId, (record) => {
         const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
         if (runtimeTurn.state === "DELIVERED") {
@@ -890,8 +1122,28 @@ export function createEncryptedPrivateCaseStore({
         const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
         const gate = candidateDeliveryGate(candidate);
         if (!candidate || current?.id !== candidate.id || !gate.delivery_allowed) throw new ValidationError("Runtime candidate delivery is not exact-version approved.");
+        const binding = candidate.metadata.continuity_binding;
+        const prepared = record.prepared_contexts.find((entry) => entry.packet_id === binding?.packet_id);
+        const sufficientAudit = candidate.audit_history.find((entry) => entry.id === gate.audit_id);
+        if (!binding || !prepared || prepared.manifest_digest !== binding.packet_digest
+            || binding.evidence_revision !== record.evidence_revision
+            || binding.inbound_sha256 !== runtimeTurn.inbound.sha256
+            || (authorizationEpoch != null && prepared.authorization_epoch !== authorizationEpoch)
+            || sufficientAudit?.writer_packet_digest !== binding.packet_digest
+            || sufficientAudit?.evidence_revision !== binding.evidence_revision) {
+          throw new ValidationError("Runtime candidate release failed current evidence/context binding.", { code: "EVIDENCE_CHANGED" });
+        }
         if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError("Runtime assistant turn identifier already exists.");
         const timestamp = now();
+        if (candidate.metadata.proposed_case_state != null) {
+          const proposedState = validateCaseState(structuredClone(candidate.metadata.proposed_case_state));
+          if (proposedState.case_id !== caseId) throw new ValidationError("Candidate state proposal case identity is invalid.");
+          record.case_state = proposedState;
+          if (candidate.metadata.proposed_state_diff != null) appendDiff(record, candidate.metadata.proposed_state_diff, {
+            turnId: runtimeTurn.user_turn_id,
+            diffId: candidate.metadata.proposed_state_diff_id
+          });
+        }
         record.raw_transcript.push({ id: assistantTurnId, exchange_id: runtimeTurn.exchange_id, role: "assistant", text: candidate.exact_text, at: timestamp, episode_id: record.case_state.current_episode?.id ?? null });
         candidate.status = "sent";
         candidate.updated_at = timestamp;
@@ -914,6 +1166,7 @@ export function createEncryptedPrivateCaseStore({
           projectionPatch: { assistant_turn_id: assistantTurnId, delivery }
         });
         Object.assign(runtimeTurn, updatedRuntime);
+        advanceEvidenceRevision(record);
         return record;
       });
     },
@@ -962,6 +1215,7 @@ export function createEncryptedPrivateCaseStore({
           turnId: diff_turn_id ?? additions.find((turn) => turn.role === "user")?.id ?? additions.at(-1)?.id ?? "unknown-turn",
           diffId: diff_id
         });
+        advanceEvidenceRevision(record);
         return record;
       });
     },
@@ -970,6 +1224,7 @@ export function createEncryptedPrivateCaseStore({
         const state = validateCaseState(structuredClone(caseState));
         if (state.case_id !== caseId) throw new ValidationError("Case state identity mismatch.");
         record.case_state = state;
+        advanceEvidenceRevision(record);
         return record;
       });
     },
@@ -977,6 +1232,7 @@ export function createEncryptedPrivateCaseStore({
     async saveCaseDiff(caseId, stateDiff, options = {}) {
       return mutate(caseId, (record) => {
         appendDiff(record, stateDiff, options);
+        advanceEvidenceRevision(record);
         return record;
       });
     },
@@ -991,6 +1247,7 @@ export function createEncryptedPrivateCaseStore({
         const [validated] = validateTranscriptEntries([structuredClone(turn)]);
         if (record.raw_transcript.some((entry) => entry.id === validated.id)) throw new ValidationError(`Duplicate transcript turn ${validated.id}.`);
         record.raw_transcript.push(validated);
+        advanceEvidenceRevision(record);
         return record;
       });
     },
@@ -1030,6 +1287,7 @@ export function createEncryptedPrivateCaseStore({
         });
         record.source_artifacts.push(structuredClone(sourceArtifact));
         record.transcript_amendments.push(structuredClone(amendment));
+        advanceEvidenceRevision(record);
         return record;
       });
     },
@@ -1241,6 +1499,7 @@ export function createEncryptedPrivateCaseStore({
         };
         validateTranscriptEntries(record.raw_transcript);
         validateCandidateResponse(candidate, record.candidate_responses.indexOf(candidate));
+        advanceEvidenceRevision(record);
         return record;
       });
     },
@@ -1262,6 +1521,7 @@ export function createEncryptedPrivateCaseStore({
         if (record.source_artifacts.some((artifact) => artifact.id === sourceArtifactId)) throw new ValidationError(`Exact source artifact ${sourceArtifactId} already exists and exact bytes are immutable.`);
         const artifact = createExactSourceArtifact({ id: sourceArtifactId, chunks, metadata, createdAt: now() });
         record.source_artifacts.push(structuredClone(artifact));
+        advanceEvidenceRevision(record);
         return record;
       });
     },
@@ -1295,12 +1555,25 @@ export function createEncryptedPrivateCaseStore({
       const candidate = candidateId === "current_pending"
         ? [...record.candidate_responses].reverse().find((entry) => ["pending_audit", "reconstructed_pending_audit"].includes(entry.status))
         : record.candidate_responses.find((entry) => entry.id === candidateId);
+      const candidateRuntimeTurn = candidate?.metadata?.runtime_turn_id == null
+        ? null
+        : record.runtime_turns.find((entry) => entry.id === candidate.metadata.runtime_turn_id);
+      const preparedContext = candidate?.metadata?.continuity_binding?.packet_id == null
+        ? null
+        : record.prepared_contexts.find((entry) => entry.packet_id === candidate.metadata.continuity_binding.packet_id);
+      const independentAuditContext = candidateRuntimeTurn == null ? context : buildDurableCaseContext({
+        caseId,
+        caseState: record.case_state,
+        transcriptEntries: transcript,
+        trackerEntries: record.tracker_entries,
+        currentUserMessage: candidateRuntimeTurn.inbound.exact_text
+      });
       const recent = Object.keys(episodePolicy).length
         ? selectRecentVerbatimWindow(transcript, {
             currentEpisodeId: episodePolicy.currentEpisodeId ?? record.case_state.current_episode?.id ?? null,
             currentEpisodeStartTurnId: episodePolicy.currentEpisodeStartTurnId ?? record.case_state.current_episode?.started_turn_id ?? null,
             maximumSelectedTurns: episodePolicy.maximumSelectedTurns ?? CONTEXT_WINDOW_LIMITS.selected_turns,
-            requireCompleteEpisode: episodePolicy.requireCompleteEpisode !== false
+            requireCompleteEpisode: record.case_state.current_episode != null && episodePolicy.requireCompleteEpisode !== false
           })
         : context.recent_verbatim_window;
       let queriedEvidence = null;
@@ -1317,13 +1590,16 @@ export function createEncryptedPrivateCaseStore({
         recent_verbatim: structuredClone(recent),
         transcript_amendments: structuredClone(record.transcript_amendments),
         candidate_response: candidate ? structuredClone(candidate) : null,
+        prepared_context: preparedContext ? structuredClone(preparedContext) : null,
+        audit_evidence_revision: record.evidence_revision,
+        audit_original_inbound: candidateRuntimeTurn ? structuredClone(candidateRuntimeTurn.inbound) : null,
         source_artifact_refs: record.source_artifacts.map((artifact) => ({
           id: artifact.id,
           version: artifact.version,
           created_at: artifact.created_at,
           metadata: structuredClone(artifact.metadata)
         })),
-        targeted_older_evidence: structuredClone(context.targeted_older_evidence),
+        targeted_older_evidence: structuredClone(independentAuditContext.targeted_older_evidence),
         queried_evidence: queriedEvidence,
         current_episode: structuredClone(record.case_state.current_episode),
         tracker_window: structuredClone(context.tracker_window),
@@ -1447,6 +1723,7 @@ export function createEncryptedPrivateCaseStore({
     async appendTracker(caseId, entry) {
       return mutate(caseId, (record) => {
         record.tracker_entries = appendTrackerEntry(record.tracker_entries, entry);
+        advanceEvidenceRevision(record);
         return record;
       });
     },
@@ -1455,6 +1732,7 @@ export function createEncryptedPrivateCaseStore({
         const validated = validateJournalEntry(entry, record.journal_entries.length);
         if (record.journal_entries.some((item) => item.id === validated.id)) throw new ValidationError(`Duplicate journal entry ${validated.id}.`);
         record.journal_entries.push(structuredClone(validated));
+        advanceEvidenceRevision(record);
         return record;
       });
     },

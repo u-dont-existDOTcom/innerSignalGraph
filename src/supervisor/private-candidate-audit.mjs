@@ -5,6 +5,7 @@ import {
   REPAIR_INDUCED_ERROR_CHECKS,
   createCandidateAuditEvidence
 } from "./private-candidate-lifecycle.mjs";
+import { digestJson } from "../case-state/turn-evidence.mjs";
 
 export const PRIVATE_CANDIDATE_AUDIT_VERSION = "private-candidate-audit-v3";
 
@@ -19,6 +20,17 @@ export async function buildPrivateCandidateAuditInput({ caseAccessService, caseI
   const candidate = context.candidate_response;
   if (!candidate?.exact_text) throw new ValidationError("Exact private candidate response is required for audit.", { code: "PRIVATE_CANDIDATE_NOT_FOUND" });
   if (!["pending_audit", "reconstructed_pending_audit"].includes(candidate.status)) throw new ValidationError("Private candidate response is not pending audit.", { code: "PRIVATE_CANDIDATE_NOT_PENDING" });
+  const continuityBinding = candidate.metadata?.continuity_binding ?? null;
+  const auditPacketDigest = continuityBinding == null ? null : digestJson({
+    case_id: caseId,
+    turn_id: candidate.metadata.runtime_turn_id,
+    original_inbound: context.audit_original_inbound,
+    evidence_revision: context.audit_evidence_revision,
+    case_state: context.case_state,
+    recent_verbatim: context.recent_verbatim,
+    targeted_older_evidence: context.targeted_older_evidence,
+    current_episode: context.current_episode
+  });
   return Object.freeze({
     schema_version: 1,
     role: "AUTHORIZED_PRIVATE_CANDIDATE_AUDIT",
@@ -29,6 +41,10 @@ export async function buildPrivateCandidateAuditInput({ caseAccessService, caseI
     candidate_parent_candidate_id: candidate.parent_candidate_id ?? null,
     candidate_producer_context_id: candidate.producer_context_id ?? null,
     candidate_response: candidate.exact_text,
+    writer_packet_digest: continuityBinding?.packet_digest ?? null,
+    audit_packet_digest: auditPacketDigest,
+    evidence_revision: continuityBinding?.evidence_revision ?? null,
+    turn_id: candidate.metadata?.runtime_turn_id ?? null,
     constitution_ref: context.constitution_ref,
     case_state: context.case_state,
     last_state_diff: context.last_state_diff,
@@ -119,6 +135,12 @@ export async function persistPrivateCandidateAuditResult({
     findings: result.findings,
     repairInducedChecks: result.repair_induced_checks ?? [],
     independentAuditorAvailable,
+    contextBinding: resolvedInput.writer_packet_digest == null ? null : {
+      turn_id: resolvedInput.turn_id,
+      evidence_revision: resolvedInput.evidence_revision,
+      writer_packet_digest: resolvedInput.writer_packet_digest,
+      audit_packet_digest: resolvedInput.audit_packet_digest
+    },
     ...(completedAt !== undefined ? { completedAt } : {}),
     ...(completedAtStatus !== undefined ? { completedAtStatus } : {}),
     ...(recordedAt !== undefined ? { recordedAt } : {}),

@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-16
+Updated: 2026-09-17
+
+## Turn-bound continuity issue #72 — offline implementation candidate
+
+Task `turn-bound-continuity-20260917` is an iteration-lane candidate on `task/turn-bound-continuity-20260917`, based on current development `main` `bf35a23dc0146c21586108fed0f726c50db8c436`. It adds schema-v7 record/evidence revisions, exact inbound provenance and idempotency, immutable prepared-context manifests, incoming-message retrieval across older raw evidence, effective transcript amendments, complete active-episode coverage, writer/auditor packet binding, proposal-only candidate state, authorization/evidence-current atomic release checks, cross-process encrypted-store serialization, and a native-controlled `READY_FOR_DRAFT` / exact candidate submission path with no provider fallback.
+
+The focused affected suite passes 65/65 synthetic tests, including actual writer-prompt assembly, an old raw source absent from short state, 130-turn amended episode continuity, explicit oversized-context blocking, zero-call native profile, forged binding rejection, correction-after-audit stale release denial, replay/idempotency, and eight overlapping writer processes. The imported reference suite remains a reproducibility artifact, not production or clinical proof.
+
+The connected host exposed the existing ten read-only continuity tools, but its synthetic authorization probe required reauthentication. No native component submission, separate subscription-funded reviewer, exact released rendering, reconnect behavior, or owner no-reminder outcome was therefore verified in the live host. No private case was accessed, no paid inference ran, and no real-case migration, installation, deployment, `stable` promotion, or merge occurred. Resume from `tasks/turn-bound-continuity-20260917/INTEGRATION.md`; the valid current completion label is `DESIGN_IMPLEMENTED_OFFLINE`, and issue #72 remains open pending the host route.
 
 ## Somatic + altered-states guide sync — owner approved, reconciled, and merged
 

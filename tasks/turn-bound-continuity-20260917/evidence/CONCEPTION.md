@@ -1,0 +1,7 @@
+# Independent design baseline
+
+Before the additional academic scan: adapt the existing encrypted case store and candidate lifecycle, do not replace them. Make the controlled input surface persist incoming text and prepare a versioned context packet before drafting. Retain native ChatGPT as the preferred reasoning route, with no hidden paid model calls. Treat direct native conversation as an advisory route, not server-enforced delivery. Search older exact evidence using incoming-message signals as well as durable importance and unresolved questions. Check actual candidate content against the evidence; source presence alone is not comprehension. Render the exact approved artifact in a server-backed component rather than an unchecked model paraphrase. Separate mechanical guarantees, semantic evaluation, independent-auditor capability, and actual delivery. Test this against the existing state-only selector, summary-only memory, and full-history input.
+
+Falsifiers: new selector does not recover decision-relevant older evidence; evidence is retrieved but reasoning still misses it; host cannot invoke the selected model/reviewer through the intended funded route; ordinary native chat bypasses the controlled surface; new controls introduce more owner relaying than they remove.
+
+No novelty claim. Intended classification: composition of established controls plus project-specific integration.

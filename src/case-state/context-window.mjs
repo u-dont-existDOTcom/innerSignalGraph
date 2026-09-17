@@ -2,12 +2,16 @@ import { ValidationError } from "../core/errors.mjs";
 import { constitutionReference } from "../therapy/constitution.mjs";
 import { createEmptyCaseState, validateCaseState } from "./longitudinal-state.mjs";
 import { summarizeTrackerWindow } from "./tracker.mjs";
+import { selectIncomingMessageEvidence } from "./turn-evidence.mjs";
 
 export const CONTEXT_WINDOW_LIMITS = Object.freeze({
   transcript_entries: 20_000,
   turn_text: 40_000,
   selected_turns: 120,
-  retrieval_requests: 24
+  retrieval_requests: 48,
+  state_retrieval_requests: 24,
+  incoming_message_retrieval_requests: 16,
+  full_history_characters: 160_000
 });
 
 function validateTurn(turn, index) {
@@ -100,7 +104,10 @@ export function formatVerbatimWindow(window) {
   return window.turns.map((turn) => `${turn.role.toUpperCase()}: ${turn.text}`).join("\n\n");
 }
 
-export function targetedRetrievalRequests(caseState, recentTurnIds = []) {
+export function targetedRetrievalRequests(caseState, recentTurnIds = [], {
+  transcriptEntries = [],
+  currentUserMessage = ""
+} = {}) {
   const state = validateCaseState(structuredClone(caseState));
   const recent = new Set(recentTurnIds);
   const refs = [];
@@ -124,7 +131,17 @@ export function targetedRetrievalRequests(caseState, recentTurnIds = []) {
     if (item.decision_relevance !== "high" || !item.source.turn_id || recent.has(item.source.turn_id)) continue;
     refs.push({ reason: `decision-relevant-${item.domain}`, turn_id: item.source.turn_id, item_id: item.id });
   }
-  return [...new Map(refs.map((item) => [`${item.turn_id}:${item.item_id}`, item])).values()].slice(0, CONTEXT_WINDOW_LIMITS.retrieval_requests);
+  const stateRequests = [...new Map(refs.map((item) => [`${item.turn_id}:${item.item_id}`, item])).values()]
+    .slice(0, CONTEXT_WINDOW_LIMITS.state_retrieval_requests);
+  const incomingRequests = selectIncomingMessageEvidence({
+    transcriptEntries,
+    currentUserMessage,
+    recentTurnIds,
+    caseState: state,
+    limit: CONTEXT_WINDOW_LIMITS.incoming_message_retrieval_requests
+  });
+  return [...new Map([...incomingRequests, ...stateRequests].map((item) => [`${item.turn_id}:${item.item_id}`, item])).values()]
+    .slice(0, CONTEXT_WINDOW_LIMITS.retrieval_requests);
 }
 
 export function buildDurableCaseContext({ caseId = "local-case", caseState = null, transcriptEntries = [], trackerEntries = [], currentUserMessage = "" } = {}) {
@@ -134,8 +151,10 @@ export function buildDurableCaseContext({ caseId = "local-case", caseState = nul
     currentEpisodeStartTurnId: state.current_episode?.started_turn_id ?? null,
     requireCompleteEpisode: Boolean(state.current_episode)
   });
-  const retrieval = targetedRetrievalRequests(state, recent.turns.map((turn) => turn.id));
-  const transcriptById = new Map(validateTranscriptEntries(transcriptEntries).map((turn) => [turn.id, turn]));
+  const validatedTranscript = validateTranscriptEntries(transcriptEntries);
+  const recentTurnIds = recent.turns.map((turn) => turn.id);
+  const retrieval = targetedRetrievalRequests(state, recentTurnIds, { transcriptEntries: validatedTranscript, currentUserMessage });
+  const transcriptById = new Map(validatedTranscript.map((turn) => [turn.id, turn]));
   const requestsByTurn = new Map();
   for (const request of retrieval) {
     const group = requestsByTurn.get(request.turn_id) ?? { turn_id: request.turn_id, reasons: [], item_ids: [] };
@@ -149,6 +168,17 @@ export function buildDurableCaseContext({ caseId = "local-case", caseState = nul
     item_ids: [...new Set(request.item_ids)],
     turn: transcriptById.has(request.turn_id) ? structuredClone(transcriptById.get(request.turn_id)) : null
   }));
+  const fullHistoryText = formatVerbatimWindow({ turns: validatedTranscript });
+  const fullHistoryIncluded = fullHistoryText.length <= CONTEXT_WINDOW_LIMITS.full_history_characters;
+  const unresolvedSourceIds = targetedOlderEvidence.filter((entry) => entry.turn == null).map((entry) => entry.turn_id);
+  const relevanceLinks = targetedOlderEvidence
+    .filter((entry) => entry.turn != null && entry.reasons.some((reason) => reason.startsWith("incoming-message-")))
+    .map((entry) => ({
+      source_ids: [entry.turn.id],
+      status: "proposed_relevance",
+      reasons: entry.reasons,
+      historical_text_sha256: null
+    }));
   return Object.freeze({
     constitution_ref: constitutionReference(),
     case_state: state,
@@ -157,6 +187,21 @@ export function buildDurableCaseContext({ caseId = "local-case", caseState = nul
     recent_transcript_text: formatVerbatimWindow(recent),
     targeted_retrieval_requests: retrieval,
     targeted_older_evidence: targetedOlderEvidence,
+    retrieval_coverage: Object.freeze({
+      requested_count: retrieval.length,
+      resolved_count: retrieval.length - unresolvedSourceIds.length,
+      unresolved_source_ids: Object.freeze(unresolvedSourceIds),
+      state_channel_count: retrieval.filter((entry) => !entry.reason.startsWith("incoming-message-")).length,
+      incoming_message_channel_count: retrieval.filter((entry) => entry.reason.startsWith("incoming-message-")).length
+    }),
+    relevance_links: Object.freeze(relevanceLinks),
+    full_history_baseline: Object.freeze({
+      included: fullHistoryIncluded,
+      character_count: fullHistoryText.length,
+      turn_count: validatedTranscript.length,
+      text: fullHistoryIncluded ? fullHistoryText : null,
+      reason: fullHistoryIncluded ? "authorized history fits the measured local character budget" : "authorized history exceeds the measured local character budget"
+    }),
     tracker_window: summarizeTrackerWindow(trackerEntries),
     current_user_message: currentUserMessage,
     lossy_summary_is_authority: false

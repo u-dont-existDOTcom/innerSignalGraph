@@ -151,7 +151,17 @@ export function createPrivateTherapyTurnController({
   }
 
   async function executeRun({ caseId, runtimeTurnId, exchangeId, userTurnId, assistantTurnId, userMessage, userInput = {}, authContext }) {
-    await call("beginPrivateRuntimeTurn", [caseId, { runtimeTurnId, exchangeId, userTurnId, exactText: userMessage }], authContext);
+    await call("beginPrivateRuntimeTurn", [caseId, {
+      runtimeTurnId,
+      exchangeId,
+      userTurnId,
+      exactText: userMessage,
+      attributedSpeaker: userInput.attributedSpeaker ?? "unknown",
+      sourceKind: userInput.sourceKind ?? "unknown",
+      relayStatus: userInput.relayStatus ?? "unknown",
+      claimedSentAt: userInput.claimedSentAt ?? null,
+      idempotencyKey: userInput.idempotencyKey ?? runtimeTurnId
+    }], authContext);
     const operationKey = sha256(`${caseId}\u0000${runtimeTurnId}`).slice(0, 24);
 
     for (let step = 0; step < 40; step += 1) {
@@ -170,6 +180,13 @@ export function createPrivateTherapyTurnController({
       }
 
       if (runtimeTurn.state === "RECEIVED") {
+        if (!runtimeTurn.preparation_id) {
+          await call("preparePrivateRuntimeTurn", [caseId, runtimeTurn.id, {
+            packetId: `context:${runtimeTurn.id}:${runtimeTurn.inbound.sha256.slice(0, 12)}`,
+            authorizationEpoch: "current-authorized-session"
+          }], authContext);
+          continue;
+        }
         const produced = await invoke({
           caseId,
           runtimeTurn,
@@ -187,6 +204,8 @@ export function createPrivateTherapyTurnController({
           caseState: produced.caseState,
           stateDiff: produced.stateDiff,
           diffId: `diff:runtime:${operationKey}`,
+          preparationId: runtimeTurn.preparation_id,
+          contextUse: produced.contextUse,
           metadata: { producer_attempt_context_id: produced.result?.producerAttemptContextId ?? null },
           eventId: `runtime-event:${operationKey}:candidate:v1:persisted`
         }], authContext);
@@ -215,6 +234,10 @@ export function createPrivateTherapyTurnController({
           execute: (attemptContextId) => modelRuntime.auditCandidate({ caseId, candidateId: candidate.id, candidate, authContext, attemptContextId })
         });
         if (audited.contextId === candidate.producer_context_id) throw new ValidationError("Candidate producer cannot audit the exact text it produced.");
+        const contextBinding = await call("getCandidateAuditBinding", [caseId, candidate.id], authContext);
+        if (audited.contextBinding && jsonHash(audited.contextBinding) !== jsonHash(contextBinding)) {
+          throw new ValidationError("Audit runtime returned a context binding that differs from the trusted store preparation.");
+        }
         const auditResult = audited.value ?? audited.result;
         const evidence = createCandidateAuditEvidence({
           auditId: auditId(operationKey, candidate.repair_cycle),
@@ -223,7 +246,8 @@ export function createPrivateTherapyTurnController({
           auditorContext: { kind: "independent", context_id: audited.contextId },
           findings: auditResult.findings,
           repairInducedChecks: auditResult.repair_induced_checks ?? [],
-          independentAuditorAvailable: true
+          independentAuditorAvailable: true,
+          contextBinding
         });
         await call("commitPrivateRuntimeAudit", [caseId, runtimeTurnId, evidence, {
           eventId: `runtime-event:${operationKey}:audit:v${candidate.repair_cycle + 1}:persisted`
@@ -303,6 +327,47 @@ export function createPrivateTherapyTurnController({
     throw new RuntimeError("Private runtime exceeded its bounded transition ceiling.", { code: "PRIVATE_RUNTIME_FRONTIER_INVALID" });
   }
 
+  async function prepareNativeRun({ caseId, runtimeTurnId, exchangeId, userTurnId, userMessage, userInput = {}, authContext }) {
+    await call("beginPrivateRuntimeTurn", [caseId, {
+      runtimeTurnId,
+      exchangeId,
+      userTurnId,
+      exactText: userMessage,
+      attributedSpeaker: userInput.attributedSpeaker ?? "unknown",
+      sourceKind: userInput.sourceKind ?? "controlled_native_input",
+      relayStatus: userInput.relayStatus ?? "unknown",
+      claimedSentAt: userInput.claimedSentAt ?? null,
+      idempotencyKey: userInput.idempotencyKey ?? runtimeTurnId
+    }], authContext);
+    let runtimeTurn = await call("getPrivateRuntimeTurn", [caseId, runtimeTurnId], authContext);
+    if (runtimeTurn.state === "RECEIVED" && !runtimeTurn.preparation_id) {
+      await call("preparePrivateRuntimeTurn", [caseId, runtimeTurn.id, {
+        packetId: `context:${runtimeTurn.id}:${runtimeTurn.inbound.sha256.slice(0, 12)}`,
+        authorizationEpoch: "current-authorized-session"
+      }], authContext);
+      runtimeTurn = await call("getPrivateRuntimeTurn", [caseId, runtimeTurnId], authContext);
+    }
+    if (runtimeTurn.state === "RECEIVED") {
+      const preparedContext = await call("getPreparedContext", [caseId, runtimeTurn.preparation_id], authContext);
+      return Object.freeze({
+        status: "READY_FOR_DRAFT",
+        profile: "native_controlled",
+        runtimeTurnId,
+        preparationId: runtimeTurn.preparation_id,
+        preparedContext,
+        nextAction: "SUBMIT_NATIVE_CANDIDATE"
+      });
+    }
+    return Object.freeze({
+      status: runtimeTurn.state === "CANDIDATE_PENDING_AUDIT" ? "DRAFT_PENDING_REVIEW" : runtimeTurn.state,
+      profile: "native_controlled",
+      runtimeTurnId,
+      preparationId: runtimeTurn.preparation_id,
+      currentCandidateId: runtimeTurn.current_candidate_id,
+      nextAction: runtimeTurn.state === "CANDIDATE_PENDING_AUDIT" ? "INDEPENDENT_REVIEW_REQUIRED" : privateRuntimeNextAction(runtimeTurn)
+    });
+  }
+
   return Object.freeze({
     async run(input) {
       const caseId = input?.caseId;
@@ -311,11 +376,47 @@ export function createPrivateTherapyTurnController({
       const currentTail = new Promise((resolve) => { release = resolve; });
       runTails.set(caseId, currentTail);
       await previousTail;
-      try { return await executeRun(input); }
+      try {
+        if (input?.userInput?.profile === "native_controlled") return await prepareNativeRun(input);
+        return await executeRun(input);
+      }
       finally {
         release();
         if (runTails.get(caseId) === currentTail) runTails.delete(caseId);
       }
+    },
+    async submitNativeCandidate({ caseId, runtimeTurnId, candidateId: submittedCandidateId, exactText, producerContextId, contextUse = null, language = "und", authContext }) {
+      const runtimeTurn = await call("getPrivateRuntimeTurn", [caseId, runtimeTurnId], authContext);
+      if (runtimeTurn.state !== "RECEIVED" || !runtimeTurn.preparation_id) throw new ValidationError("Native candidate submission requires READY_FOR_DRAFT.");
+      if (typeof exactText !== "string" || !exactText.length) throw new ValidationError("Native candidate exact text is required.");
+      if (typeof producerContextId !== "string" || !producerContextId.trim()) throw new ValidationError("Native candidate requires a host-registered producer context.");
+      const record = await loadCase(caseId, authContext);
+      const candidateIdentity = submittedCandidateId ?? `candidate:native:${sha256(`${caseId}\u0000${runtimeTurnId}\u0000${runtimeTurn.inbound.sha256}`).slice(0, 24)}:v1`;
+      await call("commitPrivateRuntimeCandidate", [caseId, {
+        runtimeTurnId,
+        candidateId: candidateIdentity,
+        exactText,
+        producerContextId,
+        caseState: record.case_state,
+        stateDiff: null,
+        preparationId: runtimeTurn.preparation_id,
+        contextUse,
+        metadata: {
+          producer_interface: "native_chatgpt",
+          producer_identity_evidence_level: "host_correlated",
+          language
+        },
+        eventId: `runtime-event:${sha256(`${caseId}\u0000${runtimeTurnId}`).slice(0, 24)}:candidate:native:persisted`
+      }], authContext);
+      const updated = await call("getPrivateRuntimeTurn", [caseId, runtimeTurnId], authContext);
+      return Object.freeze({
+        status: "DRAFT_PENDING_REVIEW",
+        profile: "native_controlled",
+        runtimeTurnId,
+        preparationId: updated.preparation_id,
+        candidateId: updated.current_candidate_id,
+        nextAction: "INDEPENDENT_REVIEW_REQUIRED"
+      });
     }
   });
 }

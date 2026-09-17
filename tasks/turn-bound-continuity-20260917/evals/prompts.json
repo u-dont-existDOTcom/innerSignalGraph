@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "purpose": "Synthetic writer-visible cases; not real case history.",
+  "cases": [
+    {
+      "id": "quiet-reading",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "Earlier, I could concentrate on reading more easily when the room was quiet."
+        },
+        {
+          "id": "h2",
+          "text": "For a few weeks I have been changing apartments."
+        }
+      ],
+      "new_message": "I found a much quieter place to study."
+    },
+    {
+      "id": "later-correction",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "The earlier train used to make me arrive on time."
+        },
+        {
+          "id": "h2",
+          "text": "I need to correct that: the earlier train is now frequently delayed too."
+        }
+      ],
+      "new_message": "I am taking the earlier train again."
+    },
+    {
+      "id": "already-answered",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "Yes, I already asked the housing office about the leak. They inspected twice but did not find its source."
+        }
+      ],
+      "new_message": "The same damp patch is back."
+    },
+    {
+      "id": "outcome-explicit",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "Quiet mornings sometimes made reading easier."
+        }
+      ],
+      "new_message": "The room is quieter now, but reading is just as difficult."
+    },
+    {
+      "id": "french-paraphrase",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "Quand je prépare mes affaires la veille, je suis moins en retard."
+        }
+      ],
+      "new_message": "I have finally started packing everything the night before."
+    },
+    {
+      "id": "draft-vs-report",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "ASSISTANT DRAFT, NOT SENT: The quiet room has solved the reading difficulty."
+        },
+        {
+          "id": "h2",
+          "text": "CLIENT REPORT: I have not tried the new room yet."
+        }
+      ],
+      "new_message": "I am trying the new room today."
+    },
+    {
+      "id": "partial-answer",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "You asked what I do and how long it lasts. I told you what I do, but not the duration."
+        }
+      ],
+      "new_message": "It happened again this afternoon."
+    },
+    {
+      "id": "deferred-priority",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "A quieter workspace had sometimes helped me read."
+        },
+        {
+          "id": "h2",
+          "text": "The current priority is a grant application due in one hour; I asked for help submitting it."
+        }
+      ],
+      "new_message": "The library is quiet today, but I still need to get this application sent."
+    },
+    {
+      "id": "ambiguous-metaphor",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "When I say my brain is buzzing, I mean too many task reminders, not a sound I hear."
+        }
+      ],
+      "new_message": "My brain is buzzing again."
+    },
+    {
+      "id": "reporter-distinction",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "SUPERVISOR HYPOTHESIS: The move may have improved concentration."
+        },
+        {
+          "id": "h2",
+          "text": "CLIENT REPORT: I have not noticed any change yet."
+        }
+      ],
+      "new_message": "SUPERVISOR: The new place is much quieter."
+    },
+    {
+      "id": "old-low-salience",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "An incidental thing: preparing my bag in the evening makes mornings less rushed."
+        },
+        {
+          "id": "h2",
+          "text": "The rest of the discussion concerned a long unrelated project."
+        }
+      ],
+      "new_message": "I am preparing my bag each evening now."
+    },
+    {
+      "id": "unchanged-condition",
+      "synthetic": true,
+      "history": [
+        {
+          "id": "h1",
+          "text": "Shorter meetings sometimes left more energy for writing."
+        }
+      ],
+      "new_message": "Meetings are still the same length. I am mainly asking about the printer."
+    }
+  ]
+}
