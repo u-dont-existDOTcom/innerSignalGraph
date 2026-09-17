@@ -40,6 +40,15 @@ test("realization contract separates conservative reasoning from natural prose",
   assert.match(prompt.user, /Which age or version/i);
 });
 
+test("realization prompt encodes conversational delivery and restrained emoji use", () => {
+  const prompt = realizationPrompt(context, adjudication, "Claude");
+  assert.match(prompt.system, /one attentive person responding to another/i);
+  assert.match(prompt.system, /one live conversational thread at a time/i);
+  assert.match(prompt.system, /intake questionnaire, clinical case note, or checklist/i);
+  assert.match(prompt.system, /Emojis are permitted but never required/i);
+  assert.match(prompt.system, /decorative emoji clusters/i);
+});
+
 test("realization safety copy is controlled by deterministic case variables rather than generic model caution", () => {
   const flaggedContext = {
     ...context,
