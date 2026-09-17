@@ -9,8 +9,8 @@
   "inspection_baseline": "bf35a23dc0146c21586108fed0f726c50db8c436",
   "authoritative_base": "bf35a23dc0146c21586108fed0f726c50db8c436",
   "recovered_task_checkpoint": "fbd12f2d260aaed053c721d2b915d6695775363f",
-  "implementation_head": null,
-  "implementation_head_status": "pending local commit at receipt creation; update after commit",
+  "implementation_head": "d07182579d79a904db3bd04bc42fb1e8d54caf6f",
+  "implementation_head_status": "committed implementation and evidence checkpoint; the later receipt-update commit and final PR head are external containing evidence",
   "assurance_lane": "iteration",
   "executor": {
     "user_selected": "GPT-5.6 Sol",

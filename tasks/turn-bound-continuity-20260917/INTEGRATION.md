@@ -6,6 +6,8 @@ Updated: 2026-09-17T23:10:40+00:00
 
 `DESIGN_IMPLEMENTED_OFFLINE`
 
+Implementation/evidence checkpoint: `d07182579d79a904db3bd04bc42fb1e8d54caf6f`.
+
 Issue #72 remains open. The repository implementation and bounded synthetic consumer tests are complete for this iteration. The ordinary ChatGPT host route is not proven: the live connection exposed only the incumbent ten read-only tools, and a synthetic read probe stopped at reauthentication before returning any case content. No controlled component write command or native separate-reviewer route was exposed.
 
 ## Implemented
