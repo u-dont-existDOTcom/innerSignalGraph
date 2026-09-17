@@ -1,6 +1,10 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-16
+Updated: 2026-09-17
+
+## Role and belief integrity — development candidate
+
+The owner requested implementation of long-conversation role/belief safeguards. Branch `task/role-belief-integrity-20260917` contains shared consumer rules, source-based memory authority correction (including restored legacy context), a targeted fallback guard, and seven synthetic trajectories totaling 89 exchanges. The 50-exchange trajectory reopens encrypted storage halfway through. No private case or live model was used. Scripted tests exercise the real runtime but do not establish semantic adherence. Exact scope, verification and continuation are in `tasks/role-belief-integrity-20260917/INTEGRATION.md`. No stable change, deployment or installation is authorized by this checkpoint.
 
 ## Somatic + altered-states guide sync — owner approved, reconciled, and merged
 
