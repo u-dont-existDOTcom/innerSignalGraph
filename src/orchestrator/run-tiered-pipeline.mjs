@@ -67,11 +67,12 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
   if (requested === "reviewed") return { tier: "reviewed", reason: "user-selected reviewed mode", forced: false, deltaCount };
   const readinessReviewRequired = Boolean(snapshot?.relational_readiness);
   const romanceGuideReviewRequired = Boolean(snapshot?.romance_guide_context);
+  const compatibilityReviewRequired = Boolean(snapshot?.compatibility_assessment || snapshot?._protective_compatibility_prior);
   const deliveryReviewRequired = Boolean(snapshot?.path_update?.delivery_review || snapshot?._path_prior?.active?.delivery_assessment_key);
   const representation = snapshot?.path_update?.representation ?? snapshot?._path_prior?.active?.representation ?? null;
   const representationReviewRequired = Boolean(representation && (representation.mode !== "CLEAR" || ["SWITCH", "STAY_SYMBOLIC", "TRANSLATE_TO_PLAIN"].includes(representation.transition)));
   if (requested === "fast" && !intentHard && !ambiguityHard && !deliveryReviewRequired
-      && !readinessReviewRequired && !romanceGuideReviewRequired && !representationReviewRequired) return { tier: "fast", reason: "user-selected fast mode", forced: false, deltaCount };
+      && !readinessReviewRequired && !romanceGuideReviewRequired && !compatibilityReviewRequired && !representationReviewRequired) return { tier: "fast", reason: "user-selected fast mode", forced: false, deltaCount };
 
   if (intentHard) return { tier: "deep", reason: "deep/high-stakes intent", forced: false, deltaCount };
   if (ambiguityHard) {
@@ -85,6 +86,7 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
   }
   if (readinessReviewRequired) return { tier: "reviewed", reason: "relational readiness and foreseeable harm require case audit", forced: true, deltaCount };
   if (romanceGuideReviewRequired) return { tier: "reviewed", reason: "source-bound romance context requires case audit", forced: true, deltaCount };
+  if (compatibilityReviewRequired) return { tier: "reviewed", reason: "child-contact permission and actor attribution require case audit", forced: true, deltaCount };
   if (deliveryReviewRequired) return { tier: "reviewed", reason: "evidence-bound delivery and practitioner trust review", forced: requested === "fast", deltaCount };
   if (representationReviewRequired) return { tier: "reviewed", reason: "process-scoped experiential or bridge representation requires epistemic audit", forced: requested === "fast", deltaCount };
   if (reviewedSignal) return { tier: "reviewed", reason: "moderate ambiguity or protective conflict", forced: false, deltaCount };

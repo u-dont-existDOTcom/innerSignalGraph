@@ -4,6 +4,7 @@ import { validateRelationalEvidence } from "./relational-readiness.mjs";
 import { validateRomanceGuideContext } from "./romance-guide.mjs";
 import { validateThreatPathwayAssessment } from "./threat-pathway.mjs";
 import { validateInnerSpeechProfile, validateObservationPhenomenology } from "./phenomenology.mjs";
+import { validateCompatibilityAssessment } from "./protective-compatibility.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
@@ -43,6 +44,9 @@ export function validateCaseSnapshot(value) {
   if (Object.hasOwn(value, "threat_pathway")) {
     value.threat_pathway = validateThreatPathwayAssessment(value.threat_pathway, { issue: value.current_issue, observationIds });
   }
+  if (Object.hasOwn(value, "compatibility_assessment")) {
+    value.compatibility_assessment = validateCompatibilityAssessment(value.compatibility_assessment, { issue: value.current_issue, observationIds });
+  }
   value.variables = validateCaseVariables(value.variables);
   if (!Array.isArray(value.hypotheses)) throw new ValidationError("caseSnapshot.hypotheses must be an array.");
   const hypothesisIds = new Set();
@@ -76,6 +80,8 @@ export function validateCaseAudit(value) {
   if (value.invalidate_romance_guide_context != null && typeof value.invalidate_romance_guide_context !== "boolean") throw new ValidationError("invalidate_romance_guide_context must be boolean.");
   if (Object.hasOwn(value, "corrected_threat_pathway") && value.corrected_threat_pathway !== null) object(value.corrected_threat_pathway, "caseAudit.corrected_threat_pathway");
   if (value.invalidate_threat_pathway != null && typeof value.invalidate_threat_pathway !== "boolean") throw new ValidationError("invalidate_threat_pathway must be boolean.");
+  if (Object.hasOwn(value, "corrected_compatibility_assessment") && value.corrected_compatibility_assessment !== null) object(value.corrected_compatibility_assessment, "caseAudit.corrected_compatibility_assessment");
+  if (value.invalidate_compatibility_assessment != null && typeof value.invalidate_compatibility_assessment !== "boolean") throw new ValidationError("invalidate_compatibility_assessment must be boolean.");
   stringArray(value.remove_observation_ids, "caseAudit.remove_observation_ids");
   stringArray(value.remove_hypothesis_ids, "caseAudit.remove_hypothesis_ids");
   if (!Array.isArray(value.variable_corrections)) throw new ValidationError("caseAudit.variable_corrections must be an array.");

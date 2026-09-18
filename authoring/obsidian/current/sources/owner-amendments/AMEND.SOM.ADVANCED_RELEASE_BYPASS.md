@@ -12,7 +12,7 @@ section_hash: f519674221cb06a7df7ff9b77ed5c5f0c6df0905d8345525926905391560ab8f
 locator_kind: amendment-record
 cited_by_node_ids:
   - SOM.BYPASS_AUDIT
-projection_input_sha256: b80b454b3d87206a7e6ffadb0102aceada3e801608421cbc12801b7c9b2597a4
+projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
 ---
 
 # AMEND.SOM.ADVANCED_RELEASE_BYPASS

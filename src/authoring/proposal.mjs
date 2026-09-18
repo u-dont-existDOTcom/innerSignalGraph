@@ -166,7 +166,7 @@ export async function loadProposal({ root, id }) {
   const relative = `authoring/obsidian/proposals/${id}`;
   assertNoSymlinkAncestors(root, relative, { allowMissingLeaf: false });
   const proposalRoot = resolveInside(root, relative);
-  const allowedRoot = new Set(["proposal.md", "base-authority.json", "nodes", "edges", "tests", "overlays"]);
+  const allowedRoot = new Set(["proposal.md", "base-authority.json", "source-amendments.json", "nodes", "edges", "tests", "overlays"]);
   const unexpectedRoot = (await fs.readdir(proposalRoot, { withFileTypes: true })).filter((entry) => !allowedRoot.has(entry.name) || entry.isSymbolicLink() || (entry.name.endsWith(".json") || entry.name.endsWith(".md")) && !entry.isFile() || !entry.name.includes(".") && !entry.isDirectory());
   if (unexpectedRoot.length) fail("PROPOSAL_PATH_UNEXPECTED", `${id} contains unsupported root entries: ${unexpectedRoot.map((entry) => entry.name).join(", ")}`);
   const manifestText = await readUtf8RegularFile(path.join(proposalRoot, "proposal.md"));
@@ -181,6 +181,22 @@ export async function loadProposal({ root, id }) {
   if (baseAuthority?.contractVersion !== "inner-signal-authoring-base-authority-v1" || baseAuthority.proposalId !== id || baseAuthority.projectionInputSha256 !== manifestParsed.data.base_projection_input_sha256 || !Array.isArray(baseAuthority.authoritativeInputs)) fail("PROPOSAL_BASE_AUTHORITY_INVALID", `${id}/base-authority.json does not match the proposal manifest.`);
   if (baseAuthority.authoritativeInputs.some((item) => !item || Object.keys(item).sort().join(",") !== "path,sha256" || typeof item.path !== "string" || item.path.startsWith("/") || item.path.includes("\\") || item.path.split("/").includes("..") || !/^[a-f0-9]{64}$/.test(item.sha256))) fail("PROPOSAL_BASE_AUTHORITY_INVALID", `${id}/base-authority.json contains an invalid input record.`);
   if (projectionInputToken(baseAuthority.authoritativeInputs) !== baseAuthority.projectionInputSha256) fail("PROPOSAL_BASE_AUTHORITY_INVALID", `${id}/base-authority.json input records do not match their projection hash.`);
+  let sourceAmendments = null;
+  try {
+    const amendmentText = await readUtf8RegularFile(path.join(proposalRoot, "source-amendments.json"));
+    assertPublicAuthoringText(amendmentText, { label: `${id}/source-amendments.json` });
+    sourceAmendments = JSON.parse(amendmentText);
+  } catch (error) {
+    if (error.code !== "ENOENT") fail("PROPOSAL_SOURCE_AMENDMENTS_INVALID", `${id}/source-amendments.json is invalid: ${error.message}`);
+  }
+  if (sourceAmendments) {
+    if (sourceAmendments.contractVersion !== "inner-signal-proposed-source-amendments-v1" || sourceAmendments.proposalId !== id || !Array.isArray(sourceAmendments.items)) {
+      fail("PROPOSAL_SOURCE_AMENDMENTS_INVALID", `${id}/source-amendments.json does not use the proposed amendment contract.`);
+    }
+    const ids = sourceAmendments.items.map(item => item?.id);
+    if (ids.some(item => typeof item !== "string" || !item.startsWith("AMEND.")) || new Set(ids).size !== ids.length) fail("PROPOSAL_SOURCE_AMENDMENTS_INVALID", `${id} contains invalid or duplicate proposed amendment IDs.`);
+    if (sourceAmendments.items.some(item => item.status !== "proposed" || typeof item.text !== "string" || !item.text.trim() || typeof item.domain !== "string" || !item.domain.trim())) fail("PROPOSAL_SOURCE_AMENDMENTS_INVALID", `${id} contains an invalid proposed amendment record.`);
+  }
 
   const nodeFiles = await listFilesIfPresent(path.join(proposalRoot, "nodes"), ".md");
   const edgeFiles = await listFilesIfPresent(path.join(proposalRoot, "edges"), ".md");
@@ -218,7 +234,7 @@ export async function loadProposal({ root, id }) {
     tests.push({ file, value });
   }
   if (new Set(tests.map((item) => item.value.id)).size !== tests.length) fail("PROPOSAL_TEST_DUPLICATE", `${id} contains duplicate regression ids.`);
-  return { id, root: proposalRoot, manifest: manifestParsed.data, manifestBody: manifestParsed.body, baseAuthority, nodes, edges, tests, overlayFiles };
+  return { id, root: proposalRoot, manifest: manifestParsed.data, manifestBody: manifestParsed.body, baseAuthority, sourceAmendments, nodes, edges, tests, overlayFiles };
 }
 
 export function applyProposalOperations({ graphs, proposal, graphHashes }) {

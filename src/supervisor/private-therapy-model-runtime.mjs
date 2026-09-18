@@ -16,6 +16,12 @@ import {
 import { privateRuntimeAuditPrompt } from "../prompts/private-runtime-audit.mjs";
 import { privateRuntimeRepairPrompt } from "../prompts/private-runtime-repair.mjs";
 import { assembleCanonicalCandidateText } from "./canonical-candidate-text.mjs";
+import {
+  childContactViolations,
+  compatibilityStateBinding,
+  protectiveCompatibilityDecision,
+  restrictedCompatibilityFallback
+} from "../case-formulation/protective-compatibility.mjs";
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -142,7 +148,8 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
           interventionContract: result.interventionContract,
           responseContract: result.responseContract,
           processingMs: result.processingMs,
-          producerAttemptContextId: attemptContextId
+          producerAttemptContextId: attemptContextId,
+          compatibilityBinding: compatibilityStateBinding(caseState.protective_compatibility ?? null)
         }
       };
     },
@@ -199,12 +206,20 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         metadata: { stage: "private_candidate_repair", fixtureKey: "private_candidate_repair", attemptContextId },
         validate: validatePrivateRuntimeRepairResult
       });
+      const compatibility = protectiveCompatibilityDecision(null, context.case_state?.protective_compatibility ?? null);
+      if (compatibility.gate !== "NOT_BLOCKED" && childContactViolations(generated.value.exact_text).length) {
+        throw new ValidationError("Private repair attempted to reintroduce child contact while the compatibility gate is restricted.", { code: "PROTECTIVE_COMPATIBILITY_REPAIR_BLOCKED" });
+      }
       return { exactText: generated.value.exact_text, contextId: generated.contextId, providerReceipt: generated.providerReceipt };
     },
 
     async produceDiscriminator({ caseId, runtimeTurn, authContext, attemptContextId }) {
       const record = await loadRuntimeCase(privateCaseSource, caseId, authContext);
-      const question = record.case_state.current_episode?.next_question;
+      const compatibility = protectiveCompatibilityDecision(null, record.case_state.protective_compatibility ?? null);
+      const currentQuestion = record.case_state.current_episode?.next_question;
+      const question = compatibility.gate !== "NOT_BLOCKED" && childContactViolations(currentQuestion).length
+        ? restrictedCompatibilityFallback(compatibility).next_question
+        : currentQuestion;
       if (typeof question !== "string" || !question.trim()) {
         throw new ValidationError("The current episode has no authorized discriminating question; delivery remains blocked.", { code: "PRIVATE_DISCRIMINATOR_UNAVAILABLE" });
       }

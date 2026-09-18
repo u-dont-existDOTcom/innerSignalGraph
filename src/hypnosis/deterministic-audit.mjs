@@ -1,4 +1,5 @@
 import { HYPNOSIS_CONTRACT_VERSION } from "./app-owned-copy.mjs";
+import { childContactViolations } from "../case-formulation/protective-compatibility.mjs";
 
 const MODEL_OWNED_FIELDS = Object.freeze([
   ["orientation"],
@@ -28,7 +29,7 @@ function wordCount(text) {
   return String(text || "").trim().split(/\s+/).filter(Boolean).length;
 }
 
-export function auditHypnosisDraft(draft) {
+export function auditHypnosisDraft(draft, { protectiveCompatibility = null } = {}) {
   const issues = [];
   if (!draft || draft.contract_version !== HYPNOSIS_CONTRACT_VERSION) {
     issues.push({ code: "contract_version_mismatch", field: "contract_version" });
@@ -44,6 +45,9 @@ export function auditHypnosisDraft(draft) {
     if (APP_OWNED_RETURN_PHRASES.test(text)) issues.push({ code: "model_emitted_waking_return", field });
     if (FORBIDDEN_MEMORY.test(text)) issues.push({ code: "memory_certainty_or_recovery", field });
     if (FORBIDDEN_AUTHORITY.test(text)) issues.push({ code: "coercive_authority", field });
+    if (protectiveCompatibility?.gate && protectiveCompatibility.gate !== "NOT_BLOCKED") {
+      for (const code of childContactViolations(text)) issues.push({ code: `restricted_${code.toLowerCase()}`, field });
+    }
   }
 
   if (EARLY_DEEPENING.test(draft.orientation)) {

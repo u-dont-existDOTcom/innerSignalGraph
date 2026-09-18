@@ -12,7 +12,7 @@ section_hash: 29834013639b0d26134df0d1464564e9bfc79e6f70f42c430ab47c1d1e4ea133
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.CARING_COMPANY
-projection_input_sha256: b80b454b3d87206a7e6ffadb0102aceada3e801608421cbc12801b7c9b2597a4
+projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
 ---
 
 # AMEND.IC.WISDOM_CARING_COMPANY

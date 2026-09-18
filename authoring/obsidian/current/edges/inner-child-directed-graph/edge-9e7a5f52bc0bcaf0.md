@@ -10,7 +10,7 @@ from_node_id: IC.DRAFT_EDITOR
 to_node_id: IC.DRAFT_RETURN_TO_CARE
 relation: returns-for-care
 base_graph_sha256: 2f31316bacb025352fbd0e2440aaa6607f50f2fc7cb38bc95263fbd807a3459f
-projection_input_sha256: b80b454b3d87206a7e6ffadb0102aceada3e801608421cbc12801b7c9b2597a4
+projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
 ---
 
 # IC.DRAFT_EDITOR returns-for-care IC.DRAFT_RETURN_TO_CARE

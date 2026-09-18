@@ -12,7 +12,7 @@ section_hash: 7398cfc4bc0bc72af51ad759044daa5034a86f881fb18e0367331dbf71944a97
 locator_kind: text-lines
 cited_by_node_ids:
   - ROUTE.ALTERED_PREPARATION
-projection_input_sha256: b80b454b3d87206a7e6ffadb0102aceada3e801608421cbc12801b7c9b2597a4
+projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
 ---
 
 # Planned Altered-State Work

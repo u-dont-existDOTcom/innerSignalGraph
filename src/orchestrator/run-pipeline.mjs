@@ -8,6 +8,7 @@ import { candidateSchema, critiqueSchema, adjudicationSchema, realizationSchema 
 import { writeLedger } from "./ledger.mjs";
 import { RuntimeError } from "../core/errors.mjs";
 import { enforceResponseContract } from "./response-contract.mjs";
+import { randomUUID } from "node:crypto";
 
 async function structuredCall(provider, prompt, metadata, validator, outputSchema, onProgress) {
   const started = Date.now();
@@ -22,6 +23,18 @@ async function structuredCall(provider, prompt, metadata, validator, outputSchem
 
 export async function realizeAdjudication({ context, adjudication, provider, onProgress, fixtureKey = "realization" }) {
   const attempts = [];
+  if (context.interventionContract?.protectiveCompatibilityContract?.forceFallback === true) {
+    const enforced = enforceResponseContract({ answer: "", next_question: "", realized_nodes: [] }, {
+      plan: context.interventionContract,
+      adjudication
+    });
+    return {
+      value: { answer: "", next_question: "", realized_nodes: [], ...enforced },
+      raw: { requestId: `deterministic-protective-fallback:${randomUUID()}` },
+      durationMs: 0,
+      timing: { totalMs: 0, attempts: [{ stage: "protective_fallback", durationMs: 0, provider: "deterministic", model: null }] }
+    };
+  }
   let rawResult = await structuredCall(
     provider,
     realizationPrompt(context, adjudication, provider.id === "anthropic" ? "Claude" : "OpenAI"),

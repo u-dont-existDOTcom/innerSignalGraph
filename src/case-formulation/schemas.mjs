@@ -4,6 +4,7 @@ import { relationalReadinessSchema } from "./relational-readiness.mjs";
 import { romanceGuideContextSchema } from "./romance-guide.mjs";
 import { threatPathwaySchema } from "./threat-pathway.mjs";
 import { innerSpeechProfileSchema, observationPhenomenologySchema } from "./phenomenology.mjs";
+import { compatibilityAssessmentSchema } from "./protective-compatibility.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 
 const observationSchema = {
@@ -35,6 +36,7 @@ export const caseSnapshotSchema = {
     relational_readiness: relationalReadinessSchema,
     romance_guide_context: romanceGuideContextSchema,
     threat_pathway: threatPathwaySchema,
+    compatibility_assessment: compatibilityAssessmentSchema,
     inner_speech_profile: innerSpeechProfileSchema,
     direct_observations: { type: "array", items: observationSchema },
     variables: {
@@ -80,7 +82,7 @@ export const caseSnapshotSchema = {
 // Provider generation requires all newer semantic fields declared, with null for
 // unavailable evidence. Historical runtime snapshots remain compatible.
 export const caseSnapshotGenerationSchema = structuredClone(caseSnapshotSchema);
-caseSnapshotGenerationSchema.required.push("relational_readiness", "romance_guide_context", "threat_pathway", "inner_speech_profile");
+caseSnapshotGenerationSchema.required.push("relational_readiness", "romance_guide_context", "threat_pathway", "compatibility_assessment", "inner_speech_profile");
 caseSnapshotGenerationSchema.properties.direct_observations.items.required.push("phenomenology");
 caseSnapshotGenerationSchema.properties.path_update.anyOf[1].required.push("delivery_review", "representation");
 
@@ -98,6 +100,8 @@ export const caseAuditSchema = {
     invalidate_romance_guide_context: { type: "boolean" },
     corrected_threat_pathway: threatPathwaySchema,
     invalidate_threat_pathway: { type: "boolean" },
+    corrected_compatibility_assessment: compatibilityAssessmentSchema,
+    invalidate_compatibility_assessment: { type: "boolean" },
     remove_observation_ids: { type: "array", items: { type: "string" } },
     remove_hypothesis_ids: { type: "array", items: { type: "string" } },
     variable_corrections: {
@@ -143,5 +147,7 @@ caseAuditGenerationSchema.required.push(
   "corrected_romance_guide_context",
   "invalidate_romance_guide_context",
   "corrected_threat_pathway",
-  "invalidate_threat_pathway"
+  "invalidate_threat_pathway",
+  "corrected_compatibility_assessment",
+  "invalidate_compatibility_assessment"
 );

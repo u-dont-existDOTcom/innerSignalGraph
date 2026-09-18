@@ -35,6 +35,13 @@ import {
   romanceGuideContextAuditRules
 } from "../prompts/relational-readiness.mjs";
 import { threatPathwayExtractionRules, threatPathwayAuditRules } from "../prompts/threat-pathway.mjs";
+import { protectiveCompatibilityExtractionRules, protectiveCompatibilityAuditRules } from "../prompts/protective-compatibility.mjs";
+import {
+  compatibilityObservationIds,
+  decoratePlanWithProtectiveCompatibility,
+  protectiveCompatibilityDecision,
+  validateCompatibilityAssessment
+} from "./protective-compatibility.mjs";
 import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
 import { planFromGraphs } from "../guide-graph/planner.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
@@ -196,6 +203,19 @@ export function applyCaseAudit(snapshot, audit) {
   }
   const threatPathwayWasTracked = Object.hasOwn(snapshot, "threat_pathway")
     || correctedThreatPathwayProvided || audit.invalidate_threat_pathway === true;
+  const originalCompatibilityAssessment = snapshot.compatibility_assessment ?? null;
+  const originalCompatibilityWithdrawn = compatibilityObservationIds(originalCompatibilityAssessment).some(id => removeObservations.has(id));
+  const correctedCompatibilityProvided = audit.corrected_compatibility_assessment != null;
+  let compatibilityAssessment = correctedCompatibilityProvided ? audit.corrected_compatibility_assessment : originalCompatibilityAssessment;
+  if (audit.invalidate_compatibility_assessment === true || (!correctedCompatibilityProvided && originalCompatibilityWithdrawn)) compatibilityAssessment = null;
+  if (compatibilityAssessment) {
+    compatibilityAssessment = validateCompatibilityAssessment(compatibilityAssessment, {
+      issue: snapshot.current_issue,
+      observationIds: remainingIds
+    });
+  }
+  const compatibilityWasTracked = Object.hasOwn(snapshot, "compatibility_assessment")
+    || correctedCompatibilityProvided || audit.invalidate_compatibility_assessment === true;
 
   return {
     ...snapshot,
@@ -209,6 +229,7 @@ export function applyCaseAudit(snapshot, audit) {
     ...(readinessWasTracked ? { relational_readiness: readiness } : {}),
     ...(romanceContextWasTracked ? { romance_guide_context: romanceGuideContext } : {}),
     ...(threatPathwayWasTracked ? { threat_pathway: threatPathway } : {}),
+    ...(compatibilityWasTracked ? { compatibility_assessment: compatibilityAssessment } : {}),
     hypotheses: snapshot.hypotheses.filter((item) => !removeHypotheses.has(item.id)),
     variables: validateCaseVariables(variables),
     unknowns: [...snapshot.unknowns, ...audit.add_unknowns],
@@ -220,7 +241,8 @@ export function applyCaseAudit(snapshot, audit) {
       ...(readinessWasTracked ? { relational_readiness_reviewed: true } : {}),
       ...(representationWasTracked ? { path_representation_reviewed: true } : {}),
       ...(romanceContextWasTracked ? { romance_guide_context_reviewed: true } : {}),
-      ...(threatPathwayWasTracked ? { threat_pathway_reviewed: true } : {})
+      ...(threatPathwayWasTracked ? { threat_pathway_reviewed: true } : {}),
+      ...(compatibilityWasTracked ? { protective_compatibility_reviewed: true } : {})
     }
   };
 }
@@ -234,9 +256,13 @@ async function planSnapshot(snapshot, {
   const bundle = await loadPlanningGraphBundle();
   const enabled = bundle.graphs.length > 0 && bundle.graphs.every(g => g.pathPerformancePolicyVersion === 1);
   const threatDecision = threatPathwayDecision(snapshot.threat_pathway ?? null);
-  const plannedVariables = threatDecision.level === "IMMINENT_OPERATIONAL_DANGER"
-    ? { ...snapshot.variables, present_safety: "unsafe" }
-    : snapshot.variables;
+  const compatibilityDecision = protectiveCompatibilityDecision(snapshot.compatibility_assessment ?? null, snapshot._protective_compatibility_prior ?? null);
+  const plannedVariables = {
+    ...snapshot.variables,
+    ...(threatDecision.level === "IMMINENT_OPERATIONAL_DANGER" ? { present_safety: "unsafe" } : {}),
+    child_contact_gate: compatibilityDecision.gate,
+    compatibility_route: compatibilityDecision.route
+  };
   const derivedVariables = deriveCaseVariables(plannedVariables);
   const readinessDecision = relationalReadinessDecision(snapshot.relational_readiness ?? null, {
     immediateProtection: immediateProtectionNeeded(derivedVariables) || derivedVariables.suicidal_state === "intent"
@@ -259,12 +285,13 @@ async function planSnapshot(snapshot, {
   delete snapshot._path_prior;
   delete snapshot._path_invalidated;
   delete snapshot._relational_issue_changed;
+  delete snapshot._protective_compatibility_prior;
   const routingControl = applyRomanceGuideRouteConstraint(pathPerformance, snapshot.romance_guide_context ?? null);
   const rawPlan = planFromGraphs({
     variables: plannedVariables,
     unknowns: snapshot.unknowns,
     graphs: bundle.graphs,
-    turnTask: snapshot.turn_task ?? null,
+    turnTask: compatibilityDecision.gate === "NOT_BLOCKED" ? (snapshot.turn_task ?? null) : null,
     pathPerformance: routingControl
   });
   const readinessPlan = decoratePlanWithRelationalReadiness(rawPlan, routingControl, readinessDecision);
@@ -274,7 +301,8 @@ async function planSnapshot(snapshot, {
   });
   if (!composition.canRealize) throw new ValidationError(`Romance guide context requires replanning before realization: ${composition.action}.`);
   const threatPlan = decoratePlanWithThreatPathway(romancePlan, snapshot.threat_pathway ?? null, threatDecision);
-  const plan = decoratePlanWithAntiBypass(threatPlan, snapshot.variables);
+  const antiBypassPlan = decoratePlanWithAntiBypass(threatPlan, plannedVariables);
+  const plan = decoratePlanWithProtectiveCompatibility(antiBypassPlan, compatibilityDecision, bundle.graphs);
   return { plan, graphBundleVersion: bundle.version };
 }
 
@@ -288,7 +316,7 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
     ...context,
     perspectivePracticesEnabled: context.perspectivePracticesEnabled === true
   });
-  prompt.system += relationalReadinessExtractionRules + romanceGuideContextExtractionRules + threatPathwayExtractionRules;
+  prompt.system += relationalReadinessExtractionRules + romanceGuideContextExtractionRules + threatPathwayExtractionRules + protectiveCompatibilityExtractionRules;
   const extraction = await structuredCall(
     provider,
     prompt,
@@ -301,6 +329,7 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
         if (!Object.hasOwn(value, "relational_readiness")) throw new ValidationError("Candidate extraction must declare relational_readiness as null or an evidenced current assessment.");
         if (!Object.hasOwn(value, "romance_guide_context")) throw new ValidationError("Candidate extraction must declare romance_guide_context as null or an evidenced current-turn selector.");
         if (!Object.hasOwn(value, "threat_pathway")) throw new ValidationError("Candidate extraction must declare threat_pathway as null or a complete evidence-bound current assessment.");
+        if (!Object.hasOwn(value, "compatibility_assessment")) throw new ValidationError("Candidate extraction must declare compatibility_assessment as null or a complete evidence-bound current assessment.");
       }
       return validateCaseSnapshot(value);
     },
@@ -312,6 +341,10 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
   delete extraction.value._path_prior;
   const prior = context.priorCaseSnapshot?.path_performance;
   if (prior) extraction.value._path_prior = structuredClone(prior);
+  const compatibilityPrior = context.durableCaseState?.protective_compatibility
+    ?? context.priorCaseSnapshot?.protective_compatibility_state
+    ?? null;
+  if (compatibilityPrior) extraction.value._protective_compatibility_prior = structuredClone(compatibilityPrior);
   const issueChanged = Boolean(context.priorCaseSnapshot?.current_issue && extraction.value.current_issue !== context.priorCaseSnapshot.current_issue);
   const scoped = reconcileIssueScope(extraction.value, context.priorCaseSnapshot);
   if (issueChanged) scoped._relational_issue_changed = true;
@@ -323,6 +356,7 @@ export async function resolveCaseExtraction({ context, provider, onProgress, rec
   if (resumed && (!context.pathPerformanceEnabled || (Object.hasOwn(resumed.value, "relational_readiness")
       && Object.hasOwn(resumed.value, "romance_guide_context")
       && Object.hasOwn(resumed.value, "threat_pathway")
+      && Object.hasOwn(resumed.value, "compatibility_assessment")
       && (!resumed.value.path_update || Object.hasOwn(resumed.value.path_update, "representation"))))) {
     onProgress?.({
       stage: "case_extraction",
@@ -349,7 +383,7 @@ export async function runCaseAudit({ context, snapshot, provider, onProgress }) 
     ...context,
     perspectivePracticesEnabled: context.perspectivePracticesEnabled === true
   }, snapshot);
-  prompt.system += relationalReadinessAuditRules + romanceGuideContextAuditRules + threatPathwayAuditRules;
+  prompt.system += relationalReadinessAuditRules + romanceGuideContextAuditRules + threatPathwayAuditRules + protectiveCompatibilityAuditRules;
   return await structuredCall(
     provider,
     prompt,
@@ -361,6 +395,9 @@ export async function runCaseAudit({ context, snapshot, provider, onProgress }) 
         }
         if (!Object.hasOwn(value, "corrected_threat_pathway") || !Object.hasOwn(value, "invalidate_threat_pathway")) {
           throw new ValidationError("Candidate audit must explicitly review threat_pathway.");
+        }
+        if (!Object.hasOwn(value, "corrected_compatibility_assessment") || !Object.hasOwn(value, "invalidate_compatibility_assessment")) {
+          throw new ValidationError("Candidate audit must explicitly review compatibility_assessment.");
         }
       }
       return validateCaseAudit(value);

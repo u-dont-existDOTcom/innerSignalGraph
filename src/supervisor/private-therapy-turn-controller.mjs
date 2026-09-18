@@ -187,7 +187,10 @@ export function createPrivateTherapyTurnController({
           caseState: produced.caseState,
           stateDiff: produced.stateDiff,
           diffId: `diff:runtime:${operationKey}`,
-          metadata: { producer_attempt_context_id: produced.result?.producerAttemptContextId ?? null },
+          metadata: {
+            producer_attempt_context_id: produced.result?.producerAttemptContextId ?? null,
+            compatibility_state_binding: produced.result?.compatibilityBinding ?? null
+          },
           eventId: `runtime-event:${operationKey}:candidate:v1:persisted`
         }], authContext);
         continue;
@@ -260,7 +263,10 @@ export function createPrivateTherapyTurnController({
           producerContextId: repaired.contextId,
           parentCandidateId: parent.id,
           basedOnAuditId: sourceAudit.id,
-          metadata: { repair_induced_error_checks_required: [...REPAIR_INDUCED_ERROR_CHECKS] },
+          metadata: {
+            repair_induced_error_checks_required: [...REPAIR_INDUCED_ERROR_CHECKS],
+            compatibility_state_binding: parent.metadata?.compatibility_state_binding ?? null
+          },
           eventId: `runtime-event:${operationKey}:candidate:v${parent.repair_cycle + 2}:persisted`
         }], authContext);
         continue;

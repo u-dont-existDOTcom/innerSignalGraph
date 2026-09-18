@@ -5,6 +5,11 @@ import {
   updateThreatPathwayState,
   validateThreatPathwayState
 } from "../case-formulation/threat-pathway.mjs";
+import {
+  protectiveCompatibilityDecision,
+  updateProtectiveCompatibilityState,
+  validateProtectiveCompatibilityState
+} from "../case-formulation/protective-compatibility.mjs";
 
 export const CASE_STATE_VERSION = 1;
 export const CASE_STATE_STATUSES = Object.freeze(["direct_report", "supervisor_report", "observed_pattern", "hypothesis", "inference", "unresolved_conflict"]);
@@ -119,6 +124,7 @@ export function createEmptyCaseState({ caseId = "local-case" } = {}) {
     intervention_history: [],
     current_episode: null,
     threat_pathway: null,
+    protective_compatibility: null,
     retrieval_hints: []
   };
 }
@@ -158,6 +164,7 @@ export function validateCaseState(value) {
   value.retrieval_hints.forEach((item, index) => bounded(item, `caseState.retrieval_hints[${index}]`, 240));
   validateEpisode(value.current_episode);
   if (Object.hasOwn(value, "threat_pathway")) validateThreatPathwayState(value.threat_pathway);
+  if (Object.hasOwn(value, "protective_compatibility")) validateProtectiveCompatibilityState(value.protective_compatibility);
   return value;
 }
 
@@ -187,7 +194,8 @@ export function applyCaseStatePatch(previous, patch = {}) {
     retrieval_hints: unique([...(before.retrieval_hints ?? []), ...(patch.retrieval_hints ?? [])]),
     trajectory_observability: patch.trajectory_observability ? clone(patch.trajectory_observability) : before.trajectory_observability,
     current_episode: Object.hasOwn(patch, "current_episode") ? clone(patch.current_episode) : before.current_episode,
-    threat_pathway: Object.hasOwn(patch, "threat_pathway") ? clone(patch.threat_pathway) : (before.threat_pathway ?? null)
+    threat_pathway: Object.hasOwn(patch, "threat_pathway") ? clone(patch.threat_pathway) : (before.threat_pathway ?? null),
+    protective_compatibility: Object.hasOwn(patch, "protective_compatibility") ? clone(patch.protective_compatibility) : (before.protective_compatibility ?? null)
   };
   return validateCaseState(next);
 }
@@ -244,6 +252,7 @@ export function diffCaseStates(previous, next) {
     answered_question_changes: changedFields(before.answered_questions, after.answered_questions).length ? after.answered_questions.map((item) => item.id) : [],
     current_episode_changed: JSON.stringify(before.current_episode) !== JSON.stringify(after.current_episode),
     threat_pathway_changed: JSON.stringify(before.threat_pathway ?? null) !== JSON.stringify(after.threat_pathway ?? null),
+    protective_compatibility_changed: JSON.stringify(before.protective_compatibility ?? null) !== JSON.stringify(after.protective_compatibility ?? null),
     trajectory_observability_changed: JSON.stringify(before.trajectory_observability) !== JSON.stringify(after.trajectory_observability)
   });
 }
@@ -255,6 +264,7 @@ export function projectCaseStateForInspection(state) {
     trajectoryObservability: value.trajectory_observability,
     currentEpisode: value.current_episode,
     threatPathway: value.threat_pathway ?? null,
+    protectiveCompatibility: value.protective_compatibility ?? null,
     factsAndHypotheses: value.items,
     contradictions: value.contradiction_clusters,
     settledAnswers: value.answered_questions,
@@ -306,6 +316,7 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
       ...(safetyVariables.ability_to_stop === "no" ? ["ability to stop is lost"] : []),
       ...(safetyVariables.ability_to_return === "no" ? ["ability to return is lost"] : []),
       ...(safetyVariables.present_safety === "unsafe" ? ["present safety becomes unsafe"] : []),
+      ...(["HOLD", "BLOCKED"].includes(safetyVariables.child_contact_gate) ? ["child-directed contact permission is restricted"] : []),
       ...(interventionContract?.threatPathway?.level === "IMMINENT_OPERATIONAL_DANGER" ? ["near-term operational violence risk is present"] : [])
     ];
     currentEpisode = {
@@ -338,5 +349,17 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
   const threatPathway = assessment
     ? updateThreatPathwayState(previous.threat_pathway ?? null, assessment, threatPathwayDecision(assessment), { turnId, recordedAt })
     : (previous.threat_pathway ?? null);
-  return applyCaseStatePatch(previous, { items, intervention_history: interventionHistory, current_episode: currentEpisode, threat_pathway: threatPathway });
+  const compatibilityAssessment = snapshot?.compatibility_assessment ?? null;
+  const compatibilityDecision = snapshot?.protective_compatibility_decision
+    ?? protectiveCompatibilityDecision(compatibilityAssessment, previous.protective_compatibility ?? null);
+  const protectiveCompatibility = compatibilityAssessment || previous.protective_compatibility
+    ? updateProtectiveCompatibilityState(previous.protective_compatibility ?? null, compatibilityAssessment, compatibilityDecision, { turnId, recordedAt })
+    : null;
+  return applyCaseStatePatch(previous, {
+    items,
+    intervention_history: interventionHistory,
+    current_episode: currentEpisode,
+    threat_pathway: threatPathway,
+    protective_compatibility: protectiveCompatibility
+  });
 }

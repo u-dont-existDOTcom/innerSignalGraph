@@ -47,6 +47,9 @@ ${context.recentTranscript || "(none supplied)"}
 CURRENT USER REQUEST:
 ${context.userMessage}
 
+DURABLE PROTECTIVE COMPATIBILITY STATE:
+${JSON.stringify(context.durableCaseState?.protective_compatibility ?? null, null, 2)}
+
 AUTOPILOT FEEDBACK FROM PRIOR ATTEMPTS:
 ${context.autopilotFeedback ? JSON.stringify(context.autopilotFeedback, null, 2) : "(none)"}`;
   return { system, user };

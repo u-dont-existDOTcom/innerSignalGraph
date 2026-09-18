@@ -90,6 +90,9 @@ export async function reconcileApprovedProposal({ root, id, packetId, packetPath
   if (verified.manifest.baseProjectionInputSha256 !== authority.projectionInputSha256) fail("STALE_AUTHORING_BASE", "Canonical authority changed after the approved proposal packet was built.");
 
   const entries = readZipEntries(buffer);
+  const packetOwnerAmendments = verified.manifest.proposedSourceAmendments === true
+    ? JSON.parse(entries.get("policy/owner-amendments.json").toString("utf8"))
+    : authority.amendments;
   const candidates = [];
   for (const record of verified.manifest.candidateGraphs ?? []) {
     const target = GRAPH_PATHS[record.graphId];
@@ -101,7 +104,12 @@ export async function reconcileApprovedProposal({ root, id, packetId, packetPath
     candidates.push({ graphId: record.graphId, target, data, graph });
   }
   if (candidates.length !== Object.keys(GRAPH_PATHS).length) fail("PACKET_CANDIDATE_GRAPH_INVALID", "Approved packet must contain all canonical candidate graphs.");
-  const compiled = await compileGuideGraphs({ root, write: false, candidateGraphs: Object.keys(GRAPH_PATHS).map((graphId) => candidates.find((item) => item.graphId === graphId).graph) });
+  const compiled = await compileGuideGraphs({
+    root,
+    write: false,
+    candidateGraphs: Object.keys(GRAPH_PATHS).map((graphId) => candidates.find((item) => item.graphId === graphId).graph),
+    candidateAmendments: packetOwnerAmendments
+  });
   if (canonicalJson(compiled) !== canonicalJson(verified.packetGraphBundle)) fail("PACKET_CANDIDATE_BUNDLE_MISMATCH", "Approved candidate graph members do not compile to the approved packet bundle.");
   const regression = await runGraphRegressionSuite({ root, bundle: compiled });
   if (!regression.ok) fail("PROPOSAL_REGRESSION_FAILURE", "Approved candidate graph fails canonical regressions.");
@@ -114,7 +122,7 @@ export async function reconcileApprovedProposal({ root, id, packetId, packetPath
   assertPublicAuthoringText(nextProposalText, { label: proposalRelative });
   const snapshotPaths = [
     "guide-graphs/candidates", "guide-graphs/compiled", "guide-graphs/source-maps", "guide-graphs/reports",
-    "authoring/obsidian/current", "docs/INNER-CHILD-THERAPY-MAP.md", proposalRelative
+    "authoring/obsidian/current", "docs/INNER-CHILD-THERAPY-MAP.md", "guides/owner-amendments.json", proposalRelative
   ];
   const snapshot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-reconcile-backup-"));
   const temporaryFiles = new Set();
@@ -127,6 +135,20 @@ export async function reconcileApprovedProposal({ root, id, packetId, packetPath
       await fs.writeFile(temporary, item.data, { flag: "wx" });
       await fs.rename(temporary, file);
       temporaryFiles.delete(temporary);
+    }
+    if (verified.manifest.proposedSourceAmendments === true) {
+      const promotedAmendments = {
+        ...packetOwnerAmendments,
+        version: `${packetOwnerAmendments.version ?? "owner-amendments"}-approved-${new Date().toISOString().slice(0, 10)}`,
+        approvedAt: new Date().toISOString().slice(0, 10),
+        items: packetOwnerAmendments.items.map(item => ({ ...item, status: "owner-approved" }))
+      };
+      const amendmentFile = path.join(root, "guides", "owner-amendments.json");
+      const amendmentTemporary = `${amendmentFile}.${process.pid}.reconcile`;
+      temporaryFiles.add(amendmentTemporary);
+      await fs.writeFile(amendmentTemporary, canonicalJson(promotedAmendments), { encoding: "utf8", flag: "wx" });
+      await fs.rename(amendmentTemporary, amendmentFile);
+      temporaryFiles.delete(amendmentTemporary);
     }
     const proposalTemporary = `${proposalFile}.${process.pid}.reconcile`;
     temporaryFiles.add(proposalTemporary);
