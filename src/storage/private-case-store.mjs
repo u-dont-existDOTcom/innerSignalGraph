@@ -30,6 +30,7 @@ import { chunkExactSourceText, createExactSourceArtifact, EXACT_SOURCE_LIMITS, v
 import { assessContinuationSafety } from "./private-case-continuity.mjs";
 import { compilePrivateHandoffArtifact, createHandoffId, openPrivateHandoffArtifact, validateHandoffId } from "./private-case-handoff.mjs";
 import { writePrivateArtifactLocator } from "./private-artifact-locator.mjs";
+import { compatibilityStateBinding } from "../case-formulation/protective-compatibility.mjs";
 import {
   TRANSCRIPT_AMENDMENT_LIMITS,
   applyTranscriptAmendments,
@@ -890,6 +891,11 @@ export function createEncryptedPrivateCaseStore({
         const current = [...record.candidate_responses].reverse().find(isActivePrivateCandidate);
         const gate = candidateDeliveryGate(candidate);
         if (!candidate || current?.id !== candidate.id || !gate.delivery_allowed) throw new ValidationError("Runtime candidate delivery is not exact-version approved.");
+        const currentCompatibilityBinding = compatibilityStateBinding(record.case_state.protective_compatibility ?? null);
+        if (record.case_state.protective_compatibility?.current
+            && candidate.metadata.compatibility_state_binding !== currentCompatibilityBinding) {
+          throw new ValidationError("Runtime candidate compatibility-state binding is stale; a new candidate and audit are required.", { code: "PROTECTIVE_COMPATIBILITY_BINDING_STALE" });
+        }
         if (record.raw_transcript.some((entry) => entry.id === assistantTurnId)) throw new ValidationError("Runtime assistant turn identifier already exists.");
         const timestamp = now();
         record.raw_transcript.push({ id: assistantTurnId, exchange_id: runtimeTurn.exchange_id, role: "assistant", text: candidate.exact_text, at: timestamp, episode_id: record.case_state.current_episode?.id ?? null });

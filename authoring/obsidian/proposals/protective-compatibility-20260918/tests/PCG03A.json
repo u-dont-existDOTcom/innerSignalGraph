@@ -1,0 +1,31 @@
+{
+  "description": "ROUTE.IDENTITY_FUNCTION_OUTCOMES is selected only for its exact compatibility route.",
+  "expected": {
+    "forbiddenOverclaimPatterns": [
+      "proven treatment for psychopathy",
+      "permission to resume child contact"
+    ],
+    "nextQuestion": "What does this identity give you, and what does it cost you?",
+    "primary": "ROUTE.IDENTITY_FUNCTION_OUTCOMES",
+    "requiredNuancePatterns": [
+      "present adult perspective",
+      "religious identity is not evidence"
+    ],
+    "selectedIncludes": [
+      "ROUTE.IDENTITY_FUNCTION_OUTCOMES"
+    ]
+  },
+  "id": "PCG03A",
+  "unknowns": [],
+  "variables": {
+    "ability_to_return": "yes",
+    "ability_to_stop": "yes",
+    "altered_state": "sober",
+    "child_contact_gate": "BLOCKED",
+    "compatibility_route": "identity_inquiry",
+    "current_intent": "conversation",
+    "dissociation": "none",
+    "orientation": "oriented",
+    "present_safety": "safe"
+  }
+}

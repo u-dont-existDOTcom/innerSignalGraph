@@ -1,0 +1,31 @@
+{
+  "description": "ROUTE.HUMAN_CARE_BRIDGE is selected only for its exact compatibility route.",
+  "expected": {
+    "forbiddenOverclaimPatterns": [
+      "proven treatment for psychopathy",
+      "permission to resume child contact"
+    ],
+    "nextQuestion": "Would being heard by a real person be more useful than another exercise right now?",
+    "primary": "ROUTE.HUMAN_CARE_BRIDGE",
+    "requiredNuancePatterns": [
+      "present adult perspective",
+      "religious identity is not evidence"
+    ],
+    "selectedIncludes": [
+      "ROUTE.HUMAN_CARE_BRIDGE"
+    ]
+  },
+  "id": "PCG06A",
+  "unknowns": [],
+  "variables": {
+    "ability_to_return": "yes",
+    "ability_to_stop": "yes",
+    "altered_state": "sober",
+    "child_contact_gate": "BLOCKED",
+    "compatibility_route": "human_support",
+    "current_intent": "conversation",
+    "dissociation": "none",
+    "orientation": "oriented",
+    "present_safety": "safe"
+  }
+}

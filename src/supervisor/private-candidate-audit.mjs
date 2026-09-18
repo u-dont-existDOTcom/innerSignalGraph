@@ -45,7 +45,8 @@ export async function buildPrivateCandidateAuditInput({ caseAccessService, caseI
       "Handoff fidelity, candidate-audit fidelity, and reconstruction-audit fidelity are distinct gates; a correct handoff does not certify later reasoning.",
       "Audit evidence applies only to this exact candidate_id and candidate_version.",
       "If this is reconstructed, explicitly inspect every repair_induced_error_check and do not rely on the parent candidate's audit.",
-      "Do not convert hypotheses into facts, repeat answered questions, expose hidden reasoning, or substitute a summary/hash for candidate_response."
+      "Do not convert hypotheses into facts, repeat answered questions, expose hidden reasoning, or substitute a summary/hash for candidate_response.",
+      "When case_state.protective_compatibility.current.gate is HOLD or BLOCKED, fail any direct or indirect inner-child/younger-self contact invitation anywhere in the exact candidate, including its final question, task, referral, or homework. A promise, conversion, calm, or general audit PASS cannot clear the gate."
     ],
     hidden_reasoning_included: false
   });

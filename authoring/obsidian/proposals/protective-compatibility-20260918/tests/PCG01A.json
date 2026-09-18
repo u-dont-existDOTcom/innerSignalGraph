@@ -1,0 +1,31 @@
+{
+  "description": "ROUTE.COMPATIBILITY_CLARIFY is selected only for its exact compatibility route.",
+  "expected": {
+    "forbiddenOverclaimPatterns": [
+      "proven treatment for psychopathy",
+      "permission to resume child contact"
+    ],
+    "nextQuestion": "When you describe that aim, are you describing something you want to do, something you fear doing, or someone else's position?",
+    "primary": "ROUTE.COMPATIBILITY_CLARIFY",
+    "requiredNuancePatterns": [
+      "present adult perspective",
+      "religious identity is not evidence"
+    ],
+    "selectedIncludes": [
+      "ROUTE.COMPATIBILITY_CLARIFY"
+    ]
+  },
+  "id": "PCG01A",
+  "unknowns": [],
+  "variables": {
+    "ability_to_return": "yes",
+    "ability_to_stop": "yes",
+    "altered_state": "sober",
+    "child_contact_gate": "BLOCKED",
+    "compatibility_route": "clarify_intent",
+    "current_intent": "conversation",
+    "dissociation": "none",
+    "orientation": "oriented",
+    "present_safety": "safe"
+  }
+}

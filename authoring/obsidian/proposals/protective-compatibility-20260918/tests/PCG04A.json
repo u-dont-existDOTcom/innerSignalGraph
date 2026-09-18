@@ -1,0 +1,31 @@
+{
+  "description": "ROUTE.SOVEREIGN_AGENCY is selected only for its exact compatibility route.",
+  "expected": {
+    "forbiddenOverclaimPatterns": [
+      "proven treatment for psychopathy",
+      "permission to resume child contact"
+    ],
+    "nextQuestion": "What room do you want to have to pause and choose when a commitment or command pulls you toward an action?",
+    "primary": "ROUTE.SOVEREIGN_AGENCY",
+    "requiredNuancePatterns": [
+      "present adult perspective",
+      "religious identity is not evidence"
+    ],
+    "selectedIncludes": [
+      "ROUTE.SOVEREIGN_AGENCY"
+    ]
+  },
+  "id": "PCG04A",
+  "unknowns": [],
+  "variables": {
+    "ability_to_return": "yes",
+    "ability_to_stop": "yes",
+    "altered_state": "sober",
+    "child_contact_gate": "BLOCKED",
+    "compatibility_route": "sovereignty",
+    "current_intent": "conversation",
+    "dissociation": "none",
+    "orientation": "oriented",
+    "present_safety": "safe"
+  }
+}

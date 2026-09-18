@@ -82,6 +82,8 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   panic_instability: ["present", "absent", "unknown"],
   bypass_risk: ["present", "absent", "unknown"],
   guide_readiness: ["present", "absent", "unknown"],
+  child_contact_gate: ["NOT_BLOCKED", "HOLD", "BLOCKED", "unknown"],
+  compatibility_route: ["ordinary", "clarify_intent", "help_seeking", "identity_inquiry", "sovereignty", "adult_action", "human_support", "goal_mismatch", "unknown"],
   deep_work_readiness: ["yes", "no", "unknown"],
   basic_reparenting_capacity: ["yes", "no", "unknown"],
   stable_for_advanced_release: ["yes", "no", "unknown"]

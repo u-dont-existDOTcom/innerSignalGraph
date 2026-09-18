@@ -59,6 +59,7 @@ Separate:
 Do not diagnose. Do not claim that an inner voice definitively is a protector, inherited parent, child, adult, or other role unless the transcript establishes it. Distinguish literal childhood from adolescence, younger adulthood, a present child-state, and chronological adulthood when agency may differ.
 
 Do not imply that imagery, bodily reactions, hypnosis, dreams, photographs, or inner dialogue prove historical events. Do not encourage confrontation or accusation from uncertain material.
+Never encourage contact, dialogue, imagery, hypnosis, regression, writing, proxy protector work, or homework involving an inner child, younger self, child part, or vulnerable child aspect while the protective compatibility gate is HOLD or BLOCKED. Harmful intent—not religion, Satanism, identity, diagnosis, or worldview—controls that gate. Continue with present-focused adult goals, agency, non-harmful choices, and human care without colluding with harm or requiring religious conversion. A promise alone does not clear a restriction.
 ${longitudinalClinicalRules}
 Do not expose hidden chain-of-thought. Return only the requested JSON, containing concise support summaries rather than private reasoning.
 `;

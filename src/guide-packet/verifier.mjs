@@ -405,9 +405,20 @@ export function verifyGuidePacket(buffer, { installedRevision = null, installedB
   let behavioralDiff = embeddedDiff ?? { substantive: true, affectedCases: [] };
   if (installedBundle && graphBundle) {
     try {
+      const comparisonBaseline = repositoryMode && manifest?.proposedSourceAmendments === true
+        ? {
+            ...installedBundle,
+            sourceMaps: graphBundle.sourceMaps,
+            stats: {
+              ...installedBundle.stats,
+              sourceSectionCount: graphBundle.stats?.sourceSectionCount,
+              ownerAmendmentCount: graphBundle.stats?.ownerAmendmentCount
+            }
+          }
+        : installedBundle;
       behavioralDiff = repositoryMode
-        ? buildBehavioralDiffV2(installedBundle, graphBundle, { regressionCases })
-        : buildBehavioralDiff(installedBundle, graphBundle, { regressionCases });
+        ? buildBehavioralDiffV2(comparisonBaseline, graphBundle, { regressionCases })
+        : buildBehavioralDiff(comparisonBaseline, graphBundle, { regressionCases });
     } catch (error) {
       errors.push(`Verified behavioral diff could not be built: ${error.message}`);
       behavioralDiff = { contractVersion: repositoryMode ? "guide-behavioral-diff-v2" : "guide-behavioral-diff-v1", substantive: true, affectedCases: [], changes: [] };

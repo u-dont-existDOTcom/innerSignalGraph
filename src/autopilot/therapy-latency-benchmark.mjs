@@ -24,12 +24,12 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  revision: "somatic-altered-guide-sync-2026-09-16",
+  revision: "protective-compatibility-2026-09-18",
   fast: Object.freeze({
-    semanticHash: "a41487bbb92114b1870ee39826948065f75502e77c82c3373d27a5ee39dbe89f"
+    semanticHash: "7537cb0cbc4d820af861cd9eb4527c55cec8caf32b1cfbb84e43ab92e844ffb0"
   }),
   reviewed: Object.freeze({
-    semanticHash: "f898656cb46a5f9971f25cc6f259169bf09c8c29ceea254b7866e72abeed5941"
+    semanticHash: "e90133096e3af589712a7b587852150c1cea8d76c059a895e6176e4b099c9e14"
   })
 });
 

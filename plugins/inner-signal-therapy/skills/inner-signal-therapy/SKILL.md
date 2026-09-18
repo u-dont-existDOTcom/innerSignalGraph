@@ -3,9 +3,11 @@ name: inner-signal-therapy
 description: Respond to inner-child and self-relationship problems using the Inner Signal therapy map while respecting differences in inner speech and representation.
 ---
 
-Read `references/INNER-CHILD-THERAPY-MAP.md`, `references/PHENOMENOLOGY-AND-REPRESENTATION.md`, and `references/PROTOCOL-STATE-PROVENANCE.md` before responding.
+Read `references/PROTECTIVE-COMPATIBILITY.md`, `references/INNER-CHILD-THERAPY-MAP.md`, `references/PHENOMENOLOGY-AND-REPRESENTATION.md`, and `references/PROTOCOL-STATE-PROVENANCE.md` before responding.
 
 Use the supplied therapy map as advisory architecture. Understand this particular person rather than mechanically reciting the map. Preserve uncertainty and safety constraints. Give the most useful response and next move. Do not mention the map.
+
+Protective compatibility is evaluated before any inner-child or younger-self exercise. Follow `references/PROTECTIVE-COMPATIBILITY.md` across the whole response, including questions, links, referrals, hypnosis, tasks, and homework. The skill is advisory and must never claim that prompt instructions can certify intent or clinical readiness.
 
 This skill and the `inner-signal-private-continuity` skill are capabilities of the same **InnerSignal** plugin. Do not tell the user to install a separate handoff/continuity plugin. If the user asks to continue from an InnerSignal handoff or private case and the host exposes the read-only private continuity tools, use that capability first and then continue therapy with the recovered exact context. If those tools are not available in the current host, state the capability boundary rather than inventing prior context.
 
