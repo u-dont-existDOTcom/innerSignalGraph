@@ -609,7 +609,7 @@ test("private handoff requires stable identifiers and executable retrieval evide
   );
 });
 
-test("separate read-only MCP process executes load_case_context from a fresh client process", async (t) => {
+test("separate MCP process preserves read-only continuity and advertises controlled application commands", async (t) => {
   const environment = await makeEnvironment(t);
   await runSession("seed", environment);
   await runSession("handoff-create", environment, { handoffId: HANDOFF_ID });
@@ -637,7 +637,12 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   }).then((response) => response.json());
   assert.deepEqual(
     listed.result.tools.map((tool) => tool.name),
-    ["load_handoff", "load_case_context", "get_state_diff", "get_recent_verbatim", "retrieve_case_evidence", "get_pending_candidate", "get_tracker_window", "get_journal_entries", "get_candidate_response", "get_source_artifact"]
+    [
+      "load_handoff", "load_case_context", "get_state_diff", "get_recent_verbatim", "retrieve_case_evidence",
+      "get_pending_candidate", "get_tracker_window", "get_journal_entries", "get_candidate_response", "get_source_artifact",
+      "open_controlled_case_turn", "prepare_controlled_case_turn", "get_controlled_turn_context", "submit_native_candidate",
+      "get_controlled_turn_status", "get_controlled_reply_artifact", "acknowledge_controlled_reply"
+    ]
   );
   const { stdout } = await runSession("mcp-load", environment, { fourthArg: ready.mcpUrl });
   const result = JSON.parse(stdout);

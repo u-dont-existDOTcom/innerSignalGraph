@@ -61,7 +61,7 @@ export function createPrivateCaseAccessService({
   assertProvider(keyProvider, "getCaseKeyMaterial", "keyProvider");
   const mutationTails = new Map();
 
-  const withStore = async (caseId, authContext, requiredScope, operation) => {
+  const authorizeCase = async (caseId, authContext, requiredScope) => {
     let authorization;
     try {
       authorization = await authorizationProvider.authorize({ caseId, authContext, requiredScope });
@@ -70,6 +70,11 @@ export function createPrivateCaseAccessService({
     }
     if (!authorization?.allowed || !authorization?.principalId) throw new PrivateCaseAccessDeniedError();
     if (!Array.isArray(authorization.scopes) || !authorization.scopes.includes(requiredScope)) throw new PrivateCaseAccessDeniedError();
+    return authorization;
+  };
+
+  const withStore = async (caseId, authContext, requiredScope, operation) => {
+    const authorization = await authorizeCase(caseId, authContext, requiredScope);
 
     let material;
     let routineKek;
@@ -134,6 +139,11 @@ export function createPrivateCaseAccessService({
 
   return Object.freeze({
     rootDir,
+    async assertPrivateCaseScope(caseId, requiredScope, authContext) {
+      if (!Object.values(PRIVATE_CASE_SCOPES).includes(requiredScope)) throw new ValidationError("Private case scope is invalid.");
+      await authorizeCase(caseId, authContext, requiredScope);
+      return true;
+    },
     async loadPrivateRuntimeCase(caseId, authContext) {
       return read(caseId, authContext, async (store) => {
         const record = await store.load(caseId);
@@ -159,6 +169,9 @@ export function createPrivateCaseAccessService({
     async recordPrivateRuntimeInvocationEvent(caseId, runtimeTurnId, event, authContext) {
       const scope = event.stage === "audit" ? PRIVATE_CASE_SCOPES.AUDIT : PRIVATE_CASE_SCOPES.WRITE;
       return mutate(caseId, authContext, scope, (store) => store.recordPrivateRuntimeInvocationEvent(caseId, runtimeTurnId, event));
+    },
+    async recordPrivateRuntimeArtifactInteraction(caseId, runtimeTurnId, event, authContext) {
+      return write(caseId, authContext, (store) => store.recordPrivateRuntimeArtifactInteraction(caseId, runtimeTurnId, event));
     },
     async transitionPrivateRuntimeTurn(caseId, runtimeTurnId, transition, authContext) {
       const scope = transition.toState === "AUDITING" || transition.toState === "APPROVED" ? PRIVATE_CASE_SCOPES.AUDIT : PRIVATE_CASE_SCOPES.WRITE;

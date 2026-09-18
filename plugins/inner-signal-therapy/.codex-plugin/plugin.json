@@ -1,7 +1,7 @@
 {
   "name": "inner-signal-therapy",
-  "version": "0.2.0",
-  "description": "InnerSignal therapy with optional authenticated private continuity in one plugin.",
+  "version": "0.3.0",
+  "description": "InnerSignal therapy with authenticated private continuity and controlled native turns in one plugin.",
   "author": {
     "name": "u-dont-existDOTcom"
   },
@@ -11,13 +11,14 @@
   "interface": {
     "displayName": "InnerSignal",
     "shortDescription": "Therapy with private continuity",
-    "longDescription": "InnerSignal combines its therapy guidance with authenticated read-only private continuity when that MCP connection is available, so users do not need a separate handoff plugin.",
+    "longDescription": "InnerSignal combines therapy guidance, authenticated read-only private continuity, and a bounded controlled native ChatGPT turn component in one plugin. Exact native drafts remain pending independent review until the existing canonical release path completes.",
     "developerName": "u-dont-existDOTcom",
     "category": "Wellness",
-    "capabilities": ["Advisory", "Read"],
+    "capabilities": ["Advisory", "Read", "Write"],
     "defaultPrompt": [
       "Help me work with an inner-child conflict.",
       "Continue from my private InnerSignal handoff.",
+      "Open a controlled native ChatGPT turn for my authorized InnerSignal case.",
       "Help me understand why care for a younger part of me feels unsafe.",
       "Help me find one grounded next step in a self-relationship conflict."
     ]

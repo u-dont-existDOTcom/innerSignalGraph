@@ -20,8 +20,15 @@ export const PRIVATE_RUNTIME_INVOCATION_EVENT_TYPES = Object.freeze([
   "INVOCATION_ABANDONED"
 ]);
 
+export const PRIVATE_RUNTIME_ARTIFACT_INTERACTION_KINDS = Object.freeze([
+  "displayed",
+  "copied",
+  "operator_reported_sent"
+]);
+
 const STATE_SET = new Set(PRIVATE_RUNTIME_TURN_STATES);
 const INVOCATION_EVENT_SET = new Set(PRIVATE_RUNTIME_INVOCATION_EVENT_TYPES);
+const ARTIFACT_INTERACTION_SET = new Set(PRIVATE_RUNTIME_ARTIFACT_INTERACTION_KINDS);
 const ID = /^[A-Za-z0-9:_-]{1,200}$/;
 const SHA256 = /^[a-f0-9]{64}$/;
 const RELAY_STATUSES = new Set(["direct", "relayed_exact", "paraphrase", "unknown"]);
@@ -75,6 +82,11 @@ function validateEvent(event, index) {
   if (event.event_type === "STATE_TRANSITION") {
     if (event.from_state !== null && !STATE_SET.has(event.from_state)) throw new ValidationError(`runtime events[${index}].from_state is invalid.`);
     if (!STATE_SET.has(event.to_state)) throw new ValidationError(`runtime events[${index}].to_state is invalid.`);
+  } else if (event.event_type === "ARTIFACT_INTERACTION") {
+    if (!STATE_SET.has(event.state)) throw new ValidationError(`runtime events[${index}].state is invalid.`);
+    if (!ARTIFACT_INTERACTION_SET.has(event.interaction_kind)) throw new ValidationError(`runtime events[${index}].interaction_kind is invalid.`);
+    if (typeof event.artifact_sha256 !== "string" || !SHA256.test(event.artifact_sha256)) throw new ValidationError(`runtime events[${index}].artifact_sha256 is invalid.`);
+    if (!["DRAFT_PENDING_REVIEW", "RELEASED"].includes(event.artifact_status)) throw new ValidationError(`runtime events[${index}].artifact_status is invalid.`);
   } else {
     if (!INVOCATION_EVENT_SET.has(event.event_type)) throw new ValidationError(`runtime events[${index}].event_type is invalid.`);
     if (!STATE_SET.has(event.state)) throw new ValidationError(`runtime events[${index}].state is invalid.`);
@@ -254,6 +266,38 @@ export function appendPrivateRuntimeInvocationEvent(runtimeTurn, { eventId, even
     context_id: contextId,
     attempt,
     input_sha256: inputSha256,
+    at,
+    details: structuredClone(details)
+  });
+  next.updated_at = at;
+  return validatePrivateRuntimeTurn(next);
+}
+
+export function appendPrivateRuntimeArtifactInteraction(runtimeTurn, {
+  eventId,
+  interactionKind,
+  artifactSha256,
+  artifactStatus,
+  at,
+  details = {}
+}) {
+  validatePrivateRuntimeTurn(runtimeTurn);
+  requiredId(eventId, "runtime artifact interaction eventId");
+  if (!ARTIFACT_INTERACTION_SET.has(interactionKind)) throw new ValidationError("runtime artifact interaction kind is invalid.");
+  if (typeof artifactSha256 !== "string" || !SHA256.test(artifactSha256)) throw new ValidationError("runtime artifact interaction sha256 is invalid.");
+  if (!["DRAFT_PENDING_REVIEW", "RELEASED"].includes(artifactStatus)) throw new ValidationError("runtime artifact interaction status is invalid.");
+  if (!["CANDIDATE_PENDING_AUDIT", "DELIVERED"].includes(runtimeTurn.state)) {
+    throw new ValidationError("Runtime artifact interaction requires a draft-pending-review or released artifact.");
+  }
+  const next = structuredClone(runtimeTurn);
+  next.events.push({
+    id: eventId,
+    sequence: next.events.length + 1,
+    event_type: "ARTIFACT_INTERACTION",
+    state: next.state,
+    interaction_kind: interactionKind,
+    artifact_sha256: artifactSha256,
+    artifact_status: artifactStatus,
     at,
     details: structuredClone(details)
   });
