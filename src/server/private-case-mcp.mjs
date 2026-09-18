@@ -1,6 +1,13 @@
 import http from "node:http";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
 import { CaseNotContinuationSafeError, PRIVATE_CASE_SCOPES, PrivateCaseAccessDeniedError, PrivateCaseKeyUnavailableError } from "../storage/private-case-access.mjs";
+import {
+  createPrivateCaseChatGptAppAdapter,
+  NATIVE_BRIDGE_RESOURCE,
+  NATIVE_BRIDGE_TOOL_DEFINITIONS,
+  NATIVE_BRIDGE_TOOL_SCOPES,
+  readNativeBridgeResource
+} from "./private-case-chatgpt-app.mjs";
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const MAX_BODY_BYTES = 1_000_000;
@@ -211,18 +218,24 @@ const TOOL_DEFINITIONS = Object.freeze([
 ]);
 
 const AUDIT_TOOLS = new Set(["load_handoff", "load_case_context", "get_pending_candidate", "get_candidate_response", "get_source_artifact"]);
+const ALL_TOOL_DEFINITIONS = Object.freeze([...TOOL_DEFINITIONS, ...NATIVE_BRIDGE_TOOL_DEFINITIONS]);
 
 function advertisedTools(oauthEnabled) {
-  if (!oauthEnabled) return TOOL_DEFINITIONS;
-  return TOOL_DEFINITIONS.map((tool) => Object.freeze({
-    ...tool,
-    securitySchemes: Object.freeze([Object.freeze({
+  if (!oauthEnabled) return ALL_TOOL_DEFINITIONS;
+  return ALL_TOOL_DEFINITIONS.map((tool) => {
+    const securityScheme = Object.freeze({
       type: "oauth2",
-      scopes: Object.freeze(AUDIT_TOOLS.has(tool.name)
+      scopes: Object.freeze(NATIVE_BRIDGE_TOOL_SCOPES[tool.name] ?? (AUDIT_TOOLS.has(tool.name)
         ? [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT]
-        : [PRIVATE_CASE_SCOPES.READ])
-    })])
-  }));
+        : [PRIVATE_CASE_SCOPES.READ]))
+    });
+    const securitySchemes = Object.freeze([securityScheme]);
+    return Object.freeze({
+      ...tool,
+      securitySchemes,
+      _meta: Object.freeze({ ...(tool._meta ?? {}), securitySchemes })
+    });
+  });
 }
 
 function normalizeOauth(value) {
@@ -241,7 +254,7 @@ function normalizeOauth(value) {
   });
   const scopesSupported = Array.isArray(value.scopesSupported) && value.scopesSupported.length
     ? [...new Set(value.scopesSupported)]
-    : [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT];
+    : [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.WRITE, PRIVATE_CASE_SCOPES.AUDIT];
   if (scopesSupported.some((scope) => !Object.values(PRIVATE_CASE_SCOPES).includes(scope))) throw new TypeError("OAuth scopes are invalid.");
   return Object.freeze({
     resource: resource.toString().replace(/\/$/u, ""),
@@ -334,11 +347,16 @@ async function callTool(service, name, args, authContext) {
   throw Object.assign(new Error(`Unknown MCP tool ${name}.`), { code: "MCP_TOOL_NOT_FOUND" });
 }
 
-export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, productionAuthReady = false } = {}) {
+export function createPrivateCaseMcpServer({ caseAccessService, nativeTurnController = null, oauth = null, productionAuthReady = false } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function") throw new TypeError("caseAccessService is required.");
   const normalizedOauth = normalizeOauth(oauth);
   if (productionAuthReady === true && !normalizedOauth) throw new TypeError("Production auth readiness requires OAuth metadata.");
+  if (productionAuthReady === true && ![PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.WRITE, PRIVATE_CASE_SCOPES.AUDIT]
+    .every((scope) => normalizedOauth.scopesSupported.includes(scope))) {
+    throw new TypeError("Production native bridge readiness requires OAuth support for case:read, case:write, and case:audit.");
+  }
   const tools = advertisedTools(Boolean(normalizedOauth));
+  const nativeBridge = createPrivateCaseChatGptAppAdapter({ caseAccessService, nativeTurnController });
   return http.createServer(async (req, res) => {
     const url = new URL(req.url || "/", "http://127.0.0.1");
     if (req.method === "GET" && url.pathname === "/health") {
@@ -358,19 +376,36 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
     if (request.method === "initialize") {
       return send(res, 200, success(request.id, {
         protocolVersion: MCP_PROTOCOL_VERSION,
-        capabilities: { tools: { listChanged: false } },
+        capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
         serverInfo: { name: "inner-signal-private-case", version: RUNTIME_VERSION },
-        instructions: "Read-only private InnerSignal continuation tools. Authorization is transport-owned; never put bearer tokens or key material in tool arguments."
+        instructions: "Private InnerSignal continuation tools plus a controlled native ChatGPT turn component. Authorization is transport-owned; never put bearer tokens or key material in tool arguments. Native candidates remain pending independent review until the existing canonical release path completes."
       }));
     }
     if (request.method === "tools/list") return send(res, 200, success(request.id, { tools }));
+    if (request.method === "resources/list") return send(res, 200, success(request.id, { resources: [NATIVE_BRIDGE_RESOURCE] }));
+    if (request.method === "resources/read") {
+      try {
+        const resource = readNativeBridgeResource(request.params?.uri, {
+          uiDomain: normalizedOauth ? new URL(normalizedOauth.resource).origin : null
+        });
+        return send(res, 200, success(request.id, { contents: [resource] }));
+      } catch (error) {
+        return send(res, 200, failure(request.id, -32002, "MCP resource failed safely.", { code: error?.code ?? "MCP_RESOURCE_NOT_FOUND" }));
+      }
+    }
     if (request.method !== "tools/call") return send(res, 200, failure(request.id, -32601, "Method not found."));
 
     const token = bearerToken(req);
     try {
       const name = request.params?.name;
       const args = request.params?.arguments ?? {};
-      const value = await callTool(caseAccessService, name, args, { bearerToken: token });
+      const authContext = {
+        bearerToken: token,
+        hostSessionId: request.params?._meta?.["openai/session"] ?? null
+      };
+      const value = NATIVE_BRIDGE_TOOL_SCOPES[name]
+        ? await nativeBridge.call(name, args, authContext)
+        : await callTool(caseAccessService, name, args, authContext);
       return send(res, 200, success(request.id, toolResult(value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
@@ -389,8 +424,8 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
   });
 }
 
-export async function listenPrivateCaseMcp({ caseAccessService, oauth = null, productionAuthReady = false, port = 0, host = "127.0.0.1" } = {}) {
-  const server = createPrivateCaseMcpServer({ caseAccessService, oauth, productionAuthReady });
+export async function listenPrivateCaseMcp({ caseAccessService, nativeTurnController = null, oauth = null, productionAuthReady = false, port = 0, host = "127.0.0.1" } = {}) {
+  const server = createPrivateCaseMcpServer({ caseAccessService, nativeTurnController, oauth, productionAuthReady });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, resolve);

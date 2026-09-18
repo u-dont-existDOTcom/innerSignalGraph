@@ -1,6 +1,6 @@
 # Private case continuity and fresh-session access
 
-Status: merged PR #49 extends the encrypted case store with the InnerSignal Universal Handoff Binding and its complementary private mutation/audit orchestration path. `InnerSignal Private Continuity` remains deliberately read-only. Synthetic acceptance proves an immutable encrypted handoff can be created in Session A and loaded in a separate Session B using only `handoff_id` plus authorized transport context, including a history larger than 100,000 characters split into deterministic chunks no larger than 20,000 bytes. It also proves append-only transcript completions, immutable candidate versions, exact-version audits, bounded reconstruction, independent-auditor separation, and explicit approval/sent transitions. The real owner-supplied source remains outside Git.
+Status: merged PR #49 extends the encrypted case store with the InnerSignal Universal Handoff Binding and its complementary private mutation/audit orchestration path. The incumbent ten continuity tools remain deliberately read-only. The same server now also contains a separately scoped MCP Apps bridge for one controlled native ChatGPT turn; repository-local tests do not prove that bridge is installed or live in ChatGPT. Synthetic acceptance proves an immutable encrypted handoff can be created in Session A and loaded in a separate Session B using only `handoff_id` plus authorized transport context, including a history larger than 100,000 characters split into deterministic chunks no larger than 20,000 bytes. It also proves append-only transcript completions, immutable candidate versions, exact-version audits, bounded reconstruction, independent-auditor separation, and explicit approval/sent transitions. The real owner-supplied source remains outside Git.
 
 ## Acceptance contract
 
@@ -58,6 +58,7 @@ Ordinary reasoning ledgers now default to `redacted`; that form excludes user-fa
 | --- | --- |
 | `beginPrivateRuntimeTurn` / `getPrivateRuntimeTurn` | Persist the exact encrypted inbound before inference and restore its executable lifecycle frontier |
 | `recordPrivateRuntimeInvocationEvent` / `transitionPrivateRuntimeTurn` | Append retry/restart evidence and enforce the explicit state graph |
+| `recordPrivateRuntimeArtifactInteraction` | Append exact-artifact displayed, copied, or operator-reported-sent evidence without inferring external delivery |
 | `commitPrivateRuntimeCandidate` / `commitPrivateRuntimeAudit` | Atomically persist immutable candidate/state or exact-version audit plus approval/repair/discriminator transition |
 | `savePrivateRuntimeDiscriminator` | Freeze the final episode-permitted one-line discriminator after repair cycle 2 |
 | `deliverPrivateRuntimeCandidate` / `deliverPrivateRuntimeDiscriminator` | Atomically append exact assistant bytes and the terminal sent/delivery state |
@@ -131,7 +132,7 @@ The ordinary local app activates the encrypted automatic controller when these p
 - `INNER_SIGNAL_PRIVATE_RUNTIME_CREDENTIALS=/absolute/outside-repository/credentials.json`; and
 - `INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN`, supplied through the process environment rather than a URL, request body, or Git-tracked file.
 
-Hosted app mode uses `INNER_SIGNAL_PRIVATE_RUNTIME_MODE=hosted` plus the managed private-root/OAuth/ACL/key settings below. Each request supplies its bearer token. Both modes compose the same authorization-first access service; the key provider is never consulted before case/scope authorization. The runtime needs `case:read`, `case:write`, and `case:audit`. This does not add mutation scopes or tools to the read-only MCP.
+Hosted app mode uses `INNER_SIGNAL_PRIVATE_RUNTIME_MODE=hosted` plus the managed private-root/OAuth/ACL/key settings below. Each request supplies its bearer token. Both modes compose the same authorization-first access service; the key provider is never consulted before case/scope authorization. The runtime and controlled-turn bridge need `case:read`, `case:write`, and `case:audit`. The original continuity tool definitions and behavior remain read-only; only the separately named application commands carry write scope.
 
 For hosted mode, configure the deployment platform's secret manager rather than a repository `.env` file:
 
@@ -146,13 +147,13 @@ Run `npm run private-case:mcp:hosted`. The server binds on `0.0.0.0`, publishes 
 
 ## Executable repository bridge
 
-Start the separate read-only MCP service with the external development credential file:
+Start the MCP service with the external development credential file:
 
 ```bash
 npm run private-case:mcp -- --credentials /absolute/private/bridge-credentials.json --port 0
 ```
 
-The process prints a local `/mcp` URL. Authentication is an HTTP bearer token supplied by the transport, never a tool argument. Its read-only tools are:
+The process prints a local `/mcp` URL. Authentication is an HTTP bearer token supplied by the transport, never a tool argument. Its incumbent read-only tools remain:
 
 - `load_handoff`
 - `load_case_context`
@@ -165,7 +166,17 @@ The process prints a local `/mcp` URL. Authentication is an HTTP bearer token su
 - `get_candidate_response`
 - `get_source_artifact`
 
-No private mutation operation is registered as an MCP tool. Backend/operator mutation runs separately through `npm run private-case:operations` and requires `case:write` or `case:audit` at the existing access boundary.
+The separately scoped controlled-turn application commands are:
+
+- `open_controlled_case_turn` (`case:read`) attaches `ui://inner-signal/controlled-turn-v1.html`;
+- `prepare_controlled_case_turn` (`case:read case:write`) records one exact input and fixes `native_controlled` server-side;
+- `get_controlled_turn_context` (`case:read`) returns the exact immutable preparation to the native writer;
+- `submit_native_candidate` (`case:read case:write`) derives producer provenance from host session correlation and persists exact bytes pending independent review;
+- `get_controlled_turn_status` (`case:read`) returns canonical lifecycle and acknowledgement state;
+- `get_controlled_reply_artifact` (`case:read case:audit`) returns exact draft or released bytes; and
+- `acknowledge_controlled_reply` (`case:read case:write case:audit`) records displayed, copied, or operator-reported-sent without proving external delivery.
+
+The component uses the MCP Apps `tools/call` and `ui/message` bridge with `window.openai` compatibility feature detection. It has one exact-input control, restores server-owned state by runtime-turn ID, renders reply text through `textContent`, and never treats its same-chat writer as an independent reviewer. Provider fallback is a hard error for this path. The existing backend/operator mutation CLI remains separate for migration/recovery and requires `case:write` or `case:audit` at the same access boundary.
 
 A fresh client normally performs this exact bootstrap call after transport authentication:
 

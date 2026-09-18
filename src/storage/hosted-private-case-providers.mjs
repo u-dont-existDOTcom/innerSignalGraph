@@ -178,7 +178,7 @@ export function loadHostedPrivateCaseProvidersFromEnvironment(environment = proc
     kind: "hosted-oauth-managed-secret-provider",
     productionReady: true,
     rootDir,
-    oauth: Object.freeze({ issuer, audience, jwksUri, scopesSupported: Object.freeze([PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT]) }),
+    oauth: Object.freeze({ issuer, audience, jwksUri, scopesSupported: Object.freeze([PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.WRITE, PRIVATE_CASE_SCOPES.AUDIT]) }),
     authorizationProvider,
     keyProvider,
     close() { keyProvider.close(); }

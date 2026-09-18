@@ -18,6 +18,7 @@ import {
   validateCandidateLifecycleFields
 } from "../supervisor/private-candidate-lifecycle.mjs";
 import {
+  appendPrivateRuntimeArtifactInteraction,
   appendPrivateRuntimeInvocationEvent,
   appendPrivateRuntimeTransition,
   createPrivateRuntimeDiscriminator,
@@ -893,6 +894,29 @@ export function createEncryptedPrivateCaseStore({
           return null;
         }
         const updated = appendPrivateRuntimeInvocationEvent(runtimeTurn, { ...event, at: event.at ?? now() });
+        Object.assign(runtimeTurn, updated);
+        return record;
+      });
+    },
+    async recordPrivateRuntimeArtifactInteraction(caseId, runtimeTurnId, event) {
+      return mutate(caseId, (record) => {
+        const runtimeTurn = runtimeTurnIn(record, runtimeTurnId);
+        const existing = runtimeTurn.events.find((entry) => entry.id === event.eventId);
+        if (existing) {
+          const expectedFields = {
+            event_type: "ARTIFACT_INTERACTION",
+            interaction_kind: event.interactionKind,
+            artifact_sha256: event.artifactSha256,
+            artifact_status: event.artifactStatus,
+            details: event.details ?? {}
+          };
+          if (!sameJson(
+            Object.fromEntries(Object.keys(expectedFields).map((key) => [key, existing[key]])),
+            expectedFields
+          )) throw new ValidationError(`Private runtime artifact interaction ${event.eventId} conflicts with immutable evidence.`);
+          return null;
+        }
+        const updated = appendPrivateRuntimeArtifactInteraction(runtimeTurn, { ...event, at: event.at ?? now() });
         Object.assign(runtimeTurn, updated);
         return record;
       });

@@ -83,7 +83,7 @@ test("hosted OAuth metadata, per-tool schemes, JWT verification, case ACL, and m
   const environment = await makeEnvironment(t);
   const listener = await listenPrivateCaseMcp({
     caseAccessService: environment.service,
-    oauth: { resource: RESOURCE, authorizationServers: [ISSUER], scopesSupported: ["case:read", "case:audit"] },
+    oauth: { resource: RESOURCE, authorizationServers: [ISSUER], scopesSupported: ["case:read", "case:write", "case:audit"] },
     productionAuthReady: true
   });
   t.after(() => listener.close());
@@ -93,7 +93,7 @@ test("hosted OAuth metadata, per-tool schemes, JWT verification, case ACL, and m
   assert.deepEqual(await metadata.json(), {
     resource: RESOURCE,
     authorization_servers: [ISSUER],
-    scopes_supported: ["case:read", "case:audit"]
+    scopes_supported: ["case:read", "case:write", "case:audit"]
   });
 
   const listed = await fetch(listener.url, {
@@ -143,4 +143,13 @@ test("hosted OAuth metadata, per-tool schemes, JWT verification, case ACL, and m
 test("production-ready server configuration cannot omit OAuth discovery", () => {
   const caseAccessService = { loadCaseContext() {} };
   assert.throws(() => createPrivateCaseMcpServer({ caseAccessService, productionAuthReady: true }), /requires OAuth metadata/);
+});
+
+test("production-ready native bridge requires read, write, and audit scopes in protected-resource metadata", () => {
+  const caseAccessService = { loadCaseContext() {} };
+  assert.throws(() => createPrivateCaseMcpServer({
+    caseAccessService,
+    productionAuthReady: true,
+    oauth: { resource: RESOURCE, authorizationServers: [ISSUER], scopesSupported: ["case:read", "case:audit"] }
+  }), /requires OAuth support for case:read, case:write, and case:audit/);
 });
