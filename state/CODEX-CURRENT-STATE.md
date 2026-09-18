@@ -1,16 +1,16 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-17
+Updated: 2026-09-18
 
-## Turn-bound continuity issue #72 — offline implementation candidate
+## Turn-bound continuity issue #72 — native bridge implemented offline, publication blocked
 
-Task `turn-bound-continuity-20260917` is an iteration-lane candidate on `task/turn-bound-continuity-20260917`, based on current development `main` `bf35a23dc0146c21586108fed0f726c50db8c436`. It adds schema-v7 record/evidence revisions, exact inbound provenance and idempotency, immutable prepared-context manifests, incoming-message retrieval across older raw evidence, effective transcript amendments, complete active-episode coverage, writer/auditor packet binding, proposal-only candidate state, authorization/evidence-current atomic release checks, cross-process encrypted-store serialization, and a native-controlled `READY_FOR_DRAFT` / exact candidate submission path with no provider fallback.
+Task `turn-bound-continuity-20260917` remains the integration lane in draft PR #73. Local child branch `work/native-bridge-20260918-0300` now adds the missing separately scoped native ChatGPT application-command and MCP Apps component bridge at product checkpoint `18406dca206385ee5d1d8d3b069d3aed839758bd`, based on PR checkpoint `b31f143138b101c7419533dedb6a89aaf8a7e44e`.
 
-The committed implementation/evidence checkpoint is `d07182579d79a904db3bd04bc42fb1e8d54caf6f`; later receipt/PR metadata is containing evidence rather than a new product change.
+The original ten read-only continuity tools remain unchanged. Seven new commands record one exact input, expose exact prepared context to the same-chat native writer, persist its unmodified candidate as `DRAFT_PENDING_REVIEW`, project canonical status/artifact bytes, and record display/copy/operator-report acknowledgements without claiming external delivery. The server fixes `native_controlled`, derives identities and host-correlated producer provenance, enforces authorization before key access, and has no provider fallback. Same-chat drafting is not independent review; the existing exact separate-audit release gate remains controlling.
 
-The focused affected suite passes 65/65 synthetic tests, including actual writer-prompt assembly, an old raw source absent from short state, 130-turn amended episode continuity, explicit oversized-context blocking, zero-call native profile, forged binding rejection, correction-after-audit stale release denial, replay/idempotency, and eight overlapping writer processes. The imported reference suite remains a reproducibility artifact, not production or clinical proof.
+Verification passes focused bridge 3/3, focused OAuth/plugin 9/9, full repository 1,244/1,244, graph 30/30, package verification, repository audit with its one known GitHub App-permissions warning, and skill validation. No private case or paid provider was used. A first parallel affected aggregate hit one transient pre-existing cross-process temporary-file `ENOENT`; that test passed immediately alone and in the final full run.
 
-The connected host exposed the existing ten read-only continuity tools, but its synthetic authorization probe required reauthentication. No native component submission, separate subscription-funded reviewer, exact released rendering, reconnect behavior, or owner no-reminder outcome was therefore verified in the live host. No private case was accessed, no paid inference ran, and no real-case migration, installation, deployment, `stable` promotion, or merge occurred. Resume from `tasks/turn-bound-continuity-20260917/INTEGRATION.md`; the valid current completion label is `DESIGN_IMPLEMENTED_OFFLINE`, and issue #72 remains open pending the host route.
+Publication is blocked: the execution environment rejected pushing the child branch to the configured GitHub remote without explicit user authorization. No workaround was attempted. No deployment, OAuth grant change, plugin refresh, install, merge, or stable promotion occurred. Live component rendering, native host dispatch/submission, reconnect behavior, a genuinely separate native reviewer, and the owner no-reminder outcome remain unverified. Resume from `tasks/turn-bound-continuity-20260917/INTEGRATION.md` and the two `NATIVE-BRIDGE-*` receipts; the current completion label is `NATIVE_BRIDGE_IMPLEMENTED_OFFLINE_PUBLICATION_BLOCKED`.
 
 ## Somatic + altered-states guide sync — owner approved, reconciled, and merged
 

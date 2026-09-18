@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "task_id": "turn-bound-continuity-native-bridge-20260918",
+  "observed_at": "2026-09-18T03:39:27Z",
+  "allowed_statuses": [
+    "verified",
+    "documented_not_tested",
+    "unavailable",
+    "unknown"
+  ],
+  "incumbent_read_only_tools": {
+    "server": {
+      "status": "verified",
+      "evidence": "The original ten tool descriptors remain the exact first catalog entries and existing fresh-process continuity tests pass."
+    },
+    "host": {
+      "status": "documented_not_tested",
+      "evidence": "The prior host catalog exposed these ten tools; no new host probe ran."
+    }
+  },
+  "native_application_commands": {
+    "server": {
+      "status": "verified",
+      "tools": [
+        "open_controlled_case_turn",
+        "prepare_controlled_case_turn",
+        "get_controlled_turn_context",
+        "submit_native_candidate",
+        "get_controlled_turn_status",
+        "get_controlled_reply_artifact",
+        "acknowledge_controlled_reply"
+      ],
+      "evidence": "Strict schemas compile; tools/list exposes the commands with bounded visibility and OAuth scope metadata; focused command execution passes."
+    },
+    "host": {
+      "status": "unavailable",
+      "evidence": "The child branch could not be published, and no live service or plugin connection was changed."
+    }
+  },
+  "authentication_and_acl": {
+    "server": {
+      "status": "verified",
+      "evidence": "Read/write denial and audit-scope denial occur before key-provider invocation. Production readiness rejects OAuth metadata missing any required scope."
+    },
+    "host": {
+      "status": "unknown",
+      "evidence": "The existing identity-provider client and subject-to-case ACL were not inspected or changed in this task."
+    }
+  },
+  "component_resource": {
+    "server": {
+      "status": "verified",
+      "evidence": "resources/list and resources/read return ui://inner-signal/controlled-turn-v1.html as text/html;profile=mcp-app with CSP, production domain, resource URI, tools/call, ui/message, and compatibility feature detection."
+    },
+    "host_rendering": {
+      "status": "unknown",
+      "evidence": "No eligible live ChatGPT render was available."
+    },
+    "visual_browser_inspection": {
+      "status": "unavailable",
+      "evidence": "No local browser executable was available; deterministic source assertions cover labels, safe text rendering, and bridge controls but not pixels."
+    }
+  },
+  "controlled_intake_and_context": {
+    "server": {
+      "status": "verified",
+      "evidence": "Synthetic exact Unicode input is idempotently bound to a stable runtime turn and exact immutable prepared context under native_controlled."
+    },
+    "host": {
+      "status": "unknown",
+      "evidence": "No component submission ran in ChatGPT."
+    }
+  },
+  "component_to_native_chat_dispatch": {
+    "server": {
+      "status": "documented_not_tested",
+      "evidence": "The component emits ui/message or the window.openai compatibility call with a bounded same-chat drafting instruction; a repository test confirms the bridge code is present."
+    },
+    "host": {
+      "status": "unknown",
+      "evidence": "No live follow-up dispatch ran."
+    }
+  },
+  "native_exact_candidate_submission": {
+    "server": {
+      "status": "verified",
+      "evidence": "The server derives a hashed host-session producer context, persists exact bytes and language/context-use provenance, calls zero providers, and returns DRAFT_PENDING_REVIEW."
+    },
+    "host": {
+      "status": "unknown",
+      "evidence": "No live ChatGPT model called submit_native_candidate."
+    }
+  },
+  "independent_reviewer": {
+    "same_chat": {
+      "status": "verified",
+      "evidence": "Skill, tool metadata, component prompt, and server response all state that the same-chat writer is not an independent reviewer."
+    },
+    "native_separate_context": {
+      "status": "unavailable",
+      "evidence": "No supported subscription-funded separate native reviewer route was identified or invoked."
+    },
+    "existing_external_api_path": {
+      "status": "verified",
+      "evidence": "The incumbent packet-only independent auditor path and exact release gate remain unchanged and pass the affected/full suites; it was not invoked by this task."
+    }
+  },
+  "reply_artifact_and_acknowledgements": {
+    "server": {
+      "status": "verified",
+      "evidence": "Exact draft bytes and digest are returned pending review; displayed/copied/operator-reported-sent are immutable and distinct; external_delivery_confirmed remains false."
+    },
+    "released_artifact": {
+      "status": "documented_not_tested",
+      "evidence": "Projection uses exact persisted candidate delivery only after the incumbent independently audited release path; the new component did not execute that path."
+    },
+    "host_reconnect": {
+      "status": "unknown",
+      "evidence": "Server resume by runtime-turn ID and latest controlled turn is implemented, but no live component reload ran."
+    }
+  },
+  "publication_and_registration": {
+    "repository_branch": {
+      "status": "unavailable",
+      "evidence": "Push was rejected by execution policy pending explicit user authorization."
+    },
+    "live_mcp_service": {
+      "status": "unknown",
+      "evidence": "No deployment was authorized or attempted."
+    },
+    "chatgpt_plugin_connection": {
+      "status": "unknown",
+      "evidence": "No refresh, reconnect, or tool scan was authorized or attempted."
+    }
+  },
+  "privacy_and_cost": {
+    "private_case_content_accessed": false,
+    "paid_inference_calls": 0,
+    "real_case_migrations": 0,
+    "deployments": 0,
+    "installations": 0,
+    "stable_promotions": 0
+  },
+  "completion_label_supported": "NATIVE_BRIDGE_IMPLEMENTED_OFFLINE_PUBLICATION_BLOCKED",
+  "unsupported_labels": [
+    "NATIVE_DRAFT_PATH_VERIFIED_IN_CHATGPT",
+    "AUDITED_NATIVE_FLOW_VERIFIED",
+    "OWNER_OUTCOME_VERIFIED"
+  ]
+}
