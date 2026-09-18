@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "status": "paused_permission_block",
+  "exclusive_writer": true,
+  "owned_branch": "work/native-bridge-20260918-0300",
+  "integration_branch": "task/turn-bound-continuity-20260917",
+  "integration_base_sha": "b31f143138b101c7419533dedb6a89aaf8a7e44e",
+  "scope": "Implement and verify the native application-command and inline-component bridge without merging, deploying, installing, or accessing a real case.",
+  "created_at": "2026-09-18T03:14:45Z",
+  "product_commit": "18406dca206385ee5d1d8d3b069d3aed839758bd",
+  "blocked_at": "2026-09-18T03:39:27Z",
+  "blocker": "The execution environment rejected pushing repository source to the configured GitHub remote without explicit user authorization.",
+  "next_required_authority": "Explicit authorization to push work/native-bridge-20260918-0300 to origin."
+}

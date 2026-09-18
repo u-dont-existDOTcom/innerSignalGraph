@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "task_id": "turn-bound-continuity-native-bridge-20260918",
+  "parent_task_id": "turn-bound-continuity-20260917",
+  "issue": 72,
+  "recorded_at": "2026-09-18T03:39:27Z",
+  "completion_label": "NATIVE_BRIDGE_IMPLEMENTED_OFFLINE_PUBLICATION_BLOCKED",
+  "repository": "u-dont-existDOTcom/innerSignalGraph",
+  "branch": "work/native-bridge-20260918-0300",
+  "integration_branch": "task/turn-bound-continuity-20260917",
+  "integration_pr": 73,
+  "integration_base": "b31f143138b101c7419533dedb6a89aaf8a7e44e",
+  "product_commit": "18406dca206385ee5d1d8d3b069d3aed839758bd",
+  "assurance_lane": "iteration",
+  "implemented_surfaces": [
+    "seven separately scoped native-controlled MCP application commands",
+    "MCP Apps inline component resource",
+    "authorization-only scope assertion before key access",
+    "server-derived stable turn identities and host-correlated producer provenance",
+    "exact draft/released artifact projection",
+    "immutable displayed/copied/operator-reported-sent acknowledgements",
+    "unified plugin and skill routing"
+  ],
+  "preserved_invariants": [
+    "the incumbent ten read-only tools remain the unchanged catalog prefix",
+    "native_controlled invokes no provider fallback",
+    "native candidate submission remains pending independent review",
+    "same-chat drafting is not independent review",
+    "release still requires the existing exact independently audited path",
+    "component acknowledgement never proves external delivery"
+  ],
+  "verification": [
+    {
+      "name": "focused native bridge",
+      "command": "node --test tests/private-case-native-bridge.test.mjs",
+      "result": "pass",
+      "count": "3/3"
+    },
+    {
+      "name": "focused OAuth and plugin routing",
+      "command": "node --test tests/inner-signal-plugin-unification.test.mjs tests/private-case-native-bridge.test.mjs tests/private-case-oauth.test.mjs",
+      "result": "pass",
+      "count": "9/9"
+    },
+    {
+      "name": "affected private runtime aggregate",
+      "result": "pass_after_diagnostic_rerun",
+      "first_attempt": "60/61; pre-existing cross-process temporary-file ENOENT under parallel aggregate",
+      "diagnostic_rerun": "1/1 pass",
+      "final_full_suite_confirmation": "the same test passed in the 1244/1244 repository run"
+    },
+    {
+      "name": "full repository",
+      "command": "npm test",
+      "result": "pass",
+      "count": "1244/1244"
+    },
+    {
+      "name": "graph regressions",
+      "command": "npm run graph:test",
+      "result": "pass",
+      "count": "30/30"
+    },
+    {
+      "name": "package verification",
+      "command": "npm run verify",
+      "result": "pass"
+    },
+    {
+      "name": "repository audit",
+      "command": "npm run audit:repository",
+      "result": "pass_with_known_warning",
+      "errors": 0,
+      "warnings": 1,
+      "warning": "hosted GitHub App permissions remain unverified"
+    },
+    {
+      "name": "private continuity skill validation",
+      "command": "python3 /root/.codex/skills/.system/skill-creator/scripts/quick_validate.py plugins/inner-signal-therapy/skills/inner-signal-private-continuity",
+      "result": "pass"
+    }
+  ],
+  "test_efficiency": {
+    "observer_started": true,
+    "observer_numeric_summary_usable": false,
+    "reason": "Tests were launched directly instead of through the observer run wrapper; its zero observed-test total is not treated as evidence.",
+    "forced_redundant_green_seconds": 0.0
+  },
+  "runtime": {
+    "node": "24.19.0",
+    "declared_engine": ">=24 <25",
+    "paid_provider_calls": 0
+  },
+  "private_data": {
+    "real_case_accessed": false,
+    "real_case_content_in_fixtures": false,
+    "live_host_case_content_returned": false
+  },
+  "cost_and_side_effects": {
+    "monetary_cost": 0,
+    "real_case_migrations": 0,
+    "deployments": 0,
+    "installations": 0,
+    "stable_promotions": 0,
+    "merges": 0,
+    "oauth_grant_changes": 0
+  },
+  "publication": {
+    "push_attempted": true,
+    "push_completed": false,
+    "blocker": "Execution policy rejected exporting the implementation branch to the configured GitHub remote without explicit user authorization.",
+    "workaround_attempted": false,
+    "remote_branch_url": null,
+    "child_pr_url": null
+  },
+  "return_links": {
+    "existing_integration_pr": "https://github.com/u-dont-existDOTcom/innerSignalGraph/pull/73",
+    "work_thread_url": null,
+    "reasoning_chat_url": null,
+    "unavailable_reason": "The host exposed no canonical thread/chat URLs; no URL was inferred from session identifiers."
+  },
+  "next_executable_action": "After explicit push authorization, publish the child branch, reconcile it into draft PR #73, and stop before merge/deploy/install."
+}
