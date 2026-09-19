@@ -106,5 +106,20 @@
     "findings": 0,
     "report": "docs/PUBLIC-REPOSITORY-TRANSITION-REPORT-2026-08-14.md"
   },
-  "audit_note": "The repository is public and the planned hosted controls are enabled and read back, except repository-scoped installed GitHub App permissions remain UNVERIFIED. Exact commands must be rerun on the final containing commit, whose identity cannot be embedded in its own contents and must be recorded in Git and the pull request. Files and CODEOWNERS do not prove hosted enforcement. Stable promotion and therapy/framework policy remain owner-gated."
+  "audit_note": "The repository is public and the planned hosted controls are enabled and read back, except repository-scoped installed GitHub App permissions remain UNVERIFIED. Exact commands must be rerun on the final containing commit, whose identity cannot be embedded in its own contents and must be recorded in Git and the pull request. Files and CODEOWNERS do not prove hosted enforcement. Stable promotion and therapy/framework policy remain owner-gated.",
+  "web_app_architecture": {
+    "status": "owner_selected",
+    "decision_date": "2026-09-19",
+    "spec": "docs/superpowers/specs/2026-09-19-web-app-stack-direction.md",
+    "frontend": "React + Vite + TypeScript PWA",
+    "backend": "existing Node 24 InnerSignal runtime",
+    "hosting": "Railway",
+    "current_sensitive_storage": "existing encrypted private-case/runtime storage",
+    "future_relational_default": "PostgreSQL; evaluate Supabase when multi-user persistence/auth is needed",
+    "non_defaults": [
+      "Firebase/Firestore",
+      "Next.js"
+    ],
+    "public_release_authorized": false
+  }
 }
