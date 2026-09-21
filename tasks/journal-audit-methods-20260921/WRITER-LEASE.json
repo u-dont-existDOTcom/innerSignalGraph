@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "active",
+  "status": "complete",
   "exclusive_writer": true,
   "owned_branch": "chat/journal-audit-methods-20260921",
   "integration_branch": "chat/journal-import-design-20260919-2055",
@@ -8,5 +8,11 @@
   "scope": "Generic journal-import audit methods and twenty-year capacity requirements. No private corpus content, source filenames, case identifiers, private-derived hashes or case findings in Git. No runtime, deployment or stable changes.",
   "parent_outcome": "Make large journal imports and key-pattern findings auditable without requiring the owner to read the entire source; support eventual twenty-year archives.",
   "assurance_lane": "iteration",
-  "remaining_execution_gap": "Production import, full-source semantic extraction, independent evaluation and cold-profile retrieval are not completed by method design."
+  "method_deliverable": "docs/superpowers/specs/2026-09-21-journal-import-audit-methods.md",
+  "method_status": "DESIGNED_NOT_RUNTIME_IMPLEMENTED",
+  "parent_profile_import_status": "OPEN_NOT_COMPLETED",
+  "remaining_execution_gap": "Production import, full-source semantic extraction, independent evaluation and cold-profile retrieval are not completed by method design.",
+  "private_evidence": "Retained only on the authorized source-analysis surface; not mirrored to this public branch.",
+  "stop_admission": "The requested audit-method design and source-preflight pass are delivered. This lease closes only this documentation write, not the eventual profile-import outcome or independent review. No full semantic recall or cold-profile success is claimed.",
+  "next_action": "Reconcile this generic extension into the import design; execute source/visual extraction and independent audit through authorized private runtime interfaces."
 }
