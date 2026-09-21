@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "status": "active",
+  "exclusive_writer": true,
+  "owned_branch": "chat/journal-audit-methods-20260921",
+  "integration_branch": "chat/journal-import-design-20260919-2055",
+  "integration_base_sha": "db431085f5d8ea1b6e3b24aa1c6efa7247f025b9",
+  "scope": "Generic journal-import audit methods and twenty-year capacity requirements. No private corpus content, source filenames, case identifiers, private-derived hashes or case findings in Git. No runtime, deployment or stable changes.",
+  "parent_outcome": "Make large journal imports and key-pattern findings auditable without requiring the owner to read the entire source; support eventual twenty-year archives.",
+  "assurance_lane": "iteration",
+  "remaining_execution_gap": "Production import, full-source semantic extraction, independent evaluation and cold-profile retrieval are not completed by method design."
+}
