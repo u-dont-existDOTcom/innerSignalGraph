@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "status": "active",
+  "exclusive_writer": true,
+  "owned_branch": "chat/journal-implementation-protocol-20260921",
+  "integration_branch": "chat/journal-audit-methods-20260921",
+  "integration_base_sha": "06e4c63120d51fec0490a8c9f89207e394c664ab",
+  "scope": "Public-safe implementation decisions and delivery checkpoint for a private journal importer and explicit temporal evidence graph. No private corpus data, source hashes, case identifiers, runtime mutation or deployment.",
+  "owner_requested_boundary": "Complete implementation protocol for mechanical Work execution, including a graph as an explicit deliverable.",
+  "parent_import_outcome": "OPEN",
+  "protocol_delivery_status": "PREPARED_WITH_LOCAL_REFERENCE_CHECKS",
+  "work_dispatch_status": "NOT_LAUNCHED_SOURCE_CHAT_URL_UNRESOLVED"
+}
