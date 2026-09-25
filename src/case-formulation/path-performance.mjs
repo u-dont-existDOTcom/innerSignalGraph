@@ -19,12 +19,75 @@ const choice = values => ({ type: "string", enum: values });
 const list = (items, maxItems = 24) => ({ type: "array", items, maxItems });
 const nullable = schema => ({ anyOf: [{ type: "null" }, schema] });
 const refs = { ...list(id, 12), minItems: 1 };
+export const evaluationContractSchema = record({
+  effect_model: choice(["deterministic", "stochastic", "skill_learning", "delayed", "unknown"]),
+  opportunity_definition: str,
+  prerequisites_description: str,
+  review_condition: str
+});
 export const strategySchema = record({
   process_id: id, target: str, formulation: str, family: str, node_id: id,
   selection_reason: str, observation_ids: refs,
   predictions: { ...list(record({ id, sign: choice(MOVEMENT_SIGNALS), description: str, horizon: choice(["immediate", "durable"]) }), 8), minItems: 1 },
   adverse_signs: { ...list(choice(HARM_SIGNALS), 8), minItems: 1 }
 });
+// Optional in historical snapshots. Current generation requires an explicit null/object.
+strategySchema.properties.evaluation_contract = nullable(evaluationContractSchema);
+
+export const strategyReviewSchema = record({
+  process_id: id,
+  node_id: id,
+  exposure: nullable(record({
+    node_id: id,
+    status: choice(["adequate", "partial", "not_attempted", "unknown"]),
+    observation_ids: list(id, 12),
+    reason: str
+  })),
+  window: nullable(record({
+    status: choice(["sufficient", "not_yet_due", "unknown"]),
+    observation_ids: list(id, 12),
+    reason: str
+  })),
+  finding: choice(["unresolved", "no_defect_identified", "implementation_gap", "specific_mismatch", "conditional_prediction_contradicted", "meaningful_nonresponse", "better_alternative"]),
+  finding_observation_ids: list(id, 12),
+  reason: str,
+  refinement: nullable(record({
+    state: choice(["active", "complete"]),
+    node_id: id,
+    scope: choice(["preparation", "pacing", "delivery", "practice"]),
+    observation_ids: refs,
+    change: str,
+    review_condition: str
+  })),
+  alternative: nullable(record({
+    node_id: id,
+    scope: choice(["target", "formulation", "method"]),
+    observation_ids: refs,
+    reason: str
+  }))
+});
+
+export function validateStrategyReview(value, observationIds, strategy = null) {
+  if (value == null) return null;
+  check(value, strategyReviewSchema, "strategy_review");
+  const allRefs = [
+    ...(value.exposure?.observation_ids ?? []),
+    ...(value.window?.observation_ids ?? []),
+    ...value.finding_observation_ids,
+    ...(value.refinement?.observation_ids ?? []),
+    ...(value.alternative?.observation_ids ?? [])
+  ];
+  if (observationIds && allRefs.some(ref => !observationIds.has(ref))) throw new ValidationError("strategy_review references unavailable observations.");
+  if (value.exposure && value.exposure.status !== "unknown" && value.exposure.observation_ids.length === 0) throw new ValidationError("Non-unknown strategy exposure requires observation references.");
+  if (value.window?.status === "sufficient" && value.window.observation_ids.length === 0) throw new ValidationError("A sufficient strategy-review window requires observation references.");
+  if (!["unresolved", "no_defect_identified"].includes(value.finding) && value.finding_observation_ids.length === 0) throw new ValidationError("A decision-relevant strategy finding requires observation references.");
+  if (value.finding === "conditional_prediction_contradicted") {
+    if (value.exposure?.status !== "adequate" || value.window?.status !== "sufficient") throw new ValidationError("A contradicted conditional prediction requires adequate exposure and a sufficient observation window.");
+    if (strategy?.evaluation_contract?.effect_model === "delayed" && value.window.status !== "sufficient") throw new ValidationError("A delayed prediction cannot fail before its review window.");
+  }
+  if (strategy && (value.process_id !== strategy.process_id || value.node_id !== strategy.node_id)) throw new ValidationError("strategy_review must bind to the active parent strategy.");
+  return structuredClone(value);
+}
 export const representationSchema = record({
   process_id: id,
   mode: choice(REPRESENTATION_MODES),
@@ -56,13 +119,16 @@ export const pathUpdateSchema = nullable(record({
 // Optional for preserved historical snapshots; current extraction declares it when relevant.
 pathUpdateSchema.anyOf[1].properties.delivery_review = nullable(record({ process_id: id, node_id: id, assessment: deliveryAssessmentSchema }));
 pathUpdateSchema.anyOf[1].properties.representation = nullable(representationSchema);
+pathUpdateSchema.anyOf[1].properties.strategy_review = nullable(strategyReviewSchema);
 
 export function validatePathUpdate(value, observationIds) {
   if (value == null) return null;
   check(value, pathUpdateSchema, "path_update");
   if (value.representation != null) value.representation = validateRepresentationSelection(value.representation, observationIds);
   if (value.signals.some(signal => signal.kind === "reality_testing_instability" && signal.severity !== "significant")) throw new ValidationError("Reality-testing instability requires significant, directly supported evidence.");
-  const referenced = [...(value.strategy?.observation_ids ?? []), ...(value.representation?.observation_ids ?? []), ...value.signals.map(s => s.observation_id), ...value.failure_hypotheses.flatMap(h => h.observation_ids)];
+  const referenced = [...(value.strategy?.observation_ids ?? []), ...(value.representation?.observation_ids ?? []), ...value.signals.map(s => s.observation_id), ...value.failure_hypotheses.flatMap(h => h.observation_ids),
+    ...(value.strategy_review?.exposure?.observation_ids ?? []), ...(value.strategy_review?.window?.observation_ids ?? []), ...(value.strategy_review?.finding_observation_ids ?? []),
+    ...(value.strategy_review?.refinement?.observation_ids ?? []), ...(value.strategy_review?.alternative?.observation_ids ?? [])];
   if (observationIds && referenced.some(ref => !observationIds.has(ref))) throw new ValidationError("path_update references unavailable observations.");
   if (value.delivery_review != null) {
     const review = value.delivery_review;
@@ -70,6 +136,7 @@ export function validatePathUpdate(value, observationIds) {
     check(review.process_id, id, "delivery_review.process_id"); check(review.node_id, id, "delivery_review.node_id");
     validateDeliveryAssessment(review.assessment, observationIds);
   }
+  if (value.strategy_review != null) validateStrategyReview(value.strategy_review, observationIds, value.strategy ?? null);
   const predictions = value.strategy?.predictions ?? [];
   if (new Set(predictions.map(p => p.id)).size !== predictions.length) throw new ValidationError("Prediction IDs must be unique within a strategy.");
   if (value.strategy && value.representation && value.strategy.process_id !== value.representation.process_id) throw new ValidationError("Representation selection must match the proposed strategy process.");
@@ -122,7 +189,7 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
     if (retained?.retained_episode) state.active = structuredClone(retained.retained_episode);
     else {
       state.sequence += 1;
-      state.active = { delivery: null, representation: update?.representation ?? null, representation_switches: 0, representation_misses: 0, representation_evidence_ids: [], observed_ids: [], failure_evidence_ids: [], id: `strategy-${state.sequence}`, strategy: candidate, prediction_failures: Object.fromEntries(candidate.predictions.map(p => [p.id, 0])), misses: 0, unclear: 0, review_count: 0, reviews: [], switch_pending: false, invalidated: false, status: "UNCLEAR", decision: "PROBE" };
+      state.active = { delivery: null, representation: update?.representation ?? null, refinement: null, refinement_history: [], representation_switches: 0, representation_misses: 0, representation_evidence_ids: [], observed_ids: [], failure_evidence_ids: [], id: `strategy-${state.sequence}`, strategy: candidate, prediction_failures: Object.fromEntries(candidate.predictions.map(p => [p.id, 0])), misses: 0, unclear: 0, review_count: 0, reviews: [], switch_pending: false, invalidated: false, status: "UNCLEAR", decision: "PROBE" };
     }
   }
   const active = state.active;
@@ -130,6 +197,15 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   if (proposedRepresentation && (!active || proposedRepresentation.process_id !== active.strategy.process_id)) throw new ValidationError("Representation selection must match the active process.");
   const deliveryReview = update?.delivery_review;
   if (deliveryReview && (!active || deliveryReview.process_id !== active.strategy.process_id || deliveryReview.node_id !== active.strategy.node_id)) throw new ValidationError("Delivery review must match the active strategy process and path.");
+  const strategyReview = update?.strategy_review ? validateStrategyReview(update.strategy_review, observationIds, active?.strategy ?? update?.strategy ?? null) : null;
+  if (strategyReview && active) {
+    if (strategyReview.refinement?.state === "active") active.refinement = structuredClone(strategyReview.refinement);
+    else if (strategyReview.refinement?.state === "complete") {
+      active.refinement_history ??= [];
+      active.refinement_history = [...active.refinement_history, structuredClone(strategyReview.refinement)].slice(-12);
+      active.refinement = null;
+    }
+  }
   // Provider/method facts and replay tombstones are case-level; episodes carry only
   // the selected key. A topic/process change cannot launder provider risk.
   const deliveryLedger = state.delivery_system_state;
@@ -199,34 +275,58 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
     if (opportunity && representationMismatch) evaluated.representation_misses = (evaluated.representation_misses ?? 0) + 1;
     else if (representationYieldedSignal && !harm) evaluated.representation_misses = 0;
   }
-  let status = "UNCLEAR", decision = "PROBE", route = "reconsider", reason = "Prospective movement is not yet observed; one bounded fit/response probe is useful.";
+  let status = "UNCLEAR", decision = "PROBE", route = "continue", reason = "Prospective movement is not yet clear; diagnose only the uncertainty that can change the next step while preserving the current process.";
   const hypotheses = update?.failure_hypotheses ?? [];
   const failures = hypotheses.map(h => ({ ...h, attribution: "provisional" }));
   const addFailure = kind => { if (!failures.some(h => h.kind === kind)) failures.push({ kind, observation_ids: unique([...(kind === "REPRESENTATION_MISMATCH" ? active?.representation_evidence_ids ?? [] : active?.failure_evidence_ids ?? []), ...signals.filter(s => HARM_SIGNALS.includes(s.kind) || s.kind === "external_stabilization_needed" || kind === "REPRESENTATION_MISMATCH" && ["repetition", "low_information", "complexity_without_information", "verbosity_without_information", "expressiveness_without_information", "representation_mismatch", "representation_declined", "representation_switch_requested"].includes(s.kind)).map(s => s.observation_id)]), attribution: active?.invalidated ? "evidence_withdrawn_reassessment_required" : "controller_review_required_not_diagnosis" }); };
   if (!active) {
-    status = state.untracked_reviews >= 2 ? "STALLED" : "UNCLEAR";
-    decision = state.untracked_reviews >= 2 ? "SWITCH" : "PROBE";
-    reason = "No prospective strategy is available. Clarify the useful target before offering a therapeutic exercise.";
+    status = "UNCLEAR";
+    decision = "PROBE";
+    route = "continue";
+    reason = "No prospective strategy is available. Clarify the useful target or opportunity without pretending that a particular method failed.";
   }
   if (active && starts) { decision = "CONTINUE"; route = "continue"; reason = "Begin the prospective strategy; no outcome has yet been attributed to it."; }
   if (evaluated && predictedMovement && !predictionFailure && !lowInformation) { status = "MOVING"; decision = "CONTINUE"; route = "continue"; reason = "Observed movement matches a prospective prediction at its stated horizon."; }
   const repeatedPredictionFailure = Object.values(active?.prediction_failures ?? {}).some(count => count >= 2);
   const priorPredictionFailure = Object.values(active?.prediction_failures ?? {}).some(count => count > 0);
-  const causalStalled = active && (active.misses >= 2 || repeatedPredictionFailure || active.unclear >= 2 || !representationTracked && (hasFresh("complexity_without_information") || hasFresh("expressiveness_without_information")) || active.switch_pending || active.invalidated);
+  const uncertaintyReviewDue = active && (active.misses >= 2 || repeatedPredictionFailure || active.unclear >= 2 || !representationTracked && (hasFresh("complexity_without_information") || hasFresh("expressiveness_without_information")));
+  const causalStop = Boolean(active?.switch_pending || active?.invalidated);
   const representationStalled = active && representationTracked && ((active.representation_misses ?? 0) >= 2 || hasFresh("complexity_without_information") || hasFresh("expressiveness_without_information"));
-  const stalled = Boolean(causalStalled || representationStalled);
-  if (causalStalled) { status = "STALLED"; decision = "SWITCH"; route = "reconsider"; reason = active.invalidated ? "Supporting evidence was withdrawn; reassess before further intervention." : "Repeated prediction failure or unresolved causal measurement requires a material reconsideration."; addFailure("FORMULATION_MISMATCH"); }
-  if (!causalStalled && representationStalled) { status = "STALLED"; decision = "PROBE"; route = "continue"; reason = "The delivered representation remained low-information or expressive without useful discrimination; change its form without resetting the causal episode."; }
-  if (hypotheses.some(h => ["FORMULATION_MISMATCH", "TARGET_MISMATCH", "METHOD_MISMATCH"].includes(h.kind))) {
-    status = "STALLED"; decision = "SWITCH"; route = "reconsider";
-    reason = "Evidence-supported mismatch warrants changing the causal strategy rather than improving its wording.";
+  const stalled = Boolean(causalStop || representationStalled || uncertaintyReviewDue);
+  if (causalStop) {
+    status = "STALLED"; decision = active.invalidated ? "PROBE" : "SWITCH"; route = active.invalidated ? "continue" : "reconsider";
+    reason = active.invalidated ? "Supporting evidence was withdrawn; reassess only the dependent action before further intervention." : "A previously supported stop remains in force pending a scope-bound reassessment.";
+  } else if (uncertaintyReviewDue) {
+    status = "UNCLEAR"; decision = "PROBE"; route = "continue";
+    reason = "Repeated unclear or disappointing observations make diagnosis due, but counts alone do not establish a failed formulation or method.";
   }
-  if (!stalled && decision !== "SWITCH" && !predictionFailure && !harm && has("mechanism_supported") && (has("delivery_problem") || has("dose_problem"))) {
+  if (!causalStop && representationStalled) { status = "STALLED"; decision = "PROBE"; route = "continue"; reason = "The delivered representation remained low-information or expressive without useful discrimination; change its form without resetting the causal episode."; }
+  // Model-proposed failure_hypotheses remain hypotheses. A source-bound strategy review owns
+  // any decision-relevant mismatch/refinement conclusion.
+  if (strategyReview?.finding === "implementation_gap") {
+    status = "UNCLEAR"; decision = "REFINE"; route = "continue";
+    reason = "A source-bound implementation or preparation gap supports one concrete refinement within the current method; retain the parent target and history.";
+  } else if (["specific_mismatch", "conditional_prediction_contradicted", "meaningful_nonresponse", "better_alternative"].includes(strategyReview?.finding)) {
+    status = "STALLED";
+    if (strategyReview.alternative) {
+      decision = "SWITCH"; route = "reconsider";
+      reason = "A decision-relevant, source-bound review supports a scoped change and names a supported next route.";
+      addFailure(strategyReview.finding === "specific_mismatch" ? "FORMULATION_MISMATCH" : "METHOD_MISMATCH");
+    } else {
+      decision = "PROBE"; route = "continue";
+      reason = "The current claim or step is unsupported, but no supported replacement route is yet bound; stop overclaiming and clarify the smallest next action.";
+    }
+  } else if (strategyReview?.finding === "no_defect_identified" && !harm && !external && !emergency) {
+    decision = predictedMovement ? "CONTINUE" : "PROBE";
+    route = "continue";
+    reason = predictedMovement ? "The method is moving and no decision-relevant defect is identified." : "No specific defect is identified; preserve the plausible method while using the next meaningful review condition.";
+  }
+  if (!causalStop && decision !== "SWITCH" && !predictionFailure && !harm && has("mechanism_supported") && (has("delivery_problem") || has("dose_problem"))) {
     decision = "ADJUST_DELIVERY"; route = "continue"; reason = "Independent support for target/mechanism permits one change in manner or dose; cumulative evidence is retained.";
     addFailure(has("dose_problem") ? "PACING_MISMATCH" : "DELIVERY_MISMATCH");
   }
   if (representationMismatch) addFailure("REPRESENTATION_MISMATCH");
-  if (active && proposedRepresentation && (representationChanged || representationTransitionRequested) && !causalStalled && !harm && !external && !emergency && !significantHarm
+  if (active && proposedRepresentation && (representationChanged || representationTransitionRequested) && !causalStop && !harm && !external && !emergency && !significantHarm
       && (representationMismatch || proposedRepresentation.transition !== "CONTINUE")) {
     decision = "SWITCH_REPRESENTATION"; route = "continue";
     reason = hasFresh("translation_requested") || proposedRepresentation.transition === "TRANSLATE_TO_PLAIN"
@@ -235,19 +335,19 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
         ? "The offered channel was declined; keep the process but use the person's selected alternative without typing them globally."
         : "A cheap change of representation can test delivery fit while preserving the process, predictions and cumulative evidence.";
   }
-  if (active && representationMismatch && !proposedRepresentation && !causalStalled && !harm && !external && !emergency && !significantHarm
+  if (active && representationMismatch && !proposedRepresentation && !causalStop && !harm && !external && !emergency && !significantHarm
       && !predictionFailure && !priorPredictionFailure && !repeatedPredictionFailure && !active.invalidated
       && !hypotheses.some(h => ["FORMULATION_MISMATCH", "TARGET_MISMATCH", "METHOD_MISMATCH"].includes(h.kind))) {
     status = stalled ? "STALLED" : "UNCLEAR"; decision = "PROBE"; route = "continue";
     reason = "The present representation is not yielding discriminating information. Offer one cheap, consent-based channel choice before changing the causal strategy.";
   }
-  if (active && hasFresh("representation_declined") && !proposedRepresentation && !causalStalled && !harm && !external && !emergency) {
+  if (active && hasFresh("representation_declined") && !proposedRepresentation && !causalStop && !harm && !external && !emergency) {
     status = stalled ? "STALLED" : "UNCLEAR"; decision = "PROBE"; route = "continue";
     reason = "The offered representation was declined. Do not repeat it; invite a plain or otherwise acceptable route without withdrawing care.";
   }
   if (has("process_complete") && variables.leave_alone_eligibility === "eligible") { status = "MOVING"; decision = "CLOSE"; route = "leave"; reason = "This specific process is complete and renewed processing would maintain checking."; addFailure("PROCESS_COMPLETE"); }
   if (update?.response === "declined" && !hasFresh("representation_declined")) { status = "UNCLEAR"; decision = "SWITCH"; route = "reconsider"; reason = "The exercise was declined; stop that exercise without withdrawing care."; }
-  if (harm) { status = "ADVERSE"; decision = "SWITCH"; route = "reconsider"; reason = "The exercise had an adverse response; stop and reconsider its fit without inferring a need for residential or supervised care."; }
+  if (harm && !significantHarm && decision !== "SWITCH") { status = "ADVERSE"; decision = "PROBE"; route = "continue"; reason = "Distress or an adverse-looking response is present. Review fit, pacing and attribution without assuming the exercise caused pre-existing distress or that the whole method failed."; }
   if (external) { status = harm ? "ADVERSE" : "STALLED"; decision = "SWITCH"; route = "external"; reason = "Evidenced state constraints make external stabilization the next strategy."; addFailure("STATE_CONSTRAINT"); }
   if (variables.actionable_problem === "present" && !emergency && !significantHarm) { route = "action"; if (decision === "CONTINUE" || decision === "PROBE") decision = "SWITCH"; reason = "A concrete external problem takes precedence; address the actionable conditions."; }
   if (romancePause) { route = "action"; reason = "Reduce instability and regulator/rescuer substitution through structured supervised non-romantic support."; }
@@ -303,9 +403,12 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
     review: evaluated?.review_count ?? 0, replayed_observation_ids: signals.filter(s => consumed.has(s.observation_id)).map(s => s.observation_id), delivery: evaluated?.delivery ?? null, predictions: evidence, observed_signals: signals,
     status, decision, route, reason, failure_sources: failures,
     ...(deliveryAssessment ? { method_status: methodStatus, delivery_assessment: deliveryAssessment, delivery_actions: [...new Set(deliveryActions)] } : {}),
-    reconsider: ["SWITCH", "STOP_DEESCALATE", "PROBE"].includes(decision) ? RECONSIDER : [],
+    reconsider: ["SWITCH", "STOP_DEESCALATE"].includes(decision) ? RECONSIDER : [],
     goal_substitution: { romance_pause: romancePause, instrumental_socializing: riskSignals.some(s => s.kind === "instrumental_partner_seeking"), evidence_ids: unique(riskSignals.map(s => s.observation_id)), cleared_by_reassessment: clearRisk },
     probe: decision === "PROBE" || route === "reconsider" ? (update?.probe ?? null) : null,
+    strategy_review: strategyReview,
+    strategy_review_policy: "diagnose-refine-v1",
+    effective_node_id: active?.refinement?.node_id ?? active?.strategy.node_id ?? null,
     human_evaluation: "NOT_ESTABLISHED_BY_DETERMINISTIC_TRACE"
   };
   if (active) {
@@ -348,7 +451,9 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
 export function pathPerformanceGuidance(control) {
   const t = control.latest;
   const guidance = ["Judge this process by prospective movement and adverse response, independently of praise or complaint. A polite answer, cooperation, temporary relief, fluent explanation, vivid imagery, poetic expressiveness, felt intensity or completed surface action is not mechanism confirmation. Formulation and failure attribution remain provisional.", "Use one analytic truth and safety system across many delivery languages. Representation belongs to this process, not a fixed verbal/visual/kinesthetic personality type. The user owns every symbol and metaphor: invite their meaning, never decode it as hidden truth. Image, poem, story, role and body material can establish phenomenological meaning but not external facts; analogy creates hypotheses, drawings are not projective tests, and AI imagery is never revelation. Consequential safety, abuse, medical, legal, external-event and ontological claims require ordinary evidence and reality checks. Be able to explain any suggestion in plain language when asked."];
-  if (["SWITCH", "PROBE", "STOP_DEESCALATE", "CLOSE"].includes(t.decision)) guidance.push("Stop repeating the previous exercise or its paraphrase. Reconsider process, formulation, target, need for external stabilization, mechanism, pacing/delivery and whether this is already a completed checking loop. Do not automatically choose an adjacent graph node or infer hidden trauma.");
+  if (["SWITCH", "STOP_DEESCALATE", "CLOSE"].includes(t.decision)) guidance.push("Stop the specifically rejected, unsafe, declined or completed exercise at its supported scope. Reconsider only what the evidence actually puts in doubt; do not automatically choose an adjacent graph node or infer hidden trauma.");
+  if (t.decision === "PROBE") guidance.push("Clarify the particular uncertainty using the established target and known history. Do not call the method failed, prohibit the prior exercise, or force a different modality merely because progress is mixed, flat or unclear.");
+  if (t.decision === "REFINE") guidance.push("Keep the parent method, target and evidence history. Apply the one supported refinement now, state what changed, and use its explicit review condition; do not rename the method or promise that the refinement will work.");
   if (t.route === "external" || t.goal_substitution.romance_pause) guidance.push("Use external stabilization and practical support before further inward processing. Match intensity to evidenced need; ordinary eyes-open activity can suffice when the issue is inward attention. When structured supervision is actually needed, agree a feasible step toward supervised non-romantic support and mentoring. Where locally appropriate, explore therapeutic community, supported residential, care-farm/green-care, Soteria-like or other supervised non-carceral settings; verify local suitability and availability rather than promising a model, rejecting all clinical care or changing medication.");
   if (t.goal_substitution.narrow_romance_pause ?? t.goal_substitution.romance_pause) guidance.push("For this evidenced current state, recommend pausing active romance-seeking because instability, load and using a partner as regulator/rescuer/proof-of-worth can increase dependency. This is case-level and revisable, not a universal requirement to love oneself before relationships. Do not advise isolation or reannounce this constraint during unrelated work. Preserve supportive community and mentoring; socializing mainly to obtain a partner is goal substitution, not success toward non-romantic stabilization.");
   if (t.decision === "STOP_DEESCALATE") guidance.push("Stop the destabilizing intervention immediately. Keep the response simple and outward-oriented; follow existing safety/consent/return gates and support access. No deeper imagery, memory search, hypnosis, intensification or further inward probe.");
@@ -367,8 +472,9 @@ export function pathPerformanceGuidance(control) {
 export function performanceQuestion(control) {
   const t = control.latest;
   if (t.failure_sources?.some(f => f.kind === "REPRESENTATION_MISMATCH")) return representationProbe;
-  if (t.route !== "reconsider") return "";
-  if (!t.episode_id) return "What would be useful to change here in what you can feel, choose, or do?";
+  if (!["reconsider", "continue"].includes(t.route)) return "";
+  if (!t.episode_id) return t.decision === "PROBE" ? "What part of the current target or opportunity is still unclear enough to change what we do next?" : "";
   if (t.probe && new Set(t.probe.alternatives.map(a => a.next_strategy)).size >= 2) return t.probe.question;
-  return t.decision === "PROBE" ? defaultProbe : rethinkProbe;
+  if (t.decision === "PROBE") return defaultProbe;
+  return t.route === "reconsider" ? rethinkProbe : "";
 }
