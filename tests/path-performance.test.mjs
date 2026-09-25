@@ -65,11 +65,58 @@ test("durable outcome cannot be inferred or falsified from immediate response", 
  assert.equal(later.latest.status, "MOVING");
 });
 
-test("repeated low-information I don't know responses force reformulation without a complaint", () => {
+test("an adequately exposed deterministic contradiction supports a scoped switch without a fixed miss counter", () => {
+ const initial = start(strategy({
+  evaluation_contract: {
+   effect_model: "deterministic",
+   opportunity_definition: "A bounded immediate opportunity to identify the blocked need after the selected care step.",
+   prerequisites_description: "The selected step was actually attempted with enough present-moment capacity to observe its immediate prediction.",
+   review_condition: "Review after the attempted step for the predeclared immediate need-access prediction."
+  }
+ }));
+ const reviewed = review(initial, update([
+  signal("prediction_failed", { prediction_id: "P1" })
+ ], {
+  strategy_review: {
+   process_id: "self-attack",
+   node_id: "ROUTE.GO_INWARD",
+   exposure: {
+    node_id: "ROUTE.GO_INWARD",
+    status: "adequate",
+    observation_ids: ["O2"],
+    reason: "The actual selected step was attempted in the defined opportunity."
+   },
+   window: {
+    status: "sufficient",
+    observation_ids: ["O2"],
+    reason: "The prediction was explicitly immediate and the observation window was complete."
+   },
+   finding: "conditional_prediction_contradicted",
+   finding_observation_ids: ["O2"],
+   reason: "The pre-existing deterministic immediate prediction was contradicted under its stated opportunity.",
+   refinement: null,
+   alternative: {
+    node_id: "ROUTE.ACT_OUTWARD",
+    scope: "method",
+    observation_ids: ["O2"],
+    reason: "A bounded alternative is supported for this synthetic scoped-failure case."
+   }
+  }
+ }));
+ assert.equal(reviewed.active.misses, 1);
+ assert.equal(reviewed.latest.decision, "SWITCH");
+ assert.equal(reviewed.latest.route, "reconsider");
+ assert.ok(reviewed.latest.failure_sources.some(f => f.kind === "METHOD_MISMATCH"));
+});
+
+test("repeated unclear low-information replies trigger diagnosis without fabricating method failure", () => {
  let s = start();
  for (let i = 0; i < 2; i++) s = review(s, update([signal("low_information"), signal("repetition")]));
- assert.equal(s.latest.status, "STALLED"); assert.equal(s.latest.route, "reconsider");
- assert.ok(s.latest.reconsider.includes("formulation")); assert.ok(s.latest.reconsider.includes("external_stabilization"));
+ assert.equal(s.latest.status, "UNCLEAR");
+ assert.equal(s.latest.decision, "PROBE");
+ assert.equal(s.latest.route, "continue");
+ assert.equal(s.active.switch_pending, false);
+ assert.ok(!s.latest.failure_sources.some(f => f.kind === "FORMULATION_MISMATCH"));
 });
 
 test("complexity rises while client information falls: switch even with one matching signal", () => {
