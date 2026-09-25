@@ -103,11 +103,7 @@ export function applyCaseAudit(snapshot, audit) {
   ])] : [];
   const episodeRefs = episode => episode ? [
     ...episode.strategy.observation_ids, ...(episode.failure_evidence_ids ?? []),
-    ...(episode.refinement?.observation_ids ?? []),
-    ...episode.reviews.flatMap(r => [
-      ...r.observed_signals.filter(episodeSignal).map(s => s.observation_id),
-      ...strategyReviewRefs(r.strategy_review)
-    ])
+    ...episode.reviews.flatMap(r => r.observed_signals.filter(episodeSignal).map(s => s.observation_id))
   ] : [];
   const activeWithdrawn = episodeRefs(priorState?.active).some(id => removeObservations.has(id));
   const pathInvalidated = Boolean(snapshot._path_invalidated || activeWithdrawn || (pathUpdate && [
