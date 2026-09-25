@@ -43,7 +43,8 @@ Not allowed under this task alone: merge, deployment, installation, `stable` pro
 - Graph proposal packet SHA-256: `645dcd509b331970e2192e38f5d6d5fce15bd85deb80fc90dabf7edf20d5814f`
 - Graph proposal candidate bundle SHA-256: `c08a77781f04dda2414602908abe882a4aff277962a6959ffefb61597c0e907b`
 - InnerSignal review surface: draft PR #80
-- Final remote branch synchronization / review readback: NEXT
+- Final remote branch synchronization / review readback: COMPLETE; remote tree exactly matches tested local tree `345bc02c71bbf4642e307f8bf6fb7f9cdb35a343`
+- Current stop boundary: OWNER SEMANTIC DECISION on the 25 graph decision cards / exact proposal packet. No reconciliation, canonical graph mutation, merge, installation, deployment, `stable` promotion, or active-guide editorial insertion is authorized before that decision.
 
 ## Evidence limits
 

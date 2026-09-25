@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-16
+Updated: 2026-09-25
+
+## Reparenting strategy refinement — owner-review candidate
+
+Task `reparenting-strategy-refinement-20260925` has reached its authorized development boundary on isolated draft review branch `task/reparenting-strategy-refinement-20260925`. The candidate replaces count-driven method abandonment with evidence-bound diagnosis/refinement, makes borrowed positive adult function an executable preparation before deeper child-facing work when current adult care is unavailable, and preserves safety, refusal, external-action precedence, mixed benefit history, real falsification, and parent-strategy evidence lineage. The runtime/controller focused suite passes 45/45; source/fidelity checks pass 16/16; longitudinal/threat-state checks pass 22/22; authoring validate/check/maps-check pass; and the exact graph proposal passes 32/32 regressions with 25 semantic owner-decision cards. These are engineering/source-consistency results, not clinical efficacy.
+
+The exact owner-supplied 2026-09-25 Substack HTML is preserved with SHA-256 `20073058fef619d8a8f5aa7fef8337face5ed50cf89d17c8142138effdb125b6`; its visible-author-text operational projection is SHA-256 `2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1`. The active article wording is unchanged beyond exact source synchronization. A proposed reader-facing strategy-review insertion is retained only as `tasks/reparenting-strategy-refinement-20260925/GUIDE-EDITORIAL-CONSISTENCY.md`.
+
+The current required next action is the owner semantic decision on the exact graph proposal/Guide Packet. Do not self-approve, reconcile canonical graph authority, merge, install, deploy, promote `stable`, mutate a real case, run paid/provider evaluation, or apply the proposed article insertion before that boundary is explicitly crossed.
 
 ## Somatic + altered-states guide sync — owner approved, reconciled, and merged
 
