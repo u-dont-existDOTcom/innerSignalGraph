@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -50,7 +51,7 @@ test("served protocol is the packaged skill, byte for byte, and the map matches 
     assert.equal(file.content, await fs.readFile(path.join(skillDir, file.path), "utf8"));
   }
   const skill = await fs.readFile(path.join(skillDir, "SKILL.md"), "utf8");
-  assert.ok(skill.includes(protocol.instructions));
+  assert.ok(skill.endsWith(protocol.instructions), "instructions are the skill body byte for byte");
   assert.doesNotMatch(protocol.instructions, /^---/u);
   for (const relative of THERAPY_PROTOCOL_FILES) assert.ok(skill.includes(relative), `${relative} is referenced by the skill`);
   const map = protocol.files.find((file) => file.path === "references/INNER-CHILD-THERAPY-MAP.md");
@@ -67,9 +68,10 @@ test("a map fix changes the served hash without a version bump or plugin reinsta
   assert.notEqual(after.protocolSha256, before.protocolSha256);
 
   const listener = await listen(t, { therapyProtocol: after });
-  const loaded = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: { paths: ["references/INNER-CHILD-THERAPY-MAP.md"] } });
+  const loaded = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: {} });
   assert.equal(loaded.body.result.structuredContent.protocol_sha256, after.protocolSha256);
-  assert.match(loaded.body.result.structuredContent.files[0].content, /Synthetic map fix\./u);
+  const map = loaded.body.result.structuredContent.files.find((file) => file.path === "references/INNER-CHILD-THERAPY-MAP.md");
+  assert.match(map.content, /Synthetic map fix\./u);
 });
 
 test("initialize tells the host to load the protocol first and to fail closed", async (t) => {
@@ -98,7 +100,7 @@ test("protocol tools are public and read-only while private case tools keep OAut
   const manifest = await post(listener.url, "tools/call", { name: "get_therapy_protocol_manifest", arguments: {} });
   assert.equal(manifest.response.status, 200);
   assert.equal(manifest.body.result.structuredContent.protocol_sha256, protocol.protocolSha256);
-  assert.equal(JSON.stringify(manifest.body).includes("## Instructions"), false);
+  assert.equal(JSON.stringify(manifest.body).includes("<<<BEGIN"), false);
 
   const loaded = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: {} });
   assert.equal(loaded.response.status, 200);
@@ -106,13 +108,23 @@ test("protocol tools are public and read-only while private case tools keep OAut
   assert.equal(value.version, protocol.version);
   assert.equal(value.instructions, protocol.instructions);
   assert.deepEqual(value.files.map((file) => file.path), [...THERAPY_PROTOCOL_FILES]);
+  // The model-facing text carries every block's exact packaged bytes, matching the advertised hashes.
   const text = loaded.body.result.content[0].text;
-  assert.match(text, /## Instructions/u);
-  assert.match(text, /## references\/INNER-CHILD-THERAPY-MAP\.md/u);
+  const blocks = [["instructions", protocol.instructionsSha256, protocol.instructions], ...protocol.files.map((file) => [file.path, file.sha256, file.content])];
+  for (const [label, digest, content] of blocks) {
+    const begin = `<<<BEGIN ${label} sha256=${digest} bytes=${Buffer.byteLength(content, "utf8")}>>>\n`;
+    const start = text.indexOf(begin);
+    assert.notEqual(start, -1, `${label} block is present`);
+    const bodyStart = start + begin.length;
+    const end = text.indexOf(`<<<END ${label}>>>`, bodyStart);
+    const body = text.slice(bodyStart, end);
+    assert.equal(content.endsWith("\n") ? body : body.slice(0, -1), content, `${label} bytes are exact`);
+    assert.equal(createHash("sha256").update(content, "utf8").digest("hex"), digest);
+  }
 
-  const unknown = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: { paths: ["../../.env"] } });
-  assert.equal(unknown.body.error.data.code, "THERAPY_PROTOCOL_FILE_UNKNOWN");
-  assert.equal(JSON.stringify(unknown.body).includes("## Instructions"), false);
+  // A request for a subset still returns the complete protocol: every reference is mandatory.
+  const subset = await post(listener.url, "tools/call", { name: "load_therapy_protocol", arguments: { paths: [] } });
+  assert.deepEqual(subset.body.result.structuredContent.files.map((file) => file.path), [...THERAPY_PROTOCOL_FILES]);
 
   const privateCall = await post(listener.url, "tools/call", { name: "retrieve_case_evidence", arguments: { case_id: "synthetic-case", query: "x" } });
   assert.equal(privateCall.response.status, 401);
@@ -131,10 +143,18 @@ test("a missing protocol fails closed without affecting private tools", async (t
   assert.equal(privateCall.response.status, 401);
 });
 
-test("an unreadable plugin build reports the protocol unavailable", async (t) => {
-  const dir = await copyPlugin(t);
-  await fs.rm(path.join(dir, "skills/inner-signal-therapy/references/PROTECTIVE-COMPATIBILITY.md"));
-  assert.throws(() => loadTherapyProtocol({ pluginRoot: dir }), { code: "THERAPY_PROTOCOL_UNAVAILABLE" });
+test("an unreadable or empty plugin build reports the protocol unavailable", async (t) => {
+  const missing = await copyPlugin(t);
+  await fs.rm(path.join(missing, "skills/inner-signal-therapy/references/PROTECTIVE-COMPATIBILITY.md"));
+  assert.throws(() => loadTherapyProtocol({ pluginRoot: missing }), { code: "THERAPY_PROTOCOL_UNAVAILABLE" });
+
+  const emptyReference = await copyPlugin(t);
+  await fs.writeFile(path.join(emptyReference, "skills/inner-signal-therapy/references/INNER-CHILD-THERAPY-MAP.md"), "\n");
+  assert.throws(() => loadTherapyProtocol({ pluginRoot: emptyReference }), { code: "THERAPY_PROTOCOL_UNAVAILABLE" });
+
+  const frontmatterOnly = await copyPlugin(t);
+  await fs.writeFile(path.join(frontmatterOnly, "skills/inner-signal-therapy/SKILL.md"), "---\nname: inner-signal-therapy\ndescription: x\n---\n\n");
+  assert.throws(() => loadTherapyProtocol({ pluginRoot: frontmatterOnly }), { code: "THERAPY_PROTOCOL_UNAVAILABLE" });
 });
 
 test("the hosted MCP image ships the packaged skill it serves", async () => {

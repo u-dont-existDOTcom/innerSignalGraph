@@ -1,7 +1,7 @@
 import http from "node:http";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
 import { CaseNotContinuationSafeError, PRIVATE_CASE_SCOPES, PrivateCaseAccessDeniedError, PrivateCaseKeyUnavailableError } from "../storage/private-case-access.mjs";
-import { THERAPY_PROTOCOL_FILES, TherapyProtocolUnavailableError, loadTherapyProtocol, therapyProtocolManifest, therapyProtocolPayload } from "../protocol/therapy-protocol.mjs";
+import { TherapyProtocolUnavailableError, loadTherapyProtocol, therapyProtocolManifest, therapyProtocolPayload } from "../protocol/therapy-protocol.mjs";
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const MAX_BODY_BYTES = 1_000_000;
@@ -225,14 +225,8 @@ const PROTOCOL_TOOL_DEFINITIONS = Object.freeze([
   {
     name: "load_therapy_protocol",
     title: "Load InnerSignal therapy protocol",
-    description: "Call before any InnerSignal therapy response (inner-child, younger-self, or self-relationship work). Returns the current therapy instructions and reference files, including the therapy map, with version and hashes. Omit paths to load everything.",
-    inputSchema: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        paths: { type: "array", minItems: 1, uniqueItems: true, items: { type: "string", enum: [...THERAPY_PROTOCOL_FILES] } }
-      }
-    },
+    description: "Call before any InnerSignal therapy response (inner-child, younger-self, or self-relationship work). Returns the complete current therapy instructions and every reference file, including the therapy map, with version and hashes.",
+    inputSchema: { type: "object", additionalProperties: false, properties: {} },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }
 ]);
@@ -264,13 +258,19 @@ function advertisedTools(oauthEnabled) {
   }))];
 }
 
-function protocolToolResult(protocol, name, args) {
+function protocolToolResult(protocol, name) {
   if (!protocol) throw new TherapyProtocolUnavailableError("The InnerSignal therapy protocol is unavailable on this server.");
   if (name === "get_therapy_protocol_manifest") return therapyProtocolManifest(protocol);
-  return therapyProtocolPayload(protocol, { paths: args.paths ?? null });
+  return therapyProtocolPayload(protocol);
 }
 
-// Readable text for the model; the same data stays in structuredContent.
+// Model-facing text. Each block carries its exact packaged bytes between its BEGIN and END lines, so
+// the text matches the advertised hashes; a newline is added before END only when a block lacks one.
+function protocolBlock(label, sha256, content) {
+  const bytes = Buffer.byteLength(content, "utf8");
+  return `<<<BEGIN ${label} sha256=${sha256} bytes=${bytes}>>>\n${content}${content.endsWith("\n") ? "" : "\n"}<<<END ${label}>>>`;
+}
+
 function protocolText(value) {
   const header = `InnerSignal therapy protocol ${value.version} (sha256 ${value.protocol_sha256})`;
   if (!value.instructions) {
@@ -279,9 +279,8 @@ function protocolText(value) {
   return [
     header,
     value.usage,
-    "## Instructions",
-    value.instructions,
-    ...value.files.map((file) => `## ${file.path}\n\n${file.content.trim()}`)
+    protocolBlock("instructions", value.instructions_sha256, value.instructions),
+    ...value.files.map((file) => protocolBlock(file.path, file.sha256, file.content))
   ].join("\n\n");
 }
 
@@ -446,14 +445,10 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
     const args = request.params?.arguments ?? {};
     if (PROTOCOL_TOOLS.has(name)) {
       try {
-        const value = protocolToolResult(protocol, name, args);
+        const value = protocolToolResult(protocol, name);
         return send(res, 200, success(request.id, { ...toolResult(value), content: [{ type: "text", text: protocolText(value) }] }));
-      } catch (error) {
-        const safeCode = error?.code === "THERAPY_PROTOCOL_FILE_UNKNOWN" ? error.code : "THERAPY_PROTOCOL_UNAVAILABLE";
-        const message = safeCode === "THERAPY_PROTOCOL_UNAVAILABLE"
-          ? "InnerSignal therapy protocol is unavailable; do not improvise it."
-          : "Unknown therapy protocol file.";
-        return send(res, 200, failure(request.id, -32003, message, { code: safeCode }));
+      } catch {
+        return send(res, 200, failure(request.id, -32003, "InnerSignal therapy protocol is unavailable; do not improvise it.", { code: "THERAPY_PROTOCOL_UNAVAILABLE" }));
       }
     }
 

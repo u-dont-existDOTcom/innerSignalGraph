@@ -25,9 +25,15 @@ export const THERAPY_PROTOCOL_FILES = Object.freeze([
 
 const sha256 = (text) => createHash("sha256").update(text, "utf8").digest("hex");
 
+// The skill body after its frontmatter; leading blank lines are dropped, the rest is kept byte for byte.
 function skillBody(markdown) {
   const match = /^---\n[\s\S]*?\n---\n/u.exec(markdown);
-  return (match ? markdown.slice(match[0].length) : markdown).trim();
+  return (match ? markdown.slice(match[0].length) : markdown).replace(/^(?:[ \t]*\n)+/u, "");
+}
+
+function requireContent(text, label) {
+  if (text.trim() === "") throw new TherapyProtocolUnavailableError(`The packaged ${label} is empty.`);
+  return text;
 }
 
 export class TherapyProtocolUnavailableError extends Error {
@@ -45,9 +51,9 @@ export function loadTherapyProtocol({ pluginRoot = DEFAULT_PLUGIN_ROOT } = {}) {
     if (manifest.name !== THERAPY_PROTOCOL_ID || typeof manifest.version !== "string") {
       throw new Error("The packaged plugin manifest does not identify the InnerSignal therapy protocol.");
     }
-    const instructions = skillBody(fs.readFileSync(new URL("skills/inner-signal-therapy/SKILL.md", root), "utf8"));
+    const instructions = requireContent(skillBody(fs.readFileSync(new URL("skills/inner-signal-therapy/SKILL.md", root), "utf8")), "skill instructions");
     const files = THERAPY_PROTOCOL_FILES.map((relative) => {
-      const content = fs.readFileSync(new URL(`skills/inner-signal-therapy/${relative}`, root), "utf8");
+      const content = requireContent(fs.readFileSync(new URL(`skills/inner-signal-therapy/${relative}`, root), "utf8"), relative);
       return Object.freeze({ path: relative, sha256: sha256(content), bytes: Buffer.byteLength(content, "utf8"), content });
     });
     const instructionsSha256 = sha256(instructions);
@@ -81,19 +87,15 @@ export function therapyProtocolManifest(protocol) {
   };
 }
 
-export function therapyProtocolPayload(protocol, { paths = null } = {}) {
-  const wanted = paths == null ? null : new Set(paths);
-  if (wanted && [...wanted].some((entry) => !THERAPY_PROTOCOL_FILES.includes(entry))) {
-    throw Object.assign(new Error("Unknown therapy protocol file."), { code: "THERAPY_PROTOCOL_FILE_UNKNOWN" });
-  }
+// Always the complete protocol: the instructions require every reference, so no subset is offered.
+export function therapyProtocolPayload(protocol) {
   return {
     protocol_id: protocol.protocolId,
     version: protocol.version,
     protocol_sha256: protocol.protocolSha256,
-    usage: "Follow `instructions` for this InnerSignal therapy response. Paths such as `references/INNER-CHILD-THERAPY-MAP.md` in the instructions refer to the matching entries in `files`. Record `version` and `protocol_sha256` with any continuity handoff.",
+    usage: "Follow the instructions for this InnerSignal therapy response. Paths such as `references/INNER-CHILD-THERAPY-MAP.md` in the instructions refer to the matching reference files returned here. Record `version` and `protocol_sha256` with any continuity handoff.",
     instructions: protocol.instructions,
-    files: protocol.files
-      .filter(({ path }) => !wanted || wanted.has(path))
-      .map(({ path, sha256: digest, content }) => ({ path, sha256: digest, content }))
+    instructions_sha256: protocol.instructionsSha256,
+    files: protocol.files.map(({ path, sha256: digest, bytes, content }) => ({ path, sha256: digest, bytes, content }))
   };
 }
