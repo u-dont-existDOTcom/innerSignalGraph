@@ -5,9 +5,9 @@
   "sources": [
     {
       "id": "inner-child-guide",
-      "version": "owner-current-2026-09-07-e01-e12",
-      "file": "inner-child-guide-2026-09-07.txt",
-      "sha256": "00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f",
+      "version": "owner-latest-humanized-2026-09-25",
+      "file": "inner-child-guide-2026-09-25.txt",
+      "sha256": "2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1",
       "role": "primary-framework",
       "format": "text"
     },
@@ -52,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "The active inner-child article is the complete owner-pasted current guide with adopted E01-E12, recorded in tasks/guide-source-sync-20260907/SOURCE-SYNC.json. The somatic source includes the owner-authorized, evidence-labeled Butoh/ecstatic/enactment external-practice note; it is not a runtime intervention or efficacy claim. Earlier source snapshots are retained byte-for-byte. Owner amendments remain separately cited extensions; semantic assets retain instructional-visual provenance. The graph contract/bundle identity and installed Guide Packets are unchanged by this candidate source revision. The latest somatic source incorporates the owner's humanized 2026-09-15 map semantics. The altered-states source is a safety-adapted operational extraction bound in the task record to the owner upload; experimental rescue regimens remain reader-guide material rather than executable emergency policy.",
+  "notes": "The active inner-child article is the owner-supplied 2026-09-25 Substack editor capture, preserved verbatim at guides/source-captures/inner-child-guide-2026-09-25.substack.html (SHA-256 20073058fef619d8a8f5aa7fef8337face5ed50cf89d17c8142138effdb125b6). The operational text projection preserves visible author text and is bound above by its own SHA-256; earlier source snapshots remain retained. This source synchronization does not itself approve graph semantic changes, install a Guide Packet, or change stable. The somatic and altered-states source notes and safety boundaries remain unchanged.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",
@@ -65,6 +65,12 @@
       "version": "owner-pasted-current-before-e01-e12",
       "file": "snapshots/inner-child-guide-owner-2026-09-06.txt",
       "sha256": "96569956f07a62a7a1d4f33a8007caaa53fa56aec3d10348eee0df527a989de5"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-current-2026-09-07-e01-e12",
+      "file": "inner-child-guide-2026-09-07.txt",
+      "sha256": "00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f"
     }
   ]
 }

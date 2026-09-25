@@ -21,7 +21,7 @@ const financial = totalCommitment => ({ resources, totalCommitment, currency: "E
 const ids = new Set(Array.from({ length: 90 }, (_, i) => `O${i+1}`));
 const variables = deriveCaseVariables({ ...blankCaseVariables(), present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes", suicidal_state: "absent", activation: "low", dissociation: "none", altered_state: "sober", inner_adult_access: "available", witness_capacity: "present", coherent_child_state: "present", body_capacity: "adequate", current_intent: "conversation", other_person_central: "no", influence_domain: "none", actionable_problem: "absent", unresolved_inner_material: "present", attention_loop: "absent", inward_attention_effect: "neutral" });
 const strategy = { process_id: "synthetic-process", target: "identify the current need", formulation: "Care may enable need access", family: "responsive_care", node_id: "ROUTE.GO_INWARD", selection_reason: "User requests support", observation_ids: ["O20"], predictions: [{ id: "P1", sign: "need_access", description: "Identify a current need", horizon: "immediate" }], adverse_signs: ["fragmentation"] };
-const update = (assessment = null, signals = [], patch = {}) => ({ strategy: null, representation: null, response: "meaningful", signals, failure_hypotheses: [], probe: null, ...(assessment ? { delivery_review: { process_id: strategy.process_id, node_id: strategy.node_id, assessment } } : {}), ...patch });
+const update = (assessment = null, signals = [], patch = {}) => ({ strategy: null, representation: null, strategy_review: null, response: "meaningful", signals, failure_hypotheses: [], probe: null, ...(assessment ? { delivery_review: { process_id: strategy.process_id, node_id: strategy.node_id, assessment } } : {}), ...patch });
 const signal = (kind, prediction_id = "", observation_id = "O21", severity = "ordinary") => ({ kind, prediction_id, observation_id, timing: "immediate", severity });
 const step = (prior, update, v = variables) => evaluatePathPerformance({ prior, update, variables: v, observationIds: ids });
 const start = () => {
@@ -100,7 +100,7 @@ test("benefit plus dose problem allows KEEP_BUT_TITRATE with alternative supervi
 test("poor method and poor provider switch both; good delivery cannot wash out method failures", () => {
  for (const input of [paywall(), good()]) {
   const a = { ...input, method: { ...input.method, benefit: "NO_BENEFIT" } };
-  const s = step(start(), update(a, [], { failure_hypotheses: [{ kind: "METHOD_MISMATCH", observation_ids: ["O22"] }] }));
+  const s = step(start(), update(a, [], { strategy_review: { process_id: strategy.process_id, node_id: strategy.node_id, exposure: { node_id: strategy.node_id, status: "adequate", observation_ids: ["O22"], reason: "The synthetic method was adequately exposed." }, window: { status: "sufficient", observation_ids: ["O22"], reason: "The synthetic method review window is complete." }, finding: "specific_mismatch", finding_observation_ids: ["O22"], reason: "Source-bound synthetic evidence supports a method mismatch.", refinement: null, alternative: { node_id: "ROUTE.THREE_WAY_GATE", scope: "method", observation_ids: ["O22"], reason: "Use a materially different synthetic route." } } }));
   assert.equal(s.latest.decision, "SWITCH");
   if (input.facts.find(f => f.dimension === "ordinary_safety_support").value === "NO") assert.ok(s.latest.delivery_actions.includes("DISCONTINUE_OR_SWITCH_METHOD"));
  }

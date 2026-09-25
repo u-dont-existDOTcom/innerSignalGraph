@@ -157,6 +157,10 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const pathContract = plan?.pathPerformanceContract;
   const prohibitedNodeIds = pathContract?.prohibit_prior_exercise
     ? reportedRealizations.map(item => text(item?.id)).filter(id => id && !id.startsWith("POLICY.") && !requiredNodeIds.includes(id)) : [];
+  const preparationOnly = plan?.executionContract?.preparationOnly ?? null;
+  const preparationLeakNodeIds = preparationOnly
+    ? reportedRealizations.map(item => text(item?.id)).filter(id => id && !id.startsWith("POLICY.") && !requiredNodeIds.includes(id))
+    : [];
   const relational = relationalPolicyMarkers(plan);
   const relationalTracked = Boolean(plan?.pathPerformance?.relational_readiness || relational.required.length || relational.forbidden.length);
   const missingRelationalPolicyMarkers = relational.required.filter(id => !realizedNodeIds.includes(id));
@@ -216,7 +220,7 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   }
   const compatibilityAdherence = !compatibilityRestricted || compatibilityFallbackApplied
     || (compatibilityViolations.length === 0 && prohibitedCompatibilityNodeIds.length === 0);
-  const pathAdherence = compatibilityFallbackApplied || ((!pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0))
+  const pathAdherence = compatibilityFallbackApplied || ((!pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0 && preparationLeakNodeIds.length === 0))
     && missingRelationalPolicyMarkers.length === 0 && forbiddenRelationalPolicyMarkers.length === 0
     && !missingRepresentationPolicyMarker && !forbiddenPriorRepresentationPolicyMarker && unexpectedRepresentationPolicyMarkers.length === 0 && symbolicOverclaims.length === 0
     && !missingThreatPathwayMarker && unexpectedThreatPathwayMarkers.length === 0 && romanceGuideAdherence
@@ -274,6 +278,8 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
       ...(pathContract || requiredThreatPathwayMarker || relational.required.length || relational.forbidden.length || romanceGuide || compatibility ? {
         pathPerformanceAdherencePassed: pathAdherence,
         prohibitedRealizationNodeIds: [...new Set(prohibitedNodeIds)],
+        preparationOnlyNodeId: preparationOnly?.nodeId ?? null,
+        preparationLeakNodeIds: [...new Set(preparationLeakNodeIds)],
         semanticAdherence: relationalTracked ? "DECLARED_POLICY_MARKERS_ARE_VERBATIM_GROUNDED_BUT_REQUIRE_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW" : "REQUIRES_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW"
       } : {})
     }

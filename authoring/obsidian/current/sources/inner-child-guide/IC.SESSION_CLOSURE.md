@@ -7,23 +7,24 @@ source_id: IC.SESSION_CLOSURE
 guide_id: inner-child-guide
 heading: Close the Session and Return to Life
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: ff04dcfc260f9a34d6cab554907b983c9bda0355bd7a4bbc34eb9aa4541b6ead
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: 9ce3d1ce6c041a758765ef20529180bdbdec835305c1fbff6c15dfed5979a330
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
 ---
 
 # Close the Session and Return to Life
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 597–611
+Locator: Lines 679–694
 
 ```text
 Close the Session and Return to Life
+
 Give every inner-child session a definite ending. Endless processing can become another way to avoid living.
 
 Look around and name where you are.
@@ -36,5 +37,5 @@ Name one ordinary action that comes next.
 
 Say: “That is enough for today. We are returning to the life we are building.”
 
-The session does not have to resolve every feeling before you make food, answer a message, take a walk,
+The session does not have to resolve every feeling before you make food, answer a message, take a walk
 ```

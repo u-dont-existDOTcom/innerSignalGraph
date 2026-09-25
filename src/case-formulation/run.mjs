@@ -1,7 +1,7 @@
 import { ValidationError } from "../core/errors.mjs";
 import { hasCanonicalRomanceReference } from "../core/romance-reference.mjs";
 import { withdrawDeliveryEvidence } from "./delivery-system-assessment.mjs";
-import { evaluatePathPerformance, CASE_RISK_SIGNALS, validateRepresentationSelection } from "./path-performance.mjs";
+import { evaluatePathPerformance, CASE_RISK_SIGNALS, validateRepresentationSelection, validateStrategyReview } from "./path-performance.mjs";
 import {
   relationalReadinessDecision,
   preparePathPriorForReadiness,
@@ -94,6 +94,13 @@ export function applyCaseAudit(snapshot, audit) {
   const pathUpdate = snapshot.path_update ? structuredClone(snapshot.path_update) : null;
   let priorState = snapshot._path_prior ? structuredClone(snapshot._path_prior) : null;
   const episodeSignal = signal => !CASE_RISK_SIGNALS.includes(signal.kind) || Boolean(signal.prediction_id);
+  const strategyReviewRefs = review => review ? [...new Set([
+    ...(review.exposure?.observation_ids ?? []),
+    ...(review.window?.observation_ids ?? []),
+    ...(review.finding_observation_ids ?? []),
+    ...(review.refinement?.observation_ids ?? []),
+    ...(review.alternative?.observation_ids ?? [])
+  ])] : [];
   const episodeRefs = episode => episode ? [
     ...episode.strategy.observation_ids, ...(episode.failure_evidence_ids ?? []),
     ...episode.reviews.flatMap(r => r.observed_signals.filter(episodeSignal).map(s => s.observation_id))
@@ -117,11 +124,19 @@ export function applyCaseAudit(snapshot, audit) {
       if (refs.some(id => removeObservations.has(id))) delete review.representation;
     }
   };
+  const withdrawStrategyReview = episode => {
+    if (!episode) return;
+    if (episode.refinement?.observation_ids?.some(id => removeObservations.has(id))) episode.refinement = null;
+    for (const review of episode.reviews ?? []) {
+      if (strategyReviewRefs(review.strategy_review).some(id => removeObservations.has(id))) review.strategy_review = null;
+    }
+  };
   if (priorState) {
     withdrawDeliveryEvidence(priorState.delivery_system_state, removeObservations);
     withdraw(priorState.active);
     withdrawRepresentation(priorState.active);
-    for (const closed of priorState.closed) { withdraw(closed.retained_episode); withdrawRepresentation(closed.retained_episode); }
+    withdrawStrategyReview(priorState.active);
+    for (const closed of priorState.closed) { withdraw(closed.retained_episode); withdrawRepresentation(closed.retained_episode); withdrawStrategyReview(closed.retained_episode); }
     const latestRepresentationRefs = [...(priorState.latest?.representation?.observed?.observation_ids ?? []), ...(priorState.latest?.representation?.selected?.observation_ids ?? [])];
     if (latestRepresentationRefs.some(id => removeObservations.has(id))) delete priorState.latest.representation;
     priorState.risk_signals = (priorState.risk_signals ?? []).filter(s => !removeObservations.has(s.observation_id));
@@ -141,6 +156,7 @@ export function applyCaseAudit(snapshot, audit) {
     pathUpdate.failure_hypotheses = pathUpdate.failure_hypotheses.filter(h => !h.observation_ids.some(id => removeObservations.has(id)));
     if (pathUpdate.strategy?.observation_ids.some(id => removeObservations.has(id))) pathUpdate.strategy = null;
     if (pathUpdate.representation?.observation_ids.some(id => removeObservations.has(id))) pathUpdate.representation = null;
+    if (strategyReviewRefs(pathUpdate.strategy_review).some(id => removeObservations.has(id))) pathUpdate.strategy_review = null;
   }
 
   const remainingObservations = snapshot.direct_observations.filter(item => !removeObservations.has(item.id));
@@ -166,6 +182,23 @@ export function applyCaseAudit(snapshot, audit) {
       if (corrected.process_id !== priorState.active.strategy.process_id) throw new ValidationError("Corrected representation must match the active process.");
       priorState.active.representation = corrected;
       priorState.active.delivery = null;
+    }
+  }
+  const correctedStrategyReviewProvided = audit.corrected_strategy_review != null;
+  const strategyReviewWasTracked = Boolean((pathUpdate && Object.hasOwn(pathUpdate, "strategy_review")) || priorState?.latest?.strategy_review || priorState?.active?.refinement || correctedStrategyReviewProvided || audit.invalidate_strategy_review === true);
+  const currentStrategy = pathUpdate?.strategy ?? priorState?.active?.strategy ?? null;
+  if (pathUpdate && strategyReviewWasTracked) {
+    if (audit.invalidate_strategy_review === true) pathUpdate.strategy_review = null;
+    else if (correctedStrategyReviewProvided) pathUpdate.strategy_review = validateStrategyReview(audit.corrected_strategy_review, remainingIds, currentStrategy);
+  }
+  if (priorState?.active && strategyReviewWasTracked) {
+    if (audit.invalidate_strategy_review === true) {
+      priorState.active.refinement = null;
+      if (priorState.latest) priorState.latest.strategy_review = null;
+    } else if (correctedStrategyReviewProvided) {
+      const corrected = validateStrategyReview(audit.corrected_strategy_review, remainingIds, priorState.active.strategy);
+      if (priorState.latest) priorState.latest.strategy_review = corrected;
+      priorState.active.refinement = corrected.refinement?.state === "active" ? structuredClone(corrected.refinement) : null;
     }
   }
   const originalReadiness = snapshot.relational_readiness ?? null;
@@ -240,6 +273,7 @@ export function applyCaseAudit(snapshot, audit) {
       variable_corrections: audit.variable_corrections,
       ...(readinessWasTracked ? { relational_readiness_reviewed: true } : {}),
       ...(representationWasTracked ? { path_representation_reviewed: true } : {}),
+      ...(strategyReviewWasTracked ? { strategy_review_reviewed: true } : {}),
       ...(romanceContextWasTracked ? { romance_guide_context_reviewed: true } : {}),
       ...(threatPathwayWasTracked ? { threat_pathway_reviewed: true } : {}),
       ...(compatibilityWasTracked ? { protective_compatibility_reviewed: true } : {})
@@ -280,6 +314,7 @@ async function planSnapshot(snapshot, {
       }) : null;
   const pathPerformance = applyRelationalReadinessToPath(basePathPerformance, readinessDecision);
   if (pathPerformance?.active && !bundle.graphs.some(g => g.nodes.some(n => n.id === pathPerformance.active.strategy.node_id))) throw new TypeError("Strategy references a node outside the current graph.");
+  if (pathPerformance?.active?.refinement && !bundle.graphs.some(g => g.nodes.some(n => n.id === pathPerformance.active.refinement.node_id))) throw new TypeError("Active refinement references a node outside the current graph.");
   if (pathPerformance) snapshot.path_performance = pathPerformance;
   else delete snapshot.path_performance;
   delete snapshot._path_prior;
@@ -325,6 +360,8 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
       if (context.pathPerformanceEnabled && !String(provider.model).startsWith("mock-")) {
         if (!Object.hasOwn(value, "path_update")) throw new ValidationError("Candidate extraction must declare path_update; missing strategy tracking cannot silently bypass monitoring.");
         if (value.path_update && !Object.hasOwn(value.path_update, "representation")) throw new ValidationError("Candidate path update must declare representation as null or a process-scoped selection.");
+        if (value.path_update && !Object.hasOwn(value.path_update, "strategy_review")) throw new ValidationError("Candidate path update must declare strategy_review as null or a source-bound review.");
+        if (value.path_update?.strategy && !Object.hasOwn(value.path_update.strategy, "evaluation_contract")) throw new ValidationError("A new candidate strategy must declare evaluation_contract as null or a prospective evaluation basis.");
         if (value.path_update?.strategy && value.path_update.representation == null) throw new ValidationError("A new candidate strategy requires an explicit process-scoped representation selection.");
         if (!Object.hasOwn(value, "relational_readiness")) throw new ValidationError("Candidate extraction must declare relational_readiness as null or an evidenced current assessment.");
         if (!Object.hasOwn(value, "romance_guide_context")) throw new ValidationError("Candidate extraction must declare romance_guide_context as null or an evidenced current-turn selector.");
@@ -357,7 +394,9 @@ export async function resolveCaseExtraction({ context, provider, onProgress, rec
       && Object.hasOwn(resumed.value, "romance_guide_context")
       && Object.hasOwn(resumed.value, "threat_pathway")
       && Object.hasOwn(resumed.value, "compatibility_assessment")
-      && (!resumed.value.path_update || Object.hasOwn(resumed.value.path_update, "representation"))))) {
+      && (!resumed.value.path_update || (Object.hasOwn(resumed.value.path_update, "representation")
+        && Object.hasOwn(resumed.value.path_update, "strategy_review")
+        && (!resumed.value.path_update.strategy || Object.hasOwn(resumed.value.path_update.strategy, "evaluation_contract"))))))) {
     onProgress?.({
       stage: "case_extraction",
       status: "resumed",
@@ -390,6 +429,9 @@ export async function runCaseAudit({ context, snapshot, provider, onProgress }) 
     { stage: "case_audit", fixtureKey: "case_audit" },
     value => {
       if (context.pathPerformanceEnabled && !String(provider.model).startsWith("mock-")) {
+        if (!Object.hasOwn(value, "corrected_strategy_review") || !Object.hasOwn(value, "invalidate_strategy_review")) {
+          throw new ValidationError("Candidate audit must explicitly review strategy_review.");
+        }
         if (!Object.hasOwn(value, "corrected_romance_guide_context") || !Object.hasOwn(value, "invalidate_romance_guide_context")) {
           throw new ValidationError("Candidate audit must explicitly review romance_guide_context.");
         }

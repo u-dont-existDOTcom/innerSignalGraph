@@ -1,0 +1,47 @@
+{
+  "id": "G037",
+  "description": "Present deep love is available but child inclusion is blocked; use the present resource without treating blocked reception as failure.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "parent_imagery": "not_used",
+    "love_access": "accessible",
+    "deep_love_access": "reliable",
+    "child_love_inclusion": "blocked",
+    "self_directed_love": "safe",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "coherent_child_state": "present",
+    "current_intent": "gentle_practice",
+    "support_available": "present",
+    "body_capacity": "adequate",
+    "other_person_central": "no",
+    "influence_domain": "none",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "present",
+    "attention_loop": "absent",
+    "inward_attention_effect": "neutral"
+  },
+  "unknowns": [],
+  "expected": {
+    "selectedExcludes": [
+      "IC.BORROW_ONE_FUNCTION",
+      "IC.NEUTRAL_WITNESS"
+    ],
+    "requiredNuancePatterns": [
+      "present intermittent or reliable access",
+      "child\u2019s reception are distinct evidence states"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "blocked transfer proof"
+    ]
+  }
+}

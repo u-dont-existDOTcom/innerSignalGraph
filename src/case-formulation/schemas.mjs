@@ -1,4 +1,4 @@
-import { pathUpdateSchema, representationSchema } from "./path-performance.mjs";
+import { pathUpdateSchema, representationSchema, strategyReviewSchema } from "./path-performance.mjs";
 import { turnTaskSchema } from "./turn-task.mjs";
 import { relationalReadinessSchema } from "./relational-readiness.mjs";
 import { romanceGuideContextSchema } from "./romance-guide.mjs";
@@ -84,7 +84,8 @@ export const caseSnapshotSchema = {
 export const caseSnapshotGenerationSchema = structuredClone(caseSnapshotSchema);
 caseSnapshotGenerationSchema.required.push("relational_readiness", "romance_guide_context", "threat_pathway", "compatibility_assessment", "inner_speech_profile");
 caseSnapshotGenerationSchema.properties.direct_observations.items.required.push("phenomenology");
-caseSnapshotGenerationSchema.properties.path_update.anyOf[1].required.push("delivery_review", "representation");
+caseSnapshotGenerationSchema.properties.path_update.anyOf[1].required.push("delivery_review", "representation", "strategy_review");
+caseSnapshotGenerationSchema.properties.path_update.anyOf[1].properties.strategy.anyOf[1].required.push("evaluation_contract");
 
 export const caseAuditSchema = {
   type: "object",
@@ -94,6 +95,8 @@ export const caseAuditSchema = {
     invalidate_turn_task: { type: "boolean" },
     corrected_path_representation: { anyOf: [{ type: "null" }, representationSchema] },
     invalidate_path_representation: { type: "boolean" },
+    corrected_strategy_review: { anyOf: [{ type: "null" }, strategyReviewSchema] },
+    invalidate_strategy_review: { type: "boolean" },
     corrected_relational_readiness: relationalReadinessSchema,
     invalidate_relational_readiness: { type: "boolean" },
     corrected_romance_guide_context: romanceGuideContextSchema,
@@ -142,6 +145,8 @@ export const caseAuditGenerationSchema = structuredClone(caseAuditSchema);
 caseAuditGenerationSchema.required.push(
   "corrected_path_representation",
   "invalidate_path_representation",
+  "corrected_strategy_review",
+  "invalidate_strategy_review",
   "corrected_relational_readiness",
   "invalidate_relational_readiness",
   "corrected_romance_guide_context",

@@ -20,8 +20,8 @@ source_refs:
   - AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
 regression_refs: []
 base_record_sha256: 2f50d59757fcebac25511712f72f59494f3a7313fd33234f959734b69038ce59
-base_graph_sha256: 2f31316bacb025352fbd0e2440aaa6607f50f2fc7cb38bc95263fbd807a3459f
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+base_graph_sha256: eb53a26b4f7b166afd60e0ecffc81439bbaa7b847d022dea2d2f3f4f9d368ecc
+projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
 ---
 
 # Untangle belonging from self-betrayal

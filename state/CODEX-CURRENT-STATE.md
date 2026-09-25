@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-16
+Updated: 2026-09-25
+
+## Reparenting strategy refinement — owner-approved, reconciled development candidate
+
+Task `reparenting-strategy-refinement-20260925` is owner-approved and reconciled on isolated draft review branch `task/reparenting-strategy-refinement-20260925`. The candidate replaces count-driven method abandonment with evidence-bound diagnosis/refinement, makes borrowed positive adult function an executable preparation before deeper child-facing work when current adult care is unavailable, and preserves safety, refusal, external-action precedence, mixed benefit history, real falsification, and parent-strategy evidence lineage. The owner explicitly approved the map/rules. After rebasing to current task state, all 25 decision IDs and contracts remained byte-identical; the exact approved packet is SHA-256 `4b5361091cd3ef722d35d4eb482a2fd78784a805fdbab59bef7b14f961a11ab9`. Reconciliation passed 30/30 canonical graph regressions and the complete package gate, producing canonical bundle SHA-256 `c08a77781f04dda2414602908abe882a4aff277962a6959ffefb61597c0e907b` and projection input `c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78`. It reports `installed=false` and `stableChanged=false`; these are development/source-consistency results, not clinical efficacy.
+
+The exact owner-supplied pre-insertion 2026-09-25 Substack HTML remains preserved with SHA-256 `20073058fef619d8a8f5aa7fef8337face5ed50cf89d17c8142138effdb125b6`; its visible-author-text operational projection is SHA-256 `2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1`. The owner subsequently kept the proposed “When to Change the Strategy” passage in the external/public draft. No post-insertion exact HTML capture has been supplied, so the repository must not claim that manual editorial change is source-synchronized yet.
+
+No further map/rules development action remains. On 2026-09-25 the owner explicitly instructed to continue merging the map changes, authorizing merge of the reconciled InnerSignal development PR after required merge gates pass. Installation, deployment, `stable` promotion, real-case mutation/experiment, paid/provider execution, and publication remain unauthorized. The separate Universal rules candidate remains isolated in its draft PR and unmerged under this instruction. Exact approval and reconciliation receipts are under `tasks/reparenting-strategy-refinement-20260925/`.
 
 ## Somatic + altered-states guide sync — owner approved, reconciled, and merged
 
