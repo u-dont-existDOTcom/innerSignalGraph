@@ -7,26 +7,27 @@ source_id: IC.ADULT_APPRENTICE
 guide_id: inner-child-guide
 heading: Become the Adult Apprentice
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: ea2e2684a070282d0cb145868d828548fdaf1b5caa2b0ff19cab12e6020ea2a0
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: 11795ec04fdc465c0c263daae3258282fe505f47ce808893463a19bd651ffb4c
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.ADULT_APPRENTICE
   - IC.BORROW_ONE_FUNCTION
   - IC.PROTECTOR_ACTION
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f
 ---
 
 # Become the Adult Apprentice
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 221–239
+Locator: Lines 255–274
 
 ```text
 Become the Adult Apprentice
+
 The borrowed adult should stand beside you rather than replace you. The movement is: receive care → observe care → participate in care → initiate care → internalize care.
 
 After a therapist, peer, friend, or imagined figure helps, ask:
@@ -37,5 +38,5 @@ Which five percent of that can I do myself?
 
 What action will prove that some of this capacity now belongs to me?
 
-The helper gradually hands the role back. Otherwise borrowed adul
+The helper gradually hands the role back. Otherwise borrowed adu
 ```

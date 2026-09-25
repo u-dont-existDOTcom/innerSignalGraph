@@ -7,20 +7,20 @@ source_id: IC.SPIRITUAL_STRUGGLE
 guide_id: inner-child-guide
 heading: When the Spiritual Relationship Hurts
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
 section_hash: 34e9aa701d2417b5721b32ff4ee918c35a758f0df14e6cc603718cf0d1bee49a
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f
 ---
 
 # When the Spiritual Relationship Hurts
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 214–220
+Locator: Lines 249–254
 
 ```text
 When the Spiritual Relationship Hurts

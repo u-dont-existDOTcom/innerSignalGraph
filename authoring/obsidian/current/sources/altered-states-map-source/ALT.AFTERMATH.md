@@ -12,7 +12,7 @@ section_hash: 4c3c3de53377a0b8426f2da150f8c3eef157acff2dac05452e29f5a6ae788412
 locator_kind: text-lines
 cited_by_node_ids:
   - ROUTE.ALTERED_AFTERMATH
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f
 ---
 
 # Aftermath and Minimum Viable Integration

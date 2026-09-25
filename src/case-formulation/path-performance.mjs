@@ -83,8 +83,15 @@ export function validateStrategyReview(value, observationIds, strategy = null) {
   if (!["unresolved", "no_defect_identified"].includes(value.finding) && value.finding_observation_ids.length === 0) throw new ValidationError("A decision-relevant strategy finding requires observation references.");
   if (value.finding === "conditional_prediction_contradicted") {
     if (value.exposure?.status !== "adequate" || value.window?.status !== "sufficient") throw new ValidationError("A contradicted conditional prediction requires adequate exposure and a sufficient observation window.");
-    if (strategy?.evaluation_contract?.effect_model === "delayed" && value.window.status !== "sufficient") throw new ValidationError("A delayed prediction cannot fail before its review window.");
+    if (strategy && strategy.evaluation_contract?.effect_model !== "deterministic") throw new ValidationError("A single contradicted conditional prediction requires a predeclared deterministic evaluation contract.");
   }
+  if (value.finding === "meaningful_nonresponse") {
+    if (value.exposure?.status !== "adequate" || value.window?.status !== "sufficient") throw new ValidationError("Meaningful nonresponse requires adequate exposure and a sufficient observation window.");
+    if (strategy && (!strategy.evaluation_contract || strategy.evaluation_contract.effect_model === "unknown")) throw new ValidationError("Meaningful nonresponse requires a predeclared informative evaluation contract.");
+  }
+  if (value.finding === "implementation_gap" && !value.refinement) throw new ValidationError("An implementation-gap finding requires one concrete refinement.");
+  if (value.finding === "better_alternative" && !value.alternative) throw new ValidationError("A better-alternative finding requires the supported alternative.");
+  if (["unresolved", "no_defect_identified"].includes(value.finding) && (value.refinement || value.alternative)) throw new ValidationError("Unresolved/no-defect reviews cannot smuggle in a refinement or replacement.");
   if (strategy && (value.process_id !== strategy.process_id || value.node_id !== strategy.node_id)) throw new ValidationError("strategy_review must bind to the active parent strategy.");
   return structuredClone(value);
 }
@@ -189,7 +196,7 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
     if (retained?.retained_episode) state.active = structuredClone(retained.retained_episode);
     else {
       state.sequence += 1;
-      state.active = { delivery: null, representation: update?.representation ?? null, refinement: null, refinement_history: [], representation_switches: 0, representation_misses: 0, representation_evidence_ids: [], observed_ids: [], failure_evidence_ids: [], id: `strategy-${state.sequence}`, strategy: candidate, prediction_failures: Object.fromEntries(candidate.predictions.map(p => [p.id, 0])), misses: 0, unclear: 0, review_count: 0, reviews: [], switch_pending: false, invalidated: false, status: "UNCLEAR", decision: "PROBE" };
+      state.active = { delivery: null, representation: update?.representation ?? null, refinement: null, refinement_history: [], representation_switches: 0, representation_misses: 0, representation_evidence_ids: [], observed_ids: [], failure_evidence_ids: [], failure_sources: [], id: `strategy-${state.sequence}`, strategy: candidate, prediction_failures: Object.fromEntries(candidate.predictions.map(p => [p.id, 0])), misses: 0, unclear: 0, review_count: 0, reviews: [], switch_pending: false, invalidated: false, status: "UNCLEAR", decision: "PROBE" };
     }
   }
   const active = state.active;
@@ -277,8 +284,24 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   }
   let status = "UNCLEAR", decision = "PROBE", route = "continue", reason = "Prospective movement is not yet clear; diagnose only the uncertainty that can change the next step while preserving the current process.";
   const hypotheses = update?.failure_hypotheses ?? [];
-  const failures = hypotheses.map(h => ({ ...h, attribution: "provisional" }));
-  const addFailure = kind => { if (!failures.some(h => h.kind === kind)) failures.push({ kind, observation_ids: unique([...(kind === "REPRESENTATION_MISMATCH" ? active?.representation_evidence_ids ?? [] : active?.failure_evidence_ids ?? []), ...signals.filter(s => HARM_SIGNALS.includes(s.kind) || s.kind === "external_stabilization_needed" || kind === "REPRESENTATION_MISMATCH" && ["repetition", "low_information", "complexity_without_information", "verbosity_without_information", "expressiveness_without_information", "representation_mismatch", "representation_declined", "representation_switch_requested"].includes(s.kind)).map(s => s.observation_id)]), attribution: active?.invalidated ? "evidence_withdrawn_reassessment_required" : "controller_review_required_not_diagnosis" }); };
+  const failures = structuredClone(active?.failure_sources ?? []);
+  for (const hypothesis of hypotheses) {
+    const existing = failures.find(item => item.kind === hypothesis.kind);
+    if (existing) {
+      existing.observation_ids = unique([...(existing.observation_ids ?? []), ...hypothesis.observation_ids]);
+      existing.attribution = "provisional";
+    } else failures.push({ ...hypothesis, attribution: "provisional" });
+  }
+  const addFailure = kind => {
+    const refs = unique([
+      ...(kind === "REPRESENTATION_MISMATCH" ? active?.representation_evidence_ids ?? [] : active?.failure_evidence_ids ?? []),
+      ...(strategyReview?.finding_observation_ids ?? []),
+      ...signals.filter(s => HARM_SIGNALS.includes(s.kind) || s.kind === "external_stabilization_needed" || kind === "REPRESENTATION_MISMATCH" && ["repetition", "low_information", "complexity_without_information", "verbosity_without_information", "expressiveness_without_information", "representation_mismatch", "representation_declined", "representation_switch_requested"].includes(s.kind)).map(s => s.observation_id)
+    ]);
+    const existing = failures.find(item => item.kind === kind);
+    if (existing) existing.observation_ids = unique([...(existing.observation_ids ?? []), ...refs]);
+    else failures.push({ kind, observation_ids: refs, attribution: active?.invalidated ? "evidence_withdrawn_reassessment_required" : "controller_review_required_not_diagnosis" });
+  };
   if (!active) {
     status = "UNCLEAR";
     decision = "PROBE";
@@ -349,7 +372,17 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   if (update?.response === "declined" && !hasFresh("representation_declined")) { status = "UNCLEAR"; decision = "SWITCH"; route = "reconsider"; reason = "The exercise was declined; stop that exercise without withdrawing care."; }
   if (harm && !significantHarm && decision !== "SWITCH") { status = "ADVERSE"; decision = "PROBE"; route = "continue"; reason = "Distress or an adverse-looking response is present. Review fit, pacing and attribution without assuming the exercise caused pre-existing distress or that the whole method failed."; }
   if (external) { status = harm ? "ADVERSE" : "STALLED"; decision = "SWITCH"; route = "external"; reason = "Evidenced state constraints make external stabilization the next strategy."; addFailure("STATE_CONSTRAINT"); }
-  if (variables.actionable_problem === "present" && !emergency && !significantHarm) { route = "action"; if (decision === "CONTINUE" || decision === "PROBE") decision = "SWITCH"; reason = "A concrete external problem takes precedence; address the actionable conditions."; }
+  if (variables.actionable_problem === "present" && !emergency && !significantHarm) {
+    if (old?.strategy.node_id === "ROUTE.ACT_OUTWARD" && ["CONTINUE", "PROBE", "ADJUST_DELIVERY", "REFINE"].includes(decision)) {
+      route = "continue";
+      if (decision === "CONTINUE") decision = "PROBE";
+      reason = "The concrete external problem remains the target, but disappointing or unclear action results call for feasibility/implementation diagnosis rather than automatically abandoning practical action.";
+    } else {
+      route = "action";
+      if (decision === "CONTINUE" || decision === "PROBE") decision = "SWITCH";
+      reason = "A concrete external problem takes precedence; address the actionable conditions.";
+    }
+  }
   if (romancePause) { route = "action"; reason = "Reduce instability and regulator/rescuer substitution through structured supervised non-romantic support."; }
   if (emergency || significantHarm) { status = "ADVERSE"; decision = "STOP_DEESCALATE"; route = "safety"; reason = "Significant destabilization or immediate protection need stops processing now."; addFailure("STATE_CONSTRAINT"); }
   if (["SWITCH", "PROBE"].includes(decision) && route === "action" && old?.strategy.node_id === "ROUTE.ACT_OUTWARD" && stalled && !romancePause) {
@@ -363,7 +396,7 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
   const methodStatus = status;
   const poorDelivery = deliveryAssessment?.trustStatus === "HIGH_RISK_DELIVERY";
   const benefitReported = ["OBSERVED_PARTIAL", "OBSERVED_USEFUL"].includes(deliveryAssessment?.method.benefit);
-  const methodMismatch = hypotheses.some(h => ["FORMULATION_MISMATCH", "TARGET_MISMATCH", "METHOD_MISMATCH"].includes(h.kind));
+  const methodMismatch = ["specific_mismatch", "conditional_prediction_contradicted", "meaningful_nonresponse", "better_alternative"].includes(strategyReview?.finding);
   const preserveMethod = (status === "MOVING" || benefitReported) && !methodMismatch && deliveryAssessment?.method.benefit !== "NO_BENEFIT";
   const deliveryActions = [...(deliveryAssessment?.actions ?? [])];
   if (poorDelivery && preserveMethod) deliveryActions.push("PRESERVE_METHOD_AS_PARTIAL_TOOL");
@@ -440,6 +473,7 @@ export function evaluatePathPerformance({ prior = null, update = null, variables
       active.representation = proposedRepresentation;
     }
     active.status = status; active.decision = decision;
+    active.failure_sources = structuredClone(failures).slice(-8);
     // Provider-only reconsideration retains predictions and does not mark the method failed.
     active.switch_pending = ["SWITCH", "STOP_DEESCALATE", "CLOSE"].includes(decision);
     active.reviews = [...active.reviews, trace].slice(-12);

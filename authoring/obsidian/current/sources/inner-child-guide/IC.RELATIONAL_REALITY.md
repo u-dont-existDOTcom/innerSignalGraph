@@ -7,24 +7,25 @@ source_id: IC.RELATIONAL_REALITY
 guide_id: inner-child-guide
 heading: Also Look Outward
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: 4521b189a9ab3df8293247de7380249aa00d76aeb7a011d1c3e55aee4a17734c
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: a129e84ad8b3c55de0144470cfafa404954e4c1d08f43571b627ef3e97be9803
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f
 ---
 
 # Also Look Outward
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 122–134
+Locator: Lines 129–150
 
 ```text
 Also Look Outward
+
 Not every hook is mainly old material. Before analyzing the child or protector, also notice what the other person is actually doing. Can they tolerate disagreement, reflect on their behavior, take responsibility, and make room for your experience—or does the interaction repeatedly end with you carrying their feelings and abandoning your own position?
 
-Lindsay Gibson’s work on emotional immaturity is useful here because it shifts attention from chasing motives to demonstrated re
+Lindsay Gibson’s work on emotional immaturity is useful here because it shifts attention from chasing motives to demonstrated r
 ```

@@ -88,7 +88,7 @@ async function evaluateUnlocked({out,settings=null,live=false,smoke=false,repeat
     replay:'Each arm has an independent assistant history; prerecorded user turns are synthetic, not observed client outcomes.',
     contamination:'Development set disclosed during implementation; not held out.',
     requestedResponder:'Owner-selected GPT-5.6 Sol xhigh; settings must bind its exact verified provider ID. No UI label establishes API entitlement.',
-    sourceLimit:'Pinned complete owner article with adopted E01-E12 plus the unchanged somatic guide and approved amendments. Source receipt: tasks/guide-source-sync-20260907/SOURCE-SYNC.json. Original media destinations absent from the pasted source are not reconstructed.'};
+    sourceLimit:'Pinned exact owner-supplied 2026-09-25 inner-child article text projection plus the unchanged somatic guide and approved amendments. Raw Substack editor HTML is preserved separately; this fidelity harness consumes the normalized visible-author-text source. Source receipt: tasks/reparenting-strategy-refinement-20260925/SOURCE-SYNC.json.'};
   await pinRun(out,manifest);
   const caller=await makeCaller(out,settings.max_calls);
   const make=(r,id)=>makeOpenRouterProvider(r,{id,execute:(...args)=>caller.execute(...args),fetchImpl});

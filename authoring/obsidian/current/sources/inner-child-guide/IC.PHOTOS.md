@@ -7,24 +7,25 @@ source_id: IC.PHOTOS
 guide_id: inner-child-guide
 heading: Use Childhood Photographs Without Interrogating Them
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: f17046c1a08f6b8fd30dbc5ce5f6bbf712324727305e274a7afc4d52e689364d
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: 0defff175f1394ced6c9ed6d5f77b158f2cbda1af1ed9a45f7044fef5e382db1
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.PHOTO_EPISTEMIC_CAUTION
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f
 ---
 
 # Use Childhood Photographs Without Interrogating Them
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 568–596
+Locator: Lines 649–678
 
 ```text
 Use Childhood Photographs Without Interrogating Them
+
 A childhood photograph can help when visualization feels fake. You don’t have to invent the child’s face or posture; you can look at an image from that time. Look gently and notice what arises without deciding what the picture is supposed to prove.
 
 Useful questions include:
@@ -37,5 +38,5 @@ What does the younger part seem to want me to understand?
 
 What do I remember directly?
 
-What
+Wha
 ```

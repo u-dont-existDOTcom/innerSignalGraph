@@ -7,26 +7,27 @@ source_id: IC.NEUTRAL_WITNESS
 guide_id: inner-child-guide
 heading: A Witness Is Enough to Begin
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: 06e18e369ddcb8f25d1401b095989937acc42a32806eba03885c349ab299f08d
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: a636b51c2ddbfb20d886a56c583afdb69fbb6ef526224815806f0653713ffa36
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.NEUTRAL_WITNESS
   - IC.SUICIDAL_ADULT_SEAT
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f
 ---
 
 # A Witness Is Enough to Begin
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 148–156
+Locator: Lines 167–176
 
 ```text
 A Witness Is Enough to Begin
+
 The first adult position may be only a witness: “A frightened younger state is here, and something can notice it.” You don’t need warmth, wisdom, or a perfect answer yet. The fact that one part can observe another creates a little space around total identification.
 
-Using your own name can help. Instead of “I am terrified,” try, “A younger part of Joel is terrified. What does Joel need from an adult right now?” Laboratory studies of third-person self-talk suggest tha
+Using your own name can help. Instead of “I am terrified,” try, “A younger part of Joel is terrified. What does Joel need from an adult right now?” Laboratory studies of third-person self-talk suggest th
 ```

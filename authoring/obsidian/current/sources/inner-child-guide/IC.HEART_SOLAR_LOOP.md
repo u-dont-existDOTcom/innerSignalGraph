@@ -7,27 +7,28 @@ source_id: IC.HEART_SOLAR_LOOP
 guide_id: inner-child-guide
 heading: A Heart-to-Child Loop
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: 80f35569ce10723145e03e68552ad8767a8d92c36ce4ec79d4eefa55de91f712
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: 1db7683962b01e113624600884f6aa7501ba9d366da07ca7ce07eb1b682f589f
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.BORROW_LOVE
   - IC.DEEP_LOVE_TO_CHILD
   - IC.SOLAR_PLEXUS_RELAXATION
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f
 ---
 
 # A Heart-to-Child Loop
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 528–567
+Locator: Lines 599–648
 
 ```text
 A Heart-to-Child Loop
+
 If you can feel even a little warmth, put one hand on the center of your chest, at the heart chakra, and feel for love. Put the other on the solar plexus, just below the chest, and feel for the inner child.
 
-The solar plexus is the most vulnerable part of the torso. One punch there hurts a lot, as I sadly learned while getting beaten up every day at kindergarten recess by a gang organized by my best friend. Can you believe it? So it feels natural to locate the vulnerable in
+The solar plexus is the most vulnerable part of the torso. One punch there hurts a lot, as I sadly learned while getting beaten up every day at kindergarten recess by a gang organized by my best friend. Can you believe it? So it feels natural to locate the vulnerable i
 ```

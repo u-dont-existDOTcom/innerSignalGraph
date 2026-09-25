@@ -22,7 +22,7 @@ regression_refs:
   - G007
 base_record_sha256: 486ab6a78444f3d7dd853015cdf577b26cfe701b0d9a293b8b06f5f2c6669518
 base_graph_sha256: 5353c44e3a61ef4c93660b66fcf57ad87b064c417c8413c45213f68306a6dd18
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f
 ---
 
 # Block advanced release when physical or regulatory safety is not established

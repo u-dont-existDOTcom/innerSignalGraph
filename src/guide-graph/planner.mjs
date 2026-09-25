@@ -149,7 +149,9 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   const control = graphs.length > 0 && graphs.every(g => g.pathPerformancePolicyVersion === 1) ? pathPerformance : null;
   let interrupt = control && control.latest.route !== "continue";
   let task = taskPolicy && !interrupt ? validateTurnTask(turnTask) : null;
-  const intendedInnerChildNode = control?.active?.strategy.node_id ?? task?.node_id ?? null;
+  const inferredInnerChildNode = ["deep_dialogue", "hypnosis"].includes(variables.current_intent)
+    ? "IC.DEEP_CHILD_DIALOGUE" : null;
+  const intendedInnerChildNode = control?.active?.strategy.node_id ?? task?.node_id ?? inferredInnerChildNode;
   const caringPreparationRequired = variables.inner_adult_access === "low"
     && ["IC.DEEP_CHILD_DIALOGUE", "IC.DEEP_LOVE_TO_CHILD"].includes(intendedInnerChildNode);
   const activeRefinementNodeId = control?.active?.refinement?.node_id ?? null;
@@ -210,6 +212,16 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   if (taskPolicy && task?.agreement === "declined" && task.node_id) {
     eligible = eligible.filter(node => node.id !== task.node_id || node.tier <= 2);
   }
+  // A known child-facing intent with low adult access must execute the positive-care
+  // preparation even before a path-performance episode or explicit turn task exists.
+  // This remains scoped to child dialogue/hypnosis; discrete memory work keeps its
+  // existing exception and higher-priority safety/external routes still outrank it.
+  if (!control && preparationNodeId && !emergency
+      && !eligible.some(node => node.tier <= 2)
+      && !eligible.some(node => ["ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.ACT_OUTWARD", "ROUTE.LEAVE_ALONE", "ROUTE.EXTERNAL_EMBODIMENT"].includes(node.id))) {
+    const preparation = eligible.find(node => node.id === preparationNodeId);
+    if (preparation) eligible = [preparation, ...eligible.filter(node => node.id !== preparationNodeId)];
+  }
   // An evidenced current task can outrank generic preparation, but never protective
   // constraints, a live external problem or an uncompleted relational reality check.
   if (taskPolicy && task?.agreement === "accepted" && task.node_id && !emergency
@@ -229,19 +241,24 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     "ROUTE.ALTERED_ACTION_LOCK"
   ]);
   const higherRoutes = new Set([...safetyIds, "ROUTE.ACT_OUTWARD", "ROUTE.EXTERNAL_EMBODIMENT", "ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.LEAVE_ALONE"]);
-  if (control && !interrupt) {
+  if (control && !control.active && control.latest.decision === "PROBE" && !interrupt && !emergency) {
+    const precedence = eligible.find(node => higherRoutes.has(node.id) || node.tier === 1);
+    const probeNode = eligible.find(node => node.id === "ROUTE.THREE_WAY_GATE");
+    if (!precedence && probeNode) eligible = [probeNode, ...eligible.filter(node => node.id !== probeNode.id)];
+  }
+  if (control?.active && !interrupt) {
     const wantedId = effectivePathNodeId;
     const wanted = eligible.find(n => n.id === wantedId);
     const precedence = eligible.find(n => (higherRoutes.has(n.id) || n.tier === 1) && n.id !== wanted?.id);
     if (wanted && !precedence && task?.agreement !== "declined") eligible = [wanted, ...eligible.filter(n => n.id !== wanted.id)];
     else if (eligible[0]?.id !== wanted?.id || !wanted) {
       control.latest.status = "UNCLEAR"; control.latest.decision = "PROBE";
-      control.latest.route = precedence?.id === "ROUTE.ACT_OUTWARD" ? "action" : precedence?.id === "ROUTE.EXTERNAL_EMBODIMENT" ? "external" : (safetyIds.has(precedence?.id) || precedence?.tier === 1) ? "protective" : "continue";
+      control.latest.route = precedence?.id === "ROUTE.ACT_OUTWARD" ? "action" : precedence?.id === "ROUTE.EXTERNAL_EMBODIMENT" ? "external" : (safetyIds.has(precedence?.id) || precedence?.tier === 1) ? "protective" : "reconsider";
       control.latest.reason = wantedId !== control.active?.strategy.node_id
         ? "The supported preparation step is not currently selectable; preserve the parent target and clarify the missing permission or prerequisite."
-        : "The proposed strategy is not the permitted executed route; clarify/reselect before attributing outcomes.";
+        : "The proposed strategy is not currently selectable. Use a diagnostic routing step without treating that mismatch as evidence that the therapeutic target or method failed.";
       control.active.status = control.latest.status; control.active.decision = control.latest.decision; control.active.switch_pending = false;
-      interrupt = control.latest.route !== "continue";
+      interrupt = true;
       if (interrupt) task = null;
     }
   }
@@ -357,7 +374,7 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     ...(preparationNodeId && primary?.id === preparationNodeId ? {
       preparationOnly: {
         nodeId: preparationNodeId,
-        parentNodeId: control?.active?.strategy.node_id ?? task?.node_id ?? null,
+        parentNodeId: control?.active?.strategy.node_id ?? task?.node_id ?? intendedInnerChildNode ?? null,
         evidenceIds: control?.active?.refinement?.observation_ids ?? []
       }
     } : {}),
