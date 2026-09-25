@@ -8,7 +8,7 @@ Task `reparenting-strategy-refinement-20260925` is owner-approved and reconciled
 
 The exact owner-supplied pre-insertion 2026-09-25 Substack HTML remains preserved with SHA-256 `20073058fef619d8a8f5aa7fef8337face5ed50cf89d17c8142138effdb125b6`; its visible-author-text operational projection is SHA-256 `2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1`. The owner subsequently kept the proposed “When to Change the Strategy” passage in the external/public draft. No post-insertion exact HTML capture has been supplied, so the repository must not claim that manual editorial change is source-synchronized yet.
 
-No further map/rules development action remains within the current authority boundary. Draft PR #80 remains unmerged; merge, install, deploy, `stable` promotion, real-case mutation/experiment, paid/provider execution, and publication are not authorized. The reusable Universal rules candidate is semantically owner-approved but remains isolated in its draft PR and unmerged. Exact approval and reconciliation receipts are under `tasks/reparenting-strategy-refinement-20260925/`.
+No further map/rules development action remains. On 2026-09-25 the owner explicitly instructed to continue merging the map changes, authorizing merge of the reconciled InnerSignal development PR after required merge gates pass. Installation, deployment, `stable` promotion, real-case mutation/experiment, paid/provider execution, and publication remain unauthorized. The separate Universal rules candidate remains isolated in its draft PR and unmerged under this instruction. Exact approval and reconciliation receipts are under `tasks/reparenting-strategy-refinement-20260925/`.
 
 ## Somatic + altered-states guide sync — owner approved, reconciled, and merged
 

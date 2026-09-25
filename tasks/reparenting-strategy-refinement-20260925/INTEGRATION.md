@@ -1,6 +1,6 @@
 # Reparenting strategy refinement — integration ledger
 
-Status: OWNER-APPROVED + RECONCILED development candidate
+Status: OWNER-APPROVED + RECONCILED + INNER SIGNAL MERGE AUTHORIZED
 Started: 2026-09-25 UTC
 
 ## Owner outcome
@@ -23,7 +23,7 @@ A separately supplied latest public-guide HTML capture is available for source s
 
 Allowed: additive schemas, synthetic regressions, controller/runtime-consumer repair, graph/source proposal work, generated candidate projections, Universal rule/template consistency, focused/affected verification, draft review artifacts.
 
-Not allowed under this task alone: merge, deployment, installation, `stable` promotion, real-client mutation/experiment, paid/provider calls, publication of private material, or semantic self-approval.
+Current owner authority now permits merge of the approved/reconciled InnerSignal map changes through PR #80 after required merge gates pass. Still not allowed: deployment, installation, `stable` promotion, real-client mutation/experiment, paid/provider calls, publication of private material, semantic self-approval, or merge of the separate Universal rules PR without separate merge authority.
 
 ## Phase ledger
 
@@ -46,10 +46,10 @@ Not allowed under this task alone: merge, deployment, installation, `stable` pro
 - Reconciliation: COMPLETE on the task branch. Canonical graph bundle SHA-256 is `c08a77781f04dda2414602908abe882a4aff277962a6959ffefb61597c0e907b`; projection input is `c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78`; 30/30 canonical graph regressions and the reconciliation-owned complete package gate pass.
 - Reconciliation plumbing repair: COMPLETE. Canonical map regeneration now atomically synchronizes the plugin's embedded map reference under the same rollback snapshot; focused authoring reconciliation tests pass 12/12.
 - Delivery/benchmark repair: COMPLETE. Provider/dose reconsideration blocks repeating the prior exercise, source-bound strategy-review fixtures replace legacy manufactured mismatch evidence, and the post-reconciliation reviewed policy fingerprint is pinned to the approved graph behavior.
-- InnerSignal review surface: draft PR #80. No merge, installation, deployment, or `stable` promotion has occurred.
+- InnerSignal review surface: PR #80. The owner subsequently instructed to continue merging the map changes, so merge to development `main` is authorized once required checks pass. Installation, deployment, and `stable` promotion remain unauthorized.
 - Universal reusable rules candidate: owner-approved semantically, still isolated in Universal draft PR #255 and unmerged.
 - Guide editorial result: the owner kept the proposed “When to Change the Strategy” prose in the external/public draft. The repository still preserves the exact pre-insertion 2026-09-25 capture; a new exact capture is required before claiming repository source synchronization to that manual edit.
-- Current stop boundary: development reconciliation is complete. Merge, installation, deployment, `stable` promotion, real-client mutation/experiment, paid/provider calls, and publication remain outside this task's authority.
+- Current next action: finish the protected GitHub merge of PR #80 after repository audits and required CI checks pass. After merge, stop before installation, deployment, `stable` promotion, real-client mutation/experiment, paid/provider calls, publication, or the separate Universal rules merge.
 
 ## Evidence limits
 
