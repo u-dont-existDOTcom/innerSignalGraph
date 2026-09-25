@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_WISER_SELF
 status: owner-approved
 domain: inner-child
-base_record_sha256: 52dd6e27f7d34470630c6f1902f607c50585a93c8e047bd0113183cd992df64d
-source_file_sha256: 669d81d9ce880962d1f7bcb040668cdc778408ea1c79b3f3c195e524c20053a9
-projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
+base_record_sha256: 1a7a59ab6b486715a321e9892b26fc5620951e2691026246b9ee184b99357d44
+source_file_sha256: bc265312b2072aacbd2e6d4307c3ae7e722051a9cd4716bc91a1e33f38834d6e
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # AMEND.IC.WISDOM_WISER_SELF
@@ -17,13 +17,13 @@ projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5f
 
 ```json
 {
-  "approvedAt": "2026-09-12",
+  "approvedAt": "2026-09-25",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.WISDOM_WISER_SELF",
     "status": "owner-approved",
     "text": "Borrowed hindsight asks what a wiser, clearer, compassionate and revisable future self would understand about the present situation and the present person's limitations. Allow a change of view, embodied access, or felt caring company, together or separately. Bring care back to the hurting person now. When the preferred state is unavailable, choose the smallest honest sufficient response, boundary, action or pause rather than demanding manufactured warmth. A possible wiser future other may support goodwill but does not establish the current person's safety, intentions, future agreement, or trustworthiness."
   },
-  "version": "2026-09-12-wisdom-r1"
+  "version": "2026-09-25-music-access-r1"
 }
 ```

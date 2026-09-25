@@ -978,6 +978,16 @@
           "excerpt": "When warm affiliative love or affection is not honestly accessible toward oneself, a younger self, a difficult person or an enemy, offer the smallest sincere benevolent wish the person can endorse rather than requiring the feeling. 'May they be loving, peaceful, and free' is an exemplar and equivalent user-chosen wording is valid; 'may they be happy' is optional and must not be forced when it feels false or like rewarding harmful behavior. Warm affection/love, benevolent goodwill/intention and non-hatred/non-cruelty are related but non-identical, with no mandatory progression and no requirement to end at 'I love you'. Goodwill may open warmth as an optional reported effect, but does not prove warm love. If goodwill is unavailable, non-cruelty or refusal to feed hatred may be the lower-cost floor without renaming it love. For harmful behavior, goodwill may wish for capacities that reduce harm without approving the behavior. Unconditional goodwill is not unconditional access: it never implies forgiveness, trust, contact, reconciliation, reduced accountability, removed consequences, relaxed boundaries, exposure to danger or a prediction about the other person. Preserve proportionate anger, external reality checking, ordinary protection, refusal, distance, documentation, support, consequences and trust calibration. Use secular language by default; religious framing is preference-dependent and not clinical-efficacy evidence. This owner-approved proposed practice is informed by adjacent compassion/metta work; engineering tests do not establish clinical efficacy.",
           "status": "owner-approved",
           "domain": "inner-child"
+        },
+        {
+          "id": "AMEND.IC.MUSIC_EMOTIONAL_ACCESS",
+          "heading": "AMEND.IC.MUSIC_EMOTIONAL_ACCESS",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "30a60be53d038d54d5ece67dcb82ba94aea20708d9a6a901bdb1cf2e2157af9c",
+          "excerpt": "Personally meaningful, user-chosen music may be used as an optional emotional-access cue when words, imagery, or deliberate effort are not making a relevant feeling or caring function available. Ask about music the person already knows has helped; do not infer taste or prescribe a supposedly therapeutic song. Treat tears, chills, a rush of energy, vivid memory, or emotional intensity as access signals only—not proof of processing, memory accuracy, causal insight, integration, or durable improvement. Once something becomes available, continue through the existing relevant route such as borrowed love/Nurturer access, child contact, memory inquiry, or integration rather than chasing intensity. Preserve intervention identity and session context: same exercise versus different exercise, music present/absent and user-named track if supplied, state beforehand, immediate opening, and later carryover. If music increases overwhelm, derealization/dissociation, panic, disorientation, or loss of stopping capacity, reduce or stop it and return to present orientation/stabilization; existing safety gates retain priority.",
+          "status": "owner-approved",
+          "domain": "inner-child"
         }
       ]
     },
@@ -4052,6 +4062,183 @@
             ]
           },
           "defaultQuestion": ""
+        },
+        {
+          "id": "IC.MUSIC_EMOTIONAL_ACCESS",
+          "title": "Use familiar music as an optional emotional-access doorway",
+          "kind": "decision-node",
+          "tier": 4,
+          "priority": 80,
+          "activation": {
+            "all": [
+              {
+                "field": "current_intent",
+                "op": "in",
+                "value": [
+                  "conversation",
+                  "gentle_practice",
+                  "deep_dialogue",
+                  "memory_processing",
+                  "integration"
+                ]
+              }
+            ],
+            "any": [
+              {
+                "field": "music_emotional_access",
+                "op": "eq",
+                "value": "helpful"
+              },
+              {
+                "field": "love_access",
+                "op": "in",
+                "value": [
+                  "limited",
+                  "absent"
+                ]
+              },
+              {
+                "field": "self_directed_love",
+                "op": "in",
+                "value": [
+                  "unsafe",
+                  "inaccessible"
+                ]
+              },
+              {
+                "field": "inner_adult_access",
+                "op": "in",
+                "value": [
+                  "low",
+                  "partial"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "music_emotional_access",
+                "op": "in",
+                "value": [
+                  "neutral",
+                  "overwhelming",
+                  "declined"
+                ]
+              },
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "ability_to_stop",
+                "op": "eq",
+                "value": "no"
+              },
+              {
+                "field": "dissociation",
+                "op": "eq",
+                "value": "high"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.IC.MUSIC_EMOTIONAL_ACCESS",
+            "IC.BORROW_LOVE",
+            "IC.BORROW_ONE_FUNCTION",
+            "IC.LOVE_MISSING"
+          ],
+          "authority": "owner-approved-extension",
+          "recommendations": [
+            "When emotional access is flat, effortful, overly intellectual, or inconsistent, ask whether music the person already knows has reliably helped them access this kind of feeling. If yes and they want to use it, treat that familiar music as a brief optional doorway before or during the existing practice.",
+            "Once emotion, love, bodily feeling, memory, or a caring stance becomes more available, name what changed and continue through the existing relevant route rather than making the intensity itself the goal.",
+            "For strategy review, keep intervention identity and context separate: same exercise versus different exercise, music present or absent, user-named track if supplied, state beforehand, immediate opening, and later carryover."
+          ],
+          "avoid": [
+            "Do not prescribe unfamiliar music, infer taste, or select a song from diagnosis, demographics, spirituality, or presumed personality.",
+            "Do not treat crying, chills, a rush of energy, vivid memory, or emotional intensity as proof of processing, memory accuracy, causal insight, integration, or durable change.",
+            "Do not use music to bypass an active guard, a known missing caring/protective function, refusal, or an existing safety gate."
+          ],
+          "successSignals": [
+            "A previously inaccessible relevant feeling, need, bodily sense, or caring function becomes more available while the person remains oriented and able to stop.",
+            "The opening supports a concrete existing therapeutic task or later functional/durable movement rather than intensity alone."
+          ],
+          "tags": [
+            "state-access",
+            "music",
+            "emotion-access",
+            "nurturer",
+            "path-performance-moderator"
+          ],
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [
+              "Do not call a dramatic music-evoked state evidence that the underlying issue has been processed or that the active therapy caused the opening."
+            ],
+            "requiredNuance": [
+              "Music is an optional access cue and session-context moderator, not a standalone explanation of outcome.",
+              "Path Performance may count newly accessible emotion or need as proximal movement only when tied to a new observation; durable improvement still requires later evidence at the declared horizon.",
+              "If the response becomes overwhelming, panicky, dissociative, disorienting, or difficult to stop, stop or reduce the cue and let the existing orientation/stabilization route take precedence."
+            ]
+          },
+          "defaultQuestion": ""
+        },
+        {
+          "id": "IC.MUSIC_EMOTIONAL_ACCESS_STOP",
+          "title": "Stop music when it overwhelms rather than opens",
+          "kind": "decision-node",
+          "tier": 2,
+          "priority": 99,
+          "activation": {
+            "all": [
+              {
+                "field": "music_emotional_access",
+                "op": "eq",
+                "value": "overwhelming"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.IC.MUSIC_EMOTIONAL_ACCESS",
+            "IC.BEFORE_DEEP",
+            "IC.REGULATION_BEFORE_DIALOGUE"
+          ],
+          "authority": "owner-approved-extension",
+          "recommendations": [
+            "Turn the music down or off and return attention to the ordinary room, body, time, and voluntary choice rather than trying to push through the reaction.",
+            "If orientation, stopping capacity, or ordinary functioning is also impaired, use the existing safety/orientation route instead of deeper symbolic or child-facing work."
+          ],
+          "avoid": [
+            "Do not interpret overwhelm as evidence that the music has reached the correct trauma, memory, or healing depth.",
+            "Do not intensify volume, repetition, imagery, or emotional exposure to force a breakthrough."
+          ],
+          "successSignals": [
+            "The person can stop the cue, reorient, and return to ordinary voluntary choice."
+          ],
+          "tags": [
+            "state-access",
+            "music",
+            "safety",
+            "orientation"
+          ],
+          "effects": {
+            "blockNodes": [
+              "IC.MUSIC_EMOTIONAL_ACCESS"
+            ],
+            "deferNodes": [],
+            "forbiddenOverclaims": [
+              "Do not call overwhelm therapeutic progress or recovered memory evidence."
+            ],
+            "requiredNuance": [
+              "Music-specific overload does not replace the broader safety gate; present danger, disorientation, or inability to stop still outrank this node."
+            ]
+          },
+          "defaultQuestion": ""
         }
       ],
       "edges": [
@@ -4249,6 +4436,26 @@
           "from": "ROUTE.RELATIONAL_REALITY_CHECK",
           "relation": "preserves-boundaries",
           "to": "IC.GOODWILL_BRIDGE"
+        },
+        {
+          "from": "IC.MUSIC_EMOTIONAL_ACCESS",
+          "to": "IC.BORROW_LOVE",
+          "relation": "may-enable-access"
+        },
+        {
+          "from": "IC.MUSIC_EMOTIONAL_ACCESS",
+          "to": "IC.BORROW_ONE_FUNCTION",
+          "relation": "may-enable-access"
+        },
+        {
+          "from": "IC.MUSIC_EMOTIONAL_ACCESS",
+          "to": "IC.DEEP_LOVE_TO_CHILD",
+          "relation": "may-enable-access"
+        },
+        {
+          "from": "IC.MUSIC_EMOTIONAL_ACCESS_STOP",
+          "to": "IC.SAFETY_ORIENTATION",
+          "relation": "escalates-if-orientation-lost"
         }
       ],
       "taskPolicyVersion": 1,
@@ -6893,9 +7100,9 @@
   ],
   "stats": {
     "graphCount": 3,
-    "nodeCount": 71,
-    "edgeCount": 95,
-    "sourceSectionCount": 115,
-    "ownerAmendmentCount": 37
+    "nodeCount": 73,
+    "edgeCount": 99,
+    "sourceSectionCount": 116,
+    "ownerAmendmentCount": 38
   }
 }

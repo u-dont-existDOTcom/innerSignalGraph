@@ -15,7 +15,8 @@ cited_by_node_ids:
   - IC.CREDIBILITY_REPAIR
   - IC.DEEP_CHILD_DIALOGUE
   - IC.DEEP_LOVE_TO_CHILD
-projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
+  - IC.MUSIC_EMOTIONAL_ACCESS
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Borrow Love—or Borrow the Perspective of Care
