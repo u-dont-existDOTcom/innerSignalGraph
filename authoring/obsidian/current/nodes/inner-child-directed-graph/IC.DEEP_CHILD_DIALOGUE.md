@@ -19,15 +19,18 @@ source_refs:
   - IC.ALTERED_STATES
   - AMEND.SOM.EARLY_INNER_CHILD_PARALLEL
   - AMEND.IC.EMOTIONAL_TASK_GUIDANCE
+  - IC.BORROW_ONE_FUNCTION
+  - IC.BORROW_LOVE
+  - IC.SPIRITUAL_LOAN
 regression_refs:
   - G004
   - G005
   - G011
   - G029
   - G030
-base_record_sha256: a662fd97fb51466ad7494c1b42e913df7a0663728a1edc7768fbc3b69c9053a6
-base_graph_sha256: 2f31316bacb025352fbd0e2440aaa6607f50f2fc7cb38bc95263fbd807a3459f
-projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f
+base_record_sha256: 08a74bafc5433b5fe2ca3c120c5f410ceac4f6b6acd22979b669a96f432a4055
+base_graph_sha256: eb53a26b4f7b166afd60e0ecffc81439bbaa7b847d022dea2d2f3f4f9d368ecc
+projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
 ---
 
 # Enter deeper child dialogue only when capacity is adequate
@@ -70,19 +73,26 @@ projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500
     ]
   },
   "avoid": [
-    "Do not interrogate imagery or imply emotional truth proves historical fact."
+    "Do not interrogate imagery or imply emotional truth proves historical fact.",
+    "Do not let generic deep-work readiness, an accepted task, a remembered loving state, or correct-sounding adult words bypass a known missing caring/protective preparation."
   ],
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [],
-    "requiredNuance": []
+    "requiredNuance": [
+      "General orientation and stop/return capacity establish safety readiness, not the positive caring adult function needed for this relational exercise.",
+      "Partial but usable positive care/protection can be enough for a bounded step; unknown access is uncertainty to clarify, not a permanent incapacity finding.",
+      "Completing preparation permits reconsideration of the deeper step under current gates; it does not prove that the child has received the care."
+    ]
   },
   "recommendations": [
     "Use deeper dialogue only when the person can remain present, stop voluntarily, and recover afterward.",
     "Keep memory-source distinctions explicit.",
-    "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift."
+    "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift.",
+    "When the needed positive caring/protective function is known to be unavailable, use IC.BORROW_ONE_FUNCTION as adult-side preparation before deeper child-facing dialogue.",
+    "Once that function is demonstrably usable and current safety, permission, and readiness still allow the work, resume the live care/reception task rather than restarting the whole bootstrap."
   ],
   "successSignals": [
     "The session increases capacity and functioning rather than compulsion or disorientation."
@@ -100,3 +110,9 @@ projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500
 [[current/governance/amendments/AMEND.SOM.EARLY_INNER_CHILD_PARALLEL]]
 
 [[current/governance/amendments/AMEND.IC.EMOTIONAL_TASK_GUIDANCE]]
+
+[[current/sources/inner-child-guide/IC.BORROW_ONE_FUNCTION]]
+
+[[current/sources/inner-child-guide/IC.BORROW_LOVE]]
+
+[[current/sources/inner-child-guide/IC.SPIRITUAL_LOAN]]

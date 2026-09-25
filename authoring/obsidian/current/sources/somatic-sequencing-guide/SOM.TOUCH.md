@@ -12,7 +12,7 @@ section_hash: eae6bb3441a8d545b8f9439ab6eb63a715997b071138ad02d3a1bc2c2b26f1f7
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.CONSENSUAL_TOUCH
-projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f
+projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
 ---
 
 # Touch, Massage, and Consent

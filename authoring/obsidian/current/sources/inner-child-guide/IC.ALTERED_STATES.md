@@ -12,9 +12,11 @@ section_hash: 2c9819a3f5c63012ca78a1b682213a6e06d0c89a34c25cca4a8cd0731d1d26d0
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.ALTERED_STATE_GATE
+  - IC.BORROW_LOVE
+  - IC.BORROW_ONE_FUNCTION
   - IC.DEEP_CHILD_DIALOGUE
   - ROUTE.ALTERED_STABLE_THERAPY
-projection_input_sha256: 3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f
+projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
 ---
 
 # Altered States Can Deepen the Therapy

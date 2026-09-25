@@ -1,6 +1,6 @@
 # Reparenting strategy refinement — integration ledger
 
-Status: OPEN development candidate
+Status: OWNER-APPROVED + RECONCILED development candidate
 Started: 2026-09-25 UTC
 
 ## Owner outcome
@@ -39,16 +39,21 @@ Not allowed under this task alone: merge, deployment, installation, `stable` pro
 - Source/fidelity consumers: COMPLETE; focused suite 16/16
 - Longitudinal/threat state consumers: COMPLETE; affected suite 22/22
 - Authoring validation/check/maps-check: PASS at projection input `3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f`
-- Graph proposal: BUILT + deterministic check PASS; 32/32 graph regressions; 25 semantic owner-decision cards
-- Graph proposal packet SHA-256: `645dcd509b331970e2192e38f5d6d5fce15bd85deb80fc90dabf7edf20d5814f`
-- Graph proposal candidate bundle SHA-256: `c08a77781f04dda2414602908abe882a4aff277962a6959ffefb61597c0e907b`
-- InnerSignal review surface: draft PR #80
-- Final remote branch synchronization / review readback: COMPLETE; remote tree exactly matches tested local tree `345bc02c71bbf4642e307f8bf6fb7f9cdb35a343`
-- Current stop boundary: OWNER SEMANTIC DECISION on the 25 graph decision cards / exact proposal packet. No reconciliation, canonical graph mutation, merge, installation, deployment, `stable` promotion, or active-guide editorial insertion is authorized before that decision.
+- Graph proposal: BUILT + deterministic check PASS; 32/32 proposal regressions; 25 semantic owner-decision cards.
+- Original proposal packet SHA-256: `645dcd509b331970e2192e38f5d6d5fce15bd85deb80fc90dabf7edf20d5814f`; candidate bundle SHA-256: `c08a77781f04dda2414602908abe882a4aff277962a6959ffefb61597c0e907b`.
+- Owner semantic decision: COMPLETE. The owner explicitly approved the map/rules. The current-base `r2` proposal preserves the same 25 decision IDs and byte-identical decision contracts; approval was therefore carried forward without semantic self-approval.
+- Rebased candidate packet SHA-256: `c87655f1341651a61e0b9c3de42581591ef5567b66a8a20a9c5c2bb1afd1e16f`; exact approved packet SHA-256: `4b5361091cd3ef722d35d4eb482a2fd78784a805fdbab59bef7b14f961a11ab9`.
+- Reconciliation: COMPLETE on the task branch. Canonical graph bundle SHA-256 is `c08a77781f04dda2414602908abe882a4aff277962a6959ffefb61597c0e907b`; projection input is `c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78`; 30/30 canonical graph regressions and the reconciliation-owned complete package gate pass.
+- Reconciliation plumbing repair: COMPLETE. Canonical map regeneration now atomically synchronizes the plugin's embedded map reference under the same rollback snapshot; focused authoring reconciliation tests pass 12/12.
+- Delivery/benchmark repair: COMPLETE. Provider/dose reconsideration blocks repeating the prior exercise, source-bound strategy-review fixtures replace legacy manufactured mismatch evidence, and the post-reconciliation reviewed policy fingerprint is pinned to the approved graph behavior.
+- InnerSignal review surface: draft PR #80. No merge, installation, deployment, or `stable` promotion has occurred.
+- Universal reusable rules candidate: owner-approved semantically, still isolated in Universal draft PR #255 and unmerged.
+- Guide editorial result: the owner kept the proposed “When to Change the Strategy” prose in the external/public draft. The repository still preserves the exact pre-insertion 2026-09-25 capture; a new exact capture is required before claiming repository source synchronization to that manual edit.
+- Current stop boundary: development reconciliation is complete. Merge, installation, deployment, `stable` promotion, real-client mutation/experiment, paid/provider calls, and publication remain outside this task's authority.
 
 ## Evidence limits
 
-All passing tests and proposal builds are deterministic development evidence. They establish controller/consumer consistency, source provenance, regression behavior, and owner-review readiness only. They do not establish clinical efficacy, real-client usefulness, installation, deployment, or semantic owner approval.
+Passing tests, proposal builds, the explicit owner approval, and the exact reconciliation receipt establish development consistency, provenance, approved map/rule semantics, and task-branch reconciliation only. They do not establish clinical efficacy, real-client usefulness, installation, deployment, publication, or `stable` release.
 
 ## Active lesson contract
 
