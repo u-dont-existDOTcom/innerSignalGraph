@@ -149,12 +149,19 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   const control = graphs.length > 0 && graphs.every(g => g.pathPerformancePolicyVersion === 1) ? pathPerformance : null;
   let interrupt = control && control.latest.route !== "continue";
   let task = taskPolicy && !interrupt ? validateTurnTask(turnTask) : null;
+  const intendedInnerChildNode = control?.active?.strategy.node_id ?? task?.node_id ?? null;
+  const caringPreparationRequired = variables.inner_adult_access === "low"
+    && ["IC.DEEP_CHILD_DIALOGUE", "IC.DEEP_LOVE_TO_CHILD"].includes(intendedInnerChildNode);
+  const activeRefinementNodeId = control?.active?.refinement?.node_id ?? null;
+  const preparationNodeId = activeRefinementNodeId ?? (caringPreparationRequired ? "IC.BORROW_ONE_FUNCTION" : null);
+  const effectivePathNodeId = preparationNodeId ?? control?.active?.strategy.node_id ?? null;
   variables.perspective_practice = perspectivePracticeForTask(task, graphs);
   const emergency = immediateProtectionNeeded(variables);
   const deferTargets = (node) => {
     if (taskPolicy && (node.effects?.deferralUnless ?? []).some(c => conditionMatches(c, variables))) return [];
     if (taskPolicy && task?.agreement === "accepted" && task.capacity === "adequate" && task.phase === "practice"
         && task.node_id === "IC.DEEP_CHILD_DIALOGUE" && variables.deep_work_readiness === "yes"
+        && !caringPreparationRequired && !activeRefinementNodeId
         && ["IC.BORROW_ONE_FUNCTION", "IC.SOLAR_PLEXUS_RELAXATION"].includes(node.id)) return [];
     return node.effects?.deferNodes ?? [];
   };
@@ -176,6 +183,12 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   }
   if (variables.deep_work_readiness !== "yes") {
     for (const id of ["IC.DEEP_CHILD_DIALOGUE", "SOM.DEEP_BRAINSPOTTING", "SOM.EMDR_DISCRETE", "SOM.EMDR_DEVELOPMENTAL"]) deferredIds.add(id);
+  }
+  // General deep-work safety does not establish the positive caring function needed
+  // for deeper child-facing work. Keep this gate scoped to the inner-child sequence.
+  if (caringPreparationRequired || activeRefinementNodeId === "IC.BORROW_ONE_FUNCTION") {
+    deferredIds.add("IC.DEEP_CHILD_DIALOGUE");
+    deferredIds.add("IC.DEEP_LOVE_TO_CHILD");
   }
   if (matchedIds.has("SOM.EMDR_DEVELOPMENTAL_DEFER")) deferredIds.add("SOM.EMDR_DEVELOPMENTAL");
 
@@ -202,7 +215,8 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   if (taskPolicy && task?.agreement === "accepted" && task.node_id && !emergency
       && !eligible.some(node => node.tier <= 2)
       && !eligible.some(node => ["ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.ACT_OUTWARD", "ROUTE.LEAVE_ALONE", "ROUTE.EXTERNAL_EMBODIMENT"].includes(node.id) && node.id !== task.node_id)) {
-    eligible = [...eligible].sort((a,b) => Number(b.id === task.node_id) - Number(a.id === task.node_id));
+    const taskPriorityId = preparationNodeId ?? task.node_id;
+    eligible = [...eligible].sort((a,b) => Number(b.id === taskPriorityId) - Number(a.id === taskPriorityId));
   }
   // A controller switch is a causal routing decision, never adjacency traversal.
   // Keep graph safety and concrete external action ahead of the reconsideration route.
@@ -216,15 +230,19 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
   ]);
   const higherRoutes = new Set([...safetyIds, "ROUTE.ACT_OUTWARD", "ROUTE.EXTERNAL_EMBODIMENT", "ROUTE.RELATIONAL_REALITY_CHECK", "ROUTE.LEAVE_ALONE"]);
   if (control && !interrupt) {
-    const wanted = eligible.find(n => n.id === control.active?.strategy.node_id);
+    const wantedId = effectivePathNodeId;
+    const wanted = eligible.find(n => n.id === wantedId);
     const precedence = eligible.find(n => (higherRoutes.has(n.id) || n.tier === 1) && n.id !== wanted?.id);
     if (wanted && !precedence && task?.agreement !== "declined") eligible = [wanted, ...eligible.filter(n => n.id !== wanted.id)];
     else if (eligible[0]?.id !== wanted?.id || !wanted) {
       control.latest.status = "UNCLEAR"; control.latest.decision = "PROBE";
-      control.latest.route = precedence?.id === "ROUTE.ACT_OUTWARD" ? "action" : precedence?.id === "ROUTE.EXTERNAL_EMBODIMENT" ? "external" : (safetyIds.has(precedence?.id) || precedence?.tier === 1) ? "protective" : "reconsider";
-      control.latest.reason = "The proposed strategy is not the permitted executed route; clarify/reselect before attributing outcomes.";
-      control.active.status = control.latest.status; control.active.decision = control.latest.decision; control.active.switch_pending = true;
-      interrupt = true; task = null;
+      control.latest.route = precedence?.id === "ROUTE.ACT_OUTWARD" ? "action" : precedence?.id === "ROUTE.EXTERNAL_EMBODIMENT" ? "external" : (safetyIds.has(precedence?.id) || precedence?.tier === 1) ? "protective" : "continue";
+      control.latest.reason = wantedId !== control.active?.strategy.node_id
+        ? "The supported preparation step is not currently selectable; preserve the parent target and clarify the missing permission or prerequisite."
+        : "The proposed strategy is not the permitted executed route; clarify/reselect before attributing outcomes.";
+      control.active.status = control.latest.status; control.active.decision = control.latest.decision; control.active.switch_pending = false;
+      interrupt = control.latest.route !== "continue";
+      if (interrupt) task = null;
     }
   }
   let controlNode = null;
@@ -242,8 +260,16 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     if (!controlNode || blockedIds.has(controlNode.id)) throw new TypeError("Path controller requires an available permitted routing node.");
     if (controlNode.id === control.active?.strategy.node_id && route !== "safety") {
       const exhaustedProbe = control.active.strategy.node_id === "ROUTE.THREE_WAY_GATE";
-      controlNode = nodes.find(n => n.id === (exhaustedProbe ? "ROUTE.EXTERNAL_EMBODIMENT" : "ROUTE.THREE_WAY_GATE"));
-      control.latest.route = exhaustedProbe ? "external" : "reconsider";
+      if (exhaustedProbe) {
+        // Repeated failure of one interview question does not establish need for an
+        // unrelated external modality. Stop changing the question mechanically and
+        // preserve the larger target for a later supported route.
+        control.latest.route = "reconsider";
+        control.latest.reason = "The current discriminator is no longer informative; change or stop that question without declaring the larger therapeutic method failed.";
+      } else {
+        controlNode = nodes.find(n => n.id === "ROUTE.THREE_WAY_GATE");
+        control.latest.route = "reconsider";
+      }
     }
     // Prior task, secondary jobs and their questions cannot smuggle the old exercise back in.
     eligible = [controlNode];
@@ -308,9 +334,12 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     : questionNode ? { type: "graph-node", id: questionNode.id }
     : { type: "case-unknown", variable: usefulUnknowns[0].variable };
   if (!emergency && control?.latest?.decision === "PROBE" && control.latest.route === "continue"
-      && control.latest.failure_sources?.some(f => f.kind === "REPRESENTATION_MISMATCH")) {
-    nextQuestion = performanceQuestion(control);
-    nextQuestionSource = nextQuestion ? { type: "path-performance-representation", episode: control.latest.episode_id } : null;
+      && (control.latest.probe || !nextQuestion || control.latest.failure_sources?.some(f => f.kind === "REPRESENTATION_MISMATCH"))) {
+    const performanceProbe = performanceQuestion(control);
+    if (performanceProbe) {
+      nextQuestion = performanceProbe;
+      nextQuestionSource = { type: control.latest.failure_sources?.some(f => f.kind === "REPRESENTATION_MISMATCH") ? "path-performance-representation" : "path-performance", episode: control.latest.episode_id };
+    }
   }
   if (interrupt && (primary?.tier > 2 || control.latest.route === "safety")) {
     nextQuestion = primary.id === "ROUTE.THREE_WAY_GATE" ? performanceQuestion(control) : "";
@@ -325,9 +354,18 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
     version: 1, requiredNodeIds,
     contextNodeIds: selected.filter(n => !requiredNodeIds.includes(n.id)).map(n => n.id),
     task: taskApplies ? task : null,
+    ...(preparationNodeId && primary?.id === preparationNodeId ? {
+      preparationOnly: {
+        nodeId: preparationNodeId,
+        parentNodeId: control?.active?.strategy.node_id ?? task?.node_id ?? null,
+        evidenceIds: control?.active?.refinement?.observation_ids ?? []
+      }
+    } : {}),
     taskGuidance: [...(taskApplies && !emergency ? guidanceForTask(task) : []), ...(control ? pathPerformanceGuidance(control) : [])],
     reason: emergency ? "Immediate protection controls this turn; other selected nodes are context only."
-      : "Perform the primary and explicitly necessary support, not every diagram secondary."
+      : preparationNodeId && primary?.id === preparationNodeId
+        ? "Perform the supported preparation step only; preserve the parent target and do not claim child reception or parent-step exposure."
+        : "Perform the primary and explicitly necessary support, not every diagram secondary."
   } : null;
 
   const dynamicNuance = [];
@@ -365,7 +403,9 @@ export function planFromGraphs({ variables: rawVariables, unknowns = [], graphs,
         delivery_assessment: control.latest.delivery_assessment ?? null,
         delivery_actions: control.latest.delivery_actions ?? [],
         prior_node: control.active?.strategy.node_id ?? null,
-        prohibit_prior_exercise: Boolean(interrupt), guidance: pathPerformanceGuidance(control),
+        effective_node_id: control.latest.effective_node_id ?? preparationNodeId ?? control.active?.strategy.node_id ?? null,
+        active_refinement: control.active?.refinement ?? null,
+        prohibit_prior_exercise: ["SWITCH", "STOP_DEESCALATE", "CLOSE"].includes(control.latest.decision), guidance: pathPerformanceGuidance(control),
         humanUsefulnessEstablished: false,
         humanHarmEvaluation: "SEPARATE_REVIEW_REQUIRED" } } : {}),
     graphBundleVersion: graphs[0]?.bundleVersion ?? null,
