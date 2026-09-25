@@ -21,6 +21,7 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   witness_capacity: ["present", "partial", "absent", "unknown"],
   parent_imagery: ["safe", "critical", "frightening", "blank", "not_used", "unknown"],
   love_access: ["accessible", "limited", "absent", "unknown"],
+  music_emotional_access: ["helpful", "neutral", "overwhelming", "not_tried", "declined", "unknown"],
   existential_sufficiency: ["sufficient", "insufficient", "profoundly_insufficient", "unknown"],
   spiritual_curiosity: ["present", "absent", "unknown"],
   wellbeing_horizon: ["ordinary_known", "deeper_conceptual", "deeper_experiential", "unknown"],

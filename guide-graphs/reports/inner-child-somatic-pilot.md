@@ -4,14 +4,14 @@ Bundle: `inner-child-somatic-pilot-2026-08-09-r5`
 
 ## Compiled graphs
 
-- inner-child-directed-graph: 37 nodes, 39 edges
+- inner-child-directed-graph: 39 nodes, 43 edges
 - somatic-directed-graph: 17 nodes, 12 edges
 - inner-child-somatic-cross-guide: 17 nodes, 44 edges
 
 ## Authority labels
 
 - author-framework: 50
-- owner-approved-extension: 21
+- owner-approved-extension: 23
 
 ## Owner-approved extensions applied
 
@@ -52,6 +52,7 @@ Bundle: `inner-child-somatic-pilot-2026-08-09-r5`
 - AMEND.IC.WISDOM_CARING_COMPANY: Where helpful, invite remembered or imagined caring company: a real caring person, a future or past self, a spiritual figure within the person's own preference, or a nonpersonified supportive stance. Do not assume family, maternal imagery or a remembered safe caregiver is available. Receiving care, generating affection and borrowing advice are related but distinct functions; choose what is actually helpful and use existing care/borrowed-adult routes without forcing a transfer. A documented Rogers care-retrieval invitation provides an exemplar, not proof of therapeutic efficacy.
 - AMEND.IC.WISDOM_SOURCES: Religious and philosophical variants are optional references attached to a practice function, not extra required graph stages or additions to the always-loaded constitution. Preserve textual provenance and distinguish original teaching from modern adaptation. The mustard-seed account is a commentarial story; ocean-of-tears and former-mother reflections retain their rebirth context. Bible, Quran, Buddhist and Stoic language depends on individual preference, not a presumed hierarchy of acceptability. Do not force forgiveness, minimize grief, make postmortem claims as fact, promise that kindness reforms an aggressor, or misattribute an unverified maxim. Keep full reference detail in the attached research source and reference cards, not every response.
 - AMEND.IC.WISDOM_GOODWILL_BRIDGE: When warm affiliative love or affection is not honestly accessible toward oneself, a younger self, a difficult person or an enemy, offer the smallest sincere benevolent wish the person can endorse rather than requiring the feeling. 'May they be loving, peaceful, and free' is an exemplar and equivalent user-chosen wording is valid; 'may they be happy' is optional and must not be forced when it feels false or like rewarding harmful behavior. Warm affection/love, benevolent goodwill/intention and non-hatred/non-cruelty are related but non-identical, with no mandatory progression and no requirement to end at 'I love you'. Goodwill may open warmth as an optional reported effect, but does not prove warm love. If goodwill is unavailable, non-cruelty or refusal to feed hatred may be the lower-cost floor without renaming it love. For harmful behavior, goodwill may wish for capacities that reduce harm without approving the behavior. Unconditional goodwill is not unconditional access: it never implies forgiveness, trust, contact, reconciliation, reduced accountability, removed consequences, relaxed boundaries, exposure to danger or a prediction about the other person. Preserve proportionate anger, external reality checking, ordinary protection, refusal, distance, documentation, support, consequences and trust calibration. Use secular language by default; religious framing is preference-dependent and not clinical-efficacy evidence. This owner-approved proposed practice is informed by adjacent compassion/metta work; engineering tests do not establish clinical efficacy.
+- AMEND.IC.MUSIC_EMOTIONAL_ACCESS: Personally meaningful, user-chosen music may be used as an optional emotional-access cue when words, imagery, or deliberate effort are not making a relevant feeling or caring function available. Ask about music the person already knows has helped; do not infer taste or prescribe a supposedly therapeutic song. Treat tears, chills, a rush of energy, vivid memory, or emotional intensity as access signals only—not proof of processing, memory accuracy, causal insight, integration, or durable improvement. Once something becomes available, continue through the existing relevant route such as borrowed love/Nurturer access, child contact, memory inquiry, or integration rather than chasing intensity. Preserve intervention identity and session context: same exercise versus different exercise, music present/absent and user-named track if supplied, state beforehand, immediate opening, and later carryover. If music increases overwhelm, derealization/dissociation, panic, disorientation, or loss of stopping capacity, reduce or stop it and return to present orientation/stabilization; existing safety gates retain priority.
 
 ## Cross-guide decisions encoded
 

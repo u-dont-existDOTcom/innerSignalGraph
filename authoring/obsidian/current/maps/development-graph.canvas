@@ -169,6 +169,12 @@
       "toNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96"
     },
     {
+      "fromNode": "e9eaeef47af57324a0dc343ad17643121768ffcfaeb508142999aed98490a529",
+      "id": "2bc484edafcd5facd53d7733b609a887e88493212b757986541f70d41ffbea2f",
+      "label": "may-enable-access",
+      "toNode": "ea222b0d69ad230aa338a82e6a589e1132108e674d1f3e28103376a281074c80"
+    },
+    {
       "fromNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff",
       "id": "2c306b88920d5bb9c7f3c3eabb29f41067772e484c90bfea0d3dc22f51f17b6f",
       "label": "acts-through",
@@ -229,6 +235,12 @@
       "toNode": "64ebc6f168c2ea2af64a9a06e10dfa187d8119de082117a5d4430936c53ffbf6"
     },
     {
+      "fromNode": "21ff152c5a6efdc37918ab35dd0dbd48103837d869ce3d7d25fb0a69b09eb5e0",
+      "id": "4fe520f4a31c2182d4a404553ff2eebbe6981cae95432818c8b5a3d8e4e50dfe",
+      "label": "escalates-if-orientation-lost",
+      "toNode": "5d6a3b677041db6df91ff2b8e23d8f09503277106cb240b9d442b2f0a0cd6f3c"
+    },
+    {
       "fromNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527",
       "id": "500078a2c25f7bb6c81b2252b215f8dc2afd269d03b6cb7d76045ef947043643",
       "label": "integrates-relationally",
@@ -253,6 +265,12 @@
       "toNode": "46584ac9821e45d0c688cf965052f0f5b972979aec41314f1e2583c6788b8ac7"
     },
     {
+      "fromNode": "e9eaeef47af57324a0dc343ad17643121768ffcfaeb508142999aed98490a529",
+      "id": "5fb44b551210e940eedc61906253bd54e13f1cc4cae9bb716121d637ed8c6940",
+      "label": "may-enable-access",
+      "toNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96"
+    },
+    {
       "fromNode": "992ca77b91daf7f5aeee92909dadd17def5a6cf8a22514f8d5d5ed6870f3d91f",
       "id": "64ed5766f37e762e6ebc698f7558c05c7382442fb74eb9b16422bf597ccfd1b5",
       "label": "uses-existing-inner-routes",
@@ -263,6 +281,12 @@
       "id": "658ef849326bde99319e7d932a5421e4cf33af968a613edba156cf608139b8b6",
       "label": "conditional-memory-route",
       "toNode": "8e99c4a92a36a0f4b29b55982f0b83c450d61b0ebeba7e3b9b79893e061d21b6"
+    },
+    {
+      "fromNode": "e9eaeef47af57324a0dc343ad17643121768ffcfaeb508142999aed98490a529",
+      "id": "6a0fc52a6f4c16dcf198b24a77e09e7e3aa45e1898e17e4a9adb5baa587d8730",
+      "label": "may-enable-access",
+      "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
     },
     {
       "fromNode": "d0fdc419723cf70b699aae4ffe9c1f6f1cf780e9e42b631c51f25995615337ff",
@@ -651,7 +675,7 @@
       "type": "file",
       "width": 300,
       "x": 1320,
-      "y": 2860
+      "y": 3080
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_ONTOLOGY_UNCERTAIN.md",
@@ -679,6 +703,15 @@
       "width": 300,
       "x": 1320,
       "y": 2420
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.MUSIC_EMOTIONAL_ACCESS_STOP.md",
+      "height": 140,
+      "id": "21ff152c5a6efdc37918ab35dd0dbd48103837d869ce3d7d25fb0a69b09eb5e0",
+      "type": "file",
+      "width": 300,
+      "x": 440,
+      "y": 220
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_LOVE_CAPACITY.md",
@@ -723,7 +756,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 880
+      "y": 1100
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.MEET_GUARD.md",
@@ -759,7 +792,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 660
+      "y": 880
     },
     {
       "color": "3",
@@ -1128,7 +1161,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 440
+      "y": 660
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.BYPASS_AUDIT.md",
@@ -1238,7 +1271,7 @@
       "type": "file",
       "width": 300,
       "x": 440,
-      "y": 220
+      "y": 440
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_MEDICAL_SAFETY.md",
@@ -1248,6 +1281,15 @@
       "width": 300,
       "x": 4200,
       "y": 0
+    },
+    {
+      "file": "current/nodes/inner-child-directed-graph/IC.MUSIC_EMOTIONAL_ACCESS.md",
+      "height": 140,
+      "id": "e9eaeef47af57324a0dc343ad17643121768ffcfaeb508142999aed98490a529",
+      "type": "file",
+      "width": 300,
+      "x": 1320,
+      "y": 2860
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.BORROW_LOVE.md",

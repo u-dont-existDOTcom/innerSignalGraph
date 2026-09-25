@@ -11,9 +11,10 @@ source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
 section_hash: cc17e828c2ae6b25cbec1a97e0065e2f4acbb0b3a4c937d8d5e524c47886179e
 locator_kind: text-lines
 cited_by_node_ids:
+  - IC.MUSIC_EMOTIONAL_ACCESS_STOP
   - IC.SAFETY_ORIENTATION
   - IC.SOLAR_PLEXUS_RELAXATION
-projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Regulation May Come Before Dialogue

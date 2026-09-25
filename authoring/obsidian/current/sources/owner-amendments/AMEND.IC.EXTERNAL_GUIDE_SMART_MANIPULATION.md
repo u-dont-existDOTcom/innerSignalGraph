@@ -7,7 +7,7 @@ source_id: AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
 guide_id: owner-amendments
 heading: AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
 source_role: owner-approved-extension
-source_hash: 669d81d9ce880962d1f7bcb040668cdc778408ea1c79b3f3c195e524c20053a9
+source_hash: bc265312b2072aacbd2e6d4307c3ae7e722051a9cd4716bc91a1e33f38834d6e
 section_hash: dee2c5e7565ae4376eedaf45bd6871f7234dc825de6a6974586e733c881e5561
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -17,7 +17,7 @@ cited_by_node_ids:
   - IC.GUIDE_LATER
   - IC.INTUITION_TRUST_CALIBRATION
   - IC.REALIZATION_LOVE_INTEGRATION
-projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION
