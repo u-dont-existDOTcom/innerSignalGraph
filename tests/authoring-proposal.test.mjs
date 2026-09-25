@@ -29,7 +29,9 @@ async function fixtureRoot(t) {
     "corpus/graph-cases",
     "authoring/overlays",
     "authoring/migration",
-    "authoring/obsidian/current"
+    "authoring/obsidian/current",
+    "docs/INNER-CHILD-THERAPY-MAP.md",
+    "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/INNER-CHILD-THERAPY-MAP.md"
   ]) await copyTree(directory, path.join(root, directory));
   for (const file of [
     "src/case-formulation/path-performance.mjs",
@@ -192,6 +194,9 @@ test("only an exact approved packet can reconcile candidate graphs on a task bra
   assert.equal(graph.nodes.find((node) => node.id === "IC.NEUTRAL_WITNESS").title, "Begin with a reconciled neutral witness");
   const projectedNote = await fs.readFile(path.join(root, "authoring", "obsidian", "current", "nodes", "inner-child-directed-graph", "IC.NEUTRAL_WITNESS.md"), "utf8");
   assert.match(projectedNote, /^title: Begin with a reconciled neutral witness$/m);
+  const generatedMap = await fs.readFile(path.join(root, "docs", "INNER-CHILD-THERAPY-MAP.md"), "utf8");
+  const pluginMap = await fs.readFile(path.join(root, "plugins", "inner-signal-therapy", "skills", "inner-signal-therapy", "references", "INNER-CHILD-THERAPY-MAP.md"), "utf8");
+  assert.equal(pluginMap, generatedMap);
   assert.match(await fs.readFile(path.join(root, "authoring", "obsidian", "proposals", "neutral-reconcile-r1", "proposal.md"), "utf8"), /^status: reconciled$/m);
   const after = await graphHashes(root);
   assert.equal(after["somatic.graph.json"], sourceBefore["somatic.graph.json"]);

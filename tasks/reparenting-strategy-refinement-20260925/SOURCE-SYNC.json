@@ -1,0 +1,29 @@
+{
+  "contractVersion": "inner-signal-source-sync-v1",
+  "guideId": "inner-child-guide",
+  "capturedAt": "2026-09-25",
+  "sourceKind": "owner-supplied-substack-editor-html",
+  "rawCapture": {
+    "path": "guides/source-captures/inner-child-guide-2026-09-25.substack.html",
+    "sha256": "20073058fef619d8a8f5aa7fef8337face5ed50cf89d17c8142138effdb125b6"
+  },
+  "operationalText": {
+    "path": "guides/inner-child-guide-2026-09-25.txt",
+    "sha256": "2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1",
+    "visibleBlocks": 476,
+    "characters": 100311
+  },
+  "extractor": "tasks/reparenting-strategy-refinement-20260925/extract_substack_source.py",
+  "projectionInputSha256": "3416b1a51d2353e79b8e58a241e8f768c7c3f21e7fd99ffc5b3c500199d9ae0f",
+  "verification": {
+    "graphRegressions": {
+      "ok": true,
+      "count": 30
+    },
+    "authoringValidate": true,
+    "authoringCheck": true,
+    "mapsCheck": true
+  },
+  "semanticStatus": "source-synchronized-only",
+  "note": "Exact source synchronization does not approve graph semantic changes, reconcile a Guide Packet, install a package, change stable, or publish the article."
+}

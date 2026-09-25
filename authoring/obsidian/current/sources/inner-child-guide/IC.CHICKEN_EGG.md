@@ -7,26 +7,25 @@ source_id: IC.CHICKEN_EGG
 guide_id: inner-child-guide
 heading: The Chicken-and-Egg Problem
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: cb7b261722d18634bb1d1c0791855c89e22e6eab4df0a097c55cd6b324a7c429
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: a397b837ebfa3e77e2ad67a005e942ed70dafa61c2ea9e69fa7dfff3434a72d1
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
 ---
 
 # The Chicken-and-Egg Problem
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 8–43
+Locator: Lines 7–44
 
 ```text
 The Chicken-and-Egg Problem
+
 Céline’s title gets the problem right: we don’t change. The child remains. What can change is who leads. A lot of people stay identified as the child, meeting adult life from the position that still feels small, abandoned, helpless, impulsive, frightened, or desperate to be chosen.
 
-My answer has been to stop asking the child to heal itself. The present-day person becomes the Nurturer, Protector, and Leader or Guide who reparents the child.
-
-But that creates a chicken
+My answer has been to stop asking the child to heal itself. The present-day person becomes the Nurturer, Protector, and Leader or Guide who reparents the child. That assumes the present-d
 ```

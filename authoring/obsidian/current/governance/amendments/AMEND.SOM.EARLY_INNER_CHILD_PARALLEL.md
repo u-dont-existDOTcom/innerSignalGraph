@@ -8,7 +8,7 @@ status: owner-approved
 domain: somatic
 base_record_sha256: b609297d69238de7b2e2829ec280964beacf7a2046134f4d8d5e2c8adae51802
 source_file_sha256: 669d81d9ce880962d1f7bcb040668cdc778408ea1c79b3f3c195e524c20053a9
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
 ---
 
 # AMEND.SOM.EARLY_INNER_CHILD_PARALLEL

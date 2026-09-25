@@ -30,6 +30,38 @@ const start = (s = strategy()) => {
 };
 const plan = (control, variables = steady, turnTask = null) => planFromGraphs({ graphs: bundle.graphs, variables, pathPerformance: control, turnTask, unknowns: [{ variable: "hidden_process", question: "Go deeper into that image?", importance: 5 }] });
 const miss = () => [signal("prediction_failed", { prediction_id: "P1" }), signal("low_information"), signal("praise")];
+const sourceSwitchReview = (prior, alternativeNode, finding = "better_alternative") => {
+ const refs = [...(prior.active?.failure_evidence_ids ?? [])];
+ assert.ok(refs.length, "source-bound switch review requires preserved failure evidence");
+ const current = prior.active.strategy;
+ return review(prior, update([], {
+  strategy_review: {
+   process_id: current.process_id,
+   node_id: current.node_id,
+   exposure: {
+    node_id: current.node_id,
+    status: "adequate",
+    observation_ids: refs,
+    reason: "The prior selected step was actually attempted at the recorded opportunities."
+   },
+   window: {
+    status: "sufficient",
+    observation_ids: refs,
+    reason: "The bounded synthetic review window contains the observations being adjudicated."
+   },
+   finding,
+   finding_observation_ids: refs,
+   reason: "A source-bound review, rather than the raw counter, supports a scoped strategy change.",
+   refinement: null,
+   alternative: {
+    node_id: alternativeNode,
+    scope: "method",
+    observation_ids: refs,
+    reason: "The synthetic evidence supports testing this materially different route."
+   }
+  }
+ }));
+};
 
 // These deterministic cases exercise policy against supplied observations, not LLM understanding or clinical benefit.
 test("prospective strategy episode contains target, hypothesis, path, reasons, signs and bound trace", () => {
@@ -41,14 +73,14 @@ test("prospective strategy episode contains target, hypothesis, path, reasons, s
  assert.equal(s.active.review_count, 0, "pure evaluator must preserve input for rollback/replay");
 });
 
-test("cooperation, praise and cosmetic changes cannot erase two failed opportunities", () => {
+test("cooperation, praise and cosmetic changes cannot erase evidence or fabricate a switch", () => {
  let s = start();
  for (let i = 0; i < 2; i++) s = review(s, update(miss(), { strategy: strategy({ formulation: `A more elegant wording ${i}`, node_id: "IC.BORROW_ONE_FUNCTION" }) }));
  assert.equal(s.active.id, "strategy-1"); assert.equal(s.active.strategy.formulation, strategy().formulation);
- assert.equal(s.active.misses, 2); assert.equal(s.latest.status, "STALLED"); assert.equal(s.latest.decision, "SWITCH");
- assert.ok(s.latest.failure_sources.some(f => f.kind === "FORMULATION_MISMATCH"));
- assert.deepEqual(plan(s).executionContract.requiredNodeIds, ["ROUTE.THREE_WAY_GATE"]);
- assert.equal(plan(s).executionContract.contextNodeIds.length, 0);
+ assert.equal(s.active.misses, 2); assert.equal(s.latest.status, "UNCLEAR"); assert.equal(s.latest.decision, "PROBE");
+ assert.ok(!s.latest.failure_sources.some(f => f.kind === "FORMULATION_MISMATCH"));
+ assert.deepEqual(plan(s).executionContract.requiredNodeIds, ["ROUTE.GO_INWARD"]);
+ assert.equal(s.active.switch_pending, false);
 });
 
 test("apparent relief conflicts with mechanism prediction and is never success", () => {
@@ -65,16 +97,144 @@ test("durable outcome cannot be inferred or falsified from immediate response", 
  assert.equal(later.latest.status, "MOVING");
 });
 
-test("repeated low-information I don't know responses force reformulation without a complaint", () => {
- let s = start();
- for (let i = 0; i < 2; i++) s = review(s, update([signal("low_information"), signal("repetition")]));
- assert.equal(s.latest.status, "STALLED"); assert.equal(s.latest.route, "reconsider");
- assert.ok(s.latest.reconsider.includes("formulation")); assert.ok(s.latest.reconsider.includes("external_stabilization"));
+test("an adequately exposed deterministic contradiction supports a scoped switch without a fixed miss counter", () => {
+ const initial = start(strategy({
+  evaluation_contract: {
+   effect_model: "deterministic",
+   opportunity_definition: "A bounded immediate opportunity to identify the blocked need after the selected care step.",
+   prerequisites_description: "The selected step was actually attempted with enough present-moment capacity to observe its immediate prediction.",
+   review_condition: "Review after the attempted step for the predeclared immediate need-access prediction."
+  }
+ }));
+ const reviewed = review(initial, update([
+  signal("prediction_failed", { prediction_id: "P1" })
+ ], {
+  strategy_review: {
+   process_id: "self-attack",
+   node_id: "ROUTE.GO_INWARD",
+   exposure: {
+    node_id: "ROUTE.GO_INWARD",
+    status: "adequate",
+    observation_ids: ["O2"],
+    reason: "The actual selected step was attempted in the defined opportunity."
+   },
+   window: {
+    status: "sufficient",
+    observation_ids: ["O2"],
+    reason: "The prediction was explicitly immediate and the observation window was complete."
+   },
+   finding: "conditional_prediction_contradicted",
+   finding_observation_ids: ["O2"],
+   reason: "The pre-existing deterministic immediate prediction was contradicted under its stated opportunity.",
+   refinement: null,
+   alternative: {
+    node_id: "ROUTE.ACT_OUTWARD",
+    scope: "method",
+    observation_ids: ["O2"],
+    reason: "A bounded alternative is supported for this synthetic scoped-failure case."
+   }
+  }
+ }));
+ assert.equal(reviewed.active.misses, 1);
+ assert.equal(reviewed.latest.decision, "SWITCH");
+ assert.equal(reviewed.latest.route, "reconsider");
+ assert.ok(reviewed.latest.failure_sources.some(f => f.kind === "METHOD_MISMATCH"));
 });
 
-test("complexity rises while client information falls: switch even with one matching signal", () => {
+test("strategy review rejects circular or unsupported failure labels", () => {
+ const noContract = start();
+ const contradiction = update([signal("prediction_failed", { prediction_id: "P1" })], { strategy_review: { process_id: "self-attack", node_id: "ROUTE.GO_INWARD", exposure: { node_id: "ROUTE.GO_INWARD", status: "adequate", observation_ids: ["O2"], reason: "Attempted." }, window: { status: "sufficient", observation_ids: ["O2"], reason: "Observed." }, finding: "conditional_prediction_contradicted", finding_observation_ids: ["O2"], reason: "Synthetic contradiction.", refinement: null, alternative: null } });
+ assert.throws(() => review(noContract, contradiction), /deterministic evaluation contract/);
+ const gap = update([], { strategy_review: { process_id: "self-attack", node_id: "ROUTE.GO_INWARD", exposure: null, window: null, finding: "implementation_gap", finding_observation_ids: ["O2"], reason: "Missing step.", refinement: null, alternative: null } });
+ assert.throws(() => review(noContract, gap), /requires one concrete refinement/);
+});
+
+test("repeated unclear low-information replies trigger diagnosis without fabricating method failure", () => {
+ let s = start();
+ for (let i = 0; i < 2; i++) s = review(s, update([signal("low_information"), signal("repetition")]));
+ assert.equal(s.latest.status, "UNCLEAR");
+ assert.equal(s.latest.decision, "PROBE");
+ assert.equal(s.latest.route, "continue");
+ assert.equal(s.active.switch_pending, false);
+ assert.ok(!s.latest.failure_sources.some(f => f.kind === "FORMULATION_MISMATCH"));
+});
+
+test("source-bound implementation gap executes borrowed-adult preparation without counting parent exposure", async () => {
+ const vars = deriveCaseVariables({ ...steady, inner_adult_access: "low", current_intent: "deep_dialogue", support_available: "present" });
+ const parent = strategy({
+  process_id: "reparenting",
+  node_id: "IC.DEEP_CHILD_DIALOGUE",
+  target: "offer care from a usable adult position",
+  formulation: "Deeper child dialogue may help once enough positive adult care is actually available."
+ });
+ let s = start(parent);
+ s = review(s, update([signal("low_information")], {
+  strategy_review: {
+   process_id: "reparenting",
+   node_id: "IC.DEEP_CHILD_DIALOGUE",
+   exposure: {
+    node_id: "IC.DEEP_CHILD_DIALOGUE",
+    status: "partial",
+    observation_ids: ["O2"],
+    reason: "The deeper step was attempted, but the adult-side caring function was not established."
+   },
+   window: {
+    status: "unknown",
+    observation_ids: ["O2"],
+    reason: "This review identifies an implementation gap rather than declaring an outcome failure."
+   },
+   finding: "implementation_gap",
+   finding_observation_ids: ["O2"],
+   reason: "The needed positive adult caring function is not currently available.",
+   refinement: {
+    state: "active",
+    node_id: "IC.BORROW_ONE_FUNCTION",
+    scope: "preparation",
+    observation_ids: ["O2"],
+    change: "Access or borrow one bounded caring/protective function on the adult side before further child-facing dialogue.",
+    review_condition: "Review whether that adult function is actually usable before reconsidering deeper child contact."
+   },
+   alternative: null
+  }
+ }), vars);
+ assert.equal(s.latest.decision, "REFINE");
+ assert.equal(s.active.refinement.node_id, "IC.BORROW_ONE_FUNCTION");
+
+ const p = plan(s, vars);
+ assert.equal(p.primaryJob.id, "IC.BORROW_ONE_FUNCTION");
+ assert.equal(p.executionContract.preparationOnly.parentNodeId, "IC.DEEP_CHILD_DIALOGUE");
+ assert.deepEqual(requiredRealizationNodeIds(p), ["IC.BORROW_ONE_FUNCTION"]);
+ assert.equal(p.pathPerformanceContract.prohibit_prior_exercise, false);
+ assert.equal(p.pathPerformanceContract.effective_node_id, "IC.BORROW_ONE_FUNCTION");
+
+ const body = "Use one borrowed caring function on the adult side first, without asking the child to respond yet.";
+ const allowed = { answer: body, next_question: p.nextQuestion, realized_nodes: [{ id: "IC.BORROW_ONE_FUNCTION", evidence_quote: body }] };
+ assert.equal(enforceResponseContract(allowed, { plan: p }).responseContract.pathPerformanceAdherencePassed, true);
+
+ const leakBody = body + " Then enter deeper child dialogue now.";
+ const leaked = {
+  answer: leakBody,
+  next_question: p.nextQuestion,
+  realized_nodes: [
+   { id: "IC.BORROW_ONE_FUNCTION", evidence_quote: body },
+   { id: "IC.DEEP_CHILD_DIALOGUE", evidence_quote: "Then enter deeper child dialogue now." }
+  ]
+ };
+ assert.equal(enforceResponseContract(leaked, { plan: p }).responseContract.pathPerformanceAdherencePassed, false);
+
+ const snap = { ...snapshot(null), path_performance: s };
+ const provider = { id: "test", model: "synthetic", generate: async () => ({ text: JSON.stringify(allowed) }) };
+ await realizeAdjudication({ context: { userMessage: "Synthetic", caseFormulation: snap, interventionContract: p }, adjudication: {}, provider });
+ assert.equal(snap.path_performance.active.delivery.node_id, "IC.BORROW_ONE_FUNCTION");
+
+ const after = review(snap.path_performance, update([signal("prediction_failed", { prediction_id: "P1" })]), vars);
+ assert.equal(after.latest.predictions[0].result, "UNOBSERVED", "preparation delivery must not count as exposure to the parent intervention");
+});
+
+test("complexity rises while client information falls: diagnose before causal replacement", () => {
  const s = review(start(), update([signal("complexity_without_information"), signal("need_access", { prediction_id: "P1" }), signal("praise")]));
- assert.equal(s.latest.decision, "SWITCH"); assert.equal(s.latest.status, "STALLED");
+ assert.equal(s.latest.decision, "PROBE"); assert.equal(s.latest.status, "UNCLEAR");
+ assert.equal(s.latest.route, "continue");
 });
 
 test("significant dissociation/fragmentation overrides praise, movement, old task, and inward question", () => {
@@ -115,12 +275,14 @@ test("loneliness, desire for romance or support alone cannot activate the case p
  }
 });
 
-test("delivery or pacing adjustment requires separate mechanism support, cannot evade accumulated failure", () => {
+test("delivery or pacing adjustment requires separate mechanism support and retains accumulated evidence", () => {
  const delivery = update([signal("mechanism_supported"), signal("delivery_problem")]);
  assert.equal(review(start(), delivery).latest.decision, "ADJUST_DELIVERY");
  assert.equal(review(start(), update([signal("delivery_problem")])).latest.decision, "PROBE");
  let s = review(start(), update(miss())); s = review(s, update(miss()));
- assert.equal(review(s, delivery).latest.decision, "SWITCH");
+ const adjusted = review(s, delivery);
+ assert.equal(adjusted.latest.decision, "ADJUST_DELIVERY");
+ assert.equal(adjusted.active.misses, 2, "delivery refinement cannot reset prior disappointing observations");
  assert.equal(review(start(), update([signal("mechanism_supported"), signal("dose_problem")])).latest.failure_sources[0].kind, "PACING_MISMATCH");
 });
 
@@ -134,21 +296,25 @@ test("a cheap discriminating probe must map alternative outcomes to different ac
  assert.notEqual(performanceQuestion(duplicate), probe.question);
 });
 
-test("after a switch, evidence can admit a materially different strategy and cannot re-admit known failed identity", () => {
+test("after a source-bound switch, evidence can admit a materially different strategy and cannot re-admit known failed identity", () => {
  let s = review(start(), update(miss())); s = review(s, update(miss()));
+ s = sourceSwitchReview(s, "ROUTE.ACT_OUTWARD");
+ assert.equal(s.latest.decision, "SWITCH");
  const next = strategy({ target: "practical support", formulation: "external load blocks attention", family: "stabilization", node_id: "ROUTE.ACT_OUTWARD" });
  const replacement = review(s, update([signal("alternative_supported")], { strategy: next }));
  assert.equal(replacement.active.id, "strategy-2"); assert.equal(replacement.closed[0].episode_id, "strategy-1");
  assert.equal(replacement.latest.predictions.length, 0, "no retrospective confirmation");
  replacement.active.delivery = { node_id: next.node_id, review: 0, evidence: "synthetic_delivered_intervention" };
  let stalledAgain = review(replacement, update(miss())); stalledAgain = review(stalledAgain, update(miss()));
+ stalledAgain = sourceSwitchReview(stalledAgain, "ROUTE.GO_INWARD");
  const old = review(stalledAgain, update([signal("alternative_supported")], { strategy: strategy() }));
  assert.equal(old.active.id, "strategy-2"); assert.equal(old.latest.decision, "SWITCH");
 });
 
-test("missing observation starts uncertain and bounded repeated unmeasured response stops exercise", () => {
+test("missing observation stays uncertain; repeated unmeasured reviews do not fabricate failure", () => {
  const first = review(start(), null); assert.equal(first.latest.status, "UNCLEAR"); assert.equal(first.active.misses, 0);
- const second = review(first, null); assert.equal(second.latest.status, "STALLED"); assert.equal(second.active.misses, 0);
+ const second = review(first, null); assert.equal(second.latest.status, "UNCLEAR"); assert.equal(second.latest.decision, "PROBE"); assert.equal(second.active.misses, 0);
+ assert.equal(second.active.unclear, 2);
  assert.equal(second.latest.predictions[0].result, "UNOBSERVED");
 });
 
@@ -211,7 +377,7 @@ test("one failed key prediction is not washed out by an unrelated success betwee
  s = review(s, update([signal("specificity", { prediction_id: "P2" })]));
  s.active.delivery.review = s.active.review_count;
  s = review(s, update([signal("prediction_failed", { prediction_id: "P1" })]));
- assert.equal(s.latest.status, "STALLED"); assert.equal(s.active.prediction_failures.P1, 2);
+ assert.equal(s.latest.status, "UNCLEAR"); assert.equal(s.latest.decision, "PROBE"); assert.equal(s.active.prediction_failures.P1, 2);
 });
 
 test("signal support cannot count on a not-observed turn; unknown prediction references fail", () => {
@@ -297,14 +463,15 @@ test("R5: explicit different process has fresh predictions; returning restores o
  assert.equal(next.latest.predictions.length, 0); assert.equal(next.closed[0].episode_id, old.active.id);
  const back = review(next, update([signal("new_process")], { strategy: strategy() }));
  assert.equal(back.active.id, old.active.id); assert.equal(back.active.misses, 2);
- assert.equal(back.latest.status, "STALLED"); assert.equal(back.latest.decision, "SWITCH");
+ assert.equal(back.latest.status, "UNCLEAR"); assert.equal(back.latest.decision, "PROBE");
 });
 
-test("R6: failed external action is reformulated instead of issuing the same action route", () => {
+test("R6: disappointing external action triggers feasibility diagnosis before abandoning practical action", () => {
  const v = { ...steady, actionable_problem: "present" };
  let s = start(strategy({ family: "action_planning", node_id: "ROUTE.ACT_OUTWARD" }));
  s = review(s, update(miss()), v); s = review(s, update(miss()), v);
- assert.equal(s.latest.route, "reconsider"); assert.equal(plan(s, v).primaryJob.id, "ROUTE.THREE_WAY_GATE");
+ assert.equal(s.latest.decision, "PROBE"); assert.equal(s.latest.route, "continue");
+ assert.equal(plan(s, v).primaryJob.id, "ROUTE.ACT_OUTWARD");
 });
 
 test("candidate live extraction cannot silently omit tracking; explicit missing proposal allows assessment only", async () => {
@@ -313,15 +480,18 @@ test("candidate live extraction cannot silently omit tracking; explicit missing 
  await assert.rejects(() => runCaseExtraction({ context: { pathPerformanceEnabled: true, guideManifest: { version: "test" }, userFacts: [] }, provider }), e => /must declare path_update/.test(e.cause?.message ?? e.message));
  const assessment = snapshot(null);
  const { plan: p } = await planCaseSnapshot(assessment, { loadPlanningGraphBundle: async () => bundle });
- assert.equal(p.primaryJob.id, "ROUTE.THREE_WAY_GATE"); assert.equal(p.pathPerformance.status, "UNCLEAR");
- assert.equal(p.pathPerformanceContract.prohibit_prior_exercise, true);
+ assert.equal(p.primaryJob.id, "ROUTE.GO_INWARD"); assert.equal(p.pathPerformance.status, "UNCLEAR");
+ assert.equal(p.pathPerformance.decision, "PROBE");
+ assert.equal(p.pathPerformanceContract.strategy, null);
+ assert.equal(p.pathPerformanceContract.prohibit_prior_exercise, false);
 });
 
-test("a formulation/target/family paraphrase cannot reset a stalled episode on the same path", () => {
+test("a formulation/target/family paraphrase cannot reset evidence or manufacture a switch on the same path", () => {
  let s = review(start(), update(miss())); s = review(s, update(miss()));
  const paraphrase = strategy({ formulation: "More elaborate care explanation", target: "A renamed version of the same need", family: "new label" });
  const next = review(s, update([signal("alternative_supported")], { strategy: paraphrase }));
- assert.equal(next.active.id, s.active.id); assert.equal(next.active.misses, 2); assert.equal(next.latest.decision, "SWITCH");
+ assert.equal(next.active.id, s.active.id); assert.equal(next.active.misses, 2); assert.equal(next.latest.decision, "PROBE");
+ assert.equal(next.active.strategy.formulation, strategy().formulation);
 });
 
 test("replayed observation does not count twice or improve trajectory", () => {
@@ -347,15 +517,18 @@ test("withdrawn closed-process evidence cannot be restored with valid delivery o
  assert.equal(retained.invalidated, true); assert.equal(retained.delivery, null); assert.deepEqual(retained.reviews, []);
 });
 
-test("cumulative failure classification retains its original observation references on empty follow-up", () => {
+test("cumulative disappointing evidence retains observation references without fabricating a mismatch classification", () => {
  let s = review(start(), update(miss())); s = review(s, update(miss()));
  const empty = review(s, null);
- assert.ok(empty.latest.failure_sources.find(f => f.kind === "FORMULATION_MISMATCH").observation_ids.includes("O2"));
+ assert.ok(empty.active.failure_evidence_ids.includes("O2"));
+ assert.ok(empty.active.failure_evidence_ids.includes("O3"));
+ assert.ok(!empty.latest.failure_sources.some(f => f.kind === "FORMULATION_MISMATCH"));
+ assert.equal(empty.latest.decision, "PROBE");
 });
 
-test("ordinary shame/confusion stops and reconsiders the exercise without inventing residential need", () => {
+test("ordinary shame/confusion triggers fit diagnosis without attributing pre-existing distress to the method", () => {
  const s = review(start(), update([signal("shame"), signal("confusion")]));
- assert.equal(s.latest.status, "ADVERSE"); assert.equal(s.latest.route, "reconsider");
+ assert.equal(s.latest.status, "ADVERSE"); assert.equal(s.latest.decision, "PROBE"); assert.equal(s.latest.route, "continue");
  assert.doesNotMatch(pathPerformanceGuidance(s).join(" "), /residential|Soteria|care-farm/);
 });
 
@@ -377,14 +550,16 @@ test("delivery opportunity is review-bound and another route clears it", async (
  assert.equal(snap.path_performance.active.delivery, null);
 });
 
-test("stalled relational check and exhausted probe cannot continue the same exercise node", () => {
+test("repeated uninformative relational/probe work triggers diagnosis without arbitrary modality replacement", () => {
  const v = { ...steady, other_person_central: "yes", relational_check_status: "pending" };
  let s = start(strategy({ node_id: "ROUTE.RELATIONAL_REALITY_CHECK" }));
  s = review(s, update(miss()), v); s = review(s, update(miss()), v);
- assert.notEqual(plan(s, v).primaryJob.id, "ROUTE.RELATIONAL_REALITY_CHECK");
+ assert.equal(s.latest.decision, "PROBE");
+ assert.equal(plan(s, v).primaryJob.id, "ROUTE.RELATIONAL_REALITY_CHECK");
  let probe = start(strategy({ node_id: "ROUTE.THREE_WAY_GATE" }));
  probe = review(probe, update(miss())); probe = review(probe, update(miss()));
- assert.notEqual(plan(probe).primaryJob.id, "ROUTE.THREE_WAY_GATE");
+ assert.equal(probe.latest.decision, "PROBE");
+ assert.equal(plan(probe).primaryJob.id, "ROUTE.THREE_WAY_GATE");
 });
 
 import { buildCompleteSemanticDiff, buildCompleteDecisionCards } from "../src/guide-graph/semantic-diff.mjs";

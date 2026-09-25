@@ -277,7 +277,9 @@
         "AMEND.IC.BORROW_LOVE_EXTERNAL",
         "AMEND.IC.WELLBEING_HORIZON",
         "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
-        "AMEND.IC.WISDOM_CORE"
+        "AMEND.IC.WISDOM_CORE",
+        "IC.SPIRITUAL_LOAN",
+        "IC.ALTERED_STATES"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -285,10 +287,14 @@
         "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.",
         "Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love.",
         "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.",
-        "Remembered or imagined caring company is an alternative when receiving support is more accessible than generating affection. Do not assume safe parental imagery or force transfer."
+        "Remembered or imagined caring company is an alternative when receiving support is more accessible than generating affection. Do not assume safe parental imagery or force transfer.",
+        "Start with what is actually accessible in the present. If a profound loving state is only remembered, use sober recollection or a chosen benevolent reference as preparation and see whether any caring function becomes available now.",
+        "Offer love toward the younger state only after some present caring function is genuinely available, and treat blankness, recoil, distrust, or refusal as information rather than a demand for more intensity."
       ],
       "avoid": [
-        "Do not manufacture warmth or make the loved being responsible for the session."
+        "Do not manufacture warmth or make the loved being responsible for the session.",
+        "Do not require spirituality, prayer, or a past altered state as the route to care.",
+        "Do not instruct the person to take, repeat, or intensify a substance in order to recover a remembered loving state."
       ],
       "successSignals": [
         "The capacity for love becomes experientially available without coercion."
@@ -306,7 +312,9 @@
         ],
         "requiredNuance": [
           "The problem may be safety of receiving love rather than absence of love.",
-          "Ordinary affection or care and profound transpersonal love are distinct resources; either may be therapeutically useful, and one must not be used to erase the distinction the user is making."
+          "Ordinary affection or care and profound transpersonal love are distinct resources; either may be therapeutically useful, and one must not be used to erase the distinction the user is making.",
+          "Past-glimpse or state-dependent access can identify a possible sober preparation resource, but it does not establish that deep love is accessible now.",
+          "Current access to love and the younger state’s reception of that love are separate observations."
         ]
       },
       "defaultQuestion": ""
@@ -422,7 +430,10 @@
         "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
         "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
         "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
-        "AMEND.IC.WISDOM_CORE"
+        "AMEND.IC.WISDOM_CORE",
+        "IC.BORROW_LOVE",
+        "IC.SPIRITUAL_LOAN",
+        "IC.ALTERED_STATES"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -430,14 +441,19 @@
         "Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.",
         "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness.",
         "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.",
-        "A real past occasion of responding well or a fallible compassionate future perspective may supply one bounded function. Offer the relevant alternative only if useful; do not demand past success or a perfect state."
+        "A real past occasion of responding well or a fallible compassionate future perspective may supply one bounded function. Offer the relevant alternative only if useful; do not demand past success or a perfect state.",
+        "If a chosen benevolent spiritual reference or remembered loving state genuinely helps, borrow its caring perspective soberly for the adult side; do not prescribe substance use, intensification, or obedience to a perceived message.",
+        "When current evidence already supports enough positive care or protection for the chosen bounded step, do not restart borrowed-adult preparation merely because access is imperfect."
       ],
       "avoid": [
         "Do not demand an ideal parent image or let the helper become authority over memories, medicine, relationships, spiritual conclusions, or future.",
-        "Do not generalize one admirable function, true teaching, healing result, or spiritual gift into global trustworthiness."
+        "Do not generalize one admirable function, true teaching, healing result, or spiritual gift into global trustworthiness.",
+        "Do not treat stopping cruelty or retaliation as proof that positive nurture, trust, or child reception is already present.",
+        "Do not require a profound feeling of love when ordinary warmth, protection, goodwill, or competent care is the usable function."
       ],
       "successSignals": [
-        "The person can perform one adult function without pretending the whole role or the source’s wider authority is available."
+        "The person can perform one adult function without pretending the whole role or the source’s wider authority is available.",
+        "The needed positive adult function is usable now in a bounded action or stance; this does not by itself establish child reception."
       ],
       "tags": [
         "borrowed-adulthood",
@@ -457,7 +473,10 @@
         "requiredNuance": [
           "Adult identity may form after behavior.",
           "Borrowed adulthood can support the part attempting the adult role, not only the younger state.",
-          "Borrow only in the domain and dose the source’s track record has earned; competence or warmth in one domain does not silently transfer authority to another."
+          "Borrow only in the domain and dose the source’s track record has earned; competence or warmth in one domain does not silently transfer authority to another.",
+          "When this is the selected preparation because a needed caring/protective function is currently unavailable, the work is adult-side first: access or receive the function now, participate in it, and only then offer permitted care without forcing reception.",
+          "A remembered profound or spiritual opening can be a sober preparation resource without establishing current access, child inclusion, or a reason to recreate the altered state.",
+          "Current task-specific functional access is not a verdict about the person’s whole personality; partial usable capacity can be enough for a bounded next step."
         ]
       },
       "defaultQuestion": ""
@@ -502,19 +521,25 @@
         "IC.RELATIONSHIP",
         "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
         "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
-        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+        "IC.BORROW_ADULT",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.SPIRITUAL_LOAN"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Name what the helper did, choose five percent to do personally, and test one action in ordinary life.",
         "Gradually hand the role and the judgment behind it back to the person so they become more able to check, disagree, revise, and act without the helper.",
-        "Name what capacity the person exercised, what help remained useful, and what the real-world attempt taught them; independence does not require refusing appropriate support. Care includes interest and delight, not duty alone, and should support exploration outside the exercise."
+        "Name what capacity the person exercised, what help remained useful, and what the real-world attempt taught them; independence does not require refusing appropriate support. Care includes interest and delight, not duty alone, and should support exploration outside the exercise.",
+        "Carry the borrowed function into one ordinary-life act that the person initiates, then review what it actually contributed rather than treating completion alone as success.",
+        "Keep outside support available when useful while returning authorship, judgment, disagreement, and revision to the person."
       ],
       "avoid": [
         "Do not create permanent practical or epistemic authority dependency."
       ],
       "successSignals": [
-        "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission."
+        "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission.",
+        "The person can initiate a small caring/protective act and evaluate whether it helped without handing the helper permanent authority."
       ],
       "tags": [
         "adult-apprentice",
@@ -526,7 +551,9 @@
         "deferNodes": [],
         "forbiddenOverclaims": [],
         "requiredNuance": [
-          "The helper hands back judgment as well as behavior; successful apprenticeship should make independent checking easier rather than making the helper harder to question."
+          "The helper hands back judgment as well as behavior; successful apprenticeship should make independent checking easier rather than making the helper harder to question.",
+          "Receiving support is not the endpoint: the sequence is receive care, observe care, participate in care, initiate a small part, and internalize what proves usable.",
+          "The adult function can become real through ordinary action before it feels like a stable identity."
         ]
       },
       "defaultQuestion": ""
@@ -627,7 +654,9 @@
       "sourceRefs": [
         "IC.PROTECTOR_VISIBLE",
         "IC.VOW",
-        "IC.BOTTOM_UP_SEQUENCE"
+        "IC.BOTTOM_UP_SEQUENCE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION"
       ],
       "authority": "author-framework",
       "recommendations": [
@@ -635,10 +664,13 @@
         "Treat skeptical or contemptuous questions as data and, when appropriate, literal requests for evidence.",
         "Distinguish no track record from an adverse track record. If the younger state is already pointing to how adult life turned out, credibility repair means building counterevidence against an existing negative assessment rather than acting as though evidence starts at zero.",
         "Make one ordinary protective act visible and do not demand gratitude, trust, or emotional change.",
-        "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently."
+        "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently.",
+        "If positive nurture is the missing function, borrow or build that function rather than asking the younger state to open merely because hostility stopped.",
+        "Pair accurate responsibility and non-defensive listening with one positive trustworthy action; keep the complaint and the response separate enough to learn from both."
       ],
       "avoid": [
-        "Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed."
+        "Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed.",
+        "Do not call a temporary ceasefire or simple non-retaliation completed nurture, and do not demand trust as payment for it."
       ],
       "successSignals": [
         "Promises and actions begin to align; an adverse track record starts accumulating credible counterevidence without demanding immediate trust."
@@ -649,17 +681,19 @@
         "repair"
       ],
       "effects": {
-        "deferNodes": [],
         "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not say the child is rejecting love when it may be rejecting an unsafe or unproven source.",
+          "Do not describe the problem as simply lacking a track record when the user has already supplied adverse evidence about how things went."
+        ],
         "requiredNuance": [
           "Action is essential but not the sole repair; accurate responsibility and non-defensive listening also matter.",
           "Relaxation may reduce nervous-system charge, but it does not by itself repair a credibility conflict or change a contradictory track record.",
           "The sarcastic question can be both contempt and a legitimate literal request for evidence; answer it concretely rather than arguing with it.",
-          "A pre-existing adverse track record is different from having no track record yet."
-        ],
-        "forbiddenOverclaims": [
-          "Do not say the child is rejecting love when it may be rejecting an unsafe or unproven source.",
-          "Do not describe the problem as simply lacking a track record when the user has already supplied adverse evidence about how things went."
+          "A pre-existing adverse track record is different from having no track record yet.",
+          "Non-cruelty and non-retaliation are necessary evidence of safety but are not substitutes for positive warmth, protection, competent care, or repair.",
+          "Trust can update from both relational evidence and ordinary-life protection; love or goodwill need not wait for trust to become favorable."
         ]
       },
       "defaultQuestion": ""
@@ -880,16 +914,22 @@
         "IC.BEFORE_DEEP",
         "IC.ALTERED_STATES",
         "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
-        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.BORROW_LOVE",
+        "IC.SPIRITUAL_LOAN"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Use deeper dialogue only when the person can remain present, stop voluntarily, and recover afterward.",
         "Keep memory-source distinctions explicit.",
-        "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift."
+        "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift.",
+        "When the needed positive caring/protective function is known to be unavailable, use IC.BORROW_ONE_FUNCTION as adult-side preparation before deeper child-facing dialogue.",
+        "Once that function is demonstrably usable and current safety, permission, and readiness still allow the work, resume the live care/reception task rather than restarting the whole bootstrap."
       ],
       "avoid": [
-        "Do not interrogate imagery or imply emotional truth proves historical fact."
+        "Do not interrogate imagery or imply emotional truth proves historical fact.",
+        "Do not let generic deep-work readiness, an accepted task, a remembered loving state, or correct-sounding adult words bypass a known missing caring/protective preparation."
       ],
       "successSignals": [
         "The session increases capacity and functioning rather than compulsion or disorientation."
@@ -900,10 +940,14 @@
         "memory"
       ],
       "effects": {
-        "deferNodes": [],
         "blockNodes": [],
-        "requiredNuance": [],
-        "forbiddenOverclaims": []
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": [
+          "General orientation and stop/return capacity establish safety readiness, not the positive caring adult function needed for this relational exercise.",
+          "Partial but usable positive care/protection can be enough for a bounded step; unknown access is uncertainty to clarify, not a permanent incapacity finding.",
+          "Completing preparation permits reconsideration of the deeper step under current gates; it does not prove that the child has received the care."
+        ]
       },
       "defaultQuestion": ""
     },
@@ -1291,16 +1335,22 @@
         "AMEND.IC.DEEP_LOVE_TO_CHILD",
         "AMEND.IC.WELLBEING_HORIZON",
         "IC.HEART_SOLAR_LOOP",
-        "IC.BOTTOM_UP_SEQUENCE"
+        "IC.BOTTOM_UP_SEQUENCE",
+        "IC.BORROW_LOVE",
+        "IC.SPIRITUAL_LOAN"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Contact the real profound love first in whatever already-valid way it is accessible; do not manufacture a special inner-child feeling.",
         "Then bring the younger self into awareness and see whether the same love can include them—the feast has to reach the hungry child.",
-        "If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity."
+        "If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity.",
+        "If current positive adult preparation is still active, use remembered or present love as a resource for the adult side first and complete that preparation before attempting transfer.",
+        "After preparation becomes usable and existing safety, permission, and readiness still allow the step, offer inclusion without treating refusal or partial reception as failure."
       ],
       "avoid": [
-        "Do not force transfer, interpret reluctance as spiritual failure, or prescribe a stronger altered state because the child cannot receive the love."
+        "Do not force transfer, interpret reluctance as spiritual failure, or prescribe a stronger altered state because the child cannot receive the love.",
+        "Do not treat past_glimpse or state_dependent history as present eligibility for deep-love transfer.",
+        "Do not let a retained deep-love task bypass a currently supported adult-side preparation gap."
       ],
       "successSignals": [
         "Profound love can include the younger self without coercion, or the specific block becomes clear enough to work with relationally."
@@ -1319,7 +1369,9 @@
         ],
         "requiredNuance": [
           "Having access to profound love and being able to let the wounded child receive it are separate capacities.",
-          "Love can remain present while distrust or refusal is heard; the child’s objection does not need to be argued away."
+          "Love can remain present while distrust or refusal is heard; the child’s objection does not need to be argued away.",
+          "This node is for present intermittent or reliable access, not merely a remembered or substance-associated glimpse.",
+          "Present deep-love access, usable adult caring/protective function, and the child’s reception are distinct evidence states."
         ]
       },
       "defaultQuestion": ""

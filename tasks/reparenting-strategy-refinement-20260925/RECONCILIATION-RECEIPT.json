@@ -1,0 +1,32 @@
+{
+  "branch": "task/reparenting-strategy-refinement-20260925",
+  "candidateGraphs": [
+    {
+      "graphId": "inner-child-directed-graph",
+      "path": "guide-graphs/candidates/inner-child.graph.json",
+      "sha256": "eb53a26b4f7b166afd60e0ecffc81439bbaa7b847d022dea2d2f3f4f9d368ecc"
+    },
+    {
+      "graphId": "inner-child-somatic-cross-guide",
+      "path": "guide-graphs/candidates/cross-guide.graph.json",
+      "sha256": "527e801bcc54ee21aaf4b9ec5f4839a2183ef661a837e39a99b57a8b1c77a702"
+    },
+    {
+      "graphId": "somatic-directed-graph",
+      "path": "guide-graphs/candidates/somatic.graph.json",
+      "sha256": "5353c44e3a61ef4c93660b66fcf57ad87b064c417c8413c45213f68306a6dd18"
+    }
+  ],
+  "compiledBundleSha256": "c08a77781f04dda2414602908abe882a4aff277962a6959ffefb61597c0e907b",
+  "contractVersion": "inner-signal-authoring-reconciliation-v1",
+  "installed": false,
+  "packetId": "authoring-reparenting-strategy-refinement-20260925-r2",
+  "packetSha256": "4b5361091cd3ef722d35d4eb482a2fd78784a805fdbab59bef7b14f961a11ab9",
+  "projectionInputSha256": "c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78",
+  "proposalId": "reparenting-strategy-refinement-20260925-r2",
+  "regressionStatus": {
+    "count": 30,
+    "ok": true
+  },
+  "stableChanged": false
+}

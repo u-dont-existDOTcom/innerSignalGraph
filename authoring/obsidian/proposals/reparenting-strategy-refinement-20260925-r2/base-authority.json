@@ -1,0 +1,239 @@
+{
+  "authoritativeInputs": [
+    {
+      "path": "authoring/migration/owner-map-resolution-2026-08-29.json",
+      "sha256": "3a6572072f63204e7511cd977f442509fe630dd761152edcba248cc1cb43b14e"
+    },
+    {
+      "path": "authoring/overlays/inner-child.overlay.json",
+      "sha256": "1b86f03b02cd05024cbc7dafa4ed6f41e16879192767ec2ef52530f0eb27e6ef"
+    },
+    {
+      "path": "authoring/overlays/somatic.overlay.json",
+      "sha256": "963ddda6ad444cecaba9bcc3fb35d5dcdc4b3c0cd30946f8aae6b54c98819efc"
+    },
+    {
+      "path": "corpus/graph-cases/G001.json",
+      "sha256": "25d9a4533b9f43f42c47a73ce7cef67af0d00c6272e6c091da07e6467b1515a4"
+    },
+    {
+      "path": "corpus/graph-cases/G002.json",
+      "sha256": "aab88cd64b9fdf00c295dcab62a48374660d98843b72428fd2e43e0654c98e93"
+    },
+    {
+      "path": "corpus/graph-cases/G003.json",
+      "sha256": "f5533f8a573ce00bafe6ae3ab1de865dde7565c60b8849007cc5c1cd46e7ac3d"
+    },
+    {
+      "path": "corpus/graph-cases/G004.json",
+      "sha256": "0f4c223359c2491d4f0f6e661ee921bbd2aa8011e065fc5c0b784f49f751e376"
+    },
+    {
+      "path": "corpus/graph-cases/G005.json",
+      "sha256": "b43b9e5caa0a7e451dcf6a51001a82ce7a989d370ff652b6a34612cc0c1ff827"
+    },
+    {
+      "path": "corpus/graph-cases/G006.json",
+      "sha256": "564ff52aeafbaf1b8e0759954089a9ec92967e758d51de0c4be678e973526987"
+    },
+    {
+      "path": "corpus/graph-cases/G007.json",
+      "sha256": "2400e4090add73c6812d99412f7971fba65281d183c41d5b373dc8bab9418e2b"
+    },
+    {
+      "path": "corpus/graph-cases/G008.json",
+      "sha256": "312bf76a4307d2d0eebd94f1e63028e4676c6654a4ebc133ae36e8423603a5fa"
+    },
+    {
+      "path": "corpus/graph-cases/G009.json",
+      "sha256": "8a0d8e0e96e2a13a267d73c218720718701aecf381a248cf2044de214906770a"
+    },
+    {
+      "path": "corpus/graph-cases/G010.json",
+      "sha256": "abbefde82bd342e59cba4ac1978ea568411a48aaa54fe796bfe4cbaed0be572a"
+    },
+    {
+      "path": "corpus/graph-cases/G011.json",
+      "sha256": "1a9e67cda377bfce23a23c6fbc77ffd8f8c1df0a048c2a40b7c7d9994cbbfd13"
+    },
+    {
+      "path": "corpus/graph-cases/G012.json",
+      "sha256": "1c260ed2fd7be7bdcbf769898ffb61ed9a1a208af5e07f93e98ac68784ec8d82"
+    },
+    {
+      "path": "corpus/graph-cases/G013.json",
+      "sha256": "7f17ed5441797f1884ce5ae6ab0d5f6ed916f159a7409a39637fed4efd4b4929"
+    },
+    {
+      "path": "corpus/graph-cases/G014.json",
+      "sha256": "a46a0532e2b88dd28567951bbd4649227c1969429c92fcb0aaf00f98ccdffb63"
+    },
+    {
+      "path": "corpus/graph-cases/G015.json",
+      "sha256": "e3cdd7e8d5090ac972ff2ae41a20e83e00a4647953567a1ff50aa06f13d7e9ab"
+    },
+    {
+      "path": "corpus/graph-cases/G016.json",
+      "sha256": "d0497926f2a98a7b1de818c74e43d68c84f87a0611947d0db020eba4397d35c9"
+    },
+    {
+      "path": "corpus/graph-cases/G017.json",
+      "sha256": "a43afc395d47a08de671587b9e840b6217ba7e5fb871f417eb16989c2e1abbd5"
+    },
+    {
+      "path": "corpus/graph-cases/G018.json",
+      "sha256": "2ae67fb8ae852b8ce9f088abec2f0f0699a94b4bef494e7828653b51ec7e9868"
+    },
+    {
+      "path": "corpus/graph-cases/G025.json",
+      "sha256": "49b65bd3c3c3b446158ee9cefd099fd18124c45c98a26a60c5c3f81b9a501a9d"
+    },
+    {
+      "path": "corpus/graph-cases/G026.json",
+      "sha256": "d5c1dd648a9e752e13438b682ba4f346be6a45cf395e64c275d25e901beee670"
+    },
+    {
+      "path": "corpus/graph-cases/G027.json",
+      "sha256": "74f88328adf1a2031eaacc443cff1bb82eba8c2830b5315d6c1fc1359526fbf3"
+    },
+    {
+      "path": "corpus/graph-cases/G028.json",
+      "sha256": "22a264f0916b847a825e886d18f4767e7af3ee90e7f4b0deb14bff6b1ec725f4"
+    },
+    {
+      "path": "corpus/graph-cases/G029.json",
+      "sha256": "ecaf29b7878b12b5de97bfebabfba383462c2cca412d4a2780f7341521ecb3e7"
+    },
+    {
+      "path": "corpus/graph-cases/G030.json",
+      "sha256": "e50f7494c0298b55e3fee91184863eee914ebe62ad9511619202e0e0d3227bbf"
+    },
+    {
+      "path": "corpus/graph-cases/G031.json",
+      "sha256": "4ceba3fd1c91322fcc7be49325a1d1297afc7016ee97cafd8377f5e17342df27"
+    },
+    {
+      "path": "corpus/graph-cases/G032.json",
+      "sha256": "4dbe0f4fedf8b59953ea1ec5cc6631f9478360eb1b7c03007f14f5799bf78c0a"
+    },
+    {
+      "path": "corpus/graph-cases/G033.json",
+      "sha256": "8248b8d45c97e7c247934611a522f6da43f24325ad04ea06f0bab3973a1e489a"
+    },
+    {
+      "path": "corpus/graph-cases/G034.json",
+      "sha256": "8dd838b5683f933dd2e5e86faf69971b658a5a98762117fe4c826d92817db6fc"
+    },
+    {
+      "path": "corpus/graph-cases/G035.json",
+      "sha256": "0b1282c176316e938b04d05f741e0e1ec3aa3958e317cde1e22a79e52e6aac88"
+    },
+    {
+      "path": "corpus/graph-cases/G036.json",
+      "sha256": "19f1d007108c3d9dc3375c42db1d9141bad5d954eadde91cd78c9ef93add6ebc"
+    },
+    {
+      "path": "guide-graphs/candidates/cross-guide.graph.json",
+      "sha256": "527e801bcc54ee21aaf4b9ec5f4839a2183ef661a837e39a99b57a8b1c77a702"
+    },
+    {
+      "path": "guide-graphs/candidates/inner-child.graph.json",
+      "sha256": "2f31316bacb025352fbd0e2440aaa6607f50f2fc7cb38bc95263fbd807a3459f"
+    },
+    {
+      "path": "guide-graphs/candidates/somatic.graph.json",
+      "sha256": "5353c44e3a61ef4c93660b66fcf57ad87b064c417c8413c45213f68306a6dd18"
+    },
+    {
+      "path": "guide-graphs/compiled/bundle.json",
+      "sha256": "805c01247fa7afe559967303d636aeb6733e74f917225c50634c397a86e59b1d"
+    },
+    {
+      "path": "guide-graphs/compiled/inner-child-directed-graph.json",
+      "sha256": "d6c98ac21411c6ceafb63fa16cf0926ca2b4a0a0c575e75eaa55f3d17ff3036e"
+    },
+    {
+      "path": "guide-graphs/compiled/inner-child-somatic-cross-guide.json",
+      "sha256": "6ad7f1760ec3f385fbc4e87924ac64af194844d42f295920057c1325231a3065"
+    },
+    {
+      "path": "guide-graphs/compiled/somatic-directed-graph.json",
+      "sha256": "0228189ed5fc3d502c0615d48c089fbf405afdd66b827a9370f0b0eb2fabfb77"
+    },
+    {
+      "path": "guides/altered-states-map-source.txt",
+      "sha256": "2c6435769931222afc125973b8e71bf88f94e099e0185c951ebce680c14f18ab"
+    },
+    {
+      "path": "guides/inner-child-guide-2026-09-25.txt",
+      "sha256": "2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1"
+    },
+    {
+      "path": "guides/manifest.json",
+      "sha256": "a0a82a69943b6115e45952697a90eebb990623ca8ab0af61553e47451a6fbd14"
+    },
+    {
+      "path": "guides/owner-amendments.json",
+      "sha256": "669d81d9ce880962d1f7bcb040668cdc778408ea1c79b3f3c195e524c20053a9"
+    },
+    {
+      "path": "guides/semantic-assets.json",
+      "sha256": "aee2364244ff989c850a1e84d4e556ae1ae67891fa706e852081d5f82d74936d"
+    },
+    {
+      "path": "guides/somatic-sequencing-guide.txt",
+      "sha256": "952e1fd40afa00fd5c762bcc5c8cfbfa8811b66660a90f5495f41f50c69d2428"
+    },
+    {
+      "path": "guides/source-layout.json",
+      "sha256": "4eaa0e3fe490f3fc9f67b9d4708bc9d5277757830e2738083a8be8701bc1dd8f"
+    },
+    {
+      "path": "guides/vagal-blitz-source.pdf",
+      "sha256": "79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c"
+    },
+    {
+      "path": "src/case-formulation/bounded-schema.mjs",
+      "sha256": "f5a96854e0b1ff5e1c99efba367e2a091d25fa4f7347190bdd0c6fe297cbec72"
+    },
+    {
+      "path": "src/case-formulation/delivery-system-assessment.mjs",
+      "sha256": "1292d1ab98c9ea587a0687f8cc4de5a27e40a5acdca5be9d3d9f3e41ff2529d1"
+    },
+    {
+      "path": "src/case-formulation/path-performance.mjs",
+      "sha256": "41e8334801ba571b188f4924704a23ac4c729109b526fb16da8d3cdce14cc670"
+    },
+    {
+      "path": "src/case-formulation/turn-task.mjs",
+      "sha256": "b6e84bbf959c17736ffc795b3d6ef3ba8a848fbb0437ff42fd4e6c2fd103e30f"
+    },
+    {
+      "path": "src/guide-graph/compiler.mjs",
+      "sha256": "6e32d20430bac67e23feaee42c542a176c59293843cc0ef1cd43d87f10d1f33d"
+    },
+    {
+      "path": "src/guide-graph/contract.mjs",
+      "sha256": "cec2a40877ffa303ea0af22d0932194193b0ff1e4ca63ac8cc1b56a93b5d465a"
+    },
+    {
+      "path": "src/guide-graph/planner.mjs",
+      "sha256": "673a9f52e042cf2027f2ddf133807fbf5073dd16d13b86791acea8dc6da1c847"
+    },
+    {
+      "path": "src/guide-graph/regressions.mjs",
+      "sha256": "827d1e1127c81ace4fa8da4b9dd2833ef2faf298deec99f3136830c92b397cbe"
+    },
+    {
+      "path": "src/guide-graph/source-map.mjs",
+      "sha256": "94db29ad60ac15a2b3c7c54eda545fbe860764ebc863c9c20d7053c183d776c5"
+    },
+    {
+      "path": "src/guide-graph/validate.mjs",
+      "sha256": "b870caf0ad9dd07bd48dc1daa129ab0bc9bd85603e29a9f512a5bdcbe47841ce"
+    }
+  ],
+  "contractVersion": "inner-signal-authoring-base-authority-v1",
+  "projectionInputSha256": "a808db873f9e78309821561e9b51d69dbe063dc3993dd6c46764e5dd217b638d",
+  "proposalId": "reparenting-strategy-refinement-20260925-r2"
+}
