@@ -1,6 +1,7 @@
 import http from "node:http";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
 import { CaseNotContinuationSafeError, PRIVATE_CASE_SCOPES, PrivateCaseAccessDeniedError, PrivateCaseKeyUnavailableError } from "../storage/private-case-access.mjs";
+import { THERAPY_PROTOCOL_FILES, TherapyProtocolUnavailableError, loadTherapyProtocol, therapyProtocolManifest, therapyProtocolPayload } from "../protocol/therapy-protocol.mjs";
 
 const MCP_PROTOCOL_VERSION = "2025-06-18";
 const MAX_BODY_BYTES = 1_000_000;
@@ -210,11 +211,49 @@ const TOOL_DEFINITIONS = Object.freeze([
   }
 ]);
 
+// Public, read-only protocol tools. Their content is the public packaged skill, so they
+// need no case authorization; hosts load the current map from the deployed build instead
+// of a bundled plugin copy.
+const PROTOCOL_TOOL_DEFINITIONS = Object.freeze([
+  {
+    name: "get_therapy_protocol_manifest",
+    title: "Get InnerSignal therapy protocol manifest",
+    description: "Return the version and SHA-256 hashes of the InnerSignal therapy protocol this server currently serves, without the file contents.",
+    inputSchema: { type: "object", additionalProperties: false, properties: {} },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  },
+  {
+    name: "load_therapy_protocol",
+    title: "Load InnerSignal therapy protocol",
+    description: "Call before any InnerSignal therapy response (inner-child, younger-self, or self-relationship work). Returns the current therapy instructions and reference files, including the therapy map, with version and hashes. Omit paths to load everything.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        paths: { type: "array", minItems: 1, uniqueItems: true, items: { type: "string", enum: [...THERAPY_PROTOCOL_FILES] } }
+      }
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }
+]);
+const PROTOCOL_TOOLS = new Set(PROTOCOL_TOOL_DEFINITIONS.map((tool) => tool.name));
+
+const SERVER_INSTRUCTIONS = [
+  "InnerSignal. Before any inner-child, younger-self, or self-relationship therapy response, call load_therapy_protocol and follow its instructions and files; do not mention the map to the user.",
+  "If the protocol cannot be loaded, say that InnerSignal's therapy protocol is unavailable right now instead of improvising it from memory.",
+  "To continue from an InnerSignal handoff, call load_handoff first. The private case tools are read-only.",
+  "Authorization is transport-owned; never put bearer tokens or key material in tool arguments."
+].join(" ");
+
 const AUDIT_TOOLS = new Set(["load_handoff", "load_case_context", "get_pending_candidate", "get_candidate_response", "get_source_artifact"]);
 
 function advertisedTools(oauthEnabled) {
-  if (!oauthEnabled) return TOOL_DEFINITIONS;
-  return TOOL_DEFINITIONS.map((tool) => Object.freeze({
+  if (!oauthEnabled) return [...PROTOCOL_TOOL_DEFINITIONS, ...TOOL_DEFINITIONS];
+  const protocolTools = PROTOCOL_TOOL_DEFINITIONS.map((tool) => Object.freeze({
+    ...tool,
+    securitySchemes: Object.freeze([Object.freeze({ type: "noauth" })])
+  }));
+  return [...protocolTools, ...TOOL_DEFINITIONS.map((tool) => Object.freeze({
     ...tool,
     securitySchemes: Object.freeze([Object.freeze({
       type: "oauth2",
@@ -222,7 +261,36 @@ function advertisedTools(oauthEnabled) {
         ? [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT]
         : [PRIVATE_CASE_SCOPES.READ])
     })])
-  }));
+  }))];
+}
+
+function protocolToolResult(protocol, name, args) {
+  if (!protocol) throw new TherapyProtocolUnavailableError("The InnerSignal therapy protocol is unavailable on this server.");
+  if (name === "get_therapy_protocol_manifest") return therapyProtocolManifest(protocol);
+  return therapyProtocolPayload(protocol, { paths: args.paths ?? null });
+}
+
+// Readable text for the model; the same data stays in structuredContent.
+function protocolText(value) {
+  const header = `InnerSignal therapy protocol ${value.version} (sha256 ${value.protocol_sha256})`;
+  if (!value.instructions) {
+    return [header, ...value.files.map((file) => `- ${file.path}: ${file.bytes} bytes, sha256 ${file.sha256}`)].join("\n");
+  }
+  return [
+    header,
+    value.usage,
+    "## Instructions",
+    value.instructions,
+    ...value.files.map((file) => `## ${file.path}\n\n${file.content.trim()}`)
+  ].join("\n\n");
+}
+
+function loadProtocolOrNull() {
+  try { return loadTherapyProtocol(); }
+  catch (error) {
+    if (error instanceof TherapyProtocolUnavailableError) return null;
+    throw error;
+  }
 }
 
 function normalizeOauth(value) {
@@ -334,15 +402,23 @@ async function callTool(service, name, args, authContext) {
   throw Object.assign(new Error(`Unknown MCP tool ${name}.`), { code: "MCP_TOOL_NOT_FOUND" });
 }
 
-export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, productionAuthReady = false } = {}) {
+export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, productionAuthReady = false, therapyProtocol = undefined } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function") throw new TypeError("caseAccessService is required.");
   const normalizedOauth = normalizeOauth(oauth);
   if (productionAuthReady === true && !normalizedOauth) throw new TypeError("Production auth readiness requires OAuth metadata.");
   const tools = advertisedTools(Boolean(normalizedOauth));
+  // Loaded once per process: a redeploy is what changes the served protocol.
+  const protocol = therapyProtocol === undefined ? loadProtocolOrNull() : therapyProtocol;
   return http.createServer(async (req, res) => {
     const url = new URL(req.url || "/", "http://127.0.0.1");
     if (req.method === "GET" && url.pathname === "/health") {
-      return send(res, 200, { ok: true, service: "inner-signal-private-case-mcp", runtimeVersion: RUNTIME_VERSION, productionAuthReady: productionAuthReady === true });
+      return send(res, 200, {
+        ok: true,
+        service: "inner-signal-private-case-mcp",
+        runtimeVersion: RUNTIME_VERSION,
+        productionAuthReady: productionAuthReady === true,
+        therapyProtocol: protocol ? { version: protocol.version, protocolSha256: protocol.protocolSha256 } : null
+      });
     }
     if (req.method === "GET" && normalizedOauth && ["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"].includes(url.pathname)) {
       return send(res, 200, protectedResourceMetadata(normalizedOauth));
@@ -360,16 +436,29 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
         protocolVersion: MCP_PROTOCOL_VERSION,
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: "inner-signal-private-case", version: RUNTIME_VERSION },
-        instructions: "Read-only private InnerSignal continuation tools. Authorization is transport-owned; never put bearer tokens or key material in tool arguments."
+        instructions: SERVER_INSTRUCTIONS
       }));
     }
     if (request.method === "tools/list") return send(res, 200, success(request.id, { tools }));
     if (request.method !== "tools/call") return send(res, 200, failure(request.id, -32601, "Method not found."));
 
+    const name = request.params?.name;
+    const args = request.params?.arguments ?? {};
+    if (PROTOCOL_TOOLS.has(name)) {
+      try {
+        const value = protocolToolResult(protocol, name, args);
+        return send(res, 200, success(request.id, { ...toolResult(value), content: [{ type: "text", text: protocolText(value) }] }));
+      } catch (error) {
+        const safeCode = error?.code === "THERAPY_PROTOCOL_FILE_UNKNOWN" ? error.code : "THERAPY_PROTOCOL_UNAVAILABLE";
+        const message = safeCode === "THERAPY_PROTOCOL_UNAVAILABLE"
+          ? "InnerSignal therapy protocol is unavailable; do not improvise it."
+          : "Unknown therapy protocol file.";
+        return send(res, 200, failure(request.id, -32003, message, { code: safeCode }));
+      }
+    }
+
     const token = bearerToken(req);
     try {
-      const name = request.params?.name;
-      const args = request.params?.arguments ?? {};
       const value = await callTool(caseAccessService, name, args, { bearerToken: token });
       return send(res, 200, success(request.id, toolResult(value)));
     } catch (error) {
@@ -389,8 +478,8 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
   });
 }
 
-export async function listenPrivateCaseMcp({ caseAccessService, oauth = null, productionAuthReady = false, port = 0, host = "127.0.0.1" } = {}) {
-  const server = createPrivateCaseMcpServer({ caseAccessService, oauth, productionAuthReady });
+export async function listenPrivateCaseMcp({ caseAccessService, oauth = null, productionAuthReady = false, therapyProtocol = undefined, port = 0, host = "127.0.0.1" } = {}) {
+  const server = createPrivateCaseMcpServer({ caseAccessService, oauth, productionAuthReady, therapyProtocol });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, resolve);

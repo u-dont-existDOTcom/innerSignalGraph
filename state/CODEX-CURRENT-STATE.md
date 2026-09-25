@@ -1,6 +1,10 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-16
+Updated: 2026-09-25
+
+## Claude connector: therapy protocol served over MCP — candidate on `claude/claude-protocol-mcp-20260925`
+
+Owner request 2026-09-25: use InnerSignal in Claude without rebuilding and reinstalling a plugin for every map or rule fix. The hosted private-case MCP now also serves the packaged therapy skill. Public read-only tools `get_therapy_protocol_manifest` and `load_therapy_protocol` return the skill instructions and reference files, including the map, with version and SHA-256 hashes, read from the deployed build. The server's `initialize` instructions require loading the protocol before therapy responses and say to report it unavailable rather than improvise. The private case tools, OAuth and ACL are unchanged, and the Codex plugin is unchanged apart from neutral host wording. `docs/CLAUDE-CONNECTOR.md` covers the update flow and one-time Claude OAuth setup. No deployment, installation, Keycloak change, `stable` promotion or private case access occurred; deploying the image and registering the Claude client follow review and merge.
 
 ## Somatic + altered-states guide sync — owner approved, reconciled, and merged
 
