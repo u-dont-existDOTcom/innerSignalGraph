@@ -637,7 +637,7 @@ test("separate read-only MCP process executes load_case_context from a fresh cli
   }).then((response) => response.json());
   assert.deepEqual(
     listed.result.tools.map((tool) => tool.name),
-    ["load_handoff", "load_case_context", "get_state_diff", "get_recent_verbatim", "retrieve_case_evidence", "get_pending_candidate", "get_tracker_window", "get_journal_entries", "get_candidate_response", "get_source_artifact"]
+    ["get_therapy_protocol_manifest", "load_therapy_protocol", "load_handoff", "load_case_context", "get_state_diff", "get_recent_verbatim", "retrieve_case_evidence", "get_pending_candidate", "get_tracker_window", "get_journal_entries", "get_candidate_response", "get_source_artifact"]
   );
   const { stdout } = await runSession("mcp-load", environment, { fourthArg: ready.mcpUrl });
   const result = JSON.parse(stdout);
