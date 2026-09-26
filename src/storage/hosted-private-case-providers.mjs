@@ -93,38 +93,53 @@ export function createJwtPrivateCaseAuthorizationProvider({
     ? createLocalJWKSet(jwks)
     : createRemoteJWKSet(new URL(requiredText(jwksUri, "OAuth JWKS URI")));
 
+  // Verifies the bearer token itself (signature, issuer, audience, expiry, subject); says nothing about any case.
+  async function verifyToken(token) {
+    if (typeof token !== "string" || !token) throw new PrivateCaseAccessDeniedError();
+    let verified;
+    try {
+      verified = await jwtVerify(token, keySet, {
+        issuer: normalizedIssuer,
+        audience: normalizedAudience,
+        algorithms,
+        clockTolerance,
+        currentDate: new Date(now() * 1_000)
+      });
+    } catch {
+      throw new PrivateCaseAccessDeniedError();
+    }
+    if (!Number.isInteger(verified.payload.exp)) throw new PrivateCaseAccessDeniedError();
+    const subject = verified.payload.sub;
+    if (typeof subject !== "string" || !subject) throw new PrivateCaseAccessDeniedError();
+    return { subject, tokenScopeSet: tokenScopes(verified.payload), payload: verified.payload };
+  }
+
   return Object.freeze({
     kind: "oauth-jwt-case-acl",
     issuer: normalizedIssuer,
     audience: normalizedAudience,
+    // Whether a denial could be cured by signing in again: a valid token whose subject holds at
+    // least one grant is already the right account, so a case it cannot open is a wrong or
+    // unauthorized ID, not an authentication problem. Returns no case or grant details.
+    async authenticate({ authContext }) {
+      const { subject, tokenScopeSet } = await verifyToken(authContext?.bearerToken);
+      return Object.freeze({
+        subjectHasGrants: normalizedGrants.some((entry) => entry.subject === subject),
+        scopes: Object.freeze([...tokenScopeSet])
+      });
+    },
     async authorize({ caseId, authContext, requiredScope }) {
-      const token = authContext?.bearerToken;
-      if (typeof token !== "string" || !token || !CASE_ID.test(caseId) || !Object.values(PRIVATE_CASE_SCOPES).includes(requiredScope)) {
+      if (!CASE_ID.test(caseId) || !Object.values(PRIVATE_CASE_SCOPES).includes(requiredScope)) {
         throw new PrivateCaseAccessDeniedError();
       }
-      let verified;
-      try {
-        verified = await jwtVerify(token, keySet, {
-          issuer: normalizedIssuer,
-          audience: normalizedAudience,
-          algorithms,
-          clockTolerance,
-          currentDate: new Date(now() * 1_000)
-        });
-      } catch {
-        throw new PrivateCaseAccessDeniedError();
-      }
-      if (!Number.isInteger(verified.payload.exp)) throw new PrivateCaseAccessDeniedError();
-      const subject = verified.payload.sub;
-      if (typeof subject !== "string" || !subject) throw new PrivateCaseAccessDeniedError();
-      const tokenScopeSet = tokenScopes(verified.payload);
+      const { subject, tokenScopeSet, payload } = await verifyToken(authContext?.bearerToken);
       const grant = normalizedGrants.find((entry) => entry.subject === subject && entry.caseIds.includes(caseId));
       if (!grant || !grant.scopes.includes(requiredScope) || !tokenScopeSet.has(requiredScope)) throw new PrivateCaseAccessDeniedError();
       return Object.freeze({
         allowed: true,
         principalId: subject,
         scopes: Object.freeze(grant.scopes.filter((scope) => tokenScopeSet.has(scope))),
-        tokenId: typeof verified.payload.jti === "string" ? verified.payload.jti : null,
+        tokenId: typeof payload.jti === "string" ? payload.jti : null,
         authorizationProvider: "oauth-jwt-case-acl"
       });
     }

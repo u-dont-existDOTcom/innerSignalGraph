@@ -140,6 +140,46 @@ test("hosted OAuth metadata, per-tool schemes, JWT verification, case ACL, and m
   assert.equal(JSON.stringify(wrongAudience.body).includes(PRIVATE_MARKER), false);
 });
 
+test("a signed-in account that cannot open a case gets a tool error, not a sign-in challenge", async (t) => {
+  const environment = await makeEnvironment(t);
+  const listener = await listenPrivateCaseMcp({
+    caseAccessService: environment.service,
+    oauth: { resource: RESOURCE, authorizationServers: [ISSUER], scopesSupported: ["case:read", "case:audit"] },
+    productionAuthReady: true
+  });
+  t.after(() => listener.close());
+
+  const assertNotAuthorized = (outcome) => {
+    assert.equal(outcome.response.status, 200);
+    assert.equal(outcome.response.headers.get("www-authenticate"), null);
+    assert.equal(outcome.body.result.isError, true);
+    assert.equal(outcome.body.result.structuredContent.code, "PRIVATE_CASE_NOT_AUTHORIZED");
+    assert.equal(Object.hasOwn(outcome.body.result, "_meta"), false);
+    assert.equal(JSON.stringify(outcome.body).includes(PRIVATE_MARKER), false);
+  };
+  // A case outside the account's grants and a handoff that does not exist answer alike.
+  assertNotAuthorized(await rpc(listener.url, "retrieve_case_evidence", { case_id: "synthetic-other-case", query: "oauth" }, environment.token));
+  assertNotAuthorized(await rpc(listener.url, "load_handoff", { handoff_id: "handoff:00000000-0000-4000-8000-000000000000" }, environment.token));
+
+  // Signing in again can still cure these, so they keep the challenge.
+  const sign = (claims, subject) => new SignJWT(claims)
+    .setProtectedHeader({ alg: "RS256", kid: "synthetic-key-1" })
+    .setIssuer(ISSUER)
+    .setAudience(RESOURCE)
+    .setSubject(subject)
+    .setIssuedAt()
+    .setExpirationTime("5m")
+    .sign(environment.privateKey);
+  const missingScope = await rpc(listener.url, "load_case_context", { case_id: CASE_ID }, await sign({ scope: "case:read" }, SUBJECT));
+  assert.equal(missingScope.response.status, 401);
+  assert.match(missingScope.response.headers.get("www-authenticate"), /error="invalid_token"/);
+  const noGrants = await rpc(listener.url, "retrieve_case_evidence", { case_id: "synthetic-other-case", query: "oauth" }, await sign({ scope: "case:read case:audit" }, "not-in-case-acl"));
+  assert.equal(noGrants.response.status, 401);
+  const invalid = await rpc(listener.url, "retrieve_case_evidence", { case_id: "synthetic-other-case", query: "oauth" }, "not-a-jwt");
+  assert.equal(invalid.response.status, 401);
+  assert.match(invalid.body.result._meta["mcp/www_authenticate"][0], /error="invalid_token"/);
+});
+
 test("production-ready server configuration cannot omit OAuth discovery", () => {
   const caseAccessService = { loadCaseContext() {} };
   assert.throws(() => createPrivateCaseMcpServer({ caseAccessService, productionAuthReady: true }), /requires OAuth metadata/);

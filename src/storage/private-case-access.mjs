@@ -134,6 +134,17 @@ export function createPrivateCaseAccessService({
 
   return Object.freeze({
     rootDir,
+    // Checks only the caller's token, without opening any case, so a transport can tell a denial
+    // that signing in again could cure from one it could not. Null means invalid, or unknown
+    // because the authorization provider cannot say.
+    async authenticate(authContext) {
+      if (typeof authorizationProvider.authenticate !== "function") return null;
+      let identity;
+      try { identity = await authorizationProvider.authenticate({ authContext }); }
+      catch { return null; }
+      if (!identity || !Array.isArray(identity.scopes)) return null;
+      return Object.freeze({ subjectHasGrants: identity.subjectHasGrants === true, scopes: Object.freeze([...identity.scopes]) });
+    },
     async loadPrivateRuntimeCase(caseId, authContext) {
       return read(caseId, authContext, async (store) => {
         const record = await store.load(caseId);

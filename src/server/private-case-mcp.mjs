@@ -240,6 +240,9 @@ const SERVER_INSTRUCTIONS = [
 ].join(" ");
 
 const AUDIT_TOOLS = new Set(["load_handoff", "load_case_context", "get_pending_candidate", "get_candidate_response", "get_source_artifact"]);
+const toolScopes = (name) => (AUDIT_TOOLS.has(name)
+  ? [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT]
+  : [PRIVATE_CASE_SCOPES.READ]);
 
 function advertisedTools(oauthEnabled) {
   if (!oauthEnabled) return [...PROTOCOL_TOOL_DEFINITIONS, ...TOOL_DEFINITIONS];
@@ -251,9 +254,7 @@ function advertisedTools(oauthEnabled) {
     ...tool,
     securitySchemes: Object.freeze([Object.freeze({
       type: "oauth2",
-      scopes: Object.freeze(AUDIT_TOOLS.has(tool.name)
-        ? [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT]
-        : [PRIVATE_CASE_SCOPES.READ])
+      scopes: Object.freeze(toolScopes(tool.name))
     })])
   }))];
 }
@@ -337,6 +338,30 @@ function authenticationRequiredResult(challenge) {
   return {
     content: [{ type: "text", text: "Authentication required for this private case tool." }],
     _meta: { "mcp/www_authenticate": [challenge] },
+    isError: true
+  };
+}
+
+// A denial is an authentication problem only when signing in again could cure it: no token, an
+// invalid one, an account with no case grants at all, or a token missing a scope this tool needs.
+// A valid token for an account that holds grants, with every scope the tool needs, was refused
+// for this case or handoff itself (a wrong ID, or one this account may not open). That gets a
+// tool error rather than a sign-in challenge, which would send the host into a pointless
+// re-authentication. The error is the same whether or not the case exists.
+async function deniedForSignedInAccount(service, token, name) {
+  if (!token || typeof service?.authenticate !== "function") return false;
+  try {
+    const identity = await service.authenticate({ bearerToken: token });
+    return identity?.subjectHasGrants === true && toolScopes(name).every((scope) => identity.scopes.includes(scope));
+  } catch {
+    return false;
+  }
+}
+
+function caseNotAuthorizedResult() {
+  return {
+    content: [{ type: "text", text: "This account cannot open that case or handoff, or it does not exist. Check the ID with the user; signing in again will not change this." }],
+    structuredContent: { code: "PRIVATE_CASE_NOT_AUTHORIZED" },
     isError: true
   };
 }
@@ -462,6 +487,9 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
       return send(res, 200, success(request.id, toolResult(value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
+        if (await deniedForSignedInAccount(caseAccessService, token, name)) {
+          return send(res, 200, success(request.id, caseNotAuthorizedResult()));
+        }
         const challenge = oauthChallenge(normalizedOauth, "invalid_token", "The access token is missing, invalid, or is not authorized for this case and scope.");
         return send(res, 401, success(request.id, authenticationRequiredResult(challenge)), {
           "www-authenticate": challenge
