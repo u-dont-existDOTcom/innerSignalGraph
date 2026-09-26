@@ -157,6 +157,23 @@ test("an unreadable or empty plugin build reports the protocol unavailable", asy
   assert.throws(() => loadTherapyProtocol({ pluginRoot: frontmatterOnly }), { code: "THERAPY_PROTOCOL_UNAVAILABLE" });
 });
 
+test("text that names a reference the server does not serve makes the protocol unavailable", async (t) => {
+  const inInstructions = await copyPlugin(t);
+  const skillDir = path.join(inInstructions, "skills/inner-signal-therapy");
+  await fs.writeFile(path.join(skillDir, "references/SYNTHETIC-UNSERVED.md"), "Synthetic reference.\n");
+  await fs.appendFile(path.join(skillDir, "SKILL.md"), "\nAlso read `references/SYNTHETIC-UNSERVED.md` before responding.\n");
+  assert.throws(() => loadTherapyProtocol({ pluginRoot: inInstructions }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: /skill instructions names references\/SYNTHETIC-UNSERVED\.md/u });
+
+  const inReference = await copyPlugin(t);
+  await fs.appendFile(path.join(inReference, "skills/inner-signal-therapy/references/GUIDE-REFERRALS.md"), "\nSee references/SYNTHETIC-UNSERVED.md.\n");
+  assert.throws(() => loadTherapyProtocol({ pluginRoot: inReference }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: /references\/GUIDE-REFERRALS\.md names references\/SYNTHETIC-UNSERVED\.md/u });
+
+  // The packaged skill itself names only served references.
+  const protocol = loadTherapyProtocol();
+  const named = new Set([protocol.instructions, ...protocol.files.map((file) => file.content)].flatMap((text) => text.match(/references\/[A-Za-z0-9._-]+\.md/gu) ?? []));
+  for (const reference of named) assert.ok(THERAPY_PROTOCOL_FILES.includes(reference), `${reference} is served`);
+});
+
 test("the hosted MCP image ships the packaged skill it serves", async () => {
   const dockerfile = await fs.readFile(path.join(root, "Dockerfile.private-case-mcp"), "utf8");
   assert.match(dockerfile, /^COPY plugins\/inner-signal-therapy \.\/plugins\/inner-signal-therapy$/mu);

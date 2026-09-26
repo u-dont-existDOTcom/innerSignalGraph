@@ -39,6 +39,21 @@ function requireContent(text, label) {
   return text;
 }
 
+const REFERENCE_MENTION = /references\/[A-Za-z0-9._-]+\.md/gu;
+
+// Every reference the served text names must itself be served. Otherwise a host would be told
+// to read a file it cannot see, so the protocol is reported unavailable instead of incomplete.
+function requireServedReferences(texts) {
+  const served = new Set(THERAPY_PROTOCOL_FILES);
+  for (const [label, text] of texts) {
+    for (const [mention] of text.matchAll(REFERENCE_MENTION)) {
+      if (!served.has(mention)) {
+        throw new TherapyProtocolUnavailableError(`The packaged ${label} names ${mention}, which this server does not serve.`);
+      }
+    }
+  }
+}
+
 export class TherapyProtocolUnavailableError extends Error {
   constructor(message, options) {
     super(message, options);
@@ -59,6 +74,7 @@ export function loadTherapyProtocol({ pluginRoot = DEFAULT_PLUGIN_ROOT } = {}) {
       const content = requireContent(fs.readFileSync(new URL(`skills/inner-signal-therapy/${relative}`, root), "utf8"), relative);
       return Object.freeze({ path: relative, sha256: sha256(content), bytes: Buffer.byteLength(content, "utf8"), content });
     });
+    requireServedReferences([["skill instructions", instructions], ...files.map((file) => [file.path, file.content])]);
     const instructionsSha256 = sha256(instructions);
     const protocolSha256 = sha256(JSON.stringify({
       protocol_id: THERAPY_PROTOCOL_ID,

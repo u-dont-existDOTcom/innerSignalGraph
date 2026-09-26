@@ -2,6 +2,10 @@
 
 Updated: 2026-09-26
 
+## Therapy protocol: unserved references fail closed — `claude/protocol-reference-guard-20260926`
+
+The hosted MCP rebuilt after #84 served instructions that name `references/ROLE-BELIEF-INTEGRITY.md` (added by #86) without serving that file. #87 added it to the served list, plus a CI check on the skill's always-read line. The server itself now refuses any build whose instructions or served files name a `references/…` file it doesn't serve: the protocol tools report `THERAPY_PROTOCOL_UNAVAILABLE` instead of serving an incomplete protocol. Tests cover both cases and confirm that the packaged skill names only served files. No therapy content changes. Redeploying the hosted MCP stays owner-gated.
+
 ## Owner decisions 2026-09-26: suicidal-state record and focus discipline — `claude/focus-discipline-owner-decisions-20260926`
 
 D1 (record only): the owner confirmed that `classifyTherapyTier` and the realization safety trigger deliberately do not escalate on `suicidal_state` ("no this was the point, it was detecting them wrong so i switched that nonsense off"); graph nodes and the immediate-protection check handle it. A test and code comments pin this. D2: focus discipline — questions that move the current focus forward are pursued, load-bearing side questions count as focus, real side questions are parked in durable `focus_discipline` case state and surfaced according to focus strength with a bounded pile-up, and drift is redirected warmly. The `common.mjs` protective-function probe is now gated by whether its answer serves the current focus. The rules ship in the plugin reference, and the MCP-served protocol now includes every always-read reference (fixing the unserved `ROLE-BELIEF-INTEGRITY.md`). Legacy snapshots are unaffected. Scripted runtime trajectories only; no live model or private case. Scope and verification: `tasks/focus-discipline-20260926/`. Merge is for the owner; no stable change, deployment or installation.
