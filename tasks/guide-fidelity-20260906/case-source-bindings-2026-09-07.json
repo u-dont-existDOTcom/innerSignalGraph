@@ -1,8 +1,8 @@
 {
-  "version": 1,
-  "sourceFile": "guides/inner-child-guide-2026-09-07.txt",
-  "sourceSha256": "00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f",
-  "purpose": "Add current article passages to grader context after E01-E12 source synchronization. Original cases, turns, required functions and calibration controls remain unchanged.",
+  "version": 2,
+  "sourceFile": "guides/inner-child-guide-2026-09-25.txt",
+  "sourceSha256": "2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1",
+  "purpose": "Bind the unchanged synthetic fidelity cases to the exact owner-supplied 2026-09-25 inner-child article while preserving their existing source refs, user turns, required functions and calibration controls.",
   "additionalSourceRefs": {
     "GF01": [
       "IC.CHECKING_LOOP"

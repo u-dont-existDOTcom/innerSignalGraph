@@ -10,6 +10,8 @@
 - `../package.json`: supported commands
 - `RELEASE-EVIDENCE.md`: stable-promotion evidence contract
 - `PRIVATE-CASE-CONTINUITY.md`: encrypted case APIs, fresh-session acceptance gate, repository MCP bridge, private handoff format, and blocking production/ChatGPT boundary
+- `CLAUDE-CONNECTOR.md`: InnerSignal in Claude as one MCP connector; the therapy protocol served from the deployed build, how map fixes go live, and one-time Claude OAuth setup
+- `INSTRUCTION-CONSUMER-MAP.md`: instruction source, consumer, destination, and enforcement boundaries across developer, application, and private-inference roles
 
 ## Worker → Brave Pro review
 

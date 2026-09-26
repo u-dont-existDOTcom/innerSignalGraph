@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.REALIZATION_LOVE_INTEGRATION
 status: owner-approved
 domain: inner-child
-base_record_sha256: da3640b9fab39ee8f41b3345bd3fd98f92e728fe672f294fb2b48c3d760c89e8
-source_file_sha256: 1d1d78a359df20cddf3aac6f5f93bb3badda84b7bcf7bcff085d8ee9f75e0dd1
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+base_record_sha256: 57a5b5a3292b27f6955070bd47458a68eccbe3b1d4f2bda006a083ee411ab472
+source_file_sha256: bc265312b2072aacbd2e6d4307c3ae7e722051a9cd4716bc91a1e33f38834d6e
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # AMEND.IC.REALIZATION_LOVE_INTEGRATION
@@ -17,13 +17,13 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
 
 ```json
 {
-  "approvedAt": "2026-09-06",
+  "approvedAt": "2026-09-25",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
     "status": "owner-approved",
     "text": "Spiritual realization, religious rebirth, meditation, mystical experience, or another opening can reveal a much deeper horizon of wellbeing and thereby deepen compassion, but do not let mystery outrun love indefinitely. Respect genuine realization without treating attainment claims, doctrines about love, or group warmth as proof that love is actually accessible. Test whether the opening deepens and widens love, reaches the inner child, and becomes practical protection, truth, service, relationship, Hearthwork, and community participation. Community can precede, accompany, or follow a breakthrough; do not assume that finding loving people is always what creates access to deep love."
   },
-  "version": "2026-09-06-r7"
+  "version": "2026-09-25-music-access-r1"
 }
 ```

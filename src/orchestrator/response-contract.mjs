@@ -2,6 +2,12 @@ import {
   romanceReferenceMentions,
   isCanonicalRomanceReferenceToken
 } from "../core/romance-reference.mjs";
+import {
+  CHILD_CONTACT_GATES,
+  ACTIVE_EXERCISE_EXIT,
+  childContactViolations,
+  restrictedCompatibilityFallback
+} from "../case-formulation/protective-compatibility.mjs";
 
 function text(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -127,7 +133,7 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   }
 
   const answerBody = paragraphs.join("\n\n").trim();
-  const userFacingAnswer = [answerBody, question].filter(Boolean).join("\n\n");
+  let userFacingAnswer = [answerBody, question].filter(Boolean).join("\n\n");
   const rendererQuestion = text(realization?.next_question);
   const requiredNodeIds = requiredRealizationNodeIds(plan);
   const normalizedAnswer = answerBody.replace(/\s+/g, " ").trim();
@@ -151,6 +157,10 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
   const pathContract = plan?.pathPerformanceContract;
   const prohibitedNodeIds = pathContract?.prohibit_prior_exercise
     ? reportedRealizations.map(item => text(item?.id)).filter(id => id && !id.startsWith("POLICY.") && !requiredNodeIds.includes(id)) : [];
+  const preparationOnly = plan?.executionContract?.preparationOnly ?? null;
+  const preparationLeakNodeIds = preparationOnly
+    ? reportedRealizations.map(item => text(item?.id)).filter(id => id && !id.startsWith("POLICY.") && !requiredNodeIds.includes(id))
+    : [];
   const relational = relationalPolicyMarkers(plan);
   const relationalTracked = Boolean(plan?.pathPerformance?.relational_readiness || relational.required.length || relational.forbidden.length);
   const missingRelationalPolicyMarkers = relational.required.filter(id => !realizedNodeIds.includes(id));
@@ -184,15 +194,42 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
     && (!romanceReferenceShown || !romanceReferenceAllowed || !romanceReferenceCanonical || !romanceReferenceMarkerValid);
   const romanceGuideAdherence = !missingRomanceGuideReferenceMarker
     && !forbiddenRomanceGuideReference && !unsupportedRomanceGuideReferenceMarker;
-  const pathAdherence = (!pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0))
+  const compatibility = plan?.protectiveCompatibility ?? null;
+  const compatibilityContract = plan?.protectiveCompatibilityContract ?? null;
+  const compatibilityRestricted = Boolean(compatibilityContract?.prohibitChildContact
+    && CHILD_CONTACT_GATES.includes(compatibility?.gate)
+    && compatibility.gate !== "NOT_BLOCKED");
+  const compatibilityViolations = compatibilityRestricted ? childContactViolations(userFacingAnswer) : [];
+  const compatibilityAllowed = new Set(compatibilityContract?.allowedNodeIds ?? []);
+  const prohibitedCompatibilityNodeIds = compatibilityRestricted
+    ? reportedRealizations.map(item => text(item?.id)).filter(id => id && !id.startsWith("POLICY.THREAT_PATHWAY.") && !compatibilityAllowed.has(id))
+    : [];
+  const compatibilityFallbackRequired = compatibilityRestricted && (compatibilityContract.forceFallback
+    || compatibilityViolations.length > 0 || prohibitedCompatibilityNodeIds.length > 0);
+  let compatibilityFallbackApplied = false;
+  let effectiveAnswerBody = answerBody;
+  let effectiveQuestion = question;
+  if (compatibilityFallbackRequired) {
+    const fallback = restrictedCompatibilityFallback(compatibility);
+    effectiveAnswerBody = compatibilityContract.activeExerciseExitRequired
+      ? `${ACTIVE_EXERCISE_EXIT}\n\n${fallback.answer}`
+      : fallback.answer;
+    effectiveQuestion = fallback.next_question;
+    userFacingAnswer = [effectiveAnswerBody, effectiveQuestion].filter(Boolean).join("\n\n");
+    compatibilityFallbackApplied = true;
+  }
+  const compatibilityAdherence = !compatibilityRestricted || compatibilityFallbackApplied
+    || (compatibilityViolations.length === 0 && prohibitedCompatibilityNodeIds.length === 0);
+  const pathAdherence = compatibilityFallbackApplied || ((!pathContract || (missingNodeIds.length === 0 && prohibitedNodeIds.length === 0 && preparationLeakNodeIds.length === 0))
     && missingRelationalPolicyMarkers.length === 0 && forbiddenRelationalPolicyMarkers.length === 0
     && !missingRepresentationPolicyMarker && !forbiddenPriorRepresentationPolicyMarker && unexpectedRepresentationPolicyMarkers.length === 0 && symbolicOverclaims.length === 0
-    && !missingThreatPathwayMarker && unexpectedThreatPathwayMarkers.length === 0 && romanceGuideAdherence;
+    && !missingThreatPathwayMarker && unexpectedThreatPathwayMarkers.length === 0 && romanceGuideAdherence
+    && compatibilityAdherence);
 
   return {
     answer: userFacingAnswer,
-    answer_body: answerBody,
-    next_question: question,
+    answer_body: effectiveAnswerBody,
+    next_question: effectiveQuestion,
     responseContract: {
       version: "response-question-contract-v3",
       canonicalQuestion: question,
@@ -229,9 +266,20 @@ export function enforceResponseContract(realization, { plan, adjudication } = {}
         forbiddenRomanceGuideReference,
         unsupportedRomanceGuideReferenceMarker
       } : {}),
-      ...(pathContract || requiredThreatPathwayMarker || relational.required.length || relational.forbidden.length || romanceGuide ? {
+      ...(compatibility ? {
+        protectiveCompatibilityGate: compatibility.gate,
+        protectiveCompatibilityRoute: compatibility.route,
+        childContactViolations: compatibilityViolations,
+        prohibitedCompatibilityNodeIds: [...new Set(prohibitedCompatibilityNodeIds)],
+        compatibilityFallbackApplied,
+        compatibilityAdherencePassed: compatibilityAdherence,
+        compatibilitySemanticLimit: "PATTERN_BACKSTOP_REQUIRES_EVIDENCE_BOUND_MODEL_AUDIT_AND_HUMAN_REVIEW"
+      } : {}),
+      ...(pathContract || requiredThreatPathwayMarker || relational.required.length || relational.forbidden.length || romanceGuide || compatibility ? {
         pathPerformanceAdherencePassed: pathAdherence,
         prohibitedRealizationNodeIds: [...new Set(prohibitedNodeIds)],
+        preparationOnlyNodeId: preparationOnly?.nodeId ?? null,
+        preparationLeakNodeIds: [...new Set(preparationLeakNodeIds)],
         semanticAdherence: relationalTracked ? "DECLARED_POLICY_MARKERS_ARE_VERBATIM_GROUNDED_BUT_REQUIRE_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW" : "REQUIRES_SEPARATE_HUMAN_USEFULNESS_AND_HARM_REVIEW"
       } : {})
     }

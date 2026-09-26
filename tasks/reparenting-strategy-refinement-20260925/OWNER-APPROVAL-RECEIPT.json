@@ -1,0 +1,19 @@
+{
+  "contractVersion": "reparenting-strategy-owner-approval-v1",
+  "approvalDate": "2026-09-25",
+  "approvalScope": "map-and-rules",
+  "ownerInstruction": "approved map/rules",
+  "originalProposalId": "reparenting-strategy-refinement-20260925",
+  "originalProposalPacketSha256": "645dcd509b331970e2192e38f5d6d5fce15bd85deb80fc90dabf7edf20d5814f",
+  "rebasedProposalId": "reparenting-strategy-refinement-20260925-r2",
+  "rebasedProposalPacketSha256": "c87655f1341651a61e0b9c3de42581591ef5567b66a8a20a9c5c2bb1afd1e16f",
+  "approvedPacketId": "authoring-reparenting-strategy-refinement-20260925-r2",
+  "approvedPacketSha256": "4b5361091cd3ef722d35d4eb482a2fd78784a805fdbab59bef7b14f961a11ab9",
+  "decisionCardCount": 25,
+  "decisionContractsIdenticalAcrossRebase": true,
+  "semanticSelfApproval": false,
+  "guideEditorialInsertion": {
+    "ownerKeptInPublishedDraft": true,
+    "repositoryExactSourceUpdatedAfterInsertion": false
+  }
+}

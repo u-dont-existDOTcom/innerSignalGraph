@@ -1,0 +1,32 @@
+{
+  "approvedPacket": {
+    "approved": true,
+    "path": "approval/authoring-goodwill-bridge-20260914-approved.zip",
+    "sha256": "4d5a0e1a59aa2d0e9574db88a1f690f1e6dc1b1ddc7cf0c2e36001ed5229a7ab",
+    "verified": true
+  },
+  "boundaries": {
+    "deployAuthorized": false,
+    "installAuthorized": false,
+    "mergeAuthorized": true,
+    "reconciliationAuthorized": true,
+    "stablePromotionAuthorized": false
+  },
+  "contractVersion": "inner-signal-owner-approval-record-v1",
+  "decision": {
+    "allApproved": true,
+    "approvalDecisionSha256": "0b1c174190671a60b482c8a4606624fa9b3e6752c7e825b0455e39ec61dc5488",
+    "authority": "owner-explicit-chat-approval",
+    "decidedAt": "2026-09-14T00:00:39.000Z",
+    "ownerNote": "Owner explicitly approved the exact goodwill bridge directive in Chat.",
+    "scope": "approve-all-exact-decision-cards",
+    "status": "approved"
+  },
+  "packetId": "authoring-goodwill-bridge-20260914",
+  "proposalId": "goodwill-bridge-20260914",
+  "sourcePacket": {
+    "decisionCards": 3,
+    "path": "candidate/packet/proposal.zip",
+    "sha256": "04674808d8c8cd84a22180151e1eacfd73b6f1626db7eb374c6bb7c7e0c38c47"
+  }
+}

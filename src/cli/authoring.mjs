@@ -108,7 +108,7 @@ function parseOptions(args, { repeatable = new Set() } = {}) {
     const value = args[index + 1];
     if (!flag?.startsWith("--") || value === undefined || value.startsWith("--")) throw Object.assign(new Error(`Invalid option sequence near ${flag ?? "(end)"}.`), { code: "AUTHORING_ARGUMENT_INVALID" });
     const name = flag.slice(2);
-    if (!/^[a-z][a-z-]*$/.test(name)) throw Object.assign(new Error(`Invalid option name: ${flag}.`), { code: "AUTHORING_ARGUMENT_INVALID" });
+    if (!/^[a-z][a-z0-9-]*$/.test(name)) throw Object.assign(new Error(`Invalid option name: ${flag}.`), { code: "AUTHORING_ARGUMENT_INVALID" });
     if (repeatable.has(name)) options[name] = [...(options[name] ?? []), value];
     else if (Object.hasOwn(options, name)) throw Object.assign(new Error(`Duplicate option: ${flag}.`), { code: "AUTHORING_ARGUMENT_INVALID" });
     else options[name] = value;

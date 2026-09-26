@@ -1,0 +1,3046 @@
+{
+  "contractVersion": "guide-graph-v1",
+  "graphId": "inner-child-directed-graph",
+  "guideId": "inner-child-guide",
+  "version": "2026-08-09-r5",
+  "description": "Executable pilot graph derived from the latest inner-child guide plus owner-approved amendments.",
+  "nodes": [
+    {
+      "id": "IC.SAFETY_ORIENTATION",
+      "title": "Outside safety and present orientation first",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 100,
+      "activation": {
+        "any": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.BEFORE_DEEP",
+        "IC.REGULATION_BEFORE_DIALOGUE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Pause deeper dialogue; orient to the actual room, body, time, and available human support.",
+        "Use eyes-open, present-focused contact and the smallest reversible action.",
+        "When self-harm action is imminent, prioritize distance from means, immediate human contact and urgent in-person help. Defer deeper or metaphysical inquiry until immediate safety and reflective capacity are restored."
+      ],
+      "avoid": [
+        "Do not deepen, interpret memories, or require an inner-child response."
+      ],
+      "successSignals": [
+        "The person can stop, orient, and return to ordinary life."
+      ],
+      "tags": [
+        "safety",
+        "orientation"
+      ],
+      "effects": {
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE",
+          "IC.GUIDE_LATER",
+          "IC.FORGIVENESS_LATER",
+          "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+          "IC.PRECIOUS_HUMAN_OPPORTUNITY"
+        ],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Present danger and past childhood fear are different problems."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim a hidden adult capacity or hidden progress."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.NEUTRAL_WITNESS",
+      "title": "Begin with a neutral witness",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 95,
+      "activation": {
+        "any": [
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low"
+            ]
+          },
+          {
+            "field": "coherent_child_state",
+            "op": "in",
+            "value": [
+              "unclear",
+              "absent"
+            ]
+          },
+          {
+            "field": "activation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "dissociation",
+            "op": "in",
+            "value": [
+              "mild",
+              "high"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "witness_capacity",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.NEUTRAL_WITNESS",
+        "IC.BORROW_ADULT",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Name that a younger or distressed state is present and that something can notice it, without pretending warmth or wisdom already exists."
+      ],
+      "avoid": [
+        "Do not turn witnessing into proof that a complete inner adult is present."
+      ],
+      "successSignals": [
+        "A small amount of psychological distance appears without losing present orientation."
+      ],
+      "tags": [
+        "borrowed-adulthood",
+        "witness"
+      ],
+      "effects": {
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Witnessing is a starting function, not evidence that the whole adult role is built.",
+          "When the person can already observe and distinguish the internal positions, do not send them back through witness bootstrap merely because the adult role remains incomplete."
+        ],
+        "forbiddenOverclaims": [
+          "Do not declare the calm Self or adult already exists underneath everything."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.SOLAR_PLEXUS_RELAXATION",
+      "title": "Relax solar-plexus or abdominal holding before dialogue",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 90,
+      "activation": {
+        "any": [
+          {
+            "field": "solar_plexus_tension",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "activation",
+            "op": "eq",
+            "value": "high"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.REGULATION_BEFORE_DIALOGUE",
+        "IC.HEART_SOLAR_LOOP",
+        "AMEND.SOM.PREP_MODALITIES"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use non-forced longer exhales, gentle self-massage, or another low-dose somatic method to reduce holding around the solar plexus or abdomen.",
+        "Treat softening as an opening for love or presence, not an order to enter memories."
+      ],
+      "avoid": [
+        "Do not force breath, chase intensity, or assume tension proves a hidden memory."
+      ],
+      "successSignals": [
+        "The body softens without air hunger, flooding, or loss of orientation."
+      ],
+      "tags": [
+        "regulation",
+        "solar-plexus",
+        "love-access"
+      ],
+      "effects": {
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Relaxation may remove a bodily barrier but does not by itself repair credibility or resolve relational conflict."
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim that energy has definitively moved or trauma has been released."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.BORROW_LOVE",
+      "title": "Borrow already-accessible love without flattening its depth",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 92,
+      "activation": {
+        "all": [
+          {
+            "field": "love_access",
+            "op": "in",
+            "value": [
+              "accessible",
+              "limited"
+            ]
+          }
+        ],
+        "any": [
+          {
+            "field": "self_directed_love",
+            "op": "in",
+            "value": [
+              "unsafe",
+              "inaccessible",
+              "unknown"
+            ]
+          },
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "partial"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.LOVE_MISSING",
+        "IC.HEART_SOLAR_LOOP",
+        "AMEND.IC.BORROW_LOVE_EXTERNAL",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.",
+        "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.",
+        "Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love.",
+        "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.",
+        "Remembered or imagined caring company is an alternative when receiving support is more accessible than generating affection. Do not assume safe parental imagery or force transfer."
+      ],
+      "avoid": [
+        "Do not manufacture warmth or make the loved being responsible for the session."
+      ],
+      "successSignals": [
+        "The capacity for love becomes experientially available without coercion."
+      ],
+      "tags": [
+        "love",
+        "borrowed-adulthood",
+        "nurturer"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not call reluctance proof that the child rejects love."
+        ],
+        "requiredNuance": [
+          "The problem may be safety of receiving love rather than absence of love.",
+          "Ordinary affection or care and profound transpersonal love are distinct resources; either may be therapeutically useful, and one must not be used to erase the distinction the user is making."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.BEST_FRIEND_PERSPECTIVE",
+      "title": "Borrow the best-friend standard of care",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 88,
+      "activation": {
+        "any": [
+          {
+            "field": "self_criticism",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "partial"
+            ]
+          },
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "conversation"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.BEST_FRIEND_PROMPT",
+        "IC.BORROW_ONE_FUNCTION",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Ask: 'What would I tell my best friend in this exact situation?'",
+        "Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action.",
+        "If the person wants another caring vantage point, offer a wiser future self or supportive company as an alternative, not a compulsory addition. Preserve changed understanding, felt embodiment and companionship as different possible benefits."
+      ],
+      "avoid": [
+        "Do not use the friend standard to shame the person for not already treating themselves that way."
+      ],
+      "successSignals": [
+        "One concrete sentence or action becomes available."
+      ],
+      "tags": [
+        "best-friend",
+        "borrowed-adulthood",
+        "perspective"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.BORROW_ONE_FUNCTION",
+      "title": "Borrow one bounded adult function",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 94,
+      "activation": {
+        "any": [
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "partial"
+            ]
+          },
+          {
+            "field": "parent_imagery",
+            "op": "in",
+            "value": [
+              "critical",
+              "frightening",
+              "blank"
+            ]
+          },
+          {
+            "field": "self_directed_love",
+            "op": "in",
+            "value": [
+              "unsafe",
+              "inaccessible"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.ADULT_APPRENTICE",
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.",
+        "Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.",
+        "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness.",
+        "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.",
+        "A real past occasion of responding well or a fallible compassionate future perspective may supply one bounded function. Offer the relevant alternative only if useful; do not demand past success or a perfect state."
+      ],
+      "avoid": [
+        "Do not demand an ideal parent image or let the helper become authority over memories, medicine, relationships, spiritual conclusions, or future.",
+        "Do not generalize one admirable function, true teaching, healing result, or spiritual gift into global trustworthiness."
+      ],
+      "successSignals": [
+        "The person can perform one adult function without pretending the whole role or the source’s wider authority is available."
+      ],
+      "tags": [
+        "borrowed-adulthood",
+        "nurturer",
+        "protector",
+        "guide",
+        "adult-side-borrowing"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim the inner adult has already been built."
+        ],
+        "requiredNuance": [
+          "Adult identity may form after behavior.",
+          "Borrowed adulthood can support the part attempting the adult role, not only the younger state.",
+          "Borrow only in the domain and dose the source’s track record has earned; competence or warmth in one domain does not silently transfer authority to another."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.ADULT_APPRENTICE",
+      "title": "Move from receiving care to doing five percent",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 86,
+      "activation": {
+        "all": [
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "partial"
+            ]
+          },
+          {
+            "field": "support_available",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.ADULT_APPRENTICE",
+        "IC.RELATIONSHIP",
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Name what the helper did, choose five percent to do personally, and test one action in ordinary life.",
+        "Gradually hand the role and the judgment behind it back to the person so they become more able to check, disagree, revise, and act without the helper.",
+        "Name what capacity the person exercised, what help remained useful, and what the real-world attempt taught them; independence does not require refusing appropriate support. Care includes interest and delight, not duty alone, and should support exploration outside the exercise."
+      ],
+      "avoid": [
+        "Do not create permanent practical or epistemic authority dependency."
+      ],
+      "successSignals": [
+        "One protective or nurturing act occurs without the helper present, and the person can evaluate the helper without needing the helper’s permission."
+      ],
+      "tags": [
+        "adult-apprentice",
+        "five-percent",
+        "relationship"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": [
+          "The helper hands back judgment as well as behavior; successful apprenticeship should make independent checking easier rather than making the helper harder to question."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.MEET_GUARD",
+      "title": "Meet the protective response before pushing deeper",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 93,
+      "activation": {
+        "any": [
+          {
+            "field": "protective_response",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "urge_to_escape",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "dissociation",
+            "op": "in",
+            "value": [
+              "mild",
+              "high"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.START_WHATEVER",
+        "IC.GUARDS",
+        "IC.BOTTOM_UP_SEQUENCE",
+        "IC.ESCAPE_URGE",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
+        "Ask what the part predicts will happen if it steps back; acknowledge before answering.",
+        "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking."
+      ],
+      "avoid": [
+        "Do not classify the voice more confidently than the transcript supports or push past it."
+      ],
+      "successSignals": [
+        "The protective response can be heard without running the session or being exiled."
+      ],
+      "tags": [
+        "protector",
+        "guard",
+        "avoidance"
+      ],
+      "effects": {
+        "deferNodes": [
+          "IC.DEEP_CHILD_DIALOGUE"
+        ],
+        "blockNodes": [],
+        "requiredNuance": [
+          "The contempt may be child, protector, adult evaluator, or blend."
+        ],
+        "forbiddenOverclaims": [
+          "Do not definitively label a cynical voice as a guard."
+        ],
+        "deferralUnless": [
+          {
+            "field": "guard_engagement",
+            "op": "eq",
+            "value": "willing_to_allow"
+          }
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.CREDIBILITY_REPAIR",
+      "title": "Repair credibility through non-defensive follow-through",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 96,
+      "activation": {
+        "any": [
+          {
+            "field": "credibility_conflict",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "self_directed_love",
+            "op": "eq",
+            "value": "unsafe"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.PROTECTOR_VISIBLE",
+        "IC.VOW",
+        "IC.BOTTOM_UP_SEQUENCE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Hear the angry side's exact accusation before trying to resolve the conflict: what does it believe the younger version should have done, at what age, and with what available capacity?",
+        "Treat skeptical or contemptuous questions as data and, when appropriate, literal requests for evidence.",
+        "Distinguish no track record from an adverse track record. If the younger state is already pointing to how adult life turned out, credibility repair means building counterevidence against an existing negative assessment rather than acting as though evidence starts at zero.",
+        "Make one ordinary protective act visible and do not demand gratitude, trust, or emotional change.",
+        "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently."
+      ],
+      "avoid": [
+        "Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed."
+      ],
+      "successSignals": [
+        "Promises and actions begin to align; an adverse track record starts accumulating credible counterevidence without demanding immediate trust."
+      ],
+      "tags": [
+        "credibility",
+        "protector",
+        "repair"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "Action is essential but not the sole repair; accurate responsibility and non-defensive listening also matter.",
+          "Relaxation may reduce nervous-system charge, but it does not by itself repair a credibility conflict or change a contradictory track record.",
+          "The sarcastic question can be both contempt and a legitimate literal request for evidence; answer it concretely rather than arguing with it.",
+          "A pre-existing adverse track record is different from having no track record yet."
+        ],
+        "forbiddenOverclaims": [
+          "Do not say the child is rejecting love when it may be rejecting an unsafe or unproven source.",
+          "Do not describe the problem as simply lacking a track record when the user has already supplied adverse evidence about how things went."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+      "title": "Separate developmental ages and responsibility",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 91,
+      "activation": {
+        "any": [
+          {
+            "field": "age_agency_ambiguity",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "resentment_toward_younger_self",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.INHERITED_PARENT",
+        "IC.BOTTOM_UP_SEQUENCE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Identify which age or version is being blamed and what opportunity it supposedly failed to use.",
+        "Allocate responsibility according to actual developmental capacity and later constrained agency."
+      ],
+      "avoid": [
+        "Do not flatten literal childhood, adolescence, younger adulthood, and a present child-state into one powerless category."
+      ],
+      "successSignals": [
+        "The accusation becomes specific enough to evaluate rather than globally prosecuting the child."
+      ],
+      "tags": [
+        "age",
+        "agency",
+        "responsibility"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": "Which age or version of you is the resentment actually directed toward, and what opportunity do you believe that version failed to use?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
+    },
+    {
+      "id": "IC.PROTECTOR_ACTION",
+      "title": "Make the Protector visible in ordinary life",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 90,
+      "activation": {
+        "any": [
+          {
+            "field": "credibility_conflict",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "partial"
+            ]
+          },
+          {
+            "field": "protective_response",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.PROTECTOR_VISIBLE",
+        "IC.ADULT_APPRENTICE",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
+        "Report the action without requiring the younger state to trust it yet.",
+        "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise."
+      ],
+      "avoid": [
+        "Do not choose an action so large that failure becomes new evidence of unreliability."
+      ],
+      "successSignals": [
+        "One small promise is kept.",
+        "The action or its review provides truthful information about what supports protection and follow-through, including when a reasonable plan needs changing."
+      ],
+      "tags": [
+        "protector",
+        "ordinary-life",
+        "credibility"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.GENTLE_SELF_HYPNOSIS",
+      "title": "Use gentle present-focused self-hypnosis only as preparation",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 76,
+      "activation": {
+        "all": [
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "gentle_practice",
+              "hypnosis"
+            ]
+          },
+          {
+            "field": "deep_work_readiness",
+            "op": "notIn",
+            "value": [
+              "yes"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.ESCAPE_URGE",
+        "AMEND.IC.EARLY_GENTLE_HYPNOSIS"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Keep the practice present-focused: calming, warmth, non-cruelty, borrowed adulthood, or a simple Protector rehearsal."
+      ],
+      "avoid": [
+        "Do not enter memories, immersive child dialogue, or suggestive origin stories."
+      ],
+      "successSignals": [
+        "The person remains oriented, can stop, and returns to ordinary functioning."
+      ],
+      "tags": [
+        "hypnosis",
+        "gentle",
+        "preparation"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.DEEP_CHILD_DIALOGUE",
+      "title": "Enter deeper child dialogue only when capacity is adequate",
+      "kind": "decision-node",
+      "tier": 6,
+      "priority": 70,
+      "activation": {
+        "all": [
+          {
+            "field": "current_intent",
+            "op": "in",
+            "value": [
+              "deep_dialogue",
+              "memory_processing",
+              "hypnosis"
+            ]
+          },
+          {
+            "field": "deep_work_readiness",
+            "op": "eq",
+            "value": "yes"
+          }
+        ],
+        "none": [
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.BEFORE_DEEP",
+        "IC.ALTERED_STATES",
+        "AMEND.SOM.EARLY_INNER_CHILD_PARALLEL",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use deeper dialogue only when the person can remain present, stop voluntarily, and recover afterward.",
+        "Keep memory-source distinctions explicit.",
+        "Follow the current emotional task, not a generic demand to go deeper: clarify an unclear feeling, respond to self-treatment, hear an unmet need, or offer care according to the reported marker. Notice partial change and check fit before progressing; do not restart the same exercise after a meaningful shift."
+      ],
+      "avoid": [
+        "Do not interrogate imagery or imply emotional truth proves historical fact."
+      ],
+      "successSignals": [
+        "The session increases capacity and functioning rather than compulsion or disorientation."
+      ],
+      "tags": [
+        "deep-work",
+        "child-dialogue",
+        "memory"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.IDENTITY_FORMATION",
+      "title": "Build identity through private preference and experimental play",
+      "kind": "decision-node",
+      "tier": 5,
+      "priority": 80,
+      "activation": {
+        "any": [
+          {
+            "field": "coherent_child_state",
+            "op": "in",
+            "value": [
+              "unclear",
+              "absent"
+            ]
+          },
+          {
+            "field": "identity_blur",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.NO_CLEAR_CHILD",
+        "IC.IDENTITY_PLAY",
+        "IC.CHILD_BAD_THINGS",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use private journaling, time without external cues, nature, preference recovery, and low-stakes experiments.",
+        "Protect the beginner from immediate talent judgments.",
+        "Make room for being interested in and enjoying the child, not only correcting or protecting them. A secure base supports safe exploration; outward competence alone does not demonstrate warmth or vitality."
+      ],
+      "avoid": [
+        "Do not assume a fully formed true self is merely hidden and waiting to be uncovered."
+      ],
+      "successSignals": [
+        "Preferences become more stable across relationships and settings."
+      ],
+      "tags": [
+        "identity",
+        "play",
+        "differentiation"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.DIFFERENTIATION",
+      "title": "Untangle belonging from self-betrayal",
+      "kind": "decision-node",
+      "tier": 6,
+      "priority": 65,
+      "activation": {
+        "any": [
+          {
+            "field": "belonging_pressure",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "identity_blur",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.DIFFERENTIATION",
+        "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Notice where other people’s emotions and group expectations replace personal knowing.",
+        "Notice when praise, pity, fear, attraction, belonging, or resonance changes what seems true; if felt certainty and evidence diverge, use intuition/trust calibration rather than treating either feeling or consensus as automatic authority.",
+        "Practice selective belonging, disagreement, and leaving when staying requires disappearance."
+      ],
+      "avoid": [
+        "Do not equate differentiation with isolation or automatic permanent cutoff.",
+        "Do not call every change of mind manipulation; notice when social or emotional pressure changes the weighting of evidence, then investigate."
+      ],
+      "successSignals": [
+        "The person remains recognizably themselves across settings and can update beliefs without having their knowing automatically replaced by approval, fear, attraction, or group pressure."
+      ],
+      "tags": [
+        "differentiation",
+        "belonging",
+        "identity"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": [
+          "Differentiation includes epistemic continuity: the person can notice when praise, pity, fear, attraction, belonging, or resonance suddenly changes what they think they know without either obeying or suppressing the feeling automatically."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.GUIDE_LATER",
+      "title": "Bring in direction after warmth, safety, and a coherent child exist",
+      "kind": "decision-node",
+      "tier": 7,
+      "priority": 55,
+      "activation": {
+        "all": [
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "partial",
+              "available"
+            ]
+          },
+          {
+            "field": "coherent_child_state",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "oriented"
+          }
+        ],
+        "any": [
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "integration"
+          },
+          {
+            "field": "guide_readiness",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.GUIDE_LATER",
+        "IC.THREE_FUNCTIONS",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
+        "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.",
+        "When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion.",
+        "Borrow from outer guides selectively. A strong intuitive click is information, not proof; when intuition and evidence diverge or outside authority starts displacing independent judgment, route to intuition/trust calibration before increasing the stakes."
+      ],
+      "avoid": [
+        "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing.",
+        "Do not escalate spiritual abstraction or attainment because love feels inaccessible.",
+        "Do not treat explicit demands for surrender as the only authority risk; voluntary judgment transfer can occur through praise, mirroring, pity, attraction, rescue hopes, confession, humor, or spiritual charisma.",
+        "Do not use an intuitive or mystical style as an exemption from ordinary contradiction, track-record, scope, and boundary checks."
+      ],
+      "successSignals": [
+        "Direction increases life participation without exiling the child, and outside guidance strengthens rather than replaces the person’s capacity to evaluate truth, boundaries, and trust."
+      ],
+      "tags": [
+        "guide",
+        "integration",
+        "meaning"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not say a guide’s self-awareness about their flaws proves those flaws are currently repaired or makes consequential trust safe."
+        ],
+        "requiredNuance": [
+          "Spiritual exploration is optional when the person’s current horizon feels sufficient; when realization is already present, assess whether it deepens accessible love and reaches the child rather than assuming attainment itself integrates the wound.",
+          "An external guide may contribute real wisdom while remaining trustworthy only in a limited domain. The internal Guide keeps authority corrigible by evidence and does not outsource true/false judgment to charisma, intuition, or specialness."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.PHOTO_EPISTEMIC_CAUTION",
+      "title": "Keep photograph and memory sources separate",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 92,
+      "activation": {
+        "any": [
+          {
+            "field": "memory_source_risk",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "photo_work"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.PHOTOS"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Separate direct memory, report from another person, inference, dream, image, metaphor, altered-state impression, and uncertainty.",
+        "Stop if the practice produces compulsive certainty or dysregulation."
+      ],
+      "avoid": [
+        "Do not ask what abuse must have happened or accuse someone from material generated in the practice."
+      ],
+      "successSignals": [
+        "Emotional meaning can be used without converting uncertain material into historical fact."
+      ],
+      "tags": [
+        "memory",
+        "epistemic",
+        "photo"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.ALTERED_STATE_GATE",
+      "title": "Build sober capacity before using altered states to deepen",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 89,
+      "activation": {
+        "any": [
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "current_intent",
+            "op": "eq",
+            "value": "altered_state"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.ALTERED_STATES",
+        "IC.ESCAPE_URGE",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Prefer sober Nurturer and Protector capacity first or grounded support that does not seize authority.",
+        "Return to ordinary orientation when the state outruns the ability to hold what appears."
+      ],
+      "avoid": [
+        "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.",
+        "Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness."
+      ],
+      "successSignals": [
+        "The person can stop, orient, and integrate without escalating use."
+      ],
+      "tags": [
+        "altered-state",
+        "gate",
+        "epistemic"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [],
+        "requiredNuance": [
+          "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.FORGIVENESS_LATER",
+      "title": "Approach forgiveness without bypassing accountability",
+      "kind": "decision-node",
+      "tier": 7,
+      "priority": 50,
+      "activation": {
+        "all": [
+          {
+            "field": "forgiveness_interest",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "deep_work_readiness",
+            "op": "eq",
+            "value": "yes"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "IC.FORGIVENESS"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Use responsibility, remorse, rectification, and release for self-forgiveness; preserve boundaries and consequences for others."
+      ],
+      "avoid": [
+        "Do not force forgiveness early or use causal understanding to erase moral judgment."
+      ],
+      "successSignals": [
+        "Understanding changes the emotional relationship without erasing the harm."
+      ],
+      "tags": [
+        "forgiveness",
+        "accountability",
+        "integration"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [],
+        "forbiddenOverclaims": []
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.DEEP_LOVE_TO_CHILD",
+      "title": "Bring already-accessible deep love to the younger self without force",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 95,
+      "activation": {
+        "all": [
+          {
+            "field": "deep_love_access",
+            "op": "in",
+            "value": [
+              "intermittent",
+              "reliable"
+            ]
+          },
+          {
+            "field": "child_love_inclusion",
+            "op": "in",
+            "value": [
+              "untested",
+              "blocked",
+              "partial"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.DEEP_LOVE_TO_CHILD",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "IC.HEART_SOLAR_LOOP",
+        "IC.BOTTOM_UP_SEQUENCE"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Contact the real profound love first in whatever already-valid way it is accessible; do not manufacture a special inner-child feeling.",
+        "Then bring the younger self into awareness and see whether the same love can include them—the feast has to reach the hungry child.",
+        "If inclusion is blocked by numbness, distrust, threat, recoil, or a credibility objection, keep the love from becoming an argument and route toward the Guard, credibility repair, Nurturer, or Protector instead of increasing spiritual intensity."
+      ],
+      "avoid": [
+        "Do not force transfer, interpret reluctance as spiritual failure, or prescribe a stronger altered state because the child cannot receive the love."
+      ],
+      "successSignals": [
+        "Profound love can include the younger self without coercion, or the specific block becomes clear enough to work with relationally."
+      ],
+      "tags": [
+        "deep-love",
+        "inner-child",
+        "integration",
+        "anti-bypass"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not call a blocked transfer proof that the child rejects love, is spiritually deficient, or needs a stronger altered state."
+        ],
+        "requiredNuance": [
+          "Having access to profound love and being able to let the wounded child receive it are separate capacities.",
+          "Love can remain present while distrust or refusal is heard; the child’s objection does not need to be argued away."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.EXISTENTIAL_NOURISHMENT",
+      "title": "Match the work to existential hunger without making spirituality mandatory",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 98,
+      "activation": {
+        "any": [
+          {
+            "field": "existential_sufficiency",
+            "op": "in",
+            "value": [
+              "insufficient",
+              "profoundly_insufficient"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Distinguish whether the person is simply working on a wound within a basically sufficient life, is hungry and curious for a deeper horizon, or experiences ordinary life as radically insufficient.",
+        "When the person says they hate themselves yet voluntarily seeks help, believe the self-hating part and also ask what the help-seeking part hoped might happen; do not name that motive love for them.",
+        "When hopelessness is profound, keep immediate safety and human contact first while also taking the why-live question seriously; a small protective action can preserve the person without pretending to answer the existential question."
+      ],
+      "avoid": [
+        "Do not tell a satisfied, non-curious person that they are spiritually deficient or must seek a profound experience.",
+        "Do not romanticize suicidal crisis, despair, an NDE, psychedelics, conversion, or extraordinary states as a route to transformation."
+      ],
+      "successSignals": [
+        "The intervention matches the scale of the person’s hunger while preserving safety and choice about spiritual exploration."
+      ],
+      "tags": [
+        "existential",
+        "love",
+        "meaning",
+        "curiosity",
+        "safety"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not say a small practical act should be sufficient for profound existential hopelessness.",
+          "Do not say a suicidal crisis is spiritually useful or necessary."
+        ],
+        "requiredNuance": [
+          "Immediate safety action and existential nourishment solve different problems; do not confuse preserving life today with answering why life feels worth living.",
+          "Curiosity can open a route without proving that a spiritual conclusion is true or required."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.LOVE_HORIZON_EXPLORATION",
+      "title": "Explore a deeper horizon of wellbeing when curiosity is genuine",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 94,
+      "activation": {
+        "all": [
+          {
+            "field": "spiritual_curiosity",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "deep_love_access",
+            "op": "in",
+            "value": [
+              "none_known",
+              "past_glimpse",
+              "state_dependent",
+              "unknown"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "IC.GUIDE_LATER"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Invite investigation rather than belief: notice people, practices, traditions, experiences, nature, art, service, prayer, meditation, or other sources whose lived fruits make a deeper kind of love or wellbeing seem worth exploring.",
+        "Use metta or loving-kindness as one possible cultivation practice, especially when it feels meaningful, without presenting it as the definition or guaranteed depth of love.",
+        "Follow the fruits: prefer paths and exemplars that become more loving, honest, grounded, protective, and able to face pain rather than merely more impressive or certain."
+      ],
+      "avoid": [
+        "Do not prescribe a religion, theism, awakening, nonduality, conversion, psychedelics, NDEs, or a metaphysical conclusion.",
+        "Do not imply that everyone needs profound spiritual love when the person says their present horizon is sufficient."
+      ],
+      "successSignals": [
+        "Curiosity becomes a voluntary experiment with no forced doctrine, attainment target, or promise of extraordinary experience."
+      ],
+      "tags": [
+        "spiritual-curiosity",
+        "love",
+        "wellbeing-horizon",
+        "guide"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not say everyone needs profound spiritual love in order to heal or live well."
+        ],
+        "requiredNuance": [
+          "The relevant distinction is experiential access to deeper wellbeing and love, not believer versus atheist or one religion versus another.",
+          "A conceptual horizon and a directly experienced horizon are different; do not pretend reading about profound love is the same as having touched it."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.REALIZATION_LOVE_INTEGRATION",
+      "title": "Keep realization, doctrine, and community answerable to lived love",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 99,
+      "activation": {
+        "any": [
+          {
+            "field": "spiritual_bypass_pattern",
+            "op": "in",
+            "value": [
+              "attainment_outpaces_love",
+              "doctrine_outpaces_love",
+              "group_warmth_mismatch"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
+        "AMEND.IC.DEEP_LOVE_TO_CHILD",
+        "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "IC.GUIDE_LATER",
+        "IC.PROTECTOR_VISIBLE",
+        "IC.RELATIONSHIP"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Respect whatever realization, rebirth, doctrine, or community experience is genuine while testing separately whether love is actually felt, can include the inner child, and survives ordinary relational difficulty.",
+        "Do not let mystery outrun love indefinitely: if attainment or doctrine is far ahead of felt love, turn toward the missing love rather than prescribing a more advanced abstraction.",
+        "Keep spiritual truth separate from authority transfer. If a teacher’s gifts or realization are being used—by the teacher, group, or user’s own intuition—to override contradictory evidence about trust, use intuition/trust calibration.",
+        "Translate spiritual opening into protection, truth, reliability, service, Hearthwork or reciprocal relationship, and community where useful; community may reinforce an opening without being assumed to have caused it."
+      ],
+      "avoid": [
+        "Do not dismiss genuine nibbana, nondual, Christian, mystical, or other realization merely because emotional integration is incomplete.",
+        "Do not treat claims about divine love, spiritual attainment, a welcoming group atmosphere, extraordinary gifts, or one genuine insight as proof of either emotional integration or another person’s trustworthiness."
+      ],
+      "successSignals": [
+        "The person can distinguish spiritual truth or identity from felt love, practical integration, and interpersonal trustworthiness, and the next step addresses the actual mismatch rather than protecting a status claim."
+      ],
+      "tags": [
+        "spiritual-bypass",
+        "realization",
+        "doctrine",
+        "community",
+        "integration"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not say that awakening, religious belief, church or sangha membership, mystical experience, psychic-seeming ability, or spiritual gifts certify moral reliability or authority.",
+          "Do not say that ordinary practical care is worthless because profound spiritual love is not accessible."
+        ],
+        "requiredNuance": [
+          "Mystical intensity, doctrinal certainty, love depth, and interpersonal trustworthiness are separate variables.",
+          "Practical love and profound love are complementary: practical conduct embodies love, while a deeper wellbeing horizon may enlarge what the person can sincerely wish for beings.",
+          "A realization or gift may be completely genuine while the person who carries it remains unreliable in another domain; trust still updates from track record, contradiction, boundaries, and response to disagreement."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.SUICIDAL_ADULT_SEAT",
+      "title": "Bring a second adult or witness seat into the room",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 100,
+      "activation": {
+        "all": [
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ],
+        "any": [
+          {
+            "field": "identity_blur",
+            "op": "eq",
+            "value": "present"
+          },
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "low",
+              "unknown"
+            ]
+          },
+          {
+            "field": "witness_capacity",
+            "op": "in",
+            "value": [
+              "absent",
+              "unknown"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.SUICIDAL_ADULT_SEAT",
+        "AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY",
+        "IC.NEUTRAL_WITNESS",
+        "IC.BORROW_ONE_FUNCTION"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "First discriminate fusion: ask whether the wish to die feels like the whole self right now or whether any observing/protective position can sit beside it.",
+        "Invite one second seat rather than a complete ideal parent: neutral witness, Nurturer, Protector, future self, trusted person, spiritual figure, written plan, or another bounded source of adult capacity.",
+        "If no internal adult position is available, borrow one function only: keep the body safe, listen without retaliation, and postpone irreversible action while the suicidal state speaks.",
+        "Once the person can hold the suicidal state and an observing/protective position at the same time, continue to the strict self/death/rebirth inquiry rather than remaining indefinitely in preparatory soothing."
+      ],
+      "avoid": [
+        "Do not announce that the suicidal voice is the inner child or impose a parts model the person has not endorsed.",
+        "Do not make the borrowed adult into a new external authority over memories, medicine, relationships, or spiritual conclusions.",
+        "Do not use the adult position to lecture, shame, suppress, or outvote the suicidal state."
+      ],
+      "successSignals": [
+        "The person can distinguish the suicidal state from at least one observing or protective position, even if that adult capacity is weak, borrowed, or temporary."
+      ],
+      "tags": [
+        "suicide-prevention",
+        "borrowed-adulthood",
+        "witness",
+        "differentiation",
+        "safety"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+          "IC.EXISTENTIAL_NOURISHMENT",
+          "IC.LOVE_HORIZON_EXPLORATION"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim a complete inner adult already exists merely because the person can momentarily observe the suicidal state.",
+          "Do not claim every suicidal state is a child-state."
+        ],
+        "requiredNuance": [
+          "The prerequisite is a minimally reflective second position, not a fully healed or spiritually advanced self.",
+          "A neutral witness, partial inner adult, or borrowed adult function can be enough to begin; adult identity may form after protective behavior.",
+          "The adult position first protects the body and listens. It does not need to convince the suicidal state that life is good before the self/death inquiry can begin."
+        ]
+      },
+      "defaultQuestion": "Before we decide anything, can we invite any part of you that can observe, protect the body, or simply postpone the decision to sit beside the part that wants to die—even if we have to borrow that adult position from someone you trust?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
+    },
+    {
+      "id": "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+      "title": "Examine the self/death assumption before an irreversible act",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 99,
+      "activation": {
+        "all": [
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY",
+        "AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "ASSET.IC.SUICIDE.COSMIC_JACKPOT"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Ask what the person is trying to end or obtain through death—annihilation, escape, punishment, love or reunion, God or spiritual contact, liberation or release, or something else—without using motive to predict a postmortem outcome.",
+        "Examine whether the person is equating the relevant self with the body and what evidence supports the belief that bodily death ends the mind-state, identity, or suffering they want ended.",
+        "Challenge annihilation certainty without demanding belief: examine dream phenomenology, rebirth arguments and reports, NDE accounts and their survivor-selection limits, and major contemplative traditions that warn bodily death may not end suffering.",
+        "State the Buddhist danger warning plainly: intentional mental trajectories have consequences, rebirth and hellish states are possible, and bodily death should not be treated as a demonstrated off-switch. Keep doctrine, evidence, and inference distinguished rather than inventing odds.",
+        "Use the shared mental-trajectory principle carefully: psychology supports self-reinforcing negative cognition within life, while Buddhist teaching extends intentional causation across death and rebirth; therefore bodily death should not be assumed to interrupt the process the person is trying to escape.",
+        "Pair this inquiry with the precious-human-opportunity reality check: human birth is presented in Buddhism as an extraordinarily rare chance to investigate suffering, wisdom, love, and liberation before discarding the platform on which that investigation is possible.",
+        "Ask what previously forbidden but reversible changes become negotiable if the person is already contemplating losing everything: what would they change before making the one irreversible change?",
+        "Keep the body alive while investigating. If danger becomes imminent or the person cannot delay action, return immediately to concrete human contact and physical safety."
+      ],
+      "avoid": [
+        "Do not shame or condemn the person, claim punitive divine certainty, assign postmortem odds, or say that a spiritual motive makes suicide safer.",
+        "Do not present dreams, NDEs, rebirth reports, or religious teachings as empirical proof of a specific individual’s postmortem outcome.",
+        "Do not claim psychology proves postmortem mental continuity.",
+        "Do not prescribe an NDE, psychedelic experience, or solitary spiritual practice as a substitute for urgent real-world protection when danger is imminent."
+      ],
+      "successSignals": [
+        "The person can name what death is supposed to accomplish, recognize uncertainty in the self/death assumption, grasp the high value Buddhism assigns to the present human opportunity, and delay irreversible action while investigating spiritual claims and reversible life changes."
+      ],
+      "tags": [
+        "suicide-prevention",
+        "self-inquiry",
+        "rebirth",
+        "existential",
+        "safety"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.EXISTENTIAL_NOURISHMENT",
+          "IC.LOVE_HORIZON_EXPLORATION"
+        ],
+        "forbiddenOverclaims": [
+          "Do not say suicide reliably leads to hell or reliably leads to heaven, nothingness, liberation, reunion, or any other postmortem outcome.",
+          "Do not infer that suicidality itself proves spiritual attainment or that a person must be curious about spirituality before this inquiry or the precious-human-birth reality check is relevant."
+        ],
+        "requiredNuance": [
+          "Suicidal intent itself stakes an irreversible act on assumptions about self, body, mind, and death; the guide therefore examines those assumptions even when ordinary spiritual curiosity is absent, while belief remains voluntary.",
+          "Immediate safety preserves the opportunity for inquiry but does not answer the existential or metaphysical question.",
+          "Repeated self-hatred, despair, rumination, attentional narrowing, withdrawal, and self-destructive cognition can become self-reinforcing within life; Buddhism additionally teaches continuity of intentional mental causation through death and rebirth. Keep those evidentiary levels distinct.",
+          "A Buddhist warning may explicitly include rebirth, hellish states, and severe postmortem suffering without claiming certainty about this individual’s destination or suppressing the warning merely because it is frightening.",
+          "Every reflective suicidal route also presents human birth as an extraordinarily rare and precious opportunity to investigate dukkha and liberation, not merely as a life that might possibly become worthwhile."
+        ]
+      },
+      "defaultQuestion": "What exactly is the self you want to kill, and what makes you think killing this body ends that self or the suffering you are trying to escape?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
+    },
+    {
+      "id": "IC.INTUITION_TRUST_CALIBRATION",
+      "title": "Make intuition and analysis correct each other before trust transfers",
+      "kind": "decision-node",
+      "tier": 2,
+      "priority": 100,
+      "activation": {
+        "any": [
+          {
+            "field": "intuition_evidence_alignment",
+            "op": "in",
+            "value": [
+              "mixed",
+              "contradictory"
+            ]
+          },
+          {
+            "field": "epistemic_mode_balance",
+            "op": "in",
+            "value": [
+              "intuitive_overrides_analytic",
+              "analytic_overrides_intuitive",
+              "oscillating"
+            ]
+          },
+          {
+            "field": "external_authority_pull",
+            "op": "in",
+            "value": [
+              "elevated",
+              "strong"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "IC.GUIDE_LATER",
+        "IC.DIFFERENTIATION"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Name the felt/intuitive signal without arguing it away, then state separately the factual or trust conclusion being drawn from it.",
+        "Inventory direct observations, relevant track record, contradictions, domain-specific competence, and what happens when the person is disagreed with, refused, delayed, or denied special status.",
+        "Notice influence hooks without diagnosing the other person: praise or specialness, mirroring, pity for a wounded healer, rescue or miracle hopes, attraction, belonging, fear, spiritual charisma, hypnotic or mystical ease, confession, and humor can all change how evidence is weighted.",
+        "Ask whether compassion is preserving the facts or erasing them. A wounded person can deserve compassion while still being unsafe or unreliable in a particular domain.",
+        "Use prediction → observation → update: state what trustworthy and untrustworthy behavior would each predict, watch what actually happens, and let the result change trust rather than protecting the original intuition.",
+        "When intuition and evidence seriously conflict, do not increase high-leverage authority while the conflict is unresolved. Keep money, medical decisions, sexual consent, isolation, legal control, altered-state dependence, and exclusive spiritual authority especially answerable to ordinary evidence."
+      ],
+      "avoid": [
+        "Do not teach that intuition, mystical cognition, humor, spontaneity, compassion, attraction, or spiritual gifts are inherently untrustworthy.",
+        "Do not make analytical cognition the sole authority or treat every contradiction, confession, or influence cue as proof that another person is malicious or manipulative.",
+        "Do not literalize the intuitive/analytic distinction as a simplistic left-brain/right-brain anatomy claim.",
+        "Do not recommend automatic cutoff merely because trust is unresolved; slow consequential transfers while evidence is being calibrated."
+      ],
+      "successSignals": [
+        "The person can preserve useful intuitive information and analytical checking at the same time, distinguish resonance from proof, and allow new evidence to raise or lower domain-specific trust."
+      ],
+      "tags": [
+        "intuition",
+        "epistemic-trust",
+        "external-guide",
+        "protector",
+        "differentiation"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not say a strong intuitive click proves trustworthiness or that a suspicious feeling proves danger.",
+          "Do not say admitting dishonesty, danger, manipulation, addiction, or another flaw makes the current risk disappear merely because the admission sounds self-aware.",
+          "Do not generalize one true teaching, healing result, beautiful voice, spiritual gift, confession, or accurate intuitive hit into global authority."
+        ],
+        "requiredNuance": [
+          "Intuitive, gestalt, affective, mystical, and subconscious cognition can surface real pattern information that analysis has not consciously assembled; analytical, propositional cognition checks contradiction, track record, scope, and falsifiability. Neither receives unilateral control in a high-stakes trust decision.",
+          "Separate the raw signal from the proposition inferred from it: feeling seen, safe, fascinated, compassionate, attracted, spiritually opened, amused, or deeply resonant is real data without by itself proving 'therefore this person is trustworthy.'",
+          "Open confession can be genuine self-awareness and simultaneous evidence that the confessed problem currently exists. 'I am working on it' is not the same as a repaired track record.",
+          "Humor and half-jokes may legitimately relieve pressure and expand perspective; when a joke also carries a consequential factual claim, request, permission, boundary move, or authority transfer, test that content as if it had been said plainly.",
+          "Trust is domain-specific and corrigible: what matters is whether track record, contradictions, boundaries, response to disagreement or no, and new evidence can still update the conclusion."
+        ]
+      },
+      "defaultQuestion": "What exactly is your intuition telling you, what evidence supports or contradicts that conclusion, and what evidence would actually lower your trust?",
+      "questionPolicy": {
+        "purpose": "discriminate",
+        "unresolvedFields": []
+      }
+    },
+    {
+      "id": "IC.PRECIOUS_HUMAN_OPPORTUNITY",
+      "title": "Treat human birth as a precious opportunity before discarding it",
+      "kind": "decision-node",
+      "tier": 1,
+      "priority": 98,
+      "activation": {
+        "all": [
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ],
+        "any": [
+          {
+            "field": "witness_capacity",
+            "op": "in",
+            "value": [
+              "present",
+              "partial"
+            ]
+          },
+          {
+            "field": "inner_adult_access",
+            "op": "in",
+            "value": [
+              "partial",
+              "available"
+            ]
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "altered_state",
+            "op": "eq",
+            "value": "altered"
+          },
+          {
+            "field": "identity_blur",
+            "op": "eq",
+            "value": "present"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.SUICIDAL_PRECIOUS_HUMAN_OPPORTUNITY",
+        "AMEND.IC.SUICIDAL_SELF_DEATH_INQUIRY",
+        "ASSET.IC.SUICIDE.COSMIC_JACKPOT"
+      ],
+      "authority": "author-framework",
+      "recommendations": [
+        "Give the reality check plainly: in Buddhist teaching, a human birth is extraordinarily rare and precious—a high-leverage opportunity to understand dukkha, deepen wisdom and love, and pursue liberation before discarding the conditions that make that investigation possible.",
+        "Use the blind-turtle-and-yoke or cosmic-jackpot analogy when helpful: the person need not accept the doctrine, but should understand the magnitude of the opportunity Buddhism says is presently in hand before making an irreversible decision.",
+        "Present hell, rebirth, and severe postmortem suffering as serious Buddhist possibilities to investigate rather than as fabricated probabilities; the purpose of the warning is to challenge the assumption that bodily death is a safe off-switch.",
+        "Keep the human body and social world available while investigating: sensory reality, other people, practice, learning, repair, and reversible life changes all remain possible redirections while alive."
+      ],
+      "avoid": [
+        "Do not reduce the message to 'life might possibly be worthwhile' when the Buddhist claim being presented is that human birth is an extraordinarily rare and precious opportunity.",
+        "Do not shame the person, claim punitive divine certainty, guarantee an individual postmortem destination, or invent odds for hell, heaven, nothingness, rebirth, or liberation.",
+        "Do not prescribe an NDE, psychedelic experience, dangerous ordeal, or solitary spiritual practice instead of urgent human protection when immediate safety deteriorates."
+      ],
+      "successSignals": [
+        "The person can recognize that suicide may discard an exceptionally valuable investigative opportunity, can hold uncertainty about what death does, and is willing to preserve the human platform while investigating further."
+      ],
+      "tags": [
+        "suicide-prevention",
+        "precious-human-birth",
+        "rebirth",
+        "existential",
+        "buddhist-reality-check"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [
+          "IC.EXISTENTIAL_NOURISHMENT",
+          "IC.LOVE_HORIZON_EXPLORATION"
+        ],
+        "forbiddenOverclaims": [
+          "Do not claim empirical certainty about this individual’s postmortem destination.",
+          "Do not require pre-existing spiritual curiosity before presenting the precious-human-birth reality check."
+        ],
+        "requiredNuance": [
+          "Once a suicidal person is safe and differentiated enough to reflect, the precious-human-opportunity reality check applies regardless of prior spiritual curiosity.",
+          "The Buddhist claim is stronger than mere possible worth: human birth is an extraordinarily rare opportunity to investigate dukkha, cultivate wisdom and love, and attain liberation.",
+          "Fear can carry information about danger. Do not suppress a relevant Buddhist warning about rebirth, hellish states, or severe postmortem suffering merely because the warning may be frightening; keep uncertainty and provenance explicit.",
+          "Within life, deliberate self-harm and repeated self-destructive cognition cause harm and can reinforce a destructive trajectory; Buddhism additionally teaches that intentional causal momentum can continue through death and rebirth."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.SPIRITUAL_STRUGGLE",
+      "title": "Work with spiritual struggle or sacred loss",
+      "kind": "decision-node",
+      "tier": 3,
+      "priority": 100,
+      "activation": {
+        "all": [
+          {
+            "field": "spiritual_struggle",
+            "op": "eq",
+            "value": "present"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "in",
+            "value": [
+              "ideation",
+              "intent",
+              "imminent"
+            ]
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.SPIRITUAL_STRUGGLE"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Find out what turning toward this spiritual source currently evokes and what has been lost or violated. Support the user’s wish to preserve, mourn, reconsider or change that relationship without requiring stronger belief or abandonment of the tradition.",
+        "Do not prescribe more borrowing from a source that is itself distressing without examining the mismatch. Discussing spiritual distress is not consent to prayer or imagery."
+      ],
+      "avoid": [
+        "Do not infer divine condemnation or certify an external spiritual cause.",
+        "Do not automatically reduce spiritual struggle to a parent projection, bypass, or inability to love.",
+        "Do not treat continued devotion, uncertainty, or declining an exercise as pathology."
+      ],
+      "successSignals": [
+        "The concern is heard in its own terms and the person can choose a fitting next step without surrendering practical safety or judgment."
+      ],
+      "tags": [
+        "spiritual-struggle",
+        "sacred-loss",
+        "choice"
+      ],
+      "effects": {
+        "deferNodes": [],
+        "blockNodes": [],
+        "requiredNuance": [
+          "A valued spiritual source may help in one respect and hurt in another; spiritual struggle and unavailable support are different."
+        ],
+        "forbiddenOverclaims": [
+          "No guarantee of metaphysical truth, protection or clinical efficacy follows from this route."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.CARING_COMPANY",
+      "title": "Meet the moment with remembered or imagined caring company",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 88,
+      "activation": {
+        "all": [
+          {
+            "field": "perspective_practice",
+            "op": "eq",
+            "value": "caring_company"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.WISDOM_CORE",
+        "AMEND.IC.WISDOM_CARING_COMPANY",
+        "AMEND.IC.WISDOM_SOURCES"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Offer remembered or imagined caring company or a nonpersonified supportive stance when it feels useful. The future self, a real caring figure or a person's own chosen spiritual frame may help.",
+        "Do not assume family, maternal imagery or a safe remembered caregiver is available. Blank, critical or frightening imagery calls for another entrance, not forced recall.",
+        "Notice whether receiving support makes some present care, discernment, courage or agency more available. Do not make becoming independent of all support or spiritual relationship the goal.",
+        "Rogers's documented care-retrieval invitation is an optional exemplar, not proof that this technique caused his qualities."
+      ],
+      "avoid": [
+        "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+        "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+      ],
+      "successSignals": [
+        "The person feels accompanied and can choose a useful present response without surrendering judgment."
+      ],
+      "tags": [
+        "wisdom-practice",
+        "caring-company",
+        "optional"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+          "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+          "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+          "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+        ],
+        "requiredNuance": [
+          "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+          "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+          "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+          "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+          "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+          "Receiving caring company is not identical to generating affection toward another; use the function actually needed."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.COMMON_HUMANITY",
+      "title": "Recognize shared humanity without minimizing this experience",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 88,
+      "activation": {
+        "all": [
+          {
+            "field": "perspective_practice",
+            "op": "eq",
+            "value": "common_humanity"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.WISDOM_CORE",
+        "AMEND.IC.WISDOM_COMMON_HUMANITY",
+        "AMEND.IC.WISDOM_SOURCES"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Begin with the particular experience and its circumstances. If useful, recognize that the longing underneath it is something other people may know as well.",
+        "Invite, do not diagnose, possible longings such as safety, understanding, dignity, belonging, freedom or repair. The person may name something else or prefer simple company.",
+        "Distinguish “I am not excluded from humanity” from “others have it worse.” Shared longing does not excuse harmful ways of meeting it.",
+        "An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance."
+      ],
+      "avoid": [
+        "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+        "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+      ],
+      "successSignals": [
+        "The person feels less uniquely defective while their particular loss, needs and boundaries remain recognized."
+      ],
+      "tags": [
+        "wisdom-practice",
+        "common-humanity",
+        "optional"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+          "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+          "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+          "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+        ],
+        "requiredNuance": [
+          "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+          "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+          "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+          "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+          "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+          "Universality is belonging, not comparison, doctrinal pressure or a substitute for accompaniment."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.COMPASSIONATE_STORY",
+      "title": "Give a difficult memory compassionate story punctuation",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 88,
+      "activation": {
+        "all": [
+          {
+            "field": "perspective_practice",
+            "op": "eq",
+            "value": "story_punctuation"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.WISDOM_CORE",
+        "AMEND.IC.WISDOM_STORY",
+        "AMEND.IC.WISDOM_SOURCES"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "For a manageable memory, offer the exact short phrase: “And so that's the way it happened!” “Once upon a time…” may be added only if that tone fits.",
+        "Notice whether it changes the relationship to the memory without inventing facts or treating it as fiction. The aim is kind distance or acknowledgment, not proving innocence or silencing grief.",
+        "If useful, let the short practice end. An optional next move asks what the person in the story needs now; specific responsibility or repair can be considered without global self-condemnation.",
+        "A sneering narrator, increased shame, forced humor, numbness or unreality means change route, not add more narrative distance."
+      ],
+      "avoid": [
+        "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+        "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+      ],
+      "successSignals": [
+        "The episode is less like a global verdict while contact, responsibility and present orientation remain."
+      ],
+      "tags": [
+        "wisdom-practice",
+        "story-punctuation",
+        "optional"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+          "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+          "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+          "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+        ],
+        "requiredNuance": [
+          "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+          "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+          "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+          "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+          "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+          "The exact phrase is owner-reported, not a clinically validated intervention."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.CRITICISM_KERNEL",
+      "title": "Receive useful content without accepting contempt",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 88,
+      "activation": {
+        "all": [
+          {
+            "field": "perspective_practice",
+            "op": "eq",
+            "value": "criticism_kernel"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.WISDOM_CORE",
+        "AMEND.IC.WISDOM_CRITICISM_KERNEL",
+        "AMEND.IC.WISDOM_SOURCES"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "After the relevant external reality check, ask whether there is a specific supported point inside the criticism worth considering. Separate it from insults, exaggeration or coercive demands.",
+        "Where true, acknowledge the specific behavior or make an appropriate repair. Where uncertain, clarification is optional; do not invent a kernel or concede unsupported blame.",
+        "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity."
+      ],
+      "avoid": [
+        "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+        "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+      ],
+      "successSignals": [
+        "Accurate responsibility and useful information are retained without swallowing a global verdict or surrendering protection."
+      ],
+      "tags": [
+        "wisdom-practice",
+        "criticism-kernel",
+        "optional"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+          "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+          "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+          "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+        ],
+        "requiredNuance": [
+          "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+          "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+          "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+          "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+          "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+          "The exact maxim is not a verified Fred Rogers quotation."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.DRAFT_EDITOR",
+      "title": "Edit the communication without rejecting its author",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 88,
+      "activation": {
+        "all": [
+          {
+            "field": "perspective_practice",
+            "op": "eq",
+            "value": "draft_editor"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.WISDOM_CORE",
+        "AMEND.IC.WISDOM_DRAFT_EDITOR",
+        "AMEND.IC.WISDOM_SOURCES"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Invite a brief private mental or written draft of what the person wants to say. Keep raw draft and sendable response clearly separate; do not require disclosure or storage.",
+        "Take the caring editor's position: preserve the important truth, justified protest, proportionate responsibility, realistic aim and necessary boundary. Better does not mean softer or more agreeable.",
+        "Check an honest sufficient response for this actual recipient and situation. The human decides whether to send, pause, apologize, refuse or not respond. Do not send anything automatically.",
+        "Make room to return to the original draft for inward care after the outward decision. Some inward care can come first if that makes editing possible. An appropriate existing draft may not need editing."
+      ],
+      "avoid": [
+        "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+        "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+      ],
+      "successSignals": [
+        "The communication is more appropriate without internal abandonment.",
+        "A later return to care remains visible as a separate purpose until reported, deferred or declined."
+      ],
+      "tags": [
+        "wisdom-practice",
+        "draft-editor",
+        "optional"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+          "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+          "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+          "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+        ],
+        "requiredNuance": [
+          "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+          "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+          "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+          "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+          "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+          "The first draft can be a mature protest; it is not automatically a child-state.",
+          "A private draft is not a sent message, a settled intention, or an established account of the other person."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.DRAFT_RETURN_TO_CARE",
+      "title": "Return to the first draft for understanding and care",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 88,
+      "activation": {
+        "all": [
+          {
+            "field": "perspective_practice",
+            "op": "eq",
+            "value": "return_to_care"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.WISDOM_CORE",
+        "AMEND.IC.WISDOM_DRAFT_RETURN",
+        "AMEND.IC.WISDOM_SOURCES"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "After the reported outward response or decision, return to the original writer's experience without scolding them for it. Mental recall is enough; do not require a stored draft.",
+        "Attend to the actual hurt, need, protest, responsibility or limit. Offer feasible Nurturer/Protector/Guide care; the adult acts before requiring belief or reassurance from a part.",
+        "Use existing guard, credibility, borrowed-function, protection or deeper-dialogue routes only as actually needed and within their existing gates. Do not infer a younger self or childhood memory.",
+        "Track the return separately from communication success. Respect a wish to defer, stop or decline; preserve unfinished work without making it a compulsory assignment or another reassurance loop."
+      ],
+      "avoid": [
+        "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+        "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+      ],
+      "successSignals": [
+        "The person reports understanding, helpful care, an appropriate protective action or a freely chosen ending."
+      ],
+      "tags": [
+        "wisdom-practice",
+        "return-to-care",
+        "optional"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+          "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+          "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+          "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+        ],
+        "requiredNuance": [
+          "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+          "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+          "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+          "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+          "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+          "Outward completion is not inward completion. Declining further work is not failure."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.PAST_COMPETENCE",
+      "title": "Retrieve a real occasion of responding well",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 88,
+      "activation": {
+        "all": [
+          {
+            "field": "perspective_practice",
+            "op": "eq",
+            "value": "past_competence"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.WISDOM_CORE",
+        "AMEND.IC.WISDOM_PAST_COMPETENCE",
+        "AMEND.IC.WISDOM_SOURCES"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Offer: “Remember one real occasion when you met a difficulty in a way you respect. What did you actually do, and what helped? Is one part available now?”",
+        "A small relevant event is sufficient. Retrieve action, support, resources or conditions rather than merely a flattering identity claim.",
+        "If recall is difficult, stop the search or use an already chosen anchor or another care entrance. Prior ability does not cancel present limits or the value of receiving help."
+      ],
+      "avoid": [
+        "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+        "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+      ],
+      "successSignals": [
+        "A specific actual action or support becomes available without pressure or invented memory."
+      ],
+      "tags": [
+        "wisdom-practice",
+        "past-competence",
+        "optional"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+          "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+          "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+          "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+        ],
+        "requiredNuance": [
+          "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+          "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+          "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+          "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+          "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+          "Prior capacity is evidence, not a guarantee that the same response is possible now."
+        ]
+      },
+      "defaultQuestion": ""
+    },
+    {
+      "id": "IC.WISER_SELF_PERSPECTIVE",
+      "title": "Borrow a wiser perspective without rejecting the present self",
+      "kind": "decision-node",
+      "tier": 4,
+      "priority": 88,
+      "activation": {
+        "all": [
+          {
+            "field": "perspective_practice",
+            "op": "eq",
+            "value": "wiser_self"
+          }
+        ],
+        "none": [
+          {
+            "field": "present_safety",
+            "op": "eq",
+            "value": "unsafe"
+          },
+          {
+            "field": "orientation",
+            "op": "eq",
+            "value": "disoriented"
+          },
+          {
+            "field": "ability_to_stop",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "ability_to_return",
+            "op": "eq",
+            "value": "no"
+          },
+          {
+            "field": "dissociation",
+            "op": "eq",
+            "value": "high"
+          },
+          {
+            "field": "suicidal_state",
+            "op": "eq",
+            "value": "imminent"
+          }
+        ]
+      },
+      "sourceRefs": [
+        "AMEND.IC.WISDOM_CORE",
+        "AMEND.IC.WISDOM_WISER_SELF",
+        "AMEND.IC.WISDOM_SOURCES"
+      ],
+      "authority": "owner-approved-extension",
+      "recommendations": [
+        "Offer: “Imagine looking back when you are clearer and compassionate toward everyone involved, including yourself. What would you understand about this moment?”",
+        "Allow clearer understanding, feeling like that wiser self, or feeling accompanied by it; use whichever actually helps, including more than one. Do not force visualization or a state transition.",
+        "Ask what that perspective understands about the present person's limitations and how it would care for them now. When embodiment is unavailable, use one honest sufficient action, firm boundary, acknowledgment or pause.",
+        "The optional future-other extension is goodwill toward a possibility, not mind-reading, prediction of an apology, certainty that they will agree, or a reason to override present evidence."
+      ],
+      "avoid": [
+        "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+        "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+        "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+      ],
+      "successSignals": [
+        "The person has more usable choice or caring contact, with appropriate boundaries intact."
+      ],
+      "tags": [
+        "wisdom-practice",
+        "wiser-self",
+        "optional"
+      ],
+      "effects": {
+        "blockNodes": [],
+        "deferNodes": [],
+        "forbiddenOverclaims": [
+          "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+          "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+          "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+          "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+        ],
+        "requiredNuance": [
+          "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+          "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+          "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+          "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+          "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+          "Perfect clarity is not required; future perspective stays fallible and open to correction."
+        ]
+      },
+      "defaultQuestion": ""
+    }
+  ],
+  "edges": [
+    {
+      "from": "IC.SAFETY_ORIENTATION",
+      "to": "IC.NEUTRAL_WITNESS",
+      "relation": "enables"
+    },
+    {
+      "from": "IC.SOLAR_PLEXUS_RELAXATION",
+      "to": "IC.BORROW_LOVE",
+      "relation": "enables"
+    },
+    {
+      "from": "IC.NEUTRAL_WITNESS",
+      "to": "IC.BORROW_ONE_FUNCTION",
+      "relation": "enables"
+    },
+    {
+      "from": "IC.BORROW_ONE_FUNCTION",
+      "to": "IC.ADULT_APPRENTICE",
+      "relation": "enables"
+    },
+    {
+      "from": "IC.ADULT_APPRENTICE",
+      "to": "IC.PROTECTOR_ACTION",
+      "relation": "enables"
+    },
+    {
+      "from": "IC.MEET_GUARD",
+      "to": "IC.DEEP_CHILD_DIALOGUE",
+      "relation": "precedes"
+    },
+    {
+      "from": "IC.CREDIBILITY_REPAIR",
+      "to": "IC.PROTECTOR_ACTION",
+      "relation": "requires-evidence"
+    },
+    {
+      "from": "IC.AGE_RESPONSIBILITY_CLARIFICATION",
+      "to": "IC.CREDIBILITY_REPAIR",
+      "relation": "clarifies"
+    },
+    {
+      "from": "IC.IDENTITY_FORMATION",
+      "to": "IC.GUIDE_LATER",
+      "relation": "precedes"
+    },
+    {
+      "from": "IC.ALTERED_STATE_GATE",
+      "to": "IC.DEEP_CHILD_DIALOGUE",
+      "relation": "gates"
+    },
+    {
+      "from": "IC.DEEP_LOVE_TO_CHILD",
+      "relation": "embodies-through",
+      "to": "IC.PROTECTOR_ACTION"
+    },
+    {
+      "from": "IC.REALIZATION_LOVE_INTEGRATION",
+      "relation": "feeds-child-integration",
+      "to": "IC.DEEP_LOVE_TO_CHILD"
+    },
+    {
+      "from": "IC.DEEP_LOVE_TO_CHILD",
+      "relation": "integrates-relationally",
+      "to": "IC.ADULT_APPRENTICE"
+    },
+    {
+      "from": "IC.LOVE_HORIZON_EXPLORATION",
+      "relation": "can-enable",
+      "to": "IC.DEEP_LOVE_TO_CHILD"
+    },
+    {
+      "from": "IC.REALIZATION_LOVE_INTEGRATION",
+      "relation": "requires-embodiment",
+      "to": "IC.PROTECTOR_ACTION"
+    },
+    {
+      "from": "IC.DEEP_LOVE_TO_CHILD",
+      "relation": "routes-block-to",
+      "to": "IC.MEET_GUARD"
+    },
+    {
+      "from": "IC.EXISTENTIAL_NOURISHMENT",
+      "relation": "opens-when-curious",
+      "to": "IC.LOVE_HORIZON_EXPLORATION"
+    },
+    {
+      "from": "IC.DIFFERENTIATION",
+      "relation": "supports-calibration",
+      "to": "IC.INTUITION_TRUST_CALIBRATION"
+    },
+    {
+      "from": "IC.REALIZATION_LOVE_INTEGRATION",
+      "relation": "does-not-certify-authority",
+      "to": "IC.INTUITION_TRUST_CALIBRATION"
+    },
+    {
+      "from": "IC.INTUITION_TRUST_CALIBRATION",
+      "relation": "slows-high-stakes-transfer",
+      "to": "IC.PROTECTOR_ACTION"
+    },
+    {
+      "from": "IC.INTUITION_TRUST_CALIBRATION",
+      "relation": "calibrates",
+      "to": "IC.GUIDE_LATER"
+    },
+    {
+      "from": "IC.SUICIDAL_SELF_DEATH_INQUIRY",
+      "relation": "requires-reality-check",
+      "to": "IC.PRECIOUS_HUMAN_OPPORTUNITY"
+    },
+    {
+      "from": "IC.SPIRITUAL_STRUGGLE",
+      "to": "IC.BORROW_ONE_FUNCTION",
+      "relation": "may-connect-to"
+    },
+    {
+      "from": "IC.SPIRITUAL_STRUGGLE",
+      "to": "IC.DIFFERENTIATION",
+      "relation": "may-connect-to"
+    },
+    {
+      "from": "IC.SPIRITUAL_STRUGGLE",
+      "to": "IC.EXISTENTIAL_NOURISHMENT",
+      "relation": "may-connect-to"
+    },
+    {
+      "from": "IC.COMMON_HUMANITY",
+      "relation": "may-support",
+      "to": "IC.CARING_COMPANY"
+    },
+    {
+      "from": "IC.CRITICISM_KERNEL",
+      "relation": "may-support",
+      "to": "IC.DRAFT_EDITOR"
+    },
+    {
+      "from": "IC.WISER_SELF_PERSPECTIVE",
+      "relation": "may-support",
+      "to": "IC.DRAFT_EDITOR"
+    },
+    {
+      "from": "IC.DRAFT_RETURN_TO_CARE",
+      "relation": "may-use",
+      "to": "IC.MEET_GUARD"
+    },
+    {
+      "from": "IC.COMPASSIONATE_STORY",
+      "relation": "may-use",
+      "to": "IC.BORROW_ONE_FUNCTION"
+    },
+    {
+      "from": "ROUTE.RELATIONAL_REALITY_CHECK",
+      "relation": "clarifies",
+      "to": "IC.CRITICISM_KERNEL"
+    },
+    {
+      "from": "ROUTE.ACT_OUTWARD",
+      "relation": "may-use-as-communication-support",
+      "to": "IC.DRAFT_EDITOR"
+    },
+    {
+      "from": "IC.DRAFT_RETURN_TO_CARE",
+      "relation": "embodies-through",
+      "to": "IC.PROTECTOR_ACTION"
+    },
+    {
+      "from": "IC.BEST_FRIEND_PERSPECTIVE",
+      "relation": "offers-alternative",
+      "to": "IC.WISER_SELF_PERSPECTIVE"
+    },
+    {
+      "from": "IC.BORROW_LOVE",
+      "relation": "offers-alternative",
+      "to": "IC.CARING_COMPANY"
+    },
+    {
+      "from": "IC.DRAFT_EDITOR",
+      "relation": "returns-for-care",
+      "to": "IC.DRAFT_RETURN_TO_CARE"
+    },
+    {
+      "from": "IC.BORROW_ONE_FUNCTION",
+      "relation": "offers-alternative",
+      "to": "IC.PAST_COMPETENCE"
+    }
+  ],
+  "taskPolicyVersion": 1,
+  "pathPerformancePolicyVersion": 1
+}

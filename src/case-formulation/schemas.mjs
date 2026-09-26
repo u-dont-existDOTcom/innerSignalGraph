@@ -1,8 +1,10 @@
-import { pathUpdateSchema, representationSchema } from "./path-performance.mjs";
+import { pathUpdateSchema, representationSchema, strategyReviewSchema } from "./path-performance.mjs";
 import { turnTaskSchema } from "./turn-task.mjs";
 import { relationalReadinessSchema } from "./relational-readiness.mjs";
 import { romanceGuideContextSchema } from "./romance-guide.mjs";
 import { threatPathwaySchema } from "./threat-pathway.mjs";
+import { innerSpeechProfileSchema, observationPhenomenologySchema } from "./phenomenology.mjs";
+import { compatibilityAssessmentSchema } from "./protective-compatibility.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 
 const observationSchema = {
@@ -11,8 +13,11 @@ const observationSchema = {
   properties: {
     id: { type: "string" },
     statement: { type: "string" },
-    evidence: { type: "string" }
+    evidence: { type: "string" },
+    phenomenology: observationPhenomenologySchema
   },
+  // Historical snapshots remain valid without the newer provenance field. The
+  // provider-generation schema below requires an explicit null/object.
   required: ["id", "statement", "evidence"]
 };
 
@@ -31,6 +36,8 @@ export const caseSnapshotSchema = {
     relational_readiness: relationalReadinessSchema,
     romance_guide_context: romanceGuideContextSchema,
     threat_pathway: threatPathwaySchema,
+    compatibility_assessment: compatibilityAssessmentSchema,
+    inner_speech_profile: innerSpeechProfileSchema,
     direct_observations: { type: "array", items: observationSchema },
     variables: {
       type: "object",
@@ -67,16 +74,18 @@ export const caseSnapshotSchema = {
       }
     }
   },
-  // relational_readiness is optional for historical/mock compatibility. The live
-  // candidate extractor is required separately to emit it explicitly as null/object.
+  // Newer semantic fields remain optional for historical/mock compatibility.
+  // The live candidate extractor is required separately to emit them explicitly.
   required: ["user_goal", "current_issue", "turn_task", "path_update", "direct_observations", "variables", "hypotheses", "unknowns"]
 };
 
-// Provider generation requires all properties declared, with null for optional
-// semantics. The historical runtime validator still accepts omitted delivery_review.
+// Provider generation requires all newer semantic fields declared, with null for
+// unavailable evidence. Historical runtime snapshots remain compatible.
 export const caseSnapshotGenerationSchema = structuredClone(caseSnapshotSchema);
-caseSnapshotGenerationSchema.required.push("relational_readiness", "romance_guide_context", "threat_pathway");
-caseSnapshotGenerationSchema.properties.path_update.anyOf[1].required.push("delivery_review", "representation");
+caseSnapshotGenerationSchema.required.push("relational_readiness", "romance_guide_context", "threat_pathway", "compatibility_assessment", "inner_speech_profile");
+caseSnapshotGenerationSchema.properties.direct_observations.items.required.push("phenomenology");
+caseSnapshotGenerationSchema.properties.path_update.anyOf[1].required.push("delivery_review", "representation", "strategy_review");
+caseSnapshotGenerationSchema.properties.path_update.anyOf[1].properties.strategy.anyOf[1].required.push("evaluation_contract");
 
 export const caseAuditSchema = {
   type: "object",
@@ -86,12 +95,16 @@ export const caseAuditSchema = {
     invalidate_turn_task: { type: "boolean" },
     corrected_path_representation: { anyOf: [{ type: "null" }, representationSchema] },
     invalidate_path_representation: { type: "boolean" },
+    corrected_strategy_review: { anyOf: [{ type: "null" }, strategyReviewSchema] },
+    invalidate_strategy_review: { type: "boolean" },
     corrected_relational_readiness: relationalReadinessSchema,
     invalidate_relational_readiness: { type: "boolean" },
     corrected_romance_guide_context: romanceGuideContextSchema,
     invalidate_romance_guide_context: { type: "boolean" },
     corrected_threat_pathway: threatPathwaySchema,
     invalidate_threat_pathway: { type: "boolean" },
+    corrected_compatibility_assessment: compatibilityAssessmentSchema,
+    invalidate_compatibility_assessment: { type: "boolean" },
     remove_observation_ids: { type: "array", items: { type: "string" } },
     remove_hypothesis_ids: { type: "array", items: { type: "string" } },
     variable_corrections: {
@@ -132,10 +145,14 @@ export const caseAuditGenerationSchema = structuredClone(caseAuditSchema);
 caseAuditGenerationSchema.required.push(
   "corrected_path_representation",
   "invalidate_path_representation",
+  "corrected_strategy_review",
+  "invalidate_strategy_review",
   "corrected_relational_readiness",
   "invalidate_relational_readiness",
   "corrected_romance_guide_context",
   "invalidate_romance_guide_context",
   "corrected_threat_pathway",
-  "invalidate_threat_pathway"
+  "invalidate_threat_pathway",
+  "corrected_compatibility_assessment",
+  "invalidate_compatibility_assessment"
 );

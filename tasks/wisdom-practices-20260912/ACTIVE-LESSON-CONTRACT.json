@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "taskId": "wisdom-practices-20260912",
+  "authority": {
+    "universalCommit": "e8c127944b7b065cef039fb25a3939477e664605",
+    "projectBaseCommit": "ad441affd378e06d6395e0ba4ec0760eaaea5d52",
+    "packetManifestSha256": "e072eaee9357db85c129a9e28b571c5422c2cd68d68a9d3a94f8bad4410b1c80"
+  },
+  "activeLessons": [
+    {
+      "id": "exclusive-active-task-locks",
+      "requiredBehavior": "Use only the isolated wisdom-practices branch and keep competing task sources suspended.",
+      "failureCondition": "Work resumes an unrelated branch, private case, deployment or stable task.",
+      "enforcement": "branch and changed-path review"
+    },
+    {
+      "id": "transformation-preservation-proof",
+      "requiredBehavior": "Apply the packet records and code delta exactly, preserving all non-whitelisted graph fields and existing gates.",
+      "failureCondition": "An unexplained substantive source, graph, safety, privacy or precedence delta appears.",
+      "enforcement": "bound-blob staging, semantic diff, regression suite and final diff review"
+    },
+    {
+      "id": "development-assurance-lanes",
+      "requiredBehavior": "Produce a reversible tested candidate without importing merge, release, installation or deployment gates as authorization.",
+      "failureCondition": "The task is reported beyond its evidence state or crosses a prohibited boundary.",
+      "enforcement": "typed candidate and approval status in the validation receipt"
+    },
+    {
+      "id": "test-efficiency-and-verification-budget",
+      "requiredBehavior": "Use focused and affected checks during integration and one complete gate at the legitimate candidate boundary.",
+      "failureCondition": "Repeated unchanged full suites or unmeasured nontrivial verification.",
+      "enforcement": "canonical test-efficiency observer"
+    },
+    {
+      "id": "source-interpretation-provenance",
+      "requiredBehavior": "Preserve the de-identified approved source and distinguish source, adaptation, owner approval and clinical validation.",
+      "failureCondition": "A reference is promoted into a quotation, empirical claim, exact packet approval or clinical proof.",
+      "enforcement": "source-map checks, proposal provenance audit and receipt nonclaims"
+    }
+  ],
+  "admission": "PASS"
+}

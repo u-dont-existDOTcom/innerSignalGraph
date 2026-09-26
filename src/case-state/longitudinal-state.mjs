@@ -5,6 +5,11 @@ import {
   updateThreatPathwayState,
   validateThreatPathwayState
 } from "../case-formulation/threat-pathway.mjs";
+import {
+  protectiveCompatibilityDecision,
+  updateProtectiveCompatibilityState,
+  validateProtectiveCompatibilityState
+} from "../case-formulation/protective-compatibility.mjs";
 
 export const CASE_STATE_VERSION = 1;
 export const CASE_STATE_STATUSES = Object.freeze(["direct_report", "supervisor_report", "observed_pattern", "hypothesis", "inference", "unresolved_conflict"]);
@@ -80,6 +85,8 @@ function validateEpisode(episode, name = "caseState.current_episode") {
   if (episode == null) return null;
   record(episode, name);
   for (const field of ["id", "target", "route", "prediction", "next_question", "started_turn_id"]) bounded(episode[field], `${name}.${field}`, 2400, { empty: field === "next_question" });
+  if (episode.active_step != null) bounded(episode.active_step, `${name}.active_step`, 240);
+  if (episode.strategy_review_policy != null) bounded(episode.strategy_review_policy, `${name}.strategy_review_policy`, 120);
   for (const field of ["constitutional_aim_ids", "adverse_signs", "stay_conditions", "switch_conditions", "stop_conditions", "source_item_ids"]) {
     if (!Array.isArray(episode[field]) || episode[field].length > CASE_STATE_LIMITS.episode_list || episode[field].some((value) => typeof value !== "string" || !value.trim())) throw new ValidationError(`${name}.${field} must contain bounded strings.`);
   }
@@ -119,6 +126,7 @@ export function createEmptyCaseState({ caseId = "local-case" } = {}) {
     intervention_history: [],
     current_episode: null,
     threat_pathway: null,
+    protective_compatibility: null,
     retrieval_hints: []
   };
 }
@@ -158,6 +166,7 @@ export function validateCaseState(value) {
   value.retrieval_hints.forEach((item, index) => bounded(item, `caseState.retrieval_hints[${index}]`, 240));
   validateEpisode(value.current_episode);
   if (Object.hasOwn(value, "threat_pathway")) validateThreatPathwayState(value.threat_pathway);
+  if (Object.hasOwn(value, "protective_compatibility")) validateProtectiveCompatibilityState(value.protective_compatibility);
   return value;
 }
 
@@ -187,7 +196,8 @@ export function applyCaseStatePatch(previous, patch = {}) {
     retrieval_hints: unique([...(before.retrieval_hints ?? []), ...(patch.retrieval_hints ?? [])]),
     trajectory_observability: patch.trajectory_observability ? clone(patch.trajectory_observability) : before.trajectory_observability,
     current_episode: Object.hasOwn(patch, "current_episode") ? clone(patch.current_episode) : before.current_episode,
-    threat_pathway: Object.hasOwn(patch, "threat_pathway") ? clone(patch.threat_pathway) : (before.threat_pathway ?? null)
+    threat_pathway: Object.hasOwn(patch, "threat_pathway") ? clone(patch.threat_pathway) : (before.threat_pathway ?? null),
+    protective_compatibility: Object.hasOwn(patch, "protective_compatibility") ? clone(patch.protective_compatibility) : (before.protective_compatibility ?? null)
   };
   return validateCaseState(next);
 }
@@ -244,6 +254,7 @@ export function diffCaseStates(previous, next) {
     answered_question_changes: changedFields(before.answered_questions, after.answered_questions).length ? after.answered_questions.map((item) => item.id) : [],
     current_episode_changed: JSON.stringify(before.current_episode) !== JSON.stringify(after.current_episode),
     threat_pathway_changed: JSON.stringify(before.threat_pathway ?? null) !== JSON.stringify(after.threat_pathway ?? null),
+    protective_compatibility_changed: JSON.stringify(before.protective_compatibility ?? null) !== JSON.stringify(after.protective_compatibility ?? null),
     trajectory_observability_changed: JSON.stringify(before.trajectory_observability) !== JSON.stringify(after.trajectory_observability)
   });
 }
@@ -255,6 +266,7 @@ export function projectCaseStateForInspection(state) {
     trajectoryObservability: value.trajectory_observability,
     currentEpisode: value.current_episode,
     threatPathway: value.threat_pathway ?? null,
+    protectiveCompatibility: value.protective_compatibility ?? null,
     factsAndHypotheses: value.items,
     contradictions: value.contradiction_clusters,
     settledAnswers: value.answered_questions,
@@ -293,9 +305,11 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
   ];
   let currentEpisode = previous.current_episode;
   const primary = interventionContract?.primaryJob;
+  const pathContract = interventionContract?.pathPerformanceContract ?? null;
   const interventionHistory = [];
   if (primary?.id && primary?.title) {
-    const continuing = previous.current_episode?.route === primary.id;
+    const episodeRoute = pathContract?.strategy?.node_id ?? primary.id;
+    const continuing = previous.current_episode?.route === episodeRoute;
     const episodeId = continuing ? previous.current_episode.id : `episode:${turnId}`;
     const selected = interventionContract.selectedNodes?.find((node) => node.id === primary.id);
     const successSignals = selected?.successSignals?.filter((value) => typeof value === "string" && value.trim()) ?? [];
@@ -306,19 +320,24 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
       ...(safetyVariables.ability_to_stop === "no" ? ["ability to stop is lost"] : []),
       ...(safetyVariables.ability_to_return === "no" ? ["ability to return is lost"] : []),
       ...(safetyVariables.present_safety === "unsafe" ? ["present safety becomes unsafe"] : []),
+      ...(["HOLD", "BLOCKED"].includes(safetyVariables.child_contact_gate) ? ["child-directed contact permission is restricted"] : []),
       ...(interventionContract?.threatPathway?.level === "IMMINENT_OPERATIONAL_DANGER" ? ["near-term operational violence risk is present"] : [])
     ];
     currentEpisode = {
       id: episodeId,
       target: snapshot?.user_goal || snapshot?.current_issue || primary.title,
-      route: primary.id,
-      prediction: successSignals[0] || `The selected route should produce observable movement toward ${primary.title.toLowerCase()}.`,
+      route: episodeRoute,
+      active_step: primary.id,
+      strategy_review_policy: pathContract ? "diagnose-refine-v1" : null,
+      prediction: continuing ? previous.current_episode.prediction : (successSignals[0] || `The selected route should produce observable movement toward ${primary.title.toLowerCase()}.`),
       next_question: interventionContract.nextQuestion ?? "",
       started_turn_id: continuing ? previous.current_episode.started_turn_id : turnId,
       constitutional_aim_ids: continuing ? previous.current_episode.constitutional_aim_ids : ["CARE", "LEADERSHIP", "PROTECTION", "INTEGRATION_VITALITY"],
       adverse_signs: continuing ? previous.current_episode.adverse_signs : ["reduced choice", "destabilization", "increasing alienation"],
-      stay_conditions: successSignals.length ? successSignals : ["more choice or flexibility", "observable ordinary-life transfer"],
-      switch_conditions: ["the prediction is not observed", "the route produces repeated low-information responses", "the client declines this route"],
+      stay_conditions: pathContract?.active_refinement?.review_condition
+        ? unique([...(successSignals.length ? successSignals : ["more choice or flexibility", "observable ordinary-life transfer"]), pathContract.active_refinement.review_condition])
+        : (successSignals.length ? successSignals : ["more choice or flexibility", "observable ordinary-life transfer"]),
+      switch_conditions: ["a source-bound review identifies a specific target/method mismatch or adequately tested contradiction", "meaningful harm or an independent safety restriction requires a change", "the client declines this route"],
       stop_conditions: stopConditions,
       source_item_ids: unique([...(continuing ? previous.current_episode.source_item_ids : []), ...items.map((item) => item.id)])
     };
@@ -338,5 +357,17 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
   const threatPathway = assessment
     ? updateThreatPathwayState(previous.threat_pathway ?? null, assessment, threatPathwayDecision(assessment), { turnId, recordedAt })
     : (previous.threat_pathway ?? null);
-  return applyCaseStatePatch(previous, { items, intervention_history: interventionHistory, current_episode: currentEpisode, threat_pathway: threatPathway });
+  const compatibilityAssessment = snapshot?.compatibility_assessment ?? null;
+  const compatibilityDecision = snapshot?.protective_compatibility_decision
+    ?? protectiveCompatibilityDecision(compatibilityAssessment, previous.protective_compatibility ?? null);
+  const protectiveCompatibility = compatibilityAssessment || previous.protective_compatibility
+    ? updateProtectiveCompatibilityState(previous.protective_compatibility ?? null, compatibilityAssessment, compatibilityDecision, { turnId, recordedAt })
+    : null;
+  return applyCaseStatePatch(previous, {
+    items,
+    intervention_history: interventionHistory,
+    current_episode: currentEpisode,
+    threat_pathway: threatPathway,
+    protective_compatibility: protectiveCompatibility
+  });
 }

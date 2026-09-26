@@ -7,20 +7,20 @@ source_id: IC.RELATED_CLINICAL_WORK
 guide_id: inner-child-guide
 heading: Related Clinical Work
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: 748c2ddee2acd722bce2c66b13f7ed3e23ddb8ee8a6270f124c6804618a6905b
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: be4059ea79b5b355f2cf6a63d0dc950049201ae07637bd66b298019352ff2139
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Related Clinical Work
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 842–857
+Locator: Lines 935–952
 
 ```text
 Related Clinical Work

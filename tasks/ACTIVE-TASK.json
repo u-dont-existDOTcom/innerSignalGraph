@@ -1,36 +1,22 @@
 {
   "schemaVersion": 1,
-  "taskId": "automatic-runtime-orchestration-20260910",
-  "title": "Automate private candidate-audit runtime orchestration",
-  "status": "active",
-  "exclusive": true,
-  "startedAt": "2026-09-10",
+  "taskId": "somatic-altered-guide-sync-20260916",
+  "title": "Integrate latest somatic and altered-states guides",
+  "status": "complete",
+  "exclusive": false,
+  "startedAt": "2026-09-16",
   "repository": "u-dont-existDOTcom/innerSignalGraph",
-  "requiredBranch": "codex/automatic-runtime-orchestration-20260910",
-  "pullRequest": 49,
+  "requiredBranch": "task/somatic-altered-guide-sync-20260916",
+  "pullRequest": 67,
   "ownerAuthorized": true,
-  "startingTaskHead": "a98f9f7d46ed8233cf638b76121d7b293ccef9b4",
-  "ownerOutcomePath": "tasks/automatic-runtime-orchestration-20260910/OWNER-OUTCOME.json",
-  "directivePath": "tasks/automatic-runtime-orchestration-20260910/EXECUTION-DIRECTIVE.json",
-  "statePath": "tasks/automatic-runtime-orchestration-20260910/INTEGRATION.md",
-  "activeLessonContractPath": "tasks/automatic-runtime-orchestration-20260910/ACTIVE-LESSON-CONTRACT.json",
-  "completionClaimRule": "Completion requires a production-wired, restart-safe, fail-closed one-message controller; mechanically independent exact-version audits and bounded repairs; persisted delivery; public/private isolation; synthetic end-to-end tests; canonical handoff; and a verified commit on draft PR 49.",
-  "coordination": {
-    "isolatedFrom": "completed Louka v3 private lifecycle work",
-    "rule": "Do not mutate or audit the real Louka case; preserve and integrate only the completed task's durable public-safe state.",
-    "integratedTask": {
-      "taskId": "private-case-v3-repair-cycle2-20260910",
-      "status": "complete",
-      "commit": "5564a2d",
-      "statePath": "tasks/private-case-v3-repair-cycle2-20260910/INTEGRATION.md",
-      "outcomeReceiptPath": "tasks/private-case-v3-repair-cycle2-20260910/PRIVATE-OPERATION-RECEIPT.json"
-    }
-  },
-  "currentPrivateCaseNextAction": "FRESH_INDEPENDENT_AUDIT",
-  "suspendedTaskSources": [
-    "fresh independent Louka v3 audit, approval, repair, or delivery",
-    "the older 48-call A/B/C discovery experiment unless separately re-authorized",
-    "unrelated task branches and pull requests",
-    "public deployment, installation, stable promotion, or merge"
-  ]
+  "startingTaskHead": "5bc037327392eef45b3c0f7bf4e3be0a3f341245",
+  "statePath": "tasks/somatic-altered-guide-sync-20260916/INTEGRATION.md",
+  "completionClaimRule": "Report the exact achieved state: all 31 exact Guide Packet decision cards are owner-approved, reconciled, and merged to development main; stable promotion, installation and deployment remain separate and unauthorized.",
+  "terminal": {
+    "mergedHead": "e48c183a725c9d894a6f401f87ae6bea181068cc",
+    "mergeCommit": "0e132aa8b3826ff5cd57b70e07bd2591543087a2",
+    "mergedAt": "2026-09-16T21:50:57Z",
+    "closeoutRecordedAt": "2026-09-16T21:56:12Z",
+    "closeoutBasis": "GitHub readback confirms PR 67 merged after exact-head protected checks; the verified review tree matches the merged development-main tree."
+  }
 }

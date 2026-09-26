@@ -1,0 +1,89 @@
+{
+  "changes": [
+    {
+      "after": [
+        "IC.ALTERED_STATES",
+        "IC.ESCAPE_URGE",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "ALT.CAPACITY",
+        "ALT.EPISTEMICS",
+        "ALT.GROUNDING"
+      ],
+      "before": [
+        "IC.ALTERED_STATES",
+        "IC.ESCAPE_URGE",
+        "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+        "AMEND.IC.WELLBEING_HORIZON"
+      ],
+      "field": "sourceRefs",
+      "nodeId": "IC.ALTERED_STATE_GATE",
+      "resolvedSourceRefs": [
+        {
+          "id": "IC.ALTERED_STATES",
+          "resolved": true
+        },
+        {
+          "id": "IC.ESCAPE_URGE",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.EXISTENTIAL_LOVE_ROUTING",
+          "resolved": true
+        },
+        {
+          "id": "AMEND.IC.WELLBEING_HORIZON",
+          "resolved": true
+        },
+        {
+          "id": "ALT.CAPACITY",
+          "resolved": true
+        },
+        {
+          "id": "ALT.EPISTEMICS",
+          "resolved": true
+        },
+        {
+          "id": "ALT.GROUNDING",
+          "resolved": true
+        }
+      ]
+    },
+    {
+      "after": [
+        "SOM.PHASE5",
+        "SOM.INTEGRATION",
+        "SOM.JUDGE_HELP",
+        "SOM.SIBAM"
+      ],
+      "before": [
+        "SOM.PHASE5",
+        "SOM.INTEGRATION",
+        "SOM.JUDGE_HELP"
+      ],
+      "field": "sourceRefs",
+      "nodeId": "SOM.MEANING_INTEGRATION",
+      "resolvedSourceRefs": [
+        {
+          "id": "SOM.PHASE5",
+          "resolved": true
+        },
+        {
+          "id": "SOM.INTEGRATION",
+          "resolved": true
+        },
+        {
+          "id": "SOM.JUDGE_HELP",
+          "resolved": true
+        },
+        {
+          "id": "SOM.SIBAM",
+          "resolved": true
+        }
+      ]
+    }
+  ],
+  "contractVersion": "inner-signal-provenance-impact-v1",
+  "ok": true,
+  "unresolved": []
+}

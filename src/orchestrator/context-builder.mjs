@@ -1,5 +1,6 @@
 import { loadGuide, loadSomaticGuide, selectGuideExcerpts } from "../guide/load-guide.mjs";
 import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
+import { perspectivePracticesEnabled } from "../guide-graph/perspective-practices.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { buildDurableCaseContext, formatVerbatimWindow } from "../case-state/context-window.mjs";
 import { constitutionReference } from "../therapy/constitution.mjs";
@@ -49,6 +50,7 @@ export async function buildContext(input, config) {
     graphBundleVersion: graphBundle.version,
     pathPerformanceNodes: graphBundle.graphs.flatMap(g => g.nodes.map(({ id, title, successSignals }) => ({ id, title, successSignals }))),
     pathPerformanceEnabled: graphBundle.graphs.length > 0 && graphBundle.graphs.every(g => g.pathPerformancePolicyVersion === 1),
+    perspectivePracticesEnabled: perspectivePracticesEnabled(graphBundle.graphs),
     guidePacketVersion: guide.manifest.guidePacketVersion ?? null,
     guideSources: guide.manifest.sources?.map((source) => ({ id: source.id, version: source.version })) ?? [],
     guideExcerpts

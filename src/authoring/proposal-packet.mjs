@@ -35,7 +35,9 @@ function buildProvenance(bundle, sourceManifest) {
     for (const section of map.sections) sourceRefs[section.id] = {
       role: source?.role ?? "current-source",
       guideId: map.guideId,
-      certainty: map.guideId === "owner-amendments" ? "owner-approved" : "author-framework",
+      certainty: map.guideId === "owner-amendments"
+        ? section.status === "proposed" ? "proposed-owner-policy" : "owner-approved"
+        : "author-framework",
       sourceSha256: source?.sha256 ?? section.sha256,
       sectionSha256: section.sha256
     };
@@ -68,11 +70,14 @@ function decisionCase(definition, affectedNodeIds) {
     affectedNodeIds,
     variables: definition.variables,
     unknowns: definition.unknowns,
+    turnTask: definition.turn_task ?? null,
     expectations: {
       ...(expected.primary ? { primaryJobId: expected.primary } : {}),
       ...(expected.selectedIncludes?.length ? { selectedNodeIds: expected.selectedIncludes } : {}),
       ...(expected.selectedExcludes?.length ? { excludedNodeIds: expected.selectedExcludes } : {}),
       ...(expected.deferredIncludes?.length ? { deferredNodeIds: expected.deferredIncludes } : {}),
+      ...(expected.requiredExecutionIncludes?.length ? { requiredNodeIds: expected.requiredExecutionIncludes } : {}),
+      ...(expected.requiredExecutionExcludes?.length ? { excludedRequiredNodeIds: expected.requiredExecutionExcludes } : {}),
       ...(expected.nextQuestion ? { nextQuestionIncludes: [expected.nextQuestion] } : {}),
       ...(expected.requiredNuancePatterns?.length ? { requiredNuanceIncludes: expected.requiredNuancePatterns } : {}),
       ...(expected.forbiddenOverclaimPatterns?.length ? { forbiddenOverclaimIncludes: expected.forbiddenOverclaimPatterns } : {})
@@ -109,7 +114,9 @@ export async function buildProposalGuidePacket({ proposal, authority, candidateG
     const paths = sourcePaths(source);
     const relative = `guides/${source.file}`;
     assertNoSymlinkAncestors(authority.root, relative, { allowMissingLeaf: false });
-    const data = await withOpenedRegularFile(path.join(authority.root, relative), (handle) => handle.readFile());
+    const data = proposal.sourceAmendments && source.id === "owner-amendments"
+      ? Buffer.from(canonicalJson(authority.amendments))
+      : await withOpenedRegularFile(path.join(authority.root, relative), (handle) => handle.readFile());
     const actual = sha(data);
     if (source.sha256 && actual !== source.sha256) throw new Error(`Current source hash changed while building proposal packet: ${source.file}.`);
     const map = mapByGuide.get(source.id);
@@ -158,6 +165,7 @@ export async function buildProposalGuidePacket({ proposal, authority, candidateG
     candidateOnly: true,
     approvalRequired: diff.substantive,
     proposalId: proposal.id,
+    proposedSourceAmendments: Boolean(proposal.sourceAmendments),
     baseProjectionInputSha256: proposal.manifest.base_projection_input_sha256,
     guides: [
       { id: "inner-child", revision: sourceById.get("inner-child-guide").version, ...sourcePaths(sourceById.get("inner-child-guide")), graphPath: graphPaths["inner-child-directed-graph"], sourceSha256: repositorySources.find((item) => item.id === "inner-child-guide").sourceSha256, graphSha256: sha(graphData["inner-child-directed-graph"]) },

@@ -1,0 +1,31 @@
+{
+  "description": "ROUTE.HELP_SEEKING is selected only for its exact compatibility route.",
+  "expected": {
+    "forbiddenOverclaimPatterns": [
+      "proven treatment for psychopathy",
+      "permission to resume child contact"
+    ],
+    "nextQuestion": "What are you hoping for from this conversation—what hurts, or what would you like to be different?",
+    "primary": "ROUTE.HELP_SEEKING",
+    "requiredNuancePatterns": [
+      "present adult perspective",
+      "religious identity is not evidence"
+    ],
+    "selectedIncludes": [
+      "ROUTE.HELP_SEEKING"
+    ]
+  },
+  "id": "PCG02A",
+  "unknowns": [],
+  "variables": {
+    "ability_to_return": "yes",
+    "ability_to_stop": "yes",
+    "altered_state": "sober",
+    "child_contact_gate": "BLOCKED",
+    "compatibility_route": "help_seeking",
+    "current_intent": "conversation",
+    "dissociation": "none",
+    "orientation": "oriented",
+    "present_safety": "safe"
+  }
+}

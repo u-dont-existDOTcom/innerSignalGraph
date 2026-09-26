@@ -17,6 +17,7 @@ graph_tags:
 source_refs:
   - AMEND.IC.BEST_FRIEND_PROMPT
   - IC.BORROW_ONE_FUNCTION
+  - AMEND.IC.WISDOM_CORE
 regression_refs:
   - G008
   - G026
@@ -27,9 +28,10 @@ regression_refs:
   - G033
   - G034
   - G035
-base_record_sha256: 2094b53095b0213ede115a8db91bb4aab513f48ed727a16853da008dee1a192c
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+  - G036
+base_record_sha256: 5474d5ff4fa1c7c74908569a728d25d197c61dfe11cf3d5bc99bb3b8684523e8
+base_graph_sha256: 55369c75e95b5cc9fc32c807f7b47bef411acf3aedcbe895076fbb796d04a0c4
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Borrow the best-friend standard of care
@@ -75,7 +77,8 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
   },
   "recommendations": [
     "Ask: 'What would I tell my best friend in this exact situation?'",
-    "Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action."
+    "Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action.",
+    "If the person wants another caring vantage point, offer a wiser future self or supportive company as an alternative, not a compulsory addition. Preserve changed understanding, felt embodiment and companionship as different possible benefits."
   ],
   "successSignals": [
     "One concrete sentence or action becomes available."
@@ -89,3 +92,5 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
 [[current/governance/amendments/AMEND.IC.BEST_FRIEND_PROMPT]]
 
 [[current/sources/inner-child-guide/IC.BORROW_ONE_FUNCTION]]
+
+[[current/governance/amendments/AMEND.IC.WISDOM_CORE]]

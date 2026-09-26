@@ -11,11 +11,12 @@ test("inner-child and somatic sources compile into a validated directed-graph bu
   assert.equal(bundle.contractVersion, "guide-graph-v1");
   assert.equal(bundle.version, "inner-child-somatic-pilot-2026-08-09-r5");
   assert.equal(bundle.stats.graphCount, 3);
-  assert.equal(bundle.stats.nodeCount, 53);
-  assert.equal(bundle.stats.edgeCount, 70);
-  assert.equal(bundle.stats.ownerAmendmentCount, 26);
+  assert.equal(bundle.stats.nodeCount, 73);
+  assert.equal(bundle.stats.edgeCount, 99);
+  assert.equal(bundle.stats.ownerAmendmentCount, 38);
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "inner-child-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "somatic-sequencing-guide"));
+  assert.ok(bundle.sourceMaps.some((item) => item.guideId === "altered-states-map-source"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "vagal-blitz-source"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "semantic-assets"));
 });
@@ -28,7 +29,7 @@ test("compiled guide-graph bundles contain no wall-clock build metadata", async 
 test("all authored branch cases pass the deterministic graph planner", async () => {
   const result = await runGraphRegressionSuite();
   assert.equal(result.ok, true, JSON.stringify(result.results.filter((item) => !item.ok), null, 2));
-  assert.equal(result.count, 29);
+  assert.equal(result.count, 30);
 });
 
 test("borrowed spiritual love preserves devotion, agency transfer, ontology humility, and ordinary safety", async () => {
@@ -246,4 +247,41 @@ test("safety still outranks the leave-it-alone branch", async () => {
   });
   assert.equal(plan.primaryJob.tier, 1);
   assert.notEqual(plan.primaryJob.id, "ROUTE.LEAVE_ALONE");
+});
+
+
+test("familiar music is an optional emotional-access cue, not outcome proof", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      activation: "moderate", dissociation: "none", altered_state: "sober", current_intent: "gentle_practice",
+      inner_adult_access: "partial", love_access: "limited", self_directed_love: "inaccessible",
+      music_emotional_access: "helpful"
+    }
+  });
+  assert.ok(plan.displayTrace.secondaryJobs.some((item) => item.id === "IC.MUSIC_EMOTIONAL_ACCESS"));
+  const node = bundle.graphs.flatMap((graph) => graph.nodes).find((item) => item.id === "IC.MUSIC_EMOTIONAL_ACCESS");
+  assert.ok(node);
+  assert.ok(node.effects.forbiddenOverclaims.some((item) => /dramatic music-evoked state/i.test(item)));
+  assert.ok(node.effects.requiredNuance.some((item) => /session-context moderator/i.test(item)));
+  assert.ok(node.successSignals.some((item) => /remains oriented and able to stop/i.test(item)));
+});
+
+test("music overwhelm stops the cue and broader safety still outranks it", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const base = {
+    present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+    activation: "moderate", dissociation: "none", altered_state: "sober", current_intent: "gentle_practice",
+    inner_adult_access: "partial", love_access: "limited", self_directed_love: "inaccessible",
+    music_emotional_access: "overwhelming"
+  };
+  const stopped = planFromGraphs({ graphs: bundle.graphs, variables: base });
+  assert.equal(stopped.primaryJob.id, "IC.MUSIC_EMOTIONAL_ACCESS_STOP");
+  assert.ok(stopped.blockedNodes.some((item) => item.id === "IC.MUSIC_EMOTIONAL_ACCESS"));
+  assert.ok(stopped.avoid.some((item) => /force a breakthrough/i.test(item)));
+
+  const unsafe = planFromGraphs({ graphs: bundle.graphs, variables: { ...base, orientation: "disoriented" } });
+  assert.equal(unsafe.primaryJob.id, "IC.SAFETY_ORIENTATION");
 });

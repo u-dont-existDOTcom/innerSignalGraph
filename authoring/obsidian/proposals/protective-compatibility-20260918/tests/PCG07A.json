@@ -1,0 +1,31 @@
+{
+  "description": "ROUTE.GOAL_MISMATCH is selected only for its exact compatibility route.",
+  "expected": {
+    "forbiddenOverclaimPatterns": [
+      "proven treatment for psychopathy",
+      "permission to resume child contact"
+    ],
+    "nextQuestion": "",
+    "primary": "ROUTE.GOAL_MISMATCH",
+    "requiredNuancePatterns": [
+      "present adult perspective",
+      "religious identity is not evidence"
+    ],
+    "selectedIncludes": [
+      "ROUTE.GOAL_MISMATCH"
+    ]
+  },
+  "id": "PCG07A",
+  "unknowns": [],
+  "variables": {
+    "ability_to_return": "yes",
+    "ability_to_stop": "yes",
+    "altered_state": "sober",
+    "child_contact_gate": "BLOCKED",
+    "compatibility_route": "goal_mismatch",
+    "current_intent": "conversation",
+    "dissociation": "none",
+    "orientation": "oriented",
+    "present_safety": "safe"
+  }
+}

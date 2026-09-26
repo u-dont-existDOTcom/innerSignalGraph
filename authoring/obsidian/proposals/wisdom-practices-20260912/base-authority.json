@@ -1,0 +1,231 @@
+{
+  "authoritativeInputs": [
+    {
+      "path": "authoring/migration/owner-map-resolution-2026-08-29.json",
+      "sha256": "3a6572072f63204e7511cd977f442509fe630dd761152edcba248cc1cb43b14e"
+    },
+    {
+      "path": "authoring/overlays/inner-child.overlay.json",
+      "sha256": "8ca238d5494a0449746cc1c877f0e812891379b596559949633fd6bd4230dfda"
+    },
+    {
+      "path": "authoring/overlays/somatic.overlay.json",
+      "sha256": "963ddda6ad444cecaba9bcc3fb35d5dcdc4b3c0cd30946f8aae6b54c98819efc"
+    },
+    {
+      "path": "corpus/graph-cases/G001.json",
+      "sha256": "25d9a4533b9f43f42c47a73ce7cef67af0d00c6272e6c091da07e6467b1515a4"
+    },
+    {
+      "path": "corpus/graph-cases/G002.json",
+      "sha256": "aab88cd64b9fdf00c295dcab62a48374660d98843b72428fd2e43e0654c98e93"
+    },
+    {
+      "path": "corpus/graph-cases/G003.json",
+      "sha256": "f5533f8a573ce00bafe6ae3ab1de865dde7565c60b8849007cc5c1cd46e7ac3d"
+    },
+    {
+      "path": "corpus/graph-cases/G004.json",
+      "sha256": "0f4c223359c2491d4f0f6e661ee921bbd2aa8011e065fc5c0b784f49f751e376"
+    },
+    {
+      "path": "corpus/graph-cases/G005.json",
+      "sha256": "b43b9e5caa0a7e451dcf6a51001a82ce7a989d370ff652b6a34612cc0c1ff827"
+    },
+    {
+      "path": "corpus/graph-cases/G006.json",
+      "sha256": "564ff52aeafbaf1b8e0759954089a9ec92967e758d51de0c4be678e973526987"
+    },
+    {
+      "path": "corpus/graph-cases/G007.json",
+      "sha256": "2400e4090add73c6812d99412f7971fba65281d183c41d5b373dc8bab9418e2b"
+    },
+    {
+      "path": "corpus/graph-cases/G008.json",
+      "sha256": "312bf76a4307d2d0eebd94f1e63028e4676c6654a4ebc133ae36e8423603a5fa"
+    },
+    {
+      "path": "corpus/graph-cases/G009.json",
+      "sha256": "8a0d8e0e96e2a13a267d73c218720718701aecf381a248cf2044de214906770a"
+    },
+    {
+      "path": "corpus/graph-cases/G010.json",
+      "sha256": "abbefde82bd342e59cba4ac1978ea568411a48aaa54fe796bfe4cbaed0be572a"
+    },
+    {
+      "path": "corpus/graph-cases/G011.json",
+      "sha256": "1a9e67cda377bfce23a23c6fbc77ffd8f8c1df0a048c2a40b7c7d9994cbbfd13"
+    },
+    {
+      "path": "corpus/graph-cases/G012.json",
+      "sha256": "1c260ed2fd7be7bdcbf769898ffb61ed9a1a208af5e07f93e98ac68784ec8d82"
+    },
+    {
+      "path": "corpus/graph-cases/G013.json",
+      "sha256": "7f17ed5441797f1884ce5ae6ab0d5f6ed916f159a7409a39637fed4efd4b4929"
+    },
+    {
+      "path": "corpus/graph-cases/G014.json",
+      "sha256": "a46a0532e2b88dd28567951bbd4649227c1969429c92fcb0aaf00f98ccdffb63"
+    },
+    {
+      "path": "corpus/graph-cases/G015.json",
+      "sha256": "e3cdd7e8d5090ac972ff2ae41a20e83e00a4647953567a1ff50aa06f13d7e9ab"
+    },
+    {
+      "path": "corpus/graph-cases/G016.json",
+      "sha256": "d0497926f2a98a7b1de818c74e43d68c84f87a0611947d0db020eba4397d35c9"
+    },
+    {
+      "path": "corpus/graph-cases/G017.json",
+      "sha256": "a43afc395d47a08de671587b9e840b6217ba7e5fb871f417eb16989c2e1abbd5"
+    },
+    {
+      "path": "corpus/graph-cases/G018.json",
+      "sha256": "2ae67fb8ae852b8ce9f088abec2f0f0699a94b4bef494e7828653b51ec7e9868"
+    },
+    {
+      "path": "corpus/graph-cases/G025.json",
+      "sha256": "49b65bd3c3c3b446158ee9cefd099fd18124c45c98a26a60c5c3f81b9a501a9d"
+    },
+    {
+      "path": "corpus/graph-cases/G026.json",
+      "sha256": "d5c1dd648a9e752e13438b682ba4f346be6a45cf395e64c275d25e901beee670"
+    },
+    {
+      "path": "corpus/graph-cases/G027.json",
+      "sha256": "74f88328adf1a2031eaacc443cff1bb82eba8c2830b5315d6c1fc1359526fbf3"
+    },
+    {
+      "path": "corpus/graph-cases/G028.json",
+      "sha256": "22a264f0916b847a825e886d18f4767e7af3ee90e7f4b0deb14bff6b1ec725f4"
+    },
+    {
+      "path": "corpus/graph-cases/G029.json",
+      "sha256": "ecaf29b7878b12b5de97bfebabfba383462c2cca412d4a2780f7341521ecb3e7"
+    },
+    {
+      "path": "corpus/graph-cases/G030.json",
+      "sha256": "e50f7494c0298b55e3fee91184863eee914ebe62ad9511619202e0e0d3227bbf"
+    },
+    {
+      "path": "corpus/graph-cases/G031.json",
+      "sha256": "4ceba3fd1c91322fcc7be49325a1d1297afc7016ee97cafd8377f5e17342df27"
+    },
+    {
+      "path": "corpus/graph-cases/G032.json",
+      "sha256": "4dbe0f4fedf8b59953ea1ec5cc6631f9478360eb1b7c03007f14f5799bf78c0a"
+    },
+    {
+      "path": "corpus/graph-cases/G033.json",
+      "sha256": "8248b8d45c97e7c247934611a522f6da43f24325ad04ea06f0bab3973a1e489a"
+    },
+    {
+      "path": "corpus/graph-cases/G034.json",
+      "sha256": "8dd838b5683f933dd2e5e86faf69971b658a5a98762117fe4c826d92817db6fc"
+    },
+    {
+      "path": "corpus/graph-cases/G035.json",
+      "sha256": "0b1282c176316e938b04d05f741e0e1ec3aa3958e317cde1e22a79e52e6aac88"
+    },
+    {
+      "path": "guide-graphs/candidates/cross-guide.graph.json",
+      "sha256": "beb05b08a340cf9bd62efacaab7619a3dd4f6adf6bedabb4927cfe4e3a329560"
+    },
+    {
+      "path": "guide-graphs/candidates/inner-child.graph.json",
+      "sha256": "8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968"
+    },
+    {
+      "path": "guide-graphs/candidates/somatic.graph.json",
+      "sha256": "6b31d4e5d0e6dc2ab838aae714fe59c2c1c2ab21607409c9b1a25b2d5769dd2d"
+    },
+    {
+      "path": "guide-graphs/compiled/bundle.json",
+      "sha256": "b7a4b71f2d8d9b67e162f72da317523767cdcd91a996222dee7c4ac0457cebb9"
+    },
+    {
+      "path": "guide-graphs/compiled/inner-child-directed-graph.json",
+      "sha256": "1f2f759b1278d2ce752c2c874d370600c29ff8424a23e2a1d368a6acdfeeb19f"
+    },
+    {
+      "path": "guide-graphs/compiled/inner-child-somatic-cross-guide.json",
+      "sha256": "d4b2e7b462c08aebe3ce20f34bdae07d7547756f32db2a0a955047f10296031b"
+    },
+    {
+      "path": "guide-graphs/compiled/somatic-directed-graph.json",
+      "sha256": "92a514a9faa2b75886a353b44dd8934d519afc6a20eb648e7052f2e552ba418d"
+    },
+    {
+      "path": "guides/inner-child-guide-2026-09-07.txt",
+      "sha256": "00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f"
+    },
+    {
+      "path": "guides/manifest.json",
+      "sha256": "d7030177ed687791c9575596dfd53925dcc4b46ef8be043e473984cc9debbd96"
+    },
+    {
+      "path": "guides/owner-amendments.json",
+      "sha256": "eb0a4cfdd77465a3d3d34557e850976d689c51196d0b4054f51b59c8922ef491"
+    },
+    {
+      "path": "guides/semantic-assets.json",
+      "sha256": "aee2364244ff989c850a1e84d4e556ae1ae67891fa706e852081d5f82d74936d"
+    },
+    {
+      "path": "guides/somatic-sequencing-guide.txt",
+      "sha256": "5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267"
+    },
+    {
+      "path": "guides/source-layout.json",
+      "sha256": "f65467561a8a31d109aefff766035885b85b62fc55539e33988a045f98b485ec"
+    },
+    {
+      "path": "guides/vagal-blitz-source.pdf",
+      "sha256": "79181c31e8cb5af5b20b1269c448bb3afbde4d903e7e609d5b059cb63399af5c"
+    },
+    {
+      "path": "src/case-formulation/bounded-schema.mjs",
+      "sha256": "f5a96854e0b1ff5e1c99efba367e2a091d25fa4f7347190bdd0c6fe297cbec72"
+    },
+    {
+      "path": "src/case-formulation/delivery-system-assessment.mjs",
+      "sha256": "1292d1ab98c9ea587a0687f8cc4de5a27e40a5acdca5be9d3d9f3e41ff2529d1"
+    },
+    {
+      "path": "src/case-formulation/path-performance.mjs",
+      "sha256": "acd0c9151479e8c1543df9e5cd02604357f61c3ace5a4a1d4adcbf4e370a2648"
+    },
+    {
+      "path": "src/case-formulation/turn-task.mjs",
+      "sha256": "f6c01c652a7798f798750521d3748999964f35d642cd5922ef009f939506e100"
+    },
+    {
+      "path": "src/guide-graph/compiler.mjs",
+      "sha256": "6ef155b0e717fdaf52f5ab6a389808f40cc4673fb961070775967cff820f0a33"
+    },
+    {
+      "path": "src/guide-graph/contract.mjs",
+      "sha256": "5ba33b5ac65076e66cf262e54010900ef4e3225caeaf5c16d4ff7d08b078a6e0"
+    },
+    {
+      "path": "src/guide-graph/planner.mjs",
+      "sha256": "18fc93d21d1e1c25ce260d01a07aa2729a299d8f6c2f2ca07a5db60ccdf141b4"
+    },
+    {
+      "path": "src/guide-graph/regressions.mjs",
+      "sha256": "827d1e1127c81ace4fa8da4b9dd2833ef2faf298deec99f3136830c92b397cbe"
+    },
+    {
+      "path": "src/guide-graph/source-map.mjs",
+      "sha256": "94db29ad60ac15a2b3c7c54eda545fbe860764ebc863c9c20d7053c183d776c5"
+    },
+    {
+      "path": "src/guide-graph/validate.mjs",
+      "sha256": "b870caf0ad9dd07bd48dc1daa129ab0bc9bd85603e29a9f512a5bdcbe47841ce"
+    }
+  ],
+  "contractVersion": "inner-signal-authoring-base-authority-v1",
+  "projectionInputSha256": "2b23083b114602af50c57f715c5afb16d1c1b9959e3ca8ea9d7f87f501a49b2f",
+  "proposalId": "wisdom-practices-20260912"
+}

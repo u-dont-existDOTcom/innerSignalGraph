@@ -1,0 +1,2295 @@
+{
+  "contractVersion": "inner-signal-proposal-evidence-v1",
+  "edgeEvidence": [
+    {
+      "body": "\n# IC.COMMON_HUMANITY may-support IC.CARING_COMPANY\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-09358c495d7e7c09",
+      "operation": "add"
+    },
+    {
+      "body": "\n# IC.CRITICISM_KERNEL may-support IC.DRAFT_EDITOR\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-150cfa2806398797",
+      "operation": "add"
+    },
+    {
+      "body": "\n# IC.WISER_SELF_PERSPECTIVE may-support IC.DRAFT_EDITOR\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-15879508315cf094",
+      "operation": "add"
+    },
+    {
+      "body": "\n# IC.DRAFT_RETURN_TO_CARE may-use IC.MEET_GUARD\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-1a7c15c34ca3eb6e",
+      "operation": "add"
+    },
+    {
+      "body": "\n# IC.COMPASSIONATE_STORY may-use IC.BORROW_ONE_FUNCTION\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-2995b8a0204e4f16",
+      "operation": "add"
+    },
+    {
+      "body": "\n# ROUTE.RELATIONAL_REALITY_CHECK clarifies IC.CRITICISM_KERNEL\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-4199a55d0566afa3",
+      "operation": "add"
+    },
+    {
+      "body": "\n# ROUTE.ACT_OUTWARD may-use-as-communication-support IC.DRAFT_EDITOR\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-6c02b2ad03ea59d1",
+      "operation": "add"
+    },
+    {
+      "body": "\n# IC.DRAFT_RETURN_TO_CARE embodies-through IC.PROTECTOR_ACTION\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-70a28d7f2ad3f92c",
+      "operation": "add"
+    },
+    {
+      "body": "\n# IC.BEST_FRIEND_PERSPECTIVE offers-alternative IC.WISER_SELF_PERSPECTIVE\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-90e8bf697a5cc2bb",
+      "operation": "add"
+    },
+    {
+      "body": "\n# IC.BORROW_LOVE offers-alternative IC.CARING_COMPANY\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-925905a3b57a86e5",
+      "operation": "add"
+    },
+    {
+      "body": "\n# IC.DRAFT_EDITOR returns-for-care IC.DRAFT_RETURN_TO_CARE\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-9e7a5f52bc0bcaf0",
+      "operation": "add"
+    },
+    {
+      "body": "\n# IC.BORROW_ONE_FUNCTION offers-alternative IC.PAST_COMPETENCE\n\nThis exact packet-supplied relation is a candidate topology addition. It does not schedule a later turn or override safety, relationship, consent or trajectory gates.\n",
+      "edgeId": "edge-ebd0ae015462b4ea",
+      "operation": "add"
+    }
+  ],
+  "manifestBody": "\n# wisdom-practices-20260912\n\n## Intent\n\nMaterialize the exact owner-approved, source-provenanced wisdom practices as reachable optional graph tasks and production-gated runtime support.\n\n## Non-goals\n\nNo therapy redesign, new research, private-case access, forced practice, new task store, automatic send, provider call, merge, deployment, installation or stable promotion.\n\n## Worst plausible failure\n\nA practice could suppress valid protest, invent facts or child-state, bypass safety or relational assessment, carry stale consent across issues, or treat outward communication as completed inward care. Existing precedence and the supplied negative cases must prevent those failures.\n\n## Acceptance distinctions\n\nG930–G962 distinguish grounded direct entrances from decline/close, raw-variable spoofing, safety and relationship precedence, and the bounded case where draft editing is required support while outward action remains primary.\n",
+  "nodeEvidence": [
+    {
+      "body": "\n# Borrow the best-friend standard of care\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"any\": [\n      {\n        \"field\": \"self_criticism\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      },\n      {\n        \"field\": \"inner_adult_access\",\n        \"op\": \"in\",\n        \"value\": [\n          \"low\",\n          \"partial\"\n        ]\n      },\n      {\n        \"field\": \"current_intent\",\n        \"op\": \"eq\",\n        \"value\": \"conversation\"\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Do not use the friend standard to shame the person for not already treating themselves that way.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [],\n    \"requiredNuance\": []\n  },\n  \"recommendations\": [\n    \"Ask: 'What would I tell my best friend in this exact situation?'\",\n    \"Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action.\",\n    \"If the person wants another caring vantage point, offer a wiser future self or supportive company as an alternative, not a compulsory addition. Preserve changed understanding, felt embodiment and companionship as different possible benefits.\"\n  ],\n  \"successSignals\": [\n    \"One concrete sentence or action becomes available.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.BEST_FRIEND_PERSPECTIVE",
+      "operation": "replace"
+    },
+    {
+      "body": "\n# Borrow already-accessible love without flattening its depth\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"love_access\",\n        \"op\": \"in\",\n        \"value\": [\n          \"accessible\",\n          \"limited\"\n        ]\n      }\n    ],\n    \"any\": [\n      {\n        \"field\": \"self_directed_love\",\n        \"op\": \"in\",\n        \"value\": [\n          \"unsafe\",\n          \"inaccessible\",\n          \"unknown\"\n        ]\n      },\n      {\n        \"field\": \"inner_adult_access\",\n        \"op\": \"in\",\n        \"value\": [\n          \"low\",\n          \"partial\"\n        ]\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Do not manufacture warmth or make the loved being responsible for the session.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not call reluctance proof that the child rejects love.\"\n    ],\n    \"requiredNuance\": [\n      \"The problem may be safety of receiving love rather than absence of love.\",\n      \"Ordinary affection or care and profound transpersonal love are distinct resources; either may be therapeutically useful, and one must not be used to erase the distinction the user is making.\"\n    ]\n  },\n  \"recommendations\": [\n    \"First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.\",\n    \"Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.\",\n    \"Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love.\",\n    \"Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.\",\n    \"Remembered or imagined caring company is an alternative when receiving support is more accessible than generating affection. Do not assume safe parental imagery or force transfer.\"\n  ],\n  \"successSignals\": [\n    \"The capacity for love becomes experientially available without coercion.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.BORROW_LOVE",
+      "operation": "replace"
+    },
+    {
+      "body": "\n# Borrow one bounded adult function\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"any\": [\n      {\n        \"field\": \"inner_adult_access\",\n        \"op\": \"in\",\n        \"value\": [\n          \"low\",\n          \"partial\"\n        ]\n      },\n      {\n        \"field\": \"parent_imagery\",\n        \"op\": \"in\",\n        \"value\": [\n          \"critical\",\n          \"frightening\",\n          \"blank\"\n        ]\n      },\n      {\n        \"field\": \"self_directed_love\",\n        \"op\": \"in\",\n        \"value\": [\n          \"unsafe\",\n          \"inaccessible\"\n        ]\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Do not demand an ideal parent image or let the helper become authority over memories, medicine, relationships, spiritual conclusions, or future.\",\n    \"Do not generalize one admirable function, true teaching, healing result, or spiritual gift into global trustworthiness.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [\n      \"IC.DEEP_CHILD_DIALOGUE\"\n    ],\n    \"forbiddenOverclaims\": [\n      \"Do not claim the inner adult has already been built.\"\n    ],\n    \"requiredNuance\": [\n      \"Adult identity may form after behavior.\",\n      \"Borrowed adulthood can support the part attempting the adult role, not only the younger state.\",\n      \"Borrow only in the domain and dose the source’s track record has earned; competence or warmth in one domain does not silently transfer authority to another.\"\n    ]\n  },\n  \"recommendations\": [\n    \"Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.\",\n    \"Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.\",\n    \"When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness.\",\n    \"Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.\",\n    \"A real past occasion of responding well or a fallible compassionate future perspective may supply one bounded function. Offer the relevant alternative only if useful; do not demand past success or a perfect state.\"\n  ],\n  \"successSignals\": [\n    \"The person can perform one adult function without pretending the whole role or the source’s wider authority is available.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.BORROW_ONE_FUNCTION",
+      "operation": "replace"
+    },
+    {
+      "body": "\n# Meet the moment with remembered or imagined caring company\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"caring_company\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"Receiving caring company is not identical to generating affection toward another; use the function actually needed.\"\n    ]\n  },\n  \"recommendations\": [\n    \"Offer remembered or imagined caring company or a nonpersonified supportive stance when it feels useful. The future self, a real caring figure or a person's own chosen spiritual frame may help.\",\n    \"Do not assume family, maternal imagery or a safe remembered caregiver is available. Blank, critical or frightening imagery calls for another entrance, not forced recall.\",\n    \"Notice whether receiving support makes some present care, discernment, courage or agency more available. Do not make becoming independent of all support or spiritual relationship the goal.\",\n    \"Rogers's documented care-retrieval invitation is an optional exemplar, not proof that this technique caused his qualities.\"\n  ],\n  \"successSignals\": [\n    \"The person feels accompanied and can choose a useful present response without surrendering judgment.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.CARING_COMPANY",
+      "operation": "add"
+    },
+    {
+      "body": "\n# Recognize shared humanity without minimizing this experience\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"common_humanity\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"Universality is belonging, not comparison, doctrinal pressure or a substitute for accompaniment.\"\n    ]\n  },\n  \"recommendations\": [\n    \"Begin with the particular experience and its circumstances. If useful, recognize that the longing underneath it is something other people may know as well.\",\n    \"Invite, do not diagnose, possible longings such as safety, understanding, dignity, belonging, freedom or repair. The person may name something else or prefer simple company.\",\n    \"Distinguish “I am not excluded from humanity” from “others have it worse.” Shared longing does not excuse harmful ways of meeting it.\",\n    \"An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance.\"\n  ],\n  \"successSignals\": [\n    \"The person feels less uniquely defective while their particular loss, needs and boundaries remain recognized.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.COMMON_HUMANITY",
+      "operation": "add"
+    },
+    {
+      "body": "\n# Give a difficult memory compassionate story punctuation\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"story_punctuation\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"The exact phrase is owner-reported, not a clinically validated intervention.\"\n    ]\n  },\n  \"recommendations\": [\n    \"For a manageable memory, offer the exact short phrase: “And so that's the way it happened!” “Once upon a time…” may be added only if that tone fits.\",\n    \"Notice whether it changes the relationship to the memory without inventing facts or treating it as fiction. The aim is kind distance or acknowledgment, not proving innocence or silencing grief.\",\n    \"If useful, let the short practice end. An optional next move asks what the person in the story needs now; specific responsibility or repair can be considered without global self-condemnation.\",\n    \"A sneering narrator, increased shame, forced humor, numbness or unreality means change route, not add more narrative distance.\"\n  ],\n  \"successSignals\": [\n    \"The episode is less like a global verdict while contact, responsibility and present orientation remain.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.COMPASSIONATE_STORY",
+      "operation": "add"
+    },
+    {
+      "body": "\n# Receive useful content without accepting contempt\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"criticism_kernel\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"The exact maxim is not a verified Fred Rogers quotation.\"\n    ]\n  },\n  \"recommendations\": [\n    \"After the relevant external reality check, ask whether there is a specific supported point inside the criticism worth considering. Separate it from insults, exaggeration or coercive demands.\",\n    \"Where true, acknowledge the specific behavior or make an appropriate repair. Where uncertain, clarification is optional; do not invent a kernel or concede unsupported blame.\",\n    \"Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity.\"\n  ],\n  \"successSignals\": [\n    \"Accurate responsibility and useful information are retained without swallowing a global verdict or surrendering protection.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.CRITICISM_KERNEL",
+      "operation": "add"
+    },
+    {
+      "body": "\n# Edit the communication without rejecting its author\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"draft_editor\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"The first draft can be a mature protest; it is not automatically a child-state.\",\n      \"A private draft is not a sent message, a settled intention, or an established account of the other person.\"\n    ]\n  },\n  \"recommendations\": [\n    \"Invite a brief private mental or written draft of what the person wants to say. Keep raw draft and sendable response clearly separate; do not require disclosure or storage.\",\n    \"Take the caring editor's position: preserve the important truth, justified protest, proportionate responsibility, realistic aim and necessary boundary. Better does not mean softer or more agreeable.\",\n    \"Check an honest sufficient response for this actual recipient and situation. The human decides whether to send, pause, apologize, refuse or not respond. Do not send anything automatically.\",\n    \"Make room to return to the original draft for inward care after the outward decision. Some inward care can come first if that makes editing possible. An appropriate existing draft may not need editing.\"\n  ],\n  \"successSignals\": [\n    \"The communication is more appropriate without internal abandonment.\",\n    \"A later return to care remains visible as a separate purpose until reported, deferred or declined.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.DRAFT_EDITOR",
+      "operation": "add"
+    },
+    {
+      "body": "\n# Return to the first draft for understanding and care\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"return_to_care\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"Outward completion is not inward completion. Declining further work is not failure.\"\n    ]\n  },\n  \"recommendations\": [\n    \"After the reported outward response or decision, return to the original writer's experience without scolding them for it. Mental recall is enough; do not require a stored draft.\",\n    \"Attend to the actual hurt, need, protest, responsibility or limit. Offer feasible Nurturer/Protector/Guide care; the adult acts before requiring belief or reassurance from a part.\",\n    \"Use existing guard, credibility, borrowed-function, protection or deeper-dialogue routes only as actually needed and within their existing gates. Do not infer a younger self or childhood memory.\",\n    \"Track the return separately from communication success. Respect a wish to defer, stop or decline; preserve unfinished work without making it a compulsory assignment or another reassurance loop.\"\n  ],\n  \"successSignals\": [\n    \"The person reports understanding, helpful care, an appropriate protective action or a freely chosen ending.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.DRAFT_RETURN_TO_CARE",
+      "operation": "add"
+    },
+    {
+      "body": "\n# Retrieve a real occasion of responding well\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"past_competence\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"Prior capacity is evidence, not a guarantee that the same response is possible now.\"\n    ]\n  },\n  \"recommendations\": [\n    \"Offer: “Remember one real occasion when you met a difficulty in a way you respect. What did you actually do, and what helped? Is one part available now?”\",\n    \"A small relevant event is sufficient. Retrieve action, support, resources or conditions rather than merely a flattering identity claim.\",\n    \"If recall is difficult, stop the search or use an already chosen anchor or another care entrance. Prior ability does not cancel present limits or the value of receiving help.\"\n  ],\n  \"successSignals\": [\n    \"A specific actual action or support becomes available without pressure or invented memory.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.PAST_COMPETENCE",
+      "operation": "add"
+    },
+    {
+      "body": "\n# Make the Protector visible in ordinary life\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"any\": [\n      {\n        \"field\": \"credibility_conflict\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      },\n      {\n        \"field\": \"inner_adult_access\",\n        \"op\": \"in\",\n        \"value\": [\n          \"low\",\n          \"partial\"\n        ]\n      },\n      {\n        \"field\": \"protective_response\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Do not choose an action so large that failure becomes new evidence of unreliability.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [],\n    \"requiredNuance\": []\n  },\n  \"recommendations\": [\n    \"Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.\",\n    \"Report the action without requiring the younger state to trust it yet.\",\n    \"Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.\"\n  ],\n  \"successSignals\": [\n    \"One small promise is kept.\",\n    \"The action or its review provides truthful information about what supports protection and follow-through, including when a reasonable plan needs changing.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.PROTECTOR_ACTION",
+      "operation": "replace"
+    },
+    {
+      "body": "\n# Borrow a wiser perspective without rejecting the present self\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"wiser_self\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"Perfect clarity is not required; future perspective stays fallible and open to correction.\"\n    ]\n  },\n  \"recommendations\": [\n    \"Offer: “Imagine looking back when you are clearer and compassionate toward everyone involved, including yourself. What would you understand about this moment?”\",\n    \"Allow clearer understanding, feeling like that wiser self, or feeling accompanied by it; use whichever actually helps, including more than one. Do not force visualization or a state transition.\",\n    \"Ask what that perspective understands about the present person's limitations and how it would care for them now. When embodiment is unavailable, use one honest sufficient action, firm boundary, acknowledgment or pause.\",\n    \"The optional future-other extension is goodwill toward a possibility, not mind-reading, prediction of an apology, certainty that they will agree, or a reason to override present evidence.\"\n  ],\n  \"successSignals\": [\n    \"The person has more usable choice or caring contact, with appropriate boundaries intact.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "IC.WISER_SELF_PERSPECTIVE",
+      "operation": "add"
+    },
+    {
+      "body": "\n# Act on the concrete problem\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"actionable_problem\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"in\",\n        \"value\": [\n          \"ideation\",\n          \"intent\",\n          \"imminent\"\n        ]\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Do not wait for complete emotional certainty before taking a reversible necessary action.\",\n    \"Do not use action as a way to deny clearly unresolved inner material that continues to drive the problem.\",\n    \"Do not treat noncompletion as lack of motivation or a protective part before examining practical barriers; do not treat task completion or immediate mood improvement as the sole evidence of benefit.\"\n  ],\n  \"defaultQuestion\": \"What is the next observable action that could actually change this situation?\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not reduce every emotional problem to productivity or behavioral execution.\"\n    ],\n    \"requiredNuance\": [\n      \"A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job.\"\n    ]\n  },\n  \"questionPolicy\": {\n    \"purpose\": \"discriminate\",\n    \"unresolvedFields\": []\n  },\n  \"recommendations\": [\n    \"Extract one concrete problem that can be changed and choose the next observable decision or action.\",\n    \"When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.\",\n    \"Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.\",\n    \"When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.\",\n    \"For a chosen interpersonal response that the person wants help composing, offer the draft/editor method if useful. A brief sufficient response, firm boundary, apology, pause or nonresponse can be appropriate. Preserve the return to inward care separately from outward completion.\"\n  ],\n  \"successSignals\": [\n    \"A decision, boundary, request, repair, plan, or other observable action changes the real situation.\",\n    \"Thinking becomes shorter and more specific because it terminates in action or a defined wait for new information.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "ROUTE.ACT_OUTWARD",
+      "operation": "replace"
+    },
+    {
+      "body": "\n# Reality-check the relationship before self-analysis\n\n> [!warning] Editable proposal record. Building it never changes canonical graph files.\n\n## Structured graph payload\n\n<!-- inner-signal:payload:start -->\n```json\n{\n  \"activation\": {\n    \"any\": [\n      {\n        \"field\": \"other_person_central\",\n        \"op\": \"eq\",\n        \"value\": \"yes\"\n      },\n      {\n        \"field\": \"emotional_takeover_pressure\",\n        \"op\": \"eq\",\n        \"value\": \"present\"\n      },\n      {\n        \"field\": \"influence_domain\",\n        \"op\": \"eq\",\n        \"value\": \"ordinary_social\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"in\",\n        \"value\": [\n          \"ideation\",\n          \"intent\",\n          \"imminent\"\n        ]\n      },\n      {\n        \"field\": \"relational_check_status\",\n        \"op\": \"in\",\n        \"value\": [\n          \"completed\",\n          \"not_needed\"\n        ]\n      }\n    ]\n  },\n  \"avoid\": [\n    \"Do not diagnose or automatically label another person emotionally immature, manipulative, narcissistic, or unsafe from a disagreement or a single frustrating interaction.\",\n    \"Do not infer motive, moral worth, or global personality from a capacity assessment.\",\n    \"Do not recommend cutoff by default; calibrate trust, access, distance, requests, and investment to the actual evidence and safety needs.\",\n    \"Do not make the user responsible for managing, educating, soothing, or developing the other person's missing capacities.\"\n  ],\n  \"defaultQuestion\": \"What did this person actually do, and what have they demonstrated they can do when you disagree, say no, or ask for repair?\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not treat disagreement, emotional intensity, one mistake, a diagnosis, or the user's disappointment as proof of emotional immaturity.\",\n      \"Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character.\"\n    ],\n    \"requiredNuance\": [\n      \"Relational capacity is not motive or diagnosis. The relevant evidence is what the person has demonstrated in the domain at issue, especially under disagreement, limits, accountability, and repair.\",\n      \"A person trained to internalize blame, manage adults, or take on forced adulthood may reflexively analyze themselves or caretake first; use that linkage only when their history supports it, not as a universal explanation.\",\n      \"Selecting for reciprocal maturity means calibrating closeness and investment toward demonstrated reciprocity; it does not require automatic cutoff or contempt for limited people.\"\n    ]\n  },\n  \"questionPolicy\": {\n    \"purpose\": \"discriminate\",\n    \"unresolvedFields\": []\n  },\n  \"recommendations\": [\n    \"Before analyzing the user's trigger, use detached observation: state what the other person actually did, in sequence, without filling in motive or diagnosis.\",\n    \"Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.\",\n    \"Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.\",\n    \"Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.\",\n    \"Act outward where the situation can be changed, then route inward only if inner processing adds useful information or freedom rather than substituting for external judgment and action.\",\n    \"Invest in relationships according to demonstrated reciprocity, empathy, accountability, and repair rather than repeatedly trying to extract capacities another person has not shown.\",\n    \"Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive.\",\n    \"After the current assessment, an optional criticism-kernel practice can separate a genuinely supported point from contempt. The imagined wiser future of the other person never outranks their demonstrated behavior or the user's boundary.\"\n  ],\n  \"successSignals\": [\n    \"Observable behavior, demonstrated capacity, interpersonal pressure, and the user's own internal reaction remain distinguishable.\",\n    \"The chosen interaction has a realistic outcome and preserves the user's position, boundaries, and practical options.\",\n    \"Inward work, when used, follows rather than erases the external reality check.\"\n  ]\n}\n```\n<!-- inner-signal:payload:end -->\n\n## Proposal rationale\n\nApply the exact owner-approved wisdom-practice packet record while preserving current safety, relationship, trajectory, consent, provenance and task-state boundaries. The worst plausible failure is a fitting optional practice displacing protection, reality checking, a valid boundary, or current consent.\n\n## Regression intent\n\nThe proposal declares G930–G962, including direct entrances, refusal/close boundaries, safety precedence, raw-variable spoofing, outward editor support and relationship-first routing.\n",
+      "nodeId": "ROUTE.RELATIONAL_REALITY_CHECK",
+      "operation": "replace"
+    }
+  ],
+  "proposalId": "wisdom-practices-20260912",
+  "proposedTests": [
+    {
+      "description": "Explicit bounded practice: wiser_self",
+      "expected": {
+        "nextQuestion": "",
+        "primary": "IC.WISER_SELF_PERSPECTIVE",
+        "requiredExecutionIncludes": [
+          "IC.WISER_SELF_PERSPECTIVE"
+        ],
+        "requiredNuancePatterns": [
+          "optional",
+          "truthful responsibility"
+        ],
+        "selectedIncludes": [
+          "IC.WISER_SELF_PERSPECTIVE"
+        ]
+      },
+      "id": "G930",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.WISER_SELF_PERSPECTIVE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force wiser_self",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE"
+        ],
+        "selectedExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE"
+        ]
+      },
+      "id": "G931",
+      "turn_task": {
+        "action": null,
+        "agreement": "declined",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.WISER_SELF_PERSPECTIVE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force wiser_self",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE"
+        ],
+        "selectedExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE"
+        ]
+      },
+      "id": "G932",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.WISER_SELF_PERSPECTIVE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "close",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Explicit bounded practice: draft_editor",
+      "expected": {
+        "nextQuestion": "",
+        "primary": "IC.DRAFT_EDITOR",
+        "requiredExecutionIncludes": [
+          "IC.DRAFT_EDITOR"
+        ],
+        "requiredNuancePatterns": [
+          "optional",
+          "truthful responsibility"
+        ],
+        "selectedIncludes": [
+          "IC.DRAFT_EDITOR"
+        ]
+      },
+      "id": "G933",
+      "turn_task": {
+        "action": {
+          "adjustment": "",
+          "barriers": "",
+          "cue": "Before sending",
+          "outcome": "not_attempted",
+          "purpose": "Preserve truth and the relationship boundary",
+          "result": "",
+          "size": "One message",
+          "step": "State a specific request without an insult."
+        },
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "action",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.DRAFT_EDITOR",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force draft_editor",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.DRAFT_EDITOR"
+        ],
+        "selectedExcludes": [
+          "IC.DRAFT_EDITOR"
+        ]
+      },
+      "id": "G934",
+      "turn_task": {
+        "action": {
+          "adjustment": "",
+          "barriers": "",
+          "cue": "Before sending",
+          "outcome": "not_attempted",
+          "purpose": "Preserve truth and the relationship boundary",
+          "result": "",
+          "size": "One message",
+          "step": "State a specific request without an insult."
+        },
+        "agreement": "declined",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "action",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.DRAFT_EDITOR",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force draft_editor",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.DRAFT_EDITOR"
+        ],
+        "selectedExcludes": [
+          "IC.DRAFT_EDITOR"
+        ]
+      },
+      "id": "G935",
+      "turn_task": {
+        "action": {
+          "adjustment": "",
+          "barriers": "",
+          "cue": "Before sending",
+          "outcome": "not_attempted",
+          "purpose": "Preserve truth and the relationship boundary",
+          "result": "",
+          "size": "One message",
+          "step": "State a specific request without an insult."
+        },
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "action",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.DRAFT_EDITOR",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "close",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Explicit bounded practice: return_to_care",
+      "expected": {
+        "nextQuestion": "",
+        "primary": "IC.DRAFT_RETURN_TO_CARE",
+        "requiredExecutionIncludes": [
+          "IC.DRAFT_RETURN_TO_CARE"
+        ],
+        "requiredNuancePatterns": [
+          "optional",
+          "truthful responsibility"
+        ],
+        "selectedIncludes": [
+          "IC.DRAFT_RETURN_TO_CARE"
+        ]
+      },
+      "id": "G936",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": {
+          "change_point": "",
+          "process": "self_treatment",
+          "response": "The person still feels attacked internally."
+        },
+        "issue": "Synthetic perspective-practice test",
+        "kind": "emotion",
+        "last_response": "",
+        "marker": "The outward response was completed; inward care has not yet happened.",
+        "node_id": "IC.DRAFT_RETURN_TO_CARE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "review",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force return_to_care",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.DRAFT_RETURN_TO_CARE"
+        ],
+        "selectedExcludes": [
+          "IC.DRAFT_RETURN_TO_CARE"
+        ]
+      },
+      "id": "G937",
+      "turn_task": {
+        "action": null,
+        "agreement": "declined",
+        "capacity": "adequate",
+        "emotion": {
+          "change_point": "",
+          "process": "self_treatment",
+          "response": "The person still feels attacked internally."
+        },
+        "issue": "Synthetic perspective-practice test",
+        "kind": "emotion",
+        "last_response": "",
+        "marker": "The outward response was completed; inward care has not yet happened.",
+        "node_id": "IC.DRAFT_RETURN_TO_CARE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force return_to_care",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.DRAFT_RETURN_TO_CARE"
+        ],
+        "selectedExcludes": [
+          "IC.DRAFT_RETURN_TO_CARE"
+        ]
+      },
+      "id": "G938",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": {
+          "change_point": "",
+          "process": "self_treatment",
+          "response": "The person still feels attacked internally."
+        },
+        "issue": "Synthetic perspective-practice test",
+        "kind": "emotion",
+        "last_response": "",
+        "marker": "The outward response was completed; inward care has not yet happened.",
+        "node_id": "IC.DRAFT_RETURN_TO_CARE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "close",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Explicit bounded practice: story_punctuation",
+      "expected": {
+        "nextQuestion": "",
+        "primary": "IC.COMPASSIONATE_STORY",
+        "requiredExecutionIncludes": [
+          "IC.COMPASSIONATE_STORY"
+        ],
+        "requiredNuancePatterns": [
+          "optional",
+          "truthful responsibility"
+        ],
+        "selectedIncludes": [
+          "IC.COMPASSIONATE_STORY"
+        ]
+      },
+      "id": "G939",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.COMPASSIONATE_STORY",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force story_punctuation",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.COMPASSIONATE_STORY"
+        ],
+        "selectedExcludes": [
+          "IC.COMPASSIONATE_STORY"
+        ]
+      },
+      "id": "G940",
+      "turn_task": {
+        "action": null,
+        "agreement": "declined",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.COMPASSIONATE_STORY",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force story_punctuation",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.COMPASSIONATE_STORY"
+        ],
+        "selectedExcludes": [
+          "IC.COMPASSIONATE_STORY"
+        ]
+      },
+      "id": "G941",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.COMPASSIONATE_STORY",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "close",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Explicit bounded practice: past_competence",
+      "expected": {
+        "nextQuestion": "",
+        "primary": "IC.PAST_COMPETENCE",
+        "requiredExecutionIncludes": [
+          "IC.PAST_COMPETENCE"
+        ],
+        "requiredNuancePatterns": [
+          "optional",
+          "truthful responsibility"
+        ],
+        "selectedIncludes": [
+          "IC.PAST_COMPETENCE"
+        ]
+      },
+      "id": "G942",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.PAST_COMPETENCE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force past_competence",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.PAST_COMPETENCE"
+        ],
+        "selectedExcludes": [
+          "IC.PAST_COMPETENCE"
+        ]
+      },
+      "id": "G943",
+      "turn_task": {
+        "action": null,
+        "agreement": "declined",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.PAST_COMPETENCE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force past_competence",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.PAST_COMPETENCE"
+        ],
+        "selectedExcludes": [
+          "IC.PAST_COMPETENCE"
+        ]
+      },
+      "id": "G944",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.PAST_COMPETENCE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "close",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Explicit bounded practice: common_humanity",
+      "expected": {
+        "nextQuestion": "",
+        "primary": "IC.COMMON_HUMANITY",
+        "requiredExecutionIncludes": [
+          "IC.COMMON_HUMANITY"
+        ],
+        "requiredNuancePatterns": [
+          "optional",
+          "truthful responsibility"
+        ],
+        "selectedIncludes": [
+          "IC.COMMON_HUMANITY"
+        ]
+      },
+      "id": "G945",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.COMMON_HUMANITY",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force common_humanity",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.COMMON_HUMANITY"
+        ],
+        "selectedExcludes": [
+          "IC.COMMON_HUMANITY"
+        ]
+      },
+      "id": "G946",
+      "turn_task": {
+        "action": null,
+        "agreement": "declined",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.COMMON_HUMANITY",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force common_humanity",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.COMMON_HUMANITY"
+        ],
+        "selectedExcludes": [
+          "IC.COMMON_HUMANITY"
+        ]
+      },
+      "id": "G947",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.COMMON_HUMANITY",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "close",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Explicit bounded practice: criticism_kernel",
+      "expected": {
+        "nextQuestion": "",
+        "primary": "IC.CRITICISM_KERNEL",
+        "requiredExecutionIncludes": [
+          "IC.CRITICISM_KERNEL"
+        ],
+        "requiredNuancePatterns": [
+          "optional",
+          "truthful responsibility"
+        ],
+        "selectedIncludes": [
+          "IC.CRITICISM_KERNEL"
+        ]
+      },
+      "id": "G948",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.CRITICISM_KERNEL",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force criticism_kernel",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.CRITICISM_KERNEL"
+        ],
+        "selectedExcludes": [
+          "IC.CRITICISM_KERNEL"
+        ]
+      },
+      "id": "G949",
+      "turn_task": {
+        "action": null,
+        "agreement": "declined",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.CRITICISM_KERNEL",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force criticism_kernel",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.CRITICISM_KERNEL"
+        ],
+        "selectedExcludes": [
+          "IC.CRITICISM_KERNEL"
+        ]
+      },
+      "id": "G950",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.CRITICISM_KERNEL",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "close",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Explicit bounded practice: caring_company",
+      "expected": {
+        "nextQuestion": "",
+        "primary": "IC.CARING_COMPANY",
+        "requiredExecutionIncludes": [
+          "IC.CARING_COMPANY"
+        ],
+        "requiredNuancePatterns": [
+          "optional",
+          "truthful responsibility"
+        ],
+        "selectedIncludes": [
+          "IC.CARING_COMPANY"
+        ]
+      },
+      "id": "G951",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.CARING_COMPANY",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force caring_company",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.CARING_COMPANY"
+        ],
+        "selectedExcludes": [
+          "IC.CARING_COMPANY"
+        ]
+      },
+      "id": "G952",
+      "turn_task": {
+        "action": null,
+        "agreement": "declined",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.CARING_COMPANY",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Do not force caring_company",
+      "expected": {
+        "nextQuestion": "",
+        "requiredExecutionExcludes": [
+          "IC.CARING_COMPANY"
+        ],
+        "selectedExcludes": [
+          "IC.CARING_COMPANY"
+        ]
+      },
+      "id": "G953",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.CARING_COMPANY",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "close",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Protection overrides selected future-self exercise",
+      "expected": {
+        "requiredExecutionExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ],
+        "selectedExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ]
+      },
+      "id": "G954",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.WISER_SELF_PERSPECTIVE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "unsafe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Protection overrides selected future-self exercise",
+      "expected": {
+        "requiredExecutionExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ],
+        "selectedExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ]
+      },
+      "id": "G955",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.WISER_SELF_PERSPECTIVE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "disoriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Protection overrides selected future-self exercise",
+      "expected": {
+        "requiredExecutionExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ],
+        "selectedExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ]
+      },
+      "id": "G956",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.WISER_SELF_PERSPECTIVE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "no",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Protection overrides selected future-self exercise",
+      "expected": {
+        "requiredExecutionExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ],
+        "selectedExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ]
+      },
+      "id": "G957",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.WISER_SELF_PERSPECTIVE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "no",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Protection overrides selected future-self exercise",
+      "expected": {
+        "requiredExecutionExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ],
+        "selectedExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ]
+      },
+      "id": "G958",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.WISER_SELF_PERSPECTIVE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "high",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Protection overrides selected future-self exercise",
+      "expected": {
+        "requiredExecutionExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ],
+        "selectedExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ]
+      },
+      "id": "G959",
+      "turn_task": {
+        "action": null,
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "exploration",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.WISER_SELF_PERSPECTIVE",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "imminent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Raw case-variable cannot choose a method",
+      "expected": {
+        "requiredExecutionExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ],
+        "selectedExcludes": [
+          "IC.WISER_SELF_PERSPECTIVE",
+          "IC.DRAFT_EDITOR",
+          "IC.DRAFT_RETURN_TO_CARE",
+          "IC.COMPASSIONATE_STORY",
+          "IC.PAST_COMPETENCE",
+          "IC.COMMON_HUMANITY",
+          "IC.CRITICISM_KERNEL",
+          "IC.CARING_COMPANY"
+        ]
+      },
+      "id": "G960",
+      "turn_task": null,
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "absent",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "no",
+        "parent_imagery": "not_used",
+        "perspective_practice": "draft_editor",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "relational_check_status": "not_needed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "Editing supports outward action without replacing it",
+      "expected": {
+        "nextQuestion": "",
+        "primary": "ROUTE.ACT_OUTWARD",
+        "requiredExecutionIncludes": [
+          "ROUTE.ACT_OUTWARD",
+          "IC.DRAFT_EDITOR"
+        ],
+        "selectedIncludes": [
+          "IC.DRAFT_EDITOR"
+        ]
+      },
+      "id": "G961",
+      "turn_task": {
+        "action": {
+          "adjustment": "",
+          "barriers": "",
+          "cue": "Before replying",
+          "outcome": "not_attempted",
+          "purpose": "Retain my boundary",
+          "result": "",
+          "size": "One sentence",
+          "step": "Send a firm refusal."
+        },
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "action",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.DRAFT_EDITOR",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "present",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "yes",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "realistic_interaction_outcome": "boundary_or_refusal",
+        "relational_check_status": "completed",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    },
+    {
+      "description": "An unresolved relationship check is not bypassed",
+      "expected": {
+        "primary": "ROUTE.RELATIONAL_REALITY_CHECK",
+        "requiredExecutionExcludes": [
+          "IC.DRAFT_EDITOR"
+        ]
+      },
+      "id": "G962",
+      "turn_task": {
+        "action": {
+          "adjustment": "",
+          "barriers": "",
+          "cue": "Before replying",
+          "outcome": "not_attempted",
+          "purpose": "Retain my boundary",
+          "result": "",
+          "size": "One sentence",
+          "step": "Send a firm refusal."
+        },
+        "agreement": "accepted",
+        "capacity": "adequate",
+        "emotion": null,
+        "issue": "Synthetic perspective-practice test",
+        "kind": "action",
+        "last_response": "",
+        "marker": "The person explicitly requested this bounded practice.",
+        "node_id": "IC.DRAFT_EDITOR",
+        "observation_ids": [
+          "W_OBS_1"
+        ],
+        "phase": "practice",
+        "question_focus": "none",
+        "version": 1
+      },
+      "unknowns": [],
+      "variables": {
+        "ability_to_return": "yes",
+        "ability_to_stop": "yes",
+        "actionable_problem": "present",
+        "activation": "low",
+        "altered_state": "sober",
+        "attention_loop": "absent",
+        "coherent_child_state": "present",
+        "credibility_conflict": "absent",
+        "current_intent": "conversation",
+        "dissociation": "none",
+        "influence_domain": "none",
+        "inner_adult_access": "available",
+        "inward_attention_effect": "helps",
+        "love_access": "accessible",
+        "orientation": "oriented",
+        "other_person_central": "yes",
+        "parent_imagery": "not_used",
+        "present_safety": "safe",
+        "protective_response": "absent",
+        "realistic_interaction_outcome": "boundary_or_refusal",
+        "relational_check_status": "pending",
+        "resentment_toward_younger_self": "absent",
+        "self_criticism": "absent",
+        "self_directed_love": "safe",
+        "suicidal_state": "absent",
+        "thinking_yield": "new_information_or_action",
+        "unresolved_inner_material": "present",
+        "witness_capacity": "present"
+      }
+    }
+  ]
+}

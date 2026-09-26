@@ -7,12 +7,12 @@ source_id: SOM.YOGA
 guide_id: somatic-sequencing-guide
 heading: Trauma-Sensitive / Restorative Yoga
 source_role: primary-framework
-source_hash: 5a44af1eabbff07217bc02ead1c218e065d9d83b63629112edafc00fb98d0267
+source_hash: 952e1fd40afa00fd5c762bcc5c8cfbfa8811b66660a90f5495f41f50c69d2428
 section_hash: 261f0674ef4ed297f0f6a48eea18a10beddd053328db9bee27c01f2befcf4e59
 locator_kind: text-lines
 cited_by_node_ids:
   - SOM.GENTLE_REGULATION
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Trauma-Sensitive / Restorative Yoga
@@ -21,7 +21,7 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
 
 Authority path: `guides/somatic-sequencing-guide.txt`
 
-Locator: Lines 68–96
+Locator: Lines 75–103
 
 ```text
 Trauma-Sensitive / Restorative Yoga

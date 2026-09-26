@@ -1,0 +1,1156 @@
+{
+  "allApproved": false,
+  "cards": [
+    {
+      "affectedRegressions": [
+        "G930",
+        "G931",
+        "G932",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"wiser_self\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"authority\": \"owner-approved-extension\",\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"Perfect clarity is not required; future perspective stays fallible and open to correction.\"\n    ]\n  },\n  \"id\": \"IC.WISER_SELF_PERSPECTIVE\",\n  \"kind\": \"decision-node\",\n  \"priority\": 88,\n  \"recommendations\": [\n    \"Offer: “Imagine looking back when you are clearer and compassionate toward everyone involved, including yourself. What would you understand about this moment?”\",\n    \"Allow clearer understanding, feeling like that wiser self, or feeling accompanied by it; use whichever actually helps, including more than one. Do not force visualization or a state transition.\",\n    \"Ask what that perspective understands about the present person's limitations and how it would care for them now. When embodiment is unavailable, use one honest sufficient action, firm boundary, acknowledgment or pause.\",\n    \"The optional future-other extension is goodwill toward a possibility, not mind-reading, prediction of an apology, certainty that they will agree, or a reason to override present evidence.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.WISDOM_CORE\",\n    \"AMEND.IC.WISDOM_WISER_SELF\",\n    \"AMEND.IC.WISDOM_SOURCES\"\n  ],\n  \"successSignals\": [\n    \"The person has more usable choice or caring contact, with appropriate boundaries intact.\"\n  ],\n  \"tags\": [\n    \"wisdom-practice\",\n    \"wiser-self\",\n    \"optional\"\n  ],\n  \"tier\": 4,\n  \"title\": \"Borrow a wiser perspective without rejecting the present self\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-034f831b65d4a5a9",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.WISER_SELF_PERSPECTIVE: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G017",
+        "G026",
+        "G027",
+        "G028",
+        "G031",
+        "G032",
+        "G033",
+        "G034",
+        "G035",
+        "G930",
+        "G931",
+        "G932",
+        "G933",
+        "G934",
+        "G935",
+        "G936",
+        "G937",
+        "G938",
+        "G939",
+        "G940",
+        "G941",
+        "G942",
+        "G943",
+        "G944",
+        "G945",
+        "G946",
+        "G947",
+        "G948",
+        "G949",
+        "G950",
+        "G951",
+        "G952",
+        "G953",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960",
+        "G961",
+        "G962"
+      ],
+      "behavioralEffect": "Changes sourceRefs under the explicit provenance-policy policy.",
+      "candidate": "[\n  \"AMEND.IC.BEST_FRIEND_PROMPT\",\n  \"IC.BORROW_ONE_FUNCTION\",\n  \"AMEND.IC.WISDOM_CORE\"\n]",
+      "classification": "provenance-policy",
+      "cons": [
+        "The proposed new provenance/authority value could overstate support or attach the behavior to the wrong source if approved without exact source review."
+      ],
+      "current": "[\n  \"AMEND.IC.BEST_FRIEND_PROMPT\",\n  \"IC.BORROW_ONE_FUNCTION\"\n]",
+      "id": "decision-0c1593b4c722e54b",
+      "pros": [
+        "Approving records the candidate sourceRefs as the explicit provenance/authority basis instead of leaving the current basis in place."
+      ],
+      "provenance": "source-and-authority-review",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.BEST_FRIEND_PERSPECTIVE: sourceRefs",
+      "worstPlausibleFailure": "The change could present unsupported material with stronger authority than its source permits."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G014",
+        "G028",
+        "G962"
+      ],
+      "behavioralEffect": "Changes recommendations under the explicit therapeutic-response policy.",
+      "candidate": "[\n  \"Before analyzing the user's trigger, use detached observation: state what the other person actually did, in sequence, without filling in motive or diagnosis.\",\n  \"Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.\",\n  \"Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.\",\n  \"Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.\",\n  \"Act outward where the situation can be changed, then route inward only if inner processing adds useful information or freedom rather than substituting for external judgment and action.\",\n  \"Invest in relationships according to demonstrated reciprocity, empathy, accountability, and repair rather than repeatedly trying to extract capacities another person has not shown.\",\n  \"Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive.\",\n  \"After the current assessment, an optional criticism-kernel practice can separate a genuinely supported point from contempt. The imagined wiser future of the other person never outranks their demonstrated behavior or the user's boundary.\"\n]",
+      "classification": "therapeutic-response",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"Before analyzing the user's trigger, use detached observation: state what the other person actually did, in sequence, without filling in motive or diagnosis.\",\n  \"Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.\",\n  \"Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.\",\n  \"Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.\",\n  \"Act outward where the situation can be changed, then route inward only if inner processing adds useful information or freedom rather than substituting for external judgment and action.\",\n  \"Invest in relationships according to demonstrated reciprocity, empathy, accountability, and repair rather than repeatedly trying to extract capacities another person has not shown.\",\n  \"Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive.\"\n]",
+      "id": "decision-130b52c951bbf9da",
+      "pros": [
+        "Approving lets responses use the exact candidate recommendations rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node ROUTE.RELATIONAL_REALITY_CHECK: recommendations",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G014",
+        "G028",
+        "G962"
+      ],
+      "behavioralEffect": "Changes sourceRefs under the explicit provenance-policy policy.",
+      "candidate": "[\n  \"AMEND.CROSS.THREE_WAY_THERAPY_ROUTING\",\n  \"AMEND.CROSS.RELATIONAL_REALITY_CHECK\",\n  \"AMEND.CROSS.LITERATURE_TASK_PROGRESS\",\n  \"AMEND.IC.WISDOM_CORE\"\n]",
+      "classification": "provenance-policy",
+      "cons": [
+        "The proposed new provenance/authority value could overstate support or attach the behavior to the wrong source if approved without exact source review."
+      ],
+      "current": "[\n  \"AMEND.CROSS.THREE_WAY_THERAPY_ROUTING\",\n  \"AMEND.CROSS.RELATIONAL_REALITY_CHECK\",\n  \"AMEND.CROSS.LITERATURE_TASK_PROGRESS\"\n]",
+      "id": "decision-171a44da8975e343",
+      "pros": [
+        "Approving records the candidate sourceRefs as the explicit provenance/authority basis instead of leaving the current basis in place."
+      ],
+      "provenance": "source-and-authority-review",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node ROUTE.RELATIONAL_REALITY_CHECK: sourceRefs",
+      "worstPlausibleFailure": "The change could present unsupported material with stronger authority than its source permits."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G017",
+        "G033"
+      ],
+      "behavioralEffect": "Changes recommendations under the explicit therapeutic-response policy.",
+      "candidate": "[\n  \"Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.\",\n  \"Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.\",\n  \"When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness.\",\n  \"Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.\",\n  \"A real past occasion of responding well or a fallible compassionate future perspective may supply one bounded function. Offer the relevant alternative only if useful; do not demand past success or a perfect state.\"\n]",
+      "classification": "therapeutic-response",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.\",\n  \"Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.\",\n  \"When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness.\",\n  \"Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.\"\n]",
+      "id": "decision-184ef540ec997ae4",
+      "pros": [
+        "Approving lets responses use the exact candidate recommendations rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.BORROW_ONE_FUNCTION: recommendations",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G017",
+        "G029",
+        "G030",
+        "G936",
+        "G937",
+        "G938",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.DRAFT_RETURN_TO_CARE\",\n  \"relation\": \"embodies-through\",\n  \"to\": \"IC.PROTECTOR_ACTION\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-1fd95ca0ea6b30e5",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 86f2b8061b72071a477e6901bf6bd201d7d92e6ca433af7c39ae37d21ffd4e2b: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012"
+      ],
+      "behavioralEffect": "Changes sourceRefs under the explicit provenance-policy policy.",
+      "candidate": "[\n  \"IC.LOVE_MISSING\",\n  \"IC.HEART_SOLAR_LOOP\",\n  \"AMEND.IC.BORROW_LOVE_EXTERNAL\",\n  \"AMEND.IC.WELLBEING_HORIZON\",\n  \"AMEND.IC.EMOTIONAL_TASK_GUIDANCE\",\n  \"AMEND.IC.WISDOM_CORE\"\n]",
+      "classification": "provenance-policy",
+      "cons": [
+        "The proposed new provenance/authority value could overstate support or attach the behavior to the wrong source if approved without exact source review."
+      ],
+      "current": "[\n  \"IC.LOVE_MISSING\",\n  \"IC.HEART_SOLAR_LOOP\",\n  \"AMEND.IC.BORROW_LOVE_EXTERNAL\",\n  \"AMEND.IC.WELLBEING_HORIZON\",\n  \"AMEND.IC.EMOTIONAL_TASK_GUIDANCE\"\n]",
+      "id": "decision-241e52337875c4fe",
+      "pros": [
+        "Approving records the candidate sourceRefs as the explicit provenance/authority basis instead of leaving the current basis in place."
+      ],
+      "provenance": "source-and-authority-review",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.BORROW_LOVE: sourceRefs",
+      "worstPlausibleFailure": "The change could present unsupported material with stronger authority than its source permits."
+    },
+    {
+      "affectedRegressions": [
+        "G933",
+        "G934",
+        "G935",
+        "G948",
+        "G949",
+        "G950",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960",
+        "G961",
+        "G962"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.CRITICISM_KERNEL\",\n  \"relation\": \"may-support\",\n  \"to\": \"IC.DRAFT_EDITOR\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-2df9e0d9d28f2d8b",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 03f9416fdbc959f8a8310a4a6efe75628f9c9cff4024352927474ae351b90fc2: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G951",
+        "G952",
+        "G953",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"caring_company\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"authority\": \"owner-approved-extension\",\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"Receiving caring company is not identical to generating affection toward another; use the function actually needed.\"\n    ]\n  },\n  \"id\": \"IC.CARING_COMPANY\",\n  \"kind\": \"decision-node\",\n  \"priority\": 88,\n  \"recommendations\": [\n    \"Offer remembered or imagined caring company or a nonpersonified supportive stance when it feels useful. The future self, a real caring figure or a person's own chosen spiritual frame may help.\",\n    \"Do not assume family, maternal imagery or a safe remembered caregiver is available. Blank, critical or frightening imagery calls for another entrance, not forced recall.\",\n    \"Notice whether receiving support makes some present care, discernment, courage or agency more available. Do not make becoming independent of all support or spiritual relationship the goal.\",\n    \"Rogers's documented care-retrieval invitation is an optional exemplar, not proof that this technique caused his qualities.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.WISDOM_CORE\",\n    \"AMEND.IC.WISDOM_CARING_COMPANY\",\n    \"AMEND.IC.WISDOM_SOURCES\"\n  ],\n  \"successSignals\": [\n    \"The person feels accompanied and can choose a useful present response without surrendering judgment.\"\n  ],\n  \"tags\": [\n    \"wisdom-practice\",\n    \"caring-company\",\n    \"optional\"\n  ],\n  \"tier\": 4,\n  \"title\": \"Meet the moment with remembered or imagined caring company\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-34dc846d175590ba",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.CARING_COMPANY: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G936",
+        "G937",
+        "G938",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"return_to_care\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"authority\": \"owner-approved-extension\",\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"Outward completion is not inward completion. Declining further work is not failure.\"\n    ]\n  },\n  \"id\": \"IC.DRAFT_RETURN_TO_CARE\",\n  \"kind\": \"decision-node\",\n  \"priority\": 88,\n  \"recommendations\": [\n    \"After the reported outward response or decision, return to the original writer's experience without scolding them for it. Mental recall is enough; do not require a stored draft.\",\n    \"Attend to the actual hurt, need, protest, responsibility or limit. Offer feasible Nurturer/Protector/Guide care; the adult acts before requiring belief or reassurance from a part.\",\n    \"Use existing guard, credibility, borrowed-function, protection or deeper-dialogue routes only as actually needed and within their existing gates. Do not infer a younger self or childhood memory.\",\n    \"Track the return separately from communication success. Respect a wish to defer, stop or decline; preserve unfinished work without making it a compulsory assignment or another reassurance loop.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.WISDOM_CORE\",\n    \"AMEND.IC.WISDOM_DRAFT_RETURN\",\n    \"AMEND.IC.WISDOM_SOURCES\"\n  ],\n  \"successSignals\": [\n    \"The person reports understanding, helpful care, an appropriate protective action or a freely chosen ending.\"\n  ],\n  \"tags\": [\n    \"wisdom-practice\",\n    \"return-to-care\",\n    \"optional\"\n  ],\n  \"tier\": 4,\n  \"title\": \"Return to the first draft for understanding and care\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-3669377a1ad75653",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.DRAFT_RETURN_TO_CARE: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G951",
+        "G952",
+        "G953",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.BORROW_LOVE\",\n  \"relation\": \"offers-alternative\",\n  \"to\": \"IC.CARING_COMPANY\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-37e055631301741a",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge fb28dd559e70bc1e7564d81e70569f6649e55742404317ecea3255580b1b4a19: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G014",
+        "G028",
+        "G948",
+        "G949",
+        "G950",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960",
+        "G962"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"ROUTE.RELATIONAL_REALITY_CHECK\",\n  \"relation\": \"clarifies\",\n  \"to\": \"IC.CRITICISM_KERNEL\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-3928a5dcd947eb05",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 58ed63901d97d8f66a9dbc48b5673956bd203edb75bed47867d8d105b5dfe2ab: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G933",
+        "G934",
+        "G935",
+        "G936",
+        "G937",
+        "G938",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960",
+        "G961",
+        "G962"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.DRAFT_EDITOR\",\n  \"relation\": \"returns-for-care\",\n  \"to\": \"IC.DRAFT_RETURN_TO_CARE\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-3cc75810a94c8ad5",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 6b1a35b6791d5f7428eb41b0b80e9eb010a34e9249f1a137f079d5dbe42135a6: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G945",
+        "G946",
+        "G947",
+        "G951",
+        "G952",
+        "G953",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.COMMON_HUMANITY\",\n  \"relation\": \"may-support\",\n  \"to\": \"IC.CARING_COMPANY\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-70818374e4ea364c",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge b4c89cebf5421d4c18705fd83856e68d3e9872693ec8a07f2170d7a612c76de8: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G930",
+        "G931",
+        "G932",
+        "G933",
+        "G934",
+        "G935",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960",
+        "G961",
+        "G962"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.WISER_SELF_PERSPECTIVE\",\n  \"relation\": \"may-support\",\n  \"to\": \"IC.DRAFT_EDITOR\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-771337eb8c139df5",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 4a621d511ccb176805ffecd1f5edecf745e0008b085afa2c1f72ce341d4b8ae4: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G017",
+        "G029",
+        "G030"
+      ],
+      "behavioralEffect": "Changes recommendations under the explicit therapeutic-response policy.",
+      "candidate": "[\n  \"Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.\",\n  \"Report the action without requiring the younger state to trust it yet.\",\n  \"Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.\"\n]",
+      "classification": "therapeutic-response",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.\",\n  \"Report the action without requiring the younger state to trust it yet.\"\n]",
+      "id": "decision-7be5149ccf632cdb",
+      "pros": [
+        "Approving lets responses use the exact candidate recommendations rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.PROTECTOR_ACTION: recommendations",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G942",
+        "G943",
+        "G944",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"past_competence\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"authority\": \"owner-approved-extension\",\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"Prior capacity is evidence, not a guarantee that the same response is possible now.\"\n    ]\n  },\n  \"id\": \"IC.PAST_COMPETENCE\",\n  \"kind\": \"decision-node\",\n  \"priority\": 88,\n  \"recommendations\": [\n    \"Offer: “Remember one real occasion when you met a difficulty in a way you respect. What did you actually do, and what helped? Is one part available now?”\",\n    \"A small relevant event is sufficient. Retrieve action, support, resources or conditions rather than merely a flattering identity claim.\",\n    \"If recall is difficult, stop the search or use an already chosen anchor or another care entrance. Prior ability does not cancel present limits or the value of receiving help.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.WISDOM_CORE\",\n    \"AMEND.IC.WISDOM_PAST_COMPETENCE\",\n    \"AMEND.IC.WISDOM_SOURCES\"\n  ],\n  \"successSignals\": [\n    \"A specific actual action or support becomes available without pressure or invented memory.\"\n  ],\n  \"tags\": [\n    \"wisdom-practice\",\n    \"past-competence\",\n    \"optional\"\n  ],\n  \"tier\": 4,\n  \"title\": \"Retrieve a real occasion of responding well\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-7efd1e35cc4c13bd",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.PAST_COMPETENCE: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G017",
+        "G029",
+        "G030"
+      ],
+      "behavioralEffect": "Changes sourceRefs under the explicit provenance-policy policy.",
+      "candidate": "[\n  \"IC.PROTECTOR_VISIBLE\",\n  \"IC.ADULT_APPRENTICE\",\n  \"AMEND.CROSS.LITERATURE_ACTION_REVIEW\",\n  \"AMEND.IC.WISDOM_CORE\"\n]",
+      "classification": "provenance-policy",
+      "cons": [
+        "The proposed new provenance/authority value could overstate support or attach the behavior to the wrong source if approved without exact source review."
+      ],
+      "current": "[\n  \"IC.PROTECTOR_VISIBLE\",\n  \"IC.ADULT_APPRENTICE\",\n  \"AMEND.CROSS.LITERATURE_ACTION_REVIEW\"\n]",
+      "id": "decision-88d728bb4e7ce0a8",
+      "pros": [
+        "Approving records the candidate sourceRefs as the explicit provenance/authority basis instead of leaving the current basis in place."
+      ],
+      "provenance": "source-and-authority-review",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.PROTECTOR_ACTION: sourceRefs",
+      "worstPlausibleFailure": "The change could present unsupported material with stronger authority than its source permits."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G014",
+        "G033",
+        "G961",
+        "G962"
+      ],
+      "behavioralEffect": "Changes sourceRefs under the explicit provenance-policy policy.",
+      "candidate": "[\n  \"AMEND.CROSS.THREE_WAY_THERAPY_ROUTING\",\n  \"AMEND.CROSS.LITERATURE_ACTION_REVIEW\",\n  \"AMEND.IC.WISDOM_CORE\"\n]",
+      "classification": "provenance-policy",
+      "cons": [
+        "The proposed new provenance/authority value could overstate support or attach the behavior to the wrong source if approved without exact source review."
+      ],
+      "current": "[\n  \"AMEND.CROSS.THREE_WAY_THERAPY_ROUTING\",\n  \"AMEND.CROSS.LITERATURE_ACTION_REVIEW\"\n]",
+      "id": "decision-921275d785caeadd",
+      "pros": [
+        "Approving records the candidate sourceRefs as the explicit provenance/authority basis instead of leaving the current basis in place."
+      ],
+      "provenance": "source-and-authority-review",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node ROUTE.ACT_OUTWARD: sourceRefs",
+      "worstPlausibleFailure": "The change could present unsupported material with stronger authority than its source permits."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G017",
+        "G026",
+        "G027",
+        "G028",
+        "G031",
+        "G032",
+        "G033",
+        "G034",
+        "G035",
+        "G930",
+        "G931",
+        "G932",
+        "G933",
+        "G934",
+        "G935",
+        "G936",
+        "G937",
+        "G938",
+        "G939",
+        "G940",
+        "G941",
+        "G942",
+        "G943",
+        "G944",
+        "G945",
+        "G946",
+        "G947",
+        "G948",
+        "G949",
+        "G950",
+        "G951",
+        "G952",
+        "G953",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960",
+        "G961",
+        "G962"
+      ],
+      "behavioralEffect": "Changes recommendations under the explicit therapeutic-response policy.",
+      "candidate": "[\n  \"Ask: 'What would I tell my best friend in this exact situation?'\",\n  \"Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action.\",\n  \"If the person wants another caring vantage point, offer a wiser future self or supportive company as an alternative, not a compulsory addition. Preserve changed understanding, felt embodiment and companionship as different possible benefits.\"\n]",
+      "classification": "therapeutic-response",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"Ask: 'What would I tell my best friend in this exact situation?'\",\n  \"Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action.\"\n]",
+      "id": "decision-9833d2a4042e202b",
+      "pros": [
+        "Approving lets responses use the exact candidate recommendations rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.BEST_FRIEND_PERSPECTIVE: recommendations",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G014",
+        "G033",
+        "G933",
+        "G934",
+        "G935",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960",
+        "G961",
+        "G962"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"ROUTE.ACT_OUTWARD\",\n  \"relation\": \"may-use-as-communication-support\",\n  \"to\": \"IC.DRAFT_EDITOR\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-ad2942a6da2fad0d",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 817d57d1b265fa3145aaa6222224ce30f2c5665756017ae2cdfe65539baaafd9: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G017",
+        "G033"
+      ],
+      "behavioralEffect": "Changes sourceRefs under the explicit provenance-policy policy.",
+      "candidate": "[\n  \"IC.BORROW_ONE_FUNCTION\",\n  \"IC.ADULT_APPRENTICE\",\n  \"AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION\",\n  \"AMEND.CROSS.LITERATURE_TASK_PROGRESS\",\n  \"AMEND.IC.EMOTIONAL_TASK_GUIDANCE\",\n  \"AMEND.IC.WISDOM_CORE\"\n]",
+      "classification": "provenance-policy",
+      "cons": [
+        "The proposed new provenance/authority value could overstate support or attach the behavior to the wrong source if approved without exact source review."
+      ],
+      "current": "[\n  \"IC.BORROW_ONE_FUNCTION\",\n  \"IC.ADULT_APPRENTICE\",\n  \"AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION\",\n  \"AMEND.CROSS.LITERATURE_TASK_PROGRESS\",\n  \"AMEND.IC.EMOTIONAL_TASK_GUIDANCE\"\n]",
+      "id": "decision-b91bbe34eb30a795",
+      "pros": [
+        "Approving records the candidate sourceRefs as the explicit provenance/authority basis instead of leaving the current basis in place."
+      ],
+      "provenance": "source-and-authority-review",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.BORROW_ONE_FUNCTION: sourceRefs",
+      "worstPlausibleFailure": "The change could present unsupported material with stronger authority than its source permits."
+    },
+    {
+      "affectedRegressions": [
+        "G939",
+        "G940",
+        "G941",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"story_punctuation\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"authority\": \"owner-approved-extension\",\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"The exact phrase is owner-reported, not a clinically validated intervention.\"\n    ]\n  },\n  \"id\": \"IC.COMPASSIONATE_STORY\",\n  \"kind\": \"decision-node\",\n  \"priority\": 88,\n  \"recommendations\": [\n    \"For a manageable memory, offer the exact short phrase: “And so that's the way it happened!” “Once upon a time…” may be added only if that tone fits.\",\n    \"Notice whether it changes the relationship to the memory without inventing facts or treating it as fiction. The aim is kind distance or acknowledgment, not proving innocence or silencing grief.\",\n    \"If useful, let the short practice end. An optional next move asks what the person in the story needs now; specific responsibility or repair can be considered without global self-condemnation.\",\n    \"A sneering narrator, increased shame, forced humor, numbness or unreality means change route, not add more narrative distance.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.WISDOM_CORE\",\n    \"AMEND.IC.WISDOM_STORY\",\n    \"AMEND.IC.WISDOM_SOURCES\"\n  ],\n  \"successSignals\": [\n    \"The episode is less like a global verdict while contact, responsibility and present orientation remain.\"\n  ],\n  \"tags\": [\n    \"wisdom-practice\",\n    \"story-punctuation\",\n    \"optional\"\n  ],\n  \"tier\": 4,\n  \"title\": \"Give a difficult memory compassionate story punctuation\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-d1a9ebe62715379f",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.COMPASSIONATE_STORY: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G012",
+        "G029",
+        "G030",
+        "G936",
+        "G937",
+        "G938",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.DRAFT_RETURN_TO_CARE\",\n  \"relation\": \"may-use\",\n  \"to\": \"IC.MEET_GUARD\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-dc0a7b4eee344e50",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 66bda611217609ca6d72666acf7a2651f0569b2373a2793874c2a10bf3b68498: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G948",
+        "G949",
+        "G950",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"criticism_kernel\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"authority\": \"owner-approved-extension\",\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"The exact maxim is not a verified Fred Rogers quotation.\"\n    ]\n  },\n  \"id\": \"IC.CRITICISM_KERNEL\",\n  \"kind\": \"decision-node\",\n  \"priority\": 88,\n  \"recommendations\": [\n    \"After the relevant external reality check, ask whether there is a specific supported point inside the criticism worth considering. Separate it from insults, exaggeration or coercive demands.\",\n    \"Where true, acknowledge the specific behavior or make an appropriate repair. Where uncertain, clarification is optional; do not invent a kernel or concede unsupported blame.\",\n    \"Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.WISDOM_CORE\",\n    \"AMEND.IC.WISDOM_CRITICISM_KERNEL\",\n    \"AMEND.IC.WISDOM_SOURCES\"\n  ],\n  \"successSignals\": [\n    \"Accurate responsibility and useful information are retained without swallowing a global verdict or surrendering protection.\"\n  ],\n  \"tags\": [\n    \"wisdom-practice\",\n    \"criticism-kernel\",\n    \"optional\"\n  ],\n  \"tier\": 4,\n  \"title\": \"Receive useful content without accepting contempt\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-dc49c2dad47ad8a0",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.CRITICISM_KERNEL: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G017",
+        "G033",
+        "G939",
+        "G940",
+        "G941",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.COMPASSIONATE_STORY\",\n  \"relation\": \"may-use\",\n  \"to\": \"IC.BORROW_ONE_FUNCTION\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-decda86ccafa95d0",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 565fa0fc78efbec996a141136d359094eb1e3a75aad8c67b0e813fe677dea12f: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G017",
+        "G026",
+        "G027",
+        "G028",
+        "G031",
+        "G032",
+        "G033",
+        "G034",
+        "G035",
+        "G930",
+        "G931",
+        "G932",
+        "G933",
+        "G934",
+        "G935",
+        "G936",
+        "G937",
+        "G938",
+        "G939",
+        "G940",
+        "G941",
+        "G942",
+        "G943",
+        "G944",
+        "G945",
+        "G946",
+        "G947",
+        "G948",
+        "G949",
+        "G950",
+        "G951",
+        "G952",
+        "G953",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960",
+        "G961",
+        "G962"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.BEST_FRIEND_PERSPECTIVE\",\n  \"relation\": \"offers-alternative\",\n  \"to\": \"IC.WISER_SELF_PERSPECTIVE\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-e47ba5f0094f4e16",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge 049044016072b731acf93595339479ff301b8deaeb86b17384d0079f5f4bc1e3: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G945",
+        "G946",
+        "G947",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"common_humanity\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"authority\": \"owner-approved-extension\",\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"Universality is belonging, not comparison, doctrinal pressure or a substitute for accompaniment.\"\n    ]\n  },\n  \"id\": \"IC.COMMON_HUMANITY\",\n  \"kind\": \"decision-node\",\n  \"priority\": 88,\n  \"recommendations\": [\n    \"Begin with the particular experience and its circumstances. If useful, recognize that the longing underneath it is something other people may know as well.\",\n    \"Invite, do not diagnose, possible longings such as safety, understanding, dignity, belonging, freedom or repair. The person may name something else or prefer simple company.\",\n    \"Distinguish “I am not excluded from humanity” from “others have it worse.” Shared longing does not excuse harmful ways of meeting it.\",\n    \"An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.WISDOM_CORE\",\n    \"AMEND.IC.WISDOM_COMMON_HUMANITY\",\n    \"AMEND.IC.WISDOM_SOURCES\"\n  ],\n  \"successSignals\": [\n    \"The person feels less uniquely defective while their particular loss, needs and boundaries remain recognized.\"\n  ],\n  \"tags\": [\n    \"wisdom-practice\",\n    \"common-humanity\",\n    \"optional\"\n  ],\n  \"tier\": 4,\n  \"title\": \"Recognize shared humanity without minimizing this experience\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-e6c29043fc6c3982",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.COMMON_HUMANITY: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    },
+    {
+      "affectedRegressions": [
+        "G013",
+        "G014",
+        "G033",
+        "G961",
+        "G962"
+      ],
+      "behavioralEffect": "Changes recommendations under the explicit therapeutic-response policy.",
+      "candidate": "[\n  \"Extract one concrete problem that can be changed and choose the next observable decision or action.\",\n  \"When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.\",\n  \"Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.\",\n  \"When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.\",\n  \"For a chosen interpersonal response that the person wants help composing, offer the draft/editor method if useful. A brief sufficient response, firm boundary, apology, pause or nonresponse can be appropriate. Preserve the return to inward care separately from outward completion.\"\n]",
+      "classification": "therapeutic-response",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"Extract one concrete problem that can be changed and choose the next observable decision or action.\",\n  \"When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.\",\n  \"Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.\",\n  \"When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.\"\n]",
+      "id": "decision-e9ff0e981e621311",
+      "pros": [
+        "Approving lets responses use the exact candidate recommendations rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node ROUTE.ACT_OUTWARD: recommendations",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012",
+        "G017",
+        "G033",
+        "G942",
+        "G943",
+        "G944",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-topology policy.",
+      "candidate": "{\n  \"from\": \"IC.BORROW_ONE_FUNCTION\",\n  \"relation\": \"offers-alternative\",\n  \"to\": \"IC.PAST_COMPETENCE\"\n}",
+      "classification": "substantive-topology",
+      "cons": [
+        "The proposed new value could select, delay, block, or sequence an intervention incorrectly in cases outside the reviewed examples."
+      ],
+      "current": "Not present.",
+      "id": "decision-ec08a476b9edb867",
+      "pros": [
+        "Approving adds the exact edge shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "edge a6b24256586a073960d9c9ad01801d2a053de661f4a45873ab599937d8326ea1: $add",
+      "worstPlausibleFailure": "The change could select, defer, or sequence the wrong intervention for an affected case."
+    },
+    {
+      "affectedRegressions": [
+        "G001",
+        "G002",
+        "G003",
+        "G005",
+        "G008",
+        "G011",
+        "G012"
+      ],
+      "behavioralEffect": "Changes recommendations under the explicit therapeutic-response policy.",
+      "candidate": "[\n  \"First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.\",\n  \"Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.\",\n  \"Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love.\",\n  \"Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.\",\n  \"Remembered or imagined caring company is an alternative when receiving support is more accessible than generating affection. Do not assume safe parental imagery or force transfer.\"\n]",
+      "classification": "therapeutic-response",
+      "cons": [
+        "The proposed new response value could be unhelpful, overconfident, or too broad for people whose presentation differs from the tested cases."
+      ],
+      "current": "[\n  \"First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.\",\n  \"Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.\",\n  \"Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love.\",\n  \"Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.\"\n]",
+      "id": "decision-f6601e93cf78fcc9",
+      "pros": [
+        "Approving lets responses use the exact candidate recommendations rather than the current value."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.BORROW_LOVE: recommendations",
+      "worstPlausibleFailure": "The change could realize guidance that is unhelpful, overconfident, or inconsistent with the intended therapy distinction."
+    },
+    {
+      "affectedRegressions": [
+        "G933",
+        "G934",
+        "G935",
+        "G954",
+        "G955",
+        "G956",
+        "G957",
+        "G958",
+        "G959",
+        "G960",
+        "G961",
+        "G962"
+      ],
+      "behavioralEffect": "Changes $add under the explicit substantive-node-membership policy.",
+      "candidate": "{\n  \"activation\": {\n    \"all\": [\n      {\n        \"field\": \"perspective_practice\",\n        \"op\": \"eq\",\n        \"value\": \"draft_editor\"\n      }\n    ],\n    \"none\": [\n      {\n        \"field\": \"present_safety\",\n        \"op\": \"eq\",\n        \"value\": \"unsafe\"\n      },\n      {\n        \"field\": \"orientation\",\n        \"op\": \"eq\",\n        \"value\": \"disoriented\"\n      },\n      {\n        \"field\": \"ability_to_stop\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"ability_to_return\",\n        \"op\": \"eq\",\n        \"value\": \"no\"\n      },\n      {\n        \"field\": \"dissociation\",\n        \"op\": \"eq\",\n        \"value\": \"high\"\n      },\n      {\n        \"field\": \"suicidal_state\",\n        \"op\": \"eq\",\n        \"value\": \"imminent\"\n      }\n    ]\n  },\n  \"authority\": \"owner-approved-extension\",\n  \"avoid\": [\n    \"Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.\",\n    \"Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.\",\n    \"Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support.\"\n  ],\n  \"defaultQuestion\": \"\",\n  \"effects\": {\n    \"blockNodes\": [],\n    \"deferNodes\": [],\n    \"forbiddenOverclaims\": [\n      \"Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.\",\n      \"Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.\",\n      \"Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.\",\n      \"Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer.\"\n    ],\n    \"requiredNuance\": [\n      \"Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.\",\n      \"These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.\",\n      \"A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.\",\n      \"Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.\",\n      \"Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.\",\n      \"The first draft can be a mature protest; it is not automatically a child-state.\",\n      \"A private draft is not a sent message, a settled intention, or an established account of the other person.\"\n    ]\n  },\n  \"id\": \"IC.DRAFT_EDITOR\",\n  \"kind\": \"decision-node\",\n  \"priority\": 88,\n  \"recommendations\": [\n    \"Invite a brief private mental or written draft of what the person wants to say. Keep raw draft and sendable response clearly separate; do not require disclosure or storage.\",\n    \"Take the caring editor's position: preserve the important truth, justified protest, proportionate responsibility, realistic aim and necessary boundary. Better does not mean softer or more agreeable.\",\n    \"Check an honest sufficient response for this actual recipient and situation. The human decides whether to send, pause, apologize, refuse or not respond. Do not send anything automatically.\",\n    \"Make room to return to the original draft for inward care after the outward decision. Some inward care can come first if that makes editing possible. An appropriate existing draft may not need editing.\"\n  ],\n  \"sourceRefs\": [\n    \"AMEND.IC.WISDOM_CORE\",\n    \"AMEND.IC.WISDOM_DRAFT_EDITOR\",\n    \"AMEND.IC.WISDOM_SOURCES\"\n  ],\n  \"successSignals\": [\n    \"The communication is more appropriate without internal abandonment.\",\n    \"A later return to care remains visible as a separate purpose until reported, deferred or declined.\"\n  ],\n  \"tags\": [\n    \"wisdom-practice\",\n    \"draft-editor\",\n    \"optional\"\n  ],\n  \"tier\": 4,\n  \"title\": \"Edit the communication without rejecting its author\"\n}",
+      "classification": "substantive-node-membership",
+      "cons": [
+        "The proposed new value could encode an unintended semantic distinction that is not represented in the reviewed regressions."
+      ],
+      "current": "Not present.",
+      "id": "decision-fe5386c18ea50982",
+      "pros": [
+        "Approving adds the exact node shown in the candidate value, allowing the candidate route or relationship to exist."
+      ],
+      "provenance": "graph-proposal",
+      "recommended": "review",
+      "requiresHumanDecision": true,
+      "status": "pending",
+      "title": "node IC.DRAFT_EDITOR: $add",
+      "worstPlausibleFailure": "The change could conceal an unintended semantic difference or make the public development record misleading."
+    }
+  ],
+  "contractVersion": "guide-owner-decisions-v1",
+  "proposalEvidenceSha256": "20341f38d6fe73dcb925b47145cc33ecfc8029fb94bbfa1b88571b503aff6bc2",
+  "status": "awaiting-owner"
+}

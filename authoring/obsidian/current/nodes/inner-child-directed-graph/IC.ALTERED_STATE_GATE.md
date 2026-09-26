@@ -5,10 +5,10 @@ projection_mode: current
 generated: true
 graph_id: inner-child-directed-graph
 node_id: IC.ALTERED_STATE_GATE
-title: Build sober capacity before using altered states to deepen
+title: Calibrate therapy depth during altered states instead of assuming incapacity
 kind: decision-node
-tier: 2
-priority: 89
+tier: 5
+priority: 78
 authority: author-framework
 graph_tags:
   - altered-state
@@ -19,14 +19,17 @@ source_refs:
   - IC.ESCAPE_URGE
   - AMEND.IC.EXISTENTIAL_LOVE_ROUTING
   - AMEND.IC.WELLBEING_HORIZON
+  - ALT.CAPACITY
+  - ALT.EPISTEMICS
+  - ALT.GROUNDING
 regression_refs:
   - G009
-base_record_sha256: 1834ec961af7d1f5ff5052faf3c6344361f8f2b1d373144193182cae0a303fea
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+base_record_sha256: 84f40c052600da9cf481d6238222ec74541f7814b37ebe3f88ec2df167629c28
+base_graph_sha256: 55369c75e95b5cc9fc32c807f7b47bef411acf3aedcbe895076fbb796d04a0c4
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
-# Build sober capacity before using altered states to deepen
+# Calibrate therapy depth during altered states instead of assuming incapacity
 
 > [!warning] Generated current-state projection — do not edit. Create a proposal from this node.
 
@@ -51,6 +54,7 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
   },
   "avoid": [
     "Do not treat entheogenic or hypnotic material as recovered fact or use altered intensity as proof of healing.",
+    "Do not automatically end useful therapy or replace the user’s actual question with generic grounding merely because they disclose an altered state.",
     "Do not prescribe recreating a psychedelic, NDE-like, or other extraordinary breakthrough as the answer to hopelessness."
   ],
   "defaultQuestion": "",
@@ -59,12 +63,14 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
     "deferNodes": [],
     "forbiddenOverclaims": [],
     "requiredNuance": [
-      "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration."
+      "A past altered-state opening may establish that a deeper wellbeing horizon was experienced, but it does not prove present access, child inclusion, or integration.",
+      "A current altered state and a lack of habitual inner speech are unrelated dimensions; neither establishes that the person cannot reason, use language, or engage therapy."
     ]
   },
   "recommendations": [
-    "Prefer sober Nurturer and Protector capacity first or grounded support that does not seize authority.",
-    "Return to ordinary orientation when the state outruns the ability to hold what appears."
+    "Treat current altered state as a routing variable rather than an automatic stop: assess physical safety, orientation, capacity to communicate, stopping capacity, ordinary agency, and available support.",
+    "When those capacities remain coherent and stable, continue substantive inner-child or relational work at a depth the person can actually hold; when they deteriorate, shift toward room/body/human/time stabilization.",
+    "Prefer already-developed or borrowed Nurturer/Protector capacity for deeper altered-state work, and reduce depth rather than escalating intensity when the experience outruns that capacity."
   ],
   "successSignals": [
     "The person can stop, orient, and integrate without escalating use."
@@ -82,3 +88,9 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
 [[current/governance/amendments/AMEND.IC.EXISTENTIAL_LOVE_ROUTING]]
 
 [[current/governance/amendments/AMEND.IC.WELLBEING_HORIZON]]
+
+[[current/sources/altered-states-map-source/ALT.CAPACITY]]
+
+[[current/sources/altered-states-map-source/ALT.EPISTEMICS]]
+
+[[current/sources/altered-states-map-source/ALT.GROUNDING]]

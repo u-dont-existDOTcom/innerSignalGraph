@@ -1,7 +1,10 @@
+import { PERSPECTIVE_PRACTICE_VALUES } from "./perspective-practices.mjs";
+
 export const GUIDE_GRAPH_CONTRACT = "guide-graph-v1";
 export const GUIDE_GRAPH_BUNDLE_VERSION = "inner-child-somatic-pilot-2026-08-09-r5";
 
 export const CASE_VARIABLE_ENUMS = Object.freeze({
+  perspective_practice: PERSPECTIVE_PRACTICE_VALUES,
   present_safety: ["safe", "unsafe", "unknown"],
   orientation: ["oriented", "disoriented", "unknown"],
   ability_to_stop: ["yes", "no", "unknown"],
@@ -9,10 +12,16 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   activation: ["low", "moderate", "high", "unknown"],
   dissociation: ["none", "mild", "high", "unknown"],
   altered_state: ["sober", "altered", "unknown"],
+  altered_phase: ["none", "planned", "acute", "aftermath", "unknown"],
+  altered_capacity: ["coherent", "limited", "impaired", "unknown"],
+  altered_medical_status: ["stable", "concerning", "unknown"],
+  altered_action_pressure: ["present", "absent", "unknown"],
+  sleep_deprivation: ["present", "absent", "unknown"],
   inner_adult_access: ["available", "partial", "low", "unknown"],
   witness_capacity: ["present", "partial", "absent", "unknown"],
   parent_imagery: ["safe", "critical", "frightening", "blank", "not_used", "unknown"],
   love_access: ["accessible", "limited", "absent", "unknown"],
+  music_emotional_access: ["helpful", "neutral", "overwhelming", "not_tried", "declined", "unknown"],
   existential_sufficiency: ["sufficient", "insufficient", "profoundly_insufficient", "unknown"],
   spiritual_curiosity: ["present", "absent", "unknown"],
   wellbeing_horizon: ["ordinary_known", "deeper_conceptual", "deeper_experiential", "unknown"],
@@ -29,6 +38,8 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   influence_hook: ["none_observed", "praise_specialness", "mirroring", "pity_wounded_healer", "rescue_miracle", "belonging", "fear_obedience", "romantic_sexual", "spiritual_attainment", "humor_disarmament", "confession_inoculation", "mixed", "unknown"],
   self_directed_love: ["safe", "unsafe", "inaccessible", "unknown"],
   solar_plexus_tension: ["present", "absent", "unknown"],
+  touch_interest: ["present", "absent", "averse", "unknown"],
+  aquatic_bodywork_interest: ["present", "absent", "unknown"],
   protective_response: ["present", "absent", "unknown"],
   urge_to_escape: ["present", "absent", "unknown"],
   credibility_conflict: ["present", "absent", "unknown"],
@@ -72,6 +83,8 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   panic_instability: ["present", "absent", "unknown"],
   bypass_risk: ["present", "absent", "unknown"],
   guide_readiness: ["present", "absent", "unknown"],
+  child_contact_gate: ["NOT_BLOCKED", "HOLD", "BLOCKED", "unknown"],
+  compatibility_route: ["ordinary", "clarify_intent", "help_seeking", "identity_inquiry", "sovereignty", "adult_action", "human_support", "goal_mismatch", "unknown"],
   deep_work_readiness: ["yes", "no", "unknown"],
   basic_reparenting_capacity: ["yes", "no", "unknown"],
   stable_for_advanced_release: ["yes", "no", "unknown"]

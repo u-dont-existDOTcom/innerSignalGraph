@@ -188,6 +188,24 @@
       "anchorNodeIds": ["IC.FORGIVENESS_LATER"],
       "relation": "realized-by-compiled-node",
       "reconciledNodeIds": ["IC.FORGIVENESS_LATER"]
+    },
+    {
+      "id": "OVERLAY.IC.PROTOCOL_STATE_PROVENANCE",
+      "status": "owner-approved-uncompiled",
+      "authority": "OWNER.TASK.2026-09-16.PROTOCOL_PROVENANCE; tasks/reparenting-provenance-20260916/INTEGRATION.md",
+      "title": "Hypothetical care is not enacted reparenting",
+      "description": "Keep method not taught -> method taught -> wise/caring response available hypothetically -> actual imaginal enactment attempted -> child reception observed -> response pattern characterized separate and evidence-bound. Read each answer with its preceding prompt; past-tense shorthand in a hypothetical answer does not prove practice. Reuse the person's own caring words to invite actual enactment before retrospectively asking how care landed. Observe without scripting the child, and keep hypothetical content, deliberate imagery, spontaneous response and later interpretation distinct. Existing reported reception should not be re-queried. Prompt-level rules and audit failures are defined in src/prompts/protocol-provenance.mjs; this overlay is not a compiled state machine.",
+      "sourceRefs": [
+        "AMEND.IC.BEST_FRIEND_PROMPT",
+        "IC.BORROW_ONE_FUNCTION"
+      ],
+      "anchorNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.CREDIBILITY_REPAIR"
+      ],
+      "relation": "qualifies-protocol-state-evidence",
+      "reconciledNodeIds": []
     }
   ]
 }

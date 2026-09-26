@@ -1,0 +1,55 @@
+{
+  "id": "G038",
+  "description": "Deep work is otherwise safe but the needed adult caring function is not yet available; borrowed adulthood is preparation rather than method abandonment.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "low",
+    "witness_capacity": "present",
+    "parent_imagery": "not_used",
+    "love_access": "accessible",
+    "deep_love_access": "past_glimpse",
+    "child_love_inclusion": "untested",
+    "self_directed_love": "inaccessible",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "coherent_child_state": "present",
+    "current_intent": "deep_dialogue",
+    "support_available": "present",
+    "body_capacity": "adequate",
+    "other_person_central": "no",
+    "influence_domain": "none",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "present",
+    "attention_loop": "absent",
+    "inward_attention_effect": "neutral"
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "IC.BORROW_ONE_FUNCTION",
+    "matchedIncludes": [
+      "IC.BORROW_LOVE",
+      "IC.ADULT_APPRENTICE",
+      "IC.DEEP_CHILD_DIALOGUE"
+    ],
+    "selectedExcludes": [
+      "IC.NEUTRAL_WITNESS",
+      "IC.DEEP_CHILD_DIALOGUE"
+    ],
+    "deferredIncludes": [
+      "IC.DEEP_CHILD_DIALOGUE"
+    ],
+    "requiredNuancePatterns": [
+      "adult-side first",
+      "Receiving support is not the endpoint",
+      "Past-glimpse or state-dependent access",
+      "General orientation and stop/return capacity establish safety readiness"
+    ]
+  }
+}

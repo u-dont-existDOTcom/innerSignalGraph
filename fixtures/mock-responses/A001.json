@@ -234,7 +234,14 @@
         "stable_for_advanced_release": "unknown",
         "witness_capacity": "present",
         "credibility_evidence_state": "adverse",
-        "internal_speaker_relation": "unresolved"
+        "internal_speaker_relation": "unresolved",
+        "altered_phase": "none",
+        "altered_capacity": "coherent",
+        "altered_medical_status": "stable",
+        "altered_action_pressure": "absent",
+        "sleep_deprivation": "absent",
+        "touch_interest": "unknown",
+        "aquatic_bodywork_interest": "unknown"
       },
       "hypotheses": [
         {

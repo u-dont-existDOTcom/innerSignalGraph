@@ -11,7 +11,7 @@ function replaceUnique(text, before, after, id) {
   return text.replace(before, after);
 }
 
-export async function verifySourceSync({ projectRoot = root, candidateText } = {}) {
+export async function verifySourceSync({ projectRoot = root, candidateText, requireCurrentManifest = false } = {}) {
   const read = file => fs.readFile(path.join(projectRoot, file));
   const receipt = JSON.parse(await read('tasks/guide-source-sync-20260907/SOURCE-SYNC.json'));
   for (const entry of [receipt.source, receipt.approvedPatch, receipt.ownerAdoption, receipt.operations, receipt.historicalSource]) {
@@ -28,11 +28,13 @@ export async function verifySourceSync({ projectRoot = root, candidateText } = {
   for (const op of operations.toReversed()) reversed = replaceUnique(reversed, op.replacement, op.anchor, op.id);
   assert.equal(reversed, original, 'Inverse transformation must recover the original source exactly');
   assert.equal(hash(actual), receipt.target.sha256, 'Target hash mismatch');
-  const manifest = JSON.parse(await read('guides/manifest.json'));
-  const current = manifest.sources.find(source => source.id === 'inner-child-guide');
-  assert.equal(`guides/${current.file}`, receipt.target.file);
-  assert.equal(current.sha256, receipt.target.sha256);
-  assert.equal(current.version, receipt.target.version);
+  if (requireCurrentManifest) {
+    const manifest = JSON.parse(await read('guides/manifest.json'));
+    const current = manifest.sources.find(source => source.id === 'inner-child-guide');
+    assert.equal(`guides/${current.file}`, receipt.target.file);
+    assert.equal(current.sha256, receipt.target.sha256);
+    assert.equal(current.version, receipt.target.version);
+  }
   return { status: 'PASS', operations: 12, forwardReconstruction: true, inverseReconstruction: true,
     unexplainedChanges: 0, sourceSha256: hash(original), targetSha256: hash(actual) };
 }

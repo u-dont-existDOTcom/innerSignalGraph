@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "taskId": "wisdom-practices-20260912",
+  "generatedAt": "2026-09-12T15:05:48Z",
+  "authority": {
+    "universalArchitectureCommit": "e8c127944b7b065cef039fb25a3939477e664605",
+    "repository": "u-dont-existDOTcom/innerSignalGraph",
+    "branch": "task/wisdom-practices-reconcile-20260912",
+    "pullRequest": 56,
+    "baseCommit": "e729632070e80c7ae3c545bf22a10c8aba9f26dc",
+    "baseTree": "1956fff6213df70a9d96f2fb8b21e8743656ecf2",
+    "sourcePacketManifestSha256": "e072eaee9357db85c129a9e28b571c5422c2cd68d68a9d3a94f8bad4410b1c80"
+  },
+  "states": {
+    "PREPARED": true,
+    "COMPILED": true,
+    "TESTED": true,
+    "APPROVAL_PENDING": false,
+    "RECONCILED": true,
+    "MERGED": false,
+    "INSTALLED": false
+  },
+  "candidate": {
+    "proposalId": "wisdom-practices-20260912",
+    "packetId": "authoring-wisdom-practices-20260912",
+    "packetSha256": "f2d67e1990ceadb4120955c4c46c65d95aed0ad0c0270f2e6d652f778fa4ab8c",
+    "authoringReceiptSha256": "910bd4bb1ba97e11c88aff2f79450f9de78225b067af8de59748117868a27ad7",
+    "proposalEvidenceSha256": "20341f38d6fe73dcb925b47145cc33ecfc8029fb94bbfa1b88571b503aff6bc2",
+    "semanticDiffSha256": "1f83c629bfdc40ddaf9ff9927b76a9aa3e1a77f445734593187b366095f6c9e0",
+    "regressionImpactSha256": "d63013a8a90eb051f1c30b560e3ecb75ca02d3ffe94c1ca0ef374252c72dcbd7",
+    "provenanceImpactSha256": "0f38e736953933b4b5004caab8020c33e4f8b86b1e869be322d5a3b1f3bd8508",
+    "bundleSha256": "cf8f7d7e0a4ff7f84996b31a066c32b22a0954b0b781ce3bd4018759fbfdc13b",
+    "stats": {
+      "graphs": 3,
+      "nodes": 61,
+      "edges": 82,
+      "sourceSections": 100,
+      "ownerAmendments": 36,
+      "newNodes": 8,
+      "newEdges": 12,
+      "ownerDecisionCards": 32
+    },
+    "graphHashes": {
+      "inner-child-directed-graph": "a82fe28e2917f3c301b588e770ee0e367ee56286abd94ed9cf4b37a34459fb08",
+      "inner-child-somatic-cross-guide": "61db2ed53fe2c0eaa386328c1a52df3081f1c96c46771a327c431b16261a5396",
+      "somatic-directed-graph": "6b31d4e5d0e6dc2ab838aae714fe59c2c1c2ab21607409c9b1a25b2d5769dd2d"
+    },
+    "paths": {
+      "bundle": "tasks/wisdom-practices-20260912/candidate/candidate/bundle.json",
+      "proposalPacket": "tasks/wisdom-practices-20260912/candidate/packet/proposal.zip",
+      "authoringReceipt": "tasks/wisdom-practices-20260912/candidate/receipt.json",
+      "ownerDecisions": "tasks/wisdom-practices-20260912/candidate/audit/owner-decisions.json",
+      "approvedPacket": "tasks/wisdom-practices-20260912/approval/authoring-wisdom-practices-20260912-approved.zip",
+      "approvalRecord": "tasks/wisdom-practices-20260912/approval/OWNER-APPROVAL.json",
+      "reconciliationReceipt": "tasks/wisdom-practices-20260912/reconciliation/RECONCILIATION-RECEIPT.json"
+    }
+  },
+  "sourceState": {
+    "canonicalCompiledBundleSha256": "cf8f7d7e0a4ff7f84996b31a066c32b22a0954b0b781ce3bd4018759fbfdc13b",
+    "ownerAmendmentsSha256": "eb0a4cfdd77465a3d3d34557e850976d689c51196d0b4054f51b59c8922ef491",
+    "projectionInputSha256": "1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169",
+    "projectionManifestSha256": "953a71b668a425710fa40659329e89d49f1bfa1103e1f8faac599152930d8faa",
+    "canonicalGraphStats": {
+      "graphs": 3,
+      "nodes": 61,
+      "edges": 82,
+      "sourceSections": 100,
+      "ownerAmendments": 36
+    },
+    "canonicalCandidateGraphsReconciled": true
+  },
+  "changedPathScopes": [
+    "guide-graphs/candidates and generated compiled bundle/report",
+    "authoring/obsidian/current generated projection, map and reconciled proposal state",
+    "src/cli option parsing and deterministic reconciled-policy fingerprint",
+    "post-reconciliation graph, authoring and perspective-practice assertions",
+    "tasks/wisdom-practices-20260912 approval/reconciliation evidence and tasks/ACTIVE-TASK.json"
+  ],
+  "validation": {
+    "packetIntegrity": { "status": "PASS", "manifestFiles": 23, "stagedMembers": 36, "stagingTests": { "passed": 7, "total": 7 }, "helperCases": { "passed": 33, "total": 33 } },
+    "focusedProductionPath": { "status": "PASS", "passed": 8, "total": 8 },
+    "affectedNodeTests": { "status": "PASS", "passed": 112, "total": 112 },
+    "canonicalGraphRegressions": { "status": "PASS", "passed": 29, "total": 29 },
+    "proposalRegressions": { "status": "PASS", "passed": 62, "total": 62 },
+    "therapyLessons": { "status": "PASS", "passed": 5, "total": 5, "activeRuntimeLessonsDocumented": 4 },
+    "authoringValidate": { "status": "PASS", "generatedFiles": 342, "bases": 6, "maps": 1 },
+    "authoringCheck": { "status": "PASS", "generatedFiles": 342 },
+    "authoringMapsCheck": { "status": "PASS", "maps": 1, "canvas": true },
+    "proposalCheck": { "status": "PASS", "files": 13 },
+    "repositoryAudit": { "status": "PASS", "errors": 0, "warnings": 1, "warning": "hosted GitHub App permissions remain unverified by repository files" },
+    "publicationAudit": { "status": "PASS", "scannedRecords": 234264, "findings": 0 },
+    "completePackageVerify": {
+      "status": "PASS",
+      "runtime": { "node": "24.18.0", "npm": "11.16.0" },
+      "passed": 1117,
+      "total": 1117,
+      "failed": 0,
+      "repairedFailureClasses": [
+        "the CLI required --sha256 but rejected digits in option names",
+        "post-reconciliation inventory assertions still expected the former 53-node/70-edge authority",
+        "the historical pending packet test compared its diff against the newly reconciled baseline",
+        "the incomplete-graph compatibility test relied on the former canonical graph being incomplete",
+        "the deterministic mock benchmark fingerprint still represented the pre-reconciliation graph"
+      ],
+      "repair": "Repaired the CLI parser, updated exact canonical inventories, retained separate pending/approved packet assertions, made the incomplete fixture structurally explicit, and refreshed the deterministic mock-only policy fingerprint.",
+      "focusedRepairChecks": { "status": "PASS", "authoringProposal": { "passed": 12, "total": 12 }, "affectedReconciliation": { "passed": 48, "total": 48 }, "perspectivePractices": { "passed": 8, "total": 8 }, "therapyFingerprint": { "passed": 2, "total": 2 } },
+      "finalBoundary": "The existing reconciliation command ran the complete package gate successfully before retaining canonical writes."
+    }
+  },
+  "privacyAndCompatibility": {
+    "realPrivateDataAccessed": false,
+    "realPrivateCaseMutated": false,
+    "privateNonEffectEvidence": "Synthetic private-continuity/runtime tests passed inside the 112-test affected suite.",
+    "legacyCompatibilityEvidence": "Archived r01 and active r02 Guide Packet compatibility tests passed inside the 112-test affected suite.",
+    "providerOrPaidModelCalls": false
+  },
+  "testEfficiency": {
+    "observerTaskId": "wisdom-practices-reconcile-20260912",
+    "fullRuns": 4,
+    "fullRunSeconds": 427.86,
+    "forcedRedundantGreenRuns": 0,
+    "failureDiscoveringFullRuns": 3,
+    "focusedRepairPolicy": "Each discovered failure was isolated with affected/focused checks before the mandatory final reconciliation boundary was rerun."
+  },
+  "approval": {
+    "status": "approved",
+    "allApproved": true,
+    "approvedDecisionCards": 32,
+    "pendingDecisionCards": 0,
+    "sourcePacketSha256": "f2d67e1990ceadb4120955c4c46c65d95aed0ad0c0270f2e6d652f778fa4ab8c",
+    "approvedPacketSha256": "892c0c1191c84c925874a3895f299e41da5e803b6832caa265cecfd8aa5fbfae",
+    "approvalDecisionSha256": "33477b474c35b7e8c1f90bff73e01ecdb1ed8f9f9977d85840935cebf656fac7",
+    "detail": "The owner explicitly approved all 32 cards bound to the immutable source packet. The approved derivative verified before reconciliation."
+  },
+  "reconciliation": {
+    "status": "PASS",
+    "receiptSha256": "71b09ff31cb027519897931a3e8315476b2100e00f53320d49a0bd0cc0cef267",
+    "canonicalBundleSha256": "cf8f7d7e0a4ff7f84996b31a066c32b22a0954b0b781ce3bd4018759fbfdc13b",
+    "projectionInputSha256": "1f98e966e76da6e426ced6cfc6e014ba9b97033cb71512468963415ca21e4169",
+    "installed": false,
+    "stableChanged": false
+  },
+  "nonClaims": {
+    "modelAdherence": "NOT_ESTABLISHED",
+    "humanUsefulness": "NOT_ESTABLISHED",
+    "clinicalEfficacy": "NOT_ESTABLISHED"
+  }
+}

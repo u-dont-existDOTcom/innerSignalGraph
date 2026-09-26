@@ -1,0 +1,72 @@
+{
+  "id": "G961",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "parent_imagery": "not_used",
+    "coherent_child_state": "present",
+    "love_access": "accessible",
+    "self_directed_love": "safe",
+    "protective_response": "absent",
+    "credibility_conflict": "absent",
+    "resentment_toward_younger_self": "absent",
+    "self_criticism": "absent",
+    "actionable_problem": "present",
+    "attention_loop": "absent",
+    "thinking_yield": "new_information_or_action",
+    "inward_attention_effect": "helps",
+    "other_person_central": "yes",
+    "influence_domain": "none",
+    "relational_check_status": "completed",
+    "suicidal_state": "absent",
+    "unresolved_inner_material": "present",
+    "current_intent": "conversation",
+    "realistic_interaction_outcome": "boundary_or_refusal"
+  },
+  "turn_task": {
+    "version": 1,
+    "issue": "Synthetic perspective-practice test",
+    "node_id": "IC.DRAFT_EDITOR",
+    "kind": "action",
+    "phase": "practice",
+    "agreement": "accepted",
+    "observation_ids": [
+      "W_OBS_1"
+    ],
+    "marker": "The person explicitly requested this bounded practice.",
+    "last_response": "",
+    "capacity": "adequate",
+    "question_focus": "none",
+    "action": {
+      "step": "Send a firm refusal.",
+      "cue": "Before replying",
+      "size": "One sentence",
+      "barriers": "",
+      "purpose": "Retain my boundary",
+      "outcome": "not_attempted",
+      "result": "",
+      "adjustment": ""
+    },
+    "emotion": null
+  },
+  "unknowns": [],
+  "expected": {
+    "primary": "ROUTE.ACT_OUTWARD",
+    "requiredExecutionIncludes": [
+      "ROUTE.ACT_OUTWARD",
+      "IC.DRAFT_EDITOR"
+    ],
+    "selectedIncludes": [
+      "IC.DRAFT_EDITOR"
+    ],
+    "nextQuestion": ""
+  },
+  "description": "Editing supports outward action without replacing it"
+}

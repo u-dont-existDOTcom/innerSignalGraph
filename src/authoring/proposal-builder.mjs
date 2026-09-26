@@ -155,7 +155,8 @@ function proposalEvidence(proposal) {
     manifestBody: proposal.manifestBody,
     nodeEvidence: proposal.nodes.map((item) => ({ nodeId: item.data.node_id, operation: item.data.operation, body: item.body })).sort((left, right) => compareText(left.nodeId, right.nodeId)),
     edgeEvidence: proposal.edges.map((item) => ({ edgeId: item.data.edge_id, operation: item.data.operation, body: item.body })).sort((left, right) => compareText(left.edgeId, right.edgeId)),
-    proposedTests: proposal.tests.map((item) => item.value).sort((left, right) => compareText(left.id, right.id))
+    proposedTests: proposal.tests.map((item) => item.value).sort((left, right) => compareText(left.id, right.id)),
+    proposedSourceAmendments: structuredClone(proposal.sourceAmendments?.items ?? [])
   };
 }
 
@@ -215,21 +216,33 @@ export async function materializeProposal({ root, id, enforceCoverage = true }) 
   const operations = applyProposalOperations({ graphs: graphRows.map((row) => row.graph), proposal, graphHashes });
   const declaredTargets = [...proposal.manifest.target_graph_ids].sort(compareText);
   if (canonicalJson(declaredTargets) !== canonicalJson(operations.touchedGraphIds)) fail("PROPOSAL_TARGET_GRAPH_MISMATCH", "Manifest target_graph_ids must exactly match edited graph records.");
-  const candidateBundle = await compileGuideGraphs({ root, write: false, candidateGraphs: operations.graphs });
+  const candidateAmendments = proposal.sourceAmendments
+    ? { ...authority.amendments, items: [...authority.amendments.items, ...proposal.sourceAmendments.items] }
+    : authority.amendments;
+  const candidateBundle = await compileGuideGraphs({ root, write: false, candidateGraphs: operations.graphs, candidateAmendments });
   const cases = mergeRegressionCases(authority.regressionCases, proposal.tests);
   const baselineResults = await runGraphRegressionSuite({ root, bundle: authority.bundle, cases });
   const candidateResults = await runGraphRegressionSuite({ root, bundle: candidateBundle, cases });
   if (!candidateResults.ok) fail("PROPOSAL_REGRESSION_FAILURE", "Candidate graph fails one or more declared/canonical graph regressions.", { results: candidateResults.results.filter((item) => !item.ok) });
   const caseRows = selectedCaseRows({ proposal, cases, baselineResults, candidateResults });
-  const diff = buildCompleteSemanticDiff(authority.bundle, candidateBundle, { affectedCases: caseRows });
+  const semanticCandidateBundle = proposal.sourceAmendments ? {
+    ...candidateBundle,
+    sourceMaps: authority.bundle.sourceMaps,
+    stats: {
+      ...candidateBundle.stats,
+      ownerAmendmentCount: authority.bundle.stats.ownerAmendmentCount,
+      sourceSectionCount: authority.bundle.stats.sourceSectionCount
+    }
+  } : candidateBundle;
+  const diff = buildCompleteSemanticDiff(authority.bundle, semanticCandidateBundle, { affectedCases: caseRows });
   const decisions = buildCompleteDecisionCards(diff);
   const regressionImpact = assessRegressionCoverage(diff, caseRows);
   if (enforceCoverage && !regressionImpact.ok) fail("PROPOSAL_REGRESSION_COVERAGE_GAP", "Semantic changes lack required regression coverage.", { gaps: regressionImpact.gaps });
-  const sourceIds = new Set(authority.bundle.sourceMaps.flatMap((map) => map.sections.map((section) => section.id)));
+  const sourceIds = new Set(candidateBundle.sourceMaps.flatMap((map) => map.sections.map((section) => section.id)));
   const provenance = provenanceImpact(diff, sourceIds);
   const evidence = proposalEvidence(proposal);
   const built = buildOutputs({ proposal, authority, graphRows, candidateGraphs: operations.graphs, candidateBundle, diff, decisions, regressionImpact, provenance, evidence, regressionResults: candidateResults });
-  const packet = await buildProposalGuidePacket({ proposal, authority, candidateGraphs: operations.graphs, candidateBundle, diff, decisions, regressionCases: cases, caseRows, provenanceImpact: provenance, evidence });
+  const packet = await buildProposalGuidePacket({ proposal, authority: { ...authority, amendments: candidateAmendments }, candidateGraphs: operations.graphs, candidateBundle, diff, decisions, regressionCases: cases, caseRows, provenanceImpact: provenance, evidence });
   const packetVerification = verifyGuidePacket(packet.buffer, { installedBundle: authority.bundle });
   if (!packetVerification.ok) fail("PROPOSAL_PACKET_VERIFICATION_FAILED", "Candidate Guide Packet adapter failed authoritative verification.", { errors: packetVerification.errors });
   built.output.set("packet/proposal.zip", packet.buffer);

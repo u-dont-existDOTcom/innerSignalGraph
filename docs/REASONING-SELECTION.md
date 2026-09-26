@@ -1,8 +1,10 @@
 # InnerSignal reasoning selection supplement
 
-Status: owner-authorized candidate development reasoning policy on draft PR #46.
+Status: owner-authored repository reasoning supplement for its named development and supervision consumers; not a runtime prompt, provider configuration, or installed policy.
 
 Authority: this is a reasoning supplement, not a replacement for current project authority. Higher-ranked system/developer/security requirements, the current owner/task request, `AGENTS.md`, owner locks, privacy/budget/action gates, and installed/stable authority continue to control. This document grants no new execution, spending, publication, installation, merge, deployment, promotion, or release authority.
+
+Consumer boundary: authorized developers and reasoning supervisors may use this document when selecting methods for repository work. It is not automatically injected into application audit, implementation, replay, therapy, realization, private inference, hypnosis, or Guide Packet provider calls. A method named here is not an executed provider-effort setting or evidence of provider receipt; those claims require the applicable call-site configuration or provider receipt. See `INSTRUCTION-CONSUMER-MAP.md`.
 
 The owner-provided policy is preserved below without semantic softening.
 

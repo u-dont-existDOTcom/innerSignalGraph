@@ -113,6 +113,15 @@ export function targetedRetrievalRequests(caseState, recentTurnIds = []) {
       item_id: "threat_pathway.current"
     });
   }
+  const compatibility = state.protective_compatibility?.current;
+  if (compatibility?.assessed_turn_id && !recent.has(compatibility.assessed_turn_id)
+      && compatibility.gate !== "NOT_BLOCKED") {
+    refs.push({
+      reason: `protective-compatibility-${compatibility.gate.toLowerCase()}`,
+      turn_id: compatibility.assessed_turn_id,
+      item_id: "protective_compatibility.current"
+    });
+  }
   for (const cluster of state.contradiction_clusters) {
     if (cluster.status !== "open" || cluster.decision_relevance !== "high") continue;
     for (const itemId of cluster.item_ids) {
@@ -179,6 +188,14 @@ export function decisionRelevantProjection(context) {
       present_signal_kinds: state.threat_pathway.current.present_signal_kinds,
       denied_signal_kinds: state.threat_pathway.current.denied_signal_kinds,
       unknown_signal_kinds: state.threat_pathway.current.unknown_signal_kinds
+    } : null,
+    protective_compatibility: state.protective_compatibility?.current ? {
+      gate: state.protective_compatibility.current.gate,
+      route: state.protective_compatibility.current.route,
+      issue: state.protective_compatibility.current.issue,
+      reentry_status: state.protective_compatibility.current.reentry_status,
+      human_review_required: state.protective_compatibility.current.human_review_required,
+      assessed_turn_id: state.protective_compatibility.current.assessed_turn_id
     } : null,
     retrieval_item_ids: context.targeted_retrieval_requests.map((item) => item.item_id)
   };

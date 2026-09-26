@@ -1,0 +1,21 @@
+{
+  "description": "ROUTE.COMPATIBILITY_CLARIFY is not selected when the compatibility route does not match.",
+  "expected": {
+    "selectedExcludes": [
+      "ROUTE.COMPATIBILITY_CLARIFY"
+    ]
+  },
+  "id": "PCG01B",
+  "unknowns": [],
+  "variables": {
+    "ability_to_return": "yes",
+    "ability_to_stop": "yes",
+    "altered_state": "sober",
+    "child_contact_gate": "BLOCKED",
+    "compatibility_route": "ordinary",
+    "current_intent": "conversation",
+    "dissociation": "none",
+    "orientation": "oriented",
+    "present_safety": "unsafe"
+  }
+}

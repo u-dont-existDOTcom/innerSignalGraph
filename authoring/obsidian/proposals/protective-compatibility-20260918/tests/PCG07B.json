@@ -1,0 +1,21 @@
+{
+  "description": "ROUTE.GOAL_MISMATCH is not selected when the compatibility route does not match.",
+  "expected": {
+    "selectedExcludes": [
+      "ROUTE.GOAL_MISMATCH"
+    ]
+  },
+  "id": "PCG07B",
+  "unknowns": [],
+  "variables": {
+    "ability_to_return": "yes",
+    "ability_to_stop": "yes",
+    "altered_state": "sober",
+    "child_contact_gate": "BLOCKED",
+    "compatibility_route": "ordinary",
+    "current_intent": "conversation",
+    "dissociation": "none",
+    "orientation": "oriented",
+    "present_safety": "unsafe"
+  }
+}

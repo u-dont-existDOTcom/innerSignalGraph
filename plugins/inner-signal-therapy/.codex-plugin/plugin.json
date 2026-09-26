@@ -1,0 +1,25 @@
+{
+  "name": "inner-signal-therapy",
+  "version": "0.2.0",
+  "description": "InnerSignal therapy with optional authenticated private continuity in one plugin.",
+  "author": {
+    "name": "u-dont-existDOTcom"
+  },
+  "repository": "https://github.com/u-dont-existDOTcom/innerSignalGraph",
+  "keywords": ["therapy", "inner-child", "self-relationship", "wellness", "continuity", "handoff"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "InnerSignal",
+    "shortDescription": "Therapy with private continuity",
+    "longDescription": "InnerSignal combines its therapy guidance with authenticated read-only private continuity when that MCP connection is available, so users do not need a separate handoff plugin.",
+    "developerName": "u-dont-existDOTcom",
+    "category": "Wellness",
+    "capabilities": ["Advisory", "Read"],
+    "defaultPrompt": [
+      "Help me work with an inner-child conflict.",
+      "Continue from my private InnerSignal handoff.",
+      "Help me understand why care for a younger part of me feels unsafe.",
+      "Help me find one grounded next step in a self-relationship conflict."
+    ]
+  }
+}

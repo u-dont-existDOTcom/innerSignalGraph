@@ -25,18 +25,26 @@ function failUnless(failures, condition, message) {
 
 function runPlannerCase(testCase, graphBundle) {
   const failures = [];
-  const plan = planFromGraphs({ variables: testCase.variables ?? {}, unknowns: testCase.unknowns ?? [], graphs: graphBundle.graphs ?? [] });
+  const plan = planFromGraphs({
+    variables: testCase.variables ?? {},
+    unknowns: testCase.unknowns ?? [],
+    graphs: graphBundle.graphs ?? [],
+    turnTask: testCase.turnTask ?? null
+  });
   const expected = testCase.expectations ?? {};
   if (expected.primaryJobId) failUnless(failures, plan.primaryJob?.id === expected.primaryJobId, `Expected primary job ${expected.primaryJobId}, received ${plan.primaryJob?.id ?? "none"}.`);
   const selected = new Set(plan.selectedNodes.map((node) => node.id));
   for (const id of expected.selectedNodeIds ?? []) failUnless(failures, selected.has(id), `Expected selected node ${id}.`);
   for (const id of expected.excludedNodeIds ?? []) failUnless(failures, !selected.has(id), `Node ${id} must not be selected.`);
+  const required = new Set(plan.executionContract?.requiredNodeIds ?? []);
+  for (const id of expected.requiredNodeIds ?? []) failUnless(failures, required.has(id), `Expected required execution node ${id}.`);
+  for (const id of expected.excludedRequiredNodeIds ?? []) failUnless(failures, !required.has(id), `Node ${id} must not be required for execution.`);
   const deferred = new Set(plan.deferredNodes.map((node) => node.id));
   for (const id of expected.deferredNodeIds ?? []) failUnless(failures, deferred.has(id), `Expected deferred node ${id}.`);
   for (const text of expected.nextQuestionIncludes ?? []) failUnless(failures, String(plan.nextQuestion).toLowerCase().includes(String(text).toLowerCase()), `Next question must include ${JSON.stringify(text)}.`);
   for (const text of expected.requiredNuanceIncludes ?? []) failUnless(failures, includesText(plan.requiredNuance, text), `Required nuance must include ${JSON.stringify(text)}.`);
   for (const text of expected.forbiddenOverclaimIncludes ?? []) failUnless(failures, includesText(plan.forbiddenOverclaims, text), `Forbidden overclaims must include ${JSON.stringify(text)}.`);
-  return { failures, evidence: { primaryJobId: plan.primaryJob?.id ?? null, selectedNodeIds: [...selected], deferredNodeIds: [...deferred], nextQuestion: plan.nextQuestion } };
+  return { failures, evidence: { primaryJobId: plan.primaryJob?.id ?? null, selectedNodeIds: [...selected], requiredNodeIds: [...required], deferredNodeIds: [...deferred], nextQuestion: plan.nextQuestion } };
 }
 
 function graphByNodeId(graphBundle, id) {

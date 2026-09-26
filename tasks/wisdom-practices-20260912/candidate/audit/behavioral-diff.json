@@ -1,0 +1,1726 @@
+{
+  "affectedCases": [
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G001",
+      "title": "Accessible love feels unsafe and the younger state disputes adult credibility."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G002",
+      "title": "Flooded person with critical parent imagery and little inner-adult access."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G003",
+      "title": "Solar-plexus holding blocks self-directed love while external love remains available."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G005",
+      "title": "Developmental trauma and EMDR interest without basic reparenting capacity."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G008",
+      "title": "No clear child-self and unstable preferences across contexts."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G011",
+      "title": "Gentle hypnosis requested without deep-work readiness."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_LOVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G012",
+      "title": "Credibility conflict with adverse track record, established witness capacity, and unresolved adult-side speaker identity."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.ACT_OUTWARD",
+        "ROUTE.RELATIONAL_REALITY_CHECK"
+      ],
+      "id": "G013",
+      "title": "Another person is central, interpersonal pressure displaced self-possession, and both outward action and later inward work are relevant."
+    },
+    {
+      "affectedNodeIds": [
+        "ROUTE.ACT_OUTWARD",
+        "ROUTE.RELATIONAL_REALITY_CHECK"
+      ],
+      "id": "G014",
+      "title": "Ordinary social danger keeps practical safety above love, relational interpretation, and inward processing."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G017",
+      "title": "An experienced other-than-self presence with inaccessible metta routes to Nurturer, Protector, and Guide capacity-building rather than psychic combat."
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE"
+      ],
+      "id": "G026"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE"
+      ],
+      "id": "G027"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "ROUTE.RELATIONAL_REALITY_CHECK"
+      ],
+      "id": "G028"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G029"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.MEET_GUARD",
+        "IC.PROTECTOR_ACTION"
+      ],
+      "id": "G030"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE"
+      ],
+      "id": "G031"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE"
+      ],
+      "id": "G032"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.BORROW_ONE_FUNCTION",
+        "ROUTE.ACT_OUTWARD"
+      ],
+      "id": "G033"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE"
+      ],
+      "id": "G034"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE"
+      ],
+      "id": "G035"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.WISER_SELF_PERSPECTIVE"
+      ],
+      "id": "G930",
+      "title": "Explicit bounded practice: wiser_self"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.WISER_SELF_PERSPECTIVE"
+      ],
+      "id": "G931",
+      "title": "Do not force wiser_self"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.WISER_SELF_PERSPECTIVE"
+      ],
+      "id": "G932",
+      "title": "Do not force wiser_self"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_EDITOR"
+      ],
+      "id": "G933",
+      "title": "Explicit bounded practice: draft_editor"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_EDITOR"
+      ],
+      "id": "G934",
+      "title": "Do not force draft_editor"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_EDITOR"
+      ],
+      "id": "G935",
+      "title": "Do not force draft_editor"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_RETURN_TO_CARE"
+      ],
+      "id": "G936",
+      "title": "Explicit bounded practice: return_to_care"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_RETURN_TO_CARE"
+      ],
+      "id": "G937",
+      "title": "Do not force return_to_care"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_RETURN_TO_CARE"
+      ],
+      "id": "G938",
+      "title": "Do not force return_to_care"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMPASSIONATE_STORY"
+      ],
+      "id": "G939",
+      "title": "Explicit bounded practice: story_punctuation"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMPASSIONATE_STORY"
+      ],
+      "id": "G940",
+      "title": "Do not force story_punctuation"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMPASSIONATE_STORY"
+      ],
+      "id": "G941",
+      "title": "Do not force story_punctuation"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.PAST_COMPETENCE"
+      ],
+      "id": "G942",
+      "title": "Explicit bounded practice: past_competence"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.PAST_COMPETENCE"
+      ],
+      "id": "G943",
+      "title": "Do not force past_competence"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.PAST_COMPETENCE"
+      ],
+      "id": "G944",
+      "title": "Do not force past_competence"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMMON_HUMANITY"
+      ],
+      "id": "G945",
+      "title": "Explicit bounded practice: common_humanity"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMMON_HUMANITY"
+      ],
+      "id": "G946",
+      "title": "Do not force common_humanity"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.COMMON_HUMANITY"
+      ],
+      "id": "G947",
+      "title": "Do not force common_humanity"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CRITICISM_KERNEL"
+      ],
+      "id": "G948",
+      "title": "Explicit bounded practice: criticism_kernel"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CRITICISM_KERNEL"
+      ],
+      "id": "G949",
+      "title": "Do not force criticism_kernel"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CRITICISM_KERNEL"
+      ],
+      "id": "G950",
+      "title": "Do not force criticism_kernel"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY"
+      ],
+      "id": "G951",
+      "title": "Explicit bounded practice: caring_company"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY"
+      ],
+      "id": "G952",
+      "title": "Do not force caring_company"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY"
+      ],
+      "id": "G953",
+      "title": "Do not force caring_company"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.WISER_SELF_PERSPECTIVE"
+      ],
+      "id": "G954",
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.WISER_SELF_PERSPECTIVE"
+      ],
+      "id": "G955",
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.WISER_SELF_PERSPECTIVE"
+      ],
+      "id": "G956",
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.WISER_SELF_PERSPECTIVE"
+      ],
+      "id": "G957",
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.MEET_GUARD",
+        "IC.PAST_COMPETENCE",
+        "IC.WISER_SELF_PERSPECTIVE"
+      ],
+      "id": "G958",
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.WISER_SELF_PERSPECTIVE"
+      ],
+      "id": "G959",
+      "title": "Protection overrides selected future-self exercise"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.CARING_COMPANY",
+        "IC.COMMON_HUMANITY",
+        "IC.COMPASSIONATE_STORY",
+        "IC.CRITICISM_KERNEL",
+        "IC.DRAFT_EDITOR",
+        "IC.DRAFT_RETURN_TO_CARE",
+        "IC.PAST_COMPETENCE",
+        "IC.WISER_SELF_PERSPECTIVE"
+      ],
+      "id": "G960",
+      "title": "Raw case-variable cannot choose a method"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_EDITOR",
+        "ROUTE.ACT_OUTWARD"
+      ],
+      "id": "G961",
+      "title": "Editing supports outward action without replacing it"
+    },
+    {
+      "affectedNodeIds": [
+        "IC.BEST_FRIEND_PERSPECTIVE",
+        "IC.DRAFT_EDITOR",
+        "ROUTE.ACT_OUTWARD",
+        "ROUTE.RELATIONAL_REALITY_CHECK"
+      ],
+      "id": "G962",
+      "title": "An unresolved relationship check is not bypassed"
+    }
+  ],
+  "baselineVersion": "inner-child-somatic-pilot-2026-08-09-r5",
+  "candidateVersion": "inner-child-somatic-pilot-2026-08-09-r5",
+  "changedNodeIds": [
+    "IC.BEST_FRIEND_PERSPECTIVE",
+    "IC.BORROW_LOVE",
+    "IC.BORROW_ONE_FUNCTION",
+    "IC.CARING_COMPANY",
+    "IC.COMMON_HUMANITY",
+    "IC.COMPASSIONATE_STORY",
+    "IC.CRITICISM_KERNEL",
+    "IC.DRAFT_EDITOR",
+    "IC.DRAFT_RETURN_TO_CARE",
+    "IC.MEET_GUARD",
+    "IC.PAST_COMPETENCE",
+    "IC.PROTECTOR_ACTION",
+    "IC.WISER_SELF_PERSPECTIVE",
+    "ROUTE.ACT_OUTWARD",
+    "ROUTE.RELATIONAL_REALITY_CHECK"
+  ],
+  "changes": [
+    {
+      "after": {
+        "from": "IC.CRITICISM_KERNEL",
+        "relation": "may-support",
+        "to": "IC.DRAFT_EDITOR"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "03f9416fdbc959f8a8310a4a6efe75628f9c9cff4024352927474ae351b90fc2",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.BEST_FRIEND_PERSPECTIVE",
+        "relation": "offers-alternative",
+        "to": "IC.WISER_SELF_PERSPECTIVE"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "049044016072b731acf93595339479ff301b8deaeb86b17384d0079f5f4bc1e3",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.WISER_SELF_PERSPECTIVE",
+        "relation": "may-support",
+        "to": "IC.DRAFT_EDITOR"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "4a621d511ccb176805ffecd1f5edecf745e0008b085afa2c1f72ce341d4b8ae4",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.COMPASSIONATE_STORY",
+        "relation": "may-use",
+        "to": "IC.BORROW_ONE_FUNCTION"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "565fa0fc78efbec996a141136d359094eb1e3a75aad8c67b0e813fe677dea12f",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "ROUTE.RELATIONAL_REALITY_CHECK",
+        "relation": "clarifies",
+        "to": "IC.CRITICISM_KERNEL"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "58ed63901d97d8f66a9dbc48b5673956bd203edb75bed47867d8d105b5dfe2ab",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.DRAFT_RETURN_TO_CARE",
+        "relation": "may-use",
+        "to": "IC.MEET_GUARD"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "66bda611217609ca6d72666acf7a2651f0569b2373a2793874c2a10bf3b68498",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.DRAFT_EDITOR",
+        "relation": "returns-for-care",
+        "to": "IC.DRAFT_RETURN_TO_CARE"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "6b1a35b6791d5f7428eb41b0b80e9eb010a34e9249f1a137f079d5dbe42135a6",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "ROUTE.ACT_OUTWARD",
+        "relation": "may-use-as-communication-support",
+        "to": "IC.DRAFT_EDITOR"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "817d57d1b265fa3145aaa6222224ce30f2c5665756017ae2cdfe65539baaafd9",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.DRAFT_RETURN_TO_CARE",
+        "relation": "embodies-through",
+        "to": "IC.PROTECTOR_ACTION"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "86f2b8061b72071a477e6901bf6bd201d7d92e6ca433af7c39ae37d21ffd4e2b",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.BORROW_ONE_FUNCTION",
+        "relation": "offers-alternative",
+        "to": "IC.PAST_COMPETENCE"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "a6b24256586a073960d9c9ad01801d2a053de661f4a45873ab599937d8326ea1",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.COMMON_HUMANITY",
+        "relation": "may-support",
+        "to": "IC.CARING_COMPANY"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "b4c89cebf5421d4c18705fd83856e68d3e9872693ec8a07f2170d7a612c76de8",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "from": "IC.BORROW_LOVE",
+        "relation": "offers-alternative",
+        "to": "IC.CARING_COMPANY"
+      },
+      "before": null,
+      "classification": "substantive-topology",
+      "entityId": "fb28dd559e70bc1e7564d81e70569f6649e55742404317ecea3255580b1b4a19",
+      "entityType": "edge",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Ask: 'What would I tell my best friend in this exact situation?'",
+        "Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action.",
+        "If the person wants another caring vantage point, offer a wiser future self or supportive company as an alternative, not a compulsory addition. Preserve changed understanding, felt embodiment and companionship as different possible benefits."
+      ],
+      "before": [
+        "Ask: 'What would I tell my best friend in this exact situation?'",
+        "Identify whether the answer supplies Nurturer, Protector, or Guide, then borrow one sentence or one five-percent action."
+      ],
+      "classification": "therapeutic-response",
+      "entityId": "IC.BEST_FRIEND_PERSPECTIVE",
+      "entityType": "node",
+      "fieldPath": "recommendations",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "AMEND.IC.BEST_FRIEND_PROMPT",
+        "IC.BORROW_ONE_FUNCTION",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "AMEND.IC.BEST_FRIEND_PROMPT",
+        "IC.BORROW_ONE_FUNCTION"
+      ],
+      "classification": "provenance-policy",
+      "entityId": "IC.BEST_FRIEND_PERSPECTIVE",
+      "entityType": "node",
+      "fieldPath": "sourceRefs",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.",
+        "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.",
+        "Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love.",
+        "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.",
+        "Remembered or imagined caring company is an alternative when receiving support is more accessible than generating affection. Do not assume safe parental imagery or force transfer."
+      ],
+      "before": [
+        "First feel real love for a pet, baby, friend, child, partner, beauty, or another naturally loved presence.",
+        "Do not force an immediate turn toward the self; offer only as much toward the younger state as feels possible.",
+        "Use ordinary affection or care as a real bridge when it is available, without claiming that it is equivalent to profound spiritual or transpersonal love.",
+        "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image."
+      ],
+      "classification": "therapeutic-response",
+      "entityId": "IC.BORROW_LOVE",
+      "entityType": "node",
+      "fieldPath": "recommendations",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "IC.LOVE_MISSING",
+        "IC.HEART_SOLAR_LOOP",
+        "AMEND.IC.BORROW_LOVE_EXTERNAL",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "IC.LOVE_MISSING",
+        "IC.HEART_SOLAR_LOOP",
+        "AMEND.IC.BORROW_LOVE_EXTERNAL",
+        "AMEND.IC.WELLBEING_HORIZON",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
+      ],
+      "classification": "provenance-policy",
+      "entityId": "IC.BORROW_LOVE",
+      "entityType": "node",
+      "fieldPath": "sourceRefs",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.",
+        "Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.",
+        "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness.",
+        "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image.",
+        "A real past occasion of responding well or a fallible compassionate future perspective may supply one bounded function. Offer the relevant alternative only if useful; do not demand past success or a perfect state."
+      ],
+      "before": [
+        "Borrow one narrow function—warmth, protection, or direction—from a safe person, figure, plan, value, or ordinary action.",
+        "Keep it bounded, observable, returnable, and limited to the domain in which the source has actually shown useful competence or care.",
+        "When the part attempting the adult role becomes resentful, defensive, or retaliatory, borrow one non-retaliatory adult response for that side too—for example, how a decent adult would hear contempt without arguing its own goodness.",
+        "Adapt the distance, manner or source when a caring interaction feels intrusive or mismatched. Start with non-cruelty when needed without redefining love as merely non-cruelty; do not intensify an unwanted image."
+      ],
+      "classification": "therapeutic-response",
+      "entityId": "IC.BORROW_ONE_FUNCTION",
+      "entityType": "node",
+      "fieldPath": "recommendations",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.ADULT_APPRENTICE",
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "IC.BORROW_ONE_FUNCTION",
+        "IC.ADULT_APPRENTICE",
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.IC.EMOTIONAL_TASK_GUIDANCE"
+      ],
+      "classification": "provenance-policy",
+      "entityId": "IC.BORROW_ONE_FUNCTION",
+      "entityType": "node",
+      "fieldPath": "sourceRefs",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "perspective_practice",
+              "op": "eq",
+              "value": "caring_company"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            },
+            {
+              "field": "ability_to_stop",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "ability_to_return",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "dissociation",
+              "op": "eq",
+              "value": "high"
+            },
+            {
+              "field": "suicidal_state",
+              "op": "eq",
+              "value": "imminent"
+            }
+          ]
+        },
+        "authority": "owner-approved-extension",
+        "avoid": [
+          "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+          "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+          "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+            "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+            "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+            "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+          ],
+          "requiredNuance": [
+            "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+            "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+            "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+            "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+            "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+            "Receiving caring company is not identical to generating affection toward another; use the function actually needed."
+          ]
+        },
+        "id": "IC.CARING_COMPANY",
+        "kind": "decision-node",
+        "priority": 88,
+        "recommendations": [
+          "Offer remembered or imagined caring company or a nonpersonified supportive stance when it feels useful. The future self, a real caring figure or a person's own chosen spiritual frame may help.",
+          "Do not assume family, maternal imagery or a safe remembered caregiver is available. Blank, critical or frightening imagery calls for another entrance, not forced recall.",
+          "Notice whether receiving support makes some present care, discernment, courage or agency more available. Do not make becoming independent of all support or spiritual relationship the goal.",
+          "Rogers's documented care-retrieval invitation is an optional exemplar, not proof that this technique caused his qualities."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.WISDOM_CORE",
+          "AMEND.IC.WISDOM_CARING_COMPANY",
+          "AMEND.IC.WISDOM_SOURCES"
+        ],
+        "successSignals": [
+          "The person feels accompanied and can choose a useful present response without surrendering judgment."
+        ],
+        "tags": [
+          "wisdom-practice",
+          "caring-company",
+          "optional"
+        ],
+        "tier": 4,
+        "title": "Meet the moment with remembered or imagined caring company"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.CARING_COMPANY",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "perspective_practice",
+              "op": "eq",
+              "value": "common_humanity"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            },
+            {
+              "field": "ability_to_stop",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "ability_to_return",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "dissociation",
+              "op": "eq",
+              "value": "high"
+            },
+            {
+              "field": "suicidal_state",
+              "op": "eq",
+              "value": "imminent"
+            }
+          ]
+        },
+        "authority": "owner-approved-extension",
+        "avoid": [
+          "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+          "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+          "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+            "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+            "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+            "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+          ],
+          "requiredNuance": [
+            "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+            "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+            "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+            "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+            "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+            "Universality is belonging, not comparison, doctrinal pressure or a substitute for accompaniment."
+          ]
+        },
+        "id": "IC.COMMON_HUMANITY",
+        "kind": "decision-node",
+        "priority": 88,
+        "recommendations": [
+          "Begin with the particular experience and its circumstances. If useful, recognize that the longing underneath it is something other people may know as well.",
+          "Invite, do not diagnose, possible longings such as safety, understanding, dignity, belonging, freedom or repair. The person may name something else or prefer simple company.",
+          "Distinguish “I am not excluded from humanity” from “others have it worse.” Shared longing does not excuse harmful ways of meeting it.",
+          "An explicit shared-suffering reflection is optional; common humanity remains a relational stance. Use tradition-specific references only by individual preference and retain their provenance."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.WISDOM_CORE",
+          "AMEND.IC.WISDOM_COMMON_HUMANITY",
+          "AMEND.IC.WISDOM_SOURCES"
+        ],
+        "successSignals": [
+          "The person feels less uniquely defective while their particular loss, needs and boundaries remain recognized."
+        ],
+        "tags": [
+          "wisdom-practice",
+          "common-humanity",
+          "optional"
+        ],
+        "tier": 4,
+        "title": "Recognize shared humanity without minimizing this experience"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.COMMON_HUMANITY",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "perspective_practice",
+              "op": "eq",
+              "value": "story_punctuation"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            },
+            {
+              "field": "ability_to_stop",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "ability_to_return",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "dissociation",
+              "op": "eq",
+              "value": "high"
+            },
+            {
+              "field": "suicidal_state",
+              "op": "eq",
+              "value": "imminent"
+            }
+          ]
+        },
+        "authority": "owner-approved-extension",
+        "avoid": [
+          "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+          "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+          "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+            "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+            "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+            "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+          ],
+          "requiredNuance": [
+            "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+            "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+            "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+            "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+            "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+            "The exact phrase is owner-reported, not a clinically validated intervention."
+          ]
+        },
+        "id": "IC.COMPASSIONATE_STORY",
+        "kind": "decision-node",
+        "priority": 88,
+        "recommendations": [
+          "For a manageable memory, offer the exact short phrase: “And so that's the way it happened!” “Once upon a time…” may be added only if that tone fits.",
+          "Notice whether it changes the relationship to the memory without inventing facts or treating it as fiction. The aim is kind distance or acknowledgment, not proving innocence or silencing grief.",
+          "If useful, let the short practice end. An optional next move asks what the person in the story needs now; specific responsibility or repair can be considered without global self-condemnation.",
+          "A sneering narrator, increased shame, forced humor, numbness or unreality means change route, not add more narrative distance."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.WISDOM_CORE",
+          "AMEND.IC.WISDOM_STORY",
+          "AMEND.IC.WISDOM_SOURCES"
+        ],
+        "successSignals": [
+          "The episode is less like a global verdict while contact, responsibility and present orientation remain."
+        ],
+        "tags": [
+          "wisdom-practice",
+          "story-punctuation",
+          "optional"
+        ],
+        "tier": 4,
+        "title": "Give a difficult memory compassionate story punctuation"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.COMPASSIONATE_STORY",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "perspective_practice",
+              "op": "eq",
+              "value": "criticism_kernel"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            },
+            {
+              "field": "ability_to_stop",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "ability_to_return",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "dissociation",
+              "op": "eq",
+              "value": "high"
+            },
+            {
+              "field": "suicidal_state",
+              "op": "eq",
+              "value": "imminent"
+            }
+          ]
+        },
+        "authority": "owner-approved-extension",
+        "avoid": [
+          "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+          "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+          "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+            "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+            "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+            "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+          ],
+          "requiredNuance": [
+            "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+            "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+            "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+            "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+            "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+            "The exact maxim is not a verified Fred Rogers quotation."
+          ]
+        },
+        "id": "IC.CRITICISM_KERNEL",
+        "kind": "decision-node",
+        "priority": 88,
+        "recommendations": [
+          "After the relevant external reality check, ask whether there is a specific supported point inside the criticism worth considering. Separate it from insults, exaggeration or coercive demands.",
+          "Where true, acknowledge the specific behavior or make an appropriate repair. Where uncertain, clarification is optional; do not invent a kernel or concede unsupported blame.",
+          "Preserve refusal, boundaries or nonresponse when appropriate. A charitable reading does not establish intention, character, safety or future reciprocity."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.WISDOM_CORE",
+          "AMEND.IC.WISDOM_CRITICISM_KERNEL",
+          "AMEND.IC.WISDOM_SOURCES"
+        ],
+        "successSignals": [
+          "Accurate responsibility and useful information are retained without swallowing a global verdict or surrendering protection."
+        ],
+        "tags": [
+          "wisdom-practice",
+          "criticism-kernel",
+          "optional"
+        ],
+        "tier": 4,
+        "title": "Receive useful content without accepting contempt"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.CRITICISM_KERNEL",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "perspective_practice",
+              "op": "eq",
+              "value": "draft_editor"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            },
+            {
+              "field": "ability_to_stop",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "ability_to_return",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "dissociation",
+              "op": "eq",
+              "value": "high"
+            },
+            {
+              "field": "suicidal_state",
+              "op": "eq",
+              "value": "imminent"
+            }
+          ]
+        },
+        "authority": "owner-approved-extension",
+        "avoid": [
+          "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+          "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+          "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+            "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+            "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+            "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+          ],
+          "requiredNuance": [
+            "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+            "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+            "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+            "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+            "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+            "The first draft can be a mature protest; it is not automatically a child-state.",
+            "A private draft is not a sent message, a settled intention, or an established account of the other person."
+          ]
+        },
+        "id": "IC.DRAFT_EDITOR",
+        "kind": "decision-node",
+        "priority": 88,
+        "recommendations": [
+          "Invite a brief private mental or written draft of what the person wants to say. Keep raw draft and sendable response clearly separate; do not require disclosure or storage.",
+          "Take the caring editor's position: preserve the important truth, justified protest, proportionate responsibility, realistic aim and necessary boundary. Better does not mean softer or more agreeable.",
+          "Check an honest sufficient response for this actual recipient and situation. The human decides whether to send, pause, apologize, refuse or not respond. Do not send anything automatically.",
+          "Make room to return to the original draft for inward care after the outward decision. Some inward care can come first if that makes editing possible. An appropriate existing draft may not need editing."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.WISDOM_CORE",
+          "AMEND.IC.WISDOM_DRAFT_EDITOR",
+          "AMEND.IC.WISDOM_SOURCES"
+        ],
+        "successSignals": [
+          "The communication is more appropriate without internal abandonment.",
+          "A later return to care remains visible as a separate purpose until reported, deferred or declined."
+        ],
+        "tags": [
+          "wisdom-practice",
+          "draft-editor",
+          "optional"
+        ],
+        "tier": 4,
+        "title": "Edit the communication without rejecting its author"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.DRAFT_EDITOR",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "perspective_practice",
+              "op": "eq",
+              "value": "return_to_care"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            },
+            {
+              "field": "ability_to_stop",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "ability_to_return",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "dissociation",
+              "op": "eq",
+              "value": "high"
+            },
+            {
+              "field": "suicidal_state",
+              "op": "eq",
+              "value": "imminent"
+            }
+          ]
+        },
+        "authority": "owner-approved-extension",
+        "avoid": [
+          "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+          "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+          "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+            "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+            "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+            "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+          ],
+          "requiredNuance": [
+            "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+            "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+            "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+            "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+            "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+            "Outward completion is not inward completion. Declining further work is not failure."
+          ]
+        },
+        "id": "IC.DRAFT_RETURN_TO_CARE",
+        "kind": "decision-node",
+        "priority": 88,
+        "recommendations": [
+          "After the reported outward response or decision, return to the original writer's experience without scolding them for it. Mental recall is enough; do not require a stored draft.",
+          "Attend to the actual hurt, need, protest, responsibility or limit. Offer feasible Nurturer/Protector/Guide care; the adult acts before requiring belief or reassurance from a part.",
+          "Use existing guard, credibility, borrowed-function, protection or deeper-dialogue routes only as actually needed and within their existing gates. Do not infer a younger self or childhood memory.",
+          "Track the return separately from communication success. Respect a wish to defer, stop or decline; preserve unfinished work without making it a compulsory assignment or another reassurance loop."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.WISDOM_CORE",
+          "AMEND.IC.WISDOM_DRAFT_RETURN",
+          "AMEND.IC.WISDOM_SOURCES"
+        ],
+        "successSignals": [
+          "The person reports understanding, helpful care, an appropriate protective action or a freely chosen ending."
+        ],
+        "tags": [
+          "wisdom-practice",
+          "return-to-care",
+          "optional"
+        ],
+        "tier": 4,
+        "title": "Return to the first draft for understanding and care"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.DRAFT_RETURN_TO_CARE",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "perspective_practice",
+              "op": "eq",
+              "value": "past_competence"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            },
+            {
+              "field": "ability_to_stop",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "ability_to_return",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "dissociation",
+              "op": "eq",
+              "value": "high"
+            },
+            {
+              "field": "suicidal_state",
+              "op": "eq",
+              "value": "imminent"
+            }
+          ]
+        },
+        "authority": "owner-approved-extension",
+        "avoid": [
+          "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+          "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+          "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+            "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+            "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+            "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+          ],
+          "requiredNuance": [
+            "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+            "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+            "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+            "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+            "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+            "Prior capacity is evidence, not a guarantee that the same response is possible now."
+          ]
+        },
+        "id": "IC.PAST_COMPETENCE",
+        "kind": "decision-node",
+        "priority": 88,
+        "recommendations": [
+          "Offer: “Remember one real occasion when you met a difficulty in a way you respect. What did you actually do, and what helped? Is one part available now?”",
+          "A small relevant event is sufficient. Retrieve action, support, resources or conditions rather than merely a flattering identity claim.",
+          "If recall is difficult, stop the search or use an already chosen anchor or another care entrance. Prior ability does not cancel present limits or the value of receiving help."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.WISDOM_CORE",
+          "AMEND.IC.WISDOM_PAST_COMPETENCE",
+          "AMEND.IC.WISDOM_SOURCES"
+        ],
+        "successSignals": [
+          "A specific actual action or support becomes available without pressure or invented memory."
+        ],
+        "tags": [
+          "wisdom-practice",
+          "past-competence",
+          "optional"
+        ],
+        "tier": 4,
+        "title": "Retrieve a real occasion of responding well"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.PAST_COMPETENCE",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
+        "Report the action without requiring the younger state to trust it yet.",
+        "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise."
+      ],
+      "before": [
+        "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
+        "Report the action without requiring the younger state to trust it yet."
+      ],
+      "classification": "therapeutic-response",
+      "entityId": "IC.PROTECTOR_ACTION",
+      "entityType": "node",
+      "fieldPath": "recommendations",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "IC.PROTECTOR_VISIBLE",
+        "IC.ADULT_APPRENTICE",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "IC.PROTECTOR_VISIBLE",
+        "IC.ADULT_APPRENTICE",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW"
+      ],
+      "classification": "provenance-policy",
+      "entityId": "IC.PROTECTOR_ACTION",
+      "entityType": "node",
+      "fieldPath": "sourceRefs",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": {
+        "activation": {
+          "all": [
+            {
+              "field": "perspective_practice",
+              "op": "eq",
+              "value": "wiser_self"
+            }
+          ],
+          "none": [
+            {
+              "field": "present_safety",
+              "op": "eq",
+              "value": "unsafe"
+            },
+            {
+              "field": "orientation",
+              "op": "eq",
+              "value": "disoriented"
+            },
+            {
+              "field": "ability_to_stop",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "ability_to_return",
+              "op": "eq",
+              "value": "no"
+            },
+            {
+              "field": "dissociation",
+              "op": "eq",
+              "value": "high"
+            },
+            {
+              "field": "suicidal_state",
+              "op": "eq",
+              "value": "imminent"
+            }
+          ]
+        },
+        "authority": "owner-approved-extension",
+        "avoid": [
+          "Stop or adapt distancing that produces a contemptuous observer, increased shame, loss of contact, numbness, or unreality. Return to present contact, care, or practical protection; do not intensify the same technique.",
+          "Do not replace an urgent external action, the current relational reality check, or the existing risk/trajectory controller with a perspective exercise.",
+          "Do not perform secondary graph nodes as a checklist. Use the primary task and only explicitly necessary support."
+        ],
+        "defaultQuestion": "",
+        "effects": {
+          "blockNodes": [],
+          "deferNodes": [],
+          "forbiddenOverclaims": [
+            "Do not require a perfect state, pleasantness, forgiveness, reconciliation, imagery, an inner-child interpretation, or weakened boundaries as the price of responding well.",
+            "Do not infer another person's intentions, future regret, agreement, safety, or trustworthiness from an imagined wiser version of them.",
+            "Do not claim that these exact combined practices are clinically validated, or that a momentary state proves lasting capacity.",
+            "Do not treat unsent draft wording as established facts about another person, settled intent, or a durable diagnosis of its writer."
+          ],
+          "requiredNuance": [
+            "Edit the communication without rejecting its author. Care, truthful responsibility, appropriate protection, and human agency remain together.",
+            "These are optional, smallest-sufficient practices. Changed understanding, felt embodiment, and supportive companionship are distinct valid entrances, not mandatory stages or proof of healing.",
+            "A task in offer phase is an invitation, not permission to perform the exercise. Accepted practice may proceed without repeated consent questions. Respect declining, ending, or changing the practice.",
+            "Keep immediate relief, wise reasoning, actual action, and durable self-leadership separate. An appropriate outward response alone does not prove the return to inward care happened.",
+            "Use secular language unless an individual requests or has an evidenced current preference for a tradition. Religious sources and exemplar practices are not clinical efficacy evidence.",
+            "Perfect clarity is not required; future perspective stays fallible and open to correction."
+          ]
+        },
+        "id": "IC.WISER_SELF_PERSPECTIVE",
+        "kind": "decision-node",
+        "priority": 88,
+        "recommendations": [
+          "Offer: “Imagine looking back when you are clearer and compassionate toward everyone involved, including yourself. What would you understand about this moment?”",
+          "Allow clearer understanding, feeling like that wiser self, or feeling accompanied by it; use whichever actually helps, including more than one. Do not force visualization or a state transition.",
+          "Ask what that perspective understands about the present person's limitations and how it would care for them now. When embodiment is unavailable, use one honest sufficient action, firm boundary, acknowledgment or pause.",
+          "The optional future-other extension is goodwill toward a possibility, not mind-reading, prediction of an apology, certainty that they will agree, or a reason to override present evidence."
+        ],
+        "sourceRefs": [
+          "AMEND.IC.WISDOM_CORE",
+          "AMEND.IC.WISDOM_WISER_SELF",
+          "AMEND.IC.WISDOM_SOURCES"
+        ],
+        "successSignals": [
+          "The person has more usable choice or caring contact, with appropriate boundaries intact."
+        ],
+        "tags": [
+          "wisdom-practice",
+          "wiser-self",
+          "optional"
+        ],
+        "tier": 4,
+        "title": "Borrow a wiser perspective without rejecting the present self"
+      },
+      "before": null,
+      "classification": "substantive-node-membership",
+      "entityId": "IC.WISER_SELF_PERSPECTIVE",
+      "entityType": "node",
+      "fieldPath": "$add",
+      "graphId": "inner-child-directed-graph",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Extract one concrete problem that can be changed and choose the next observable decision or action.",
+        "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
+        "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.",
+        "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.",
+        "For a chosen interpersonal response that the person wants help composing, offer the draft/editor method if useful. A brief sufficient response, firm boundary, apology, pause or nonresponse can be appropriate. Preserve the return to inward care separately from outward completion."
+      ],
+      "before": [
+        "Extract one concrete problem that can be changed and choose the next observable decision or action.",
+        "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
+        "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.",
+        "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again."
+      ],
+      "classification": "therapeutic-response",
+      "entityId": "ROUTE.ACT_OUTWARD",
+      "entityType": "node",
+      "fieldPath": "recommendations",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.LITERATURE_ACTION_REVIEW"
+      ],
+      "classification": "provenance-policy",
+      "entityId": "ROUTE.ACT_OUTWARD",
+      "entityType": "node",
+      "fieldPath": "sourceRefs",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": [
+        "Before analyzing the user's trigger, use detached observation: state what the other person actually did, in sequence, without filling in motive or diagnosis.",
+        "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
+        "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
+        "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
+        "Act outward where the situation can be changed, then route inward only if inner processing adds useful information or freedom rather than substituting for external judgment and action.",
+        "Invest in relationships according to demonstrated reciprocity, empathy, accountability, and repair rather than repeatedly trying to extract capacities another person has not shown.",
+        "Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive.",
+        "After the current assessment, an optional criticism-kernel practice can separate a genuinely supported point from contempt. The imagined wiser future of the other person never outranks their demonstrated behavior or the user's boundary."
+      ],
+      "before": [
+        "Before analyzing the user's trigger, use detached observation: state what the other person actually did, in sequence, without filling in motive or diagnosis.",
+        "Assess only demonstrated relational capacity: whether the person can tolerate disagreement, admit fault, show empathy, respect no, repair, and remain reality-based under stress. Capacity can be domain-specific, mixed, or still unknown.",
+        "Check whether fear, guilt, anger, disappointment, withdrawal, urgency, or implied obligation displaced the user's own position; restore inner boundaries and self-possession before choosing a response.",
+        "Define the realistic outcome before the interaction: mutual understanding, conveying information, a boundary or refusal, distance or ending the exchange, or learning how the person responds to a limit.",
+        "Act outward where the situation can be changed, then route inward only if inner processing adds useful information or freedom rather than substituting for external judgment and action.",
+        "Invest in relationships according to demonstrated reciprocity, empathy, accountability, and repair rather than repeatedly trying to extract capacities another person has not shown.",
+        "Do not repeat a completed current-issue assessment without new relevant evidence or a changed decision. Preserve the distinction between reported behavior and an inference of inability, unwillingness, or motive."
+      ],
+      "classification": "therapeutic-response",
+      "entityId": "ROUTE.RELATIONAL_REALITY_CHECK",
+      "entityType": "node",
+      "fieldPath": "recommendations",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    },
+    {
+      "after": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.IC.WISDOM_CORE"
+      ],
+      "before": [
+        "AMEND.CROSS.THREE_WAY_THERAPY_ROUTING",
+        "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+      ],
+      "classification": "provenance-policy",
+      "entityId": "ROUTE.RELATIONAL_REALITY_CHECK",
+      "entityType": "node",
+      "fieldPath": "sourceRefs",
+      "graphId": "inner-child-somatic-cross-guide",
+      "substantive": true
+    }
+  ],
+  "contractVersion": "guide-behavioral-diff-v2",
+  "installedVersion": "inner-child-somatic-pilot-2026-08-09-r5",
+  "substantive": true
+}

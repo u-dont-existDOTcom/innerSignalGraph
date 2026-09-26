@@ -18,13 +18,14 @@ graph_tags:
 source_refs:
   - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
   - AMEND.CROSS.LITERATURE_ACTION_REVIEW
+  - AMEND.IC.WISDOM_CORE
 regression_refs:
   - G013
   - G014
   - G033
-base_record_sha256: 90524ce906f30738dd6a9a128b9c4cc2f3a8a55b0323ba439bc58cfc0145f2b6
-base_graph_sha256: beb05b08a340cf9bd62efacaab7619a3dd4f6adf6bedabb4927cfe4e3a329560
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+base_record_sha256: 826b6f1a7d3ca60c469b8f3d399312a5c4dd6fbfb5c9618409824fc09efd4437
+base_graph_sha256: 527e801bcc54ee21aaf4b9ec5f4839a2183ef661a837e39a99b57a8b1c77a702
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Act on the concrete problem
@@ -90,7 +91,8 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
     "Extract one concrete problem that can be changed and choose the next observable decision or action.",
     "When useful problem-solving is surrounded by rumination, act on the actionable piece and stop rerunning the remainder until genuinely new information arrives.",
     "Use Protector functions for boundaries and safety, and Guide or Leader functions for sequencing and practical follow-through, without requiring deeper introspection merely because action is emotionally charged.",
-    "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again."
+    "When an action is agreed, make its cue, feasible size, resource needs and personally useful purpose concrete. When an attempt has already happened, review the actual sequence and consequences instead of assigning the same action again.",
+    "For a chosen interpersonal response that the person wants help composing, offer the draft/editor method if useful. A brief sufficient response, firm boundary, apology, pause or nonresponse can be appropriate. Preserve the return to inward care separately from outward completion."
   ],
   "successSignals": [
     "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -105,3 +107,5 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
 [[current/governance/amendments/AMEND.CROSS.THREE_WAY_THERAPY_ROUTING]]
 
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW]]
+
+[[current/governance/amendments/AMEND.IC.WISDOM_CORE]]

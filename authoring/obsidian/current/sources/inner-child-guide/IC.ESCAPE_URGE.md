@@ -7,26 +7,27 @@ source_id: IC.ESCAPE_URGE
 guide_id: inner-child-guide
 heading: When the Urge to Escape Arrives
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: 52e0010946b48dec11023ae10bf801b3fcbf09efc4be1468b142cf3801ccb0fe
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: 4f1e512d1dc47125f80fbdc41ecf9601522c43f65ca54c398de5bd156a0060bc
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.ALTERED_STATE_GATE
   - IC.GENTLE_SELF_HYPNOSIS
   - IC.MEET_GUARD
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # When the Urge to Escape Arrives
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 400–411
+Locator: Lines 449–460
 
 ```text
 When the Urge to Escape Arrives
+
 Sometimes the protective response is a sudden desire for a substance, a relationship, a new project, or anything else that can move attention away from pain. Don’t shame the urge. Notice what it may be signaling: something painful has come close enough to require management. That can be progress.
 
 Thank the protective part. Slow down. Bring in support when the material is bigger than your present capacity.

@@ -24,6 +24,13 @@ import { hypnosisReviewPrompt } from "../prompts/hypnosis-review.mjs";
 import { hypnosisRepairPrompt } from "../prompts/hypnosis-repair.mjs";
 import { hypnosisFinalReviewPrompt } from "../prompts/hypnosis-final-review.mjs";
 import { writeLedger } from "./ledger.mjs";
+import {
+  ACTIVE_EXERCISE_EXIT,
+  isChildDirectedTarget,
+  protectiveCompatibilityDecision,
+  restrictedCompatibilityFallback,
+  unavailableCompatibilityDecision
+} from "../case-formulation/protective-compatibility.mjs";
 
 const SCOPED_REPAIR_FAILURE_CODES = new Set([
   "REVIEW_SCOPE_INVALID",
@@ -72,6 +79,46 @@ export async function runHypnosisCompilerPipeline({ context, providers, config, 
   const reviewer = providers[config.hypnosisReviewerProvider];
   const repairer = providers[config.hypnosisRepairProvider];
   const finalReviewer = providers[config.hypnosisFinalReviewerProvider];
+  const childDirectedTarget = isChildDirectedTarget(context.hypnosisRequest?.target);
+  const compatibility = childDirectedTarget && !context.durableCaseState?.protective_compatibility?.current
+    ? unavailableCompatibilityDecision("Child-directed hypnosis requires a current evidence-bound compatibility assessment.")
+    : protectiveCompatibilityDecision(null, context.durableCaseState?.protective_compatibility ?? null);
+
+  if (compatibility.gate !== "NOT_BLOCKED" && childDirectedTarget) {
+    const fallback = restrictedCompatibilityFallback(compatibility);
+    const result = {
+      mode: "hypnosis-compiler",
+      status: "blocked",
+      releaseable: false,
+      contractVersion: null,
+      guideVersion: context.guideManifest.version,
+      guidePacketVersion: context.guidePacketVersion ?? null,
+      graphBundleVersion: context.graphBundleVersion,
+      target: context.hypnosisRequest.target,
+      relationship: context.hypnosisRequest.relationship,
+      deterministicAudit: { ok: false, issues: [{ code: "protective_compatibility_child_target", field: "hypnosisRequest.target" }] },
+      finalReview: null,
+      repairScope: null,
+      repairFailure: { code: "PROTECTIVE_COMPATIBILITY_BLOCK", stage: "pre_draft", targetIds: [] },
+      playbackPlan: null,
+      aftercare: null,
+      safeAlternative: [
+        /(?:CHILD|REPAR|HYPNOSIS|MEMORY)/i.test(String(context.currentTherapeuticEpisode?.route ?? "")) ? ACTIVE_EXERCISE_EXIT : "",
+        fallback.answer,
+        fallback.next_question
+      ].filter(Boolean).join("\n\n")
+    };
+    const ledger = await writeLedger(config, {
+      kind: "hypnosis-compiler",
+      caseId,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      context,
+      evidence: { protectiveCompatibility: compatibility, providerMetadata: { writer: null, reviewer: null, repairer: null, finalReviewer: null } },
+      result
+    });
+    return { ...result, decisionLedgerId: ledger.id, decisionLedgerPath: ledger.path };
+  }
 
   const initial = await structuredCall(
     writer,
@@ -81,7 +128,7 @@ export async function runHypnosisCompilerPipeline({ context, providers, config, 
     hypnosisDraftSchema,
     onProgress
   );
-  const initialAudit = auditHypnosisDraft(initial.value);
+  const initialAudit = auditHypnosisDraft(initial.value, { protectiveCompatibility: compatibility });
   let review = null;
   let repair = null;
   let finalReview = null;
@@ -239,7 +286,7 @@ export async function runHypnosisCompilerPipeline({ context, providers, config, 
     }
   }
 
-  repairedAudit = auditHypnosisDraft(mergedDraft);
+  repairedAudit = auditHypnosisDraft(mergedDraft, { protectiveCompatibility: compatibility });
   finalReview = await structuredCall(
     finalReviewer,
     hypnosisFinalReviewPrompt(context, mergedDraft, repairedAudit, config.hypnosisFinalReviewerProvider),

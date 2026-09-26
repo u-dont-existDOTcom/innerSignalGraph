@@ -1,0 +1,32 @@
+{
+  "approvedPacket": {
+    "approved": true,
+    "path": "approval/authoring-wisdom-practices-20260912-approved.zip",
+    "sha256": "892c0c1191c84c925874a3895f299e41da5e803b6832caa265cecfd8aa5fbfae",
+    "verified": true
+  },
+  "boundaries": {
+    "deployAuthorized": false,
+    "installAuthorized": false,
+    "mergeAuthorized": true,
+    "reconciliationAuthorized": true,
+    "stablePromotionAuthorized": false
+  },
+  "contractVersion": "inner-signal-owner-approval-record-v1",
+  "decision": {
+    "allApproved": true,
+    "approvalDecisionSha256": "33477b474c35b7e8c1f90bff73e01ecdb1ed8f9f9977d85840935cebf656fac7",
+    "authority": "owner-explicit-chat-approval",
+    "decidedAt": "2026-09-12T14:48:55.000Z",
+    "ownerNote": "Owner approved all 32 exact decision cards in Chat.",
+    "scope": "approve-all-exact-decision-cards",
+    "status": "approved"
+  },
+  "packetId": "authoring-wisdom-practices-20260912",
+  "proposalId": "wisdom-practices-20260912",
+  "sourcePacket": {
+    "decisionCards": 32,
+    "path": "candidate/packet/proposal.zip",
+    "sha256": "f2d67e1990ceadb4120955c4c46c65d95aed0ad0c0270f2e6d652f778fa4ab8c"
+  }
+}

@@ -18,15 +18,17 @@ source_refs:
   - IC.PROTECTOR_VISIBLE
   - IC.ADULT_APPRENTICE
   - AMEND.CROSS.LITERATURE_ACTION_REVIEW
+  - AMEND.IC.WISDOM_CORE
 regression_refs:
   - G003
   - G008
   - G011
   - G029
   - G030
-base_record_sha256: 84133c7495f9d44ef5e76862f9d6e821e2514fc806b149764990ecdc56486d75
-base_graph_sha256: 8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+  - G036
+base_record_sha256: 868975a7d808c198797583425c6a8f8efb40212b117ee88f50ef2d19ccfaab28
+base_graph_sha256: 55369c75e95b5cc9fc32c807f7b47bef411acf3aedcbe895076fbb796d04a0c4
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Make the Protector visible in ordinary life
@@ -72,7 +74,8 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
   },
   "recommendations": [
     "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
-    "Report the action without requiring the younger state to trust it yet."
+    "Report the action without requiring the younger state to trust it yet.",
+    "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise."
   ],
   "successSignals": [
     "One small promise is kept.",
@@ -89,3 +92,5 @@ projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d0
 [[current/sources/inner-child-guide/IC.ADULT_APPRENTICE]]
 
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW]]
+
+[[current/governance/amendments/AMEND.IC.WISDOM_CORE]]

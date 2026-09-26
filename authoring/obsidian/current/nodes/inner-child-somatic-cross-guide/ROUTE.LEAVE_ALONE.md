@@ -25,8 +25,8 @@ regression_refs:
   - G027
   - G028
 base_record_sha256: 02722afbbd0cfc900111e7d7a9d721f790897ee0b9c96a93d219ab7ec2f2732b
-base_graph_sha256: beb05b08a340cf9bd62efacaab7619a3dd4f6adf6bedabb4927cfe4e3a329560
-projection_input_sha256: a8e29c1684b1ac74a0869570a8e57a4a164a02c35beee1e47d269d06eaaf68de
+base_graph_sha256: 527e801bcc54ee21aaf4b9ec5f4839a2183ef661a837e39a99b57a8b1c77a702
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Leave the loop alone and re-enter ordinary life

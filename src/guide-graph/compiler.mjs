@@ -131,12 +131,21 @@ function graphReport(bundle, amendments) {
     `- Advanced-release nodes never coach syncope, substance potentiation, or standing lightheadedness.\n`;
 }
 
-export async function compileGuideGraphs({ root = projectRoot, write = true, candidateGraphs = null } = {}) {
+export async function compileGuideGraphs({ root = projectRoot, write = true, candidateGraphs = null, candidateAmendments = null } = {}) {
   const guidesDir = path.join(root, "guides");
   const graphRoot = path.join(root, "guide-graphs");
   const manifest = await readJson(path.join(guidesDir, "manifest.json"));
   const layout = await readJson(path.join(guidesDir, "source-layout.json"));
-  const amendments = await readJson(path.join(guidesDir, "owner-amendments.json"));
+  const canonicalAmendments = await readJson(path.join(guidesDir, "owner-amendments.json"));
+  const amendments = candidateAmendments === null ? canonicalAmendments : structuredClone(candidateAmendments);
+  if (!amendments || !Array.isArray(amendments.items)) throw new ValidationError("Candidate amendments must contain an items array.");
+  const amendmentIds = amendments.items.map(item => item?.id);
+  if (amendmentIds.some(id => typeof id !== "string" || !id.startsWith("AMEND.")) || new Set(amendmentIds).size !== amendmentIds.length) {
+    throw new ValidationError("Candidate amendment ids must be unique AMEND.* strings.");
+  }
+  if (amendments.items.some(item => typeof item.text !== "string" || !item.text.trim() || typeof item.status !== "string" || typeof item.domain !== "string")) {
+    throw new ValidationError("Candidate amendments must contain text, status, and domain.");
+  }
   if (manifest.graphContractVersion !== GUIDE_GRAPH_CONTRACT) throw new ValidationError("Guide manifest graph contract mismatch.");
   if (manifest.version !== GUIDE_GRAPH_BUNDLE_VERSION) throw new ValidationError("Guide manifest bundle version mismatch.");
 
@@ -188,7 +197,7 @@ export async function compileGuideGraphs({ root = projectRoot, write = true, can
   };
 
   if (write) {
-    if (candidateGraphs !== null) throw new ValidationError("Candidate graph overrides may only be compiled with write:false.");
+    if (candidateGraphs !== null || candidateAmendments !== null) throw new ValidationError("Candidate graph and amendment overrides may only be compiled with write:false.");
     for (const map of sourceMaps) await atomicWrite(path.join(graphRoot, "source-maps", `${map.guideId}.json`), map);
     for (const graph of compiledGraphs) await atomicWrite(path.join(graphRoot, "compiled", `${graph.graphId}.json`), graph);
     await atomicWrite(path.join(graphRoot, "compiled", "bundle.json"), bundle);

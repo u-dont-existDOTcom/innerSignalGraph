@@ -29,9 +29,30 @@ No authoring command installs a Guide Packet or writes to `stable`.
 | Behavioral acceptance | `corpus/graph-cases/*.json` and existing realization tests | Regression index and impact reports |
 | Semantic approval | Guide Packet owner-decision artifact | Proposal decision preview |
 | Documentation-only concepts | schema-validated overlay registry | Dashed Mermaid/Canvas overlay layer |
+| Public humanized guides | no independent therapy authority; each derives from canonical source and graph | independent reader-facing derivatives tracked by `docs/PUBLIC-GUIDE-HUMANIZATION.md` and `authoring/public-guide-sync.json` |
 | Visual layout | generated Canvas | Obsidian display only |
 
 Canonical guide text is never round-tripped through Markdown. The current source family used by the existing runtime remains byte-authoritative.
+
+## Public humanized derivative
+
+A public reader-facing guide may be maintained separately from the canonical guide/source family so prose can be substantially humanized without turning publication wording into a second therapy authority.
+
+The public guide is a one-way derivative:
+
+```text
+canonical guide/source authority + executable graph authority
+→ semantic preservation obligations
+→ public humanized derivative
+```
+
+The public derivative may change voice, compression, examples, section order, memoir, jokes, transitions, citations, and layout. It may combine several upstream concepts into one natural passage and may omit implementation-only mechanics. It must not silently create, remove, reverse, broaden, narrow, or weaken therapy semantics.
+
+A public-only wording change never modifies runtime behavior. A genuinely new therapeutic distinction, intervention, safety or consent rule, routing rule, authority claim, or conceptual correction discovered during humanization must return upstream through the normal source/graph/owner-approval process before it can affect canonical behavior.
+
+When canonical source or graph semantics change, update only the affected public passages. Do not re-humanize the entire article merely because an unrelated upstream file changed. Semantic fidelity is defined by preserved meaning, not wording similarity or one-to-one graph-node coverage.
+
+The full synchronization and publication contract is `docs/PUBLIC-GUIDE-HUMANIZATION.md`. Background bidirectional synchronization remains prohibited.
 
 ## Current projection
 
