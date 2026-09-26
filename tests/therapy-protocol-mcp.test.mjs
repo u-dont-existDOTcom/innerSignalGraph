@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
 import { PrivateCaseAccessDeniedError } from "../src/storage/private-case-access.mjs";
-import { THERAPY_PROTOCOL_FILES, loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
+import { THERAPY_PROTOCOL_FILES, loadTherapyProtocol, unservedReferenceMentions } from "../src/protocol/therapy-protocol.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const pluginRoot = path.join(root, "plugins/inner-signal-therapy");
@@ -155,6 +155,67 @@ test("an unreadable or empty plugin build reports the protocol unavailable", asy
   const frontmatterOnly = await copyPlugin(t);
   await fs.writeFile(path.join(frontmatterOnly, "skills/inner-signal-therapy/SKILL.md"), "---\nname: inner-signal-therapy\ndescription: x\n---\n\n");
   assert.throws(() => loadTherapyProtocol({ pluginRoot: frontmatterOnly }), { code: "THERAPY_PROTOCOL_UNAVAILABLE" });
+});
+
+test("text that names a reference the server does not serve makes the protocol unavailable", async (t) => {
+  const inInstructions = await copyPlugin(t);
+  const skillDir = path.join(inInstructions, "skills/inner-signal-therapy");
+  await fs.writeFile(path.join(skillDir, "references/SYNTHETIC-UNSERVED.md"), "Synthetic reference.\n");
+  await fs.appendFile(path.join(skillDir, "SKILL.md"), "\nAlso read `references/SYNTHETIC-UNSERVED.md` before responding.\n");
+  assert.throws(() => loadTherapyProtocol({ pluginRoot: inInstructions }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: /skill instructions names references\/SYNTHETIC-UNSERVED\.md/u });
+
+  const inReference = await copyPlugin(t);
+  await fs.appendFile(path.join(inReference, "skills/inner-signal-therapy/references/GUIDE-REFERRALS.md"), "\nSee references/SYNTHETIC-UNSERVED.md.\n");
+  assert.throws(() => loadTherapyProtocol({ pluginRoot: inReference }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: /references\/GUIDE-REFERRALS\.md names references\/SYNTHETIC-UNSERVED\.md/u });
+
+  const nested = await copyPlugin(t);
+  await fs.appendFile(path.join(nested, "skills/inner-signal-therapy/SKILL.md"), "\nFor safety also read `references/safety/EXTRA.md`.\n");
+  assert.throws(() => loadTherapyProtocol({ pluginRoot: nested }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: /names references\/safety\/EXTRA\.md/u });
+
+  // In a code span, any other spelling, character, case or longer name counts as unserved.
+  const variants = [
+    "references/SOMATIC+SAFETY.md",
+    "references/SAFETY GUIDE.md",
+    "references/SAFETY.MD",
+    "references/guide-referrals.md",
+    "references/GUIDE-REFERRALS.md.bak",
+    "references/GUIDE-REFERRALS.md..bak",
+    "references/GUIDE-REFERRALS.md;x"
+  ];
+  for (const mention of variants) {
+    const variant = await copyPlugin(t);
+    await fs.appendFile(path.join(variant, "skills/inner-signal-therapy/SKILL.md"), `\nAlso read \`${mention}\` first.\n`);
+    assert.throws(() => loadTherapyProtocol({ pluginRoot: variant }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: new RegExp(`names ${mention.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\``, "u") }, mention);
+  }
+
+  // Outside a code span, or in an unclosed one, even a served path is reported.
+  // So is one in a span delimited by a run of backticks, whose content can run past the first one.
+  for (const line of [
+    "See references/GUIDE-REFERRALS.md.",
+    "Then [the map](references/INNER-CHILD-THERAPY-MAP.md).",
+    "Open `references/GUIDE-REFERRALS.md and continue.",
+    "Read ``references/GUIDE-REFERRALS.md`.bak`` first.",
+    "Read ``references/GUIDE-REFERRALS.md`` first.",
+    "Read `references/GUIDE-REFERRALS.md`` first.",
+    "Read ``x `references/GUIDE-REFERRALS.md`-UNSERVED`` first.",
+    "Read \\`references/GUIDE-REFERRALS.md`.bak\\` first.",
+    "Read ` references/GUIDE-REFERRALS.md ` first."
+  ]) {
+    assert.equal(unservedReferenceMentions(line).length, 1, line);
+  }
+
+  // Code spans holding a served path may sit next to any punctuation.
+  // An even run of backslashes escapes itself, so the backtick after it still opens a span.
+  assert.deepEqual(unservedReferenceMentions("A literal backslash \\\\`references/GUIDE-REFERRALS.md` first."), []);
+
+  const punctuated = await copyPlugin(t);
+  await fs.appendFile(path.join(punctuated, "skills/inner-signal-therapy/SKILL.md"), "\nSee `references/GUIDE-REFERRALS.md`. Then (`references/INNER-CHILD-THERAPY-MAP.md`), and `references/FOCUS-DISCIPLINE.md`; done.\n");
+  assert.equal(loadTherapyProtocol({ pluginRoot: punctuated }).files.length, THERAPY_PROTOCOL_FILES.length);
+
+  // The packaged skill itself names only served references, and names every served one.
+  const protocol = loadTherapyProtocol();
+  for (const text of [protocol.instructions, ...protocol.files.map((file) => file.content)]) assert.deepEqual(unservedReferenceMentions(text), []);
+  for (const file of THERAPY_PROTOCOL_FILES) assert.ok(protocol.instructions.includes(file), `${file} is named by the instructions`);
 });
 
 test("the hosted MCP image ships the packaged skill it serves", async () => {

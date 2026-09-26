@@ -2,6 +2,15 @@
 
 Updated: 2026-09-26
 
+## Therapy protocol: unserved references fail closed — `claude/protocol-reference-guard-20260926` (PR #90)
+
+- **Goal:** the hosted MCP never serves instructions that name a reference file it doesn't send.
+- **Baseline:** main `f8e6936`. The hosted MCP rebuilt after #84 serves instructions naming `references/ROLE-BELIEF-INTEGRITY.md` (added by #86) without the file. #87 fixed the served list on main and added a CI check on the skill's always-read line.
+- **Done, don't repeat:** `loadTherapyProtocol` reports `THERAPY_PROTOCOL_UNAVAILABLE` whenever served text contains `references/` other than as a single-backtick code span holding exactly a path in `THERAPY_PROTOCOL_FILES`. Codex rounds 1–5 are addressed: nested paths, names outside a character set, delimiter-like suffixes, multi-backtick spans, and spans nested in wider spans. Code spans are now read the way CommonMark reads them. `docs/CLAUDE-CONNECTOR.md` states the authoring rule.
+- **Verified:** deterministic tests only. `tests/therapy-protocol-mcp.test.mjs`, `tests/focus-discipline.test.mjs` and `tests/protocol-provenance.test.mjs` pass locally on Node 22 with a test-only argon2 stand-in; the Node 24.18.0 `verify` workflow is authoritative. `npm run audit:repository` and `npm run audit:publication` are clean. No live model or private case was involved.
+- **Safety:** no therapy content changes. A guard failure makes the protocol unavailable, which the connector's instructions already tell hosts to say plainly instead of improvising.
+- **Next safe action:** a clean Codex review, then owner approval to merge and redeploy the hosted MCP; that redeploy also ships #87's served-list fix. This branch authorizes no stable change, installation or deployment.
+
 ## Private-case MCP: a wrong case ID is not a sign-in failure — `claude/case-denial-not-reauth-20260926`
 
 Every private-tool denial used to return HTTP 401 with an `invalid_token` challenge, including a valid token asking for a case its account can't open. Claude treats that as "needs re-authentication": a probe with a made-up case ID on 2026-09-26 marked the working connector as needing sign-in, even though Keycloak showed its token refreshing normally. The JWT provider now also exposes `authenticate` (token only, no case). When the case ACL grants a single account and a request with that account's valid token, carrying every scope the tool needs, is refused a case or handoff, the server answers with a tool error (`PRIVATE_CASE_NOT_AUTHORIZED`, no challenge), identical for missing and unauthorized cases. No token, an invalid token, a missing scope, and any denial in a deployment with several granted accounts keep the 401 challenge; account selection with several accounts is an owner decision. Merge and deployment are owner-gated.

@@ -11,11 +11,11 @@ The server's `initialize` instructions tell the host to call `load_therapy_proto
 
 The Codex plugin bundles the map and rules inside its skill folder. A personal Claude account installs a custom plugin as an uploaded file, so every map or rule fix would need a rebuild and re-upload. Served over MCP, the protocol comes from the deployed build: a fix reaches Claude on the next conversation after the server is redeployed, with nothing to reinstall.
 
-The packaged skill (`plugins/inner-signal-therapy/skills/inner-signal-therapy/`) stays the single source. `tests/protocol-provenance.test.mjs` keeps its map byte-identical to `docs/INNER-CHILD-THERAPY-MAP.md`, and `tests/therapy-protocol-mcp.test.mjs` checks that the served files are the packaged ones byte for byte. The MCP image copies the packaged skill (`Dockerfile.private-case-mcp`).
+The packaged skill (`plugins/inner-signal-therapy/skills/inner-signal-therapy/`) stays the single source. `tests/protocol-provenance.test.mjs` keeps its map byte-identical to `docs/INNER-CHILD-THERAPY-MAP.md`, and `tests/therapy-protocol-mcp.test.mjs` checks that the served files are the packaged ones byte for byte. The MCP image copies the packaged skill (`Dockerfile.private-case-mcp`). If the instructions or a served file name a `references/…` file that the server doesn't serve, the server reports the protocol unavailable rather than serving it incomplete.
 
 ## Updating the map or rules
 
-1. Change the canonical source and the packaged skill copy as the existing authoring and sync gates require, on a task branch with a pull request.
+1. Change the canonical source and the packaged skill copy as the existing authoring and sync gates require, on a task branch with a pull request. A new reference file must also be added to `THERAPY_PROTOCOL_FILES` in `src/protocol/therapy-protocol.mjs`. The skill and reference files may name a reference only as single-backtick inline code holding its exact path, such as `` `references/FOCUS-DISCIPLINE.md` ``. Any other mention of `references/`, or a missing entry, makes the server report the protocol unavailable.
 2. Merge, then redeploy the hosted MCP image through the normal release path, keeping the prior image for rollback.
 3. Confirm the change is live: `GET /health` reports `therapyProtocol.version` and `therapyProtocol.protocolSha256`, and `get_therapy_protocol_manifest` returns the same hash.
 

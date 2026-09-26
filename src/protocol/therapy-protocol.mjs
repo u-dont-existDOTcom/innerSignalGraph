@@ -39,6 +39,67 @@ function requireContent(text, label) {
   return text;
 }
 
+const REFERENCE_PREFIX = "references/";
+
+// Inline code spans on one line, as CommonMark reads them: a run of N backticks opens a span that
+// closes at the next run of exactly N backticks, a run with no matching close stays literal, and a
+// backtick escaped by an odd run of backslashes outside a span cannot open one. Spans that would
+// cross a line break are not recognized, so mentions inside them are reported.
+function codeSpans(line) {
+  const spans = [];
+  let i = 0;
+  while (i < line.length) {
+    if (line[i] !== "`") { i += 1; continue; }
+    let backslashes = 0;
+    while (line[i - 1 - backslashes] === "\\") backslashes += 1;
+    if (backslashes % 2 === 1) { i += 1; continue; }
+    let width = 1;
+    while (line[i + width] === "`") width += 1;
+    let j = i + width;
+    let close = -1;
+    while (j < line.length) {
+      if (line[j] !== "`") { j += 1; continue; }
+      let run = 1;
+      while (line[j + run] === "`") run += 1;
+      if (run === width) { close = j; break; }
+      j += run;
+    }
+    if (close === -1) { i += width; continue; }
+    spans.push({ start: i + width, end: close, width });
+    i = close + width;
+  }
+  return spans;
+}
+
+// Served text may name a reference only in one unambiguous form: a single-backtick code span whose
+// whole content is a served path, such as `references/FOCUS-DISCIPLINE.md`. Every other occurrence
+// of "references/" is reported, whatever characters it uses: outside a code span, inside a wider
+// span, inside a span that holds anything more or less than a served path, or in an unclosed one.
+// The packaged skill already writes every reference this way.
+export function unservedReferenceMentions(text) {
+  const served = new Set(THERAPY_PROTOCOL_FILES);
+  const unserved = [];
+  for (const line of text.split("\n")) {
+    const spans = codeSpans(line);
+    for (let at = line.indexOf(REFERENCE_PREFIX); at !== -1; at = line.indexOf(REFERENCE_PREFIX, at + 1)) {
+      const span = spans.find((candidate) => candidate.start <= at && at < candidate.end);
+      const exact = span !== undefined && span.width === 1 && span.start === at && served.has(line.slice(span.start, span.end));
+      if (!exact) unserved.push(line.slice(at, at + 120));
+    }
+  }
+  return unserved;
+}
+
+// A served text that names an unserved reference makes the protocol unavailable, not incomplete.
+function requireServedReferences(texts) {
+  for (const [label, text] of texts) {
+    const [mention] = unservedReferenceMentions(text);
+    if (mention !== undefined) {
+      throw new TherapyProtocolUnavailableError(`The packaged ${label} names ${mention}, which this server does not serve.`);
+    }
+  }
+}
+
 export class TherapyProtocolUnavailableError extends Error {
   constructor(message, options) {
     super(message, options);
@@ -59,6 +120,7 @@ export function loadTherapyProtocol({ pluginRoot = DEFAULT_PLUGIN_ROOT } = {}) {
       const content = requireContent(fs.readFileSync(new URL(`skills/inner-signal-therapy/${relative}`, root), "utf8"), relative);
       return Object.freeze({ path: relative, sha256: sha256(content), bytes: Buffer.byteLength(content, "utf8"), content });
     });
+    requireServedReferences([["skill instructions", instructions], ...files.map((file) => [file.path, file.content])]);
     const instructionsSha256 = sha256(instructions);
     const protocolSha256 = sha256(JSON.stringify({
       protocol_id: THERAPY_PROTOCOL_ID,
