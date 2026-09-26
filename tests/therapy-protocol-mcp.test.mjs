@@ -172,16 +172,30 @@ test("text that names a reference the server does not serve makes the protocol u
   await fs.appendFile(path.join(nested, "skills/inner-signal-therapy/SKILL.md"), "\nFor safety also read `references/safety/EXTRA.md`.\n");
   assert.throws(() => loadTherapyProtocol({ pluginRoot: nested }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: /names references\/safety\/EXTRA\.md/u });
 
-  // Any other spelling, character, case or longer name counts as unserved.
-  for (const mention of ["references/SOMATIC+SAFETY.md", "references/SAFETY GUIDE.md", "references/SAFETY.MD", "references/GUIDE-REFERRALS.md.bak", "references/guide-referrals.md"]) {
+  // In a code span, any other spelling, character, case or longer name counts as unserved.
+  const variants = [
+    "references/SOMATIC+SAFETY.md",
+    "references/SAFETY GUIDE.md",
+    "references/SAFETY.MD",
+    "references/guide-referrals.md",
+    "references/GUIDE-REFERRALS.md.bak",
+    "references/GUIDE-REFERRALS.md..bak",
+    "references/GUIDE-REFERRALS.md;x"
+  ];
+  for (const mention of variants) {
     const variant = await copyPlugin(t);
-    await fs.appendFile(path.join(variant, "skills/inner-signal-therapy/SKILL.md"), `\nAlso read ${mention} first.\n`);
-    assert.throws(() => loadTherapyProtocol({ pluginRoot: variant }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: new RegExp(`names ${mention.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}`, "u") }, mention);
+    await fs.appendFile(path.join(variant, "skills/inner-signal-therapy/SKILL.md"), `\nAlso read \`${mention}\` first.\n`);
+    assert.throws(() => loadTherapyProtocol({ pluginRoot: variant }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: new RegExp(`names ${mention.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\``, "u") }, mention);
   }
 
-  // A served path followed by punctuation, an anchor or a markdown link delimiter is still served.
+  // Outside a code span, or in an unclosed one, even a served path is reported.
+  for (const line of ["See references/GUIDE-REFERRALS.md.", "Then [the map](references/INNER-CHILD-THERAPY-MAP.md).", "Open `references/GUIDE-REFERRALS.md and continue."]) {
+    assert.equal(unservedReferenceMentions(line).length, 1, line);
+  }
+
+  // Code spans holding a served path may sit next to any punctuation.
   const punctuated = await copyPlugin(t);
-  await fs.appendFile(path.join(punctuated, "skills/inner-signal-therapy/SKILL.md"), "\nSee references/GUIDE-REFERRALS.md. Then [the map](references/INNER-CHILD-THERAPY-MAP.md#core), and references/FOCUS-DISCIPLINE.md, too.\n");
+  await fs.appendFile(path.join(punctuated, "skills/inner-signal-therapy/SKILL.md"), "\nSee `references/GUIDE-REFERRALS.md`. Then (`references/INNER-CHILD-THERAPY-MAP.md`), and `references/FOCUS-DISCIPLINE.md`; done.\n");
   assert.equal(loadTherapyProtocol({ pluginRoot: punctuated }).files.length, THERAPY_PROTOCOL_FILES.length);
 
   // The packaged skill itself names only served references, and names every served one.

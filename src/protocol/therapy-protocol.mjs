@@ -40,21 +40,20 @@ function requireContent(text, label) {
 }
 
 const REFERENCE_PREFIX = "references/";
-// Longest first, so a served path that prefixes another is never matched short.
-const SERVED_BY_LENGTH = Object.freeze([...THERAPY_PROTOCOL_FILES].sort((a, b) => b.length - a.length));
-// After a served path, these continue the name (another name, or ".bak"); a delimiter, the end
-// of the text, or a sentence-ending period does not.
-const CONTINUES_NAME = /^(?:[^\s`'"()[\]<>,;:!?*#|.]|\.[^\s`'"()[\]<>,;:!?*#|.])/u;
 
-// Every "references/" in served text must be exactly one served path. Any other name, spelling,
-// case, character or longer name is reported, whatever characters it uses, so a host is never
-// told to read a file it cannot see.
+// Served text may name a reference only in one unambiguous form: an inline code span holding
+// exactly a served path, such as `references/FOCUS-DISCIPLINE.md`. Every other occurrence of
+// "references/" (outside a code span, a span with anything more or less than a served path, or
+// one left unclosed on its line) is reported, whatever characters it uses. The packaged skill
+// already writes every reference this way.
 export function unservedReferenceMentions(text) {
+  const served = new Set(THERAPY_PROTOCOL_FILES);
   const unserved = [];
   for (let at = text.indexOf(REFERENCE_PREFIX); at !== -1; at = text.indexOf(REFERENCE_PREFIX, at + 1)) {
-    const served = SERVED_BY_LENGTH.find((file) => text.startsWith(file, at)
-      && !CONTINUES_NAME.test(text.slice(at + file.length, at + file.length + 2)));
-    if (!served) unserved.push(text.slice(at, at + 120).split(/[\n`'"()<>|]/u)[0]);
+    const lineEnd = text.indexOf("\n", at) === -1 ? text.length : text.indexOf("\n", at);
+    const close = text.indexOf("`", at);
+    const span = at > 0 && text[at - 1] === "`" && close !== -1 && close < lineEnd ? text.slice(at, close) : null;
+    if (span === null || !served.has(span)) unserved.push(text.slice(at, Math.min(lineEnd, at + 120)));
   }
   return unserved;
 }

@@ -15,7 +15,7 @@ The packaged skill (`plugins/inner-signal-therapy/skills/inner-signal-therapy/`)
 
 ## Updating the map or rules
 
-1. Change the canonical source and the packaged skill copy as the existing authoring and sync gates require, on a task branch with a pull request. A new reference file must also be added to `THERAPY_PROTOCOL_FILES` in `src/protocol/therapy-protocol.mjs`, or the server will report the protocol unavailable.
+1. Change the canonical source and the packaged skill copy as the existing authoring and sync gates require, on a task branch with a pull request. A new reference file must also be added to `THERAPY_PROTOCOL_FILES` in `src/protocol/therapy-protocol.mjs`. The skill and reference files may name a reference only as inline code holding its exact path, such as `` `references/FOCUS-DISCIPLINE.md` ``. Any other mention of `references/`, or a missing entry, makes the server report the protocol unavailable.
 2. Merge, then redeploy the hosted MCP image through the normal release path, keeping the prior image for rollback.
 3. Confirm the change is live: `GET /health` reports `therapyProtocol.version` and `therapyProtocol.protocolSha256`, and `get_therapy_protocol_manifest` returns the same hash.
 
