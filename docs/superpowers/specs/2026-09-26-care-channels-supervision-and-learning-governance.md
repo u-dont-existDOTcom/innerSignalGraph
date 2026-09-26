@@ -69,15 +69,23 @@ The private runtime already works this way:
 - it audits the draft;
 - it delivers only an explicitly approved, exact-version candidate (`src/supervisor/private-candidate-lifecycle.mjs`, `private-candidate-audit.mjs`).
 
-Supervised mode puts the therapist at that approval step, with a queue where the therapist can approve, edit or reject each draft.
+Supervised mode puts the therapist at that approval step, with a queue. For each audited draft the therapist can:
+- **Approve.** The exact audited version is delivered.
+- **Edit.** The edited text becomes a new immutable candidate version. It follows the existing rule: approval is version-specific, and a changed candidate stays closed until that exact version passes a fresh independent audit (`POST_RECONSTRUCTION_AUDIT_RULE`). The therapist then approves that exact version. An edit is never delivered on the strength of the earlier draft's audit.
+- **Reject.** Nothing is delivered. The therapist gives guidance and the runtime drafts again.
 
-- **Crisis path.** A message showing risk never waits in the queue. The client immediately gets a safety response and help resources, and the supervisor gets an urgent alert.
+The crisis path and client expectations:
+- **Only imminent danger bypasses the queue.** The runtime's risk pathways decide when that applies. For violence risk, the threat pathway (`src/case-formulation/threat-pathway.mjs`) does so only at `IMMINENT_OPERATIONAL_DANGER`: concrete near-term danger with intent, capability or preparation, and opportunity established. At that level the immediate reply comes from an owner-approved, pre-audited response set that follows the pathway's guidance (seek immediate human help; take the least disruptive effective step). The supervisor gets an urgent alert.
+- **Lower risk levels never bypass.** Ideation or escalating risk goes to the front of the supervisor queue, while the runtime keeps engaging as the pathway directs, with no canned emergency instructions.
+- **Other risk types need a pathway first.** Where the runtime has no formal pathway (for example self-harm), defining one comes before any bypass exists for it.
 - **Asynchronous by design.** Clients are told up front that replies come after review, like messaging a therapist, not live chat.
-- **Edits are lessons.** The difference between a draft and the approved reply becomes a lesson candidate automatically, subject to the client's consent.
+- **Edits are lessons.** The difference between the audited draft and the approved version becomes a lesson candidate automatically, subject to the client's consent.
 
 ## Escalation: never fully unsupervised
 
-A model's own sense that it is unsure misses the cases where it is confidently wrong, so escalation has three sources.
+A model's own sense that it is unsure misses the cases where it is confidently wrong, so escalation has three sources. Sources 2 and 3 need InnerSignal to see the turn:
+- **In the web app,** InnerSignal runs the model and sees every turn, so all three sources apply to every turn.
+- **In the free channel,** the host sends replies itself. InnerSignal sees only what the host model passes through connector tools. See "Free-channel limits" below.
 
 1. **The model's own flag.** A connector tool, `request_supervision`, carries the model's question, its proposed direction and the minimal excerpt.
 2. **Events the server detects.** These need no self-report:
@@ -90,12 +98,23 @@ A model's own sense that it is unsure misses the cases where it is confidently w
    - situations with no applicable map node.
 3. **Random spot checks** of sessions that were never escalated, at a rate the owner sets. These catch confident mistakes.
 
+**Free-channel limits.**
+- The protocol requires the host model to call a per-turn `check_turn` tool before each reply, passing the client's message and the draft reply.
+- The server runs the detectors that work without the full case and answers proceed, proceed cautiously, or escalate.
+- It stores nothing unless the turn becomes an escalation, or a spot-check sample the client consented to at sign-up. Per-turn processing still sends each turn off the device, so sign-up must disclose it. A client who declines gets only the model's self-report (source 1).
+- The host model can skip the call, and the server can't see turns that never reach it. It can measure call rates for signed-in clients, but supervision in the free channel stays best-effort.
+- **"Never fully unsupervised" is guaranteed only in the web app.** That limit belongs in the free tier's sign-up agreement.
+
 **While an escalation waits:**
 - **Web app:** hold the reply if a supervisor is available within the promised window. Otherwise send a cautious reply and queue the review.
 - **Free channel:** send a cautious reply now. The supervisor's guidance reaches the client at their next session, through `get_supervisor_guidance`. That return path needs a free InnerSignal account.
 - **What "cautious" means:** slow down, stay with the present, start no new deep exercise, and tell the client a therapist will look.
 
-**Consent.** At sign-up, clients agree that a supervisor may read escalated excerpts. The model can also ask in the moment ("can I check this part with a therapist?"). An escalation package contains only the excerpt, the question and the proposed direction, never the whole history.
+**Consent.**
+- At sign-up, clients agree that a supervisor may read escalated excerpts. The model can also ask in the moment ("can I check this part with a therapist?").
+- An escalation package contains only the excerpt, the question and the proposed direction, never the whole history.
+- **A "no" in the moment wins over sign-up consent.** Nothing is shared. The model continues cautiously and offers help resources. The escalation is recorded on the client's side as declined, and no content leaves.
+- **Emergency exception: default none.** Whether anything may ever be shared without consent, even at `IMMINENT_OPERATIONAL_DANGER`, is an explicit owner policy decision. Until the owner makes one, nothing is shared without consent. Legal or reporting duties differ by jurisdiction, and none is assumed.
 
 **Capacity.** The triage order is safety, then uncertainty, then spot checks. The free tier promises no response time.
 
@@ -133,6 +152,15 @@ This builds on the archived personalization boundary (`learning-system/PERSONALI
 
 ### Practice: supervisor-approved
 
+- **A practice lesson is a structured overlay, never free-text instructions.** The only allowed fields are:
+  - preference weights among techniques already in the map (prefer, avoid, order);
+  - which existing map nodes to try first;
+  - style defaults (length, tone, pacing);
+  - practice terminology;
+  - check-in cadence.
+
+  An overlay can't add techniques, change a node's content, or touch any safety-floor domain (crisis handling, child contact, altered states, referral, epistemic handling). An admission validator rejects any overlay with an unknown field or a floor-domain effect before it activates.
+- **Gates run after composition.** The runtime composes the global map, the practice overlay and the personal profile. Then the unmodifiable safety gates, and the final candidate audit, run on the composed result. Neither an overlay nor personal learning can route around them.
 - A lesson the supervisor approves applies to that supervisor's own clients immediately, and enters the owner queue at the same moment.
 - Clients see a short changelog of practice changes that affect them. Each entry has a **Submit for owner review and community vote** button.
 - If an owner blocks a practice change, it is paused and that practice reverts to the global map until reconciliation ends. This is how supervisors stay tied to InnerSignal's purpose.
@@ -151,7 +179,8 @@ This builds on the archived personalization boundary (`learning-system/PERSONALI
   - referral rules;
   - epistemic rules (for example, never validating recovered-memory certainty).
 - Neither personal learning nor a practice approval can change it.
-- **Tightening vs loosening.** A change that makes the floor stricter may go live on one owner's approval while the block window runs. A block then reverts it. A change that makes the floor less strict never goes live before its window ends.
+- **Every floor change waits the full block window.** Nothing activates early. "Stricter" can't be defined mechanically, and a stricter-looking change can still harm (wider escalation or disclosure, needless referral, therapy switched off). A rollback after a block wouldn't undo that exposure.
+- **Emergency holds: default none.** Pausing a specific exercise or route before its window ends is possible only if the owner adopts an explicit emergency-hold policy, including how a hold qualifies.
 
 ### Order of precedence when rules conflict
 
@@ -164,6 +193,8 @@ This extends the archived resolver.
 5. method: the global map as adjusted by the practice overlay;
 6. personal presentation, process and framing preferences;
 7. defaults.
+
+After composition, the safety gates and the final candidate audit run on the result. Nothing in steps 2–7 can skip them.
 
 ## The lesson ladder
 
@@ -193,7 +224,7 @@ The owner may approve a candidate directly at any step. Every lesson records:
   - There is no majority override. An unresolved block keeps the status quo.
   - Everything is logged.
 - **Single owner.** With one owner, an approval activates at once.
-- **Safety changes** follow the tightening and loosening rules above.
+- **Safety-floor changes** always wait the full window (see "Safety floor" above).
 
 ## Community input
 
@@ -236,7 +267,7 @@ Each phase ships as its own PR:
 - owner approval before merge and deploy.
 
 1. **Escalation for the free channel.**
-   - `request_supervision` and `get_supervisor_guidance` on the connector;
+   - `check_turn`, `request_supervision` and `get_supervisor_guidance` on the connector;
    - a minimal supervisor queue;
    - the spot-check sampler;
    - personal-learning fields, with a validation API usable by the local app.
@@ -248,6 +279,10 @@ Each phase ships as its own PR:
 ## Open questions for the owner
 
 - Who supervises free users' escalations, and with what capacity?
+- Is best-effort supervision acceptable for the free channel, given that only the web app can guarantee it?
+- Should anything ever be shared without consent at imminent danger? The default is no.
+- Should there be an emergency-hold policy for pausing an exercise or route early? The default is none.
+- A formal risk pathway for self-harm and other risk types that have none yet.
 - The block window length, the spot-check rate, and the community-response threshold.
 - A legal review of consent, data handling and therapist licensing in the countries clients live in. This must happen before the paid launch; it is not researched here.
 - How free users on phones get local storage, since there is no mobile local app yet.
