@@ -1,0 +1,74 @@
+{
+  "id": "G040",
+  "description": "Credibility repair after an effort that did not go as hoped keeps the lapse real without converting it into a verdict about intrinsic worth, and keeps kept commitments and present capacity in the picture.",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "partial",
+    "witness_capacity": "present",
+    "parent_imagery": "not_used",
+    "love_access": "accessible",
+    "self_directed_love": "unsafe",
+    "solar_plexus_tension": "absent",
+    "protective_response": "present",
+    "urge_to_escape": "absent",
+    "credibility_conflict": "present",
+    "credibility_evidence_state": "adverse",
+    "internal_speaker_relation": "unresolved",
+    "age_agency_ambiguity": "present",
+    "resentment_toward_younger_self": "present",
+    "coherent_child_state": "present",
+    "identity_blur": "absent",
+    "belonging_pressure": "absent",
+    "self_criticism": "present",
+    "current_intent": "conversation",
+    "memory_source_risk": "absent",
+    "forgiveness_interest": "absent",
+    "support_available": "present",
+    "body_capacity": "adequate",
+    "target_type": "developmental",
+    "trigger_loop": "present",
+    "freeze_pattern": "absent",
+    "discharge_used": "no",
+    "emdr_interest": "absent",
+    "advanced_release_interest": "absent",
+    "advanced_release_physical_risk": "unknown",
+    "panic_instability": "absent",
+    "bypass_risk": "absent",
+    "guide_readiness": "absent",
+    "deep_work_readiness": "unknown",
+    "basic_reparenting_capacity": "unknown",
+    "stable_for_advanced_release": "unknown"
+  },
+  "unknowns": [
+    {
+      "variable": "love_safety_reason",
+      "question": "What makes the love feel unsafe?",
+      "importance": 5
+    }
+  ],
+  "expected": {
+    "primary": "IC.CREDIBILITY_REPAIR",
+    "selectedIncludes": [
+      "IC.BORROW_ONE_FUNCTION",
+      "IC.AGE_RESPONSIBILITY_CLARIFICATION"
+    ],
+    "selectedExcludes": [
+      "IC.NEUTRAL_WITNESS"
+    ],
+    "requiredNuancePatterns": [
+      "not the whole credibility picture",
+      "kept commitments",
+      "without using positive evidence to cancel or minimize a serious lapse",
+      "existing adverse track record"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "no track record yet"
+    ]
+  }
+}

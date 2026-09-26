@@ -5,20 +5,23 @@ projection_mode: current
 generated: true
 overlay_id: OVERLAY.IC.NONPUNITIVE_REVIEW
 map_id: inner-child
-status: owner-approved-uncompiled
+status: reconciled
 authority: OWNER.MAP.RESOLUTION.2026-08-29.D09
 anchors:
   - IC.ADULT_APPRENTICE
   - IC.CREDIBILITY_REPAIR
   - IC.PROTECTOR_ACTION
-reconciled_nodes: []
-base_record_sha256: cf4ad974e1ef89b50dabb9c17f91d60c27d215b890ccb91eb9ac7629adc41803
-projection_input_sha256: 456d7539d0ac59e9a20a4c08179a8856ead6d3e863fb63b4915b9f98fd401e78
+reconciled_nodes:
+  - IC.ADULT_APPRENTICE
+  - IC.CREDIBILITY_REPAIR
+  - IC.PROTECTOR_ACTION
+base_record_sha256: 97793dfd0365f5cfea94a163e20bc9dded28cae0c6e8c2c9129d06c9c69a9407
+projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
 ---
 
 # Review without holding a trial
 
-> [!warning] Owner-approved documentation overlay — not compiled and not executable.
+> [!warning] Generated overlay reconciliation record.
 
 ```json
 {
@@ -30,15 +33,20 @@ projection_input_sha256: 456d7539d0ac59e9a20a4c08179a8856ead6d3e863fb63b4915b9f9
   "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D09",
   "description": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into prosecution, grading, or a trial.",
   "id": "OVERLAY.IC.NONPUNITIVE_REVIEW",
-  "reconciledNodeIds": [],
-  "relation": "adds-nonpunitive-review",
+  "reconciledNodeIds": [
+    "IC.ADULT_APPRENTICE",
+    "IC.CREDIBILITY_REPAIR",
+    "IC.PROTECTOR_ACTION"
+  ],
+  "relation": "realized-by-compiled-node",
   "sourceRefs": [
     "OWNER.MAP.RESOLUTION.2026-08-29.D09",
+    "AMEND.IC.NONPUNITIVE_REVIEW",
     "IC.ADULT_APPRENTICE",
     "IC.PROTECTOR_VISIBLE",
     "IC.VOW"
   ],
-  "status": "owner-approved-uncompiled",
+  "status": "reconciled",
   "title": "Review without holding a trial"
 }
 ```

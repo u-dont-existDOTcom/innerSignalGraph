@@ -24,12 +24,12 @@ export const THERAPY_LATENCY_BASELINE = Object.freeze({
 });
 
 export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
-  revision: "music-emotional-access-2026-09-25",
+  revision: "nonpunitive-review-2026-09-26",
   fast: Object.freeze({
     semanticHash: "fd39be1b795af344df243362afabcdf490607915a4cf32ccfad32e92f2609c50"
   }),
   reviewed: Object.freeze({
-    semanticHash: "c512428001998effad1e429e0ea20559c54ec673cb09dcb55455f2d0f10b0ac1"
+    semanticHash: "424deceaec7f6f1a82ed67a9bc8d2a081e861df510ace9830b58bfbbc0eeee11"
   })
 });
 
