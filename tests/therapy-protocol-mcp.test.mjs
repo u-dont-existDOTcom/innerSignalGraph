@@ -205,6 +205,9 @@ test("text that names a reference the server does not serve makes the protocol u
   }
 
   // Code spans holding a served path may sit next to any punctuation.
+  // An even run of backslashes escapes itself, so the backtick after it still opens a span.
+  assert.deepEqual(unservedReferenceMentions("A literal backslash \\\\`references/GUIDE-REFERRALS.md` first."), []);
+
   const punctuated = await copyPlugin(t);
   await fs.appendFile(path.join(punctuated, "skills/inner-signal-therapy/SKILL.md"), "\nSee `references/GUIDE-REFERRALS.md`. Then (`references/INNER-CHILD-THERAPY-MAP.md`), and `references/FOCUS-DISCIPLINE.md`; done.\n");
   assert.equal(loadTherapyProtocol({ pluginRoot: punctuated }).files.length, THERAPY_PROTOCOL_FILES.length);

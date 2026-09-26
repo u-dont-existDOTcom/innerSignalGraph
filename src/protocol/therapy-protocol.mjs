@@ -43,14 +43,16 @@ const REFERENCE_PREFIX = "references/";
 
 // Inline code spans on one line, as CommonMark reads them: a run of N backticks opens a span that
 // closes at the next run of exactly N backticks, a run with no matching close stays literal, and a
-// backslash-escaped backtick outside a span cannot open one. Spans that would cross a line break
-// are not recognized, so mentions inside them are reported.
+// backtick escaped by an odd run of backslashes outside a span cannot open one. Spans that would
+// cross a line break are not recognized, so mentions inside them are reported.
 function codeSpans(line) {
   const spans = [];
   let i = 0;
   while (i < line.length) {
     if (line[i] !== "`") { i += 1; continue; }
-    if (line[i - 1] === "\\") { i += 1; continue; }
+    let backslashes = 0;
+    while (line[i - 1 - backslashes] === "\\") backslashes += 1;
+    if (backslashes % 2 === 1) { i += 1; continue; }
     let width = 1;
     while (line[i + width] === "`") width += 1;
     let j = i + width;
