@@ -46,6 +46,7 @@ import { loadCompiledGuideGraphBundle } from "../guide-graph/compiler.mjs";
 import { planFromGraphs } from "../guide-graph/planner.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
 import { asCaseStageError, safeCaseStageFailure } from "./stage-failure.mjs";
+import { applyFocusReclassifications, decoratePlanWithFocusDiscipline, prepareFocusDiscipline } from "./focus-discipline.mjs";
 
 async function structuredCall(provider, prompt, metadata, validator, outputSchema, onProgress) {
   const started = Date.now();
@@ -265,7 +266,8 @@ export function applyCaseAudit(snapshot, audit) {
     ...(compatibilityWasTracked ? { compatibility_assessment: compatibilityAssessment } : {}),
     hypotheses: snapshot.hypotheses.filter((item) => !removeHypotheses.has(item.id)),
     variables: validateCaseVariables(variables),
-    unknowns: [...snapshot.unknowns, ...audit.add_unknowns],
+    unknowns: applyFocusReclassifications([...snapshot.unknowns, ...audit.add_unknowns], audit.focus_reclassifications ?? []),
+    ...(audit.corrected_session_focus != null ? { session_focus: audit.corrected_session_focus } : {}),
     audit: {
       verdict: audit.verdict,
       summary: audit.summary,
@@ -276,7 +278,8 @@ export function applyCaseAudit(snapshot, audit) {
       ...(strategyReviewWasTracked ? { strategy_review_reviewed: true } : {}),
       ...(romanceContextWasTracked ? { romance_guide_context_reviewed: true } : {}),
       ...(threatPathwayWasTracked ? { threat_pathway_reviewed: true } : {}),
-      ...(compatibilityWasTracked ? { protective_compatibility_reviewed: true } : {})
+      ...(compatibilityWasTracked ? { protective_compatibility_reviewed: true } : {}),
+      ...((audit.focus_reclassifications ?? []).length || audit.corrected_session_focus != null ? { focus_discipline_reviewed: true } : {})
     }
   };
 }
@@ -321,10 +324,19 @@ async function planSnapshot(snapshot, {
   delete snapshot._path_invalidated;
   delete snapshot._relational_issue_changed;
   delete snapshot._protective_compatibility_prior;
+  // Side questions are parked by the focus controller rather than competing as
+  // the next question; legacy unknowns without a declared relation are unchanged.
+  const focusDiscipline = prepareFocusDiscipline({
+    prior: snapshot._focus_prior ?? null,
+    unknowns: snapshot.unknowns,
+    sessionFocus: snapshot.session_focus ?? null,
+    variables: derivedVariables
+  });
+  delete snapshot._focus_prior;
   const routingControl = applyRomanceGuideRouteConstraint(pathPerformance, snapshot.romance_guide_context ?? null);
   const rawPlan = planFromGraphs({
     variables: plannedVariables,
-    unknowns: snapshot.unknowns,
+    unknowns: focusDiscipline.frontalUnknowns,
     graphs: bundle.graphs,
     turnTask: compatibilityDecision.gate === "NOT_BLOCKED" ? (snapshot.turn_task ?? null) : null,
     pathPerformance: routingControl
@@ -337,7 +349,10 @@ async function planSnapshot(snapshot, {
   if (!composition.canRealize) throw new ValidationError(`Romance guide context requires replanning before realization: ${composition.action}.`);
   const threatPlan = decoratePlanWithThreatPathway(romancePlan, snapshot.threat_pathway ?? null, threatDecision);
   const antiBypassPlan = decoratePlanWithAntiBypass(threatPlan, plannedVariables);
-  const plan = decoratePlanWithProtectiveCompatibility(antiBypassPlan, compatibilityDecision, bundle.graphs);
+  const compatibilityPlan = decoratePlanWithProtectiveCompatibility(antiBypassPlan, compatibilityDecision, bundle.graphs);
+  const { plan, state: focusState } = decoratePlanWithFocusDiscipline(compatibilityPlan, focusDiscipline);
+  if (focusState) snapshot.focus_discipline = focusState;
+  else delete snapshot.focus_discipline;
   return { plan, graphBundleVersion: bundle.version };
 }
 
@@ -382,6 +397,11 @@ export async function runCaseExtraction({ context, provider, onProgress }) {
     ?? context.priorCaseSnapshot?.protective_compatibility_state
     ?? null;
   if (compatibilityPrior) extraction.value._protective_compatibility_prior = structuredClone(compatibilityPrior);
+  // Parked side questions are runtime-owned memory; a model cannot supply or rewrite them.
+  delete extraction.value.focus_discipline;
+  delete extraction.value._focus_prior;
+  const focusPrior = context.durableCaseState?.focus_discipline ?? context.priorCaseSnapshot?.focus_discipline ?? null;
+  if (focusPrior) extraction.value._focus_prior = structuredClone(focusPrior);
   const issueChanged = Boolean(context.priorCaseSnapshot?.current_issue && extraction.value.current_issue !== context.priorCaseSnapshot.current_issue);
   const scoped = reconcileIssueScope(extraction.value, context.priorCaseSnapshot);
   if (issueChanged) scoped._relational_issue_changed = true;

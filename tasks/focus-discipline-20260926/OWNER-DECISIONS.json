@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "taskId": "FOCUS-DISCIPLINE-20260926",
+  "recordedDate": "2026-09-26",
+  "authority": "Owner (Joel) decisions of 2026-09-26, relayed verbatim to this task by the supervising session. Product-policy decisions, not private therapy data.",
+  "decisions": [
+    {
+      "id": "OWNER-2026-09-26-D1",
+      "title": "Do not add suicidal_state escalation to the tier classifier or realization safety trigger",
+      "context": "An earlier triage noted that classifyTherapyTier (src/orchestrator/run-tiered-pipeline.mjs) and the realization safety trigger (deterministicSafetyTrigger in src/prompts/realize.mjs) do not escalate on suicidal_state ideation/intent/imminent; only the suicidal graph nodes and the immediate-protection check handle it.",
+      "ownerQuote": "no this was the point, it was detecting them wrong so i switched that nonsense off",
+      "decision": "Keep it that way. Suicidal material is routed by the graph (IC.SAFETY_ORIENTATION for imminent; IC.SUICIDAL_ADULT_SEAT, IC.SUICIDAL_SELF_DEATH_INQUIRY and IC.PRECIOUS_HUMAN_OPPORTUNITY for ideation/intent/imminent) and by immediateProtectionNeeded for imminent risk. Do not re-add suicidal_state to the tier classifier's forced safety tier or to the realization trigger that adds generic crisis copy.",
+      "behaviorChange": false,
+      "historyFinding": "No commit in this repository removes such an escalation. From the first imported runtime (658d42b, v0.14.4, 2026-08-12) the tier classifier and the realization trigger have used only deterministic safety variables, and THERAPY-LESSONS entry active-focused-realization (2026-08-12) records that generic crisis boilerplate is omitted unless those variables trigger it. suicidal_state itself arrived in 790c50a (2026-09-02, owner-approved love-horizon map reconciliation) with explicit-only extraction ('Do not infer suicidality from hopelessness alone') and graph routing, and without a tier or realization-trigger escalation. The switch-off the owner describes is therefore older than, or outside, this repository's history; this record makes the existing absence deliberate.",
+      "enforcement": [
+        "tests/owner-decision-suicidal-state.test.mjs",
+        "comments at classifyTherapyTier and deterministicSafetyTrigger"
+      ]
+    },
+    {
+      "id": "OWNER-2026-09-26-D2",
+      "title": "Focus discipline: ask what moves therapy forward, with intelligent exceptions",
+      "ownerQuote": "let's make it a bit more intelligent. like, every rule needs to have exceptions right, i mean come on. but in general yes only ask questions that move therapy forward, but keep the side questions for when they might become frontal questions of course. and you can also mention a side question sometimes depending on how important the focus is on the main question, like we don't want to pile up important side questions forever. but it's also not like every side question is really totally on the side right. you know what i'm talking about? the purpose here is just don't get distracted by the client because the client is distracted, the job of the therapist is to keep things on point. it's so easy even for me to get distracted by a client who doesn't want to use my time well",
+      "interpretation": [
+        "Default: ask and pursue what moves the current therapeutic focus forward; a question's value is whether its answer would change what is done next for the current target.",
+        "Side questions are parked with a note on why they might matter, not discarded, so they can become the main question later.",
+        "A parked side question is surfaced depending on how important the current focus is: held while the focus is urgent, mentioned briefly when an important one has waited under ordinary focus or too many are waiting, offered at a natural pause, and asked as the main question when the focus is light and nothing else is being asked.",
+        "Side-ness is judged by relevance, not topic: an apparently side question that bears on the current target is pursued.",
+        "The therapist keeps the session on point: a client's drift or avoidance is acknowledged warmly, saved, and the session returns to the focus without shaming.",
+        "Exceptions: safety, protective-compatibility and threat routes, a client's deliberate change of agenda, and a step that is too big (make it smaller rather than push through).",
+        "The common-rule instruction to probe a symptom's protective function is gated by whether the answer serves the current focus; otherwise the probe is parked."
+      ],
+      "related": {
+        "closedPullRequest": "#52 (codex/reparenting-telos-target-gate-20260911) — stricter decision-changing gate; not used as a base",
+        "mergedPullRequest": "#80 (reparenting strategy refinement) — diagnose-before-replacing and borrowed-adult preparation, unchanged"
+      },
+      "implementationAuthorized": true,
+      "installationAuthorized": false,
+      "deploymentAuthorized": false,
+      "stablePromotionAuthorized": false
+    }
+  ]
+}

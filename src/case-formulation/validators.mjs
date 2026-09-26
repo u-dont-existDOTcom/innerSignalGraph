@@ -5,6 +5,7 @@ import { validateRomanceGuideContext } from "./romance-guide.mjs";
 import { validateThreatPathwayAssessment } from "./threat-pathway.mjs";
 import { validateInnerSpeechProfile, validateObservationPhenomenology } from "./phenomenology.mjs";
 import { validateCompatibilityAssessment } from "./protective-compatibility.mjs";
+import { validateFocusReclassifications, validateSessionFocus, validateUnknownFocus } from "./focus-discipline.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 import { validateCaseVariables } from "../guide-graph/validate.mjs";
@@ -47,6 +48,7 @@ export function validateCaseSnapshot(value) {
   if (Object.hasOwn(value, "compatibility_assessment")) {
     value.compatibility_assessment = validateCompatibilityAssessment(value.compatibility_assessment, { issue: value.current_issue, observationIds });
   }
+  if (Object.hasOwn(value, "session_focus")) value.session_focus = validateSessionFocus(value.session_focus);
   value.variables = validateCaseVariables(value.variables);
   if (!Array.isArray(value.hypotheses)) throw new ValidationError("caseSnapshot.hypotheses must be an array.");
   const hypothesisIds = new Set();
@@ -64,6 +66,7 @@ export function validateCaseSnapshot(value) {
     string(item.variable, `caseSnapshot.unknowns[${index}].variable`);
     string(item.question, `caseSnapshot.unknowns[${index}].question`);
     if (!Number.isInteger(item.importance) || item.importance < 1 || item.importance > 5) throw new ValidationError(`caseSnapshot.unknowns[${index}].importance is invalid.`);
+    validateUnknownFocus(item, `caseSnapshot.unknowns[${index}]`);
   }
   return value;
 }
@@ -99,7 +102,10 @@ export function validateCaseAudit(value) {
     string(item.variable, `caseAudit.add_unknowns[${index}].variable`);
     string(item.question, `caseAudit.add_unknowns[${index}].question`);
     if (!Number.isInteger(item.importance) || item.importance < 1 || item.importance > 5) throw new ValidationError(`caseAudit.add_unknowns[${index}].importance is invalid.`);
+    validateUnknownFocus(item, `caseAudit.add_unknowns[${index}]`);
   }
+  if (Object.hasOwn(value, "corrected_session_focus")) value.corrected_session_focus = validateSessionFocus(value.corrected_session_focus, "caseAudit.corrected_session_focus");
+  if (Object.hasOwn(value, "focus_reclassifications")) validateFocusReclassifications(value.focus_reclassifications);
   stringArray(value.safety_flags, "caseAudit.safety_flags");
   if (!["accept","revise","reject"].includes(value.verdict)) throw new ValidationError("caseAudit.verdict is invalid.");
   string(value.summary, "caseAudit.summary");

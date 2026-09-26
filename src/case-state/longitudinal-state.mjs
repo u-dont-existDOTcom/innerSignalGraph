@@ -11,6 +11,7 @@ import {
   updateProtectiveCompatibilityState,
   validateProtectiveCompatibilityState
 } from "../case-formulation/protective-compatibility.mjs";
+import { validateFocusState } from "../case-formulation/focus-discipline.mjs";
 
 export const CASE_STATE_VERSION = 1;
 export const CASE_STATE_STATUSES = Object.freeze(["direct_report", "supervisor_report", "observed_pattern", "hypothesis", "inference", "unresolved_conflict"]);
@@ -171,6 +172,7 @@ export function validateCaseState(value) {
   validateEpisode(value.current_episode);
   if (Object.hasOwn(value, "threat_pathway")) validateThreatPathwayState(value.threat_pathway);
   if (Object.hasOwn(value, "protective_compatibility")) validateProtectiveCompatibilityState(value.protective_compatibility);
+  if (Object.hasOwn(value, "focus_discipline")) validateFocusState(value.focus_discipline);
   return value;
 }
 
@@ -203,6 +205,8 @@ export function applyCaseStatePatch(previous, patch = {}) {
     threat_pathway: Object.hasOwn(patch, "threat_pathway") ? clone(patch.threat_pathway) : (before.threat_pathway ?? null),
     protective_compatibility: Object.hasOwn(patch, "protective_compatibility") ? clone(patch.protective_compatibility) : (before.protective_compatibility ?? null)
   };
+  // Parked side questions are optional runtime memory; historical states without them stay valid.
+  if (Object.hasOwn(patch, "focus_discipline")) next.focus_discipline = clone(patch.focus_discipline);
   return validateCaseState(next);
 }
 
@@ -259,6 +263,7 @@ export function diffCaseStates(previous, next) {
     current_episode_changed: JSON.stringify(before.current_episode) !== JSON.stringify(after.current_episode),
     threat_pathway_changed: JSON.stringify(before.threat_pathway ?? null) !== JSON.stringify(after.threat_pathway ?? null),
     protective_compatibility_changed: JSON.stringify(before.protective_compatibility ?? null) !== JSON.stringify(after.protective_compatibility ?? null),
+    focus_discipline_changed: JSON.stringify(before.focus_discipline ?? null) !== JSON.stringify(after.focus_discipline ?? null),
     trajectory_observability_changed: JSON.stringify(before.trajectory_observability) !== JSON.stringify(after.trajectory_observability)
   });
 }
@@ -381,6 +386,7 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
     intervention_history: interventionHistory,
     current_episode: currentEpisode,
     threat_pathway: threatPathway,
-    protective_compatibility: protectiveCompatibility
+    protective_compatibility: protectiveCompatibility,
+    ...(snapshot?.focus_discipline ? { focus_discipline: snapshot.focus_discipline } : {})
   });
 }
