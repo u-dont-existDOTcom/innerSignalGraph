@@ -89,42 +89,60 @@ export function createJwtPrivateCaseAuthorizationProvider({
   if (!Array.isArray(algorithms) || algorithms.length === 0 || algorithms.some((entry) => typeof entry !== "string" || !entry)) throw new ValidationError("OAuth algorithms are invalid.");
   if (!Number.isFinite(clockTolerance) || clockTolerance < 0 || clockTolerance > 300) throw new ValidationError("OAuth clock tolerance is invalid.");
   const normalizedGrants = normalizeGrants(grants);
+  const grantedSubjects = new Set(normalizedGrants.map((entry) => entry.subject));
   const keySet = jwks
     ? createLocalJWKSet(jwks)
     : createRemoteJWKSet(new URL(requiredText(jwksUri, "OAuth JWKS URI")));
+
+  // Verifies the bearer token itself (signature, issuer, audience, expiry, subject); says nothing about any case.
+  async function verifyToken(token) {
+    if (typeof token !== "string" || !token) throw new PrivateCaseAccessDeniedError();
+    let verified;
+    try {
+      verified = await jwtVerify(token, keySet, {
+        issuer: normalizedIssuer,
+        audience: normalizedAudience,
+        algorithms,
+        clockTolerance,
+        currentDate: new Date(now() * 1_000)
+      });
+    } catch {
+      throw new PrivateCaseAccessDeniedError();
+    }
+    if (!Number.isInteger(verified.payload.exp)) throw new PrivateCaseAccessDeniedError();
+    const subject = verified.payload.sub;
+    if (typeof subject !== "string" || !subject) throw new PrivateCaseAccessDeniedError();
+    return { subject, tokenScopeSet: tokenScopes(verified.payload), payload: verified.payload };
+  }
 
   return Object.freeze({
     kind: "oauth-jwt-case-acl",
     issuer: normalizedIssuer,
     audience: normalizedAudience,
+    // Whether a denial could be cured by signing in again. That is ruled out only when the case
+    // ACL grants a single account and this valid token belongs to it: no other account could open
+    // anything. With several granted accounts, another one might open the case, so the caller
+    // keeps the sign-in challenge. This is a deployment-wide property; it says nothing about
+    // any case, and nothing about which cases exist.
+    async authenticate({ authContext }) {
+      const { subject, tokenScopeSet } = await verifyToken(authContext?.bearerToken);
+      return Object.freeze({
+        onlyGrantedAccount: grantedSubjects.size === 1 && grantedSubjects.has(subject),
+        scopes: Object.freeze([...tokenScopeSet])
+      });
+    },
     async authorize({ caseId, authContext, requiredScope }) {
-      const token = authContext?.bearerToken;
-      if (typeof token !== "string" || !token || !CASE_ID.test(caseId) || !Object.values(PRIVATE_CASE_SCOPES).includes(requiredScope)) {
+      if (!CASE_ID.test(caseId) || !Object.values(PRIVATE_CASE_SCOPES).includes(requiredScope)) {
         throw new PrivateCaseAccessDeniedError();
       }
-      let verified;
-      try {
-        verified = await jwtVerify(token, keySet, {
-          issuer: normalizedIssuer,
-          audience: normalizedAudience,
-          algorithms,
-          clockTolerance,
-          currentDate: new Date(now() * 1_000)
-        });
-      } catch {
-        throw new PrivateCaseAccessDeniedError();
-      }
-      if (!Number.isInteger(verified.payload.exp)) throw new PrivateCaseAccessDeniedError();
-      const subject = verified.payload.sub;
-      if (typeof subject !== "string" || !subject) throw new PrivateCaseAccessDeniedError();
-      const tokenScopeSet = tokenScopes(verified.payload);
+      const { subject, tokenScopeSet, payload } = await verifyToken(authContext?.bearerToken);
       const grant = normalizedGrants.find((entry) => entry.subject === subject && entry.caseIds.includes(caseId));
       if (!grant || !grant.scopes.includes(requiredScope) || !tokenScopeSet.has(requiredScope)) throw new PrivateCaseAccessDeniedError();
       return Object.freeze({
         allowed: true,
         principalId: subject,
         scopes: Object.freeze(grant.scopes.filter((scope) => tokenScopeSet.has(scope))),
-        tokenId: typeof verified.payload.jti === "string" ? verified.payload.jti : null,
+        tokenId: typeof payload.jti === "string" ? payload.jti : null,
         authorizationProvider: "oauth-jwt-case-acl"
       });
     }
