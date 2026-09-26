@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "design_id": "inner-signal-journal-import-v1",
+  "status": "design_only_not_runtime",
+  "base_commit": "038f7ee61e0ddbb760e8263dbc6de3c06a56bfcf",
+  "privacy": "synthetic_examples_only",
+  "layers": [
+    "original_archive",
+    "source_representations",
+    "personal_evidence_graph",
+    "bounded_session_context"
+  ],
+  "stages": [
+    "UPLOAD",
+    "INVENTORY",
+    "PARSE",
+    "EXTRACT",
+    "CHECK_OMISSIONS",
+    "RECONCILE",
+    "REVIEW",
+    "COMMIT",
+    "AVAILABLE"
+  ],
+  "run_statuses": [
+    "running",
+    "paused",
+    "needs_input",
+    "retryable_error",
+    "failed",
+    "cancelled",
+    "revoked",
+    "complete"
+  ],
+  "operations": [
+    "archive",
+    "organize_search",
+    "session_use"
+  ],
+  "source_dispositions": [
+    "extracted",
+    "no_assertion",
+    "needs_review",
+    "unreadable",
+    "excluded",
+    "pending"
+  ],
+  "assertion_kinds": [
+    "direct_report",
+    "belief",
+    "quoted_other",
+    "dream",
+    "imaginal_experience",
+    "intention",
+    "reported_action",
+    "reported_outcome",
+    "hypothesis",
+    "explicit_correction"
+  ],
+  "relation_types": [
+    "supported_by",
+    "mentions",
+    "part_of",
+    "retells",
+    "precedes",
+    "contradicts",
+    "qualifies",
+    "exception_to",
+    "corrects",
+    "supersedes",
+    "possible_same_entity",
+    "reported_effect_of"
+  ],
+  "time_precision": [
+    "instant",
+    "day",
+    "month",
+    "year",
+    "interval",
+    "unknown"
+  ],
+  "assertion_required_fields": [
+    "id",
+    "case_id",
+    "statement",
+    "kind",
+    "polarity",
+    "subject_ref",
+    "context",
+    "evidence_ids",
+    "authored_time",
+    "event_time",
+    "recorded_at",
+    "still_current",
+    "review_state",
+    "extraction_provenance",
+    "importance_reasons"
+  ],
+  "span_required_fields": [
+    "id",
+    "representation_id",
+    "representation_version",
+    "start_byte",
+    "end_byte",
+    "quote",
+    "quote_sha256",
+    "source_locator"
+  ],
+  "cursor_bindings": [
+    "case_id",
+    "filter_digest",
+    "snapshot_generation",
+    "purpose",
+    "authorization_epoch",
+    "stable_order"
+  ],
+  "memory_packet_fields": [
+    "snapshot_ref",
+    "authorization_epoch",
+    "coverage",
+    "assertions",
+    "exact_spans",
+    "counterevidence",
+    "unresolved",
+    "more_available"
+  ],
+  "error_codes": [
+    "CONSENT_REQUIRED",
+    "CONSENT_REVOKED",
+    "UNSUPPORTED_FORMAT",
+    "PARSE_INCOMPLETE",
+    "OUTPUT_INCOMPLETE",
+    "REVISION_CONFLICT",
+    "CURSOR_STALE",
+    "SOURCE_REVOKED",
+    "QUOTA_PAUSED",
+    "RETRYABLE_PROVIDER_FAILURE"
+  ],
+  "defaults": {
+    "historical_still_current": null,
+    "session_use": false,
+    "cross_case_search": false,
+    "public_data": false,
+    "paid_fallback": false,
+    "ocr": false,
+    "automatic_policy_change": false
+  },
+  "invariants": [
+    {
+      "id": "J01",
+      "rule": "Original bytes survive every derived transformation until authorized deletion.",
+      "verification": "round_trip"
+    },
+    {
+      "id": "J02",
+      "rule": "Every extracted assertion resolves to exact authorized source spans.",
+      "verification": "span_integrity"
+    },
+    {
+      "id": "J03",
+      "rule": "Saved bytes, parse coverage, extraction coverage and semantic recall are reported separately.",
+      "verification": "coverage"
+    },
+    {
+      "id": "J04",
+      "rule": "Imported history does not automatically become current case or therapy-policy state.",
+      "verification": "state_isolation"
+    },
+    {
+      "id": "J05",
+      "rule": "All source matches are traversable by snapshot-bound pagination.",
+      "verification": "pagination"
+    },
+    {
+      "id": "J06",
+      "rule": "Subject/case/purpose authorization precedes keys, processing and disclosure.",
+      "verification": "authorization"
+    },
+    {
+      "id": "J07",
+      "rule": "Corrections and deletion invalidate dependent indexes, projections and server handoffs.",
+      "verification": "lineage"
+    },
+    {
+      "id": "J08",
+      "rule": "Dream, belief, intention, imagined experience, action and outcome retain their distinctions.",
+      "verification": "epistemic_fidelity"
+    },
+    {
+      "id": "J09",
+      "rule": "Grant revocation blocks queued results and future disclosure.",
+      "verification": "revocation"
+    },
+    {
+      "id": "J10",
+      "rule": "Atomic generation commit preserves unrelated current-case writes.",
+      "verification": "concurrency"
+    },
+    {
+      "id": "J11",
+      "rule": "Raw search still reaches unclassified or unextracted readable source units.",
+      "verification": "source_fallback"
+    },
+    {
+      "id": "J12",
+      "rule": "A handoff reference is not declared complete without working authorized source retrieval.",
+      "verification": "fresh_session"
+    }
+  ],
+  "semantic_target": {
+    "status": "provisional_not_measured",
+    "important_assertion_recall": 0.95,
+    "must_not_miss_query_retrieval": 1.0,
+    "not_an_archive_only_blocker": true
+  },
+  "prohibited_completion_claims": [
+    "real_corpus_imported",
+    "importer_implemented",
+    "clinical_effectiveness_established",
+    "security_certified",
+    "perfect_semantic_recall"
+  ]
+}
