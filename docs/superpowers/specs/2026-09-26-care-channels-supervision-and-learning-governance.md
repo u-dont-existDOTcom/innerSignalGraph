@@ -59,11 +59,11 @@ The 2026-08-31 owner product-privacy decision remains in force. It is archived w
 
 ### Local storage for free users
 
-The free channel talks to InnerSignal's hosted connector, and the server keeps no case data for free users. Continuity has three options:
+The free channel talks to InnerSignal's hosted connector, and the server keeps no case data for free users. Continuity has two options, plus a portable file for backup:
 
 1. **The InnerSignal local app on the client's own computer.** It already keeps an encrypted case on the device. Serving that case to desktop Claude as a local connector is new work. This is truly local, and it's the recommended option where the client has a computer.
 2. **The host's own memory or project features.** This needs no install, but the data then sits with the provider under the client's account. Per the 2026-08-31 decision, that isn't private from the provider, and the sign-up agreement must say so.
-3. **A portable encrypted case file** the client keeps and attaches when they want continuity.
+3. **A portable encrypted case file,** for backup or moving to another device. It doesn't give continuity by itself. A host can't read an encrypted handoff envelope (`src/storage/private-case-store.mjs` exports only that), and opening one needs case-scoped authorization and key material. The file is opened by the local app (option 1), which decrypts it on the device and passes the host only the context it is authorized to see.
 
 **Tradeoff:** server-enforced scope rules for personal learning (below) need option 1, or paid server storage. With option 2 only, the rules are instructions to the model rather than enforced checks.
 
@@ -82,6 +82,8 @@ Supervised mode puts the therapist at that approval step, with a queue. For each
 - **Approve.** The exact audited version is delivered.
 - **Edit.** The edited text becomes a new immutable candidate version. It follows the existing rule: approval is version-specific, and a changed candidate stays closed until that exact version passes a fresh independent audit (`POST_RECONSTRUCTION_AUDIT_RULE`). The therapist then approves that exact version. An edit is never delivered on the strength of the earlier draft's audit.
 - **Reject.** Nothing is delivered. The therapist gives guidance and the runtime drafts again.
+
+**Every outgoing message waits, including the discriminating question.** When repeated repairs still fail audit, today's controller writes a discriminating question and delivers it directly, without the candidate approval step (`DISCRIMINATING_QUESTION_REQUIRED` in `src/supervisor/private-therapy-turn-controller.mjs`). In supervised mode that question goes to the therapist's queue too. It follows the same approve, edit and reject rules as a draft, and nothing reaches the client without approval. The imminent-danger crisis path below is the only exception.
 
 The crisis path and client expectations:
 - **Only imminent danger bypasses the queue.** Imminent danger means what the runtime already treats as needing immediate protection:
@@ -196,12 +198,13 @@ This builds on the archived personalization boundary (`learning-system/PERSONALI
 - A lesson the supervisor approves applies to that supervisor's own clients immediately, and enters the owner queue at the same moment. A supervisor's own clients are the ones who chose them. Clients served through the free-user pool get no practice overlay, only the global map.
 - Clients see a short changelog of practice changes that affect them. Each entry has a **Submit for owner review and community vote** button.
 - If an owner blocks or rejects a practice change, it is paused at once and that practice reverts to the global map (see "Owner team: blocking consensus"). This is how supervisors stay tied to InnerSignal's purpose.
+- **Every overlay version has an identity.** Each version gets an immutable ID, version number and content hash, and every version that was ever active is kept. Sessions and handoffs record the overlay identity next to the global protocol identity (see "Global"), so after an overlay is edited, paused or rejected it's still clear which rules produced each response.
 
 ### Global: owner team
 
 - These are changes to the map and rules for everyone.
 - Each activation is a new protocol version with its own content hash.
-- The server already reports the current version and hash (`/health`, `get_therapy_protocol_manifest`), but nothing records them yet: sessions record only a guide version, and handoffs only constitution, runtime and audit versions. Recording the protocol version and hash in every session and handoff is part of phase 1.
+- The server already reports the current version and hash (`/health`, `get_therapy_protocol_manifest`), but nothing records them yet: sessions record only a guide version, and handoffs only constitution, runtime and audit versions. Recording the protocol version and hash in every session and handoff is part of phase 1. From phase 3 on, the practice overlay's identity is recorded with it. Together with the personal profile's version (phase 1), these identify the effective rules behind each response.
 - Every activated version is kept, so any one can be restored. That's part of phase 3.
 - Removing an active global change is itself a new global version, decided like any approval. When it can't wait, the emergency pause withholds the affected exercise or route at once.
 
@@ -318,13 +321,13 @@ Each phase ships as its own PR:
 - owner approval before merge and deploy.
 
 1. **Escalation for the free channel.**
-   - the protocol version and hash recorded in every session and handoff;
+   - the protocol version and hash, and the personal profile's version, recorded in every session and handoff;
    - `check_turn`, `request_supervision` and `get_supervisor_guidance` on the connector;
    - a minimal supervisor queue, with the free-user pool;
    - the spot-check sampler;
    - personal-learning fields, with a validation API usable by the local app.
 2. **Supervised mode in the web app:** the therapist queue on the candidate lifecycle, the crisis path, backup supervisors and re-supervision.
-3. **The lesson ladder:** practice overlays, the owner queue, blocking consensus (with rejection and the emergency pause), and keeping every activated protocol version for rollback.
+3. **The lesson ladder:** practice overlays with their identity recorded in sessions and handoffs, the owner queue, blocking consensus (with rejection and the emergency pause), and keeping every activated protocol and overlay version for rollback and audit.
 4. **Community input.**
 5. **Database and admin page,** when manual onboarding becomes a burden.
 
