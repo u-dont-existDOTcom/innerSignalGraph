@@ -1,7 +1,7 @@
 # InnerSignal care channels, supervision and learning governance
 
 Date: 2026-09-26
-Status: PROPOSED DESIGN built on owner requirements stated 2026-09-26 and the owner's answers to the first draft's questions (also 2026-09-26). Nothing here is implemented. It grants no runtime, therapy-policy, installation, deployment or release authority. Therapy content changes stay owner-gated.
+Status: DESIGN accepted by the owner for merge on 2026-09-26, built on his requirements and his answers to the first draft's questions (same day). The questions under "Open questions for the owner" remain open. Nothing here is implemented. It grants no runtime, therapy-policy, installation, deployment or release authority. Therapy content changes stay owner-gated.
 
 ## Owner requirements (2026-09-26)
 
@@ -32,7 +32,7 @@ These are the owner's decisions. Owner wording is quoted where it sets a rule.
 12. **Block window:** 72 hours "for now."
 13. **Emergency pause:** yes.
 14. **Supervisor unavailable.** The client can choose a backup supervisor or unsupervised mode, "but there needs to be a way they can then get re-supervised to make sure everything is on the right path."
-15. **Retention:** 30 days for escalated excerpts.
+15. **Retention:** 30 days for escalated excerpts, counted from review: "30 days after review not submission."
 
 The 2026-08-31 owner product-privacy decision remains in force. It is archived with the Commons work on branch `design/opt-in-community-learning-20260830` (`tasks/opt-in-community-mvp-20260830/OWNER-PRODUCT-PRIVACY-DECISION-20260831-003.json`):
 - It rests on the owner's premise that consumer ChatGPT accounts can't opt out of provider monitoring, and makes the API path the paid privacy option.
@@ -135,7 +135,7 @@ A model's own sense that it is unsure misses the cases where it is confidently w
 - **"Never fully unsupervised" is guaranteed only in the web app.** That limit belongs in the free tier's sign-up agreement.
 
 **Retention.**
-- Escalation packages and spot-check samples are kept only until a supervisor reviews them. After that they are deleted within 30 days (owner decision 2026-09-26), unless the legal review requires otherwise.
+- Escalation packages and spot-check samples are kept only until a supervisor reviews them. After that they are deleted within 30 days of the review (owner decision 2026-09-26: counted from review, not submission), unless the legal review requires otherwise. How long an item may wait unreviewed is still open (see "Open questions").
 - Clients can see and delete their own at any time. Deleting one that is still pending cancels its review.
 - Anything that becomes a lesson survives only in its generalized, screened form.
 
@@ -143,7 +143,7 @@ A model's own sense that it is unsure misses the cases where it is confidently w
 - **Web app, supervised session:** the reply stays queued until the supervisor approves it. Only the imminent-danger crisis path is sent without approval. The client sees that a therapist is reviewing. If the supervisor stays unavailable past the promised window, the client chooses a backup or continuing unsupervised (see "When the supervisor is unavailable").
 - **Web app, unsupervised session:** hold the reply if a supervisor is available within the promised window. Otherwise send a cautious reply and queue the review.
 - **Free channel:** send a cautious reply now. The supervisor's guidance reaches the client at their next session, through `get_supervisor_guidance`. That return path needs a free InnerSignal account.
-- **What "cautious" means:** slow down, stay with the present, start no new deep exercise, and tell the client a therapist will look.
+- **What "cautious" means:** slow down, stay with the present, start no new deep exercise, and tell the client a therapist will look. After a refusal to share, the reply leaves out that last part, because nothing is shared and no therapist will look.
 
 **Consent.**
 - At sign-up, clients agree that a supervisor may read escalated excerpts. The model can also ask in the moment ("can I check this part with a therapist?").
@@ -340,6 +340,7 @@ No phase that sends client content to InnerSignal or to a supervisor (phases 1 a
 The owner answered the first draft's questions on free-channel supervision, who supervises, the block window, emergency holds, supervisor unavailability and retention (see "Owner answers to the first draft"). These remain:
 
 - Should anything ever be shared without consent at imminent danger? The default is no.
+- How long an escalation or spot-check sample may wait unreviewed before it is deleted. Retention is counted from review, so today nothing bounds an item that no supervisor reviews.
 - An imminent-danger trigger for non-suicidal self-harm and any other risk type that has none yet.
 - The spot-check rate and the community-response threshold.
 - A legal review of consent, data handling and therapist licensing in the countries clients live in. It must happen before any supervision launches, including phase 1: free users' excerpts go to InnerSignal and to pool supervisors, who may review clients in other countries. It is not researched here.

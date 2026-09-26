@@ -2,9 +2,15 @@
 
 Updated: 2026-09-26
 
-## Care channels, supervision and learning governance — proposed design (2026-09-26)
+## Care channels, supervision and learning governance — design (2026-09-26, PR #89)
 
-The owner stated product requirements for free and paid channels, supervised mode, escalation when the model is unsure, per-user, practice and global learning, owner-team blocking consensus, community input, local storage for free users, and a later database and admin page. `docs/superpowers/specs/2026-09-26-care-channels-supervision-and-learning-governance.md` records them and proposes a design that builds on the candidate lifecycle, the archived personalization and Commons designs, and the 2026-08-31 product-privacy decision. The owner answered the first draft's questions the same day, and the spec records the answers: best-effort free-channel supervision, a free-user supervisor pool with chosen supervisors for paid users, a 72-hour block window, an emergency pause, backup-or-unsupervised with re-supervision, and 30-day retention. Still open for the owner: sharing without consent at imminent danger (default no), an imminent-danger trigger for non-suicidal self-harm, the spot-check rate and community threshold, the legal review, and mobile local storage. Nothing is implemented; no runtime, therapy-policy, deployment or release authority follows.
+- **Goal:** record the owner's product requirements for care channels, supervision and learning governance, and a design to build them in phases.
+- **Baseline:** main `f8e6936`, merged into the branch. The design builds on the private candidate lifecycle, the archived personalization and Commons designs, the 2026-08-31 product-privacy decision and owner decision D1 (suicidal state).
+- **Done, don't repeat:** `docs/superpowers/specs/2026-09-26-care-channels-supervision-and-learning-governance.md` records the owner's requirements and his answers to the first draft: best-effort free-channel supervision, a free-user supervisor pool with chosen supervisors for paid users, a 72-hour block window, an emergency pause, backup-or-unsupervised with re-supervision, and 30-day retention counted from review. Seven Codex review rounds were addressed.
+- **Verified:** documentation only. `npm run audit:repository` and `npm run audit:publication` are clean; no code, runtime, model or private case changed.
+- **Safety:** nothing is implemented. The safety floor, consent rules, crisis path and precedence order are proposals for owner-gated phase PRs. No phase that sends client content to InnerSignal or a supervisor may launch before the legal review.
+- **Remaining:** the spec's open questions: sharing without consent at imminent danger (default no), how long an item may wait unreviewed, an imminent-danger trigger for non-suicidal self-harm, the spot-check rate and community threshold, the legal review, and mobile local storage.
+- **Next safe action:** phase 1 (free-channel escalation) as its own PR with Codex review, a cross-family check and owner approval, and only after the legal review for any launch. No runtime, therapy-policy, deployment or release authority follows from this design.
 
 ## Owner decisions 2026-09-26: suicidal-state record and focus discipline — `claude/focus-discipline-owner-decisions-20260926`
 
