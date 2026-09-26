@@ -161,3 +161,28 @@ test("the hosted MCP image ships the packaged skill it serves", async () => {
   const dockerfile = await fs.readFile(path.join(root, "Dockerfile.private-case-mcp"), "utf8");
   assert.match(dockerfile, /^COPY plugins\/inner-signal-therapy \.\/plugins\/inner-signal-therapy$/mu);
 });
+
+test("MCP is also answered at the root so a connector URL can equal a bare-origin resource", async (t) => {
+  const listener = await listen(t, { oauth: { resource: RESOURCE, authorizationServers: [ISSUER], scopesSupported: ["case:read", "case:audit"] }, productionAuthReady: true });
+  const rootUrl = listener.url.replace(/\/mcp$/u, "/");
+  const [atRoot, atMcp] = await Promise.all([post(rootUrl, "tools/list"), post(listener.url, "tools/list")]);
+  assert.equal(atRoot.response.status, 200);
+  assert.deepEqual(atRoot.body.result.tools.map((tool) => tool.name), atMcp.body.result.tools.map((tool) => tool.name));
+  const privateCall = await post(rootUrl, "tools/call", { name: "retrieve_case_evidence", arguments: { case_id: "synthetic-case", query: "x" } });
+  assert.equal(privateCall.response.status, 401);
+  assert.match(privateCall.response.headers.get("www-authenticate"), /resource_metadata="https:\/\/private-mcp\.synthetic\.example\/\.well-known\/oauth-protected-resource"/u);
+  const other = await fetch(listener.url.replace(/\/mcp$/u, "/elsewhere"), { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+  assert.equal(other.status, 404);
+});
+
+test("a pathful resource gets no root MCP endpoint", async (t) => {
+  const listener = await listen(t, { oauth: { resource: `${RESOURCE}/mcp`, authorizationServers: [ISSUER], scopesSupported: ["case:read", "case:audit"] }, productionAuthReady: true });
+  const root = await fetch(listener.url.replace(/\/mcp$/u, "/"), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} })
+  });
+  assert.equal(root.status, 404);
+  const atMcp = await post(listener.url, "tools/list");
+  assert.equal(atMcp.response.status, 200);
+});
