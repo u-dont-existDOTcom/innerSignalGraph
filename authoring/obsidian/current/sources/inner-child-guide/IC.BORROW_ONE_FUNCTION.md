@@ -7,28 +7,33 @@ source_id: IC.BORROW_ONE_FUNCTION
 guide_id: inner-child-guide
 heading: Borrow One Function at a Time
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: 28a19fd804d30b18356870360e6d95e51b3cc6e67d847707bcbb058ea5c6d1e6
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: 217c684da24ba0467372937cf8b7b386c3d1163985425cb1b9327f5e357fc2a3
 locator_kind: text-lines
 cited_by_node_ids:
+  - IC.ADULT_APPRENTICE
   - IC.BEST_FRIEND_PERSPECTIVE
   - IC.BORROW_ONE_FUNCTION
+  - IC.CREDIBILITY_REPAIR
+  - IC.DEEP_CHILD_DIALOGUE
+  - IC.MUSIC_EMOTIONAL_ACCESS
   - IC.SUICIDAL_ADULT_SEAT
   - SOM.EMDR_DEVELOPMENTAL_DEFER
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Borrow One Function at a Time
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 157–171
+Locator: Lines 177–192
 
 ```text
 Borrow One Function at a Time
+
 A complete ideal parent may be impossible to imagine. Borrow one function at a time from a figure who embodies it: a therapist, grandmother, teacher, friend, older sibling, spiritual figure, fictional character, future self, or another presence whose care does not require you to disappear.
 
-Borrowed Nurturer: “How would this person sit beside the child?” Begin with non-cruelty if love feels inaccessible: no insults, no rushing, no impossible standards, no demand tha
+Borrowed Nurturer: “How would this person sit beside the child?” Begin with non-judgement if love feels inaccessible: no insults, no rushing, no impossible standards, no demand
 ```

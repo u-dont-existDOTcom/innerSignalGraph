@@ -1,0 +1,19 @@
+{
+  "contractVersion": "music-emotional-access-owner-approval-v1",
+  "approvalDate": "2026-09-25",
+  "approvalScope": "inner-signal-map-and-rules",
+  "ownerInstructionSummary": "Owner approved adding music as an emotional-opening/state-access route and then instructed completion of the merger after reconciling against the new main.",
+  "integrationBaseSha": "4e13aad38fb75c9c2acbe9a32583fe39b8fb383d",
+  "approvedBehavior": [
+    "Use personally meaningful, user-chosen music as an optional emotional-access cue.",
+    "Feed any useful opening into existing care, child-contact, memory, integration, and Path Performance routes rather than creating a separate therapy system.",
+    "Do not treat tears, chills, energy, vivid memory, or intensity as proof of processing or durable change.",
+    "Stop or reduce music and return to orientation/stabilization if it increases overwhelm, panic, dissociation, disorientation, or loss of stopping capacity.",
+    "Preserve intervention identity and session context so music effects are not misattributed to another exercise."
+  ],
+  "guideSourceEditAuthorizedByThisReceipt": false,
+  "installationAuthorized": false,
+  "deploymentAuthorized": false,
+  "stablePromotionAuthorized": false,
+  "privateTherapyMaterialIncluded": false
+}

@@ -75,7 +75,7 @@ const CONTRIBUTION_CONTRACT = {
 const PUBLIC_POSTURE_SHA256 = {
   "README.md": "1e6e8f8911d9e6c9d4f625e69595470b7b0cadf9b7f8c3568b6c6c029dbc3868",
   "AGENTS.md": "1c89ead2782fa44e693f5cdeb339d3286125e6524bb5bfbf6310fee04d709686",
-  "docs/INDEX.md": "fa8d09ff88c2d0c6825459e992b0159b3a2afa71e80048733213752f57ca496c",
+  "docs/INDEX.md": "83830c37c004f2bc455b0cc9464e880f1ee205037c1d911d7606dc083f84cb9a",
   "SECURITY.md": "b6b40e701cddb53fe49a1676c2e01cf15a8a07a28553bf78bde3a91b42e1d72a",
   "CONTRIBUTING.md": "3e36a03597382a82cb628f0daa1c9595ad86b57ffa339873dcf18be1efdd40c4"
 };
@@ -211,7 +211,8 @@ const EXPECTED_DEPENDABOT = {
       schedule: { interval: "monthly" },
       "open-pull-requests-limit": 5,
       labels: ["dependencies", "github-actions"],
-      "commit-message": { prefix: "chore(actions)" }
+      "commit-message": { prefix: "chore(actions)" },
+      groups: { "codeql-action": { patterns: ["github/codeql-action*"] } }
     },
     {
       "package-ecosystem": "npm",
@@ -260,7 +261,7 @@ const REQUIRED_OWNER_PATHS = [
   "/docs/RELEASE-EVIDENCE.md"
 ];
 const CODEQL_WORKFLOW_PATH = ".github/workflows/codeql.yml";
-const CODEQL_ACTION_SHA = "ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd";
+const CODEQL_ACTION_SHA = "2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2";
 const EXPECTED_CODEQL_WORKFLOW = {
   name: "CodeQL",
   on: {

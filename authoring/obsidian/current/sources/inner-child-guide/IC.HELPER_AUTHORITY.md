@@ -7,24 +7,25 @@ source_id: IC.HELPER_AUTHORITY
 guide_id: inner-child-guide
 heading: Don’t Give the Inner Adult Away
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: 7b154a680b10adf6680cf12cadfc056cef791e4f1c693e76d74d486bc38b33b9
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: e7f4c769bf33ac1d1bd00b35ec45a244b4ecc2b76f7c8a667fa55c81140cd0b7
 locator_kind: text-lines
 cited_by_node_ids: []
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Don’t Give the Inner Adult Away
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 44–67
+Locator: Lines 45–66
 
 ```text
 Don’t Give the Inner Adult Away
+
 In my experience, most people do not start by becoming their own loving parent. They go looking for one. Sometimes it is a spiritual guru; sometimes a therapist, coach, partner, community, or ideology. That can be a healthy first stage. I call it borrowed adulthood. The helper lends a function you cannot yet hold alone. The trouble begins when the helper keeps it.
 
-A spiritual practice can change your relationship to pain. It cannot make an abusive person safe, re
+A spiritual practice can change your relationship to pain. It cannot make an abusive person safe, r
 ```

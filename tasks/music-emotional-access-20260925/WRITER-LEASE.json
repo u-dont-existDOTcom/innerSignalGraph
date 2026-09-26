@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "status": "active",
+  "exclusive_writer": true,
+  "owned_branch": "chat/music-emotional-access-20260925",
+  "integration_branch": "main",
+  "integration_base_sha": "4e13aad38fb75c9c2acbe9a32583fe39b8fb383d",
+  "scope": "Add owner-approved music emotional-access routing without disturbing merged reparenting strategy changes"
+}

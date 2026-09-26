@@ -7,25 +7,26 @@ source_id: IC.GUARDS
 guide_id: inner-child-guide
 heading: Two Common Protective Patterns
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: ce6dc8878692610fc8a3191b00e0d19cbda67ffc0c1f2fcda15ea8ce8aa9dd22
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: 827d28ad3cea4f58bc04e3e144b5d6f345899a1a9335c834c3222aad3169b171
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.MEET_GUARD
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Two Common Protective Patterns
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 374–380
+Locator: Lines 421–428
 
 ```text
 Two Common Protective Patterns
+
 Two patterns often do have a protective function. Proactive protection stays on duty most of the time: the skeptic, intellectualizer, inner critic, or voice watching for weakness and self-indulgence. It may have spent years preventing humiliation, deception, overwhelm, or another abandonment. It has probably watched you begin other healing methods with great enthusiasm and then disappear. It may be tired, but it is experienced and competent.
 
-Reactive protection of
+Reactive protection o
 ```

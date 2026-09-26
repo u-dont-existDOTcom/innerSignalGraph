@@ -18,12 +18,14 @@ source_refs:
   - IC.PROTECTOR_VISIBLE
   - IC.VOW
   - IC.BOTTOM_UP_SEQUENCE
+  - IC.BORROW_LOVE
+  - IC.BORROW_ONE_FUNCTION
 regression_refs:
   - G001
   - G012
-base_record_sha256: feff1a99edf74330f480df74c64d641813452d7eddb299e6b8e3c4a32a86ff23
-base_graph_sha256: 2f31316bacb025352fbd0e2440aaa6607f50f2fc7cb38bc95263fbd807a3459f
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+base_record_sha256: c6faeb0333f1ce459c8bf7656db91a49a85626b9f6734002c18f575b8380eabe
+base_graph_sha256: 55369c75e95b5cc9fc32c807f7b47bef411acf3aedcbe895076fbb796d04a0c4
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Repair credibility through non-defensive follow-through
@@ -50,7 +52,8 @@ projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc3
     ]
   },
   "avoid": [
-    "Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed."
+    "Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed.",
+    "Do not call a temporary ceasefire or simple non-retaliation completed nurture, and do not demand trust as payment for it."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -64,7 +67,9 @@ projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc3
       "Action is essential but not the sole repair; accurate responsibility and non-defensive listening also matter.",
       "Relaxation may reduce nervous-system charge, but it does not by itself repair a credibility conflict or change a contradictory track record.",
       "The sarcastic question can be both contempt and a legitimate literal request for evidence; answer it concretely rather than arguing with it.",
-      "A pre-existing adverse track record is different from having no track record yet."
+      "A pre-existing adverse track record is different from having no track record yet.",
+      "Non-cruelty and non-retaliation are necessary evidence of safety but are not substitutes for positive warmth, protection, competent care, or repair.",
+      "Trust can update from both relational evidence and ordinary-life protection; love or goodwill need not wait for trust to become favorable."
     ]
   },
   "recommendations": [
@@ -72,7 +77,9 @@ projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc3
     "Treat skeptical or contemptuous questions as data and, when appropriate, literal requests for evidence.",
     "Distinguish no track record from an adverse track record. If the younger state is already pointing to how adult life turned out, credibility repair means building counterevidence against an existing negative assessment rather than acting as though evidence starts at zero.",
     "Make one ordinary protective act visible and do not demand gratitude, trust, or emotional change.",
-    "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently."
+    "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently.",
+    "If positive nurture is the missing function, borrow or build that function rather than asking the younger state to open merely because hostility stopped.",
+    "Pair accurate responsibility and non-defensive listening with one positive trustworthy action; keep the complaint and the response separate enough to learn from both."
   ],
   "successSignals": [
     "Promises and actions begin to align; an adverse track record starts accumulating credible counterevidence without demanding immediate trust."
@@ -88,3 +95,7 @@ projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc3
 [[current/sources/inner-child-guide/IC.VOW]]
 
 [[current/sources/inner-child-guide/IC.BOTTOM_UP_SEQUENCE]]
+
+[[current/sources/inner-child-guide/IC.BORROW_LOVE]]
+
+[[current/sources/inner-child-guide/IC.BORROW_ONE_FUNCTION]]

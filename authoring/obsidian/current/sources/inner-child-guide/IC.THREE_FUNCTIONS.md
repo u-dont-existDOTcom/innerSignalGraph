@@ -7,27 +7,28 @@ source_id: IC.THREE_FUNCTIONS
 guide_id: inner-child-guide
 heading: The Three Adult Functions
 source_role: primary-framework
-source_hash: 00959a1ec71de79b90c2590637782f753185f4a803f3f81a36da8f9f7b13f74f
-section_hash: f5922e67c527f253e370291c8a90daa424b8e39bf8d1c8707738f2d02a7dc9aa
+source_hash: 2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1
+section_hash: d8d3048a1540ca60516bcc01d8b7f05fbd009dfc36ae2ec5ed0ebadd340a53d5
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.GUIDE_LATER
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # The Three Adult Functions
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-09-07.txt`
+Authority path: `guides/inner-child-guide-2026-09-25.txt`
 
-Locator: Lines 240–268
+Locator: Lines 275–304
 
 ```text
 The Three Adult Functions
+
 I call the deeper therapy pl/ork: play + work. Calling it only “work” forgets the inner child, who also wants to play.
 
 Most people are stuck identifying as the inner child, which can leave them wandering helplessly through adult life from the place that feels small, frightened, abandoned, impulsive, or helpless. Reparenting begins when the present-day person occupies an adult position and cares for the child from there.
 
-These are three functions of one adult, not thre
+These are three functions of one adult, not thr
 ```

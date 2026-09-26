@@ -18,11 +18,11 @@ test.before(async () => {
 
 test("current projection has the exact canonical inventories and resolved links", () => {
   const keys = [...projected.output.keys()];
-  assert.equal(keys.filter((item) => item.includes("/nodes/")).length, 71);
-  assert.equal(keys.filter((item) => item.includes("/edges/")).length, 95);
-  assert.equal(keys.filter((item) => item.includes("/sources/")).length, 115);
+  assert.equal(keys.filter((item) => item.includes("/nodes/")).length, 73);
+  assert.equal(keys.filter((item) => item.includes("/edges/")).length, 99);
+  assert.equal(keys.filter((item) => item.includes("/sources/")).length, 116);
   assert.equal(keys.filter((item) => item.includes("/regressions/")).length, 30);
-  assert.equal(keys.filter((item) => item.includes("/governance/amendments/")).length, 37);
+  assert.equal(keys.filter((item) => item.includes("/governance/amendments/")).length, 38);
   assert.equal(keys.filter((item) => item.includes("/governance/decisions/")).length, 15);
   assert(keys.includes("current/maps/development-graph.canvas"));
   assert(keys.includes("current/manifest.json"));

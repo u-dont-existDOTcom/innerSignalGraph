@@ -85,6 +85,8 @@ function validateEpisode(episode, name = "caseState.current_episode") {
   if (episode == null) return null;
   record(episode, name);
   for (const field of ["id", "target", "route", "prediction", "next_question", "started_turn_id"]) bounded(episode[field], `${name}.${field}`, 2400, { empty: field === "next_question" });
+  if (episode.active_step != null) bounded(episode.active_step, `${name}.active_step`, 240);
+  if (episode.strategy_review_policy != null) bounded(episode.strategy_review_policy, `${name}.strategy_review_policy`, 120);
   for (const field of ["constitutional_aim_ids", "adverse_signs", "stay_conditions", "switch_conditions", "stop_conditions", "source_item_ids"]) {
     if (!Array.isArray(episode[field]) || episode[field].length > CASE_STATE_LIMITS.episode_list || episode[field].some((value) => typeof value !== "string" || !value.trim())) throw new ValidationError(`${name}.${field} must contain bounded strings.`);
   }
@@ -303,9 +305,11 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
   ];
   let currentEpisode = previous.current_episode;
   const primary = interventionContract?.primaryJob;
+  const pathContract = interventionContract?.pathPerformanceContract ?? null;
   const interventionHistory = [];
   if (primary?.id && primary?.title) {
-    const continuing = previous.current_episode?.route === primary.id;
+    const episodeRoute = pathContract?.strategy?.node_id ?? primary.id;
+    const continuing = previous.current_episode?.route === episodeRoute;
     const episodeId = continuing ? previous.current_episode.id : `episode:${turnId}`;
     const selected = interventionContract.selectedNodes?.find((node) => node.id === primary.id);
     const successSignals = selected?.successSignals?.filter((value) => typeof value === "string" && value.trim()) ?? [];
@@ -322,14 +326,18 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
     currentEpisode = {
       id: episodeId,
       target: snapshot?.user_goal || snapshot?.current_issue || primary.title,
-      route: primary.id,
-      prediction: successSignals[0] || `The selected route should produce observable movement toward ${primary.title.toLowerCase()}.`,
+      route: episodeRoute,
+      active_step: primary.id,
+      strategy_review_policy: pathContract ? "diagnose-refine-v1" : null,
+      prediction: continuing ? previous.current_episode.prediction : (successSignals[0] || `The selected route should produce observable movement toward ${primary.title.toLowerCase()}.`),
       next_question: interventionContract.nextQuestion ?? "",
       started_turn_id: continuing ? previous.current_episode.started_turn_id : turnId,
       constitutional_aim_ids: continuing ? previous.current_episode.constitutional_aim_ids : ["CARE", "LEADERSHIP", "PROTECTION", "INTEGRATION_VITALITY"],
       adverse_signs: continuing ? previous.current_episode.adverse_signs : ["reduced choice", "destabilization", "increasing alienation"],
-      stay_conditions: successSignals.length ? successSignals : ["more choice or flexibility", "observable ordinary-life transfer"],
-      switch_conditions: ["the prediction is not observed", "the route produces repeated low-information responses", "the client declines this route"],
+      stay_conditions: pathContract?.active_refinement?.review_condition
+        ? unique([...(successSignals.length ? successSignals : ["more choice or flexibility", "observable ordinary-life transfer"]), pathContract.active_refinement.review_condition])
+        : (successSignals.length ? successSignals : ["more choice or flexibility", "observable ordinary-life transfer"]),
+      switch_conditions: ["a source-bound review identifies a specific target/method mismatch or adequately tested contradiction", "meaningful harm or an independent safety restriction requires a change", "the client declines this route"],
       stop_conditions: stopConditions,
       source_item_ids: unique([...(continuing ? previous.current_episode.source_item_ids : []), ...items.map((item) => item.id)])
     };

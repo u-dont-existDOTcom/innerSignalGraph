@@ -89,8 +89,8 @@ export async function realizeAdjudication({ context, adjudication, provider, onP
   const contract = context.interventionContract;
   if (episode) episode.delivery = null;
   if (episode && enforced.responseContract.pathPerformanceAdherencePassed === true
-      && ["CONTINUE", "ADJUST_DELIVERY", "SWITCH_REPRESENTATION"].includes(contract.pathPerformanceContract.decision)
-      && contract.primaryJob?.id === episode.strategy.node_id) {
+      && ["CONTINUE", "ADJUST_DELIVERY", "SWITCH_REPRESENTATION", "REFINE"].includes(contract.pathPerformanceContract.decision)
+      && contract.primaryJob?.id === (contract.pathPerformanceContract.effective_node_id ?? episode.strategy.node_id)) {
     episode.delivery = { node_id: contract.primaryJob.id, review: episode.review_count, representation: contract.pathPerformanceContract.representation?.selected ?? null, evidence: "realization_contract_passed_semantics_unverified" };
   }
   return {

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_COMMON_HUMANITY
 status: owner-approved
 domain: inner-child
-base_record_sha256: 447957d149b7762dcfbad91887c85ced05aea839f1dee90bb9a47574f992149a
-source_file_sha256: 669d81d9ce880962d1f7bcb040668cdc778408ea1c79b3f3c195e524c20053a9
-projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc37bef56799
+base_record_sha256: 9ae51f9f2a82825b9b98fd60ff85138cc7ce6cff33779ce615c3b047050c7590
+source_file_sha256: bc265312b2072aacbd2e6d4307c3ae7e722051a9cd4716bc91a1e33f38834d6e
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # AMEND.IC.WISDOM_COMMON_HUMANITY
@@ -17,13 +17,13 @@ projection_input_sha256: c395cbc9b5c7256d6de8dfcb67f0addf5299011e03d983481822fc3
 
 ```json
 {
-  "approvedAt": "2026-09-12",
+  "approvedAt": "2026-09-25",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.WISDOM_COMMON_HUMANITY",
     "status": "owner-approved",
     "text": "Common humanity remains a standing relational stance, while any explicit shared-suffering exercise is optional. Acknowledge the particular experience while recognizing shared vulnerability and possible longings for safety, understanding, dignity, belonging, freedom, or repair. Let the person name or reject the suggested longing. Do not compare suffering, flatten power or circumstance, impose doctrine, or use universality instead of accompaniment. A shared longing does not justify a harmful tactic. References to rebirth or former mothers retain their religious status and are not requirements or empirical claims."
   },
-  "version": "2026-09-12-wisdom-r1"
+  "version": "2026-09-25-music-access-r1"
 }
 ```
