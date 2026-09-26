@@ -131,6 +131,7 @@ A model's own sense that it is unsure misses the cases where it is confidently w
 - The server runs the detectors that work without the full case and answers proceed, proceed cautiously, or escalate.
 - It stores nothing unless the turn becomes an escalation, or a spot-check sample the client consented to at sign-up. Per-turn processing still sends each turn off the device, so sign-up must disclose it. A client who declines gets only the model's self-report (source 1).
 - The host model can skip the call, and the server can't see turns that never reach it. For signed-in clients it can count the calls it receives, but not the turns that skipped the call, so that count is not a coverage rate. Supervision in the free channel stays best-effort. The owner accepted that on 2026-09-26.
+- **A refusal stops `check_turn` too.** From the turn where a client says no to sharing (see "Consent"), the host stops calling `check_turn` until the client agrees again, so nothing from that point leaves the device. Until then, free-channel supervision is off, and an escalation is only recorded on the client's side as declined.
 - **"Never fully unsupervised" is guaranteed only in the web app.** That limit belongs in the free tier's sign-up agreement.
 
 **Retention.**
@@ -147,7 +148,7 @@ A model's own sense that it is unsure misses the cases where it is confidently w
 **Consent.**
 - At sign-up, clients agree that a supervisor may read escalated excerpts. The model can also ask in the moment ("can I check this part with a therapist?").
 - An escalation package contains only the excerpt, the question and the proposed direction, never the whole history.
-- **A "no" in the moment wins over sign-up consent.** Nothing is shared. The model continues cautiously and offers help resources. The escalation is recorded on the client's side as declined, and no content leaves.
+- **A "no" in the moment wins over sign-up consent.** Nothing is shared. The model continues cautiously and offers help resources. The escalation is recorded on the client's side as declined, and no content leaves. In the free channel this includes the per-turn `check_turn` call, from the refusal turn on, until the client agrees again.
 - **Emergency exception: default none.** Whether anything may ever be shared without consent, even at imminent danger (as defined under "Supervised mode"), is an explicit owner policy decision. Until the owner makes one, nothing is shared without consent. Legal or reporting duties differ by jurisdiction, and none is assumed.
 
 **Capacity.** The triage order is safety, then uncertainty, then spot checks. The free tier promises no response time.
@@ -205,7 +206,7 @@ This builds on the archived personalization boundary (`learning-system/PERSONALI
 
 - These are changes to the map and rules for everyone.
 - Each activation is a new protocol version with its own content hash.
-- The server already reports the current version and hash (`/health`, `get_therapy_protocol_manifest`), but nothing records them yet: sessions record only a guide version, and handoffs only constitution, runtime and audit versions. Recording the protocol version and hash in every session and handoff is part of phase 1. From phase 3 on, the practice overlay's identity is recorded with it. Together with the personal profile's content hash (phase 1; see "Personal"), these identify the effective rules behind each response.
+- The server already reports the current version and hash (`/health`, `get_therapy_protocol_manifest`), but nothing records them yet: sessions record only a guide version, and handoffs only constitution, runtime and audit versions. Recording the protocol version and hash in every session and handoff is part of phase 1. From phase 3 on, the practice overlay's identity is recorded with it. Together with the personal profile's content hash (phase 1; see "Personal"), these identify the effective rules behind each response. That record exists only where InnerSignal or the local app keeps the session: the web app and the local app. A free session kept only in the host's own memory has no InnerSignal record. The protocol asks the host to note these identities, but nothing can verify that it did.
 - Every activated version is kept, so any one can be restored. That's part of phase 3.
 - Removing an active global change is itself a new global version, decided like any approval. When it can't wait, the emergency pause withholds the affected exercise or route at once.
 
@@ -324,7 +325,7 @@ Each phase ships as its own PR:
 No phase that sends client content to InnerSignal or to a supervisor (phases 1 and 2) launches before the legal review under "Open questions".
 
 1. **Escalation for the free channel.**
-   - the protocol version and hash, and the personal profile's content hash, recorded in every session and handoff;
+   - the protocol version and hash, and the personal profile's content hash, recorded in every session and handoff that InnerSignal or the local app keeps;
    - `check_turn`, `request_supervision` and `get_supervisor_guidance` on the connector;
    - a minimal supervisor queue, with the free-user pool;
    - the spot-check sampler;
