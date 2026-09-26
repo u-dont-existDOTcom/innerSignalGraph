@@ -406,6 +406,7 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
   const normalizedOauth = normalizeOauth(oauth);
   if (productionAuthReady === true && !normalizedOauth) throw new TypeError("Production auth readiness requires OAuth metadata.");
   const tools = advertisedTools(Boolean(normalizedOauth));
+  const serveRoot = !normalizedOauth || new URL(normalizedOauth.resource).pathname === "/";
   // Loaded once per process: a redeploy is what changes the served protocol.
   const protocol = therapyProtocol === undefined ? loadProtocolOrNull() : therapyProtocol;
   return http.createServer(async (req, res) => {
@@ -422,9 +423,10 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
     if (req.method === "GET" && normalizedOauth && ["/.well-known/oauth-protected-resource", "/.well-known/oauth-protected-resource/mcp"].includes(url.pathname)) {
       return send(res, 200, protectedResourceMetadata(normalizedOauth));
     }
-    // MCP is served at "/mcp" and at the root. The root lets a host whose connector URL must equal the
-    // protected-resource identifier exactly (Claude) connect when that identifier is the bare origin.
-    if (url.pathname !== "/mcp" && url.pathname !== "/") return send(res, 404, { error: "Not found." });
+    // MCP is served at "/mcp". The root is an MCP endpoint too only when the protected-resource
+    // identifier is the bare origin, so a host whose connector URL must equal that identifier exactly
+    // (Claude) can connect there; a pathful resource never gets a second, divergent endpoint.
+    if (url.pathname !== "/mcp" && !(url.pathname === "/" && serveRoot)) return send(res, 404, { error: "Not found." });
     if (req.method !== "POST") return send(res, 405, { error: "Method not allowed." }, { allow: "POST" });
 
     let request;

@@ -174,3 +174,15 @@ test("MCP is also answered at the root so a connector URL can equal a bare-origi
   const other = await fetch(listener.url.replace(/\/mcp$/u, "/elsewhere"), { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
   assert.equal(other.status, 404);
 });
+
+test("a pathful resource gets no root MCP endpoint", async (t) => {
+  const listener = await listen(t, { oauth: { resource: `${RESOURCE}/mcp`, authorizationServers: [ISSUER], scopesSupported: ["case:read", "case:audit"] }, productionAuthReady: true });
+  const root = await fetch(listener.url.replace(/\/mcp$/u, "/"), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} })
+  });
+  assert.equal(root.status, 404);
+  const atMcp = await post(listener.url, "tools/list");
+  assert.equal(atMcp.response.status, 200);
+});
