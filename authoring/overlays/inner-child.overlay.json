@@ -92,14 +92,14 @@
     },
     {
       "id": "OVERLAY.IC.NONPUNITIVE_REVIEW",
-      "status": "owner-approved-uncompiled",
+      "status": "reconciled",
       "authority": "OWNER.MAP.RESOLUTION.2026-08-29.D09",
       "title": "Review without holding a trial",
       "description": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into prosecution, grading, or a trial.",
-      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D09", "IC.ADULT_APPRENTICE", "IC.PROTECTOR_VISIBLE", "IC.VOW"],
+      "sourceRefs": ["OWNER.MAP.RESOLUTION.2026-08-29.D09", "AMEND.IC.NONPUNITIVE_REVIEW", "IC.ADULT_APPRENTICE", "IC.PROTECTOR_VISIBLE", "IC.VOW"],
       "anchorNodeIds": ["IC.ADULT_APPRENTICE", "IC.CREDIBILITY_REPAIR", "IC.PROTECTOR_ACTION"],
-      "relation": "adds-nonpunitive-review",
-      "reconciledNodeIds": []
+      "relation": "realized-by-compiled-node",
+      "reconciledNodeIds": ["IC.ADULT_APPRENTICE", "IC.CREDIBILITY_REPAIR", "IC.PROTECTOR_ACTION"]
     },
     {
       "id": "OVERLAY.IC.COMMON_HUMANITY_MUTUAL_HEALING",

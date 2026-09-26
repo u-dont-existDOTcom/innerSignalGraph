@@ -20,12 +20,13 @@ source_refs:
   - IC.BOTTOM_UP_SEQUENCE
   - IC.BORROW_LOVE
   - IC.BORROW_ONE_FUNCTION
+  - AMEND.IC.NONPUNITIVE_REVIEW
 regression_refs:
   - G001
   - G012
-base_record_sha256: c6faeb0333f1ce459c8bf7656db91a49a85626b9f6734002c18f575b8380eabe
-base_graph_sha256: 55369c75e95b5cc9fc32c807f7b47bef411acf3aedcbe895076fbb796d04a0c4
-projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
+base_record_sha256: d4df4b74f39f7cc1abfbef90666db0614c24aee056c0ee5433fcb0fe79db089f
+base_graph_sha256: 779b3f5d7b6098cdfa10243aa5d32caac60d988fa8394a0e35917a1ee289c369
+projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
 ---
 
 # Repair credibility through non-defensive follow-through
@@ -53,7 +54,8 @@ projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6af
   },
   "avoid": [
     "Do not substitute a grand vow for evidence or retaliate when the younger state is unimpressed.",
-    "Do not call a temporary ceasefire or simple non-retaliation completed nurture, and do not demand trust as payment for it."
+    "Do not call a temporary ceasefire or simple non-retaliation completed nurture, and do not demand trust as payment for it.",
+    "Do not turn a lapse or repeated pattern into a verdict about intrinsic worth. Review may still conclude that a particular commitment currently exceeds capacity or requires stronger limits, support, or a different plan."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -69,7 +71,8 @@ projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6af
       "The sarcastic question can be both contempt and a legitimate literal request for evidence; answer it concretely rather than arguing with it.",
       "A pre-existing adverse track record is different from having no track record yet.",
       "Non-cruelty and non-retaliation are necessary evidence of safety but are not substitutes for positive warmth, protection, competent care, or repair.",
-      "Trust can update from both relational evidence and ordinary-life protection; love or goodwill need not wait for trust to become favorable."
+      "Trust can update from both relational evidence and ordinary-life protection; love or goodwill need not wait for trust to become favorable.",
+      "A missed commitment matters, but it is not the whole credibility picture. Consider what was actually agreed, present capacity and circumstances, acknowledgement and repair, and kept commitments—without using positive evidence to cancel or minimize a serious lapse."
     ]
   },
   "recommendations": [
@@ -79,7 +82,8 @@ projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6af
     "Make one ordinary protective act visible and do not demand gratitude, trust, or emotional change.",
     "Repair after internal attacks; make one protective act visible, demand no immediate trust, and keep showing up consistently.",
     "If positive nurture is the missing function, borrow or build that function rather than asking the younger state to open merely because hostility stopped.",
-    "Pair accurate responsibility and non-defensive listening with one positive trustworthy action; keep the complaint and the response separate enough to learn from both."
+    "Pair accurate responsibility and non-defensive listening with one positive trustworthy action; keep the complaint and the response separate enough to learn from both.",
+    "When an effort at improvement doesn’t go as hoped, name what happened, repair what can be repaired, and make the next promise more credible."
   ],
   "successSignals": [
     "Promises and actions begin to align; an adverse track record starts accumulating credible counterevidence without demanding immediate trust."
@@ -99,3 +103,5 @@ projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6af
 [[current/sources/inner-child-guide/IC.BORROW_LOVE]]
 
 [[current/sources/inner-child-guide/IC.BORROW_ONE_FUNCTION]]
+
+[[current/governance/amendments/AMEND.IC.NONPUNITIVE_REVIEW]]

@@ -22,7 +22,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 0e87c4e77127b12c7c64b75cbf0009a3bda1720d10d7a634166981b46bfd2031
 base_graph_sha256: 527e801bcc54ee21aaf4b9ec5f4839a2183ef661a837e39a99b57a8b1c77a702
-projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
+projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
 ---
 
 # Continue substantive therapy when altered-state capacity remains coherent and safe

@@ -19,6 +19,7 @@ source_refs:
   - IC.ADULT_APPRENTICE
   - AMEND.CROSS.LITERATURE_ACTION_REVIEW
   - AMEND.IC.WISDOM_CORE
+  - AMEND.IC.NONPUNITIVE_REVIEW
 regression_refs:
   - G003
   - G008
@@ -26,9 +27,9 @@ regression_refs:
   - G029
   - G030
   - G036
-base_record_sha256: 868975a7d808c198797583425c6a8f8efb40212b117ee88f50ef2d19ccfaab28
-base_graph_sha256: 55369c75e95b5cc9fc32c807f7b47bef411acf3aedcbe895076fbb796d04a0c4
-projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
+base_record_sha256: 7245cfd315665ae66f22f77f4d81258c55ebb4da3b67a8e65f02a4a385aee683
+base_graph_sha256: 779b3f5d7b6098cdfa10243aa5d32caac60d988fa8394a0e35917a1ee289c369
+projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
 ---
 
 # Make the Protector visible in ordinary life
@@ -63,7 +64,8 @@ projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6af
     ]
   },
   "avoid": [
-    "Do not choose an action so large that failure becomes new evidence of unreliability."
+    "Do not choose an action so large that failure becomes new evidence of unreliability.",
+    "Do not make review punitive, compulsive, or mandatory. Voluntary tracking or simple measurement is allowed when it genuinely supports learning rather than becoming self-surveillance."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -75,7 +77,8 @@ projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6af
   "recommendations": [
     "Choose one bounded action: a meal, sleep, a boundary, a phone put down, a task handled, an unsafe exchange ended, or help requested.",
     "Report the action without requiring the younger state to trust it yet.",
-    "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise."
+    "Where communication itself is the action, a private draft and caring editor may help preserve truth and the boundary; return to inward care afterward when useful. Do not postpone a necessary protective action to complete an exercise.",
+    "After attempting improved care, protection, or guidance for the inner child, notice without harsh judgment what felt right and what you could do better next time."
   ],
   "successSignals": [
     "One small promise is kept.",
@@ -94,3 +97,5 @@ projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6af
 [[current/governance/amendments/AMEND.CROSS.LITERATURE_ACTION_REVIEW]]
 
 [[current/governance/amendments/AMEND.IC.WISDOM_CORE]]
+
+[[current/governance/amendments/AMEND.IC.NONPUNITIVE_REVIEW]]
