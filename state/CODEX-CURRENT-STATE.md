@@ -2,6 +2,10 @@
 
 Updated: 2026-09-26
 
+## Care channels, supervision and learning governance — proposed design (2026-09-26)
+
+The owner stated product requirements for free and paid channels, supervised mode, escalation when the model is unsure, per-user, practice and global learning, owner-team blocking consensus, community input, local storage for free users, and a later database and admin page. `docs/superpowers/specs/2026-09-26-care-channels-supervision-and-learning-governance.md` records them and proposes a design that builds on the candidate lifecycle, the archived personalization and Commons designs, and the 2026-08-31 product-privacy decision. Nothing is implemented; no runtime, therapy-policy, deployment or release authority follows.
+
 ## Role and belief integrity — owner-approved, rebuilt on current `main`
 
 The owner requested long-conversation role/belief safeguards and approved rebuilding the original candidate (`task/role-belief-integrity-20260917`) on current `main`. Branch `claude/funny-heisenberg-lsbn3b-role-belief` carries shared consumer rules, source-based memory authority correction (model-extracted observations are stored as low-confidence inferences with provenance instead of `direct_report`/`high`, including restored legacy context), a targeted fallback guard, and seven synthetic trajectories totaling 89 exchanges. The 50-exchange trajectory reopens encrypted storage halfway through. Conflicts with the protective child-contact compatibility gate were resolved by keeping both behaviors, and the scripted providers were updated to the post-compatibility case-state format. No private case or live model was used. Scripted tests exercise the real runtime but do not establish semantic adherence. Exact scope, verification and continuation are in `tasks/role-belief-integrity-20260917/INTEGRATION.md`. No stable change, deployment or installation is authorized by this checkpoint.
