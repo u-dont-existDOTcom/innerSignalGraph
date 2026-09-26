@@ -381,6 +381,16 @@
       "excerpt": "Personally meaningful, user-chosen music may be used as an optional emotional-access cue when words, imagery, or deliberate effort are not making a relevant feeling or caring function available. Ask about music the person already knows has helped; do not infer taste or prescribe a supposedly therapeutic song. Treat tears, chills, a rush of energy, vivid memory, or emotional intensity as access signals only—not proof of processing, memory accuracy, causal insight, integration, or durable improvement. Once something becomes available, continue through the existing relevant route such as borrowed love/Nurturer access, child contact, memory inquiry, or integration rather than chasing intensity. Preserve intervention identity and session context: same exercise versus different exercise, music present/absent and user-named track if supplied, state beforehand, immediate opening, and later carryover. If music increases overwhelm, derealization/dissociation, panic, disorientation, or loss of stopping capacity, reduce or stop it and return to present orientation/stabilization; existing safety gates retain priority.",
       "status": "owner-approved",
       "domain": "inner-child"
+    },
+    {
+      "id": "AMEND.IC.NONPUNITIVE_REVIEW",
+      "heading": "AMEND.IC.NONPUNITIVE_REVIEW",
+      "lineStart": null,
+      "lineEnd": null,
+      "sha256": "2a708af135ab8b1520201c3d367f8a59782897d5764a72db63ab79e48b04c3fc",
+      "excerpt": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into a trial. No mandatory morning/evening cadence is established.",
+      "status": "owner-approved",
+      "domain": "inner-child"
     }
   ]
 }

@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_CARING_COMPANY
 status: owner-approved
 domain: inner-child
-base_record_sha256: 7cf2c3e484bb8696638d113fb7838d6bcf19dbb9cb11c5090ac9f64520b0c903
-source_file_sha256: bc265312b2072aacbd2e6d4307c3ae7e722051a9cd4716bc91a1e33f38834d6e
-projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
+base_record_sha256: 69859889ac2399006fcaf76681921a2380a6a31c46b1ee7410d7dcf58032a62b
+source_file_sha256: c47a275840e39cb00b2c09b76872a9d031bb4d30e6b459e7dcc21e578efb49c3
+projection_input_sha256: 456d7539d0ac59e9a20a4c08179a8856ead6d3e863fb63b4915b9f98fd401e78
 ---
 
 # AMEND.IC.WISDOM_CARING_COMPANY
@@ -17,13 +17,13 @@ projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6af
 
 ```json
 {
-  "approvedAt": "2026-09-25",
+  "approvedAt": "2026-09-26",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.WISDOM_CARING_COMPANY",
     "status": "owner-approved",
     "text": "Where helpful, invite remembered or imagined caring company: a real caring person, a future or past self, a spiritual figure within the person's own preference, or a nonpersonified supportive stance. Do not assume family, maternal imagery or a remembered safe caregiver is available. Receiving care, generating affection and borrowing advice are related but distinct functions; choose what is actually helpful and use existing care/borrowed-adult routes without forcing a transfer. A documented Rogers care-retrieval invitation provides an exemplar, not proof of therapeutic efficacy."
   },
-  "version": "2026-09-25-music-access-r1"
+  "version": "2026-09-26-nonpunitive-review-r1"
 }
 ```

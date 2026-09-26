@@ -1,6 +1,6 @@
 {
-  "version": "2026-09-25-music-access-r1",
-  "approvedAt": "2026-09-25",
+  "version": "2026-09-26-nonpunitive-review-r1",
+  "approvedAt": "2026-09-26",
   "items": [
     {
       "id": "AMEND.IC.EARLY_GENTLE_HYPNOSIS",
@@ -229,6 +229,12 @@
       "domain": "inner-child",
       "status": "owner-approved",
       "text": "Personally meaningful, user-chosen music may be used as an optional emotional-access cue when words, imagery, or deliberate effort are not making a relevant feeling or caring function available. Ask about music the person already knows has helped; do not infer taste or prescribe a supposedly therapeutic song. Treat tears, chills, a rush of energy, vivid memory, or emotional intensity as access signals only—not proof of processing, memory accuracy, causal insight, integration, or durable improvement. Once something becomes available, continue through the existing relevant route such as borrowed love/Nurturer access, child contact, memory inquiry, or integration rather than chasing intensity. Preserve intervention identity and session context: same exercise versus different exercise, music present/absent and user-named track if supplied, state beforehand, immediate opening, and later carryover. If music increases overwhelm, derealization/dissociation, panic, disorientation, or loss of stopping capacity, reduce or stop it and return to present orientation/stabilization; existing safety gates retain priority."
+    },
+    {
+      "id": "AMEND.IC.NONPUNITIVE_REVIEW",
+      "domain": "inner-child",
+      "status": "owner-approved",
+      "text": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into a trial. No mandatory morning/evening cadence is established."
     }
   ]
 }

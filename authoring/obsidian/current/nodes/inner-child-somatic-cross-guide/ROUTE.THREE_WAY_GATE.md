@@ -19,7 +19,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 97af1b6ca44e660f2509eb1caf53c3116c311a2eafe63516fa6fb23d7f9883b0
 base_graph_sha256: 527e801bcc54ee21aaf4b9ec5f4839a2183ef661a837e39a99b57a8b1c77a702
-projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
+projection_input_sha256: 456d7539d0ac59e9a20a4c08179a8856ead6d3e863fb63b4915b9f98fd401e78
 ---
 
 # Discriminate processing, action, and non-engagement
