@@ -130,7 +130,7 @@ A model's own sense that it is unsure misses the cases where it is confidently w
 - The protocol requires the host model to call a per-turn `check_turn` tool before each reply, passing the client's message and the draft reply.
 - The server runs the detectors that work without the full case and answers proceed, proceed cautiously, or escalate.
 - It stores nothing unless the turn becomes an escalation, or a spot-check sample the client consented to at sign-up. Per-turn processing still sends each turn off the device, so sign-up must disclose it. A client who declines gets only the model's self-report (source 1).
-- The host model can skip the call, and the server can't see turns that never reach it. It can measure call rates for signed-in clients, but supervision in the free channel stays best-effort. The owner accepted that on 2026-09-26.
+- The host model can skip the call, and the server can't see turns that never reach it. For signed-in clients it can count the calls it receives, but not the turns that skipped the call, so that count is not a coverage rate. Supervision in the free channel stays best-effort. The owner accepted that on 2026-09-26.
 - **"Never fully unsupervised" is guaranteed only in the web app.** That limit belongs in the free tier's sign-up agreement.
 
 **Retention.**
@@ -183,6 +183,7 @@ This builds on the archived personalization boundary (`learning-system/PERSONALI
 - **Confirmed.** The app asks before remembering anything ("should I remember that?").
 - **Visible.** The client can see and delete every learned item. In supervised mode the supervisor sees them too.
 - **Structured.** Items are stored as fixed fields that the server validates, never as free-text rules. They live where the client's data lives: local for free users, the server for paid users.
+- **Identity, and the client's deletion wins.** The profile's identity is a content hash of those fields. Sessions and handoffs record the hash, never the items. Each profile version is kept, where the client's data lives, as long as the client keeps it. When the client edits or deletes an item, the versions containing the old item are deleted too. Old records then still show that a different profile applied, but its exact content is gone, by the client's choice.
 
 ### Practice: supervisor-approved
 
@@ -204,7 +205,7 @@ This builds on the archived personalization boundary (`learning-system/PERSONALI
 
 - These are changes to the map and rules for everyone.
 - Each activation is a new protocol version with its own content hash.
-- The server already reports the current version and hash (`/health`, `get_therapy_protocol_manifest`), but nothing records them yet: sessions record only a guide version, and handoffs only constitution, runtime and audit versions. Recording the protocol version and hash in every session and handoff is part of phase 1. From phase 3 on, the practice overlay's identity is recorded with it. Together with the personal profile's version (phase 1), these identify the effective rules behind each response.
+- The server already reports the current version and hash (`/health`, `get_therapy_protocol_manifest`), but nothing records them yet: sessions record only a guide version, and handoffs only constitution, runtime and audit versions. Recording the protocol version and hash in every session and handoff is part of phase 1. From phase 3 on, the practice overlay's identity is recorded with it. Together with the personal profile's content hash (phase 1; see "Personal"), these identify the effective rules behind each response.
 - Every activated version is kept, so any one can be restored. That's part of phase 3.
 - Removing an active global change is itself a new global version, decided like any approval. When it can't wait, the emergency pause withholds the affected exercise or route at once.
 
@@ -320,8 +321,10 @@ Each phase ships as its own PR:
 - a cross-family check of its central design conclusions;
 - owner approval before merge and deploy.
 
+No phase that sends client content to InnerSignal or to a supervisor (phases 1 and 2) launches before the legal review under "Open questions".
+
 1. **Escalation for the free channel.**
-   - the protocol version and hash, and the personal profile's version, recorded in every session and handoff;
+   - the protocol version and hash, and the personal profile's content hash, recorded in every session and handoff;
    - `check_turn`, `request_supervision` and `get_supervisor_guidance` on the connector;
    - a minimal supervisor queue, with the free-user pool;
    - the spot-check sampler;
@@ -338,5 +341,5 @@ The owner answered the first draft's questions on free-channel supervision, who 
 - Should anything ever be shared without consent at imminent danger? The default is no.
 - An imminent-danger trigger for non-suicidal self-harm and any other risk type that has none yet.
 - The spot-check rate and the community-response threshold.
-- A legal review of consent, data handling and therapist licensing in the countries clients live in. This must happen before the paid launch; it is not researched here.
+- A legal review of consent, data handling and therapist licensing in the countries clients live in. It must happen before any supervision launches, including phase 1: free users' excerpts go to InnerSignal and to pool supervisors, who may review clients in other countries. It is not researched here.
 - How free users on phones get local storage, since there is no mobile local app yet.
