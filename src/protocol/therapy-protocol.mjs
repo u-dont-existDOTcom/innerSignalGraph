@@ -39,18 +39,32 @@ function requireContent(text, label) {
   return text;
 }
 
-// The complete relative path, nested segments included (references/a/b.md).
-export const REFERENCE_MENTION = /references\/(?:[A-Za-z0-9._-]+\/)*[A-Za-z0-9._-]+\.md/gu;
+const REFERENCE_PREFIX = "references/";
+// Longest first, so a served path that prefixes another is never matched short.
+const SERVED_BY_LENGTH = Object.freeze([...THERAPY_PROTOCOL_FILES].sort((a, b) => b.length - a.length));
+// After a served path, these continue the name (another name, or ".bak"); a delimiter, the end
+// of the text, or a sentence-ending period does not.
+const CONTINUES_NAME = /^(?:[^\s`'"()[\]<>,;:!?*#|.]|\.[^\s`'"()[\]<>,;:!?*#|.])/u;
 
-// Every reference the served text names must itself be served. Otherwise a host would be told
-// to read a file it cannot see, so the protocol is reported unavailable instead of incomplete.
+// Every "references/" in served text must be exactly one served path. Any other name, spelling,
+// case, character or longer name is reported, whatever characters it uses, so a host is never
+// told to read a file it cannot see.
+export function unservedReferenceMentions(text) {
+  const unserved = [];
+  for (let at = text.indexOf(REFERENCE_PREFIX); at !== -1; at = text.indexOf(REFERENCE_PREFIX, at + 1)) {
+    const served = SERVED_BY_LENGTH.find((file) => text.startsWith(file, at)
+      && !CONTINUES_NAME.test(text.slice(at + file.length, at + file.length + 2)));
+    if (!served) unserved.push(text.slice(at, at + 120).split(/[\n`'"()<>|]/u)[0]);
+  }
+  return unserved;
+}
+
+// A served text that names an unserved reference makes the protocol unavailable, not incomplete.
 function requireServedReferences(texts) {
-  const served = new Set(THERAPY_PROTOCOL_FILES);
   for (const [label, text] of texts) {
-    for (const [mention] of text.matchAll(REFERENCE_MENTION)) {
-      if (!served.has(mention)) {
-        throw new TherapyProtocolUnavailableError(`The packaged ${label} names ${mention}, which this server does not serve.`);
-      }
+    const [mention] = unservedReferenceMentions(text);
+    if (mention !== undefined) {
+      throw new TherapyProtocolUnavailableError(`The packaged ${label} names ${mention}, which this server does not serve.`);
     }
   }
 }

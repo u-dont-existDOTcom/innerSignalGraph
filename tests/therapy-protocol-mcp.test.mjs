@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
 import { PrivateCaseAccessDeniedError } from "../src/storage/private-case-access.mjs";
-import { REFERENCE_MENTION, THERAPY_PROTOCOL_FILES, loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
+import { THERAPY_PROTOCOL_FILES, loadTherapyProtocol, unservedReferenceMentions } from "../src/protocol/therapy-protocol.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const pluginRoot = path.join(root, "plugins/inner-signal-therapy");
@@ -172,10 +172,22 @@ test("text that names a reference the server does not serve makes the protocol u
   await fs.appendFile(path.join(nested, "skills/inner-signal-therapy/SKILL.md"), "\nFor safety also read `references/safety/EXTRA.md`.\n");
   assert.throws(() => loadTherapyProtocol({ pluginRoot: nested }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: /names references\/safety\/EXTRA\.md/u });
 
-  // The packaged skill itself names only served references.
+  // Any other spelling, character, case or longer name counts as unserved.
+  for (const mention of ["references/SOMATIC+SAFETY.md", "references/SAFETY GUIDE.md", "references/SAFETY.MD", "references/GUIDE-REFERRALS.md.bak", "references/guide-referrals.md"]) {
+    const variant = await copyPlugin(t);
+    await fs.appendFile(path.join(variant, "skills/inner-signal-therapy/SKILL.md"), `\nAlso read ${mention} first.\n`);
+    assert.throws(() => loadTherapyProtocol({ pluginRoot: variant }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: new RegExp(`names ${mention.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}`, "u") }, mention);
+  }
+
+  // A served path followed by punctuation, an anchor or a markdown link delimiter is still served.
+  const punctuated = await copyPlugin(t);
+  await fs.appendFile(path.join(punctuated, "skills/inner-signal-therapy/SKILL.md"), "\nSee references/GUIDE-REFERRALS.md. Then [the map](references/INNER-CHILD-THERAPY-MAP.md#core), and references/FOCUS-DISCIPLINE.md, too.\n");
+  assert.equal(loadTherapyProtocol({ pluginRoot: punctuated }).files.length, THERAPY_PROTOCOL_FILES.length);
+
+  // The packaged skill itself names only served references, and names every served one.
   const protocol = loadTherapyProtocol();
-  const named = new Set([protocol.instructions, ...protocol.files.map((file) => file.content)].flatMap((text) => text.match(REFERENCE_MENTION) ?? []));
-  for (const reference of named) assert.ok(THERAPY_PROTOCOL_FILES.includes(reference), `${reference} is served`);
+  for (const text of [protocol.instructions, ...protocol.files.map((file) => file.content)]) assert.deepEqual(unservedReferenceMentions(text), []);
+  for (const file of THERAPY_PROTOCOL_FILES) assert.ok(protocol.instructions.includes(file), `${file} is named by the instructions`);
 });
 
 test("the hosted MCP image ships the packaged skill it serves", async () => {
