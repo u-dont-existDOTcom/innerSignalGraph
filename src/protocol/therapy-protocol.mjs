@@ -41,18 +41,21 @@ function requireContent(text, label) {
 
 const REFERENCE_PREFIX = "references/";
 
-// Served text may name a reference only in one unambiguous form: an inline code span holding
-// exactly a served path, such as `references/FOCUS-DISCIPLINE.md`. Every other occurrence of
-// "references/" (outside a code span, a span with anything more or less than a served path, or
-// one left unclosed on its line) is reported, whatever characters it uses. The packaged skill
-// already writes every reference this way.
+// Served text may name a reference only in one unambiguous form: a single-backtick inline code
+// span holding exactly a served path, such as `references/FOCUS-DISCIPLINE.md`. Every other
+// occurrence of "references/" is reported, whatever characters it uses: outside a code span, in a
+// span opened or closed by a run of two or more backticks (whose content could run past the first
+// backtick), in a span with anything more or less than a served path, or in one left unclosed on
+// its line. The packaged skill already writes every reference this way.
 export function unservedReferenceMentions(text) {
   const served = new Set(THERAPY_PROTOCOL_FILES);
   const unserved = [];
   for (let at = text.indexOf(REFERENCE_PREFIX); at !== -1; at = text.indexOf(REFERENCE_PREFIX, at + 1)) {
     const lineEnd = text.indexOf("\n", at) === -1 ? text.length : text.indexOf("\n", at);
     const close = text.indexOf("`", at);
-    const span = at > 0 && text[at - 1] === "`" && close !== -1 && close < lineEnd ? text.slice(at, close) : null;
+    const singleOpen = at > 0 && text[at - 1] === "`" && text[at - 2] !== "`";
+    const singleClose = close !== -1 && close < lineEnd && text[close + 1] !== "`";
+    const span = singleOpen && singleClose ? text.slice(at, close) : null;
     if (span === null || !served.has(span)) unserved.push(text.slice(at, Math.min(lineEnd, at + 120)));
   }
   return unserved;

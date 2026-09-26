@@ -189,7 +189,15 @@ test("text that names a reference the server does not serve makes the protocol u
   }
 
   // Outside a code span, or in an unclosed one, even a served path is reported.
-  for (const line of ["See references/GUIDE-REFERRALS.md.", "Then [the map](references/INNER-CHILD-THERAPY-MAP.md).", "Open `references/GUIDE-REFERRALS.md and continue."]) {
+  // So is one in a span delimited by a run of backticks, whose content can run past the first one.
+  for (const line of [
+    "See references/GUIDE-REFERRALS.md.",
+    "Then [the map](references/INNER-CHILD-THERAPY-MAP.md).",
+    "Open `references/GUIDE-REFERRALS.md and continue.",
+    "Read ``references/GUIDE-REFERRALS.md`.bak`` first.",
+    "Read ``references/GUIDE-REFERRALS.md`` first.",
+    "Read `references/GUIDE-REFERRALS.md`` first."
+  ]) {
     assert.equal(unservedReferenceMentions(line).length, 1, line);
   }
 

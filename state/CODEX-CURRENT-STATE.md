@@ -2,9 +2,14 @@
 
 Updated: 2026-09-26
 
-## Therapy protocol: unserved references fail closed — `claude/protocol-reference-guard-20260926`
+## Therapy protocol: unserved references fail closed — `claude/protocol-reference-guard-20260926` (PR #90)
 
-The hosted MCP rebuilt after #84 served instructions that name `references/ROLE-BELIEF-INTEGRITY.md` (added by #86) without serving that file. #87 added it to the served list, plus a CI check on the skill's always-read line. The server itself now refuses any build whose instructions or served files name a `references/…` file it doesn't serve: the protocol tools report `THERAPY_PROTOCOL_UNAVAILABLE` instead of serving an incomplete protocol. Tests cover both cases and confirm that the packaged skill names only served files. No therapy content changes. Redeploying the hosted MCP stays owner-gated.
+- **Goal:** the hosted MCP never serves instructions that name a reference file it doesn't send.
+- **Baseline:** main `f8e6936`. The hosted MCP rebuilt after #84 serves instructions naming `references/ROLE-BELIEF-INTEGRITY.md` (added by #86) without the file. #87 fixed the served list on main and added a CI check on the skill's always-read line.
+- **Done, don't repeat:** `loadTherapyProtocol` reports `THERAPY_PROTOCOL_UNAVAILABLE` whenever served text contains `references/` other than as a single-backtick code span holding exactly a path in `THERAPY_PROTOCOL_FILES`. Codex rounds 1–4 are addressed: nested paths, names outside a character set, delimiter-like suffixes, and multi-backtick spans. `docs/CLAUDE-CONNECTOR.md` states the authoring rule.
+- **Verified:** deterministic tests only. `tests/therapy-protocol-mcp.test.mjs`, `tests/focus-discipline.test.mjs` and `tests/protocol-provenance.test.mjs` pass locally on Node 22 with a test-only argon2 stand-in; the Node 24.18.0 `verify` workflow is authoritative. `npm run audit:repository` and `npm run audit:publication` are clean. No live model or private case was involved.
+- **Safety:** no therapy content changes. A guard failure makes the protocol unavailable, which the connector's instructions already tell hosts to say plainly instead of improvising.
+- **Next safe action:** a clean Codex review, then owner approval to merge and redeploy the hosted MCP; that redeploy also ships #87's served-list fix. This branch authorizes no stable change, installation or deployment.
 
 ## Owner decisions 2026-09-26: suicidal-state record and focus discipline — `claude/focus-discipline-owner-decisions-20260926`
 
