@@ -10,6 +10,12 @@ updates:
       - github-actions
     commit-message:
       prefix: chore(actions)
+    groups:
+      # init and analyze must share one pinned SHA (scripts/audit-repository.mjs),
+      # so separate PRs can never pass on their own.
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
   - package-ecosystem: npm
     directory: /
     schedule:
