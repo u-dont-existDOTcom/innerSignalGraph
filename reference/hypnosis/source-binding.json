@@ -1,0 +1,34 @@
+{
+  "format": "hypnosis-source-binding-v2",
+  "revision": "r03-candidate",
+  "article": {
+    "repository": "u-dont-existDOTcom/joel-articles",
+    "branch": "research/hypnosis-bottom-up-six-books-20260910",
+    "path": "articles/inner-signal/master.html",
+    "sha256": "842bead8f862873e6b5391cfa06bacb4ddfa3910568876112f45bef8fd3b24ab",
+    "ownerBaselineSha256": "75492a8ac9b1cfb9adc34a6e5e29d04af5efacdb245eaf52dd2a1b409d714373",
+    "commit": "90fffafd4864d62b9d987272dab5a8c17a259e9e"
+  },
+  "innerChild": {
+    "repository": "u-dont-existDOTcom/joel-articles",
+    "path": "articles/inner-signal/source/inner-child-owner-20260911.md",
+    "sha256": "0067dd79c8366a2ce9370529564ba7be1b65162c6fbba860684076de951395da",
+    "role": "exact owner supplied companion source 2026-09-11; existing IC runtime untouched",
+    "commit": "90fffafd4864d62b9d987272dab5a8c17a259e9e"
+  },
+  "islandsTool": {
+    "path": "project-sources/html_islands.py.txt",
+    "sha256": "e82e5b862e197adb56bfd484c453433d11b8b2cad0dcf45d5bf3280b9f24ddc9"
+  },
+  "externalReference": {
+    "repository": "u-dont-existDOTcom/joel-articles",
+    "commit": "defc51d43fa291dcb00c93468e111c967094164a",
+    "path": "research/inner-signal/reference-v1",
+    "files": {
+      "TEACHING-REFERENCE.md": "e1c3b65365873055030018e606ec55c3e20aaf392e57ffe9fb87d9fd720164db",
+      "SOURCES-AND-READING.md": "ed61070ab576c9b1dcdb05c9518a9537343d931a00c35f3dc3d533b5838a87f9",
+      "CONSULTATION-AND-ACCEPTANCE.md": "0748b29a58eb338f7252cf83d0b99f5841b3f806b31aee3a9485adf440c124dc"
+    },
+    "role": "original source-linked research paraphrases, not copyright book redistribution or live app competence"
+  }
+}
