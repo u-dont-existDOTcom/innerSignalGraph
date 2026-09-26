@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.WISDOM_CORE
 status: owner-approved
 domain: inner-child
-base_record_sha256: 95d210324ab25c565de1e8327db8b49407ac379113e447a27648654caf1148f2
-source_file_sha256: 669d81d9ce880962d1f7bcb040668cdc778408ea1c79b3f3c195e524c20053a9
-projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
+base_record_sha256: 5b035df1ff61a29dbb7e76bacf23e216266db786c69ee7cf2528f8e351dc2e47
+source_file_sha256: bc265312b2072aacbd2e6d4307c3ae7e722051a9cd4716bc91a1e33f38834d6e
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # AMEND.IC.WISDOM_CORE
@@ -17,13 +17,13 @@ projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5f
 
 ```json
 {
-  "approvedAt": "2026-09-12",
+  "approvedAt": "2026-09-25",
   "item": {
     "domain": "inner-child",
     "id": "AMEND.IC.WISDOM_CORE",
     "status": "owner-approved",
     "text": "The owner-approved wisdom-practice addition offers changed understanding, felt embodiment, or supportive companionship as optional entrances to wiser compassionate action. Use the smallest sufficient practice without a new mandatory therapy sequence. Preserve care, truthful responsibility, appropriate external protection, and current human agency. A future self is a fallible compassionate perspective, not an oracle or a perfectionistic judge. Immediate relief, wise reasoning, actual behavior and durable self-leadership are distinct outcomes. The exact combinations are proposed practices informed by adjacent work, not clinically validated treatments. These source amendments do not approve installation, paid evaluation, or a generated Guide Packet."
   },
-  "version": "2026-09-12-wisdom-r1"
+  "version": "2026-09-25-music-access-r1"
 }
 ```

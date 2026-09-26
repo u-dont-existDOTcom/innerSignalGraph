@@ -12,7 +12,7 @@ section_hash: 804f3dd6fbb7572ad70d1d304a0e94ddc63016f63ffa556bf9b8101fd22b7dad
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.FORGIVENESS_LATER
-projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # How to Forgive Without Forgetting

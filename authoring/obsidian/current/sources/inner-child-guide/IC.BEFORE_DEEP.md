@@ -12,8 +12,9 @@ section_hash: 657e7040f42e30545a888b152d623606708ebed6e94f58520ebc1f1b3bf9666a
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.DEEP_CHILD_DIALOGUE
+  - IC.MUSIC_EMOTIONAL_ACCESS_STOP
   - IC.SAFETY_ORIENTATION
-projection_input_sha256: c9e563fdad998e15db8d98d0bbd7edc76cda90f0145459cc620ef5fcb869df78
+projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
 ---
 
 # Before You Try to Go Deep
