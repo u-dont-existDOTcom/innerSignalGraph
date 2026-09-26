@@ -1,3 +1,4 @@
+import { projectEvidenceAuthority } from "./evidence-authority.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { INNER_SIGNAL_CONSTITUTION_VERSION } from "../therapy/constitution.mjs";
 import {
@@ -41,6 +42,9 @@ function validateSource(source, name) {
   record(source, name);
   bounded(source.kind, `${name}.kind`, 80);
   bounded(source.ref, `${name}.ref`, 240);
+  if (source.assertion_scope != null && !["model_interpretation_only", "model_hypothesis_only"].includes(source.assertion_scope)) throw new ValidationError(`${name}.assertion_scope is invalid.`);
+  if (source.proposed_evidence != null) bounded(source.proposed_evidence, `${name}.proposed_evidence`, 4000, { empty: true });
+  if (source.proposed_evidence_truncated != null && typeof source.proposed_evidence_truncated !== "boolean") throw new ValidationError(`${name}.proposed_evidence_truncated must be boolean.`);
   if (source.turn_id != null) bounded(source.turn_id, `${name}.turn_id`, 160);
   if (source.recorded_at != null) bounded(source.recorded_at, `${name}.recorded_at`, 80);
   if (source.claimed_prior_consensus != null && typeof source.claimed_prior_consensus !== "boolean") throw new ValidationError(`${name}.claimed_prior_consensus must be boolean.`);
@@ -260,7 +264,7 @@ export function diffCaseStates(previous, next) {
 }
 
 export function projectCaseStateForInspection(state) {
-  const value = clone(validateCaseState(state));
+  const value = projectEvidenceAuthority(validateCaseState(clone(state)));
   return Object.freeze({
     constitution: value.constitution_ref,
     trajectoryObservability: value.trajectory_observability,
@@ -277,6 +281,15 @@ export function projectCaseStateForInspection(state) {
   });
 }
 
+// The extractor's evidence string is retained as a proposed citation, not
+// certified as a user quotation. Exact transcript remains the source of truth.
+function extractionSource(source, evidence, assertionScope) {
+  const text = typeof evidence === "string" ? evidence : null;
+  return { ...source, assertion_scope: assertionScope,
+    proposed_evidence: text?.slice(0, 4000) ?? null,
+    proposed_evidence_truncated: text != null && text.length > 4000 };
+}
+
 export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, recordedAt = new Date().toISOString(), interventionContract = null } = {}) {
   const source = { kind: "current_turn_model_extraction", ref: turnId, turn_id: turnId, recorded_at: recordedAt };
   const items = [
@@ -284,9 +297,9 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
       id: `obs:${turnId}:${observation.id}`,
       domain: "runtime_observation",
       statement: observation.statement,
-      status: "direct_report",
-      confidence: "high",
-      source,
+      status: "inference",
+      confidence: "low",
+      source: extractionSource(source, observation.evidence, "model_interpretation_only"),
       still_current: true,
       supersedes: [],
       decision_relevance: "medium"
@@ -297,7 +310,7 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
       statement: hypothesis.claim,
       status: "hypothesis",
       confidence: CASE_STATE_CONFIDENCE.includes(hypothesis.confidence) ? hypothesis.confidence : "low",
-      source,
+      source: extractionSource(source, hypothesis.evidence, "model_hypothesis_only"),
       still_current: null,
       supersedes: [],
       decision_relevance: "medium"
@@ -363,7 +376,7 @@ export function mergeRuntimeSnapshotIntoCaseState(previous, snapshot, { turnId, 
   const protectiveCompatibility = compatibilityAssessment || previous.protective_compatibility
     ? updateProtectiveCompatibilityState(previous.protective_compatibility ?? null, compatibilityAssessment, compatibilityDecision, { turnId, recordedAt })
     : null;
-  return applyCaseStatePatch(previous, {
+  return applyCaseStatePatch(projectEvidenceAuthority(previous), {
     items,
     intervention_history: interventionHistory,
     current_episode: currentEpisode,

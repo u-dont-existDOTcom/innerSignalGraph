@@ -73,7 +73,8 @@ const expectedDependabot = {
       schedule: { interval: "monthly" },
       "open-pull-requests-limit": 5,
       labels: ["dependencies", "github-actions"],
-      "commit-message": { prefix: "chore(actions)" }
+      "commit-message": { prefix: "chore(actions)" },
+      groups: { "codeql-action": { patterns: ["github/codeql-action*"] } }
     },
     {
       "package-ecosystem": "npm",

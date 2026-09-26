@@ -211,7 +211,8 @@ const EXPECTED_DEPENDABOT = {
       schedule: { interval: "monthly" },
       "open-pull-requests-limit": 5,
       labels: ["dependencies", "github-actions"],
-      "commit-message": { prefix: "chore(actions)" }
+      "commit-message": { prefix: "chore(actions)" },
+      groups: { "codeql-action": { patterns: ["github/codeql-action*"] } }
     },
     {
       "package-ecosystem": "npm",
@@ -260,7 +261,7 @@ const REQUIRED_OWNER_PATHS = [
   "/docs/RELEASE-EVIDENCE.md"
 ];
 const CODEQL_WORKFLOW_PATH = ".github/workflows/codeql.yml";
-const CODEQL_ACTION_SHA = "ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd";
+const CODEQL_ACTION_SHA = "2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2";
 const EXPECTED_CODEQL_WORKFLOW = {
   name: "CodeQL",
   on: {

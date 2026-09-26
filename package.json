@@ -61,7 +61,8 @@
     "guide-packet:build-r01-fixture": "node src/cli/guide-packet.mjs build-fixture",
     "guide-packet:verify": "node src/cli/guide-packet.mjs verify guide-packets/fixtures/r02-candidate/inner-signal-guide-packet-r02-candidate.zip",
     "guide-packet:verify:r01": "node src/cli/guide-packet.mjs verify guide-packets/fixtures/r01-candidate/inner-signal-guide-packet-r01-candidate.zip",
-    "guide-packet:status": "node --env-file=.env src/cli/guide-packet.mjs status"
+    "guide-packet:status": "node --env-file=.env src/cli/guide-packet.mjs status",
+    "test:role-belief-integrity": "node --test tests/role-belief-memory.test.mjs tests/role-belief-prompts.test.mjs tests/role-belief-trajectories.test.mjs"
   },
   "dependencies": {
     "jose": "6.2.12",

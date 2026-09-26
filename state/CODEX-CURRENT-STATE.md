@@ -1,6 +1,10 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-25
+Updated: 2026-09-26
+
+## Role and belief integrity — owner-approved, rebuilt on current `main`
+
+The owner requested long-conversation role/belief safeguards and approved rebuilding the original candidate (`task/role-belief-integrity-20260917`) on current `main`. Branch `claude/funny-heisenberg-lsbn3b-role-belief` carries shared consumer rules, source-based memory authority correction (model-extracted observations are stored as low-confidence inferences with provenance instead of `direct_report`/`high`, including restored legacy context), a targeted fallback guard, and seven synthetic trajectories totaling 89 exchanges. The 50-exchange trajectory reopens encrypted storage halfway through. Conflicts with the protective child-contact compatibility gate were resolved by keeping both behaviors, and the scripted providers were updated to the post-compatibility case-state format. No private case or live model was used. Scripted tests exercise the real runtime but do not establish semantic adherence. Exact scope, verification and continuation are in `tasks/role-belief-integrity-20260917/INTEGRATION.md`. No stable change, deployment or installation is authorized by this checkpoint.
 
 ## Claude connector: therapy protocol served over MCP — PR #81 on `claude/claude-protocol-mcp-20260925`
 
@@ -33,6 +37,12 @@ The source authority now contains the ten owner-approved wisdom amendments, and 
 Proposal `wisdom-practices-20260912` generated immutable source packet `authoring-wisdom-practices-20260912`, SHA-256 `f2d67e1990ceadb4120955c4c46c65d95aed0ad0c0270f2e6d652f778fa4ab8c`. The owner explicitly approved all 32 exact decision cards. The separately preserved approved derivative verifies at SHA-256 `892c0c1191c84c925874a3895f299e41da5e803b6832caa265cecfd8aa5fbfae`. Reconciliation produced the exact canonical bundle SHA-256 `cf8f7d7e0a4ff7f84996b31a066c32b22a0954b0b781ce3bd4018759fbfdc13b`: 3 graphs, 61 nodes and 82 edges. All 62 proposal regressions and 29 canonical graph regressions pass. The retained reconciled authority passed the complete 1,117/1,117 package gate, repository audit, and a 234,264-record publication audit with zero findings. Exact approval, failure-discovery repairs, hashes and receipts are in `tasks/wisdom-practices-20260912/`.
 
 At the recorded reconciliation checkpoint, only the owner-authorized protected review/merge through PR #56 remained; `INSTALLED` is false and reconciliation reports `stableChanged: false`. Installation, deployment and stable promotion remain prohibited. Model adherence, human usefulness and clinical efficacy are NOT ESTABLISHED by these engineering tests. Resume from `tasks/wisdom-practices-20260912/INTEGRATION.md`, `tasks/wisdom-practices-20260912/VALIDATION-RECEIPT.json` and `tasks/wisdom-practices-20260912/reconciliation/RECONCILIATION-RECEIPT.json`.
+
+## Hypnosis / current inner-child synchronization — r03 candidate
+
+Task `hypnosis-ic-sync-r03-20260911` on `task/hypnosis-ic-sync-r03-20260911` synchronizes the new owner-pasted hypnosis source with the current inner-child guide and repairs PR #51’s source/behavior deficiencies identified in draft PR #53. Read its task README and IMPLEMENTATION before interpreting the new map. Article authority remains in joel-articles; the exact binding and actual text index are `reference/hypnosis/source-binding.json` and `knowledge.json`.
+
+The v2 hypothesis is a source-linked educational/consultation layer plus explicit evidence-bearing phase control, not another flat priority list. Actual JS tests cover the prior failures. No installed graph, compiled IC/SOM bundle, private case, stable release or live voice service changed. Independent semantic and real model/voice acceptance are still required before promotion. The other task checkpoints below retain their own authority and scope.
 
 ## Automatic private-turn runtime orchestration (merged PR #49)
 
