@@ -39,7 +39,8 @@ function requireContent(text, label) {
   return text;
 }
 
-const REFERENCE_MENTION = /references\/[A-Za-z0-9._-]+\.md/gu;
+// The complete relative path, nested segments included (references/a/b.md).
+export const REFERENCE_MENTION = /references\/(?:[A-Za-z0-9._-]+\/)*[A-Za-z0-9._-]+\.md/gu;
 
 // Every reference the served text names must itself be served. Otherwise a host would be told
 // to read a file it cannot see, so the protocol is reported unavailable instead of incomplete.

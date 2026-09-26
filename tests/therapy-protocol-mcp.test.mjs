@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
 import { PrivateCaseAccessDeniedError } from "../src/storage/private-case-access.mjs";
-import { THERAPY_PROTOCOL_FILES, loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
+import { REFERENCE_MENTION, THERAPY_PROTOCOL_FILES, loadTherapyProtocol } from "../src/protocol/therapy-protocol.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const pluginRoot = path.join(root, "plugins/inner-signal-therapy");
@@ -168,9 +168,13 @@ test("text that names a reference the server does not serve makes the protocol u
   await fs.appendFile(path.join(inReference, "skills/inner-signal-therapy/references/GUIDE-REFERRALS.md"), "\nSee references/SYNTHETIC-UNSERVED.md.\n");
   assert.throws(() => loadTherapyProtocol({ pluginRoot: inReference }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: /references\/GUIDE-REFERRALS\.md names references\/SYNTHETIC-UNSERVED\.md/u });
 
+  const nested = await copyPlugin(t);
+  await fs.appendFile(path.join(nested, "skills/inner-signal-therapy/SKILL.md"), "\nFor safety also read `references/safety/EXTRA.md`.\n");
+  assert.throws(() => loadTherapyProtocol({ pluginRoot: nested }), { code: "THERAPY_PROTOCOL_UNAVAILABLE", message: /names references\/safety\/EXTRA\.md/u });
+
   // The packaged skill itself names only served references.
   const protocol = loadTherapyProtocol();
-  const named = new Set([protocol.instructions, ...protocol.files.map((file) => file.content)].flatMap((text) => text.match(/references\/[A-Za-z0-9._-]+\.md/gu) ?? []));
+  const named = new Set([protocol.instructions, ...protocol.files.map((file) => file.content)].flatMap((text) => text.match(REFERENCE_MENTION) ?? []));
   for (const reference of named) assert.ok(THERAPY_PROTOCOL_FILES.includes(reference), `${reference} is served`);
 });
 
