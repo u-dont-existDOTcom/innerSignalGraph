@@ -196,7 +196,10 @@ test("text that names a reference the server does not serve makes the protocol u
     "Open `references/GUIDE-REFERRALS.md and continue.",
     "Read ``references/GUIDE-REFERRALS.md`.bak`` first.",
     "Read ``references/GUIDE-REFERRALS.md`` first.",
-    "Read `references/GUIDE-REFERRALS.md`` first."
+    "Read `references/GUIDE-REFERRALS.md`` first.",
+    "Read ``x `references/GUIDE-REFERRALS.md`-UNSERVED`` first.",
+    "Read \\`references/GUIDE-REFERRALS.md`.bak\\` first.",
+    "Read ` references/GUIDE-REFERRALS.md ` first."
   ]) {
     assert.equal(unservedReferenceMentions(line).length, 1, line);
   }

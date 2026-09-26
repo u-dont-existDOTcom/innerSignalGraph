@@ -41,22 +41,49 @@ function requireContent(text, label) {
 
 const REFERENCE_PREFIX = "references/";
 
-// Served text may name a reference only in one unambiguous form: a single-backtick inline code
-// span holding exactly a served path, such as `references/FOCUS-DISCIPLINE.md`. Every other
-// occurrence of "references/" is reported, whatever characters it uses: outside a code span, in a
-// span opened or closed by a run of two or more backticks (whose content could run past the first
-// backtick), in a span with anything more or less than a served path, or in one left unclosed on
-// its line. The packaged skill already writes every reference this way.
+// Inline code spans on one line, as CommonMark reads them: a run of N backticks opens a span that
+// closes at the next run of exactly N backticks, a run with no matching close stays literal, and a
+// backslash-escaped backtick outside a span cannot open one. Spans that would cross a line break
+// are not recognized, so mentions inside them are reported.
+function codeSpans(line) {
+  const spans = [];
+  let i = 0;
+  while (i < line.length) {
+    if (line[i] !== "`") { i += 1; continue; }
+    if (line[i - 1] === "\\") { i += 1; continue; }
+    let width = 1;
+    while (line[i + width] === "`") width += 1;
+    let j = i + width;
+    let close = -1;
+    while (j < line.length) {
+      if (line[j] !== "`") { j += 1; continue; }
+      let run = 1;
+      while (line[j + run] === "`") run += 1;
+      if (run === width) { close = j; break; }
+      j += run;
+    }
+    if (close === -1) { i += width; continue; }
+    spans.push({ start: i + width, end: close, width });
+    i = close + width;
+  }
+  return spans;
+}
+
+// Served text may name a reference only in one unambiguous form: a single-backtick code span whose
+// whole content is a served path, such as `references/FOCUS-DISCIPLINE.md`. Every other occurrence
+// of "references/" is reported, whatever characters it uses: outside a code span, inside a wider
+// span, inside a span that holds anything more or less than a served path, or in an unclosed one.
+// The packaged skill already writes every reference this way.
 export function unservedReferenceMentions(text) {
   const served = new Set(THERAPY_PROTOCOL_FILES);
   const unserved = [];
-  for (let at = text.indexOf(REFERENCE_PREFIX); at !== -1; at = text.indexOf(REFERENCE_PREFIX, at + 1)) {
-    const lineEnd = text.indexOf("\n", at) === -1 ? text.length : text.indexOf("\n", at);
-    const close = text.indexOf("`", at);
-    const singleOpen = at > 0 && text[at - 1] === "`" && text[at - 2] !== "`";
-    const singleClose = close !== -1 && close < lineEnd && text[close + 1] !== "`";
-    const span = singleOpen && singleClose ? text.slice(at, close) : null;
-    if (span === null || !served.has(span)) unserved.push(text.slice(at, Math.min(lineEnd, at + 120)));
+  for (const line of text.split("\n")) {
+    const spans = codeSpans(line);
+    for (let at = line.indexOf(REFERENCE_PREFIX); at !== -1; at = line.indexOf(REFERENCE_PREFIX, at + 1)) {
+      const span = spans.find((candidate) => candidate.start <= at && at < candidate.end);
+      const exact = span !== undefined && span.width === 1 && span.start === at && served.has(line.slice(span.start, span.end));
+      if (!exact) unserved.push(line.slice(at, at + 120));
+    }
   }
   return unserved;
 }
