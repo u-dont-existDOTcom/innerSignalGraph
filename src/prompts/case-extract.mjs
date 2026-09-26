@@ -2,6 +2,7 @@ import { roleBeliefIntegrityRules } from "./role-belief-integrity.mjs";
 import { CASE_VARIABLE_ENUMS } from "../guide-graph/contract.mjs";
 import { durableCaseContextBlock } from "./common.mjs";
 import { protocolProvenanceRules } from "./protocol-provenance.mjs";
+import { focusDisciplineExtractionRules, focusDisciplineRules } from "./focus-discipline.mjs";
 import { PERSPECTIVE_PRACTICES_EXTRACTION_RULES_V9 as PERSPECTIVE_PRACTICES_EXTRACTION_RULES } from "./perspective-practices.mjs";
 
 export function caseExtractionPrompt(context) {
@@ -18,6 +19,8 @@ ${hasPrior ? `INCREMENTAL SESSION MODE
 Rules:
 ${roleBeliefIntegrityRules}
 ${protocolProvenanceRules}
+${focusDisciplineRules}
+${focusDisciplineExtractionRules}
 - Record only direct observations that can be tied to exact user language.
 - Put psychological role assignments, causal stories, and speaker identity into hypotheses, never observations.
 - Preserve multiple alternatives when the transcript does not discriminate.

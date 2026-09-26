@@ -13,13 +13,16 @@ export const THERAPY_PROTOCOL_ID = "inner-signal-therapy";
 
 const DEFAULT_PLUGIN_ROOT = new URL("../../plugins/inner-signal-therapy/", import.meta.url);
 
-// Fixed order: the four always-read files first (as the skill instructs), then the
-// conditional guide-referral file.
+// Fixed order: the always-read files first, in the order the skill lists them, then the
+// conditional guide-referral file. Every always-read reference must be served, or an MCP
+// host receives instructions to read a file it cannot see.
 export const THERAPY_PROTOCOL_FILES = Object.freeze([
   "references/PROTECTIVE-COMPATIBILITY.md",
   "references/INNER-CHILD-THERAPY-MAP.md",
   "references/PHENOMENOLOGY-AND-REPRESENTATION.md",
   "references/PROTOCOL-STATE-PROVENANCE.md",
+  "references/ROLE-BELIEF-INTEGRITY.md",
+  "references/FOCUS-DISCIPLINE.md",
   "references/GUIDE-REFERRALS.md"
 ]);
 
