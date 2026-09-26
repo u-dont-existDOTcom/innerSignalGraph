@@ -1,6 +1,7 @@
 import { CASE_VARIABLE_ENUMS } from "../guide-graph/contract.mjs";
 import { durableCaseContextBlock, longitudinalClinicalRules } from "./common.mjs";
 import { PERSPECTIVE_PRACTICES_AUDIT_RULES_V9 as PERSPECTIVE_PRACTICES_AUDIT_RULES } from "./perspective-practices.mjs";
+import { focusDisciplineAuditRules } from "./focus-discipline.mjs";
 
 export function caseAuditPrompt(context, snapshot) {
   const system = `You are the adversarial case-formulation auditor. Review a structured extraction before deterministic routing.
@@ -31,7 +32,9 @@ Pay special attention to:
 - a divided, real/fake, alien, or two-self experience being declared healing, pathological, internal, or external without discriminating evidence; preserve differentiation/integration versus alienation/expulsion as live alternatives when supported;
 - a mundane concrete example being used to cancel an earlier high-stakes description without checking whether the example is representative or why the client counts it as an instance;
 - a supposedly high-information question whose answer is already present in the recent transcript or settled task history;
-- a client-generated functional hypothesis being ignored because it is unproven, or confirmed merely because it sounds coherent; require concrete function, prediction, and disconfirming evidence before promoting it.
+- a client-generated functional hypothesis being ignored because it is unproven, or confirmed merely because it sounds coherent; require concrete function, prediction, and disconfirming evidence before promoting it, and make it the live question only when its answer could change the next step for the current focus (otherwise it is a parked side question);
+- a question chasing the client's tangent or the latest salient detail instead of the current focus, or a side question that is actually load-bearing for the current target being set aside.
+${focusDisciplineAuditRules}
 
 Audit delivery_review separately from method predictions: preserve reported benefit without clinical-efficacy/mechanism/total-cure inflation; verify provider/method/process binding, observation provenance, freshness, and consent for income. Remove unsupported delivery observations using existing removal IDs; never invent supportive facts or infer motives. Accessible ordinary safety support with optional expensive coaching must not force provider rejection. Destabilizing self-practice with inaccessible safety guidance behind an exorbitant premium is a substantial delivery trust red flag. Provider push-through claims require de-escalation when harm is reported; concrete affordable corrective support can reduce concern only on fresh evidence. Neither price nor useful relief can wash out adverse evidence.
 Check path_update evidence against the transcript and the prior prospective predictions. Praise, cooperation, relief and superficial attendance cannot substitute for mechanism movement. Repetition, rising conceptual complexity without client information, goal substitution and harmful response must remain visible even when the user says it helps. Failure attribution is provisional. Remove unsupported observation IDs; the runtime invalidates dependent path evidence. Never approve hidden causes, diagnosis or a universal relationship prohibition. The narrow persistent romance-regulation pause requires the full separately evidenced instability/dependency/relapse-risk/romance-as-regulator pattern; do not manufacture that conjunction merely because somebody is lonely or wants a relationship.
