@@ -44,7 +44,7 @@ The 2026-08-31 owner product-privacy decision remains in force. It is archived w
 |---|---|---|
 | Who runs the model | the client's own account | InnerSignal, through model APIs |
 | Where the conversation lives | the client's account with that provider | InnerSignal's server, encrypted as private cases are today |
-| InnerSignal server storage | none by default; only consented escalation packages | the private case |
+| InnerSignal server storage | none by default; only consented escalation packages and consented spot-check samples, deleted after review (see "Retention") | the private case |
 | Supervision before sending | not possible: the host sends the reply straight to the client | possible (supervised mode) |
 | Supervision after sending | escalations and spot checks | escalations and spot checks |
 
@@ -105,8 +105,14 @@ A model's own sense that it is unsure misses the cases where it is confidently w
 - The host model can skip the call, and the server can't see turns that never reach it. It can measure call rates for signed-in clients, but supervision in the free channel stays best-effort.
 - **"Never fully unsupervised" is guaranteed only in the web app.** That limit belongs in the free tier's sign-up agreement.
 
+**Retention.**
+- Escalation packages and spot-check samples are kept only until a supervisor reviews them. After that they are deleted within a period the owner sets (proposed: 30 days), unless the legal review requires otherwise.
+- Clients can see and delete their own at any time. Deleting one that is still pending cancels its review.
+- Anything that becomes a lesson survives only in its generalized, screened form.
+
 **While an escalation waits:**
-- **Web app:** hold the reply if a supervisor is available within the promised window. Otherwise send a cautious reply and queue the review.
+- **Web app, supervised session:** the reply stays queued until the supervisor approves it. Only the imminent-danger crisis path is sent without approval. The client sees that a therapist is reviewing.
+- **Web app, unsupervised session:** hold the reply if a supervisor is available within the promised window. Otherwise send a cautious reply and queue the review.
 - **Free channel:** send a cautious reply now. The supervisor's guidance reaches the client at their next session, through `get_supervisor_guidance`. That return path needs a free InnerSignal account.
 - **What "cautious" means:** slow down, stay with the present, start no new deep exercise, and tell the client a therapist will look.
 
@@ -168,7 +174,9 @@ This builds on the archived personalization boundary (`learning-system/PERSONALI
 ### Global: owner team
 
 - These are changes to the map and rules for everyone.
-- Each activation is a new protocol version. The server already reports a version and hash, so every session and handoff shows which version it used, and any version can be rolled back.
+- Each activation is a new protocol version with its own content hash.
+- The server already reports the current version and hash (`/health`, `get_therapy_protocol_manifest`), but nothing records them yet: sessions record only a guide version, and handoffs only constitution, runtime and audit versions. Recording the protocol version and hash in every session and handoff is part of phase 1.
+- Every activated version is kept, so any one can be restored. That's part of phase 3.
 
 ### Safety floor: owner team only
 
@@ -184,10 +192,10 @@ This builds on the archived personalization boundary (`learning-system/PERSONALI
 
 ### Order of precedence when rules conflict
 
-This extends the archived resolver.
+This extends the archived resolver. It governs what a response says and does. It never governs disclosure: whether anything is shared with a supervisor follows only the consent rules under "Escalation", and a current "no" to sharing is absolute unless the owner adopts the emergency exception.
 
 1. the safety and epistemic floor;
-2. the client's explicit current instruction or refusal (the app never overrides a "no");
+2. the client's explicit current instruction or refusal. The floor can hold back an exercise or add safety information; it never forces an intervention the client has declined;
 3. current case evidence;
 4. personal outcome cautions (only more careful);
 5. method: the global map as adjusted by the practice overlay;
@@ -267,12 +275,13 @@ Each phase ships as its own PR:
 - owner approval before merge and deploy.
 
 1. **Escalation for the free channel.**
+   - the protocol version and hash recorded in every session and handoff;
    - `check_turn`, `request_supervision` and `get_supervisor_guidance` on the connector;
    - a minimal supervisor queue;
    - the spot-check sampler;
    - personal-learning fields, with a validation API usable by the local app.
 2. **Supervised mode in the web app:** the therapist queue on the candidate lifecycle, plus the crisis path.
-3. **The lesson ladder:** practice overlays, the owner queue, and blocking consensus.
+3. **The lesson ladder:** practice overlays, the owner queue, blocking consensus, and keeping every activated protocol version for rollback.
 4. **Community input.**
 5. **Database and admin page,** when manual onboarding becomes a burden.
 
@@ -280,6 +289,8 @@ Each phase ships as its own PR:
 
 - Who supervises free users' escalations, and with what capacity?
 - Is best-effort supervision acceptable for the free channel, given that only the web app can guarantee it?
+- What happens when a supervised session's supervisor is unavailable past the promised window: a backup supervisor, or letting the client choose to continue unsupervised?
+- How long escalation packages and spot-check samples are kept after review (proposed: 30 days).
 - Should anything ever be shared without consent at imminent danger? The default is no.
 - Should there be an emergency-hold policy for pausing an exercise or route early? The default is none.
 - A formal risk pathway for self-harm and other risk types that have none yet.
