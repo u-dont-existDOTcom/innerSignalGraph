@@ -2,6 +2,10 @@
 
 Updated: 2026-09-26
 
+## Private-case MCP: a wrong case ID is not a sign-in failure — `claude/case-denial-not-reauth-20260926`
+
+Every private-tool denial used to return HTTP 401 with an `invalid_token` challenge, including a valid token asking for a case its account can't open. Claude treats that as "needs re-authentication": a probe with a made-up case ID on 2026-09-26 marked the working connector as needing sign-in, even though Keycloak showed its token refreshing normally. The JWT provider now also exposes `authenticate` (token only, no case). When the case ACL grants a single account and a request with that account's valid token, carrying every scope the tool needs, is refused a case or handoff, the server answers with a tool error (`PRIVATE_CASE_NOT_AUTHORIZED`, no challenge), identical for missing and unauthorized cases. No token, an invalid token, a missing scope, and any denial in a deployment with several granted accounts keep the 401 challenge; account selection with several accounts is an owner decision. Merge and deployment are owner-gated.
+
 ## Care channels, supervision and learning governance — design (2026-09-26, PR #89)
 
 - **Goal:** record the owner's product requirements for care channels, supervision and learning governance, and a design to build them in phases.
