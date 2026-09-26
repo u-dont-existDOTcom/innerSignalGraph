@@ -43,3 +43,8 @@ Update this map when a material change adds a new instruction source or consumer
 `src/prompts/role-belief-integrity.mjs` supplies application-only semantic guidance: directly to extraction and hypnosis, and through longitudinal/shared clinical rules to drafting, case audit, critique/adjudication, realization, private audit and repair. The plugin loads the byte-matched `references/ROLE-BELIEF-INTEGRITY.md`. These are not developer governance instructions.
 
 `src/case-state/evidence-authority.mjs` normalizes model-extracted observation authority in memory, restored context, inspection and audit/repair views. Proposed evidence is not a verified quote. The private runtime blocks its unaudited discriminator only for current unresolved substantive/high named integrity findings. Prompt presence and injected-finding tests do not demonstrate semantic detection or model resistance. See `tasks/role-belief-integrity-20260917/`.
+
+## Focus discipline (2026-09-26)
+
+`src/prompts/focus-discipline.mjs` supplies application-only semantic guidance (owner decision D2 in `tasks/focus-discipline-20260926/OWNER-DECISIONS.json`): directly to extraction (with its field rules), and through `longitudinalClinicalRules` to case audit (with reclassification rules), candidate drafting, realization, private audit and repair. The plugin loads the byte-matched `references/FOCUS-DISCIPLINE.md`, which the MCP-served protocol includes with every other always-read reference. `src/case-formulation/focus-discipline.mjs` is the deterministic consumer: it parks side questions in durable `focus_discipline` state, bounds them, and emits the planner's `focusContract`. Prompt presence and scripted trajectories do not demonstrate semantic model adherence.
+

@@ -812,7 +812,7 @@
       "type": "text",
       "width": 300,
       "x": 12600,
-      "y": 1980
+      "y": 1760
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.IDENTITY_FORMATION.md",
@@ -867,7 +867,7 @@
       "type": "text",
       "width": 300,
       "x": 12600,
-      "y": 1540
+      "y": 1320
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.MEANING_INTEGRATION.md",
@@ -877,16 +877,6 @@
       "width": 300,
       "x": 11040,
       "y": 0
-    },
-    {
-      "color": "3",
-      "height": 140,
-      "id": "5a1222fe4722fff376088224b8f36ebef8db58fdc4054fc64f34ed77d8c89d1d",
-      "text": "OWNER-APPROVED, NOT COMPILED\nOVERLAY.IC.NONPUNITIVE_REVIEW\nReview without holding a trial\n\nReview is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into prosecution, grading, or a trial.",
-      "type": "text",
-      "width": 300,
-      "x": 12600,
-      "y": 1320
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.INFLUENCE_SOCIAL_PROTECTION.md",
@@ -968,7 +958,7 @@
       "type": "text",
       "width": 300,
       "x": 12600,
-      "y": 2420
+      "y": 2200
     },
     {
       "color": "3",
@@ -978,7 +968,7 @@
       "type": "text",
       "width": 300,
       "x": 12600,
-      "y": 1760
+      "y": 1540
     },
     {
       "color": "3",
@@ -1208,7 +1198,7 @@
       "type": "text",
       "width": 300,
       "x": 12600,
-      "y": 2640
+      "y": 2420
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ACT_OUTWARD.md",
@@ -1338,7 +1328,7 @@
       "y": 0
     },
     {
-      "height": 2960,
+      "height": 2740,
       "id": "f62509388abb23e598c9507a43310445e7d60033e78ff4e7f0811067c8f2146d",
       "label": "Owner-approved, not compiled",
       "type": "group",
@@ -1363,7 +1353,7 @@
       "type": "text",
       "width": 300,
       "x": 12600,
-      "y": 2200
+      "y": 1980
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DEEP_LOVE_TO_CHILD.md",

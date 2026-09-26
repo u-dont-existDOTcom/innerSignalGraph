@@ -7,7 +7,7 @@ source_id: AMEND.IC.WELLBEING_HORIZON
 guide_id: owner-amendments
 heading: AMEND.IC.WELLBEING_HORIZON
 source_role: owner-approved-extension
-source_hash: bc265312b2072aacbd2e6d4307c3ae7e722051a9cd4716bc91a1e33f38834d6e
+source_hash: c47a275840e39cb00b2c09b76872a9d031bb4d30e6b459e7dcc21e578efb49c3
 section_hash: 5d6820d255518982781d3befb82a66df63f4a6fafe5297cdb236319573860a82
 locator_kind: amendment-record
 cited_by_node_ids:
@@ -19,7 +19,7 @@ cited_by_node_ids:
   - IC.LOVE_HORIZON_EXPLORATION
   - IC.SUICIDAL_SELF_DEATH_INQUIRY
   - ROUTE.INFLUENCE_NONORDINARY_METTA
-projection_input_sha256: 2adb3bf0812fb5be9a84dc27a64676e322265e5007ee5cf31bab6afa2cdb9326
+projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
 ---
 
 # AMEND.IC.WELLBEING_HORIZON

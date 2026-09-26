@@ -5,6 +5,7 @@ import { romanceGuideContextSchema } from "./romance-guide.mjs";
 import { threatPathwaySchema } from "./threat-pathway.mjs";
 import { innerSpeechProfileSchema, observationPhenomenologySchema } from "./phenomenology.mjs";
 import { compatibilityAssessmentSchema } from "./protective-compatibility.mjs";
+import { focusReclassificationsSchema, sessionFocusSchema, unknownFocusProperties } from "./focus-discipline.mjs";
 import { CASE_VARIABLE_ENUMS, CASE_VARIABLE_FIELDS } from "../guide-graph/contract.mjs";
 
 const observationSchema = {
@@ -38,6 +39,7 @@ export const caseSnapshotSchema = {
     threat_pathway: threatPathwaySchema,
     compatibility_assessment: compatibilityAssessmentSchema,
     inner_speech_profile: innerSpeechProfileSchema,
+    session_focus: sessionFocusSchema,
     direct_observations: { type: "array", items: observationSchema },
     variables: {
       type: "object",
@@ -68,7 +70,8 @@ export const caseSnapshotSchema = {
         properties: {
           variable: { type: "string" },
           question: { type: "string" },
-          importance: { type: "integer", minimum: 1, maximum: 5 }
+          importance: { type: "integer", minimum: 1, maximum: 5 },
+          ...unknownFocusProperties
         },
         required: ["variable", "question", "importance"]
       }
@@ -83,6 +86,8 @@ export const caseSnapshotSchema = {
 // unavailable evidence. Historical runtime snapshots remain compatible.
 export const caseSnapshotGenerationSchema = structuredClone(caseSnapshotSchema);
 caseSnapshotGenerationSchema.required.push("relational_readiness", "romance_guide_context", "threat_pathway", "compatibility_assessment", "inner_speech_profile");
+caseSnapshotGenerationSchema.required.push("session_focus");
+caseSnapshotGenerationSchema.properties.unknowns.items.required.push("focus_relation", "why_it_matters");
 caseSnapshotGenerationSchema.properties.direct_observations.items.required.push("phenomenology");
 caseSnapshotGenerationSchema.properties.path_update.anyOf[1].required.push("delivery_review", "representation", "strategy_review");
 caseSnapshotGenerationSchema.properties.path_update.anyOf[1].properties.strategy.anyOf[1].required.push("evaluation_contract");
@@ -128,11 +133,14 @@ export const caseAuditSchema = {
         properties: {
           variable: { type: "string" },
           question: { type: "string" },
-          importance: { type: "integer", minimum: 1, maximum: 5 }
+          importance: { type: "integer", minimum: 1, maximum: 5 },
+          ...unknownFocusProperties
         },
         required: ["variable", "question", "importance"]
       }
     },
+    corrected_session_focus: sessionFocusSchema,
+    focus_reclassifications: focusReclassificationsSchema,
     safety_flags: { type: "array", items: { type: "string" } },
     verdict: { type: "string", enum: ["accept", "revise", "reject"] },
     summary: { type: "string" }
@@ -154,5 +162,8 @@ caseAuditGenerationSchema.required.push(
   "corrected_threat_pathway",
   "invalidate_threat_pathway",
   "corrected_compatibility_assessment",
-  "invalidate_compatibility_assessment"
+  "invalidate_compatibility_assessment",
+  "corrected_session_focus",
+  "focus_reclassifications"
 );
+caseAuditGenerationSchema.properties.add_unknowns.items.required.push("focus_relation", "why_it_matters");

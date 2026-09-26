@@ -26,6 +26,10 @@ function criticalDeltaCount(snapshot, priorSnapshot) {
   return CRITICAL_DELTA_FIELDS.reduce((count, field) => count + (now[field] !== before[field] ? 1 : 0), 0);
 }
 
+// Owner decision 2026-09-26 (tasks/focus-discipline-20260926/OWNER-DECISIONS.json, D1):
+// suicidal_state deliberately does not force a safety tier here. The graph's suicidal
+// nodes and the immediate-protection check handle it. Do not re-add it without a new
+// owner decision; tests/owner-decision-suicidal-state.test.mjs pins this.
 export function classifyTherapyTier(snapshot, requested = "auto", session = {}) {
   const v = snapshot?.variables ?? {};
   const performanceDanger = snapshot?.path_update?.signals?.some(s => ["dissociation", "fragmentation", "destabilization", "reality_testing_instability"].includes(s.kind) && s.severity === "significant");

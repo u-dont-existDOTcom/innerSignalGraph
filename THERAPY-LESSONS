@@ -2,6 +2,12 @@
 
 This root log records concrete lessons about how Inner Signal handles therapy prompts better. Timestamps are UTC. `active-runtime` means the behavior is in the current installed guide/prompt contract. `candidate-awaiting-owner` means the lesson was found in the newest uploaded Guide Packet but is not active until its substantive owner decision is approved and installed.
 
+## 2026-09-26 — Review self-care attempts without holding a trial
+
+Development-main closeout (not an installed-runtime claim): after an attempt at improved care, protection, or guidance, help the person notice without harsh judgment what felt right and what could be better next time; when an effort does not go as hoped, name what happened, repair what can be repaired, and make the next promise more credible. Review is voluntary and never grading, self-surveillance, or a verdict about worth, and it can honestly conclude that a commitment is too big right now. No review cadence is imposed.
+
+Authority and evidence: owner decision D09 (2026-08-29, reaffirmed 2026-09-26), reconciled into `IC.ADULT_APPRENTICE`, `IC.CREDIBILITY_REPAIR`, and `IC.PROTECTOR_ACTION`; `tasks/nonpunitive-review-20260926/` and `tests/nonpunitive-review.test.mjs`. Tests are not clinical results.
+
 ## 2026-08-12T03:29:10.000Z — Preserve the user's distinctions before choosing an intervention
 
 <!-- therapy-lesson {"lessonId":"active-formulation-distinctions","learnedAt":"2026-08-12T03:29:10.000Z","activation":"active-runtime"} -->
@@ -90,3 +96,10 @@ Evidence: r02 decision 5, `G-SOM-DELAYED`, `G-SOM-ADVANCED-BLOCK`, and attached 
 Development-candidate closeout (not a change to the pending r02 Guide Packet decision records above): a still-present guard can permit a bounded step; a completed relational assessment need not restart for another reassurance urge; unknown capacity is not a deficit; an explicit no-question instruction is authoritative. Current-task and partial-change guidance must reach the responder, and contextual graph nodes do not automatically require additional exercises. Source fidelity must be judged independently of node-name coverage.
 
 Authority and evidence: owner-authorized reconciliation at `tasks/map-literature-reconciliation-20260906/IMPLEMENTATION-RECEIPT.md`; focused routing tests and separate guide-fidelity protocol. Prepared semantic tests are not live or clinical results.
+
+## 2026-09-26 — Keep the session on point without discarding side questions
+
+Development-main closeout (not an installed-runtime claim): ask what moves the current therapeutic focus forward; judge side-ness by relevance, so an apparently side question that bears on the target is pursued. Park real side questions with why they might matter, and bring one back when the focus allows: hold while the focus is urgent, mention one briefly when an important one has waited or several are waiting, and let it become the main question once the focus is light. When the client drifts, acknowledge the topic warmly, save it, and return to the focus. A client's theory of what a symptom protects against is tested only when the answer would change the next step. Separately, the owner confirmed that suicidal_state deliberately does not escalate the processing tier or add generic crisis copy.
+
+Authority and evidence: owner decisions of 2026-09-26 in `tasks/focus-discipline-20260926/OWNER-DECISIONS.json`; `tests/focus-discipline*.test.mjs` and `tests/owner-decision-suicidal-state.test.mjs`. Scripted trajectories are not live or clinical results.
+

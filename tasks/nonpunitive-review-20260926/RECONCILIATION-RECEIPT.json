@@ -1,0 +1,32 @@
+{
+  "branch": "claude/nonpunitive-review-map-20260926",
+  "candidateGraphs": [
+    {
+      "graphId": "inner-child-directed-graph",
+      "path": "guide-graphs/candidates/inner-child.graph.json",
+      "sha256": "779b3f5d7b6098cdfa10243aa5d32caac60d988fa8394a0e35917a1ee289c369"
+    },
+    {
+      "graphId": "inner-child-somatic-cross-guide",
+      "path": "guide-graphs/candidates/cross-guide.graph.json",
+      "sha256": "527e801bcc54ee21aaf4b9ec5f4839a2183ef661a837e39a99b57a8b1c77a702"
+    },
+    {
+      "graphId": "somatic-directed-graph",
+      "path": "guide-graphs/candidates/somatic.graph.json",
+      "sha256": "5353c44e3a61ef4c93660b66fcf57ad87b064c417c8413c45213f68306a6dd18"
+    }
+  ],
+  "compiledBundleSha256": "2766473566db3c69471a8f8ec783ebcbfaa0df7d5427b7ca805e5c8c044666fa",
+  "contractVersion": "inner-signal-authoring-reconciliation-v1",
+  "installed": false,
+  "packetId": "authoring-nonpunitive-review-20260926",
+  "packetSha256": "0d05aa4e4c2b96895cd75f45ca58b30320af65a0b79fc663d472dc89d7d1ab0b",
+  "projectionInputSha256": "f4550a46fef50d37d9d40c434d8ef78b36558e9be0846d5e6356c9f34fa61a5c",
+  "proposalId": "nonpunitive-review-20260926",
+  "regressionStatus": {
+    "count": 30,
+    "ok": true
+  },
+  "stableChanged": false
+}
