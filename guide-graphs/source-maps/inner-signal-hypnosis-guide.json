@@ -1,307 +1,3736 @@
 {
-  "format": "external-guide-source-map-v1",
+  "format": "hypnosis-source-map-v2",
   "guideId": "inner-signal-hypnosis-guide",
   "sourceAuthority": {
     "repository": "u-dont-existDOTcom/joel-articles",
     "branch": "research/hypnosis-bottom-up-six-books-20260910",
     "path": "articles/inner-signal/master.html",
-    "masterSha256": "06987f70e7264a5ac72d132e4b8420cf75cda60f33bbb430c83a0146e612adf9",
-    "snapshotSha256": "35532449c0bccb2de357c35f675a7a48c4a5ba8ba322456bdd1924e204aef678",
-    "snapshotMethod": "reader-visible text extraction from exact hash-bound HTML master; native-object markup excluded from graph source text"
+    "sha256": "842bead8f862873e6b5391cfa06bacb4ddfa3910568876112f45bef8fd3b24ab",
+    "ownerBaselineSha256": "75492a8ac9b1cfb9adc34a6e5e29d04af5efacdb245eaf52dd2a1b409d714373",
+    "commit": "90fffafd4864d62b9d987272dab5a8c17a259e9e"
   },
-  "readerProjection": {
-    "sha256": "35532449c0bccb2de357c35f675a7a48c4a5ba8ba322456bdd1924e204aef678",
-    "lineCount": 723,
-    "wordCount": 18420,
-    "method": "reader-visible text extraction from exact hash-bound HTML master; native-object markup excluded from graph source text"
-  },
+  "libraryPath": "reference/hypnosis/knowledge.json",
+  "librarySha256": "f29abb786077ba9cb4286a9952d02c832fd753c2a47acde32381e72c94481dce",
   "sections": [
     {
-      "id": "HYP.ORIENTATION",
-      "heading": "Quick start: do this first",
-      "lineStart": 16,
-      "lineEnd": 20,
-      "sha256": "bf3c740e8e8c7b0ae295c698f14e889227293470b5f9fcd1b66082892af849c3"
+      "id": "HYP.S.opening",
+      "title": "Opening",
+      "parent": null,
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 0,
+        "end": 4224,
+        "rawSpanSha256": "49a19c956edf38549f2092041d25254b0328ea4ec8d493d909d94e4d842289f4",
+        "heading": "Opening"
+      },
+      "textSha256": "a95d426f561e024c30eaa542107368ffb01f49cd69d7cd2e67b8017d08c225a9",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.HYPNOSIS_MODEL",
-      "heading": "What I mean by hypnosis",
-      "lineStart": 21,
-      "lineEnd": 48,
-      "sha256": "f3372d00b58e81dca56bdb5de9f26f2ba3dbe6795c15f5185bb0892b1c619e45"
+      "id": "HYP.S.how-to-use-this-very-large-guide",
+      "title": "How to use this very large guide",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 4224,
+        "end": 5126,
+        "rawSpanSha256": "0f6c89a658e7a603e2181aef996c9f1b065b600ff646f529a8ab867cc36cefb9",
+        "heading": "How to use this very large guide"
+      },
+      "textSha256": "e555b6841bf1bbe8ef2d39e4eea3d4d6393566f1d10cca51c25ffd8ad7d9fc2e",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.SELF_HYPNOSIS",
-      "heading": "Why doing it myself worked better for me",
-      "lineStart": 49,
-      "lineEnd": 57,
-      "sha256": "4e9f54bfb61f29598fa559b3d7151a3abcd6923b2c8e4983e1e357b132fc470d"
+      "id": "HYP.S.the-table-of-contents-is-hiding-on-the-left",
+      "title": "The table of contents is hiding on the left",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 5126,
+        "end": 5376,
+        "rawSpanSha256": "7601341f6099a7de7add08bc902924aad1944a12c5d1a2e737daae38cd26a533",
+        "heading": "The table of contents is hiding on the left"
+      },
+      "textSha256": "c6722dcdfb1b9f1cd4b2331787f601a1ffb1261ba1147c0c13b42b5ab19b5a10",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.MIND_MAP",
-      "heading": "A useful map of the mind",
-      "lineStart": 58,
-      "lineEnd": 75,
-      "sha256": "6199c2ed55774e782677e6008c0fa04b2d298ee7f865d70642487c987816dc81"
+      "id": "HYP.S.introduction",
+      "title": "Introduction",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 5376,
+        "end": 7635,
+        "rawSpanSha256": "db3bfdf984279e38a69cc2c31f47c93e2ef3e249192cc9abdcd11f0008043133",
+        "heading": "Introduction"
+      },
+      "textSha256": "3a7730d7d64571e1da3157804db0fc8d237f0ae639a400be42f4bf6062dffa1e",
+      "epistemicRole": "owner-testimony-or-interpretation"
     },
     {
-      "id": "HYP.INNER_CHILD",
-      "heading": "The inner child, the guards, and the three inner adults",
-      "lineStart": 76,
-      "lineEnd": 144,
-      "sha256": "289ded17db1946aa64fb839faaa6e464d37690d1fd6d4c3d9e31e1b19bed070f"
+      "id": "HYP.S.quick-start-do-this-first",
+      "title": "Quick start: do this first",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 7635,
+        "end": 8729,
+        "rawSpanSha256": "dc6c45fc27c847650bd1e002c3f54356214a2c2954f3ab5e27b1dc6a91cbbe50",
+        "heading": "Quick start: do this first"
+      },
+      "textSha256": "bf3c740e8e8c7b0ae295c698f14e889227293470b5f9fcd1b66082892af849c3",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.SOCIAL_VOICE",
-      "heading": "When “your voice” is everybody else’s voice",
-      "lineStart": 145,
-      "lineEnd": 163,
-      "sha256": "82ef5f5b108242c346a4d23c57be85f7141456c2cbc1dd9994febc4e8989fedf"
+      "id": "HYP.S.what-i-mean-by-hypnosis",
+      "title": "What I mean by hypnosis",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 8729,
+        "end": 9067,
+        "rawSpanSha256": "1a4bac6fc9202088a911e283f3a0170e0d4ce682f4e4755da0f32731d9bab268",
+        "heading": "What I mean by hypnosis"
+      },
+      "textSha256": "7544c95ead6012679b58184103b403abd46223f70bf01cb052206b9b2cb58258",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.DEHYPNOSIS",
-      "heading": "De-hypnosis: wake up inside the influence",
-      "lineStart": 164,
-      "lineEnd": 185,
-      "sha256": "a3fccab783cc3dd6998c1e73064888535058df0157a9f95541cc163233e4ca0b"
+      "id": "HYP.S.protecting-yourself-from-hypnotists",
+      "title": "Protecting Yourself from Hypnotists",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 9067,
+        "end": 11114,
+        "rawSpanSha256": "e3391136dacdde40b3f27539a37d398c8cb3b7a42851bab03194514ff8413eb0",
+        "heading": "Protecting Yourself from Hypnotists"
+      },
+      "textSha256": "77293d87c5cd708c308145b0b873e7e9d5cfc5daf7c1558ddeb09600aa9b5ee2",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.INDUCTION",
-      "heading": "Induction: gathering attention without disappearing",
-      "lineStart": 186,
-      "lineEnd": 228,
-      "sha256": "69052bc90fa57e2d64a74dbcf054e0ff6e26e855e9ee806fbdc7f3f1456d474e"
+      "id": "HYP.S.the-most-extreme-example",
+      "title": "The Most Extreme Example",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 11114,
+        "end": 15295,
+        "rawSpanSha256": "842c54a3de6a4d257272e078015b28bc4e692b1be41885fb0af671612627f193",
+        "heading": "The Most Extreme Example"
+      },
+      "textSha256": "805e8721c18c4ee8059288aaf9c6d2d1cd971fc785f8e11863da42841200c406",
+      "epistemicRole": "owner-testimony-or-interpretation"
     },
     {
-      "id": "HYP.REENTRY_CUE",
-      "heading": "A shortcut back into hypnosis",
-      "lineStart": 229,
-      "lineEnd": 236,
-      "sha256": "96d90a946afce3bf0826dc024f8288f3e3d8f310dd74ce95680a26eb6c691e20"
+      "id": "HYP.S.affirmations-done-right",
+      "title": "Affirmations Done Right",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 15295,
+        "end": 16887,
+        "rawSpanSha256": "4f7b62b3df6aa01cc372441363ed642594230c2652f467e8ef616df583b59b84",
+        "heading": "Affirmations Done Right"
+      },
+      "textSha256": "7ddafbd764b232e51be8bab17d1a6acaef14d1c6d36684cc91dd6afa8b9b7f49",
+      "epistemicRole": "owner-testimony-or-interpretation"
     },
     {
-      "id": "HYP.RETURN",
-      "heading": "Come all the way back",
-      "lineStart": 237,
-      "lineEnd": 242,
-      "sha256": "d998052c47a2bc82230e0b0fc89f92da6eefcbc77047b852e2a8b1acfb9f26c6"
+      "id": "HYP.S.reversing-accidental-affirmations",
+      "title": "Reversing Accidental Affirmations",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 16887,
+        "end": 18004,
+        "rawSpanSha256": "eacbc6d58fb4480b8f45fc0c72bd064ecf6b5889b8f9155b11cbc1ac1630a4d3",
+        "heading": "Reversing Accidental Affirmations"
+      },
+      "textSha256": "6a6e36f02e6b6a86fbb6ba343d0959e119212d8aa28b7e4e149a0aabba8e33d0",
+      "epistemicRole": "owner-testimony-or-interpretation"
     },
     {
-      "id": "HYP.INNER_MEETING",
-      "heading": "The actual inner meeting",
-      "lineStart": 243,
-      "lineEnd": 252,
-      "sha256": "deec5bde336177fb323e8b975896b70b4c8851a660ba1889bae1be37d281ec26"
+      "id": "HYP.S.hypnosis-evidence",
+      "title": "Hypnosis Evidence",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 18004,
+        "end": 19676,
+        "rawSpanSha256": "3f23dc8a3b80d5891d173723d30ef90f747d484257c6b5a5f4e9c896b553e5d0",
+        "heading": "Hypnosis Evidence"
+      },
+      "textSha256": "02bc5b1c1875813b0df39a9ef2c5f0f707f5be0e29d1e06ab8662627807dc178",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.RESPONSIVE",
-      "heading": "Let the next response guide you",
-      "lineStart": 253,
-      "lineEnd": 264,
-      "sha256": "08c7935e8cda1e60aabeeed20c5f0c744033941f18db55e1a238e2529541cf74"
+      "id": "HYP.S.forget-the-left-brain-right-brain-cartoon",
+      "title": "Forget the left-brain/right-brain cartoon",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 19676,
+        "end": 21187,
+        "rawSpanSha256": "04a73e42fa1df9c01f7864d17b1caf3fa4cae9a02d4f355693fcbc8c64c70878",
+        "heading": "Forget the left-brain/right-brain cartoon"
+      },
+      "textSha256": "9d659c2528ce93ebc6b8e185316cb676b548852106af284e7336de705f790819",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.CONTACT_DOSE",
-      "heading": "Change the amount of contact",
-      "lineStart": 265,
-      "lineEnd": 269,
-      "sha256": "12e1747c9c52fceaa503352e3986825a2d9a393609da06db0dcf22006399d7fb"
+      "id": "HYP.S.why-doing-it-myself-worked-better-for-me",
+      "title": "Why doing it myself worked better for me",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 21187,
+        "end": 33072,
+        "rawSpanSha256": "42c20eebeeaaaf8b930087d5bb714e80a19a10263a462862a0915720d9b48ec6",
+        "heading": "Why doing it myself worked better for me"
+      },
+      "textSha256": "71f4ae423ab346d51ebef0638859b2d91a7d0f99132a3d06e979c05a2e21cb89",
+      "epistemicRole": "owner-testimony-or-interpretation"
     },
     {
-      "id": "HYP.CARE",
-      "heading": "Offer the care that is actually wanted",
-      "lineStart": 270,
-      "lineEnd": 276,
-      "sha256": "9f78b8688714603fe8c8c8edf14a4a06486065cbdfe135cd8fc977c63995bd29"
+      "id": "HYP.S.a-useful-map-of-the-mind",
+      "title": "A useful map of the mind",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 33072,
+        "end": 34677,
+        "rawSpanSha256": "87c6d093f7edf70373999f72587c1bb06c2ee01fe13b66d519ccba879c884dad",
+        "heading": "A useful map of the mind"
+      },
+      "textSha256": "3eddfb8c6bc8989aa43edb71559d0809d857abab79af070131e46da811cc77d9",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.FINISH",
-      "heading": "Finish without forcing a revelation",
-      "lineStart": 277,
-      "lineEnd": 280,
-      "sha256": "a26ee114f732d411f552f787a165b1381919c44651239f37c85794c793dd5da9"
+      "id": "HYP.S.sometimes-start-with-the-whole",
+      "title": "Sometimes start with the whole",
+      "parent": "HYP.S.a-useful-map-of-the-mind",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 34677,
+        "end": 36263,
+        "rawSpanSha256": "7145484871df448dbf9c9c1386a22a14274699214580262e60b6aecf5247e6a9",
+        "heading": "Sometimes start with the whole"
+      },
+      "textSha256": "80374ea27b045b520ceda12e7574f59759027c7cb99c5d8d7aad42973305a1c1",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.DAILY",
-      "heading": "The 15-minute daily practice",
-      "lineStart": 281,
-      "lineEnd": 285,
-      "sha256": "8de5eaa98ef74d46367589b8cabfb1da8f7e1212268efa23b897c28d54095144"
+      "id": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "title": "The inner child, the guards, and the three inner adults",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 36263,
+        "end": 36992,
+        "rawSpanSha256": "5aca58d21b4fadb87adc08bbe4983fad253bd3ed135ca3b290f0677a5a786145",
+        "heading": "The inner child, the guards, and the three inner adults"
+      },
+      "textSha256": "5b5c12b931804b8138999a151e6af8172c241861490c3f51db141d72613accdd",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.WEEKLY",
-      "heading": "The weekly deeper practice",
-      "lineStart": 286,
-      "lineEnd": 288,
-      "sha256": "a87ec7ff7ee61e1155bf081c9958e988eb43a42841527e93243e4e3291d2a94a"
+      "id": "HYP.S.when-the-adult-role-is-not-available-yet",
+      "title": "When the adult role is not available yet",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 36992,
+        "end": 39302,
+        "rawSpanSha256": "d21bcd7373f1cff0d852e355fd77456f0c66af9ec5d8ef78deb95916c9dedf18",
+        "heading": "When the adult role is not available yet"
+      },
+      "textSha256": "49607354107b4e3f85799145f3c18f17c739b84d1c1ed7f019e0486e67162d6d",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.CAPACITY",
-      "heading": "Capacity before content",
-      "lineStart": 289,
-      "lineEnd": 299,
-      "sha256": "c2fec34136bb0ea482b2dc3303513e84416f40bc195d347a4bcb4fdd0202782d"
+      "id": "HYP.S.let-the-child-speak-without-handing-over-the-steering-wheel",
+      "title": "Let the child speak without handing over the steering wheel",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 39302,
+        "end": 40110,
+        "rawSpanSha256": "2ad35cabe75eed473770154f0bc128ad06d37e3974679605c0ab86803409db29",
+        "heading": "Let the child speak without handing over the steering wheel"
+      },
+      "textSha256": "ed789110e525d5c8dead79f977c2a53518e631019673ae8237c381bedc442aa2",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.TROUBLESHOOT",
-      "heading": "Troubleshooting",
-      "lineStart": 300,
-      "lineEnd": 320,
-      "sha256": "fcdce015bf9c6aca6d7b289e89991b39a16a438d384246bd82ec7070a0061578"
+      "id": "HYP.S.love-doesn-t-have-to-wait-for-trust",
+      "title": "Love doesn’t have to wait for trust",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 40110,
+        "end": 41505,
+        "rawSpanSha256": "84d97003c1847bd0cede6e5c87c26883148f5a22d3f89ddff57e72a86012dabe",
+        "heading": "Love doesn’t have to wait for trust"
+      },
+      "textSha256": "8914a7882ba14d6c439e3720827472a0169a176f57df275291202eaff11ab58c",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.DISSOCIATION",
-      "heading": "You dissociate or feel unreal",
-      "lineStart": 321,
-      "lineEnd": 322,
-      "sha256": "fc4ea4922d046ae42539780accb8df3589294def79fe78b2b018f1513253a45f"
+      "id": "HYP.S.the-two-hand-practice",
+      "title": "The two-hand practice",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 41505,
+        "end": 42015,
+        "rawSpanSha256": "044ee4274610d90626d5cca602d4026d38ba5e4120045d8c44bd555b69a2d44d",
+        "heading": "The two-hand practice"
+      },
+      "textSha256": "207b765f5b7d35bbf3d1926a3927d27957d7ea1b49b8820efd21238100671d4c",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.GRANDIOSITY",
-      "heading": "You become grandiose",
-      "lineStart": 323,
-      "lineEnd": 325,
-      "sha256": "0cdb594ac06c657de04bdbf1e94f8af5cc7e718ba5c7bf1426549545bc1d6e76"
+      "id": "HYP.S.the-nurturer",
+      "title": "The Nurturer",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 42015,
+        "end": 42483,
+        "rawSpanSha256": "3491e3e3fe256a9b291c3191bb2cb190e44ad50aab206854cd765132d12527b7",
+        "heading": "The Nurturer"
+      },
+      "textSha256": "af8eabb7d7bc6a8300712f4862bd61f52522f28f8693649282dbc87cb6bf0fa9",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.ANALYTICAL",
-      "heading": "You become too analytical",
-      "lineStart": 326,
-      "lineEnd": 332,
-      "sha256": "c995b7154d6b47c5761e23b214c0a046ddd9ad91bc682991aa05fb786b65bf8d"
+      "id": "HYP.S.the-protector",
+      "title": "The Protector",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 42483,
+        "end": 43479,
+        "rawSpanSha256": "c0515bdd0d1d7f1cffa6e55f4f7afd1b0c2a24104452e4297ba28f77e787e468",
+        "heading": "The Protector"
+      },
+      "textSha256": "d731be241890442e0c1d396db9ab9c71947c694330d0bdf143c8c5dc0deb386a",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.HIDDEN_TRUTH",
-      "heading": "You want the hidden truth immediately",
-      "lineStart": 333,
-      "lineEnd": 345,
-      "sha256": "b8b64f0dc00ee4a1f3008c1fe29748f813ea9648e127801d63663ca32366df2a"
+      "id": "HYP.S.the-leader-guide-or-guru",
+      "title": "The Leader, Guide, or Guru",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 43479,
+        "end": 44605,
+        "rawSpanSha256": "366b1abb7d63804cacd5b309f0a2448552b587478ff00fbb9fb687e42076c0f5",
+        "heading": "The Leader, Guide, or Guru"
+      },
+      "textSha256": "aab4a9333baeb3c1d1d145d78666b6e59c6ed7d7b8a27fc05cb9e927d3802e2d",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.WHAT_NOT",
-      "heading": "What not to do",
-      "lineStart": 346,
-      "lineEnd": 360,
-      "sha256": "9a007ac166afd1186831f0bb6b4e100ad1f6adf26d05cf1fe64f69d66ef7c6ea"
+      "id": "HYP.S.working-with-protectors",
+      "title": "Working with protectors",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 44605,
+        "end": 46599,
+        "rawSpanSha256": "46733d6371dc92c64a03025a7a3222e8bca084785cab246123d37331290e1dcf",
+        "heading": "Working with protectors"
+      },
+      "textSha256": "6d9c6c174e620e8f98ff3c1993199af0eab7bc6a6b6eaa3e38de942aec8df677",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.SUPPORT",
-      "heading": "When this needs more support than a guide can provide",
-      "lineStart": 361,
-      "lineEnd": 365,
-      "sha256": "63d6d490b44f85708b4648f2a4e51d3d6a0a50d615b191d13c543490e8056ba1"
+      "id": "HYP.S.protection-that-knows-when-to-stop-scanning",
+      "title": "Protection that knows when to stop scanning",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 46599,
+        "end": 47687,
+        "rawSpanSha256": "542270f1f9b94a1f0ebdd9eb9471f235da40bd881094cb9c47d4f00adc957b9b",
+        "heading": "Protection that knows when to stop scanning"
+      },
+      "textSha256": "eeabce78db3826b540ced291280d04062ad445b820356bc46234fc80c94547cf",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.TRAINED_METHODS",
-      "heading": "Methods to explore with a trained person present",
-      "lineStart": 366,
-      "lineEnd": 374,
-      "sha256": "68a13bfcddd7395303c0ff1daba1408cd8cb11b75a0b70e35bf4e78d7ea5e634"
+      "id": "HYP.S.inner-child-reparenting",
+      "title": "Inner child reparenting",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 47687,
+        "end": 48666,
+        "rawSpanSha256": "37bac91513d79535e594a3508953d1da36585b858b212f68a85e5577211df15c",
+        "heading": "Inner child reparenting"
+      },
+      "textSha256": "52ff9179c8885d9a6d85b95f9e82bf5a215989748a4ad115958a2dd0a6824010",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.APP",
-      "heading": "Try it in the Inner Signal app",
-      "lineStart": 375,
-      "lineEnd": 382,
-      "sha256": "b6309409d2eea0a24e0a412760674fa53b92e8f73b107ebaa8f848adea3d93b7"
+      "id": "HYP.S.don-t-rush-the-repair",
+      "title": "Don’t rush the repair",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 48666,
+        "end": 49995,
+        "rawSpanSha256": "8902830fcd35ce0322559612a3f363c8bca8e8f5b89e334c346fd150e4e32285",
+        "heading": "Don’t rush the repair"
+      },
+      "textSha256": "d6ab4e46b4338d6302bea73f6f2ce9500899a955cd4b7e54f5e389f3777a1b8e",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.QUESTIONS",
-      "heading": "Appendix A: How to ask the subconscious a useful question",
-      "lineStart": 383,
-      "lineEnd": 419,
-      "sha256": "f2bac0c750ede4afb114d5f47ab29ece59fe67f9975c4319ed665598466fb95c"
+      "id": "HYP.S.play-and-rest-still-need-an-adult-present",
+      "title": "Play and rest still need an adult present",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 49995,
+        "end": 50527,
+        "rawSpanSha256": "e4ae14422a9dd5e1ca237c25028d06c812aad1872deddd936cf497ab1563dec4",
+        "heading": "Play and rest still need an adult present"
+      },
+      "textSha256": "17f4aa0ac68ae1d51d9b13c9a4647b84ac8264f9cdd2f92814740ffb4c0779a0",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.NLP",
-      "heading": "Appendix B: NLP without turning yourself into a sales seminar",
-      "lineStart": 420,
-      "lineEnd": 529,
-      "sha256": "a796161a8baf5dd1729079586e00c9f4bcc0ef7d73b775ce0350fb28f288349b"
+      "id": "HYP.S.non-dominant-hand-dialogue",
+      "title": "Non-dominant hand dialogue",
+      "parent": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 50527,
+        "end": 51233,
+        "rawSpanSha256": "f6c497646c2727f03b13a42fe850f227a8616e96fe36af9e92d0bd3f04bd3052",
+        "heading": "Non-dominant hand dialogue"
+      },
+      "textSha256": "9bbf4b80e6895126d1fa6f030c42ecb789a73f6f8af1413e1ef839421ba90d40",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.DEHYPNOSIS_CHECKLIST",
-      "heading": "Appendix C: The extended de-hypnosis checklist",
-      "lineStart": 530,
-      "lineEnd": 559,
-      "sha256": "2d96b275ab911a82d0c0f12c3c0dc6e454e65a1158ff8ef1893d97c55e58d989"
+      "id": "HYP.S.when-your-voice-is-everybody-else-s-voice",
+      "title": "When “your voice” is everybody else’s voice",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 51233,
+        "end": 55465,
+        "rawSpanSha256": "de864cf3b68c05e38d594dd1b876f483ec672eade9ff1e1358476fd0e35f6926",
+        "heading": "When “your voice” is everybody else’s voice"
+      },
+      "textSha256": "68da47150a3009bd2a5982cd6ac305dd2cc644977c80e36fe5f19d4cfc0532ab",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.ANXIETY_BODY_FIRST",
-      "heading": "Appendix D: Anxiety — body first",
-      "lineStart": 560,
-      "lineEnd": 595,
-      "sha256": "27c2c13532a3f3948478dc199a55f49ffc3e65f058d51b1e3bd8cfd69ed5101f"
+      "id": "HYP.S.de-hypnosis-wake-up-inside-the-influence",
+      "title": "De-hypnosis: wake up inside the influence",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 55465,
+        "end": 57357,
+        "rawSpanSha256": "e955aa00ee684d4197f326f118f7f88a51283c212a4c17efaf512143ee3e21f2",
+        "heading": "De-hypnosis: wake up inside the influence"
+      },
+      "textSha256": "d581c8e9b3187e81eb5459668736c2a6f33efa4528b1cd713b1dcff73c96f773",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.OUTSIDE_GUIDANCE",
-      "heading": "Appendix F: Self-trust, outside guidance, and oracle-like states",
-      "lineStart": 596,
-      "lineEnd": 599,
-      "sha256": "c0eeb543bb1afefa435ee06496513eab0a0409b5a4bb49afee042c31f5f6c8cd"
+      "id": "HYP.S.soft-language-can-still-take-away-choice",
+      "title": "Soft language can still take away choice",
+      "parent": "HYP.S.de-hypnosis-wake-up-inside-the-influence",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 57357,
+        "end": 59630,
+        "rawSpanSha256": "d3a6ff88f73055e8f3beb6327982a7b89b947f9eb8ccf213a8e2cea0cba74d1d",
+        "heading": "Soft language can still take away choice"
+      },
+      "textSha256": "01810bc20037f8bdd3b1afb51b82522f5f6ebd6080a7312c90a3f4c087d8dbba",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.PRACTITIONER",
-      "heading": "Finding a hypnotist who can work with you",
-      "lineStart": 600,
-      "lineEnd": 603,
-      "sha256": "7c83717005f9dd874298871c54e055650665d2a9f2afd90fd355b51464e19537"
+      "id": "HYP.S.induction-gathering-attention-without-disappearing",
+      "title": "Induction: gathering attention without disappearing",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 59630,
+        "end": 60289,
+        "rawSpanSha256": "920bd8ea8087c5307ffba2af3b224be38532c75d7f0c14f87f8dbdc8b3658fd4",
+        "heading": "Induction: gathering attention without disappearing"
+      },
+      "textSha256": "59e30a2b7525751746b983f1d00f915a148ccd287c2a1261a4f263feaa39c9ca",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.ORACLE",
-      "heading": "When the subconscious speaks like an oracle",
-      "lineStart": 604,
-      "lineEnd": 615,
-      "sha256": "88af2fc960ec045a5d8c2f6557121eaf62de7175ee52ef82aea6e55d026ff7c8"
+      "id": "HYP.S.what-an-induction-is-actually-doing",
+      "title": "What an induction is actually doing",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 60289,
+        "end": 60925,
+        "rawSpanSha256": "2b3ad50f4fb9c3ea299e1cda85d8c1300dcddcfe301a17ed7b4334c49ffe95e7",
+        "heading": "What an induction is actually doing"
+      },
+      "textSha256": "0653e817fd787ad32ffa5a22d5230a14353012c91c50c1fa14da0bd23b2a093a",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.ALTERED_STATES",
-      "heading": "Appendix G: Altered states",
-      "lineStart": 616,
-      "lineEnd": 622,
-      "sha256": "c210eefaaec6f12f5bb880f946b74358a06ad333458443ccdd34f1b16cba3e7a"
+      "id": "HYP.S.please-don-t-put-six-metaphors-in-one-trance",
+      "title": "Please don’t put six metaphors in one trance",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 60925,
+        "end": 61837,
+        "rawSpanSha256": "ce7203f8d348c80daa9f571db2fc59ad9fc202f39de3bc1ed1c84c297ed5d467",
+        "heading": "Please don’t put six metaphors in one trance"
+      },
+      "textSha256": "9705832e6a13cbfc9f84d4f0622e5d4d6a92485349572cf51b6f6f1e238dc8c8",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.STABILIZE_INTERPRET",
-      "heading": "Stabilize before you interpret",
-      "lineStart": 623,
-      "lineEnd": 651,
-      "sha256": "65d713eef979e13e8c3560b2cabbeeaaecaecd104394b4222d19aff6d66a81a7"
+      "id": "HYP.S.before-you-begin",
+      "title": "Before you begin",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 61837,
+        "end": 63986,
+        "rawSpanSha256": "7807b8cbe4a051d2df5f5605de17cb272854bcb09460629d68434a0f7e50e168",
+        "heading": "Before you begin"
+      },
+      "textSha256": "54f7a9405d42c261153e1e8ef694f8650278f8a7729bbe35525995521f67cf34",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.NONORDINARY",
-      "heading": "Appendix H: Demons, jinn, hostile presences, and “Unattached Burdens”",
-      "lineStart": 652,
-      "lineEnd": 660,
-      "sha256": "959daaa540703367af68708de1f16ac1a5a50f701959fe36e9b8cef5ed0812b8"
+      "id": "HYP.S.sober-induction-3-5-minutes",
+      "title": "Sober induction: 3–5 minutes",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 63986,
+        "end": 66572,
+        "rawSpanSha256": "2a99519d67f1d7ca9c0f918f663d63eb592b20f26da8b9c9d7e2bbf2dbd31182",
+        "heading": "Sober induction: 3–5 minutes"
+      },
+      "textSha256": "e97e01b81e8e2cce593fa062130008cbe1f4746086876442aacae1e7f3256a22",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.RESPONSE_CHECK",
-      "heading": "A response check, not a verdict about what it is",
-      "lineStart": 661,
-      "lineEnd": 681,
-      "sha256": "d805914a1242c8e8e35c8825b7b33685dee09636465205e0898d44095a3051c6"
+      "id": "HYP.S.already-open-contain-before-you-deepen",
+      "title": "Already open? Contain before you deepen",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 66572,
+        "end": 67597,
+        "rawSpanSha256": "3adbe0d449a1593c677890627b84d1498732a14e9a34e95b1dd8f747f7c81890",
+        "heading": "Already open? Contain before you deepen"
+      },
+      "textSha256": "68bd9cd72dcdbc59f0d10a12ca85c5215a1f280a85cd6ac6ae18cd62e3270ed9",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.SLEEP",
-      "heading": "Appendix I: Sleep hypnosis",
-      "lineStart": 682,
-      "lineEnd": 690,
-      "sha256": "a745cc2691b7c925b25eec1cc4d7cca57e3289970caa24132f2dd2afff864a76"
+      "id": "HYP.S.stay-awake-when-your-mind-likes-to-escape",
+      "title": "Stay awake when your mind likes to escape",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 67597,
+        "end": 68863,
+        "rawSpanSha256": "460db702a3fe1c328b29aa3b3bbc316fb0bef0677970faef18239a0430ddf777",
+        "heading": "Stay awake when your mind likes to escape"
+      },
+      "textSha256": "4adfb6009dee555bfff01efcf858f38205ac9fae5fb1460ec92d7e4c61dfb19b",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.INDUCTION_LIBRARY",
-      "heading": "Appendix K: A practical induction library",
-      "lineStart": 691,
-      "lineEnd": 711,
-      "sha256": "68a7d0b4c3fd3792ca0c16d57e937df804fd594ab9e43b5be224b6fc3e357442"
+      "id": "HYP.S.the-two-hand-induction",
+      "title": "The two-hand induction",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 68863,
+        "end": 69287,
+        "rawSpanSha256": "f88a89e1a1a10cd51bee1f369dcef4b9a330be7f1ebd8ccb902f71b746ae9602",
+        "heading": "The two-hand induction"
+      },
+      "textSha256": "9497fa4f6b409708ed70a8fab76800232f065fd4dd771276d9e17fc33d417210",
+      "epistemicRole": "owner-guide-not-independently-validated"
     },
     {
-      "id": "HYP.SOURCES",
-      "heading": "Appendix L: Sources and further reading",
-      "lineStart": 712,
-      "lineEnd": 723,
-      "sha256": "05a14c71396c10d5930a47d20b8ea946985ebd5fac659d8f00e1b664ab84a64d"
+      "id": "HYP.S.sleep-induction",
+      "title": "Sleep induction",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 69287,
+        "end": 69694,
+        "rawSpanSha256": "2854fd335a00f38f4da8e97aa86b992769b426d9338fcb084897a307b87b2188",
+        "heading": "Sleep induction"
+      },
+      "textSha256": "f7927c455f32c93a8a6393077ff37a2141ce5cb5b79e153280d4fb3ae8e45da2",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.optional-fractionation-practice-coming-back",
+      "title": "Optional fractionation: practice coming back",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 69694,
+        "end": 70284,
+        "rawSpanSha256": "6a05844620d53994b1735195764d9ae3c19005b385ca448ee828da167921863d",
+        "heading": "Optional fractionation: practice coming back"
+      },
+      "textSha256": "c2da63efa8f65cb5a1189cc70ee428de8356a77b1514e1e18626c21f0e0c3453",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.deepening-if-useful",
+      "title": "Deepening, if useful",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 70284,
+        "end": 70705,
+        "rawSpanSha256": "832a0d17049985052b0a0f0f7a1429f6c7debb706b8f47db38dd34e0e00a9fdb",
+        "heading": "Deepening, if useful"
+      },
+      "textSha256": "9bf16eab235452c257deede2903a2c67187fa41e4881d83aa3d1c6b447905718",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.optional-trance-depth-check",
+      "title": "Optional trance depth check",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 70705,
+        "end": 71239,
+        "rawSpanSha256": "293d3e981808bc818ea1f987045251042e5951b22c0ee5b6f932de24e3006dde",
+        "heading": "Optional trance depth check"
+      },
+      "textSha256": "5de2dee91d7bd0a6b9420c5dd179e01b2bac4bf06304628b2464afff1471a5d3",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.a-shortcut-back-into-hypnosis",
+      "title": "A shortcut back into hypnosis",
+      "parent": "HYP.S.induction-gathering-attention-without-disappearing",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 71239,
+        "end": 73246,
+        "rawSpanSha256": "d8246b33f6c71cc29fc070bddb895bcd04ce3521528052016d5d89e77c4ac250",
+        "heading": "A shortcut back into hypnosis"
+      },
+      "textSha256": "96d90a946afce3bf0826dc024f8288f3e3d8f310dd74ce95680a26eb6c691e20",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.come-all-the-way-back",
+      "title": "Come all the way back",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 73246,
+        "end": 75248,
+        "rawSpanSha256": "0809a2efb64f9bde6eea3b386055ec29c482194a17888518355eebf8407f7f83",
+        "heading": "Come all the way back"
+      },
+      "textSha256": "c654b7bf50698cc2c1ad460619f960986163471aa740d42b7d4f83728e2ecd19",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.the-actual-inner-meeting",
+      "title": "The actual inner meeting",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 75248,
+        "end": 76698,
+        "rawSpanSha256": "54f50fcba2d5909af174726cd52278f594e1f7cb529c927013d2d4729961323f",
+        "heading": "The actual inner meeting"
+      },
+      "textSha256": "deec5bde336177fb323e8b975896b70b4c8851a660ba1889bae1be37d281ec26",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.let-the-next-response-guide-you",
+      "title": "Let the next response guide you",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 76698,
+        "end": 77264,
+        "rawSpanSha256": "f6ffbf7fdb9507a4f96ef47afdf43a5af682827c392532e12ab0b027e885e2e0",
+        "heading": "Let the next response guide you"
+      },
+      "textSha256": "16401c5c3cfaa74b30e692b8e9cd6ab5e4234fec92008c340f3a08f3dd97f395",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.finding-your-own-words",
+      "title": "Finding your own words",
+      "parent": "HYP.S.let-the-next-response-guide-you",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 77264,
+        "end": 78260,
+        "rawSpanSha256": "5fb98a9b339deb0202f0989cf55f844500a0956d03fe409e8423c7e552d8c8a6",
+        "heading": "Finding your own words"
+      },
+      "textSha256": "7742daa35fc42a467439f4d6bcfcc252cfdb8cbe78a180094677a180c614dd49",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.let-the-response-change-the-invitation",
+      "title": "Let the response change the invitation",
+      "parent": "HYP.S.let-the-next-response-guide-you",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 78260,
+        "end": 79078,
+        "rawSpanSha256": "b43b4b8109f903728a3f02cb8c87b2b0f84f0ba01ae1d9cede931362b26d9eee",
+        "heading": "Let the response change the invitation"
+      },
+      "textSha256": "31bde4c870f38595042a94dba2f190a56ff0e12a907feced4788cfd50a1c4bbc",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.look-at-the-situation-too",
+      "title": "Look at the situation too",
+      "parent": "HYP.S.let-the-next-response-guide-you",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 79078,
+        "end": 79917,
+        "rawSpanSha256": "2bbdc70bd79fc7e931899c016f85c4f99cc2db3b2aa577d76e39312f8f0f1882",
+        "heading": "Look at the situation too"
+      },
+      "textSha256": "736c8445c4fdf605396aeac7ed54380a7b875629974c4265db63bfdc76c1ed04",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.change-the-amount-of-contact",
+      "title": "Change the amount of contact",
+      "parent": "HYP.S.let-the-next-response-guide-you",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 79917,
+        "end": 81060,
+        "rawSpanSha256": "052e75d485b7441226358a4fcece04253fdf6d28d5f94e732b01b0cca3d9467f",
+        "heading": "Change the amount of contact"
+      },
+      "textSha256": "f9d04457a34ea04806242b3042f4a700e9d86b9bd32def6e252a5f31a0d1749d",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.offer-the-care-that-is-actually-wanted",
+      "title": "Offer the care that is actually wanted",
+      "parent": "HYP.S.let-the-next-response-guide-you",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 81060,
+        "end": 83107,
+        "rawSpanSha256": "5e47a45842fbfd4e302f853b52973d2d68e6ddc3635590a5447f4678edc8e556",
+        "heading": "Offer the care that is actually wanted"
+      },
+      "textSha256": "5598b35ab3dde97358d2ecabf27b289cecb05680bbdcba69e546fca41dcf438e",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.finish-without-forcing-a-revelation",
+      "title": "Finish without forcing a revelation",
+      "parent": "HYP.S.let-the-next-response-guide-you",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 83107,
+        "end": 84197,
+        "rawSpanSha256": "4219dcff79f954846968fe84faff794fcb4aaa17e2fb01283291aaa13e759f68",
+        "heading": "Finish without forcing a revelation"
+      },
+      "textSha256": "592e6ab44ac23719cea85ce5c5efb098dab11c6271381b00589a8ba01fce01c8",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.the-15-minute-daily-practice",
+      "title": "The 15-minute daily practice",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 84197,
+        "end": 85630,
+        "rawSpanSha256": "339c91671c0abb4cbf7f3d0e7f5b0eacc9ee94682a71596620579eb74417e653",
+        "heading": "The 15-minute daily practice"
+      },
+      "textSha256": "8de5eaa98ef74d46367589b8cabfb1da8f7e1212268efa23b897c28d54095144",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.the-weekly-deeper-practice",
+      "title": "The weekly deeper practice",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 85630,
+        "end": 86244,
+        "rawSpanSha256": "f190ea4ab558f0d18231c28a8daf5527e9843d954a2c8a711faa862e0823d9f0",
+        "heading": "The weekly deeper practice"
+      },
+      "textSha256": "a87ec7ff7ee61e1155bf081c9958e988eb43a42841527e93243e4e3291d2a94a",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.capacity-before-content",
+      "title": "Capacity before content",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 86244,
+        "end": 88559,
+        "rawSpanSha256": "736a307cdfcb6c3575746bdb8d090123f25b7d2429a969c949e5095ad2eda8c5",
+        "heading": "Capacity before content"
+      },
+      "textSha256": "f95339c24f91ff6457c819b306ea6f7a8706f7570bff708a9e2c840fe7aabeca",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.troubleshooting",
+      "title": "Troubleshooting",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 88559,
+        "end": 88583,
+        "rawSpanSha256": "af890376a9e0faeb24a45dc3d5f994019de10beec86da9ea762b214630c9c28e",
+        "heading": "Troubleshooting"
+      },
+      "textSha256": "c3af076f92c5ed8dcb0d0b0d36dd120bc31b68264efea96cf8019ca19f1c13a3",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.nothing-happens",
+      "title": "Nothing happens",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 88583,
+        "end": 88768,
+        "rawSpanSha256": "9f544133a4b97b2c2487d2348965d196c1e4f172ff46f29b6fa4ea7002223ce3",
+        "heading": "Nothing happens"
+      },
+      "textSha256": "e1bfa736f9cfac0600be2866eb475e247b85e222e980abcdc6c9f642f55467c2",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.it-feels-fake",
+      "title": "It feels fake",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 88768,
+        "end": 89700,
+        "rawSpanSha256": "9bf9737e9cce36001ab74a8ecf518f0f80b478e856f6832a0827afd6134d2913",
+        "heading": "It feels fake"
+      },
+      "textSha256": "1b4e00a0ddf3b9537c56e7a892b0f0639532bc85d7dd2a211d25c95f7053c652",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.the-subconscious-will-not-answer",
+      "title": "The subconscious will not answer",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 89700,
+        "end": 90151,
+        "rawSpanSha256": "0824e162abe6f7634b8565d4e95fa64bf17ed79a6ab9d4236242b5678f9e5934",
+        "heading": "The subconscious will not answer"
+      },
+      "textSha256": "eec2f70da5ac6773910286dfa54ccbd571b0f116c1d4f29708d599b0da12e173",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.the-inner-child-will-not-appear",
+      "title": "The inner child will not appear",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 90151,
+        "end": 90632,
+        "rawSpanSha256": "5e49b3bae33a9741eaa72efc07d85dab1c31de10db937f2d7c0e4bfbe61ae415",
+        "heading": "The inner child will not appear"
+      },
+      "textSha256": "280524b5995b7a12380adb5ecccc4be1beccee020350ad9f37a1617fcf6a62f2",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.you-get-anxious",
+      "title": "You get anxious",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 90632,
+        "end": 91410,
+        "rawSpanSha256": "72b5224efb7460bc6dfb74598e88f7b9c8d861146482d9769f4f9d19968d1bce",
+        "heading": "You get anxious"
+      },
+      "textSha256": "63f1e221a64bd254a3a2485742bc0791e9f899d7632866d720d41550cda69b92",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.you-dissociate-or-feel-unreal",
+      "title": "You dissociate or feel unreal",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 91410,
+        "end": 91558,
+        "rawSpanSha256": "18367e76ef3078bf0e0b8ac9c6469a6f0b2d9a771962427df553fbcb8cd025c7",
+        "heading": "You dissociate or feel unreal"
+      },
+      "textSha256": "fc4ea4922d046ae42539780accb8df3589294def79fe78b2b018f1513253a45f",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.you-become-grandiose",
+      "title": "You become grandiose",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 91558,
+        "end": 91792,
+        "rawSpanSha256": "61ea018b55e18d51e2b053327193761eb5eacb2530b2439fa27cff1d2313d0c6",
+        "heading": "You become grandiose"
+      },
+      "textSha256": "0cdb594ac06c657de04bdbf1e94f8af5cc7e718ba5c7bf1426549545bc1d6e76",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.you-become-too-analytical",
+      "title": "You become too analytical",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 91792,
+        "end": 92317,
+        "rawSpanSha256": "916c38052a9c76f92e7c46e401b0e3750dace9ed7bcf6a979cce1c442cf7d055",
+        "heading": "You become too analytical"
+      },
+      "textSha256": "82676dfbc644b8a0f5bdac0f0f98a29355621352a32dc2c35186ed035546e57c",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.you-become-too-blissful-or-diffuse",
+      "title": "You become too blissful or diffuse",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 92317,
+        "end": 92514,
+        "rawSpanSha256": "981ccce7db9ca34e671ece82c61cede951a8f6d17c8ea97a1e8ed79c1d77b18e",
+        "heading": "You become too blissful or diffuse"
+      },
+      "textSha256": "bd20eb7ccc6941f44f0251d58b1ae7c12a6cb400acfb37ebb87e73a489315291",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.you-want-the-hidden-truth-immediately",
+      "title": "You want the hidden truth immediately",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 92514,
+        "end": 92651,
+        "rawSpanSha256": "edeb3c3e839e379b23ae0b59d7df0b112ff4449690b7a476087c615f0ea194ab",
+        "heading": "You want the hidden truth immediately"
+      },
+      "textSha256": "467d10a4725574bc9e615b8aa54812b5d5b359abfad34d634363bb81fe333179",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.you-keep-daydreaming",
+      "title": "You keep daydreaming",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 92651,
+        "end": 92790,
+        "rawSpanSha256": "641482180a89c6ef059ccc8c4d5dbfd8950d3282e17868b7fa829422fda837af",
+        "heading": "You keep daydreaming"
+      },
+      "textSha256": "93a46dfad0a1d9c325cee3f2fe0766eb88378cdde96974ce7e54922d50c4eda0",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.you-get-stuck-in-spiritual-bypass",
+      "title": "You get stuck in spiritual bypass",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 92790,
+        "end": 93615,
+        "rawSpanSha256": "ff30776c930e135f6b6d4206e222a62d1334594ff33415d290ad793e654049ce",
+        "heading": "You get stuck in spiritual bypass"
+      },
+      "textSha256": "f7f7387d8985478096071912391b936b7fbcd0d1bdd12c359bc6a8a7dfb730a6",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.you-get-stuck-in-endless-processing",
+      "title": "You get stuck in endless processing",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 93615,
+        "end": 94286,
+        "rawSpanSha256": "498cbefe105d88c9d32f6ccfe2b368c9043eb38fd3988f9ac49166291f20327e",
+        "heading": "You get stuck in endless processing"
+      },
+      "textSha256": "833bc73b299aaf2ed4efb0e0d34783c5b83772d074367e90b0d2d154f453b268",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.you-keep-using-hypnosis-but-not-changing-life",
+      "title": "You keep using hypnosis but not changing life",
+      "parent": "HYP.S.troubleshooting",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 94286,
+        "end": 94458,
+        "rawSpanSha256": "30c5d74570fc8966aff29cdb8eb0b23d15072a56ce55ea132db65caf188110ba",
+        "heading": "You keep using hypnosis but not changing life"
+      },
+      "textSha256": "183d82f0ca4337d8498a55f6da22580cb9a9ca1a6527dd29edaa3e8af5667fea",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.what-not-to-do",
+      "title": "What not to do",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 94458,
+        "end": 96662,
+        "rawSpanSha256": "a517fc555bd813c02fbbdeb8b4306f5f2ebd0105b327c438f2969e2f6baf64e2",
+        "heading": "What not to do"
+      },
+      "textSha256": "9a007ac166afd1186831f0bb6b4e100ad1f6adf26d05cf1fe64f69d66ef7c6ea",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.when-this-needs-more-support-than-a-guide-can-provide",
+      "title": "When this needs more support than a guide can provide",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 96662,
+        "end": 97776,
+        "rawSpanSha256": "92428d07302ddeec12050ea6ede557222d06525846686d34589de2061b88af62",
+        "heading": "When this needs more support than a guide can provide"
+      },
+      "textSha256": "63d6d490b44f85708b4648f2a4e51d3d6a0a50d615b191d13c543490e8056ba1",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.methods-to-explore-with-a-trained-person-present",
+      "title": "Methods to explore with a trained person present",
+      "parent": "HYP.S.when-this-needs-more-support-than-a-guide-can-provide",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 97776,
+        "end": 99248,
+        "rawSpanSha256": "9ebb1e7bd9e6ba59c71a15ea153bc95c2919e8e7f8d7c5433a695550b74bfaa3",
+        "heading": "Methods to explore with a trained person present"
+      },
+      "textSha256": "e867f07379506776d0a7c7438d09c6f17b384e8eee77cebd1f0cc08a6e9adf11",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.closing",
+      "title": "Closing",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 99248,
+        "end": 99957,
+        "rawSpanSha256": "c96b0d20468ebe3315c41412eb3ec055d720c4fd8efa259aaf1bbe585b54fe74",
+        "heading": "Closing"
+      },
+      "textSha256": "1e85e10a1d6b2618a03ae755c87a32e7911fd2d8a9c56f92fc83759b23d6ac64",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.try-it-in-the-inner-signal-app",
+      "title": "Try it in the Inner Signal app",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 99957,
+        "end": 101441,
+        "rawSpanSha256": "e4d80fd8294d3b2c3f88356ed36709d67b77efa20d7ef21ccb5715c41745b519",
+        "heading": "Try it in the Inner Signal app"
+      },
+      "textSha256": "63ffd090d0f3a63a23180fab577d16e9a6281de7f4f9fd0c2a66875df6e5d04f",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendices",
+      "title": "Appendices",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 101441,
+        "end": 101622,
+        "rawSpanSha256": "b3c7d516bbbf98d32331b8e92d99a9b1d87c424547ab59f02ced5013429c5ab4",
+        "heading": "Appendices"
+      },
+      "textSha256": "9fdcb07dbc0b65073299b8a0fbe62a2f6baaeb69ea751da19448538a858cac9a",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendix-a-how-to-ask-the-subconscious-a-useful-question",
+      "title": "Appendix A: How to ask the subconscious a useful question",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 101622,
+        "end": 103235,
+        "rawSpanSha256": "a1d2769def33c73b114cc0c3c4ab8b86ad7313b4007c75e4632990557bf911ca",
+        "heading": "Appendix A: How to ask the subconscious a useful question"
+      },
+      "textSha256": "11ad52f9099fdd62bc0005a5f57fc1d7690382540ad98d1f28698c92119321de",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.core-prompts",
+      "title": "Core prompts",
+      "parent": "HYP.S.appendix-a-how-to-ask-the-subconscious-a-useful-question",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 103235,
+        "end": 105923,
+        "rawSpanSha256": "06901a05e2ed6fefb0ddc6ac469d2d2a0feb249c4b75a32523fee5a05c3ec55f",
+        "heading": "Core prompts"
+      },
+      "textSha256": "3ea82fc775adad00a72a43ce344af53e6f0a4f7feba1669898163bc4de2243a3",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendix-b-nlp-without-turning-yourself-into-a-sales-seminar",
+      "title": "Appendix B: NLP without turning yourself into a sales seminar",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 105923,
+        "end": 106333,
+        "rawSpanSha256": "4458d775291352140221de11b57fb7493d94a6c5ce347c66d3d45758f7839280",
+        "heading": "Appendix B: NLP without turning yourself into a sales seminar"
+      },
+      "textSha256": "200d58d17431dc57971f06ac7f51d24891b16eb23b20b711322a4493fb9a06db",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.the-four-nlp-layers",
+      "title": "The four NLP layers",
+      "parent": "HYP.S.appendix-b-nlp-without-turning-yourself-into-a-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 106333,
+        "end": 107023,
+        "rawSpanSha256": "81c2f12d5b8aa7de205c51d5719251ff60704f2d5ca0202a55d224605d5971d6",
+        "heading": "The four NLP layers"
+      },
+      "textSha256": "53cce0f41e20ca09baaded7fd22cbfccd4632912ae3f31bc55dfbd87c3b1045d",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "title": "The Milton Model, minus the covert sales seminar",
+      "parent": "HYP.S.appendix-b-nlp-without-turning-yourself-into-a-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 107023,
+        "end": 107967,
+        "rawSpanSha256": "c2cc9681432b09180dbe0eb39e8864fc7079babf0cbb02d07a76ebf4c60348a5",
+        "heading": "The Milton Model, minus the covert sales seminar"
+      },
+      "textSha256": "c3e0b2e570c75b1ace0068843c7d643a3415a9ce196639a225e25822c776c368",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.pattern-1-pacing-and-leading-truth-before-suggestion",
+      "title": "Pattern 1: Pacing and leading — truth before suggestion",
+      "parent": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 107967,
+        "end": 108650,
+        "rawSpanSha256": "de3661e6386c672dfd44d1f12a4146833df431731e9c5448ca9aa0c09a9be6c4",
+        "heading": "Pattern 1: Pacing and leading — truth before suggestion"
+      },
+      "textSha256": "2291246bfb79a0f5cdc57acfd8dafc393de51180e8d59c580ceeaa1d675cfd07",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.pattern-2-awareness-verbs",
+      "title": "Pattern 2: Awareness verbs",
+      "parent": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 108650,
+        "end": 109004,
+        "rawSpanSha256": "a3ea579b6a16f9b05df1ee5c6ca8ff8ca3f7a1d085a3b5a58f217be50cf0d8e3",
+        "heading": "Pattern 2: Awareness verbs"
+      },
+      "textSha256": "ca05d2ae8b5b495b8e842fb20861d0367ee6e149e7783418902261753cf73eec",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.pattern-3-presuppositions",
+      "title": "Pattern 3: Presuppositions",
+      "parent": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 109004,
+        "end": 109323,
+        "rawSpanSha256": "dc6b7e407865868d4b78a8aac46c8c2c5e4319043c30c633b90ef9d31a4e59b1",
+        "heading": "Pattern 3: Presuppositions"
+      },
+      "textSha256": "2d98cae9fb3e7b146384b3ea2d0aeb150d1a581ee0f2ce4728b1c346feae699b",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.pattern-4-gentle-cause-effect-bridges",
+      "title": "Pattern 4: Gentle cause-effect bridges",
+      "parent": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 109323,
+        "end": 109770,
+        "rawSpanSha256": "3c2b95d7bab82c277f37e833e70fd80ca90420fbd193306e6f273e233943a483",
+        "heading": "Pattern 4: Gentle cause-effect bridges"
+      },
+      "textSha256": "b3aa3e819d3e4b344e65c1c9d90635644d58ce7fc4c5cf9c04b4143f7b5602cd",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.pattern-5-embedded-invitations",
+      "title": "Pattern 5: Embedded invitations",
+      "parent": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 109770,
+        "end": 110377,
+        "rawSpanSha256": "99789c10a0ad85d0f02fb77b1b560d8851859d46342346cec908e1406b890010",
+        "heading": "Pattern 5: Embedded invitations"
+      },
+      "textSha256": "1c4011f9558f0be78663b2cc487825e321edeaceedc328251dac223b8261ce4e",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.pattern-6-ethical-double-binds",
+      "title": "Pattern 6: Ethical double binds",
+      "parent": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 110377,
+        "end": 110633,
+        "rawSpanSha256": "6896d089d28577004dab1bb816d51ce96f1cb5bde7d48fdc93264ce11d9a059c",
+        "heading": "Pattern 6: Ethical double binds"
+      },
+      "textSha256": "1b74744a9f57a43b8be43b11b9549847b0d2e2f684bebe52c870e222920a5607",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.pattern-7-conversational-postulates",
+      "title": "Pattern 7: Conversational postulates",
+      "parent": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 110633,
+        "end": 110873,
+        "rawSpanSha256": "ce81c47209e3a9aabe2d929e437e24df42ddfd0671539aeff6b9d92c27ca5092",
+        "heading": "Pattern 7: Conversational postulates"
+      },
+      "textSha256": "fba18f323f87602d4f7945957212ea34d9f20d05102e428ec78d5b9b29175b44",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.pattern-8-tag-questions",
+      "title": "Pattern 8: Tag questions",
+      "parent": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 110873,
+        "end": 111143,
+        "rawSpanSha256": "502cd66c82e3c7278b5e83cd986f943908604ac94ccef370aaa16f9963b91f1e",
+        "heading": "Pattern 8: Tag questions"
+      },
+      "textSha256": "6e79a6b2a6d3f95cdc57087d93dd20d58f12a65bc2eb5461978c65eba9c7ce1a",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.pattern-9-nominalizations",
+      "title": "Pattern 9: Nominalizations",
+      "parent": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 111143,
+        "end": 111497,
+        "rawSpanSha256": "3cb58398b03bd35b0eaaa7de6f44a7c8822b0c198667ee5ffda6f01cc3279431",
+        "heading": "Pattern 9: Nominalizations"
+      },
+      "textSha256": "fe23f1a2dabc3b9a664c247d6c659fe03c231630ca646fb45bff810f823536c0",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.pattern-10-meta-model-questions-the-de-hypnosis-tool",
+      "title": "Pattern 10: Meta Model questions — the de-hypnosis tool",
+      "parent": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 111497,
+        "end": 111980,
+        "rawSpanSha256": "66916ac6862d82b4e6f35c84f13a445e4cda1ec6bbda85bea158eb9dc3fd3ba6",
+        "heading": "Pattern 10: Meta Model questions — the de-hypnosis tool"
+      },
+      "textSha256": "2ef4583e9c056e4a5f91ef8b4a5645486cfb44e248e9edb216a8e20d80c808d8",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.sensory-state-and-strategy-tools",
+      "title": "Sensory, state, and strategy tools",
+      "parent": "HYP.S.appendix-b-nlp-without-turning-yourself-into-a-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 111980,
+        "end": 112023,
+        "rawSpanSha256": "a7818f0a99e72cbb35e232c167fae571758f0e3b9b7d8d8d27d61a5e74b048ba",
+        "heading": "Sensory, state, and strategy tools"
+      },
+      "textSha256": "0fe5fcd8b08fc6ac96e165d6827ced8f2660fde0dd2582cb643ff90360c4cedf",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.submodalities-editing-the-form-not-denying-the-truth",
+      "title": "Submodalities — editing the form, not denying the truth",
+      "parent": "HYP.S.sensory-state-and-strategy-tools",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 112023,
+        "end": 112858,
+        "rawSpanSha256": "5b7022dc0901ff4f47815c9c5a95be8265d9d0533600041652a5472bf299a19c",
+        "heading": "Submodalities — editing the form, not denying the truth"
+      },
+      "textSha256": "758fe69e52ddf1a693679255b1ac3d3bb41f406742e46cddb7524100de31c9e5",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.anchoring-giving-the-body-a-doorway-back",
+      "title": "Anchoring — giving the body a doorway back",
+      "parent": "HYP.S.sensory-state-and-strategy-tools",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 112858,
+        "end": 113407,
+        "rawSpanSha256": "5652be9ec52a38052fb9dc1e680494ef8ede2fcfc59081e899ab46fe22f3a3ce",
+        "heading": "Anchoring — giving the body a doorway back"
+      },
+      "textSha256": "bf5217fe1e9cb3b52bff44c31a24415db4fbf1177a1183c2a49ce5439ada18fc",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.using-synchronicity-as-your-own-wake-up-bell",
+      "title": "Using synchronicity as your own wake-up bell",
+      "parent": "HYP.S.sensory-state-and-strategy-tools",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 113407,
+        "end": 114838,
+        "rawSpanSha256": "afe0ca32b8b595319971f05a4bc0373a9d2cf422f467e0d1bc22e9b40728471c",
+        "heading": "Using synchronicity as your own wake-up bell"
+      },
+      "textSha256": "7ba33ebda1b56af1b94e7c240785caf422c8424c89c4dcacac1f44dc5938e66c",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.installing-the-synchronicity-cue",
+      "title": "Installing the synchronicity cue",
+      "parent": "HYP.S.using-synchronicity-as-your-own-wake-up-bell",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 114838,
+        "end": 117327,
+        "rawSpanSha256": "b4aefa1ca1fe64f1231803996da3395b4237786d4d29ff0476d6b1a8ab37bae8",
+        "heading": "Installing the synchronicity cue"
+      },
+      "textSha256": "09fb03bc2b9408da8be9a27cfbffa3d5434b26c2a5eb5dd060575ab25e435300",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.reframing-changing-the-meaning-without-lying",
+      "title": "Reframing — changing the meaning without lying",
+      "parent": "HYP.S.sensory-state-and-strategy-tools",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 117327,
+        "end": 117699,
+        "rawSpanSha256": "530b874e67073a46116136c6bdfbc67725af7d6f875168a5b25f5e5865c04c41",
+        "heading": "Reframing — changing the meaning without lying"
+      },
+      "textSha256": "cb69b7f922e2d38cc4e662d2da9af0db2f8d7a2c4d2c8b147abbd4365741ccbd",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.perceptual-positions-self-other-witness-universal-heart",
+      "title": "Perceptual positions — self, other, witness, universal heart",
+      "parent": "HYP.S.sensory-state-and-strategy-tools",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 117699,
+        "end": 118205,
+        "rawSpanSha256": "78d64b43728b78bf4af250536ba0d1cfc8db52db31e4504698e3df453dd1cdf1",
+        "heading": "Perceptual positions — self, other, witness, universal heart"
+      },
+      "textSha256": "794444c8853ddd5e2c21521a3777e16c2ad0ec35ddcc29d8bd4065209ce9b27b",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.future-pacing-let-the-future-test-the-insight",
+      "title": "Future pacing — let the future test the insight",
+      "parent": "HYP.S.sensory-state-and-strategy-tools",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 118205,
+        "end": 118475,
+        "rawSpanSha256": "7d0918074742f54eef3a2a7d1622cd93e36e3c6d069b911514f70fc65415b546",
+        "heading": "Future pacing — let the future test the insight"
+      },
+      "textSha256": "d15ac15f39a0c3e459cc25010ac20394fb9f42cd23f570556d2d14af08c560f6",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.the-swish-softened",
+      "title": "The Swish, softened",
+      "parent": "HYP.S.sensory-state-and-strategy-tools",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 118475,
+        "end": 118780,
+        "rawSpanSha256": "88bf85ea6fe10d2df529355acf22ab8114efeefb35492515ba0927df6b987adf",
+        "heading": "The Swish, softened"
+      },
+      "textSha256": "0e28cf8c5461c07cd0f2604b7e061b74cc4c5603fe930a6b9c1c9252b40f606f",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.parts-integration-without-pretending-the-conflict-is-solved",
+      "title": "Parts integration, without pretending the conflict is solved",
+      "parent": "HYP.S.sensory-state-and-strategy-tools",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 118780,
+        "end": 119053,
+        "rawSpanSha256": "6d0d3760de4985b54629fc09bf897a13d74b9adf41cf1fe8785e74749d4e1aae",
+        "heading": "Parts integration, without pretending the conflict is solved"
+      },
+      "textSha256": "50646527b6094350aafe0627e622524e9798e96c034bf0942f32f547eed88c57",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.what-i-will-not-use-nlp-for",
+      "title": "What I will not use NLP for",
+      "parent": "HYP.S.appendix-b-nlp-without-turning-yourself-into-a-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 119053,
+        "end": 119988,
+        "rawSpanSha256": "34973f3e9a11e728b34d990fea9f4e420f30e080f280cc58752fb97aa9b61b07",
+        "heading": "What I will not use NLP for"
+      },
+      "textSha256": "b546ed93202b562a21b551b273fe89eb12b171a3837bb90218573c35de6dc161",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.running-the-whole-nlp-sequence",
+      "title": "Running the whole NLP sequence",
+      "parent": "HYP.S.appendix-b-nlp-without-turning-yourself-into-a-sales-seminar",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 119988,
+        "end": 121175,
+        "rawSpanSha256": "9d2754a20e1d49f236ea4316f7f5de8c41497a6176764fb6bfed76f7f6ef1659",
+        "heading": "Running the whole NLP sequence"
+      },
+      "textSha256": "1249ae4979e0b86242722e68d374e772c78d1201bba34c59ce9daddfd93266d1",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendix-c-the-extended-de-hypnosis-checklist",
+      "title": "Appendix C: The extended de-hypnosis checklist",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 121175,
+        "end": 123008,
+        "rawSpanSha256": "404c0200383a8437b6b08005541bcac46daec1a2bb78592e6c052e7b1f563849",
+        "heading": "Appendix C: The extended de-hypnosis checklist"
+      },
+      "textSha256": "56de5d591fce938678e112819d8cb05ca153996d3d37bf2808a8568ea25b44d7",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.hypnosis-specific-audit",
+      "title": "Hypnosis-specific audit",
+      "parent": "HYP.S.appendix-c-the-extended-de-hypnosis-checklist",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 123008,
+        "end": 123961,
+        "rawSpanSha256": "b1253f1a964934fe2e3ccc1d29e25271468c4d05ced2bc32f4b24165053a5d97",
+        "heading": "Hypnosis-specific audit"
+      },
+      "textSha256": "0dcfc4b9eb08c7d41e4a6a1a93f0a7fcf5254545275aade4e2dc1406b8ca0e04",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendix-d-anxiety-body-first",
+      "title": "Appendix D: Anxiety — body first",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 123961,
+        "end": 127845,
+        "rawSpanSha256": "4a7475f13f7a1815b4980fa326e05fd6e91c1df62c801f07e6a438330072db56",
+        "heading": "Appendix D: Anxiety — body first"
+      },
+      "textSha256": "b13202ab4f4aae9be770412c4f7104aaa069dba468659cd2aefc21af52d2c362",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.inner-child-love",
+      "title": "Inner child love",
+      "parent": "HYP.S.appendix-d-anxiety-body-first",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 127845,
+        "end": 128233,
+        "rawSpanSha256": "de8c2bb490f7df40ef4c519be82b93bc9266ddddb1a29e4dde9ad99aab921b11",
+        "heading": "Inner child love"
+      },
+      "textSha256": "01e8c6c228caae63cd31c828ec8de7deebd33b1f4c6ac1339ac3495b786dbb24",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.reduced-breathing-buteyko-style-breathing",
+      "title": "Reduced breathing / Buteyko-style breathing",
+      "parent": "HYP.S.appendix-d-anxiety-body-first",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 128233,
+        "end": 128719,
+        "rawSpanSha256": "cdd1fbff42e6025d5ffea495d5b6c9e1b9d150173438b2b1f4d299d63b163566",
+        "heading": "Reduced breathing / Buteyko-style breathing"
+      },
+      "textSha256": "7d0aa51f873e2cade8d92f4a4711caf3fad1d1daf3e11aef869b00537c489f38",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.eft-tapping",
+      "title": "EFT tapping",
+      "parent": "HYP.S.appendix-d-anxiety-body-first",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 128719,
+        "end": 129347,
+        "rawSpanSha256": "38eac6f6eeaeede2c7d2feadabd50afc31e38b417efbcff36727fac5249bbfa0",
+        "heading": "EFT tapping"
+      },
+      "textSha256": "4b720a61fb8f8203c6943d18ee9430cd7aad429e4c106e249699e2575f8166e1",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.somatic-experiencing",
+      "title": "Somatic Experiencing",
+      "parent": "HYP.S.appendix-d-anxiety-body-first",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 129347,
+        "end": 129751,
+        "rawSpanSha256": "1df4184e109f2b9225dbd28abd832a506270e6757f66267d8b49227fa103af6f",
+        "heading": "Somatic Experiencing"
+      },
+      "textSha256": "d7265abdc129071a146e12d339ea9abefcdffe217dda28898492344c4dc5ff33",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.gendlin-focusing",
+      "title": "Gendlin Focusing",
+      "parent": "HYP.S.appendix-d-anxiety-body-first",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 129751,
+        "end": 130055,
+        "rawSpanSha256": "eff29cf9bc3c1e28f3f64b59d4cfc74e5c0615bec5564559ebce52374657334a",
+        "heading": "Gendlin Focusing"
+      },
+      "textSha256": "815c82091eeb83cfad4e3040aaa16cd6fe5a8a4e025b319212239512de1bae01",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.body-supports",
+      "title": "Body supports",
+      "parent": "HYP.S.appendix-d-anxiety-body-first",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 130055,
+        "end": 131309,
+        "rawSpanSha256": "9d7057b1b8fe5ee9b90da016ea1dbf922833f09e6c8135f51e5578932d714607",
+        "heading": "Body supports"
+      },
+      "textSha256": "eae3cf99648f944e0913b39e319edf8207fa242beeb7b7e187c20cd053a2649c",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.anxiety-script",
+      "title": "Anxiety script",
+      "parent": "HYP.S.appendix-d-anxiety-body-first",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 131309,
+        "end": 131776,
+        "rawSpanSha256": "e4632b7e745a1c54d49e7e13f5f7ff43f0e14f249fad8057413e328ae8d69dbc",
+        "heading": "Anxiety script"
+      },
+      "textSha256": "0cd617b7b7286f62a4b236931309d8c98af884cee741b0b8848b111db7ac1bf0",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendix-e-is-the-daydream-helping-or-replacing-your-life",
+      "title": "Appendix E: Is the daydream helping or replacing your life?",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 131776,
+        "end": 133216,
+        "rawSpanSha256": "7cfccfbdabc4f2c4ffb45eca4053044d5526c2a6d730b2c53574a10447665339",
+        "heading": "Appendix E: Is the daydream helping or replacing your life?"
+      },
+      "textSha256": "62ad519982ae62c5f69dbc8344fdc6b196cc1dc2c839a22b244cfcf520bb334d",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendix-f-self-trust-outside-guidance-and-oracle-like-states",
+      "title": "Appendix F: Self-trust, outside guidance, and oracle-like states",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 133216,
+        "end": 134181,
+        "rawSpanSha256": "fc96cc3ed7bfc4881ccdca424569064d77cd5b06af4f4b7bad4e4699647b0e03",
+        "heading": "Appendix F: Self-trust, outside guidance, and oracle-like states"
+      },
+      "textSha256": "8eb5bc0e53f3239a17ebc946ea969f7b5bd1956d6e18200538a68b2a3f23b191",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.finding-a-hypnotist-who-can-work-with-you",
+      "title": "Finding a hypnotist who can work with you",
+      "parent": "HYP.S.appendix-f-self-trust-outside-guidance-and-oracle-like-states",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 134181,
+        "end": 135224,
+        "rawSpanSha256": "c694b011c7b240883b3802492c2b4baf60990963380a34d6aca7e8d16c8fd917",
+        "heading": "Finding a hypnotist who can work with you"
+      },
+      "textSha256": "7c83717005f9dd874298871c54e055650665d2a9f2afd90fd355b51464e19537",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.when-the-subconscious-speaks-like-an-oracle",
+      "title": "When the subconscious speaks like an oracle",
+      "parent": "HYP.S.appendix-f-self-trust-outside-guidance-and-oracle-like-states",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 135224,
+        "end": 135660,
+        "rawSpanSha256": "cf7c2a58066972c1631c14745da36d38b597ab418b2090cc1a369fa79a05e416",
+        "heading": "When the subconscious speaks like an oracle"
+      },
+      "textSha256": "13f60ddabb59999cdf75c90f0ae543433fcc528168644f2e16442c793e34ea12",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.the-council-internal-first-then-outward",
+      "title": "The council — internal first, then outward",
+      "parent": "HYP.S.appendix-f-self-trust-outside-guidance-and-oracle-like-states",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 135660,
+        "end": 136834,
+        "rawSpanSha256": "f2a00a9aef09faa43ee8afd201fcb03a914e501dd2636ed372b7e1e7733b128b",
+        "heading": "The council — internal first, then outward"
+      },
+      "textSha256": "33c6dc6bbf7d1c5b0679391947d7267a3b149f89494d2f0fd9dc44b83e04ab2b",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.forgiveness-without-bypass",
+      "title": "Forgiveness without bypass",
+      "parent": "HYP.S.appendix-f-self-trust-outside-guidance-and-oracle-like-states",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 136834,
+        "end": 138800,
+        "rawSpanSha256": "2abe618c9e1f03efabce668d4e0ffd2265f91c77a58d08714b569875653633d4",
+        "heading": "Forgiveness without bypass"
+      },
+      "textSha256": "b7d7c243fa17824fb8b5087ea6c9c5530f2aace65e4fde027205d55d6b12fb52",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendix-g-altered-states",
+      "title": "Appendix G: Altered states",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 138800,
+        "end": 140315,
+        "rawSpanSha256": "ea26c58c8b0183be92231e5e371945bba4a8e7090e7b900f709bfdf904f6086c",
+        "heading": "Appendix G: Altered states"
+      },
+      "textSha256": "c2f2fe3619546d18d1b03821d3760a727aacf0310d3143a2aa6bda421eb603ca",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.stabilize-before-you-interpret",
+      "title": "Stabilize before you interpret",
+      "parent": "HYP.S.appendix-g-altered-states",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 140315,
+        "end": 147081,
+        "rawSpanSha256": "bb143916c96105d0233f14d26c30a84fc65a5ea5628bdb8b8ff9dd188c9de66d",
+        "heading": "Stabilize before you interpret"
+      },
+      "textSha256": "37cd986f9859cebed340832b5a9b45fa051c03854478b29d462fddca1983e229",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendix-h-demons-jinn-hostile-presences-and-unattached-burdens",
+      "title": "Appendix H: Demons, jinn, hostile presences, and “Unattached Burdens”",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 147081,
+        "end": 147988,
+        "rawSpanSha256": "6523b219d0e30bc2b8ee92aaa6e0fbb184e12a51fa6fa6a59ce93634ff2dc87e",
+        "heading": "Appendix H: Demons, jinn, hostile presences, and “Unattached Burdens”"
+      },
+      "textSha256": "21d7dc2a8bbf036554fa5b69c8ec7c75fedd5246f90c8066c5836aff8f413133",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.start-with-the-room-the-body-and-basic-safety",
+      "title": "Start with the room, the body, and basic safety",
+      "parent": "HYP.S.appendix-h-demons-jinn-hostile-presences-and-unattached-burdens",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 147988,
+        "end": 148870,
+        "rawSpanSha256": "f7e654eec72a51db88dc60ec5f2227c7f78ecb735027813868d30f1955efe73a",
+        "heading": "Start with the room, the body, and basic safety"
+      },
+      "textSha256": "75ea554a850e29ec0071345527e0499e884f68b0d9b2ded952847f126046daaf",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.a-response-check-not-a-verdict-about-what-it-is",
+      "title": "A response check, not a verdict about what it is",
+      "parent": "HYP.S.appendix-h-demons-jinn-hostile-presences-and-unattached-burdens",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 148870,
+        "end": 149923,
+        "rawSpanSha256": "f351792cb57b8790d87704243c56397d420b58f383e1b5b526725ee2f11c791a",
+        "heading": "A response check, not a verdict about what it is"
+      },
+      "textSha256": "525b25dd13893d8cf4334baa381a415a8108386e4c212c164e4d62c28b546b08",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.do-not-fight-from-fear",
+      "title": "Do not fight from fear",
+      "parent": "HYP.S.appendix-h-demons-jinn-hostile-presences-and-unattached-burdens",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 149923,
+        "end": 150607,
+        "rawSpanSha256": "802bb1e94a44201fb0c813e5138db5066c8d573100071d11a5f882bcd9e74d67",
+        "heading": "Do not fight from fear"
+      },
+      "textSha256": "8729e843237f7b1b90a2a76820a670e4c25d75bbb7cdea558ba722a737779b8b",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.a-bodily-boundary-compassion-present-door-closed",
+      "title": "A bodily boundary: compassion present, door closed",
+      "parent": "HYP.S.appendix-h-demons-jinn-hostile-presences-and-unattached-burdens",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 150607,
+        "end": 151360,
+        "rawSpanSha256": "b4c12104291e7818933244f334295cd71a8ed2116a497c3c1d67df63254cbbd9",
+        "heading": "A bodily boundary: compassion present, door closed"
+      },
+      "textSha256": "a387217e4706613ae7ce0dc7618bbd3bad9219b0a93510d3e7774a8518fa31a9",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.if-it-might-be-psychosis-or-destabilization",
+      "title": "If it might be psychosis or destabilization",
+      "parent": "HYP.S.appendix-h-demons-jinn-hostile-presences-and-unattached-burdens",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 151360,
+        "end": 152179,
+        "rawSpanSha256": "c1728adeb190e73a2c26626c3f0014a7be92f0e0b21081e3713f89f5fb207e82",
+        "heading": "If it might be psychosis or destabilization"
+      },
+      "textSha256": "6c2cfa2c0df6e10feec16c28f21eb9501b0bbf7e2ea04a8e8daaff69986d601b",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.the-cosmic-download-humility-test",
+      "title": "The cosmic-download humility test",
+      "parent": "HYP.S.appendix-h-demons-jinn-hostile-presences-and-unattached-burdens",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 152179,
+        "end": 153000,
+        "rawSpanSha256": "c965349a5854b6b230bc2ce15f1dd473223b5cafb518e148be78068800d888e9",
+        "heading": "The cosmic-download humility test"
+      },
+      "textSha256": "580319e21bd477c7d8bf2601c307e6dc49b8e0583dec793e31dbaa0af4a074d3",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.don-t-become-an-entity-hobbyist",
+      "title": "Don’t become an entity hobbyist",
+      "parent": "HYP.S.appendix-h-demons-jinn-hostile-presences-and-unattached-burdens",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 153000,
+        "end": 153327,
+        "rawSpanSha256": "0a11cdd5d4977f73717ea04a13a6ad0f782d591603cb2541e7f040dd4d16a405",
+        "heading": "Don’t become an entity hobbyist"
+      },
+      "textSha256": "281fbfbd1a0992276bddd021dd8c5230e6398db59b3184596f380f41cbce3eb0",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendix-i-sleep-hypnosis",
+      "title": "Appendix I: Sleep hypnosis",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 153327,
+        "end": 153642,
+        "rawSpanSha256": "a90e166c4de7ef6f673b04ad785799b2de6323dd4c67c5ed05dd1ce9baa91e9f",
+        "heading": "Appendix I: Sleep hypnosis"
+      },
+      "textSha256": "43196ce0eb047f5b3e7496613011a6a6093dbcc1679b8d20617de2569a2be92a",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendix-j-a-practical-induction-library",
+      "title": "Appendix J: A practical induction library",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 153642,
+        "end": 154218,
+        "rawSpanSha256": "a804299fbb47367cf2ff6bd09b7c8d1b949aae56acf067629f82c755a44a487b",
+        "heading": "Appendix J: A practical induction library"
+      },
+      "textSha256": "9160eac2a6a79720cee23c73d20f053b9056131b6caf2889f52093f9c2b46354",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.1-stretch-and-release",
+      "title": "1. Stretch and release",
+      "parent": "HYP.S.appendix-j-a-practical-induction-library",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 154218,
+        "end": 154614,
+        "rawSpanSha256": "bc1108291891ec128683e3b9d39322984cc038c79f46fc8f1311d286acbeacf2",
+        "heading": "1. Stretch and release"
+      },
+      "textSha256": "678740543d7d61d44049c46e881255ee81726cdcf58714ada562564b8539c81d",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.2-supported-floating",
+      "title": "2. Supported floating",
+      "parent": "HYP.S.appendix-j-a-practical-induction-library",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 154614,
+        "end": 155062,
+        "rawSpanSha256": "6b72f8cb6bd958df78230c34bd3841a787b4cd7deadc414db74ba3fe008c5896",
+        "heading": "2. Supported floating"
+      },
+      "textSha256": "4b6d9edc777b0926d539b900d54279ffd3cb8f7d3b4eeee50cbc866977173b4d",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.3-rhythmic-breath-or-pulse",
+      "title": "3. Rhythmic breath or pulse",
+      "parent": "HYP.S.appendix-j-a-practical-induction-library",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 155062,
+        "end": 155496,
+        "rawSpanSha256": "030f166ad2332ed3b7e1e30ce10c86acd2693e0e7089465de8628949c6e01eb0",
+        "heading": "3. Rhythmic breath or pulse"
+      },
+      "textSha256": "003db2827e37edca5157876f5a4add8082d667d7b5150262a22b6237b945d908",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.4-unwinding-object",
+      "title": "4. Unwinding object",
+      "parent": "HYP.S.appendix-j-a-practical-induction-library",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 155496,
+        "end": 155899,
+        "rawSpanSha256": "e4cba199f088b0fec5a5aa27ea239a2a42b5240ca94e2433593839628337dce4",
+        "heading": "4. Unwinding object"
+      },
+      "textSha256": "82050bd16bd1f60d5dc0f778aee63a13174a8d45d5d9fab2e12002f3d0836d20",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.5-sensory-journey",
+      "title": "5. Sensory journey",
+      "parent": "HYP.S.appendix-j-a-practical-induction-library",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 155899,
+        "end": 156342,
+        "rawSpanSha256": "bcf595f3144243c1e5c044905e38bb631e85e2cab1a5bca376d88ea710600706",
+        "heading": "5. Sensory journey"
+      },
+      "textSha256": "d4bf486b063457535079c1e3aee5123dde102073afac2aa5c3e8a932b585ef20",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.6-gradual-wave",
+      "title": "6. Gradual wave",
+      "parent": "HYP.S.appendix-j-a-practical-induction-library",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 156342,
+        "end": 156749,
+        "rawSpanSha256": "c79d5bb0499c800392b5ec9c0f9ae01c82cfc3c660001e3e0f3ad5a18a345477",
+        "heading": "6. Gradual wave"
+      },
+      "textSha256": "6d77f1e0175423101c6e2dd8e7215b4508ac18de22fbe0f2d83d9a2937bbf240",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.7-care-workshop",
+      "title": "7. Care workshop",
+      "parent": "HYP.S.appendix-j-a-practical-induction-library",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 156749,
+        "end": 157263,
+        "rawSpanSha256": "a8a45cee90569aa349c488f22d00b7060e5f953af139d70f9a783b347d1c20c4",
+        "heading": "7. Care workshop"
+      },
+      "textSha256": "c7834c616dc0c411fb32eba7b17f2b0ff1b555b4b48262c20546ff7bb8ee344b",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.8-resource-embodiment",
+      "title": "8. Resource embodiment",
+      "parent": "HYP.S.appendix-j-a-practical-induction-library",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 157263,
+        "end": 157743,
+        "rawSpanSha256": "330e7a0140414c056e8e3c04cfb0430b72850123de61d92bac93677049cd4b4c",
+        "heading": "8. Resource embodiment"
+      },
+      "textSha256": "cb40c90b66dc6330714d9fda32f57914e63d2bf5be25b8f7a586d2f07ac1211c",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.9-no-trance-inner-contact",
+      "title": "9. No-trance inner contact",
+      "parent": "HYP.S.appendix-j-a-practical-induction-library",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 157743,
+        "end": 158706,
+        "rawSpanSha256": "5528af560cc15f9892ebf1528202a51485139515b3897c49dc2b12a87b182cf2",
+        "heading": "9. No-trance inner contact"
+      },
+      "textSha256": "6cfc4aeb3dec9d45ab38d406839d0fc51087cabc3b2b27305384ea9278bc8a47",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.appendix-k-sources-and-further-reading",
+      "title": "Appendix K: Sources and further reading",
+      "parent": "HYP.S.opening",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 158706,
+        "end": 159110,
+        "rawSpanSha256": "fad2850985ad93d33f277a0f10696e4957d25312cb1ef26916ebf67e61626f91",
+        "heading": "Appendix K: Sources and further reading"
+      },
+      "textSha256": "10427d2954310d77b85c3802711358af5659500bfd88bfaca4e1f4d3a81792eb",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.learning-entering-and-returning",
+      "title": "Learning, entering, and returning",
+      "parent": "HYP.S.appendix-k-sources-and-further-reading",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 159110,
+        "end": 159784,
+        "rawSpanSha256": "03084a8c911cfea8a5e07bd9339c654d611c68c5808a18b20800373dc8fce0e8",
+        "heading": "Learning, entering, and returning"
+      },
+      "textSha256": "af25169d718a8c822e232b6355f27c3d1760dbadfc25560603ad5886f947deef",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.indirect-language-and-re-entry-cues",
+      "title": "Indirect language and re-entry cues",
+      "parent": "HYP.S.appendix-k-sources-and-further-reading",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 159784,
+        "end": 160489,
+        "rawSpanSha256": "4e5e8c59a78ca38538fff6e36e4d16b5b95eebfeccc2638ce7e4d5e3746c1a76",
+        "heading": "Indirect language and re-entry cues"
+      },
+      "textSha256": "cc87eddf3fa9e24bc3db3037b6d8c3c45b325fcac625157f408966a26b1d3c18",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.body-awareness-and-changing-the-amount-of-contact",
+      "title": "Body awareness and changing the amount of contact",
+      "parent": "HYP.S.appendix-k-sources-and-further-reading",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 160489,
+        "end": 160990,
+        "rawSpanSha256": "eb4d9d41c51181639f58b1be689a62de2a2b1cacfc590ca96e6294e42e64d921",
+        "heading": "Body awareness and changing the amount of contact"
+      },
+      "textSha256": "27fc8515b9f8d323b5262f7d6d7a073e9649606c6171d2ca386697b3405b7dc9",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.inner-child-care-and-adult-capacities",
+      "title": "Inner-child care and adult capacities",
+      "parent": "HYP.S.appendix-k-sources-and-further-reading",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 160990,
+        "end": 162142,
+        "rawSpanSha256": "d4e48ef8dc35c59823903d75b5f65caed6d698c97f1367176df8d48a384d8a34",
+        "heading": "Inner-child care and adult capacities"
+      },
+      "textSha256": "4b26ff625d645d29a71db43505ec20d98b062b692569ee35b9d1de569aee7028",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "HYP.S.memory-support-and-choosing-a-practitioner",
+      "title": "Memory, support, and choosing a practitioner",
+      "parent": "HYP.S.appendix-k-sources-and-further-reading",
+      "layer": "hypnosis-guide",
+      "source": {
+        "document": "hypnosis-r03",
+        "start": 162142,
+        "end": 162901,
+        "rawSpanSha256": "46eb2f00bcbca4820368635fc8c3d5ef182ca33a4d9a10e9940dbd097da88c5c",
+        "heading": "Memory, support, and choosing a practitioner"
+      },
+      "textSha256": "c73fd80b1a6ee6f2531c7963fe3de5dab03bf1f10d84fdec33ca135e9437563b",
+      "epistemicRole": "owner-guide-not-independently-validated"
+    },
+    {
+      "id": "IC.S.listen-watch",
+      "title": "Listen & Watch:",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 0,
+        "end": 313,
+        "rawSpanSha256": "6757f3a03bb3ca5bae61cc0d5caf0e21b7c5a2a9c034fba0ccc339480c1d5c53",
+        "heading": "Listen & Watch:"
+      },
+      "textSha256": "b3b85c08529c2d112f40ac0ff766579314cd865d08a76390a7e4ff5b92cd792f",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.the-chicken-and-egg-problem",
+      "title": "The Chicken-and-Egg Problem",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 313,
+        "end": 2473,
+        "rawSpanSha256": "5a6d8d65e7696ae30049358d25bd773dd01e9101eb2f8a088ea9066cfa11fd7b",
+        "heading": "The Chicken-and-Egg Problem"
+      },
+      "textSha256": "dea8396eb825697814719e2352853d8a38f97138b3d172f84c7bd67db1e6c765",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.my-journey",
+      "title": "My Journey",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 2473,
+        "end": 4895,
+        "rawSpanSha256": "b71ced4166193caa23b210b533915fec3610fc0f585dc2cbc730454017a27b33",
+        "heading": "My Journey"
+      },
+      "textSha256": "2c4ee306ec9169c1847c9903eac4d2ff63fd7f9f0ff4029ef494903f238009b3",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.don-t-give-the-inner-adult-away",
+      "title": "Don’t Give the Inner Adult Away",
+      "parent": "IC.S.my-journey",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 4895,
+        "end": 8985,
+        "rawSpanSha256": "046842a0040d6591e7d7afd3af2e106e05375a848f3007a698ad94f04dc3ea9c",
+        "heading": "Don’t Give the Inner Adult Away"
+      },
+      "textSha256": "7842c5b03043366cf9f071132c74aa947141d9862655e7170b4e6c8a3dd13457",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.before-you-try-to-go-deep",
+      "title": "Before You Try to Go Deep",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 8985,
+        "end": 9433,
+        "rawSpanSha256": "17a6175336311b8d7b48241a984582faac2f20b63a4dee4f0762e8cda0c92b94",
+        "heading": "Before You Try to Go Deep"
+      },
+      "textSha256": "cae4928169c74b16fe42448c4607baa806e17ca0fdd29d19fe21efc4fbfc5e9b",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.bottom-up-healing-for-trauma-addiction-neurological-de-armoring-brainstem-relaxation-v5-july-7-2026-https-ibogaqueen-substack-com-p-trauma-and-addiction-why-neurological",
+      "title": "[Bottom-up Healing for Trauma & Addiction: \"Neurological De-Armoring\" + Brainstem Relaxation v5 (July 7, 2026)](https://ibogaqueen.substack.com/p/trauma-and-addiction-why-neurological)",
+      "parent": "IC.S.before-you-try-to-go-deep",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 9433,
+        "end": 10274,
+        "rawSpanSha256": "ec5fb765343f01fc5cff6e9f5467340d40ed400358f24992a15e2d296b0c922e",
+        "heading": "[Bottom-up Healing for Trauma & Addiction: \"Neurological De-Armoring\" + Brainstem Relaxation v5 (July 7, 2026)](https://ibogaqueen.substack.com/p/trauma-and-addiction-why-neurological)"
+      },
+      "textSha256": "12b1d94ec4805dd6921f0815ba8f1648e7c5116c2fdb2a1f0381eea84ccbdcbd",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.regulation-may-come-before-dialogue",
+      "title": "Regulation May Come Before Dialogue",
+      "parent": "IC.S.before-you-try-to-go-deep",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 10274,
+        "end": 11328,
+        "rawSpanSha256": "4f63bfb4774d135951d1aa051a75407b0636b834194bf55cb4230c7a4323ce42",
+        "heading": "Regulation May Come Before Dialogue"
+      },
+      "textSha256": "7ba9e2716e12d9e7a40e40b35c909cf9172cc7a63ba32c779a82f70079326d08",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.somatic-therapy-modalities-5-stage-strategic-sequencing-map-v3-1-last-update-aug-11-2020-https-ibogaqueen-substack-com-p-somatic-modalities-strategic-sequencing",
+      "title": "[Somatic Therapy Modalities: 5 Stage Strategic Sequencing Map v3.1 (Last update Aug 11, 2020)](https://ibogaqueen.substack.com/p/somatic-modalities-strategic-sequencing)",
+      "parent": "IC.S.before-you-try-to-go-deep",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 11328,
+        "end": 12457,
+        "rawSpanSha256": "9f906feab1765609a91b972b131c7874218ef5c2ce5138cdfa5d30cbb7e0aa06",
+        "heading": "[Somatic Therapy Modalities: 5 Stage Strategic Sequencing Map v3.1 (Last update Aug 11, 2020)](https://ibogaqueen.substack.com/p/somatic-modalities-strategic-sequencing)"
+      },
+      "textSha256": "a486bfa26a05b7b627fff6e440b6b380817384489ddaf7727fafe1fa45dd8b8d",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.catch-the-hook-before-you-interpret-it",
+      "title": "Catch the Hook Before You Interpret It",
+      "parent": "IC.S.somatic-therapy-modalities-5-stage-strategic-sequencing-map-v3-1-last-update-aug-11-2020-https-ibogaqueen-substack-com-p-somatic-modalities-strategic-sequencing",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 12457,
+        "end": 14152,
+        "rawSpanSha256": "50ea90448342f14a384006500b0a226f04e218f0f8aeb8684f992a7b82fb9b9c",
+        "heading": "Catch the Hook Before You Interpret It"
+      },
+      "textSha256": "b2e7e2c0651742fb70c2ed9ee0b17d8a9a9e2382c031f86b5afa05f905df6848",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.svg",
+      "title": "svg",
+      "parent": "IC.S.somatic-therapy-modalities-5-stage-strategic-sequencing-map-v3-1-last-update-aug-11-2020-https-ibogaqueen-substack-com-p-somatic-modalities-strategic-sequencing",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 14152,
+        "end": 14161,
+        "rawSpanSha256": "cd3f701e6af5c3c1ffe7144e54776a1bf1917789ba5f51ac818c5c2edc5fddad",
+        "heading": "svg"
+      },
+      "textSha256": "2c5c1e41c1578a74d0fde6fe3c9a9eb464aa2ea6be3614ef2b0ee67ec2952bc3",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.also-look-outward",
+      "title": "Also Look Outward",
+      "parent": "IC.S.somatic-therapy-modalities-5-stage-strategic-sequencing-map-v3-1-last-update-aug-11-2020-https-ibogaqueen-substack-com-p-somatic-modalities-strategic-sequencing",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 14161,
+        "end": 16148,
+        "rawSpanSha256": "51d43619e40248cc9c1a771a3f483d9a9740a1b579d6808df365c75ab0b5999c",
+        "heading": "Also Look Outward"
+      },
+      "textSha256": "7c323321f55d74b09e9e1ccb16c09b6b5109b1219cae2bf0b8ac7536206b03fc",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.when-more-processing-becomes-the-hook",
+      "title": "When More Processing Becomes the Hook",
+      "parent": "IC.S.somatic-therapy-modalities-5-stage-strategic-sequencing-map-v3-1-last-update-aug-11-2020-https-ibogaqueen-substack-com-p-somatic-modalities-strategic-sequencing",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 16148,
+        "end": 17182,
+        "rawSpanSha256": "cf3d4a5168455272aada95ad67682a04dbc407317a60fedfe985790f17b9bb23",
+        "heading": "When More Processing Becomes the Hook"
+      },
+      "textSha256": "0894151cfb38484f74267d355eeb664976c9f0e1af7c58a6eaf69a69975c7ec0",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.borrow-the-adult-before-you-can-be-the-adult",
+      "title": "Borrow the Adult Before You Can Be the Adult",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 17182,
+        "end": 17532,
+        "rawSpanSha256": "331e276d6c72525f95b738b0e4043b56f2fa23d3e0ef8ed85d843eca89ba1b8d",
+        "heading": "Borrow the Adult Before You Can Be the Adult"
+      },
+      "textSha256": "82cba8ebfe2420407efc053b78b44dbe8221bb1c96e7e8d30edd1bb12f5f16e4",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.a-witness-is-enough-to-begin",
+      "title": "A Witness Is Enough to Begin",
+      "parent": "IC.S.borrow-the-adult-before-you-can-be-the-adult",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 17532,
+        "end": 18682,
+        "rawSpanSha256": "c728d875e1546522145119437216948955a48534aa369814bb7b8d121e0b3df0",
+        "heading": "A Witness Is Enough to Begin"
+      },
+      "textSha256": "b94a8fad1285b94bf759f5d2260c6d51fffe0a523a1fc2a2cf7b4a15f485e0b8",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.borrow-one-function-at-a-time",
+      "title": "Borrow One Function at a Time",
+      "parent": "IC.S.borrow-the-adult-before-you-can-be-the-adult",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 18682,
+        "end": 20779,
+        "rawSpanSha256": "88a158ad29fcbf655198eae9b28f3dedd48144d8ef33cd10db8c76e8bfabcdf7",
+        "heading": "Borrow One Function at a Time"
+      },
+      "textSha256": "3eaa7664a0b741cd1c9d6c8a13086a62a0a9bc5e941f48e90c098efbcfe2e961",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.borrow-love-or-borrow-the-perspective-of-care",
+      "title": "Borrow Love—or Borrow the Perspective of Care",
+      "parent": "IC.S.borrow-the-adult-before-you-can-be-the-adult",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 20779,
+        "end": 24341,
+        "rawSpanSha256": "04a3fa9a354f974e9a371b29620a92c37060ca5689c18f2132bf0f2cdf076df1",
+        "heading": "Borrow Love—or Borrow the Perspective of Care"
+      },
+      "textSha256": "33c850373477aa80c516bbad5131d36fa874e56a9b1334d93d7aface49674a97",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.ask-god-for-a-loan",
+      "title": "Ask God for a Loan",
+      "parent": "IC.S.borrow-love-or-borrow-the-perspective-of-care",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 24341,
+        "end": 25570,
+        "rawSpanSha256": "3159da53a97ef471e237cef7c60b2f5e61efec3a606fe6ef5859514a893eacc7",
+        "heading": "Ask God for a Loan"
+      },
+      "textSha256": "16666e66fde3cd8f8b77b89828971c06ba85fed73f97ead4a6dab38d77f7f450",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.when-the-spiritual-relationship-hurts",
+      "title": "When the Spiritual Relationship Hurts",
+      "parent": "IC.S.borrow-love-or-borrow-the-perspective-of-care",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 25570,
+        "end": 26329,
+        "rawSpanSha256": "d9a18d7d42008f16e2799f8dd565632affb425826c07068a620f5d1c0b4450d5",
+        "heading": "When the Spiritual Relationship Hurts"
+      },
+      "textSha256": "63c4bf7c2ffc5de50bf6f4c3073beaa0fa55e0ac2b56f6028b83f9d5f4757b9e",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.become-the-adult-apprentice",
+      "title": "Become the Adult Apprentice",
+      "parent": "IC.S.borrow-the-adult-before-you-can-be-the-adult",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 26329,
+        "end": 27909,
+        "rawSpanSha256": "0b195200d4df5d590c11c3264ee0617afbf1ebc75641dd333da360eaa24d8a3c",
+        "heading": "Become the Adult Apprentice"
+      },
+      "textSha256": "af95a4c106463faf5159a760644c8f390f1e4bd37b32ab5c916581a20f91f8c1",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.the-three-adult-functions",
+      "title": "The Three Adult Functions",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 27909,
+        "end": 32130,
+        "rawSpanSha256": "7ad010621792b3cfa2a0c18e428aa873958d167ca2aa8a724ad4e9e1d9ba3bff",
+        "heading": "The Three Adult Functions"
+      },
+      "textSha256": "eab83f10ea594ff5cc958789ec54d969426c4b4fa9f74a89b0a0c497f55bebd0",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.make-the-protector-visible",
+      "title": "Make the Protector Visible",
+      "parent": "IC.S.the-three-adult-functions",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 32130,
+        "end": 33696,
+        "rawSpanSha256": "b539bc1bcec77943fe7ec8a1f621eef1f156c23e62896412f2e5816a22fb7388",
+        "heading": "Make the Protector Visible"
+      },
+      "textSha256": "0739c92500f060a623d4d0a4f476ceab95c7841823294180d0aec028351e5955",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.love-doesn-t-have-to-wait-for-trust",
+      "title": "Love Doesn’t Have to Wait for Trust",
+      "parent": "IC.S.the-three-adult-functions",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 33696,
+        "end": 38020,
+        "rawSpanSha256": "57c8b773eae47c6701bcc485dc9eb9c33d1c7a3cf27410887b5a88331ff2fa4f",
+        "heading": "Love Doesn’t Have to Wait for Trust"
+      },
+      "textSha256": "8ebb8bb703cf7f21e20a2b4951c8e1873ef3f88bf23ba61fea3fec1587d78295",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.make-a-simple-vow",
+      "title": "Make a Simple Vow",
+      "parent": "IC.S.the-three-adult-functions",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 38020,
+        "end": 39211,
+        "rawSpanSha256": "61cb0247e88f287989997e9032e243ae41f4a5a82fc713cf89f10e4890ab15e2",
+        "heading": "Make a Simple Vow"
+      },
+      "textSha256": "68f020d75cf994b07e8bc2525e7bcc85b0dfda8d1da591aecd91f581d99bb12a",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.give-the-vow-a-physical-reminder",
+      "title": "Give the Vow a Physical Reminder",
+      "parent": "IC.S.make-a-simple-vow",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 39211,
+        "end": 40099,
+        "rawSpanSha256": "867a59bfd9fba168cc4b80c820c5b97095598abbde8cc561e40307efa2b41063",
+        "heading": "Give the Vow a Physical Reminder"
+      },
+      "textSha256": "5f32cf8419d48025ed819adc8dbc3401865f6951f1f1a99530282a40b6870817",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.when-the-adult-voice-feels-fake",
+      "title": "When the Adult Voice Feels Fake",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 40099,
+        "end": 40832,
+        "rawSpanSha256": "88917bb47c53430195cb39f201bbd9cc2260db1221054334fe4f039cccafd9ae",
+        "heading": "When the Adult Voice Feels Fake"
+      },
+      "textSha256": "534dbccefd9853dfdcc0e7f2845b7a5fedfdf07d78ea1dad140d2103a6848ecd",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.the-parent-you-inherited",
+      "title": "The Parent You Inherited",
+      "parent": "IC.S.when-the-adult-voice-feels-fake",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 40832,
+        "end": 41811,
+        "rawSpanSha256": "9f63130079d2c6a39165a943b488901bc87f05d6707e0433339563eb8621710d",
+        "heading": "The Parent You Inherited"
+      },
+      "textSha256": "91f905ab27d44bf0d023c2e41718803585021d745daeea5abfbaef7ae32c34d1",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.start-with-whatever-showed-up",
+      "title": "Start With Whatever Showed Up",
+      "parent": "IC.S.when-the-adult-voice-feels-fake",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 41811,
+        "end": 43455,
+        "rawSpanSha256": "62cd8ff3698b8c281e07cd1f2f080d2d002be7a519af7fa65ccedb1a1decaa10",
+        "heading": "Start With Whatever Showed Up"
+      },
+      "textSha256": "98ef0eb661bdc12ebbcc2e26f8d1a360f745fe2b0f1da0e7202fb43e6b1fca24",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.two-common-protective-patterns",
+      "title": "Two Common Protective Patterns",
+      "parent": "IC.S.start-with-whatever-showed-up",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 43455,
+        "end": 44521,
+        "rawSpanSha256": "e02066288a5563111c0957758f91f9425d119bbe3cfd79622954ad329b2882ad",
+        "heading": "Two Common Protective Patterns"
+      },
+      "textSha256": "609f304b389cc5d412891279676d4e4d9222c55779076c77a44a527f9621ebec",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.a-bottom-up-sequence",
+      "title": "A Bottom-Up Sequence",
+      "parent": "IC.S.start-with-whatever-showed-up",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 44521,
+        "end": 46652,
+        "rawSpanSha256": "6b26c440ee9fdfb513a8ab6f3dbf60dfda4fdd6615ae51f2fe5cc3a65663123b",
+        "heading": "A Bottom-Up Sequence"
+      },
+      "textSha256": "2f156a49ac564e7474009430a313f026cef4d3d891ab57e259f16ceec06c4693",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.when-the-urge-to-escape-arrives",
+      "title": "When the Urge to Escape Arrives",
+      "parent": "IC.S.start-with-whatever-showed-up",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 46652,
+        "end": 48203,
+        "rawSpanSha256": "797b4198f669fb531c161d3028209297f2c615ed918cf75bf3336a313b16a809",
+        "heading": "When the Urge to Escape Arrives"
+      },
+      "textSha256": "3c4d24778932dffb046aee17610942fb3689a82626bbbad242f198ac861cdd48",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.sometimes-there-isn-t-a-clear-child-yet",
+      "title": "Sometimes There Isn’t a Clear Child Yet",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 48203,
+        "end": 48983,
+        "rawSpanSha256": "cf5adf13473502c15ea42fefa068ba2d245dcd3f488b147d705dfd70f979838e",
+        "heading": "Sometimes There Isn’t a Clear Child Yet"
+      },
+      "textSha256": "aef79dcb55752f950855eb0ce8490cc65655aaeccf8e50117df1bf39d63e0217",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.from-survival-to-experimental-play",
+      "title": "From Survival to Experimental Play",
+      "parent": "IC.S.sometimes-there-isn-t-a-clear-child-yet",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 48983,
+        "end": 51133,
+        "rawSpanSha256": "bba100d3453b9f83dcb5c447380939cf4b9b2f9c670a971b42a7fa1a19d55456",
+        "heading": "From Survival to Experimental Play"
+      },
+      "textSha256": "963257e238b7eee9e0b029139ffc4fca540b38eb499873158eef141772de8d85",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.untangling-the-belonging-bargains",
+      "title": "Untangling the Belonging Bargains",
+      "parent": "IC.S.sometimes-there-isn-t-a-clear-child-yet",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 51133,
+        "end": 52743,
+        "rawSpanSha256": "135bda196aac7b4ce725bccc32210afe263a3b2ecbf607e73be423948a12f4e8",
+        "heading": "Untangling the Belonging Bargains"
+      },
+      "textSha256": "6963f82636082ad69b43c6e9ade10c32c4dcde0293c9a7fb5eb217637d160de1",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.four-pairs-that-commonly-hook-the-child",
+      "title": "Four Pairs That Commonly Hook the Child",
+      "parent": "IC.S.untangling-the-belonging-bargains",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 52743,
+        "end": 55080,
+        "rawSpanSha256": "fdffca7624df75ed9e409868bc3234dc54091aee09610cb2f5d0fbc517f82cd5",
+        "heading": "Four Pairs That Commonly Hook the Child"
+      },
+      "textSha256": "b1e205c78b1185395980fc43ec8ae5ed8ca6a305d9bb9d40fc36c33e666cb6c9",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.let-the-child-be-bad-at-things",
+      "title": "Let the Child Be Bad at Things",
+      "parent": "IC.S.sometimes-there-isn-t-a-clear-child-yet",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 55080,
+        "end": 56031,
+        "rawSpanSha256": "f6f788feb7ef7fc12b6ef36a0871892c7350e2868b42134c59df668d6ecbf8e5",
+        "heading": "Let the Child Be Bad at Things"
+      },
+      "textSha256": "091a61dc0f312c0489fadeb3cade562b18e3a5113973ee8a1ac01e5cf8cc17cd",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.the-inner-guide-comes-later",
+      "title": "The Inner Guide Comes Later",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 56031,
+        "end": 59302,
+        "rawSpanSha256": "3da0b3a04b220417300f279217a81ce1279f09e8438e050f56063bfe989ba39d",
+        "heading": "The Inner Guide Comes Later"
+      },
+      "textSha256": "afe68b67f19908c040c81d9ea3bd5b8f80df98e4e7dfba4c15bb95a9e7cfb96d",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.timing-is-individual",
+      "title": "Timing is individual",
+      "parent": "IC.S.the-inner-guide-comes-later",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 59302,
+        "end": 60393,
+        "rawSpanSha256": "2fca03413b6d2a2b7ce1809af0e6541cf609f64e5e637d1c934f55197ff8b86f",
+        "heading": "Timing is individual"
+      },
+      "textSha256": "74266b15b914b829f1fe0f4ae458d79c1229f82eb369545fcada9ebe7fd5560d",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.simple-practices",
+      "title": "Simple Practices",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 60393,
+        "end": 60418,
+        "rawSpanSha256": "485515f7a2a4cbdb2975a3c0e4f2d5deb9e5ffa8b8feccccbd19d972ae3dd43a",
+        "heading": "Simple Practices"
+      },
+      "textSha256": "01a24af110f93e3f494136110a61326e86af821a82904a270d67fdc80ac2e745",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.a-heart-to-child-loop",
+      "title": "A Heart-to-Child Loop",
+      "parent": "IC.S.simple-practices",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 60418,
+        "end": 61333,
+        "rawSpanSha256": "eb8f10a11a5a29a3f60fc545f914f49ffc004c6a94ece2cc742acf2fa42dcbd6",
+        "heading": "A Heart-to-Child Loop"
+      },
+      "textSha256": "32b6b038c274ec156d4b482163a6003d53114c3a273ad6b260b056eb636a237a",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.journal-with-each-hand",
+      "title": "Journal With Each Hand",
+      "parent": "IC.S.simple-practices",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 61333,
+        "end": 61787,
+        "rawSpanSha256": "375454efaa108dfc49748568252f8c6c398c3fedc81965274ba19e04c552792a",
+        "heading": "Journal With Each Hand"
+      },
+      "textSha256": "902177ce7cb143b58df59f414bb169392c0b05a7526d71f5e7534497503e430d",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.one-intention-in-the-morning-one-review-at-night",
+      "title": "One Intention in the Morning, One Review at Night",
+      "parent": "IC.S.journal-with-each-hand",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 61787,
+        "end": 62387,
+        "rawSpanSha256": "b200ec1cb0877fa10a2a40564324e56d2fec9e590a12dc7e5725d70b5110af1d",
+        "heading": "One Intention in the Morning, One Review at Night"
+      },
+      "textSha256": "0a669a4224956446b5cc3b1cb7a7668ad01ac65172a5a97c83a7446a1ee3e986",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.just-like-me",
+      "title": "Just Like Me",
+      "parent": "IC.S.journal-with-each-hand",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 62387,
+        "end": 63145,
+        "rawSpanSha256": "5f29e012d61c34235fc9776a5c222088a5f567773bd87599505af0e1adc47f9d",
+        "heading": "Just Like Me"
+      },
+      "textSha256": "a345f54eaa83eaf161787a24fc7af886f02785d807ad7190900c8bfab10d4e0f",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.use-childhood-photographs-without-interrogating-them",
+      "title": "Use Childhood Photographs Without Interrogating Them",
+      "parent": "IC.S.simple-practices",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 63145,
+        "end": 65342,
+        "rawSpanSha256": "2367874af8bd325cab1c7c75087dbd314f495f024281a12b4e950e1abdd0ce85",
+        "heading": "Use Childhood Photographs Without Interrogating Them"
+      },
+      "textSha256": "4a18a818a64b41a76972b96f080b0be59c393ce2492488489501fb025495897b",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.close-the-session-and-return-to-life",
+      "title": "Close the Session and Return to Life",
+      "parent": "IC.S.use-childhood-photographs-without-interrogating-them",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 65342,
+        "end": 65928,
+        "rawSpanSha256": "fb4297f285233c1731e506cb92de470285c848ed7c251f73db45b79b336da93a",
+        "heading": "Close the Session and Return to Life"
+      },
+      "textSha256": "5de7b6b741a8cf527300bc70a2ff267b4268e68d0530c7714fdeca71dc9e0589",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.when-love-still-feels-missing",
+      "title": "When Love Still Feels Missing",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 65928,
+        "end": 67869,
+        "rawSpanSha256": "bb2b11a6730ee515c6608870cb03572bc341988410af7179255306bfadb1ada4",
+        "heading": "When Love Still Feels Missing"
+      },
+      "textSha256": "314685edf41165e5fea568a125a4c8f11529de2454a39473b30d38de323b10b5",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.notice-the-part-that-came-here",
+      "title": "Notice the Part That Came Here",
+      "parent": "IC.S.when-love-still-feels-missing",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 67869,
+        "end": 68572,
+        "rawSpanSha256": "9a90fe22b4a2a51682a869f14552f0dd793538010d47ca29c8bf2485090a8287",
+        "heading": "Notice the Part That Came Here"
+      },
+      "textSha256": "16d63e1e0514a33c1151eeb38ebb181bccf533e7464ca7b293240dbaed51ba33",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.somatic-heart-opening",
+      "title": "Somatic Heart Opening",
+      "parent": "IC.S.when-love-still-feels-missing",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 68572,
+        "end": 69357,
+        "rawSpanSha256": "494f63f24360ebbb43574485870748de8282007451080a79775dc350ae7a4bb5",
+        "heading": "Somatic Heart Opening"
+      },
+      "textSha256": "2a31767cf1e48e7e91d0f4ca2a4dab5feff47bd341150c20711e20ba1f85aabf",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.how-much-happiness-do-you-know-is-possible",
+      "title": "How Much Happiness Do You Know Is Possible?",
+      "parent": "IC.S.when-love-still-feels-missing",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 69357,
+        "end": 71830,
+        "rawSpanSha256": "a9200928102277a7e6d47dcc17bb3b7fc0c3b408996a75387935308d09775e04",
+        "heading": "How Much Happiness Do You Know Is Possible?"
+      },
+      "textSha256": "7a5089c133ae4c99bef489789c03ef0e98016578a2645a712137be3bab3ebd18",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.if-you-want-to-kill-yourself",
+      "title": "If You Want to Kill Yourself",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 71830,
+        "end": 75091,
+        "rawSpanSha256": "9d93cb7fe2090164fc3db19408987d4b3a462dedc9e00007c73dce1eeb0c74d4",
+        "heading": "If You Want to Kill Yourself"
+      },
+      "textSha256": "d4ffb337769ccf6dfc3411a53f1de6af8594a6e0cb6b2f8a18b86e3deaa1fc50",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.this-human-life-is-the-most-precious-opportunity",
+      "title": "This human life is the most precious opportunity",
+      "parent": "IC.S.if-you-want-to-kill-yourself",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 75091,
+        "end": 76363,
+        "rawSpanSha256": "d6e2a328656a0c69f44ea66f5f8e8935540b3d672d27a6bcb1d2a41a0235e958",
+        "heading": "This human life is the most precious opportunity"
+      },
+      "textSha256": "b81dd266495c9bf0871701733c4948642aa3ecf1695742fe137b1204248ff9fe",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.altered-states-can-deepen-the-therapy",
+      "title": "Altered States Can Deepen the Therapy",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 76363,
+        "end": 78009,
+        "rawSpanSha256": "ff1326a8a9ac3f323927859e26b32b10ec39877fe6a8c970efa55f7da704957f",
+        "heading": "Altered States Can Deepen the Therapy"
+      },
+      "textSha256": "5ad3d5806661277ec578c21b2fa5fd72dec96efefae3c8524e89f85b73b21e60",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.altered-states-can-require-reparenting",
+      "title": "Altered States Can *Require *Reparenting",
+      "parent": "IC.S.altered-states-can-deepen-the-therapy",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 78009,
+        "end": 82760,
+        "rawSpanSha256": "313d75a1b57dbfa0107769245d147cd7c78bb430d0da7eb83b4fc385b9c1dac9",
+        "heading": "Altered States Can *Require *Reparenting"
+      },
+      "textSha256": "c21a19eea3133371856aa510cb38f8f872ae2d2614a3988ed7952c8ece2771d8",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.non-altered-states-can-feel-like-this-too",
+      "title": "Non-altered states can feel like this too",
+      "parent": "IC.S.altered-states-can-require-reparenting",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 82760,
+        "end": 83487,
+        "rawSpanSha256": "52bd854e7af6df1aafeccb201e2d88cc289451344ec7cbed4220054c94d97fc9",
+        "heading": "Non-altered states can feel like this too"
+      },
+      "textSha256": "96e4f9b566b3562a6b85efb11d0f1690db889d9e157c63c26af5610b8428342c",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.when-the-practice-feels-real-but-stays-shallow",
+      "title": "When the Practice Feels Real but Stays Shallow",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 83487,
+        "end": 84228,
+        "rawSpanSha256": "d933bff9db03752b6e035fa4247fb85eb335025a63a357185e776b7af9dff6a4",
+        "heading": "When the Practice Feels Real but Stays Shallow"
+      },
+      "textSha256": "32f8a5d75176de46eacbc4299d50df720dfe55c3e62830ae35c757f0b4df6699",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.how-to-forgive-without-forgetting",
+      "title": "How to Forgive Without Forgetting",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 84228,
+        "end": 87311,
+        "rawSpanSha256": "dc08f9b55c5bdf932d8594ad8c1410f403a6544b5360560a8d21c6f755a7b3da",
+        "heading": "How to Forgive Without Forgetting"
+      },
+      "textSha256": "a02bd72ebeac0d10543393c53a31e4d1c678c4ad4e8dd77476a4e80d2dc5849a",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.when-one-life-has-ended-and-the-next-hasn-t-begun",
+      "title": "When One Life Has Ended and the Next Hasn’t Begun",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 87311,
+        "end": 88393,
+        "rawSpanSha256": "29f83be55e7bc822ffcfa6df662c9bea898304fe02ca655ec659cd12494b2720",
+        "heading": "When One Life Has Ended and the Next Hasn’t Begun"
+      },
+      "textSha256": "5ed78e656d667dc2a0b393598a57fcab5d618464e96d684e5dc6157c81891d4e",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.borrowed-adulthood-in-relationship",
+      "title": "Borrowed Adulthood in Relationship",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 88393,
+        "end": 90721,
+        "rawSpanSha256": "f75c1a64bc82e415e75c85fbfc3f6ba64e3901b629b20b39381e6903c38d070f",
+        "heading": "Borrowed Adulthood in Relationship"
+      },
+      "textSha256": "a567484563b346dbe6158aca2ffa13cee20bcc9ea64d6471aa0bfac8d2ad9552",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.you-are-worthy-of-love-always",
+      "title": "You Are Worthy of Love. Always.",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 90721,
+        "end": 91734,
+        "rawSpanSha256": "ee214513311553b0751eeb0bccd14837d61d9741d5111120f6a690f716e96f30",
+        "heading": "You Are Worthy of Love. Always."
+      },
+      "textSha256": "699498bc6bac62590e40d4fb6fc82d93a04bcd08ae6496a04b39ee9eb1e30bb3",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.appendix",
+      "title": "Appendix",
+      "parent": null,
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 91734,
+        "end": 91751,
+        "rawSpanSha256": "8e3ccebf01b9049e5c393d49cbeb00b7b26e6d8640f278c5c89da5e614e3702a",
+        "heading": "Appendix"
+      },
+      "textSha256": "6d43a54d5d563ee8cfe371e66554e293e13bc6298d4327c83d07f536e5280e30",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.how-this-relates-to-ifs",
+      "title": "How This Relates to IFS",
+      "parent": "IC.S.appendix",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 91751,
+        "end": 93922,
+        "rawSpanSha256": "fdc784a00144619b53e7d2f915d36218a6824b6f0801f741e65552959fe351fd",
+        "heading": "How This Relates to IFS"
+      },
+      "textSha256": "6dd3538110906b281d52f7bee989efcfa386ce851f1e8e28947a890158f50ed3",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.related-clinical-work",
+      "title": "Related Clinical Work",
+      "parent": "IC.S.how-this-relates-to-ifs",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 93922,
+        "end": 94555,
+        "rawSpanSha256": "edc5d75da67c08d3e287312f44fa38e90fb06bea441ca44aaa6371a2325ef71d",
+        "heading": "Related Clinical Work"
+      },
+      "textSha256": "a52808248b9f04ffae8aebd55d4c4370d7c1133db80b066ab2f0dc7c26e81ae0",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "IC.S.teachers-and-practice-resources",
+      "title": "Teachers and Practice Resources",
+      "parent": "IC.S.appendix",
+      "layer": "inner-child-companion",
+      "source": {
+        "document": "inner-child-owner-20260911",
+        "start": 94555,
+        "end": 96347,
+        "rawSpanSha256": "f4382aaee10b42b0f871166259d17490af084bcac36882f362977a8c340321be",
+        "heading": "Teachers and Practice Resources"
+      },
+      "textSha256": "f4382aaee10b42b0f871166259d17490af084bcac36882f362977a8c340321be",
+      "epistemicRole": "owner-guide-not-independent-evidence"
+    },
+    {
+      "id": "REF.T01",
+      "title": "Self-hypnosis, another hypnotist, and recordings",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 799,
+        "end": 1530,
+        "rawSpanSha256": "b9cea5f6237e7a30a7ba0ab69a5b6234992bc6278f0421ed623a72234ff6cbe6",
+        "heading": "Self-hypnosis, another hypnotist, and recordings"
+      },
+      "textSha256": "efb19df1a8f3987bde0388fabf4ea558052a7099d619e88598dec0a3bb211663",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T02",
+      "title": "What counts as hypnosis?",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 1530,
+        "end": 2187,
+        "rawSpanSha256": "90a19de4a0c1b72d48c05c8ae0f13ca839440cf505ec5e385abec81c7e9178ca",
+        "heading": "What counts as hypnosis?"
+      },
+      "textSha256": "c4b2514683e484626e9d5268fc381875a8ecf6903c24c0457a73fd8b2dfb6c28",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T03",
+      "title": "Theories: several accounts, not one settled mechanism",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 2187,
+        "end": 2858,
+        "rawSpanSha256": "026a5b6c851af38fa798c7b02aa7f73933cf8679a7a77ae71b87f4febdc3c3cc",
+        "heading": "Theories: several accounts, not one settled mechanism"
+      },
+      "textSha256": "cdd7990e71a8378cf87e435cd1f8836fd3670fb32b43ec2b6c7e51071318b194",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T04",
+      "title": "Predictive processing and bottom-up work",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 2858,
+        "end": 3495,
+        "rawSpanSha256": "b13590d3a5a5f33c323d7dec3bf67ae504c5e512cbee7fa4addf04fcf5277625",
+        "heading": "Predictive processing and bottom-up work"
+      },
+      "textSha256": "dcbbe02d3e5583097fe9acfd989e0d4129645b795c6a29b928295c7b1e17273a",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T05",
+      "title": "Responsiveness is something to explore, not a grade of worth",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 3495,
+        "end": 4185,
+        "rawSpanSha256": "99a64cec27c63faa691ee5844146d75322e2c93118e61a8b836b84acb77dec4f",
+        "heading": "Responsiveness is something to explore, not a grade of worth"
+      },
+      "textSha256": "e26a96c28e26845633d2f541054678458853f77e63cdea6fa1224e6ab0c20eb7",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T06",
+      "title": "Felt involuntariness and retained choice",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 4185,
+        "end": 4851,
+        "rawSpanSha256": "19b35df10cb8801e77d159b971771f6cb208029b5417789276f225537ba864db",
+        "heading": "Felt involuntariness and retained choice"
+      },
+      "textSha256": "e96102a4d3fc66453fdb571796a0273537a5aae3f01a9c85ef950c3d54d11c10",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T07",
+      "title": "Learning an induction and a return",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 4851,
+        "end": 5477,
+        "rawSpanSha256": "bea63f2030a7aa82c433b701ac8eb15bc27c73006eb6c132fba7966d023c63d2",
+        "heading": "Learning an induction and a return"
+      },
+      "textSha256": "e1c70bdc16f619eee2a143c913b658b2b4535ce1462ccccf6212de78d0f4689e",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T08",
+      "title": "Imagery without compulsory pictures",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 5477,
+        "end": 6118,
+        "rawSpanSha256": "815d66e7adbf5b2a21ee56b1adde422533c09b2ee569d51424d9311055738f49",
+        "heading": "Imagery without compulsory pictures"
+      },
+      "textSha256": "19a7095641b540626cb0a4326538604e93934c09ecc42bae376b4323513b54f8",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T09",
+      "title": "Direct, indirect and permissive language",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 6118,
+        "end": 6778,
+        "rawSpanSha256": "4a49da0567c006be8c0311fbb683e8ab6c4d7678d1fcc97824232fb154dc3f5a",
+        "heading": "Direct, indirect and permissive language"
+      },
+      "textSha256": "c8fb8ff08e4fe033b099cbf9fe2312bf230b9f30925e6fd9e86247e8170f983b",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T10",
+      "title": "Pacing, leading, utilization and metaphor",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 6778,
+        "end": 7443,
+        "rawSpanSha256": "a9a5d190c8748620fbf664bf0a705ee4d00e6107d25ac801bf643102ec95f381",
+        "heading": "Pacing, leading, utilization and metaphor"
+      },
+      "textSha256": "372522fd315d441a9a60e22426782db60c26a21e823d7466617eda7ab2ace72a",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T11",
+      "title": "Re-entry cues and anchors",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 7443,
+        "end": 8119,
+        "rawSpanSha256": "76f6f4cb27e9405750453220f76512674a87da5d40172faa348c5f8ac8f13c4e",
+        "heading": "Re-entry cues and anchors"
+      },
+      "textSha256": "3e22efc96cb7ac533ebb22d78928a0232fd0a87f6b953fc802d15ba1adf89f87",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T12",
+      "title": "Posthypnotic suggestions and amnesia",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 8119,
+        "end": 8866,
+        "rawSpanSha256": "7435c199699610e3b1c669a6afe508b1a46f7e820de5b399f8a81b34ed31c128",
+        "heading": "Posthypnotic suggestions and amnesia"
+      },
+      "textSha256": "703ecd0576179113c61b321b12030fce3b7f0518500ab2e136f006e00ae9d392",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T13",
+      "title": "Observation, interpretation and deliberate experiment",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 8866,
+        "end": 9555,
+        "rawSpanSha256": "405ac92a4d59c5aea74952f04f9f90965ae9053443b1cdd3c5a01da2c79e0cac",
+        "heading": "Observation, interpretation and deliberate experiment"
+      },
+      "textSha256": "bc9e5c22a12b18dec15a33300a74c7e7f5b87cf7c08b3a44dc2f29e6fa6314f7",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T14",
+      "title": "Bracing after a suggestion",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 9555,
+        "end": 10187,
+        "rawSpanSha256": "24dd8ee9e823aef13ffd1ad40428280d3018bdad9ed616131e4aee3b75b4849f",
+        "heading": "Bracing after a suggestion"
+      },
+      "textSha256": "d3080c07c5ae1f4c9f45a691194a2bcd7d883d9b95f577c4e4aeb43e4d48319e",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T15",
+      "title": "SIBAM is a map, not five compulsory reports",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 10187,
+        "end": 10831,
+        "rawSpanSha256": "703798a9a3a0b7c02968b581a3dea1a94118036e60bee11860371834cafc805d",
+        "heading": "SIBAM is a map, not five compulsory reports"
+      },
+      "textSha256": "f14b2aba122215491262db8169338fdd7ed7c54f4f8b584e0b994b31c804c244",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T16",
+      "title": "Titration, pendulation and fractionation",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 10831,
+        "end": 11497,
+        "rawSpanSha256": "5f92ac047576447bfa6f33dfc901bf056fe27f00717707ebbd4c02311daa3c6b",
+        "heading": "Titration, pendulation and fractionation"
+      },
+      "textSha256": "956056958f8f31574cf7fc65d513f1e972174e13ee228626d3755101f4db7bfa",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T17",
+      "title": "Resources are individually tested",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 11497,
+        "end": 12125,
+        "rawSpanSha256": "d18fc3ed58db7087a24d78e742419b5eaf5a85340edd2d4112288c4701bf91bd",
+        "heading": "Resources are individually tested"
+      },
+      "textSha256": "2257953a9514b70ada2f61fbfcb902d80849646fb189450c8c7d87d06ca22751",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T18",
+      "title": "Breath is one possible route",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 12125,
+        "end": 12733,
+        "rawSpanSha256": "dc6897636299277f368cb17c1881de5c466d8c64ac04593df6831f9836e693d0",
+        "heading": "Breath is one possible route"
+      },
+      "textSha256": "397e99d14aefc87d280945042f70618aada44c2ef69d66baa29c6b78f08950a1",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T19",
+      "title": "Overcoupling and undercoupling",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 12733,
+        "end": 13404,
+        "rawSpanSha256": "27c9b556de82001d7b1a1fd5ee178eceaf40102696d934db84f561e190ae7880",
+        "heading": "Overcoupling and undercoupling"
+      },
+      "textSha256": "27e043b3399b64c72495c0d5faa82c94e9068ced7cfcf8d001ac5f1afea43c9e",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T20",
+      "title": "Movement and containment",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 13404,
+        "end": 14047,
+        "rawSpanSha256": "44824f6d0b7df90479ffe05a7b7ca0c9fe78567c251a18a32a10d3f579b36fd7",
+        "heading": "Movement and containment"
+      },
+      "textSha256": "8eb9f64a73aa24b6e3a68fdcbfc7e976e704b4375d9b09d137fe801faa6a8461",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T21",
+      "title": "Positive practice is a complete purpose",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 14047,
+        "end": 14703,
+        "rawSpanSha256": "a83a916e510b691d5799f38f8e63c01fdccaa62e6e877995df8003520843fd66",
+        "heading": "Positive practice is a complete purpose"
+      },
+      "textSha256": "6dbec152f22c575183007f0ae9b513b81066138e410ce3907d913bdae576b394",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T22",
+      "title": "Ego states and an inner child",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 14703,
+        "end": 15380,
+        "rawSpanSha256": "be075fbc5351a5ff32da38156fad6a32e752de358231f07144c80633964db4e9",
+        "heading": "Ego states and an inner child"
+      },
+      "textSha256": "d97c5950817cfc64249c9a8ded070d0e246b376177a58abd3891dbbd32a2545e",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T23",
+      "title": "Renurturing and borrowed capacities",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 15380,
+        "end": 16055,
+        "rawSpanSha256": "b8b68a98d10c6c62a829a1c8dd58ebdec159dff33244b94ff74eb3e1c5a1692b",
+        "heading": "Renurturing and borrowed capacities"
+      },
+      "textSha256": "5c0d149815db6c7b6a2f060cae5a16e6d5bf515ba013be786cb1424191cc7c65",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T24",
+      "title": "Integration is not automatic deletion of parts",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 16055,
+        "end": 16742,
+        "rawSpanSha256": "01df77e29635145648b827562b23f2e81603136b1bf1e4374ffca3a68a8205c4",
+        "heading": "Integration is not automatic deletion of parts"
+      },
+      "textSha256": "1fc881f01c2b02496d169a73cb6278359f18d8769906d9004dc684bf9447cb5c",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T25",
+      "title": "Ideomotor and ideosensory communication",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 16742,
+        "end": 17425,
+        "rawSpanSha256": "68ec4cc28059d99eb406341b8dc561e794c27ed6e3793a3d0d41c48a5265b0d9",
+        "heading": "Ideomotor and ideosensory communication"
+      },
+      "textSha256": "8f73c732c7e10e78fd638b1c3f5a7c562208b18248a5bcc58e8748d249d27a05",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T26",
+      "title": "Age regression and affect/somatic bridges",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 17425,
+        "end": 18160,
+        "rawSpanSha256": "527987716fa6f650b7086a9ff646be88802359cd577756b894438d22be68db2b",
+        "heading": "Age regression and affect/somatic bridges"
+      },
+      "textSha256": "97aa5b9e7c1b06735d9c89f2b0dd40d784d525a5924fb9f67e11ea4330365597",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T27",
+      "title": "Distancing, screens and observer perspectives",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 18160,
+        "end": 18871,
+        "rawSpanSha256": "481bc9a5180e10b0ebbdc379c64562aba5274fd6bcf4bd936e8590b58b0a1226",
+        "heading": "Distancing, screens and observer perspectives"
+      },
+      "textSha256": "71430541a60fa7873305a98abf2ad8bf464b0b66ed905e55946bcfc8133efa9c",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T28",
+      "title": "Abreaction and renegotiation",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 18871,
+        "end": 19547,
+        "rawSpanSha256": "938c4c65d2cd247e91ce70ca567c2bdc87a19f2a845f9d146ad1e6989d405aa3",
+        "heading": "Abreaction and renegotiation"
+      },
+      "textSha256": "ab19d09cb57b4d1b5ff770a1a6fda3283273bfd3d3846acdba9d5cfdb62ac8fc",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T29",
+      "title": "Memory: significance and verification",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 19547,
+        "end": 20271,
+        "rawSpanSha256": "3c76cd9f56e52805cfd7603bcbb2357c328dae59e5e0642ed2e556c925b77a21",
+        "heading": "Memory: significance and verification"
+      },
+      "textSha256": "eb6b20e395781d4eb22e65f8c1c12b52190d60750d35dbfedfc4af4fa449da6b",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T30",
+      "title": "Reconsolidation claims",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 20271,
+        "end": 21105,
+        "rawSpanSha256": "956da3e1b97e467f1325045885b1bb7cf31ed5e9e2e86ccb8432a4cd678f5f11",
+        "heading": "Reconsolidation claims"
+      },
+      "textSha256": "69a5a6fd19ad1d328a5812b95ad1fb3b179e94bf4343b01ae6210f574a73e7b2",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T31",
+      "title": "Mismatch and repair",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 21105,
+        "end": 21721,
+        "rawSpanSha256": "9639fa9289dc615e49f703cc2d7235c3c4f8325b7d4cf79f81dfc0533924b707",
+        "heading": "Mismatch and repair"
+      },
+      "textSha256": "d38881204a0b61b32dc58ca6da647209e8b2d53b0ca4e4b155625c68094ca363",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T32",
+      "title": "Overprotection, dependency and the practitioner relationship",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 21721,
+        "end": 22445,
+        "rawSpanSha256": "7f17398dfdc50055405167dfa5a4f31e1772ff80457c2d9ecb1fd6b9c156b3e9",
+        "heading": "Overprotection, dependency and the practitioner relationship"
+      },
+      "textSha256": "591b8a5b446390ecf990072064ee88380c6c1239103763cf8107903a8a372601",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T33",
+      "title": "Touch, coordination and method boundaries",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 22445,
+        "end": 23112,
+        "rawSpanSha256": "1570d2098a8612a4fa70ef8ae5faa837d9f5beaae9362ae95c797e71c8b9d2f7",
+        "heading": "Touch, coordination and method boundaries"
+      },
+      "textSha256": "5f9e9d90e2cec52e02be642461b6eb11fc2de88aefdd3ee3cc2ab2cf28f1c24e",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T34",
+      "title": "Spirituality and forgiveness",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 23112,
+        "end": 23781,
+        "rawSpanSha256": "baee39673d543076c48f1f73365516500fb1815176b81315d735d4b74b5a96d0",
+        "heading": "Spirituality and forgiveness"
+      },
+      "textSha256": "3a65deeb18f8ff2c94a2bb2061cba644cb9c3d2e92837329d0451d27c3c5480c",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T35",
+      "title": "Contemporary treatment context and credentials",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 23781,
+        "end": 24559,
+        "rawSpanSha256": "f172098525d56e492f9933cbf943d6f59563a2c07e223015b58cbcb143376d43",
+        "heading": "Contemporary treatment context and credentials"
+      },
+      "textSha256": "4d3940b92ce1f8e8ebfc7f1f7816c8adfd988458915ae0cb9e0c55d7f207aec8",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.T36",
+      "title": "Boundaries, outcomes and escalation",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "TEACHING-REFERENCE.md",
+        "start": 24559,
+        "end": 26086,
+        "rawSpanSha256": "4840ffa673fb3a62884cffec5220307fa8b291ce9a82c6180dd6214a704e13cd",
+        "heading": "Boundaries, outcomes and escalation"
+      },
+      "textSha256": "9efdc50d03bb41545faf11172804565c4d6e129810d85c0c6d8323dc6ab678c7",
+      "epistemicRole": "attributed-source-account-and-separately-labelled-application"
+    },
+    {
+      "id": "REF.SOURCES",
+      "title": "SOURCES-AND-READING.md",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "SOURCES-AND-READING.md",
+        "start": 0,
+        "end": 14706,
+        "rawSpanSha256": "ed61070ab576c9b1dcdb05c9518a9537343d931a00c35f3dc3d533b5838a87f9",
+        "heading": "SOURCES-AND-READING.md"
+      },
+      "textSha256": "ed61070ab576c9b1dcdb05c9518a9537343d931a00c35f3dc3d533b5838a87f9",
+      "epistemicRole": "reading-record-or-authored-evaluation-not-completed-validation"
+    },
+    {
+      "id": "REF.CONSULTATION",
+      "title": "CONSULTATION-AND-ACCEPTANCE.md",
+      "parent": null,
+      "layer": "external-research",
+      "source": {
+        "document": "CONSULTATION-AND-ACCEPTANCE.md",
+        "start": 0,
+        "end": 10673,
+        "rawSpanSha256": "0748b29a58eb338f7252cf83d0b99f5841b3f806b31aee3a9485adf440c124dc",
+        "heading": "CONSULTATION-AND-ACCEPTANCE.md"
+      },
+      "textSha256": "0748b29a58eb338f7252cf83d0b99f5841b3f806b31aee3a9485adf440c124dc",
+      "epistemicRole": "reading-record-or-authored-evaluation-not-completed-validation"
     }
   ]
 }

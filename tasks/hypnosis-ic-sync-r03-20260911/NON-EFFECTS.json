@@ -1,0 +1,21 @@
+{
+  "format": "unchanged-runtime-bindings-v1",
+  "base_commit": "ad441affd378e06d6395e0ba4ec0760eaaea5d52",
+  "files": {
+    "data/graph-v1.0.0.json": {
+      "state": "absent-in-tracked-base"
+    },
+    "guide-graphs/compiled/bundle.json": {
+      "state": "present",
+      "sha256": "dd4d2971ea714694726c84b2e5b26b074829f38c99a38d566514d8e40666c112"
+    },
+    "guide-graphs/candidates/inner-child.graph.json": {
+      "state": "present",
+      "sha256": "8c8a59965c4ee3ffc9fd9dc835e9589808638bd346510a3b4d2c44ba31f3f968"
+    },
+    "guides/manifest.json": {
+      "state": "present",
+      "sha256": "d7030177ed687791c9575596dfd53925dcc4b46ef8be043e473984cc9debbd96"
+    }
+  }
+}

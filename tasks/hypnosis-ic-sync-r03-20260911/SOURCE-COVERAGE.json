@@ -1,0 +1,2161 @@
+{
+  "format": "hypnosis-source-coverage-v2",
+  "note": "Every source record is available as actual text. Routing-node coverage is not the same as teaching completeness or independent entailment proof.",
+  "records": [
+    {
+      "source": "HYP.S.opening",
+      "heading": "Opening",
+      "layer": "hypnosis-guide",
+      "text_sha256": "a95d426f561e024c30eaa542107368ffb01f49cd69d7cd2e67b8017d08c225a9",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.how-to-use-this-very-large-guide",
+      "heading": "How to use this very large guide",
+      "layer": "hypnosis-guide",
+      "text_sha256": "e555b6841bf1bbe8ef2d39e4eea3d4d6393566f1d10cca51c25ffd8ad7d9fc2e",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.the-table-of-contents-is-hiding-on-the-left",
+      "heading": "The table of contents is hiding on the left",
+      "layer": "hypnosis-guide",
+      "text_sha256": "c6722dcdfb1b9f1cd4b2331787f601a1ffb1261ba1147c0c13b42b5ab19b5a10",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.introduction",
+      "heading": "Introduction",
+      "layer": "hypnosis-guide",
+      "text_sha256": "3a7730d7d64571e1da3157804db0fc8d237f0ae639a400be42f4bf6062dffa1e",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.quick-start-do-this-first",
+      "heading": "Quick start: do this first",
+      "layer": "hypnosis-guide",
+      "text_sha256": "bf3c740e8e8c7b0ae295c698f14e889227293470b5f9fcd1b66082892af849c3",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.what-i-mean-by-hypnosis",
+      "heading": "What I mean by hypnosis",
+      "layer": "hypnosis-guide",
+      "text_sha256": "7544c95ead6012679b58184103b403abd46223f70bf01cb052206b9b2cb58258",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.protecting-yourself-from-hypnotists",
+      "heading": "Protecting Yourself from Hypnotists",
+      "layer": "hypnosis-guide",
+      "text_sha256": "77293d87c5cd708c308145b0b873e7e9d5cfc5daf7c1558ddeb09600aa9b5ee2",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.the-most-extreme-example",
+      "heading": "The Most Extreme Example",
+      "layer": "hypnosis-guide",
+      "text_sha256": "805e8721c18c4ee8059288aaf9c6d2d1cd971fc785f8e11863da42841200c406",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.affirmations-done-right",
+      "heading": "Affirmations Done Right",
+      "layer": "hypnosis-guide",
+      "text_sha256": "7ddafbd764b232e51be8bab17d1a6acaef14d1c6d36684cc91dd6afa8b9b7f49",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.reversing-accidental-affirmations",
+      "heading": "Reversing Accidental Affirmations",
+      "layer": "hypnosis-guide",
+      "text_sha256": "6a6e36f02e6b6a86fbb6ba343d0959e119212d8aa28b7e4e149a0aabba8e33d0",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.hypnosis-evidence",
+      "heading": "Hypnosis Evidence",
+      "layer": "hypnosis-guide",
+      "text_sha256": "02bc5b1c1875813b0df39a9ef2c5f0f707f5be0e29d1e06ab8662627807dc178",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.forget-the-left-brain-right-brain-cartoon",
+      "heading": "Forget the left-brain/right-brain cartoon",
+      "layer": "hypnosis-guide",
+      "text_sha256": "9d659c2528ce93ebc6b8e185316cb676b548852106af284e7336de705f790819",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.why-doing-it-myself-worked-better-for-me",
+      "heading": "Why doing it myself worked better for me",
+      "layer": "hypnosis-guide",
+      "text_sha256": "71f4ae423ab346d51ebef0638859b2d91a7d0f99132a3d06e979c05a2e21cb89",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.a-useful-map-of-the-mind",
+      "heading": "A useful map of the mind",
+      "layer": "hypnosis-guide",
+      "text_sha256": "3eddfb8c6bc8989aa43edb71559d0809d857abab79af070131e46da811cc77d9",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.sometimes-start-with-the-whole",
+      "heading": "Sometimes start with the whole",
+      "layer": "hypnosis-guide",
+      "text_sha256": "80374ea27b045b520ceda12e7574f59759027c7cb99c5d8d7aad42973305a1c1",
+      "node_refs": [
+        "HYP.INNER_MEETING",
+        "HYP.WITNESS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.the-inner-child-the-guards-and-the-three-inner-adults",
+      "heading": "The inner child, the guards, and the three inner adults",
+      "layer": "hypnosis-guide",
+      "text_sha256": "5b5c12b931804b8138999a151e6af8172c241861490c3f51db141d72613accdd",
+      "node_refs": [
+        "HYP.ADULT_FUNCTIONS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.when-the-adult-role-is-not-available-yet",
+      "heading": "When the adult role is not available yet",
+      "layer": "hypnosis-guide",
+      "text_sha256": "49607354107b4e3f85799145f3c18f17c739b84d1c1ed7f019e0486e67162d6d",
+      "node_refs": [
+        "HYP.WITNESS",
+        "HYP.BORROW_ADULT"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.let-the-child-speak-without-handing-over-the-steering-wheel",
+      "heading": "Let the child speak without handing over the steering wheel",
+      "layer": "hypnosis-guide",
+      "text_sha256": "ed789110e525d5c8dead79f977c2a53518e631019673ae8237c381bedc442aa2",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.love-doesn-t-have-to-wait-for-trust",
+      "heading": "Love doesn’t have to wait for trust",
+      "layer": "hypnosis-guide",
+      "text_sha256": "8914a7882ba14d6c439e3720827472a0169a176f57df275291202eaff11ab58c",
+      "node_refs": [
+        "HYP.LOVE_AND_TRUST"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.the-two-hand-practice",
+      "heading": "The two-hand practice",
+      "layer": "hypnosis-guide",
+      "text_sha256": "207b765f5b7d35bbf3d1926a3927d27957d7ea1b49b8820efd21238100671d4c",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.the-nurturer",
+      "heading": "The Nurturer",
+      "layer": "hypnosis-guide",
+      "text_sha256": "af8eabb7d7bc6a8300712f4862bd61f52522f28f8693649282dbc87cb6bf0fa9",
+      "node_refs": [
+        "HYP.ADULT_FUNCTIONS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.the-protector",
+      "heading": "The Protector",
+      "layer": "hypnosis-guide",
+      "text_sha256": "d731be241890442e0c1d396db9ab9c71947c694330d0bdf143c8c5dc0deb386a",
+      "node_refs": [
+        "HYP.ADULT_FUNCTIONS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.the-leader-guide-or-guru",
+      "heading": "The Leader, Guide, or Guru",
+      "layer": "hypnosis-guide",
+      "text_sha256": "aab4a9333baeb3c1d1d145d78666b6e59c6ed7d7b8a27fc05cb9e927d3802e2d",
+      "node_refs": [
+        "HYP.ADULT_FUNCTIONS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.working-with-protectors",
+      "heading": "Working with protectors",
+      "layer": "hypnosis-guide",
+      "text_sha256": "6d9c6c174e620e8f98ff3c1993199af0eab7bc6a6b6eaa3e38de942aec8df677",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.protection-that-knows-when-to-stop-scanning",
+      "heading": "Protection that knows when to stop scanning",
+      "layer": "hypnosis-guide",
+      "text_sha256": "eeabce78db3826b540ced291280d04062ad445b820356bc46234fc80c94547cf",
+      "node_refs": [
+        "HYP.PROTECTOR_STAND_DOWN"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.inner-child-reparenting",
+      "heading": "Inner child reparenting",
+      "layer": "hypnosis-guide",
+      "text_sha256": "52ff9179c8885d9a6d85b95f9e82bf5a215989748a4ad115958a2dd0a6824010",
+      "node_refs": [
+        "HYP.INNER_MEETING"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.don-t-rush-the-repair",
+      "heading": "Don’t rush the repair",
+      "layer": "hypnosis-guide",
+      "text_sha256": "d6ab4e46b4338d6302bea73f6f2ce9500899a955cd4b7e54f5e389f3777a1b8e",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.play-and-rest-still-need-an-adult-present",
+      "heading": "Play and rest still need an adult present",
+      "layer": "hypnosis-guide",
+      "text_sha256": "17f4aa0ac68ae1d51d9b13c9a4647b84ac8264f9cdd2f92814740ffb4c0779a0",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.non-dominant-hand-dialogue",
+      "heading": "Non-dominant hand dialogue",
+      "layer": "hypnosis-guide",
+      "text_sha256": "9bbf4b80e6895126d1fa6f030c42ecb789a73f6f8af1413e1ef839421ba90d40",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.when-your-voice-is-everybody-else-s-voice",
+      "heading": "When “your voice” is everybody else’s voice",
+      "layer": "hypnosis-guide",
+      "text_sha256": "68da47150a3009bd2a5982cd6ac305dd2cc644977c80e36fe5f19d4cfc0532ab",
+      "node_refs": [
+        "HYP.IDENTITY_PLAY"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.de-hypnosis-wake-up-inside-the-influence",
+      "heading": "De-hypnosis: wake up inside the influence",
+      "layer": "hypnosis-guide",
+      "text_sha256": "d581c8e9b3187e81eb5459668736c2a6f33efa4528b1cd713b1dcff73c96f773",
+      "node_refs": [
+        "HYP.DEHYPNOSIS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.soft-language-can-still-take-away-choice",
+      "heading": "Soft language can still take away choice",
+      "layer": "hypnosis-guide",
+      "text_sha256": "01810bc20037f8bdd3b1afb51b82522f5f6ebd6080a7312c90a3f4c087d8dbba",
+      "node_refs": [
+        "HYP.PRACTITIONER_VETTING",
+        "HYP.DEHYPNOSIS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.induction-gathering-attention-without-disappearing",
+      "heading": "Induction: gathering attention without disappearing",
+      "layer": "hypnosis-guide",
+      "text_sha256": "59e30a2b7525751746b983f1d00f915a148ccd287c2a1261a4f263feaa39c9ca",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.what-an-induction-is-actually-doing",
+      "heading": "What an induction is actually doing",
+      "layer": "hypnosis-guide",
+      "text_sha256": "0653e817fd787ad32ffa5a22d5230a14353012c91c50c1fa14da0bd23b2a093a",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.please-don-t-put-six-metaphors-in-one-trance",
+      "heading": "Please don’t put six metaphors in one trance",
+      "layer": "hypnosis-guide",
+      "text_sha256": "9705832e6a13cbfc9f84d4f0622e5d4d6a92485349572cf51b6f6f1e238dc8c8",
+      "node_refs": [
+        "HYP.INDUCTION"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.before-you-begin",
+      "heading": "Before you begin",
+      "layer": "hypnosis-guide",
+      "text_sha256": "54f7a9405d42c261153e1e8ef694f8650278f8a7729bbe35525995521f67cf34",
+      "node_refs": [
+        "HYP.CHOOSE_PURPOSE",
+        "HYP.PREPARATION",
+        "HYP.POSITIVE_RESOURCE",
+        "HYP.REJECT_WORDING",
+        "HYP.SILENCE_CHOICE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.sober-induction-3-5-minutes",
+      "heading": "Sober induction: 3–5 minutes",
+      "layer": "hypnosis-guide",
+      "text_sha256": "e97e01b81e8e2cce593fa062130008cbe1f4746086876442aacae1e7f3256a22",
+      "node_refs": [
+        "HYP.INDUCTION"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.already-open-contain-before-you-deepen",
+      "heading": "Already open? Contain before you deepen",
+      "layer": "hypnosis-guide",
+      "text_sha256": "68bd9cd72dcdbc59f0d10a12ca85c5215a1f280a85cd6ac6ae18cd62e3270ed9",
+      "node_refs": [
+        "HYP.ALTERED_STATE_GATE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.stay-awake-when-your-mind-likes-to-escape",
+      "heading": "Stay awake when your mind likes to escape",
+      "layer": "hypnosis-guide",
+      "text_sha256": "4adfb6009dee555bfff01efcf858f38205ac9fae5fb1460ec92d7e4c61dfb19b",
+      "node_refs": [
+        "HYP.ALTERNATIVE_ENTRY"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.the-two-hand-induction",
+      "heading": "The two-hand induction",
+      "layer": "hypnosis-guide",
+      "text_sha256": "9497fa4f6b409708ed70a8fab76800232f065fd4dd771276d9e17fc33d417210",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.sleep-induction",
+      "heading": "Sleep induction",
+      "layer": "hypnosis-guide",
+      "text_sha256": "f7927c455f32c93a8a6393077ff37a2141ce5cb5b79e153280d4fb3ae8e45da2",
+      "node_refs": [
+        "HYP.SLEEP"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.optional-fractionation-practice-coming-back",
+      "heading": "Optional fractionation: practice coming back",
+      "layer": "hypnosis-guide",
+      "text_sha256": "c2da63efa8f65cb5a1189cc70ee428de8356a77b1514e1e18626c21f0e0c3453",
+      "node_refs": [
+        "HYP.FRACTIONATION"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.deepening-if-useful",
+      "heading": "Deepening, if useful",
+      "layer": "hypnosis-guide",
+      "text_sha256": "9bf16eab235452c257deede2903a2c67187fa41e4881d83aa3d1c6b447905718",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.optional-trance-depth-check",
+      "heading": "Optional trance depth check",
+      "layer": "hypnosis-guide",
+      "text_sha256": "5de2dee91d7bd0a6b9420c5dd179e01b2bac4bf06304628b2464afff1471a5d3",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.a-shortcut-back-into-hypnosis",
+      "heading": "A shortcut back into hypnosis",
+      "layer": "hypnosis-guide",
+      "text_sha256": "96d90a946afce3bf0826dc024f8288f3e3d8f310dd74ce95680a26eb6c691e20",
+      "node_refs": [
+        "HYP.REENTRY_CUE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.come-all-the-way-back",
+      "heading": "Come all the way back",
+      "layer": "hypnosis-guide",
+      "text_sha256": "c654b7bf50698cc2c1ad460619f960986163471aa740d42b7d4f83728e2ecd19",
+      "node_refs": [
+        "HYP.PREPARATION",
+        "HYP.SAFETY_ORIENTATION",
+        "HYP.DISSOCIATION_RESPONSE",
+        "HYP.FULL_RETURN",
+        "HYP.INTERRUPTION_RETURN"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.the-actual-inner-meeting",
+      "heading": "The actual inner meeting",
+      "layer": "hypnosis-guide",
+      "text_sha256": "deec5bde336177fb323e8b975896b70b4c8851a660ba1889bae1be37d281ec26",
+      "node_refs": [
+        "HYP.INNER_MEETING"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.let-the-next-response-guide-you",
+      "heading": "Let the next response guide you",
+      "layer": "hypnosis-guide",
+      "text_sha256": "16401c5c3cfaa74b30e692b8e9cd6ab5e4234fec92008c340f3a08f3dd97f395",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.finding-your-own-words",
+      "heading": "Finding your own words",
+      "layer": "hypnosis-guide",
+      "text_sha256": "7742daa35fc42a467439f4d6bcfcc252cfdb8cbe78a180094677a180c614dd49",
+      "node_refs": [
+        "HYP.RESPONSIVE_INVITATION",
+        "HYP.SILENCE_CHOICE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.let-the-response-change-the-invitation",
+      "heading": "Let the response change the invitation",
+      "layer": "hypnosis-guide",
+      "text_sha256": "31bde4c870f38595042a94dba2f190a56ff0e12a907feced4788cfd50a1c4bbc",
+      "node_refs": [
+        "HYP.RESPONSIVE_INVITATION",
+        "HYP.BODY_SIGNAL_NOT_VERDICT",
+        "HYP.REJECT_WORDING"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.look-at-the-situation-too",
+      "heading": "Look at the situation too",
+      "layer": "hypnosis-guide",
+      "text_sha256": "736c8445c4fdf605396aeac7ed54380a7b875629974c4265db63bfdc76c1ed04",
+      "node_refs": [
+        "HYP.RELATIONAL_REALITY"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.change-the-amount-of-contact",
+      "heading": "Change the amount of contact",
+      "layer": "hypnosis-guide",
+      "text_sha256": "f9d04457a34ea04806242b3042f4a700e9d86b9bd32def6e252a5f31a0d1749d",
+      "node_refs": [
+        "HYP.CAPACITY_BEFORE_CONTENT",
+        "HYP.CONTACT_DOSE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.offer-the-care-that-is-actually-wanted",
+      "heading": "Offer the care that is actually wanted",
+      "layer": "hypnosis-guide",
+      "text_sha256": "5598b35ab3dde97358d2ecabf27b289cecb05680bbdcba69e546fca41dcf438e",
+      "node_refs": [
+        "HYP.WANTED_CARE",
+        "HYP.POSITIVE_RESOURCE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.finish-without-forcing-a-revelation",
+      "heading": "Finish without forcing a revelation",
+      "layer": "hypnosis-guide",
+      "text_sha256": "592e6ab44ac23719cea85ce5c5efb098dab11c6271381b00589a8ba01fce01c8",
+      "node_refs": [
+        "HYP.BODY_SIGNAL_NOT_VERDICT",
+        "HYP.MEMORY_CAUTION",
+        "HYP.REVIEW",
+        "HYP.ANALYSIS_BALANCE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.the-15-minute-daily-practice",
+      "heading": "The 15-minute daily practice",
+      "layer": "hypnosis-guide",
+      "text_sha256": "8de5eaa98ef74d46367589b8cabfb1da8f7e1212268efa23b897c28d54095144",
+      "node_refs": [
+        "HYP.DAILY_PRACTICE",
+        "HYP.REVIEW"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.the-weekly-deeper-practice",
+      "heading": "The weekly deeper practice",
+      "layer": "hypnosis-guide",
+      "text_sha256": "a87ec7ff7ee61e1155bf081c9958e988eb43a42841527e93243e4e3291d2a94a",
+      "node_refs": [
+        "HYP.WEEKLY_DEEPER"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.capacity-before-content",
+      "heading": "Capacity before content",
+      "layer": "hypnosis-guide",
+      "text_sha256": "f95339c24f91ff6457c819b306ea6f7a8706f7570bff708a9e2c840fe7aabeca",
+      "node_refs": [
+        "HYP.CAPACITY_BEFORE_CONTENT"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.troubleshooting",
+      "heading": "Troubleshooting",
+      "layer": "hypnosis-guide",
+      "text_sha256": "c3af076f92c5ed8dcb0d0b0d36dd120bc31b68264efea96cf8019ca19f1c13a3",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.nothing-happens",
+      "heading": "Nothing happens",
+      "layer": "hypnosis-guide",
+      "text_sha256": "e1bfa736f9cfac0600be2866eb475e247b85e222e980abcdc6c9f642f55467c2",
+      "node_refs": [
+        "HYP.ALTERNATIVE_ENTRY"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.it-feels-fake",
+      "heading": "It feels fake",
+      "layer": "hypnosis-guide",
+      "text_sha256": "1b4e00a0ddf3b9537c56e7a892b0f0639532bc85d7dd2a211d25c95f7053c652",
+      "node_refs": [
+        "HYP.BORROW_ADULT"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.the-subconscious-will-not-answer",
+      "heading": "The subconscious will not answer",
+      "layer": "hypnosis-guide",
+      "text_sha256": "eec2f70da5ac6773910286dfa54ccbd571b0f116c1d4f29708d599b0da12e173",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.the-inner-child-will-not-appear",
+      "heading": "The inner child will not appear",
+      "layer": "hypnosis-guide",
+      "text_sha256": "280524b5995b7a12380adb5ecccc4be1beccee020350ad9f37a1617fcf6a62f2",
+      "node_refs": [
+        "HYP.IDENTITY_PLAY"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.you-get-anxious",
+      "heading": "You get anxious",
+      "layer": "hypnosis-guide",
+      "text_sha256": "63f1e221a64bd254a3a2485742bc0791e9f899d7632866d720d41550cda69b92",
+      "node_refs": [
+        "HYP.ANXIETY_BODY_FIRST"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.you-dissociate-or-feel-unreal",
+      "heading": "You dissociate or feel unreal",
+      "layer": "hypnosis-guide",
+      "text_sha256": "fc4ea4922d046ae42539780accb8df3589294def79fe78b2b018f1513253a45f",
+      "node_refs": [
+        "HYP.DISSOCIATION_RESPONSE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.you-become-grandiose",
+      "heading": "You become grandiose",
+      "layer": "hypnosis-guide",
+      "text_sha256": "0cdb594ac06c657de04bdbf1e94f8af5cc7e718ba5c7bf1426549545bc1d6e76",
+      "node_refs": [
+        "HYP.GRANDIOSITY_BYPASS_CHECK"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.you-become-too-analytical",
+      "heading": "You become too analytical",
+      "layer": "hypnosis-guide",
+      "text_sha256": "82676dfbc644b8a0f5bdac0f0f98a29355621352a32dc2c35186ed035546e57c",
+      "node_refs": [
+        "HYP.ANALYSIS_BALANCE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.you-become-too-blissful-or-diffuse",
+      "heading": "You become too blissful or diffuse",
+      "layer": "hypnosis-guide",
+      "text_sha256": "bd20eb7ccc6941f44f0251d58b1ae7c12a6cb400acfb37ebb87e73a489315291",
+      "node_refs": [
+        "HYP.GRANDIOSITY_BYPASS_CHECK"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.you-want-the-hidden-truth-immediately",
+      "heading": "You want the hidden truth immediately",
+      "layer": "hypnosis-guide",
+      "text_sha256": "467d10a4725574bc9e615b8aa54812b5d5b359abfad34d634363bb81fe333179",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.you-keep-daydreaming",
+      "heading": "You keep daydreaming",
+      "layer": "hypnosis-guide",
+      "text_sha256": "93a46dfad0a1d9c325cee3f2fe0766eb88378cdde96974ce7e54922d50c4eda0",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.you-get-stuck-in-spiritual-bypass",
+      "heading": "You get stuck in spiritual bypass",
+      "layer": "hypnosis-guide",
+      "text_sha256": "f7f7387d8985478096071912391b936b7fbcd0d1bdd12c359bc6a8a7dfb730a6",
+      "node_refs": [
+        "HYP.SPIRITUAL_STRUGGLE",
+        "HYP.GRANDIOSITY_BYPASS_CHECK"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.you-get-stuck-in-endless-processing",
+      "heading": "You get stuck in endless processing",
+      "layer": "hypnosis-guide",
+      "text_sha256": "833bc73b299aaf2ed4efb0e0d34783c5b83772d074367e90b0d2d154f453b268",
+      "node_refs": [
+        "HYP.PROCESSING_LOOP"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.you-keep-using-hypnosis-but-not-changing-life",
+      "heading": "You keep using hypnosis but not changing life",
+      "layer": "hypnosis-guide",
+      "text_sha256": "183d82f0ca4337d8498a55f6da22580cb9a9ca1a6527dd29edaa3e8af5667fea",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.what-not-to-do",
+      "heading": "What not to do",
+      "layer": "hypnosis-guide",
+      "text_sha256": "9a007ac166afd1186831f0bb6b4e100ad1f6adf26d05cf1fe64f69d66ef7c6ea",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.when-this-needs-more-support-than-a-guide-can-provide",
+      "heading": "When this needs more support than a guide can provide",
+      "layer": "hypnosis-guide",
+      "text_sha256": "63d6d490b44f85708b4648f2a4e51d3d6a0a50d615b191d13c543490e8056ba1",
+      "node_refs": [
+        "HYP.SAFETY_ORIENTATION",
+        "HYP.SUPPORT_WITH_TRAINED_PERSON"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.methods-to-explore-with-a-trained-person-present",
+      "heading": "Methods to explore with a trained person present",
+      "layer": "hypnosis-guide",
+      "text_sha256": "e867f07379506776d0a7c7438d09c6f17b384e8eee77cebd1f0cc08a6e9adf11",
+      "node_refs": [
+        "HYP.MEMORY_CAUTION",
+        "HYP.SUPPORT_WITH_TRAINED_PERSON"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.closing",
+      "heading": "Closing",
+      "layer": "hypnosis-guide",
+      "text_sha256": "1e85e10a1d6b2618a03ae755c87a32e7911fd2d8a9c56f92fc83759b23d6ac64",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.try-it-in-the-inner-signal-app",
+      "heading": "Try it in the Inner Signal app",
+      "layer": "hypnosis-guide",
+      "text_sha256": "63ffd090d0f3a63a23180fab577d16e9a6281de7f4f9fd0c2a66875df6e5d04f",
+      "node_refs": [
+        "HYP.APP_BRIDGE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.appendices",
+      "heading": "Appendices",
+      "layer": "hypnosis-guide",
+      "text_sha256": "9fdcb07dbc0b65073299b8a0fbe62a2f6baaeb69ea751da19448538a858cac9a",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.appendix-a-how-to-ask-the-subconscious-a-useful-question",
+      "heading": "Appendix A: How to ask the subconscious a useful question",
+      "layer": "hypnosis-guide",
+      "text_sha256": "11ad52f9099fdd62bc0005a5f57fc1d7690382540ad98d1f28698c92119321de",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.core-prompts",
+      "heading": "Core prompts",
+      "layer": "hypnosis-guide",
+      "text_sha256": "3ea82fc775adad00a72a43ce344af53e6f0a4f7feba1669898163bc4de2243a3",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.appendix-b-nlp-without-turning-yourself-into-a-sales-seminar",
+      "heading": "Appendix B: NLP without turning yourself into a sales seminar",
+      "layer": "hypnosis-guide",
+      "text_sha256": "200d58d17431dc57971f06ac7f51d24891b16eb23b20b711322a4493fb9a06db",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.the-four-nlp-layers",
+      "heading": "The four NLP layers",
+      "layer": "hypnosis-guide",
+      "text_sha256": "53cce0f41e20ca09baaded7fd22cbfccd4632912ae3f31bc55dfbd87c3b1045d",
+      "node_refs": [
+        "HYP.NLP_LANGUAGE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.the-milton-model-minus-the-covert-sales-seminar",
+      "heading": "The Milton Model, minus the covert sales seminar",
+      "layer": "hypnosis-guide",
+      "text_sha256": "c3e0b2e570c75b1ace0068843c7d643a3415a9ce196639a225e25822c776c368",
+      "node_refs": [
+        "HYP.NLP_LANGUAGE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.pattern-1-pacing-and-leading-truth-before-suggestion",
+      "heading": "Pattern 1: Pacing and leading — truth before suggestion",
+      "layer": "hypnosis-guide",
+      "text_sha256": "2291246bfb79a0f5cdc57acfd8dafc393de51180e8d59c580ceeaa1d675cfd07",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.pattern-2-awareness-verbs",
+      "heading": "Pattern 2: Awareness verbs",
+      "layer": "hypnosis-guide",
+      "text_sha256": "ca05d2ae8b5b495b8e842fb20861d0367ee6e149e7783418902261753cf73eec",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.pattern-3-presuppositions",
+      "heading": "Pattern 3: Presuppositions",
+      "layer": "hypnosis-guide",
+      "text_sha256": "2d98cae9fb3e7b146384b3ea2d0aeb150d1a581ee0f2ce4728b1c346feae699b",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.pattern-4-gentle-cause-effect-bridges",
+      "heading": "Pattern 4: Gentle cause-effect bridges",
+      "layer": "hypnosis-guide",
+      "text_sha256": "b3aa3e819d3e4b344e65c1c9d90635644d58ce7fc4c5cf9c04b4143f7b5602cd",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.pattern-5-embedded-invitations",
+      "heading": "Pattern 5: Embedded invitations",
+      "layer": "hypnosis-guide",
+      "text_sha256": "1c4011f9558f0be78663b2cc487825e321edeaceedc328251dac223b8261ce4e",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.pattern-6-ethical-double-binds",
+      "heading": "Pattern 6: Ethical double binds",
+      "layer": "hypnosis-guide",
+      "text_sha256": "1b74744a9f57a43b8be43b11b9549847b0d2e2f684bebe52c870e222920a5607",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.pattern-7-conversational-postulates",
+      "heading": "Pattern 7: Conversational postulates",
+      "layer": "hypnosis-guide",
+      "text_sha256": "fba18f323f87602d4f7945957212ea34d9f20d05102e428ec78d5b9b29175b44",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.pattern-8-tag-questions",
+      "heading": "Pattern 8: Tag questions",
+      "layer": "hypnosis-guide",
+      "text_sha256": "6e79a6b2a6d3f95cdc57087d93dd20d58f12a65bc2eb5461978c65eba9c7ce1a",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.pattern-9-nominalizations",
+      "heading": "Pattern 9: Nominalizations",
+      "layer": "hypnosis-guide",
+      "text_sha256": "fe23f1a2dabc3b9a664c247d6c659fe03c231630ca646fb45bff810f823536c0",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.pattern-10-meta-model-questions-the-de-hypnosis-tool",
+      "heading": "Pattern 10: Meta Model questions — the de-hypnosis tool",
+      "layer": "hypnosis-guide",
+      "text_sha256": "2ef4583e9c056e4a5f91ef8b4a5645486cfb44e248e9edb216a8e20d80c808d8",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.sensory-state-and-strategy-tools",
+      "heading": "Sensory, state, and strategy tools",
+      "layer": "hypnosis-guide",
+      "text_sha256": "0fe5fcd8b08fc6ac96e165d6827ced8f2660fde0dd2582cb643ff90360c4cedf",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.submodalities-editing-the-form-not-denying-the-truth",
+      "heading": "Submodalities — editing the form, not denying the truth",
+      "layer": "hypnosis-guide",
+      "text_sha256": "758fe69e52ddf1a693679255b1ac3d3bb41f406742e46cddb7524100de31c9e5",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.anchoring-giving-the-body-a-doorway-back",
+      "heading": "Anchoring — giving the body a doorway back",
+      "layer": "hypnosis-guide",
+      "text_sha256": "bf5217fe1e9cb3b52bff44c31a24415db4fbf1177a1183c2a49ce5439ada18fc",
+      "node_refs": [
+        "HYP.REENTRY_CUE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.using-synchronicity-as-your-own-wake-up-bell",
+      "heading": "Using synchronicity as your own wake-up bell",
+      "layer": "hypnosis-guide",
+      "text_sha256": "7ba33ebda1b56af1b94e7c240785caf422c8424c89c4dcacac1f44dc5938e66c",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.installing-the-synchronicity-cue",
+      "heading": "Installing the synchronicity cue",
+      "layer": "hypnosis-guide",
+      "text_sha256": "09fb03bc2b9408da8be9a27cfbffa3d5434b26c2a5eb5dd060575ab25e435300",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.reframing-changing-the-meaning-without-lying",
+      "heading": "Reframing — changing the meaning without lying",
+      "layer": "hypnosis-guide",
+      "text_sha256": "cb69b7f922e2d38cc4e662d2da9af0db2f8d7a2c4d2c8b147abbd4365741ccbd",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.perceptual-positions-self-other-witness-universal-heart",
+      "heading": "Perceptual positions — self, other, witness, universal heart",
+      "layer": "hypnosis-guide",
+      "text_sha256": "794444c8853ddd5e2c21521a3777e16c2ad0ec35ddcc29d8bd4065209ce9b27b",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.future-pacing-let-the-future-test-the-insight",
+      "heading": "Future pacing — let the future test the insight",
+      "layer": "hypnosis-guide",
+      "text_sha256": "d15ac15f39a0c3e459cc25010ac20394fb9f42cd23f570556d2d14af08c560f6",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.the-swish-softened",
+      "heading": "The Swish, softened",
+      "layer": "hypnosis-guide",
+      "text_sha256": "0e28cf8c5461c07cd0f2604b7e061b74cc4c5603fe930a6b9c1c9252b40f606f",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.parts-integration-without-pretending-the-conflict-is-solved",
+      "heading": "Parts integration, without pretending the conflict is solved",
+      "layer": "hypnosis-guide",
+      "text_sha256": "50646527b6094350aafe0627e622524e9798e96c034bf0942f32f547eed88c57",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.what-i-will-not-use-nlp-for",
+      "heading": "What I will not use NLP for",
+      "layer": "hypnosis-guide",
+      "text_sha256": "b546ed93202b562a21b551b273fe89eb12b171a3837bb90218573c35de6dc161",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.running-the-whole-nlp-sequence",
+      "heading": "Running the whole NLP sequence",
+      "layer": "hypnosis-guide",
+      "text_sha256": "1249ae4979e0b86242722e68d374e772c78d1201bba34c59ce9daddfd93266d1",
+      "node_refs": [
+        "HYP.NLP_LANGUAGE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.appendix-c-the-extended-de-hypnosis-checklist",
+      "heading": "Appendix C: The extended de-hypnosis checklist",
+      "layer": "hypnosis-guide",
+      "text_sha256": "56de5d591fce938678e112819d8cb05ca153996d3d37bf2808a8568ea25b44d7",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.hypnosis-specific-audit",
+      "heading": "Hypnosis-specific audit",
+      "layer": "hypnosis-guide",
+      "text_sha256": "0dcfc4b9eb08c7d41e4a6a1a93f0a7fcf5254545275aade4e2dc1406b8ca0e04",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.appendix-d-anxiety-body-first",
+      "heading": "Appendix D: Anxiety — body first",
+      "layer": "hypnosis-guide",
+      "text_sha256": "b13202ab4f4aae9be770412c4f7104aaa069dba468659cd2aefc21af52d2c362",
+      "node_refs": [
+        "HYP.ANXIETY_BODY_FIRST"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.inner-child-love",
+      "heading": "Inner child love",
+      "layer": "hypnosis-guide",
+      "text_sha256": "01e8c6c228caae63cd31c828ec8de7deebd33b1f4c6ac1339ac3495b786dbb24",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.reduced-breathing-buteyko-style-breathing",
+      "heading": "Reduced breathing / Buteyko-style breathing",
+      "layer": "hypnosis-guide",
+      "text_sha256": "7d0aa51f873e2cade8d92f4a4711caf3fad1d1daf3e11aef869b00537c489f38",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.eft-tapping",
+      "heading": "EFT tapping",
+      "layer": "hypnosis-guide",
+      "text_sha256": "4b720a61fb8f8203c6943d18ee9430cd7aad429e4c106e249699e2575f8166e1",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.somatic-experiencing",
+      "heading": "Somatic Experiencing",
+      "layer": "hypnosis-guide",
+      "text_sha256": "d7265abdc129071a146e12d339ea9abefcdffe217dda28898492344c4dc5ff33",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.gendlin-focusing",
+      "heading": "Gendlin Focusing",
+      "layer": "hypnosis-guide",
+      "text_sha256": "815c82091eeb83cfad4e3040aaa16cd6fe5a8a4e025b319212239512de1bae01",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.body-supports",
+      "heading": "Body supports",
+      "layer": "hypnosis-guide",
+      "text_sha256": "eae3cf99648f944e0913b39e319edf8207fa242beeb7b7e187c20cd053a2649c",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.anxiety-script",
+      "heading": "Anxiety script",
+      "layer": "hypnosis-guide",
+      "text_sha256": "0cd617b7b7286f62a4b236931309d8c98af884cee741b0b8848b111db7ac1bf0",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.appendix-e-is-the-daydream-helping-or-replacing-your-life",
+      "heading": "Appendix E: Is the daydream helping or replacing your life?",
+      "layer": "hypnosis-guide",
+      "text_sha256": "62ad519982ae62c5f69dbc8344fdc6b196cc1dc2c839a22b244cfcf520bb334d",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.appendix-f-self-trust-outside-guidance-and-oracle-like-states",
+      "heading": "Appendix F: Self-trust, outside guidance, and oracle-like states",
+      "layer": "hypnosis-guide",
+      "text_sha256": "8eb5bc0e53f3239a17ebc946ea969f7b5bd1956d6e18200538a68b2a3f23b191",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.finding-a-hypnotist-who-can-work-with-you",
+      "heading": "Finding a hypnotist who can work with you",
+      "layer": "hypnosis-guide",
+      "text_sha256": "7c83717005f9dd874298871c54e055650665d2a9f2afd90fd355b51464e19537",
+      "node_refs": [
+        "HYP.PRACTITIONER_VETTING",
+        "HYP.APP_BRIDGE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.when-the-subconscious-speaks-like-an-oracle",
+      "heading": "When the subconscious speaks like an oracle",
+      "layer": "hypnosis-guide",
+      "text_sha256": "13f60ddabb59999cdf75c90f0ae543433fcc528168644f2e16442c793e34ea12",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.the-council-internal-first-then-outward",
+      "heading": "The council — internal first, then outward",
+      "layer": "hypnosis-guide",
+      "text_sha256": "33c6dc6bbf7d1c5b0679391947d7267a3b149f89494d2f0fd9dc44b83e04ab2b",
+      "node_refs": [
+        "HYP.PEER_SUPPORT"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.forgiveness-without-bypass",
+      "heading": "Forgiveness without bypass",
+      "layer": "hypnosis-guide",
+      "text_sha256": "b7d7c243fa17824fb8b5087ea6c9c5530f2aace65e4fde027205d55d6b12fb52",
+      "node_refs": [
+        "HYP.FORGIVENESS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.appendix-g-altered-states",
+      "heading": "Appendix G: Altered states",
+      "layer": "hypnosis-guide",
+      "text_sha256": "c2f2fe3619546d18d1b03821d3760a727aacf0310d3143a2aa6bda421eb603ca",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.stabilize-before-you-interpret",
+      "heading": "Stabilize before you interpret",
+      "layer": "hypnosis-guide",
+      "text_sha256": "37cd986f9859cebed340832b5a9b45fa051c03854478b29d462fddca1983e229",
+      "node_refs": [
+        "HYP.ALTERED_STATE_GATE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.appendix-h-demons-jinn-hostile-presences-and-unattached-burdens",
+      "heading": "Appendix H: Demons, jinn, hostile presences, and “Unattached Burdens”",
+      "layer": "hypnosis-guide",
+      "text_sha256": "21d7dc2a8bbf036554fa5b69c8ec7c75fedd5246f90c8066c5836aff8f413133",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.start-with-the-room-the-body-and-basic-safety",
+      "heading": "Start with the room, the body, and basic safety",
+      "layer": "hypnosis-guide",
+      "text_sha256": "75ea554a850e29ec0071345527e0499e884f68b0d9b2ded952847f126046daaf",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.a-response-check-not-a-verdict-about-what-it-is",
+      "heading": "A response check, not a verdict about what it is",
+      "layer": "hypnosis-guide",
+      "text_sha256": "525b25dd13893d8cf4334baa381a415a8108386e4c212c164e4d62c28b546b08",
+      "node_refs": [
+        "HYP.NONORDINARY_RESPONSE_CHECK"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.do-not-fight-from-fear",
+      "heading": "Do not fight from fear",
+      "layer": "hypnosis-guide",
+      "text_sha256": "8729e843237f7b1b90a2a76820a670e4c25d75bbb7cdea558ba722a737779b8b",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.a-bodily-boundary-compassion-present-door-closed",
+      "heading": "A bodily boundary: compassion present, door closed",
+      "layer": "hypnosis-guide",
+      "text_sha256": "a387217e4706613ae7ce0dc7618bbd3bad9219b0a93510d3e7774a8518fa31a9",
+      "node_refs": [
+        "HYP.NONORDINARY_RESPONSE_CHECK"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.if-it-might-be-psychosis-or-destabilization",
+      "heading": "If it might be psychosis or destabilization",
+      "layer": "hypnosis-guide",
+      "text_sha256": "6c2cfa2c0df6e10feec16c28f21eb9501b0bbf7e2ea04a8e8daaff69986d601b",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.the-cosmic-download-humility-test",
+      "heading": "The cosmic-download humility test",
+      "layer": "hypnosis-guide",
+      "text_sha256": "580319e21bd477c7d8bf2601c307e6dc49b8e0583dec793e31dbaa0af4a074d3",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.don-t-become-an-entity-hobbyist",
+      "heading": "Don’t become an entity hobbyist",
+      "layer": "hypnosis-guide",
+      "text_sha256": "281fbfbd1a0992276bddd021dd8c5230e6398db59b3184596f380f41cbce3eb0",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.appendix-i-sleep-hypnosis",
+      "heading": "Appendix I: Sleep hypnosis",
+      "layer": "hypnosis-guide",
+      "text_sha256": "43196ce0eb047f5b3e7496613011a6a6093dbcc1679b8d20617de2569a2be92a",
+      "node_refs": [
+        "HYP.SLEEP"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.appendix-j-a-practical-induction-library",
+      "heading": "Appendix J: A practical induction library",
+      "layer": "hypnosis-guide",
+      "text_sha256": "9160eac2a6a79720cee23c73d20f053b9056131b6caf2889f52093f9c2b46354",
+      "node_refs": [
+        "HYP.ALTERNATIVE_ENTRY"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.1-stretch-and-release",
+      "heading": "1. Stretch and release",
+      "layer": "hypnosis-guide",
+      "text_sha256": "678740543d7d61d44049c46e881255ee81726cdcf58714ada562564b8539c81d",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.2-supported-floating",
+      "heading": "2. Supported floating",
+      "layer": "hypnosis-guide",
+      "text_sha256": "4b6d9edc777b0926d539b900d54279ffd3cb8f7d3b4eeee50cbc866977173b4d",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.3-rhythmic-breath-or-pulse",
+      "heading": "3. Rhythmic breath or pulse",
+      "layer": "hypnosis-guide",
+      "text_sha256": "003db2827e37edca5157876f5a4add8082d667d7b5150262a22b6237b945d908",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.4-unwinding-object",
+      "heading": "4. Unwinding object",
+      "layer": "hypnosis-guide",
+      "text_sha256": "82050bd16bd1f60d5dc0f778aee63a13174a8d45d5d9fab2e12002f3d0836d20",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.5-sensory-journey",
+      "heading": "5. Sensory journey",
+      "layer": "hypnosis-guide",
+      "text_sha256": "d4bf486b063457535079c1e3aee5123dde102073afac2aa5c3e8a932b585ef20",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.6-gradual-wave",
+      "heading": "6. Gradual wave",
+      "layer": "hypnosis-guide",
+      "text_sha256": "6d77f1e0175423101c6e2dd8e7215b4508ac18de22fbe0f2d83d9a2937bbf240",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.7-care-workshop",
+      "heading": "7. Care workshop",
+      "layer": "hypnosis-guide",
+      "text_sha256": "c7834c616dc0c411fb32eba7b17f2b0ff1b555b4b48262c20546ff7bb8ee344b",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.8-resource-embodiment",
+      "heading": "8. Resource embodiment",
+      "layer": "hypnosis-guide",
+      "text_sha256": "cb40c90b66dc6330714d9fda32f57914e63d2bf5be25b8f7a586d2f07ac1211c",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.9-no-trance-inner-contact",
+      "heading": "9. No-trance inner contact",
+      "layer": "hypnosis-guide",
+      "text_sha256": "6cfc4aeb3dec9d45ab38d406839d0fc51087cabc3b2b27305384ea9278bc8a47",
+      "node_refs": [
+        "HYP.NO_TRANCE_CONTACT",
+        "HYP.NO_TRANCE_CLOSE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "HYP.S.appendix-k-sources-and-further-reading",
+      "heading": "Appendix K: Sources and further reading",
+      "layer": "hypnosis-guide",
+      "text_sha256": "10427d2954310d77b85c3802711358af5659500bfd88bfaca4e1f4d3a81792eb",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.learning-entering-and-returning",
+      "heading": "Learning, entering, and returning",
+      "layer": "hypnosis-guide",
+      "text_sha256": "af25169d718a8c822e232b6355f27c3d1760dbadfc25560603ad5886f947deef",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.indirect-language-and-re-entry-cues",
+      "heading": "Indirect language and re-entry cues",
+      "layer": "hypnosis-guide",
+      "text_sha256": "cc87eddf3fa9e24bc3db3037b6d8c3c45b325fcac625157f408966a26b1d3c18",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.body-awareness-and-changing-the-amount-of-contact",
+      "heading": "Body awareness and changing the amount of contact",
+      "layer": "hypnosis-guide",
+      "text_sha256": "27fc8515b9f8d323b5262f7d6d7a073e9649606c6171d2ca386697b3405b7dc9",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.inner-child-care-and-adult-capacities",
+      "heading": "Inner-child care and adult capacities",
+      "layer": "hypnosis-guide",
+      "text_sha256": "4b26ff625d645d29a71db43505ec20d98b062b692569ee35b9d1de569aee7028",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "HYP.S.memory-support-and-choosing-a-practitioner",
+      "heading": "Memory, support, and choosing a practitioner",
+      "layer": "hypnosis-guide",
+      "text_sha256": "c73fd80b1a6ee6f2531c7963fe3de5dab03bf1f10d84fdec33ca135e9437563b",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.listen-watch",
+      "heading": "Listen & Watch:",
+      "layer": "inner-child-companion",
+      "text_sha256": "b3b85c08529c2d112f40ac0ff766579314cd865d08a76390a7e4ff5b92cd792f",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.the-chicken-and-egg-problem",
+      "heading": "The Chicken-and-Egg Problem",
+      "layer": "inner-child-companion",
+      "text_sha256": "dea8396eb825697814719e2352853d8a38f97138b3d172f84c7bd67db1e6c765",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.my-journey",
+      "heading": "My Journey",
+      "layer": "inner-child-companion",
+      "text_sha256": "2c4ee306ec9169c1847c9903eac4d2ff63fd7f9f0ff4029ef494903f238009b3",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.don-t-give-the-inner-adult-away",
+      "heading": "Don’t Give the Inner Adult Away",
+      "layer": "inner-child-companion",
+      "text_sha256": "7842c5b03043366cf9f071132c74aa947141d9862655e7170b4e6c8a3dd13457",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.before-you-try-to-go-deep",
+      "heading": "Before You Try to Go Deep",
+      "layer": "inner-child-companion",
+      "text_sha256": "cae4928169c74b16fe42448c4607baa806e17ca0fdd29d19fe21efc4fbfc5e9b",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.bottom-up-healing-for-trauma-addiction-neurological-de-armoring-brainstem-relaxation-v5-july-7-2026-https-ibogaqueen-substack-com-p-trauma-and-addiction-why-neurological",
+      "heading": "[Bottom-up Healing for Trauma & Addiction: \"Neurological De-Armoring\" + Brainstem Relaxation v5 (July 7, 2026)](https://ibogaqueen.substack.com/p/trauma-and-addiction-why-neurological)",
+      "layer": "inner-child-companion",
+      "text_sha256": "12b1d94ec4805dd6921f0815ba8f1648e7c5116c2fdb2a1f0381eea84ccbdcbd",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.regulation-may-come-before-dialogue",
+      "heading": "Regulation May Come Before Dialogue",
+      "layer": "inner-child-companion",
+      "text_sha256": "7ba9e2716e12d9e7a40e40b35c909cf9172cc7a63ba32c779a82f70079326d08",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.somatic-therapy-modalities-5-stage-strategic-sequencing-map-v3-1-last-update-aug-11-2020-https-ibogaqueen-substack-com-p-somatic-modalities-strategic-sequencing",
+      "heading": "[Somatic Therapy Modalities: 5 Stage Strategic Sequencing Map v3.1 (Last update Aug 11, 2020)](https://ibogaqueen.substack.com/p/somatic-modalities-strategic-sequencing)",
+      "layer": "inner-child-companion",
+      "text_sha256": "a486bfa26a05b7b627fff6e440b6b380817384489ddaf7727fafe1fa45dd8b8d",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.catch-the-hook-before-you-interpret-it",
+      "heading": "Catch the Hook Before You Interpret It",
+      "layer": "inner-child-companion",
+      "text_sha256": "b2e7e2c0651742fb70c2ed9ee0b17d8a9a9e2382c031f86b5afa05f905df6848",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.svg",
+      "heading": "svg",
+      "layer": "inner-child-companion",
+      "text_sha256": "2c5c1e41c1578a74d0fde6fe3c9a9eb464aa2ea6be3614ef2b0ee67ec2952bc3",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.also-look-outward",
+      "heading": "Also Look Outward",
+      "layer": "inner-child-companion",
+      "text_sha256": "7c323321f55d74b09e9e1ccb16c09b6b5109b1219cae2bf0b8ac7536206b03fc",
+      "node_refs": [
+        "HYP.RELATIONAL_REALITY"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.when-more-processing-becomes-the-hook",
+      "heading": "When More Processing Becomes the Hook",
+      "layer": "inner-child-companion",
+      "text_sha256": "0894151cfb38484f74267d355eeb664976c9f0e1af7c58a6eaf69a69975c7ec0",
+      "node_refs": [
+        "HYP.PROCESSING_LOOP"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.borrow-the-adult-before-you-can-be-the-adult",
+      "heading": "Borrow the Adult Before You Can Be the Adult",
+      "layer": "inner-child-companion",
+      "text_sha256": "82cba8ebfe2420407efc053b78b44dbe8221bb1c96e7e8d30edd1bb12f5f16e4",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.a-witness-is-enough-to-begin",
+      "heading": "A Witness Is Enough to Begin",
+      "layer": "inner-child-companion",
+      "text_sha256": "b94a8fad1285b94bf759f5d2260c6d51fffe0a523a1fc2a2cf7b4a15f485e0b8",
+      "node_refs": [
+        "HYP.WITNESS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.borrow-one-function-at-a-time",
+      "heading": "Borrow One Function at a Time",
+      "layer": "inner-child-companion",
+      "text_sha256": "3eaa7664a0b741cd1c9d6c8a13086a62a0a9bc5e941f48e90c098efbcfe2e961",
+      "node_refs": [
+        "HYP.BORROW_ADULT"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.borrow-love-or-borrow-the-perspective-of-care",
+      "heading": "Borrow Love—or Borrow the Perspective of Care",
+      "layer": "inner-child-companion",
+      "text_sha256": "33c850373477aa80c516bbad5131d36fa874e56a9b1334d93d7aface49674a97",
+      "node_refs": [
+        "HYP.BORROW_ADULT"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.ask-god-for-a-loan",
+      "heading": "Ask God for a Loan",
+      "layer": "inner-child-companion",
+      "text_sha256": "16666e66fde3cd8f8b77b89828971c06ba85fed73f97ead4a6dab38d77f7f450",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.when-the-spiritual-relationship-hurts",
+      "heading": "When the Spiritual Relationship Hurts",
+      "layer": "inner-child-companion",
+      "text_sha256": "63c4bf7c2ffc5de50bf6f4c3073beaa0fa55e0ac2b56f6028b83f9d5f4757b9e",
+      "node_refs": [
+        "HYP.SPIRITUAL_STRUGGLE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.become-the-adult-apprentice",
+      "heading": "Become the Adult Apprentice",
+      "layer": "inner-child-companion",
+      "text_sha256": "af95a4c106463faf5159a760644c8f390f1e4bd37b32ab5c916581a20f91f8c1",
+      "node_refs": [
+        "HYP.BORROW_ADULT"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.the-three-adult-functions",
+      "heading": "The Three Adult Functions",
+      "layer": "inner-child-companion",
+      "text_sha256": "eab83f10ea594ff5cc958789ec54d969426c4b4fa9f74a89b0a0c497f55bebd0",
+      "node_refs": [
+        "HYP.ADULT_FUNCTIONS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.make-the-protector-visible",
+      "heading": "Make the Protector Visible",
+      "layer": "inner-child-companion",
+      "text_sha256": "0739c92500f060a623d4d0a4f476ceab95c7841823294180d0aec028351e5955",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.love-doesn-t-have-to-wait-for-trust",
+      "heading": "Love Doesn’t Have to Wait for Trust",
+      "layer": "inner-child-companion",
+      "text_sha256": "8ebb8bb703cf7f21e20a2b4951c8e1873ef3f88bf23ba61fea3fec1587d78295",
+      "node_refs": [
+        "HYP.LOVE_AND_TRUST"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.make-a-simple-vow",
+      "heading": "Make a Simple Vow",
+      "layer": "inner-child-companion",
+      "text_sha256": "68f020d75cf994b07e8bc2525e7bcc85b0dfda8d1da591aecd91f581d99bb12a",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.give-the-vow-a-physical-reminder",
+      "heading": "Give the Vow a Physical Reminder",
+      "layer": "inner-child-companion",
+      "text_sha256": "5f32cf8419d48025ed819adc8dbc3401865f6951f1f1a99530282a40b6870817",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.when-the-adult-voice-feels-fake",
+      "heading": "When the Adult Voice Feels Fake",
+      "layer": "inner-child-companion",
+      "text_sha256": "534dbccefd9853dfdcc0e7f2845b7a5fedfdf07d78ea1dad140d2103a6848ecd",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.the-parent-you-inherited",
+      "heading": "The Parent You Inherited",
+      "layer": "inner-child-companion",
+      "text_sha256": "91f905ab27d44bf0d023c2e41718803585021d745daeea5abfbaef7ae32c34d1",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.start-with-whatever-showed-up",
+      "heading": "Start With Whatever Showed Up",
+      "layer": "inner-child-companion",
+      "text_sha256": "98ef0eb661bdc12ebbcc2e26f8d1a360f745fe2b0f1da0e7202fb43e6b1fca24",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.two-common-protective-patterns",
+      "heading": "Two Common Protective Patterns",
+      "layer": "inner-child-companion",
+      "text_sha256": "609f304b389cc5d412891279676d4e4d9222c55779076c77a44a527f9621ebec",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.a-bottom-up-sequence",
+      "heading": "A Bottom-Up Sequence",
+      "layer": "inner-child-companion",
+      "text_sha256": "2f156a49ac564e7474009430a313f026cef4d3d891ab57e259f16ceec06c4693",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.when-the-urge-to-escape-arrives",
+      "heading": "When the Urge to Escape Arrives",
+      "layer": "inner-child-companion",
+      "text_sha256": "3c4d24778932dffb046aee17610942fb3689a82626bbbad242f198ac861cdd48",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.sometimes-there-isn-t-a-clear-child-yet",
+      "heading": "Sometimes There Isn’t a Clear Child Yet",
+      "layer": "inner-child-companion",
+      "text_sha256": "aef79dcb55752f950855eb0ce8490cc65655aaeccf8e50117df1bf39d63e0217",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.from-survival-to-experimental-play",
+      "heading": "From Survival to Experimental Play",
+      "layer": "inner-child-companion",
+      "text_sha256": "963257e238b7eee9e0b029139ffc4fca540b38eb499873158eef141772de8d85",
+      "node_refs": [
+        "HYP.IDENTITY_PLAY"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.untangling-the-belonging-bargains",
+      "heading": "Untangling the Belonging Bargains",
+      "layer": "inner-child-companion",
+      "text_sha256": "6963f82636082ad69b43c6e9ade10c32c4dcde0293c9a7fb5eb217637d160de1",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.four-pairs-that-commonly-hook-the-child",
+      "heading": "Four Pairs That Commonly Hook the Child",
+      "layer": "inner-child-companion",
+      "text_sha256": "b1e205c78b1185395980fc43ec8ae5ed8ca6a305d9bb9d40fc36c33e666cb6c9",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.let-the-child-be-bad-at-things",
+      "heading": "Let the Child Be Bad at Things",
+      "layer": "inner-child-companion",
+      "text_sha256": "091a61dc0f312c0489fadeb3cade562b18e3a5113973ee8a1ac01e5cf8cc17cd",
+      "node_refs": [
+        "HYP.IDENTITY_PLAY"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.the-inner-guide-comes-later",
+      "heading": "The Inner Guide Comes Later",
+      "layer": "inner-child-companion",
+      "text_sha256": "afe68b67f19908c040c81d9ea3bd5b8f80df98e4e7dfba4c15bb95a9e7cfb96d",
+      "node_refs": [
+        "HYP.ADULT_FUNCTIONS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.timing-is-individual",
+      "heading": "Timing is individual",
+      "layer": "inner-child-companion",
+      "text_sha256": "74266b15b914b829f1fe0f4ae458d79c1229f82eb369545fcada9ebe7fd5560d",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.simple-practices",
+      "heading": "Simple Practices",
+      "layer": "inner-child-companion",
+      "text_sha256": "01a24af110f93e3f494136110a61326e86af821a82904a270d67fdc80ac2e745",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.a-heart-to-child-loop",
+      "heading": "A Heart-to-Child Loop",
+      "layer": "inner-child-companion",
+      "text_sha256": "32b6b038c274ec156d4b482163a6003d53114c3a273ad6b260b056eb636a237a",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.journal-with-each-hand",
+      "heading": "Journal With Each Hand",
+      "layer": "inner-child-companion",
+      "text_sha256": "902177ce7cb143b58df59f414bb169392c0b05a7526d71f5e7534497503e430d",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.one-intention-in-the-morning-one-review-at-night",
+      "heading": "One Intention in the Morning, One Review at Night",
+      "layer": "inner-child-companion",
+      "text_sha256": "0a669a4224956446b5cc3b1cb7a7668ad01ac65172a5a97c83a7446a1ee3e986",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.just-like-me",
+      "heading": "Just Like Me",
+      "layer": "inner-child-companion",
+      "text_sha256": "a345f54eaa83eaf161787a24fc7af886f02785d807ad7190900c8bfab10d4e0f",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.use-childhood-photographs-without-interrogating-them",
+      "heading": "Use Childhood Photographs Without Interrogating Them",
+      "layer": "inner-child-companion",
+      "text_sha256": "4a18a818a64b41a76972b96f080b0be59c393ce2492488489501fb025495897b",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.close-the-session-and-return-to-life",
+      "heading": "Close the Session and Return to Life",
+      "layer": "inner-child-companion",
+      "text_sha256": "5de7b6b741a8cf527300bc70a2ff267b4268e68d0530c7714fdeca71dc9e0589",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.when-love-still-feels-missing",
+      "heading": "When Love Still Feels Missing",
+      "layer": "inner-child-companion",
+      "text_sha256": "314685edf41165e5fea568a125a4c8f11529de2454a39473b30d38de323b10b5",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.notice-the-part-that-came-here",
+      "heading": "Notice the Part That Came Here",
+      "layer": "inner-child-companion",
+      "text_sha256": "16d63e1e0514a33c1151eeb38ebb181bccf533e7464ca7b293240dbaed51ba33",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.somatic-heart-opening",
+      "heading": "Somatic Heart Opening",
+      "layer": "inner-child-companion",
+      "text_sha256": "2a31767cf1e48e7e91d0f4ca2a4dab5feff47bd341150c20711e20ba1f85aabf",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.how-much-happiness-do-you-know-is-possible",
+      "heading": "How Much Happiness Do You Know Is Possible?",
+      "layer": "inner-child-companion",
+      "text_sha256": "7a5089c133ae4c99bef489789c03ef0e98016578a2645a712137be3bab3ebd18",
+      "node_refs": [
+        "HYP.SPIRITUAL_STRUGGLE"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.if-you-want-to-kill-yourself",
+      "heading": "If You Want to Kill Yourself",
+      "layer": "inner-child-companion",
+      "text_sha256": "d4ffb337769ccf6dfc3411a53f1de6af8594a6e0cb6b2f8a18b86e3deaa1fc50",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.this-human-life-is-the-most-precious-opportunity",
+      "heading": "This human life is the most precious opportunity",
+      "layer": "inner-child-companion",
+      "text_sha256": "b81dd266495c9bf0871701733c4948642aa3ecf1695742fe137b1204248ff9fe",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.altered-states-can-deepen-the-therapy",
+      "heading": "Altered States Can Deepen the Therapy",
+      "layer": "inner-child-companion",
+      "text_sha256": "5ad3d5806661277ec578c21b2fa5fd72dec96efefae3c8524e89f85b73b21e60",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.altered-states-can-require-reparenting",
+      "heading": "Altered States Can *Require *Reparenting",
+      "layer": "inner-child-companion",
+      "text_sha256": "c21a19eea3133371856aa510cb38f8f872ae2d2614a3988ed7952c8ece2771d8",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.non-altered-states-can-feel-like-this-too",
+      "heading": "Non-altered states can feel like this too",
+      "layer": "inner-child-companion",
+      "text_sha256": "96e4f9b566b3562a6b85efb11d0f1690db889d9e157c63c26af5610b8428342c",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.when-the-practice-feels-real-but-stays-shallow",
+      "heading": "When the Practice Feels Real but Stays Shallow",
+      "layer": "inner-child-companion",
+      "text_sha256": "32f8a5d75176de46eacbc4299d50df720dfe55c3e62830ae35c757f0b4df6699",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.how-to-forgive-without-forgetting",
+      "heading": "How to Forgive Without Forgetting",
+      "layer": "inner-child-companion",
+      "text_sha256": "a02bd72ebeac0d10543393c53a31e4d1c678c4ad4e8dd77476a4e80d2dc5849a",
+      "node_refs": [
+        "HYP.FORGIVENESS"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.when-one-life-has-ended-and-the-next-hasn-t-begun",
+      "heading": "When One Life Has Ended and the Next Hasn’t Begun",
+      "layer": "inner-child-companion",
+      "text_sha256": "5ed78e656d667dc2a0b393598a57fcab5d618464e96d684e5dc6157c81891d4e",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.borrowed-adulthood-in-relationship",
+      "heading": "Borrowed Adulthood in Relationship",
+      "layer": "inner-child-companion",
+      "text_sha256": "a567484563b346dbe6158aca2ffa13cee20bcc9ea64d6471aa0bfac8d2ad9552",
+      "node_refs": [
+        "HYP.PEER_SUPPORT"
+      ],
+      "disposition": "node-linked and retrievable"
+    },
+    {
+      "source": "IC.S.you-are-worthy-of-love-always",
+      "heading": "You Are Worthy of Love. Always.",
+      "layer": "inner-child-companion",
+      "text_sha256": "699498bc6bac62590e40d4fb6fc82d93a04bcd08ae6496a04b39ee9eb1e30bb3",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.appendix",
+      "heading": "Appendix",
+      "layer": "inner-child-companion",
+      "text_sha256": "6d43a54d5d563ee8cfe371e66554e293e13bc6298d4327c83d07f536e5280e30",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.how-this-relates-to-ifs",
+      "heading": "How This Relates to IFS",
+      "layer": "inner-child-companion",
+      "text_sha256": "6dd3538110906b281d52f7bee989efcfa386ce851f1e8e28947a890158f50ed3",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.related-clinical-work",
+      "heading": "Related Clinical Work",
+      "layer": "inner-child-companion",
+      "text_sha256": "a52808248b9f04ffae8aebd55d4c4370d7c1133db80b066ab2f0dc7c26e81ae0",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "IC.S.teachers-and-practice-resources",
+      "heading": "Teachers and Practice Resources",
+      "layer": "inner-child-companion",
+      "text_sha256": "f4382aaee10b42b0f871166259d17490af084bcac36882f362977a8c340321be",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T01",
+      "heading": "Self-hypnosis, another hypnotist, and recordings",
+      "layer": "external-research",
+      "text_sha256": "efb19df1a8f3987bde0388fabf4ea558052a7099d619e88598dec0a3bb211663",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T02",
+      "heading": "What counts as hypnosis?",
+      "layer": "external-research",
+      "text_sha256": "c4b2514683e484626e9d5268fc381875a8ecf6903c24c0457a73fd8b2dfb6c28",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T03",
+      "heading": "Theories: several accounts, not one settled mechanism",
+      "layer": "external-research",
+      "text_sha256": "cdd7990e71a8378cf87e435cd1f8836fd3670fb32b43ec2b6c7e51071318b194",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T04",
+      "heading": "Predictive processing and bottom-up work",
+      "layer": "external-research",
+      "text_sha256": "dcbbe02d3e5583097fe9acfd989e0d4129645b795c6a29b928295c7b1e17273a",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T05",
+      "heading": "Responsiveness is something to explore, not a grade of worth",
+      "layer": "external-research",
+      "text_sha256": "e26a96c28e26845633d2f541054678458853f77e63cdea6fa1224e6ab0c20eb7",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T06",
+      "heading": "Felt involuntariness and retained choice",
+      "layer": "external-research",
+      "text_sha256": "e96102a4d3fc66453fdb571796a0273537a5aae3f01a9c85ef950c3d54d11c10",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T07",
+      "heading": "Learning an induction and a return",
+      "layer": "external-research",
+      "text_sha256": "e1c70bdc16f619eee2a143c913b658b2b4535ce1462ccccf6212de78d0f4689e",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T08",
+      "heading": "Imagery without compulsory pictures",
+      "layer": "external-research",
+      "text_sha256": "19a7095641b540626cb0a4326538604e93934c09ecc42bae376b4323513b54f8",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T09",
+      "heading": "Direct, indirect and permissive language",
+      "layer": "external-research",
+      "text_sha256": "c8fb8ff08e4fe033b099cbf9fe2312bf230b9f30925e6fd9e86247e8170f983b",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T10",
+      "heading": "Pacing, leading, utilization and metaphor",
+      "layer": "external-research",
+      "text_sha256": "372522fd315d441a9a60e22426782db60c26a21e823d7466617eda7ab2ace72a",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T11",
+      "heading": "Re-entry cues and anchors",
+      "layer": "external-research",
+      "text_sha256": "3e22efc96cb7ac533ebb22d78928a0232fd0a87f6b953fc802d15ba1adf89f87",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T12",
+      "heading": "Posthypnotic suggestions and amnesia",
+      "layer": "external-research",
+      "text_sha256": "703ecd0576179113c61b321b12030fce3b7f0518500ab2e136f006e00ae9d392",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T13",
+      "heading": "Observation, interpretation and deliberate experiment",
+      "layer": "external-research",
+      "text_sha256": "bc9e5c22a12b18dec15a33300a74c7e7f5b87cf7c08b3a44dc2f29e6fa6314f7",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T14",
+      "heading": "Bracing after a suggestion",
+      "layer": "external-research",
+      "text_sha256": "d3080c07c5ae1f4c9f45a691194a2bcd7d883d9b95f577c4e4aeb43e4d48319e",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T15",
+      "heading": "SIBAM is a map, not five compulsory reports",
+      "layer": "external-research",
+      "text_sha256": "f14b2aba122215491262db8169338fdd7ed7c54f4f8b584e0b994b31c804c244",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T16",
+      "heading": "Titration, pendulation and fractionation",
+      "layer": "external-research",
+      "text_sha256": "956056958f8f31574cf7fc65d513f1e972174e13ee228626d3755101f4db7bfa",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T17",
+      "heading": "Resources are individually tested",
+      "layer": "external-research",
+      "text_sha256": "2257953a9514b70ada2f61fbfcb902d80849646fb189450c8c7d87d06ca22751",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T18",
+      "heading": "Breath is one possible route",
+      "layer": "external-research",
+      "text_sha256": "397e99d14aefc87d280945042f70618aada44c2ef69d66baa29c6b78f08950a1",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T19",
+      "heading": "Overcoupling and undercoupling",
+      "layer": "external-research",
+      "text_sha256": "27e043b3399b64c72495c0d5faa82c94e9068ced7cfcf8d001ac5f1afea43c9e",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T20",
+      "heading": "Movement and containment",
+      "layer": "external-research",
+      "text_sha256": "8eb9f64a73aa24b6e3a68fdcbfc7e976e704b4375d9b09d137fe801faa6a8461",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T21",
+      "heading": "Positive practice is a complete purpose",
+      "layer": "external-research",
+      "text_sha256": "6dbec152f22c575183007f0ae9b513b81066138e410ce3907d913bdae576b394",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T22",
+      "heading": "Ego states and an inner child",
+      "layer": "external-research",
+      "text_sha256": "d97c5950817cfc64249c9a8ded070d0e246b376177a58abd3891dbbd32a2545e",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T23",
+      "heading": "Renurturing and borrowed capacities",
+      "layer": "external-research",
+      "text_sha256": "5c0d149815db6c7b6a2f060cae5a16e6d5bf515ba013be786cb1424191cc7c65",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T24",
+      "heading": "Integration is not automatic deletion of parts",
+      "layer": "external-research",
+      "text_sha256": "1fc881f01c2b02496d169a73cb6278359f18d8769906d9004dc684bf9447cb5c",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T25",
+      "heading": "Ideomotor and ideosensory communication",
+      "layer": "external-research",
+      "text_sha256": "8f73c732c7e10e78fd638b1c3f5a7c562208b18248a5bcc58e8748d249d27a05",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T26",
+      "heading": "Age regression and affect/somatic bridges",
+      "layer": "external-research",
+      "text_sha256": "97aa5b9e7c1b06735d9c89f2b0dd40d784d525a5924fb9f67e11ea4330365597",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T27",
+      "heading": "Distancing, screens and observer perspectives",
+      "layer": "external-research",
+      "text_sha256": "71430541a60fa7873305a98abf2ad8bf464b0b66ed905e55946bcfc8133efa9c",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T28",
+      "heading": "Abreaction and renegotiation",
+      "layer": "external-research",
+      "text_sha256": "ab19d09cb57b4d1b5ff770a1a6fda3283273bfd3d3846acdba9d5cfdb62ac8fc",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T29",
+      "heading": "Memory: significance and verification",
+      "layer": "external-research",
+      "text_sha256": "eb6b20e395781d4eb22e65f8c1c12b52190d60750d35dbfedfc4af4fa449da6b",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T30",
+      "heading": "Reconsolidation claims",
+      "layer": "external-research",
+      "text_sha256": "69a5a6fd19ad1d328a5812b95ad1fb3b179e94bf4343b01ae6210f574a73e7b2",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T31",
+      "heading": "Mismatch and repair",
+      "layer": "external-research",
+      "text_sha256": "d38881204a0b61b32dc58ca6da647209e8b2d53b0ca4e4b155625c68094ca363",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T32",
+      "heading": "Overprotection, dependency and the practitioner relationship",
+      "layer": "external-research",
+      "text_sha256": "591b8a5b446390ecf990072064ee88380c6c1239103763cf8107903a8a372601",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T33",
+      "heading": "Touch, coordination and method boundaries",
+      "layer": "external-research",
+      "text_sha256": "5f9e9d90e2cec52e02be642461b6eb11fc2de88aefdd3ee3cc2ab2cf28f1c24e",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T34",
+      "heading": "Spirituality and forgiveness",
+      "layer": "external-research",
+      "text_sha256": "3a65deeb18f8ff2c94a2bb2061cba644cb9c3d2e92837329d0451d27c3c5480c",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T35",
+      "heading": "Contemporary treatment context and credentials",
+      "layer": "external-research",
+      "text_sha256": "4d3940b92ce1f8e8ebfc7f1f7816c8adfd988458915ae0cb9e0c55d7f207aec8",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.T36",
+      "heading": "Boundaries, outcomes and escalation",
+      "layer": "external-research",
+      "text_sha256": "9efdc50d03bb41545faf11172804565c4d6e129810d85c0c6d8323dc6ab678c7",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.SOURCES",
+      "heading": "SOURCES-AND-READING.md",
+      "layer": "external-research",
+      "text_sha256": "ed61070ab576c9b1dcdb05c9518a9537343d931a00c35f3dc3d533b5838a87f9",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    },
+    {
+      "source": "REF.CONSULTATION",
+      "heading": "CONSULTATION-AND-ACCEPTANCE.md",
+      "layer": "external-research",
+      "text_sha256": "0748b29a58eb338f7252cf83d0b99f5841b3f806b31aee3a9485adf440c124dc",
+      "node_refs": [],
+      "disposition": "retrievable source/reference; no invented compulsory action"
+    }
+  ]
+}
