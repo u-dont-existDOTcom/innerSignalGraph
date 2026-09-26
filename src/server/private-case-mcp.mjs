@@ -342,17 +342,18 @@ function authenticationRequiredResult(challenge) {
   };
 }
 
-// A denial is an authentication problem only when signing in again could cure it: no token, an
-// invalid one, an account with no case grants at all, or a token missing a scope this tool needs.
-// A valid token for an account that holds grants, with every scope the tool needs, was refused
-// for this case or handoff itself (a wrong ID, or one this account may not open). That gets a
-// tool error rather than a sign-in challenge, which would send the host into a pointless
-// re-authentication. The error is the same whether or not the case exists.
+// A denial keeps its sign-in challenge whenever signing in again could cure it: no token, an
+// invalid one, a token missing a scope this tool needs, or a deployment whose case ACL grants
+// more than one account (another account might open the case). Only when the ACL grants a single
+// account, this valid token is that account's and it carries every scope the tool needs, was the
+// request refused for the case or handoff itself (a wrong ID). That gets a tool error instead of
+// a challenge that would send the host into a pointless re-authentication. The error is the same
+// whether or not the case exists.
 async function deniedForSignedInAccount(service, token, name) {
   if (!token || typeof service?.authenticate !== "function") return false;
   try {
     const identity = await service.authenticate({ bearerToken: token });
-    return identity?.subjectHasGrants === true && toolScopes(name).every((scope) => identity.scopes.includes(scope));
+    return identity?.onlyGrantedAccount === true && toolScopes(name).every((scope) => identity.scopes.includes(scope));
   } catch {
     return false;
   }

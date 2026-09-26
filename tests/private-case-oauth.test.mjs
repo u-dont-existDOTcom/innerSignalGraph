@@ -17,7 +17,7 @@ const ISSUER = "https://identity.synthetic.example";
 const RESOURCE = "https://private-mcp.synthetic.example";
 const PRIVATE_MARKER = "synthetic-private-oauth-evidence-π";
 
-async function makeEnvironment(t) {
+async function makeEnvironment(t, { extraGrants = [] } = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-oauth-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const routineKek = randomBytes(32);
@@ -44,7 +44,7 @@ async function makeEnvironment(t) {
   publicJwk.kid = "synthetic-key-1";
   publicJwk.use = "sig";
   publicJwk.alg = "RS256";
-  const grants = [{ subject: SUBJECT, case_ids: [CASE_ID], scopes: ["case:read", "case:audit"] }];
+  const grants = [{ subject: SUBJECT, case_ids: [CASE_ID], scopes: ["case:read", "case:audit"] }, ...extraGrants];
   const authorizationProvider = createJwtPrivateCaseAuthorizationProvider({ issuer: ISSUER, audience: RESOURCE, jwks: { keys: [publicJwk] }, grants });
   const keyProvider = createManagedSecretCaseKeyProvider({
     caseKeys: {
@@ -140,7 +140,7 @@ test("hosted OAuth metadata, per-tool schemes, JWT verification, case ACL, and m
   assert.equal(JSON.stringify(wrongAudience.body).includes(PRIVATE_MARKER), false);
 });
 
-test("a signed-in account that cannot open a case gets a tool error, not a sign-in challenge", async (t) => {
+test("with a single granted account, its case denials get a tool error, not a sign-in challenge", async (t) => {
   const environment = await makeEnvironment(t);
   const listener = await listenPrivateCaseMcp({
     caseAccessService: environment.service,
@@ -178,6 +178,29 @@ test("a signed-in account that cannot open a case gets a tool error, not a sign-
   const invalid = await rpc(listener.url, "retrieve_case_evidence", { case_id: "synthetic-other-case", query: "oauth" }, "not-a-jwt");
   assert.equal(invalid.response.status, 401);
   assert.match(invalid.body.result._meta["mcp/www_authenticate"][0], /error="invalid_token"/);
+});
+
+test("with several granted accounts, a denial keeps the sign-in challenge", async (t) => {
+  // Another account might open the case, so signing in again could cure the denial.
+  const environment = await makeEnvironment(t, { extraGrants: [{ subject: "second-subject-002", case_ids: ["synthetic-second-case"], scopes: ["case:read", "case:audit"] }] });
+  const listener = await listenPrivateCaseMcp({
+    caseAccessService: environment.service,
+    oauth: { resource: RESOURCE, authorizationServers: [ISSUER], scopesSupported: ["case:read", "case:audit"] },
+    productionAuthReady: true
+  });
+  t.after(() => listener.close());
+  for (const request of [
+    ["retrieve_case_evidence", { case_id: "synthetic-second-case", query: "oauth" }],
+    ["load_handoff", { handoff_id: "handoff:00000000-0000-4000-8000-000000000000" }]
+  ]) {
+    const outcome = await rpc(listener.url, ...request, environment.token);
+    assert.equal(outcome.response.status, 401);
+    assert.match(outcome.response.headers.get("www-authenticate"), /error="invalid_token"/);
+    assert.equal(JSON.stringify(outcome.body).includes(PRIVATE_MARKER), false);
+  }
+  const allowed = await rpc(listener.url, "retrieve_case_evidence", { case_id: CASE_ID, query: "oauth" }, environment.token);
+  assert.equal(allowed.response.status, 200);
+  assert.equal(allowed.body.result.structuredContent.turns[0].text, PRIVATE_MARKER);
 });
 
 test("production-ready server configuration cannot omit OAuth discovery", () => {

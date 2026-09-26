@@ -143,7 +143,7 @@ export function createPrivateCaseAccessService({
       try { identity = await authorizationProvider.authenticate({ authContext }); }
       catch { return null; }
       if (!identity || !Array.isArray(identity.scopes)) return null;
-      return Object.freeze({ subjectHasGrants: identity.subjectHasGrants === true, scopes: Object.freeze([...identity.scopes]) });
+      return Object.freeze({ onlyGrantedAccount: identity.onlyGrantedAccount === true, scopes: Object.freeze([...identity.scopes]) });
     },
     async loadPrivateRuntimeCase(caseId, authContext) {
       return read(caseId, authContext, async (store) => {

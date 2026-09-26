@@ -89,6 +89,7 @@ export function createJwtPrivateCaseAuthorizationProvider({
   if (!Array.isArray(algorithms) || algorithms.length === 0 || algorithms.some((entry) => typeof entry !== "string" || !entry)) throw new ValidationError("OAuth algorithms are invalid.");
   if (!Number.isFinite(clockTolerance) || clockTolerance < 0 || clockTolerance > 300) throw new ValidationError("OAuth clock tolerance is invalid.");
   const normalizedGrants = normalizeGrants(grants);
+  const grantedSubjects = new Set(normalizedGrants.map((entry) => entry.subject));
   const keySet = jwks
     ? createLocalJWKSet(jwks)
     : createRemoteJWKSet(new URL(requiredText(jwksUri, "OAuth JWKS URI")));
@@ -118,13 +119,15 @@ export function createJwtPrivateCaseAuthorizationProvider({
     kind: "oauth-jwt-case-acl",
     issuer: normalizedIssuer,
     audience: normalizedAudience,
-    // Whether a denial could be cured by signing in again: a valid token whose subject holds at
-    // least one grant is already the right account, so a case it cannot open is a wrong or
-    // unauthorized ID, not an authentication problem. Returns no case or grant details.
+    // Whether a denial could be cured by signing in again. That is ruled out only when the case
+    // ACL grants a single account and this valid token belongs to it: no other account could open
+    // anything. With several granted accounts, another one might open the case, so the caller
+    // keeps the sign-in challenge. This is a deployment-wide property; it says nothing about
+    // any case, and nothing about which cases exist.
     async authenticate({ authContext }) {
       const { subject, tokenScopeSet } = await verifyToken(authContext?.bearerToken);
       return Object.freeze({
-        subjectHasGrants: normalizedGrants.some((entry) => entry.subject === subject),
+        onlyGrantedAccount: grantedSubjects.size === 1 && grantedSubjects.has(subject),
         scopes: Object.freeze([...tokenScopeSet])
       });
     },
