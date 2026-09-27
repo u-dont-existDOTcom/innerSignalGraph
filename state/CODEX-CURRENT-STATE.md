@@ -12,7 +12,7 @@ Updated: 2026-09-27
 - **Review round 1 (pre-existing defects in the moved code):**
   - Publication now holds the vault root's writer lock, the one the one-shot operator takes.
   - An explicit null expected generation is a compare-and-swap guard again, not "whatever is active".
-  - Cold retrieval reports passages and seeds beyond its bounds as more available.
+  - Cold retrieval reports passages and seeds beyond its bounds as more available, and sends only passages for source resolution (a pattern's supporting assertions used to abort it).
   - The web page drops an evidence response for a superseded selection.
   - The staging key and the source are checked and read through one no-follow handle (CodeQL).
   - Each fix has a test that fails without it.

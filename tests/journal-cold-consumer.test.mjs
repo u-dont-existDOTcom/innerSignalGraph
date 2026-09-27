@@ -42,3 +42,40 @@ test("cold retrieval within its bounds reports complete evidence", async () => {
   assert.equal(result.more_available, false);
   assert.match(result.coverage_note, /mandatory evidence closure/u);
 });
+
+test("a pattern's supporting assertions are not sent for source resolution; its closure passages are", async () => {
+  const requested = [];
+  const journalApi = {
+    async search() {
+      return {
+        snapshot: { generation: "generation:synthetic" },
+        items: [{ id: "pattern:1", kind: "pattern", data: { support_assertion_ids: ["assertion:1"], counter_assertion_ids: ["assertion:2"] } }],
+        next_cursor: null
+      };
+    },
+    async getSubgraph({ seedIds }) {
+      assert.deepEqual(seedIds, ["pattern:1"]);
+      return {
+        closure_status: "complete",
+        more_available: false,
+        nodes: [
+          { id: "assertion:1", kind: "assertion", data: { evidence_ids: ["passage:1"] } },
+          { id: "assertion:2", kind: "assertion", data: { evidence_ids: ["passage:2"] } },
+          { id: "passage:1", kind: "passage" },
+          { id: "passage:2", kind: "passage" }
+        ],
+        edges: []
+      };
+    },
+    async resolveEvidence({ evidenceIds }) {
+      requested.push(...evidenceIds);
+      if (evidenceIds.some((id) => !id.startsWith("passage:"))) throw Object.assign(new Error("not a passage"), { code: "EVIDENCE_RECORD_NOT_PASSAGE" });
+      return { exact_spans: [], source_locators: [], next_cursor: null };
+    }
+  };
+  const result = await createJournalColdConsumer({ journalApi }).retrieveQuestion({
+    locator, question: { id: "q1", query: "synthetic" }, authContext: {}
+  });
+  assert.equal(result.status, "evidence_retrieved");
+  assert.deepEqual(requested.sort(), ["passage:1", "passage:2"]);
+});

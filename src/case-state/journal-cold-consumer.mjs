@@ -4,11 +4,12 @@ function invariant(condition, code) {
   if (!condition) throw new ValidationError(code, { code });
 }
 
+// Passage IDs a record cites as evidence. A pattern cites assertions, not passages; its passages
+// arrive through the subgraph closure, which seeds from every non-passage record.
 function evidenceIds(record) {
   if (record.kind === "passage") return [record.id];
   if (Array.isArray(record.evidence_ids)) return record.evidence_ids;
   if (Array.isArray(record.data?.evidence_ids)) return record.data.evidence_ids;
-  if (record.kind === "pattern") return [...record.data.support_assertion_ids, ...record.data.counter_assertion_ids];
   return [];
 }
 
@@ -73,7 +74,10 @@ export function createJournalColdConsumer({ journalApi, maximumPagesPerQuestion 
       invariant(closure.closure_status === "complete", "INSUFFICIENT_CONTEXT");
     }
     const allRecords = [...records.values(), ...closure.nodes, ...closure.edges];
-    const passages = [...new Set([...initialEvidence, ...allRecords.filter((record) => record.kind === "passage").map((record) => record.id)])];
+    // Only passages can be resolved to exact source; an ID known to be another kind never is.
+    const otherKinds = new Set(allRecords.filter((record) => record.kind !== "passage").map((record) => record.id));
+    const passages = [...new Set([...initialEvidence, ...allRecords.filter((record) => record.kind === "passage").map((record) => record.id)])]
+      .filter((id) => !otherKinds.has(id));
     const evidence = passages.length
       ? await journalApi.resolveEvidence({
           caseId: locator.case_id,
