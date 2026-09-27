@@ -93,7 +93,7 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
   Object.freeze({
     name: "get_journal_timeline",
     title: "Get private journal timeline",
-    description: "Read the authorized known-time lane plus explicitly separate unknown-time records.",
+    description: "Read the authorized known-time lane plus explicitly separate unknown-time records, with bounded, snapshot-bound pagination.",
     inputSchema: {
       type: "object", additionalProperties: false, required: ["case_id", "corpus_id"],
       properties: {
@@ -103,7 +103,8 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
         from: { type: ["string", "null"] },
         to: { type: ["string", "null"] },
         include_unknown: { type: "boolean", default: true },
-        page_size: { type: "integer", minimum: 1, maximum: PAGE_SIZE_MAX, default: PAGE_SIZE_DEFAULT }
+        page_size: { type: "integer", minimum: 1, maximum: PAGE_SIZE_MAX, default: PAGE_SIZE_DEFAULT },
+        cursor: { type: ["string", "null"] }
       }
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
@@ -233,13 +234,18 @@ export function createJournalPrivateApi({ caseAccessService, jobController = nul
 
     async timeline(input, authContext) {
       return withReader(input, authContext, async (reader, snapshot) => {
-        const result = await reader.timeline({ from: input.from ?? null, to: input.to ?? null, includeUnknown: input.includeUnknown !== false });
-        const limit = pageSize(input.pageSize);
+        const result = await reader.timeline({
+          from: input.from ?? null,
+          to: input.to ?? null,
+          includeUnknown: input.includeUnknown !== false,
+          pageSize: pageSize(input.pageSize),
+          cursor: input.cursor ?? null
+        });
         return Object.freeze({
-          items: result.records.slice(0, limit),
+          items: result.records,
           unknown_count: result.unknown_count,
-          more_available: result.records.length > limit,
-          next_cursor: null,
+          more_available: result.more_available,
+          next_cursor: result.next_cursor,
           snapshot: { generation: snapshot.generation, visibility_epoch: snapshot.visibility_epoch }
         });
       });

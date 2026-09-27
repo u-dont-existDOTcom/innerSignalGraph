@@ -17,6 +17,8 @@ Provision a dedicated confidential Keycloak client with service accounts enabled
 ]
 ```
 
+The import needs no `case:read`. It checks what it publishes through a write-authorized inspection that returns the case revision, the corpus reference and a digest of the state outside the journal, never case content.
+
 Do not add this grant to `INNER_SIGNAL_CASE_ACL_JSON`, which belongs to the read-only MCP. Supply it only as `INNER_SIGNAL_OPERATOR_CASE_ACL_JSON` to the one-shot operator.
 
 Keycloak's supported machine-to-machine flow is the client-credentials grant backed by the client's service account. Obtain a short-lived token immediately before an operation and pass it only through `INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN`; never put the token in argv, a request file, a receipt, or logs.

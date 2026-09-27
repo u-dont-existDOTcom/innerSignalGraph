@@ -6,12 +6,18 @@ test("cold process opens only a saved session-use profile snapshot and closes it
   const reference = { active_generation: "generation:synthetic",
     manifest_object_id: "manifest:synthetic", visibility_epoch: 0 };
   const checks = [], calls = [], saved = new Map();
+  let inspections = 0;
   const service = {
     async verifyCaseAccess(id, request) {
       assert.equal(id, "case:synthetic");
       checks.push(request);
     },
-    async getJournalCorpus() { return { reference }; },
+    async inspectJournalCorpus(id, corpus, request) {
+      assert.deepEqual([id, corpus], ["case:synthetic", "corpus:synthetic"]);
+      assert.deepEqual(request, { requiredScope: "case:write", requiredPurpose: "session_use" });
+      inspections += 1;
+      return { reference };
+    },
     async withJournalCorpus(id, corpus, request, callback) {
       assert.deepEqual(request, { requiredScope: "case:write", requiredPurpose: "session_use" });
       return callback({ corpusStore: { saved: true }, cursorSecret: Buffer.alloc(32, 7), reference });
@@ -60,6 +66,7 @@ test("cold process opens only a saved session-use profile snapshot and closes it
   assert.equal(calls.length, 2);
   assert.equal(closed, true);
   assert.ok(checks.length >= 3);
+  assert.ok(inspections >= 3);
   assert.ok(checks.every(check => check.requiredPurpose === "session_use"
     && check.requiredScope === "case:write"));
 });
@@ -68,7 +75,8 @@ test("cold process refuses an unpublished or changed generation before inference
   let invoked = false;
   const service = {
     async verifyCaseAccess() {},
-    async getJournalCorpus() {
+    async inspectJournalCorpus(_case, _corpus, request) {
+      assert.deepEqual(request, { requiredScope: "case:read", requiredPurpose: "session_use" });
       return { reference: { active_generation: "generation:old",
         manifest_object_id: "manifest:old", visibility_epoch: 0 } };
     },
@@ -92,7 +100,7 @@ test("cold retrieval refreshes expiring session credentials before each saved-pr
       assert.ok(credentials.bearerToken?.startsWith("refreshed:"));
       seen.push(credentials.bearerToken);
     },
-    async getJournalCorpus() { return { reference }; },
+    async inspectJournalCorpus() { return { reference }; },
     async withJournalCorpus(_case, _corpus, _request, callback) {
       return callback({ corpusStore: {}, cursorSecret: Buffer.alloc(32), reference });
     }
@@ -121,4 +129,19 @@ test("cold retrieval refreshes expiring session credentials before each saved-pr
   });
   assert.equal(results[0].variants.length, 2);
   assert.ok(new Set(seen).size > 2);
+});
+
+test("cold process refuses a corpus that was never created before inference", async () => {
+  let invoked = false;
+  const service = {
+    async verifyCaseAccess() {},
+    async inspectJournalCorpus() { return { reference: null }; },
+    async withJournalCorpus() { invoked = true; }
+  };
+  await assert.rejects(() => runSavedProfileColdConsumer({
+    service, auth: {}, caseId: "case:synthetic", corpusId: "corpus:synthetic",
+    expectedGeneration: "generation:new", questions: [{ id: "q", question: "Detail?" }],
+    grant: { purpose: "session_use", allowed_roles: ["cold_consumer"] }
+  }), { code: "COLD_PROFILE_GENERATION_NOT_SAVED" });
+  assert.equal(invoked, false);
 });

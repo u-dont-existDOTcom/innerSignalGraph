@@ -507,7 +507,8 @@ async function callTool(service, name, args, authContext, journalApi = null) {
       from: args.from,
       to: args.to,
       includeUnknown: args.include_unknown,
-      pageSize: args.page_size
+      pageSize: args.page_size,
+      cursor: args.cursor
     }, authContext);
   }
   throw Object.assign(new Error(`Unknown MCP tool ${name}.`), { code: "MCP_TOOL_NOT_FOUND" });

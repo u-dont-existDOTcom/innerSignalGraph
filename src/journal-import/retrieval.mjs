@@ -200,15 +200,53 @@ export async function openPrivateJournalGraph({
     return records;
   };
 
-  const timeline = async ({ from = null, to = null, includeUnknown = true } = {}) => {
+  // Without a page size this returns the whole window. With one it returns a page and, when more
+  // remain, a cursor bound like a search cursor to this snapshot and purpose, and to this window.
+  // Its sort label keeps a timeline cursor from being replayed as a search cursor, or the reverse.
+  const timeline = async ({ from = null, to = null, includeUnknown = true, pageSize = null, cursor = null } = {}) => {
     await assertCurrent();
+    invariant((from === null || typeof from === "string") && (to === null || typeof to === "string")
+      && typeof includeUnknown === "boolean", "TIMELINE_QUERY_INVALID");
+    invariant(pageSize === null || (Number.isSafeInteger(pageSize) && pageSize >= 1 && pageSize <= 250), "TIMELINE_PAGE_SIZE_INVALID");
+    invariant(cursor === null || pageSize !== null, "TIMELINE_CURSOR_REQUIRES_PAGE_SIZE");
+    const querySha = sha256(Buffer.from(JSON.stringify({ from, to }), "utf8"));
+    const filtersSha = sha256(Buffer.from(JSON.stringify({ includeUnknown }), "utf8"));
+    const offset = cursor ? parseCursor(cursor, { query_sha256: querySha, filters_sha256: filtersSha, sort: "timeline" }).offset : 0;
     const known = await readIndex("time_known", "known");
     const unknown = includeUnknown ? await readIndex("time_unknown", "unknown") : [];
     const selected = known.filter((entry) => (from === null || entry.to >= from) && (to === null || entry.from <= to));
+    // The index is sorted when the generation is built, so this order is the same on every page.
     const ids = [...new Set([...selected, ...unknown].map(({ id }) => id))];
     const records = (await Promise.all(ids.map(loadRecord))).filter(active);
+    const unknownCount = new Set(unknown.filter(({ id }) => records.some((record) => record.id === id)).map(({ id }) => id)).size;
+    if (pageSize === null) {
+      await assertCurrent();
+      return Object.freeze({ records, unknown_count: unknownCount });
+    }
+    const page = records.slice(offset, offset + pageSize);
+    const nextOffset = offset + page.length;
+    const moreAvailable = nextOffset < records.length;
+    const result = Object.freeze({
+      records: page,
+      unknown_count: unknownCount,
+      total_matches: records.length,
+      more_available: moreAvailable,
+      next_cursor: moreAvailable ? signCursor({
+        schema_version: "1.0",
+        case_id: caseId,
+        corpus_id: corpusId,
+        purpose,
+        generation,
+        visibility_epoch: visibilityEpoch,
+        query_sha256: querySha,
+        filters_sha256: filtersSha,
+        sort: "timeline",
+        offset: nextOffset,
+        expires_at: now() + cursorTtlMs
+      }) : null
+    });
     await assertCurrent();
-    return Object.freeze({ records, unknown_count: new Set(unknown.filter(({ id }) => records.some((record) => record.id === id)).map(({ id }) => id)).size });
+    return result;
   };
 
   const evidenceGroup = async (seedIds, { maximumNodes = 100 } = {}) => {

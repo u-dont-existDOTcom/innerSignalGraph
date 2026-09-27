@@ -54,6 +54,14 @@ const copyBytes = (value, name) => {
   if (!(value instanceof Uint8Array) || value.byteLength === 0) throw new PrivateCaseKeyUnavailableError(`${name} is unavailable.`);
   return Buffer.from(value);
 };
+// A digest of everything in a case record outside the journal and the record's own bookkeeping.
+// Publishing a journal generation must leave it unchanged.
+const NON_JOURNAL_EXCLUDED_FIELDS = Object.freeze(["revision", "updated_at", "schema_version", "journal_corpora", "journal_corpus_keys"]);
+function nonJournalStateDigest(record) {
+  const copy = structuredClone(record);
+  for (const field of NON_JOURNAL_EXCLUDED_FIELDS) delete copy[field];
+  return createHash("sha256").update(JSON.stringify(copy)).digest("hex");
+}
 const isWithin = (parent, candidate) => {
   const relative = path.relative(parent, candidate);
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
@@ -258,6 +266,26 @@ export function createPrivateCaseAccessService({
     },
     async getJournalCorpus(caseId, corpusId, authContext) {
       return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.READ, (store) => store.getJournalCorpus(caseId, corpusId), PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH);
+    },
+    // The corpus reference (null before the corpus exists), the case revision and a digest of the
+    // state outside the journal, under the scope and purpose the caller names. It returns no case
+    // content, so a journal writer holding only case:write can check its own publication, and a
+    // session reader holding only session_use can check its snapshot, without a broader grant.
+    async inspectJournalCorpus(caseId, corpusId, { requiredScope, requiredPurpose } = {}, authContext) {
+      if (![PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.WRITE].includes(requiredScope)) throw new ValidationError("requiredScope is invalid.");
+      if (!Object.values(PRIVATE_JOURNAL_PURPOSES).includes(requiredPurpose)) throw new ValidationError("requiredPurpose is invalid.");
+      nonBlank(corpusId, "corpusId", 160);
+      return withStore(caseId, authContext, requiredScope, async (store) => {
+        const record = await store.load(caseId);
+        if (!record) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        const reference = record.journal_corpora.find((item) => item.corpus_id === corpusId);
+        return Object.freeze({
+          case_id: caseId,
+          case_revision: record.revision,
+          reference: reference ? structuredClone(reference) : null,
+          non_journal_state_sha256: nonJournalStateDigest(record)
+        });
+      }, requiredPurpose);
     },
     async publishJournalGeneration(caseId, input, authContext) {
       return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, (store) => store.publishJournalGeneration(caseId, input), PRIVATE_JOURNAL_PURPOSES.SESSION_USE);

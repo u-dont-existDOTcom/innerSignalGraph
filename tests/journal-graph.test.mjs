@@ -8,6 +8,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { validateJournalGraph } from "../src/journal-import/contracts.mjs";
 import { adaptExtractionToGraph, persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
+import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 import { partitionRepresentation } from "../src/journal-import/partition.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 
@@ -178,6 +179,91 @@ test("encrypted graph generation supports raw search, aliases, unknown time and 
   const encryptedBodies = await Promise.all(encryptedFiles.map((name) => fs.readFile(path.join(store.rootDir, name), "utf8")));
   assert.equal(encryptedBodies.some((body) => body.includes("discomfort in my arm")), false);
   reader.close();
+  store.close();
+});
+
+async function syntheticReader(rootDir) {
+  const graph = fixture("synthetic-graph.json");
+  const representations = fixture("synthetic-sources.json");
+  const store = corpusStore(rootDir, graph.case_id, graph.corpus_id, Buffer.alloc(32, 17));
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph, sourceRepresentations: representations, shardTargetBytes: 4096 });
+  const reference = { active_generation: graph.generation, manifest_object_id: persisted.manifest_object_id, visibility_epoch: 0 };
+  const reader = await openPrivateJournalGraph({
+    corpusStore: store,
+    manifestObjectId: persisted.manifest_object_id,
+    caseId: graph.case_id,
+    corpusId: graph.corpus_id,
+    generation: graph.generation,
+    visibilityEpoch: 0,
+    cursorSecret: Buffer.alloc(32, 19)
+  });
+  return { graph, store, reader, reference };
+}
+
+test("timeline pages carry a snapshot-bound cursor that reaches every record once", async () => {
+  const rootDir = await temporaryRoot();
+  const { store, reader } = await syntheticReader(rootDir);
+  const whole = await reader.timeline();
+  assert.ok(whole.records.length > 4);
+  const seen = [];
+  let cursor = null;
+  let first = null;
+  let pages = 0;
+  do {
+    const page = await reader.timeline({ pageSize: 2, cursor });
+    pages += 1;
+    assert.equal(page.total_matches, whole.records.length);
+    assert.equal(page.unknown_count, whole.unknown_count);
+    assert.equal(page.more_available, page.next_cursor !== null);
+    seen.push(...page.records.map(({ id }) => id));
+    cursor = page.next_cursor;
+    first ??= cursor;
+  } while (cursor);
+  assert.deepEqual(seen, whole.records.map(({ id }) => id));
+  assert.equal(pages, Math.ceil(whole.records.length / 2));
+
+  // A cursor continues only the window it was issued for, and never a search; a search cursor
+  // never continues a timeline.
+  await assert.rejects(() => reader.timeline({ pageSize: 2, cursor: first, includeUnknown: false }), /CURSOR_QUERY_MISMATCH/);
+  await assert.rejects(() => reader.timeline({ pageSize: 2, cursor: first, from: "2026-01-01" }), /CURSOR_QUERY_MISMATCH/);
+  await assert.rejects(() => reader.search({ query: "discomfort", pageSize: 2, cursor: first }), /CURSOR_QUERY_MISMATCH/);
+  const search = await reader.search({ query: "discomfort", pageSize: 1 });
+  assert.equal(typeof search.next_cursor, "string");
+  await assert.rejects(() => reader.timeline({ pageSize: 2, cursor: search.next_cursor }), /CURSOR_QUERY_MISMATCH/);
+  const [body] = first.split(".");
+  await assert.rejects(() => reader.timeline({ pageSize: 2, cursor: `${body}.${Buffer.alloc(32).toString("base64url")}` }), /CURSOR_MAC_INVALID/);
+  await assert.rejects(() => reader.timeline({ cursor: first }), /TIMELINE_CURSOR_REQUIRES_PAGE_SIZE/);
+  await assert.rejects(() => reader.timeline({ pageSize: 0 }), /TIMELINE_PAGE_SIZE_INVALID/);
+  reader.close();
+  store.close();
+});
+
+test("the timeline tool returns the cursor for its next page", async () => {
+  const rootDir = await temporaryRoot();
+  const { graph, store, reader, reference } = await syntheticReader(rootDir);
+  const whole = (await reader.timeline()).records.map(({ id }) => id);
+  reader.close();
+  const api = createJournalPrivateApi({ caseAccessService: {
+    async withJournalCorpus(caseId, corpusId, request, operation) {
+      assert.deepEqual([caseId, corpusId, request.requiredScope], [graph.case_id, graph.corpus_id, "case:read"]);
+      return operation({
+        caseStore: { async getJournalCorpus() { return { reference }; } },
+        corpusStore: store,
+        cursorSecret: Buffer.alloc(32, 19),
+        reference
+      });
+    }
+  } });
+  const input = { caseId: graph.case_id, corpusId: graph.corpus_id, pageSize: 4 };
+  const seen = [];
+  let cursor = null;
+  do {
+    const page = await api.timeline({ ...input, cursor }, {});
+    assert.equal(page.more_available, page.next_cursor !== null);
+    seen.push(...page.items.map(({ id }) => id));
+    cursor = page.next_cursor;
+  } while (cursor);
+  assert.deepEqual(seen, whole);
   store.close();
 });
 

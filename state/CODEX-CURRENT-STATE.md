@@ -16,9 +16,13 @@ Updated: 2026-09-27
   - The web page drops an evidence response for a superseded selection.
   - The staging key and the source are checked and read through one no-follow handle (CodeQL).
   - Each fix has a test that fails without it.
+- **Review round 3:**
+  - Publication reads the case only through a write-authorized inspection: the case revision, the corpus reference and a digest of everything outside the journal, never case content. So the operator's documented `case:write`-only grant can publish; before, it needed `case:read` and was refused before anything was transferred. The cold runner uses the same inspection under its own scope and purpose.
+  - The timeline tool returns a signed cursor bound to the snapshot and the time window, so later pages are reachable. Before, it said more records were available but gave no way to get them.
+  - Both have tests that fail without the fix.
 - **Verified:** `npm test` (1,519), `npm run audit:repository`, `npm run audit:publication`, `npm run verify`, `npm run journal:ui:test` (10) and `npm run journal:ui:build` pass on Node 24.18.0. Privacy scan of every moved file: no case ID or source hash, host paths, e-mail addresses, IP addresses or personal names; only synthetic example domains.
 - **Safety:** nothing is deployed, and the running import is unchanged; it keeps running from the private checkout until the owner approves the switch. The journal read tools stay off unless a grant lists journal purposes, and the operator needs its own environment.
-- **Next safe action:** Codex review, then owner approval to merge. Then the exchange-backed provider (retiring the desktop transport), then the Mission Control job type.
+- **Next safe action:** the owner approved the merge once review is clean ("merge 93 and 94"). Then the exchange-backed provider (retiring the desktop transport), then the Mission Control job type.
 ## Journal work exchange hardening — `claude/journal-work-exchange-hardening-20260927`
 
 - **Goal:** the two points deferred from PR #92's last review. A failed write must not leave temporary files behind, and an exchange root that other local users can reach must be refused.
