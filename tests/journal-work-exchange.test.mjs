@@ -125,16 +125,48 @@ test("tampered, moved or wrongly keyed files are refused", async (t) => {
   await assert.rejects(exchange.readResult(WORK_ID), { code: "JOURNAL_WORK_ENTRY_INVALID" });
 });
 
-test("a missing exchange root is created with private modes and works end to end", async (t) => {
+test("the exchange root must exist; its queues are created private, also by concurrent first uses", async (t) => {
   const parent = await tempRoot(t);
-  const root = path.join(parent, "fresh", "exchange");
+  const missing = createJournalWorkExchange({ root: path.join(parent, "missing", "exchange"), secret: secret() });
+  await assert.rejects(missing.publishWork(workEntry()), { code: "JOURNAL_WORK_EXCHANGE_ROOT_MISSING" });
+  await assert.rejects(missing.submitResult({ workId: WORK_ID, output: { items: [] }, subject: "s" }), { code: "JOURNAL_WORK_EXCHANGE_ROOT_MISSING" });
+  assert.deepEqual(await fs.readdir(parent), []);
+
+  const root = path.join(parent, "exchange");
+  await fs.mkdir(root, { mode: 0o700 });
   const exchange = createJournalWorkExchange({ root, secret: secret() });
-  await exchange.publishWork(workEntry());
-  await exchange.submitResult({ workId: WORK_ID, output: { items: [] }, subject: "s" });
-  assert.deepEqual((await exchange.readResult(WORK_ID)).output, { items: [] });
-  for (const dir of [path.join(parent, "fresh"), root, path.join(root, "outbox"), path.join(root, "inbox")]) {
-    assert.equal((await fs.stat(dir)).mode & 0o777, 0o700, dir);
-  }
+  const ids = Array.from({ length: 8 }, (_, index) => `job:synthetic-work-10${index}`);
+  const published = await Promise.all(ids.map((workId) => exchange.publishWork(workEntry({ work_id: workId }))));
+  assert.ok(published.every(({ created }) => created));
+  const stored = await Promise.all(ids.map((workId) => exchange.submitResult({ workId, output: { items: [workId] }, subject: "s" })));
+  assert.ok(stored.every(({ already }) => already === false));
+  for (const workId of ids) assert.deepEqual((await exchange.readResult(workId)).output, { items: [workId] });
+  for (const dir of ["outbox", "inbox"]) assert.equal((await fs.stat(path.join(root, dir))).mode & 0o777, 0o700, dir);
+});
+
+test("a queue that is a symbolic link or not a directory is refused before anything is written", async (t) => {
+  const base = await tempRoot(t);
+  const checkout = path.join(base, "checkout");
+  const root = path.join(base, "exchange");
+  await fs.mkdir(checkout);
+  await fs.mkdir(root);
+  const exchange = createJournalWorkExchange({ root, secret: secret() });
+  const outbox = path.join(root, "outbox");
+
+  await fs.symlink(checkout, outbox);
+  await assert.rejects(exchange.publishWork(workEntry()), { code: "JOURNAL_WORK_EXCHANGE_QUEUE_INVALID" });
+  await fs.symlink(checkout, path.join(root, "inbox"));
+  await assert.rejects(exchange.submitResult({ workId: WORK_ID, output: { items: [] }, subject: "s" }), { code: "JOURNAL_WORK_EXCHANGE_QUEUE_INVALID" });
+  await assert.rejects(exchange.retireWork(WORK_ID), { code: "JOURNAL_WORK_EXCHANGE_QUEUE_INVALID" });
+
+  // A dangling link and a regular file are refused the same way.
+  await fs.rm(outbox);
+  await fs.symlink(path.join(checkout, "not-yet"), outbox);
+  await assert.rejects(exchange.publishWork(workEntry()), { code: "JOURNAL_WORK_EXCHANGE_QUEUE_INVALID" });
+  await fs.rm(outbox);
+  await fs.writeFile(outbox, "");
+  await assert.rejects(exchange.publishWork(workEntry()), { code: "JOURNAL_WORK_EXCHANGE_QUEUE_INVALID" });
+  assert.deepEqual(await fs.readdir(checkout), []);
 });
 
 test("an exchange root is canonicalized and refused when it resolves into the repository", async (t) => {

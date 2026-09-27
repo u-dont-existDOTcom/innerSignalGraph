@@ -52,6 +52,12 @@ if (configuredJournalWork === 3) {
   if (!path.isAbsolute(exchangeRoot)) throw new Error("INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT must be an absolute path.");
   // Canonical, so a symbolic link cannot place the exchange inside the public checkout.
   const canonicalRoot = await resolveJournalWorkExchangeRoot(exchangeRoot, { outside: repositoryRoot });
+  // The exchange never creates its root: deployment does, owned by the user both processes run as.
+  const rootInfo = await fs.stat(canonicalRoot).catch((error) => {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return null;
+    throw error;
+  });
+  if (!rootInfo?.isDirectory()) throw new Error("INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT must name an existing directory.");
   journalWork = createJournalWorkTools({
     exchange: createJournalWorkExchange({ root: canonicalRoot, secret: exchangeSecret }),
     caseId: journalCaseId,

@@ -178,19 +178,22 @@ export function createJournalWorkExchange({
     finally { await handle.close(); }
   }
 
-  // A newly created queue directory is durable only once its parent is synced, and so on up to the
-  // parent of the first directory mkdir created.
+  // The root must already exist: deployment creates it, owned by the user both processes run as.
+  // The queues are its direct children and must be real directories, never symbolic links, so
+  // nothing written here can land outside the canonical root. (This guards configuration: a process
+  // running as the exchange's user could swap a queue after the check, but it already holds the
+  // secret.) The root is synced on every call, so a queue's own name is durable before anything is
+  // written in it, whichever caller or process created the queue.
   async function ensureDirectory(kind) {
     const target = directory(kind);
-    const created = await fs.mkdir(target, { recursive: true, mode: dirMode });
-    if (created === undefined) return;
-    const stop = path.dirname(created);
-    for (let current = target; ;) {
-      const parent = path.dirname(current);
-      await syncPath(parent);
-      if (parent === stop || parent === current) break;
-      current = parent;
+    try {
+      await fs.mkdir(target, { mode: dirMode });
+    } catch (error) {
+      if (error?.code === "ENOENT" || error?.code === "ENOTDIR") fail("JOURNAL_WORK_EXCHANGE_ROOT_MISSING");
+      if (error?.code !== "EEXIST") throw error;
     }
+    if (!(await fs.lstat(target)).isDirectory()) fail("JOURNAL_WORK_EXCHANGE_QUEUE_INVALID");
+    await syncPath(root);
   }
 
   // A published or removed entry is durable only once its directory is synced.
@@ -336,6 +339,7 @@ export function createJournalWorkExchange({
     async retireWork(workId) {
       const fileKey = journalWorkFileKey(workId);
       await ensureDirectory("result");
+      await ensureDirectory("work");
       const tombstone = seal(derived.encryption, "result", fileKey, {
         schema_version: JOURNAL_WORK_EXCHANGE_VERSION,
         work_id: workId,
@@ -353,7 +357,6 @@ export function createJournalWorkExchange({
       await fs.unlink(fileFor("work", fileKey)).catch((error) => {
         if (error?.code !== "ENOENT") throw error;
       });
-      await ensureDirectory("work");
       await syncDirectory("work");
     }
   });
