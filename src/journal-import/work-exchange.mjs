@@ -20,6 +20,8 @@ const ROLE_PATTERN = /^[a-z_]{3,40}$/u;
 const MAX_WORK_BYTES = 4 * 1024 * 1024;
 export const MAX_JOURNAL_RESULT_BYTES = 900_000;
 const MAX_INSTRUCTION_BYTES = 256 * 1024;
+const TEMPORARY_PREFIX = ".tmp-";
+export const STALE_JOURNAL_WORK_TEMPORARY_MS = 60 * 60 * 1000;
 
 export class JournalWorkExchangeError extends Error {
   constructor(code, details = undefined) {
@@ -67,6 +69,24 @@ export async function resolveJournalWorkExchangeRoot(root, { outside }) {
   const escapes = relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);
   if (!escapes) fail("JOURNAL_WORK_EXCHANGE_ROOT_INSIDE_REPOSITORY");
   return canonical;
+}
+
+const currentUser = () => (typeof process.getuid === "function" ? process.getuid() : null);
+
+// The root must already exist (deployment creates it), be a real directory, be owned by the user
+// both processes run as (`owner`; null skips the check where the platform has no user IDs) and grant
+// no group or other access. Another local user can then neither read, remove nor block entries.
+export async function assertJournalWorkExchangeRoot(root, { owner = currentUser() } = {}) {
+  if (typeof root !== "string" || !path.isAbsolute(root)) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
+  let info;
+  try {
+    info = await fs.lstat(root);
+  } catch (error) {
+    if (error?.code === "ENOENT" || error?.code === "ENOTDIR") fail("JOURNAL_WORK_EXCHANGE_ROOT_MISSING");
+    throw error;
+  }
+  if (!info.isDirectory()) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
+  if ((owner !== null && info.uid !== owner) || (info.mode & 0o077) !== 0) fail("JOURNAL_WORK_EXCHANGE_ROOT_INSECURE");
 }
 
 // One secret, two independent keys: payload encryption and receipt authentication.
@@ -164,6 +184,7 @@ export function createJournalWorkExchange({
   keys = null,
   dirMode = 0o700,
   fileMode = 0o600,
+  owner = currentUser(),
   now = () => new Date()
 } = {}) {
   if (typeof root !== "string" || !path.isAbsolute(root)) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
@@ -178,21 +199,34 @@ export function createJournalWorkExchange({
     finally { await handle.close(); }
   }
 
-  // The root must already exist: deployment creates it, owned by the user both processes run as.
-  // The queues are its direct children and must be real directories, never symbolic links, so
-  // nothing written here can land outside the canonical root. (This guards configuration: a process
-  // running as the exchange's user could swap a queue after the check, but it already holds the
-  // secret.) The root is synced on every call, so a queue's own name is durable before anything is
-  // written in it, whichever caller or process created the queue.
-  async function ensureDirectory(kind) {
-    const target = directory(kind);
+  // A queue is a direct child of the root and must be a real directory, never a symbolic link, so
+  // nothing written or removed here can land outside the canonical root. (This guards configuration:
+  // a process running as the exchange's user could swap a queue after the check, but it already holds
+  // the secret.) Returns false when the queue does not exist yet.
+  async function queueExists(kind) {
+    let info;
     try {
-      await fs.mkdir(target, { mode: dirMode });
+      info = await fs.lstat(directory(kind));
+    } catch (error) {
+      if (error?.code === "ENOENT") return false;
+      throw error;
+    }
+    if (!info.isDirectory()) fail("JOURNAL_WORK_EXCHANGE_QUEUE_INVALID");
+    return true;
+  }
+
+  // Checks the root (see assertJournalWorkExchangeRoot) and creates the queue if needed. The root is
+  // synced on every call, so a queue's own name is durable before anything is written in it,
+  // whichever caller or process created the queue.
+  async function ensureDirectory(kind) {
+    await assertJournalWorkExchangeRoot(root, { owner });
+    try {
+      await fs.mkdir(directory(kind), { mode: dirMode });
     } catch (error) {
       if (error?.code === "ENOENT" || error?.code === "ENOTDIR") fail("JOURNAL_WORK_EXCHANGE_ROOT_MISSING");
       if (error?.code !== "EEXIST") throw error;
     }
-    if (!(await fs.lstat(target)).isDirectory()) fail("JOURNAL_WORK_EXCHANGE_QUEUE_INVALID");
+    await queueExists(kind);
     await syncPath(root);
   }
 
@@ -201,14 +235,21 @@ export function createJournalWorkExchange({
     await syncPath(directory(kind));
   }
 
+  // A write that fails (a full disk, an I/O error) removes its partial temporary file before the error
+  // propagates, so retries cannot pile them up.
   async function writeTemporary(kind, bytes) {
-    const temporary = path.join(directory(kind), `.tmp-${randomUUID()}`);
+    const temporary = path.join(directory(kind), `${TEMPORARY_PREFIX}${randomUUID()}`);
     const handle = await fs.open(temporary, "wx", fileMode);
     try {
-      await handle.writeFile(bytes);
-      await handle.sync();
-    } finally {
-      await handle.close();
+      try {
+        await handle.writeFile(bytes);
+        await handle.sync();
+      } finally {
+        await handle.close();
+      }
+    } catch (error) {
+      await fs.unlink(temporary).catch(() => {});
+      throw error;
     }
     return temporary;
   }
@@ -358,6 +399,41 @@ export function createJournalWorkExchange({
         if (error?.code !== "ENOENT") throw error;
       });
       await syncDirectory("work");
+    },
+
+    // Removes temporary files that a process stopped mid-write (for example, killed) left behind.
+    // Only files older than `olderThanMs` go, so a write still in progress elsewhere is never touched.
+    // Both processes call this at startup. Returns how many files were removed.
+    async removeStaleTemporaries({ olderThanMs = STALE_JOURNAL_WORK_TEMPORARY_MS } = {}) {
+      if (!Number.isSafeInteger(olderThanMs) || olderThanMs < 0) fail("JOURNAL_WORK_EXCHANGE_AGE_INVALID");
+      await assertJournalWorkExchangeRoot(root, { owner });
+      const cutoff = Date.now() - olderThanMs;
+      let removed = 0;
+      for (const kind of ["work", "result"]) {
+        if (!(await queueExists(kind))) continue;
+        let removedHere = 0;
+        for (const name of await fs.readdir(directory(kind))) {
+          if (!name.startsWith(TEMPORARY_PREFIX)) continue;
+          const file = path.join(directory(kind), name);
+          let info;
+          try {
+            info = await fs.lstat(file);
+          } catch (error) {
+            if (error?.code === "ENOENT") continue;
+            throw error;
+          }
+          if (!info.isFile() || info.mtimeMs > cutoff) continue;
+          try {
+            await fs.unlink(file);
+            removedHere += 1;
+          } catch (error) {
+            if (error?.code !== "ENOENT") throw error;
+          }
+        }
+        if (removedHere > 0) await syncDirectory(kind);
+        removed += removedHere;
+      }
+      return removed;
     }
   });
 }
