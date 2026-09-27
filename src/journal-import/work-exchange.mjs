@@ -40,6 +40,35 @@ export function assertJournalWorkId(workId) {
   return workId;
 }
 
+// The real path of p, following symbolic links through its deepest existing ancestor; components
+// that do not exist yet are appended unchanged.
+async function canonicalPath(p) {
+  const missing = [];
+  let current = path.resolve(p);
+  for (;;) {
+    try {
+      return path.join(await fs.realpath(current), ...missing.reverse());
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+      const parent = path.dirname(current);
+      if (parent === current) throw error;
+      missing.push(path.basename(current));
+      current = parent;
+    }
+  }
+}
+
+// Canonicalizes a configured exchange root and refuses one that resolves into `outside` (the public
+// checkout), including through a symbolic link. Returns the canonical root to use from then on.
+export async function resolveJournalWorkExchangeRoot(root, { outside }) {
+  if (typeof root !== "string" || !path.isAbsolute(root)) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
+  const canonical = await canonicalPath(root);
+  const relative = path.relative(await canonicalPath(outside), canonical);
+  const escapes = relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);
+  if (!escapes) fail("JOURNAL_WORK_EXCHANGE_ROOT_INSIDE_REPOSITORY");
+  return canonical;
+}
+
 // One secret, two independent keys: payload encryption and receipt authentication.
 export function deriveJournalWorkExchangeKeys(secret) {
   const raw = Buffer.isBuffer(secret) || secret instanceof Uint8Array

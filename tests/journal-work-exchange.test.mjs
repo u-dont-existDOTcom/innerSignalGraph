@@ -7,7 +7,8 @@ import path from "node:path";
 import {
   createJournalWorkExchange,
   deriveJournalWorkExchangeKeys,
-  journalWorkFileKey
+  journalWorkFileKey,
+  resolveJournalWorkExchangeRoot
 } from "../src/journal-import/work-exchange.mjs";
 
 const WORK_ID = "job:synthetic-work-0001";
@@ -134,6 +135,31 @@ test("a missing exchange root is created with private modes and works end to end
   for (const dir of [path.join(parent, "fresh"), root, path.join(root, "outbox"), path.join(root, "inbox")]) {
     assert.equal((await fs.stat(dir)).mode & 0o777, 0o700, dir);
   }
+});
+
+test("an exchange root is canonicalized and refused when it resolves into the repository", async (t) => {
+  const base = await tempRoot(t);
+  const repository = path.join(base, "repository");
+  const outsideDir = path.join(base, "outside");
+  await fs.mkdir(path.join(repository, "nested"), { recursive: true });
+  await fs.mkdir(outsideDir);
+  await fs.mkdir(path.join(repository, "..repo-sibling-inside"));
+  await fs.symlink(path.join(repository, "nested"), path.join(base, "link-into-repository"));
+  await fs.symlink(outsideDir, path.join(base, "link-outside"));
+  const options = { outside: repository };
+
+  assert.equal(await resolveJournalWorkExchangeRoot(path.join(outsideDir, "exchange"), options), path.join(await fs.realpath(outsideDir), "exchange"));
+  assert.equal(await resolveJournalWorkExchangeRoot(path.join(base, "link-outside", "a", "b"), options), path.join(await fs.realpath(outsideDir), "a", "b"));
+  for (const inside of [
+    repository,
+    path.join(repository, "exchange"),
+    path.join(base, "link-into-repository"),
+    path.join(base, "link-into-repository", "not-yet", "created"),
+    path.join(repository, "..repo-sibling-inside", "exchange")
+  ]) {
+    await assert.rejects(resolveJournalWorkExchangeRoot(inside, options), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSIDE_REPOSITORY" }, inside);
+  }
+  await assert.rejects(resolveJournalWorkExchangeRoot("relative/exchange", options), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INVALID" });
 });
 
 test("an entry replaced by a symbolic link is refused, not followed", async (t) => {

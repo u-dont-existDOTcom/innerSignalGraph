@@ -36,7 +36,7 @@ Completion is therefore known: an answer either is in `inbox/` or is not. Re-sen
 | `submit_journal_work_result` | `journal:submit` | Checks the answer with Ajv (draft 2020-12, `allErrors`, `strict`), returns up to 25 schema problems when it fails, and stores the first valid answer |
 
 - `journal:submit` is new and narrow: it opens no case store and allows no other write. Grant it only to the accounts that run the import, next to `case:read` for the import's case.
-- The tools are advertised only when all three settings are present: `INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT` (absolute, outside the repository), the secret, and `INNER_SIGNAL_JOURNAL_WORK_CASE_ID`. Without them the server's tools and instructions are unchanged.
+- The tools are advertised only when all three settings are present: `INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT` (absolute; canonicalized through any symbolic links and refused if it resolves into the repository), the secret, and `INNER_SIGNAL_JOURNAL_WORK_CASE_ID`. Without them the server's tools and instructions are unchanged.
 - Authorization comes first (`authorizeCase`, which opens no case and touches no key). The tools serve only items the runtime published, only for the configured case, and only before they expire.
 - Denials behave like every other private tool: a sign-in challenge unless re-authentication cannot help. A challenge asks only for the called tool's scopes: the ordinary tools never ask for `journal:submit`, and both journal tools ask for `case:read` and `journal:submit` together, so the import account signs in once.
 - Nothing is logged. Errors carry codes, and schema problems carry schema paths and keywords, not answer text.

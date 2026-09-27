@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { PRIVATE_CASE_SCOPES, createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 import { listenPrivateCaseMcp } from "../server/private-case-mcp.mjs";
-import { createJournalWorkExchange } from "../journal-import/work-exchange.mjs";
+import { createJournalWorkExchange, resolveJournalWorkExchangeRoot } from "../journal-import/work-exchange.mjs";
 import { createJournalWorkTools } from "../server/journal-work-tools.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -50,12 +50,10 @@ let journalWork = null;
 if (configuredJournalWork === 3) {
   const [exchangeRoot, exchangeSecret, journalCaseId] = journalWorkSettings;
   if (!path.isAbsolute(exchangeRoot)) throw new Error("INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT must be an absolute path.");
-  const relative = path.relative(repositoryRoot, path.resolve(exchangeRoot));
-  if (relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))) {
-    throw new Error("The journal work exchange must live outside the public repository.");
-  }
+  // Canonical, so a symbolic link cannot place the exchange inside the public checkout.
+  const canonicalRoot = await resolveJournalWorkExchangeRoot(exchangeRoot, { outside: repositoryRoot });
   journalWork = createJournalWorkTools({
-    exchange: createJournalWorkExchange({ root: path.resolve(exchangeRoot), secret: exchangeSecret }),
+    exchange: createJournalWorkExchange({ root: canonicalRoot, secret: exchangeSecret }),
     caseId: journalCaseId,
     authorizeCase: (caseId, authContext, scope) => service.authorizeCase(caseId, authContext, scope)
   });
