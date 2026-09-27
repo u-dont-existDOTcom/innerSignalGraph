@@ -5,7 +5,7 @@ Updated: 2026-09-27
 ## Journal import through the connector: the exchange provider — `claude/journal-exchange-provider-20260927`
 
 - **Goal:** run the private journal import through ChatGPT with known completion, replacing the desktop-app transport whose runs each ended on "completion unknown" after one step.
-- **Base:** the move (PR #94) plus the exchange hardening (PR #93). Open this PR once both are merged, rebased onto main.
+- **Base:** main, after the move (#94) and the exchange hardening (#93).
 - **Done, don't repeat:**
   - `src/journal-import/exchange-port.mjs` sends each role call as a work item with a content-free dispatch record. It waits for the stored answer, resumes open calls after a restart without sending them twice, and closes expired items so they are sent again as successors. It releases items once the answer is durable and returns authenticated receipts. The route is `chatgpt_connector_exchange` in `provider-runtime.mjs`.
   - The durable layer trusts `authoritative_completion` ports for "not submitted" and "invalid output".
@@ -14,7 +14,7 @@ Updated: 2026-09-27
   - The exchange gained dispatch records and an unanswered-close that can't overwrite an answer.
 - **Verified:** `tests/journal-exchange-port.test.mjs` (9) and `tests/journal-exchange-runtime.test.mjs` (2) run through the real exchange and connector tools; the full gates are listed in the PR.
 - **Safety:** no deployment; the desktop transport stays for page images, which the connector can't deliver yet. The owner-gated steps are in the spec's Deployment section, plus a runtime route switch.
-- **Next safe action:** Codex review once opened, then owner approval to merge. Then the Mission Control job type (`dispatch/` reader) and a pilot: one synthetic item per account, then 20 real units.
+- **Next safe action:** Codex review, then owner approval to merge. Then the Mission Control job type (`dispatch/` reader) and a pilot: one synthetic item per account, then 20 real units.
 
 ## Journal import: the private journal branch, moved into this repository — `claude/journal-import-public-20260927`
 
@@ -105,7 +105,7 @@ Updated: 2026-09-27
 - **Known gaps (not built in the private branch either):** the cold test (freezing questions from the audit, the separate consumer and scoring against the answer key, which `cold_retrieval_verified` waits on), `export`, and a production journal evidence provider for therapy turns.
 - **Verified:** after round 17 and main at `187f2f4` (#95), `npm test` (1,562), `npm run audit:repository`, `npm run audit:publication`, `npm run verify`, `npm run journal:ui:test` (20) and `npm run journal:ui:build` pass on Node 24.18.0, and the web client type-checks (`tsc -p apps/journal-web`). Privacy scan of every moved file: no case ID or source hash, host paths, e-mail addresses, IP addresses or personal names; only synthetic example domains.
 - **Safety:** nothing is deployed, and the running import is unchanged; it keeps running from the private checkout until the owner approves the switch. The journal read tools stay off unless a grant lists journal purposes, and the operator needs its own environment.
-- **Next safe action:** the owner approved the merge once review is clean ("merge 93 and 94"). Then the exchange-backed provider (retiring the desktop transport), then the Mission Control job type.
+- **Status:** merged as PR #94 on 2026-09-27.
 ## Journal work exchange hardening — `claude/journal-work-exchange-hardening-20260927`
 
 - **Goal:** the two points deferred from PR #92's last review. A failed write must not leave temporary files behind, and an exchange root that other local users can reach must be refused.
