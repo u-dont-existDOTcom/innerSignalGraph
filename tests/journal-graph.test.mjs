@@ -223,6 +223,10 @@ test("encrypted graph generation supports raw search, aliases, unknown time and 
   assert.ok(["a1", "a3", "a4", "a5", "p1", "p3", "p4", "p5"].every((id) => closure.nodes.some((node) => node.id === id)));
   assert.ok(["exception", "qualifier", "correction", "support3"].every((id) => closure.edges.some((edge) => edge.id === id)));
   assert.equal((await reader.evidenceGroup(["a3"], { maximumNodes: 2 })).status, "insufficient_context");
+  // The closure is bounded in edges too, not only in nodes.
+  assert.equal(closure.edges.length > 2, true);
+  const edgeBound = await reader.evidenceGroup(["a3"], { maximumNodes: 20, maximumEdges: 2 });
+  assert.deepEqual([edgeBound.status, edgeBound.edges.length, edgeBound.more_available], ["insufficient_context", 0, true]);
 
   const encryptedFiles = await fs.readdir(store.rootDir);
   const encryptedBodies = await Promise.all(encryptedFiles.map((name) => fs.readFile(path.join(store.rootDir, name), "utf8")));
@@ -312,12 +316,13 @@ test("the timeline places a record at each of its known times and says which fie
   });
   const describe = (records) => records.map(({ id, timeline_entry }) => [id, timeline_entry.lane, timeline_entry.fields.join("+"), timeline_entry.from?.slice(0, 10) ?? null]);
   const whole = await reader.timeline();
+  // An interval open at its start ("before 2019") sits at its end, the latest it can be.
   assert.deepEqual(describe(whole.records.filter(({ timeline_entry }) => timeline_entry.lane === "known")), [
+    ["a4", "known", "event_time", null],
     ["a1", "known", "authored_time", "2020-01-01"],
     ["a3", "known", "event_time", "2021-05-01"],
     ["a2", "known", "authored_time+event_time", "2022-03-03"],
-    ["a1", "known", "event_time", "2024-06-01"],
-    ["a4", "known", "event_time", null]
+    ["a1", "known", "event_time", "2024-06-01"]
   ]);
   // Records with a known time never also sit in the unknown lane.
   assert.deepEqual(whole.records.filter(({ timeline_entry }) => timeline_entry.lane === "unknown").map(({ id }) => id).sort(),

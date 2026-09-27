@@ -233,7 +233,10 @@ export function buildGraphIndexes(graph) {
     add(adjacency, edge.from, edge.id);
     add(adjacency, edge.to, edge.id);
   }
-  timeKnown.sort((left, right) => String(left.from).localeCompare(String(right.from)) || left.id.localeCompare(right.id) || left.field.localeCompare(right.field));
+  // Known intervals in order of their start. One open at the start ("before 2019") is placed at its
+  // end, the latest it can be, rather than wherever the string "null" happens to sort.
+  const position = (entry) => entry.from ?? entry.to;
+  timeKnown.sort((left, right) => position(left).localeCompare(position(right)) || left.id.localeCompare(right.id) || left.field.localeCompare(right.field));
   timeUnknown.sort((left, right) => (left.source_order ?? Number.MAX_SAFE_INTEGER) - (right.source_order ?? Number.MAX_SAFE_INTEGER)
     || left.id.localeCompare(right.id) || left.field.localeCompare(right.field));
   const serializable = (map) => new Map([...map.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([key, values]) => [key, [...values].sort()]));

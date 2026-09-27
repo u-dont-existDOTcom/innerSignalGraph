@@ -311,10 +311,14 @@ export async function openPrivateJournalGraph({
     return result;
   };
 
-  const evidenceGroup = async (seedIds, { maximumNodes = 100 } = {}) => {
+  // The closure is bounded in nodes and in edges: a dense neighborhood that exceeds either reports
+  // insufficient context instead of returning an unbounded response.
+  const evidenceGroup = async (seedIds, { maximumNodes = 100, maximumEdges = 200 } = {}) => {
     await assertCurrent();
-    invariant(Array.isArray(seedIds) && seedIds.length > 0 && Number.isSafeInteger(maximumNodes) && maximumNodes > 0, "EVIDENCE_GROUP_INPUT_INVALID");
+    invariant(Array.isArray(seedIds) && seedIds.length > 0 && Number.isSafeInteger(maximumNodes) && maximumNodes > 0
+      && Number.isSafeInteger(maximumEdges) && maximumEdges > 0, "EVIDENCE_GROUP_INPUT_INVALID");
     const mandatory = new Set(JOURNAL_GRAPH_CONTRACT.mandatory_closure_relations);
+    const insufficientContext = Object.freeze({ status: "insufficient_context", nodes: [], edges: [], more_available: true });
     const nodes = new Map();
     const edges = new Map();
     const queue = [...new Set(seedIds)];
@@ -326,7 +330,7 @@ export async function openPrivateJournalGraph({
       invariant(active(record), "GRAPH_RECORD_REVOKED");
       if (record.relation) edges.set(record.id, record);
       else nodes.set(record.id, record);
-      if (nodes.size > maximumNodes) return Object.freeze({ status: "insufficient_context", nodes: [], edges: [], more_available: true });
+      if (nodes.size > maximumNodes || edges.size > maximumEdges) return insufficientContext;
       for (const evidenceId of evidenceIds(record)) enqueue(evidenceId);
       if (!record.kind) continue;
       const adjacentEdgeIds = await readIndex("adjacency", record.id);
@@ -335,6 +339,7 @@ export async function openPrivateJournalGraph({
         if (!active(edge)) continue;
         if (mandatory.has(edge.relation) || edge.relation === "supported_by") {
           edges.set(edge.id, edge);
+          if (edges.size > maximumEdges) return insufficientContext;
           enqueue(edge.from);
           enqueue(edge.to);
           edge.evidence_ids.forEach(enqueue);

@@ -215,7 +215,7 @@ export function createJournalPrivateApi({ caseAccessService, jobController = nul
 
     async getSubgraph(input, authContext) {
       return withReader(input, authContext, async (reader, snapshot) => {
-        const group = await reader.evidenceGroup(input.seedIds, { maximumNodes: Math.min(input.nodeLimit ?? 100, 100) });
+        const group = await reader.evidenceGroup(input.seedIds, { maximumNodes: Math.min(input.nodeLimit ?? 100, 100), maximumEdges: 200 });
         return Object.freeze({
           nodes: group.nodes,
           edges: group.edges,

@@ -13,6 +13,12 @@ function evidenceIds(record) {
   return [];
 }
 
+// Search, closure and evidence for a question, and every question in one run, must come from one
+// published snapshot. A generation published mid-run is reported, never combined; a facade that
+// reports no snapshot is taken at its word.
+const snapshotKey = (value) => value ? JSON.stringify([value.generation, value.visibility_epoch ?? null]) : null;
+const sameSnapshot = (expected, value) => expected == null || value == null || snapshotKey(expected) === snapshotKey(value);
+
 export function createJournalColdConsumer({ journalApi, maximumPagesPerQuestion = 100 } = {}) {
   invariant(journalApi && typeof journalApi.search === "function" && typeof journalApi.getSubgraph === "function"
     && typeof journalApi.resolveEvidence === "function", "JOURNAL_READ_FACADE_REQUIRED");
@@ -49,6 +55,7 @@ export function createJournalColdConsumer({ journalApi, maximumPagesPerQuestion 
         question_id: question.id,
         status: "not_found_in_authorized_material",
         snapshot_generation: snapshot?.generation ?? null,
+        snapshot_visibility_epoch: snapshot?.visibility_epoch ?? null,
         records: [],
         evidence: { exact_spans: [], source_locators: [] },
         coverage_note: `searched ${pages} authorized snapshot page(s); absence is not proof the event never occurred`,
@@ -72,6 +79,7 @@ export function createJournalColdConsumer({ journalApi, maximumPagesPerQuestion 
         nodeLimit: question.node_limit ?? 100
       }, authContext);
       invariant(closure.closure_status === "complete", "INSUFFICIENT_CONTEXT");
+      invariant(sameSnapshot(snapshot, closure.coverage), "COLD_SNAPSHOT_CHANGED");
     }
     const allRecords = [...records.values(), ...closure.nodes, ...closure.edges];
     // Only passages can be resolved to exact source; an ID known to be another kind never is.
@@ -86,10 +94,12 @@ export function createJournalColdConsumer({ journalApi, maximumPagesPerQuestion 
           purpose: locator.purpose ?? "organize_search"
         }, authContext)
       : { exact_spans: [], source_locators: [], next_cursor: null };
+    invariant(sameSnapshot(snapshot, evidence.snapshot), "COLD_SNAPSHOT_CHANGED");
     return Object.freeze({
       question_id: question.id,
       status: "evidence_retrieved",
       snapshot_generation: snapshot.generation,
+      snapshot_visibility_epoch: snapshot.visibility_epoch ?? null,
       records: allRecords,
       evidence: { exact_spans: evidence.exact_spans, source_locators: evidence.source_locators },
       coverage_note: passages.length > MAXIMUM_PASSAGES || nonPassageSeeds.length > MAXIMUM_SEEDS
@@ -111,7 +121,13 @@ export function createJournalColdConsumer({ journalApi, maximumPagesPerQuestion 
         invariant(!Object.hasOwn(question, "answer") && !Object.hasOwn(question, "answer_key"), "COLD_ANSWER_KEY_FORBIDDEN");
       }
       const results = [];
-      for (const question of questions) results.push(await retrieveQuestion({ locator, question, authContext }));
+      for (const question of questions) {
+        const result = await retrieveQuestion({ locator, question, authContext });
+        const first = results.find((item) => item.snapshot_generation != null);
+        invariant(!first || result.snapshot_generation == null || (first.snapshot_generation === result.snapshot_generation
+          && first.snapshot_visibility_epoch === result.snapshot_visibility_epoch), "COLD_SNAPSHOT_CHANGED");
+        results.push(result);
+      }
       return Object.freeze({
         schema_version: 1,
         isolation: Object.freeze({ original_upload_available: false, producer_history_available: false, corpus_key_available: false, answer_key_available: false }),

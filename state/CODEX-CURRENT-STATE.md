@@ -53,8 +53,13 @@ Updated: 2026-09-27
   - Search and the timeline filter and order matches from the lookup index, which new generations fill with each record's kind, lifecycle and order, and decrypt only the page they return. A generation built before that falls back to decrypting every match, as before.
   - `cold-test` and `export` fail with `JOURNAL_COMMAND_NOT_AVAILABLE` instead of opening a run, and help lists them as planned.
   - Each has a test that fails without it.
+- **Review round 10:**
+  - Cold retrieval refuses to combine a question's search, closure and evidence, or a run's questions, from different published snapshots (`COLD_SNAPSHOT_CHANGED`).
+  - The timeline places an interval open at its start at its end, rather than wherever the string "null" sorts.
+  - The evidence closure is bounded in edges (200) as well as nodes, and stops as soon as either bound is exceeded.
+  - Each has a test that fails without it.
 - **Known gaps (not built in the private branch either):** the cold test (freezing questions from the audit, the separate consumer and scoring against the answer key, which `cold_retrieval_verified` waits on), `export`, and a production journal evidence provider for therapy turns.
-- **Verified:** after round 9 and main at `187f2f4` (#95), `npm test` (1,548), `npm run audit:repository`, `npm run audit:publication`, `npm run verify`, `npm run journal:ui:test` (16) and `npm run journal:ui:build` pass on Node 24.18.0, and the web client type-checks (`tsc -p apps/journal-web`). Privacy scan of every moved file: no case ID or source hash, host paths, e-mail addresses, IP addresses or personal names; only synthetic example domains.
+- **Verified:** after round 10 and main at `187f2f4` (#95), `npm test` (1,549), `npm run audit:repository`, `npm run audit:publication`, `npm run verify`, `npm run journal:ui:test` (16) and `npm run journal:ui:build` pass on Node 24.18.0, and the web client type-checks (`tsc -p apps/journal-web`). Privacy scan of every moved file: no case ID or source hash, host paths, e-mail addresses, IP addresses or personal names; only synthetic example domains.
 - **Safety:** nothing is deployed, and the running import is unchanged; it keeps running from the private checkout until the owner approves the switch. The journal read tools stay off unless a grant lists journal purposes, and the operator needs its own environment.
 - **Next safe action:** the owner approved the merge once review is clean ("merge 93 and 94"). Then the exchange-backed provider (retiring the desktop transport), then the Mission Control job type.
 ## Journal work exchange hardening — `claude/journal-work-exchange-hardening-20260927`
