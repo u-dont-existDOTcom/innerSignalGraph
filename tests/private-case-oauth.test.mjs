@@ -8,7 +8,12 @@ import { SignJWT, exportJWK, generateKeyPair } from "jose";
 import { createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
 import { createPrivateCaseMcpServer, listenPrivateCaseMcp } from "../src/server/private-case-mcp.mjs";
 import { createPrivateCaseAccessService } from "../src/storage/private-case-access.mjs";
-import { createJwtPrivateCaseAuthorizationProvider, createManagedSecretCaseKeyProvider } from "../src/storage/hosted-private-case-providers.mjs";
+import {
+  createJwtPrivateCaseAuthorizationProvider,
+  createManagedSecretCaseKeyProvider,
+  loadHostedPrivateCaseOperatorProvidersFromEnvironment,
+  loadHostedPrivateCaseProvidersFromEnvironment
+} from "../src/storage/hosted-private-case-providers.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
 
 const CASE_ID = "synthetic-oauth-case";
@@ -206,4 +211,49 @@ test("with several granted accounts, a denial keeps the sign-in challenge", asyn
 test("production-ready server configuration cannot omit OAuth discovery", () => {
   const caseAccessService = { loadCaseContext() {} };
   assert.throws(() => createPrivateCaseMcpServer({ caseAccessService, productionAuthReady: true }), /requires OAuth metadata/);
+});
+
+test("hosted operator ACL is separate from the read-only MCP ACL", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-hosted-provider-split-"));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const keyPayload = JSON.stringify({
+    [CASE_ID]: {
+      routine_kek_base64: Buffer.alloc(32, 71).toString("base64"),
+      recovery_secret_base64: Buffer.alloc(32, 72).toString("base64")
+    }
+  });
+  const common = {
+    INNER_SIGNAL_PRIVATE_ROOT: directory,
+    INNER_SIGNAL_OAUTH_ISSUER: ISSUER,
+    INNER_SIGNAL_OAUTH_AUDIENCE: RESOURCE,
+    INNER_SIGNAL_OAUTH_JWKS_URI: `${ISSUER}/protocol/openid-connect/certs`,
+    INNER_SIGNAL_CASE_KEYS_JSON: keyPayload
+  };
+  const mcp = loadHostedPrivateCaseProvidersFromEnvironment({
+    ...common,
+    INNER_SIGNAL_CASE_ACL_JSON: JSON.stringify([{ subject: SUBJECT, case_ids: [CASE_ID], scopes: ["case:read", "case:audit"] }])
+  });
+  const operator = loadHostedPrivateCaseOperatorProvidersFromEnvironment({
+    ...common,
+    INNER_SIGNAL_OPERATOR_OAUTH_JWKS_JSON: JSON.stringify({ keys: [] }),
+    INNER_SIGNAL_OPERATOR_CASE_ACL_JSON: JSON.stringify([{
+      subject: "operator-subject-001",
+      case_ids: [CASE_ID],
+      scopes: ["case:write"],
+      purposes: ["archive", "organize_search", "session_use"]
+    }])
+  });
+  t.after(() => { mcp.close(); operator.close(); });
+  assert.deepEqual(mcp.oauth.scopesSupported, ["case:read", "case:audit"]);
+  assert.deepEqual(operator.oauth.scopesSupported, ["case:write", "case:audit"]);
+  assert.equal(mcp.journalEnabled, false);
+  assert.equal(operator.journalEnabled, true);
+  assert.throws(
+    () => loadHostedPrivateCaseOperatorProvidersFromEnvironment({
+      ...common,
+      INNER_SIGNAL_OPERATOR_OAUTH_JWKS_JSON: JSON.stringify({ keys: [] }),
+      INNER_SIGNAL_CASE_ACL_JSON: "[]"
+    }),
+    /INNER_SIGNAL_OPERATOR_CASE_ACL_JSON/
+  );
 });

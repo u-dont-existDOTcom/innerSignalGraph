@@ -1,0 +1,401 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import {createHash} from 'node:crypto';
+import {openJournalExecutionRuntime} from '../src/journal-import/private-runtime.mjs';
+import {createDisabledJournalInferencePort,createMockJournalInferencePort,JournalInferencePortError} from '../src/journal-import/provider-port.mjs';
+import {createDurableJournalInferencePort} from '../src/journal-import/durable-inference.mjs';
+import {createCorpusJournalJobLedger} from '../src/journal-import/controller.mjs';
+import {journalRoleInstruction} from '../src/journal-import/provider-port.mjs';
+import {runJournalImportCli} from '../src/cli/journal-import.mjs';
+import {createPrivateJournalCorpusStore} from '../src/storage/private-journal-corpus.mjs';
+
+async function fixture(t){
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'journal-resume-synthetic-'));
+ t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ await fs.mkdir(path.join(root,'private'),{mode:0o700});
+ const text='Synthetic entry, uncertain date. A blue cup is on the table.\n';
+ await fs.writeFile(path.join(root,'private','source.txt'),text,{mode:0o600});
+ const config={schema_version:1,max_external_spend_usd:0,execution_root:path.join(root,'execution'),private_runtime_root:root,source:{relative_path:'private/source.txt',bytes:Buffer.byteLength(text),sha256:createHash('sha256').update(text).digest('hex')},target_profile:{case_id:'synthetic-case'},existing_grant_ref:'synthetic:grant'};
+ const configPath=path.join(root,'private','config.json');
+ await fs.writeFile(configPath,JSON.stringify(config),{mode:0o600});
+ return {root,config,configPath,service:{verifyCaseAccess:async()=>({})},inferencePort:createDisabledJournalInferencePort()};
+}
+
+test('runtime reopens the encrypted source checkpoint without invoking the parser or inference',async t=>{
+ const f=await fixture(t);let runtime=await openJournalExecutionRuntime(f);
+ const first=await runtime.execute('stage');await runtime.close();
+ assert.equal(first.completion.archive_verified,'pass');
+ const before=await fs.readFile(path.join(f.config.execution_root,'state.json'));
+ runtime=await openJournalExecutionRuntime({...f,sourceParser:()=>assert.fail('completed parse must be reused')});
+ assert.deepEqual(await runtime.execute('stage'),first);
+ assert.deepEqual(await fs.readFile(path.join(f.config.execution_root,'state.json')),before);
+ await runtime.execute('verify');await runtime.close();
+ const after=JSON.parse(await fs.readFile(path.join(f.config.execution_root,'state.json')));
+ const saved=JSON.parse(before);
+ assert.deepEqual(after.parsed_ref,saved.parsed_ref);assert.deepEqual(after.original,saved.original);
+ assert.equal(after.raw_verification.source_or_producer_history_used_by_reader,false);
+});
+
+test('publication is denied before reviewed semantic and pattern dependencies exist',async t=>{
+ const f=await fixture(t);const runtime=await openJournalExecutionRuntime(f);
+ try{await runtime.execute('stage');await assert.rejects(()=>runtime.execute('commit'),{code:'JOURNAL_REVIEWED_GENERATION_NOT_READY'});}finally{await runtime.close();}
+});
+
+test('CLI sends status to the authorized runtime and always closes it',async t=>{
+ const f=await fixture(t);let closed=false,output='';
+ assert.equal(await runJournalImportCli(['status','--config',f.configPath],{stdout:{write:s=>output+=s},stderr:{write:()=>assert.fail('unexpected CLI error')},runtimeFactory:async input=>{
+ assert.equal(input.configPath,f.configPath);
+ return {execute:async command=>{assert.equal(command,'status');return {stage:'PARTITION'};},close:async()=>{closed=true;}};
+ }}),0);assert.equal(closed,true);assert.equal(JSON.parse(output).stage,'PARTITION');
+});
+
+test('newly declared parser hazards revise only the plan and keep completed parsing and original bytes',async t=>{
+ const f=await fixture(t);
+ const parser=async()=>({source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'text/plain'},parser:{version:'synthetic'},pages:[{page_number:1,representation_id:'synthetic:page',disposition:'readable',warnings:[],image_inventory:[]}],representations:[{representation_id:'synthetic:page',text:'Synthetic page.',utf8_byte_length:15}]});
+ let runtime=await openJournalExecutionRuntime({...f,sourceParser:parser});await runtime.execute('stage');await runtime.close();
+ const before=JSON.parse(await fs.readFile(path.join(f.config.execution_root,'state.json')));
+ runtime=await openJournalExecutionRuntime({...f,config:{...f.config,parser_hazard_pages:[1]},sourceParser:()=>assert.fail('must not reparse')});
+ const result=await runtime.execute('stage');await runtime.close();assert.equal(result.required_visual_pages,1);
+ const after=JSON.parse(await fs.readFile(path.join(f.config.execution_root,'state.json')));
+ assert.deepEqual(after.original,before.original);assert.deepEqual(after.plan_revisions,[before.parsed_ref]);assert.deepEqual(after.raw_persisted,before.raw_persisted);
+ const key=await fs.readFile(path.join(f.config.execution_root,'staging.key'));
+ const store=createPrivateJournalCorpusStore({rootDir:f.config.execution_root,caseId:after.case_id,corpusId:after.corpus_id,corpusKey:key});
+ try{const plan=JSON.parse((await store.reassembleOriginal(after.parsed_ref)).toString());assert.deepEqual(plan.visual_pages,[1]);assert.ok(plan.units[0].hazard_types.includes('declared_source_hazard'));}finally{store.close();key.fill(0);}
+});
+
+test('synthetic runtime completes the application reconciliation stage once and resumes its saved graph',async t=>{
+ const f=await fixture(t);const calls=[];
+ const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,assessments:[],proposed_repairs:[],unassessed_ids:[],status:'sufficient_for_stated_scope'});
+ const handlers={
+  reference_reader:p=>({schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]}),
+  extractor:p=>({schema_version:'1.0',status:'complete',assertions:[],entities:[],episodes:[],coverage:p.core_units.map(u=>({unit_id:u.unit_id,disposition:'no_assertion',assertion_local_ids:[],reason:'Synthetic pipeline fixture.'})),requested_context:[]}),
+  omission_checker:p=>review('omission_checker',p),fidelity_auditor:p=>review('fidelity_auditor',p),
+  reconciler:p=>{assert.ok(p.candidates.nodes.length);assert.equal(p.neighborhood_evidence.more_available,false);return {schema_version:'1.0',target_generation:p.expected_generation,proposals:[],unresolved_ids:[],status:'proposals_complete'};}
+ };
+ const port=createMockJournalInferencePort({handlers:Object.fromEntries(Object.entries(handlers).map(([role,fn])=>[role,p=>{calls.push(role);return fn(p)}]))});
+ let runtime=await openJournalExecutionRuntime({...f,inferencePort:port});
+ const result=await runtime.execute('run');await runtime.close();
+ assert.equal(result.completion.graph_built,'pass');assert.equal(result.stage,'REFERENCE_AUDIT');
+ assert.deepEqual(calls,['reference_reader','extractor','omission_checker','fidelity_auditor','reconciler']);
+ runtime=await openJournalExecutionRuntime({...f,sourceParser:()=>assert.fail('completed source must not reparse')});
+ assert.deepEqual(await runtime.execute('run'),result);await runtime.close();
+});
+
+test('revocation during a semantic call prevents completed-result admission and all dependent calls',async t=>{
+ const f=await fixture(t);let revoked=false,calls=0;
+ const service={verifyCaseAccess:async()=>{if(revoked)throw Object.assign(new Error('Synthetic revoked grant'),{code:'GRANT_REVOKED'});}};
+ const port=createMockJournalInferencePort({handlers:{reference_reader:()=>{calls++;revoked=true;return {schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]};}}});
+ const runtime=await openJournalExecutionRuntime({...f,service,inferencePort:port});
+ await assert.rejects(()=>runtime.execute('run'),{code:'GRANT_REVOKED'});await runtime.close();assert.equal(calls,1);
+ const state=JSON.parse(await fs.readFile(path.join(f.config.execution_root,'state.json')));assert.deepEqual(state.completed_units,[]);
+ const directory=path.join(f.config.execution_root,'.journal-corpora');
+ for(const bucket of await fs.readdir(directory))for(const file of await fs.readdir(path.join(directory,bucket))){
+  const envelope=JSON.parse(await fs.readFile(path.join(directory,bucket,file),'utf8'));
+  assert.equal(/^inference:.*:result$/.test(envelope.object_id),false,'revoked output must not become a completed durable inference result');
+ }
+});
+
+function memoryStore(){const data=new Map();return {data,readJsonObject:async({objectId})=>{if(!data.has(objectId))throw Object.assign(new Error(),{code:'ENOENT'});return structuredClone(data.get(objectId));},writeJsonObject:async({objectId,value})=>{assert.equal(data.has(objectId),false,'immutable record');data.set(objectId,structuredClone(value));}};}
+
+test('unmatched source quotes return to bounded application repair before graph admission',async t=>{
+ const f=await fixture(t);let extractions=0;
+ const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,assessments:[],proposed_repairs:[],unassessed_ids:[],status:'sufficient_for_stated_scope'});
+ const handlers={
+  reference_reader:()=>({schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]}),
+  extractor:p=>{
+   extractions++;
+   if(extractions===2)assert.equal(p.repair_request.mechanical_failure.code,'QUOTE_NOT_FOUND');
+   return {schema_version:'1.0',status:'complete',entities:[{local_id:'object',label:'Synthetic cup',entity_kind:'object',anchors:[{unit_id:p.core_units[0].unit_id,quote:extractions===1?'Nonexistent quote':'A blue cup is on the table.',occurrence:null}]}],episodes:[],assertions:[],coverage:p.core_units.map(u=>({unit_id:u.unit_id,disposition:'no_assertion',assertion_local_ids:[],reason:'Synthetic mapping fixture.'})),requested_context:[]};
+  },
+  omission_checker:p=>review('omission_checker',p),fidelity_auditor:p=>review('fidelity_auditor',p),
+  reconciler:p=>({schema_version:'1.0',target_generation:p.expected_generation,proposals:[],unresolved_ids:[],status:'proposals_complete'})
+ };
+ const runtime=await openJournalExecutionRuntime({...f,inferencePort:createMockJournalInferencePort({handlers})});
+ try{assert.equal((await runtime.execute('run')).completion.graph_built,'pass');assert.equal(extractions,2);}finally{await runtime.close();}
+});
+const request={role:'extractor',packet:{grant_purpose:'organize_search'},operationKey:'synthetic:operation',grant:{purpose:'organize_search',allowed_roles:['extractor'],revoked:false}};
+
+test('durable port retries only proven non-submissions and reuses completed results after restart',async()=>{
+ const store=memoryStore();let calls=0;
+ const port={capabilities:()=>({}),invoke:async()=>{if(++calls===1)throw new JournalInferencePortError('UNAVAILABLE',{submissionStatus:'not_submitted'});return {output:{synthetic:true},receipt:{request_id:'synthetic'}};},getCompletion:async()=>({status:'not_submitted'})};
+ let durable=createDurableJournalInferencePort({port,corpusStore:store});
+ await assert.rejects(()=>durable.invoke(request),{code:'UNAVAILABLE'});
+ durable=createDurableJournalInferencePort({port,corpusStore:store});
+ await durable.invoke(request);await durable.invoke(request);assert.equal(calls,2);
+ await assert.rejects(()=>durable.invoke({...request,packet:{...request.packet,extra:true}}),{code:'OPERATION_KEY_CONFLICT'});
+});
+
+test('durable port refuses automatic resubmission after an unknown completion',async()=>{
+ const store=memoryStore();let calls=0;
+ const port={capabilities:()=>({}),invoke:async()=>{calls++;throw new JournalInferencePortError('COMPLETION_UNKNOWN',{submissionStatus:'unknown'});},getCompletion:async()=>({status:'not_submitted'})};
+ await assert.rejects(()=>createDurableJournalInferencePort({port,corpusStore:store}).invoke(request));
+ await assert.rejects(()=>createDurableJournalInferencePort({port,corpusStore:store}).invoke(request),{code:'COMPLETION_UNKNOWN'});assert.equal(calls,1);
+});
+
+
+test('three source units through one source-first batch reach the saved graph',async t=>{
+ const f=await fixture(t);
+ const texts=['Synthetic first event.','Synthetic second event.','Synthetic third event.'];
+ const parser=async()=>({
+  source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'text/plain'},
+  parser:{version:'synthetic-three'},
+  pages:texts.map((_,i)=>({page_number:i+1,representation_id:'synthetic:page:'+i,disposition:'readable',warnings:[],image_inventory:[]})),
+  representations:texts.map((text,i)=>({representation_id:'synthetic:page:'+i,text,utf8_byte_length:Buffer.byteLength(text)}))
+ });
+ const calls=[];
+ const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,assessments:[],proposed_repairs:[],unassessed_ids:[],status:'sufficient_for_stated_scope'});
+ const handlers={
+  reference_reader:p=>({schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]}),
+  extractor:p=>({schema_version:'1.0',status:'complete',assertions:[],entities:[],episodes:[],coverage:p.core_units.map(u=>({unit_id:u.unit_id,disposition:'no_assertion',assertion_local_ids:[],reason:'Synthetic coverage.'})),requested_context:[]}),
+  omission_checker:p=>review('omission_checker',p),
+  fidelity_auditor:p=>review('fidelity_auditor',p),
+  reconciler:p=>({schema_version:'1.0',target_generation:p.expected_generation,proposals:[],unresolved_ids:[],status:'proposals_complete'})
+ };
+ const port=createMockJournalInferencePort({handlers:Object.fromEntries(Object.entries(handlers).map(([role,fn])=>[role,p=>{calls.push(role);return fn(p)}]))});
+ const runtime=await openJournalExecutionRuntime({...f,config:{...f.config,semantic_batching:{calibration_maximum_units:3}},sourceParser:parser,inferencePort:port});
+ try{
+  const result=await runtime.execute('run');
+  assert.equal(result.completed_units,3);
+  assert.equal(result.calibration,'pass');
+  assert.equal(result.completion.graph_built,'pass');
+  assert.deepEqual(calls,['reference_reader','extractor','omission_checker','fidelity_auditor','reconciler']);
+ }finally{await runtime.close();}
+});
+
+test('completed semantic batch survives a known non-submission and restart', async t => {
+ const f=await fixture(t);
+ const texts=['Synthetic first event.','Synthetic second event.','Synthetic third event.'];
+ const parser=async()=>({
+  source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'text/plain'},
+  parser:{version:'synthetic-resume'},
+  pages:texts.map((_,i)=>({page_number:i+1,representation_id:'synthetic:page:'+i,disposition:'readable',warnings:[],image_inventory:[]})),
+  representations:texts.map((text,i)=>({representation_id:'synthetic:page:'+i,text,utf8_byte_length:Buffer.byteLength(text)}))
+ });
+ const config={...f.config,semantic_batching:{maximum_units:2,calibration_maximum_units:2,reconciliation_maximum_units:2}};
+ const extracted=[];let referenceCalls=0,failOnce=true;
+ const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,assessments:[],proposed_repairs:[],unassessed_ids:[],status:'sufficient_for_stated_scope'});
+ const handlers={
+  reference_reader:()=>{
+   referenceCalls++;
+   if(failOnce && referenceCalls===2){failOnce=false;throw new JournalInferencePortError('UNAVAILABLE',{submissionStatus:'not_submitted'});}
+   return {schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]};
+  },
+  extractor:p=>{
+   extracted.push(p.core_units.map(u=>u.unit_id));
+   return {schema_version:'1.0',status:'complete',assertions:[],entities:[],episodes:[],coverage:p.core_units.map(u=>({unit_id:u.unit_id,disposition:'no_assertion',assertion_local_ids:[],reason:'Synthetic coverage.'})),requested_context:[]};
+  },
+  omission_checker:p=>review('omission_checker',p),
+  fidelity_auditor:p=>review('fidelity_auditor',p),
+  reconciler:p=>({schema_version:'1.0',target_generation:p.expected_generation,proposals:[],unresolved_ids:[],status:'proposals_complete'})
+ };
+ let runtime=await openJournalExecutionRuntime({...f,config,sourceParser:parser,inferencePort:createMockJournalInferencePort({handlers})});
+ try{await assert.rejects(()=>runtime.execute('run'),{code:'UNAVAILABLE'});}finally{await runtime.close();}
+ const checkpoint=JSON.parse(await fs.readFile(path.join(config.execution_root,'state.json')));
+ assert.equal(checkpoint.completed_units.length,2);
+ runtime=await openJournalExecutionRuntime({...f,config,sourceParser:()=>assert.fail('completed parse must be reused'),inferencePort:createMockJournalInferencePort({handlers})});
+ try{
+  const result=await runtime.execute('run');
+  assert.equal(result.completed_units,3);
+  assert.equal(result.completion.graph_built,'pass');
+  assert.deepEqual(extracted.map(batch=>batch.length),[2,1]);
+ }finally{await runtime.close();}
+});
+
+test('partial split resumes the original batch identity without repeating completed children', async t => {
+ const f=await fixture(t);
+ const texts=['Synthetic one.','Synthetic two.','Synthetic three.','Synthetic four.'];
+ const parser=async()=>({
+  source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'text/plain'},
+  parser:{version:'synthetic-split'},
+  pages:texts.map((_,i)=>({page_number:i+1,representation_id:'synthetic:page:'+i,disposition:'readable',warnings:[],image_inventory:[]})),
+  representations:texts.map((text,i)=>({representation_id:'synthetic:page:'+i,text,utf8_byte_length:Buffer.byteLength(text)}))
+ });
+ const config={...f.config,semantic_batching:{calibration_maximum_units:4}};
+ const extracted=[];let references=0,failed=false;
+ const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,assessments:[],proposed_repairs:[],unassessed_ids:[],status:'sufficient_for_stated_scope'});
+ const handlers={
+  reference_reader:()=>{
+   references++;
+   if(references===3 && !failed){failed=true;throw new JournalInferencePortError('UNAVAILABLE',{submissionStatus:'not_submitted'});}
+   return {schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]};
+  },
+  extractor:p=>{
+   const size=p.core_units.length;extracted.push(size);
+   return {schema_version:'1.0',status:'complete',assertions:[],
+    entities:size===4?[{local_id:'cross',label:'Synthetic object',entity_kind:'object',
+      anchors:[{unit_id:p.core_units[0].unit_id,quote:'Synthetic one.',occurrence:null},
+        {unit_id:p.core_units[3].unit_id,quote:'Synthetic four.',occurrence:null}]}]:[],episodes:[],
+    coverage:p.core_units.map(u=>({unit_id:u.unit_id,disposition:'no_assertion',assertion_local_ids:[],reason:'Synthetic split coverage.'})),requested_context:[]};
+  },
+  omission_checker:p=>review('omission_checker',p),
+  fidelity_auditor:p=>review('fidelity_auditor',p),
+  reconciler:p=>({schema_version:'1.0',target_generation:p.expected_generation,proposals:[],unresolved_ids:[],status:'proposals_complete'})
+ };
+ let runtime=await openJournalExecutionRuntime({...f,config,sourceParser:parser,inferencePort:createMockJournalInferencePort({handlers})});
+ try{await assert.rejects(()=>runtime.execute('run'),{code:'UNAVAILABLE'});}finally{await runtime.close();}
+ const checkpoint=JSON.parse(await fs.readFile(path.join(config.execution_root,'state.json')));
+ assert.equal(checkpoint.completed_units.length,2);
+ assert.ok(checkpoint.semantic_batch_plan_ref);
+ runtime=await openJournalExecutionRuntime({...f,
+  config:{...config,semantic_batching:{calibration_maximum_units:1}},
+  sourceParser:()=>assert.fail('parse must be reused'),inferencePort:createMockJournalInferencePort({handlers})});
+ try{
+  const result=await runtime.execute('run');
+  assert.equal(result.completed_units,4);
+  assert.equal(result.completion.graph_built,'pass');
+  assert.deepEqual(extracted,[4,4,4,2,2]);
+ }finally{await runtime.close();}
+});
+
+test('reconciliation keeps its frozen groups after a pre-submission revocation', async t => {
+ const f=await fixture(t);
+ const texts=['Synthetic first.','Synthetic second.','Synthetic third.'];
+ const parser=async()=>({
+  source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'text/plain'},
+  parser:{version:'synthetic-reconcile'},
+  pages:texts.map((_,i)=>({page_number:i+1,representation_id:'synthetic:page:'+i,disposition:'readable',warnings:[],image_inventory:[]})),
+  representations:texts.map((text,i)=>({representation_id:'synthetic:page:'+i,text,utf8_byte_length:Buffer.byteLength(text)}))
+ });
+ const config={...f.config,semantic_batching:{reconciliation_maximum_units:2}};
+ const reconciled=[];let deny=true;
+ const service={verifyCaseAccess:async()=>{
+  let checkpoint;
+  try{checkpoint=JSON.parse(await fs.readFile(path.join(config.execution_root,'state.json')));}
+  catch(error){if(error.code!=='ENOENT')throw error;}
+  if(deny && checkpoint?.reconciliation_completed?.length===2)
+   throw Object.assign(new Error('Synthetic grant revoked'),{code:'GRANT_REVOKED'});
+ }};
+ const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,assessments:[],proposed_repairs:[],unassessed_ids:[],status:'sufficient_for_stated_scope'});
+ const handlers={
+  reference_reader:()=>({schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]}),
+  extractor:p=>({schema_version:'1.0',status:'complete',assertions:[],entities:[],episodes:[],
+    coverage:p.core_units.map(u=>({unit_id:u.unit_id,disposition:'no_assertion',assertion_local_ids:[],reason:'Synthetic coverage.'})),requested_context:[]}),
+  omission_checker:p=>review('omission_checker',p),
+  fidelity_auditor:p=>review('fidelity_auditor',p),
+  reconciler:p=>{
+   reconciled.push(p.assigned_core_ids.length);
+   return {schema_version:'1.0',target_generation:p.expected_generation,proposals:[],unresolved_ids:[],status:'proposals_complete'};
+  }
+ };
+ let runtime=await openJournalExecutionRuntime({...f,config,service,sourceParser:parser,inferencePort:createMockJournalInferencePort({handlers})});
+ try{await assert.rejects(()=>runtime.execute('run'),{code:'GRANT_REVOKED'});}finally{await runtime.close();}
+ const checkpoint=JSON.parse(await fs.readFile(path.join(config.execution_root,'state.json')));
+ assert.equal(checkpoint.reconciliation_completed.length,2);
+ deny=false;
+ assert.ok(checkpoint.reconciliation_batch_plan_ref);
+ runtime=await openJournalExecutionRuntime({...f,
+  config:{...config,semantic_batching:{reconciliation_maximum_units:1}},
+  sourceParser:()=>assert.fail('parse must be reused'),inferencePort:createMockJournalInferencePort({handlers})});
+ try{
+  const result=await runtime.execute('run');
+  assert.equal(result.completion.graph_built,'pass');
+  assert.deepEqual(reconciled,[2,1]);
+ }finally{await runtime.close();}
+});
+
+
+test('visual-only handoff persists an admitted visual page and resumes semantic batches without rereading it', async t => {
+ const f=await fixture(t);
+ const config={...f.config,visual_hazard_pages:[1]};
+ const text='Synthetic source page.';
+ const parser=async()=>({
+  source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'text/plain'},
+  parser:{version:'synthetic-visual'},
+  pages:[{page_number:1,representation_id:'synthetic:page:1',disposition:'readable',
+    warnings:[],image_inventory:[],geometry:{width:100,height:100}}],
+  representations:[{representation_id:'synthetic:page:1',text,utf8_byte_length:Buffer.byteLength(text)}]
+ });
+ const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==','base64');
+ const calls=[];
+ let referenceAttempts=0;
+ const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,
+  assessments:[],proposed_repairs:[],unassessed_ids:[],status:'sufficient_for_stated_scope'});
+ const handlers={
+  visual_reader:p=>({schema_version:'1.0',source_page_id:p.assigned_core_ids[0],regions:[{
+   region_id:'region:synthetic',bbox:[0,0,1,1],kind:'text',transcription:'Synthetic image text.',
+   non_graphic_description:null,interpretation_status:'readable',speaker_or_document_label:null,
+   table_cells:[]}],page_complete:true,missing_or_uncertain_regions:[]}),
+  reference_reader:()=>{
+   referenceAttempts+=1;
+   if(referenceAttempts===1) throw Object.assign(new Error('synthetic invalid structured output'),
+    {code:'INVALID_STRUCTURED_OUTPUT',submissionStatus:'completed_invalid'});
+   return {schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]};
+  },
+  extractor:p=>({schema_version:'1.0',status:'complete',assertions:[],entities:[],episodes:[],
+   coverage:p.core_units.map(u=>({unit_id:u.unit_id,disposition:'no_assertion',assertion_local_ids:[],
+    reason:'Synthetic visual handoff fixture.'})),requested_context:[]}),
+  omission_checker:p=>review('omission_checker',p),
+  fidelity_auditor:p=>review('fidelity_auditor',p),
+  reconciler:p=>({schema_version:'1.0',target_generation:p.expected_generation,
+   proposals:[],unresolved_ids:[],status:'proposals_complete'})
+ };
+ const port=()=>createMockJournalInferencePort({handlers:Object.fromEntries(
+  Object.entries(handlers).map(([role,fn])=>[role,p=>{calls.push(role);return fn(p)}]))});
+ let runtime=await openJournalExecutionRuntime({...f,config,sourceParser:parser,renderVisualPage:async()=>image,inferencePort:port()});
+ try {
+  const result=await runtime.execute('visual-only');
+  assert.equal(result.stage,'REFERENCE_AUDIT');
+  assert.equal(result.calibration,'not_run');
+  assert.equal(result.completed_visual_pages,1);
+  assert.equal(result.completed_units,0);
+  assert.deepEqual(calls,['visual_reader']);
+ } finally { await runtime.close(); }
+ const checkpoint=JSON.parse(await fs.readFile(path.join(f.config.execution_root,'state.json')));
+ assert.deepEqual(checkpoint.visual_handoff_ready.visual_plan_ref,checkpoint.visual_plan_ref);
+ assert.equal(checkpoint.visual_handoff_ready.status,'ready');
+ assert.equal(checkpoint.semantic_batch_plan_ref,undefined);
+ assert.equal(checkpoint.blocker,null);
+ const key=await fs.readFile(path.join(f.config.execution_root,'staging.key'));
+ const store=createPrivateJournalCorpusStore({rootDir:f.config.execution_root,
+  caseId:checkpoint.case_id,corpusId:checkpoint.corpus_id,corpusKey:key});
+ try {
+  assert.equal((await store.readJsonObject({objectId:'visual:result:1'})).output.page_complete,true);
+  assert.ok(await store.readJsonObject({objectId:'visual:image-ref:1'}));
+  const H=x=>createHash('sha256').update(x).digest('hex');
+  const legacyPacket={page_image_ref:{kind:'inline_image',media_type:'image/png',
+    data_base64:image.toString('base64'),sha256:H(image)},
+    page_geometry:{width:100,height:100},native_text_rendering:text,neighbor_pages:[]};
+  const legacyId='job:'+H(JSON.stringify({id:'visual:1',role:'visual_reader',
+    stage:'VISUAL_READ',packetInput:legacyPacket,dependencies:[],
+    instruction:journalRoleInstruction('visual_reader'),dependency_instructions:[]}));
+  const legacyLedger=createCorpusJournalJobLedger({corpusStore:store,jobId:legacyId});
+  const entry=await legacyLedger.load();
+  assert.equal(entry?.snapshot?.work_items[0]?.status,'completed',
+   'new visual runner must reuse the exact pre-batch job identity');
+  const plan=JSON.parse((await store.reassembleOriginal(checkpoint.visual_plan_ref)).toString());
+  assert.equal(plan.units.filter(u=>u.visual).length,1);
+ } finally { store.close();key.fill(0); }
+ runtime=await openJournalExecutionRuntime({...f,config,sourceParser:()=>assert.fail('must not reparse'),
+  renderVisualPage:()=>assert.fail('must not rerender'),inferencePort:port()});
+ try {
+  assert.equal((await runtime.execute('visual-only')).stage,'REFERENCE_AUDIT');
+  assert.deepEqual(calls,['visual_reader']);
+  const firstSemantic=await runtime.execute('run');
+  assert.equal(firstSemantic.blocker,'INVALID_STRUCTURED_OUTPUT');
+  const failed=JSON.parse(await fs.readFile(path.join(f.config.execution_root,'state.json')));
+  assert.equal(failed.stage,'REFERENCE_AUDIT');
+  const result=await runtime.execute('run');
+  assert.equal(result.completion.graph_built,'pass');
+  assert.equal(result.completed_visual_pages,1);
+  assert.equal(calls.filter(role=>role==='reference_reader').length,3,
+   'one invalid calibration, one bounded retry, and one distinct later source-first audit');
+  assert.ok(calls.includes('extractor'));
+  assert.ok(calls.includes('omission_checker'));
+  assert.ok(calls.includes('reconciler'));
+  assert.equal(calls.filter(role=>role==='visual_reader').length,1);
+  const corpusRoot=path.join(f.config.execution_root,'.journal-corpora');
+  const objectFiles=(await fs.readdir(corpusRoot,{recursive:true})).filter(name=>name.endsWith('.journal-object.json'));
+  const objectHeaders=await Promise.all(objectFiles.map(async name=>(await fs.readFile(path.join(corpusRoot,name),'utf8')).slice(0,512)));
+  assert.ok(objectHeaders.some(header=>header.includes('"object_id":"reference:result:job:')),
+   'source-first reference output must survive a runtime restart without resubmission');
+  assert.equal(objectHeaders.filter(header=>header.includes('"object_id":"reference:failure:job:')).length,1,
+   'the completed-invalid first attempt must be durable and must not create a third calibration attempt');
+  const consumed=JSON.parse(await fs.readFile(path.join(f.config.execution_root,'state.json')));
+  assert.equal(consumed.visual_handoff_ready.status,'consumed');
+  assert.deepEqual(consumed.visual_handoff_ready.semantic_batch_plan_ref,consumed.semantic_batch_plan_ref);
+  await assert.rejects(()=>runtime.execute('visual-only'),{code:'JOURNAL_VISUAL_HANDOFF_ALREADY_PASSED'});
+ } finally { await runtime.close(); }
+});

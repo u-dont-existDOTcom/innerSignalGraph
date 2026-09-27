@@ -1,0 +1,45 @@
+{
+  "type": "object",
+  "properties": {
+    "anchor_kind": {
+      "const": "restricted_source_pointer"
+    },
+    "unit_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "region_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "disclosure": {
+      "const": "restricted"
+    },
+    "non_graphic_statement": {
+      "type": "string",
+      "minLength": 1
+    },
+    "review_state": {
+      "enum": [
+        "unreviewed",
+        "source_checked",
+        "independent_checked",
+        "disputed"
+      ]
+    }
+  },
+  "required": [
+    "anchor_kind",
+    "unit_id",
+    "region_id",
+    "disclosure",
+    "non_graphic_statement",
+    "review_state"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:restricted-anchor:1.0"
+}

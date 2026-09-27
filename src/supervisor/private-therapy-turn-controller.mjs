@@ -60,11 +60,13 @@ function normalizeInvocationOutput(value) {
 export function createPrivateTherapyTurnController({
   privateCaseSource,
   modelRuntime,
+  journalEvidenceProvider = null,
   maximumInvocationAttempts = 2
 } = {}) {
   if (!privateCaseSource || typeof privateCaseSource !== "object") throw new ValidationError("privateCaseSource is required.");
   if (!modelRuntime || typeof modelRuntime !== "object") throw new ValidationError("modelRuntime is required.");
   for (const method of ["produceCandidate", "auditCandidate", "repairCandidate", "produceDiscriminator"]) requiredFunction(modelRuntime[method], `modelRuntime.${method}`);
+  if (journalEvidenceProvider != null) requiredFunction(journalEvidenceProvider.freezeForTurn, "journalEvidenceProvider.freezeForTurn");
   if (!Number.isSafeInteger(maximumInvocationAttempts) || maximumInvocationAttempts < 1 || maximumInvocationAttempts > 3) {
     throw new ValidationError("maximumInvocationAttempts must be from one to three.");
   }
@@ -77,6 +79,28 @@ export function createPrivateTherapyTurnController({
   const loadCase = (caseId, authContext) => typeof privateCaseSource.loadPrivateRuntimeCase === "function"
     ? privateCaseSource.loadPrivateRuntimeCase(caseId, authContext)
     : privateCaseSource.loadOrCreate(caseId);
+
+  const freezeJournalEvidence = async ({ caseId, runtimeTurn, userInput, authContext }) => {
+    if (!journalEvidenceProvider) return null;
+    const value = await journalEvidenceProvider.freezeForTurn({
+      caseId,
+      runtimeTurn: structuredClone(runtimeTurn),
+      authContext,
+      query: userInput.journalQuery ?? runtimeTurn.inbound.exact_text,
+      maximumTokens: Math.min(userInput.journalMaximumTokens ?? 8_000, 8_000),
+      reserveCompleteActiveEpisode: true,
+      reserveMandatoryAuditContext: true
+    });
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError("Journal evidence provider returned no bounded packet.");
+    const packet = structuredClone(value.packet ?? value);
+    const serialized = JSON.stringify(packet);
+    if (Buffer.byteLength(serialized, "utf8") > 64_000) throw new ValidationError("Journal evidence packet exceeds the bounded runtime allowance.", { code: "INSUFFICIENT_CONTEXT" });
+    return Object.freeze({ packet, sha256: sha256(serialized) });
+  };
+
+  const frozenJournalEvidence = (runtimeTurn) => runtimeTurn.events
+    .find((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === "candidate")
+    ?.details?.output?.journalEvidence ?? null;
 
   async function invoke({ caseId, runtimeTurn, operationKey, stage, inputIdentity, authContext, execute }) {
     const inputSha256 = jsonHash(inputIdentity);
@@ -170,14 +194,18 @@ export function createPrivateTherapyTurnController({
       }
 
       if (runtimeTurn.state === "RECEIVED") {
+        const journalEvidence = await freezeJournalEvidence({ caseId, runtimeTurn, userInput, authContext });
         const produced = await invoke({
           caseId,
           runtimeTurn,
           operationKey,
           stage: "candidate",
-          inputIdentity: { runtime_turn_id: runtimeTurn.id, inbound_sha256: runtimeTurn.inbound.sha256, repair_cycle: 0 },
+          inputIdentity: { runtime_turn_id: runtimeTurn.id, inbound_sha256: runtimeTurn.inbound.sha256, repair_cycle: 0, journal_evidence_sha256: journalEvidence?.sha256 ?? null },
           authContext,
-          execute: (attemptContextId) => modelRuntime.produceCandidate({ caseId, runtimeTurn, userInput, authContext, attemptContextId })
+          execute: async (attemptContextId) => ({
+            ...(await modelRuntime.produceCandidate({ caseId, runtimeTurn, userInput, journalEvidence, authContext, attemptContextId })),
+            journalEvidence
+          })
         });
         await call("commitPrivateRuntimeCandidate", [caseId, {
           runtimeTurnId,
@@ -189,6 +217,7 @@ export function createPrivateTherapyTurnController({
           diffId: `diff:runtime:${operationKey}`,
           metadata: {
             producer_attempt_context_id: produced.result?.producerAttemptContextId ?? null,
+            journal_evidence_sha256: produced.journalEvidence?.sha256 ?? null,
             compatibility_state_binding: produced.result?.compatibilityBinding ?? null
           },
           eventId: `runtime-event:${operationKey}:candidate:v1:persisted`
@@ -208,14 +237,15 @@ export function createPrivateTherapyTurnController({
       if (runtimeTurn.state === "AUDITING") {
         const record = await loadCase(caseId, authContext);
         const candidate = exactCandidate(record, runtimeTurn.current_candidate_id);
+        const journalEvidence = frozenJournalEvidence(runtimeTurn);
         const audited = await invoke({
           caseId,
           runtimeTurn,
           operationKey,
           stage: "audit",
-          inputIdentity: { candidate_id: candidate.id, candidate_version: candidate.version, candidate_sha256: sha256(candidate.exact_text) },
+          inputIdentity: { candidate_id: candidate.id, candidate_version: candidate.version, candidate_sha256: sha256(candidate.exact_text), journal_evidence_sha256: journalEvidence?.sha256 ?? null },
           authContext,
-          execute: (attemptContextId) => modelRuntime.auditCandidate({ caseId, candidateId: candidate.id, candidate, authContext, attemptContextId })
+          execute: (attemptContextId) => modelRuntime.auditCandidate({ caseId, candidateId: candidate.id, candidate, journalEvidence, authContext, attemptContextId })
         });
         if (audited.contextId === candidate.producer_context_id) throw new ValidationError("Candidate producer cannot audit the exact text it produced.");
         const auditResult = audited.value ?? audited.result;
@@ -247,14 +277,15 @@ export function createPrivateTherapyTurnController({
         const record = await loadCase(caseId, authContext);
         const parent = exactCandidate(record, runtimeTurn.current_candidate_id);
         const sourceAudit = parent.audit_history.at(-1);
+        const journalEvidence = frozenJournalEvidence(runtimeTurn);
         const repaired = await invoke({
           caseId,
           runtimeTurn,
           operationKey,
           stage: "repair",
-          inputIdentity: { parent_candidate_id: parent.id, parent_version: parent.version, parent_sha256: sha256(parent.exact_text), audit_id: sourceAudit?.id, repair_cycle: parent.repair_cycle + 1 },
+          inputIdentity: { parent_candidate_id: parent.id, parent_version: parent.version, parent_sha256: sha256(parent.exact_text), audit_id: sourceAudit?.id, repair_cycle: parent.repair_cycle + 1, journal_evidence_sha256: journalEvidence?.sha256 ?? null },
           authContext,
-          execute: (attemptContextId) => modelRuntime.repairCandidate({ caseId, candidate: parent, authContext, attemptContextId })
+          execute: (attemptContextId) => modelRuntime.repairCandidate({ caseId, candidate: parent, journalEvidence, authContext, attemptContextId })
         });
         await call("commitPrivateRuntimeCandidate", [caseId, {
           runtimeTurnId,

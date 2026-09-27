@@ -1,0 +1,211 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "job_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9:_-]+$"
+    },
+    "stage": {
+      "enum": [
+        "INTAKE",
+        "PARSE",
+        "PARTITION",
+        "VISUAL_READ",
+        "EXTRACT",
+        "OMISSION_CHECK",
+        "RECONCILE",
+        "GRAPH_VALIDATE",
+        "REFERENCE_AUDIT",
+        "PATTERN_BUILD",
+        "PATTERN_REVIEW",
+        "COMMIT",
+        "COLD_TEST",
+        "REPORT"
+      ]
+    },
+    "state": {
+      "enum": [
+        "ready",
+        "running",
+        "paused_quota",
+        "retryable_error",
+        "needs_context",
+        "blocked_authority",
+        "completed",
+        "cancelled",
+        "revoked"
+      ]
+    },
+    "generation": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "responsible_actor": {
+      "enum": [
+        "controller",
+        "worker",
+        "reasoning_role",
+        "owner"
+      ]
+    },
+    "blocked_reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "completed_work_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160,
+        "pattern": "^[A-Za-z0-9:_-]+$"
+      },
+      "uniqueItems": true
+    },
+    "pending_work_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160,
+        "pattern": "^[A-Za-z0-9:_-]+$"
+      },
+      "uniqueItems": true
+    },
+    "completion": {
+      "type": "object",
+      "properties": {
+        "archive_verified": {
+          "enum": [
+            "not_run",
+            "pass",
+            "fail",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "raw_search_available": {
+          "enum": [
+            "not_run",
+            "pass",
+            "fail",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "graph_built": {
+          "enum": [
+            "not_run",
+            "pass",
+            "fail",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "semantically_audited": {
+          "enum": [
+            "not_run",
+            "pass",
+            "fail",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "patterns_reviewed": {
+          "enum": [
+            "not_run",
+            "pass",
+            "fail",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "profile_committed": {
+          "enum": [
+            "not_run",
+            "pass",
+            "fail",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "cold_retrieval_verified": {
+          "enum": [
+            "not_run",
+            "pass",
+            "fail",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "capacity_tested": {
+          "enum": [
+            "not_run",
+            "pass",
+            "fail",
+            "partial",
+            "unavailable"
+          ]
+        }
+      },
+      "required": [
+        "archive_verified",
+        "raw_search_available",
+        "graph_built",
+        "semantically_audited",
+        "patterns_reviewed",
+        "profile_committed",
+        "cold_retrieval_verified",
+        "capacity_tested"
+      ],
+      "additionalProperties": false
+    },
+    "private_receipt_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160,
+        "pattern": "^[A-Za-z0-9:_-]+$"
+      },
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "schema_version",
+    "job_id",
+    "stage",
+    "state",
+    "generation",
+    "next_action",
+    "responsible_actor",
+    "blocked_reason",
+    "completed_work_ids",
+    "pending_work_ids",
+    "completion",
+    "private_receipt_refs"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:checkpoint:1.0"
+}

@@ -2,6 +2,17 @@
 
 Updated: 2026-09-27
 
+## Journal import: the private journal branch, moved into this repository — `claude/journal-import-public-20260927`
+
+- **Goal:** one reviewed home for the journal work that GPT chats built in private checkouts on the central host, so those checkouts can be retired.
+- **Owner decisions:** 2026-09-27, the importer code may be public ("public is fine"). Later that day he chose to move the whole private journal branch ("1"): the importer, the journal search tools for the connector, the therapy runtime's use of journal evidence, the journal graph web page and the operator commands.
+- **Source:** the private branch forked from main at `038f7ee` (#76). Its head is `b47942a` (48 commits), plus one uncommitted runtime edit: up to two fidelity repair cycles in calibration before `CALIBRATION_REPAIR_REQUIRED`. It is moved as one squashed change. The private history, task records and state entries stay behind.
+- **Reconciled with #77–#92:** the MCP server serves both the journal read tools (`journalApi`) and the journal work tools (`journalWork`). The access service keeps `authenticate` and `authorizeCase` and adds `verifyCaseAccess` with journal purposes. The hosted provider keeps `verifyToken` and `authenticate` and adds purposes to grants. The connector image copies both the therapy plugin and `schemas/`.
+- **Fixes the move needed:** the UI's vitest setup file is renamed so `node --test` no longer runs it as a test. The desktop transport's checkpoint test fixture is updated for the window focus and native Copy capture added upstream.
+- **Verified:** `npm test` (1,515), `npm run audit:repository`, `npm run audit:publication`, `npm run verify`, `npm run journal:ui:test` (9) and `npm run journal:ui:build` pass on Node 24.18.0. Privacy scan of every moved file: no case ID or source hash, host paths, e-mail addresses, IP addresses or personal names; only synthetic example domains.
+- **Safety:** nothing is deployed, and the running import is unchanged; it keeps running from the private checkout until the owner approves the switch. The journal read tools stay off unless a grant lists journal purposes, and the operator needs its own environment.
+- **Next safe action:** Codex review, then owner approval to merge. Then the exchange-backed provider (retiring the desktop transport), then the Mission Control job type.
+
 ## Journal work exchange: connector tools for the private import — `claude/journal-work-exchange-20260927`
 
 - **Goal:** unstick the private journal import. Its desktop-app transport ends every run on "completion unknown" and has advanced about one step an hour.

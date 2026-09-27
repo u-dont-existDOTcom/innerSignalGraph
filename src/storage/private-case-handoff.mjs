@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { validateCaseState } from "../case-state/longitudinal-state.mjs";
 import { validateTrackerEntry } from "../case-state/tracker.mjs";
 import { validateTranscriptEntries } from "../case-state/context-window.mjs";
+import { createJournalContinuityProjection, validateJournalContinuityProjection } from "../case-state/journal-continuity.mjs";
 import { ValidationError } from "../core/errors.mjs";
 import { candidateDeliveryGate, isActivePrivateCandidate, projectCandidateLifecycle, validateCandidateLifecycleFields } from "../supervisor/private-candidate-lifecycle.mjs";
 import { chunkExactSourceText, createExactSourceArtifact, validateExactSourceArtifact } from "./exact-source-artifact.mjs";
@@ -14,7 +15,7 @@ const HANDOFF_STATUS = Object.freeze({
   BLOCKED: "BLOCKED_CONTINUATION_UNSAFE",
   READY: "READY_FOR_FRESH_SESSION_TEST"
 });
-export const PRIVATE_HANDOFF_PACKET_VERSION = 3;
+export const PRIVATE_HANDOFF_PACKET_VERSION = 4;
 export const PRIVATE_HANDOFF_CHUNK_BYTES = 20_000;
 
 function bounded(value, name, pattern = null, maximumLength = 500) {
@@ -155,6 +156,7 @@ function validateComponentManifest(packet) {
   if (Object.hasOwn(packet, "transcript_amendments")) components.transcript_amendments = packet.transcript_amendments;
   if (Object.hasOwn(packet, "candidate_lifecycle")) components.candidate_lifecycle = packet.candidate_lifecycle;
   if (Object.hasOwn(packet, "delivery_completion")) components.delivery_completion = packet.delivery_completion;
+  if (Object.hasOwn(packet, "journal_continuity")) components.journal_continuity = packet.journal_continuity;
   const expected = componentManifest(components);
   if (canonicalJson(packet.manifest.components) !== canonicalJson(expected)) throw new ValidationError("Private handoff component manifest failed its integrity check.");
 }
@@ -171,7 +173,7 @@ export function validateHandoffId(value) {
 
 export function validatePrivateHandoffPacket(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError("Private handoff packet must be an object.");
-  if (![1, 2, PRIVATE_HANDOFF_PACKET_VERSION].includes(value.schema_version) || value.kind !== "inner-signal-private-handoff-packet") throw new ValidationError("Private handoff packet version is invalid.");
+  if (![1, 2, 3, PRIVATE_HANDOFF_PACKET_VERSION].includes(value.schema_version) || value.kind !== "inner-signal-private-handoff-packet") throw new ValidationError("Private handoff packet version is invalid.");
   bounded(value.handoff_id, "handoff_id", HANDOFF_ID);
   bounded(value.case_id, "case_id", CASE_ID);
   bounded(value.created_at, "created_at");
@@ -185,6 +187,7 @@ export function validatePrivateHandoffPacket(value) {
   value.pending_artifacts.forEach(validateCandidate);
   if (value.pending_artifacts.length > 1) throw new ValidationError("Private handoff may contain only one current candidate version.");
   if (value.schema_version >= 3 && !Object.hasOwn(value, "delivery_completion")) throw new ValidationError("Private handoff v3 requires a delivery completion projection.");
+  if (value.schema_version >= 4) validateJournalContinuityProjection(value.journal_continuity);
   if (!Array.isArray(value.transcript_archive)) throw new ValidationError("Private handoff transcript_archive is invalid.");
   validateTranscriptEntries(value.transcript_archive);
   if (value.schema_version >= 2) {
@@ -298,7 +301,8 @@ export function compilePrivateHandoffArtifact({ handoffId, record, recentVerbati
     raw_transcript_archive: rawTranscript,
     transcript_amendments: transcriptAmendments,
     candidate_lifecycle: candidateLifecycle,
-    delivery_completion: deliveryCompletion
+    delivery_completion: deliveryCompletion,
+    journal_continuity: createJournalContinuityProjection(record.journal_corpora)
   };
   const packet = validatePrivateHandoffPacket({
     schema_version: PRIVATE_HANDOFF_PACKET_VERSION,
@@ -362,6 +366,7 @@ export function projectHandoffTherapeuticContinuity(packet) {
     exact_pending_candidate_ids: value.pending_artifacts.map((entry) => entry.id),
     candidate_lifecycle: value.candidate_lifecycle ? clone(value.candidate_lifecycle) : null,
     delivery_completion: value.delivery_completion ? clone(value.delivery_completion) : null,
+    journal_continuity: value.journal_continuity ? clone(value.journal_continuity) : null,
     hidden_reasoning_included: false
   });
 }

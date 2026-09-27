@@ -1,0 +1,147 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "target_generation": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9:_-]+$"
+    },
+    "review_role": {
+      "enum": [
+        "omission_checker",
+        "fidelity_auditor",
+        "pattern_reviewer",
+        "reconciler"
+      ]
+    },
+    "assessments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "outcome": {
+            "enum": [
+              "preserved",
+              "omitted",
+              "distorted",
+              "unassessed"
+            ]
+          },
+          "critical": {
+            "type": "boolean"
+          },
+          "finding_type": {
+            "enum": [
+              "none",
+              "missing_evidence",
+              "wrong_identity",
+              "wrong_time",
+              "wrong_mode",
+              "lost_qualifier",
+              "unsupported_claim",
+              "causal_promotion",
+              "duplicate_support",
+              "other"
+            ]
+          },
+          "explanation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "target_id",
+          "outcome",
+          "critical",
+          "finding_type",
+          "explanation",
+          "evidence_ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "proposed_repairs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "repair": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "target_id",
+          "repair",
+          "evidence_ids"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "unassessed_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160,
+        "pattern": "^[A-Za-z0-9:_-]+$"
+      },
+      "uniqueItems": true
+    },
+    "status": {
+      "enum": [
+        "sufficient_for_stated_scope",
+        "repair_required",
+        "incomplete"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "target_generation",
+    "review_role",
+    "assessments",
+    "proposed_repairs",
+    "unassessed_ids",
+    "status"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:review:1.0"
+}

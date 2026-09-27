@@ -1,8 +1,9 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { ValidationError } from "../core/errors.mjs";
 import { createEmptyCaseState, validateCaseState } from "../case-state/longitudinal-state.mjs";
+import { createJournalContinuityProjection } from "../case-state/journal-continuity.mjs";
 import { appendTrackerEntry, summarizeTrackerWindow, validateTrackerEntry } from "../case-state/tracker.mjs";
 import { buildDurableCaseContext, CONTEXT_WINDOW_LIMITS, selectRecentVerbatimWindow, validateTranscriptEntries } from "../case-state/context-window.mjs";
 import { RUNTIME_VERSION } from "../core/runtime-version.mjs";
@@ -37,10 +38,12 @@ import {
   createTranscriptCompletionAmendment,
   validateTranscriptAmendments
 } from "./transcript-amendments.mjs";
+import { getSharedCaseMutationCoordinator } from "./shared-case-coordinator.mjs";
 
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
+const JOURNAL_ID = /^[A-Za-z0-9:_-]{1,160}$/;
 const ENVELOPE_FORMAT = "inner-signal-private-case-envelope-v1";
-const RECORD_VERSION = 6;
+const RECORD_VERSION = 7;
 const TRACKER_QUERY_VARIABLES = Object.freeze([
   "sleep_duration_hours", "sleep_quality", "pain_intensity", "pain_location", "pain_function_interference",
   "anxiety", "depressed_mood", "stability", "unreality", "division", "social_contact_quality",
@@ -69,6 +72,10 @@ const bytes = (value, name) => {
 };
 const safeCaseId = (value) => {
   if (typeof value !== "string" || !CASE_ID.test(value)) throw new ValidationError("caseId is invalid.");
+  return value;
+};
+const safeJournalId = (value, name) => {
+  if (typeof value !== "string" || !JOURNAL_ID.test(value)) throw new ValidationError(`${name} is invalid.`);
   return value;
 };
 const base64 = (value) => Buffer.from(value).toString("base64");
@@ -267,8 +274,14 @@ function normalizePrivateCaseRecord(value) {
     migrated.transcript_amendments = [];
   }
   if (migrated.schema_version === 5) {
-    migrated.schema_version = RECORD_VERSION;
+    migrated.schema_version = 6;
     migrated.runtime_turns = [];
+  }
+  if (migrated.schema_version === 6) {
+    migrated.schema_version = RECORD_VERSION;
+    migrated.revision = 0;
+    migrated.journal_corpora = [];
+    migrated.journal_corpus_keys = [];
   }
   return migrated;
 }
@@ -278,6 +291,7 @@ export function validatePrivateCaseRecord(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError("Private case record must be an object.");
   if (value.schema_version !== RECORD_VERSION) throw new ValidationError("Private case record version is invalid.");
   safeCaseId(value.case_id);
+  if (!Number.isSafeInteger(value.revision) || value.revision < 0) throw new ValidationError("Private case revision is invalid.");
   for (const field of ["created_at", "updated_at"]) if (typeof value[field] !== "string" || !value[field].trim()) throw new ValidationError(`Private case record ${field} is required.`);
   validateTranscriptEntries(value.raw_transcript);
   if (!Array.isArray(value.source_artifacts) || value.source_artifacts.length > PRIVATE_RECORD_LIMITS.source_artifacts) throw new ValidationError("source_artifacts exceeds the private-record limit or is invalid.");
@@ -353,6 +367,39 @@ export function validatePrivateCaseRecord(value) {
       }
     }
   }
+  if (!Array.isArray(value.journal_corpora) || !Array.isArray(value.journal_corpus_keys)) {
+    throw new ValidationError("Journal corpus extensions are invalid.");
+  }
+  const corpusIds = new Set();
+  for (const reference of value.journal_corpora) {
+    if (!reference || typeof reference !== "object" || Array.isArray(reference)) throw new ValidationError("Journal corpus reference is invalid.");
+    const keys = Object.keys(reference).sort();
+    const expected = ["active_generation", "corpus_id", "manifest_object_id", "previous_generations", "visibility_epoch"].sort();
+    if (JSON.stringify(keys) !== JSON.stringify(expected) || typeof reference.corpus_id !== "string" || !reference.corpus_id
+        || (reference.active_generation != null && (typeof reference.active_generation !== "string" || !reference.active_generation))
+        || typeof reference.manifest_object_id !== "string" || !reference.manifest_object_id
+        || !Number.isSafeInteger(reference.visibility_epoch) || reference.visibility_epoch < 0
+        || !Array.isArray(reference.previous_generations) || reference.previous_generations.some((item) => !item || typeof item.generation !== "string" || typeof item.manifest_object_id !== "string")) {
+      throw new ValidationError("Journal corpus reference is invalid.");
+    }
+    if (corpusIds.has(reference.corpus_id)) throw new ValidationError("Duplicate journal corpus reference.");
+    corpusIds.add(reference.corpus_id);
+  }
+  const keyCorpusIds = new Set();
+  for (const entry of value.journal_corpus_keys) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)
+        || JSON.stringify(Object.keys(entry).sort()) !== JSON.stringify(["corpus_id", "key_base64", "key_version"])
+        || typeof entry.corpus_id !== "string" || !entry.corpus_id
+        || entry.key_version !== 1 || typeof entry.key_base64 !== "string") {
+      throw new ValidationError("Journal corpus key entry is invalid.");
+    }
+    const key = Buffer.from(entry.key_base64, "base64");
+    try { if (key.byteLength !== 32) throw new ValidationError("Journal corpus key entry is invalid."); }
+    finally { key.fill(0); }
+    if (keyCorpusIds.has(entry.corpus_id) || !corpusIds.has(entry.corpus_id)) throw new ValidationError("Journal corpus key binding is invalid.");
+    keyCorpusIds.add(entry.corpus_id);
+  }
+  if (keyCorpusIds.size !== corpusIds.size) throw new ValidationError("Every journal corpus requires exactly one key entry.");
   return value;
 }
 
@@ -360,6 +407,7 @@ function newRecord(caseId, now) {
   return {
     schema_version: RECORD_VERSION,
     case_id: caseId,
+    revision: 0,
     created_at: now,
     updated_at: now,
     raw_transcript: [],
@@ -371,7 +419,9 @@ function newRecord(caseId, now) {
     state_diff_history: [],
     candidate_responses: [],
     runtime_turns: [],
-    source_artifacts: []
+    source_artifacts: [],
+    journal_corpora: [],
+    journal_corpus_keys: []
   };
 }
 
@@ -416,6 +466,16 @@ function assertAppendOnly(previous, next) {
   for (let index = 0; index < previous.source_artifacts.length; index += 1) {
     if (JSON.stringify(previous.source_artifacts[index]) !== JSON.stringify(next.source_artifacts[index])) throw new ValidationError("Exact source artifacts are immutable and cannot be rewritten.");
   }
+  if (next.journal_corpus_keys.length < previous.journal_corpus_keys.length) throw new ValidationError("Journal corpus keys are append-only.");
+  for (let index = 0; index < previous.journal_corpus_keys.length; index += 1) {
+    if (JSON.stringify(previous.journal_corpus_keys[index]) !== JSON.stringify(next.journal_corpus_keys[index])) {
+      throw new ValidationError("Journal corpus keys are immutable.");
+    }
+  }
+  const previousCorpora = new Map(previous.journal_corpora.map((reference) => [reference.corpus_id, reference]));
+  for (const [corpusId] of previousCorpora) {
+    if (!next.journal_corpora.some((reference) => reference.corpus_id === corpusId)) throw new ValidationError("Journal corpus references cannot be removed by ordinary mutation.");
+  }
 }
 
 async function durableEncryptedWrite(file, envelope) {
@@ -445,6 +505,7 @@ export function createEncryptedPrivateCaseStore({
   osBackedReauthenticated = false,
   managedSecretAuthorized = false,
   developmentExternalCredentialAuthorized = false,
+  mutationCoordinator = null,
   now = () => new Date().toISOString()
 } = {}) {
   if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw new ValidationError("rootDir must be an absolute private storage path.");
@@ -458,7 +519,8 @@ export function createEncryptedPrivateCaseStore({
   const routineKey = bytes(routineKek, "routineKek");
   const recoverySecret = recoverySecretBytes == null ? null : bytes(recoverySecretBytes, "recoverySecretBytes");
   let closed = false;
-  const caseMutationTails = new Map();
+  const coordinator = mutationCoordinator ?? getSharedCaseMutationCoordinator(rootDir);
+  if (!coordinator || typeof coordinator.run !== "function") throw new ValidationError("mutationCoordinator must implement run().");
 
   const ensureOpen = () => {
     if (closed) throw new ValidationError("Private case store is closed.");
@@ -523,35 +585,26 @@ export function createEncryptedPrivateCaseStore({
     return structuredClone(candidate);
   };
   const loadOrCreate = async (caseId) => mutate(safeCaseId(caseId), () => null);
-  const mutate = async (caseId, operation) => {
+  const mutate = async (caseId, operation) => coordinator.run(safeCaseId(caseId), async () => {
     const id = safeCaseId(caseId);
-    const previousTail = caseMutationTails.get(id) ?? Promise.resolve();
-    let release;
-    const currentTail = new Promise((resolve) => { release = resolve; });
-    caseMutationTails.set(id, currentTail);
-    await previousTail;
-    try {
-      const existing = await readExistingWithEnvelope(id);
-      let previous;
-      let currentEnvelope = null;
-      if (existing) {
-        previous = structuredClone(existing.record);
-        currentEnvelope = existing.envelope;
-      } else {
-        const timestamp = now();
-        previous = await write(id, newRecord(id, timestamp));
-        const created = await readExistingWithEnvelope(id);
-        currentEnvelope = created.envelope;
-      }
-      const next = await operation(structuredClone(previous));
-      if (next === null) return structuredClone(previous);
-      next.updated_at = now();
-      return write(id, next, previous, currentEnvelope);
-    } finally {
-      release();
-      if (caseMutationTails.get(id) === currentTail) caseMutationTails.delete(id);
+    const existing = await readExistingWithEnvelope(id);
+    let previous;
+    let currentEnvelope = null;
+    if (existing) {
+      previous = structuredClone(existing.record);
+      currentEnvelope = existing.envelope;
+    } else {
+      const timestamp = now();
+      previous = await write(id, newRecord(id, timestamp));
+      const created = await readExistingWithEnvelope(id);
+      currentEnvelope = created.envelope;
     }
-  };
+    const next = await operation(structuredClone(previous));
+    if (next === null) return structuredClone(previous);
+    next.updated_at = now();
+    next.revision = previous.revision + 1;
+    return write(id, next, previous, currentEnvelope);
+  });
   const readRequired = async (caseId) => {
     const record = await readExisting(safeCaseId(caseId));
     if (!record) throw new ValidationError(`Private case ${caseId} was not found.`, { code: "PRIVATE_CASE_NOT_FOUND" });
@@ -1288,8 +1341,131 @@ export function createEncryptedPrivateCaseStore({
       const record = await readRequired(caseId);
       return selectJournalEntries(record.journal_entries, options);
     },
+    async createJournalCorpus(caseId, { corpusId, manifestObjectId }) {
+      const checkedCorpusId = safeJournalId(corpusId, "corpusId");
+      const checkedManifestObjectId = safeJournalId(manifestObjectId, "manifestObjectId");
+      const record = await mutate(caseId, (candidate) => {
+        const existing = candidate.journal_corpora.find((reference) => reference.corpus_id === checkedCorpusId);
+        if (existing) {
+          if (existing.manifest_object_id !== checkedManifestObjectId) throw new ValidationError("Journal corpus creation conflicts with an existing corpus.", { code: "REVISION_CONFLICT" });
+          return null;
+        }
+        const corpusKey = randomBytes(32);
+        try {
+          candidate.journal_corpora.push({
+            corpus_id: checkedCorpusId,
+            active_generation: null,
+            manifest_object_id: checkedManifestObjectId,
+            visibility_epoch: 0,
+            previous_generations: []
+          });
+          candidate.journal_corpus_keys.push({ corpus_id: checkedCorpusId, key_version: 1, key_base64: corpusKey.toString("base64") });
+          return candidate;
+        } finally { corpusKey.fill(0); }
+      });
+      return Object.freeze({
+        case_id: record.case_id,
+        case_revision: record.revision,
+        reference: structuredClone(record.journal_corpora.find((item) => item.corpus_id === checkedCorpusId))
+      });
+    },
+    async getJournalCorpus(caseId, corpusId) {
+      const checkedCorpusId = safeJournalId(corpusId, "corpusId");
+      const record = await readRequired(caseId);
+      const reference = record.journal_corpora.find((item) => item.corpus_id === checkedCorpusId);
+      if (!reference) throw new ValidationError("Journal corpus was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+      return Object.freeze({ case_id: record.case_id, case_revision: record.revision, reference: structuredClone(reference) });
+    },
+    async getJournalCorpusKey(caseId, corpusId) {
+      const checkedCorpusId = safeJournalId(corpusId, "corpusId");
+      const record = await readRequired(caseId);
+      const entry = record.journal_corpus_keys.find((item) => item.corpus_id === checkedCorpusId);
+      if (!entry) throw new ValidationError("Journal corpus was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+      return Buffer.from(entry.key_base64, "base64");
+    },
+    async publishJournalGeneration(caseId, {
+      corpusId,
+      generation,
+      manifestObjectId,
+      expectedGeneration = null,
+      expectedCaseRevision = null,
+      expectedVisibilityEpoch = null
+    }) {
+      const checkedCorpusId = safeJournalId(corpusId, "corpusId");
+      const checkedGeneration = safeJournalId(generation, "generation");
+      const checkedManifestObjectId = safeJournalId(manifestObjectId, "manifestObjectId");
+      const record = await mutate(caseId, (candidate) => {
+        if (expectedCaseRevision != null && candidate.revision !== expectedCaseRevision) throw new ValidationError("Private case revision changed.", { code: "REVISION_CONFLICT" });
+        const reference = candidate.journal_corpora.find((item) => item.corpus_id === checkedCorpusId);
+        if (!reference) throw new ValidationError("Journal corpus was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        if (expectedVisibilityEpoch != null && reference.visibility_epoch !== expectedVisibilityEpoch) throw new ValidationError("Journal visibility epoch changed.", { code: "GRANT_REVOKED" });
+        if (reference.active_generation === checkedGeneration && reference.manifest_object_id === checkedManifestObjectId) return null;
+        if (reference.active_generation !== expectedGeneration) throw new ValidationError("Journal generation changed.", { code: "REVISION_CONFLICT" });
+        if (reference.active_generation !== null) {
+          reference.previous_generations.push({ generation: reference.active_generation, manifest_object_id: reference.manifest_object_id });
+        }
+        reference.active_generation = checkedGeneration;
+        reference.manifest_object_id = checkedManifestObjectId;
+        return candidate;
+      });
+      const reference = record.journal_corpora.find((item) => item.corpus_id === checkedCorpusId);
+      return Object.freeze({ case_revision: record.revision, active_generation: reference.active_generation, visibility_epoch: reference.visibility_epoch });
+    },
+    async rollbackJournalGeneration(caseId, { corpusId, targetGeneration, expectedGeneration }) {
+      const checkedCorpusId = safeJournalId(corpusId, "corpusId");
+      const checkedTarget = safeJournalId(targetGeneration, "targetGeneration");
+      const record = await mutate(caseId, (candidate) => {
+        const reference = candidate.journal_corpora.find((item) => item.corpus_id === checkedCorpusId);
+        if (!reference) throw new ValidationError("Journal corpus was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        if (reference.active_generation !== expectedGeneration) throw new ValidationError("Journal generation changed.", { code: "REVISION_CONFLICT" });
+        const target = [...reference.previous_generations].reverse().find((item) => item.generation === checkedTarget);
+        if (!target) throw new ValidationError("Rollback generation is unavailable.", { code: "SOURCE_UNAVAILABLE" });
+        if (reference.active_generation !== null) reference.previous_generations.push({ generation: reference.active_generation, manifest_object_id: reference.manifest_object_id });
+        reference.active_generation = target.generation;
+        reference.manifest_object_id = target.manifest_object_id;
+        return candidate;
+      });
+      const reference = record.journal_corpora.find((item) => item.corpus_id === checkedCorpusId);
+      return Object.freeze({ case_revision: record.revision, active_generation: reference.active_generation });
+    },
+    async incrementJournalVisibilityEpoch(caseId, { corpusId, expectedEpoch }) {
+      const checkedCorpusId = safeJournalId(corpusId, "corpusId");
+      const record = await mutate(caseId, (candidate) => {
+        const reference = candidate.journal_corpora.find((item) => item.corpus_id === checkedCorpusId);
+        if (!reference) throw new ValidationError("Journal corpus was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        if (reference.visibility_epoch !== expectedEpoch) throw new ValidationError("Journal visibility epoch changed.", { code: "REVISION_CONFLICT" });
+        reference.visibility_epoch += 1;
+        return candidate;
+      });
+      return record.journal_corpora.find((item) => item.corpus_id === checkedCorpusId).visibility_epoch;
+    },
+    async tombstoneJournalCorpus(caseId, { corpusId, expectedGeneration, expectedEpoch, tombstoneId }) {
+      const checkedCorpusId = safeJournalId(corpusId, "corpusId");
+      const checkedTombstoneId = safeJournalId(tombstoneId, "tombstoneId");
+      const checkedExpectedGeneration = expectedGeneration == null ? null : safeJournalId(expectedGeneration, "expectedGeneration");
+      if (!Number.isSafeInteger(expectedEpoch) || expectedEpoch < 0) throw new ValidationError("expectedEpoch is invalid.");
+      const record = await mutate(caseId, (candidate) => {
+        const reference = candidate.journal_corpora.find((item) => item.corpus_id === checkedCorpusId);
+        if (!reference) throw new ValidationError("Journal corpus was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        if (reference.active_generation !== checkedExpectedGeneration || reference.visibility_epoch !== expectedEpoch) {
+          throw new ValidationError("Journal corpus changed before deletion.", { code: "REVISION_CONFLICT" });
+        }
+        reference.active_generation = null;
+        reference.manifest_object_id = checkedTombstoneId;
+        reference.previous_generations = [];
+        reference.visibility_epoch += 1;
+        return candidate;
+      });
+      const reference = record.journal_corpora.find((item) => item.corpus_id === checkedCorpusId);
+      return Object.freeze({
+        case_revision: record.revision,
+        active_generation: null,
+        visibility_epoch: reference.visibility_epoch,
+        tombstone_id: reference.manifest_object_id
+      });
+    },
     async getCurrentEpisode(caseId) { return structuredClone((await readRequired(caseId)).case_state.current_episode); },
-    async loadCaseContext(caseId, { candidateId = "current_pending", episodePolicy = {}, evidenceQuery = null } = {}) {
+    async loadCaseContext(caseId, { candidateId = "current_pending", episodePolicy = {}, evidenceQuery = null, journalContinuitySupported = false } = {}) {
       const record = await readRequired(caseId);
       const transcript = effectiveTranscript(record);
       const context = buildDurableCaseContext({
@@ -1333,6 +1509,9 @@ export function createEncryptedPrivateCaseStore({
         queried_evidence: queriedEvidence,
         current_episode: structuredClone(record.case_state.current_episode),
         tracker_window: structuredClone(context.tracker_window),
+        journal_continuity: createJournalContinuityProjection(record.journal_corpora, {
+          consumerCapabilitySupported: journalContinuitySupported
+        }),
         hidden_reasoning_included: false
       });
     },
@@ -1375,7 +1554,10 @@ export function createEncryptedPrivateCaseStore({
         delivery_completion: deliveryCompletion,
         recent_verbatim: recentVerbatim,
         source_artifact_refs: record.source_artifacts.map((artifact) => ({ id: artifact.id })),
-        targeted_older_evidence: durableContext.targeted_older_evidence
+        targeted_older_evidence: durableContext.targeted_older_evidence,
+        journal_continuity: createJournalContinuityProjection(record.journal_corpora, {
+          consumerCapabilitySupported: true
+        })
       };
       const continuationSafety = assessContinuationSafety(context);
       const createdAt = now();

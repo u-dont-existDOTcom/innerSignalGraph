@@ -1,0 +1,244 @@
+#!/usr/bin/env node
+import { createHash } from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { ValidationError } from "../core/errors.mjs";
+import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
+import { sourceParserCapabilities } from "../journal-import/parsers/index.mjs";
+import { loadJournalInferencePortFromEnvironment } from "../journal-import/provider-runtime.mjs";
+import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
+import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
+
+export const JOURNAL_IMPORT_COMMANDS = Object.freeze([
+  "doctor",
+  "inventory",
+  "stage",
+  "run",
+  "visual-only",
+  "status",
+  "verify",
+  "audit",
+  "patterns",
+  "commit",
+  "cold-test",
+  "report",
+  "export",
+  "delete-plan"
+]);
+
+export function journalImportHelp() {
+  return [
+    "InnerSignal private journal importer",
+    "",
+    "Usage:",
+    "  npm run journal:import -- <command> --config /absolute/private/run.json",
+    "  npm run journal:import -- doctor --mock",
+    "",
+    `Commands: ${JOURNAL_IMPORT_COMMANDS.join(", ")}`,
+    "",
+    "The source, target and private receipts are never accepted as inline command arguments.",
+    "Live mutation, disclosure, export and deletion remain denied unless the private configuration supplies their grants."
+  ].join("\n");
+}
+
+export function parseJournalImportArgs(argv) {
+  if (!Array.isArray(argv)) throw new ValidationError("Journal import arguments must be an array.");
+  const args = [...argv];
+  if (args.length === 0 || args.includes("--help") || args.includes("-h")) return Object.freeze({ help: true });
+  const command = args.shift();
+  if (!JOURNAL_IMPORT_COMMANDS.includes(command)) throw new ValidationError("Unknown journal import command.", { code: "JOURNAL_COMMAND_UNKNOWN" });
+  const options = { command, configPath: null, mock: false, json: false };
+  while (args.length) {
+    const flag = args.shift();
+    if (flag === "--mock") options.mock = true;
+    else if (flag === "--json") options.json = true;
+    else if (flag === "--config") {
+      const configPath = args.shift();
+      if (!configPath || !path.isAbsolute(configPath)) throw new ValidationError("--config must be followed by an absolute private path.", { code: "JOURNAL_CONFIG_PATH_INVALID" });
+      options.configPath = path.normalize(configPath);
+    } else {
+      throw new ValidationError("Unknown journal import option.", { code: "JOURNAL_OPTION_UNKNOWN" });
+    }
+  }
+  if (options.mock && command !== "doctor") throw new ValidationError("--mock is supported only by doctor.", { code: "JOURNAL_MOCK_SCOPE_INVALID" });
+  if (!options.mock && !options.configPath) throw new ValidationError("A private --config path is required.", { code: "JOURNAL_CONFIG_REQUIRED" });
+  return Object.freeze(options);
+}
+
+export function mockJournalDoctorReport() {
+  return Object.freeze({
+    schema_version: 1,
+    mode: "synthetic_mock",
+    mutation_allowed: false,
+    external_spend_usd: 0,
+    capabilities: {
+      source_mount: "synthetic",
+      parser: "not_checked",
+      private_target: "synthetic_only",
+      inference_route: "mock_only",
+      inference_isolation: "synthetic",
+      archive_scope: "synthetic",
+      semantic_scope: "unavailable",
+      version_support: "contracts_loaded"
+    },
+    blockers: ["PRIVATE_CONFIGURATION_NOT_LOADED", "LIVE_MUTATION_DENIED"]
+  });
+}
+
+function outsideRepository(candidate) {
+  const relative = path.relative(repositoryRoot, candidate);
+  return relative !== "" && (relative.startsWith("..") || path.isAbsolute(relative));
+}
+
+async function loadPrivateConfig(configPath) {
+  if (!outsideRepository(configPath)) throw new ValidationError("Private journal configuration must remain outside the public repository.", { code: "JOURNAL_CONFIG_LOCATION_INVALID" });
+  return withOpenedRegularFile(configPath, async (handle, information) => {
+    if ((information.mode & 0o077) !== 0) throw new ValidationError("Private journal configuration must have mode 0600 or stricter.", { code: "JOURNAL_CONFIG_MODE_INVALID" });
+    let value;
+    try { value = JSON.parse(await handle.readFile("utf8")); }
+    catch { throw new ValidationError("Private journal configuration is invalid.", { code: "JOURNAL_CONFIG_INVALID" }); }
+    if (value?.schema_version !== 1 || !CASE_ID.test(value?.target_profile?.case_id ?? "")
+        || typeof value?.private_runtime_root !== "string" || !path.isAbsolute(value.private_runtime_root)) {
+      throw new ValidationError("Private journal configuration is unresolved.", { code: "JOURNAL_CONFIG_UNRESOLVED" });
+    }
+    return value;
+  });
+}
+
+async function inspectConfiguredSource(configPath, config) {
+  const bundleRoot = path.resolve(path.dirname(configPath), "..");
+  const sourcePath = path.resolve(bundleRoot, config.source?.relative_path ?? "");
+  if (!outsideRepository(sourcePath)) throw new ValidationError("Journal source must remain outside the public repository.", { code: "JOURNAL_SOURCE_LOCATION_INVALID" });
+  return withOpenedRegularFile(sourcePath, async (handle, information) => {
+    if ((information.mode & 0o077) !== 0) throw new ValidationError("Journal source must have mode 0600 or stricter.", { code: "JOURNAL_SOURCE_MODE_INVALID" });
+    const bytes = await handle.readFile();
+    const actualDigest = createHash("sha256").update(bytes).digest("hex");
+    return Object.freeze({
+      available: true,
+      byte_length_matches: information.size === config.source.bytes,
+      digest_matches: actualDigest === config.source.sha256,
+      format: path.extname(sourcePath).toLowerCase() === ".pdf" ? "pdf" : "unknown"
+    });
+  });
+}
+
+async function inspectOperator(config, environment) {
+  const requiredNames = [
+    "INNER_SIGNAL_PRIVATE_ROOT",
+    "INNER_SIGNAL_OAUTH_ISSUER",
+    "INNER_SIGNAL_OAUTH_AUDIENCE",
+    "INNER_SIGNAL_OPERATOR_OAUTH_JWKS_JSON",
+    "INNER_SIGNAL_OPERATOR_CASE_ACL_JSON",
+    "INNER_SIGNAL_CASE_KEYS_JSON",
+    "INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN"
+  ];
+  if (requiredNames.some((name) => typeof environment[name] !== "string" || environment[name].length === 0)) {
+    return Object.freeze({ available: false, authorized_purposes: [], blocker: "OPERATOR_ENVIRONMENT_UNAVAILABLE" });
+  }
+  const providerEnvironment = { ...environment };
+  const providers = loadHostedPrivateCaseOperatorProvidersFromEnvironment(providerEnvironment);
+  const service = createPrivateCaseAccessService({
+    rootDir: providers.rootDir,
+    authorizationProvider: providers.authorizationProvider,
+    keyProvider: providers.keyProvider
+  });
+  try {
+    const configuredRoots = [config.private_runtime_root, path.resolve(config.private_runtime_root, "vaults"), config.private_runtime_mount]
+      .filter((value) => typeof value === "string")
+      .map((value) => path.resolve(value));
+    if (!configuredRoots.includes(providers.rootDir)) {
+      return Object.freeze({ available: false, authorized_purposes: [], blocker: "OPERATOR_PRIVATE_ROOT_MISMATCH" });
+    }
+    const authContext = { bearerToken: environment.INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN };
+    const purposes = [PRIVATE_JOURNAL_PURPOSES.ARCHIVE, PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH, PRIVATE_JOURNAL_PURPOSES.SESSION_USE];
+    const authorized = [];
+    for (const purpose of purposes) {
+      await service.verifyCaseAccess(config.target_profile.case_id, { requiredScope: PRIVATE_CASE_SCOPES.WRITE, requiredPurpose: purpose }, authContext);
+      authorized.push(purpose);
+    }
+    return Object.freeze({ available: true, authorized_purposes: authorized, blocker: null });
+  } catch {
+    return Object.freeze({ available: false, authorized_purposes: [], blocker: "OPERATOR_AUTHORIZATION_DENIED" });
+  } finally {
+    providers.close();
+  }
+}
+
+export async function configuredJournalDoctorReport(configPath, environment = process.env) {
+  const config = await loadPrivateConfig(configPath);
+  const blockers = [];
+  let source;
+  try { source = await inspectConfiguredSource(configPath, config); }
+  catch (error) { source = { available: false, byte_length_matches: false, digest_matches: false, format: "unknown" }; blockers.push(error?.code ?? "SOURCE_UNAVAILABLE"); }
+  if (source.available && (!source.byte_length_matches || !source.digest_matches)) blockers.push("SOURCE_BINDING_MISMATCH");
+  const parser = sourceParserCapabilities();
+  if (!parser.formats[source.format]) blockers.push("FORMAT_UNSUPPORTED");
+  let operator;
+  try { operator = await inspectOperator(config, environment); }
+  catch { operator = { available: false, authorized_purposes: [], blocker: "OPERATOR_CONFIGURATION_INVALID" }; }
+  if (operator.blocker) blockers.push(operator.blocker);
+  let inference;
+  try {
+    const port = loadJournalInferencePortFromEnvironment({ ...environment });
+    try { inference = port.capabilities(); }
+    finally { port.close?.(); }
+  } catch (error) {
+    inference = { enabled: false, live_inference: false, external_spend_authorized_usd: 0 };
+    blockers.push(error?.code ?? "INFERENCE_ISOLATION_UNAVAILABLE");
+  }
+  if (!inference.enabled) blockers.push("INFERENCE_ISOLATION_UNAVAILABLE");
+  if ((inference.external_spend_authorized_usd ?? 0) > config.max_external_spend_usd) blockers.push("INFERENCE_ALLOWANCE_EXCEEDS_CONFIG");
+  return Object.freeze({
+    schema_version: 1,
+    mode: config.mode,
+    mutation_allowed: operator.available,
+    external_spend_usd: 0,
+    capabilities: {
+      source_mount: source.available && source.byte_length_matches && source.digest_matches ? "verified" : "unavailable",
+      parser: parser.formats[source.format]?.adapter ?? "unsupported",
+      private_target: operator.available ? "authorized_operator" : "unavailable",
+      inference_route: inference.enabled ? "authorized" : "unavailable",
+      inference_isolation: inference.packet_only && inference.fresh_context_per_generate ? "packet_only_fresh_context" : "unavailable",
+      archive_scope: operator.authorized_purposes.includes(PRIVATE_JOURNAL_PURPOSES.ARCHIVE) ? "authorized" : "unavailable",
+      semantic_scope: operator.authorized_purposes.includes(PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH) && inference.enabled ? "authorized" : "unavailable",
+      version_support: "contracts_loaded"
+    },
+    blockers: [...new Set(blockers)].sort()
+  });
+}
+
+export async function runJournalImportCli(argv, { stdout = process.stdout, stderr = process.stderr, environment = process.env, runtimeFactory = null } = {}) {
+  try {
+    const parsed = parseJournalImportArgs(argv);
+    if (parsed.help) {
+      stdout.write(`${journalImportHelp()}\n`);
+      return 0;
+    }
+    if (parsed.command === "doctor" && parsed.mock) {
+      stdout.write(`${JSON.stringify(mockJournalDoctorReport())}\n`);
+      return 0;
+    }
+    if (parsed.command === "doctor") {
+      stdout.write(`${JSON.stringify(await configuredJournalDoctorReport(parsed.configPath, environment))}\n`);
+      return 0;
+    }
+    // The configured one-shot operator owns writes. The MCP remains read-only.
+    const config = await loadPrivateConfig(parsed.configPath);
+    const openRuntime = runtimeFactory ?? (await import("../journal-import/private-runtime.mjs")).openJournalExecutionRuntime;
+    const runtime = await openRuntime({ config, configPath: parsed.configPath, environment });
+    try { stdout.write(`${JSON.stringify(await runtime.execute(parsed.command))}\n`); }
+    finally { await runtime.close(); }
+    return 0;
+  } catch (error) {
+    const code = error?.code ?? "JOURNAL_COMMAND_FAILED";
+    stderr.write(`${JSON.stringify({ error: code })}\n`);
+    return 1;
+  }
+}
+
+if (process.argv[1] && path.resolve(fileURLToPath(import.meta.url)) === path.resolve(process.argv[1])) {
+  process.exitCode = await runJournalImportCli(process.argv.slice(2));
+}

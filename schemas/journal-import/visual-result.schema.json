@@ -1,0 +1,160 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "source_page_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160
+    },
+    "regions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "region_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "bbox": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "kind": {
+            "enum": [
+              "text",
+              "table",
+              "chart",
+              "photograph",
+              "decoration",
+              "mixed",
+              "unreadable"
+            ]
+          },
+          "transcription": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "non_graphic_description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interpretation_status": {
+            "enum": [
+              "readable",
+              "uncertain",
+              "unreadable",
+              "restricted"
+            ]
+          },
+          "speaker_or_document_label": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "table_cells": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "row": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "column": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "header_refs": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  }
+                },
+                "unit_text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "bbox": {
+                  "type": "array",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 4,
+                  "maxItems": 4
+                },
+                "uncertain": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "row",
+                "column",
+                "text",
+                "header_refs",
+                "unit_text",
+                "bbox",
+                "uncertain"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "region_id",
+          "bbox",
+          "kind",
+          "transcription",
+          "non_graphic_description",
+          "interpretation_status",
+          "speaker_or_document_label",
+          "table_cells"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "page_complete": {
+      "type": "boolean"
+    },
+    "missing_or_uncertain_regions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "source_page_id",
+    "regions",
+    "page_complete",
+    "missing_or_uncertain_regions"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:visual:1.0"
+}

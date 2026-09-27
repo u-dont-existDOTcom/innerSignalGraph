@@ -6,6 +6,7 @@ import { PRIVATE_CASE_SCOPES, createPrivateCaseAccessService, loadDevelopmentPri
 import { loadHostedPrivateCaseProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 import { listenPrivateCaseMcp } from "../server/private-case-mcp.mjs";
 import { createJournalWorkExchange, resolveJournalWorkExchangeRoot } from "../journal-import/work-exchange.mjs";
+import { createJournalPrivateApi } from "../journal-import/http.mjs";
 import { createJournalWorkTools } from "../server/journal-work-tools.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -67,6 +68,7 @@ if (configuredJournalWork === 3) {
 
 const listener = await listenPrivateCaseMcp({
   caseAccessService: service,
+  journalApi: providers.journalEnabled ? createJournalPrivateApi({ caseAccessService: service }) : null,
   port,
   host: hosted ? "0.0.0.0" : "127.0.0.1",
   productionAuthReady: providers.productionReady,
@@ -83,6 +85,7 @@ const ready = {
   mcpUrl: hosted ? new URL("/mcp", `${resource}/`).toString() : listener.url,
   provider: providers.kind,
   productionReady: providers.productionReady,
+  journalEnabled: providers.journalEnabled === true,
   journalWork: Boolean(journalWork)
 };
 const readyFile = valueAfter("--ready-file");

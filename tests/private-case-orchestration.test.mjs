@@ -34,6 +34,13 @@ function operation(operation, body = {}) {
 
 function serviceFor(store) {
   return {
+    async verifyCaseAccess(caseId, { requiredScope, requiredPurpose }) {
+      const record = await store.load(caseId);
+      return { case_id: caseId, case_revision: record.revision, required_scope: requiredScope, required_purpose: requiredPurpose, authorized: true };
+    },
+    createJournalCorpus: (caseId, input) => store.createJournalCorpus(caseId, input),
+    rollbackJournalGeneration: (caseId, input) => store.rollbackJournalGeneration(caseId, input),
+    incrementJournalVisibilityEpoch: (caseId, input) => store.incrementJournalVisibilityEpoch(caseId, input),
     getTranscriptAmendments: (caseId) => store.getTranscriptAmendments(caseId),
     appendTranscriptCompletionAmendment: (caseId, amendment) => store.appendTranscriptCompletionAmendment(caseId, amendment),
     getCandidateResponse: (caseId, selector) => store.getCandidateResponse(caseId, selector),
@@ -118,6 +125,32 @@ test("completion amendment preserves raw bytes and produces effective handoff co
   await assert.rejects(() => orchestrator.execute({ ...request, completion_text: " conflicting completion" }, {}), /conflicts with an existing immutable record/i);
 });
 
+test("backend-only journal operator probes and creates a corpus without exposing an MCP mutation", async (t) => {
+  const { store, orchestrator } = await makeHarness(t);
+  const probe = await orchestrator.execute(operation("probe_journal_write", { purpose: "archive" }), {});
+  assert.equal(probe.required_scope, "case:write");
+  assert.equal(probe.required_purpose, "archive");
+  assert.equal(probe.mutation_performed, false);
+
+  const createRequest = operation("create_journal_corpus", {
+    corpus_id: "corpus:synthetic:operator",
+    manifest_object_id: "manifest:synthetic:staging"
+  });
+  const created = await orchestrator.execute(createRequest, {});
+  const replay = await orchestrator.execute(createRequest, {});
+  assert.equal(created.corpus_id, createRequest.corpus_id);
+  assert.equal(created.active_generation, null);
+  assert.equal(created.visibility_epoch, 0);
+  assert.equal(replay.corpus_id, createRequest.corpus_id);
+  assert.equal((await store.load(CASE_ID)).journal_corpora.length, 1);
+
+  const visibility = await orchestrator.execute(operation("increment_journal_visibility", {
+    corpus_id: createRequest.corpus_id,
+    expected_epoch: 0
+  }), {});
+  assert.equal(visibility.visibility_epoch, 1);
+});
+
 test("failed v1 audit, v2 reconstruction, handoff retrieval, and delivery gates are exact-version-bound", async (t) => {
   const { store, orchestrator } = await makeHarness(t);
   const failedAudit = operation("record_candidate_audit", {
@@ -150,7 +183,8 @@ test("failed v1 audit, v2 reconstruction, handoff retrieval, and delivery gates 
   assert.equal((await orchestrator.execute(reconstruct, {})).reused, true);
 
   const packet = await store.loadHandoff(CASE_ID, HANDOFF_ID);
-  assert.equal(packet.schema_version, 3);
+  assert.equal(packet.schema_version, 4);
+  assert.equal(packet.journal_continuity.mode, "not_attached");
   assert.equal(packet.pending_artifacts.at(-1).id, REPAIR_ID);
   assert.equal(packet.pending_artifacts.at(-1).exact_text, reconstruct.exact_text);
   assert.equal(packet.candidate_lifecycle.current_candidate_version, 2);
@@ -199,7 +233,8 @@ test("failed v1 audit, v2 reconstruction, handoff retrieval, and delivery gates 
   assert.equal(deliveredTurn.exchange_id, deliveredRecord.raw_transcript[0].exchange_id);
   assert.equal(deliveredTurn.episode_id, deliveredRecord.raw_transcript[0].episode_id);
   const deliveredHandoff = await store.loadHandoff(CASE_ID, DELIVERED_HANDOFF_ID);
-  assert.equal(deliveredHandoff.schema_version, 3);
+  assert.equal(deliveredHandoff.schema_version, 4);
+  assert.equal(deliveredHandoff.journal_continuity.mode, "not_attached");
   assert.deepEqual(deliveredHandoff.pending_artifacts, []);
   assert.equal(deliveredHandoff.continuation_safety.continuation_safe, true);
   assert.equal(deliveredHandoff.delivery_completion.candidate_id, REPAIR_ID);
@@ -304,6 +339,19 @@ test("published private operation schemas compile strictly", async () => {
   for (const schema of schemas) assert.equal(typeof ajv.getSchema(schema.$id), "function");
   const validateOperation = ajv.getSchema(schemas.at(-1).$id);
   assert.equal(validateOperation(operation("mark_candidate_sent", { candidate_id: REPAIR_ID })), true);
+  assert.equal(validateOperation(operation("probe_journal_write", { purpose: "archive" })), true);
+  assert.equal(validateOperation(operation("create_journal_corpus", {
+    corpus_id: "corpus:synthetic:schema",
+    manifest_object_id: "manifest:synthetic:schema"
+  })), true);
+  assert.equal(validateOperation(operation("commit_journal_generation", {
+    corpus_id: "corpus:synthetic:schema",
+    generation: "generation:synthetic:schema",
+    manifest_object_id: "manifest:synthetic:schema",
+    expected_generation: null,
+    expected_case_revision: 7,
+    permitted_uses: ["archive", "organize_search", "session_use"]
+  })), true);
   assert.equal(validateOperation(operation("deliver_candidate_and_create_handoff", {
     candidate_id: REPAIR_ID,
     audit_id: "audit:synthetic:fresh-version-2",

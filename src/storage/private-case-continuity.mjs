@@ -1,4 +1,5 @@
 import { RuntimeError } from "../core/errors.mjs";
+import { journalContinuityUnsupported } from "../case-state/journal-continuity.mjs";
 
 export class CaseNotContinuationSafeError extends RuntimeError {
   constructor(failures) {
@@ -27,6 +28,9 @@ export function assessContinuationSafety(context) {
   const olderTurnAvailable = (context?.targeted_older_evidence ?? []).some((entry) => entry?.turn?.text);
   const olderSourceAvailable = (context?.source_artifact_refs ?? []).length > 0;
   if (!olderTurnAvailable && !olderSourceAvailable) failures.push("targeted older raw evidence has no retrievable private provenance source");
+  if (context?.journal_continuity && journalContinuityUnsupported(context.journal_continuity)) {
+    failures.push("journal continuity capability is unsupported by this consumer");
+  }
   const episodeCompleteness = context?.recent_verbatim?.episode_completeness;
   if (episodeCompleteness?.required !== true || episodeCompleteness?.complete !== true) {
     const reasons = episodeCompleteness?.failures?.length
@@ -40,6 +44,8 @@ export function assessContinuationSafety(context) {
     exact_candidate_available: Boolean(candidate?.exact_text && candidate.status !== "sent"),
     exact_delivery_available: Boolean(delivery),
     exact_recent_verbatim_available: episodeCompleteness?.complete === true,
+    journal_continuity_available: Boolean(context?.journal_continuity?.corpora?.length),
+    journal_continuity_supported: context?.journal_continuity?.consumer_capability_supported === true,
     hidden_reasoning_included: false
   });
 }

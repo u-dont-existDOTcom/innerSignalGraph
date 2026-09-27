@@ -4,7 +4,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../storage/private-case-access.mjs";
-import { loadHostedPrivateCaseProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
+import {
+  loadHostedPrivateCaseOperatorProvidersFromEnvironment,
+  loadHostedPrivateCaseProvidersFromEnvironment
+} from "../storage/hosted-private-case-providers.mjs";
+import { acquirePrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { createPrivateCaseOrchestrator } from "../supervisor/private-case-orchestration.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -18,11 +22,12 @@ const outsideRepository = (candidate) => {
 };
 
 const hosted = process.argv.includes("--hosted-env");
+const hostedOperator = process.argv.includes("--hosted-operator-env");
 const credentials = valueAfter("--credentials");
 const requestPath = path.resolve(valueAfter("--request") ?? "");
 const receiptPath = path.resolve(valueAfter("--receipt") ?? "");
-if (hosted === Boolean(credentials) || !valueAfter("--request") || !valueAfter("--receipt")) {
-  throw new Error("Usage: node src/cli/private-case-operations.mjs (--hosted-env | --credentials /absolute/private-credentials.json) --request /absolute/mode-0600-request.json --receipt /absolute/private-receipt.json");
+if ([hosted, hostedOperator, Boolean(credentials)].filter(Boolean).length !== 1 || !valueAfter("--request") || !valueAfter("--receipt")) {
+  throw new Error("Usage: node src/cli/private-case-operations.mjs (--hosted-operator-env | --hosted-env | --credentials /absolute/private-credentials.json) --request /absolute/mode-0600-request.json --receipt /absolute/private-receipt.json");
 }
 if (!outsideRepository(requestPath) || !outsideRepository(receiptPath)) throw new Error("Private operation requests and receipts must remain outside the public repository.");
 
@@ -30,8 +35,10 @@ const request = await withOpenedRegularFile(requestPath, async (handle, info) =>
   if ((info.mode & 0o077) !== 0) throw new Error("Private operation request must have mode 0600 or stricter.");
   return JSON.parse(await handle.readFile("utf8"));
 });
-const providers = hosted
-  ? loadHostedPrivateCaseProvidersFromEnvironment()
+const providers = hostedOperator
+  ? loadHostedPrivateCaseOperatorProvidersFromEnvironment()
+  : hosted
+    ? loadHostedPrivateCaseProvidersFromEnvironment()
   : await loadDevelopmentPrivateCaseProviders(path.resolve(credentials));
 const service = createPrivateCaseAccessService({
   rootDir: providers.rootDir,
@@ -41,8 +48,10 @@ const service = createPrivateCaseAccessService({
 });
 const token = process.env.INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN;
 if (typeof token !== "string" || !token) throw new Error("INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN is required and must not be passed on the command line.");
+let writerLock = null;
 
 try {
+  writerLock = hostedOperator ? await acquirePrivateRootWriterLock({ rootDir: providers.rootDir }) : null;
   const receipt = await createPrivateCaseOrchestrator({ caseAccessService: service }).execute(request, { bearerToken: token });
   const temporary = `${receiptPath}.${process.pid}.${randomUUID()}.tmp`;
   try {
@@ -55,5 +64,6 @@ try {
   }
   process.stdout.write(`${JSON.stringify({ operation_succeeded: true, receipt_path: receiptPath })}\n`);
 } finally {
+  await writerLock?.release();
   providers.close();
 }
