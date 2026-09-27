@@ -5,6 +5,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
+  assertJournalWorkExchangeRoot,
   createJournalWorkExchange,
   deriveJournalWorkExchangeKeys,
   journalWorkFileKey,
@@ -149,7 +150,7 @@ test("a queue that is a symbolic link or not a directory is refused before anyth
   const checkout = path.join(base, "checkout");
   const root = path.join(base, "exchange");
   await fs.mkdir(checkout);
-  await fs.mkdir(root);
+  await fs.mkdir(root, { mode: 0o700 });
   const exchange = createJournalWorkExchange({ root, secret: secret() });
   const outbox = path.join(root, "outbox");
 
@@ -167,6 +168,109 @@ test("a queue that is a symbolic link or not a directory is refused before anyth
   await fs.writeFile(outbox, "");
   await assert.rejects(exchange.publishWork(workEntry()), { code: "JOURNAL_WORK_EXCHANGE_QUEUE_INVALID" });
   assert.deepEqual(await fs.readdir(checkout), []);
+});
+
+test("the exchange root must be a private directory owned by the exchange's user", async (t) => {
+  const base = await tempRoot(t);
+  const root = path.join(base, "exchange");
+  await fs.mkdir(root, { mode: 0o700 });
+  await fs.chmod(root, 0o750);
+  const exchange = createJournalWorkExchange({ root, secret: secret() });
+  await assert.rejects(exchange.publishWork(workEntry()), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+  await assert.rejects(exchange.submitResult({ workId: WORK_ID, output: { items: [] }, subject: "s" }), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+  await assert.rejects(exchange.retireWork(WORK_ID), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+  await assert.rejects(exchange.removeStaleTemporaries(), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+  await assert.rejects(assertJournalWorkExchangeRoot(root), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+  assert.deepEqual(await fs.readdir(root), []);
+
+  // The owner needs full access too: a 0500 root would pass startup and fail at the first write.
+  await fs.chmod(root, 0o500);
+  await assert.rejects(assertJournalWorkExchangeRoot(root), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+
+  await fs.chmod(root, 0o700);
+  await assertJournalWorkExchangeRoot(root);
+  assert.equal((await exchange.publishWork(workEntry())).created, true);
+
+  // A directory above the root that others can write could rename the root away and put another in
+  // its place, unless the sticky bit (as on /tmp) stops them.
+  if (typeof process.getuid === "function") {
+    await fs.chmod(base, 0o777);
+    await assert.rejects(assertJournalWorkExchangeRoot(root), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+    await assert.rejects(exchange.publishWork(workEntry({ work_id: "job:synthetic-work-0008" })), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+    await fs.chmod(base, 0o1777);
+    await assertJournalWorkExchangeRoot(root);
+    await fs.chmod(base, 0o700);
+  }
+
+  if (typeof process.getuid === "function") {
+    const stranger = process.getuid() + 1;
+    await assert.rejects(assertJournalWorkExchangeRoot(root, { owner: stranger }), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+    await assert.rejects(createJournalWorkExchange({ root, secret: secret(), owner: stranger }).publishWork(workEntry({ work_id: "job:synthetic-work-0009" })), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+  }
+
+  const file = path.join(base, "not-a-directory");
+  await fs.writeFile(file, "", { mode: 0o600 });
+  await assert.rejects(assertJournalWorkExchangeRoot(file), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INVALID" });
+  const link = path.join(base, "link-to-root");
+  await fs.symlink(root, link);
+  await assert.rejects(assertJournalWorkExchangeRoot(link), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INVALID" });
+  await assert.rejects(assertJournalWorkExchangeRoot(path.join(base, "missing")), { code: "JOURNAL_WORK_EXCHANGE_ROOT_MISSING" });
+  await assert.rejects(assertJournalWorkExchangeRoot("relative/root"), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INVALID" });
+});
+
+test("a failed write removes its temporary file, and stale temporaries are swept", async (t) => {
+  const root = await tempRoot(t);
+  const exchange = createJournalWorkExchange({ root, secret: secret() });
+  const temporaries = async (dir) => (await fs.readdir(path.join(root, dir))).filter((name) => name.startsWith(".tmp-"));
+
+  // Make file writes stop part-way with an error, as a full disk would. (Directory syncs don't write.)
+  const probe = await fs.open(path.join(root, "probe"), "w");
+  const FileHandle = Object.getPrototypeOf(probe);
+  await probe.close();
+  await fs.rm(path.join(root, "probe"));
+  const originalWriteFile = FileHandle.writeFile;
+  let failures = 0;
+  FileHandle.writeFile = async function writeFile() {
+    failures += 1;
+    await originalWriteFile.call(this, "partial");
+    throw Object.assign(new Error("synthetic full disk"), { code: "ENOSPC" });
+  };
+  try {
+    await assert.rejects(exchange.publishWork(workEntry()), { code: "ENOSPC" });
+    await assert.rejects(exchange.submitResult({ workId: WORK_ID, output: { items: [] }, subject: "s" }), { code: "ENOSPC" });
+    await assert.rejects(exchange.retireWork(WORK_ID), { code: "ENOSPC" });
+  } finally {
+    FileHandle.writeFile = originalWriteFile;
+  }
+  assert.equal(failures, 3);
+  assert.deepEqual(await temporaries("outbox"), []);
+  assert.deepEqual(await temporaries("inbox"), []);
+  assert.equal((await exchange.publishWork(workEntry())).created, true);
+
+  // Leftovers from a process that stopped mid-write: only the old ones go.
+  const old = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  for (const [dir, name, stale] of [["outbox", ".tmp-old-work", true], ["inbox", ".tmp-old-result", true], ["inbox", ".tmp-in-progress", false]]) {
+    const file = path.join(root, dir, name);
+    await fs.writeFile(file, "partial", { mode: 0o600 });
+    if (stale) await fs.utimes(file, old, old);
+  }
+  assert.equal(await exchange.removeStaleTemporaries(), 2);
+  assert.deepEqual(await temporaries("outbox"), []);
+  assert.deepEqual(await temporaries("inbox"), [".tmp-in-progress"]);
+  assert.deepEqual(await exchange.readWork(WORK_ID), workEntry());
+  assert.equal(await exchange.removeStaleTemporaries({ olderThanMs: 0 }), 1);
+  await assert.rejects(exchange.removeStaleTemporaries({ olderThanMs: -1 }), { code: "JOURNAL_WORK_EXCHANGE_AGE_INVALID" });
+
+  // A queue replaced by a symbolic link is refused, and nothing behind it is removed.
+  const elsewhere = path.join(root, "elsewhere");
+  await fs.mkdir(elsewhere);
+  const bait = path.join(elsewhere, ".tmp-bait");
+  await fs.writeFile(bait, "keep");
+  await fs.utimes(bait, old, old);
+  await fs.rm(path.join(root, "inbox"), { recursive: true });
+  await fs.symlink(elsewhere, path.join(root, "inbox"));
+  await assert.rejects(exchange.removeStaleTemporaries(), { code: "JOURNAL_WORK_EXCHANGE_QUEUE_INVALID" });
+  assert.deepEqual(await fs.readdir(elsewhere), [".tmp-bait"]);
 });
 
 test("an exchange root is canonicalized and refused when it resolves into the repository", async (t) => {

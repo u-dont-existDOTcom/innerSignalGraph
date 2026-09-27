@@ -19,6 +19,13 @@ Updated: 2026-09-27
 - **Verified:** `npm test` (1,519), `npm run audit:repository`, `npm run audit:publication`, `npm run verify`, `npm run journal:ui:test` (10) and `npm run journal:ui:build` pass on Node 24.18.0. Privacy scan of every moved file: no case ID or source hash, host paths, e-mail addresses, IP addresses or personal names; only synthetic example domains.
 - **Safety:** nothing is deployed, and the running import is unchanged; it keeps running from the private checkout until the owner approves the switch. The journal read tools stay off unless a grant lists journal purposes, and the operator needs its own environment.
 - **Next safe action:** Codex review, then owner approval to merge. Then the exchange-backed provider (retiring the desktop transport), then the Mission Control job type.
+## Journal work exchange hardening — `claude/journal-work-exchange-hardening-20260927`
+
+- **Goal:** the two points deferred from PR #92's last review. A failed write must not leave temporary files behind, and an exchange root that other local users can reach must be refused.
+- **Done, don't repeat:** `assertJournalWorkExchangeRoot` requires a real directory owned by the process's user with mode exactly 0700, below directories that only that user or root can change (sticky directories such as /tmp are fine). Every write checks it, and the connector checks it at startup with a plain message. A failed write removes its temporary file. `removeStaleTemporaries` removes temporaries older than an hour and refuses a linked queue; the connector calls it at startup, and the import runtime will too.
+- **Verified:** `tests/journal-work-exchange.test.mjs`, `tests/journal-work-tools.test.mjs` and the new `tests/journal-work-cli.test.mjs` pass. The full gates are listed in the PR.
+- **Safety:** with journal work unconfigured, nothing changes. No deployment, ACL, identity-provider or private-data change is in this branch.
+- **Status:** merged as PR #93 on 2026-09-27.
 
 ## Journal work exchange: connector tools for the private import — `claude/journal-work-exchange-20260927`
 
@@ -27,7 +34,7 @@ Updated: 2026-09-27
 - **Done, don't repeat:** `src/journal-import/work-exchange.mjs` is an encrypted outbox/inbox with first-write-wins publication and connector-signed receipts. `src/server/journal-work-tools.mjs` adds `get_journal_work_packet` (`case:read`) and `submit_journal_work_result` (new narrow scope `journal:submit`, schema-checked with Ajv). Both are wired into the private MCP server and CLI behind three optional settings. Ajv is now a runtime dependency. The exchange root must already exist and resolve outside the checkout; each queue must be a real directory, never a symbolic link; the root is synced before every write. Codex rounds 1–4 are addressed. Design: `docs/superpowers/specs/2026-09-27-journal-work-exchange.md`.
 - **Verified:** `tests/journal-work-exchange.test.mjs` and `tests/journal-work-tools.test.mjs` pass. The full `npm test` (1,371 tests), `npm run audit:repository`, `npm run audit:publication` and `npm run verify` pass on Node 24.18.0.
 - **Safety:** with the settings absent, the server's tools and instructions are unchanged. No private data, deployment, ACL or identity-provider change is in this branch.
-- **Next safe action:** Codex review; owner approval to merge. Then the runtime provider (moving the importer into this repository) and the Mission Control job type. Deploying the tools needs the owner's approval of the steps in the spec's Deployment section.
+- **Status:** merged as PR #92 on 2026-09-27. Deploying the tools needs the owner's approval of the steps in the spec's Deployment section.
 
 ## Therapy protocol: unserved references fail closed — `claude/protocol-reference-guard-20260926` (PR #90)
 
