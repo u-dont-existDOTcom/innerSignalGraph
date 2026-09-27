@@ -174,7 +174,8 @@ export function createJournalPrivateApi({ caseAccessService, jobController = nul
             corpusId,
             generation,
             manifestObjectId,
-            expectedGeneration: input.expectedGeneration ?? reference.active_generation,
+            // Undefined means "whatever is active now"; null asserts that nothing is active yet.
+            expectedGeneration: input.expectedGeneration === undefined ? reference.active_generation : input.expectedGeneration,
             expectedCaseRevision: input.expectedCaseRevision ?? before.revision,
             expectedVisibilityEpoch: reference.visibility_epoch
           });

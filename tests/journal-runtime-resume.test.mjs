@@ -399,3 +399,25 @@ test('visual-only handoff persists an admitted visual page and resumes semantic 
   await assert.rejects(()=>runtime.execute('visual-only'),{code:'JOURNAL_VISUAL_HANDOFF_ALREADY_PASSED'});
  } finally { await runtime.close(); }
 });
+
+test('the staging key and the source are checked and read through one no-follow handle',async t=>{
+ const f=await fixture(t);
+ let runtime=await openJournalExecutionRuntime(f);await runtime.close();
+ const keyFile=path.join(f.config.execution_root,'staging.key');
+ const sourceFile=path.join(f.root,'private','source.txt');
+ await fs.chmod(keyFile,0o644);
+ await assert.rejects(()=>openJournalExecutionRuntime(f),{code:'JOURNAL_STAGING_KEY_INVALID'});
+ await fs.chmod(keyFile,0o600);
+ const movedKey=path.join(f.root,'moved.key');
+ await fs.rename(keyFile,movedKey);await fs.symlink(movedKey,keyFile);
+ await assert.rejects(()=>openJournalExecutionRuntime(f),{code:'JOURNAL_STAGING_KEY_INVALID'});
+ await fs.rm(keyFile);await fs.rename(movedKey,keyFile);
+ await fs.chmod(sourceFile,0o644);
+ await assert.rejects(()=>openJournalExecutionRuntime(f),{code:'JOURNAL_SOURCE_PRIVATE_REQUIRED'});
+ await fs.chmod(sourceFile,0o600);
+ const movedSource=path.join(f.root,'moved-source.txt');
+ await fs.rename(sourceFile,movedSource);await fs.symlink(movedSource,sourceFile);
+ await assert.rejects(()=>openJournalExecutionRuntime(f),{code:'JOURNAL_SOURCE_PRIVATE_REQUIRED'});
+ await fs.rm(sourceFile);await fs.rename(movedSource,sourceFile);
+ runtime=await openJournalExecutionRuntime(f);await runtime.close();
+});

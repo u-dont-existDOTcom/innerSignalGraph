@@ -121,6 +121,22 @@ test("authorized corpus tombstone revokes cached reads and removes all live hand
     expectedCaseRevision: beforeCommit.revision,
     permittedUses: ["archive", "organize_search"]
   }, auth);
+  // An explicit null asserts that no generation is active yet. With one active now, committing a
+  // new generation that way is a conflict; it must not replace the active one.
+  const competing = createSyntheticCalendarGraph({ years: 1, corpusId: CORPUS_ID, generation: "delete-v1-competing" });
+  const competingPersisted = await service.withJournalCorpus(CASE_ID, CORPUS_ID, {
+    requiredScope: PRIVATE_CASE_SCOPES.WRITE,
+    requiredPurpose: PRIVATE_JOURNAL_PURPOSES.ARCHIVE
+  }, ({ corpusStore }) => persistGraphGeneration({ corpusStore, graph: competing.graph, sourceRepresentations: competing.representations }), auth);
+  await assert.rejects(() => api.commit({
+    caseId: CASE_ID,
+    corpusId: CORPUS_ID,
+    generation: "delete-v1-competing",
+    manifestObjectId: competingPersisted.manifest_object_id,
+    expectedGeneration: null,
+    permittedUses: ["archive", "organize_search"]
+  }, auth), (error) => error.code === "REVISION_CONFLICT");
+  assert.equal((await service.loadPrivateRuntimeCase(CASE_ID, auth)).journal_corpora[0].active_generation, "delete-v1");
   assert.equal((await api.search({ caseId: CASE_ID, corpusId: CORPUS_ID, query: "capacitymarker" }, auth)).items.length > 0, true);
   await assert.rejects(
     () => api.delete({ caseId: CASE_ID, corpusId: CORPUS_ID }, auth),

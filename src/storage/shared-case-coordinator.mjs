@@ -104,3 +104,17 @@ export async function acquirePrivateRootWriterLock({ rootDir, flockCommand = "fl
     }
   });
 }
+
+/**
+ * Runs an operation while holding another private root's writer lock, such as the case vault's,
+ * so this process and a one-shot operator can't change the same vault at once. When this process
+ * already holds that root's lock as its own (heldRootDir), the operation simply runs.
+ */
+export async function withPrivateRootWriterLock({ rootDir, heldRootDir = null, flockCommand = "flock" } = {}, operation) {
+  const root = ensureAbsoluteRoot(rootDir);
+  if (typeof operation !== "function") throw new ValidationError("Locked operation must be a function.");
+  if (heldRootDir != null && ensureAbsoluteRoot(heldRootDir) === root) return operation();
+  const lock = await acquirePrivateRootWriterLock({ rootDir: root, flockCommand });
+  try { return await operation(); }
+  finally { await lock.release(); }
+}

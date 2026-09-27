@@ -57,12 +57,16 @@ export function createJournalColdConsumer({ journalApi, maximumPagesPerQuestion 
 
     const initialEvidence = [...new Set([...records.values()].flatMap(evidenceIds))];
     const nonPassageSeeds = [...records.values()].filter((record) => record.kind !== "passage").map((record) => record.id);
+    // Closure and evidence are bounded per question. What doesn't fit is reported as more available,
+    // never silently dropped.
+    const MAXIMUM_SEEDS = 50;
+    const MAXIMUM_PASSAGES = 200;
     let closure = { nodes: [], edges: [], closure_status: "not_required", more_available: false };
     if (nonPassageSeeds.length) {
       closure = await journalApi.getSubgraph({
         caseId: locator.case_id,
         corpusId: locator.corpus_id,
-        seedIds: nonPassageSeeds.slice(0, 50),
+        seedIds: nonPassageSeeds.slice(0, MAXIMUM_SEEDS),
         purpose: locator.purpose ?? "organize_search",
         nodeLimit: question.node_limit ?? 100
       }, authContext);
@@ -74,7 +78,7 @@ export function createJournalColdConsumer({ journalApi, maximumPagesPerQuestion 
       ? await journalApi.resolveEvidence({
           caseId: locator.case_id,
           corpusId: locator.corpus_id,
-          evidenceIds: passages.slice(0, 200),
+          evidenceIds: passages.slice(0, MAXIMUM_PASSAGES),
           purpose: locator.purpose ?? "organize_search"
         }, authContext)
       : { exact_spans: [], source_locators: [], next_cursor: null };
@@ -84,8 +88,11 @@ export function createJournalColdConsumer({ journalApi, maximumPagesPerQuestion 
       snapshot_generation: snapshot.generation,
       records: allRecords,
       evidence: { exact_spans: evidence.exact_spans, source_locators: evidence.source_locators },
-      coverage_note: `traversed ${pages} authorized search page(s) with mandatory evidence closure`,
-      more_available: Boolean(closure.more_available || evidence.next_cursor)
+      coverage_note: passages.length > MAXIMUM_PASSAGES || nonPassageSeeds.length > MAXIMUM_SEEDS
+        ? `traversed ${pages} authorized search page(s); closure and evidence were cut to their bounds`
+        : `traversed ${pages} authorized search page(s) with mandatory evidence closure`,
+      more_available: Boolean(closure.more_available || evidence.next_cursor
+        || passages.length > MAXIMUM_PASSAGES || nonPassageSeeds.length > MAXIMUM_SEEDS)
     });
   };
 

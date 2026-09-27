@@ -130,6 +130,28 @@ describe("authenticated journal surface", () => {
     expect(screen.getByText("visual_transcript · page 7")).toBeTruthy();
   });
 
+  test("keeps the latest selection's exact source when an earlier response arrives late", async () => {
+    let releaseFirst: (value: Awaited<ReturnType<JournalApi["resolveEvidence"]>>) => void = () => {};
+    const span = (quote: string) => ({
+      exact_spans: [{ evidence_id: "p1", representation_id: "repr", start_byte: 0, end_byte: 10, quote, quote_sha256: "b".repeat(64), disclosure: "exact" }],
+      source_locators: []
+    });
+    const resolveEvidence = vi.fn<JournalApi["resolveEvidence"]>()
+      .mockImplementationOnce(() => new Promise((resolve) => { releaseFirst = resolve; }))
+      .mockImplementationOnce(async () => span("Current selection source."));
+    const api = fakeApi({ resolveEvidence });
+    const user = await search(api);
+    await user.click(screen.getByRole("button", { name: "Accessible list" }));
+    const list = screen.getByTestId("journal-result-list");
+    await user.click(within(list).getByRole("button", { name: /Une frontière familiale/ }));
+    await user.click(within(list).getByRole("button", { name: /Je me sens mieux/ }));
+    expect(await screen.findByText("Current selection source.")).toBeTruthy();
+    releaseFirst(span("Earlier selection source."));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.queryByText("Earlier selection source.")).toBeNull();
+    expect(screen.getByText("Current selection source.")).toBeTruthy();
+  });
+
   test("opens exact evidence from a keyboard-focused SVG node", async () => {
     const api = fakeApi();
     const user = await search(api, "aide");

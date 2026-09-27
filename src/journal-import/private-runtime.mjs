@@ -4,8 +4,9 @@ import path from "node:path";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
+import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
-import { acquirePrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
+import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 import { createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs";
@@ -84,9 +85,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     if (!suppliedPort && route) invariant(route.provider === "chatgpt_subscription_browser" && route.model === "GPT-5.6 Sol" && route.effort === "Pro" && route.max_external_spend_usd === 0, "JOURNAL_SUBSCRIPTION_ROUTE_REQUIRED");
     const keyFile = path.join(root, "staging.key");
     try { await fs.writeFile(keyFile, randomBytes(32), { flag: "wx", mode: 0o600 }); } catch (e) { if (e.code !== "EEXIST") throw e; }
-    const keyInfo = await fs.lstat(keyFile);
-    invariant(keyInfo.isFile() && !keyInfo.isSymbolicLink() && (keyInfo.mode & 0o077) === 0, "JOURNAL_STAGING_KEY_INVALID");
-    const key = await fs.readFile(keyFile); secretBuffers.push(key);
+    // One no-follow handle for the check and the read, so the key can't be swapped in between.
+    const key = await withOpenedRegularFile(keyFile, async (handle, keyInfo) => {
+      invariant((keyInfo.mode & 0o077) === 0, "JOURNAL_STAGING_KEY_INVALID");
+      return handle.readFile();
+    }).catch((error) => {
+      if (error?.code === "ELOOP" || error?.code === "ERR_NOT_REGULAR_FILE") invariant(false, "JOURNAL_STAGING_KEY_INVALID");
+      throw error;
+    });
+    secretBuffers.push(key);
     const stateFile = path.join(root, "state.json");
     let state = await existingJson(stateFile);
     if (!state) {
@@ -120,9 +127,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       close: () => semanticPort.close?.()
     }, corpusStore: store });
     const sourcePath = path.resolve(path.dirname(configPath), "..", config.source.relative_path);
-    const sourceInfo = await fs.lstat(sourcePath);
-    invariant(sourceInfo.isFile() && !sourceInfo.isSymbolicLink() && (sourceInfo.mode & 0o077) === 0, "JOURNAL_SOURCE_PRIVATE_REQUIRED");
-    const sourceBytes = await fs.readFile(sourcePath);
+    const sourceBytes = await withOpenedRegularFile(sourcePath, async (handle, sourceInfo) => {
+      invariant((sourceInfo.mode & 0o077) === 0, "JOURNAL_SOURCE_PRIVATE_REQUIRED");
+      return handle.readFile();
+    }).catch((error) => {
+      if (error?.code === "ELOOP" || error?.code === "ERR_NOT_REGULAR_FILE") invariant(false, "JOURNAL_SOURCE_PRIVATE_REQUIRED");
+      throw error;
+    });
     invariant(sourceBytes.length === config.source.bytes && hash(sourceBytes) === config.source.sha256, "SOURCE_BINDING_MISMATCH");
     sourceBytes.fill(0);
     const grant = { grant_id: config.existing_grant_ref, principal_id: "authorized-private-operator", purpose: "organize_search", allowed_roles: Object.keys(JOURNAL_ROLE_DEFINITIONS), revoked: false, expires_at: null };
@@ -1115,8 +1126,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       invariant(state.reviewed_persisted.manifest.graph_sha256 === hash(JSON.stringify(graph)), "JOURNAL_PUBLICATION_GENERATION_STALE");
       await authorize();
-      const receipt = await publishJournalGenerationFromStaging({ service, sourceStore: store,
+      // Publication writes the case vault. Hold the vault root's writer lock, the one the one-shot
+      // operator takes, so the two can't change the same vault at once. (When the vault root is the
+      // execution root, this runtime already holds that lock.)
+      const publish = () => publishJournalGenerationFromStaging({ service, sourceStore: store,
         persisted: state.reviewed_persisted, auth, authorize });
+      const receipt = typeof service.rootDir === "string"
+        ? await withPrivateRootWriterLock({ rootDir: service.rootDir, heldRootDir: root }, publish)
+        : await publish();
       state.profile_commit_ref = await writeLarge(`profile:commit:${randomUUID()}`, receipt);
       state.completion.profile_committed = receipt.profile_committed ? "pass" : "not_run";
       state.stage = "COLD_TEST";

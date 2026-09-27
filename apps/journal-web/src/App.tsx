@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createHttpJournalApi } from "./api";
 import {
   EMPTY_IMPORT_STATUS,
@@ -140,6 +140,9 @@ export function App({ context, api = defaultApi }: AppProps) {
   const [selectedNode, setSelectedNode] = useState<JournalNode | null>(null);
   const [evidence, setEvidence] = useState<EvidenceResult | null>(null);
   const [evidenceLoading, setEvidenceLoading] = useState(false);
+  // Each selection gets a token; a response for an earlier selection is dropped, so the panel never
+  // shows one node's exact source under another node's heading.
+  const evidenceRequest = useRef(0);
   const [evidenceError, setEvidenceError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -183,17 +186,24 @@ export function App({ context, api = defaultApi }: AppProps) {
   };
 
   const selectNode = async (node: JournalNode) => {
+    const request = ++evidenceRequest.current;
     setSelectedNode(node);
     setEvidence(null);
     setEvidenceError(null);
     const evidenceIds = nodeEvidenceIds(node);
-    if (!evidenceIds.length) return;
+    if (!evidenceIds.length) {
+      setEvidenceLoading(false);
+      return;
+    }
     setEvidenceLoading(true);
     try {
-      setEvidence(await api.resolveEvidence(createReadScope(context, appliedFilters), evidenceIds));
+      const resolved = await api.resolveEvidence(createReadScope(context, appliedFilters), evidenceIds);
+      if (request === evidenceRequest.current) setEvidence(resolved);
     } catch {
-      setEvidenceError("Exact source is not available for this authorized selection.");
-    } finally { setEvidenceLoading(false); }
+      if (request === evidenceRequest.current) setEvidenceError("Exact source is not available for this authorized selection.");
+    } finally {
+      if (request === evidenceRequest.current) setEvidenceLoading(false);
+    }
   };
 
   const submitSearch = async (event: FormEvent) => {
@@ -206,8 +216,10 @@ export function App({ context, api = defaultApi }: AppProps) {
     }
     setSearchState("loading");
     setSearchError(null);
+    evidenceRequest.current += 1;
     setSelectedNode(null);
     setEvidence(null);
+    setEvidenceLoading(false);
     try {
       const scope = createReadScope(context, nextFilters);
       const [search, nextTimeline] = await Promise.all([api.search(scope), api.getTimeline(scope)]);

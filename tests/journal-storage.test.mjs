@@ -7,7 +7,7 @@ import { randomBytes } from "node:crypto";
 import { decryptJournalObject, encryptJournalObject } from "../src/storage/journal-object-crypto.mjs";
 import { createPrivateJournalCorpusStore, JOURNAL_BINARY_CHUNK_BYTES } from "../src/storage/private-journal-corpus.mjs";
 import { createEncryptedPrivateCaseStore, validatePrivateCaseRecord } from "../src/storage/private-case-store.mjs";
-import { acquirePrivateRootWriterLock } from "../src/storage/shared-case-coordinator.mjs";
+import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../src/storage/shared-case-coordinator.mjs";
 
 const CASE_ID = "synthetic_case";
 const CORPUS_ID = "corpus:synthetic";
@@ -71,6 +71,29 @@ test("OS-held private-root lock rejects a second writer and releases cleanly", a
   await first.release();
   const second = await acquirePrivateRootWriterLock({ rootDir });
   await second.release();
+});
+
+test("publication runs under the vault root's writer lock, or not at all while another writer holds it", async () => {
+  const vaultRoot = await temporaryRoot("inner-signal-journal-vault-lock-");
+  const executionRoot = await temporaryRoot("inner-signal-journal-execution-lock-");
+  // Another writer (a one-shot operator) holds the vault: the operation doesn't run.
+  const operator = await acquirePrivateRootWriterLock({ rootDir: vaultRoot });
+  let ran = false;
+  await assert.rejects(withPrivateRootWriterLock({ rootDir: vaultRoot, heldRootDir: executionRoot }, async () => { ran = true; }),
+    { code: "PRIVATE_ROOT_WRITER_ACTIVE" });
+  assert.equal(ran, false);
+  await operator.release();
+  // Free: the operation runs holding the lock, which is released afterwards.
+  const value = await withPrivateRootWriterLock({ rootDir: vaultRoot, heldRootDir: executionRoot }, async () => {
+    await assert.rejects(() => acquirePrivateRootWriterLock({ rootDir: vaultRoot }), /active writer/i);
+    return "published";
+  });
+  assert.equal(value, "published");
+  await (await acquirePrivateRootWriterLock({ rootDir: vaultRoot })).release();
+  // When the vault is the execution root, this process already holds its lock.
+  const own = await acquirePrivateRootWriterLock({ rootDir: executionRoot });
+  assert.equal(await withPrivateRootWriterLock({ rootDir: executionRoot, heldRootDir: executionRoot }, async () => "same root"), "same root");
+  await own.release();
 });
 
 test("v6 record migrates to v7 without changing legacy content", async () => {

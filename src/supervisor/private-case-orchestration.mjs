@@ -142,7 +142,9 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
           corpusId: request.corpus_id,
           generation: request.generation,
           manifestObjectId: request.manifest_object_id,
-          expectedGeneration: request.expected_generation ?? null,
+          // An explicit null asserts that no generation is active yet; only an omitted field means
+          // "whatever is active now".
+          expectedGeneration: Object.hasOwn(request, "expected_generation") ? request.expected_generation : undefined,
           expectedCaseRevision: request.expected_case_revision ?? null,
           permittedUses: request.permitted_uses
         }, authContext);
