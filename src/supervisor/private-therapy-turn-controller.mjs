@@ -60,6 +60,9 @@ function normalizeInvocationOutput(value) {
 export function createPrivateTherapyTurnController({
   privateCaseSource,
   modelRuntime,
+  // Off by default. No production provider exists yet, and the servers build this controller
+  // without one, so therapy turns read no journal evidence. Supplying one is a separate change,
+  // made once the import has published a session-use generation that passed its cold test.
   journalEvidenceProvider = null,
   maximumInvocationAttempts = 2
 } = {}) {
@@ -194,7 +197,13 @@ export function createPrivateTherapyTurnController({
       }
 
       if (runtimeTurn.state === "RECEIVED") {
-        const journalEvidence = await freezeJournalEvidence({ caseId, runtimeTurn, userInput, authContext });
+        // A candidate that already completed keeps the evidence it was produced with. Freezing again
+        // after a restart could pick up a newer snapshot, miss the completed call, produce a second
+        // candidate, and leave the audit with a different packet from the one the producer saw.
+        const candidateCompleted = runtimeTurn.events.some((event) => event.event_type === "INVOCATION_COMPLETED" && event.stage === "candidate");
+        const journalEvidence = candidateCompleted
+          ? frozenJournalEvidence(runtimeTurn)
+          : await freezeJournalEvidence({ caseId, runtimeTurn, userInput, authContext });
         const produced = await invoke({
           caseId,
           runtimeTurn,

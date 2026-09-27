@@ -45,19 +45,56 @@ async function existingJson(file) {
   catch (e) { if (e.code === "ENOENT") return null; throw e; }
 }
 
-async function renderPage(inputPath, page, outputPrefix) {
-  await new Promise((resolve, reject) => {
-    const child = spawn("pdftoppm", ["-f", String(page), "-l", String(page), "-singlefile", "-scale-to", "1800", "-png", inputPath, outputPrefix], { stdio: "ignore", shell: false });
-    const timer = setTimeout(() => { child.kill("SIGKILL"); reject(new ValidationError("VISUAL_RENDER_TIMEOUT", { code: "VISUAL_RENDER_TIMEOUT" })); }, 60_000);
-    child.once("error", () => { clearTimeout(timer); reject(new ValidationError("VISUAL_RENDER_UNAVAILABLE", { code: "VISUAL_RENDER_UNAVAILABLE" })); });
-    child.once("exit", (code) => { clearTimeout(timer); code === 0 ? resolve() : reject(new ValidationError("VISUAL_RENDER_FAILED", { code: "VISUAL_RENDER_FAILED" })); });
+const MAXIMUM_RENDERED_PAGE_BYTES = 64 * 1024 * 1024;
+
+// Renders one page of the verified source, fed to pdftoppm on stdin, and reads the image from its
+// stdout. Neither the source nor the page image is read from or written to a file, so a page can't
+// come from a replaced source and no plaintext page image is left behind.
+export async function renderJournalPdfPage(sourceBytes, page) {
+  return new Promise((resolve, reject) => {
+    const child = spawn("pdftoppm", ["-f", String(page), "-l", String(page), "-singlefile", "-scale-to", "1800", "-png", "-"], { stdio: ["pipe", "pipe", "ignore"], shell: false });
+    const chunks = [];
+    let bytes = 0;
+    let settled = false;
+    const finish = (error, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (error) reject(error); else resolve(value);
+    };
+    const timer = setTimeout(() => { child.kill("SIGKILL"); finish(new ValidationError("VISUAL_RENDER_TIMEOUT", { code: "VISUAL_RENDER_TIMEOUT" })); }, 60_000);
+    child.stdout.on("data", (chunk) => {
+      bytes += chunk.length;
+      if (bytes <= MAXIMUM_RENDERED_PAGE_BYTES) { chunks.push(chunk); return; }
+      child.kill("SIGKILL");
+      finish(new ValidationError("VISUAL_RENDER_TOO_LARGE", { code: "VISUAL_RENDER_TOO_LARGE" }));
+    });
+    child.once("error", () => finish(new ValidationError("VISUAL_RENDER_UNAVAILABLE", { code: "VISUAL_RENDER_UNAVAILABLE" })));
+    child.once("close", (code) => code === 0 && bytes > 0
+      ? finish(null, Buffer.concat(chunks))
+      : finish(new ValidationError("VISUAL_RENDER_FAILED", { code: "VISUAL_RENDER_FAILED" })));
+    // pdftoppm may exit before reading all of stdin; its exit status reports that failure.
+    child.stdin.on("error", () => {});
+    child.stdin.end(sourceBytes);
   });
-  await fs.chmod(`${outputPrefix}.png`, 0o600);
-  return fs.readFile(`${outputPrefix}.png`);
+}
+
+// Earlier versions rendered page images to plaintext files under visual/. A completed page's image
+// is already in the encrypted store and an unfinished page is rendered again, so leftovers go.
+async function removeLegacyPageRenders(root) {
+  const directory = path.join(root, "visual");
+  let info;
+  try { info = await fs.lstat(directory); }
+  catch (error) { if (error.code === "ENOENT") return; throw error; }
+  invariant(info.isDirectory() && !info.isSymbolicLink(), "JOURNAL_EXECUTION_ROOT_INVALID");
+  for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+    if (entry.isFile() && /^page-\d+\.png$/.test(entry.name)) await fs.unlink(path.join(directory, entry.name));
+  }
+  await fs.rmdir(directory).catch((error) => { if (!["ENOTEMPTY", "EEXIST", "ENOENT"].includes(error.code)) throw error; });
 }
 
 /** A private operator process owns this runtime. No mutation is added to the MCP. */
-export async function openJournalExecutionRuntime({ config, configPath, environment = process.env, service: suppliedService = null, inferencePort: suppliedPort = null, authContextProvider = null, sourceParser = parseSourceFile, renderVisualPage = renderPage }) {
+export async function openJournalExecutionRuntime({ config, configPath, environment = process.env, service: suppliedService = null, inferencePort: suppliedPort = null, authContextProvider = null, sourceParser = parseSourceFile, renderVisualPage = renderJournalPdfPage }) {
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
   invariant(path.isAbsolute(config.execution_root ?? ""), "JOURNAL_EXECUTION_ROOT_REQUIRED");
   const root = path.resolve(config.execution_root);
@@ -72,6 +109,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
   let providers, port, store;
   const secretBuffers = [];
   try {
+    await removeLegacyPageRenders(root);
     providers = suppliedService ? null : loadHostedPrivateCaseOperatorProvidersFromEnvironment({ ...environment });
     const service = suppliedService ?? createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider, keyProvider: providers.keyProvider });
     const caseId = config.target_profile.case_id;
@@ -775,21 +813,31 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       await stage();
       if (state.graph_ref) return reconcile();
       const plan = await readLarge(state.parsed_ref);
-      await fs.mkdir(path.join(root, "visual"), { recursive: true, mode: 0o700 });
-      for (const pageNumber of plan.visual_pages) {
-        if (state.completed_visual_pages.includes(pageNumber)) continue;
-        const page = plan.parsed.pages.find((p) => p.page_number === pageNumber);
-        const image = await renderVisualPage(sourcePath, pageNumber, path.join(root, "visual", `page-${pageNumber}`));
-        const native = plan.parsed.representations.find((r) => r.representation_id === page.representation_id);
-        const result = await work({ id: `visual:${pageNumber}`, role: "visual_reader", stage: "VISUAL_READ", unit: { unit_id: `page:${pageNumber}`, representation_id: page.representation_id, start_byte: 0, end_byte: image.length, page_number: pageNumber }, packetInput: { page_image_ref: { kind: "inline_image", media_type: "image/png", data_base64: image.toString("base64"), sha256: hash(image) }, page_geometry: page.geometry, native_text_rendering: native.text, neighbor_pages: [] } });
-        if (!result) return summary();
-        invariant(result[0].output.source_page_id === `page:${pageNumber}`, "VISUAL_PAGE_BINDING_MISMATCH");
-        invariant(result[0].output.page_complete, "VISUAL_PAGE_INCOMPLETE");
-        await writeOnce(`visual:result:${pageNumber}`, result[0]);
-        const imageRef = await store.writeChunkedOriginal({ objectId: `visual:image:${pageNumber}`, bytes: image });
-        await writeOnce(`visual:image-ref:${pageNumber}`, imageRef);
-        state.completed_visual_pages.push(pageNumber); state.stage = "VISUAL_READ"; state.blocker = null; await save();
-      }
+      // Pages render from the archived original, checked against the configured digest, not from
+      // the source path, which could have been replaced since intake.
+      let verifiedSource = null;
+      const archivedSource = async () => {
+        if (verifiedSource) return verifiedSource;
+        verifiedSource = await store.reassembleOriginal(state.original);
+        invariant(verifiedSource.length === config.source.bytes && hash(verifiedSource) === config.source.sha256, "ORIGINAL_REASSEMBLY_MISMATCH");
+        return verifiedSource;
+      };
+      try {
+        for (const pageNumber of plan.visual_pages) {
+          if (state.completed_visual_pages.includes(pageNumber)) continue;
+          const page = plan.parsed.pages.find((p) => p.page_number === pageNumber);
+          const image = await renderVisualPage(await archivedSource(), pageNumber);
+          const native = plan.parsed.representations.find((r) => r.representation_id === page.representation_id);
+          const result = await work({ id: `visual:${pageNumber}`, role: "visual_reader", stage: "VISUAL_READ", unit: { unit_id: `page:${pageNumber}`, representation_id: page.representation_id, start_byte: 0, end_byte: image.length, page_number: pageNumber }, packetInput: { page_image_ref: { kind: "inline_image", media_type: "image/png", data_base64: image.toString("base64"), sha256: hash(image) }, page_geometry: page.geometry, native_text_rendering: native.text, neighbor_pages: [] } });
+          if (!result) return summary();
+          invariant(result[0].output.source_page_id === `page:${pageNumber}`, "VISUAL_PAGE_BINDING_MISMATCH");
+          invariant(result[0].output.page_complete, "VISUAL_PAGE_INCOMPLETE");
+          await writeOnce(`visual:result:${pageNumber}`, result[0]);
+          const imageRef = await store.writeChunkedOriginal({ objectId: `visual:image:${pageNumber}`, bytes: image });
+          await writeOnce(`visual:image-ref:${pageNumber}`, imageRef);
+          state.completed_visual_pages.push(pageNumber); state.stage = "VISUAL_READ"; state.blocker = null; await save();
+        }
+      } finally { verifiedSource?.fill(0); }
       if (!state.visual_plan_ref) {
         for (const pageNumber of plan.visual_pages) {
           const visual = await readIfPresent(`visual:result:${pageNumber}`);

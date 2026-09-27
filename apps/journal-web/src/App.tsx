@@ -12,6 +12,7 @@ import {
   type JournalContext,
   type JournalFilters,
   type JournalNode,
+  type ReadScope,
   type SubgraphResult,
   type TimelineResult
 } from "./contracts";
@@ -29,7 +30,7 @@ const stageLabels: Record<ImportStageName, string> = Object.freeze({
 });
 
 const emptyGraph: SubgraphResult = Object.freeze({ nodes: [], edges: [], closure_status: "empty", more_available: false });
-const emptyTimeline: TimelineResult = Object.freeze({ items: [], unknown_count: 0, more_available: false });
+const emptyTimeline: TimelineResult = Object.freeze({ items: [], unknown_count: 0, next_cursor: null, more_available: false });
 
 function stageProgress(stage: ImportStage): number | null {
   if (stage.state === "complete") return 100;
@@ -135,6 +136,11 @@ export function App({ context, api = defaultApi }: AppProps) {
   const [rawGraph, setRawGraph] = useState<SubgraphResult>(emptyGraph);
   const [timeline, setTimeline] = useState<TimelineResult>(emptyTimeline);
   const [searchState, setSearchState] = useState<"idle" | "loading" | "ready" | "empty" | "error">("idle");
+  // Which page of matches the graph shows, and the snapshot-bound cursor for the next one.
+  const [matchPage, setMatchPage] = useState<{ number: number; nextCursor: string | null }>({ number: 0, nextCursor: null });
+  const [pageLoading, setPageLoading] = useState(false);
+  // Bumped by each new search, so a page or timeline response for an earlier search is dropped.
+  const retrieval = useRef(0);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [view, setView] = useState<"graph" | "list">("graph");
   const [selectedNode, setSelectedNode] = useState<JournalNode | null>(null);
@@ -206,6 +212,25 @@ export function App({ context, api = defaultApi }: AppProps) {
     }
   };
 
+  // One page of matches and the bounded neighborhood it seeds. Matches whose closure did not fit
+  // are still listed, never reported as absent.
+  const loadNeighborhood = async (scope: ReadScope, cursor: string | null) => {
+    const page = await api.search(scope, cursor);
+    if (!page.items.length) return { page, graph: emptyGraph };
+    const closure = await api.getSubgraph(scope, page.items.map(({ id }) => id));
+    const graph: SubgraphResult = closure.nodes.length
+      ? closure
+      : { nodes: page.items, edges: [], closure_status: closure.closure_status, more_available: true };
+    return { page, graph };
+  };
+
+  const clearSelection = () => {
+    evidenceRequest.current += 1;
+    setSelectedNode(null);
+    setEvidence(null);
+    setEvidenceLoading(false);
+  };
+
   const submitSearch = async (event: FormEvent) => {
     event.preventDefault();
     const nextFilters = { ...draftFilters, query: draftFilters.query.trim(), kinds: [...draftFilters.kinds] };
@@ -214,27 +239,68 @@ export function App({ context, api = defaultApi }: AppProps) {
       setSearchError("Enter a search term before retrieving journal evidence.");
       return;
     }
+    const request = ++retrieval.current;
     setSearchState("loading");
     setSearchError(null);
-    evidenceRequest.current += 1;
-    setSelectedNode(null);
-    setEvidence(null);
-    setEvidenceLoading(false);
+    setPageLoading(false);
+    clearSelection();
     try {
       const scope = createReadScope(context, nextFilters);
-      const [search, nextTimeline] = await Promise.all([api.search(scope), api.getTimeline(scope)]);
-      const nextGraph = search.items.length
-        ? await api.getSubgraph(scope, search.items.slice(0, 50).map(({ id }) => id))
-        : emptyGraph;
+      const [{ page, graph }, nextTimeline] = await Promise.all([loadNeighborhood(scope, null), api.getTimeline(scope)]);
+      if (request !== retrieval.current) return;
       setAppliedFilters(nextFilters);
-      setRawGraph(nextGraph);
+      setRawGraph(graph);
+      setMatchPage({ number: 1, nextCursor: page.more_available ? page.next_cursor : null });
       setTimeline(nextTimeline);
-      setSearchState(nextGraph.nodes.length ? "ready" : "empty");
+      setSearchState(graph.nodes.length ? "ready" : "empty");
     } catch {
+      if (request !== retrieval.current) return;
       setRawGraph(emptyGraph);
+      setMatchPage({ number: 0, nextCursor: null });
       setTimeline(emptyTimeline);
       setSearchState("error");
       setSearchError("Authorized journal retrieval failed. Filters and credentials were not cached.");
+    }
+  };
+
+  const nextMatches = async () => {
+    const cursor = matchPage.nextCursor;
+    if (!cursor) return;
+    const request = retrieval.current;
+    setPageLoading(true);
+    setSearchError(null);
+    clearSelection();
+    try {
+      const { page, graph } = await loadNeighborhood(createReadScope(context, appliedFilters), cursor);
+      if (request !== retrieval.current) return;
+      setRawGraph(graph);
+      setMatchPage({ number: matchPage.number + 1, nextCursor: page.more_available ? page.next_cursor : null });
+    } catch {
+      if (request === retrieval.current) setSearchError("The next matches could not be retrieved. Search again to start over.");
+    } finally {
+      if (request === retrieval.current) setPageLoading(false);
+    }
+  };
+
+  const loadMoreTimeline = async () => {
+    const cursor = timeline.next_cursor;
+    if (!cursor) return;
+    const request = retrieval.current;
+    setPageLoading(true);
+    setSearchError(null);
+    try {
+      const more = await api.getTimeline(createReadScope(context, appliedFilters), cursor);
+      if (request !== retrieval.current) return;
+      setTimeline((current) => ({
+        items: [...current.items, ...more.items],
+        unknown_count: more.unknown_count,
+        next_cursor: more.more_available ? more.next_cursor : null,
+        more_available: more.more_available
+      }));
+    } catch {
+      if (request === retrieval.current) setSearchError("More timeline records could not be retrieved. Search again to start over.");
+    } finally {
+      if (request === retrieval.current) setPageLoading(false);
     }
   };
 
@@ -290,7 +356,11 @@ export function App({ context, api = defaultApi }: AppProps) {
           {searchState === "ready" ? (
             <div className="result-layout">
               <div className="result-main">
-                <div className="result-summary"><strong>{boundedGraph.nodes.length} nodes · {boundedGraph.edges.length} links</strong><span>Bounded to {GRAPH_NODE_LIMIT} / {GRAPH_EDGE_LIMIT}{boundedGraph.truncated ? " · more available" : ""}</span></div>
+                <div className="result-summary">
+                  <strong>{boundedGraph.nodes.length} nodes · {boundedGraph.edges.length} links</strong>
+                  <span>Bounded to {GRAPH_NODE_LIMIT} / {GRAPH_EDGE_LIMIT}{boundedGraph.truncated ? " · more available" : ""} · Matches page {matchPage.number}{matchPage.nextCursor ? " · more matches available" : ""}</span>
+                  {matchPage.nextCursor ? <button className="secondary" type="button" disabled={pageLoading} onClick={nextMatches}>Next matches</button> : null}
+                </div>
                 {view === "graph"
                   ? <JournalGraph nodes={boundedGraph.nodes} edges={boundedGraph.edges} selectedId={selectedNode?.id ?? null} onSelect={selectNode} />
                   : <ResultList nodes={boundedGraph.nodes} selectedId={selectedNode?.id ?? null} onSelect={selectNode} />}
@@ -303,7 +373,10 @@ export function App({ context, api = defaultApi }: AppProps) {
         {searchState === "ready" ? (
           <section className="panel timeline-panel" aria-labelledby="timeline-heading">
             <div><p className="eyebrow">Chronology</p><h2 id="timeline-heading">Timeline</h2><p className="muted">The same authorized purpose and applied filters are used. Ordering is evidence, not causal inference.</p></div>
-            {visibleTimeline.length ? <ol className="timeline-list">{visibleTimeline.map((item) => <li key={item.id}><button type="button" onClick={() => selectNode(item)}><time>{nodeDate(item)}</time><strong>{nodeLabel(item)}</strong><span>{item.kind}</span></button></li>)}</ol> : <p className="empty-state">No timeline records match the applied filter snapshot.</p>}
+            <div className="timeline-results">
+              {visibleTimeline.length ? <ol className="timeline-list">{visibleTimeline.map((item) => <li key={item.id}><button type="button" onClick={() => selectNode(item)}><time>{nodeDate(item)}</time><strong>{nodeLabel(item)}</strong><span>{item.kind}</span></button></li>)}</ol> : <p className="empty-state">No timeline records match the applied filter snapshot.</p>}
+              {timeline.next_cursor ? <button className="secondary" type="button" disabled={pageLoading} onClick={loadMoreTimeline}>Load more timeline</button> : null}
+            </div>
           </section>
         ) : null}
       </main>

@@ -71,7 +71,7 @@ function fakeApi(overrides: Partial<JournalApi> = {}) {
       }],
       source_locators: [{ evidence_id: "p1", kind: "visual_transcript", page: 7, interpretation_status: "verified" }]
     })),
-    getTimeline: vi.fn(async () => ({ items: [passage, assertion], unknown_count: 0, more_available: false })),
+    getTimeline: vi.fn(async () => ({ items: [passage, assertion], unknown_count: 0, next_cursor: null, more_available: false })),
     ...overrides
   };
   return api;
@@ -175,6 +175,51 @@ describe("authenticated journal surface", () => {
     expect(start.disabled).toBe(false);
     await user.click(start);
     expect(api.startImport).toHaveBeenCalledWith(context, file);
+  });
+
+  test("pages through matches and the timeline with their snapshot-bound cursors", async () => {
+    const secondAssertion: JournalNode = { id: "a2", kind: "assertion", lifecycle: "active", data: { statement: "Une seconde page de résultats.", evidence_ids: ["p2"] } };
+    const secondPassage: JournalNode = { id: "p2", kind: "passage", lifecycle: "active", data: { quote: "Deuxième passage exact." } };
+    const searchPages = vi.fn<JournalApi["search"]>()
+      .mockImplementationOnce(async () => ({ items: [assertion], next_cursor: "cursor:search:2", more_available: true }))
+      .mockImplementationOnce(async () => ({ items: [secondAssertion], next_cursor: null, more_available: false }));
+    const getSubgraph = vi.fn<JournalApi["getSubgraph"]>(async (_scope, seeds) => seeds.includes("a2")
+      ? { nodes: [secondAssertion, secondPassage], edges: [{ id: "e2", relation: "supported_by", from: "a2", to: "p2", evidence_ids: ["p2"] }], closure_status: "complete", more_available: false }
+      : { nodes: [assertion, passage], edges: [edge], closure_status: "complete", more_available: false });
+    const getTimeline = vi.fn<JournalApi["getTimeline"]>()
+      .mockImplementationOnce(async () => ({ items: [passage], unknown_count: 0, next_cursor: "cursor:timeline:2", more_available: true }))
+      .mockImplementationOnce(async () => ({ items: [secondPassage], unknown_count: 0, next_cursor: null, more_available: false }));
+    const api = fakeApi({ search: searchPages, getSubgraph, getTimeline });
+    const user = await search(api);
+    expect(screen.getByText(/Matches page 1 · more matches available/)).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Next matches" }));
+    expect(await screen.findByText(/Matches page 2/)).toBeTruthy();
+    expect(searchPages.mock.calls[1][1]).toBe("cursor:search:2");
+    expect(searchPages.mock.calls[1][0]).toEqual(searchPages.mock.calls[0][0]);
+    expect(screen.queryByRole("button", { name: "Next matches" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Accessible list" }));
+    expect(within(screen.getByTestId("journal-result-list")).getByRole("button", { name: /Une seconde page/ })).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Load more timeline" }));
+    const timelineList = await screen.findByText("Deuxième passage exact.", { selector: ".timeline-list strong" });
+    expect(timelineList).toBeTruthy();
+    expect(getTimeline.mock.calls[1][1]).toBe("cursor:timeline:2");
+    expect(screen.queryByRole("button", { name: "Load more timeline" })).toBeNull();
+  });
+
+  test("lists matches whose evidence closure did not fit instead of reporting none", async () => {
+    const api = fakeApi({
+      getSubgraph: vi.fn(async () => ({ nodes: [], edges: [], closure_status: "insufficient_context", more_available: true }))
+    });
+    const user = userEvent.setup();
+    render(<App context={context} api={api} />);
+    await screen.findByText("1 source verified");
+    await user.type(screen.getByRole("textbox", { name: "Search journal" }), "frontière");
+    await user.click(screen.getByRole("button", { name: "Retrieve evidence" }));
+    expect(await screen.findByText("1 nodes · 0 links")).toBeTruthy();
+    expect(screen.getByText(/more available/)).toBeTruthy();
+    expect(screen.queryByText(/No evidence was found/)).toBeNull();
   });
 
   test("fails closed when no in-memory authenticated context is supplied", () => {

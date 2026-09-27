@@ -17,6 +17,8 @@ Provision a dedicated confidential Keycloak client with service accounts enabled
 ]
 ```
 
+Rollback is a correction, so `rollback_journal_generation` needs the `correct` purpose, which this import grant leaves out on purpose. The operator ACL is supplied per run, and only the first entry for a subject and case counts, so run a rollback with an operator ACL whose entry for this subject lists `"purposes": ["correct"]`. Check it first with `probe_journal_write` and purpose `correct`, and go back to the import ACL afterwards.
+
 The import needs no `case:read`. It checks what it publishes through a write-authorized inspection that returns the case revision, the corpus reference and a digest of the state outside the journal, never case content.
 
 Do not add this grant to `INNER_SIGNAL_CASE_ACL_JSON`, which belongs to the read-only MCP. Supply it only as `INNER_SIGNAL_OPERATOR_CASE_ACL_JSON` to the one-shot operator.

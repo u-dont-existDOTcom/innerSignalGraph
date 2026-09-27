@@ -20,6 +20,14 @@ Updated: 2026-09-27
   - Publication reads the case only through a write-authorized inspection: the case revision, the corpus reference and a digest of everything outside the journal, never case content. So the operator's documented `case:write`-only grant can publish; before, it needed `case:read` and was refused before anything was transferred. The cold runner uses the same inspection under its own scope and purpose.
   - The timeline tool returns a signed cursor bound to the snapshot and the time window, so later pages are reachable. Before, it said more records were available but gave no way to get them.
   - Both have tests that fail without the fix.
+- **Review round 4:**
+  - Page images render in memory from the archived original, checked against the configured digest: `pdftoppm` reads the bytes on stdin and writes the image to stdout. A page can't come from a source replaced after intake, and no plaintext image is left on disk. Page files an earlier version left under `visual/` are removed at startup.
+  - The producer prompts include the frozen journal packet that the audit and repair receive, through the shared durable-context block, so a candidate is produced from what it is checked against.
+  - A restart after the candidate call completed reuses that call's packet instead of freezing a new one.
+  - The operator doc says how to run a rollback, which needs the `correct` purpose that the import grant leaves out.
+  - The web page pages through matches and the timeline with their cursors, and lists matches whose closure did not fit instead of reporting none. Each neighborhood is seeded by one page of 50 matches.
+  - Not changed: no production journal evidence provider exists, so therapy turns read no journal evidence. Building one and turning it on is a separate change, after the import's cold test.
+  - Each fix has a test that fails without it.
 - **Verified:** after round 3 and main at `187f2f4` (#95), `npm test` (1,529), `npm run audit:repository`, `npm run audit:publication`, `npm run verify`, `npm run journal:ui:test` (10) and `npm run journal:ui:build` pass on Node 24.18.0. Privacy scan of every moved file: no case ID or source hash, host paths, e-mail addresses, IP addresses or personal names; only synthetic example domains.
 - **Safety:** nothing is deployed, and the running import is unchanged; it keeps running from the private checkout until the owner approves the switch. The journal read tools stay off unless a grant lists journal purposes, and the operator needs its own environment.
 - **Next safe action:** the owner approved the merge once review is clean ("merge 93 and 94"). Then the exchange-backed provider (retiring the desktop transport), then the Mission Control job type.

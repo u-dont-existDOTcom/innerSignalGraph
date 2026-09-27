@@ -8,10 +8,11 @@ import {createPrivateCaseAccessService,loadDevelopmentPrivateCaseProviders} from
 import {createPrivateJournalCorpusStore} from '../src/storage/private-journal-corpus.mjs';
 import {persistGraphGeneration} from '../src/journal-import/graph.mjs';
 import {publishJournalGenerationFromStaging} from '../src/journal-import/publication.mjs';
+import {createPrivateCaseOrchestrator} from '../src/supervisor/private-case-orchestration.mjs';
 
 const CASE_ID='synthetic-case',CORPUS_ID='corpus:synthetic';
 // The operator's documented grant: case:write only, for the import's three purposes.
-const WRITER='synthetic-operator-token',ARCHIVE_ONLY='synthetic-archive-only-token',READER='synthetic-reader-token';
+const WRITER='synthetic-operator-token',ARCHIVE_ONLY='synthetic-archive-only-token',READER='synthetic-reader-token',CORRECTOR='synthetic-rollback-token';
 const sha256=value=>createHash('sha256').update(value).digest('hex');
 
 async function environment(t){
@@ -21,7 +22,8 @@ async function environment(t){
  await fs.writeFile(credentialsPath,`${JSON.stringify({schema_version:1,root_dir:path.join(root,'vaults'),grants:[
   {token_sha256:sha256(WRITER),principal_id:'journal-operator',case_ids:[CASE_ID],scopes:['case:write'],purposes:['archive','organize_search','session_use']},
   {token_sha256:sha256(ARCHIVE_ONLY),principal_id:'archive-only',case_ids:[CASE_ID],scopes:['case:write'],purposes:['archive']},
-  {token_sha256:sha256(READER),principal_id:'test-reader',case_ids:[CASE_ID],scopes:['case:read'],purposes:['organize_search']}
+  {token_sha256:sha256(READER),principal_id:'test-reader',case_ids:[CASE_ID],scopes:['case:read'],purposes:['organize_search']},
+  {token_sha256:sha256(CORRECTOR),principal_id:'journal-operator-rollback',case_ids:[CASE_ID],scopes:['case:write'],purposes:['correct']}
  ],case_keys:{[CASE_ID]:{routine_kek_base64:Buffer.alloc(32,7).toString('base64'),recovery_secret_base64:Buffer.alloc(32,9).toString('base64')}}})}\n`,{mode:0o600});
  const providers=await loadDevelopmentPrivateCaseProviders(credentialsPath);t.after(()=>providers.close());
  const service=createPrivateCaseAccessService({rootDir:providers.rootDir,authorizationProvider:providers.authorizationProvider,
@@ -88,4 +90,18 @@ test('an operator without session_use is refused before any corpus is created or
   {code:'PRIVATE_CASE_ACCESS_DENIED'});
  const inspection=await service.inspectJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'session_use'},{bearerToken:WRITER});
  assert.equal(inspection.reference,null);
+});
+
+test('the documented import grant cannot roll back, and a run with a correct-purpose grant can',async t=>{
+ const {service,sourceStore,persisted}=await environment(t);
+ const operator=createPrivateCaseOrchestrator({caseAccessService:service});
+ const probe=purpose=>({schema_version:1,operation:'probe_journal_write',case_id:CASE_ID,purpose});
+ await assert.rejects(operator.execute(probe('correct'),{bearerToken:WRITER}),{code:'PRIVATE_CASE_ACCESS_DENIED'});
+ assert.equal((await operator.execute(probe('correct'),{bearerToken:CORRECTOR})).operation_succeeded,true);
+ await publishJournalGenerationFromStaging({service,sourceStore,persisted,auth:{bearerToken:WRITER},authorize:async()=>{}});
+ const rollback={schema_version:1,operation:'rollback_journal_generation',case_id:CASE_ID,corpus_id:CORPUS_ID,
+  target_generation:'generation:absent',expected_generation:persisted.manifest.generation};
+ await assert.rejects(operator.execute(rollback,{bearerToken:WRITER}),{code:'PRIVATE_CASE_ACCESS_DENIED'});
+ // Authorized: it now fails only because the synthetic target generation was never published.
+ await assert.rejects(operator.execute(rollback,{bearerToken:CORRECTOR}),{code:'SOURCE_UNAVAILABLE'});
 });

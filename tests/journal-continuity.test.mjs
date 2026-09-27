@@ -338,3 +338,84 @@ test("therapy producer and independent auditor receive the same frozen bounded j
   assert.equal(record.case_state.current_episode.id, "episode:journal:runtime");
   assert.equal(record.candidate_responses[0].metadata.journal_evidence_sha256, seen[0].journalEvidence.sha256);
 });
+
+test("a restart after the candidate call completed reuses its journal packet instead of freezing a new one", async (t) => {
+  const privateRoot = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-journal-restart-"));
+  t.after(async () => { await fs.rm(privateRoot, { recursive: true, force: true }); });
+  const store = createEncryptedPrivateCaseStore({
+    rootDir: privateRoot,
+    routineKek: Buffer.alloc(32, 83),
+    recoverySecretBytes: Buffer.alloc(32, 84),
+    osBackedReauthenticated: true,
+    now: () => "2026-09-22T18:00:00.000Z"
+  });
+  t.after(() => store.close());
+  let freezes = 0;
+  let produced = 0;
+  const audited = [];
+  const packetFor = (index) => ({ schema_version: 1, generation: `generation-${index}`, evidence_groups: [], more_available: false });
+  const journalEvidenceProvider = {
+    // Any later freeze sees a newer snapshot.
+    async freezeForTurn() { freezes += 1; return { packet: packetFor(freezes) }; }
+  };
+  const modelRuntime = {
+    async produceCandidate({ caseId, runtimeTurn, attemptContextId }) {
+      produced += 1;
+      return {
+        exactText: "Synthetic journal-informed candidate.",
+        contextId: `context:journal:restart:producer:${produced}`,
+        caseState: applyCaseStatePatch(createEmptyCaseState({ caseId }), {
+          current_episode: {
+            id: "episode:journal:restart",
+            target: "Keep the current target authoritative.",
+            route: "SYNTHETIC.JOURNAL",
+            prediction: "Journal evidence remains supplemental.",
+            next_question: "What is current now?",
+            started_turn_id: runtimeTurn.user_turn_id,
+            constitutional_aim_ids: ["CARE"],
+            adverse_signs: ["archive replaces present state"],
+            stay_conditions: ["current episode remains explicit"],
+            switch_conditions: ["evidence is insufficient"],
+            stop_conditions: ["decline"],
+            source_item_ids: []
+          }
+        }),
+        stateDiff: { schema_version: 1, additions: [], current_episode_changed: true },
+        result: { producerAttemptContextId: attemptContextId }
+      };
+    },
+    async auditCandidate({ journalEvidence }) {
+      audited.push(journalEvidence?.packet?.generation ?? null);
+      return { contextId: "context:journal:restart:auditor", value: { findings: [], repair_induced_checks: [] } };
+    },
+    async repairCandidate() { throw new Error("repair must not run"); },
+    async produceDiscriminator() { throw new Error("discriminator must not run"); }
+  };
+  // The first run stops after the candidate call completed but before the candidate was saved.
+  let stopBeforeSave = true;
+  const source = Object.fromEntries(Object.keys(store).map((key) => [key, typeof store[key] === "function" ? store[key].bind(store) : store[key]]));
+  const save = source.commitPrivateRuntimeCandidate;
+  source.commitPrivateRuntimeCandidate = async (...args) => {
+    if (stopBeforeSave) { stopBeforeSave = false; throw new Error("synthetic stop before the candidate was saved"); }
+    return save(...args);
+  };
+  const controller = createPrivateTherapyTurnController({ privateCaseSource: source, modelRuntime, journalEvidenceProvider });
+  const turn = {
+    caseId: CASE_ID,
+    runtimeTurnId: "runtime:journal:restart",
+    exchangeId: "exchange:journal:restart",
+    userTurnId: "turn:journal:restart:user",
+    assistantTurnId: "turn:journal:restart:assistant",
+    userMessage: "Use relevant history without replacing the current episode.",
+    userInput: {}
+  };
+  await assert.rejects(controller.run(turn));
+  const result = await controller.run(turn);
+  assert.equal(result.deliveryKind, "candidate");
+  assert.equal(freezes, 1);
+  assert.equal(produced, 1);
+  assert.deepEqual(audited, ["generation-1"]);
+  const record = await store.load(CASE_ID);
+  assert.equal(record.candidate_responses[0].metadata.journal_evidence_sha256,
+    createHash("sha256").update(JSON.stringify(packetFor(1))).digest("hex"));
+});

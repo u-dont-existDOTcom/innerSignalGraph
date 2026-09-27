@@ -4,7 +4,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
-import {openJournalExecutionRuntime} from '../src/journal-import/private-runtime.mjs';
+import {spawnSync} from 'node:child_process';
+import {openJournalExecutionRuntime,renderJournalPdfPage} from '../src/journal-import/private-runtime.mjs';
 import {createDisabledJournalInferencePort,createMockJournalInferencePort,JournalInferencePortError} from '../src/journal-import/provider-port.mjs';
 import {createDurableJournalInferencePort} from '../src/journal-import/durable-inference.mjs';
 import {createCorpusJournalJobLedger} from '../src/journal-import/controller.mjs';
@@ -420,4 +421,52 @@ test('the staging key and the source are checked and read through one no-follow 
  await assert.rejects(()=>openJournalExecutionRuntime(f),{code:'JOURNAL_SOURCE_PRIVATE_REQUIRED'});
  await fs.rm(sourceFile);await fs.rename(movedSource,sourceFile);
  runtime=await openJournalExecutionRuntime(f);await runtime.close();
+});
+
+test('visual pages render in memory from the verified archive, and legacy page files are removed', async t => {
+ const f=await fixture(t);
+ const config={...f.config,visual_hazard_pages:[1]};
+ const text='Synthetic source page.';
+ const parser=async()=>({
+  source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'text/plain'},
+  parser:{version:'synthetic-visual'},
+  pages:[{page_number:1,representation_id:'synthetic:page:1',disposition:'readable',
+    warnings:[],image_inventory:[],geometry:{width:100,height:100}}],
+  representations:[{representation_id:'synthetic:page:1',text,utf8_byte_length:Buffer.byteLength(text)}]
+ });
+ const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==','base64');
+ // A page image an earlier version left in plaintext.
+ const visualDirectory=path.join(f.config.execution_root,'visual');
+ await fs.mkdir(visualDirectory,{recursive:true,mode:0o700});
+ await fs.writeFile(path.join(visualDirectory,'page-1.png'),image,{mode:0o600});
+ const renders=[];
+ const port=createMockJournalInferencePort({handlers:{visual_reader:p=>({schema_version:'1.0',
+  source_page_id:p.assigned_core_ids[0],regions:[{region_id:'region:synthetic',bbox:[0,0,1,1],kind:'text',
+   transcription:'Synthetic image text.',non_graphic_description:null,interpretation_status:'readable',
+   speaker_or_document_label:null,table_cells:[]}],page_complete:true,missing_or_uncertain_regions:[]})}});
+ const runtime=await openJournalExecutionRuntime({...f,config,sourceParser:parser,inferencePort:port,
+  renderVisualPage:async(bytes,page)=>{
+   renders.push({page,isBuffer:Buffer.isBuffer(bytes),sha256:Buffer.isBuffer(bytes)?createHash('sha256').update(bytes).digest('hex'):null});
+   return image;
+  }});
+ try {
+  await assert.rejects(fs.access(path.join(visualDirectory,'page-1.png')));
+  await runtime.execute('stage');
+  // The source is replaced after intake; the page must still come from the archived original.
+  const sourcePath=path.join(f.root,'private','source.txt');
+  await fs.writeFile(sourcePath,'Replaced synthetic source, different bytes.\n',{mode:0o600});
+  const result=await runtime.execute('visual-only');
+  assert.equal(result.completed_visual_pages,1);
+ } finally { await runtime.close(); }
+ assert.deepEqual(renders,[{page:1,isBuffer:true,sha256:f.config.source.sha256}]);
+ const left=await fs.readdir(visualDirectory).catch(error=>error.code==='ENOENT'?[]:Promise.reject(error));
+ assert.deepEqual(left,[]);
+});
+
+test('the page renderer reads the source on stdin and returns the image on stdout',
+ {skip:spawnSync('pdftoppm',['-v']).error?'pdftoppm is not installed':false},async()=>{
+ const pdf=await fs.readFile(new URL('../guides/vagal-blitz-source.pdf',import.meta.url));
+ const image=await renderJournalPdfPage(pdf,1);
+ assert.equal(image.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+ await assert.rejects(renderJournalPdfPage(Buffer.from('not a pdf'),1),{code:'VISUAL_RENDER_FAILED'});
 });

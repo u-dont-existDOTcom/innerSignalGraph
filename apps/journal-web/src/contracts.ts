@@ -1,6 +1,9 @@
 export const JOURNAL_PURPOSE = "organize_search" as const;
 export const GRAPH_NODE_LIMIT = 100;
 export const GRAPH_EDGE_LIMIT = 200;
+// One page of matches seeds one bounded neighborhood, so no match on a page is left out of it.
+export const SEARCH_PAGE_SIZE = 50;
+export const TIMELINE_PAGE_SIZE = 100;
 
 export type ImportStageName = "archive" | "parse" | "semantic" | "visual" | "session_use";
 export type ImportStageState = "not_started" | "waiting" | "running" | "complete" | "failed" | "unavailable";
@@ -50,6 +53,7 @@ export interface SubgraphResult {
 export interface TimelineResult {
   items: JournalNode[];
   unknown_count: number;
+  next_cursor: string | null;
   more_available: boolean;
 }
 
@@ -101,10 +105,10 @@ export interface JournalApi {
   getImportStatus(context: JournalContext): Promise<ImportStatus>;
   startImport(context: JournalContext, file: File): Promise<ImportStatus>;
   resumeImport(context: JournalContext): Promise<ImportStatus>;
-  search(scope: ReadScope): Promise<SearchResult>;
+  search(scope: ReadScope, cursor?: string | null): Promise<SearchResult>;
   getSubgraph(scope: ReadScope, seedIds: string[]): Promise<SubgraphResult>;
   resolveEvidence(scope: ReadScope, evidenceIds: string[]): Promise<EvidenceResult>;
-  getTimeline(scope: ReadScope): Promise<TimelineResult>;
+  getTimeline(scope: ReadScope, cursor?: string | null): Promise<TimelineResult>;
 }
 
 export const EMPTY_IMPORT_STATUS: ImportStatus = Object.freeze({

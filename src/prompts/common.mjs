@@ -10,6 +10,12 @@ export function durableCaseContextBlock(context) {
   const tracker = context?.trackerWindow ?? null;
   const retrieval = context?.targetedRetrievalRequests ?? [];
   const olderEvidence = context?.targetedOlderEvidence ?? [];
+  // The same frozen packet the audit and repair receive, so the candidate is produced from what it
+  // is later checked against. Absent unless a journal evidence provider froze one for this turn.
+  const journal = context?.journal_evidence == null ? "" : `
+
+AUTHORIZED JOURNAL EVIDENCE (the user's own saved journal, retrieved and frozen for this turn; bounded, so absence is not proof; supplemental to the current episode, which stays authoritative):
+${JSON.stringify(context.journal_evidence, null, 2)}`;
   return `DURABLE CASE STATE (structured evidence; never hidden reasoning):
 ${state ? JSON.stringify(state, null, 2) : "(none supplied)"}
 
@@ -23,7 +29,7 @@ TARGETED OLDER-EVIDENCE RETRIEVAL REQUESTS:
 ${retrieval.length ? JSON.stringify(retrieval, null, 2) : "(none)"}
 
 TARGETED OLDER VERBATIM EVIDENCE (null means the referenced exact turn is not available in this context):
-${olderEvidence.length ? JSON.stringify(olderEvidence, null, 2) : "(none)"}`;
+${olderEvidence.length ? JSON.stringify(olderEvidence, null, 2) : "(none)"}${journal}`;
 }
 
 export const longitudinalClinicalRules = `

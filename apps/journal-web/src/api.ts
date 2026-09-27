@@ -1,12 +1,14 @@
-import type {
-  EvidenceResult,
-  ImportStatus,
-  JournalApi,
-  JournalContext,
-  ReadScope,
-  SearchResult,
-  SubgraphResult,
-  TimelineResult
+import {
+  SEARCH_PAGE_SIZE,
+  TIMELINE_PAGE_SIZE,
+  type EvidenceResult,
+  type ImportStatus,
+  type JournalApi,
+  type JournalContext,
+  type ReadScope,
+  type SearchResult,
+  type SubgraphResult,
+  type TimelineResult
 } from "./contracts";
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -111,11 +113,12 @@ export function createHttpJournalApi(fetcher: FetchLike = globalThis.fetch.bind(
       return readJson<ImportStatus>(response);
     },
 
-    async search(scope) {
+    async search(scope, cursor = null) {
       const response = await postJson(fetcher, scope, routes.search, readBody(scope, {
         query: scope.filters.query,
         graphEnabled: true,
-        pageSize: 100
+        pageSize: SEARCH_PAGE_SIZE,
+        cursor
       }));
       return readJson<SearchResult>(response);
     },
@@ -133,12 +136,13 @@ export function createHttpJournalApi(fetcher: FetchLike = globalThis.fetch.bind(
       return readJson<EvidenceResult>(response);
     },
 
-    async getTimeline(scope) {
+    async getTimeline(scope, cursor = null) {
       const response = await postJson(fetcher, scope, routes.timeline, readBody(scope, {
         from: scope.filters.from || null,
         to: scope.filters.to || null,
         includeUnknown: scope.filters.includeUnknown,
-        pageSize: 100
+        pageSize: TIMELINE_PAGE_SIZE,
+        cursor
       }));
       return readJson<TimelineResult>(response);
     }
