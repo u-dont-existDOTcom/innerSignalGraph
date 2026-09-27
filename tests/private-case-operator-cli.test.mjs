@@ -9,6 +9,8 @@ import { fileURLToPath } from "node:url";
 import { SignJWT, exportJWK, generateKeyPair } from "jose";
 import { createEmptyCaseState } from "../src/case-state/longitudinal-state.mjs";
 import { createEncryptedPrivateCaseStore } from "../src/storage/private-case-store.mjs";
+import { acquirePrivateRootWriterLock } from "../src/storage/shared-case-coordinator.mjs";
+import { createHash } from "node:crypto";
 
 const execFileAsync = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -99,4 +101,34 @@ test("one-shot hosted operator uses its separate ACL, pinned JWKS and writer loc
   assert.equal(created.active_generation, null);
   assert.equal((await fs.stat(createReceiptPath)).mode & 0o777, 0o600);
   assert.equal((await fs.stat(path.join(directory, ".journal-writer.lock"))).mode & 0o777, 0o600);
+});
+
+test("every operator mode takes the vault writer lock, so none writes under another writer", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-operator-cli-dev-"));
+  await fs.chmod(directory, 0o700);
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const vault = path.join(directory, "vaults");
+  const routineKek = Buffer.alloc(32, 103);
+  const recoverySecretBytes = Buffer.alloc(32, 104);
+  const seed = createEncryptedPrivateCaseStore({ rootDir: vault, routineKek, recoverySecretBytes, developmentExternalCredentialAuthorized: true });
+  await seed.saveCaseState(CASE_ID, createEmptyCaseState({ caseId: CASE_ID }));
+  seed.close();
+  const token = "synthetic-development-operator-token";
+  const credentialsPath = path.join(directory, "credentials.json");
+  await writePrivateJson(credentialsPath, {
+    schema_version: 1,
+    root_dir: vault,
+    grants: [{ token_sha256: createHash("sha256").update(token).digest("hex"), principal_id: "synthetic-operator", case_ids: [CASE_ID], scopes: ["case:write"], purposes: ["archive"] }],
+    case_keys: { [CASE_ID]: { routine_kek_base64: routineKek.toString("base64"), recovery_secret_base64: recoverySecretBytes.toString("base64") } }
+  });
+  const probePath = path.join(directory, "probe.json");
+  const receiptPath = path.join(directory, "probe-receipt.json");
+  await writePrivateJson(probePath, { schema_version: 1, operation: "probe_journal_write", case_id: CASE_ID, purpose: "archive" });
+  const run = () => execFileAsync(process.execPath, [cli, "--credentials", credentialsPath, "--request", probePath, "--receipt", receiptPath],
+    { cwd: root, env: { PATH: process.env.PATH, INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: token } });
+  const server = await acquirePrivateRootWriterLock({ rootDir: vault });
+  await assert.rejects(run(), (error) => /active writer/.test(error.stderr));
+  await server.release();
+  await run();
+  assert.equal(JSON.parse(await fs.readFile(receiptPath, "utf8")).operation_succeeded, true);
 });

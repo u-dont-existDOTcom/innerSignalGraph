@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
-import { sourceParserCapabilities } from "../journal-import/parsers/index.mjs";
+import { sourceFormatForPath, sourceParserCapabilities } from "../journal-import/parsers/index.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../journal-import/provider-runtime.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -116,11 +116,19 @@ async function inspectConfiguredSource(configPath, config) {
     if ((information.mode & 0o077) !== 0) throw new ValidationError("Journal source must have mode 0600 or stricter.", { code: "JOURNAL_SOURCE_MODE_INVALID" });
     const bytes = await handle.readFile();
     const actualDigest = createHash("sha256").update(bytes).digest("hex");
+    // The runtime parses a non-PDF source as UTF-8 text, so it is supported exactly when it decodes.
+    const format = sourceFormatForPath(sourcePath);
+    let decodes = true;
+    if (format === "text") {
+      try { new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
+      catch { decodes = false; }
+    }
+    bytes.fill(0);
     return Object.freeze({
       available: true,
       byte_length_matches: information.size === config.source.bytes,
       digest_matches: actualDigest === config.source.sha256,
-      format: path.extname(sourcePath).toLowerCase() === ".pdf" ? "pdf" : "unknown"
+      format: decodes ? format : "unknown"
     });
   });
 }

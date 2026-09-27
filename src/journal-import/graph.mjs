@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { validateExtractionReferences, validateJournalGraph } from "./contracts.mjs";
 import { resolveUnitQuote } from "./anchors.mjs";
+import { JOURNAL_OBJECT_PAYLOAD_MAX_BYTES } from "../storage/private-journal-corpus.mjs";
 
 const DEFAULT_SHARD_TARGET_BYTES = 1024 * 1024;
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
@@ -357,17 +358,22 @@ export async function persistGraphGeneration({
   const sourceRepresentationObjects = {};
   for (const [index, [representationId, text]] of Object.entries(sourceRepresentations).sort(([left], [right]) => left.localeCompare(right)).entries()) {
     const objectId = `graph:${generationTag}:representation:${String(index).padStart(6, "0")}`;
-    const reference = await corpusStore.writeJsonObject({
-      objectId,
-      value: {
-        schema_version: "1.0",
-        representation_id: representationId,
-        text,
-        utf8_byte_length: Buffer.byteLength(text, "utf8"),
-        sha256: sha256(Buffer.from(text, "utf8"))
-      }
-    });
-    sourceRepresentationObjects[representationId] = contentRef(reference);
+    const value = {
+      schema_version: "1.0",
+      representation_id: representationId,
+      text,
+      utf8_byte_length: Buffer.byteLength(text, "utf8"),
+      sha256: sha256(Buffer.from(text, "utf8"))
+    };
+    // A representation that fits one object is stored as one, as before. A larger one, such as a
+    // long text journal, is stored as UTF-8 chunks, so no source that intake accepts fails here.
+    if (Buffer.byteLength(JSON.stringify(value), "utf8") <= JOURNAL_OBJECT_PAYLOAD_MAX_BYTES) {
+      sourceRepresentationObjects[representationId] = contentRef(await corpusStore.writeJsonObject({ objectId, value }));
+      continue;
+    }
+    invariant(typeof corpusStore.writeChunkedOriginal === "function", "CORPUS_STORE_INVALID");
+    const chunked = await corpusStore.writeChunkedOriginal({ objectId, bytes: Buffer.from(text, "utf8") });
+    sourceRepresentationObjects[representationId] = { ...structuredClone(chunked), representation_id: representationId, encoding: "utf8_chunks" };
   }
   const manifestObjectId = `graph:${generationTag}:manifest`;
   const manifest = {

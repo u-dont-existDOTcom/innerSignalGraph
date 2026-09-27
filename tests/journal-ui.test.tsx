@@ -15,7 +15,7 @@ import {
   type JournalNode,
   type ReadScope
 } from "../apps/journal-web/src/contracts";
-import { boundAndFilterGraph, emptyFilters } from "../apps/journal-web/src/model";
+import { boundAndFilterGraph, emptyFilters, matchesFilters } from "../apps/journal-web/src/model";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const context: JournalContext = Object.freeze({
@@ -301,6 +301,22 @@ describe("private HTTP boundary", () => {
 
     await expect(api.startImport({ ...context, csrfToken: undefined }, new File(["x"], "journal.pdf"))).rejects.toThrow(/CSRF token/);
     storageSpy.mockRestore();
+  });
+});
+
+describe("timeline filtering", () => {
+  test("filters a timeline item by the interval that places it, not by the record's first-listed time", () => {
+    const record: JournalNode = { id: "a9", kind: "assertion", data: {
+      authored_time: { from: "2020-01-01T00:00:00.000Z", to: "2020-01-01T23:59:59.999Z" },
+      event_time: { from: "2024-06-01T00:00:00.000Z", to: "2024-06-01T23:59:59.999Z" }
+    } };
+    const written = { ...record, timeline_entry: { lane: "known" as const, fields: ["authored_time"], from: "2020-01-01T00:00:00.000Z", to: "2020-01-01T23:59:59.999Z" } };
+    const window2020 = { ...emptyFilters(), from: "2020-01-01", to: "2020-12-31" };
+    expect(matchesFilters(written, window2020)).toBe(true);
+    expect(matchesFilters(written, { ...emptyFilters(), from: "2024-01-01" })).toBe(false);
+    const unknown = { ...record, timeline_entry: { lane: "unknown" as const, fields: ["authored_time", "event_time"], from: null, to: null } };
+    expect(matchesFilters(unknown, { ...window2020, includeUnknown: false })).toBe(false);
+    expect(matchesFilters(unknown, { ...window2020, includeUnknown: true })).toBe(true);
   });
 });
 

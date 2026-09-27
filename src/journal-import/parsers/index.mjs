@@ -27,6 +27,12 @@ function invariant(condition, code) {
   if (!condition) throw new ValidationError(code, { code });
 }
 
+// The format a source is parsed as: PDF by extension, otherwise UTF-8 text. The runtime and the
+// doctor both use this, so the doctor reports what an import will actually do.
+export function sourceFormatForPath(filePath) {
+  return path.extname(filePath).toLowerCase() === ".pdf" ? "pdf" : "text";
+}
+
 export function sourceParserCapabilities() {
   return structuredClone({ protocol_version: "1.0", formats: SUPPORTED });
 }

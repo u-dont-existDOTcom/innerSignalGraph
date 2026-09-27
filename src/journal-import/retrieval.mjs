@@ -52,6 +52,7 @@ export async function openPrivateJournalGraph({
   const cache = new Map();
   const indexMaps = new Map();
   const recordMaps = new Map();
+  const representationTexts = new Map();
   let objectReads = 0;
   const assertCurrent = async () => invariant((await assertSnapshotCurrent()) !== false, "CURSOR_STALE");
   const memoized = (map, id, load) => {
@@ -214,7 +215,9 @@ export async function openPrivateJournalGraph({
     const offset = cursor ? parseCursor(cursor, { query_sha256: querySha, filters_sha256: filtersSha, sort: "timeline" }).offset : 0;
     const known = await readIndex("time_known", "known");
     const unknown = includeUnknown ? await readIndex("time_unknown", "unknown") : [];
-    const selected = known.filter((entry) => (from === null || entry.to >= from) && (to === null || entry.from <= to));
+    // A date-only upper bound, as the web page sends, includes that whole day.
+    const upper = to !== null && /^\d{4}-\d{2}-\d{2}$/u.test(to) ? `${to}T23:59:59.999Z` : to;
+    const selected = known.filter((entry) => (from === null || entry.to >= from) && (upper === null || entry.from <= upper));
     // One entry per record and known time interval, labeled with the field or fields that place
     // it there: a record written on one date about an event on another appears at each, and one
     // whose two times are equal appears once. A record with no known time at all appears once in
@@ -308,6 +311,24 @@ export async function openPrivateJournalGraph({
     return Object.freeze({ status: "complete", nodes: [...nodes.values()], edges: [...edges.values()], more_available: false });
   };
 
+  // A representation is one JSON object or, when too large for one, UTF-8 chunks checked against
+  // the digest the manifest records for it.
+  const representationText = (representationId, descriptor) => memoized(representationTexts, descriptor.object_id, async () => {
+    if (!Array.isArray(descriptor.chunks)) {
+      const representation = await readJson(descriptor.object_id);
+      invariant(representation.representation_id === representationId, "SOURCE_REPRESENTATION_MISMATCH");
+      return representation.text;
+    }
+    invariant(descriptor.representation_id === representationId && descriptor.encoding === "utf8_chunks", "SOURCE_REPRESENTATION_MISMATCH");
+    const bytes = await corpusStore.reassembleOriginal(descriptor);
+    objectReads += descriptor.chunks.length;
+    try {
+      const expected = manifest.source_representations?.[representationId];
+      invariant(expected && bytes.length === expected.utf8_byte_length && sha256(bytes) === expected.sha256, "SOURCE_REPRESENTATION_MISMATCH");
+      return bytes.toString("utf8");
+    } finally { bytes.fill(0); }
+  });
+
   const resolveEvidence = async (ids) => {
     await assertCurrent();
     invariant(Array.isArray(ids) && ids.length > 0 && ids.length <= 200
@@ -320,9 +341,7 @@ export async function openPrivateJournalGraph({
       invariant(active(record), "EVIDENCE_RECORD_REVOKED");
       const descriptor = manifest.source_representation_objects?.[record.data.representation_id];
       invariant(descriptor?.object_id, "SOURCE_REPRESENTATION_UNAVAILABLE");
-      const representation = await readJson(descriptor.object_id);
-      invariant(representation.representation_id === record.data.representation_id, "SOURCE_REPRESENTATION_MISMATCH");
-      const sourceBytes = Buffer.from(representation.text, "utf8");
+      const sourceBytes = Buffer.from(await representationText(record.data.representation_id, descriptor), "utf8");
       const slice = sourceBytes.subarray(record.data.start_byte, record.data.end_byte);
       invariant(slice.byteLength === record.data.end_byte - record.data.start_byte, "SOURCE_SPAN_OUT_OF_RANGE");
       invariant(sha256(slice) === record.data.quote_sha256, "SOURCE_SPAN_DIGEST_MISMATCH");
@@ -363,6 +382,6 @@ export async function openPrivateJournalGraph({
       await assertCurrent();
       return records;
     },
-    close() { secret.fill(0); cache.clear(); indexMaps.clear(); recordMaps.clear(); }
+    close() { secret.fill(0); cache.clear(); indexMaps.clear(); recordMaps.clear(); representationTexts.clear(); }
   });
 }

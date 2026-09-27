@@ -37,7 +37,13 @@ Updated: 2026-09-27
   - Once intake has archived the original, the upload is no longer needed. Startup checks the source only until then, and the parser reads the archived bytes, which reach the parser process over IPC so it reads no file. Status and a resumed intake work after the upload is deleted or rotated.
   - The web page builds each view from one published snapshot. If a generation is published mid-load it retries once, then reports the change; a later page or exact source from another snapshot is refused with a prompt to search again.
   - Each has a test that fails without it.
-- **Verified:** after round 6 and main at `187f2f4` (#95), `npm test` (1,539), `npm run audit:repository`, `npm run audit:publication`, `npm run verify`, `npm run journal:ui:test` (15) and `npm run journal:ui:build` pass on Node 24.18.0, and the web client type-checks (`tsc -p apps/journal-web`). Privacy scan of every moved file: no case ID or source hash, host paths, e-mail addresses, IP addresses or personal names; only synthetic example domains.
+- **Review round 7:**
+  - Every operator CLI mode takes the vault writer lock, not only the hosted one-shot mode.
+  - A source representation too large for one encrypted object (a long text journal) is stored as UTF-8 chunks checked against the manifest's digest. Reading evidence and transferring a generation handle both forms.
+  - The web page filters a timeline item by the interval that places it, and the timeline's date-only upper bound includes that whole day.
+  - `doctor` uses the runtime's format rule, so a UTF-8 text source is reported as importable and other non-PDF bytes as unsupported.
+  - Each has a test that fails without it.
+- **Verified:** after round 7 and main at `187f2f4` (#95), `npm test` (1,542), `npm run audit:repository`, `npm run audit:publication`, `npm run verify`, `npm run journal:ui:test` (16) and `npm run journal:ui:build` pass on Node 24.18.0, and the web client type-checks (`tsc -p apps/journal-web`). Privacy scan of every moved file: no case ID or source hash, host paths, e-mail addresses, IP addresses or personal names; only synthetic example domains.
 - **Safety:** nothing is deployed, and the running import is unchanged; it keeps running from the private checkout until the owner approves the switch. The journal read tools stay off unless a grant lists journal purposes, and the operator needs its own environment.
 - **Next safe action:** the owner approved the merge once review is clean ("merge 93 and 94"). Then the exchange-backed provider (retiring the desktop transport), then the Mission Control job type.
 ## Journal work exchange hardening — `claude/journal-work-exchange-hardening-20260927`

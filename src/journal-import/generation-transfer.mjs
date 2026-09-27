@@ -12,7 +12,9 @@ export async function transferJournalGeneration({sourceStore,destinationStore,pe
   requireValue(manifest.case_id===sourceStore.caseId&&manifest.corpus_id===sourceStore.corpusId,
     'JOURNAL_TRANSFER_MANIFEST_MISMATCH');
   const objects=[...manifest.record_shards,...Object.values(manifest.indexes).flat(),
-    ...Object.values(manifest.source_representation_objects),
+    // A large representation is stored as chunks, each copied and verified like an archive chunk.
+    ...Object.values(manifest.source_representation_objects).flatMap(ref=>Array.isArray(ref.chunks)
+      ?ref.chunks.map(chunk=>({...chunk,object_id:ref.object_id,object_version:ref.object_version})):[ref]),
     ...manifest.archive_references.flatMap(archive=>archive.chunks.map(chunk=>({...chunk,object_id:archive.object_id,object_version:archive.object_version}))),
     persisted.manifest_reference];
   const seen=new Set();let copied=0,reused=0,bytes=0;

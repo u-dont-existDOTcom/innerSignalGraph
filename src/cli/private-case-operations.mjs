@@ -51,7 +51,9 @@ if (typeof token !== "string" || !token) throw new Error("INNER_SIGNAL_PRIVATE_C
 let writerLock = null;
 
 try {
-  writerLock = hostedOperator ? await acquirePrivateRootWriterLock({ rootDir: providers.rootDir }) : null;
+  // Every mode can change the vault, so every mode holds its writer lock: no operator write runs
+  // under a running InnerSignal server, a journal publication or another operator.
+  writerLock = await acquirePrivateRootWriterLock({ rootDir: providers.rootDir });
   const receipt = await createPrivateCaseOrchestrator({ caseAccessService: service }).execute(request, { bearerToken: token });
   const temporary = `${receiptPath}.${process.pid}.${randomUUID()}.tmp`;
   try {

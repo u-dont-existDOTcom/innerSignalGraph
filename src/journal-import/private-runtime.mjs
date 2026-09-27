@@ -11,7 +11,7 @@ import { createPrivateCaseAccessService } from "../storage/private-case-access.m
 import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs";
 import { createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
 import { JOURNAL_ROLE_DEFINITIONS, buildJournalRolePacket, journalRoleInstruction } from "./provider-port.mjs";
-import { parseSourceFile } from "./parsers/index.mjs";
+import { parseSourceFile, sourceFormatForPath } from "./parsers/index.mjs";
 import { partitionRepresentation, verifyRepresentationCoverage } from "./partition.mjs";
 import { selectCalibrationWindows, scoreReferenceReview, createDeterministicAuditSample, certifyIndependentAudit } from "./audit.mjs";
 import { adaptExtractionToGraph, persistGraphGeneration } from "./graph.mjs";
@@ -248,7 +248,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       let parsed;
       try {
         invariant(archivedBytes.length === config.source.bytes && hash(archivedBytes) === config.source.sha256, "ORIGINAL_REASSEMBLY_MISMATCH");
-        parsed = await sourceParser({ inputBytes: archivedBytes, format: path.extname(sourcePath) === ".pdf" ? "pdf" : "text", timeoutMs: 240_000, memoryLimitMb: 1024 });
+        parsed = await sourceParser({ inputBytes: archivedBytes, format: sourceFormatForPath(sourcePath), timeoutMs: 240_000, memoryLimitMb: 1024 });
       } finally { archivedBytes.fill(0); }
       invariant(parsed.source.sha256 === config.source.sha256, "PARSED_SOURCE_BINDING_MISMATCH");
       const units = [];

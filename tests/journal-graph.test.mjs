@@ -9,6 +9,7 @@ import { validateJournalGraph } from "../src/journal-import/contracts.mjs";
 import { adaptExtractionToGraph, persistGraphGeneration } from "../src/journal-import/graph.mjs";
 import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
+import { transferJournalGeneration } from "../src/journal-import/generation-transfer.mjs";
 import { partitionRepresentation } from "../src/journal-import/partition.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 
@@ -77,6 +78,54 @@ function passageGraph({ caseId = "page-case", corpusId = "page-corpus", generati
     representations: { "representation:paging": text }
   };
 }
+
+// One text representation larger than a single encrypted object, with a passage at its far end.
+function largeTextGraph() {
+  const caseId = "large-case";
+  const corpusId = "large-corpus";
+  const filler = "Synthetic filler line for a long invented text journal.\n".repeat(90_000);
+  const quote = "needle at the far end\n";
+  const text = filler + quote;
+  const start = Buffer.byteLength(filler, "utf8");
+  const common = { case_id: caseId, corpus_id: corpusId, version: 1, lifecycle: "active" };
+  return {
+    graph: {
+      schema_version: "1.0", case_id: caseId, corpus_id: corpusId, generation: "large-generation",
+      nodes: [
+        { id: "source:large", ...common, kind: "source", data: { representation_id: "representation:large", original_object_id: "original:large",
+          media_type: "text/plain", byte_length: Buffer.byteLength(text, "utf8"), parse_status: "readable" } },
+        { id: "passage:far", ...common, kind: "passage", data: { representation_id: "representation:large", unit_id: "unit:far",
+          start_byte: start, end_byte: start + Buffer.byteLength(quote, "utf8"), quote, quote_sha256: sha256(Buffer.from(quote, "utf8")),
+          locator: { kind: "native_text", page: null, bbox: null, original_object_id: "original:large", interpretation_status: "native" } } }
+      ],
+      edges: []
+    },
+    representations: { "representation:large": text }
+  };
+}
+
+test("a text source larger than one object is stored in chunks, and its exact spans resolve and transfer", async () => {
+  const { graph, representations } = largeTextGraph();
+  assert.ok(Buffer.byteLength(representations["representation:large"], "utf8") > 4 * 1024 * 1024);
+  const store = corpusStore(await temporaryRoot(), graph.case_id, graph.corpus_id, Buffer.alloc(32, 41));
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph, sourceRepresentations: representations, shardTargetBytes: 8192 });
+  const descriptor = persisted.manifest.source_representation_objects["representation:large"];
+  assert.equal(descriptor.encoding, "utf8_chunks");
+  assert.ok(descriptor.chunks.length >= 2);
+  const open = (corpus) => openPrivateJournalGraph({ corpusStore: corpus, manifestObjectId: persisted.manifest_object_id, caseId: graph.case_id,
+    corpusId: graph.corpus_id, generation: graph.generation, visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 43) });
+  const reader = await open(store);
+  assert.equal((await reader.resolveEvidence(["passage:far"])).exact_spans[0].quote, "needle at the far end\n");
+  reader.close();
+  const destination = corpusStore(await temporaryRoot(), graph.case_id, graph.corpus_id, Buffer.alloc(32, 45));
+  const transfer = await transferJournalGeneration({ sourceStore: store, destinationStore: destination, persisted });
+  assert.ok(transfer.copied_objects > descriptor.chunks.length);
+  const copied = await open(destination);
+  assert.equal((await copied.resolveEvidence(["passage:far"])).exact_spans[0].quote, "needle at the far end\n");
+  copied.close();
+  store.close();
+  destination.close();
+});
 
 test("schema-valid mocked extraction becomes a persistent searchable graph without conflating source order and time", async () => {
   const rootDir = await temporaryRoot();
@@ -269,6 +318,9 @@ test("the timeline places a record at each of its known times and says which fie
   assert.equal(whole.unknown_count, 7);
   const window = await reader.timeline({ from: "2024-01-01T00:00:00.000Z", includeUnknown: false });
   assert.deepEqual(describe(window.records), [["a1", "known", "event_time", "2024-06-01"]]);
+  // Date-only bounds, as the web page sends them, include the whole of their days.
+  const oneDay = await reader.timeline({ from: "2024-06-01", to: "2024-06-01", includeUnknown: false });
+  assert.deepEqual(describe(oneDay.records), [["a1", "known", "event_time", "2024-06-01"]]);
   reader.close();
   store.close();
 });

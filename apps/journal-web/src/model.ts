@@ -43,6 +43,17 @@ function recordDate(node: JournalNode): string | null {
 
 export function matchesFilters(node: JournalNode, filters: JournalFilters): boolean {
   if (filters.kinds.length && !filters.kinds.includes(node.kind)) return false;
+  // A timeline item is placed by its own interval, which may be its written or its event time, so
+  // it is filtered by that interval rather than by whichever time the record lists first.
+  const entry = node.timeline_entry;
+  if (entry) {
+    if (entry.lane === "unknown") return filters.includeUnknown || (!filters.from && !filters.to);
+    const from = entry.from?.slice(0, 10) ?? null;
+    const to = entry.to?.slice(0, 10) ?? from;
+    if (filters.from && to && to < filters.from) return false;
+    if (filters.to && from && from > filters.to) return false;
+    return true;
+  }
   const date = recordDate(node);
   if (!date) return filters.includeUnknown || (!filters.from && !filters.to);
   if (filters.from && date < filters.from) return false;

@@ -121,3 +121,34 @@ test("configured doctor verifies the private source while reporting missing oper
   assert.equal(report.capabilities.inference_route, "unavailable");
   assert.deepEqual(report.blockers, ["INFERENCE_ISOLATION_UNAVAILABLE", "OPERATOR_ENVIRONMENT_UNAVAILABLE"]);
 });
+
+test("doctor reports a UTF-8 text source as importable and other non-PDF bytes as unsupported", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-journal-doctor-text-"));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const privateDirectory = path.join(directory, "private");
+  const sourceDirectory = path.join(privateDirectory, "source");
+  await fs.mkdir(sourceDirectory, { recursive: true, mode: 0o700 });
+  const doctor = async (name, bytes) => {
+    await fs.writeFile(path.join(sourceDirectory, name), bytes, { mode: 0o600 });
+    const configPath = path.join(privateDirectory, `${name}.json`);
+    await fs.writeFile(configPath, `${JSON.stringify({
+      schema_version: 1,
+      mode: "synthetic_private_doctor",
+      source: { relative_path: `private/source/${name}`, sha256: createHash("sha256").update(bytes).digest("hex"), bytes: bytes.byteLength },
+      target_profile: { case_id: "synthetic-doctor-case" },
+      private_runtime_root: path.join(directory, "runtime"),
+      max_external_spend_usd: 0
+    })}\n`, { mode: 0o600 });
+    let stdout = "";
+    assert.equal(await runJournalImportCli(["doctor", "--config", configPath], {
+      stdout: { write: (chunk) => { stdout += chunk; } }, stderr: { write: () => {} }, environment: {}
+    }), 0);
+    return JSON.parse(stdout);
+  };
+  const text = await doctor("journal.txt", Buffer.from("Entrée inventée 🌿 — une ligne.\n", "utf8"));
+  assert.equal(text.capabilities.parser, "node-utf8");
+  assert.equal(text.blockers.includes("FORMAT_UNSUPPORTED"), false);
+  const binary = await doctor("journal.bin", Buffer.from([0xff, 0xfe, 0x00, 0x81]));
+  assert.equal(binary.capabilities.parser, "unsupported");
+  assert.equal(binary.blockers.includes("FORMAT_UNSUPPORTED"), true);
+});
