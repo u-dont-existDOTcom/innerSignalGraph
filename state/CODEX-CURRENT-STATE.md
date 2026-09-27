@@ -1,6 +1,15 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-26
+Updated: 2026-09-27
+
+## Journal work exchange: connector tools for the private import — `claude/journal-work-exchange-20260927`
+
+- **Goal:** unstick the private journal import. Its desktop-app transport ends every run on "completion unknown" and has advanced about one step an hour.
+- **Owner decisions:** 2026-09-26, add two private connector tools, one to hand ChatGPT a work item and one to store its answer. 2026-09-27, keep the importer code in this public repository.
+- **Done, don't repeat:** `src/journal-import/work-exchange.mjs` is an encrypted outbox/inbox with first-write-wins publication and connector-signed receipts. `src/server/journal-work-tools.mjs` adds `get_journal_work_packet` (`case:read`) and `submit_journal_work_result` (new narrow scope `journal:submit`, schema-checked with Ajv). Both are wired into the private MCP server and CLI behind three optional settings. Ajv is now a runtime dependency. The exchange root must already exist and resolve outside the checkout; each queue must be a real directory, never a symbolic link; the root is synced before every write. Codex rounds 1–4 are addressed. Design: `docs/superpowers/specs/2026-09-27-journal-work-exchange.md`.
+- **Verified:** `tests/journal-work-exchange.test.mjs` and `tests/journal-work-tools.test.mjs` pass. The full `npm test` (1,371 tests), `npm run audit:repository`, `npm run audit:publication` and `npm run verify` pass on Node 24.18.0.
+- **Safety:** with the settings absent, the server's tools and instructions are unchanged. No private data, deployment, ACL or identity-provider change is in this branch.
+- **Next safe action:** Codex review; owner approval to merge. Then the runtime provider (moving the importer into this repository) and the Mission Control job type. Deploying the tools needs the owner's approval of the steps in the spec's Deployment section.
 
 ## Therapy protocol: unserved references fail closed — `claude/protocol-reference-guard-20260926` (PR #90)
 

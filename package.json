@@ -65,10 +65,8 @@
     "test:role-belief-integrity": "node --test tests/role-belief-memory.test.mjs tests/role-belief-prompts.test.mjs tests/role-belief-trajectories.test.mjs"
   },
   "dependencies": {
+    "ajv": "8.20.0",
     "jose": "6.2.12",
     "yaml": "2.9.0"
-  },
-  "devDependencies": {
-    "ajv": "8.20.0"
   }
 }
