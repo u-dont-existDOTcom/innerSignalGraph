@@ -217,7 +217,10 @@ export async function openPrivateJournalGraph({
     const unknown = includeUnknown ? await readIndex("time_unknown", "unknown") : [];
     // A date-only upper bound, as the web page sends, includes that whole day.
     const upper = to !== null && /^\d{4}-\d{2}-\d{2}$/u.test(to) ? `${to}T23:59:59.999Z` : to;
-    const selected = known.filter((entry) => (from === null || entry.to >= from) && (upper === null || entry.from <= upper));
+    // A known interval may be open at one end: a missing start is the unbounded past and a missing
+    // end the unbounded future, so a partly dated record stays inside any window it overlaps.
+    const selected = known.filter((entry) => (from === null || entry.to === null || entry.to >= from)
+      && (upper === null || entry.from === null || entry.from <= upper));
     // One entry per record and known time interval, labeled with the field or fields that place
     // it there: a record written on one date about an event on another appears at each, and one
     // whose two times are equal appears once. A record with no known time at all appears once in

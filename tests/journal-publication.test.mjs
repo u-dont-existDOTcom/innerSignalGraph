@@ -9,6 +9,8 @@ import {createPrivateJournalCorpusStore} from '../src/storage/private-journal-co
 import {persistGraphGeneration} from '../src/journal-import/graph.mjs';
 import {publishJournalGenerationFromStaging} from '../src/journal-import/publication.mjs';
 import {createPrivateCaseOrchestrator} from '../src/supervisor/private-case-orchestration.mjs';
+import {createJournalPrivateApi} from '../src/journal-import/http.mjs';
+import {transferJournalGeneration} from '../src/journal-import/generation-transfer.mjs';
 
 const CASE_ID='synthetic-case',CORPUS_ID='corpus:synthetic';
 // The operator's documented grant: case:write only, for the import's three purposes.
@@ -104,4 +106,19 @@ test('the documented import grant cannot roll back, and a run with a correct-pur
  await assert.rejects(operator.execute(rollback,{bearerToken:WRITER}),{code:'PRIVATE_CASE_ACCESS_DENIED'});
  // Authorized: it now fails only because the synthetic target generation was never published.
  await assert.rejects(operator.execute(rollback,{bearerToken:CORRECTOR}),{code:'SOURCE_UNAVAILABLE'});
+});
+
+test('a commit refuses a manifest staged before a visibility change instead of activating a dead generation',async t=>{
+ const {service,sourceStore,persisted}=await environment(t);
+ const auth={bearerToken:WRITER};
+ await service.createJournalCorpus(CASE_ID,{corpusId:CORPUS_ID,manifestObjectId:persisted.manifest_object_id},auth);
+ await service.withJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'archive'},
+  ({corpusStore})=>transferJournalGeneration({sourceStore,destinationStore:corpusStore,persisted}),auth);
+ await service.incrementJournalVisibilityEpoch(CASE_ID,{corpusId:CORPUS_ID,expectedEpoch:0},auth);
+ await assert.rejects(createJournalPrivateApi({caseAccessService:service}).commit({caseId:CASE_ID,corpusId:CORPUS_ID,
+  generation:persisted.manifest.generation,manifestObjectId:persisted.manifest_object_id,
+  permittedUses:['archive','organize_search','session_use']},auth),{code:'GRANT_REVOKED'});
+ const inspection=await service.inspectJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'session_use'},auth);
+ assert.equal(inspection.reference.active_generation,null);
+ assert.equal(inspection.reference.visibility_epoch,1);
 });

@@ -27,6 +27,13 @@ import { createJournalSemanticBatches, splitBatchExtractionByUnit } from "./sema
 
 const hash = (v) => createHash("sha256").update(v).digest("hex");
 const invariant = (v, code) => { if (!v) throw new ValidationError(code, { code }); };
+// Calibration windows over native-text units. A scanned or image-only source has none at intake;
+// its visual units get windows once the page reader has produced them, so none is a valid start.
+const nativeCalibration = (units) => units.length ? selectCalibrationWindows(units) : [];
+// The graph's parse status for a parsed page. A page whose text needs its reading order or tables
+// reviewed is readable in part; anything unrecognized is recorded as partial, never as readable.
+const PARSE_STATUS_BY_DISPOSITION = Object.freeze({ readable: "readable", visual_pending: "visual_pending", review_required: "partial", unreadable: "unreadable" });
+const parseStatus = (page) => page ? (PARSE_STATUS_BY_DISPOSITION[page.disposition] ?? "partial") : "readable";
 const completions = () => Object.fromEntries(["archive_verified", "raw_search_available", "graph_built", "semantically_audited", "patterns_reviewed", "profile_committed", "cold_retrieval_verified", "capacity_tested"].map((k) => [k, "not_run"]));
 
 async function privateJson(file, value) {
@@ -207,7 +214,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       for (const unit of plan.units) if (pages.has(unit.page_number)) {
         unit.hazard_types = [...new Set([...unit.hazard_types, "declared_source_hazard"])];
       }
-      plan.calibration = selectCalibrationWindows(plan.units);
+      plan.calibration = nativeCalibration(plan.units);
       if (JSON.stringify(plan) !== previous) {
         invariant(!state.visual_plan_ref && !state.graph_ref, "JOURNAL_HAZARD_PLAN_ALREADY_CONSUMED");
         state.plan_revisions ??= [];
@@ -260,7 +267,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       const explicitHazards = new Set(config.visual_hazard_pages ?? []);
       const visualPages = parsed.pages.filter((p) => p.disposition !== "readable" || p.image_inventory?.length || explicitHazards.has(p.page_number)).map((p) => p.page_number);
-      const plan = { parsed, units, visual_pages: visualPages, calibration: selectCalibrationWindows(units), parser_version: parsed.parser.version };
+      const plan = { parsed, units, visual_pages: visualPages, calibration: nativeCalibration(units), parser_version: parsed.parser.version };
       state.parsed_ref = await writeLarge(`intake:plan:${randomUUID()}`, plan);
       state.total_units = units.length; state.required_visual_pages = visualPages.length;
       state.completion.archive_verified = "pass";
@@ -276,7 +283,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const units = plan.units.filter(u => u.representation_id === representation.representation_id);
         const page = plan.parsed.pages.find(p => p.representation_id === representation.representation_id);
         const empty = { schema_version: "1.0", status: "incomplete", assertions: [], entities: [], episodes: [], coverage: units.map(u => ({ unit_id: u.unit_id, disposition: "pending", assertion_local_ids: [], reason: "Semantic processing has not completed." })), requested_context: [] };
-        const graph = adaptExtractionToGraph({ caseId, corpusId: state.corpus_id, generation, source: { id: `source:${hash(representation.representation_id).slice(0, 32)}`, representation_id: representation.representation_id, original_object_id: state.original.object_id, media_type: plan.parsed.source.mime_type, byte_length: representation.utf8_byte_length, parse_status: page?.disposition ?? "readable", page: page?.page_number ?? null }, units, extraction: empty, producerRef: "mechanical-source-index" });
+        const graph = adaptExtractionToGraph({ caseId, corpusId: state.corpus_id, generation, source: { id: `source:${hash(representation.representation_id).slice(0, 32)}`, representation_id: representation.representation_id, original_object_id: state.original.object_id, media_type: plan.parsed.source.mime_type, byte_length: representation.utf8_byte_length, parse_status: parseStatus(page), page: page?.page_number ?? null }, units, extraction: empty, producerRef: "mechanical-source-index" });
         nodes.push(...graph.nodes); edges.push(...graph.edges);
       }
       const graph = { schema_version: "1.0", case_id: caseId, corpus_id: state.corpus_id, generation, nodes, edges };
@@ -868,7 +875,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         // The twelve position windows belong to the original source sequence;
         // appended visual interpretations are additional hazards, not strata.
-        plan.calibration = [...selectCalibrationWindows(plan.units.filter(u => !u.visual)),
+        plan.calibration = [...nativeCalibration(plan.units.filter(u => !u.visual)),
           ...plan.units.filter(u => u.visual).map(u => ({ unit_id: u.unit_id, source_order: u.source_order, reason: "visual_hazard" }))];
         state.visual_plan_ref = await writeLarge(`visual:plan:${randomUUID()}`, plan);
         state.total_units = plan.units.length; await save();

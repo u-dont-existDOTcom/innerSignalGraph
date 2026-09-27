@@ -48,8 +48,9 @@ export function matchesFilters(node: JournalNode, filters: JournalFilters): bool
   const entry = node.timeline_entry;
   if (entry) {
     if (entry.lane === "unknown") return filters.includeUnknown || (!filters.from && !filters.to);
+    // An interval may be open at one end: no start is the unbounded past, no end the unbounded future.
     const from = entry.from?.slice(0, 10) ?? null;
-    const to = entry.to?.slice(0, 10) ?? from;
+    const to = entry.to?.slice(0, 10) ?? null;
     if (filters.from && to && to < filters.from) return false;
     if (filters.to && from && from > filters.to) return false;
     return true;

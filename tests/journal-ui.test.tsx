@@ -317,6 +317,12 @@ describe("timeline filtering", () => {
     const unknown = { ...record, timeline_entry: { lane: "unknown" as const, fields: ["authored_time", "event_time"], from: null, to: null } };
     expect(matchesFilters(unknown, { ...window2020, includeUnknown: false })).toBe(false);
     expect(matchesFilters(unknown, { ...window2020, includeUnknown: true })).toBe(true);
+    // An interval open at one end reaches the unbounded past or future on that side.
+    const openAfter = { ...record, timeline_entry: { lane: "known" as const, fields: ["event_time"], from: "2021-05-01T00:00:00.000Z", to: null } };
+    expect(matchesFilters(openAfter, { ...emptyFilters(), from: "2024-01-01" })).toBe(true);
+    const openBefore = { ...record, timeline_entry: { lane: "known" as const, fields: ["event_time"], from: null, to: "2018-12-31T23:59:59.999Z" } };
+    expect(matchesFilters(openBefore, { ...emptyFilters(), to: "2019-06-01" })).toBe(true);
+    expect(matchesFilters(openBefore, { ...emptyFilters(), from: "2019-06-01" })).toBe(false);
   });
 });
 

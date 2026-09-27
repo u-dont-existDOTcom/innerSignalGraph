@@ -512,3 +512,50 @@ test('once the original is archived, the upload may go: status and a resumed par
  } finally { await runtime.close(); }
  assert.deepEqual(inputs,[{inputPath:null,sha256:f.config.source.sha256}]);
 });
+
+test('a scanned source with no native text reaches its visual pages instead of failing calibration', async t => {
+ const f=await fixture(t);
+ const parser=async()=>({
+  source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'application/pdf'},
+  parser:{version:'synthetic-scan'},
+  pages:[{page_number:1,representation_id:'synthetic:scan:1',disposition:'visual_pending',
+    warnings:['no_native_text'],image_inventory:[{kind:'scan'}],geometry:{width:100,height:100}}],
+  representations:[{representation_id:'synthetic:scan:1',text:'',utf8_byte_length:0}]
+ });
+ const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==','base64');
+ const port=createMockJournalInferencePort({handlers:{visual_reader:p=>({schema_version:'1.0',
+  source_page_id:p.assigned_core_ids[0],regions:[{region_id:'region:scan',bbox:[0,0,1,1],kind:'text',
+   transcription:'Handwritten synthetic line.',non_graphic_description:null,interpretation_status:'readable',
+   speaker_or_document_label:null,table_cells:[]}],page_complete:true,missing_or_uncertain_regions:[]})}});
+ const runtime=await openJournalExecutionRuntime({...f,sourceParser:parser,renderVisualPage:async()=>image,inferencePort:port});
+ try {
+  const staged=await runtime.execute('stage');
+  assert.equal(staged.completion.archive_verified,'pass');
+  const result=await runtime.execute('visual-only');
+  assert.equal(result.stage,'REFERENCE_AUDIT');
+  assert.equal(result.completed_visual_pages,1);
+ } finally { await runtime.close(); }
+ const checkpoint=JSON.parse(await fs.readFile(path.join(f.config.execution_root,'state.json')));
+ const key=await fs.readFile(path.join(f.config.execution_root,'staging.key'));
+ const store=createPrivateJournalCorpusStore({rootDir:f.config.execution_root,caseId:checkpoint.case_id,corpusId:checkpoint.corpus_id,corpusKey:key});
+ try {
+  const plan=JSON.parse((await store.reassembleOriginal(checkpoint.visual_plan_ref)).toString());
+  assert.ok(plan.units.length>0&&plan.units.every(u=>u.visual));
+  assert.ok(plan.calibration.length>0&&plan.calibration.every(w=>w.reason==='visual_hazard'));
+ } finally { store.close();key.fill(0); }
+});
+
+test('a page whose reading order needs review is indexed as partly readable', async t => {
+ const f=await fixture(t);
+ const text='Synthetic page with a table.\n';
+ const parser=async()=>({
+  source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'application/pdf'},
+  parser:{version:'synthetic-review'},
+  pages:[{page_number:1,representation_id:'synthetic:review:1',disposition:'review_required',
+    warnings:['structured_table_present'],image_inventory:[],geometry:{width:100,height:100}}],
+  representations:[{representation_id:'synthetic:review:1',text,utf8_byte_length:Buffer.byteLength(text)}]
+ });
+ const runtime=await openJournalExecutionRuntime({...f,sourceParser:parser});
+ try { assert.equal((await runtime.execute('stage')).completion.raw_search_available,'pass'); }
+ finally { await runtime.close(); }
+});

@@ -299,6 +299,11 @@ test("the timeline places a record at each of its known times and says which fie
   a1.data.event_time = day("2024-06-01", "p1");
   a2.data.authored_time = day("2022-03-03", "p2");
   a2.data.event_time = day("2022-03-03", "p2");
+  // Open at one end: after a date, and before one.
+  const a3 = graph.nodes.find(({ id }) => id === "a3");
+  const a4 = graph.nodes.find(({ id }) => id === "a4");
+  a3.data.event_time = { raw: "after May 2021", from: "2021-05-01T00:00:00.000Z", to: null, precision: "interval", timezone: "UTC", basis: "explicit", evidence_ids: ["p3"] };
+  a4.data.event_time = { raw: "before 2019", from: null, to: "2018-12-31T23:59:59.999Z", precision: "interval", timezone: "UTC", basis: "explicit", evidence_ids: ["p4"] };
   const store = corpusStore(rootDir, graph.case_id, graph.corpus_id, Buffer.alloc(32, 17));
   const persisted = await persistGraphGeneration({ corpusStore: store, graph, sourceRepresentations: representations, shardTargetBytes: 4096 });
   const reader = await openPrivateJournalGraph({
@@ -309,18 +314,23 @@ test("the timeline places a record at each of its known times and says which fie
   const whole = await reader.timeline();
   assert.deepEqual(describe(whole.records.filter(({ timeline_entry }) => timeline_entry.lane === "known")), [
     ["a1", "known", "authored_time", "2020-01-01"],
+    ["a3", "known", "event_time", "2021-05-01"],
     ["a2", "known", "authored_time+event_time", "2022-03-03"],
-    ["a1", "known", "event_time", "2024-06-01"]
+    ["a1", "known", "event_time", "2024-06-01"],
+    ["a4", "known", "event_time", null]
   ]);
   // Records with a known time never also sit in the unknown lane.
   assert.deepEqual(whole.records.filter(({ timeline_entry }) => timeline_entry.lane === "unknown").map(({ id }) => id).sort(),
-    ["a3", "a4", "a5", "a6", "a7", "ep1", "ep2"]);
-  assert.equal(whole.unknown_count, 7);
+    ["a5", "a6", "a7", "ep1", "ep2"]);
+  assert.equal(whole.unknown_count, 5);
+  // An interval open at its end stays in every later window, and one open at its start in every earlier one.
   const window = await reader.timeline({ from: "2024-01-01T00:00:00.000Z", includeUnknown: false });
-  assert.deepEqual(describe(window.records), [["a1", "known", "event_time", "2024-06-01"]]);
+  assert.deepEqual(describe(window.records), [["a3", "known", "event_time", "2021-05-01"], ["a1", "known", "event_time", "2024-06-01"]]);
+  const early = await reader.timeline({ to: "2019-06-01", includeUnknown: false });
+  assert.deepEqual(describe(early.records), [["a4", "known", "event_time", null]]);
   // Date-only bounds, as the web page sends them, include the whole of their days.
   const oneDay = await reader.timeline({ from: "2024-06-01", to: "2024-06-01", includeUnknown: false });
-  assert.deepEqual(describe(oneDay.records), [["a1", "known", "event_time", "2024-06-01"]]);
+  assert.deepEqual(describe(oneDay.records), [["a3", "known", "event_time", "2021-05-01"], ["a1", "known", "event_time", "2024-06-01"]]);
   reader.close();
   store.close();
 });

@@ -170,6 +170,9 @@ export function createJournalPrivateApi({ caseAccessService, jobController = nul
           const manifest = await corpusStore.readJsonObject({ objectId: manifestObjectId });
           invariant(manifest.case_id === caseId && manifest.corpus_id === corpusId && manifest.generation === generation, "GRAPH_MANIFEST_SCOPE_MISMATCH");
           invariant(JSON.stringify(manifest.permitted_uses) === JSON.stringify(permittedUses), "PERMITTED_USES_MISMATCH");
+          // A manifest staged before a visibility change belongs to the revoked snapshot: publishing it
+          // would activate a generation that every reader then refuses.
+          invariant(manifest.visibility_epoch === reference.visibility_epoch, "GRANT_REVOKED");
           const before = await caseStore.load(caseId);
           const result = await caseStore.publishJournalGeneration(caseId, {
             corpusId,
