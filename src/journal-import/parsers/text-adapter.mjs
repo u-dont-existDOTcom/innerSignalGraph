@@ -5,8 +5,8 @@ import { TextDecoder } from "node:util";
 const utf8 = new TextDecoder("utf-8", { fatal: true });
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
-export async function parseUtf8File({ inputPath, byteLimit }) {
-  const bytes = await fs.readFile(inputPath);
+export async function parseUtf8File({ inputPath, inputBytes, byteLimit }) {
+  const bytes = inputBytes ? Buffer.from(inputBytes) : await fs.readFile(inputPath);
   if (bytes.byteLength > byteLimit) throw Object.assign(new Error("SOURCE_BYTE_LIMIT_EXCEEDED"), { code: "SOURCE_BYTE_LIMIT_EXCEEDED" });
   let text;
   try { text = utf8.decode(bytes); }

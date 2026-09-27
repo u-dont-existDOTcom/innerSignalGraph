@@ -31,8 +31,11 @@ export function sourceParserCapabilities() {
   return structuredClone({ protocol_version: "1.0", formats: SUPPORTED });
 }
 
+// Parses either a file (inputPath) or bytes already held and verified by the caller (inputBytes),
+// such as an authenticated archive. Bytes reach the parser process over IPC, and it may read no file.
 export async function parseSourceFile({
-  inputPath,
+  inputPath = null,
+  inputBytes = null,
   format,
   timeoutMs = 30_000,
   byteLimit = defaults.file_max_bytes,
@@ -41,14 +44,18 @@ export async function parseSourceFile({
   representationByteLimit = defaults.file_max_bytes * 2,
   memoryLimitMb = 512
 } = {}) {
-  invariant(typeof inputPath === "string" && path.isAbsolute(inputPath), "SOURCE_PATH_MUST_BE_ABSOLUTE");
+  invariant((inputPath === null) !== (inputBytes === null), "SOURCE_INPUT_INVALID");
+  if (inputBytes === null) invariant(typeof inputPath === "string" && path.isAbsolute(inputPath), "SOURCE_PATH_MUST_BE_ABSOLUTE");
+  else invariant(inputBytes instanceof Uint8Array, "SOURCE_INPUT_INVALID");
   invariant(Object.hasOwn(SUPPORTED, format), "SOURCE_FORMAT_UNSUPPORTED");
   invariant(Number.isSafeInteger(timeoutMs) && timeoutMs > 0, "PARSER_TIMEOUT_INVALID");
   invariant(Number.isSafeInteger(byteLimit) && byteLimit > 0, "SOURCE_BYTE_LIMIT_INVALID");
   invariant(Number.isSafeInteger(pageLimit) && pageLimit > 0, "SOURCE_PAGE_LIMIT_INVALID");
-  const information = await fs.lstat(inputPath);
-  invariant(information.isFile() && !information.isSymbolicLink(), "SOURCE_NOT_REGULAR_FILE");
-  if (information.size > byteLimit) throw new ValidationError("SOURCE_BYTE_LIMIT_EXCEEDED", { code: "SOURCE_BYTE_LIMIT_EXCEEDED" });
+  if (inputBytes === null) {
+    const information = await fs.lstat(inputPath);
+    invariant(information.isFile() && !information.isSymbolicLink(), "SOURCE_NOT_REGULAR_FILE");
+    if (information.size > byteLimit) throw new ValidationError("SOURCE_BYTE_LIMIT_EXCEEDED", { code: "SOURCE_BYTE_LIMIT_EXCEEDED" });
+  } else if (inputBytes.byteLength > byteLimit) throw new ValidationError("SOURCE_BYTE_LIMIT_EXCEEDED", { code: "SOURCE_BYTE_LIMIT_EXCEEDED" });
 
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -57,7 +64,7 @@ export async function parseSourceFile({
       execArgv: [
         `--max-old-space-size=${memoryLimitMb}`,
         "--permission",
-        `--allow-fs-read=${inputPath}`,
+        ...(inputBytes === null ? [`--allow-fs-read=${inputPath}`] : []),
         `--allow-fs-read=${parserDirectory}`,
         `--allow-fs-read=${path.join(projectRoot, "node_modules")}`
       ],
@@ -106,6 +113,6 @@ export async function parseSourceFile({
         }
       })));
     });
-    child.send({ inputPath, format, byteLimit, pageLimit, imageLimit, representationByteLimit });
+    child.send({ inputPath, inputBytes, format, byteLimit, pageLimit, imageLimit, representationByteLimit });
   });
 }

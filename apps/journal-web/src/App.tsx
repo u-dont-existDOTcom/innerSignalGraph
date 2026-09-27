@@ -13,6 +13,7 @@ import {
   type JournalFilters,
   type JournalNode,
   type ReadScope,
+  type SnapshotIdentity,
   type SubgraphResult,
   type TimelineResult
 } from "./contracts";
@@ -31,6 +32,22 @@ const stageLabels: Record<ImportStageName, string> = Object.freeze({
 
 const emptyGraph: SubgraphResult = Object.freeze({ nodes: [], edges: [], closure_status: "empty", more_available: false });
 const emptyTimeline: TimelineResult = Object.freeze({ items: [], unknown_count: 0, next_cursor: null, more_available: false });
+
+// Responses combined in one view must come from the same published snapshot. A service that
+// reports none is taken at its word; two different reported snapshots never share a view.
+class SnapshotChangedError extends Error {}
+
+function snapshotKey(value: SnapshotIdentity | undefined): string | null {
+  return value ? `${value.generation}\u0000${value.visibility_epoch}` : null;
+}
+
+function combineSnapshots(...keys: Array<string | null>): string | null {
+  const distinct = [...new Set(keys.filter((key): key is string => key !== null))];
+  if (distinct.length > 1) throw new SnapshotChangedError("SNAPSHOT_CHANGED");
+  return distinct[0] ?? null;
+}
+
+const SNAPSHOT_CHANGED = "The journal changed since this search. Search again to see the current version.";
 
 function stageProgress(stage: ImportStage): number | null {
   if (stage.state === "complete") return 100;
@@ -160,6 +177,8 @@ export function App({ context, api = defaultApi }: AppProps) {
   const [pageLoading, setPageLoading] = useState(false);
   // Bumped by each new search, so a page or timeline response for an earlier search is dropped.
   const retrieval = useRef(0);
+  // The snapshot the current view was built from; later pages and exact sources must match it.
+  const viewSnapshot = useRef<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [view, setView] = useState<"graph" | "list">("graph");
   const [selectedNode, setSelectedNode] = useState<JournalNode | null>(null);
@@ -223,9 +242,11 @@ export function App({ context, api = defaultApi }: AppProps) {
     setEvidenceLoading(true);
     try {
       const resolved = await api.resolveEvidence(createReadScope(context, appliedFilters), evidenceIds);
-      if (request === evidenceRequest.current) setEvidence(resolved);
-    } catch {
-      if (request === evidenceRequest.current) setEvidenceError("Exact source is not available for this authorized selection.");
+      if (request !== evidenceRequest.current) return;
+      combineSnapshots(viewSnapshot.current, snapshotKey(resolved.snapshot));
+      setEvidence(resolved);
+    } catch (error) {
+      if (request === evidenceRequest.current) setEvidenceError(error instanceof SnapshotChangedError ? SNAPSHOT_CHANGED : "Exact source is not available for this authorized selection.");
     } finally {
       if (request === evidenceRequest.current) setEvidenceLoading(false);
     }
@@ -235,12 +256,12 @@ export function App({ context, api = defaultApi }: AppProps) {
   // are still listed, never reported as absent.
   const loadNeighborhood = async (scope: ReadScope, cursor: string | null) => {
     const page = await api.search(scope, cursor);
-    if (!page.items.length) return { page, graph: emptyGraph };
+    if (!page.items.length) return { page, graph: emptyGraph, snapshot: snapshotKey(page.snapshot) };
     const closure = await api.getSubgraph(scope, page.items.map(({ id }) => id));
     const graph: SubgraphResult = closure.nodes.length
       ? closure
       : { nodes: page.items, edges: [], closure_status: closure.closure_status, more_available: true };
-    return { page, graph };
+    return { page, graph, snapshot: combineSnapshots(snapshotKey(page.snapshot), snapshotKey(closure.coverage)) };
   };
 
   const clearSelection = () => {
@@ -265,20 +286,36 @@ export function App({ context, api = defaultApi }: AppProps) {
     clearSelection();
     try {
       const scope = createReadScope(context, nextFilters);
-      const [{ page, graph }, nextTimeline] = await Promise.all([loadNeighborhood(scope, null), api.getTimeline(scope)]);
+      // A generation published while these requests are in flight can answer them from different
+      // snapshots. The view is built from one only: one retry, then the change is reported.
+      const load = async () => {
+        const [neighborhood, nextTimeline] = await Promise.all([loadNeighborhood(scope, null), api.getTimeline(scope)]);
+        return { ...neighborhood, nextTimeline, snapshot: combineSnapshots(neighborhood.snapshot, snapshotKey(nextTimeline.snapshot)) };
+      };
+      let loaded;
+      try { loaded = await load(); }
+      catch (error) {
+        if (!(error instanceof SnapshotChangedError)) throw error;
+        loaded = await load();
+      }
+      const { page, graph, nextTimeline, snapshot } = loaded;
       if (request !== retrieval.current) return;
+      viewSnapshot.current = snapshot;
       setAppliedFilters(nextFilters);
       setRawGraph(graph);
       setMatchPage({ number: 1, nextCursor: page.more_available ? page.next_cursor : null });
       setTimeline(nextTimeline);
       setSearchState(graph.nodes.length ? "ready" : "empty");
-    } catch {
+    } catch (error) {
       if (request !== retrieval.current) return;
+      viewSnapshot.current = null;
       setRawGraph(emptyGraph);
       setMatchPage({ number: 0, nextCursor: null });
       setTimeline(emptyTimeline);
       setSearchState("error");
-      setSearchError("Authorized journal retrieval failed. Filters and credentials were not cached.");
+      setSearchError(error instanceof SnapshotChangedError
+        ? "The journal changed while it was loading. Search again."
+        : "Authorized journal retrieval failed. Filters and credentials were not cached.");
     }
   };
 
@@ -290,12 +327,13 @@ export function App({ context, api = defaultApi }: AppProps) {
     setSearchError(null);
     clearSelection();
     try {
-      const { page, graph } = await loadNeighborhood(createReadScope(context, appliedFilters), cursor);
+      const { page, graph, snapshot } = await loadNeighborhood(createReadScope(context, appliedFilters), cursor);
       if (request !== retrieval.current) return;
+      combineSnapshots(viewSnapshot.current, snapshot);
       setRawGraph(graph);
       setMatchPage({ number: matchPage.number + 1, nextCursor: page.more_available ? page.next_cursor : null });
-    } catch {
-      if (request === retrieval.current) setSearchError("The next matches could not be retrieved. Search again to start over.");
+    } catch (error) {
+      if (request === retrieval.current) setSearchError(error instanceof SnapshotChangedError ? SNAPSHOT_CHANGED : "The next matches could not be retrieved. Search again to start over.");
     } finally {
       if (request === retrieval.current) setPageLoading(false);
     }
@@ -310,14 +348,15 @@ export function App({ context, api = defaultApi }: AppProps) {
     try {
       const more = await api.getTimeline(createReadScope(context, appliedFilters), cursor);
       if (request !== retrieval.current) return;
+      combineSnapshots(viewSnapshot.current, snapshotKey(more.snapshot));
       setTimeline((current) => ({
         items: [...current.items, ...more.items],
         unknown_count: more.unknown_count,
         next_cursor: more.more_available ? more.next_cursor : null,
         more_available: more.more_available
       }));
-    } catch {
-      if (request === retrieval.current) setSearchError("More timeline records could not be retrieved. Search again to start over.");
+    } catch (error) {
+      if (request === retrieval.current) setSearchError(error instanceof SnapshotChangedError ? SNAPSHOT_CHANGED : "More timeline records could not be retrieved. Search again to start over.");
     } finally {
       if (request === retrieval.current) setPageLoading(false);
     }

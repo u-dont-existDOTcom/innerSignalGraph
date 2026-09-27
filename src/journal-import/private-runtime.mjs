@@ -177,7 +177,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       bytes.fill(0);
       throw new ValidationError("SOURCE_BINDING_MISMATCH", { code: "SOURCE_BINDING_MISMATCH" });
     };
-    (await readVerifiedSource()).fill(0);
+    // Until intake archives the original, the configured source must be present and match. After
+    // that the encrypted archive is the source every step reads, so deleting or rotating the upload
+    // doesn't stop status or a resume.
+    const archived = await store.readJsonObject({ objectId: "intake:original" })
+      .catch((error) => { if (error?.code === "ENOENT") return null; throw error; });
+    if (!archived) (await readVerifiedSource()).fill(0);
     const grant = { grant_id: config.existing_grant_ref, principal_id: "authorized-private-operator", purpose: "organize_search", allowed_roles: Object.keys(JOURNAL_ROLE_DEFINITIONS), revoked: false, expires_at: null };
     invariant(typeof grant.grant_id === "string" && grant.grant_id.length > 0, "JOURNAL_GRANT_REFERENCE_REQUIRED");
     const save = async () => { state.updated_at = new Date().toISOString(); await privateJson(stateFile, state); };
@@ -237,10 +242,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         } finally { verified.fill(0); }
       }
       state.original = await store.readJsonObject({ objectId: "intake:original" });
-      let length = 0; const digest = createHash("sha256");
-      for await (const chunk of store.iterateOriginal(state.original)) { length += chunk.length; digest.update(chunk); }
-      invariant(length === config.source.bytes && digest.digest("hex") === config.source.sha256, "ORIGINAL_REASSEMBLY_MISMATCH");
-      const parsed = await sourceParser({ inputPath: sourcePath, format: path.extname(sourcePath) === ".pdf" ? "pdf" : "text", timeoutMs: 240_000, memoryLimitMb: 1024 });
+      // The parser reads the authenticated archive, checked against the configured digest, never
+      // the source path.
+      const archivedBytes = await store.reassembleOriginal(state.original);
+      let parsed;
+      try {
+        invariant(archivedBytes.length === config.source.bytes && hash(archivedBytes) === config.source.sha256, "ORIGINAL_REASSEMBLY_MISMATCH");
+        parsed = await sourceParser({ inputBytes: archivedBytes, format: path.extname(sourcePath) === ".pdf" ? "pdf" : "text", timeoutMs: 240_000, memoryLimitMb: 1024 });
+      } finally { archivedBytes.fill(0); }
       invariant(parsed.source.sha256 === config.source.sha256, "PARSED_SOURCE_BINDING_MISMATCH");
       const units = [];
       for (const representation of parsed.representations) {

@@ -489,3 +489,26 @@ test('a source replaced after startup is never archived, and restoring it lets i
  try { assert.equal((await runtime.execute('stage')).completion.archive_verified,'pass'); }
  finally { await runtime.close(); }
 });
+
+test('once the original is archived, the upload may go: status and a resumed parse read the archive', async t => {
+ const f=await fixture(t);
+ const sourcePath=path.join(f.root,'private','source.txt');
+ const text=await fs.readFile(sourcePath,'utf8');
+ const parsed={source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'text/plain'},
+  parser:{version:'synthetic'},pages:[],representations:[{representation_id:'synthetic:text',text,utf8_byte_length:Buffer.byteLength(text)}]};
+ // The first run archives the original and stops before its parse completes.
+ let runtime=await openJournalExecutionRuntime({...f,sourceParser:async()=>{throw Object.assign(new Error('synthetic stop'),{code:'SYNTHETIC_STOP'});}});
+ try { await assert.rejects(runtime.execute('stage'),{code:'SYNTHETIC_STOP'}); }
+ finally { await runtime.close(); }
+ await fs.rm(sourcePath);
+ const inputs=[];
+ runtime=await openJournalExecutionRuntime({...f,sourceParser:async input=>{
+  inputs.push({inputPath:input.inputPath??null,sha256:createHash('sha256').update(input.inputBytes).digest('hex')});
+  return parsed;
+ }});
+ try {
+  assert.equal((await runtime.execute('status')).stage,'INTAKE');
+  assert.equal((await runtime.execute('stage')).completion.archive_verified,'pass');
+ } finally { await runtime.close(); }
+ assert.deepEqual(inputs,[{inputPath:null,sha256:f.config.source.sha256}]);
+});

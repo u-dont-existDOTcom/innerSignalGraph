@@ -46,10 +46,18 @@ export interface JournalEdge {
   lifecycle?: string;
 }
 
+// The published generation and visibility epoch a response was read from. Responses combined in
+// one view must share it.
+export interface SnapshotIdentity {
+  generation: string;
+  visibility_epoch: number;
+}
+
 export interface SearchResult {
   items: JournalNode[];
   next_cursor: string | null;
   more_available: boolean;
+  snapshot?: SnapshotIdentity;
 }
 
 export interface SubgraphResult {
@@ -57,6 +65,7 @@ export interface SubgraphResult {
   edges: JournalEdge[];
   closure_status: string;
   more_available: boolean;
+  coverage?: SnapshotIdentity;
 }
 
 export interface TimelineResult {
@@ -64,6 +73,7 @@ export interface TimelineResult {
   unknown_count: number;
   next_cursor: string | null;
   more_available: boolean;
+  snapshot?: SnapshotIdentity;
 }
 
 export interface ExactSpan {
@@ -88,6 +98,7 @@ export interface SourceLocator {
 export interface EvidenceResult {
   exact_spans: ExactSpan[];
   source_locators: SourceLocator[];
+  snapshot?: SnapshotIdentity;
 }
 
 export interface JournalFilters {

@@ -88,8 +88,8 @@ function attachmentInventory(attachments) {
   }));
 }
 
-export async function parsePdfFile({ inputPath, byteLimit, pageLimit, imageLimit, representationByteLimit }) {
-  const bytes = await fs.readFile(inputPath);
+export async function parsePdfFile({ inputPath, inputBytes, byteLimit, pageLimit, imageLimit, representationByteLimit }) {
+  const bytes = inputBytes ? Buffer.from(inputBytes) : await fs.readFile(inputPath);
   if (bytes.byteLength > byteLimit) throw Object.assign(new Error("SOURCE_BYTE_LIMIT_EXCEEDED"), { code: "SOURCE_BYTE_LIMIT_EXCEEDED" });
   const loadingTask = getDocument({
     data: new Uint8Array(bytes),

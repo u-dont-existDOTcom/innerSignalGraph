@@ -226,6 +226,40 @@ describe("authenticated journal surface", () => {
     expect(labels).toEqual(["1 janvier 2020 · written", "juin 2024 · event"]);
   });
 
+  test("rebuilds the view once when a generation is published mid-load, and never mixes snapshots", async () => {
+    const g = (generation: string) => ({ generation, visibility_epoch: 0 });
+    const searchResults = vi.fn<JournalApi["search"]>()
+      .mockImplementationOnce(async () => ({ items: [assertion], next_cursor: null, more_available: false, snapshot: g("generation-1") }))
+      .mockImplementation(async () => ({ items: [assertion], next_cursor: null, more_available: false, snapshot: g("generation-2") }));
+    const getSubgraph = vi.fn<JournalApi["getSubgraph"]>()
+      .mockImplementationOnce(async () => ({ nodes: [assertion, passage], edges: [edge], closure_status: "complete", more_available: false, coverage: g("generation-1") }))
+      .mockImplementation(async () => ({ nodes: [assertion, passage], edges: [edge], closure_status: "complete", more_available: false, coverage: g("generation-2") }));
+    const getTimeline = vi.fn<JournalApi["getTimeline"]>(async () => ({ items: [passage], unknown_count: 0, next_cursor: null, more_available: false, snapshot: g("generation-2") }));
+    const resolveEvidence = vi.fn<JournalApi["resolveEvidence"]>(async () => ({ exact_spans: [], source_locators: [], snapshot: g("generation-3") }));
+    const api = fakeApi({ search: searchResults, getSubgraph, getTimeline, resolveEvidence });
+    const user = await search(api);
+    expect(searchResults).toHaveBeenCalledTimes(2);
+    // An exact source from a later generation isn't shown under this view.
+    await user.click(screen.getByRole("button", { name: "Accessible list" }));
+    await user.click(within(screen.getByTestId("journal-result-list")).getByRole("button", { name: /Une frontière familiale/ }));
+    expect(await screen.findByText(/The journal changed since this search/)).toBeTruthy();
+  });
+
+  test("reports a snapshot change that persists instead of combining the responses", async () => {
+    const g = (generation: string) => ({ generation, visibility_epoch: 0 });
+    const api = fakeApi({
+      search: vi.fn(async () => ({ items: [assertion], next_cursor: null, more_available: false, snapshot: g("generation-1") })),
+      getTimeline: vi.fn(async () => ({ items: [passage], unknown_count: 0, next_cursor: null, more_available: false, snapshot: g("generation-2") }))
+    });
+    const user = userEvent.setup();
+    render(<App context={context} api={api} />);
+    await screen.findByText("1 source verified");
+    await user.type(screen.getByRole("textbox", { name: "Search journal" }), "frontière");
+    await user.click(screen.getByRole("button", { name: "Retrieve evidence" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("The journal changed while it was loading");
+    expect(screen.queryByText(/nodes ·/)).toBeNull();
+  });
+
   test("lists matches whose evidence closure did not fit instead of reporting none", async () => {
     const api = fakeApi({
       getSubgraph: vi.fn(async () => ({ nodes: [], edges: [], closure_status: "insufficient_context", more_available: true }))

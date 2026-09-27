@@ -138,3 +138,15 @@ test("intake limits and invalid UTF-8 fail explicitly without partial admission"
   const invalidPath = await temporaryFile("invalid.txt", Buffer.from([0xc3, 0x28]));
   await assert.rejects(() => parseSourceFile({ inputPath: invalidPath, format: "text" }), /SOURCE_NOT_VALID_UTF8/);
 });
+
+test("the parser reads verified bytes over IPC exactly as it reads the same file", async () => {
+  const text = `${"Entrée inventée 🌿 — une ligne.\n".repeat(8)}fin.`;
+  const bytes = Buffer.from(text, "utf8");
+  const inputPath = await temporaryFile("invented-bytes.txt", bytes);
+  const fromFile = await parseSourceFile({ inputPath, format: "text" });
+  const fromBytes = await parseSourceFile({ inputBytes: bytes, format: "text" });
+  assert.deepEqual(fromBytes.source, fromFile.source);
+  assert.deepEqual(fromBytes.representations, fromFile.representations);
+  await assert.rejects(() => parseSourceFile({ inputPath, inputBytes: bytes, format: "text" }), /SOURCE_INPUT_INVALID/);
+  await assert.rejects(() => parseSourceFile({ inputBytes: bytes, format: "text", byteLimit: bytes.length - 1 }), /SOURCE_BYTE_LIMIT_EXCEEDED/);
+});
