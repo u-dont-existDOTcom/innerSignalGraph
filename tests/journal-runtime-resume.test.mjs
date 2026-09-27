@@ -470,3 +470,22 @@ test('the page renderer reads the source on stdin and returns the image on stdou
  assert.equal(image.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
  await assert.rejects(renderJournalPdfPage(Buffer.from('not a pdf'),1),{code:'VISUAL_RENDER_FAILED'});
 });
+
+test('a source replaced after startup is never archived, and restoring it lets intake continue', async t => {
+ const f=await fixture(t);
+ const sourcePath=path.join(f.root,'private','source.txt');
+ const original=await fs.readFile(sourcePath);
+ let runtime=await openJournalExecutionRuntime(f);
+ try {
+  await fs.writeFile(sourcePath,'Replaced synthetic source, different bytes.\n',{mode:0o600});
+  await assert.rejects(runtime.execute('stage'),{code:'SOURCE_BINDING_MISMATCH'});
+  await fs.rm(sourcePath);
+  await fs.symlink(path.join(f.root,'private','config.json'),sourcePath);
+  await assert.rejects(runtime.execute('stage'),{code:'JOURNAL_SOURCE_PRIVATE_REQUIRED'});
+ } finally { await runtime.close(); }
+ await fs.rm(sourcePath);
+ await fs.writeFile(sourcePath,original,{mode:0o600});
+ runtime=await openJournalExecutionRuntime(f);
+ try { assert.equal((await runtime.execute('stage')).completion.archive_verified,'pass'); }
+ finally { await runtime.close(); }
+});

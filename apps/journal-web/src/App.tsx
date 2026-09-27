@@ -73,6 +73,25 @@ function nodeDate(node: JournalNode): string {
   return "Time unknown";
 }
 
+// A timeline item is labeled with the field that places it, so a record written on one date
+// about an event on another never shows one date at the other's position.
+function timelineDate(item: JournalNode): string {
+  const entry = item.timeline_entry;
+  if (!entry) return nodeDate(item);
+  if (entry.lane === "unknown") return "Time unknown";
+  const field = entry.fields.includes("event_time") ? "event_time" : "authored_time";
+  const value = item.data?.[field];
+  const raw = value && typeof value === "object" ? (value as Record<string, unknown>).raw : null;
+  const date = typeof raw === "string" && raw ? raw : (entry.from ?? entry.to ?? "Time unknown");
+  if (entry.fields.length > 1) return date;
+  return `${date} · ${field === "event_time" ? "event" : "written"}`;
+}
+
+function timelineKey(item: JournalNode): string {
+  const entry = item.timeline_entry;
+  return entry ? `${item.id}:${entry.lane}:${entry.from ?? ""}:${entry.to ?? ""}` : item.id;
+}
+
 function ResultList({ nodes, selectedId, onSelect }: { nodes: JournalNode[]; selectedId: string | null; onSelect(node: JournalNode): void }) {
   if (!nodes.length) return <p className="empty-state">No authorized list results match these filters.</p>;
   return (
@@ -374,7 +393,7 @@ export function App({ context, api = defaultApi }: AppProps) {
           <section className="panel timeline-panel" aria-labelledby="timeline-heading">
             <div><p className="eyebrow">Chronology</p><h2 id="timeline-heading">Timeline</h2><p className="muted">The same authorized purpose and applied filters are used. Ordering is evidence, not causal inference.</p></div>
             <div className="timeline-results">
-              {visibleTimeline.length ? <ol className="timeline-list">{visibleTimeline.map((item) => <li key={item.id}><button type="button" onClick={() => selectNode(item)}><time>{nodeDate(item)}</time><strong>{nodeLabel(item)}</strong><span>{item.kind}</span></button></li>)}</ol> : <p className="empty-state">No timeline records match the applied filter snapshot.</p>}
+              {visibleTimeline.length ? <ol className="timeline-list">{visibleTimeline.map((item) => <li key={timelineKey(item)}><button type="button" onClick={() => selectNode(item)}><time>{timelineDate(item)}</time><strong>{nodeLabel(item)}</strong><span>{item.kind}</span></button></li>)}</ol> : <p className="empty-state">No timeline records match the applied filter snapshot.</p>}
               {timeline.next_cursor ? <button className="secondary" type="button" disabled={pageLoading} onClick={loadMoreTimeline}>Load more timeline</button> : null}
             </div>
           </section>

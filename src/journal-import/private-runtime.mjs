@@ -1,5 +1,4 @@
 import fs from "node:fs/promises";
-import { createReadStream } from "node:fs";
 import path from "node:path";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
@@ -165,15 +164,20 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       close: () => semanticPort.close?.()
     }, corpusStore: store });
     const sourcePath = path.resolve(path.dirname(configPath), "..", config.source.relative_path);
-    const sourceBytes = await withOpenedRegularFile(sourcePath, async (handle, sourceInfo) => {
-      invariant((sourceInfo.mode & 0o077) === 0, "JOURNAL_SOURCE_PRIVATE_REQUIRED");
-      return handle.readFile();
-    }).catch((error) => {
-      if (error?.code === "ELOOP" || error?.code === "ERR_NOT_REGULAR_FILE") invariant(false, "JOURNAL_SOURCE_PRIVATE_REQUIRED");
-      throw error;
-    });
-    invariant(sourceBytes.length === config.source.bytes && hash(sourceBytes) === config.source.sha256, "SOURCE_BINDING_MISMATCH");
-    sourceBytes.fill(0);
+    // One no-follow read of the private source, checked against the configured length and digest.
+    const readVerifiedSource = async () => {
+      const bytes = await withOpenedRegularFile(sourcePath, async (handle, sourceInfo) => {
+        invariant((sourceInfo.mode & 0o077) === 0, "JOURNAL_SOURCE_PRIVATE_REQUIRED");
+        return handle.readFile();
+      }).catch((error) => {
+        if (error?.code === "ELOOP" || error?.code === "ERR_NOT_REGULAR_FILE") invariant(false, "JOURNAL_SOURCE_PRIVATE_REQUIRED");
+        throw error;
+      });
+      if (bytes.length === config.source.bytes && hash(bytes) === config.source.sha256) return bytes;
+      bytes.fill(0);
+      throw new ValidationError("SOURCE_BINDING_MISMATCH", { code: "SOURCE_BINDING_MISMATCH" });
+    };
+    (await readVerifiedSource()).fill(0);
     const grant = { grant_id: config.existing_grant_ref, principal_id: "authorized-private-operator", purpose: "organize_search", allowed_roles: Object.keys(JOURNAL_ROLE_DEFINITIONS), revoked: false, expires_at: null };
     invariant(typeof grant.grant_id === "string" && grant.grant_id.length > 0, "JOURNAL_GRANT_REFERENCE_REQUIRED");
     const save = async () => { state.updated_at = new Date().toISOString(); await privateJson(stateFile, state); };
@@ -223,8 +227,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       await authorize();
       const original = await readIfPresent("intake:original");
       if (!original) {
-        const reference = await store.writeChunkedOriginalStream({ objectId: "original:source", chunks: createReadStream(sourcePath) });
-        await store.writeJsonObject({ objectId: "intake:original", value: reference });
+        // Archived from bytes checked before anything is written, not by reopening the path, so a
+        // source replaced since startup is never stored as the original; restoring it lets a later
+        // run continue.
+        const verified = await readVerifiedSource();
+        try {
+          const reference = await store.writeChunkedOriginal({ objectId: "original:source", bytes: verified });
+          await store.writeJsonObject({ objectId: "intake:original", value: reference });
+        } finally { verified.fill(0); }
       }
       state.original = await store.readJsonObject({ objectId: "intake:original" });
       let length = 0; const digest = createHash("sha256");

@@ -238,6 +238,41 @@ test("timeline pages carry a snapshot-bound cursor that reaches every record onc
   store.close();
 });
 
+test("the timeline places a record at each of its known times and says which field put it there", async () => {
+  const rootDir = await temporaryRoot();
+  const graph = fixture("synthetic-graph.json");
+  const representations = fixture("synthetic-sources.json");
+  const day = (date, evidence) => ({ raw: date, from: `${date}T00:00:00.000Z`, to: `${date}T23:59:59.999Z`, precision: "day", timezone: "UTC", basis: "explicit", evidence_ids: [evidence] });
+  const a1 = graph.nodes.find(({ id }) => id === "a1");
+  const a2 = graph.nodes.find(({ id }) => id === "a2");
+  // Written in 2020 about an event in 2024; and one written on the day it describes.
+  a1.data.authored_time = day("2020-01-01", "p1");
+  a1.data.event_time = day("2024-06-01", "p1");
+  a2.data.authored_time = day("2022-03-03", "p2");
+  a2.data.event_time = day("2022-03-03", "p2");
+  const store = corpusStore(rootDir, graph.case_id, graph.corpus_id, Buffer.alloc(32, 17));
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph, sourceRepresentations: representations, shardTargetBytes: 4096 });
+  const reader = await openPrivateJournalGraph({
+    corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId: graph.case_id, corpusId: graph.corpus_id,
+    generation: graph.generation, visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 19)
+  });
+  const describe = (records) => records.map(({ id, timeline_entry }) => [id, timeline_entry.lane, timeline_entry.fields.join("+"), timeline_entry.from?.slice(0, 10) ?? null]);
+  const whole = await reader.timeline();
+  assert.deepEqual(describe(whole.records.filter(({ timeline_entry }) => timeline_entry.lane === "known")), [
+    ["a1", "known", "authored_time", "2020-01-01"],
+    ["a2", "known", "authored_time+event_time", "2022-03-03"],
+    ["a1", "known", "event_time", "2024-06-01"]
+  ]);
+  // Records with a known time never also sit in the unknown lane.
+  assert.deepEqual(whole.records.filter(({ timeline_entry }) => timeline_entry.lane === "unknown").map(({ id }) => id).sort(),
+    ["a3", "a4", "a5", "a6", "a7", "ep1", "ep2"]);
+  assert.equal(whole.unknown_count, 7);
+  const window = await reader.timeline({ from: "2024-01-01T00:00:00.000Z", includeUnknown: false });
+  assert.deepEqual(describe(window.records), [["a1", "known", "event_time", "2024-06-01"]]);
+  reader.close();
+  store.close();
+});
+
 test("the timeline tool returns the cursor for its next page", async () => {
   const rootDir = await temporaryRoot();
   const { graph, store, reader, reference } = await syntheticReader(rootDir);

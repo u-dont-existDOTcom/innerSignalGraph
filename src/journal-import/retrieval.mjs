@@ -215,10 +215,35 @@ export async function openPrivateJournalGraph({
     const known = await readIndex("time_known", "known");
     const unknown = includeUnknown ? await readIndex("time_unknown", "unknown") : [];
     const selected = known.filter((entry) => (from === null || entry.to >= from) && (to === null || entry.from <= to));
-    // The index is sorted when the generation is built, so this order is the same on every page.
-    const ids = [...new Set([...selected, ...unknown].map(({ id }) => id))];
-    const records = (await Promise.all(ids.map(loadRecord))).filter(active);
-    const unknownCount = new Set(unknown.filter(({ id }) => records.some((record) => record.id === id)).map(({ id }) => id)).size;
+    // One entry per record and known time interval, labeled with the field or fields that place
+    // it there: a record written on one date about an event on another appears at each, and one
+    // whose two times are equal appears once. A record with no known time at all appears once in
+    // the unknown lane. The index is sorted when the generation is built, so this order is the
+    // same on every page.
+    const entries = [];
+    const knownEntries = new Map();
+    for (const entry of selected) {
+      const key = JSON.stringify([entry.id, entry.from, entry.to]);
+      const existing = knownEntries.get(key);
+      if (existing) { if (!existing.fields.includes(entry.field)) existing.fields.push(entry.field); continue; }
+      const value = { id: entry.id, lane: "known", fields: [entry.field], from: entry.from, to: entry.to };
+      knownEntries.set(key, value);
+      entries.push(value);
+    }
+    const everKnown = new Set(known.map(({ id }) => id));
+    const unknownEntries = new Map();
+    for (const entry of unknown) {
+      if (everKnown.has(entry.id)) continue;
+      const existing = unknownEntries.get(entry.id);
+      if (existing) { if (!existing.fields.includes(entry.field)) existing.fields.push(entry.field); continue; }
+      const value = { id: entry.id, lane: "unknown", fields: [entry.field], from: null, to: null };
+      unknownEntries.set(entry.id, value);
+      entries.push(value);
+    }
+    const loaded = new Map((await Promise.all([...new Set(entries.map(({ id }) => id))].map(loadRecord))).map((record) => [record.id, record]));
+    const records = entries.filter(({ id }) => active(loaded.get(id)))
+      .map(({ id, lane, fields, from: entryFrom, to: entryTo }) => ({ ...loaded.get(id), timeline_entry: { lane, fields, from: entryFrom, to: entryTo } }));
+    const unknownCount = records.filter(({ timeline_entry }) => timeline_entry.lane === "unknown").length;
     if (pageSize === null) {
       await assertCurrent();
       return Object.freeze({ records, unknown_count: unknownCount });

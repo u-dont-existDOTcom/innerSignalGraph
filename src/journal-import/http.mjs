@@ -93,7 +93,7 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
   Object.freeze({
     name: "get_journal_timeline",
     title: "Get private journal timeline",
-    description: "Read the authorized known-time lane plus explicitly separate unknown-time records, with bounded, snapshot-bound pagination.",
+    description: "Read the authorized known-time lane, one entry per record and time interval labeled with the field that places it, plus explicitly separate unknown-time records, with bounded, snapshot-bound pagination.",
     inputSchema: {
       type: "object", additionalProperties: false, required: ["case_id", "corpus_id"],
       properties: {

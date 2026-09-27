@@ -208,6 +208,24 @@ describe("authenticated journal surface", () => {
     expect(screen.queryByRole("button", { name: "Load more timeline" })).toBeNull();
   });
 
+  test("labels each timeline item with the time that places it", async () => {
+    const written = { raw: "1 janvier 2020", from: "2020-01-01T00:00:00.000Z", to: "2020-01-01T23:59:59.999Z" };
+    const happened = { raw: "juin 2024", from: "2024-06-01T00:00:00.000Z", to: "2024-06-30T23:59:59.999Z" };
+    const record: JournalNode = { id: "a9", kind: "assertion", lifecycle: "active", data: { statement: "Un souvenir daté deux fois.", authored_time: written, event_time: happened } };
+    const api = fakeApi({
+      getTimeline: vi.fn(async () => ({
+        items: [
+          { ...record, timeline_entry: { lane: "known" as const, fields: ["authored_time"], from: written.from, to: written.to } },
+          { ...record, timeline_entry: { lane: "known" as const, fields: ["event_time"], from: happened.from, to: happened.to } }
+        ],
+        unknown_count: 0, next_cursor: null, more_available: false
+      }))
+    });
+    await search(api);
+    const labels = [...document.querySelectorAll(".timeline-list time")].map((node) => node.textContent);
+    expect(labels).toEqual(["1 janvier 2020 · written", "juin 2024 · event"]);
+  });
+
   test("lists matches whose evidence closure did not fit instead of reporting none", async () => {
     const api = fakeApi({
       getSubgraph: vi.fn(async () => ({ nodes: [], edges: [], closure_status: "insufficient_context", more_available: true }))

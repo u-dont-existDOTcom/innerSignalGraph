@@ -21,11 +21,20 @@ export interface ImportStatus {
   stages: Record<ImportStageName, ImportStage>;
 }
 
+export interface TimelineEntry {
+  lane: "known" | "unknown";
+  fields: string[];
+  from: string | null;
+  to: string | null;
+}
+
 export interface JournalNode {
   id: string;
   kind: string;
   lifecycle?: string;
   data?: Record<string, unknown>;
+  // Present on timeline items: the time field or fields that place the item where it is.
+  timeline_entry?: TimelineEntry;
 }
 
 export interface JournalEdge {
