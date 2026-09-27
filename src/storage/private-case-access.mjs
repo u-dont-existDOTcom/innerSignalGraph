@@ -14,7 +14,10 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 export const PRIVATE_CASE_SCOPES = Object.freeze({
   READ: "case:read",
   WRITE: "case:write",
-  AUDIT: "case:audit"
+  AUDIT: "case:audit",
+  // Narrow: lets a connector caller submit an answer for an outstanding journal work item and
+  // nothing else. It opens no case store and grants no other write.
+  JOURNAL_SUBMIT: "journal:submit"
 });
 
 export class PrivateCaseAccessDeniedError extends RuntimeError {
@@ -144,6 +147,19 @@ export function createPrivateCaseAccessService({
       catch { return null; }
       if (!identity || !Array.isArray(identity.scopes)) return null;
       return Object.freeze({ onlyGrantedAccount: identity.onlyGrantedAccount === true, scopes: Object.freeze([...identity.scopes]) });
+    },
+    // Authorizes the caller for one case and scope without opening the case or touching any key.
+    // Used by tools that act on material outside the case store, such as the journal work exchange.
+    async authorizeCase(caseId, authContext, requiredScope) {
+      let authorization;
+      try {
+        authorization = await authorizationProvider.authorize({ caseId, authContext, requiredScope });
+      } catch {
+        throw new PrivateCaseAccessDeniedError();
+      }
+      if (!authorization?.allowed || !authorization?.principalId) throw new PrivateCaseAccessDeniedError();
+      if (!Array.isArray(authorization.scopes) || !authorization.scopes.includes(requiredScope)) throw new PrivateCaseAccessDeniedError();
+      return Object.freeze({ principalId: authorization.principalId, scopes: Object.freeze([...authorization.scopes]) });
     },
     async loadPrivateRuntimeCase(caseId, authContext) {
       return read(caseId, authContext, async (store) => {

@@ -232,31 +232,56 @@ const PROTOCOL_TOOL_DEFINITIONS = Object.freeze([
 ]);
 const PROTOCOL_TOOLS = new Set(PROTOCOL_TOOL_DEFINITIONS.map((tool) => tool.name));
 
-const SERVER_INSTRUCTIONS = [
+const THERAPY_INSTRUCTIONS = [
   "InnerSignal. Before any inner-child, younger-self, or self-relationship therapy response, call load_therapy_protocol and follow its instructions and files; do not mention the map to the user.",
-  "If the protocol cannot be loaded, say that InnerSignal's therapy protocol is unavailable right now instead of improvising it from memory.",
-  "To continue from an InnerSignal handoff, call load_handoff first. The private case tools are read-only.",
-  "Authorization is transport-owned; never put bearer tokens or key material in tool arguments."
-].join(" ");
+  "If the protocol cannot be loaded, say that InnerSignal's therapy protocol is unavailable right now instead of improvising it from memory."
+];
+const AUTHORIZATION_INSTRUCTION = "Authorization is transport-owned; never put bearer tokens or key material in tool arguments.";
+
+// Without journal work tools this is exactly the long-standing instruction text.
+function serverInstructions(journalWork) {
+  return [
+    ...THERAPY_INSTRUCTIONS,
+    journalWork
+      ? "To continue from an InnerSignal handoff, call load_handoff first. The private case tools are read-only, except submit_journal_work_result."
+      : "To continue from an InnerSignal handoff, call load_handoff first. The private case tools are read-only.",
+    ...(journalWork ? [journalWork.instructions] : []),
+    AUTHORIZATION_INSTRUCTION
+  ].join(" ");
+}
 
 const AUDIT_TOOLS = new Set(["load_handoff", "load_case_context", "get_pending_candidate", "get_candidate_response", "get_source_artifact"]);
-const toolScopes = (name) => (AUDIT_TOOLS.has(name)
-  ? [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT]
-  : [PRIVATE_CASE_SCOPES.READ]);
+const toolScopes = (name, journalWork = null) => {
+  if (journalWork?.names.has(name)) return [...journalWork.scopes(name)];
+  return AUDIT_TOOLS.has(name)
+    ? [PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.AUDIT]
+    : [PRIVATE_CASE_SCOPES.READ];
+};
 
-function advertisedTools(oauthEnabled) {
-  if (!oauthEnabled) return [...PROTOCOL_TOOL_DEFINITIONS, ...TOOL_DEFINITIONS];
+function advertisedTools(oauthEnabled, journalWork = null) {
+  const privateTools = [...TOOL_DEFINITIONS, ...(journalWork ? journalWork.definitions : [])];
+  if (!oauthEnabled) return [...PROTOCOL_TOOL_DEFINITIONS, ...privateTools];
   const protocolTools = PROTOCOL_TOOL_DEFINITIONS.map((tool) => Object.freeze({
     ...tool,
     securitySchemes: Object.freeze([Object.freeze({ type: "noauth" })])
   }));
-  return [...protocolTools, ...TOOL_DEFINITIONS.map((tool) => Object.freeze({
+  return [...protocolTools, ...privateTools.map((tool) => Object.freeze({
     ...tool,
     securitySchemes: Object.freeze([Object.freeze({
       type: "oauth2",
-      scopes: Object.freeze(toolScopes(tool.name))
+      scopes: Object.freeze(toolScopes(tool.name, journalWork))
     })])
   }))];
+}
+
+// A journal answer that fails its schema is an ordinary tool error the model can read and fix,
+// not a transport failure.
+function journalWorkToolError({ code, message, details }) {
+  return {
+    content: [{ type: "text", text: details ? `${message}\n${JSON.stringify(details)}` : message }],
+    structuredContent: { code, ...(details ?? {}) },
+    isError: true
+  };
 }
 
 function protocolToolResult(protocol, name) {
@@ -349,11 +374,11 @@ function authenticationRequiredResult(challenge) {
 // request refused for the case or handoff itself (a wrong ID). That gets a tool error instead of
 // a challenge that would send the host into a pointless re-authentication. The error is the same
 // whether or not the case exists.
-async function deniedForSignedInAccount(service, token, name) {
+async function deniedForSignedInAccount(service, token, name, journalWork = null) {
   if (!token || typeof service?.authenticate !== "function") return false;
   try {
     const identity = await service.authenticate({ bearerToken: token });
-    return identity?.onlyGrantedAccount === true && toolScopes(name).every((scope) => identity.scopes.includes(scope));
+    return identity?.onlyGrantedAccount === true && toolScopes(name, journalWork).every((scope) => identity.scopes.includes(scope));
   } catch {
     return false;
   }
@@ -427,11 +452,15 @@ async function callTool(service, name, args, authContext) {
   throw Object.assign(new Error(`Unknown MCP tool ${name}.`), { code: "MCP_TOOL_NOT_FOUND" });
 }
 
-export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, productionAuthReady = false, therapyProtocol = undefined } = {}) {
+export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null } = {}) {
   if (!caseAccessService || typeof caseAccessService.loadCaseContext !== "function") throw new TypeError("caseAccessService is required.");
+  if (journalWork !== null && (typeof journalWork?.call !== "function" || !(journalWork.names instanceof Set))) {
+    throw new TypeError("journalWork must come from createJournalWorkTools.");
+  }
   const normalizedOauth = normalizeOauth(oauth);
   if (productionAuthReady === true && !normalizedOauth) throw new TypeError("Production auth readiness requires OAuth metadata.");
-  const tools = advertisedTools(Boolean(normalizedOauth));
+  const tools = advertisedTools(Boolean(normalizedOauth), journalWork);
+  const instructions = serverInstructions(journalWork);
   const serveRoot = !normalizedOauth || new URL(normalizedOauth.resource).pathname === "/";
   // Loaded once per process: a redeploy is what changes the served protocol.
   const protocol = therapyProtocol === undefined ? loadProtocolOrNull() : therapyProtocol;
@@ -465,7 +494,7 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
         protocolVersion: MCP_PROTOCOL_VERSION,
         capabilities: { tools: { listChanged: false } },
         serverInfo: { name: "inner-signal-private-case", version: RUNTIME_VERSION },
-        instructions: SERVER_INSTRUCTIONS
+        instructions
       }));
     }
     if (request.method === "tools/list") return send(res, 200, success(request.id, { tools }));
@@ -484,11 +513,15 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
 
     const token = bearerToken(req);
     try {
+      if (journalWork?.names.has(name)) {
+        const outcome = await journalWork.call(name, args, { bearerToken: token });
+        return send(res, 200, success(request.id, outcome.toolError ? journalWorkToolError(outcome.toolError) : toolResult(outcome.value)));
+      }
       const value = await callTool(caseAccessService, name, args, { bearerToken: token });
       return send(res, 200, success(request.id, toolResult(value)));
     } catch (error) {
       if (error instanceof PrivateCaseAccessDeniedError) {
-        if (await deniedForSignedInAccount(caseAccessService, token, name)) {
+        if (await deniedForSignedInAccount(caseAccessService, token, name, journalWork)) {
           return send(res, 200, success(request.id, caseNotAuthorizedResult()));
         }
         const challenge = oauthChallenge(normalizedOauth, "invalid_token", "The access token is missing, invalid, or is not authorized for this case and scope.");
@@ -506,8 +539,8 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
   });
 }
 
-export async function listenPrivateCaseMcp({ caseAccessService, oauth = null, productionAuthReady = false, therapyProtocol = undefined, port = 0, host = "127.0.0.1" } = {}) {
-  const server = createPrivateCaseMcpServer({ caseAccessService, oauth, productionAuthReady, therapyProtocol });
+export async function listenPrivateCaseMcp({ caseAccessService, oauth = null, productionAuthReady = false, therapyProtocol = undefined, journalWork = null, port = 0, host = "127.0.0.1" } = {}) {
+  const server = createPrivateCaseMcpServer({ caseAccessService, oauth, productionAuthReady, therapyProtocol, journalWork });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
     server.listen(port, host, resolve);
