@@ -143,15 +143,30 @@ export function createJournalWorkExchange({
   const directory = (kind) => path.join(root, kind === "work" ? "outbox" : "inbox");
   const fileFor = (kind, fileKey) => path.join(directory(kind), `${fileKey}.json`);
 
+  async function syncPath(dir) {
+    const handle = await fs.open(dir, "r");
+    try { await handle.sync(); }
+    finally { await handle.close(); }
+  }
+
+  // A newly created queue directory is durable only once its parent is synced, and so on up to the
+  // parent of the first directory mkdir created.
   async function ensureDirectory(kind) {
-    await fs.mkdir(directory(kind), { recursive: true, mode: dirMode });
+    const target = directory(kind);
+    const created = await fs.mkdir(target, { recursive: true, mode: dirMode });
+    if (created === undefined) return;
+    const stop = path.dirname(created);
+    for (let current = target; ;) {
+      const parent = path.dirname(current);
+      await syncPath(parent);
+      if (parent === stop || parent === current) break;
+      current = parent;
+    }
   }
 
   // A published or removed entry is durable only once its directory is synced.
   async function syncDirectory(kind) {
-    const handle = await fs.open(directory(kind), "r");
-    try { await handle.sync(); }
-    finally { await handle.close(); }
+    await syncPath(directory(kind));
   }
 
   async function writeTemporary(kind, bytes) {

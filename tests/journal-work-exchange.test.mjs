@@ -124,6 +124,18 @@ test("tampered, moved or wrongly keyed files are refused", async (t) => {
   await assert.rejects(exchange.readResult(WORK_ID), { code: "JOURNAL_WORK_ENTRY_INVALID" });
 });
 
+test("a missing exchange root is created with private modes and works end to end", async (t) => {
+  const parent = await tempRoot(t);
+  const root = path.join(parent, "fresh", "exchange");
+  const exchange = createJournalWorkExchange({ root, secret: secret() });
+  await exchange.publishWork(workEntry());
+  await exchange.submitResult({ workId: WORK_ID, output: { items: [] }, subject: "s" });
+  assert.deepEqual((await exchange.readResult(WORK_ID)).output, { items: [] });
+  for (const dir of [path.join(parent, "fresh"), root, path.join(root, "outbox"), path.join(root, "inbox")]) {
+    assert.equal((await fs.stat(dir)).mode & 0o777, 0o700, dir);
+  }
+});
+
 test("an entry replaced by a symbolic link is refused, not followed", async (t) => {
   const root = await tempRoot(t);
   const exchange = createJournalWorkExchange({ root, secret: secret() });

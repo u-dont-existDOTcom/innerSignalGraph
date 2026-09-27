@@ -23,7 +23,7 @@ Completion is therefore known: an answer either is in `inbox/` or is not. Re-sen
 - One secret (`INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64`, at least 32 bytes) is split with HKDF-SHA256 into an encryption key and a receipt key. Neither side shares the corpus key.
 - Each file is AES-256-GCM with a random 12-byte nonce. The associated data binds the version, the direction and the file name, so a file copied under another name, or from the other direction, fails.
 - File names are a SHA-256 of the work ID. A watcher can tell whether an answer arrived without holding any key; the names reveal nothing else.
-- Publication writes and syncs a private temporary file, hard-links it into place and syncs the directory. `link()` never replaces an existing file, which makes publication first-write-wins. Directories are 0700 and files 0600, so the runtime and the connector must run as the same user.
+- Publication writes and syncs a private temporary file, hard-links it into place and syncs the directory. When a queue directory is first created, its parents are synced too. `link()` never replaces an existing file, which makes publication first-write-wins. Directories are 0700 and files 0600, so the runtime and the connector must run as the same user.
 - Retiring an item replaces its answer with an encrypted tombstone in one rename and then removes the work item. The answer's name never goes missing, so a duplicate submission still in flight cannot leave a late answer behind. The tombstone holds no answer text, and retiring an unanswered item closes it the same way.
 - A work item carries the case ID, role, instruction, packet, output schema, expected generation, and issue and expiry times. An answer carries the output and a receipt: receipt ID, transport `chatgpt_connector_tool`, completion status, file key, output SHA-256, a SHA-256 of the OAuth subject, receipt time, and an HMAC tag.
 - Limits: 4 MiB per file, 900,000 bytes per answer, 256 KiB per instruction.
@@ -48,7 +48,7 @@ Completion is therefore known: an answer either is in `inbox/` or is not. Re-sen
 ## Next changes
 
 1. **Runtime.** Move the importer from its private work branch into this repository (owner approved public, 2026-09-27; the export was checked for the run's case ID and source hash). Add a provider that publishes work items and waits for `inbox/`, and have the port's `getCompletion` read `inbox/` so a restart recovers answers instead of reporting "completion unknown". On a zero-spend route, an unknown completion re-sends the item. The REFERENCE_AUDIT branch's permanent completion-unknown marker must consult the exchange before blocking.
-2. **Mission Control.** A job type that opens a fresh chat on the chosen account, model and effort with the InnerSignal app enabled, sends the instruction above, and treats an `inbox/` file as done. It keeps the heartbeat ladder: continue, then Retry, then a fresh chat.
+2. **Mission Control.** A job type that opens a fresh chat on the chosen account, model and effort with the InnerSignal app enabled, sends the instruction above, and treats an `inbox/` file as done. It keeps the heartbeat ladder: continue, then Retry, then a fresh chat. ChatGPT occasionally asks the user to confirm an app's write (the owner reports this is rare). If ChatGPT offers "always allow" for the app, that is set once. Otherwise the heartbeat approves a waiting confirmation only for `submit_journal_work_result` and sends any other confirmation to the owner.
 3. **Parallel calls.** The controller runs one call at a time today. Several in-flight work items need per-item state, not one `state.json` read-modify-write per process.
 
 ## Deployment (owner-gated)
@@ -57,7 +57,7 @@ Completion is therefore known: an answer either is in `inbox/` or is not. Re-sen
 2. Generate one 32-byte secret; give it to both processes through their secret files, never Git.
 3. Mount the exchange into the connector container read-write; the case vault mount stays read-only.
 4. Add `journal:submit` to the import account's ACL grant for the import's case, and to the identity provider's client scopes.
-5. Redeploy the connector, then reconnect the InnerSignal app in each ChatGPT account that runs the import, so the new scope is granted.
+5. Redeploy the connector, then reconnect the InnerSignal app in each ChatGPT account that runs the import, so the new scope is granted. Both the Plus and the Pro account can create custom MCP apps with OAuth (owner check, 2026-09-27; developer mode is no longer shown). Neither account has yet run a custom app's write, so the pilot's first step submits one synthetic answer from each account.
 
 ## Tests
 
