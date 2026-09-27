@@ -1,6 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
-import { JOURNAL_GRAPH_CONTRACT } from "./contracts.mjs";
+import { JOURNAL_GRAPH_CONTRACT, isJournalTimeBound, timeBoundStartsByEndOf } from "./contracts.mjs";
 import { lexicalTerms } from "./graph.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
@@ -227,7 +227,7 @@ export async function openPrivateJournalGraph({
   // Its sort label keeps a timeline cursor from being replayed as a search cursor, or the reverse.
   const timeline = async ({ from = null, to = null, includeUnknown = true, pageSize = null, cursor = null } = {}) => {
     await assertCurrent();
-    invariant((from === null || typeof from === "string") && (to === null || typeof to === "string")
+    invariant((from === null || isJournalTimeBound(from)) && (to === null || isJournalTimeBound(to))
       && typeof includeUnknown === "boolean", "TIMELINE_QUERY_INVALID");
     invariant(pageSize === null || (Number.isSafeInteger(pageSize) && pageSize >= 1 && pageSize <= 250), "TIMELINE_PAGE_SIZE_INVALID");
     invariant(cursor === null || pageSize !== null, "TIMELINE_CURSOR_REQUIRES_PAGE_SIZE");
@@ -236,12 +236,13 @@ export async function openPrivateJournalGraph({
     const offset = cursor ? parseCursor(cursor, { query_sha256: querySha, filters_sha256: filtersSha, sort: "timeline" }).offset : 0;
     const known = await readIndex("time_known", "known");
     const unknown = includeUnknown ? await readIndex("time_unknown", "unknown") : [];
-    // A date-only upper bound, as the web page sends, includes that whole day.
-    const upper = to !== null && /^\d{4}-\d{2}-\d{2}$/u.test(to) ? `${to}T23:59:59.999Z` : to;
-    // A known interval may be open at one end: a missing start is the unbounded past and a missing
-    // end the unbounded future, so a partly dated record stays inside any window it overlaps.
-    const selected = known.filter((entry) => (from === null || entry.to === null || entry.to >= from)
-      && (upper === null || entry.from === null || entry.from <= upper));
+    // An entry is in the window when their periods overlap, each bound covering the whole of its
+    // precision: a window ending "2024-06-01" includes that day, and a record dated "2021-05" is in
+    // a window starting May 10, 2021. A known interval may be open at one end: a missing start is
+    // the unbounded past and a missing end the unbounded future, so a partly dated record stays
+    // inside any window it overlaps.
+    const selected = known.filter((entry) => (from === null || entry.to === null || timeBoundStartsByEndOf(from, entry.to))
+      && (to === null || entry.from === null || timeBoundStartsByEndOf(entry.from, to)));
     // One entry per record and known time interval, labeled with the field or fields that place
     // it there: a record written on one date about an event on another appears at each, and one
     // whose two times are equal appears once. A record with no known time at all appears once in

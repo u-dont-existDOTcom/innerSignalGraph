@@ -138,6 +138,44 @@ export function resolveExactQuote(text, quote, occurrence = null) {
   });
 }
 
+// A time bound is an ISO 8601 calendar value at the precision its source supports, from a year to
+// a millisecond, without a numeric offset: "2021", "2021-05", "2021-05-14", "2021-05-14T09:30",
+// "2021-05-14T09:30:15" or "2021-05-14T09:30:15.250", a date-time optionally marked "Z". A known
+// zone is kept in the time's separate timezone field. A bound names a period ("2021-05" is the
+// whole of May 2021), and with the "Z" set aside, text order in this form is time order, so the
+// timeline sorts and filters bounds without parsing them. Vague wording ("last summer") is not a
+// bound; it stays in the time's raw text.
+export const JOURNAL_TIME_BOUND_FORMS = Object.freeze(["YYYY", "YYYY-MM", "YYYY-MM-DD", "YYYY-MM-DDTHH:MM", "YYYY-MM-DDTHH:MM:SS", "YYYY-MM-DDTHH:MM:SS.sss", "any date-time form followed by Z"]);
+const TIME_BOUND = /^(\d{4})(?:-(\d{2})(?:-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,3})?)?Z?)?)?)?$/u;
+
+export function isJournalTimeBound(value) {
+  const match = typeof value === "string" ? TIME_BOUND.exec(value) : null;
+  if (!match) return false;
+  const [year, month = 1, day = 1, hour = 0, minute = 0, second = 0] = match.slice(1).map((part) => (part === undefined ? undefined : Number(part)));
+  // Built field by field so a month, day or time that does not exist (February 30, 24:00) shows up
+  // as a value that changed, and so years before 100 are not read as 19xx.
+  const date = new Date(0);
+  date.setUTCFullYear(year, month - 1, day);
+  date.setUTCHours(hour, minute, second, 0);
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day
+    && date.getUTCHours() === hour && date.getUTCMinutes() === minute && date.getUTCSeconds() === second;
+}
+
+/** The text a bound is ordered by: the bound itself, without a trailing "Z". */
+export function timeBoundOrderKey(bound) {
+  return bound.endsWith("Z") ? bound.slice(0, -1) : bound;
+}
+
+/**
+ * Whether the period one bound names begins no later than the period another names ends. A period
+ * ends after every value that begins with its text, so it is enough to compare the first bound
+ * with the second cut to the second's precision: "2021-05-20" begins before "2021-05" ends.
+ */
+export function timeBoundStartsByEndOf(earlier, later) {
+  const end = timeBoundOrderKey(later);
+  return timeBoundOrderKey(earlier).slice(0, end.length) <= end;
+}
+
 export function validateJournalGraph(graph, sourceRepresentations, contract = JOURNAL_GRAPH_CONTRACT) {
   validateJournalSchema("graph", graph);
   invariant(sourceRepresentations && typeof sourceRepresentations === "object" && !Array.isArray(sourceRepresentations), "REPRESENTATIONS_INVALID");
@@ -178,11 +216,13 @@ export function validateJournalGraph(graph, sourceRepresentations, contract = JO
     if (value.precision === "unknown") {
       invariant(value.from === null && value.to === null && value.timezone === null, "FALSE_TIME_PRECISION");
     }
-    if (value.from !== null && value.to !== null) {
-      const from = Date.parse(value.from);
-      const to = Date.parse(value.to);
-      invariant(Number.isFinite(from) && Number.isFinite(to) && from <= to, "INVALID_TIME_INTERVAL");
+    // Every bound that is present must be a calendar value the timeline can order: an interval open
+    // at one end ("after May 2021") checks its one bound, and a closed one also checks that it does
+    // not end before it starts.
+    for (const bound of [value.from, value.to]) {
+      invariant(bound === null || isJournalTimeBound(bound), "INVALID_TIME_BOUND", { expected: JOURNAL_TIME_BOUND_FORMS });
     }
+    if (value.from !== null && value.to !== null) invariant(timeBoundStartsByEndOf(value.from, value.to), "INVALID_TIME_INTERVAL");
     if (value.precision !== "unknown") invariant(value.evidence_ids.length > 0, "TIME_WITHOUT_EVIDENCE");
   };
   for (const node of graph.nodes) {

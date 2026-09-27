@@ -1,4 +1,5 @@
 import path from "node:path";
+import { isOutside } from "../core/private-path.mjs";
 import { fileURLToPath } from "node:url";
 import { createLocalJWKSet, createRemoteJWKSet, jwtVerify } from "jose";
 import { ValidationError } from "../core/errors.mjs";
@@ -13,10 +14,8 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/;
 const HTTPS = /^https:\/\/[^\s/]+/i;
 
-const isWithin = (parent, candidate) => {
-  const relative = path.relative(parent, candidate);
-  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
-};
+// Judged on real locations: a link back into the checkout is inside, and so is a name like "..private".
+const isWithin = (parent, candidate) => !isOutside(parent, candidate);
 
 function requiredText(value, name, maximum = 4_000) {
   if (typeof value !== "string" || !value.trim() || value.length > maximum) throw new ValidationError(`${name} must be bounded non-empty text.`);

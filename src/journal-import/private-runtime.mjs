@@ -4,6 +4,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
+import { isOutside } from "../core/private-path.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -105,8 +106,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
   invariant(path.isAbsolute(config.execution_root ?? ""), "JOURNAL_EXECUTION_ROOT_REQUIRED");
   const root = path.resolve(config.execution_root);
   const repositoryRoot = path.resolve(new URL("../../", import.meta.url).pathname);
-  const relative = path.relative(repositoryRoot, root);
-  invariant(relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative), "JOURNAL_EXECUTION_ROOT_PRIVATE_REQUIRED");
+  invariant(isOutside(repositoryRoot, root), "JOURNAL_EXECUTION_ROOT_PRIVATE_REQUIRED");
   await fs.mkdir(root, { recursive: true, mode: 0o700 });
   const rootInfo = await fs.lstat(root);
   invariant(rootInfo.isDirectory() && !rootInfo.isSymbolicLink(), "JOURNAL_EXECUTION_ROOT_INVALID");

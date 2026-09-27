@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
+import { isOutside } from "../core/private-path.mjs";
 import { sourceFormatForPath, sourceParserCapabilities } from "../journal-import/parsers/index.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../journal-import/provider-runtime.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
@@ -93,10 +94,8 @@ export function mockJournalDoctorReport() {
   });
 }
 
-function outsideRepository(candidate) {
-  const relative = path.relative(repositoryRoot, candidate);
-  return relative !== "" && (relative.startsWith("..") || path.isAbsolute(relative));
-}
+// Judged on real locations, so a link can't smuggle a private file into the public checkout.
+const outsideRepository = (candidate) => isOutside(repositoryRoot, candidate);
 
 async function loadPrivateConfig(configPath) {
   if (!outsideRepository(configPath)) throw new ValidationError("Private journal configuration must remain outside the public repository.", { code: "JOURNAL_CONFIG_LOCATION_INVALID" });
@@ -180,9 +179,22 @@ async function inspectOperator(config, environment) {
   }
 }
 
+// What opening a run requires of the config, checked the way the run checks it, so doctor never
+// passes a config that every real command would then refuse.
+function runConfigBlockers(config) {
+  const blockers = [];
+  if (config.max_external_spend_usd !== 0) blockers.push("JOURNAL_ZERO_SPEND_REQUIRED");
+  if (typeof config.execution_root !== "string" || !path.isAbsolute(config.execution_root)) blockers.push("JOURNAL_EXECUTION_ROOT_REQUIRED");
+  else if (!outsideRepository(config.execution_root)) blockers.push("JOURNAL_EXECUTION_ROOT_PRIVATE_REQUIRED");
+  if (typeof config.existing_grant_ref !== "string" || !config.existing_grant_ref) blockers.push("JOURNAL_GRANT_REFERENCE_REQUIRED");
+  if (typeof config.source?.relative_path !== "string" || !config.source.relative_path
+    || !Number.isSafeInteger(config.source.bytes) || !/^[0-9a-f]{64}$/u.test(config.source.sha256 ?? "")) blockers.push("JOURNAL_SOURCE_BINDING_REQUIRED");
+  return blockers;
+}
+
 export async function configuredJournalDoctorReport(configPath, environment = process.env) {
   const config = await loadPrivateConfig(configPath);
-  const blockers = [];
+  const blockers = runConfigBlockers(config);
   let source;
   try { source = await inspectConfiguredSource(configPath, config); }
   catch (error) { source = { available: false, byte_length_matches: false, digest_matches: false, format: "unknown" }; blockers.push(error?.code ?? "SOURCE_UNAVAILABLE"); }

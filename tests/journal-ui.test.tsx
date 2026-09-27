@@ -324,6 +324,20 @@ describe("timeline filtering", () => {
     expect(matchesFilters(openBefore, { ...emptyFilters(), to: "2019-06-01" })).toBe(true);
     expect(matchesFilters(openBefore, { ...emptyFilters(), from: "2019-06-01" })).toBe(false);
   });
+
+  test("a coarse time covers its whole period, in the timeline and in other results", () => {
+    const record: JournalNode = { id: "a10", kind: "assertion", data: { event_time: { from: "2021-05", to: "2021-05" } } };
+    const inMay = { ...emptyFilters(), from: "2021-05-10", to: "2021-05-12" };
+    const inJune = { ...emptyFilters(), from: "2021-06-01", includeUnknown: false };
+    const month = { ...record, timeline_entry: { lane: "known" as const, fields: ["event_time"], from: "2021-05", to: "2021-05" } };
+    expect(matchesFilters(month, inMay)).toBe(true);
+    expect(matchesFilters(month, inJune)).toBe(false);
+    // A search result is filtered by the same interval rather than by a day cut from its start.
+    expect(matchesFilters(record, inMay)).toBe(true);
+    expect(matchesFilters(record, inJune)).toBe(false);
+    const afterMay = { ...record, data: { event_time: { from: "2021-05", to: null } } };
+    expect(matchesFilters(afterMay, inJune)).toBe(true);
+  });
 });
 
 describe("bounded and hardened rendering", () => {

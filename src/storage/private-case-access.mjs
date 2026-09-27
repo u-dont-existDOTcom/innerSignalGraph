@@ -1,4 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { isOutside } from "../core/private-path.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
@@ -62,10 +63,8 @@ function nonJournalStateDigest(record) {
   for (const field of NON_JOURNAL_EXCLUDED_FIELDS) delete copy[field];
   return createHash("sha256").update(JSON.stringify(copy)).digest("hex");
 }
-const isWithin = (parent, candidate) => {
-  const relative = path.relative(parent, candidate);
-  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
-};
+// Judged on real locations: a link back into the checkout is inside, and so is a name like "..private".
+const isWithin = (parent, candidate) => !isOutside(parent, candidate);
 
 function assertProvider(provider, method, name) {
   if (!provider || typeof provider[method] !== "function") throw new ValidationError(`${name} must implement ${method}().`);

@@ -39,6 +39,9 @@ async function recheckSnapshot(caseStore, caseId, corpusId, snapshot) {
   invariant(sameSnapshot(current.reference, snapshot), "CURSOR_STALE");
 }
 
+// A timeline bound, as the reader accepts it: the window includes the whole period each bound names.
+const TIME_BOUND_DESCRIPTION = "ISO 8601 calendar value without an offset: YYYY, YYYY-MM, YYYY-MM-DD or YYYY-MM-DDTHH:MM[:SS[.sss]], optionally ending in Z. The window includes the whole period a bound names.";
+
 export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
   Object.freeze({
     name: "search_journal_graph",
@@ -100,8 +103,8 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
         case_id: { type: "string", pattern: "^[a-z0-9][a-z0-9_-]{0,79}$" },
         corpus_id: { type: "string", pattern: "^[A-Za-z0-9:_-]{1,160}$" },
         purpose: { enum: [...READ_PURPOSES] },
-        from: { type: ["string", "null"] },
-        to: { type: ["string", "null"] },
+        from: { type: ["string", "null"], description: TIME_BOUND_DESCRIPTION },
+        to: { type: ["string", "null"], description: TIME_BOUND_DESCRIPTION },
         include_unknown: { type: "boolean", default: true },
         page_size: { type: "integer", minimum: 1, maximum: PAGE_SIZE_MAX, default: PAGE_SIZE_DEFAULT },
         cursor: { type: ["string", "null"] }

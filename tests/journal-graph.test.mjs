@@ -340,6 +340,40 @@ test("the timeline places a record at each of its known times and says which fie
   store.close();
 });
 
+test("timeline bounds cover their whole period, and a query bound must be one", async () => {
+  const rootDir = await temporaryRoot();
+  const graph = fixture("synthetic-graph.json");
+  const representations = fixture("synthetic-sources.json");
+  const time = (from, to, evidence) => ({ raw: "synthetic", from, to, precision: "interval", timezone: null, basis: "explicit", evidence_ids: [evidence] });
+  // A month, a day inside it, a time on that day, and a year.
+  graph.nodes.find(({ id }) => id === "a1").data.event_time = time("2021-05", "2021-05", "p1");
+  graph.nodes.find(({ id }) => id === "a2").data.event_time = time("2021-05-14", "2021-05-14", "p2");
+  graph.nodes.find(({ id }) => id === "a3").data.event_time = time("2021-05-14T09:30Z", "2021-05-14T10:00Z", "p3");
+  graph.nodes.find(({ id }) => id === "a4").data.event_time = time("2020", "2020", "p4");
+  const store = corpusStore(rootDir, graph.case_id, graph.corpus_id, Buffer.alloc(32, 17));
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph, sourceRepresentations: representations, shardTargetBytes: 4096 });
+  const reader = await openPrivateJournalGraph({
+    corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId: graph.case_id, corpusId: graph.corpus_id,
+    generation: graph.generation, visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 19)
+  });
+  const ids = async (query) => (await reader.timeline({ ...query, includeUnknown: false })).records.map(({ id }) => id);
+  // Ordered by start, a coarser period before the finer ones it contains.
+  assert.deepEqual(await ids({}), ["a4", "a1", "a2", "a3"]);
+  // A window inside May 2021 still overlaps the record dated only "May 2021".
+  assert.deepEqual(await ids({ from: "2021-05-10", to: "2021-05-12" }), ["a1"]);
+  assert.deepEqual(await ids({ from: "2021-05-14", to: "2021-05-14" }), ["a1", "a2", "a3"]);
+  // A coarse query bound covers its whole period too: "to 2021-05" includes May 14.
+  assert.deepEqual(await ids({ from: "2021-01", to: "2021-05" }), ["a1", "a2", "a3"]);
+  assert.deepEqual(await ids({ from: "2021-05-14T10:01" }), ["a1", "a2"]);
+  assert.deepEqual(await ids({ to: "2020-12-31" }), ["a4"]);
+  for (const bad of ["last summer", "2021-02-30", "2021-05-14T09:30+02:00"]) {
+    await assert.rejects(() => reader.timeline({ from: bad }), /TIMELINE_QUERY_INVALID/);
+    await assert.rejects(() => reader.timeline({ to: bad }), /TIMELINE_QUERY_INVALID/);
+  }
+  reader.close();
+  store.close();
+});
+
 test("the timeline tool returns the cursor for its next page", async () => {
   const rootDir = await temporaryRoot();
   const { graph, store, reader, reference } = await syntheticReader(rootDir);

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
+import { isOutside } from "../core/private-path.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../storage/private-case-access.mjs";
 import {
   loadHostedPrivateCaseOperatorProvidersFromEnvironment,
@@ -16,10 +17,8 @@ const valueAfter = (flag) => {
   const index = process.argv.indexOf(flag);
   return index >= 0 ? process.argv[index + 1] : null;
 };
-const outsideRepository = (candidate) => {
-  const relative = path.relative(repositoryRoot, candidate);
-  return relative !== "" && (relative.startsWith("..") || path.isAbsolute(relative));
-};
+// Judged on real locations, so a link can't place a request or receipt inside the public checkout.
+const outsideRepository = (candidate) => isOutside(repositoryRoot, candidate);
 
 const hosted = process.argv.includes("--hosted-env");
 const hostedOperator = process.argv.includes("--hosted-operator-env");
