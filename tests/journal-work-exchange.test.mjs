@@ -183,9 +183,24 @@ test("the exchange root must be a private directory owned by the exchange's user
   await assert.rejects(assertJournalWorkExchangeRoot(root), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
   assert.deepEqual(await fs.readdir(root), []);
 
+  // The owner needs full access too: a 0500 root would pass startup and fail at the first write.
+  await fs.chmod(root, 0o500);
+  await assert.rejects(assertJournalWorkExchangeRoot(root), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+
   await fs.chmod(root, 0o700);
   await assertJournalWorkExchangeRoot(root);
   assert.equal((await exchange.publishWork(workEntry())).created, true);
+
+  // A directory above the root that others can write could rename the root away and put another in
+  // its place, unless the sticky bit (as on /tmp) stops them.
+  if (typeof process.getuid === "function") {
+    await fs.chmod(base, 0o777);
+    await assert.rejects(assertJournalWorkExchangeRoot(root), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+    await assert.rejects(exchange.publishWork(workEntry({ work_id: "job:synthetic-work-0008" })), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+    await fs.chmod(base, 0o1777);
+    await assertJournalWorkExchangeRoot(root);
+    await fs.chmod(base, 0o700);
+  }
 
   if (typeof process.getuid === "function") {
     const stranger = process.getuid() + 1;

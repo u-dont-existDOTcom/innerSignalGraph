@@ -69,7 +69,7 @@ test("the connector won't start on a missing exchange root or one other users ca
   for (const [prepare, message] of [
     [async () => path.join(environment.base, "missing"), /INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT must name an existing directory/u],
     [async () => { await fs.chmod(environment.exchangeRoot, 0o755); return environment.exchangeRoot; },
-      /INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT must be owned by this process's user and grant no group or other access/u]
+      /INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT must be owned by this process's user, have mode 0700, and sit in directories no other user can change/u]
   ]) {
     const run = start(environment, await prepare());
     t.after(() => run.child.kill("SIGTERM"));

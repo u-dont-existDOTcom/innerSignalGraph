@@ -73,9 +73,11 @@ export async function resolveJournalWorkExchangeRoot(root, { outside }) {
 
 const currentUser = () => (typeof process.getuid === "function" ? process.getuid() : null);
 
-// The root must already exist (deployment creates it), be a real directory, be owned by the user
-// both processes run as (`owner`; null skips the check where the platform has no user IDs) and grant
-// no group or other access. Another local user can then neither read, remove nor block entries.
+// The root must already exist (deployment creates it), be a real directory owned by the user both
+// processes run as (`owner`; null skips the ownership checks where the platform has no user IDs), and
+// have mode 0700. Every directory above it must be owned by that user or by root and be writable by
+// no one else, unless it has the sticky bit (like /tmp), which stops others renaming what they don't
+// own. Another local user can then neither read, remove, block nor swap entries or the root itself.
 export async function assertJournalWorkExchangeRoot(root, { owner = currentUser() } = {}) {
   if (typeof root !== "string" || !path.isAbsolute(root)) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
   let info;
@@ -86,7 +88,18 @@ export async function assertJournalWorkExchangeRoot(root, { owner = currentUser(
     throw error;
   }
   if (!info.isDirectory()) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
-  if ((owner !== null && info.uid !== owner) || (info.mode & 0o077) !== 0) fail("JOURNAL_WORK_EXCHANGE_ROOT_INSECURE");
+  if ((owner !== null && info.uid !== owner) || (info.mode & 0o777) !== 0o700) fail("JOURNAL_WORK_EXCHANGE_ROOT_INSECURE");
+  if (owner === null) return;
+  for (let current = await fs.realpath(path.dirname(root)); ;) {
+    const ancestor = await fs.lstat(current);
+    const trustedOwner = ancestor.uid === 0 || ancestor.uid === owner;
+    const writableByOthers = (ancestor.mode & 0o022) !== 0;
+    const sticky = (ancestor.mode & 0o1000) !== 0;
+    if (!trustedOwner || (writableByOthers && !sticky)) fail("JOURNAL_WORK_EXCHANGE_ROOT_INSECURE");
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
 }
 
 // One secret, two independent keys: payload encryption and receipt authentication.

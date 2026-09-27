@@ -5,7 +5,7 @@ Updated: 2026-09-27
 ## Journal work exchange hardening — `claude/journal-work-exchange-hardening-20260927`
 
 - **Goal:** the two points deferred from PR #92's last review. A failed write must not leave temporary files behind, and an exchange root that other local users can reach must be refused.
-- **Done, don't repeat:** `assertJournalWorkExchangeRoot` requires a real directory owned by the process's user with mode 0700. Every write checks it, and the connector checks it at startup with a plain message. A failed write removes its temporary file. `removeStaleTemporaries` removes temporaries older than an hour and refuses a linked queue; the connector calls it at startup, and the import runtime will too.
+- **Done, don't repeat:** `assertJournalWorkExchangeRoot` requires a real directory owned by the process's user with mode exactly 0700, below directories that only that user or root can change (sticky directories such as /tmp are fine). Every write checks it, and the connector checks it at startup with a plain message. A failed write removes its temporary file. `removeStaleTemporaries` removes temporaries older than an hour and refuses a linked queue; the connector calls it at startup, and the import runtime will too.
 - **Verified:** `tests/journal-work-exchange.test.mjs`, `tests/journal-work-tools.test.mjs` and the new `tests/journal-work-cli.test.mjs` pass. The full gates are listed in the PR.
 - **Safety:** with journal work unconfigured, nothing changes. No deployment, ACL, identity-provider or private-data change is in this branch.
 - **Next safe action:** Codex review, then owner approval to merge. Moving the importer into this repository is waiting on the owner's decision about the scope of the move.

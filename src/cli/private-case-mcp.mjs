@@ -59,7 +59,7 @@ if (configuredJournalWork === 3) {
     const problem = {
       JOURNAL_WORK_EXCHANGE_ROOT_MISSING: "must name an existing directory",
       JOURNAL_WORK_EXCHANGE_ROOT_INVALID: "must name a directory, not a file or a symbolic link",
-      JOURNAL_WORK_EXCHANGE_ROOT_INSECURE: "must be owned by this process's user and grant no group or other access (mode 0700)"
+      JOURNAL_WORK_EXCHANGE_ROOT_INSECURE: "must be owned by this process's user, have mode 0700, and sit in directories no other user can change"
     }[error?.code];
     if (!problem) throw error;
     throw new Error(`INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT ${problem}.`);
