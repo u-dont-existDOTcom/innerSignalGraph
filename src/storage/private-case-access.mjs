@@ -291,7 +291,28 @@ export function createPrivateCaseAccessService({
       return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, (store) => store.publishJournalGeneration(caseId, input), PRIVATE_JOURNAL_PURPOSES.SESSION_USE);
     },
     async rollbackJournalGeneration(caseId, input, authContext) {
-      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, (store) => store.rollbackJournalGeneration(caseId, input), PRIVATE_JOURNAL_PURPOSES.CORRECT);
+      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, async (store) => {
+        // A rollback target must be readable at the current visibility epoch. A generation staged
+        // before a visibility change belongs to the revoked snapshot, and activating it would leave
+        // every reader refusing the corpus.
+        const record = await store.load(caseId);
+        const reference = record?.journal_corpora.find((item) => item.corpus_id === input?.corpusId);
+        const target = reference && [...reference.previous_generations].reverse().find((item) => item.generation === input?.targetGeneration);
+        if (target) {
+          const corpusKey = await store.getJournalCorpusKey(caseId, input.corpusId);
+          const corpusStore = createPrivateJournalCorpusStore({ rootDir, caseId, corpusId: input.corpusId, corpusKey });
+          try {
+            const manifest = await corpusStore.readJsonObject({ objectId: target.manifest_object_id });
+            if (manifest.generation !== target.generation || manifest.visibility_epoch !== reference.visibility_epoch) {
+              throw new ValidationError("Rollback generation belongs to a revoked visibility epoch.", { code: "GRANT_REVOKED" });
+            }
+          } finally {
+            corpusStore.close();
+            corpusKey.fill(0);
+          }
+        }
+        return store.rollbackJournalGeneration(caseId, { ...input, expectedVisibilityEpoch: reference?.visibility_epoch ?? null });
+      }, PRIVATE_JOURNAL_PURPOSES.CORRECT);
     },
     async incrementJournalVisibilityEpoch(caseId, input, authContext) {
       return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, (store) => store.incrementJournalVisibilityEpoch(caseId, input), PRIVATE_JOURNAL_PURPOSES.SESSION_USE);

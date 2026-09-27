@@ -29,6 +29,10 @@ export const JOURNAL_IMPORT_COMMANDS = Object.freeze([
   "delete-plan"
 ]);
 
+// Designed but not built yet: they fail with JOURNAL_COMMAND_NOT_AVAILABLE rather than open a run.
+// The cold test still needs question freezing, the separate consumer and scoring wired together.
+export const JOURNAL_IMPORT_PLANNED_COMMANDS = Object.freeze(["cold-test", "export"]);
+
 export function journalImportHelp() {
   return [
     "InnerSignal private journal importer",
@@ -37,7 +41,8 @@ export function journalImportHelp() {
     "  npm run journal:import -- <command> --config /absolute/private/run.json",
     "  npm run journal:import -- doctor --mock",
     "",
-    `Commands: ${JOURNAL_IMPORT_COMMANDS.join(", ")}`,
+    `Commands: ${JOURNAL_IMPORT_COMMANDS.filter((command) => !JOURNAL_IMPORT_PLANNED_COMMANDS.includes(command)).join(", ")}`,
+    `Planned, not available yet: ${JOURNAL_IMPORT_PLANNED_COMMANDS.join(", ")}`,
     "",
     "The source, target and private receipts are never accepted as inline command arguments.",
     "Live mutation, disclosure, export and deletion remain denied unless the private configuration supplies their grants."
@@ -232,6 +237,9 @@ export async function runJournalImportCli(argv, { stdout = process.stdout, stder
     if (parsed.command === "doctor") {
       stdout.write(`${JSON.stringify(await configuredJournalDoctorReport(parsed.configPath, environment))}\n`);
       return 0;
+    }
+    if (JOURNAL_IMPORT_PLANNED_COMMANDS.includes(parsed.command)) {
+      throw new ValidationError("This journal import command isn't available yet.", { code: "JOURNAL_COMMAND_NOT_AVAILABLE" });
     }
     // The configured one-shot operator owns writes. The MCP remains read-only.
     const config = await loadPrivateConfig(parsed.configPath);

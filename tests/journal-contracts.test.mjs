@@ -152,3 +152,23 @@ test("doctor reports a UTF-8 text source as importable and other non-PDF bytes a
   assert.equal(binary.capabilities.parser, "unsupported");
   assert.equal(binary.blockers.includes("FORMAT_UNSUPPORTED"), true);
 });
+
+test("commands that are designed but not built fail plainly instead of opening a run", async () => {
+  for (const command of ["cold-test", "export"]) {
+    let stderr = "";
+    let opened = false;
+    const code = await runJournalImportCli([command, "--config", "/synthetic/private/run.json"], {
+      stdout: { write: () => {} },
+      stderr: { write: (chunk) => { stderr += chunk; } },
+      environment: {},
+      runtimeFactory: async () => { opened = true; throw new Error("must not open"); }
+    });
+    assert.equal(code, 1);
+    assert.equal(opened, false);
+    assert.deepEqual(JSON.parse(stderr), { error: "JOURNAL_COMMAND_NOT_AVAILABLE" });
+  }
+  let help = "";
+  await runJournalImportCli(["--help"], { stdout: { write: (chunk) => { help += chunk; } }, stderr: { write: () => {} } });
+  assert.match(help, /Planned, not available yet: cold-test, export/);
+  assert.doesNotMatch(help.split("Planned")[0], /cold-test|export/);
+});

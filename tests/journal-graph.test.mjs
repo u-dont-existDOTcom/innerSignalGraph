@@ -383,6 +383,10 @@ test("snapshot cursors traverse 1001 matches without gaps or duplicates and reje
   const narrow = await reader.search({ query: "uniqueterm", graphEnabled: false });
   assert.deepEqual(narrow.records.map(({ id }) => id), ["passage:000713"]);
   assert.ok(narrow.read_receipt.encrypted_objects_read < persisted.manifest.record_shards.length);
+  // A broad query is filtered and ordered from the lookup index: one page decrypts only its own records.
+  const broadPage = await reader.search({ query: "needle", graphEnabled: false, pageSize: 10 });
+  assert.equal(broadPage.total_matches, 1001);
+  assert.ok(broadPage.read_receipt.encrypted_objects_read < persisted.manifest.record_shards.length / 2);
 
   const seen = [];
   let cursor = null;
@@ -414,6 +418,29 @@ test("snapshot cursors traverse 1001 matches without gaps or duplicates and reje
   secondReader.close();
   firstStore.close();
   secondStore.close();
+});
+
+test("a generation whose lookup index predates record facts is still searched and paged the same way", async () => {
+  const rootDir = await temporaryRoot();
+  const { graph, representations } = passageGraph({ count: 120 });
+  const store = corpusStore(rootDir, graph.case_id, graph.corpus_id, Buffer.alloc(32, 47));
+  // Write the lookup index as earlier generations did: object locations only.
+  const legacyStore = Object.create(store, { writeJsonObject: { value: ({ objectId, value }) => store.writeJsonObject({ objectId,
+    value: value?.name === "record_lookup" ? { ...value, entries: value.entries.map(([key, locations]) => [key, locations.map(({ object_id }) => ({ object_id }))]) } : value }) } });
+  const persisted = await persistGraphGeneration({ corpusStore: legacyStore, graph, sourceRepresentations: representations, shardTargetBytes: 8192 });
+  const reader = await openPrivateJournalGraph({ corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId: graph.case_id,
+    corpusId: graph.corpus_id, generation: graph.generation, visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 49) });
+  const seen = [];
+  let cursor = null;
+  do {
+    const page = await reader.search({ query: "needle", graphEnabled: false, pageSize: 25, cursor });
+    assert.equal(page.total_matches, 120);
+    seen.push(...page.records.map(({ id }) => id));
+    cursor = page.next_cursor;
+  } while (cursor);
+  assert.deepEqual(seen, graph.nodes.filter(({ kind }) => kind === "passage").map(({ id }) => id));
+  reader.close();
+  store.close();
 });
 
 test("graph validation rejects vanished qualifiers, duplicate support and unsupported causation", () => {

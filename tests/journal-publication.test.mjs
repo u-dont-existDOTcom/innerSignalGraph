@@ -40,7 +40,7 @@ async function environment(t){
  for(const node of graph.nodes){if(node.kind==='source')node.data.original_object_id=original.object_id;if(node.kind==='passage')node.data.locator.original_object_id=original.object_id;}
  const persisted=await persistGraphGeneration({corpusStore:sourceStore,graph,sourceRepresentations:representations,permittedUses:['archive','organize_search','session_use'],archiveReferences:[original]});
  await service.appendJournal(CASE_ID,{id:'legacy-synthetic',observed_at:'2026-01-01T00:00:00.000Z',kind:'journal',text:'Invented legacy entry'},{bearerToken:WRITER});
- return {service,sourceStore,graph,persisted};
+ return {service,sourceStore,graph,persisted,representations};
 }
 
 test('a case:write-only operator publishes a generation and keeps the rest of the case unchanged across a retry',async t=>{
@@ -121,4 +121,30 @@ test('a commit refuses a manifest staged before a visibility change instead of a
  const inspection=await service.inspectJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'session_use'},auth);
  assert.equal(inspection.reference.active_generation,null);
  assert.equal(inspection.reference.visibility_epoch,1);
+});
+
+test('a rollback refuses a generation from a revoked visibility epoch and still rolls back within one',async t=>{
+ const {service,sourceStore,graph,persisted,representations}=await environment(t);
+ const auth={bearerToken:WRITER},corrector={bearerToken:CORRECTOR};
+ const uses=['archive','organize_search','session_use'];
+ await publishJournalGenerationFromStaging({service,sourceStore,persisted,auth,authorize:async()=>{}});
+ await service.incrementJournalVisibilityEpoch(CASE_ID,{corpusId:CORPUS_ID,expectedEpoch:0},auth);
+ const stage=generation=>{const next=structuredClone(graph);next.generation=generation;
+  return persistGraphGeneration({corpusStore:sourceStore,graph:next,sourceRepresentations:representations,visibilityEpoch:1,
+   permittedUses:uses,archiveReferences:persisted.manifest.archive_references});};
+ const commit=async staged=>{
+  await service.withJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'archive'},
+   ({corpusStore})=>transferJournalGeneration({sourceStore,destinationStore:corpusStore,persisted:staged}),auth);
+  return createJournalPrivateApi({caseAccessService:service}).commit({caseId:CASE_ID,corpusId:CORPUS_ID,
+   generation:staged.manifest.generation,manifestObjectId:staged.manifest_object_id,permittedUses:uses},auth);
+ };
+ const first=persisted.manifest.generation,second=`${first}:second`,third=`${first}:third`;
+ await commit(await stage(second));
+ await assert.rejects(service.rollbackJournalGeneration(CASE_ID,{corpusId:CORPUS_ID,targetGeneration:first,expectedGeneration:second},corrector),
+  {code:'GRANT_REVOKED'});
+ const inspect=()=>service.inspectJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'session_use'},auth);
+ assert.equal((await inspect()).reference.active_generation,second);
+ await commit(await stage(third));
+ await service.rollbackJournalGeneration(CASE_ID,{corpusId:CORPUS_ID,targetGeneration:second,expectedGeneration:third},corrector);
+ assert.equal((await inspect()).reference.active_generation,second);
 });

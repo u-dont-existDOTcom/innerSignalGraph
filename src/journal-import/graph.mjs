@@ -306,6 +306,16 @@ function packIndex(index, targetBytes) {
   return shards;
 }
 
+// What search and the timeline need to filter and order a record without decrypting it: its
+// kind, lifecycle and source order, the same order the reader sorts by.
+function recordLookupFacts(record) {
+  return {
+    kind: record.kind ?? null,
+    lifecycle: record.lifecycle ?? null,
+    order: record.kind === "passage" ? record.data.start_byte : (record.data?.source_order ?? null)
+  };
+}
+
 function contentRef(reference, extra = {}) {
   return {
     object_id: reference.object_id,
@@ -341,7 +351,7 @@ export async function persistGraphGeneration({
     const objectId = `graph:${generationTag}:records:${String(index).padStart(6, "0")}`;
     const reference = await corpusStore.writeJsonObject({ objectId, value: { schema_version: "1.0", records: shard } });
     recordShards.push(contentRef(reference, { record_count: shard.length }));
-    for (const record of shard) recordLookup.set(record.id, [{ object_id: objectId }]);
+    for (const record of shard) recordLookup.set(record.id, [{ object_id: objectId, ...recordLookupFacts(record) }]);
   }
   const indexes = { ...buildGraphIndexes(graph), record_lookup: recordLookup };
   const indexDirectories = {};

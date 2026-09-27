@@ -106,6 +106,13 @@ export async function openPrivateJournalGraph({
     return record;
   };
 
+  // A record's kind, lifecycle and order as the generation's lookup index records them, or null
+  // for a generation built before the index carried them.
+  const lookupFacts = async (id) => {
+    const [location] = await readIndex("record_lookup", id);
+    return location && typeof location.lifecycle === "string" && Object.hasOwn(location, "order") ? location : null;
+  };
+
   const signCursor = (body) => {
     const encoded = Buffer.from(JSON.stringify(body), "utf8").toString("base64url");
     const mac = createHmac("sha256", secret).update(encoded).digest("base64url");
@@ -156,22 +163,36 @@ export async function openPrivateJournalGraph({
     const offset = cursor ? parseCursor(cursor, expected).offset : 0;
     const beforeReads = objectReads;
     const ids = intersection(await Promise.all(terms.map((term) => readIndex("lexical", term))));
-    const records = [];
-    for (const id of ids) {
-      const record = await loadRecord(id);
-      if (effectiveFilters.kinds.length && !effectiveFilters.kinds.includes(record.kind)) continue;
-      if (!effectiveFilters.lifecycles.includes(record.lifecycle)) continue;
-      records.push(record);
+    const matches = (kind, lifecycle) => (!effectiveFilters.kinds.length || effectiveFilters.kinds.includes(kind))
+      && effectiveFilters.lifecycles.includes(lifecycle);
+    const facts = await Promise.all(ids.map(lookupFacts));
+    let page;
+    let total;
+    if (facts.every(Boolean)) {
+      // Filter and order from the lookup index, then decrypt only the requested page.
+      const rows = ids.map((id, index) => ({ id, ...facts[index] })).filter((row) => matches(row.kind, row.lifecycle));
+      rows.sort((left, right) => (sort === "source_order"
+        ? (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER) : 0) || left.id.localeCompare(right.id));
+      total = rows.length;
+      page = await Promise.all(rows.slice(offset, offset + pageSize).map(({ id }) => loadRecord(id)));
+    } else {
+      // A generation built before its lookup index carried these facts: decrypt every match.
+      const records = [];
+      for (const id of ids) {
+        const record = await loadRecord(id);
+        if (matches(record.kind, record.lifecycle)) records.push(record);
+      }
+      records.sort((left, right) => resultSort(left, right, sort));
+      total = records.length;
+      page = records.slice(offset, offset + pageSize);
     }
-    records.sort((left, right) => resultSort(left, right, sort));
-    const page = records.slice(offset, offset + pageSize);
     const nextOffset = offset + page.length;
-    const moreAvailable = nextOffset < records.length;
+    const moreAvailable = nextOffset < total;
     const result = Object.freeze({
       generation,
       visibility_epoch: visibilityEpoch,
       records: page,
-      total_matches: records.length,
+      total_matches: total,
       more_available: moreAvailable,
       next_cursor: moreAvailable ? signCursor({
         schema_version: "1.0",
@@ -246,21 +267,31 @@ export async function openPrivateJournalGraph({
       unknownEntries.set(entry.id, value);
       entries.push(value);
     }
-    const loaded = new Map((await Promise.all([...new Set(entries.map(({ id }) => id))].map(loadRecord))).map((record) => [record.id, record]));
-    const records = entries.filter(({ id }) => active(loaded.get(id)))
-      .map(({ id, lane, fields, from: entryFrom, to: entryTo }) => ({ ...loaded.get(id), timeline_entry: { lane, fields, from: entryFrom, to: entryTo } }));
-    const unknownCount = records.filter(({ timeline_entry }) => timeline_entry.lane === "unknown").length;
+    // Which entries are live comes from the lookup index when the generation records it there, so
+    // only the records being returned are decrypted.
+    const uniqueIds = [...new Set(entries.map(({ id }) => id))];
+    const facts = new Map(uniqueIds.map((id) => [id, null]));
+    await Promise.all(uniqueIds.map(async (id) => { facts.set(id, await lookupFacts(id)); }));
+    const loaded = new Map();
+    if (![...facts.values()].every(Boolean)) {
+      for (const record of await Promise.all(uniqueIds.map(loadRecord))) loaded.set(record.id, record);
+    }
+    const live = entries.filter(({ id }) => active(facts.get(id) ?? loaded.get(id)));
+    const unknownCount = live.filter(({ lane }) => lane === "unknown").length;
+    const materialize = async (selection) => Promise.all(selection.map(async ({ id, lane, fields, from: entryFrom, to: entryTo }) =>
+      ({ ...(loaded.get(id) ?? await loadRecord(id)), timeline_entry: { lane, fields, from: entryFrom, to: entryTo } })));
     if (pageSize === null) {
+      const records = await materialize(live);
       await assertCurrent();
       return Object.freeze({ records, unknown_count: unknownCount });
     }
-    const page = records.slice(offset, offset + pageSize);
+    const page = await materialize(live.slice(offset, offset + pageSize));
     const nextOffset = offset + page.length;
-    const moreAvailable = nextOffset < records.length;
+    const moreAvailable = nextOffset < live.length;
     const result = Object.freeze({
       records: page,
       unknown_count: unknownCount,
-      total_matches: records.length,
+      total_matches: live.length,
       more_available: moreAvailable,
       next_cursor: moreAvailable ? signCursor({
         schema_version: "1.0",

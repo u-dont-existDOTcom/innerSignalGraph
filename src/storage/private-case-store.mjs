@@ -1411,12 +1411,13 @@ export function createEncryptedPrivateCaseStore({
       const reference = record.journal_corpora.find((item) => item.corpus_id === checkedCorpusId);
       return Object.freeze({ case_revision: record.revision, active_generation: reference.active_generation, visibility_epoch: reference.visibility_epoch });
     },
-    async rollbackJournalGeneration(caseId, { corpusId, targetGeneration, expectedGeneration }) {
+    async rollbackJournalGeneration(caseId, { corpusId, targetGeneration, expectedGeneration, expectedVisibilityEpoch = null }) {
       const checkedCorpusId = safeJournalId(corpusId, "corpusId");
       const checkedTarget = safeJournalId(targetGeneration, "targetGeneration");
       const record = await mutate(caseId, (candidate) => {
         const reference = candidate.journal_corpora.find((item) => item.corpus_id === checkedCorpusId);
         if (!reference) throw new ValidationError("Journal corpus was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        if (expectedVisibilityEpoch != null && reference.visibility_epoch !== expectedVisibilityEpoch) throw new ValidationError("Journal visibility epoch changed.", { code: "GRANT_REVOKED" });
         if (reference.active_generation !== expectedGeneration) throw new ValidationError("Journal generation changed.", { code: "REVISION_CONFLICT" });
         const target = [...reference.previous_generations].reverse().find((item) => item.generation === checkedTarget);
         if (!target) throw new ValidationError("Rollback generation is unavailable.", { code: "SOURCE_UNAVAILABLE" });
