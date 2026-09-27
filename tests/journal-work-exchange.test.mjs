@@ -146,7 +146,7 @@ test("a receipt signed with another key is refused even when the payload decrypt
   await assert.rejects(reader.readResult(WORK_ID), { code: "JOURNAL_WORK_RECEIPT_INVALID" });
 });
 
-test("malformed entries, oversized answers and weak secrets are refused; retiring removes both files", async (t) => {
+test("malformed entries, oversized answers and weak secrets are refused; retiring leaves a tombstone", async (t) => {
   const root = await tempRoot(t);
   assert.throws(() => createJournalWorkExchange({ root, secret: randomBytes(16).toString("base64") }), { code: "JOURNAL_WORK_EXCHANGE_SECRET_INVALID" });
   assert.throws(() => createJournalWorkExchange({ root: "relative/path", secret: secret() }), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INVALID" });
@@ -159,8 +159,17 @@ test("malformed entries, oversized answers and weak secrets are refused; retirin
   assert.equal(exchange.isExpired(await exchange.readWork(WORK_ID)), true);
   await assert.rejects(exchange.submitResult({ workId: WORK_ID, output: { items: ["x".repeat(900_001)] }, subject: "s" }), { code: "JOURNAL_WORK_OUTPUT_TOO_LARGE" });
   await assert.rejects(exchange.submitResult({ workId: WORK_ID, output: [1], subject: "s" }), { code: "JOURNAL_WORK_OUTPUT_INVALID" });
-  await exchange.submitResult({ workId: WORK_ID, output: { items: [] }, subject: "s" });
+  await exchange.submitResult({ workId: WORK_ID, output: { items: ["first"] }, subject: "s" });
   await exchange.retireWork(WORK_ID);
   assert.equal(await exchange.readWork(WORK_ID), null);
-  assert.equal(await exchange.hasResult(WORK_ID), false);
+  assert.equal(await exchange.hasResult(WORK_ID), true);
+  assert.deepEqual(await exchange.readResult(WORK_ID), { retired: true, retired_at: "2026-09-29T00:00:00.000Z" });
+  // A duplicate still in flight when the item was retired cannot leave a late answer behind.
+  assert.deepEqual(await exchange.submitResult({ workId: WORK_ID, output: { items: ["late"] }, subject: "s" }), { stored: true, already: true });
+  assert.deepEqual(await exchange.readResult(WORK_ID), { retired: true, retired_at: "2026-09-29T00:00:00.000Z" });
+  // Retiring an item that never got an answer closes it too.
+  await exchange.publishWork(workEntry({ work_id: "job:synthetic-work-0003" }));
+  await exchange.retireWork("job:synthetic-work-0003");
+  assert.deepEqual(await exchange.submitResult({ workId: "job:synthetic-work-0003", output: { items: [] }, subject: "s" }), { stored: true, already: true });
+  assert.deepEqual((await fs.readdir(path.join(root, "inbox"))).filter((name) => name.startsWith(".tmp-")), []);
 });

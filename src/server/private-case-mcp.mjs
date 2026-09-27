@@ -353,10 +353,22 @@ function protectedResourceMetadata(oauth) {
   };
 }
 
-function oauthChallenge(oauth, error = "invalid_token", description = "Authenticate to access the authorized private case.") {
+function oauthChallenge(oauth, error = "invalid_token", description = "Authenticate to access the authorized private case.", scopes = null) {
   if (!oauth) return "Bearer realm=\"inner-signal-private-case\"";
   const metadataUrl = new URL("/.well-known/oauth-protected-resource", `${oauth.resource}/`).toString();
-  return `Bearer resource_metadata="${metadataUrl}", scope="${oauth.scopesSupported.join(" ")}", error="${error}", error_description="${description}"`;
+  return `Bearer resource_metadata="${metadataUrl}", scope="${(scopes ?? oauth.scopesSupported).join(" ")}", error="${error}", error_description="${description}"`;
+}
+
+// A challenge asks only for what the called tool needs. The journal submission scope is requested
+// only by the journal work tools, never by the ordinary read-only tools, so ordinary sign-ins are
+// unaffected when the exchange is enabled. Both journal tools ask for the import pair (read and
+// submit), so the import account signs in once instead of once per tool.
+function challengeScopes(oauth, name, journalWork) {
+  if (!oauth) return null;
+  if (journalWork?.names.has(name)) {
+    return [...new Set([PRIVATE_CASE_SCOPES.READ, ...[...journalWork.names].flatMap((tool) => toolScopes(tool, journalWork))])];
+  }
+  return oauth.scopesSupported.filter((scope) => scope !== PRIVATE_CASE_SCOPES.JOURNAL_SUBMIT);
 }
 
 function authenticationRequiredResult(challenge) {
@@ -524,7 +536,7 @@ export function createPrivateCaseMcpServer({ caseAccessService, oauth = null, pr
         if (await deniedForSignedInAccount(caseAccessService, token, name, journalWork)) {
           return send(res, 200, success(request.id, caseNotAuthorizedResult()));
         }
-        const challenge = oauthChallenge(normalizedOauth, "invalid_token", "The access token is missing, invalid, or is not authorized for this case and scope.");
+        const challenge = oauthChallenge(normalizedOauth, "invalid_token", "The access token is missing, invalid, or is not authorized for this case and scope.", challengeScopes(normalizedOauth, name, journalWork));
         return send(res, 401, success(request.id, authenticationRequiredResult(challenge)), {
           "www-authenticate": challenge
         });

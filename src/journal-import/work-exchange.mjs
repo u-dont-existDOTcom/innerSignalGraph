@@ -147,11 +147,14 @@ export function createJournalWorkExchange({
     await fs.mkdir(directory(kind), { recursive: true, mode: dirMode });
   }
 
-  // Atomic, first-write-wins publication: write a private temporary file, then hard-link it into
-  // place. link() fails with EEXIST instead of replacing an existing entry.
-  async function publish(kind, fileKey, bytes) {
-    await ensureDirectory(kind);
-    const target = fileFor(kind, fileKey);
+  // A published or removed entry is durable only once its directory is synced.
+  async function syncDirectory(kind) {
+    const handle = await fs.open(directory(kind), "r");
+    try { await handle.sync(); }
+    finally { await handle.close(); }
+  }
+
+  async function writeTemporary(kind, bytes) {
     const temporary = path.join(directory(kind), `.tmp-${randomUUID()}`);
     const handle = await fs.open(temporary, "wx", fileMode);
     try {
@@ -160,14 +163,23 @@ export function createJournalWorkExchange({
     } finally {
       await handle.close();
     }
+    return temporary;
+  }
+
+  // Atomic, first-write-wins publication: write a private temporary file, then hard-link it into
+  // place. link() fails with EEXIST instead of replacing an existing entry.
+  async function publish(kind, fileKey, bytes) {
+    await ensureDirectory(kind);
+    const temporary = await writeTemporary(kind, bytes);
     try {
-      await fs.link(temporary, target);
+      await fs.link(temporary, fileFor(kind, fileKey));
       return true;
     } catch (error) {
       if (error?.code === "EEXIST") return false;
       throw error;
     } finally {
       await fs.unlink(temporary).catch(() => {});
+      await syncDirectory(kind);
     }
   }
 
@@ -252,7 +264,8 @@ export function createJournalWorkExchange({
         : { stored: true, already: true });
     },
 
-    // Runtime side: read an answer and authenticate its connector receipt. Null when none arrived.
+    // Runtime side: read an answer and authenticate its connector receipt. Null when none arrived;
+    // { retired: true } once the runtime has consumed the answer and retired the item.
     async readResult(workId) {
       const fileKey = journalWorkFileKey(workId);
       const bytes = await readRegular("result", fileKey, MAX_WORK_BYTES);
@@ -261,6 +274,7 @@ export function createJournalWorkExchange({
       if (!isPlainObject(record) || record.schema_version !== JOURNAL_WORK_EXCHANGE_VERSION || record.work_id !== workId) {
         fail("JOURNAL_WORK_RESULT_INVALID");
       }
+      if (record.retired === true) return Object.freeze({ retired: true, retired_at: record.retired_at });
       const { tag, ...fields } = record.receipt ?? {};
       if (typeof tag !== "string" || fields.work_file_key !== fileKey || fields.transport !== JOURNAL_WORK_TRANSPORT
         || fields.completion_status !== "completed") fail("JOURNAL_WORK_RESULT_INVALID");
@@ -271,14 +285,32 @@ export function createJournalWorkExchange({
       return Object.freeze({ output: record.output, receipt: Object.freeze({ ...fields, tag }) });
     },
 
-    // Runtime side, after the answer is safely in the encrypted corpus store.
+    // Runtime side, after the answer is safely in the encrypted corpus store. The answer is replaced
+    // by an encrypted tombstone in one rename, so its name never goes missing: a duplicate submission
+    // still in flight finds the name taken and cannot leave a late answer behind. The tombstone holds
+    // no answer text. Then the work item is removed, so the connector stops serving it.
     async retireWork(workId) {
       const fileKey = journalWorkFileKey(workId);
-      for (const kind of ["work", "result"]) {
-        await fs.unlink(fileFor(kind, fileKey)).catch((error) => {
-          if (error?.code !== "ENOENT") throw error;
-        });
+      await ensureDirectory("result");
+      const tombstone = seal(derived.encryption, "result", fileKey, {
+        schema_version: JOURNAL_WORK_EXCHANGE_VERSION,
+        work_id: workId,
+        retired: true,
+        retired_at: now().toISOString()
+      });
+      const temporary = await writeTemporary("result", tombstone);
+      try {
+        await fs.rename(temporary, fileFor("result", fileKey));
+      } catch (error) {
+        await fs.unlink(temporary).catch(() => {});
+        throw error;
       }
+      await syncDirectory("result");
+      await fs.unlink(fileFor("work", fileKey)).catch((error) => {
+        if (error?.code !== "ENOENT") throw error;
+      });
+      await ensureDirectory("work");
+      await syncDirectory("work");
     }
   });
 }

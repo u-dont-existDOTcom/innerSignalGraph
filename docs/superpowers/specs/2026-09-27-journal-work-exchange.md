@@ -23,7 +23,8 @@ Completion is therefore known: an answer either is in `inbox/` or is not. Re-sen
 - One secret (`INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64`, at least 32 bytes) is split with HKDF-SHA256 into an encryption key and a receipt key. Neither side shares the corpus key.
 - Each file is AES-256-GCM with a random 12-byte nonce. The associated data binds the version, the direction and the file name, so a file copied under another name, or from the other direction, fails.
 - File names are a SHA-256 of the work ID. A watcher can tell whether an answer arrived without holding any key; the names reveal nothing else.
-- Publication writes a private temporary file, then hard-links it into place. `link()` never replaces an existing file, which makes publication first-write-wins. Directories are 0700 and files 0600, so the runtime and the connector must run as the same user.
+- Publication writes and syncs a private temporary file, hard-links it into place and syncs the directory. `link()` never replaces an existing file, which makes publication first-write-wins. Directories are 0700 and files 0600, so the runtime and the connector must run as the same user.
+- Retiring an item replaces its answer with an encrypted tombstone in one rename and then removes the work item. The answer's name never goes missing, so a duplicate submission still in flight cannot leave a late answer behind. The tombstone holds no answer text, and retiring an unanswered item closes it the same way.
 - A work item carries the case ID, role, instruction, packet, output schema, expected generation, and issue and expiry times. An answer carries the output and a receipt: receipt ID, transport `chatgpt_connector_tool`, completion status, file key, output SHA-256, a SHA-256 of the OAuth subject, receipt time, and an HMAC tag.
 - Limits: 4 MiB per file, 900,000 bytes per answer, 256 KiB per instruction.
 
@@ -37,7 +38,7 @@ Completion is therefore known: an answer either is in `inbox/` or is not. Re-sen
 - `journal:submit` is new and narrow: it opens no case store and allows no other write. Grant it only to the accounts that run the import, next to `case:read` for the import's case.
 - The tools are advertised only when all three settings are present: `INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT` (absolute, outside the repository), the secret, and `INNER_SIGNAL_JOURNAL_WORK_CASE_ID`. Without them the server's tools and instructions are unchanged.
 - Authorization comes first (`authorizeCase`, which opens no case and touches no key). The tools serve only items the runtime published, only for the configured case, and only before they expire.
-- Denials behave like every other private tool: a sign-in challenge unless re-authentication cannot help.
+- Denials behave like every other private tool: a sign-in challenge unless re-authentication cannot help. A challenge asks only for the called tool's scopes: the ordinary tools never ask for `journal:submit`, and both journal tools ask for `case:read` and `journal:submit` together, so the import account signs in once.
 - Nothing is logged. Errors carry codes, and schema problems carry schema paths and keywords, not answer text.
 
 ## Instruction Mission Control sends

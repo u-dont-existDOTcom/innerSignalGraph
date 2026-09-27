@@ -72,6 +72,29 @@ async function rpc(url, method, params = {}, token = null) {
 
 const call = (url, name, args, token) => rpc(url, "tools/call", { name, arguments: args }, token);
 
+async function challengeFor(url, name, args) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: args } })
+  });
+  await response.json();
+  return { status: response.status, challenge: response.headers.get("www-authenticate") };
+}
+
+test("sign-in challenges ask only for the called tool's scopes", async (t) => {
+  const { exchange, url } = await setup(t, { oauth: { resource: RESOURCE, authorizationServers: [ISSUER], scopesSupported: ["case:read", "case:audit", "journal:submit"] } });
+  await exchange.publishWork(workEntry());
+  const ordinary = await challengeFor(url, "load_case_context", { case_id: CASE_ID });
+  assert.equal(ordinary.status, 401);
+  assert.match(ordinary.challenge, /scope="case:read case:audit"/u);
+  const submit = await challengeFor(url, "submit_journal_work_result", { work_id: WORK_ID, output: { items: [] } });
+  assert.equal(submit.status, 401);
+  assert.match(submit.challenge, /scope="case:read journal:submit"/u);
+  const packet = await challengeFor(url, "get_journal_work_packet", { work_id: WORK_ID });
+  assert.match(packet.challenge, /scope="case:read journal:submit"/u);
+});
+
 test("journal work tools are advertised only when configured, with narrow scopes", async (t) => {
   const plain = await setup(t, { withTools: false });
   const plainTools = (await rpc(plain.url, "tools/list")).body.result.tools.map((tool) => tool.name);
