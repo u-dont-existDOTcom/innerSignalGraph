@@ -82,10 +82,15 @@ test("files are private, named without the work ID, and hold no plaintext", asyn
     assert.equal(info.mode & 0o777, 0o700);
     const names = await fs.readdir(path.join(root, dir));
     assert.deepEqual(names, [`${journalWorkFileKey(WORK_ID)}.json`]);
-    const file = path.join(root, dir, names[0]);
-    assert.equal((await fs.stat(file)).mode & 0o777, 0o600);
-    const text = await fs.readFile(file, "utf8");
-    for (const secretText of ["synthetic", WORK_ID, CASE_ID, "instruction"]) assert.ok(!text.includes(secretText), `${dir} leaks ${secretText}`);
+    // One handle for the mode check and the read, so both look at the same file.
+    const handle = await fs.open(path.join(root, dir, names[0]), "r");
+    try {
+      assert.equal((await handle.stat()).mode & 0o777, 0o600);
+      const text = await handle.readFile("utf8");
+      for (const secretText of ["synthetic", WORK_ID, CASE_ID, "instruction"]) assert.ok(!text.includes(secretText), `${dir} leaks ${secretText}`);
+    } finally {
+      await handle.close();
+    }
   }
 });
 
@@ -105,13 +110,17 @@ test("tampered, moved or wrongly keyed files are refused", async (t) => {
   await assert.rejects(exchange.readResult("job:synthetic-work-0002"), { code: "JOURNAL_WORK_ENTRY_INVALID" });
 
   // Flipped ciphertext fails authentication.
-  const file = path.join(inbox, `${journalWorkFileKey(WORK_ID)}.json`);
-  const envelope = JSON.parse(await fs.readFile(file, "utf8"));
-  const bytes = Buffer.from(envelope.ciphertext, "base64");
-  bytes[0] ^= 1;
-  envelope.ciphertext = bytes.toString("base64");
-  await fs.chmod(file, 0o600);
-  await fs.writeFile(file, JSON.stringify(envelope));
+  const handle = await fs.open(path.join(inbox, `${journalWorkFileKey(WORK_ID)}.json`), "r+");
+  try {
+    const envelope = JSON.parse(await handle.readFile("utf8"));
+    const bytes = Buffer.from(envelope.ciphertext, "base64");
+    bytes[0] ^= 1;
+    envelope.ciphertext = bytes.toString("base64");
+    await handle.truncate(0);
+    await handle.write(JSON.stringify(envelope), 0);
+  } finally {
+    await handle.close();
+  }
   await assert.rejects(exchange.readResult(WORK_ID), { code: "JOURNAL_WORK_ENTRY_INVALID" });
 });
 
