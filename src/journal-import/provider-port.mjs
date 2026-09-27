@@ -66,7 +66,7 @@ export function buildJournalRolePacket(role, input) {
   return Object.freeze(packet);
 }
 
-function assertGrant(grant, role, packet) {
+export function assertJournalInferenceGrant(grant, role, packet) {
   invariant(grant && typeof grant === "object" && grant.revoked !== true, "GRANT_REVOKED");
   invariant(typeof grant.grant_id === "string" && typeof grant.principal_id === "string", "GRANT_INVALID");
   invariant(grant.purpose === packet.grant_purpose, "GRANT_PURPOSE_MISMATCH");
@@ -108,7 +108,7 @@ export function createMockJournalInferencePort({
     const definition = JOURNAL_ROLE_DEFINITIONS[role];
     invariant(definition && definition.outputSchema === outputSchema, "JOURNAL_ROLE_OUTPUT_SCHEMA_MISMATCH");
     const checkedPacket = buildJournalRolePacket(role, packet);
-    assertGrant(grant, role, checkedPacket);
+    assertJournalInferenceGrant(grant, role, checkedPacket);
     const instruction = journalRoleInstruction(role);
     invariant(typeof operationKey === "string" && operationKey.length > 0, "OPERATION_KEY_INVALID");
     const inputDigest = sha256(Buffer.from(JSON.stringify({ role, packet: checkedPacket, outputSchema, principal_id: grant.principal_id, grant_id: grant.grant_id }), "utf8"));
@@ -276,7 +276,7 @@ export function createProviderJournalInferencePort({
     const definition = JOURNAL_ROLE_DEFINITIONS[role];
     invariant(definition && definition.outputSchema === outputSchema, "JOURNAL_ROLE_OUTPUT_SCHEMA_MISMATCH");
     const checkedPacket = buildJournalRolePacket(role, packet);
-    assertGrant(grant, role, checkedPacket);
+    assertJournalInferenceGrant(grant, role, checkedPacket);
     invariant(typeof operationKey === "string" && operationKey.length > 0, "OPERATION_KEY_INVALID");
     const instruction = journalRoleInstruction(role);
     const inputDigest = sha256(Buffer.from(JSON.stringify({

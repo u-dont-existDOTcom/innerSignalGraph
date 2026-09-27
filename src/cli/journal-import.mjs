@@ -207,7 +207,7 @@ export async function configuredJournalDoctorReport(configPath, environment = pr
   if (operator.blocker) blockers.push(operator.blocker);
   let inference;
   try {
-    const port = loadJournalInferencePortFromEnvironment({ ...environment });
+    const port = loadJournalInferencePortFromEnvironment({ ...environment }, { caseId: config.target_profile.case_id });
     try { inference = port.capabilities(); }
     finally { port.close?.(); }
   } catch (error) {

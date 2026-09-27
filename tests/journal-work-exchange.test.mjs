@@ -337,10 +337,10 @@ test("malformed entries, oversized answers and weak secrets are refused; retirin
   await exchange.retireWork(WORK_ID);
   assert.equal(await exchange.readWork(WORK_ID), null);
   assert.equal(await exchange.hasResult(WORK_ID), true);
-  assert.deepEqual(await exchange.readResult(WORK_ID), { retired: true, retired_at: "2026-09-29T00:00:00.000Z" });
+  assert.deepEqual(await exchange.readResult(WORK_ID), { retired: true, retired_at: "2026-09-29T00:00:00.000Z", unanswered: false });
   // A duplicate still in flight when the item was retired cannot leave a late answer behind.
   assert.deepEqual(await exchange.submitResult({ workId: WORK_ID, output: { items: ["late"] }, subject: "s" }), { stored: true, already: true });
-  assert.deepEqual(await exchange.readResult(WORK_ID), { retired: true, retired_at: "2026-09-29T00:00:00.000Z" });
+  assert.deepEqual(await exchange.readResult(WORK_ID), { retired: true, retired_at: "2026-09-29T00:00:00.000Z", unanswered: false });
   // Retiring an item that never got an answer closes it too.
   await exchange.publishWork(workEntry({ work_id: "job:synthetic-work-0003" }));
   await exchange.retireWork("job:synthetic-work-0003");

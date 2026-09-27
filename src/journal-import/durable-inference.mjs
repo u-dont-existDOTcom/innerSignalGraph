@@ -2,10 +2,20 @@ import { createHash } from "node:crypto";
 import { JournalInferencePortError } from "./provider-port.mjs";
 import { ValidationError } from "../core/errors.mjs";
 
-/** Immutable submission intents and results. Unknown submissions never auto-repeat. */
+/**
+ * Immutable submission intents and results. Unknown submissions never auto-repeat.
+ *
+ * A port whose capabilities declare `authoritative_completion` (the connector exchange) knows for
+ * certain whether a submission was answered, is still open, or was closed unanswered. For such a
+ * port an existing intent is resumed through the port itself, which waits on the same submission
+ * instead of sending it again, and a definite "not submitted" or "invalid output" is recorded so the
+ * caller's normal retry rules apply. Every other port keeps the original rule: an intent without a
+ * result is "completion unknown" until the port reports it completed.
+ */
 export function createDurableJournalInferencePort({ port, corpusStore }) {
   const hash = (v) => createHash("sha256").update(v).digest("hex");
   const id = (key, attempt, suffix) => `inference:${hash(key)}:${attempt === 1 ? "" : `attempt:${attempt}:`}${suffix}`;
+  const authoritative = () => port.capabilities?.()?.authoritative_completion === true;
   const read = async (objectId) => {
     try { return await corpusStore.readJsonObject({ objectId }); }
     catch (e) { if (e.code === "ENOENT") return null; throw e; }
@@ -18,6 +28,24 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
     }
   }
   const writeResult = (key, attempt, value) => corpusStore.writeJsonObject({ objectId: id(key, attempt, "result"), value });
+  // Once an answer is stored here, the port may let go of its own copy. A failure to do so leaves
+  // only a stale item behind, never a lost answer, so it does not fail the call.
+  const release = async (key) => {
+    try { await port.release?.(key); } catch { /* the answer is already durable */ }
+  };
+  async function settle(key, attempt, input) {
+    try {
+      const output = await port.invoke(input);
+      await writeResult(key, attempt, { status: "completed", ...output });
+      await release(key);
+      return output;
+    } catch (e) {
+      if (["not_submitted", "completed_invalid"].includes(e.submissionStatus)) await writeResult(key, attempt, {
+        status: e.submissionStatus === "not_submitted" ? "not_submitted" : "invalid_output", code: e.code
+      });
+      throw e;
+    }
+  }
   return Object.freeze({
     capabilities: () => port.capabilities(),
     async invoke(input) {
@@ -32,29 +60,38 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
       if (result?.status === "invalid_output") throw new JournalInferencePortError("INVALID_STRUCTURED_OUTPUT", { submissionStatus: "completed_invalid" });
       if (result?.status === "not_submitted") throw new JournalInferencePortError("INFERENCE_RETRY_LIMIT", { submissionStatus: "not_submitted" });
       if (intent) {
+        // Resume the same submission; the port neither sends it twice nor loses its answer.
+        if (authoritative()) return settle(input.operationKey, attempt, input);
         const completion = await port.getCompletion(input.operationKey);
         if (completion.status !== "completed") throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" });
         await writeResult(input.operationKey, attempt, completion);
+        await release(input.operationKey);
         return { output: completion.output, receipt: completion.receipt };
       }
       await corpusStore.writeJsonObject({ objectId: id(input.operationKey, attempt, "intent"), value: { operation_key: input.operationKey, input_sha256: digest, recorded_at: new Date().toISOString() } });
-      try {
-        const output = await port.invoke(input);
-        await writeResult(input.operationKey, attempt, { status: "completed", ...output });
-        return output;
-      } catch (e) {
-        if (["not_submitted", "completed_invalid"].includes(e.submissionStatus)) await writeResult(input.operationKey, attempt, {
-          status: e.submissionStatus === "not_submitted" ? "not_submitted" : "invalid_output", code: e.code
-        });
-        throw e;
-      }
+      return settle(input.operationKey, attempt, input);
     },
     async getCompletion(key) {
       const { attempt, intent, result } = await latest(key);
-      if (result) return result.status === "invalid_output" ? { status: "unknown" } : result;
+      if (result) {
+        if (result.status === "invalid_output") return authoritative() ? { status: "invalid_output" } : { status: "unknown" };
+        return result;
+      }
       if (!intent) return { status: "not_submitted" };
       const completion = await port.getCompletion(key);
-      if (completion.status === "completed") { await writeResult(key, attempt, completion); return completion; }
+      if (completion.status === "completed") {
+        await writeResult(key, attempt, completion);
+        await release(key);
+        return completion;
+      }
+      if (authoritative() && completion.status === "not_submitted") {
+        await writeResult(key, attempt, { status: "not_submitted", code: completion.code ?? "INFERENCE_NOT_SUBMITTED" });
+        return { status: "not_submitted" };
+      }
+      if (authoritative() && completion.status === "invalid_output") {
+        await writeResult(key, attempt, { status: "invalid_output", code: "INVALID_STRUCTURED_OUTPUT" });
+        return { status: "invalid_output" };
+      }
       return { status: "unknown" };
     },
     close() { return port.close?.(); }

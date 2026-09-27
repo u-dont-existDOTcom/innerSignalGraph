@@ -191,6 +191,24 @@ function validateWorkEntry(entry) {
   return entry;
 }
 
+const MAX_DISPATCH_BYTES = 4096;
+const LABEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ._:+-]{0,79}$/u;
+
+function validateDispatchRecord(record) {
+  if (!isPlainObject(record) || record.schema_version !== JOURNAL_WORK_EXCHANGE_VERSION) fail("JOURNAL_WORK_DISPATCH_INVALID");
+  const allowed = new Set(["schema_version", "work_id", "role", "output_schema_name", "model", "effort", "route_ref", "issued_at", "expires_at"]);
+  if (Object.keys(record).some((key) => !allowed.has(key))) fail("JOURNAL_WORK_DISPATCH_INVALID");
+  assertJournalWorkId(record.work_id);
+  if (typeof record.role !== "string" || !ROLE_PATTERN.test(record.role)) fail("JOURNAL_WORK_DISPATCH_INVALID");
+  for (const field of ["output_schema_name", "model", "effort", "route_ref"]) {
+    if (typeof record[field] !== "string" || !LABEL_PATTERN.test(record[field])) fail("JOURNAL_WORK_DISPATCH_INVALID");
+  }
+  if (!isoTime(record.issued_at) || !isoTime(record.expires_at) || Date.parse(record.expires_at) <= Date.parse(record.issued_at)) {
+    fail("JOURNAL_WORK_DISPATCH_INVALID");
+  }
+  return record;
+}
+
 export function createJournalWorkExchange({
   root,
   secret,
@@ -203,7 +221,8 @@ export function createJournalWorkExchange({
   if (typeof root !== "string" || !path.isAbsolute(root)) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
   const derived = keys ?? deriveJournalWorkExchangeKeys(secret);
   if (!Buffer.isBuffer(derived?.encryption) || !Buffer.isBuffer(derived?.receipt)) fail("JOURNAL_WORK_EXCHANGE_SECRET_INVALID");
-  const directory = (kind) => path.join(root, kind === "work" ? "outbox" : "inbox");
+  const QUEUES = Object.freeze({ work: "outbox", result: "inbox", dispatch: "dispatch" });
+  const directory = (kind) => path.join(root, QUEUES[kind]);
   const fileFor = (kind, fileKey) => path.join(directory(kind), `${fileKey}.json`);
 
   async function syncPath(dir) {
@@ -299,6 +318,28 @@ export function createJournalWorkExchange({
     }
   }
 
+  async function hasResult(workId) {
+    try {
+      await fs.lstat(fileFor("result", journalWorkFileKey(workId)));
+      return true;
+    } catch (error) {
+      if (error?.code === "ENOENT") return false;
+      throw error;
+    }
+  }
+
+  async function removeDispatch(workId) {
+    const fileKey = journalWorkFileKey(workId);
+    if (!(await queueExists("dispatch"))) return;
+    try {
+      await fs.unlink(fileFor("dispatch", fileKey));
+    } catch (error) {
+      if (error?.code === "ENOENT") return;
+      throw error;
+    }
+    await syncDirectory("dispatch");
+  }
+
   return Object.freeze({
     root,
 
@@ -326,15 +367,7 @@ export function createJournalWorkExchange({
       return Date.parse(entry.expires_at) <= now().getTime();
     },
 
-    async hasResult(workId) {
-      try {
-        await fs.lstat(fileFor("result", journalWorkFileKey(workId)));
-        return true;
-      } catch (error) {
-        if (error?.code === "ENOENT") return false;
-        throw error;
-      }
-    },
+    hasResult,
 
     // Connector side: store a validated answer with a receipt the runtime can authenticate.
     // The subject is hashed; the output is never logged or returned.
@@ -375,7 +408,9 @@ export function createJournalWorkExchange({
       if (!isPlainObject(record) || record.schema_version !== JOURNAL_WORK_EXCHANGE_VERSION || record.work_id !== workId) {
         fail("JOURNAL_WORK_RESULT_INVALID");
       }
-      if (record.retired === true) return Object.freeze({ retired: true, retired_at: record.retired_at });
+      if (record.retired === true) {
+        return Object.freeze({ retired: true, retired_at: record.retired_at, unanswered: record.unanswered === true });
+      }
       const { tag, ...fields } = record.receipt ?? {};
       if (typeof tag !== "string" || fields.work_file_key !== fileKey || fields.transport !== JOURNAL_WORK_TRANSPORT
         || fields.completion_status !== "completed") fail("JOURNAL_WORK_RESULT_INVALID");
@@ -412,7 +447,63 @@ export function createJournalWorkExchange({
         if (error?.code !== "ENOENT") throw error;
       });
       await syncDirectory("work");
+      await removeDispatch(workId);
     },
+
+    // Runtime side, for an item that expired unanswered: closes it with an encrypted tombstone, but
+    // only if no answer arrived first. The tombstone is linked into place like an answer, so an answer
+    // and the closing can never both win. Returns { closed: false } when an answer (or an earlier
+    // tombstone) already holds the name; the caller then reads it.
+    async closeUnanswered(workId) {
+      const fileKey = journalWorkFileKey(workId);
+      await ensureDirectory("work");
+      const closed = await publish("result", fileKey, seal(derived.encryption, "result", fileKey, {
+        schema_version: JOURNAL_WORK_EXCHANGE_VERSION,
+        work_id: workId,
+        retired: true,
+        unanswered: true,
+        retired_at: now().toISOString()
+      }));
+      if (!closed) return Object.freeze({ closed: false });
+      await fs.unlink(fileFor("work", fileKey)).catch((error) => {
+        if (error?.code !== "ENOENT") throw error;
+      });
+      await syncDirectory("work");
+      await removeDispatch(workId);
+      return Object.freeze({ closed: true });
+    },
+
+    // Dispatch records tell Mission Control which items to hand to ChatGPT. They are plain JSON and
+    // content-free (an opaque work ID, the role and the route's model and effort), so a dispatcher can
+    // read them without any key. Publication is first-write-wins like every other entry.
+    async publishDispatch(record) {
+      const value = validateDispatchRecord(structuredClone(record));
+      await ensureDirectory("dispatch");
+      const created = await publish("dispatch", journalWorkFileKey(value.work_id), Buffer.from(`${JSON.stringify(value)}\n`, "utf8"));
+      return Object.freeze({ created });
+    },
+
+    // Outstanding dispatch records, oldest first, each with whether an answer (or a tombstone) is
+    // already stored, so a dispatcher can tell what still needs a chat.
+    async listDispatch() {
+      await assertJournalWorkExchangeRoot(root, { owner });
+      if (!(await queueExists("dispatch"))) return [];
+      const records = [];
+      for (const name of await fs.readdir(directory("dispatch"))) {
+        const match = /^([0-9a-f]{64})\.json$/u.exec(name);
+        if (!match) continue;
+        const bytes = await readRegular("dispatch", match[1], MAX_DISPATCH_BYTES);
+        if (!bytes) continue;
+        let value;
+        try { value = validateDispatchRecord(JSON.parse(bytes.toString("utf8"))); }
+        catch { fail("JOURNAL_WORK_DISPATCH_INVALID"); }
+        if (journalWorkFileKey(value.work_id) !== match[1]) fail("JOURNAL_WORK_DISPATCH_INVALID");
+        records.push(Object.freeze({ ...value, answered: await hasResult(value.work_id) }));
+      }
+      return records.sort((left, right) => Date.parse(left.issued_at) - Date.parse(right.issued_at) || left.work_id.localeCompare(right.work_id));
+    },
+
+    removeDispatch,
 
     // Removes temporary files that a process stopped mid-write (for example, killed) left behind.
     // Only files older than `olderThanMs` go, so a write still in progress elsewhere is never touched.
@@ -422,7 +513,7 @@ export function createJournalWorkExchange({
       await assertJournalWorkExchangeRoot(root, { owner });
       const cutoff = Date.now() - olderThanMs;
       let removed = 0;
-      for (const kind of ["work", "result"]) {
+      for (const kind of ["work", "result", "dispatch"]) {
         if (!(await queueExists(kind))) continue;
         let removedHere = 0;
         for (const name of await fs.readdir(directory(kind))) {

@@ -2,6 +2,20 @@
 
 Updated: 2026-09-27
 
+## Journal import through the connector: the exchange provider — `claude/journal-exchange-provider-20260927`
+
+- **Goal:** run the private journal import through ChatGPT with known completion, replacing the desktop-app transport whose runs each ended on "completion unknown" after one step.
+- **Base:** the move (PR #94) plus the exchange hardening (PR #93). Open this PR once both are merged, rebased onto main.
+- **Done, don't repeat:**
+  - `src/journal-import/exchange-port.mjs` sends each role call as a work item with a content-free dispatch record. It waits for the stored answer, resumes open calls after a restart without sending them twice, and closes expired items so they are sent again as successors. It releases items once the answer is durable and returns authenticated receipts. The route is `chatgpt_connector_exchange` in `provider-runtime.mjs`.
+  - The durable layer trusts `authoritative_completion` ports for "not submitted" and "invalid output".
+  - The controller retries an invalid stored answer once.
+  - The runtime accepts the exchange route (GPT-5.6 Sol, Pro, zero spend), prepares the exchange at startup, and no longer stops permanently on a reference-audit "completion unknown".
+  - The exchange gained dispatch records and an unanswered-close that can't overwrite an answer.
+- **Verified:** `tests/journal-exchange-port.test.mjs` (9) and `tests/journal-exchange-runtime.test.mjs` (2) run through the real exchange and connector tools; the full gates are listed in the PR.
+- **Safety:** no deployment; the desktop transport stays for page images, which the connector can't deliver yet. The owner-gated steps are in the spec's Deployment section, plus a runtime route switch.
+- **Next safe action:** Codex review once opened, then owner approval to merge. Then the Mission Control job type (`dispatch/` reader) and a pilot: one synthetic item per account, then 20 real units.
+
 ## Journal import: the private journal branch, moved into this repository — `claude/journal-import-public-20260927`
 
 - **Goal:** one reviewed home for the journal work that GPT chats built in private checkouts on the central host, so those checkouts can be retired.
