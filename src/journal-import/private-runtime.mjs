@@ -351,6 +351,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             state.blocker = null; await save();
             return [recovered];
           }
+          if (completion.status === "invalid_output") {
+            const attempt = firstFailure ? 2 : 1;
+            await writeOnce(`reference:failure:${id}:${attempt}`, { status: "invalid_output", operation_key: operationKey, attempt });
+            state.stage = workStage; state.blocker = "INVALID_STRUCTURED_OUTPUT"; await save(); return null;
+          }
           if (completion.status !== "not_submitted" || resend > 2) {
             state.stage = workStage; state.blocker = "COMPLETION_UNKNOWN"; await save(); return null;
           }

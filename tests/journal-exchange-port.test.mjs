@@ -254,7 +254,22 @@ test("a stored answer that fails the importer's schema is reported as invalid ou
   // Written directly, past the connector's own schema check.
   await environment.runtimeExchange.submitResult({ workId: journalExchangeWorkId(KEY), output: { unexpected: true }, subject: "synthetic" });
   assert.deepEqual(await durable.getCompletion(KEY), { status: "invalid_output" });
+  assert.deepEqual(await environment.connector.listDispatch(), [], "invalid answer retired after its durable failure was recorded");
   await assert.rejects(durable.invoke(referenceCall()), (error) => error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid");
+});
+
+test("an invalid answer observed while invoking is retired after its durable failure is recorded", async (t) => {
+  const environment = await setup(t);
+  const store = memoryStore();
+  const durable = createDurableJournalInferencePort({ port: environment.makePort(), corpusStore: store });
+  const rejected = assert.rejects(durable.invoke(referenceCall()),
+    (error) => error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid");
+  while ((await environment.connector.listDispatch()).length === 0) await delay(5);
+  await environment.runtimeExchange.submitResult({
+    workId: journalExchangeWorkId(KEY), output: { unexpected: true }, subject: "synthetic"
+  });
+  await rejected;
+  assert.deepEqual(await environment.connector.listDispatch(), []);
 });
 
 test("starting the port clears stale temporary files, and open items are listed without content", async (t) => {
@@ -303,7 +318,9 @@ test("the exchange route loads from the environment and checks its root before a
   const capabilities = port.capabilities();
   assert.equal(capabilities.transport, "chatgpt_connector_tool");
   assert.equal(capabilities.authoritative_completion, true);
-  assert.equal(capabilities.packet_only && capabilities.fresh_context_per_generate, true);
+  assert.equal(capabilities.packet_only, true);
+  assert.equal(capabilities.fresh_context_per_generate, false,
+    "an authenticated connector receipt does not prove the dispatcher created a fresh chat");
   assert.equal(capabilities.configured_model_profile, "GPT-5.6 Sol");
   assert.equal(capabilities.external_spend_authorized_usd, 0);
   await port.prepare();

@@ -2,6 +2,16 @@
 
 Updated: 2026-09-28
 
+## Journal exchange provider — Codex review findings at `05ce741`
+
+- **Goal:** resolve the three findings on PR #97 without weakening the exchange's privacy, completion, or bounded-retry contracts.
+- **Review result:** all three findings were correct and are fixed. The connector route now reports `fresh_context_per_generate: false`, because its authenticated submission receipt binds an account, work item, and answer but does not prove that Mission Control opened a new chat. A future true capability requires mechanical dispatcher evidence or a verifiable session-isolation receipt.
+- **Delayed invalid reference answers:** when a reference answer arrives after a timed-out run and fails the current schema, the runtime now persists the same `invalid_output` failure used by the synchronous path. The next run uses the one allowed schema-bound reserialization; a second invalid answer remains terminal.
+- **Exchange retirement:** both durable invalid-output paths first persist the failure and then best-effort release the answered exchange item, removing its private packet, invalid answer, and dispatch record. Regression tests cover invalid output discovered by `getCompletion`, invalid output discovered during `invoke`, and the end-to-end delayed-reference retry.
+- **Verified on Node v24.18.0:** targeted exchange tests, `npm test`, `npm run verify`, `npm run audit:repository`, `npm run audit:publication`, and `npm run journal:ui:test` pass. The repository audit retains its single expected warning that hosted GitHub App permissions are unverified; it has zero errors.
+- **Safety:** no deployment, installation, provider call, private case access, therapy/framework policy change, or `stable` change occurred. Live Universal guidance could not be fetched in this environment because the GitHub HTTPS tunnel returned 403; the repository's current task-specific authority, code, tests, and local governance were used.
+- **Next safe action:** review this bounded patch and merge PR #97 if its hosted gates pass; configure no consumer to treat the connector exchange as fresh-context inference until mechanical evidence exists.
+
 ## Mission Control journal dispatch listing — `work`
 
 - **Goal:** give the Mission Control journal work runner (UDA #275) a content-free command that lists outstanding connector-exchange work.

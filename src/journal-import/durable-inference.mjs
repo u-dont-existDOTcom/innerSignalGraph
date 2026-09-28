@@ -40,9 +40,12 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
       await release(key);
       return output;
     } catch (e) {
-      if (["not_submitted", "completed_invalid"].includes(e.submissionStatus)) await writeResult(key, attempt, {
-        status: e.submissionStatus === "not_submitted" ? "not_submitted" : "invalid_output", code: e.code
-      });
+      if (["not_submitted", "completed_invalid"].includes(e.submissionStatus)) {
+        await writeResult(key, attempt, {
+          status: e.submissionStatus === "not_submitted" ? "not_submitted" : "invalid_output", code: e.code
+        });
+        if (e.submissionStatus === "completed_invalid") await release(key);
+      }
       throw e;
     }
   }
@@ -90,6 +93,7 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
       }
       if (authoritative() && completion.status === "invalid_output") {
         await writeResult(key, attempt, { status: "invalid_output", code: "INVALID_STRUCTURED_OUTPUT" });
+        await release(key);
         return { status: "invalid_output" };
       }
       return { status: "unknown" };

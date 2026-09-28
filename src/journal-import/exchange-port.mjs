@@ -83,7 +83,10 @@ export function createExchangeJournalInferencePort({
     route_ref: routeRef,
     transport: JOURNAL_WORK_TRANSPORT,
     packet_only: true,
-    fresh_context_per_generate: true,
+    // The connector authenticates the submitting account and binds the answer to this work item,
+    // but its receipt does not attest that the dispatcher opened a new chat. Do not let callers
+    // treat that receipt as proof of fresh-context isolation.
+    fresh_context_per_generate: false,
     // The exchange knows whether an item was answered, is still open, or was closed unanswered.
     authoritative_completion: true,
     external_spend_authorized_usd: 0,
