@@ -43,7 +43,7 @@ test("every check has a recorded disposition, and the companion checks are carri
   assert.deepEqual(coverage.checks["CI-11"], {
     title: "Independent claim check before delivery",
     disposition: "NOT_APPLICABLE",
-    reason: "The pack excludes companion and therapeutic replies from CI-11. InnerSignal replies are natural, not formulaic, and its separate critique and adjudication roles already carry the anchoring, quotation, absence, correction, and consistency rules."
+    reason: "Companion replies are not among the outputs CI-11 covers (critiques, reviews of someone's work, source attributions, facts added to text for publication, and claims that something was verified), and the pack excludes companion and therapeutic replies. Claims about what the person said are held at the point of use by the added anchoring and absence rules, and the separate critique and adjudication roles already review each reply."
   });
   assert.equal(coverage.checks["CI-X1"].disposition, "NOT_APPLICABLE");
 });
@@ -95,7 +95,7 @@ test("the plugin reference is the exact shared rule, read before responding, and
 test("the served rules are self-contained and govern claims, not style", async () => {
   const reference = await fs.readFile(new URL(REFERENCE, skillDir), "utf8");
   for (const text of [reference, claimIntegrityRules]) {
-    assert.doesNotMatch(text, /universal-dev-architecture|\bUDA\b|\bCI-(?:0\d|10|X1)\b|Mission Control|check pack/iu);
+    assert.doesNotMatch(text, /universal-dev-architecture|\bUDA\b|\bCI-(?:\d{2}|X1)\b|Mission Control|check pack/iu);
     assert.doesNotMatch(text, /\b(?:always|must)\s+(?:quote|restate|summari[sz]e|repeat)\b/iu);
   }
   assert.match(claimIntegrityRules, /They never require quoting, restating, or summarizing the person; natural paraphrase and warm, conversational wording stay the default\./u);

@@ -99,12 +99,12 @@
     "CI-11": {
       "title": "Independent claim check before delivery",
       "disposition": "NOT_APPLICABLE",
-      "reason": "The pack excludes companion and therapeutic replies from CI-11. InnerSignal replies are natural, not formulaic, and its separate critique and adjudication roles already carry the anchoring, quotation, absence, correction, and consistency rules."
+      "reason": "Companion replies are not among the outputs CI-11 covers (critiques, reviews of someone's work, source attributions, facts added to text for publication, and claims that something was verified), and the pack excludes companion and therapeutic replies. Claims about what the person said are held at the point of use by the added anchoring and absence rules, and the separate critique and adjudication roles already review each reply."
     },
     "CI-X1": {
       "title": "Experimental key-condition recoverability",
       "disposition": "NOT_APPLICABLE",
-      "reason": "Owner decision, relayed by the supervising session on 2026-09-27: InnerSignal replies are natural, not formulaic, so a checker's failure to reconstruct the person's message from a reply says nothing about the reply's quality. The pack also limits this check to research verdicts and excludes conversational, companion, and therapeutic replies."
+      "reason": "The owner excluded InnerSignal from this check; his words, relayed by the supervising session on 2026-09-27: \"replies from innersignal are natural and not formulaic\". The pack also limits this check to research verdicts and excludes conversational, companion, and therapeutic replies."
     }
   },
   "scopeBoundaries": [
