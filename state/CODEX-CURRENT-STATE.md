@@ -107,11 +107,15 @@ Updated: 2026-09-28
   - The new `tests/journal-runtime-finish.test.mjs` is the first test to drive a synthetic import from intake to a committed generation through `run`, `audit`, `patterns` and `commit`, both cleanly and with each outcome above.
   - New pattern-stage and visual tests.
   - The full gates are listed in the PR.
+- **Codex review round at `98a9386` (2026-09-28):** all three findings were valid and are fixed.
+  - Pattern review now accepts a candidate only after every decision is `reviewed` or `disputed`. A schema-valid incomplete result that would leave a candidate provisional is retried under the existing three-attempt budget; exhaustion records the batch unresolved and admits none of its candidates.
+  - Resetting an exhausted, confirmed-unsent controller budget increments a persisted retry epoch. Retry operation keys bind that epoch, so a restarted durable port cannot replay immutable `INFERENCE_RETRY_LIMIT` results from an earlier budget after the transport recovers.
+  - Counterevidence search cache IDs are now `v2`, separating the exhaustive byte-bounded paginator from legacy 64-result receipts. A regression seeds the old incomplete cache and proves that the new search runs and is then replayed.
+  - Verification on Node 24.18.0: targeted regressions (21 passing), repository audit, publication audit, and journal UI tests (20 passing) pass. `npm test` reaches 1,586 passing and one skipped test, but the unrelated pre-existing `tests/runtime-service-liveness.test.mjs` process-group teardown check fails because this container's orphaned descendant remains visible after `SIGKILL`; running that file alone reproduces the same failure. `npm run verify` reaches the same sole failure through its `npm test` step. No code or test was changed to bypass it.
 - **Known gaps:**
   - the hardest-case lane (Opus) before a residual is labeled;
   - the visual job ledger holds the page image, which is over 4 MiB for a large page;
-  - a transport error after the controller's retries still stops its job for good;
-  - the 64-result cap on the counterevidence search leaves a broad pattern provisional.
+  - retries remain bounded within each controller run; only confirmed-unsent failures receive a fresh epoch on a later run.
 - **Next safe action:** Codex review, then owner approval naming the PR. Then the escalation lane.
 
 ## Journal import through the connector: the exchange provider — `claude/journal-exchange-provider-20260927`

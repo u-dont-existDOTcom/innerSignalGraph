@@ -204,6 +204,7 @@ export function createJournalImportController({
         packet_input: clone(definition.packet_input ?? {}),
         status: "planned",
         attempts: 0,
+        retry_epoch: 0,
         operation_key: null,
         output: null,
         receipt: null,
@@ -328,8 +329,9 @@ export function createJournalImportController({
     if (beforeInvoke) await beforeInvoke({ work: clone(work) });
     const packetDigest = sha256(Buffer.from(JSON.stringify(packet), "utf8"));
     const baseOperationKey = `journal:${work.work_id.slice(5, 45)}:${packetDigest.slice(0, 32)}`;
+    const retryEpoch = Number.isSafeInteger(work.retry_epoch) && work.retry_epoch >= 0 ? work.retry_epoch : 0;
     const operationKey = work.status === "invalid_output" ? `${baseOperationKey}:reserialize`
-      : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${work.attempts}`
+      : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${retryEpoch}:${work.attempts}`
         : (work.operation_key ?? baseOperationKey);
     const intentSnapshot = clone(entry.snapshot);
     const intentWork = intentSnapshot.work_items.find(({ work_id: workId }) => workId === work.work_id);
@@ -377,6 +379,7 @@ export function createJournalImportController({
         const target = next.work_items.find(({ work_id: workId }) => workId === work.work_id);
         target.status = "retryable_error";
         target.attempts = 0;
+        target.retry_epoch = (Number.isSafeInteger(target.retry_epoch) && target.retry_epoch >= 0 ? target.retry_epoch : 0) + 1;
         target.operation_key = null;
         await persist(next, blocked.revision, { state: "retryable_error", stage: target.stage,
           next_action: `retry confirmed-unsent work ${target.work_id}`, blocked_reason: target.last_failure.code,

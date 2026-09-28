@@ -136,7 +136,9 @@ export async function runJournalPatternPass({
 
     const searchRecords = {}, counterReceipts = {};
     for (const id of added.created_pattern_ids) {
-      const searchId = `pattern:counter-search:${id}`;
+      // v2 identifies the exhaustive, byte-bounded paginator. Do not replay receipts written by
+      // the former 64-result search, because those receipts can be incomplete.
+      const searchId = `pattern:counter-search:v2:${id}`;
       let saved = await readIfPresent(searchId);
       if (!saved) {
         saved = await executeCounterevidenceSearch({
@@ -156,11 +158,16 @@ export async function runJournalPatternPass({
       edges: added.graph.edges.filter(edge => !["supports_pattern", "exception_to"].includes(edge.relation)
         || selected.has(edge.to))
     };
-    const decide = (saved) => reviewPatternRegister({
-      graph: scoped, reviewResult: saved.output, reviewReceipt: saved.receipt,
-      builderReceipt: built.receipt, frozenSourceReceipt: frozen.receipt,
-      counterevidenceReceipts: counterReceipts, counterReceiptSecret
-    });
+    const decide = (saved) => {
+      const decision = reviewPatternRegister({
+        graph: scoped, reviewResult: saved.output, reviewReceipt: saved.receipt,
+        builderReceipt: built.receipt, frozenSourceReceipt: frozen.receipt,
+        counterevidenceReceipts: counterReceipts, counterReceiptSecret
+      });
+      requireValue(decision.decisions.every(({ decision: outcome }) => SETTLED_DECISIONS.has(outcome)),
+        "PATTERN_REVIEW_INCOMPLETE");
+      return decision;
+    };
     const review = await checkedStep(`pattern:reviewer:${batch.id}`, {
       role: "pattern_reviewer", stage: "PATTERN_REVIEW",
       units: batchUnits, acceptReviewFindings: true,
@@ -179,7 +186,7 @@ export async function runJournalPatternPass({
     const resolved = new Map(decision.graph.nodes.filter(node => selected.has(node.id)).map(node => [node.id, node]));
     graph.nodes = graph.nodes.map(node => resolved.get(node.id) ?? node);
     reports.push({ batch_id: batch.id, pattern_ids: added.created_pattern_ids,
-      status: decision.decisions.every(({ decision: outcome }) => SETTLED_DECISIONS.has(outcome)) ? "reviewed" : "partial",
+      status: "reviewed",
       decisions: decision.decisions,
       counter_search_complete: Object.values(counterReceipts).every(receipt => receipt.complete) });
   }

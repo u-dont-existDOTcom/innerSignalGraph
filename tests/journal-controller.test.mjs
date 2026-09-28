@@ -16,6 +16,7 @@ import {
 } from "../src/journal-import/provider-port.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../src/journal-import/provider-runtime.mjs";
+import { createDurableJournalInferencePort } from "../src/journal-import/durable-inference.mjs";
 
 const grant = Object.freeze({
   grant_id: "grant:synthetic",
@@ -456,6 +457,43 @@ test("a fresh run resets exhausted confirmed-unsent retries but never resends an
   });
 });
 
+test("each restarted confirmed-unsent budget uses fresh durable operation keys", async () => {
+  const store = await temporaryStore();
+  const ledger = () => createCorpusJournalJobLedger({ corpusStore: store, jobId: "job:retry-epochs" });
+  const operationKeys = [];
+  let available = false;
+  const transport = {
+    capabilities: () => ({ mode: "synthetic-authoritative", authoritative_completion: true }),
+    async invoke(input) {
+      operationKeys.push(input.operationKey);
+      if (!available) throw new JournalInferencePortError("RETRYABLE_TRANSPORT", { submissionStatus: "not_submitted" });
+      return { output: completeExtraction(), receipt: { receipt_id: "receipt:recovered" } };
+    },
+    async getCompletion() { return { status: "not_submitted" }; }
+  };
+  const open = () => createJournalImportController({
+    ledger: ledger(),
+    inferencePort: createDurableJournalInferencePort({ port: transport, corpusStore: store }),
+    controllerSecret: Buffer.alloc(32, 59), grant
+  });
+
+  for (let run = 0; run < 3; run += 1) {
+    const controller = open();
+    if (run === 0) await controller.initialize({ ...initialization(), jobId: "job:retry-epochs", workDefinitions: [workDefinitions()[0]] });
+    const blocked = await controller.runUntilBlocked();
+    assert.equal(blocked.snapshot.work_items[0].status, "blocked_authority");
+    controller.close();
+  }
+  available = true;
+  const recovered = open();
+  const completed = await recovered.runUntilBlocked();
+  assert.equal(completed.snapshot.work_items[0].status, "completed");
+  assert.equal(new Set(operationKeys).size, operationKeys.length);
+  assert.equal(operationKeys.length, 7);
+  recovered.close();
+  store.close();
+});
+
 test("quota, revocation and missing fresh-context route block only the affected semantic work", async (t) => {
   for (const [code, expectedState] of [["QUOTA_PAUSED", "paused_quota"], ["GRANT_REVOKED", "revoked"], ["INFERENCE_ISOLATION_UNAVAILABLE", "blocked_authority"]]) {
     await t.test(code, async () => {
@@ -477,7 +515,6 @@ test("quota, revocation and missing fresh-context route block only the affected 
 });
 
 test("an authorization failure before a call spends no attempt and leaves nothing unknown", async () => {
-  const { createDurableJournalInferencePort } = await import("../src/journal-import/durable-inference.mjs");
   const store = await temporaryStore();
   let calls = 0;
   const handlers = { extractor: () => { calls += 1; return completeExtraction(); }, omission_checker: omissionResult, reconciler: reconciliationResult };

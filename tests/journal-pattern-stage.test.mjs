@@ -34,6 +34,7 @@ test("pattern pass freezes source before neutral candidates, searches contrary s
     searches.push({ query, cursor });
     return { records: cursor ? broadMatches.slice(35) : broadMatches.slice(0, 35), next_cursor: cursor ? null : "page:2" };
   } };
+  let reviewerCalls = 0;
   const work = async ({ role, packetInput }) => {
     calls.push(role);
     if (role === "reference_reader") {
@@ -65,6 +66,7 @@ test("pattern pass freezes source before neutral candidates, searches contrary s
     }
     assert.equal(role, "pattern_reviewer");
     assert.equal(calls[1], "pattern_builder");
+    reviewerCalls += 1;
     assert.ok(searches.length > 0);
     assert.equal(packetInput.frozen_observations.source_only_first_pass, true);
     assert.equal(packetInput.source_retrieval.counterevidence[
@@ -81,21 +83,35 @@ test("pattern pass freezes source before neutral candidates, searches contrary s
         critical: false, finding_type: "none",
         explanation: "Synthetic source challenge preserved scope.", evidence_ids: ["p1", "p3", "p4"]
       }], proposed_repairs: [], unassessed_ids: [],
-      status: "sufficient_for_stated_scope" },
-      receipt: receipt("reviewer", "fresh-reviewer") }];
+      status: reviewerCalls === 1 ? "incomplete" : "sufficient_for_stated_scope" },
+      receipt: receipt("reviewer", `fresh-reviewer-${reviewerCalls}`) }];
   };
   const args = { graph, units, unitGraphs, sourceReader, work,
     readIfPresent, writeOnce, counterReceiptSecret: Buffer.alloc(32, 63),
     generation, representations, counterevidenceMaximumBytes: 5_000 };
   const first = await runJournalPatternPass(args);
-  assert.deepEqual(calls, ["reference_reader", "pattern_builder", "pattern_reviewer"]);
+  assert.deepEqual(calls, ["reference_reader", "pattern_builder", "pattern_reviewer", "pattern_reviewer"]);
   assert.equal(first.status, "pass");
   assert.equal(first.graph.nodes.find(node => node.kind === "pattern").data.review_state, "reviewed");
+  const currentSearchId = [...saved.keys()].find(id => id.startsWith("pattern:counter-search:v2:"));
+  assert.ok(currentSearchId);
+  const currentSearch = saved.get(currentSearchId);
+  saved.delete(currentSearchId);
+  saved.set(currentSearchId.replace(":v2:", ":"), {
+    records: currentSearch.records.slice(0, 64),
+    receipt: { ...currentSearch.receipt, complete: false, more_available: true }
+  });
+  const searchesBeforeLegacyReplay = searches.length;
   const second = await runJournalPatternPass({ ...args,
     work: async () => { throw new Error("Durable replay submitted again"); },
-    sourceReader: { search: async () => { throw new Error("Durable search repeated"); } } });
+    sourceReader });
+  assert.ok(searches.length > searchesBeforeLegacyReplay, "legacy capped search must be replaced");
   assert.equal(second.status, "pass");
-  assert.deepEqual(second.graph, first.graph);
+  const third = await runJournalPatternPass({ ...args,
+    work: async () => { throw new Error("Durable replay submitted again"); },
+    sourceReader: { search: async () => { throw new Error("Durable search repeated"); } } });
+  assert.equal(third.status, "pass");
+  assert.deepEqual(third.graph, first.graph);
 });
 
 // Two single-unit batches over the synthetic graph: the first unit holds a restricted passage, the
