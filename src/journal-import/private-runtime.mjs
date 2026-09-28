@@ -417,7 +417,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             assigned_core_ids: assignedCoreIds, source_locators: sourceLocators,
             expected_generation: state.generation, controller_provenance_tag: id,
             grant_purpose: grant.purpose, ...packetInput
-          }), outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema, operationKey, grant, tier });
+          }), outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema, operationKey, grant,
+          ...(tier === "hardest" ? { tier } : {}) });
         } catch (error) {
           if (error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid") {
             const attempt = firstFailure ? 2 : 1;

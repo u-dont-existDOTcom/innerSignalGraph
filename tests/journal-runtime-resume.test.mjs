@@ -129,6 +129,39 @@ test('durable port retries only proven non-submissions and reuses completed resu
  await assert.rejects(()=>durable.invoke({...request,packet:{...request.packet,extra:true}}),{code:'OPERATION_KEY_CONFLICT'});
 });
 
+test('a standard reference audit replays a legacy durable result whose input omitted the default tier',async t=>{
+ const f=await fixture(t);let replayed=false;
+ const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,assessments:[],proposed_repairs:[],unassessed_ids:[],status:'sufficient_for_stated_scope'});
+ const reference={schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]};
+ const base=createMockJournalInferencePort({handlers:{
+  reference_reader:()=>assert.fail('the stored legacy reference result must be replayed'),
+  extractor:p=>({schema_version:'1.0',status:'complete',assertions:[],entities:[],episodes:[],coverage:p.core_units.map(u=>({unit_id:u.unit_id,disposition:'no_assertion',assertion_local_ids:[],reason:'Synthetic legacy replay fixture.'})),requested_context:[]}),
+  omission_checker:p=>review('omission_checker',p),fidelity_auditor:p=>review('fidelity_auditor',p),
+  reconciler:p=>({schema_version:'1.0',target_generation:p.expected_generation,proposals:[],unresolved_ids:[],status:'proposals_complete'})
+ }});
+ const legacyStore=memoryStore();
+ const legacyDurable=createDurableJournalInferencePort({corpusStore:legacyStore,port:{
+  capabilities:()=>base.capabilities(),invoke:()=>assert.fail('the durable legacy result must prevent resubmission'),
+  getCompletion:()=>assert.fail('the durable legacy result must be read directly')
+ }});
+ const port={
+  capabilities:()=>base.capabilities(),getCompletion:key=>base.getCompletion(key),
+  invoke(input){
+   if(input.role!=='reference_reader'||replayed)return base.invoke(input);
+   replayed=true;
+   const legacyInput={role:input.role,packet:input.packet,outputSchema:input.outputSchema,operationKey:input.operationKey,grant:input.grant};
+   const prefix=`inference:${createHash('sha256').update(input.operationKey).digest('hex')}:`;
+   legacyStore.data.set(`${prefix}intent`,{operation_key:input.operationKey,input_sha256:createHash('sha256').update(JSON.stringify(legacyInput)).digest('hex'),authoritative_completion:false,recorded_at:'2026-09-27T00:00:00.000Z'});
+   legacyStore.data.set(`${prefix}result`,{status:'completed',output:reference,receipt:{request_id:'legacy-standard-reference'}});
+   return legacyDurable.invoke(input);
+  },
+  close(){legacyDurable.close();base.close();}
+ };
+ const runtime=await openJournalExecutionRuntime({...f,inferencePort:port});
+ try{const result=await runtime.execute('run');assert.equal(result.completion.graph_built,'pass');assert.equal(replayed,true);}
+ finally{await runtime.close();}
+});
+
 test('durable port refuses automatic resubmission after an unknown completion',async()=>{
  const store=memoryStore();let calls=0;
  const port={capabilities:()=>({}),invoke:async()=>{calls++;throw new JournalInferencePortError('COMPLETION_UNKNOWN',{submissionStatus:'unknown'});},getCompletion:async()=>({status:'not_submitted'})};
