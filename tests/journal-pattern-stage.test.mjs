@@ -200,3 +200,46 @@ test("an unresolved batch keeps its candidates out of the graph, and a rerun rep
   assert.deepEqual(second.graph, first.graph);
   assert.deepEqual(second.reports, first.reports);
 });
+
+test("an incomplete or missing candidate assessment cannot settle a pattern as disputed", async () => {
+  const graph = fixture("synthetic-graph.json");
+  graph.nodes = graph.nodes.filter(node => node.kind !== "pattern");
+  graph.edges = graph.edges.filter(edge => edge.from !== "pat" && edge.to !== "pat");
+  const representations = fixture("synthetic-sources.json");
+  const unit = { unit_id: "u1", representation_id: "repr", text: representations.repr,
+    start_byte: 0, end_byte: Buffer.byteLength(representations.repr), source_order: 0 };
+  const scope = { graph, representations, units: [unit], unitGraphs: [{ unit_id: "u1", graph }] };
+  const candidate = () => {
+    return { schema_version: "1.0", target_generation: generation,
+      patterns: [{ local_id: "candidate", data: {
+        statement: "Invented reports show a bounded contrast.", pattern_kind: "recurrent", scope: "One invented support group.",
+        support_assertion_ids: ["a1", "a3"], counter_assertion_ids: [], alternative_explanations: ["Different invented contexts."],
+        observation_gaps: ["Unwritten periods remain unknown."], disconfirming_question: "Where does this contrast not hold?",
+        disconfirmation: { status: "pending", search_receipt_ref: null }, review_state: "provisional", independent_review_ref: null,
+        producer_ref: "producer:synthetic" }, counterevidence_queries: ["invented exception"] }],
+      unclassified_assertion_ids: [], coverage_note: "Invented bounded source.", status: "complete_for_stated_scope" };
+  };
+  let reviewCalls = 0;
+  const { args } = stageHarness(scope, (request) => {
+    if (request.role === "reference_reader") {
+      return { output: freezeOutput(), receipt: receipt("freeze", request.id) };
+    }
+    if (request.role === "pattern_builder") return { output: candidate(request), receipt: receipt("builder", request.id) };
+    reviewCalls += 1;
+    const patternId = request.packetInput.candidate_patterns[0].id;
+    const assessments = reviewCalls % 2 === 1 ? [] : [{ target_id: patternId, outcome: "distorted", critical: true,
+      finding_type: "unsupported_claim", explanation: "The claim is unsupported.", evidence_ids: [] }];
+    return { output: { schema_version: "1.0", target_generation: generation, review_role: "pattern_reviewer",
+      assessments, proposed_repairs: [], unassessed_ids: assessments.length ? [] : [patternId],
+      status: assessments.length ? "repair_required" : "sufficient_for_stated_scope" },
+      receipt: receipt("reviewer", request.id) };
+  });
+
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000 });
+
+  assert.equal(reviewCalls, 3);
+  assert.equal(result.status, "partial");
+  assert.equal(result.graph.nodes.some(node => node.kind === "pattern"), false);
+  assert.deepEqual(result.reports.map(report => [report.status, report.stage, report.reason]),
+    [["unresolved", "PATTERN_REVIEW", "PATTERN_REVIEW_INCOMPLETE"]]);
+});

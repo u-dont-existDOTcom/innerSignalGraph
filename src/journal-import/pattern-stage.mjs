@@ -164,6 +164,17 @@ export async function runJournalPatternPass({
         builderReceipt: built.receipt, frozenSourceReceipt: frozen.receipt,
         counterevidenceReceipts: counterReceipts, counterReceiptSecret
       });
+      // A dispute is settled only when it is the reviewer's explicit conclusion in a complete
+      // review. reviewPatternRegister deliberately marks missing or unsupported assessments as
+      // disputed, so validate review coverage before using those normalized decisions as the
+      // batch's completion signal.
+      requireValue(saved.output.status === "sufficient_for_stated_scope", "PATTERN_REVIEW_INCOMPLETE");
+      const assessmentCounts = new Map();
+      for (const assessment of saved.output.assessments) {
+        assessmentCounts.set(assessment.target_id, (assessmentCounts.get(assessment.target_id) ?? 0) + 1);
+      }
+      requireValue(added.created_pattern_ids.every(id => assessmentCounts.get(id) === 1),
+        "PATTERN_REVIEW_INCOMPLETE");
       requireValue(decision.decisions.every(({ decision: outcome }) => SETTLED_DECISIONS.has(outcome)),
         "PATTERN_REVIEW_INCOMPLETE");
       return decision;
