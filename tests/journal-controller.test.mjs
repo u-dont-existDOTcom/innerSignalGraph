@@ -438,6 +438,46 @@ test("a fresh run resets exhausted confirmed-unsent retries but never resends an
     second.close(); recoveredPort.close();
   });
 
+  await t.test("a legacy confirmed-unsent snapshot resumes after authoritative confirmation", async () => {
+    const ledger = createMemoryJournalJobLedger();
+    const failedPort = {
+      capabilities: () => ({ mode: "synthetic-authoritative", authoritative_completion: true }),
+      async invoke() { throw new JournalInferencePortError("RETRYABLE_TRANSPORT", { submissionStatus: "not_submitted" }); },
+      async getCompletion() { return { status: "not_submitted" }; }
+    };
+    const first = createJournalImportController({ ledger, inferencePort: failedPort, controllerSecret: Buffer.alloc(32, 56), grant });
+    await first.initialize({ ...initialization(), jobId: "job:legacy-unsent", workDefinitions: [workDefinitions()[0]] });
+    const exhausted = await first.runUntilBlocked();
+    first.close();
+
+    const legacySnapshot = structuredClone(exhausted.snapshot);
+    delete legacySnapshot.work_items[0].last_failure;
+    delete legacySnapshot.work_items[0].retry_epoch;
+    await ledger.append(legacySnapshot, exhausted.revision);
+
+    const completionChecks = [];
+    let recoveredInvokes = 0;
+    const recoveredPort = {
+      capabilities: () => ({ mode: "synthetic-authoritative", authoritative_completion: true }),
+      async invoke() {
+        recoveredInvokes += 1;
+        return { output: completeExtraction(), receipt: { receipt_id: "receipt:legacy-recovered" } };
+      },
+      async getCompletion(operationKey) {
+        completionChecks.push(operationKey);
+        return { status: "not_submitted" };
+      }
+    };
+    const second = createJournalImportController({ ledger, inferencePort: recoveredPort, controllerSecret: Buffer.alloc(32, 56), grant });
+    const completed = await second.runUntilBlocked();
+    assert.equal(completed.snapshot.work_items[0].status, "completed");
+    assert.equal(completed.snapshot.work_items[0].attempts, 1);
+    assert.equal(completed.snapshot.work_items[0].retry_epoch, 1);
+    assert.deepEqual(completionChecks, [legacySnapshot.work_items[0].operation_key]);
+    assert.equal(recoveredInvokes, 1);
+    second.close();
+  });
+
   await t.test("unknown completion remains parked", async () => {
     const ledger = createMemoryJournalJobLedger();
     let invokes = 0;

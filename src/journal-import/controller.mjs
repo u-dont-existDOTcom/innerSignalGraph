@@ -373,8 +373,16 @@ export function createJournalImportController({
       resumedConfirmedUnsent = true;
       const blocked = await ledger.load();
       const work = blocked?.snapshot.work_items.find(({ status }) => status !== "completed");
-      if (work?.status === "blocked_authority" && work.last_failure?.submission_status === "not_submitted"
-        && work.last_failure.code !== "INFERENCE_ISOLATION_UNAVAILABLE") {
+      let lastFailure = work?.last_failure;
+      const legacyFailureCode = blocked?.snapshot.checkpoint.blocked_reason;
+      if (work?.status === "blocked_authority" && !lastFailure && typeof work.operation_key === "string"
+        && typeof legacyFailureCode === "string" && legacyFailureCode !== "INFERENCE_ISOLATION_UNAVAILABLE"
+        && inferencePort.capabilities?.()?.authoritative_completion === true
+        && (await inferencePort.getCompletion(work.operation_key)).status === "not_submitted") {
+        lastFailure = { code: legacyFailureCode, submission_status: "not_submitted" };
+      }
+      if (work?.status === "blocked_authority" && lastFailure?.submission_status === "not_submitted"
+        && lastFailure.code !== "INFERENCE_ISOLATION_UNAVAILABLE") {
         const next = clone(blocked.snapshot);
         const target = next.work_items.find(({ work_id: workId }) => workId === work.work_id);
         target.status = "retryable_error";
@@ -382,7 +390,7 @@ export function createJournalImportController({
         target.retry_epoch = (Number.isSafeInteger(target.retry_epoch) && target.retry_epoch >= 0 ? target.retry_epoch : 0) + 1;
         target.operation_key = null;
         await persist(next, blocked.revision, { state: "retryable_error", stage: target.stage,
-          next_action: `retry confirmed-unsent work ${target.work_id}`, blocked_reason: target.last_failure.code,
+          next_action: `retry confirmed-unsent work ${target.work_id}`, blocked_reason: lastFailure.code,
           responsible_actor: "controller" });
       }
     }
