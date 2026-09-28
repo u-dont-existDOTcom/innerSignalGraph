@@ -122,18 +122,26 @@ export function createExchangeJournalInferencePort({
   }
 
   function receiptFor(operationKey, entry, stored) {
+    // The exchange receipt authenticates only what the connector observed. Desired dispatch labels
+    // are not evidence of the profile that actually ran, so an answer is inadmissible until a
+    // dispatcher/provider receipt carries the effective model and effort and they match the route.
+    invariant(stored.receipt.effective_model_profile === model
+      && stored.receipt.effective_effort === effort, "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
     const receiptBody = {
       receipt_id: `receipt:${createHmac("sha256", key).update(`${operationKey}\0${entry.input_sha256}`).digest("hex").slice(0, 40)}`,
       transport: JOURNAL_WORK_TRANSPORT,
       request_id: stored.receipt.receipt_id,
-      // Each item is handed to its own fresh chat; the connector receipt names that submission.
-      request_context_id: `chatgpt-connector:${stored.receipt.receipt_id}`,
+      // A unique answer receipt does not prove a unique chat. Leave this unverified unless a
+      // dispatcher/provider receipt mechanically supplies the actual request context.
+      request_context_id: typeof stored.receipt.request_context_id === "string"
+        ? stored.receipt.request_context_id
+        : null,
       input_manifest_sha256: entry.input_sha256,
       role_instruction_sha256: sha256(Buffer.from(entry.instruction, "utf8")),
       configured_model_profile: model,
       configured_effort: effort,
-      effective_model_profile: null,
-      effective_effort: null,
+      effective_model_profile: stored.receipt.effective_model_profile,
+      effective_effort: stored.receipt.effective_effort,
       completion_status: "completed",
       target_generation: entry.expected_generation,
       token_evidence: null,

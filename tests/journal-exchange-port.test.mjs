@@ -75,8 +75,25 @@ async function setup(t) {
     authorizeCase: async () => ({ principalId: "synthetic-chatgpt-account", scopes: ["case:read", "journal:submit"] })
   });
   const receiptKey = randomBytes(32);
-  const makePort = (options = {}) => createExchangeJournalInferencePort({
-    exchange: runtimeExchange,
+  const makePort = ({ verifiedExecution = true, ...options } = {}) => createExchangeJournalInferencePort({
+    // The deployed connector cannot produce these fields yet. Most port tests model the future
+    // mechanically verified dispatcher receipt; the regression below uses the real receipt.
+    exchange: verifiedExecution ? {
+      ...runtimeExchange,
+      async readResult(workId) {
+        const result = await runtimeExchange.readResult(workId);
+        if (!result?.receipt) return result;
+        return {
+          ...result,
+          receipt: {
+            ...result.receipt,
+            request_context_id: `verified-chat:${workId}`,
+            effective_model_profile: "GPT-5.6 Sol",
+            effective_effort: "Pro"
+          }
+        };
+      }
+    } : runtimeExchange,
     caseId: CASE_ID,
     receiptKey,
     routeRef: "route:synthetic-exchange",
@@ -131,6 +148,9 @@ test("a role call goes out as a work item and comes back as an authenticated ans
   assert.equal(receipt.completion_status, "completed");
   assert.equal(receipt.cost_usd, 0);
   assert.equal(receipt.configured_model_profile, "GPT-5.6 Sol");
+  assert.equal(receipt.effective_model_profile, "GPT-5.6 Sol");
+  assert.equal(receipt.effective_effort, "Pro");
+  assert.equal(receipt.request_context_id, `verified-chat:${journalExchangeWorkId(KEY)}`);
   assert.equal(receipt.provider_route_receipt.work_id, journalExchangeWorkId(KEY));
   assert.ok(isAuthenticatedTransportReceipt(receipt, { generation: GENERATION, grantId: grant.grant_id }));
 
@@ -153,6 +173,23 @@ test("a role call goes out as a work item and comes back as an authenticated ans
   assert.deepEqual(await environment.connector.listDispatch(), []);
   assert.equal(await environment.connector.readWork(journalExchangeWorkId(KEY)), null);
   assert.deepEqual(await port.getCompletion(KEY), { status: "unknown" });
+});
+
+test("an answer without mechanically verified execution profile and context is not admitted", async (t) => {
+  const environment = await setup(t);
+  const port = environment.makePort({ verifiedExecution: false });
+  const rejected = assert.rejects(port.invoke(referenceCall()), {
+    code: "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED"
+  });
+  while ((await environment.connector.listDispatch()).length === 0) await delay(5);
+  await environment.answerOpenItems();
+  await rejected;
+
+  const stored = await environment.runtimeExchange.readResult(journalExchangeWorkId(KEY));
+  assert.equal(stored.receipt.request_context_id, undefined,
+    "an answer receipt must not be promoted into a fresh-chat identifier");
+  assert.equal(stored.receipt.effective_model_profile, undefined);
+  assert.equal(stored.receipt.effective_effort, undefined);
 });
 
 test("a call left open survives a restart and completes from the exchange, without a second send", async (t) => {

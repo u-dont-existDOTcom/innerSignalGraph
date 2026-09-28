@@ -49,8 +49,25 @@ async function fixture(t) {
     authorizeCase: async () => ({ principalId: "synthetic-chatgpt-account", scopes: ["case:read", "journal:submit"] })
   });
   const receiptKey = randomBytes(32);
+  const runtimeExchange = createJournalWorkExchange({ root: exchangeRoot, secret });
+  const verifiedExchange = {
+    ...runtimeExchange,
+    async readResult(workId) {
+      const result = await runtimeExchange.readResult(workId);
+      if (!result?.receipt) return result;
+      return {
+        ...result,
+        receipt: {
+          ...result.receipt,
+          request_context_id: `verified-chat:${workId}`,
+          effective_model_profile: "GPT-5.6 Sol",
+          effective_effort: "Pro"
+        }
+      };
+    }
+  };
   const makePort = (options = {}) => createExchangeJournalInferencePort({
-    exchange: createJournalWorkExchange({ root: exchangeRoot, secret }),
+    exchange: verifiedExchange,
     caseId: CASE_ID,
     receiptKey,
     routeRef: "route:synthetic-exchange",

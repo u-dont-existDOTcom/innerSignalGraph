@@ -2,6 +2,17 @@
 
 Updated: 2026-09-28
 
+## Journal exchange provider — Codex review findings at `cf74528`
+
+- **Goal:** resolve the two remaining findings on PR #97 without treating desired dispatch configuration or answer identity as execution evidence.
+- **Review result:** both findings were correct. The exchange port no longer derives `request_context_id` from the connector's unique answer receipt. It uses a context identifier only when the authenticated dispatcher/provider receipt supplies one, so the independent-audit and pattern-review gates cannot mistake separate answers from one reused chat for independent contexts.
+- **Execution profile gate:** the port now refuses to admit a stored answer unless the authenticated receipt attests an effective model and effort exactly matching the configured route. The current connector receipt does not supply those fields, so the production exchange route remains deliberately blocked until Mission Control provides mechanically verified dispatcher/provider evidence; configured GPT-5.6 Sol/Pro labels alone are not accepted.
+- **Regression evidence:** the exchange-port tests model a future verified receipt for existing success paths and separately exercise the real current receipt, proving it has no context/model/effort attestation and is rejected. No production code mints those fields.
+- **Verification:** Node v24.18.0 was active. The targeted exchange tests, repository audit, local publication audit, and journal UI test pass. `npm test` and `npm run verify` each reach 1,577 passing tests but fail the unrelated process-group teardown test because this container's PID 1 leaves the test's killed descendant as a zombie, so `kill(-pgid, 0)` continues to report the group; the isolated test reproduces the same environment limitation. No package was missing.
+- **Universal guidance:** a fresh read of the live canonical repository was attempted, but the GitHub HTTPS tunnel returned 403. Current owner instructions, repository governance, the consumer map, reasoning selection, code, tests, and existing local specifications were used; no remembered Universal copy was substituted.
+- **Safety:** no deployment, installation, provider call, private case access, therapy/framework policy change, or `stable` change occurred.
+- **Next safe action:** add a dispatcher/provider receipt whose authenticated fields mechanically bind each answer to its actual fresh chat and effective model/effort, then review that evidence path before enabling this exchange route.
+
 ## Journal exchange provider — Codex review findings at `05ce741`
 
 - **Goal:** resolve the three findings on PR #97 without weakening the exchange's privacy, completion, or bounded-retry contracts.
