@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "taskId": "CLAIM-INTEGRITY-20260927",
+  "status": "PROPOSED",
+  "productType": "companion",
+  "lineage": "Adapted from the claim-integrity pack v1 in universal-dev-architecture (development-side lineage only; no runtime dependency).",
+  "pack": { "id": "claim-integrity", "version": 1, "sha256": "6d8cec2a474beb574922d8ddd15977c6e183c40dd3990d71787d0451c565ce6a" },
+  "ownerGate": "Therapy prompt policy is owner-gated. The owner must approve the added wording before merge; no installation, deployment, or stable promotion follows from this record.",
+  "runtimeSurfaces": [
+    { "path": "plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md", "consumer": "Served as the instructions of load_therapy_protocol by the hosted MCP, and bundled in the Codex plugin." },
+    { "path": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/", "consumer": "Every file in THERAPY_PROTOCOL_FILES is served by load_therapy_protocol and bundled in the Codex plugin; CLAIM-INTEGRITY.md is new." },
+    { "path": "src/protocol/therapy-protocol.mjs", "consumer": "Selects, hashes, and serves the protocol files; the served list now includes the new reference." },
+    { "path": "src/prompts/common.mjs", "consumer": "longitudinalClinicalRules reaches case audit, candidate drafting, critique, adjudication, realization, private audit, and private repair in the local and hosted runtime." },
+    { "path": "src/server/private-case-mcp.mjs", "consumer": "Server instructions and tool descriptions; unchanged, they route hosts to load_therapy_protocol." },
+    { "path": "plugins/inner-signal-therapy/skills/inner-signal-private-continuity/SKILL.md", "consumer": "Codex plugin skill, not served over MCP; unchanged, it applies the therapy skill after loading exact context." }
+  ],
+  "checks": {
+    "CI-01": {
+      "title": "Anchor claims about what the person said or did",
+      "disposition": "ADDED",
+      "anchors": [
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/CLAIM-INTEGRITY.md", "text": "Never add backstory, motives, or history that they did not state, about them or about the people in their life." },
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/CLAIM-INTEGRITY.md", "text": "This includes words of scope, frequency, persistence, or consent, such as always, never, everyone, kept, stopped, willing, or forced." }
+      ],
+      "relatedExisting": [
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/ROLE-BELIEF-INTEGRITY.md", "text": "Keep reported experience, reported events, appraisals, external claims, and assistant hypotheses distinct." },
+        { "file": "src/prompts/realize.mjs", "text": "Do not add new psychological assignments or diagnoses. Do not upgrade a hypothesis into a fact." }
+      ],
+      "note": "The existing rules keep reports, appraisals, and hypotheses apart, but nothing forbade unstated backstory, motives, or history, or covered scope words such as always and kept."
+    },
+    "CI-02": {
+      "title": "Quotation marks mean exact words",
+      "disposition": "ADDED",
+      "anchors": [
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/CLAIM-INTEGRITY.md", "text": "When quotation marks present words as something the person said, use their exact words" }
+      ],
+      "relatedExisting": [
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/ROLE-BELIEF-INTEGRITY.md", "text": "Quoting or exploring a self-judgment with clear attribution is allowed." }
+      ],
+      "note": "No existing rule required quoted words to be exact. Quotation marks around a suggested phrase, an example, or exercise wording stay allowed."
+    },
+    "CI-03": {
+      "title": "Absence claims cover only what was searched",
+      "disposition": "ADDED",
+      "anchors": [
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/CLAIM-INTEGRITY.md", "text": "Before saying the person never mentioned, never said, or has not described something, check the whole conversation and the records supplied to you." }
+      ],
+      "relatedExisting": [
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/PROTOCOL-STATE-PROVENANCE.md", "text": "Silence in the transcript is unknown, not a report of no response." }
+      ],
+      "note": "The existing rule covers silence about one exercise. The added rule covers claims that the person never mentioned something, and limits them to the visible window of a longer history."
+    },
+    "CI-04": {
+      "title": "Check claims about what a field or tradition says",
+      "disposition": "NOT_APPLICABLE",
+      "reason": "Applies to research, writing, and design. InnerSignal is a companion: it does not answer research questions from sources, edit or draft text for publication, or critique visual design. Its therapy content comes from owner-approved guides and graph rules that change only through the owner-decision lifecycle."
+    },
+    "CI-05": {
+      "title": "Trace figures to the primary source",
+      "disposition": "NOT_APPLICABLE",
+      "reason": "Applies to research and writing. InnerSignal replies are private companion conversation, not conclusions drawn from sources or text for publication, and the product does not collect or cite figures from sources. Numbers a reply derives from the person's own reports fall under the added estimate rule (CI-10)."
+    },
+    "CI-06": {
+      "title": "Say exactly what you checked",
+      "disposition": "NOT_APPLICABLE",
+      "reason": "Applies to research, writing, and design. InnerSignal does not verify sources, quotations, or versions for the person. The nearest companion claim, that something was or was not said in the conversation, falls under the added absence rule (CI-03)."
+    },
+    "CI-07": {
+      "title": "Recheck before conceding, companion form: go back to the person's words when they correct a reflection",
+      "disposition": "ADDED",
+      "anchors": [
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/CLAIM-INTEGRITY.md", "text": "When the person says you got their words or their meaning wrong, go back to what they actually said." },
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/CLAIM-INTEGRITY.md", "text": "Do not defend your earlier reading, and do not swap in another interpretation they did not offer." }
+      ],
+      "relatedExisting": [
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/ROLE-BELIEF-INTEGRITY.md", "text": "Preserve counterevidence and legitimate client corrections; revise mistakes rather than treating disagreement as pathology or resistance." }
+      ],
+      "note": "Partly covered: the existing rule keeps valid corrections and does not treat disagreement as resistance. Missing were going back to the person's words and not substituting a new reading. The added text also says that accepting what they meant is not agreeing that it is true, which keeps the role and belief rules intact."
+    },
+    "CI-08": {
+      "title": "Recheck facts added to someone's text",
+      "disposition": "NOT_APPLICABLE",
+      "reason": "Applies to writing, and to research when drafting text the person will publish. InnerSignal does not edit text for publication. Its only editing practice, the optional owner-approved draft editor (IC.DRAFT_EDITOR in guide-graphs/compiled/inner-child-directed-graph.json), helps with a private message to one recipient, and already forbids treating unsent draft wording as established facts about another person. Attributions and quotations the companion itself makes there fall under the added CI-01 and CI-02 rules."
+    },
+    "CI-09": {
+      "title": "Review someone's own work on its strongest reading",
+      "disposition": "NOT_APPLICABLE",
+      "reason": "Applies to writing, design, and research when reviewing the person's own work. InnerSignal does not review a work product. The nearest practices, the draft editor and the owner-approved non-punitive review of self-care attempts (D09), are relational practices governed by owner-approved graph rules that already hold a charitable, non-grading standard, for example that an appropriate existing draft may not need editing. Changing them is a graph change that only the owner-decision lifecycle can make."
+    },
+    "CI-10": {
+      "title": "Keep claims consistent and label estimates",
+      "disposition": "ADDED",
+      "anchors": [
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/CLAIM-INTEGRITY.md", "text": "If something you are about to say conflicts with what you said earlier on the same topic, check which is right and say openly that you are correcting yourself rather than switching silently." },
+        { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/CLAIM-INTEGRITY.md", "text": "Label estimates as estimates, and give a number, time, or count no more precisely than what it came from." }
+      ],
+      "note": "No existing rule covered consistency across turns or the labeling of estimates."
+    },
+    "CI-X1": {
+      "title": "Experimental key-condition recoverability",
+      "disposition": "NOT_APPLICABLE",
+      "reason": "Owner decision, relayed by the supervising session on 2026-09-27: InnerSignal replies are natural, not formulaic, so a checker's failure to reconstruct the person's message from a reply says nothing about the reply's quality. The pack also limits this check to research verdicts and excludes conversational, companion, and therapeutic replies."
+    }
+  },
+  "scopeBoundaries": [
+    {
+      "surface": "Case extraction (src/prompts/case-extract.mjs)",
+      "decision": "Unchanged. It produces structured observations, not replies, and keeps its own equivalent anchoring rule rather than receiving a second copy.",
+      "anchor": { "file": "src/prompts/case-extract.mjs", "text": "Record only direct observations that can be tied to exact user language." }
+    },
+    {
+      "surface": "Hypnosis compiler (src/prompts/hypnosis-*.mjs)",
+      "decision": "Unchanged. Its scripts are permissive suggestion rather than claims about what the person reported, it already forbids claiming change or capacity the person has not established, and it has its own owner-gated contract.",
+      "anchor": { "file": "src/prompts/hypnosis-common.mjs", "text": "Do not claim hidden change, therapeutic capacity, or a trustworthy inner adult has appeared unless the user has established it." }
+    },
+    {
+      "surface": "Guide Packet compiler and reviewers (src/guide-packet/model-compiler.mjs, src/guide-packet/model-review.mjs)",
+      "decision": "Unchanged. Owner-only authoring tooling that audits the owner's guides against the graph; not a user-facing surface. Carrying review checks there would be a separate owner decision."
+    },
+    {
+      "surface": "Private journal import role instructions (open pull request #94)",
+      "decision": "Not on main. Its extraction, pattern, and review roles read the person's own journal and should be assessed for these checks when that pull request is reviewed."
+    },
+    {
+      "surface": "Development roles (src/dev/*) and repository documents (AGENTS.md, AUTOPILOT.md, docs/, tasks/, THERAPY-LESSONS)",
+      "decision": "Development-only; not served to the people who use InnerSignal."
+    }
+  ]
+}

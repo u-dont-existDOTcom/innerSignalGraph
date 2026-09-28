@@ -1,6 +1,14 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-27
+Updated: 2026-09-28
+
+## Claim integrity in the served protocol and response prompts — `claude/claim-integrity-checks-20260927`
+
+- **Goal:** the owner asked that each public product carry the claim-integrity checks that apply to it, since published products do not load the development architecture. InnerSignal is a companion product.
+- **Done, don't repeat:** `src/prompts/claim-integrity.mjs` (`claim-integrity-v1`) adds five rules and six audit codes on what a reply claims about the person: attributions resting on their words, exact quotation, "never mentioned" claims limited to what was visible, going back to their words when they correct a reflection, and consistency with labeled estimates. They reach case audit, drafting, critique, adjudication, realization, private audit and repair through `longitudinalClinicalRules`. The byte-matched `references/CLAIM-INTEGRITY.md` is always-read in `SKILL.md` and served over MCP; the served `protocol_sha256` becomes `89bc154f8cbd80b89e68e1d4e37033d03e4977ccfe4f7fb7d7f3ce2312a4ea16` (plugin version unchanged). The rules govern claims, not style, and never require quoting or restating the person. Extraction and hypnosis are unchanged. Dispositions for all eleven checks, with anchors: `tasks/claim-integrity-20260927/COVERAGE.json`.
+- **Verified:** `tests/claim-integrity.test.mjs` and the affected prompt and protocol tests pass; the full gates are listed in the pull request. Wording tests do not show model adherence.
+- **Safety:** prompt text only. No graph, guide, schema, routing, storage, model-role, or deployment change; the mock therapy-policy fingerprints are unchanged.
+- **Next safe action:** owner approval of the wording (therapy prompt policy is owner-gated) and Codex review, then merge. Serving the new protocol needs the normal hosted MCP redeploy; no `stable` change, installation or deployment is authorized.
 
 ## Journal work exchange hardening — `claude/journal-work-exchange-hardening-20260927`
 
