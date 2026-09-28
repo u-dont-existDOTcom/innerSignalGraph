@@ -131,6 +131,23 @@ test("identity questions a bounded neighborhood cannot settle are counted, not a
   assert.equal(commit.completion.profile_committed, "pass");
 });
 
+test("schema-valid reconciliation proposals deferred by graph rules remain visible as residuals", async (t) => {
+  const f = await environment(t);
+  const { run, commit } = await drive(f, handlers({
+    reconciler: (packet) => {
+      const assertions = packet.candidates.nodes.filter((node) => node.kind === "assertion");
+      const passage = packet.candidates.nodes.find((node) => node.kind === "passage");
+      return { schema_version: "1.0", target_generation: packet.expected_generation,
+        proposals: [{ operation: "link", relation: "corrects", subject_ids: assertions.slice(0, 2).map(({ id }) => id),
+          evidence_ids: [passage.id], explanation: "Synthetic invalid correction proposal.", automatic_retirement_allowed: false }],
+        unresolved_ids: [], status: "proposals_complete" };
+    }
+  }));
+  assert.equal(run.completion.graph_built, "pass");
+  assert.equal(run.residuals.reconciliation_deferred_proposals, 1);
+  assert.equal(commit.completion.profile_committed, "pass");
+});
+
 test("a disputed pattern settles its review: it stays in the register as disputed and the import commits", async (t) => {
   const f = await environment(t);
   const { patterns, commit } = await drive(f, handlers({

@@ -236,6 +236,14 @@ export function reviewPatternRegister({
     } else {
       pattern.version += 1;
       pattern.data.review_state = unsupported ? "disputed" : "provisional";
+      // An explicit, complete dispute is still a settled independent review. Preserve the
+      // authenticated reviewer and counterevidence receipts just as we do for a preserved pattern;
+      // otherwise the published node claims a dispute without retaining the evidence that settled it.
+      if (unsupported && receiptReasons.length === 0 && counterVerified
+        && review.status === "sufficient_for_stated_scope") {
+        pattern.data.independent_review_ref = reviewReceipt.receipt_id;
+        pattern.data.disconfirmation = { status: "complete", search_receipt_ref: counterReceipt.search_receipt_ref };
+      }
       decisions.push({ pattern_id: pattern.id, decision: pattern.data.review_state, reasons: [
         ...receiptReasons,
         ...(counterVerified ? [] : ["COUNTEREVIDENCE_SEARCH_INCOMPLETE_OR_UNAUTHENTICATED"]),

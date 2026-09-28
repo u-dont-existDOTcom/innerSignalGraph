@@ -1225,10 +1225,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // stayed unresolved leaves the graph itself partial.
       const sourceOnlyUnits = [...unitGraphs.values()].filter(record => record.source_only_unresolved).length;
       state.completion.graph_built = sourceOnlyUnits > 0 ? 'partial' : 'pass';
+      const reconciliationBatches = new Map();
+      for (const report of reports) reconciliationBatches.set(report.batch_ref, report);
       state.residuals = { ...(state.residuals ?? {}),
         source_only_units: sourceOnlyUnits,
         reconciliation_needs_context_units: reports.filter(report => report.status === 'needs_context').length,
-        reconciliation_unresolved_units: reports.filter(report => report.status === 'unresolved').length };
+        reconciliation_unresolved_units: reports.filter(report => report.status === 'unresolved').length,
+        reconciliation_deferred_proposals: [...reconciliationBatches.values()]
+          .reduce((count, report) => count + report.deferred_proposals.length, 0) };
       state.stage = 'REFERENCE_AUDIT';
       state.blocker = null;
       await save();
