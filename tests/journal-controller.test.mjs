@@ -376,6 +376,39 @@ test("known-unsent transport failure retries twice at most and malformed output 
     controller.close();
     port.close();
   });
+
+  await t.test("a delayed invalid second answer is terminal", async () => {
+    let invokes = 0;
+    let completionStatus = "unknown";
+    const port = {
+      capabilities: () => ({ mode: "synthetic-delayed-invalid", authoritative_completion: true }),
+      async invoke() {
+        invokes += 1;
+        throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" });
+      },
+      async getCompletion() { return { status: completionStatus }; }
+    };
+    const ledger = createMemoryJournalJobLedger();
+    const controller = createJournalImportController({ ledger, inferencePort: port, controllerSecret: Buffer.alloc(32, 55), grant });
+    await controller.initialize({ ...initialization(), jobId: "job:delayed-invalid-final", workDefinitions: [workDefinitions()[0]] });
+
+    let result = await controller.step();
+    assert.equal(result.snapshot.work_items[0].status, "completion_unknown");
+    completionStatus = "invalid_output";
+    result = await controller.step();
+    assert.equal(result.snapshot.work_items[0].status, "invalid_output");
+
+    result = await controller.step();
+    assert.equal(result.snapshot.work_items[0].attempts, 2);
+    assert.equal(result.snapshot.work_items[0].status, "completion_unknown");
+    completionStatus = "invalid_output";
+    result = await controller.step();
+    assert.equal(result.snapshot.work_items[0].status, "blocked_authority");
+    assert.equal(result.snapshot.checkpoint.state, "blocked_authority");
+    assert.equal(result.snapshot.checkpoint.blocked_reason, "INVALID_STRUCTURED_OUTPUT");
+    assert.equal(invokes, 2);
+    controller.close();
+  });
 });
 
 test("quota, revocation and missing fresh-context route block only the affected semantic work", async (t) => {

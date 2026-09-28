@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { ValidationError } from "../core/errors.mjs";
 import { AnthropicProvider } from "../providers/anthropic.mjs";
 import { OpenAIProvider } from "../providers/openai.mjs";
@@ -5,6 +7,15 @@ import { createChatGptSubscriptionBrowserProvider } from "../providers/chatgpt-s
 import { createChatGptSubscriptionCdpTransport } from "./chatgpt-subscription-cdp.mjs";
 import { createChatGptSubscriptionDesktopCdpTransport } from "./chatgpt-subscription-desktop-cdp.mjs";
 import { createDisabledJournalInferencePort, createProviderJournalInferencePort } from "./provider-port.mjs";
+import { JOURNAL_EXCHANGE_PROVIDER, createExchangeJournalInferencePort } from "./exchange-port.mjs";
+import {
+  assertJournalWorkExchangeRoot,
+  createJournalWorkExchange,
+  deriveJournalWorkExchangeKeys,
+  resolveJournalWorkExchangeRoot
+} from "./work-exchange.mjs";
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 const PROVIDERS = Object.freeze({
   openai: (options) => new OpenAIProvider(options),
@@ -30,11 +41,24 @@ function parseConfiguration(value) {
   catch { throw new ValidationError("JOURNAL_INFERENCE_ROUTE_CONFIG_INVALID", { code: "JOURNAL_INFERENCE_ROUTE_CONFIG_INVALID" }); }
   invariant(parsed && typeof parsed === "object" && !Array.isArray(parsed), "JOURNAL_INFERENCE_ROUTE_CONFIG_INVALID");
   invariant(parsed.schema_version === 1, "JOURNAL_INFERENCE_ROUTE_VERSION_UNSUPPORTED");
-  invariant(Object.hasOwn(PROVIDERS, parsed.provider), "JOURNAL_INFERENCE_PROVIDER_UNSUPPORTED");
+  const exchangeRoute = parsed.provider === JOURNAL_EXCHANGE_PROVIDER;
+  invariant(exchangeRoute || Object.hasOwn(PROVIDERS, parsed.provider), "JOURNAL_INFERENCE_PROVIDER_UNSUPPORTED");
   for (const field of ["route_ref", "model", "effort"]) invariant(typeof parsed[field] === "string" && parsed[field].length > 0, "JOURNAL_INFERENCE_ROUTE_CONFIG_INVALID");
   invariant(Number.isFinite(parsed.max_external_spend_usd) && parsed.max_external_spend_usd >= 0, "INFERENCE_SPEND_LIMIT_INVALID");
+  // For the exchange route, timeout_ms is how long one call waits for its answer before the run
+  // leaves it open for a later run.
   invariant(Number.isSafeInteger(parsed.timeout_ms) && parsed.timeout_ms >= 1_000 && parsed.timeout_ms <= 3_600_000, "JOURNAL_INFERENCE_TIMEOUT_INVALID");
-  invariant(Number.isSafeInteger(parsed.max_output_tokens) && parsed.max_output_tokens >= 1 && parsed.max_output_tokens <= 100_000, "JOURNAL_INFERENCE_OUTPUT_LIMIT_INVALID");
+  if (!exchangeRoute || parsed.max_output_tokens !== undefined) {
+    invariant(Number.isSafeInteger(parsed.max_output_tokens) && parsed.max_output_tokens >= 1 && parsed.max_output_tokens <= 100_000, "JOURNAL_INFERENCE_OUTPUT_LIMIT_INVALID");
+  }
+  if (exchangeRoute) {
+    invariant(parsed.max_external_spend_usd === 0, "SUBSCRIPTION_ROUTE_REQUIRES_ZERO_EXTERNAL_SPEND");
+    invariant(parsed.allowance_evidence?.maximum_incremental_cost_usd === 0, "SUBSCRIPTION_ROUTE_REQUIRES_ZERO_EXTERNAL_SPEND");
+    const exchange = parsed.exchange ?? {};
+    invariant(exchange && typeof exchange === "object" && !Array.isArray(exchange), "JOURNAL_EXCHANGE_CONFIG_INVALID");
+    if (exchange.poll_ms !== undefined) invariant(Number.isSafeInteger(exchange.poll_ms) && exchange.poll_ms >= 250 && exchange.poll_ms <= 60_000, "JOURNAL_EXCHANGE_CONFIG_INVALID");
+    if (exchange.ttl_ms !== undefined) invariant(Number.isSafeInteger(exchange.ttl_ms) && exchange.ttl_ms >= 60_000 && exchange.ttl_ms <= 7 * 24 * 3_600_000, "JOURNAL_EXCHANGE_CONFIG_INVALID");
+  }
   if (parsed.provider === "chatgpt_subscription_browser") {
     invariant(parsed.max_external_spend_usd === 0, "SUBSCRIPTION_ROUTE_REQUIRES_ZERO_EXTERNAL_SPEND");
     invariant(parsed.allowance_evidence?.maximum_incremental_cost_usd === 0, "SUBSCRIPTION_ROUTE_REQUIRES_ZERO_EXTERNAL_SPEND");
@@ -51,12 +75,47 @@ function secret(environment, name) {
   return value;
 }
 
-export function loadJournalInferencePortFromEnvironment(environment = process.env, { providerFactories = PROVIDERS, transportCheckpoint } = {}) {
+// The connector exchange route: work items go to ChatGPT through the private connector tools, and
+// the exchange root and secret are the same ones the connector uses.
+function loadExchangePort(environment, config, receiptKey, caseId) {
+  const configuredRoot = secret(environment, "INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT");
+  invariant(path.isAbsolute(configuredRoot), "JOURNAL_EXCHANGE_ROOT_INVALID");
+  const keys = deriveJournalWorkExchangeKeys(secret(environment, "INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64"));
+  if (environment === process.env) delete process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64;
+  return createExchangeJournalInferencePort({
+    caseId,
+    receiptKey,
+    routeRef: config.route_ref,
+    allowanceEvidence: config.allowance_evidence,
+    model: config.model,
+    effort: config.effort,
+    waitMs: config.timeout_ms,
+    ...(config.exchange?.poll_ms !== undefined ? { pollMs: config.exchange.poll_ms } : {}),
+    ...(config.exchange?.ttl_ms !== undefined ? { ttlMs: config.exchange.ttl_ms } : {}),
+    // Canonical, private and outside this checkout, checked when the runtime starts.
+    prepareExchange: async () => {
+      const root = await resolveJournalWorkExchangeRoot(configuredRoot, { outside: repositoryRoot });
+      await assertJournalWorkExchangeRoot(root);
+      return createJournalWorkExchange({ root, keys });
+    }
+  });
+}
+
+export function loadJournalInferencePortFromEnvironment(environment = process.env, { providerFactories = PROVIDERS, transportCheckpoint, caseId = null } = {}) {
   const raw = environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON;
   if (raw == null || raw === "") return createDisabledJournalInferencePort();
   const config = parseConfiguration(raw);
   const receiptKey = Buffer.from(secret(environment, "INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64"), "base64");
   invariant(receiptKey.byteLength >= 32, "INFERENCE_RECEIPT_KEY_INVALID");
+  if (config.provider === JOURNAL_EXCHANGE_PROVIDER) {
+    try {
+      invariant(typeof caseId === "string" && caseId.length > 0, "JOURNAL_EXCHANGE_CASE_INVALID");
+      return loadExchangePort(environment, config, receiptKey, caseId);
+    } finally {
+      receiptKey.fill(0);
+      if (environment === process.env) delete process.env.INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64;
+    }
+  }
   const factory = providerFactories[config.provider];
   invariant(typeof factory === "function", "JOURNAL_INFERENCE_PROVIDER_UNSUPPORTED");
   const apiKeyName = config.provider === "openai"

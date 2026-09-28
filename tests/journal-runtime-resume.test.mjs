@@ -85,6 +85,44 @@ test('synthetic runtime completes the application reconciliation stage once and 
  assert.deepEqual(await runtime.execute('run'),result);await runtime.close();
 });
 
+test('authoritative reference recovery waits on the existing operation after an empty completion snapshot',async t=>{
+ const f=await fixture(t);let answerReady=false,completionChecks=0;const referenceKeys=[];
+ const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,assessments:[],proposed_repairs:[],unassessed_ids:[],status:'sufficient_for_stated_scope'});
+ const handlers={
+  reference_reader:()=>({schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]}),
+  extractor:p=>({schema_version:'1.0',status:'complete',assertions:[],entities:[],episodes:[],coverage:p.core_units.map(u=>({unit_id:u.unit_id,disposition:'no_assertion',assertion_local_ids:[],reason:'Synthetic pipeline fixture.'})),requested_context:[]}),
+  omission_checker:p=>review('omission_checker',p),fidelity_auditor:p=>review('fidelity_auditor',p),
+  reconciler:p=>({schema_version:'1.0',target_generation:p.expected_generation,proposals:[],unresolved_ids:[],status:'proposals_complete'})
+ };
+ const makePort=()=>{
+  const base=createMockJournalInferencePort({handlers});
+  return {
+   capabilities:()=>({...base.capabilities(),authoritative_completion:true}),
+   async invoke(input){
+    if(input.role==='reference_reader'){
+     referenceKeys.push(input.operationKey);
+     if(!answerReady)throw new JournalInferencePortError('COMPLETION_UNKNOWN',{submissionStatus:'unknown'});
+    }
+    return base.invoke(input);
+   },
+   async getCompletion(){completionChecks++;return {status:'unknown'};},
+   close:()=>base.close()
+  };
+ };
+ let runtime=await openJournalExecutionRuntime({...f,inferencePort:makePort()});
+ let result;
+ try{result=await runtime.execute('run');}finally{await runtime.close();}
+ assert.equal(result.blocker,'COMPLETION_UNKNOWN');
+ answerReady=true;
+ runtime=await openJournalExecutionRuntime({...f,inferencePort:makePort()});
+ try{result=await runtime.execute('run');}finally{await runtime.close();}
+ assert.equal(result.completion.graph_built,'pass');
+ assert.equal(result.blocker,null);
+ assert.equal(completionChecks,1);
+ assert.equal(referenceKeys.length,2);
+ assert.equal(referenceKeys[1],referenceKeys[0],'the resumed call waits on the existing operation instead of creating another');
+});
+
 test('revocation during a semantic call prevents completed-result admission and all dependent calls',async t=>{
  const f=await fixture(t);let revoked=false,calls=0;
  const service={verifyCaseAccess:async()=>{if(revoked)throw Object.assign(new Error('Synthetic revoked grant'),{code:'GRANT_REVOKED'});}};

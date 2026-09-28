@@ -132,7 +132,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     };
     await authorize();
     const route = environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON ? JSON.parse(environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON) : null;
-    if (!suppliedPort && route) invariant(route.provider === "chatgpt_subscription_browser" && route.model === "GPT-5.6 Sol" && route.effort === "Pro" && route.max_external_spend_usd === 0, "JOURNAL_SUBSCRIPTION_ROUTE_REQUIRED");
+    // Either subscription route: the desktop app driven over CDP, or the connector exchange that
+    // Mission Control hands to fresh chats. Model, effort and zero spend are the same for both.
+    if (!suppliedPort && route) invariant(["chatgpt_subscription_browser", "chatgpt_connector_exchange"].includes(route.provider)
+      && route.model === "GPT-5.6 Sol" && route.effort === "Pro" && route.max_external_spend_usd === 0, "JOURNAL_SUBSCRIPTION_ROUTE_REQUIRED");
     const keyFile = path.join(root, "staging.key");
     try { await fs.writeFile(keyFile, randomBytes(32), { flag: "wx", mode: 0o600 }); } catch (e) { if (e.code !== "EEXIST") throw e; }
     // One no-follow handle for the check and the read, so the key can't be swapped in between.
@@ -153,11 +156,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     invariant(state.case_id === caseId && state.source_sha256 === config.source.sha256, "JOURNAL_RESUME_BINDING_MISMATCH");
     store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: state.corpus_id, corpusKey: key, resumeMatchingObjects: true });
     port = suppliedPort ?? loadJournalInferencePortFromEnvironment({ ...environment }, {
+      caseId,
       transportCheckpoint: value => store.writeJsonObject({
         objectId: `transport:${hash(value.context.request_id)}:${value.phase}`, value
       })
     });
     const semanticPort = port;
+    // The connector exchange checks its root and clears stale temporary files before any work.
+    await semanticPort.prepare?.();
     port = createDurableJournalInferencePort({ port: {
       capabilities: () => semanticPort.capabilities(),
       async invoke(input) {
@@ -174,6 +180,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         await authorize();
         return result;
       },
+      // Lets the port drop its own copy once the durable store holds the answer; moves no content.
+      release: (operationKey) => semanticPort.release?.(operationKey),
       close: () => semanticPort.close?.()
     }, corpusStore: store });
     const sourcePath = path.resolve(path.dirname(configPath), "..", config.source.relative_path);
@@ -331,10 +339,31 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (secondFailure) {
           state.stage = workStage; state.blocker = "INVALID_STRUCTURED_OUTPUT"; await save(); return null;
         }
-        const operationKey = firstFailure ? `${id}:reserialize` : id;
-        const completionUnknown = await readIfPresent(`reference:completion-unknown:${operationKey}`);
-        if (completionUnknown) {
-          state.stage = workStage; state.blocker = "COMPLETION_UNKNOWN"; await save(); return null;
+        const baseKey = firstFailure ? `${id}:reserialize` : id;
+        let operationKey = baseKey;
+        // An earlier run left this call open. Ask the port before blocking: a connector answer may
+        // have arrived since, and a call that is definitely unanswered is sent again under a new key.
+        for (let resend = 1; await readIfPresent(`reference:completion-unknown:${operationKey}`); resend += 1) {
+          const completion = await port.getCompletion(operationKey);
+          if (completion.status === "completed") {
+            const recovered = { output: completion.output, receipt: completion.receipt };
+            await writeOnce(resultId, recovered);
+            state.blocker = null; await save();
+            return [recovered];
+          }
+          if (completion.status === "invalid_output") {
+            const attempt = firstFailure ? 2 : 1;
+            await writeOnce(`reference:failure:${id}:${attempt}`, { status: "invalid_output", operation_key: operationKey, attempt });
+            state.stage = workStage; state.blocker = "INVALID_STRUCTURED_OUTPUT"; await save(); return null;
+          }
+          // An authoritative port can safely wait on this exact operation key: invoke() resumes the
+          // existing submission instead of sending a duplicate. The completion check above is only
+          // a snapshot, so an answer may arrive immediately after it reports unknown.
+          if (completion.status === "unknown" && port.capabilities?.()?.authoritative_completion === true) break;
+          if (completion.status !== "not_submitted" || resend > 2) {
+            state.stage = workStage; state.blocker = "COMPLETION_UNKNOWN"; await save(); return null;
+          }
+          operationKey = `${baseKey}:resend:${resend}`;
         }
         let result;
         try {
@@ -353,6 +382,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           if (error.code === "COMPLETION_UNKNOWN") {
             await writeOnce(`reference:completion-unknown:${operationKey}`, { status: "completion_unknown", operation_key: operationKey });
             state.stage = workStage; state.blocker = "COMPLETION_UNKNOWN"; await save(); return null;
+          }
+          // Definitely never answered (an exchange item that expired): record it as open, so the next
+          // run confirms that through the port and sends the call again under a fresh key.
+          if (error.submissionStatus === "not_submitted" && port.capabilities?.()?.authoritative_completion === true) {
+            await writeOnce(`reference:completion-unknown:${operationKey}`, { status: "not_submitted", operation_key: operationKey });
+            state.stage = workStage; state.blocker = error.code ?? "INFERENCE_NOT_SUBMITTED"; await save(); return null;
           }
           throw error;
         }

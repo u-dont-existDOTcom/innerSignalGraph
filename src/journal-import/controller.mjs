@@ -291,6 +291,11 @@ export function createJournalImportController({
         next.work_items.find(({ work_id: workId }) => workId === work.work_id).status = "retryable_error";
         return persist(next, entry.revision, { state: "retryable_error", stage: work.stage, next_action: `retry confirmed-unsent work ${work.work_id}`, blocked_reason: "CONFIRMED_NOT_SUBMITTED", responsible_actor: "controller" });
       }
+      // Only a port that knows its outcomes (the connector exchange) reports a stored answer that fails
+      // the schema here; it gets the same one schema-bound retry as an invalid answer from invoke().
+      if (completion.status === "invalid_output") {
+        return recordFailure(entry, work, { code: "INVALID_STRUCTURED_OUTPUT", submissionStatus: "completed_invalid" });
+      }
       if (work.status === "completion_unknown") return entry;
       const next = clone(entry.snapshot);
       next.work_items.find(({ work_id: workId }) => workId === work.work_id).status = "completion_unknown";
