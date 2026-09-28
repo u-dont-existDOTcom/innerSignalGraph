@@ -22,7 +22,7 @@ const read = (relative) => fs.readFile(new URL(relative, root), "utf8");
 const flat = (text) => text.replace(/\s+/gu, " ").trim();
 const coverage = JSON.parse(await read("tasks/claim-integrity-20260927/COVERAGE.json"));
 const cases = JSON.parse(await read("corpus/claim-integrity-cases.json"));
-const PACK_CHECKS = ["CI-01", "CI-02", "CI-03", "CI-04", "CI-05", "CI-06", "CI-07", "CI-08", "CI-09", "CI-10", "CI-X1"];
+const PACK_CHECKS = ["CI-01", "CI-02", "CI-03", "CI-04", "CI-05", "CI-06", "CI-07", "CI-08", "CI-09", "CI-10", "CI-11", "CI-X1"];
 const DISPOSITIONS = new Set(["ADDED", "COVERED_BY_EXISTING", "NOT_APPLICABLE", "DEFERRED"]);
 const context = (extra = {}) => ({ guideManifest: { version: "synthetic" }, guideExcerpts: "", userFacts: [],
   userMessage: "A synthetic report.", recentTranscript: "", ...extra });
@@ -40,6 +40,11 @@ test("every check has a recorded disposition, and the companion checks are carri
   for (const id of ["CI-01", "CI-02", "CI-03", "CI-07", "CI-10"]) {
     assert.ok(["ADDED", "COVERED_BY_EXISTING"].includes(coverage.checks[id].disposition), `${id} is carried`);
   }
+  assert.deepEqual(coverage.checks["CI-11"], {
+    title: "Independent claim check before delivery",
+    disposition: "NOT_APPLICABLE",
+    reason: "The pack excludes companion and therapeutic replies from CI-11. InnerSignal replies are natural, not formulaic, and its separate critique and adjudication roles already carry the anchoring, quotation, absence, correction, and consistency rules."
+  });
   assert.equal(coverage.checks["CI-X1"].disposition, "NOT_APPLICABLE");
 });
 

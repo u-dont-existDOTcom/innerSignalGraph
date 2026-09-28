@@ -8,7 +8,7 @@ Dispositions and anchors: `COVERAGE.json`
 
 ## Request
 
-The owner asked that every public product carry the claim-integrity checks that apply to it, because published products do not load the development architecture. InnerSignal is a companion product, so it carries the companion checks: what a reply says the person said or did, quotation, "you never mentioned" claims, corrected reflections, and consistency across turns. The owner decided that the experimental key-condition check does not apply, because InnerSignal replies are natural rather than formulaic. The request and that decision were relayed by the supervising session; no verbatim owner quote is recorded here.
+The owner asked that every public product carry the claim-integrity checks that apply to it, because published products do not load the development architecture. InnerSignal is a companion product, so it carries the companion checks: what a reply says the person said or did, quotation, "you never mentioned" claims, corrected reflections, and consistency across turns. CI-11 does not apply because the pack excludes companion and therapeutic replies; InnerSignal's separate critique and adjudication roles already carry those claim-integrity rules. The owner decided that the experimental key-condition check does not apply, because InnerSignal replies are natural rather than formulaic. The request and that decision were relayed by the supervising session; no verbatim owner quote is recorded here.
 
 Adapted from the claim-integrity pack v1 in universal-dev-architecture (development-side lineage only; no runtime dependency). The runtime text is rewritten for the companion and names no outside repository.
 
@@ -25,7 +25,7 @@ The plugin version stays `0.2.0`; the repository treats the protocol hash as the
 
 ## Verification
 
-- `tests/claim-integrity.test.mjs`: dispositions for all eleven checks, every anchor word for word in its file, delivery to each consumer exactly once, byte match between the plugin reference and the application rule, MCP serving, self-contained wording, and the naturalness guards. Six synthetic contrast cases in `corpus/claim-integrity-cases.json`, one per audit code, are checked for internal consistency and reach every response consumer.
+- `tests/claim-integrity.test.mjs`: dispositions for all twelve checks, every anchor word for word in its file, delivery to each consumer exactly once, byte match between the plugin reference and the application rule, MCP serving, self-contained wording, and the naturalness guards. Six synthetic contrast cases in `corpus/claim-integrity-cases.json`, one per audit code, are checked for internal consistency and reach every response consumer.
 - The complete gates for the final head are recorded in the pull request.
 
 Tests pin delivery and wording. They do not show that a model follows the rules, and the synthetic cases are evaluation inputs, not completed model evaluations or clinical evidence.

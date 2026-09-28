@@ -4,7 +4,7 @@
   "status": "PROPOSED",
   "productType": "companion",
   "lineage": "Adapted from the claim-integrity pack v1 in universal-dev-architecture (development-side lineage only; no runtime dependency).",
-  "pack": { "id": "claim-integrity", "version": 1, "sha256": "6d8cec2a474beb574922d8ddd15977c6e183c40dd3990d71787d0451c565ce6a" },
+  "pack": { "id": "claim-integrity", "version": 1, "sha256": "f045c11713a42d7078edd2cac6db181786feb0820bab7ae65c5905ae5c150746" },
   "ownerGate": "Therapy prompt policy is owner-gated. The owner must approve the added wording before merge; no installation, deployment, or stable promotion follows from this record.",
   "runtimeSurfaces": [
     { "path": "plugins/inner-signal-therapy/skills/inner-signal-therapy/SKILL.md", "consumer": "Served as the instructions of load_therapy_protocol by the hosted MCP, and bundled in the Codex plugin." },
@@ -95,6 +95,11 @@
         { "file": "plugins/inner-signal-therapy/skills/inner-signal-therapy/references/CLAIM-INTEGRITY.md", "text": "Label estimates as estimates, and give a number, time, or count no more precisely than what it came from." }
       ],
       "note": "No existing rule covered consistency across turns or the labeling of estimates."
+    },
+    "CI-11": {
+      "title": "Independent claim check before delivery",
+      "disposition": "NOT_APPLICABLE",
+      "reason": "The pack excludes companion and therapeutic replies from CI-11. InnerSignal replies are natural, not formulaic, and its separate critique and adjudication roles already carry the anchoring, quotation, absence, correction, and consistency rules."
     },
     "CI-X1": {
       "title": "Experimental key-condition recoverability",
