@@ -106,10 +106,9 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
   const raw = environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON;
   if (raw == null || raw === "") return createDisabledJournalInferencePort();
   const config = parseConfiguration(raw);
-  // A browser route remains necessary for image-bearing visual_reader work. When the hardest lane
-  // is enabled alongside it, non-visual hardest work is dispatched through the local exchange while
-  // ordinary work (and visual work at either tier) retains the attachment-capable browser route.
-  // This avoids silently dropping pending scanned pages merely because the escalation lane is on.
+  // A browser route remains necessary for ordinary image-bearing visual_reader work. The local
+  // hardest exchange cannot carry attachments, so its tier-specific capabilities say that a hardest
+  // visual attempt is unavailable; no hardest call may silently fall through to the standard model.
   const receiptKey = Buffer.from(secret(environment, "INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64"), "base64");
   invariant(receiptKey.byteLength >= 32, "INFERENCE_RECEIPT_KEY_INVALID");
   if (config.provider === JOURNAL_EXCHANGE_PROVIDER) {
@@ -162,10 +161,13 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
     if (!(hardestLane.enabled === true && config.provider === "chatgpt_subscription_browser")) return providerPort;
     const exchangePort = loadExchangePort(environment, config, Buffer.from(receiptKey), caseId, hardestLane);
     const operations = new Map();
-    const portFor = (input) => input.tier === "hardest" && input.role !== "visual_reader" ? exchangePort : providerPort;
+    const portFor = (input) => input.tier === "hardest" ? exchangePort : providerPort;
     return Object.freeze({
       capabilities() {
-        return providerPort.capabilities();
+        return Object.freeze({
+          ...providerPort.capabilities(),
+          hardest_roles: exchangePort.capabilities().roles
+        });
       },
       async prepare() { await exchangePort.prepare?.(); },
       async invoke(input) {

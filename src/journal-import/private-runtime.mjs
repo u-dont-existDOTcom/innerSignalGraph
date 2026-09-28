@@ -400,7 +400,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         let result;
         try {
           if (tier === "hardest") {
-            try { await beforeHardestSend(); }
+            // A crash may leave the durable intent without this direct path's result marker. Recover
+            // or resume that intent before charging a slot; only a confirmed-new send consumes one.
+            const completion = await port.getCompletion(operationKey);
+            if (completion.status === "completed") {
+              const recovered = { output: completion.output, receipt: completion.receipt };
+              await writeOnce(resultId, recovered);
+              state.blocker = null; await save();
+              return [recovered];
+            }
+            try { if (completion.status === "not_submitted") await beforeHardestSend(); }
             catch (error) { if (error?.code === "HARDEST_DAILY_LIMIT") return null; throw error; }
           }
           result = await port.invoke({ role, packet: buildJournalRolePacket(role, {
@@ -506,6 +515,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (!failure) return { result };
       }
       if (!hardestLane.enabled) return { failure };
+      // The configured hardest exchange currently cannot deliver image attachments. Preserve the
+      // ordinary visual residual, but say explicitly that no hardest-model attempt occurred.
+      if (port.capabilities?.().hardest_roles?.[request.role]?.available === false) {
+        return { failure, hardest: "not_attempted" };
+      }
       const result = await work({ ...request, id: `${request.id}:hardest`, tier: "hardest" });
       if (!result) {
         if (!workExhausted) return { blocked: true };

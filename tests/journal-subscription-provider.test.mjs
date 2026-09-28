@@ -274,7 +274,10 @@ test("visual reader rejects mismatched image digests before provider submission"
   port.close();
 });
 
-test("runtime binds subscription browser without API credentials and hard-requires zero incremental spend", (t) => {
+test("runtime binds subscription browser without API credentials and hard-requires zero incremental spend", async (t) => {
+  const exchangeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "journal-hardest-route-"));
+  await fs.chmod(exchangeRoot, 0o700);
+  t.after(() => fs.rm(exchangeRoot, { recursive: true, force: true }));
   let options = null;
   const fakeProvider = {
     model: "GPT-5.6 Sol",
@@ -328,7 +331,7 @@ test("runtime binds subscription browser without API credentials and hard-requir
   const combined = loadJournalInferencePortFromEnvironment({
     INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify(route),
     INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: Buffer.alloc(32, 93).toString("base64"),
-    INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: "/tmp/synthetic-journal-hardest-exchange",
+    INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: exchangeRoot,
     INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64: Buffer.alloc(32, 94).toString("base64")
   }, {
     caseId: "synthetic-case",
@@ -336,6 +339,24 @@ test("runtime binds subscription browser without API credentials and hard-requir
     providerFactories: { chatgpt_subscription_browser() { return fakeProvider; } }
   });
   assert.equal(combined.capabilities().roles.visual_reader.available, true);
+  assert.equal(combined.capabilities().hardest_roles.visual_reader.available, false);
+  const image = Buffer.from("synthetic-hardest-visual", "utf8");
+  const packet = buildJournalRolePacket("visual_reader", {
+    protocol_version: "1.0",
+    output_schema_id: "visual-result",
+    assigned_core_ids: ["page:synthetic"],
+    source_locators: [],
+    expected_generation: "generation:synthetic",
+    controller_provenance_tag: "work:hardest-visual:synthetic",
+    grant_purpose: "organize_search",
+    page_image_ref: { kind: "inline_image", media_type: "image/png", data_base64: image.toString("base64"), sha256: sha256(image) },
+    page_geometry: { width: 100, height: 100 },
+    native_text_rendering: null,
+    neighbor_pages: []
+  });
+  await assert.rejects(combined.invoke({ role: "visual_reader", packet, outputSchema: "visual-result",
+    operationKey: "operation:hardest-visual:synthetic", grant, tier: "hardest" }),
+  { code: "JOURNAL_EXCHANGE_ROLE_UNSUPPORTED" });
   combined.close();
 
   assert.throws(() => loadJournalInferencePortFromEnvironment({

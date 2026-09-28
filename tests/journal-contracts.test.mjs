@@ -208,6 +208,21 @@ test("doctor checks the configured hardest exchange for a subscription browser r
   const report = JSON.parse(stdout);
   assert.equal(report.capabilities.inference_route, "unavailable");
   assert.ok(report.blockers.includes("INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT_REQUIRED"));
+
+  stdout = "";
+  assert.equal(await runJournalImportCli(["doctor", "--config", configPath], {
+    stdout: { write: (chunk) => { stdout += chunk; } },
+    stderr: { write: () => {} },
+    environment: {
+      INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify(route),
+      INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: Buffer.alloc(32, 97).toString("base64"),
+      INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: path.join(root, "doctor-hardest-exchange"),
+      INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64: Buffer.alloc(32, 98).toString("base64")
+    }
+  }), 0);
+  const unsafeRoot = JSON.parse(stdout);
+  assert.equal(unsafeRoot.capabilities.inference_route, "unavailable");
+  assert.ok(unsafeRoot.blockers.includes("JOURNAL_WORK_EXCHANGE_ROOT_INSIDE_REPOSITORY"));
 });
 
 test("doctor reports a UTF-8 text source as importable and other non-PDF bytes as unsupported", async (t) => {

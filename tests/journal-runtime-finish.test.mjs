@@ -152,6 +152,72 @@ test("the hardest daily limit counts each dependency invocation before it is sen
   } finally { await runtime.close(); }
 });
 
+test("a restarted hardest reference recovers its durable intent before charging the daily limit", async (t) => {
+  const f = await environment(t);
+  f.config.hardest_lane = { enabled: true, daily_limit: 1 };
+  const invalidReference = (packet) => ({
+    schema_version: "1.0",
+    source_only_first_pass: true,
+    reference_items: [{ id: "reference:synthetic", statement: "Synthetic invalid reference.", required_qualifiers: [],
+      anchors: [{ unit_id: packet.source_windows[0].unit_id, quote: "Words absent from the source.", occurrence: null }],
+      importance_reason: "Synthetic restart fixture.", critical: false }],
+    questions: [],
+    unassessed_unit_ids: []
+  });
+  let hardestInput = null;
+  let hardestInvocations = 0;
+  const firstMock = createMockJournalInferencePort({ handlers: handlers({ reference_reader: invalidReference }) });
+  const firstPort = {
+    capabilities: () => firstMock.capabilities(),
+    getCompletion: (operationKey) => firstMock.getCompletion(operationKey),
+    isAuthoritativeCompletion: (_operationKey, input) => input?.tier === "hardest",
+    invoke(input) {
+      if (input.role === "reference_reader" && input.tier === "hardest") {
+        hardestInput = structuredClone(input);
+        hardestInvocations += 1;
+        throw new Error("synthetic crash after durable hardest intent");
+      }
+      return firstMock.invoke(input);
+    },
+    close: () => firstMock.close()
+  };
+  let runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: firstPort, environment: f.environment });
+  try {
+    await assert.rejects(runtime.execute("run"), /synthetic crash after durable hardest intent/);
+  } finally { await runtime.close(); }
+  assert.ok(hardestInput);
+  assert.equal(JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"))).hardest_lane.sent, 1);
+
+  const resumedMock = createMockJournalInferencePort({ handlers: handlers() });
+  const resumedPort = {
+    capabilities: () => resumedMock.capabilities(),
+    async getCompletion(operationKey) {
+      if (operationKey === hardestInput.operationKey) {
+        const completed = await resumedMock.invoke(hardestInput);
+        return { status: "completed", ...completed };
+      }
+      return resumedMock.getCompletion(operationKey);
+    },
+    isAuthoritativeCompletion: (_operationKey, input) => input?.tier === "hardest",
+    invoke(input) {
+      if (input.role === "reference_reader" && input.tier === "hardest") hardestInvocations += 1;
+      return resumedMock.invoke(input);
+    },
+    close: () => resumedMock.close()
+  };
+  runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: resumedPort, environment: f.environment });
+  try {
+    const summary = await runtime.execute("run");
+    assert.equal(summary.blocker, null);
+    assert.equal(summary.completion.graph_built, "pass");
+    assert.equal(summary.hardest_lane.sent, 1);
+    assert.equal(summary.residuals.hardest_resolved, 1);
+  } finally { await runtime.close(); }
+  assert.equal(hardestInvocations, 1, "the restart must recover rather than invoke the hardest reference again");
+});
+
 function invalidHardestPort(standardPort, shouldExhaust) {
   return {
     capabilities: () => standardPort.capabilities(),

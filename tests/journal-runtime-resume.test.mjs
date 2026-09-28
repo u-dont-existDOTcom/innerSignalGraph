@@ -627,6 +627,7 @@ test('an extractor that asks for smaller windows gets its batch split instead of
 
 test('a page read only in part is kept and counted, and a page no reading binds to is excluded and counted',async t=>{
  const f=await fixture(t);
+ f.config.hardest_lane={enabled:true};
  const pages=[1,2,3];
  const parser=async()=>({
   source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'application/pdf'},
@@ -639,7 +640,7 @@ test('a page read only in part is kept and counted, and a page no reading binds 
  const reads=[];
  // Page 1 reads fully. Page 2 has an unreadable region. Page 3's reading always names the wrong
  // page. Page 1's first reading also names the wrong page, and its second is used.
- const port=createMockJournalInferencePort({handlers:{visual_reader:p=>{
+ const basePort=createMockJournalInferencePort({handlers:{visual_reader:p=>{
   const page=p.assigned_core_ids[0];reads.push(page);
   const wrong=page==='page:3'||(page==='page:1'&&reads.filter(r=>r==='page:1').length===1);
   return {schema_version:'1.0',source_page_id:wrong?'page:99':page,
@@ -648,6 +649,10 @@ test('a page read only in part is kept and counted, and a page no reading binds 
     interpretation_status:page==='page:2'?'unreadable':'readable',speaker_or_document_label:null,table_cells:[]}],
    page_complete:page!=='page:2',missing_or_uncertain_regions:page==='page:2'?['region:scan']:[]};
  }}});
+ const port={
+  capabilities(){return {...basePort.capabilities(),hardest_roles:{visual_reader:{available:false}}};},
+  invoke:input=>basePort.invoke(input),getCompletion:key=>basePort.getCompletion(key),close:()=>basePort.close()
+ };
  const runtime=await openJournalExecutionRuntime({...f,sourceParser:parser,renderVisualPage:async()=>image,inferencePort:port});
  try {
   const result=await runtime.execute('visual-only');
@@ -663,5 +668,6 @@ test('a page read only in part is kept and counted, and a page no reading binds 
   // The partly read page keeps its reading; the excluded page has none in the plan.
   const plan=JSON.parse((await store.reassembleOriginal(checkpoint.visual_plan_ref)).toString());
   assert.deepEqual([...new Set(plan.units.filter(u=>u.visual).map(u=>u.page_number))].sort(),[1,2]);
+  assert.deepEqual(checkpoint.visual_residuals,[{page_number:3,reason:'VISUAL_PAGE_BINDING_MISMATCH',hardest:'not_attempted'}]);
  } finally { store.close();key.fill(0); }
 });

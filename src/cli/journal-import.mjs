@@ -211,7 +211,10 @@ export async function configuredJournalDoctorReport(configPath, environment = pr
       caseId: config.target_profile.case_id,
       hardestLane: normalizeJournalHardestLaneConfig(config)
     });
-    try { inference = port.capabilities(); }
+    try {
+      await port.prepare?.();
+      inference = port.capabilities();
+    }
     finally { port.close?.(); }
   } catch (error) {
     inference = { enabled: false, live_inference: false, external_spend_authorized_usd: 0 };
