@@ -150,3 +150,13 @@ test("the parser reads verified bytes over IPC exactly as it reads the same file
   await assert.rejects(() => parseSourceFile({ inputPath, inputBytes: bytes, format: "text" }), /SOURCE_INPUT_INVALID/);
   await assert.rejects(() => parseSourceFile({ inputBytes: bytes, format: "text", byteLimit: bytes.length - 1 }), /SOURCE_BYTE_LIMIT_EXCEEDED/);
 });
+
+test("a UTF-8 text source that starts with a byte-order mark keeps it, so its spans still match its bytes", async () => {
+  const bytes = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from("Entrée inventée.\nDeuxième ligne.\n", "utf8")]);
+  const parsed = await parseSourceFile({ inputBytes: bytes, format: "text" });
+  const [representation] = parsed.representations;
+  assert.equal(representation.utf8_byte_length, bytes.length);
+  assert.equal(Buffer.byteLength(representation.text, "utf8"), bytes.length);
+  const units = partitionRepresentation({ representationId: representation.representation_id, text: representation.text });
+  assert.equal(verifyRepresentationCoverage(representation.text, units).complete, true);
+});

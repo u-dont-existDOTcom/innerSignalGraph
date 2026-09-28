@@ -27,12 +27,30 @@ export function validateReconciliationResult(result, graph) {
   return checked;
 }
 
+const active = (record) => Boolean(record) && !["deleted", "revoked"].includes(record.lifecycle);
+
+// The graph's own rules for a new edge, checked before a proposal is applied. A proposal that would
+// break them is deferred for review; applying it would make the whole reconciled graph invalid, and
+// the saved result would fail the same way on every later run.
+function edgeRuleViolation(nodes, edge) {
+  // An assertion's evidence edges must match its own evidence list, which only extraction writes.
+  if (edge.relation === "supported_by") return "RECONCILIATION_EVIDENCE_EDGE";
+  const from = nodes.get(edge.from);
+  const to = nodes.get(edge.to);
+  if (!active(from) || !active(to)) return "ACTIVE_EDGE_TO_REVOKED";
+  if (edge.relation === "corrects" && from.data?.assertion_kind !== "explicit_correction") return "CORRECTION_WITHOUT_CORRECTION_ASSERTION";
+  if (edge.relation === "reported_effect_of"
+    && (from.data?.assertion_kind !== "reported_outcome" || to.data?.assertion_kind !== "reported_action")) return "INTENTION_CONFUSED_WITH_EFFECTIVE_ACTION";
+  return null;
+}
+
 /** Apply source-linked proposals without merging identities or rewriting claims/time. */
 export function applyReconciliationResult({ graph, result, receipt }) {
   const checked = validateReconciliationResult(result, graph);
   invariant(receipt?.completion_status === "completed" && receipt.target_generation === graph.generation
     && typeof receipt.receipt_id === "string", "RECONCILIATION_RECEIPT_INVALID");
   const next = structuredClone(graph);
+  const nodes = new Map(next.nodes.map((node) => [node.id, node]));
   const existing = new Map(next.edges.map(e => [`${e.relation}\0${e.from}\0${e.to}`, e]));
   const deferred = [];
   for (const proposal of checked.proposals) {
@@ -48,6 +66,11 @@ export function applyReconciliationResult({ graph, result, receipt }) {
       relation: proposal.relation, from, to, evidence_ids: [...new Set(proposal.evidence_ids)],
       basis: proposal.relation === "reported_effect_of" ? "author_attribution" : "derived_proposal",
       derivation_ref: receipt.receipt_id };
+    const violation = edgeRuleViolation(nodes, edge);
+    if (violation) {
+      deferred.push({ ...structuredClone(proposal), deferred_reason: violation });
+      continue;
+    }
     next.edges.push(edge); existing.set(identity,edge);
   }
   // Retelling support is counted by connected episode groups. Source occurrences

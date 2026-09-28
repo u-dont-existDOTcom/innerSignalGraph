@@ -430,3 +430,32 @@ test("quota, revocation and missing fresh-context route block only the affected 
     });
   }
 });
+
+test("an authorization failure before a call spends no attempt and leaves nothing unknown", async () => {
+  const { createDurableJournalInferencePort } = await import("../src/journal-import/durable-inference.mjs");
+  const store = await temporaryStore();
+  let calls = 0;
+  const handlers = { extractor: () => { calls += 1; return completeExtraction(); }, omission_checker: omissionResult, reconciler: reconciliationResult };
+  const open = (deny) => {
+    // A fresh process: the provider port's own memory is empty, as after a restart.
+    const inferencePort = createDurableJournalInferencePort({ port: createMockJournalInferencePort({ handlers }), corpusStore: store });
+    return createJournalImportController({
+      ledger: createCorpusJournalJobLedger({ corpusStore: store, jobId: "job:synthetic" }),
+      inferencePort, controllerSecret: Buffer.alloc(32, 43), grant,
+      beforeInvoke: async () => { if (deny) throw Object.assign(new Error("synthetic expired authorization"), { code: "PRIVATE_CASE_ACCESS_DENIED" }); }
+    });
+  };
+  const first = open(true);
+  await first.initialize(initialization());
+  await assert.rejects(first.runUntilBlocked(), { code: "PRIVATE_CASE_ACCESS_DENIED" });
+  const stopped = await createCorpusJournalJobLedger({ corpusStore: store, jobId: "job:synthetic" }).load();
+  assert.deepEqual(stopped.snapshot.work_items.map(({ status, attempts }) => [status, attempts]), [["planned", 0], ["planned", 0], ["planned", 0]]);
+  assert.equal(calls, 0);
+  first.close();
+  const second = open(false);
+  const done = await second.runUntilBlocked();
+  assert.deepEqual(done.snapshot.work_items.map(({ status }) => status), ["completed", "completed", "completed"]);
+  assert.equal(calls, 1);
+  second.close();
+  store.close();
+});
