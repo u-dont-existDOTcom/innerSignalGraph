@@ -147,7 +147,10 @@ export function createJournalImportController({
   grant,
   promptVersion = "1.0",
   modelProfile = "mock-deterministic",
-  afterInvokeBeforeCheckpoint = null
+  afterInvokeBeforeCheckpoint = null,
+  // Runs before an intent is recorded. A failure here, such as an expired authorization, stops the
+  // step with nothing persisted: no attempt is spent and no call is left in an unknown state.
+  beforeInvoke = null
 }) {
   invariant(ledger && typeof ledger.load === "function" && typeof ledger.append === "function", "JOURNAL_LEDGER_INVALID");
   invariant(inferencePort && typeof inferencePort.invoke === "function" && typeof inferencePort.getCompletion === "function", "INFERENCE_PORT_INVALID");
@@ -320,6 +323,7 @@ export function createJournalImportController({
       grant_purpose: grant.purpose,
       ...roleInput
     });
+    if (beforeInvoke) await beforeInvoke({ work: clone(work) });
     const packetDigest = sha256(Buffer.from(JSON.stringify(packet), "utf8"));
     const baseOperationKey = `journal:${work.work_id.slice(5, 45)}:${packetDigest.slice(0, 32)}`;
     const operationKey = work.status === "invalid_output" ? `${baseOperationKey}:reserialize`

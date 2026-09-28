@@ -593,3 +593,72 @@ test('a page whose reading order needs review is indexed as partly readable', as
  try { assert.equal((await runtime.execute('stage')).completion.raw_search_available,'pass'); }
  finally { await runtime.close(); }
 });
+
+test('an extractor that asks for smaller windows gets its batch split instead of stopping the run', async t => {
+ const f=await fixture(t);
+ const texts=['Synthetic one.','Synthetic two.','Synthetic three.','Synthetic four.'];
+ const config={...f.config,semantic_batching:{calibration_maximum_units:4}};
+ const parser=async()=>({source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'text/plain'},parser:{version:'synthetic-split'},
+  pages:texts.map((_,i)=>({page_number:i+1,representation_id:'synthetic:page:'+i,disposition:'readable',warnings:[],image_inventory:[]})),
+  representations:texts.map((text,i)=>({representation_id:'synthetic:page:'+i,text,utf8_byte_length:Buffer.byteLength(text)}))});
+ const sizes=[];
+ const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,assessments:[],proposed_repairs:[],unassessed_ids:[],status:'sufficient_for_stated_scope'});
+ const handlers={
+  reference_reader:()=>({schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]}),
+  // More than two units is "too long": the extractor reports incomplete, as its instructions ask.
+  extractor:p=>{sizes.push(p.core_units.length);const tooLong=p.core_units.length>2;
+   return {schema_version:'1.0',status:tooLong?'incomplete':'complete',assertions:[],entities:[],episodes:[],
+    coverage:p.core_units.map((u,i)=>({unit_id:u.unit_id,disposition:tooLong&&i>1?'pending':'no_assertion',assertion_local_ids:[],reason:'Synthetic split fixture.'})),requested_context:[]};},
+  omission_checker:p=>review('omission_checker',p),fidelity_auditor:p=>review('fidelity_auditor',p),
+  reconciler:p=>({schema_version:'1.0',target_generation:p.expected_generation,proposals:[],unresolved_ids:[],status:'proposals_complete'})
+ };
+ const runtime=await openJournalExecutionRuntime({...f,config,sourceParser:parser,inferencePort:createMockJournalInferencePort({handlers})});
+ try {
+  const summary=await runtime.execute('run');
+  assert.equal(summary.completed_units,4);
+  assert.equal(summary.blocker,null);
+  assert.equal(summary.completion.graph_built,'pass');
+ } finally { await runtime.close(); }
+ assert.deepEqual(sizes,[4,2,2]);
+});
+
+test('a page read only in part is kept and counted, and a page no reading binds to is excluded and counted',async t=>{
+ const f=await fixture(t);
+ const pages=[1,2,3];
+ const parser=async()=>({
+  source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'application/pdf'},
+  parser:{version:'synthetic-scan'},
+  pages:pages.map(n=>({page_number:n,representation_id:'synthetic:scan:'+n,disposition:'visual_pending',
+   warnings:['no_native_text'],image_inventory:[{kind:'scan'}],geometry:{width:100,height:100}})),
+  representations:pages.map(n=>({representation_id:'synthetic:scan:'+n,text:'',utf8_byte_length:0}))
+ });
+ const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==','base64');
+ const reads=[];
+ // Page 1 reads fully. Page 2 has an unreadable region. Page 3's reading always names the wrong
+ // page. Page 1's first reading also names the wrong page, and its second is used.
+ const port=createMockJournalInferencePort({handlers:{visual_reader:p=>{
+  const page=p.assigned_core_ids[0];reads.push(page);
+  const wrong=page==='page:3'||(page==='page:1'&&reads.filter(r=>r==='page:1').length===1);
+  return {schema_version:'1.0',source_page_id:wrong?'page:99':page,
+   regions:[{region_id:'region:scan',bbox:[0,0,1,1],kind:page==='page:2'?'unreadable':'text',
+    transcription:page==='page:2'?null:'Handwritten synthetic line.',non_graphic_description:null,
+    interpretation_status:page==='page:2'?'unreadable':'readable',speaker_or_document_label:null,table_cells:[]}],
+   page_complete:page!=='page:2',missing_or_uncertain_regions:page==='page:2'?['region:scan']:[]};
+ }}});
+ const runtime=await openJournalExecutionRuntime({...f,sourceParser:parser,renderVisualPage:async()=>image,inferencePort:port});
+ try {
+  const result=await runtime.execute('visual-only');
+  assert.deepEqual([result.stage,result.completed_visual_pages,result.blocker],['REFERENCE_AUDIT',3,null]);
+  assert.deepEqual(result.residuals,{excluded_visual_pages:1,partial_visual_pages:1});
+  assert.deepEqual(reads.filter(r=>r==='page:1').length,2);
+  assert.deepEqual(reads.filter(r=>r==='page:3').length,3);
+ } finally { await runtime.close(); }
+ const checkpoint=JSON.parse(await fs.readFile(path.join(f.config.execution_root,'state.json')));
+ const key=await fs.readFile(path.join(f.config.execution_root,'staging.key'));
+ const store=createPrivateJournalCorpusStore({rootDir:f.config.execution_root,caseId:checkpoint.case_id,corpusId:checkpoint.corpus_id,corpusKey:key});
+ try {
+  // The partly read page keeps its reading; the excluded page has none in the plan.
+  const plan=JSON.parse((await store.reassembleOriginal(checkpoint.visual_plan_ref)).toString());
+  assert.deepEqual([...new Set(plan.units.filter(u=>u.visual).map(u=>u.page_number))].sort(),[1,2]);
+ } finally { store.close();key.fill(0); }
+});

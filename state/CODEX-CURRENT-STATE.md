@@ -2,6 +2,46 @@
 
 Updated: 2026-09-27
 
+## Journal import runs that can finish — `claude/journal-import-finishes-20260927`
+
+- **Goal:** a real journal import reaches a committed generation instead of stopping for good at the first ordinary outcome of real material. Before this, each of these stopped the run permanently, because the stored answer failed the same check on every later run:
+  - a reference that misquotes its source;
+  - a page read only in part;
+  - a reconciler that can't settle a common name from its bounded view;
+  - an audit finding;
+  - a restricted unit in the pattern check;
+  - a disputed pattern.
+- **Base:** main, after the move (#94) and the exchange provider.
+- **Done, don't repeat:**
+  - Authorization is checked before intent is persisted (controller `beforeInvoke`). A byte-order mark in a text source is ignored. Incomplete multi-unit batches are split. Reconciliation proposals that break edge rules are deferred instead of failing the batch.
+  - A step whose answer fails a check after it returns is asked again under a new attempt ID, up to three times. A rerun replays the stored attempts without resending them. A job whose output stays invalid through its own retries counts as a failed attempt. Any other stop (quota, an unknown completion, revocation, a first invalid answer the job will retry) still pauses the run.
+  - After the last attempt:
+    - calibration's reference splits its batch, then stops with `CALIBRATION_REFERENCE_UNRESOLVED`, since calibration stays the gate;
+    - a visual page no reading binds to is excluded and counted;
+    - a reconciliation batch stays unreconciled and counted;
+    - an audited unit is recorded as unassessed and counted;
+    - a pattern batch is recorded as unresolved, and its candidates stay out of the graph.
+  - A page read only in part keeps its reading, with its unreadable regions listed, and is counted.
+  - Reconciliation's `needs_context` no longer makes the graph partial. Only a unit whose extraction stayed unresolved does.
+  - Audit findings are recorded and counted; they no longer stop the run.
+  - A disputed pattern settles its review: it is kept, marked disputed. `patterns_reviewed` is partial only when a batch or a review stayed unresolved. A restricted unit may stay unassessed in the pattern source freeze.
+  - Patterns are built from the units whose extraction resolved, and commit accepts partial stages. The run summary carries `residuals`, content-free counts of everything that finished without being resolved.
+- **Owner decisions this carries (flagged in the PR):**
+  - commit with labeled partials instead of holding everything back;
+  - keep disputed patterns, marked disputed;
+  - count identity questions that can't be settled, instead of letting them block.
+  The owner was told on 2026-09-28; the merge approval is the checkpoint.
+- **Verified:**
+  - The new `tests/journal-runtime-finish.test.mjs` is the first test to drive a synthetic import from intake to a committed generation through `run`, `audit`, `patterns` and `commit`, both cleanly and with each outcome above.
+  - New pattern-stage and visual tests.
+  - The full gates are listed in the PR.
+- **Known gaps:**
+  - the hardest-case lane (Opus) before a residual is labeled;
+  - the visual job ledger holds the page image, which is over 4 MiB for a large page;
+  - a transport error after the controller's retries still stops its job for good;
+  - the 64-result cap on the counterevidence search leaves a broad pattern provisional.
+- **Next safe action:** Codex review, then owner approval naming the PR. Then the escalation lane.
+
 ## Journal import through the connector: the exchange provider — `claude/journal-exchange-provider-20260927`
 
 - **Goal:** run the private journal import through ChatGPT with known completion, replacing the desktop-app transport whose runs each ended on "completion unknown" after one step.

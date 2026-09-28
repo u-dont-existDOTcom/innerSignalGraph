@@ -166,8 +166,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     await semanticPort.prepare?.();
     port = createDurableJournalInferencePort({ port: {
       capabilities: () => semanticPort.capabilities(),
+      // Authorization is checked before a call's intent is recorded (the controller's beforeInvoke,
+      // and at the start of every work step), never between the intent and the call: a failure there
+      // would leave a call that never went out looking unanswered forever.
       async invoke(input) {
-        await authorize();
         const result = await semanticPort.invoke(input);
         // A grant may change during a long application call. Recheck before the
         // durable port admits its result or a dependent role receives it.
@@ -218,7 +220,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (prior) { invariant(canonical(prior) === canonical(value), "JOURNAL_IMMUTABLE_RESULT_CONFLICT"); return prior; }
       await store.writeJsonObject({ objectId: id, value }); return value;
     };
-    const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration, completed_units: state.completed_units.length, completed_visual_pages: state.completed_visual_pages.length, total_units: state.total_units ?? 0, required_visual_pages: state.required_visual_pages ?? 0, completion: structuredClone(state.completion), blocker: state.blocker, external_spend_usd: 0 });
+    const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration, completed_units: state.completed_units.length, completed_visual_pages: state.completed_visual_pages.length, total_units: state.total_units ?? 0, required_visual_pages: state.required_visual_pages ?? 0, completion: structuredClone(state.completion), blocker: state.blocker, residuals: structuredClone(state.residuals ?? {}), external_spend_usd: 0 });
 
     async function synchronizeHazards(plan) {
       const pages = new Set([...(config.visual_hazard_pages ?? []), ...(config.parser_hazard_pages ?? [])]);
@@ -307,7 +309,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       state.completion.raw_search_available = "pass"; await save();
     }
 
+    // Set when work() returns null because its job can never answer (the output stayed invalid
+    // through every retry the job allows), as opposed to a pause the next run may resolve.
+    let workExhausted = false;
     async function work({ id, role, stage: workStage, unit = null, units = null, packetInput, dependencies = [], acceptReviewFindings = false }) {
+      workExhausted = false;
       await authorize();
       const scopeUnits = Array.isArray(units) ? units : (unit ? [unit] : []);
       invariant(scopeUnits.length > 0, "JOURNAL_WORK_SCOPE_INVALID");
@@ -337,7 +343,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const firstFailure = await readIfPresent(`reference:failure:${id}:1`);
         const secondFailure = await readIfPresent(`reference:failure:${id}:2`);
         if (secondFailure) {
-          state.stage = workStage; state.blocker = "INVALID_STRUCTURED_OUTPUT"; await save(); return null;
+          state.stage = workStage; state.blocker = "INVALID_STRUCTURED_OUTPUT"; workExhausted = true; await save(); return null;
         }
         const baseKey = firstFailure ? `${id}:reserialize` : id;
         let operationKey = baseKey;
@@ -368,7 +374,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           if (error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid") {
             const attempt = firstFailure ? 2 : 1;
             await writeOnce(`reference:failure:${id}:${attempt}`, { status: "invalid_output", operation_key: operationKey, attempt });
-            state.stage = workStage; state.blocker = "INVALID_STRUCTURED_OUTPUT"; await save(); return null;
+            state.stage = workStage; state.blocker = "INVALID_STRUCTURED_OUTPUT"; workExhausted = attempt === 2; await save(); return null;
           }
           if (error.code === "COMPLETION_UNKNOWN") {
             await writeOnce(`reference:completion-unknown:${operationKey}`, { status: "completion_unknown", operation_key: operationKey });
@@ -387,17 +393,54 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         return [result];
       }
       const ledger = createCorpusJournalJobLedger({ corpusStore: store, jobId: id });
-      const controller = createJournalImportController({ ledger, inferencePort: port, controllerSecret: key, grant, promptVersion: `1.0:${hash(id).slice(0, 24)}`, modelProfile: route?.model ?? "synthetic" });
+      const controller = createJournalImportController({ ledger, inferencePort: port, controllerSecret: key, grant, promptVersion: `1.0:${hash(id).slice(0, 24)}`, modelProfile: route?.model ?? "synthetic", beforeInvoke: authorize });
       try {
         if (!(await ledger.load())) await controller.initialize({ jobId: id, caseId, corpusId: state.corpus_id, generation: state.generation, workDefinitions: [{ key: role, stage: workStage, role, identity, assigned_core_ids: assignedCoreIds, source_locators: sourceLocators, packet_input: packetInput }, ...dependencies] });
         const entry = await controller.runUntilBlocked({ maximumSteps: 8 });
         const unfinished = entry.snapshot.work_items.find((item) => item.status !== "completed");
-        if (unfinished && !(acceptReviewFindings && entry.snapshot.work_items.every(item => item.output && item.receipt))) {
-          state.stage = unfinished.stage; state.blocker = entry.snapshot.checkpoint.blocked_reason ?? "OUTPUT_INCOMPLETE"; await save();
+        // A primary output that asks for smaller windows or more context parks its job, and its
+        // reviewers never run. The caller repairs or splits such a batch, so it is handed back
+        // rather than stopping the run for good.
+        const [primary] = entry.snapshot.work_items;
+        const parked = acceptReviewFindings && primary?.status === "needs_context" && primary.output && primary.receipt;
+        if (unfinished && !parked && !(acceptReviewFindings && entry.snapshot.work_items.every(item => item.output && item.receipt))) {
+          state.stage = unfinished.stage; state.blocker = entry.snapshot.checkpoint.blocked_reason ?? "OUTPUT_INCOMPLETE";
+          workExhausted = unfinished.status === "blocked_authority" && state.blocker === "INVALID_STRUCTURED_OUTPUT";
+          await save();
           return null;
         }
-        return entry.snapshot.work_items.map((item) => ({ output: item.output, receipt: item.receipt }));
+        return entry.snapshot.work_items.map((item) => ({ output: item.output ?? null, receipt: item.receipt ?? null }));
       } finally { controller.close(); }
+    }
+
+    const CHECKED_ATTEMPTS = 3;
+    const checkFailure = (check, value) => {
+      try { check(value); return null; }
+      catch (error) {
+        if (error instanceof ValidationError) return error.code ?? "WORK_OUTPUT_INVALID";
+        throw error;
+      }
+    };
+    // A work result is used only once it passes its check. Each attempt has its own ID, so a rerun
+    // replays the stored attempts in order, neither using a failed one nor sending it again. After
+    // the last attempt the caller decides what the unresolved step means for its stage, instead of
+    // the same stored answer failing the same check on every run.
+    async function checkedWork(request, check = () => {}) {
+      let failure = null;
+      for (let attempt = 1; attempt <= CHECKED_ATTEMPTS; attempt += 1) {
+        const result = await work({ ...request, id: attempt === 1 ? request.id : `${request.id}:attempt:${attempt}` });
+        if (!result) {
+          // A job that can never answer is a failed attempt. Any other stop (quota, an unknown
+          // completion, revocation, a first invalid answer the job will retry) pauses the run.
+          if (!workExhausted) return { blocked: true };
+          failure = state.blocker;
+          state.blocker = null;
+          continue;
+        }
+        failure = checkFailure(check, result);
+        if (!failure) return { result };
+      }
+      return { failure };
     }
 
     async function runBatched(plan) {
@@ -559,22 +602,37 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         let reference = null;
         if (calibration) {
-          const frozen = await work({
+          const frozen = await checkedWork({
             id: `reference:calibration:batch:${keyId}`,
             role: "reference_reader",
             stage: "REFERENCE_AUDIT",
             units,
             packetInput: { source_windows: core, adjacent_context: adjacentContext, visual_context: visualContext, neutral_reading_instructions: [] }
-          });
-          if (!frozen) return false;
-          reference = frozen[0];
-          for (const item of reference.output.reference_items) {
-            for (const anchor of item.anchors) {
-              const unit = units.find((candidate) => candidate.unit_id === anchor.unit_id);
-              invariant(unit, "REFERENCE_ANCHOR_OUTSIDE_SOURCE_PACKET");
-              resolveExactQuote(unit.text, anchor.quote, anchor.occurrence);
+          }, ([saved]) => {
+            for (const item of saved.output.reference_items) {
+              for (const anchor of item.anchors) {
+                const unit = units.find((candidate) => candidate.unit_id === anchor.unit_id);
+                invariant(unit, "REFERENCE_ANCHOR_OUTSIDE_SOURCE_PACKET");
+                resolveExactQuote(unit.text, anchor.quote, anchor.occurrence);
+              }
             }
+          });
+          if (frozen.blocked) return false;
+          // A reference that never quotes its source exactly: smaller batches are read again, and a
+          // single unit stops calibration with its own blocker, since calibration is the gate that
+          // decides whether the run goes on at all.
+          if (frozen.failure && units.length > 1) {
+            const middle = Math.ceil(units.length / 2);
+            return await processBatch(units.slice(0, middle), calibration)
+              && await processBatch(units.slice(middle), calibration);
           }
+          if (frozen.failure) {
+            state.stage = "REFERENCE_AUDIT";
+            state.blocker = "CALIBRATION_REFERENCE_UNRESOLVED";
+            await save();
+            return false;
+          }
+          reference = frozen.result[0];
         }
         let results, repairRequest, split, graphsByUnit, bindingFailure;
         for (let cycle = 0; cycle <= 2; cycle += 1) {
@@ -607,6 +665,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             acceptReviewFindings: true
           });
           if (!results) return false;
+          // The extractor asked for smaller windows or more context: split a batch of several units
+          // at once instead of asking again for the same window.
+          if (["incomplete", "needs_context"].includes(results[0].output?.status) && units.length > 1) {
+            const middle = Math.ceil(units.length / 2);
+            return await processBatch(units.slice(0, middle), calibration)
+              && await processBatch(units.slice(middle), calibration);
+          }
           bindingFailure = null;
           try {
             split = splitBatchExtractionByUnit({ extraction: results[0].output, unitIds: units.map((unit) => unit.unit_id) });
@@ -888,18 +953,33 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const page = plan.parsed.pages.find((p) => p.page_number === pageNumber);
           const image = await renderVisualPage(await archivedSource(), pageNumber);
           const native = plan.parsed.representations.find((r) => r.representation_id === page.representation_id);
-          const result = await work({ id: `visual:${pageNumber}`, role: "visual_reader", stage: "VISUAL_READ", unit: { unit_id: `page:${pageNumber}`, representation_id: page.representation_id, start_byte: 0, end_byte: image.length, page_number: pageNumber }, packetInput: { page_image_ref: { kind: "inline_image", media_type: "image/png", data_base64: image.toString("base64"), sha256: hash(image) }, page_geometry: page.geometry, native_text_rendering: native.text, neighbor_pages: [] } });
-          if (!result) return summary();
-          invariant(result[0].output.source_page_id === `page:${pageNumber}`, "VISUAL_PAGE_BINDING_MISMATCH");
-          invariant(result[0].output.page_complete, "VISUAL_PAGE_INCOMPLETE");
-          await writeOnce(`visual:result:${pageNumber}`, result[0]);
-          const imageRef = await store.writeChunkedOriginal({ objectId: `visual:image:${pageNumber}`, bytes: image });
-          await writeOnce(`visual:image-ref:${pageNumber}`, imageRef);
+          const read = await checkedWork({ id: `visual:${pageNumber}`, role: "visual_reader", stage: "VISUAL_READ", unit: { unit_id: `page:${pageNumber}`, representation_id: page.representation_id, start_byte: 0, end_byte: image.length, page_number: pageNumber }, packetInput: { page_image_ref: { kind: "inline_image", media_type: "image/png", data_base64: image.toString("base64"), sha256: hash(image) }, page_geometry: page.geometry, native_text_rendering: native.text, neighbor_pages: [] } },
+            ([saved]) => invariant(saved.output.source_page_id === `page:${pageNumber}`, "VISUAL_PAGE_BINDING_MISMATCH"));
+          if (read.blocked) return summary();
+          if (read.failure) {
+            // No reading of this page could be bound to it. Its native text, if any, stays in the
+            // plan; the page is recorded as excluded from visual reading, not left to stop the run.
+            state.excluded_visual_pages ??= [];
+            if (!state.excluded_visual_pages.includes(pageNumber)) state.excluded_visual_pages.push(pageNumber);
+          } else {
+            // A page read only in part keeps its reading, with the regions it could not read listed
+            // in it; it is counted, so the report says how many pages are partly read.
+            await writeOnce(`visual:result:${pageNumber}`, read.result[0]);
+            const imageRef = await store.writeChunkedOriginal({ objectId: `visual:image:${pageNumber}`, bytes: image });
+            await writeOnce(`visual:image-ref:${pageNumber}`, imageRef);
+            if (read.result[0].output.page_complete !== true) {
+              state.partial_visual_pages ??= [];
+              if (!state.partial_visual_pages.includes(pageNumber)) state.partial_visual_pages.push(pageNumber);
+            }
+          }
+          state.residuals = { ...(state.residuals ?? {}), excluded_visual_pages: state.excluded_visual_pages?.length ?? 0,
+            partial_visual_pages: state.partial_visual_pages?.length ?? 0 };
           state.completed_visual_pages.push(pageNumber); state.stage = "VISUAL_READ"; state.blocker = null; await save();
         }
       } finally { verifiedSource?.fill(0); }
       if (!state.visual_plan_ref) {
         for (const pageNumber of plan.visual_pages) {
+          if (state.excluded_visual_pages?.includes(pageNumber)) continue;
           const visual = await readIfPresent(`visual:result:${pageNumber}`);
           const image = await readIfPresent(`visual:image-ref:${pageNumber}`);
           const text = JSON.stringify(visual.output);
@@ -1056,7 +1136,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             await save();
             return summary();
           }
-          const result = await work({
+          const reconciled = await checkedWork({
             id: state.reconciliation_mode === 'per_unit_v1'
               ? 'reconcile:' + unitIds[0] : 'reconcile:batch:' + keyId,
             role: 'reconciler',
@@ -1065,24 +1145,27 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               ? { unit: batch.units[0] } : { units: batch.units }),
             packetInput: input,
             acceptReviewFindings: true
-          });
-          if (!result) return summary();
-          validateReconciliationResult(result[0].output, neighborhood);
-          saved = await writeOnce(batchRef, {
-            ...result[0],
+          }, ([primary]) => validateReconciliationResult(primary.output, neighborhood));
+          if (reconciled.blocked) return summary();
+          const scope = {
             selected_unit_ids: [...selected],
             neighborhood_complete: omittedNeighbors.size === 0,
             batch_unit_ids: unitIds
-          });
+          };
+          // No attempt gave a usable proposal set: the batch's identities and relations stay as
+          // extracted, unreconciled, which leaves the graph valid; the report counts it.
+          saved = await writeOnce(batchRef, reconciled.failure
+            ? { unresolved: reconciled.failure, ...scope }
+            : { ...reconciled.result[0], ...scope });
           savedRef = batchRef;
         }
         for (const unit of batch.units) {
           if (!(await readIfPresent('reconcile:result:' + unit.unit_id)))
             await writeOnce('reconcile:result:' + unit.unit_id, saved);
         }
-        const applied = applyReconciliationResult({
-          graph, result: saved.output, receipt: saved.receipt
-        });
+        const applied = saved.unresolved
+          ? { graph, status: 'unresolved', unresolved_ids: [], deferred_proposals: [] }
+          : applyReconciliationResult({ graph, result: saved.output, receipt: saved.receipt });
         graph = applied.graph;
         state.reconciliation_completed ??= [];
         for (const unit of batch.units) {
@@ -1093,7 +1176,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             unresolved_ids: applied.unresolved_ids,
             deferred_proposals: applied.deferred_proposals,
             neighborhood_complete: saved.neighborhood_complete,
-            receipt_ref: saved.receipt.receipt_id
+            receipt_ref: saved.receipt?.receipt_id ?? null,
+            ...(saved.unresolved ? { reason: saved.unresolved } : {})
           });
           if (!state.reconciliation_completed.includes(unit.unit_id))
             state.reconciliation_completed.push(unit.unit_id);
@@ -1108,11 +1192,18 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       state.reconciliation_report_ref = await writeLarge(
         'reconciliation:report:' + randomUUID(), reports);
       state.graph_ref = state.reconciled_ref;
-      const unfinished = [...unitGraphs.values()].some(record => record.source_only_unresolved)
-        || reports.some(report => report.status !== 'proposals_complete');
-      state.completion.graph_built = unfinished ? 'partial' : 'pass';
+      // The graph is built once every unit has been through reconciliation. What reconciliation could
+      // not settle from its bounded view (needs_context), or could not propose at all, stays
+      // unresolved and is counted, as the reconciler's contract intends. Only a unit whose extraction
+      // stayed unresolved leaves the graph itself partial.
+      const sourceOnlyUnits = [...unitGraphs.values()].filter(record => record.source_only_unresolved).length;
+      state.completion.graph_built = sourceOnlyUnits > 0 ? 'partial' : 'pass';
+      state.residuals = { ...(state.residuals ?? {}),
+        source_only_units: sourceOnlyUnits,
+        reconciliation_needs_context_units: reports.filter(report => report.status === 'needs_context').length,
+        reconciliation_unresolved_units: reports.filter(report => report.status === 'unresolved').length };
       state.stage = 'REFERENCE_AUDIT';
-      state.blocker = unfinished ? 'JOURNAL_RECONCILIATION_SCOPE_UNRESOLVED' : null;
+      state.blocker = null;
       await save();
       return summary();
     }
@@ -1137,22 +1228,35 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (!report) {
           const visual = await readIfPresent(`visual:result:${unit.page_number}`);
           const original = [{ unit_id: unit.unit_id, text: unit.text }];
-          const frozen = await work({ id: `reference:final:${unit.unit_id}`, role: "reference_reader", stage: "REFERENCE_AUDIT", unit, packetInput: { source_windows: original, adjacent_context: unit.context, visual_context: visual ? [visual.output] : [], neutral_reading_instructions: [] } });
-          if (!frozen) return summary();
-          for (const item of frozen[0].output.reference_items) for (const anchor of item.anchors) {
-            invariant(anchor.unit_id === unit.unit_id, "REFERENCE_ANCHOR_OUTSIDE_SOURCE_PACKET"); resolveExactQuote(unit.text, anchor.quote, anchor.occurrence);
-          }
+          const frozen = await checkedWork({ id: `reference:final:${unit.unit_id}`, role: "reference_reader", stage: "REFERENCE_AUDIT", unit, packetInput: { source_windows: original, adjacent_context: unit.context, visual_context: visual ? [visual.output] : [], neutral_reading_instructions: [] } },
+            ([saved]) => {
+              for (const item of saved.output.reference_items) for (const anchor of item.anchors) {
+                invariant(anchor.unit_id === unit.unit_id, "REFERENCE_ANCHOR_OUTSIDE_SOURCE_PACKET"); resolveExactQuote(unit.text, anchor.quote, anchor.occurrence);
+              }
+            });
+          if (frozen.blocked) return summary();
           const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
-          const reconciliation = await readIfPresent(`reconcile:result:${unit.unit_id}`);
-          const scope = createReconciledAuditScope({ graph: frozenGraph, unitGraph: imported.graph,
-            derivationRef: reconciliation?.receipt.receipt_id, index: scopeIndex });
-          const fidelity = await work({ id: `fidelity:final:${unit.unit_id}`, role: "fidelity_auditor", stage: "REFERENCE_AUDIT", unit, packetInput: { frozen_reference: frozen[0].output, supporting_passages: [...original, ...scope.supporting_passages], imported_generation: { generation: state.generation, graph: scope.graph, assessment_target_ids: scope.assessment_target_ids } } });
-          if (!fidelity) return summary();
-          const freeze = { generation: state.generation, reference: frozen[0].output, receipt: frozen[0].receipt, freeze_ref: `freeze:${hash(JSON.stringify(frozen[0].output)).slice(0, 40)}` };
-          const certification = certifyIndependentAudit({ generation: state.generation, referenceFreeze: freeze, fidelityOutput: fidelity[0].output, fidelityReceipt: fidelity[0].receipt, producerReceipt: imported.extraction.receipt, grantId: grant.grant_id });
-          const score = scoreReferenceReview({ referenceResult: freeze.reference, reviewResult: fidelity[0].output, candidateIds: scope.assessment_target_ids });
-          const coverage = summarizeFidelityCoverage({ reference: freeze.reference, review: fidelity[0].output, candidateIds: scope.assessment_target_ids });
-          report = await writeOnce(`audit:result:${graphRevision}:${unit.unit_id}`, { graph_revision: graphRevision, freeze, fidelity: fidelity[0], certification, score, coverage, source_only_unresolved: imported.source_only_unresolved, calibration_overlap: plan.calibration.some(u => u.unit_id === unit.unit_id) });
+          const common = { graph_revision: graphRevision, source_only_unresolved: imported.source_only_unresolved, calibration_overlap: plan.calibration.some(u => u.unit_id === unit.unit_id) };
+          let outcome = null;
+          let unassessed = frozen.failure ?? null;
+          if (!unassessed) {
+            const reconciliation = await readIfPresent(`reconcile:result:${unit.unit_id}`);
+            const scope = createReconciledAuditScope({ graph: frozenGraph, unitGraph: imported.graph,
+              derivationRef: reconciliation?.receipt?.receipt_id, index: scopeIndex });
+            const reference = frozen.result[0];
+            const freeze = { generation: state.generation, reference: reference.output, receipt: reference.receipt, freeze_ref: `freeze:${hash(JSON.stringify(reference.output)).slice(0, 40)}` };
+            const assess = ([saved]) => ({
+              certification: certifyIndependentAudit({ generation: state.generation, referenceFreeze: freeze, fidelityOutput: saved.output, fidelityReceipt: saved.receipt, producerReceipt: imported.extraction.receipt, grantId: grant.grant_id }),
+              score: scoreReferenceReview({ referenceResult: freeze.reference, reviewResult: saved.output, candidateIds: scope.assessment_target_ids }),
+              coverage: summarizeFidelityCoverage({ reference: freeze.reference, review: saved.output, candidateIds: scope.assessment_target_ids })
+            });
+            const fidelity = await checkedWork({ id: `fidelity:final:${unit.unit_id}`, role: "fidelity_auditor", stage: "REFERENCE_AUDIT", unit, packetInput: { frozen_reference: reference.output, supporting_passages: [...original, ...scope.supporting_passages], imported_generation: { generation: state.generation, graph: scope.graph, assessment_target_ids: scope.assessment_target_ids } } }, assess);
+            if (fidelity.blocked) return summary();
+            if (fidelity.failure) unassessed = fidelity.failure;
+            else outcome = { freeze, fidelity: fidelity.result[0], ...assess(fidelity.result) };
+          }
+          // A unit no attempt could audit is recorded as unassessed, with the reason, and counted.
+          report = await writeOnce(`audit:result:${graphRevision}:${unit.unit_id}`, outcome ? { ...common, ...outcome } : { ...common, unassessed });
         }
         reports.push({ unit_id: unit.unit_id, ...report });
         if (!state.audit_completed.includes(unit.unit_id)) { state.audit_completed.push(unit.unit_id); state.stage = "REFERENCE_AUDIT"; await save(); }
@@ -1163,27 +1267,40 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         for (const key of ["preserved", "omitted", "distorted", "unassessed"]) out[key] += r.score.reference_counts[key] * weight;
         out.critical_misses += r.score.critical_miss_count * weight; out.qualifier_errors += r.score.qualifier_error_count * weight; return out;
       }, { preserved: 0, omitted: 0, distorted: 0, unassessed: 0, critical_misses: 0, qualifier_errors: 0 });
-      const sampled = reports.filter(r => probability.has(r.unit_id));
-      const auditReport = { generation: state.generation, graph_sha256: graphRevision, probability_unweighted: totals(sampled, false), probability_weighted: totals(sampled, true), targeted_unweighted: totals(reports.filter(r => sample.targeted_challenge.some(x => x.unit_id === r.unit_id)), false), population_recall_claim: false, reference_completeness: "unknown", reports };
+      const assessed = reports.filter(r => !r.unassessed);
+      const sampled = assessed.filter(r => probability.has(r.unit_id));
+      const auditReport = { generation: state.generation, graph_sha256: graphRevision, probability_unweighted: totals(sampled, false), probability_weighted: totals(sampled, true), targeted_unweighted: totals(assessed.filter(r => sample.targeted_challenge.some(x => x.unit_id === r.unit_id)), false), unassessed_unit_count: reports.length - assessed.length, population_recall_claim: false, reference_completeness: "unknown", reports };
       state.audit_report_ref = await writeLarge(`audit:report:${randomUUID()}`, auditReport);
-      state.completion.semantically_audited = reports.every(r => r.certification.semantically_audited === "pass" && r.coverage.complete) ? "pass" : "partial";
-      state.audit_repair_required = reports.some(r => r.coverage.repair_required || !r.coverage.complete);
-      state.stage = state.audit_repair_required ? "REFERENCE_AUDIT" : "PATTERN_BUILD";
-      state.blocker = state.audit_repair_required ? "JOURNAL_AUDIT_REPAIR_REQUIRED" : null;
+      state.completion.semantically_audited = reports.every(r => !r.unassessed && r.certification.semantically_audited === "pass" && r.coverage.complete) ? "pass" : "partial";
+      // Findings are recorded and counted rather than stopping the run: the audit measures a sample
+      // of the extraction, and the report carries what it found.
+      state.audit_repair_required = assessed.some(r => r.coverage.repair_required || !r.coverage.complete);
+      state.residuals = { ...(state.residuals ?? {}),
+        audit_unassessed_units: reports.length - assessed.length,
+        audit_repair_units: assessed.filter(r => r.coverage.repair_required || !r.coverage.complete).length };
+      state.stage = "PATTERN_BUILD";
+      state.blocker = null;
       await save(); return summary();
     }
 
     async function patterns() {
-      invariant(state.reconciled_ref && state.completion.graph_built === "pass"
-        && state.completion.semantically_audited === "pass" && !state.audit_repair_required,
+      // Patterns are built once the graph is reconciled and audited, whether or not either finished
+      // with residuals; those are counted in the report, not a reason to withhold the register.
+      invariant(state.reconciled_ref && state.audit_report_ref
+        && ["pass", "partial"].includes(state.completion.graph_built)
+        && ["pass", "partial"].includes(state.completion.semantically_audited),
         "JOURNAL_PATTERN_SOURCE_NOT_READY");
       if (state.reviewed_graph_ref) return summary();
       const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
       const graph = await readLarge(state.reconciled_ref);
+      // A unit whose extraction stayed unresolved has no assertions to build patterns from.
+      const units = [];
       const unitGraphs = [];
       for (const unit of plan.units) {
         const record = await readIfPresent(`unit:graph:${unit.unit_id}`);
-        invariant(record && !record.source_only_unresolved, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
+        invariant(record, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
+        if (record.source_only_unresolved) continue;
+        units.push(unit);
         unitGraphs.push({ unit_id: unit.unit_id, graph: record.graph });
       }
       const reader = await openPrivateJournalGraph({ corpusStore: store,
@@ -1193,7 +1310,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       let result;
       try {
         result = await runJournalPatternPass({
-          graph, units: plan.units, unitGraphs, sourceReader: reader, work,
+          graph, units, unitGraphs, sourceReader: reader, work,
+          stepFailure: () => (workExhausted ? state.blocker : null),
           readIfPresent, writeOnce, counterReceiptSecret: key,
           generation: state.generation,
           representations: Object.fromEntries(plan.parsed.representations.map(item =>
@@ -1203,19 +1321,27 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (result.status === "blocked") return summary();
       state.reviewed_graph_ref = await writeLarge(`pattern:reviewed:${randomUUID()}`, result.graph);
       state.pattern_report_ref = await writeLarge(`pattern:report:${randomUUID()}`,
-        { batches: result.batches, reports: result.reports, status: result.status });
+        { batches: result.batches, reports: result.reports, status: result.status, counts: result.counts });
+      // Pass: every candidate's review was settled, as reviewed or disputed. Partial: some batch or
+      // review stayed unresolved; the counts say how many, and the register holds only what was
+      // reviewed.
       state.completion.patterns_reviewed = result.status;
-      state.stage = result.status === "pass" ? "COMMIT" : "PATTERN_REVIEW";
-      state.blocker = result.status === "pass" ? null : "JOURNAL_PATTERN_REVIEW_UNRESOLVED";
+      state.residuals = { ...(state.residuals ?? {}), ...result.counts };
+      state.stage = "COMMIT";
+      state.blocker = null;
       await save();
       return summary();
     }
 
     async function commit() {
+      // Every stage ran to its end. A stage that ended with residuals (a unit left source-only, audit
+      // findings, an unresolved pattern batch) is committed as partial, with its counts in the
+      // summary, rather than holding back everything that did resolve.
+      const finished = (status) => ["pass", "partial"].includes(status);
       invariant(state.calibration === "pass" && state.completion.archive_verified === "pass"
-        && state.completion.raw_search_available === "pass" && state.completion.graph_built === "pass"
-        && state.completion.semantically_audited === "pass" && !state.audit_repair_required
-        && state.completion.patterns_reviewed === "pass" && state.reviewed_graph_ref,
+        && state.completion.raw_search_available === "pass" && finished(state.completion.graph_built)
+        && finished(state.completion.semantically_audited) && finished(state.completion.patterns_reviewed)
+        && state.reviewed_graph_ref,
         "JOURNAL_REVIEWED_GENERATION_NOT_READY");
       const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
       invariant(plan.units.every(u => state.completed_units.includes(u.unit_id))

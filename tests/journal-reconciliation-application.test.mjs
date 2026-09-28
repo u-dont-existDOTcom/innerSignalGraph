@@ -24,3 +24,19 @@ test('untyped, unsupported, wrong-kind, stale-generation and self links cannot e
  for(const p of [proposal('possible_identity','possible_same_entity',['episode:a','episode:b']),proposal('group_retelling','retells',['assertion:a','assertion:b']),proposal('link','causes',['assertion:a','assertion:b']),proposal('link','qualifies',['assertion:a','assertion:a']),{...proposal('link','qualifies',['assertion:a','assertion:b']),evidence_ids:[]}])assert.throws(()=>validateReconciliationResult(result([p]),graph()));
  assert.throws(()=>applyReconciliationResult({graph:graph(),result:result([]),receipt:{...receipt,target_generation:'stale'}}),{code:'RECONCILIATION_RECEIPT_INVALID'});
 });
+test('proposals the graph would reject are deferred with their reason, and valid ones still apply',()=>{
+ const g=graph();
+ g.nodes.find(n=>n.id==='assertion:a').data.assertion_kind='direct_report';
+ g.nodes.find(n=>n.id==='assertion:b').data.assertion_kind='explicit_correction';
+ g.nodes.find(n=>n.id==='assertion:c').data.assertion_kind='reported_action';
+ const proposals=[
+  proposal('link','corrects',['assertion:a','assertion:c']),
+  proposal('link','corrects',['assertion:b','assertion:a']),
+  proposal('link','reported_effect_of',['assertion:a','assertion:c']),
+  proposal('link','supported_by',['assertion:a','passage:a'])
+ ];
+ const applied=applyReconciliationResult({graph:g,result:result(proposals),receipt});
+ assert.deepEqual(applied.graph.edges.map(e=>[e.relation,e.from,e.to]),[['corrects','assertion:b','assertion:a']]);
+ assert.deepEqual(applied.deferred_proposals.map(p=>p.deferred_reason),
+  ['CORRECTION_WITHOUT_CORRECTION_ASSERTION','INTENTION_CONFUSED_WITH_EFFECTIVE_ACTION','RECONCILIATION_EVIDENCE_EDGE']);
+});
