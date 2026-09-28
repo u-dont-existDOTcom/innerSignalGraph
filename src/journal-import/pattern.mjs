@@ -218,10 +218,12 @@ export function reviewPatternRegister({
   const assessments = new Map(review.assessments.map((assessment) => [assessment.target_id, assessment]));
   const next = structuredClone(graph);
   const decisions = [];
+  let counterevidenceVerified = true;
   for (const pattern of next.nodes.filter((node) => active(node) && node.kind === "pattern")) {
     const assessment = assessments.get(pattern.id);
     const counterReceipt = counterevidenceReceipts[pattern.id];
     const counterVerified = verifyCounterReceipt(counterReceipt, counterReceiptSecret, graph.generation, pattern.id);
+    counterevidenceVerified &&= counterVerified;
     const unsupported = !assessment || assessment.outcome !== "preserved" || assessment.critical
       || ["unsupported_claim", "causal_promotion", "duplicate_support", "lost_qualifier"].includes(assessment.finding_type);
     if (receiptReasons.length === 0 && counterVerified && !unsupported && review.status === "sufficient_for_stated_scope") {
@@ -241,5 +243,10 @@ export function reviewPatternRegister({
       ] });
     }
   }
-  return Object.freeze({ graph: next, decisions, patterns_reviewed: decisions.every(({ decision }) => decision === "reviewed") ? "pass" : "partial" });
+  return Object.freeze({
+    graph: next,
+    decisions,
+    review_evidence_verified: receiptReasons.length === 0 && counterevidenceVerified,
+    patterns_reviewed: decisions.every(({ decision }) => decision === "reviewed") ? "pass" : "partial"
+  });
 }

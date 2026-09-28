@@ -175,6 +175,9 @@ export async function runJournalPatternPass({
       }
       requireValue(added.created_pattern_ids.every(id => assessmentCounts.get(id) === 1),
         "PATTERN_REVIEW_INCOMPLETE");
+      // Semantic disagreement is a settled result, but it cannot substitute for authenticated,
+      // independent review and a verified counterevidence search.
+      requireValue(decision.review_evidence_verified === true, "PATTERN_REVIEW_EVIDENCE_INVALID");
       requireValue(decision.decisions.every(({ decision: outcome }) => SETTLED_DECISIONS.has(outcome)),
         "PATTERN_REVIEW_INCOMPLETE");
       return decision;

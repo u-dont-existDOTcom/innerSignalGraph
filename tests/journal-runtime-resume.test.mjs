@@ -663,7 +663,7 @@ test('an extractor that asks for smaller windows gets its batch split instead of
  assert.deepEqual(sizes,[4,2,2]);
 });
 
-test('a page read only in part is kept and counted, and a page no reading binds to is excluded and counted',async t=>{
+test('an incomplete visual inventory is retried while a complete inventory may retain unreadable regions',async t=>{
  const f=await fixture(t);
  const pages=[1,2,3];
  const parser=async()=>({
@@ -675,30 +675,34 @@ test('a page read only in part is kept and counted, and a page no reading binds 
  });
  const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==','base64');
  const reads=[];
- // Page 1 reads fully. Page 2 has an unreadable region. Page 3's reading always names the wrong
- // page. Page 1's first reading also names the wrong page, and its second is used.
+ // Page 1 reads fully. Page 2 omits a disposition twice, then completely inventories its unreadable
+ // region. Page 3's reading always names the wrong page. Page 1's first reading also names the
+ // wrong page, and its second is used.
  const port=createMockJournalInferencePort({handlers:{visual_reader:p=>{
   const page=p.assigned_core_ids[0];reads.push(page);
   const wrong=page==='page:3'||(page==='page:1'&&reads.filter(r=>r==='page:1').length===1);
+  const pageTwoComplete=page!=='page:2'||reads.filter(r=>r==='page:2').length===3;
   return {schema_version:'1.0',source_page_id:wrong?'page:99':page,
    regions:[{region_id:'region:scan',bbox:[0,0,1,1],kind:page==='page:2'?'unreadable':'text',
     transcription:page==='page:2'?null:'Handwritten synthetic line.',non_graphic_description:null,
     interpretation_status:page==='page:2'?'unreadable':'readable',speaker_or_document_label:null,table_cells:[]}],
-   page_complete:page!=='page:2',missing_or_uncertain_regions:page==='page:2'?['region:scan']:[]};
+   page_complete:pageTwoComplete,missing_or_uncertain_regions:page==='page:2'?['region:scan']:[]};
  }}});
  const runtime=await openJournalExecutionRuntime({...f,sourceParser:parser,renderVisualPage:async()=>image,inferencePort:port});
  try {
   const result=await runtime.execute('visual-only');
   assert.deepEqual([result.stage,result.completed_visual_pages,result.blocker],['REFERENCE_AUDIT',3,null]);
-  assert.deepEqual(result.residuals,{excluded_visual_pages:1,partial_visual_pages:1});
+  assert.deepEqual(result.residuals,{excluded_visual_pages:1,partial_visual_pages:0});
   assert.deepEqual(reads.filter(r=>r==='page:1').length,2);
+  assert.deepEqual(reads.filter(r=>r==='page:2').length,3);
   assert.deepEqual(reads.filter(r=>r==='page:3').length,3);
  } finally { await runtime.close(); }
  const checkpoint=JSON.parse(await fs.readFile(path.join(f.config.execution_root,'state.json')));
  const key=await fs.readFile(path.join(f.config.execution_root,'staging.key'));
  const store=createPrivateJournalCorpusStore({rootDir:f.config.execution_root,caseId:checkpoint.case_id,corpusId:checkpoint.corpus_id,corpusKey:key});
  try {
-  // The partly read page keeps its reading; the excluded page has none in the plan.
+  // The completely inventoried page keeps its explicitly unreadable region; the excluded page
+  // has no visual representation in the plan.
   const plan=JSON.parse((await store.reassembleOriginal(checkpoint.visual_plan_ref)).toString());
   assert.deepEqual([...new Set(plan.units.filter(u=>u.visual).map(u=>u.page_number))].sort(),[1,2]);
  } finally { store.close();key.fill(0); }

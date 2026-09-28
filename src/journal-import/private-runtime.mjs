@@ -983,7 +983,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const packetInput = { ...legacyPacketInput, page_image_ref: { kind: "chunked_image", media_type: "image/png",
             object_ref: imageRef, byte_length: image.length, sha256: imageDigest } };
           const read = await checkedWork({ id: `visual:${pageNumber}`, role: "visual_reader", stage: "VISUAL_READ", unit: { unit_id: `page:${pageNumber}`, representation_id: page.representation_id, start_byte: 0, end_byte: image.length, page_number: pageNumber }, packetInput, identityPacketInput: legacyPacketInput },
-            ([saved]) => invariant(saved.output.source_page_id === `page:${pageNumber}`, "VISUAL_PAGE_BINDING_MISMATCH"));
+            ([saved]) => {
+              invariant(saved.output.source_page_id === `page:${pageNumber}`, "VISUAL_PAGE_BINDING_MISMATCH");
+              // Unreadable regions are valid dispositions. page_complete=false instead means that
+              // at least one visible region has no disposition and the page must be tried again.
+              invariant(saved.output.page_complete === true, "VISUAL_PAGE_INVENTORY_INCOMPLETE");
+            });
           if (read.blocked) return summary();
           if (read.failure) {
             // No reading of this page could be bound to it. Its native text, if any, stays in the
@@ -991,13 +996,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             state.excluded_visual_pages ??= [];
             if (!state.excluded_visual_pages.includes(pageNumber)) state.excluded_visual_pages.push(pageNumber);
           } else {
-            // A page read only in part keeps its reading, with the regions it could not read listed
-            // in it; it is counted, so the report says how many pages are partly read.
+            // A complete inventory may still label individual regions uncertain or unreadable.
             await writeOnce(`visual:result:${pageNumber}`, read.result[0]);
-            if (read.result[0].output.page_complete !== true) {
-              state.partial_visual_pages ??= [];
-              if (!state.partial_visual_pages.includes(pageNumber)) state.partial_visual_pages.push(pageNumber);
-            }
           }
           state.residuals = { ...(state.residuals ?? {}), excluded_visual_pages: state.excluded_visual_pages?.length ?? 0,
             partial_visual_pages: state.partial_visual_pages?.length ?? 0 };
