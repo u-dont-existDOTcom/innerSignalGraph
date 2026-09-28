@@ -1,9 +1,11 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { isOutside } from "../core/private-path.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { RuntimeError, ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { createEncryptedPrivateCaseStore } from "./private-case-store.mjs";
+import { createPrivateJournalCorpusStore } from "./private-journal-corpus.mjs";
 import { assessContinuationSafety, CaseNotContinuationSafeError } from "./private-case-continuity.mjs";
 import { resolvePrivateArtifactCaseId } from "./private-artifact-locator.mjs";
 
@@ -18,6 +20,16 @@ export const PRIVATE_CASE_SCOPES = Object.freeze({
   // Narrow: lets a connector caller submit an answer for an outstanding journal work item and
   // nothing else. It opens no case store and grants no other write.
   JOURNAL_SUBMIT: "journal:submit"
+});
+
+export const PRIVATE_JOURNAL_PURPOSES = Object.freeze({
+  ARCHIVE: "archive",
+  ORGANIZE_SEARCH: "organize_search",
+  SESSION_USE: "session_use",
+  CORRECT: "correct",
+  REVIEW: "review",
+  EXPORT: "export",
+  DELETE: "delete"
 });
 
 export class PrivateCaseAccessDeniedError extends RuntimeError {
@@ -43,10 +55,16 @@ const copyBytes = (value, name) => {
   if (!(value instanceof Uint8Array) || value.byteLength === 0) throw new PrivateCaseKeyUnavailableError(`${name} is unavailable.`);
   return Buffer.from(value);
 };
-const isWithin = (parent, candidate) => {
-  const relative = path.relative(parent, candidate);
-  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
-};
+// A digest of everything in a case record outside the journal and the record's own bookkeeping.
+// Publishing a journal generation must leave it unchanged.
+const NON_JOURNAL_EXCLUDED_FIELDS = Object.freeze(["revision", "updated_at", "schema_version", "journal_corpora", "journal_corpus_keys"]);
+function nonJournalStateDigest(record) {
+  const copy = structuredClone(record);
+  for (const field of NON_JOURNAL_EXCLUDED_FIELDS) delete copy[field];
+  return createHash("sha256").update(JSON.stringify(copy)).digest("hex");
+}
+// Judged on real locations: a link back into the checkout is inside, and so is a name like "..private".
+const isWithin = (parent, candidate) => !isOutside(parent, candidate);
 
 function assertProvider(provider, method, name) {
   if (!provider || typeof provider[method] !== "function") throw new ValidationError(`${name} must implement ${method}().`);
@@ -57,22 +75,24 @@ export function createPrivateCaseAccessService({
   authorizationProvider,
   keyProvider,
   allowDevelopmentFileProvider = false,
+  mutationCoordinator = null,
   now = () => new Date().toISOString()
 } = {}) {
   if (typeof rootDir !== "string" || !path.isAbsolute(rootDir)) throw new ValidationError("rootDir must be an absolute private storage path.");
   assertProvider(authorizationProvider, "authorize", "authorizationProvider");
   assertProvider(keyProvider, "getCaseKeyMaterial", "keyProvider");
-  const mutationTails = new Map();
-
-  const withStore = async (caseId, authContext, requiredScope, operation) => {
+  const withStore = async (caseId, authContext, requiredScope, operation, requiredPurpose = null) => {
     let authorization;
     try {
-      authorization = await authorizationProvider.authorize({ caseId, authContext, requiredScope });
+      authorization = await authorizationProvider.authorize({ caseId, authContext, requiredScope, requiredPurpose });
     } catch {
       throw new PrivateCaseAccessDeniedError();
     }
     if (!authorization?.allowed || !authorization?.principalId) throw new PrivateCaseAccessDeniedError();
     if (!Array.isArray(authorization.scopes) || !authorization.scopes.includes(requiredScope)) throw new PrivateCaseAccessDeniedError();
+    if (requiredPurpose != null && (!Array.isArray(authorization.purposes) || !authorization.purposes.includes(requiredPurpose))) {
+      throw new PrivateCaseAccessDeniedError();
+    }
 
     let material;
     let routineKek;
@@ -97,6 +117,7 @@ export function createPrivateCaseAccessService({
         osBackedReauthenticated,
         managedSecretAuthorized,
         developmentExternalCredentialAuthorized,
+        mutationCoordinator,
         now
       });
       return await operation(store, authorization);
@@ -114,18 +135,7 @@ export function createPrivateCaseAccessService({
   };
 
   const read = (caseId, authContext, operation) => withStore(caseId, authContext, PRIVATE_CASE_SCOPES.READ, operation);
-  const mutate = async (caseId, authContext, requiredScope, operation) => {
-    const previousTail = mutationTails.get(caseId) ?? Promise.resolve();
-    let release;
-    const currentTail = new Promise((resolve) => { release = resolve; });
-    mutationTails.set(caseId, currentTail);
-    await previousTail;
-    try { return await withStore(caseId, authContext, requiredScope, operation); }
-    finally {
-      release();
-      if (mutationTails.get(caseId) === currentTail) mutationTails.delete(caseId);
-    }
-  };
+  const mutate = (caseId, authContext, requiredScope, operation) => withStore(caseId, authContext, requiredScope, operation);
   const write = (caseId, authContext, operation) => mutate(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, operation);
   const auditWrite = (caseId, authContext, operation) => mutate(caseId, authContext, PRIVATE_CASE_SCOPES.AUDIT, operation);
   const withResolvedArtifact = async (kind, artifactId, authContext, requiredScope, operation) => {
@@ -160,6 +170,25 @@ export function createPrivateCaseAccessService({
       if (!authorization?.allowed || !authorization?.principalId) throw new PrivateCaseAccessDeniedError();
       if (!Array.isArray(authorization.scopes) || !authorization.scopes.includes(requiredScope)) throw new PrivateCaseAccessDeniedError();
       return Object.freeze({ principalId: authorization.principalId, scopes: Object.freeze([...authorization.scopes]) });
+    },
+    // Authorizes the caller for one case, scope and journal purpose, and confirms the case exists,
+    // without changing anything.
+    async verifyCaseAccess(caseId, { requiredScope, requiredPurpose = null } = {}, authContext) {
+      if (!Object.values(PRIVATE_CASE_SCOPES).includes(requiredScope)) throw new ValidationError("requiredScope is invalid.");
+      if (requiredPurpose != null && !Object.values(PRIVATE_JOURNAL_PURPOSES).includes(requiredPurpose)) {
+        throw new ValidationError("requiredPurpose is invalid.");
+      }
+      return withStore(caseId, authContext, requiredScope, async (store) => {
+        const record = await store.load(caseId);
+        if (!record) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        return Object.freeze({
+          case_id: caseId,
+          case_revision: record.revision,
+          required_scope: requiredScope,
+          required_purpose: requiredPurpose,
+          authorized: true
+        });
+      }, requiredPurpose);
     },
     async loadPrivateRuntimeCase(caseId, authContext) {
       return read(caseId, authContext, async (store) => {
@@ -231,13 +260,95 @@ export function createPrivateCaseAccessService({
     async retrieveCaseEvidence(caseId, criteria, authContext) { return read(caseId, authContext, (store) => store.retrieveCaseEvidence(caseId, criteria)); },
     async getTrackerWindow(caseId, options, authContext) { return read(caseId, authContext, (store) => store.getTrackerWindow(caseId, options)); },
     async getJournalEntries(caseId, options, authContext) { return read(caseId, authContext, (store) => store.getJournalEntries(caseId, options)); },
+    async createJournalCorpus(caseId, input, authContext) {
+      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, (store) => store.createJournalCorpus(caseId, input), PRIVATE_JOURNAL_PURPOSES.ARCHIVE);
+    },
+    async getJournalCorpus(caseId, corpusId, authContext) {
+      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.READ, (store) => store.getJournalCorpus(caseId, corpusId), PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH);
+    },
+    // The corpus reference (null before the corpus exists), the case revision and a digest of the
+    // state outside the journal, under the scope and purpose the caller names. It returns no case
+    // content, so a journal writer holding only case:write can check its own publication, and a
+    // session reader holding only session_use can check its snapshot, without a broader grant.
+    async inspectJournalCorpus(caseId, corpusId, { requiredScope, requiredPurpose } = {}, authContext) {
+      if (![PRIVATE_CASE_SCOPES.READ, PRIVATE_CASE_SCOPES.WRITE].includes(requiredScope)) throw new ValidationError("requiredScope is invalid.");
+      if (!Object.values(PRIVATE_JOURNAL_PURPOSES).includes(requiredPurpose)) throw new ValidationError("requiredPurpose is invalid.");
+      nonBlank(corpusId, "corpusId", 160);
+      return withStore(caseId, authContext, requiredScope, async (store) => {
+        const record = await store.load(caseId);
+        if (!record) throw new RuntimeError("Private case was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
+        const reference = record.journal_corpora.find((item) => item.corpus_id === corpusId);
+        return Object.freeze({
+          case_id: caseId,
+          case_revision: record.revision,
+          reference: reference ? structuredClone(reference) : null,
+          non_journal_state_sha256: nonJournalStateDigest(record)
+        });
+      }, requiredPurpose);
+    },
+    async publishJournalGeneration(caseId, input, authContext) {
+      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, (store) => store.publishJournalGeneration(caseId, input), PRIVATE_JOURNAL_PURPOSES.SESSION_USE);
+    },
+    async rollbackJournalGeneration(caseId, input, authContext) {
+      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, async (store) => {
+        // A rollback target must be readable at the current visibility epoch. A generation staged
+        // before a visibility change belongs to the revoked snapshot, and activating it would leave
+        // every reader refusing the corpus.
+        const record = await store.load(caseId);
+        const reference = record?.journal_corpora.find((item) => item.corpus_id === input?.corpusId);
+        const target = reference && [...reference.previous_generations].reverse().find((item) => item.generation === input?.targetGeneration);
+        if (target) {
+          const corpusKey = await store.getJournalCorpusKey(caseId, input.corpusId);
+          const corpusStore = createPrivateJournalCorpusStore({ rootDir, caseId, corpusId: input.corpusId, corpusKey });
+          try {
+            const manifest = await corpusStore.readJsonObject({ objectId: target.manifest_object_id });
+            if (manifest.generation !== target.generation || manifest.visibility_epoch !== reference.visibility_epoch) {
+              throw new ValidationError("Rollback generation belongs to a revoked visibility epoch.", { code: "GRANT_REVOKED" });
+            }
+          } finally {
+            corpusStore.close();
+            corpusKey.fill(0);
+          }
+        }
+        return store.rollbackJournalGeneration(caseId, { ...input, expectedVisibilityEpoch: reference?.visibility_epoch ?? null });
+      }, PRIVATE_JOURNAL_PURPOSES.CORRECT);
+    },
+    async incrementJournalVisibilityEpoch(caseId, input, authContext) {
+      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, (store) => store.incrementJournalVisibilityEpoch(caseId, input), PRIVATE_JOURNAL_PURPOSES.SESSION_USE);
+    },
+    async tombstoneJournalCorpus(caseId, input, authContext) {
+      return withStore(caseId, authContext, PRIVATE_CASE_SCOPES.WRITE, (store) => store.tombstoneJournalCorpus(caseId, input), PRIVATE_JOURNAL_PURPOSES.DELETE);
+    },
+    async withJournalCorpus(caseId, corpusId, { requiredScope = PRIVATE_CASE_SCOPES.READ, requiredPurpose = PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH } = {}, operation, authContext) {
+      if (typeof operation !== "function") throw new ValidationError("Journal corpus operation must be a function.");
+      return withStore(caseId, authContext, requiredScope, async (caseStore, authorization) => {
+        const [{ reference }, corpusKey] = await Promise.all([
+          caseStore.getJournalCorpus(caseId, corpusId),
+          caseStore.getJournalCorpusKey(caseId, corpusId)
+        ]);
+        const corpusStore = createPrivateJournalCorpusStore({ rootDir, caseId, corpusId, corpusKey });
+        const cursorSecret = createHmac("sha256", corpusKey)
+          .update(`inner-signal-journal-cursor-v1\0${caseId}\0${corpusId}`)
+          .digest();
+        try {
+          return await operation({ caseStore, corpusStore, cursorSecret, reference: structuredClone(reference), authorization: structuredClone(authorization) });
+        } finally {
+          cursorSecret.fill(0);
+          corpusStore.close();
+          corpusKey.fill(0);
+        }
+      }, requiredPurpose);
+    },
     async appendTracker(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendTracker(caseId, entry)); },
     async appendJournal(caseId, entry, authContext) { return write(caseId, authContext, (store) => store.appendJournal(caseId, entry)); },
     async getCurrentEpisode(caseId, authContext) { return read(caseId, authContext, (store) => store.getCurrentEpisode(caseId)); },
     async createHandoff(caseId, options, authContext) { return write(caseId, authContext, (store) => store.createHandoff(caseId, options)); },
-    async loadHandoff(handoffId, authContext, { requireContinuationSafe = true } = {}) {
+    async loadHandoff(handoffId, authContext, { requireContinuationSafe = true, journalContinuitySupported = false } = {}) {
       const packet = await withResolvedArtifact("handoff", handoffId, authContext, PRIVATE_CASE_SCOPES.AUDIT, (store, caseId) => store.loadHandoff(caseId, handoffId));
       if (requireContinuationSafe && !packet.continuation_safety.continuation_safe) throw new CaseNotContinuationSafeError(packet.continuation_safety.failures);
+      if (packet.journal_continuity?.corpora?.length && journalContinuitySupported !== true) {
+        throw new CaseNotContinuationSafeError(["journal continuity capability is unsupported by this consumer"]);
+      }
       return packet;
     },
     async exportHandoff(handoffId, authContext) {
@@ -305,7 +416,11 @@ function validateDevelopmentCredentialFile(value, credentialsPath) {
     nonBlank(grant.principal_id, `grants[${index}].principal_id`, 160);
     if (!Array.isArray(grant.case_ids) || grant.case_ids.length === 0 || grant.case_ids.some((id) => typeof id !== "string" || !id.trim())) throw new ValidationError(`grants[${index}].case_ids is invalid.`);
     if (!Array.isArray(grant.scopes) || grant.scopes.some((scope) => !Object.values(PRIVATE_CASE_SCOPES).includes(scope))) throw new ValidationError(`grants[${index}].scopes is invalid.`);
-    return { ...structuredClone(grant), tokenDigest: Buffer.from(tokenSha256, "hex") };
+    const purposes = grant.purposes ?? [];
+    if (!Array.isArray(purposes) || purposes.some((purpose) => !Object.values(PRIVATE_JOURNAL_PURPOSES).includes(purpose))) {
+      throw new ValidationError(`grants[${index}].purposes is invalid.`);
+    }
+    return { ...structuredClone(grant), purposes: [...new Set(purposes)], tokenDigest: Buffer.from(tokenSha256, "hex") };
   });
   const keys = new Map();
   for (const [caseId, entry] of Object.entries(value.case_keys)) {
@@ -328,15 +443,16 @@ export async function loadDevelopmentPrivateCaseProviders(credentialsPath) {
   if (isWithin(repositoryRoot, path.resolve(parsed.rootDir))) throw new ValidationError("Development private-case storage root must be outside the public repository.");
   let closed = false;
   const authorizationProvider = Object.freeze({
-    async authorize({ caseId, authContext, requiredScope }) {
+    async authorize({ caseId, authContext, requiredScope, requiredPurpose = null }) {
       if (closed) throw new PrivateCaseAccessDeniedError();
       const token = authContext?.bearerToken;
       if (typeof token !== "string" || !token) throw new PrivateCaseAccessDeniedError();
       const digest = sha256(token);
       try {
         const grant = parsed.grants.find((candidate) => candidate.tokenDigest.byteLength === digest.byteLength && timingSafeEqual(candidate.tokenDigest, digest));
-        const allowed = Boolean(grant && grant.case_ids.includes(caseId) && grant.scopes.includes(requiredScope));
-        return allowed ? { allowed: true, principalId: grant.principal_id, scopes: [...grant.scopes] } : { allowed: false };
+        const allowed = Boolean(grant && grant.case_ids.includes(caseId) && grant.scopes.includes(requiredScope)
+          && (requiredPurpose == null || grant.purposes.includes(requiredPurpose)));
+        return allowed ? { allowed: true, principalId: grant.principal_id, scopes: [...grant.scopes], purposes: [...grant.purposes] } : { allowed: false };
       } finally { digest.fill(0); }
     }
   });
@@ -356,6 +472,7 @@ export async function loadDevelopmentPrivateCaseProviders(credentialsPath) {
   return Object.freeze({
     kind: "development-file-provider",
     productionReady: false,
+    journalEnabled: parsed.grants.some((grant) => grant.purposes.length > 0),
     rootDir: parsed.rootDir,
     authorizationProvider,
     keyProvider,

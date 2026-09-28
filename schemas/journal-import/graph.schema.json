@@ -1,0 +1,1234 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9:_-]+$"
+    },
+    "corpus_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9:_-]+$"
+    },
+    "generation": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[A-Za-z0-9:_-]+$"
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "case_id",
+    "corpus_id",
+    "generation",
+    "nodes",
+    "edges"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:innersignal:journal:graph:1.0",
+  "$defs": {
+    "time": {
+      "type": "object",
+      "properties": {
+        "raw": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "to": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "precision": {
+          "enum": [
+            "instant",
+            "day",
+            "month",
+            "year",
+            "interval",
+            "unknown"
+          ]
+        },
+        "timezone": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "basis": {
+          "enum": [
+            "explicit",
+            "relative_supported",
+            "unresolved"
+          ]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "raw",
+        "from",
+        "to",
+        "precision",
+        "timezone",
+        "basis",
+        "evidence_ids"
+      ],
+      "additionalProperties": false
+    },
+    "locator": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "native_text",
+            "visual_transcript",
+            "table_cell"
+          ]
+        },
+        "page": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "bbox": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "original_object_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "interpretation_status": {
+          "enum": [
+            "native",
+            "verified",
+            "provisional",
+            "unreadable"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "page",
+        "bbox",
+        "original_object_id",
+        "interpretation_status"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "corpus_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lifecycle": {
+          "enum": [
+            "candidate",
+            "active",
+            "superseded",
+            "revoked",
+            "deleted"
+          ]
+        },
+        "kind": {
+          "const": "source"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "representation_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "original_object_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "media_type": {
+              "type": "string",
+              "minLength": 1
+            },
+            "byte_length": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "parse_status": {
+              "enum": [
+                "readable",
+                "partial",
+                "visual_pending",
+                "unreadable"
+              ]
+            }
+          },
+          "required": [
+            "representation_id",
+            "original_object_id",
+            "media_type",
+            "byte_length",
+            "parse_status"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "case_id",
+        "corpus_id",
+        "version",
+        "lifecycle",
+        "kind",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "passage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "corpus_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lifecycle": {
+          "enum": [
+            "candidate",
+            "active",
+            "superseded",
+            "revoked",
+            "deleted"
+          ]
+        },
+        "kind": {
+          "const": "passage"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "representation_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "unit_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "start_byte": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "end_byte": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "quote": {
+              "type": "string",
+              "minLength": 1
+            },
+            "quote_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "locator": {
+              "$ref": "#/$defs/locator"
+            }
+          },
+          "required": [
+            "representation_id",
+            "unit_id",
+            "start_byte",
+            "end_byte",
+            "quote",
+            "quote_sha256",
+            "locator"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "case_id",
+        "corpus_id",
+        "version",
+        "lifecycle",
+        "kind",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "entity": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "corpus_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lifecycle": {
+          "enum": [
+            "candidate",
+            "active",
+            "superseded",
+            "revoked",
+            "deleted"
+          ]
+        },
+        "kind": {
+          "const": "entity"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "entity_kind": {
+              "enum": [
+                "person",
+                "place",
+                "activity",
+                "object",
+                "organization",
+                "unknown"
+              ]
+            },
+            "aliases": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "^[A-Za-z0-9:_-]+$"
+              },
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "label",
+            "entity_kind",
+            "aliases",
+            "evidence_ids"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "case_id",
+        "corpus_id",
+        "version",
+        "lifecycle",
+        "kind",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "episode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "corpus_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lifecycle": {
+          "enum": [
+            "candidate",
+            "active",
+            "superseded",
+            "revoked",
+            "deleted"
+          ]
+        },
+        "kind": {
+          "const": "episode"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "authored_time": {
+              "$ref": "#/$defs/time"
+            },
+            "event_time": {
+              "$ref": "#/$defs/time"
+            },
+            "source_order": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "^[A-Za-z0-9:_-]+$"
+              },
+              "uniqueItems": true
+            },
+            "support_group_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            }
+          },
+          "required": [
+            "label",
+            "authored_time",
+            "event_time",
+            "source_order",
+            "evidence_ids",
+            "support_group_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "case_id",
+        "corpus_id",
+        "version",
+        "lifecycle",
+        "kind",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "assertion": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "corpus_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lifecycle": {
+          "enum": [
+            "candidate",
+            "active",
+            "superseded",
+            "revoked",
+            "deleted"
+          ]
+        },
+        "kind": {
+          "const": "assertion"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "statement": {
+              "type": "string",
+              "minLength": 1
+            },
+            "assertion_kind": {
+              "enum": [
+                "direct_report",
+                "belief",
+                "quoted_other",
+                "dream",
+                "imaginal_experience",
+                "intention",
+                "reported_action",
+                "reported_outcome",
+                "hypothesis",
+                "explicit_correction",
+                "uncertain_memory"
+              ]
+            },
+            "narrative_mode": {
+              "enum": [
+                "waking",
+                "dream",
+                "imaginal",
+                "quoted",
+                "uncertain"
+              ]
+            },
+            "speaker_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "subject_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "^[A-Za-z0-9:_-]+$"
+              },
+              "uniqueItems": true
+            },
+            "episode_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160,
+                  "pattern": "^[A-Za-z0-9:_-]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "polarity": {
+              "enum": [
+                "affirmed",
+                "negated",
+                "uncertain"
+              ]
+            },
+            "qualifiers": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "authored_time": {
+              "$ref": "#/$defs/time"
+            },
+            "event_time": {
+              "$ref": "#/$defs/time"
+            },
+            "still_current": {
+              "type": "null"
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "^[A-Za-z0-9:_-]+$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "review_state": {
+              "enum": [
+                "unreviewed",
+                "source_checked",
+                "independent_checked",
+                "disputed"
+              ]
+            },
+            "extraction_confidence": {
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            },
+            "producer_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "support_group_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            }
+          },
+          "required": [
+            "statement",
+            "assertion_kind",
+            "narrative_mode",
+            "speaker_id",
+            "subject_ids",
+            "episode_id",
+            "polarity",
+            "qualifiers",
+            "authored_time",
+            "event_time",
+            "still_current",
+            "evidence_ids",
+            "review_state",
+            "extraction_confidence",
+            "producer_ref",
+            "support_group_id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "case_id",
+        "corpus_id",
+        "version",
+        "lifecycle",
+        "kind",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "theme": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "corpus_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lifecycle": {
+          "enum": [
+            "candidate",
+            "active",
+            "superseded",
+            "revoked",
+            "deleted"
+          ]
+        },
+        "kind": {
+          "const": "theme"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1
+            },
+            "origin": {
+              "enum": [
+                "source_term",
+                "neutral_induced",
+                "user_supplied"
+              ]
+            },
+            "vocabulary_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "evidence_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "^[A-Za-z0-9:_-]+$"
+              },
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "label",
+            "origin",
+            "vocabulary_version",
+            "evidence_ids"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "case_id",
+        "corpus_id",
+        "version",
+        "lifecycle",
+        "kind",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "pattern": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "corpus_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lifecycle": {
+          "enum": [
+            "candidate",
+            "active",
+            "superseded",
+            "revoked",
+            "deleted"
+          ]
+        },
+        "kind": {
+          "const": "pattern"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "statement": {
+              "type": "string",
+              "minLength": 1
+            },
+            "pattern_kind": {
+              "enum": [
+                "single_event",
+                "descriptive",
+                "recurrent",
+                "hypothesis"
+              ]
+            },
+            "scope": {
+              "type": "string",
+              "minLength": 1
+            },
+            "support_assertion_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "^[A-Za-z0-9:_-]+$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "counter_assertion_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160,
+                "pattern": "^[A-Za-z0-9:_-]+$"
+              },
+              "uniqueItems": true
+            },
+            "alternative_explanations": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "observation_gaps": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "disconfirming_question": {
+              "type": "string",
+              "minLength": 1
+            },
+            "disconfirmation": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "enum": [
+                    "pending",
+                    "complete"
+                  ]
+                },
+                "search_receipt_ref": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160,
+                      "pattern": "^[A-Za-z0-9:_-]+$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "status",
+                "search_receipt_ref"
+              ],
+              "additionalProperties": false
+            },
+            "review_state": {
+              "enum": [
+                "provisional",
+                "reviewed",
+                "disputed",
+                "withdrawn"
+              ]
+            },
+            "independent_review_ref": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160,
+                  "pattern": "^[A-Za-z0-9:_-]+$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "producer_ref": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            }
+          },
+          "required": [
+            "statement",
+            "pattern_kind",
+            "scope",
+            "support_assertion_ids",
+            "counter_assertion_ids",
+            "alternative_explanations",
+            "observation_gaps",
+            "disconfirming_question",
+            "disconfirmation",
+            "review_state",
+            "independent_review_ref",
+            "producer_ref"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "case_id",
+        "corpus_id",
+        "version",
+        "lifecycle",
+        "kind",
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "node": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/source"
+        },
+        {
+          "$ref": "#/$defs/passage"
+        },
+        {
+          "$ref": "#/$defs/entity"
+        },
+        {
+          "$ref": "#/$defs/episode"
+        },
+        {
+          "$ref": "#/$defs/assertion"
+        },
+        {
+          "$ref": "#/$defs/theme"
+        },
+        {
+          "$ref": "#/$defs/pattern"
+        },
+        {
+          "$ref": "#/$defs/restricted_passage"
+        }
+      ]
+    },
+    "edge": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "corpus_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lifecycle": {
+          "enum": [
+            "candidate",
+            "active",
+            "superseded",
+            "revoked",
+            "deleted"
+          ]
+        },
+        "relation": {
+          "enum": [
+            "contains",
+            "supported_by",
+            "mentions",
+            "in_episode",
+            "about_theme",
+            "supports_pattern",
+            "contradicts",
+            "qualifies",
+            "exception_to",
+            "corrects",
+            "retells",
+            "precedes",
+            "possible_same_entity",
+            "reported_effect_of"
+          ]
+        },
+        "from": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "to": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "basis": {
+          "enum": [
+            "direct_source",
+            "author_attribution",
+            "derived_proposal",
+            "reviewed_derivation"
+          ]
+        },
+        "derivation_ref": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "case_id",
+        "corpus_id",
+        "version",
+        "lifecycle",
+        "relation",
+        "from",
+        "to",
+        "evidence_ids",
+        "basis",
+        "derivation_ref"
+      ],
+      "additionalProperties": false
+    },
+    "restricted_passage": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "corpus_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9:_-]+$"
+        },
+        "version": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "lifecycle": {
+          "enum": [
+            "candidate",
+            "active",
+            "superseded",
+            "revoked",
+            "deleted"
+          ]
+        },
+        "kind": {
+          "const": "passage"
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "representation_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "unit_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160,
+              "pattern": "^[A-Za-z0-9:_-]+$"
+            },
+            "start_byte": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "end_byte": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "quote": {
+              "type": "null"
+            },
+            "quote_sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "locator": {
+              "$ref": "#/$defs/locator"
+            },
+            "disclosure": {
+              "const": "restricted"
+            }
+          },
+          "required": [
+            "representation_id",
+            "unit_id",
+            "start_byte",
+            "end_byte",
+            "quote",
+            "quote_sha256",
+            "locator",
+            "disclosure"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "case_id",
+        "corpus_id",
+        "version",
+        "lifecycle",
+        "kind",
+        "data"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -2,13 +2,103 @@
 
 Updated: 2026-09-27
 
+## Journal import: the private journal branch, moved into this repository — `claude/journal-import-public-20260927`
+
+- **Goal:** one reviewed home for the journal work that GPT chats built in private checkouts on the central host, so those checkouts can be retired.
+- **Owner decisions:** 2026-09-27, the importer code may be public ("public is fine"). Later that day he chose to move the whole private journal branch ("1"): the importer, the journal search tools for the connector, the therapy runtime's use of journal evidence, the journal graph web page and the operator commands.
+- **Source:** the private branch forked from main at `038f7ee` (#76). Its head is `b47942a` (48 commits), plus one uncommitted runtime edit: up to two fidelity repair cycles in calibration before `CALIBRATION_REPAIR_REQUIRED`. It is moved as one squashed change. The private history, task records and state entries stay behind.
+- **Reconciled with #77–#92:** the MCP server serves both the journal read tools (`journalApi`) and the journal work tools (`journalWork`). The access service keeps `authenticate` and `authorizeCase` and adds `verifyCaseAccess` with journal purposes. The hosted provider keeps `verifyToken` and `authenticate` and adds purposes to grants. The connector image copies both the therapy plugin and `schemas/`.
+- **Fixes the move needed:** the UI's vitest setup file is renamed so `node --test` no longer runs it as a test. The desktop transport's checkpoint test fixture is updated for the window focus and native Copy capture added upstream.
+- **Review round 1 (pre-existing defects in the moved code):**
+  - Publication now holds the vault root's writer lock, the one the one-shot operator takes.
+  - An explicit null expected generation is a compare-and-swap guard again, not "whatever is active".
+  - Cold retrieval reports passages and seeds beyond its bounds as more available, and sends only passages for source resolution (a pattern's supporting assertions used to abort it).
+  - The web page drops an evidence response for a superseded selection.
+  - The staging key and the source are checked and read through one no-follow handle (CodeQL).
+  - Each fix has a test that fails without it.
+- **Review round 3:**
+  - Publication reads the case only through a write-authorized inspection: the case revision, the corpus reference and a digest of everything outside the journal, never case content. So the operator's documented `case:write`-only grant can publish; before, it needed `case:read` and was refused before anything was transferred. The cold runner uses the same inspection under its own scope and purpose.
+  - The timeline tool returns a signed cursor bound to the snapshot and the time window, so later pages are reachable. Before, it said more records were available but gave no way to get them.
+  - Both have tests that fail without the fix.
+- **Review round 4:**
+  - Page images render in memory from the archived original, checked against the configured digest: `pdftoppm` reads the bytes on stdin and writes the image to stdout. A page can't come from a source replaced after intake, and no plaintext image is left on disk. Page files an earlier version left under `visual/` are removed at startup.
+  - The producer prompts include the frozen journal packet that the audit and repair receive, through the shared durable-context block, so a candidate is produced from what it is checked against.
+  - A restart after the candidate call completed reuses that call's packet instead of freezing a new one.
+  - The operator doc says how to run a rollback, which needs the `correct` purpose that the import grant leaves out.
+  - The web page pages through matches and the timeline with their cursors, and lists matches whose closure did not fit instead of reporting none. Each neighborhood is seeded by one page of 50 matches.
+  - Not changed: no production journal evidence provider exists, so therapy turns read no journal evidence. Building one and turning it on is a separate change, after the import's cold test.
+  - Each fix has a test that fails without it.
+- **Review round 5:**
+  - One writer per vault: an InnerSignal server with a private runtime holds the vault's writer lock while it runs, so a one-shot operator write or a journal publication is refused until it stops, and the server refuses to start while either is writing. This was a gap on main too: the server's writes were never coordinated across processes. The read-only MCP takes no lock.
+  - Intake archives the original from one no-follow read checked against the configured length and digest before anything is written, so a source replaced after startup is never stored, and restoring it lets a later run continue.
+  - The timeline places a record at each of its known time intervals and labels each entry with the field that places it; a record with no known time appears once in the unknown lane. The web page labels timeline items the same way.
+  - Each has a test that fails without it.
+- **Review round 6:**
+  - Once intake has archived the original, the upload is no longer needed. Startup checks the source only until then, and the parser reads the archived bytes, which reach the parser process over IPC so it reads no file. Status and a resumed intake work after the upload is deleted or rotated.
+  - The web page builds each view from one published snapshot. If a generation is published mid-load it retries once, then reports the change; a later page or exact source from another snapshot is refused with a prompt to search again.
+  - Each has a test that fails without it.
+- **Review round 7:**
+  - Every operator CLI mode takes the vault writer lock, not only the hosted one-shot mode.
+  - A source representation too large for one encrypted object (a long text journal) is stored as UTF-8 chunks checked against the manifest's digest. Reading evidence and transferring a generation handle both forms.
+  - The web page filters a timeline item by the interval that places it, and the timeline's date-only upper bound includes that whole day.
+  - `doctor` uses the runtime's format rule, so a UTF-8 text source is reported as importable and other non-PDF bytes as unsupported.
+  - Each has a test that fails without it.
+- **Review round 8:**
+  - A scanned or image-only source, with no native text, reaches its visual pages: calibration starts empty and takes the visual units once they exist. Pages whose reading order or tables need review are indexed as partly readable; their page disposition used to be written as an invalid parse status, which stopped the raw index.
+  - A commit refuses a manifest staged before a visibility change (`GRANT_REVOKED`) instead of activating a generation every reader refuses.
+  - A time interval open at one end is treated as reaching the unbounded past or future on that side, in the service and on the web page.
+  - Each has a test that fails without it.
+- **Review round 9:**
+  - A rollback refuses a generation whose manifest belongs to a revoked visibility epoch (`GRANT_REVOKED`), and still rolls back within one.
+  - Search and the timeline filter and order matches from the lookup index, which new generations fill with each record's kind, lifecycle and order, and decrypt only the page they return. A generation built before that falls back to decrypting every match, as before.
+  - `cold-test` and `export` fail with `JOURNAL_COMMAND_NOT_AVAILABLE` instead of opening a run, and help lists them as planned.
+  - Each has a test that fails without it.
+- **Review round 10:**
+  - Cold retrieval refuses to combine a question's search, closure and evidence, or a run's questions, from different published snapshots (`COLD_SNAPSHOT_CHANGED`).
+  - The timeline places an interval open at its start at its end, rather than wherever the string "null" sorts.
+  - The evidence closure is bounded in edges (200) as well as nodes, and stops as soon as either bound is exceeded.
+  - Each has a test that fails without it.
+- **Review round 11:**
+  - Privacy containment checks (the config, source, execution root and hosted roots against the checkout) compare real locations, so a symbolic link cannot carry a path inside the checkout, and a name that merely starts with `..` is not taken for outside (`src/core/private-path.mjs`).
+  - `doctor` reports the same config blockers a run would hit: zero spend, a private execution root, a grant reference and the source binding.
+  - Every time bound present is checked, not only closed intervals: a bound is an ISO 8601 calendar value from a year to a millisecond without a numeric offset (`INVALID_TIME_BOUND`), and a closed interval may not end before it starts. The extractor is told the form. A bound covers its whole period ("2021-05" is all of May), so the timeline, its query bounds and the web filter treat a month or a year as overlapping any window inside it; query bounds must be the same form (`TIMELINE_QUERY_INVALID`).
+  - Each has a test that fails without it.
+- **Review round 12:**
+  - When a long source's representation maps would take the generation manifest past one object, they move into a chunked directory object that the manifest references. A PDF near the page limit therefore no longer fails at persistence. Readers and generation transfer accept either form.
+  - Every run, not only doctor, checks two things before authorization or reading the source: that the operator environment's vault is one the config names (`JOURNAL_PRIVATE_ROOT_MISMATCH`), and that the source lies outside the checkout (`JOURNAL_SOURCE_LOCATION_INVALID`).
+  - The time index records each entry's lifecycle, so a timeline page needs no lookup per entry and decrypts only its own records. Older generations fall back to lookups.
+  - The evidence closure includes each passage's source and containment edge, within the same bounds, without fanning out from the source.
+  - Each has a test that fails without it.
+- **Review round 13:**
+  - In the web client, the kind and date filters choose which matches seed the neighborhood, and the closure those matches bring is shown whole. The client no longer drops supporting passages or out-of-window corrections from a closure the service returned complete.
+  - `verify` on a fully scanned source, which has no native units, skips the native search probes instead of failing with a `TypeError`.
+  - Each has a test that fails without it.
+- **Review round 14:**
+  - Archive references, which list the original and every page image with its chunks, move into the chunked generation directory together with the representation maps (renamed `generation_directory`). A large scanned PDF therefore no longer overfills the manifest at commit.
+  - Search applies the time window on the service, before paging. The lookup index records each record's known intervals, and both written and event time can place a record. Every page then holds only matches, the window is bound into the cursor, and invalid bounds fail with `SEARCH_FILTERS_INVALID`. The web client reads a record's times the same way. A page with nothing to show still offers the next matches.
+  - Each has a test that fails without it.
+- **Review round 15:**
+  - Doctor reports an empty source (`JOURNAL_SOURCE_EMPTY`), and a run refuses one when it opens, since no unit or page of it could reach a later stage.
+  - Search and the timeline keep their ordered result in a cache shared across the API's per-request readers. A later page slices that result instead of rescanning every match and rereading the time index. Keys name the snapshot, purpose, query and filters, and entries hold only record identifiers. A miss rebuilds the same order.
+  - Each has a test that fails without it.
+- **Review round 16:**
+  - A visibility change retires the active generation. The generation moves to the previous generations, where rollback refuses it for its epoch, and a handoff's continuity no longer presents the corpus as attached. Before this, the reference kept pointing at a generation that no reader accepts.
+  - A cursor keeps paging the snapshot it was issued for, as the spec requires. Before this, every page request opened the active generation, so publishing a newer one broke paging with `CURSOR_SNAPSHOT_INVALID`. Now a request with a cursor opens the cursor's generation while it is retained (active, or among the previous generations) under the current visibility epoch. A visibility change or a deletion still ends it, and first pages read the active generation. The web client's closure and evidence reads still use the active generation, so a view that pages across an import still asks for a new search.
+  - Each fix has a test that fails without it.
+- **Review round 17:**
+  - Source-order search follows the pages of a multi-page source. Each PDF page is its own representation, and its byte offsets restart at zero, so ordering passages by offset alone interleaved the pages. The lookup index now stores each record's position as its representation's place among the graph's sources, then its byte offset. Other records take the position of their earliest evidence passage. Generations indexed before this keep their old order.
+  - The fix has a test that fails without it.
+- **Known gaps (not built in the private branch either):** the cold test (freezing questions from the audit, the separate consumer and scoring against the answer key, which `cold_retrieval_verified` waits on), `export`, and a production journal evidence provider for therapy turns.
+- **Verified:** after round 17 and main at `187f2f4` (#95), `npm test` (1,562), `npm run audit:repository`, `npm run audit:publication`, `npm run verify`, `npm run journal:ui:test` (20) and `npm run journal:ui:build` pass on Node 24.18.0, and the web client type-checks (`tsc -p apps/journal-web`). Privacy scan of every moved file: no case ID or source hash, host paths, e-mail addresses, IP addresses or personal names; only synthetic example domains.
+- **Safety:** nothing is deployed, and the running import is unchanged; it keeps running from the private checkout until the owner approves the switch. The journal read tools stay off unless a grant lists journal purposes, and the operator needs its own environment.
+- **Next safe action:** the owner approved the merge once review is clean ("merge 93 and 94"). Then the exchange-backed provider (retiring the desktop transport), then the Mission Control job type.
 ## Journal work exchange hardening — `claude/journal-work-exchange-hardening-20260927`
 
 - **Goal:** the two points deferred from PR #92's last review. A failed write must not leave temporary files behind, and an exchange root that other local users can reach must be refused.
 - **Done, don't repeat:** `assertJournalWorkExchangeRoot` requires a real directory owned by the process's user with mode exactly 0700, below directories that only that user or root can change (sticky directories such as /tmp are fine). Every write checks it, and the connector checks it at startup with a plain message. A failed write removes its temporary file. `removeStaleTemporaries` removes temporaries older than an hour and refuses a linked queue; the connector calls it at startup, and the import runtime will too.
 - **Verified:** `tests/journal-work-exchange.test.mjs`, `tests/journal-work-tools.test.mjs` and the new `tests/journal-work-cli.test.mjs` pass. The full gates are listed in the PR.
 - **Safety:** with journal work unconfigured, nothing changes. No deployment, ACL, identity-provider or private-data change is in this branch.
-- **Next safe action:** Codex review, then owner approval to merge. Moving the importer into this repository is waiting on the owner's decision about the scope of the move.
+- **Status:** merged as PR #93 on 2026-09-27.
 
 ## Journal work exchange: connector tools for the private import — `claude/journal-work-exchange-20260927`
 

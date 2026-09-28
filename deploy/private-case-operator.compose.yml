@@ -1,0 +1,28 @@
+services:
+  private-case-operator:
+    profiles: ["operator"]
+    build:
+      context: ..
+      dockerfile: Dockerfile.private-case-mcp
+    restart: "no"
+    entrypoint: ["node", "src/cli/private-case-operations.mjs", "--hosted-operator-env"]
+    command: ["--request", "/run/inner-signal-operator/request.json", "--receipt", "/run/inner-signal-operator/receipt.json"]
+    environment:
+      INNER_SIGNAL_PRIVATE_ROOT: /data/private-case
+      INNER_SIGNAL_OAUTH_ISSUER: ${INNER_SIGNAL_OAUTH_ISSUER:?required}
+      INNER_SIGNAL_OAUTH_AUDIENCE: ${INNER_SIGNAL_OAUTH_AUDIENCE:?required}
+      INNER_SIGNAL_OPERATOR_OAUTH_JWKS_JSON: ${INNER_SIGNAL_OPERATOR_OAUTH_JWKS_JSON:?required}
+      INNER_SIGNAL_OPERATOR_CASE_ACL_JSON: ${INNER_SIGNAL_OPERATOR_CASE_ACL_JSON:?required}
+      INNER_SIGNAL_CASE_KEYS_JSON: ${INNER_SIGNAL_CASE_KEYS_JSON:?required}
+      INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: ${INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN:?required}
+    volumes:
+      - ${INNER_SIGNAL_PRIVATE_VAULT_HOST_PATH:?required}:/data/private-case:rw
+      - ${INNER_SIGNAL_OPERATOR_HOST_PATH:?required}:/run/inner-signal-operator:rw
+    network_mode: none
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1700
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true

@@ -57,7 +57,7 @@ async function generatePacketOnly(provider, { prompt, outputSchema, metadata, va
   };
 }
 
-function sealAuditPacket(input) {
+function sealAuditPacket(input, journalEvidence = null) {
   return Object.freeze({
     schema_version: 1,
     role: "AUTHORIZED_PRIVATE_CANDIDATE_AUDIT",
@@ -78,6 +78,7 @@ function sealAuditPacket(input) {
     reconstruction_audit_required: input.reconstruction_audit_required,
     repair_induced_error_checks: input.repair_induced_error_checks,
     instructions: input.instructions,
+    ...(journalEvidence ? { journal_evidence: structuredClone(journalEvidence.packet), journal_evidence_sha256: journalEvidence.sha256 } : {}),
     disclosure_manifest: Object.freeze({
       exact_candidate_included: true,
       authorized_case_context_included: true,
@@ -112,7 +113,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
   const repairProvider = providers.privateRepairer ?? providers.renderer ?? providers.anthropic;
 
   return Object.freeze({
-    async produceCandidate({ caseId, runtimeTurn, userInput, authContext, attemptContextId }) {
+    async produceCandidate({ caseId, runtimeTurn, userInput, journalEvidence = null, authContext, attemptContextId }) {
       const record = await loadRuntimeCase(privateCaseSource, caseId, authContext);
       const previousCaseState = record.case_state;
       const context = await buildContext({
@@ -123,7 +124,11 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         trackerEntries: record.tracker_entries
       }, { ...config, ledgerMode: "off", devAutomationEnabled: false });
       const result = await runTieredTherapyPipeline({
-        context,
+        context: journalEvidence ? {
+          ...context,
+          journal_evidence: structuredClone(journalEvidence.packet),
+          journal_evidence_sha256: journalEvidence.sha256
+        } : context,
         providers,
         config: { ...config, ledgerMode: "off", devAutomationEnabled: false },
         processingMode: userInput.processingMode ?? config.therapyProcessingMode ?? "auto"
@@ -155,14 +160,14 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       };
     },
 
-    async auditCandidate({ caseId, candidateId, authContext, attemptContextId }) {
+    async auditCandidate({ caseId, candidateId, journalEvidence = null, authContext, attemptContextId }) {
       const auditInput = await buildPrivateCandidateAuditInput({
         caseAccessService: directAuditAccess(privateCaseSource),
         caseId,
         candidateId,
         authContext
       });
-      const packet = sealAuditPacket(auditInput);
+      const packet = sealAuditPacket(auditInput, journalEvidence);
       const generated = await generatePacketOnly(auditProvider, {
         prompt: privateRuntimeAuditPrompt(packet),
         outputSchema: privateRuntimeAuditResultSchema,
@@ -177,7 +182,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
       };
     },
 
-    async repairCandidate({ caseId, candidate, authContext, attemptContextId }) {
+    async repairCandidate({ caseId, candidate, journalEvidence = null, authContext, attemptContextId }) {
       const context = await directAuditAccess(privateCaseSource).loadCaseContext(caseId, authContext, {
         candidateId: candidate.id,
         requireContinuationSafe: true,
@@ -199,6 +204,7 @@ export function createPrivateTherapyModelRuntime({ privateCaseSource, providers,
         targeted_older_evidence: context.targeted_older_evidence,
         current_episode: context.current_episode,
         repair_induced_error_checks: REPAIR_INDUCED_ERROR_CHECKS,
+        ...(journalEvidence ? { journal_evidence: structuredClone(journalEvidence.packet), journal_evidence_sha256: journalEvidence.sha256 } : {}),
         disclosure_manifest: { producer_hidden_reasoning_included: false, provider_trace_included: false, tools_available: false, filesystem_available: false }
       });
       const generated = await generatePacketOnly(repairProvider, {

@@ -9,11 +9,17 @@
     { "$ref": "#/$defs/createHandoff" },
     { "$ref": "#/$defs/approve" },
     { "$ref": "#/$defs/deliverAndHandoff" },
-    { "$ref": "#/$defs/markSent" }
+    { "$ref": "#/$defs/markSent" },
+    { "$ref": "#/$defs/probeJournalWrite" },
+    { "$ref": "#/$defs/createJournalCorpus" },
+    { "$ref": "#/$defs/commitJournalGeneration" },
+    { "$ref": "#/$defs/rollbackJournalGeneration" },
+    { "$ref": "#/$defs/incrementJournalVisibility" }
   ],
   "$defs": {
     "id": { "type": "string", "pattern": "^[A-Za-z0-9:_-]{1,200}$" },
     "caseId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,79}$" },
+    "journalPurpose": { "enum": ["archive", "organize_search", "session_use", "correct", "review", "export", "delete"] },
     "base": {
       "type": "object",
       "required": ["schema_version", "operation", "case_id"],
@@ -77,6 +83,59 @@
         "received_at": { "type": "string", "format": "date-time" },
         "reported_independence_from_producer_context_id": { "$ref": "#/$defs/id" }
       }
+    },
+    "probeJournalWrite": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "purpose"],
+        "properties": {
+          "schema_version": { "const": 1 }, "operation": { "const": "probe_journal_write" }, "case_id": { "$ref": "#/$defs/caseId" },
+          "purpose": { "$ref": "#/$defs/journalPurpose" }
+        }
+      }]
+    },
+    "createJournalCorpus": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "corpus_id", "manifest_object_id"],
+        "properties": {
+          "schema_version": { "const": 1 }, "operation": { "const": "create_journal_corpus" }, "case_id": { "$ref": "#/$defs/caseId" },
+          "corpus_id": { "$ref": "#/$defs/id" }, "manifest_object_id": { "$ref": "#/$defs/id" }
+        }
+      }]
+    },
+    "commitJournalGeneration": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "corpus_id", "generation", "manifest_object_id", "permitted_uses"],
+        "properties": {
+          "schema_version": { "const": 1 }, "operation": { "const": "commit_journal_generation" }, "case_id": { "$ref": "#/$defs/caseId" },
+          "corpus_id": { "$ref": "#/$defs/id" }, "generation": { "$ref": "#/$defs/id" }, "manifest_object_id": { "$ref": "#/$defs/id" },
+          "expected_generation": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+          "expected_case_revision": { "oneOf": [{ "type": "integer", "minimum": 0 }, { "type": "null" }] },
+          "permitted_uses": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["archive", "organize_search", "session_use"] } }
+        }
+      }]
+    },
+    "rollbackJournalGeneration": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "corpus_id", "target_generation", "expected_generation"],
+        "properties": {
+          "schema_version": { "const": 1 }, "operation": { "const": "rollback_journal_generation" }, "case_id": { "$ref": "#/$defs/caseId" },
+          "corpus_id": { "$ref": "#/$defs/id" }, "target_generation": { "$ref": "#/$defs/id" }, "expected_generation": { "$ref": "#/$defs/id" }
+        }
+      }]
+    },
+    "incrementJournalVisibility": {
+      "allOf": [{ "$ref": "#/$defs/base" }, {
+        "type": "object", "additionalProperties": false,
+        "required": ["schema_version", "operation", "case_id", "corpus_id", "expected_epoch"],
+        "properties": {
+          "schema_version": { "const": 1 }, "operation": { "const": "increment_journal_visibility" }, "case_id": { "$ref": "#/$defs/caseId" },
+          "corpus_id": { "$ref": "#/$defs/id" }, "expected_epoch": { "type": "integer", "minimum": 0 }
+        }
+      }]
     },
     "markSent": {
       "allOf": [{ "$ref": "#/$defs/base" }, {

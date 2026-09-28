@@ -1,6 +1,7 @@
 import path from "node:path";
 import { RuntimeError } from "../core/errors.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "./private-case-access.mjs";
+import { acquirePrivateRootWriterLock } from "./shared-case-coordinator.mjs";
 
 function optionalText(value) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
@@ -30,6 +31,7 @@ export async function loadPrivateRuntimeAccessFromEnvironment(environment = proc
   }
 
   let providers;
+  let writerLock = null;
   try {
     if (resolvedMode === "hosted") {
       const { loadHostedPrivateCaseProvidersFromEnvironment } = await import("./hosted-private-case-providers.mjs");
@@ -51,15 +53,28 @@ export async function loadPrivateRuntimeAccessFromEnvironment(environment = proc
       }
       privateAuthContext = Object.freeze({ bearerToken });
     }
+    // This server writes the vault for as long as it runs, so it holds the vault's writer lock for
+    // that long: the lock the one-shot operator and a journal publication take. Neither can change
+    // the vault under it, and it doesn't start while one of them is writing.
+    try { writerLock = await acquirePrivateRootWriterLock({ rootDir: providers.rootDir }); }
+    catch (error) {
+      if (error?.code !== "PRIVATE_ROOT_WRITER_ACTIVE") throw error;
+      throw new RuntimeError("Another writer holds this private vault: a one-shot operator, a journal publication or another InnerSignal server. Start this server after it finishes.", { code: "PRIVATE_ROOT_WRITER_ACTIVE" });
+    }
+    const lock = writerLock;
     return Object.freeze({
       mode: resolvedMode,
       providerKind: providers.kind,
       productionReady: providers.productionReady,
       privateCaseAccessService,
       privateAuthContext,
-      close() { providers.close(); }
+      close() {
+        providers.close();
+        return lock.release();
+      }
     });
   } catch (error) {
+    await writerLock?.release();
     providers?.close();
     throw error;
   }

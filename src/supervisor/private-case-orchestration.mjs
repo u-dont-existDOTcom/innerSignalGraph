@@ -1,5 +1,6 @@
 import { ValidationError } from "../core/errors.mjs";
-import { PrivateCaseAccessDeniedError } from "../storage/private-case-access.mjs";
+import { createJournalPrivateApi } from "../journal-import/http.mjs";
+import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, PrivateCaseAccessDeniedError } from "../storage/private-case-access.mjs";
 import { candidateDeliveryGate } from "./private-candidate-lifecycle.mjs";
 import { persistPrivateCandidateAuditResult, reconstructPrivateCandidate } from "./private-candidate-audit.mjs";
 
@@ -12,7 +13,12 @@ const OPERATIONS = new Set([
   "create_handoff",
   "approve_candidate_for_delivery",
   "deliver_candidate_and_create_handoff",
-  "mark_candidate_sent"
+  "mark_candidate_sent",
+  "probe_journal_write",
+  "create_journal_corpus",
+  "commit_journal_generation",
+  "rollback_journal_generation",
+  "increment_journal_visibility"
 ]);
 
 function requiredText(value, name, maximum = 100_000) {
@@ -27,6 +33,16 @@ function requiredId(value, name, pattern = PRIVATE_ID) {
 
 function requiredObject(value, name) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new ValidationError(`${name} must be an object.`);
+  return value;
+}
+
+function requiredInteger(value, name) {
+  if (!Number.isSafeInteger(value) || value < 0) throw new ValidationError(`${name} is invalid.`);
+  return value;
+}
+
+function requiredJournalPurpose(value, name = "purpose") {
+  if (!Object.values(PRIVATE_JOURNAL_PURPOSES).includes(value)) throw new ValidationError(`${name} is invalid.`);
   return value;
 }
 
@@ -80,6 +96,96 @@ export function createPrivateCaseOrchestrator({ caseAccessService } = {}) {
     async execute(request, authContext) {
       commonRequest(request);
       const caseId = request.case_id;
+
+      if (request.operation === "probe_journal_write") {
+        if (typeof caseAccessService.verifyCaseAccess !== "function") throw new ValidationError("caseAccessService must support non-mutating authorization probes.");
+        const purpose = requiredJournalPurpose(request.purpose);
+        const result = await caseAccessService.verifyCaseAccess(caseId, {
+          requiredScope: PRIVATE_CASE_SCOPES.WRITE,
+          requiredPurpose: purpose
+        }, authContext);
+        return Object.freeze({
+          schema_version: 1,
+          operation_succeeded: true,
+          case_id: caseId,
+          required_scope: PRIVATE_CASE_SCOPES.WRITE,
+          required_purpose: purpose,
+          case_revision: result.case_revision,
+          mutation_performed: false
+        });
+      }
+
+      if (request.operation === "create_journal_corpus") {
+        requiredId(request.corpus_id, "corpus_id");
+        requiredId(request.manifest_object_id, "manifest_object_id");
+        if (typeof caseAccessService.createJournalCorpus !== "function") throw new ValidationError("caseAccessService must support journal corpus creation.");
+        const result = await caseAccessService.createJournalCorpus(caseId, {
+          corpusId: request.corpus_id,
+          manifestObjectId: request.manifest_object_id
+        }, authContext);
+        return Object.freeze({
+          schema_version: 1,
+          operation_succeeded: true,
+          case_id: caseId,
+          corpus_id: result.reference.corpus_id,
+          active_generation: result.reference.active_generation,
+          visibility_epoch: result.reference.visibility_epoch,
+          case_revision: result.case_revision
+        });
+      }
+
+      if (request.operation === "commit_journal_generation") {
+        for (const [name, value] of [["corpus_id", request.corpus_id], ["generation", request.generation], ["manifest_object_id", request.manifest_object_id]]) requiredId(value, name);
+        if (!Array.isArray(request.permitted_uses)) throw new ValidationError("permitted_uses is invalid.");
+        const result = await createJournalPrivateApi({ caseAccessService }).commit({
+          caseId,
+          corpusId: request.corpus_id,
+          generation: request.generation,
+          manifestObjectId: request.manifest_object_id,
+          // An explicit null asserts that no generation is active yet; only an omitted field means
+          // "whatever is active now".
+          expectedGeneration: Object.hasOwn(request, "expected_generation") ? request.expected_generation : undefined,
+          expectedCaseRevision: request.expected_case_revision ?? null,
+          permittedUses: request.permitted_uses
+        }, authContext);
+        return Object.freeze({
+          schema_version: 1,
+          operation_succeeded: true,
+          case_id: caseId,
+          corpus_id: request.corpus_id,
+          active_generation: result.active_generation,
+          visibility_epoch: result.visibility_epoch,
+          case_revision: result.case_revision
+        });
+      }
+
+      if (request.operation === "rollback_journal_generation") {
+        for (const [name, value] of [["corpus_id", request.corpus_id], ["target_generation", request.target_generation], ["expected_generation", request.expected_generation]]) requiredId(value, name);
+        if (typeof caseAccessService.rollbackJournalGeneration !== "function") throw new ValidationError("caseAccessService must support journal rollback.");
+        const result = await caseAccessService.rollbackJournalGeneration(caseId, {
+          corpusId: request.corpus_id,
+          targetGeneration: request.target_generation,
+          expectedGeneration: request.expected_generation
+        }, authContext);
+        return Object.freeze({ schema_version: 1, operation_succeeded: true, case_id: caseId, corpus_id: request.corpus_id, ...result });
+      }
+
+      if (request.operation === "increment_journal_visibility") {
+        requiredId(request.corpus_id, "corpus_id");
+        requiredInteger(request.expected_epoch, "expected_epoch");
+        if (typeof caseAccessService.incrementJournalVisibilityEpoch !== "function") throw new ValidationError("caseAccessService must support journal visibility changes.");
+        const visibilityEpoch = await caseAccessService.incrementJournalVisibilityEpoch(caseId, {
+          corpusId: request.corpus_id,
+          expectedEpoch: request.expected_epoch
+        }, authContext);
+        return Object.freeze({
+          schema_version: 1,
+          operation_succeeded: true,
+          case_id: caseId,
+          corpus_id: request.corpus_id,
+          visibility_epoch: visibilityEpoch
+        });
+      }
 
       if (request.operation === "append_transcript_completion") {
         requiredId(request.amendment_id, "amendment_id");
