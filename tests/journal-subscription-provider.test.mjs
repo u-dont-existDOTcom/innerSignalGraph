@@ -307,13 +307,18 @@ test("runtime binds subscription browser without API credentials and hard-requir
   assert.equal(options.browser.port, 9223);
   assert.equal(port.capabilities().external_spend_authorized_usd, 0);
 
-  assert.throws(() => loadJournalInferencePortFromEnvironment({
+  const combined = loadJournalInferencePortFromEnvironment({
     INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify(route),
-    INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: Buffer.alloc(32, 93).toString("base64")
+    INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: Buffer.alloc(32, 93).toString("base64"),
+    INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: "/tmp/synthetic-journal-hardest-exchange",
+    INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64: Buffer.alloc(32, 94).toString("base64")
   }, {
+    caseId: "synthetic-case",
     hardestLane: { enabled: true, model: "claude-opus-5-5", effort: "max" },
     providerFactories: { chatgpt_subscription_browser() { return fakeProvider; } }
-  }), /HARDEST_LANE_TRANSPORT_UNSUPPORTED/);
+  });
+  assert.equal(combined.capabilities().roles.visual_reader.available, true);
+  combined.close();
 
   assert.throws(() => loadJournalInferencePortFromEnvironment({
     INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify({

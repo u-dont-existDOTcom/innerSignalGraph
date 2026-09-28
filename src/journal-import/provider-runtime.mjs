@@ -106,10 +106,10 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
   const raw = environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON;
   if (raw == null || raw === "") return createDisabledJournalInferencePort();
   const config = parseConfiguration(raw);
-  // The connector exchange dispatches hardest-tier work to its separately configured model.
-  // Generic provider routes have one fixed provider/model and ignore the work tier, so admitting a
-  // hardest lane there would falsely label an ordinary answer as a hardest-model answer.
-  invariant(hardestLane.enabled !== true || config.provider === JOURNAL_EXCHANGE_PROVIDER, "HARDEST_LANE_TRANSPORT_UNSUPPORTED");
+  // A browser route remains necessary for image-bearing visual_reader work. When the hardest lane
+  // is enabled alongside it, non-visual hardest work is dispatched through the local exchange while
+  // ordinary work (and visual work at either tier) retains the attachment-capable browser route.
+  // This avoids silently dropping pending scanned pages merely because the escalation lane is on.
   const receiptKey = Buffer.from(secret(environment, "INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64"), "base64");
   invariant(receiptKey.byteLength >= 32, "INFERENCE_RECEIPT_KEY_INVALID");
   if (config.provider === JOURNAL_EXCHANGE_PROVIDER) {
@@ -150,14 +150,43 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
         generationTimeoutMs: config.timeout_ms
       } : undefined
     });
-    return createProviderJournalInferencePort({
+    const providerPort = createProviderJournalInferencePort({
       provider,
-      receiptKey,
+      receiptKey: Buffer.from(receiptKey),
       routeRef: config.route_ref,
       allowanceEvidence: config.allowance_evidence,
       maxExternalSpendUsd: config.max_external_spend_usd,
       configuredModelProfile: config.model,
       configuredEffort: config.effort
+    });
+    if (!(hardestLane.enabled === true && config.provider === "chatgpt_subscription_browser")) return providerPort;
+    const exchangePort = loadExchangePort(environment, config, Buffer.from(receiptKey), caseId, hardestLane);
+    const operations = new Map();
+    const portFor = (input) => input.tier === "hardest" && input.role !== "visual_reader" ? exchangePort : providerPort;
+    return Object.freeze({
+      capabilities() {
+        const browser = providerPort.capabilities();
+        return { ...browser, authoritative_completion: true };
+      },
+      async prepare() { await exchangePort.prepare?.(); },
+      async invoke(input) {
+        const selected = portFor(input);
+        operations.set(input.operationKey, selected);
+        return selected.invoke(input);
+      },
+      async getCompletion(operationKey) {
+        const selected = operations.get(operationKey);
+        if (selected) return selected.getCompletion(operationKey);
+        const [exchange, browser] = await Promise.all([
+          exchangePort.getCompletion(operationKey), providerPort.getCompletion(operationKey)
+        ]);
+        return exchange.status !== "not_submitted" ? exchange : browser;
+      },
+      async release(operationKey) {
+        operations.delete(operationKey);
+        await Promise.all([exchangePort.release?.(operationKey), providerPort.release?.(operationKey)]);
+      },
+      close() { operations.clear(); exchangePort.close?.(); providerPort.close(); }
     });
   } finally {
     receiptKey.fill(0);

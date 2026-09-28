@@ -480,6 +480,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         throw error;
       }
     };
+    async function recordHardestOutcome(id, outcome) {
+      state.hardest_outcomes ??= {};
+      if (state.hardest_outcomes[id]) return;
+      state.hardest_outcomes[id] = outcome;
+      state.residuals = { ...(state.residuals ?? {}),
+        hardest_attempted: (state.residuals?.hardest_attempted ?? 0) + 1,
+        hardest_resolved: (state.residuals?.hardest_resolved ?? 0) + (outcome === "resolved" ? 1 : 0) };
+      await save();
+    }
     // A work result is used only once it passes its check. Each attempt has its own ID, so a rerun
     // replays the stored attempts in order, neither using a failed one nor sending it again. After
     // the last attempt the caller decides what the unresolved step means for its stage, instead of
@@ -501,16 +510,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       if (!hardestLane.enabled) return { failure };
       const result = await work({ ...request, id: `${request.id}:hardest`, tier: "hardest" });
-      if (!result) return workExhausted ? { failure, hardest: "failed" } : { blocked: true };
-      const hardestFailure = checkFailure(check, result);
-      state.hardest_outcomes ??= {};
-      if (!state.hardest_outcomes[request.id]) {
-        state.hardest_outcomes[request.id] = hardestFailure ? "failed" : "resolved";
-        state.residuals = { ...(state.residuals ?? {}),
-          hardest_attempted: (state.residuals?.hardest_attempted ?? 0) + 1,
-          hardest_resolved: (state.residuals?.hardest_resolved ?? 0) + (hardestFailure ? 0 : 1) };
+      if (!result) {
+        if (!workExhausted) return { blocked: true };
+        await recordHardestOutcome(request.id, "failed");
+        state.blocker = null;
         await save();
+        return { failure, hardest: "failed" };
       }
+      const hardestFailure = checkFailure(check, result);
+      await recordHardestOutcome(request.id, hardestFailure ? "failed" : "resolved");
       return hardestFailure ? { failure: hardestFailure, hardest: "failed" } : { result, hardest: "resolved" };
     }
 
@@ -789,30 +797,28 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                 candidate_extraction: { $work_output: "extractor" }, target_generation: state.generation } }],
             acceptReviewFindings: true
           });
-          if (!hardest) return false;
-          results = hardest;
-          bindingFailure = null;
-          try {
-            split = splitBatchExtractionByUnit({ extraction: results[0].output, unitIds: units.map((item) => item.unit_id) });
-            graphsByUnit = new Map(units.map((item) => [item.unit_id,
-              bindUnitExtraction(item, split.get(item.unit_id), results[0].receipt)]));
-          } catch (error) {
-            if (!(error instanceof ValidationError)) throw error;
-            bindingFailure = { code: error.code, details: error.details ?? null };
-          }
-          review = results?.[1]?.output;
-          unresolved = Boolean(bindingFailure) || results?.[0]?.output?.status !== "complete"
-            || review?.status !== "sufficient_for_stated_scope"
-            || review.assessments.some((assessment) => assessment.critical && assessment.outcome !== "preserved")
-            || review.unassessed_ids.length > 0;
-          state.hardest_outcomes ??= {};
           const outcomeId = `extract:batch:${keyId}`;
-          if (!state.hardest_outcomes[outcomeId]) {
-            state.hardest_outcomes[outcomeId] = unresolved ? "failed" : "resolved";
-            state.residuals = { ...(state.residuals ?? {}),
-              hardest_attempted: (state.residuals?.hardest_attempted ?? 0) + 1,
-              hardest_resolved: (state.residuals?.hardest_resolved ?? 0) + (unresolved ? 0 : 1) };
-            await save();
+          if (!hardest) {
+            if (!workExhausted) return false;
+            state.blocker = null;
+            await recordHardestOutcome(outcomeId, "failed");
+          } else {
+            results = hardest;
+            bindingFailure = null;
+            try {
+              split = splitBatchExtractionByUnit({ extraction: results[0].output, unitIds: units.map((item) => item.unit_id) });
+              graphsByUnit = new Map(units.map((item) => [item.unit_id,
+                bindUnitExtraction(item, split.get(item.unit_id), results[0].receipt)]));
+            } catch (error) {
+              if (!(error instanceof ValidationError)) throw error;
+              bindingFailure = { code: error.code, details: error.details ?? null };
+            }
+            review = results?.[1]?.output;
+            unresolved = Boolean(bindingFailure) || results?.[0]?.output?.status !== "complete"
+              || review?.status !== "sufficient_for_stated_scope"
+              || review.assessments.some((assessment) => assessment.critical && assessment.outcome !== "preserved")
+              || review.unassessed_ids.length > 0;
+            await recordHardestOutcome(outcomeId, unresolved ? "failed" : "resolved");
           }
         }
         if (unresolved && units.length > 1) {
