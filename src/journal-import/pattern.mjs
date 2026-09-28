@@ -149,23 +149,29 @@ export function addProvisionalPatterns({ graph, patternResult, producerReceipt, 
     unclassified_assertion_ids: [...result.unclassified_assertion_ids] });
 }
 
-export async function executeCounterevidenceSearch({ reader, patternId: targetPatternId, queries, generation, receiptSecret, maximumResults = 1000 }) {
+export async function executeCounterevidenceSearch({ reader, patternId: targetPatternId, queries, generation, receiptSecret, maximumBytes = 50_000 }) {
   invariant(reader && typeof reader.search === "function" && Array.isArray(queries) && queries.length > 0, "COUNTEREVIDENCE_SEARCH_INPUT_INVALID");
   invariant(receiptSecret instanceof Uint8Array && receiptSecret.byteLength >= 32, "COUNTEREVIDENCE_RECEIPT_SECRET_INVALID");
+  invariant(Number.isSafeInteger(maximumBytes) && maximumBytes >= 2, "COUNTEREVIDENCE_SEARCH_BYTE_BUDGET_INVALID");
   const records = new Map();
-  let incomplete = false;
+  const matchedIds = new Set();
+  let retainedBytes = 2;
   for (const query of queries) {
     let cursor = null;
     do {
       const page = await reader.search({ query, graphEnabled: false, pageSize: 200, cursor });
       for (const record of page.records) {
-        if (records.size >= maximumResults) { incomplete = true; break; }
-        records.set(record.id, record);
+        matchedIds.add(record.id);
+        if (!records.has(record.id)) {
+          const recordBytes = Buffer.byteLength(JSON.stringify(record), "utf8") + (records.size ? 1 : 0);
+          if (retainedBytes + recordBytes <= maximumBytes) {
+            records.set(record.id, record);
+            retainedBytes += recordBytes;
+          }
+        }
       }
-      if (incomplete) break;
       cursor = page.next_cursor;
     } while (cursor);
-    if (incomplete) break;
   }
   const body = {
     kind: "counterevidence_search",
@@ -174,8 +180,9 @@ export async function executeCounterevidenceSearch({ reader, patternId: targetPa
     pattern_id: targetPatternId,
     query_sha256: queries.map((query) => sha256(Buffer.from(query.normalize("NFKC"), "utf8"))),
     matched_ids: [...records.keys()].sort(),
-    complete: !incomplete,
-    more_available: incomplete
+    matched_count: matchedIds.size,
+    complete: true,
+    more_available: false
   };
   const authenticationTag = createHmac("sha256", receiptSecret).update(JSON.stringify(body)).digest("base64url");
   return Object.freeze({ records: [...records.values()], receipt: { ...body, authentication_tag: authenticationTag } });

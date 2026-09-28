@@ -470,3 +470,13 @@ Obtain GitHub App-authorized authentication, read repository-scoped installed-Ap
 ## Recovery rule
 
 After interruption, inspect actual Git state, this checkpoint, `.github/codex-repository.json`, newer owner instructions, current PR/check/API state, and the final commits in each worktree. Never infer completion from chat or replay completed changes. Do not copy r03 therapy changes into this branch.
+
+## Current journal-import Task 5 fixes (2026-09-28)
+
+The current task branch implements the three owner-requested fixes from Task 5 of `docs/superpowers/plans/2026-09-28-journal-import-handoff.md`:
+
+- Visual page bytes are written once to the encrypted chunked corpus store before semantic work. The durable job packet keeps only the chunk manifest, byte length, media type, and SHA-256; the controller resolves and verifies those bytes only while constructing the transport packet. The job key is still derived from the legacy inline packet so already-read pages and in-flight visual jobs retain their identity. A regression uses a rendered page larger than the 4 MiB object limit and verifies the ledger remains below that limit.
+- A fresh controller run resets the two-attempt budget only when the preceding terminal failure is recorded as definitely `not_submitted`. Unknown or submitted completion remains parked and is never automatically resent. Regressions cover both a recovered transport on the next run and an ambiguous completion.
+- Counterevidence search now follows every cursor to completion while retaining only records that fit the review byte budget. The authenticated receipt records the complete distinct-match count, and the reviewer receives that count with the retained records. A regression covers 70 matches over multiple pages, beyond the former 64-result cap.
+
+This is import/runtime infrastructure only. It changes no therapy, graph, product, release, installation, provider-spend, or owner-policy authority. `stable` remains the sole installation source. Final verification and commit/PR receipts belong in Git and the pull request; resume by inspecting the working tree and rerunning the exact repository gates if they are not recorded there.

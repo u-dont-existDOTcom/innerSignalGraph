@@ -27,9 +27,12 @@ test("pattern pass freezes source before neutral candidates, searches contrary s
   const saved = new Map(), calls = [], searches = [];
   const readIfPresent = async id => saved.get(id) ?? null;
   const writeOnce = async (id, value) => { assert.equal(saved.has(id), false); saved.set(id, value); return value; };
+  const broadMatches = Array.from({ length: 70 }, (_, index) => ({
+    ...structuredClone(graph.nodes.find(node => node.id === "p4")), id: `broad-match-${index}`
+  }));
   const sourceReader = { async search({ query, cursor }) {
     searches.push({ query, cursor });
-    return { records: cursor ? [] : [graph.nodes.find(node => node.id === "p4")], next_cursor: null };
+    return { records: cursor ? broadMatches.slice(35) : broadMatches.slice(0, 35), next_cursor: cursor ? null : "page:2" };
   } };
   const work = async ({ role, packetInput }) => {
     calls.push(role);
@@ -66,6 +69,12 @@ test("pattern pass freezes source before neutral candidates, searches contrary s
     assert.equal(packetInput.frozen_observations.source_only_first_pass, true);
     assert.equal(packetInput.source_retrieval.counterevidence[
       packetInput.candidate_patterns[0].id].complete, true);
+    assert.equal(packetInput.source_retrieval.counterevidence[
+      packetInput.candidate_patterns[0].id].total_matches, 70);
+    assert.ok(packetInput.source_retrieval.counterevidence[
+      packetInput.candidate_patterns[0].id].records.length < 70);
+    assert.ok(packetInput.source_retrieval.counterevidence[
+      packetInput.candidate_patterns[0].id].records.length > 0);
     return [{ output: { schema_version: "1.0", target_generation: generation,
       review_role: "pattern_reviewer", assessments: [{
         target_id: packetInput.candidate_patterns[0].id, outcome: "preserved",
@@ -77,7 +86,7 @@ test("pattern pass freezes source before neutral candidates, searches contrary s
   };
   const args = { graph, units, unitGraphs, sourceReader, work,
     readIfPresent, writeOnce, counterReceiptSecret: Buffer.alloc(32, 63),
-    generation, representations };
+    generation, representations, counterevidenceMaximumBytes: 5_000 };
   const first = await runJournalPatternPass(args);
   assert.deepEqual(calls, ["reference_reader", "pattern_builder", "pattern_reviewer"]);
   assert.equal(first.status, "pass");

@@ -40,7 +40,8 @@ function failureOf(check, saved) {
 export async function runJournalPatternPass({
   graph: reconciledGraph, units, unitGraphs, sourceReader, work,
   readIfPresent, writeOnce, counterReceiptSecret, generation,
-  representations, maximumBytes = 50000, stepFailure = () => null
+  representations, maximumBytes = 50000, counterevidenceMaximumBytes = maximumBytes,
+  stepFailure = () => null
 }) {
   requireValue(reconciledGraph?.generation === generation, "PATTERN_GENERATION_MISMATCH");
   requireValue(Array.isArray(units) && units.length === unitGraphs.length, "PATTERN_UNIT_SCOPE_INVALID");
@@ -140,13 +141,13 @@ export async function runJournalPatternPass({
       if (!saved) {
         saved = await executeCounterevidenceSearch({
           reader: sourceReader, patternId: id, queries: added.counterevidence_queries[id],
-          generation, receiptSecret: counterReceiptSecret, maximumResults: 64
+          generation, receiptSecret: counterReceiptSecret, maximumBytes: counterevidenceMaximumBytes
         });
         saved = await writeOnce(searchId, saved);
       }
       counterReceipts[id] = saved.receipt;
       searchRecords[id] = { records: saved.records, complete: saved.receipt.complete,
-        more_available: saved.receipt.more_available };
+        more_available: saved.receipt.more_available, total_matches: saved.receipt.matched_count };
     }
     const selected = new Set(added.created_pattern_ids);
     const scoped = {

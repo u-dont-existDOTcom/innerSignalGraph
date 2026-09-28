@@ -378,6 +378,51 @@ test("known-unsent transport failure retries twice at most and malformed output 
   });
 });
 
+test("a fresh run resets exhausted confirmed-unsent retries but never resends an unknown completion", async (t) => {
+  await t.test("confirmed unsent resumes with a fresh budget", async () => {
+    const ledger = createMemoryJournalJobLedger();
+    let failedInvokes = 0;
+    const failedPort = {
+      capabilities: () => ({ mode: "synthetic-unsent" }),
+      async invoke() { failedInvokes += 1; throw new JournalInferencePortError("RETRYABLE_TRANSPORT", { submissionStatus: "not_submitted" }); },
+      async getCompletion() { return { status: "not_submitted" }; }
+    };
+    const first = createJournalImportController({ ledger, inferencePort: failedPort, controllerSecret: Buffer.alloc(32, 55), grant });
+    await first.initialize({ ...initialization(), jobId: "job:fresh-run-unsent", workDefinitions: [workDefinitions()[0]] });
+    const exhausted = await first.runUntilBlocked();
+    assert.equal(exhausted.snapshot.work_items[0].status, "blocked_authority");
+    assert.equal(failedInvokes, 2);
+    first.close();
+
+    let recoveredInvokes = 0;
+    const recoveredPort = createMockJournalInferencePort({ handlers: { extractor() { recoveredInvokes += 1; return completeExtraction(); } } });
+    const second = createJournalImportController({ ledger, inferencePort: recoveredPort, controllerSecret: Buffer.alloc(32, 55), grant });
+    const completed = await second.runUntilBlocked();
+    assert.equal(completed.snapshot.work_items[0].status, "completed");
+    assert.equal(completed.snapshot.work_items[0].attempts, 1);
+    assert.equal(recoveredInvokes, 1);
+    second.close(); recoveredPort.close();
+  });
+
+  await t.test("unknown completion remains parked", async () => {
+    const ledger = createMemoryJournalJobLedger();
+    let invokes = 0;
+    const port = {
+      capabilities: () => ({ mode: "synthetic-unknown" }),
+      async invoke() { invokes += 1; throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" }); },
+      async getCompletion() { return { status: "unknown" }; }
+    };
+    const first = createJournalImportController({ ledger, inferencePort: port, controllerSecret: Buffer.alloc(32, 57), grant });
+    await first.initialize({ ...initialization(), jobId: "job:fresh-run-unknown", workDefinitions: [workDefinitions()[0]] });
+    await first.runUntilBlocked(); first.close();
+    const second = createJournalImportController({ ledger, inferencePort: port, controllerSecret: Buffer.alloc(32, 57), grant });
+    const parked = await second.runUntilBlocked();
+    assert.equal(parked.snapshot.work_items[0].status, "completion_unknown");
+    assert.equal(invokes, 1);
+    second.close();
+  });
+});
+
 test("quota, revocation and missing fresh-context route block only the affected semantic work", async (t) => {
   for (const [code, expectedState] of [["QUOTA_PAUSED", "paused_quota"], ["GRANT_REVOKED", "revoked"], ["INFERENCE_ISOLATION_UNAVAILABLE", "blocked_authority"]]) {
     await t.test(code, async () => {
