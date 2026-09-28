@@ -1,6 +1,15 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-27
+Updated: 2026-09-28
+
+## Mission Control journal dispatch listing — `work`
+
+- **Goal:** give the Mission Control journal work runner (UDA #275) a content-free command that lists outstanding connector-exchange work.
+- **Done:** `npm run journal:work -- dispatch [--json]` canonicalizes and validates the configured exchange root, reads the content-free dispatch queue without the exchange secret, and writes one JSON object per non-expired record. The allowlisted fields include the work ID, role, output schema name, model, effort, fixed `standard` tier, issue/expiry times and answer presence; packets, answers and paths never cross the command boundary.
+- **Failure boundary:** a missing, in-repository or unsafe root exits non-zero and emits only a stable content-free error code. An empty, expired or retired queue emits nothing and exits successfully.
+- **Verified:** targeted dispatch/exchange/port tests cover unanswered-to-answered state, expiry, retirement, empty output and a packet sentinel. The complete repository gates and audits are recorded in this PR.
+- **Safety:** no deployment, runtime-route, therapy, product-policy or `stable` change. The listing does not receive or decrypt the exchange secret.
+- **Next safe action:** review and merge this PR; UDA #275 can then invoke the listing with the same exchange-root setting used by the connector.
 
 ## Journal import through the connector: the exchange provider — `claude/journal-exchange-provider-20260927`
 
