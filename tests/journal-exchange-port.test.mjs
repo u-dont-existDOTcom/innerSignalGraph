@@ -294,6 +294,31 @@ test("a hardest call uses its configured tier, model, effort and expiry and reco
   assert.equal(result.receipt.configured_effort, "max");
 });
 
+test("a hardest receipt keeps the persisted dispatch model and effort after restart config drift", async (t) => {
+  const environment = await setup(t);
+  const operationKey = `${KEY}:hardest:config-drift`;
+  const first = environment.makePort({
+    waitMs: 0,
+    hardestLane: { model: "claude-opus-original", effort: "original-effort", ttl_hours: 6 }
+  });
+  await assert.rejects(
+    first.invoke({ ...referenceCall({ operationKey }), tier: "hardest" }),
+    { code: "COMPLETION_UNKNOWN" }
+  );
+  first.close();
+  assert.equal(await environment.answerOpenItems(), 1);
+
+  const restarted = environment.makePort({
+    waitMs: 0,
+    hardestLane: { model: "claude-opus-new", effort: "new-effort", ttl_hours: 6 }
+  });
+  t.after(() => restarted.close());
+  const completed = await restarted.getCompletion(operationKey);
+  assert.equal(completed.status, "completed");
+  assert.equal(completed.receipt.configured_model_profile, "claude-opus-original");
+  assert.equal(completed.receipt.configured_effort, "original-effort");
+});
+
 test("the exchange route loads from the environment and checks its root before any work", async (t) => {
   const { loadJournalInferencePortFromEnvironment } = await import("../src/journal-import/provider-runtime.mjs");
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "journal-exchange-route-"));

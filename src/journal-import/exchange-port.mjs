@@ -124,8 +124,16 @@ export function createExchangeJournalInferencePort({
     throw new JournalInferencePortError("JOURNAL_EXCHANGE_RETRY_LIMIT", { submissionStatus: "not_submitted" });
   }
 
-  function receiptFor(operationKey, entry, stored) {
-    const hardest = entry.tier === "hardest";
+  async function hasOperation(operationKey) {
+    const store = await ready();
+    for (let successor = 0; successor <= MAX_SUCCESSORS; successor += 1) {
+      const workId = journalExchangeWorkId(operationKey, successor);
+      if ((await store.readWork(workId)) || (await store.readResult(workId))) return true;
+    }
+    return false;
+  }
+
+  function receiptFor(operationKey, entry, stored, dispatch) {
     const receiptBody = {
       receipt_id: `receipt:${createHmac("sha256", key).update(`${operationKey}\0${entry.input_sha256}`).digest("hex").slice(0, 40)}`,
       transport: JOURNAL_WORK_TRANSPORT,
@@ -134,8 +142,8 @@ export function createExchangeJournalInferencePort({
       request_context_id: `chatgpt-connector:${stored.receipt.receipt_id}`,
       input_manifest_sha256: entry.input_sha256,
       role_instruction_sha256: sha256(Buffer.from(entry.instruction, "utf8")),
-      configured_model_profile: hardest ? hardestModel : model,
-      configured_effort: hardest ? hardestEffort : effort,
+      configured_model_profile: dispatch.model,
+      configured_effort: dispatch.effort,
       effective_model_profile: null,
       effective_effort: null,
       completion_status: "completed",
@@ -150,7 +158,7 @@ export function createExchangeJournalInferencePort({
         output_sha256: stored.receipt.output_sha256,
         subject_sha256: stored.receipt.subject_sha256,
         subject: stored.receipt.subject,
-        tier: entry.tier ?? "standard"
+        tier: dispatch.tier ?? "standard"
       },
       cost_usd: 0,
       grant_id: entry.grant_id,
@@ -185,13 +193,15 @@ export function createExchangeJournalInferencePort({
     const { store, workId, entry, stored } = await current(operationKey);
     if (stored?.output) {
       invariant(entry, "JOURNAL_EXCHANGE_ENTRY_MISSING");
+      const dispatch = (await store.listDispatch()).find((record) => record.work_id === workId);
+      invariant(dispatch, "JOURNAL_EXCHANGE_DISPATCH_MISSING");
       let output;
       try {
         output = validateJournalSchema(entry.output_schema_name, stored.output);
       } catch (cause) {
         return { status: "invalid_output", cause };
       }
-      return { status: "completed", output, receipt: receiptFor(operationKey, entry, stored) };
+      return { status: "completed", output, receipt: receiptFor(operationKey, entry, stored, dispatch) };
     }
     // Retired after its answer was stored durably; the caller holds the answer, not the exchange.
     if (stored?.retired) return { status: "unknown" };
@@ -284,6 +294,7 @@ export function createExchangeJournalInferencePort({
       if (observed.status === "invalid_output") return { status: "invalid_output" };
       return { status: "unknown" };
     },
+    hasOperation,
     // Called once the caller has stored the answer durably: the item is retired and its dispatch
     // record removed, so the connector stops serving it and Mission Control stops offering it.
     async release(operationKey) {

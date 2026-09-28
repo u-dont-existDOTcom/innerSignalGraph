@@ -7,7 +7,7 @@ import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
 import { sourceFormatForPath, sourceParserCapabilities } from "../journal-import/parsers/index.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../journal-import/provider-runtime.mjs";
-import { vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
+import { normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 
@@ -207,7 +207,10 @@ export async function configuredJournalDoctorReport(configPath, environment = pr
   if (operator.blocker) blockers.push(operator.blocker);
   let inference;
   try {
-    const port = loadJournalInferencePortFromEnvironment({ ...environment }, { caseId: config.target_profile.case_id });
+    const port = loadJournalInferencePortFromEnvironment({ ...environment }, {
+      caseId: config.target_profile.case_id,
+      hardestLane: normalizeJournalHardestLaneConfig(config)
+    });
     try { inference = port.capabilities(); }
     finally { port.close?.(); }
   } catch (error) {

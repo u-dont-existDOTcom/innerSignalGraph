@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
-import { vaultRootMatchesConfig } from "./run-config.mjs";
+import { normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -169,13 +169,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
     invariant(state.case_id === caseId && state.source_sha256 === config.source.sha256, "JOURNAL_RESUME_BINDING_MISMATCH");
     store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: state.corpus_id, corpusKey: key, resumeMatchingObjects: true });
-    const hardestLane = {
-      enabled: config.hardest_lane?.enabled === true,
-      model: config.hardest_lane?.model ?? "claude-opus-5-5",
-      effort: config.hardest_lane?.effort ?? "max",
-      ttl_hours: config.hardest_lane?.ttl_hours ?? 24,
-      daily_limit: config.hardest_lane?.daily_limit ?? 20
-    };
+    const hardestLane = normalizeJournalHardestLaneConfig(config);
     invariant(Number.isSafeInteger(hardestLane.daily_limit) && hardestLane.daily_limit >= 1, "HARDEST_LANE_CONFIG_INVALID");
     invariant(Number.isFinite(hardestLane.ttl_hours) && hardestLane.ttl_hours > 0, "HARDEST_LANE_CONFIG_INVALID");
     port = suppliedPort ?? loadJournalInferencePortFromEnvironment({ ...environment }, {
@@ -200,12 +194,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         await authorize();
         return result;
       },
-      async getCompletion(operationKey) {
+      async getCompletion(operationKey, options) {
         await authorize();
-        const result = await semanticPort.getCompletion(operationKey);
+        const result = await semanticPort.getCompletion(operationKey, options);
         await authorize();
         return result;
       },
+      isAuthoritativeCompletion: (operationKey, input) => typeof semanticPort.isAuthoritativeCompletion === "function"
+        ? semanticPort.isAuthoritativeCompletion(operationKey, input)
+        : semanticPort.capabilities?.()?.authoritative_completion === true,
       // Lets the port drop its own copy once the durable store holds the answer; moves no content.
       release: (operationKey) => semanticPort.release?.(operationKey),
       close: () => semanticPort.close?.()
@@ -424,7 +421,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           }
           // Definitely never answered (an exchange item that expired): record it as open, so the next
           // run confirms that through the port and sends the call again under a fresh key.
-          if (error.submissionStatus === "not_submitted" && port.capabilities?.()?.authoritative_completion === true) {
+          if (error.submissionStatus === "not_submitted" && await port.isAuthoritativeCompletion(operationKey)) {
             await writeOnce(`reference:completion-unknown:${operationKey}`, { status: "not_submitted", operation_key: operationKey });
             state.stage = workStage; state.blocker = error.code ?? "INFERENCE_NOT_SUBMITTED"; await save(); return null;
           }

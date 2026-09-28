@@ -165,8 +165,7 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
     const portFor = (input) => input.tier === "hardest" && input.role !== "visual_reader" ? exchangePort : providerPort;
     return Object.freeze({
       capabilities() {
-        const browser = providerPort.capabilities();
-        return { ...browser, authoritative_completion: true };
+        return providerPort.capabilities();
       },
       async prepare() { await exchangePort.prepare?.(); },
       async invoke(input) {
@@ -174,13 +173,20 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
         operations.set(input.operationKey, selected);
         return selected.invoke(input);
       },
-      async getCompletion(operationKey) {
-        const selected = operations.get(operationKey);
+      async getCompletion(operationKey, { authoritativeCompletion } = {}) {
+        const selected = operations.get(operationKey)
+          ?? (typeof authoritativeCompletion === "boolean" ? (authoritativeCompletion ? exchangePort : providerPort) : null);
         if (selected) return selected.getCompletion(operationKey);
         const [exchange, browser] = await Promise.all([
           exchangePort.getCompletion(operationKey), providerPort.getCompletion(operationKey)
         ]);
         return exchange.status !== "not_submitted" ? exchange : browser;
+      },
+      async isAuthoritativeCompletion(operationKey, input = null) {
+        if (input) return portFor(input) === exchangePort;
+        const selected = operations.get(operationKey);
+        if (selected) return selected === exchangePort;
+        return exchangePort.hasOperation(operationKey);
       },
       async release(operationKey) {
         operations.delete(operationKey);
