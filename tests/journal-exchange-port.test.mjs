@@ -192,6 +192,33 @@ test("an answer without mechanically verified execution profile and context is n
   assert.equal(stored.receipt.effective_effort, undefined);
 });
 
+test("an invalid dispatcher context identifier is not promoted into an authenticated receipt", async (t) => {
+  const environment = await setup(t);
+  const port = environment.makePort({
+    exchange: {
+      ...environment.runtimeExchange,
+      async readResult(workId) {
+        const result = await environment.runtimeExchange.readResult(workId);
+        if (!result?.receipt) return result;
+        return {
+          ...result,
+          receipt: {
+            ...result.receipt,
+            request_context_id: "verified-chat:\nforged-field",
+            effective_model_profile: "GPT-5.6 Sol",
+            effective_effort: "Pro"
+          }
+        };
+      }
+    }
+  });
+  const invocation = port.invoke(referenceCall());
+  while ((await environment.connector.listDispatch()).length === 0) await delay(5);
+  await environment.answerOpenItems();
+  const { receipt } = await invocation;
+  assert.equal(receipt.request_context_id, null);
+});
+
 test("a call left open survives a restart and completes from the exchange, without a second send", async (t) => {
   const environment = await setup(t);
   const store = memoryStore();

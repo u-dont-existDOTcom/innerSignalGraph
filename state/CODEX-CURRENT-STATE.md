@@ -2,6 +2,14 @@
 
 Updated: 2026-09-28
 
+## Journal exchange provider — required-check repair after `9e112e6`
+
+- **Goal:** repair the PR #97 required-check regression without broadening the connector exchange's trust boundary.
+- **Cause and fix:** `9e112e6` copied a dispatcher-supplied `request_context_id` into the runtime's authenticated inference receipt after checking only that it was a string. The receipt now admits only a bounded, printable ASCII identifier (1–256 bytes); malformed, multiline, empty, and oversized values remain unverified (`null`) rather than crossing the authenticated receipt boundary. A regression exercises the malformed multiline case.
+- **Verification:** Node v24.18.0 was activated before npm. The targeted exchange tests, repository audit, local publication audit, and journal UI test pass. `npm test` and `npm run verify` reach 1,577/1,579 and 1,578/1,580 passing tests respectively, but each retains the unrelated container-only process-group teardown failure recorded below: PID 1 leaves the killed descendant as a zombie, so `kill(-pgid, 0)` continues to report the group. No package was missing.
+- **Universal guidance:** live canonical GitHub access was attempted again, but the environment's GitHub HTTPS tunnel returned 403. No remembered Universal copy was substituted.
+- **Safety:** no deployment, installation, provider call, private case access, therapy/framework policy change, or `stable` change occurred.
+
 ## Journal exchange provider — Codex review findings at `cf74528`
 
 - **Goal:** resolve the two remaining findings on PR #97 without treating desired dispatch configuration or answer identity as execution evidence.

@@ -28,6 +28,7 @@ const MAX_SUCCESSORS = 8;
 // Images reach ChatGPT only as attachments, which the connector cannot deliver yet.
 const UNSUPPORTED_ROLES = new Set(["visual_reader"]);
 const CASE_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,79}$/u;
+const REQUEST_CONTEXT_ID_PATTERN = /^[\x21-\x7e]{1,256}$/u;
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -134,6 +135,7 @@ export function createExchangeJournalInferencePort({
       // A unique answer receipt does not prove a unique chat. Leave this unverified unless a
       // dispatcher/provider receipt mechanically supplies the actual request context.
       request_context_id: typeof stored.receipt.request_context_id === "string"
+        && REQUEST_CONTEXT_ID_PATTERN.test(stored.receipt.request_context_id)
         ? stored.receipt.request_context_id
         : null,
       input_manifest_sha256: entry.input_sha256,
