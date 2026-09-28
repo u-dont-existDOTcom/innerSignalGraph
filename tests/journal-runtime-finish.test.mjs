@@ -5,6 +5,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
+import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 import { createMockJournalInferencePort } from "../src/journal-import/provider-port.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 
@@ -183,4 +184,69 @@ test("a reference that never quotes its source is asked again, and a unit no att
   assert.ok(audit.residuals.audit_unassessed_units > 0);
   assert.ok(finalReferences >= 3, "each audited unit is asked three times before it is recorded as unassessed");
   assert.equal(commit.completion.profile_committed, "pass");
+});
+
+test("a successful reference freeze remains in the unassessed denominator when fidelity exhausts its attempts", async (t) => {
+  const f = await environment(t);
+  let failedFidelityAttempts = 0;
+  const roleHandlers = handlers({
+    reference_reader: (packet) => {
+      const unit = packet.source_windows[0];
+      return { schema_version: "1.0", source_only_first_pass: true,
+        reference_items: [{ id: `reference:${unit.unit_id}`, statement: "Synthetic proposition.", required_qualifiers: [],
+          anchors: [{ unit_id: unit.unit_id, quote: unit.text, occurrence: null }], importance_reason: "Synthetic.", critical: false }],
+        questions: [], unassessed_unit_ids: [] };
+    },
+    fidelity_auditor: (packet) => {
+      if (!packet.imported_generation?.assessment_target_ids) return handlers().fidelity_auditor(packet);
+      failedFidelityAttempts += 1;
+      return { ...review("fidelity_auditor", packet), status: "not-a-valid-status" };
+    },
+    pattern_builder: (packet) => ({ schema_version: "1.0", target_generation: packet.target_generation,
+      patterns: [], unclassified_assertion_ids: [], coverage_note: "All failed-audit assertions excluded.", status: "complete_for_stated_scope" })
+  });
+  const inferencePort = createMockJournalInferencePort({ handlers: roleHandlers });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort, environment: f.environment });
+  let audit;
+  let commit;
+  try {
+    await runtime.execute("run");
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      audit = await runtime.execute("audit");
+      if (audit.stage === "PATTERN_BUILD") break;
+    }
+    await runtime.execute("patterns");
+    commit = await runtime.execute("commit");
+  } finally { await runtime.close(); }
+  assert.equal(audit.completion.semantically_audited, "partial");
+  assert.ok(failedFidelityAttempts >= 3);
+  assert.ok(audit.residuals.audit_unassessed_reference_items > 0,
+    "frozen reference items must contribute to the audit's unassessed denominator");
+  assert.equal(commit.completion.profile_committed, "pass");
+});
+
+test("distorted assertions are excluded from the published session-use generation", async (t) => {
+  const f = await environment(t);
+  const { audit, patterns, commit } = await drive(f, handlers({
+    fidelity_auditor: (packet) => {
+      const ids = [...(packet.frozen_reference?.reference_items ?? []).map(({ id }) => id),
+        ...(packet.imported_generation?.assessment_target_ids ?? [])];
+      return { ...review("fidelity_auditor", packet), assessments: ids.map((id) => ({ target_id: id,
+        outcome: packet.imported_generation?.assessment_target_ids?.includes(id) ? "distorted" : "preserved",
+        critical: false, finding_type: "unsupported_claim", explanation: "Synthetic distortion.", evidence_ids: [] })) };
+    },
+    pattern_builder: (packet) => ({ schema_version: "1.0", target_generation: packet.target_generation,
+      patterns: [], unclassified_assertion_ids: [], coverage_note: "Audit exclusions applied.", status: "complete_for_stated_scope" })
+  }));
+  assert.ok(["pass", "partial"].includes(audit.completion.semantically_audited));
+  assert.ok(patterns.residuals.audit_excluded_records > 0);
+  assert.equal(commit.completion.profile_committed, "pass");
+  const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
+  const corpusId = published.journal_corpora[0].corpus_id;
+  const result = await createJournalPrivateApi({ caseAccessService: f.service }).search({
+    caseId: CASE_ID, corpusId, query: "Synthetic report",
+    purpose: "organize_search", filters: { kinds: ["assertion"] }
+  }, { bearerToken: READER });
+  assert.deepEqual(result.items, [], "an ordinary consumer must not retrieve audit-failed assertions");
 });

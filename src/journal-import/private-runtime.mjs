@@ -1283,11 +1283,26 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             });
             const fidelity = await checkedWork({ id: `fidelity:final:${unit.unit_id}`, role: "fidelity_auditor", stage: "REFERENCE_AUDIT", unit, packetInput: { frozen_reference: reference.output, supporting_passages: [...original, ...scope.supporting_passages], imported_generation: { generation: state.generation, graph: scope.graph, assessment_target_ids: scope.assessment_target_ids } } }, assess);
             if (fidelity.blocked) return summary();
-            if (fidelity.failure) unassessed = fidelity.failure;
+            if (fidelity.failure) {
+              unassessed = fidelity.failure;
+              // The source-first freeze is still evidence even when no fidelity attempt succeeds.
+              // Keep its reference weight in the sample denominator, and withhold every candidate
+              // that the failed audit was responsible for checking.
+              outcome = {
+                freeze,
+                score: {
+                  reference_total: freeze.reference.reference_items.length,
+                  reference_counts: { preserved: 0, omitted: 0, distorted: 0, unassessed: freeze.reference.reference_items.length },
+                  critical_miss_count: freeze.reference.reference_items.filter(item => item.critical).length,
+                  qualifier_error_count: 0
+                },
+                untrusted_candidate_ids: scope.assessment_target_ids
+              };
+            }
             else outcome = { freeze, fidelity: fidelity.result[0], ...assess(fidelity.result) };
           }
           // A unit no attempt could audit is recorded as unassessed, with the reason, and counted.
-          report = await writeOnce(`audit:result:${graphRevision}:${unit.unit_id}`, outcome ? { ...common, ...outcome } : { ...common, unassessed });
+          report = await writeOnce(`audit:result:${graphRevision}:${unit.unit_id}`, outcome ? { ...common, ...outcome, ...(unassessed ? { unassessed } : {}) } : { ...common, unassessed });
         }
         reports.push({ unit_id: unit.unit_id, ...report });
         if (!state.audit_completed.includes(unit.unit_id)) { state.audit_completed.push(unit.unit_id); state.stage = "REFERENCE_AUDIT"; await save(); }
@@ -1299,7 +1314,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         out.critical_misses += r.score.critical_miss_count * weight; out.qualifier_errors += r.score.qualifier_error_count * weight; return out;
       }, { preserved: 0, omitted: 0, distorted: 0, unassessed: 0, critical_misses: 0, qualifier_errors: 0 });
       const assessed = reports.filter(r => !r.unassessed);
-      const sampled = assessed.filter(r => probability.has(r.unit_id));
+      // A successful reference freeze followed by failed fidelity has a real reference denominator,
+      // represented entirely as unassessed. A failed freeze has no trustworthy item count to add.
+      const sampled = reports.filter(r => probability.has(r.unit_id) && r.score);
       const auditReport = { generation: state.generation, graph_sha256: graphRevision, probability_unweighted: totals(sampled, false), probability_weighted: totals(sampled, true), targeted_unweighted: totals(assessed.filter(r => sample.targeted_challenge.some(x => x.unit_id === r.unit_id)), false), unassessed_unit_count: reports.length - assessed.length, population_recall_claim: false, reference_completeness: "unknown", reports };
       state.audit_report_ref = await writeLarge(`audit:report:${randomUUID()}`, auditReport);
       state.completion.semantically_audited = reports.every(r => !r.unassessed && r.certification.semantically_audited === "pass" && r.coverage.complete) ? "pass" : "partial";
@@ -1308,6 +1325,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       state.audit_repair_required = assessed.some(r => r.coverage.repair_required || !r.coverage.complete);
       state.residuals = { ...(state.residuals ?? {}),
         audit_unassessed_units: reports.length - assessed.length,
+        audit_unassessed_reference_items: auditReport.probability_unweighted.unassessed,
         audit_repair_units: assessed.filter(r => r.coverage.repair_required || !r.coverage.complete).length };
       state.stage = "PATTERN_BUILD";
       state.blocker = null;
@@ -1323,7 +1341,18 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         "JOURNAL_PATTERN_SOURCE_NOT_READY");
       if (state.reviewed_graph_ref) return summary();
       const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
-      const graph = await readLarge(state.reconciled_ref);
+      const auditReport = await readLarge(state.audit_report_ref);
+      const untrusted = new Set(auditReport.reports.flatMap(report =>
+        report.coverage?.untrusted_candidate_ids ?? report.untrusted_candidate_ids ?? []));
+      const excludeUntrusted = (candidateGraph) => ({
+        ...candidateGraph,
+        nodes: candidateGraph.nodes.filter(node => !untrusted.has(node.id)),
+        edges: candidateGraph.edges.filter(edge => !untrusted.has(edge.id)
+          && !untrusted.has(edge.from) && !untrusted.has(edge.to))
+      });
+      // Audit failures never cross into the session-use generation. This is an exclusion rather
+      // than a staging-only warning, so every consumer sees the same safe graph.
+      const graph = excludeUntrusted(await readLarge(state.reconciled_ref));
       // A unit whose extraction stayed unresolved has no assertions to build patterns from.
       const units = [];
       const unitGraphs = [];
@@ -1332,7 +1361,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         invariant(record, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
         if (record.source_only_unresolved) continue;
         units.push(unit);
-        unitGraphs.push({ unit_id: unit.unit_id, graph: record.graph });
+        unitGraphs.push({ unit_id: unit.unit_id, graph: excludeUntrusted(record.graph) });
       }
       const reader = await openPrivateJournalGraph({ corpusStore: store,
         manifestObjectId: state.persisted.manifest_object_id, caseId,
@@ -1357,7 +1386,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // review stayed unresolved; the counts say how many, and the register holds only what was
       // reviewed.
       state.completion.patterns_reviewed = result.status;
-      state.residuals = { ...(state.residuals ?? {}), ...result.counts };
+      state.residuals = { ...(state.residuals ?? {}), audit_excluded_records: untrusted.size, ...result.counts };
       state.stage = "COMMIT";
       state.blocker = null;
       await save();
