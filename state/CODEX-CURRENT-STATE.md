@@ -2,6 +2,15 @@
 
 Updated: 2026-09-28
 
+## PR #98 required-check reconciliation after `05571ba`
+
+- **Goal:** diagnose and repair the reported `codeql-javascript`, `workflow-policy`, and `deterministic-package` failures without changing unrelated journal behavior or weakening a repository gate.
+- **Cause:** the reported workflow runs were canceled duplicates, not failing executions. Runs `36476387450`, `36476387630`, and `36476387625` all targeted exact commit `05571ba289413bb8a7c0847a21fb817dd49966e0`; the CodeQL and workflow-policy jobs were canceled before steps were recorded, and deterministic-package was canceled during setup. The workflows intentionally use the pull-request concurrency group with `cancel-in-progress`, so the immediately following duplicate pull-request runs superseded them.
+- **Resolution:** no production, test, dependency, or workflow change was warranted. Replacement runs on the same exact commit succeeded: workflow-policy run `36476388304` / job `109111048085`, deterministic-package run `36476388314` / job `109111090955`, and CodeQL run `36476388329` / job `109111049008`. The successful deterministic-package job completed the repository audit, complete package gate, final-worktree report, and clean-worktree check.
+- **Local verification on Node v24.18.0:** the seven non-server test files changed across PR #98 pass together; the journal UI suite passes 20/20; `npm run audit:repository` and the direct workflow audit pass. The separate repository-compliance test cannot create its fixture beside the repository because this sandbox permits writes only inside the workspace root; no test was changed to bypass that boundary. `npm test` and `npm run verify` were not rerun locally under the owner's sandbox instruction; the successful same-commit deterministic-package job is the hosted evidence for both.
+- **Publication audit boundary:** `npm run audit:publication` scanned 761,691 records and reported the same five pre-existing credential-pattern fixtures in historical `tests/learning-groundwork-privacy.test.mjs` blobs reachable from the unrelated `origin/design/opt-in-community-learning-20260830` ref. This branch does not contain, modify, or make those commits ancestors, so no unrelated history, audit rule, or fixture was changed.
+- **Safety and next action:** only this resumable checkpoint was updated. The runner may commit and push the working tree; the containing commit must receive its own replacement required checks through normal push CI. No installation, deployment, provider call, private case access, Git ref mutation, therapy/framework policy change, or `stable` change occurred.
+
 ## Journal exchange provider — deterministic-package repair after `fb7b60c`
 
 - **Goal:** repair the sole failing required check on PR #97 without weakening authenticated exchange receipts or resubmitting an outcome whose completion is unknown.
