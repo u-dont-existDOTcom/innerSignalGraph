@@ -184,3 +184,37 @@ test("an unresolved batch keeps its candidates out of the graph, and a rerun rep
   assert.deepEqual(second.graph, first.graph);
   assert.deepEqual(second.reports, first.reports);
 });
+
+test("a pattern step uses one hardest attempt after its standard attempts and replays it", async () => {
+  const scope = twoBatchScope();
+  const { args, calls, saved } = stageHarness(scope, (request) => {
+    if (request.role === "reference_reader") return { output: freezeOutput(), receipt: receipt("freeze", request.id) };
+    return { output: emptyBuild, receipt: receipt("builder", request.id) };
+  });
+  let failures = 0;
+  const work = async (request) => {
+    calls.push(request.id);
+    if (request.role === "reference_reader") {
+      const hardest = request.tier === "hardest";
+      return [{ output: freezeOutput(hardest ? [] : request.units.map((unit) => unit.unit_id)), receipt: receipt("freeze", request.id) }];
+    }
+    return [{ output: emptyBuild, receipt: receipt("builder", request.id) }];
+  };
+  const first = await runJournalPatternPass({ ...args, work, hardestLaneEnabled: true });
+  assert.equal(first.status, "pass");
+  assert.equal(calls.filter((id) => id.endsWith(":hardest")).length, 1);
+  await runJournalPatternPass({ ...args, hardestLaneEnabled: true,
+    readIfPresent: async (id) => saved.get(id) ?? null,
+    work: async () => { failures += 1; throw new Error("hardest replay submitted again"); } });
+  assert.equal(failures, 0);
+});
+
+test("a pattern residual records a failed hardest attempt", async () => {
+  const scope = twoBatchScope();
+  const { args } = stageHarness(scope, (request) => request.role === "reference_reader"
+    ? { output: freezeOutput(request.units.map((unit) => unit.unit_id)), receipt: receipt("freeze", request.id) }
+    : { output: emptyBuild, receipt: receipt("builder", request.id) });
+  const result = await runJournalPatternPass({ ...args, hardestLaneEnabled: true });
+  const residual = result.reports.find((report) => report.status === "unresolved");
+  assert.equal(residual.hardest, "failed");
+});

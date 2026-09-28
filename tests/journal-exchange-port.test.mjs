@@ -143,7 +143,8 @@ test("a role call goes out as a work item and comes back as an authenticated ans
 
   // The dispatch record carries no content: an opaque ID, the role and the route's model and effort.
   const [record] = await environment.connector.listDispatch();
-  assert.deepEqual(Object.keys(record).sort(), ["answered", "effort", "expires_at", "issued_at", "model", "output_schema_name", "role", "route_ref", "schema_version", "work_id"]);
+  assert.deepEqual(Object.keys(record).sort(), ["answered", "effort", "expires_at", "issued_at", "model", "output_schema_name", "role", "route_ref", "schema_version", "tier", "work_id"]);
+  assert.equal(record.tier, "standard");
   assert.equal(record.answered, true);
   const dispatchText = await fs.readFile(path.join(environment.root, "dispatch", `${journalWorkFileKey(record.work_id)}.json`), "utf8");
   assert.ok(!dispatchText.includes("synthetic sentence"));
@@ -269,9 +270,26 @@ test("starting the port clears stale temporary files, and open items are listed 
   await assert.rejects(fs.access(stale));
   const items = await port.openItems();
   assert.equal(items.length, 1);
-  assert.deepEqual(Object.keys(items[0]).sort(), ["answered", "expires_at", "issued_at", "role", "work_file_key", "work_id"]);
+  assert.deepEqual(Object.keys(items[0]).sort(), ["answered", "expires_at", "issued_at", "role", "tier", "work_file_key", "work_id"]);
   assert.equal(items[0].work_id, journalExchangeWorkId(KEY));
   assert.equal(items[0].answered, false);
+});
+
+test("a hardest call uses its configured tier, model, effort and expiry and records its subject", async (t) => {
+  const environment = await setup(t);
+  const now = () => new Date("2026-09-28T12:00:00.000Z");
+  const port = environment.makePort({ now, hardestLane: { model: "claude-opus-5-5", effort: "max", ttl_hours: 6 } });
+  const stop = environment.answerInBackground();
+  let result;
+  try { result = await port.invoke({ ...referenceCall({ operationKey: `${KEY}:hardest` }), tier: "hardest" }); }
+  finally { await stop(); }
+  const [dispatch] = await environment.connector.listDispatch();
+  assert.equal(dispatch.tier, "hardest");
+  assert.equal(dispatch.model, "claude-opus-5-5");
+  assert.equal(dispatch.effort, "max");
+  assert.equal(Date.parse(dispatch.expires_at) - Date.parse(dispatch.issued_at), 6 * 60 * 60_000);
+  assert.equal(result.receipt.provider_route_receipt.subject, "synthetic-chatgpt-account");
+  assert.equal(result.receipt.provider_route_receipt.tier, "hardest");
 });
 
 test("the exchange route loads from the environment and checks its root before any work", async (t) => {

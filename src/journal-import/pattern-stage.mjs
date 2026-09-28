@@ -41,7 +41,7 @@ export async function runJournalPatternPass({
   graph: reconciledGraph, units, unitGraphs, sourceReader, work,
   readIfPresent, writeOnce, counterReceiptSecret, generation,
   representations, maximumBytes = 50000, counterevidenceMaximumBytes = maximumBytes,
-  stepFailure = () => null
+  stepFailure = () => null, hardestLaneEnabled = false
 }) {
   requireValue(reconciledGraph?.generation === generation, "PATTERN_GENERATION_MISMATCH");
   requireValue(Array.isArray(units) && units.length === unitGraphs.length, "PATTERN_UNIT_SCOPE_INVALID");
@@ -53,6 +53,8 @@ export async function runJournalPatternPass({
   const batches = createJournalPatternBatches({ graph: reconciledGraph, unitGraphs, maximumBytes });
   let graph = structuredClone(reconciledGraph);
   const reports = [];
+  let hardestAttempted = 0;
+  let hardestResolved = 0;
 
   const checkedStep = async (baseId, request, check) => {
     let failure = null;
@@ -73,9 +75,23 @@ export async function runJournalPatternPass({
       failure = failureOf(check, saved);
       if (!failure) return { saved, attempts: attempt };
     }
-    return { failure };
+    if (!hardestLaneEnabled) return { failure };
+    hardestAttempted += 1;
+    const id = `${baseId}:hardest`;
+    let saved = await readIfPresent(id);
+    if (!saved) {
+      const result = await work({ ...request, id, tier: "hardest" });
+      if (!result) {
+        const terminal = stepFailure();
+        return terminal ? { failure: terminal, hardest: "failed" } : { blocked: true };
+      }
+      saved = await writeOnce(id, result[0]);
+    }
+    const hardestFailure = failureOf(check, saved);
+    if (!hardestFailure) hardestResolved += 1;
+    return hardestFailure ? { failure: hardestFailure, hardest: "failed" } : { saved, attempts: PATTERN_STEP_ATTEMPTS + 1, hardest: "resolved" };
   };
-  const unresolved = (batch, stage, reason) => reports.push({ batch_id: batch.id, pattern_ids: [], status: "unresolved", stage, reason });
+  const unresolved = (batch, stage, reason, hardest) => reports.push({ batch_id: batch.id, pattern_ids: [], status: "unresolved", stage, reason, ...(hardest ? { hardest } : {}) });
 
   for (const batch of batches) {
     const batchUnits = batch.unit_ids.map(id => byId.get(id));
@@ -99,7 +115,7 @@ export async function runJournalPatternPass({
       }
     });
     if (freeze.blocked) return { status: "blocked", stage: "REFERENCE_AUDIT", reports };
-    if (freeze.failure) { unresolved(batch, "REFERENCE_AUDIT", freeze.failure); continue; }
+    if (freeze.failure) { unresolved(batch, "REFERENCE_AUDIT", freeze.failure, freeze.hardest); continue; }
     const frozen = freeze.saved;
 
     const buildId = `pattern:builder:${batch.id}`;
@@ -124,7 +140,7 @@ export async function runJournalPatternPass({
       }
     });
     if (build.blocked) return { status: "blocked", stage: "PATTERN_BUILD", reports };
-    if (build.failure) { unresolved(batch, "PATTERN_BUILD", build.failure); continue; }
+    if (build.failure) { unresolved(batch, "PATTERN_BUILD", build.failure, build.hardest); continue; }
     const built = build.saved;
     const added = addProvisionalPatterns({ graph, patternResult: built.output,
       producerReceipt: built.receipt, localIdNamespace: batch.id });
@@ -173,7 +189,7 @@ export async function runJournalPatternPass({
     }, decide);
     if (review.blocked) return { status: "blocked", stage: "PATTERN_REVIEW", reports };
     // Candidates whose review never produced a usable result stay out of the graph.
-    if (review.failure) { unresolved(batch, "PATTERN_REVIEW", review.failure); continue; }
+    if (review.failure) { unresolved(batch, "PATTERN_REVIEW", review.failure, review.hardest); continue; }
     const decision = decide(review.saved);
     graph = added.graph;
     const resolved = new Map(decision.graph.nodes.filter(node => selected.has(node.id)).map(node => [node.id, node]));
@@ -194,7 +210,9 @@ export async function runJournalPatternPass({
       unresolved_batches: reports.filter(report => report.status === "unresolved").length,
       reviewed_patterns: decisions.filter(({ decision }) => decision === "reviewed").length,
       disputed_patterns: decisions.filter(({ decision }) => decision === "disputed").length,
-      provisional_patterns: decisions.filter(({ decision }) => decision === "provisional").length
+      provisional_patterns: decisions.filter(({ decision }) => decision === "provisional").length,
+      hardest_attempted: hardestAttempted,
+      hardest_resolved: hardestResolved
     }
   };
 }

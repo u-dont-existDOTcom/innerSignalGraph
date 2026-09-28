@@ -55,6 +55,7 @@ export function createExchangeJournalInferencePort({
   waitMs = DEFAULT_WAIT_MS,
   pollMs = DEFAULT_POLL_MS,
   ttlMs = DEFAULT_TTL_MS,
+  hardestLane = {},
   prepareExchange = null,
   now = () => new Date(),
   sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -70,6 +71,11 @@ export function createExchangeJournalInferencePort({
   for (const value of [waitMs, pollMs, ttlMs]) invariant(Number.isSafeInteger(value) && value >= 0, "JOURNAL_EXCHANGE_TIMING_INVALID");
   invariant(pollMs > 0 && ttlMs > 0, "JOURNAL_EXCHANGE_TIMING_INVALID");
   const key = Buffer.from(receiptKey);
+  const hardestModel = hardestLane.model ?? "claude-opus-5-5";
+  const hardestEffort = hardestLane.effort ?? "max";
+  const hardestTtlMs = (hardestLane.ttl_hours ?? 24) * 60 * 60_000;
+  invariant(typeof hardestModel === "string" && hardestModel.length > 0 && typeof hardestEffort === "string" && hardestEffort.length > 0, "INFERENCE_MODEL_PROFILE_INVALID");
+  invariant(Number.isFinite(hardestTtlMs) && hardestTtlMs >= 60_000, "JOURNAL_EXCHANGE_TIMING_INVALID");
   let exchangePromise = exchange ? Promise.resolve(exchange) : null;
   const ready = () => {
     exchangePromise ??= Promise.resolve().then(() => prepareExchange());
@@ -141,7 +147,9 @@ export function createExchangeJournalInferencePort({
         connector_receipt_id: stored.receipt.receipt_id,
         received_at: stored.receipt.received_at,
         output_sha256: stored.receipt.output_sha256,
-        subject_sha256: stored.receipt.subject_sha256
+        subject_sha256: stored.receipt.subject_sha256,
+        subject: stored.receipt.subject,
+        tier: entry.tier ?? "standard"
       },
       cost_usd: 0,
       grant_id: entry.grant_id,
@@ -161,8 +169,9 @@ export function createExchangeJournalInferencePort({
       work_id: entry.work_id,
       role: entry.role,
       output_schema_name: entry.output_schema_name,
-      model,
-      effort,
+      tier: entry.tier ?? "standard",
+      model: entry.tier === "hardest" ? hardestModel : model,
+      effort: entry.tier === "hardest" ? hardestEffort : effort,
       route_ref: routeRef,
       issued_at: entry.issued_at,
       expires_at: entry.expires_at
@@ -195,7 +204,7 @@ export function createExchangeJournalInferencePort({
     return { status: "pending", workId };
   }
 
-  const invoke = async ({ role, packet, outputSchema, operationKey, grant }) => {
+  const invoke = async ({ role, packet, outputSchema, operationKey, grant, tier = "standard" }) => {
     const definition = JOURNAL_ROLE_DEFINITIONS[role];
     invariant(definition && definition.outputSchema === outputSchema, "JOURNAL_ROLE_OUTPUT_SCHEMA_MISMATCH");
     if (UNSUPPORTED_ROLES.has(role)) {
@@ -204,6 +213,7 @@ export function createExchangeJournalInferencePort({
     const checkedPacket = buildJournalRolePacket(role, packet);
     assertJournalInferenceGrant(grant, role, checkedPacket);
     invariant(typeof operationKey === "string" && operationKey.length > 0, "OPERATION_KEY_INVALID");
+    invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
     const digest = inputDigest(role, checkedPacket, outputSchema, grant);
 
     const { store, workId, entry: existing, stored } = await current(operationKey);
@@ -215,13 +225,14 @@ export function createExchangeJournalInferencePort({
         work_id: workId,
         case_id: caseId,
         role,
+        tier,
         instruction: journalRoleInstruction(role),
         packet: checkedPacket,
         output_schema_name: outputSchema,
         output_schema: journalSchema(outputSchema),
         expected_generation: checkedPacket.expected_generation ?? null,
         issued_at: issuedAt.toISOString(),
-        expires_at: new Date(issuedAt.getTime() + ttlMs).toISOString(),
+        expires_at: new Date(issuedAt.getTime() + (tier === "hardest" ? hardestTtlMs : ttlMs)).toISOString(),
         input_sha256: digest,
         grant_id: grant.grant_id,
         grant_purpose: grant.purpose,
@@ -287,8 +298,8 @@ export function createExchangeJournalInferencePort({
     // Content-free list of open items for status reports.
     async openItems() {
       const store = await ready();
-      return (await store.listDispatch()).map(({ work_id: workId, role, issued_at: issuedAt, expires_at: expiresAt, answered }) => ({
-        work_id: workId, work_file_key: journalWorkFileKey(workId), role, issued_at: issuedAt, expires_at: expiresAt, answered
+      return (await store.listDispatch()).map(({ work_id: workId, role, tier = "standard", issued_at: issuedAt, expires_at: expiresAt, answered }) => ({
+        work_id: workId, work_file_key: journalWorkFileKey(workId), role, tier, issued_at: issuedAt, expires_at: expiresAt, answered
       }));
     },
     close() { key.fill(0); }

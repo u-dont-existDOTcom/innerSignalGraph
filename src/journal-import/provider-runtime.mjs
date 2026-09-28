@@ -77,7 +77,7 @@ function secret(environment, name) {
 
 // The connector exchange route: work items go to ChatGPT through the private connector tools, and
 // the exchange root and secret are the same ones the connector uses.
-function loadExchangePort(environment, config, receiptKey, caseId) {
+function loadExchangePort(environment, config, receiptKey, caseId, hardestLane) {
   const configuredRoot = secret(environment, "INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT");
   invariant(path.isAbsolute(configuredRoot), "JOURNAL_EXCHANGE_ROOT_INVALID");
   const keys = deriveJournalWorkExchangeKeys(secret(environment, "INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64"));
@@ -90,6 +90,7 @@ function loadExchangePort(environment, config, receiptKey, caseId) {
     model: config.model,
     effort: config.effort,
     waitMs: config.timeout_ms,
+    hardestLane,
     ...(config.exchange?.poll_ms !== undefined ? { pollMs: config.exchange.poll_ms } : {}),
     ...(config.exchange?.ttl_ms !== undefined ? { ttlMs: config.exchange.ttl_ms } : {}),
     // Canonical, private and outside this checkout, checked when the runtime starts.
@@ -101,7 +102,7 @@ function loadExchangePort(environment, config, receiptKey, caseId) {
   });
 }
 
-export function loadJournalInferencePortFromEnvironment(environment = process.env, { providerFactories = PROVIDERS, transportCheckpoint, caseId = null } = {}) {
+export function loadJournalInferencePortFromEnvironment(environment = process.env, { providerFactories = PROVIDERS, transportCheckpoint, caseId = null, hardestLane = {} } = {}) {
   const raw = environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON;
   if (raw == null || raw === "") return createDisabledJournalInferencePort();
   const config = parseConfiguration(raw);
@@ -110,7 +111,7 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
   if (config.provider === JOURNAL_EXCHANGE_PROVIDER) {
     try {
       invariant(typeof caseId === "string" && caseId.length > 0, "JOURNAL_EXCHANGE_CASE_INVALID");
-      return loadExchangePort(environment, config, receiptKey, caseId);
+      return loadExchangePort(environment, config, receiptKey, caseId, hardestLane);
     } finally {
       receiptKey.fill(0);
       if (environment === process.env) delete process.env.INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64;

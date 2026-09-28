@@ -38,6 +38,20 @@ const PARSE_STATUS_BY_DISPOSITION = Object.freeze({ readable: "readable", visual
 const parseStatus = (page) => page ? (PARSE_STATUS_BY_DISPOSITION[page.disposition] ?? "partial") : "readable";
 const completions = () => Object.fromEntries(["archive_verified", "raw_search_available", "graph_built", "semantically_audited", "patterns_reviewed", "profile_committed", "cold_retrieval_verified", "capacity_tested"].map((k) => [k, "not_run"]));
 
+export function applyHardestDailyLimit(state, { now = () => new Date(), dailyLimit, newlySent = true }) {
+  invariant(Number.isSafeInteger(dailyLimit) && dailyLimit >= 1, "HARDEST_LANE_CONFIG_INVALID");
+  const day = now().toISOString().slice(0, 10);
+  if (state.hardest_lane?.day !== day) state.hardest_lane = { day, sent: 0 };
+  if (!newlySent) return true;
+  if (state.hardest_lane.sent >= dailyLimit) {
+    state.blocker = "HARDEST_DAILY_LIMIT";
+    return false;
+  }
+  state.hardest_lane.sent += 1;
+  if (state.blocker === "HARDEST_DAILY_LIMIT") state.blocker = null;
+  return true;
+}
+
 async function privateJson(file, value) {
   const temporary = `${file}.${randomUUID()}.tmp`;
   const handle = await fs.open(temporary, "wx", 0o600);
@@ -102,7 +116,7 @@ async function removeLegacyPageRenders(root) {
 }
 
 /** A private operator process owns this runtime. No mutation is added to the MCP. */
-export async function openJournalExecutionRuntime({ config, configPath, environment = process.env, service: suppliedService = null, inferencePort: suppliedPort = null, authContextProvider = null, sourceParser = parseSourceFile, renderVisualPage = renderJournalPdfPage }) {
+export async function openJournalExecutionRuntime({ config, configPath, environment = process.env, service: suppliedService = null, inferencePort: suppliedPort = null, authContextProvider = null, sourceParser = parseSourceFile, renderVisualPage = renderJournalPdfPage, now = () => new Date() }) {
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
   // An empty source has nothing to import, so no run of it could finish; doctor reports the same.
   invariant(Number.isSafeInteger(config.source?.bytes) && config.source.bytes > 0, "JOURNAL_SOURCE_EMPTY");
@@ -155,8 +169,18 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
     invariant(state.case_id === caseId && state.source_sha256 === config.source.sha256, "JOURNAL_RESUME_BINDING_MISMATCH");
     store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: state.corpus_id, corpusKey: key, resumeMatchingObjects: true });
+    const hardestLane = {
+      enabled: config.hardest_lane?.enabled === true,
+      model: config.hardest_lane?.model ?? "claude-opus-5-5",
+      effort: config.hardest_lane?.effort ?? "max",
+      ttl_hours: config.hardest_lane?.ttl_hours ?? 24,
+      daily_limit: config.hardest_lane?.daily_limit ?? 20
+    };
+    invariant(Number.isSafeInteger(hardestLane.daily_limit) && hardestLane.daily_limit >= 1, "HARDEST_LANE_CONFIG_INVALID");
+    invariant(Number.isFinite(hardestLane.ttl_hours) && hardestLane.ttl_hours > 0, "HARDEST_LANE_CONFIG_INVALID");
     port = suppliedPort ?? loadJournalInferencePortFromEnvironment({ ...environment }, {
       caseId,
+      hardestLane,
       transportCheckpoint: value => store.writeJsonObject({
         objectId: `transport:${hash(value.context.request_id)}:${value.phase}`, value
       })
@@ -210,7 +234,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     if (!archived) (await readVerifiedSource()).fill(0);
     const grant = { grant_id: config.existing_grant_ref, principal_id: "authorized-private-operator", purpose: "organize_search", allowed_roles: Object.keys(JOURNAL_ROLE_DEFINITIONS), revoked: false, expires_at: null };
     invariant(typeof grant.grant_id === "string" && grant.grant_id.length > 0, "JOURNAL_GRANT_REFERENCE_REQUIRED");
-    const save = async () => { state.updated_at = new Date().toISOString(); await privateJson(stateFile, state); };
+    const save = async () => { state.updated_at = now().toISOString(); await privateJson(stateFile, state); };
     const writeLarge = async (id, value) => store.writeChunkedOriginal({ objectId: id, bytes: Buffer.from(JSON.stringify(value)) });
     const readLarge = async (ref) => { const b = await store.reassembleOriginal(ref); try { return JSON.parse(b.toString("utf8")); } finally { b.fill(0); } };
     const readIfPresent = async (id) => { try { return await store.readJsonObject({ objectId: id }); } catch (e) { if (e.code === "ENOENT") return null; throw e; } };
@@ -220,7 +244,18 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (prior) { invariant(canonical(prior) === canonical(value), "JOURNAL_IMMUTABLE_RESULT_CONFLICT"); return prior; }
       await store.writeJsonObject({ objectId: id, value }); return value;
     };
-    const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration, completed_units: state.completed_units.length, completed_visual_pages: state.completed_visual_pages.length, total_units: state.total_units ?? 0, required_visual_pages: state.required_visual_pages ?? 0, completion: structuredClone(state.completion), blocker: state.blocker, residuals: structuredClone(state.residuals ?? {}), external_spend_usd: 0 });
+    const hardestStatus = () => {
+      applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit, newlySent: false });
+      return state.hardest_lane;
+    };
+    const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration, completed_units: state.completed_units.length, completed_visual_pages: state.completed_visual_pages.length, total_units: state.total_units ?? 0, required_visual_pages: state.required_visual_pages ?? 0, completion: structuredClone(state.completion), blocker: state.blocker, residuals: structuredClone(state.residuals ?? {}), hardest_lane: { ...hardestStatus(), daily_limit: hardestLane.daily_limit }, external_spend_usd: 0 });
+    const beforeHardestSend = async () => {
+      if (!applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit })) {
+        await save();
+        throw new ValidationError("HARDEST_DAILY_LIMIT", { code: "HARDEST_DAILY_LIMIT" });
+      }
+      await save();
+    };
 
     async function synchronizeHazards(plan) {
       const pages = new Set([...(config.visual_hazard_pages ?? []), ...(config.parser_hazard_pages ?? [])]);
@@ -312,7 +347,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // Set when work() returns null because its job can never answer (the output stayed invalid
     // through every retry the job allows), as opposed to a pause the next run may resolve.
     let workExhausted = false;
-    async function work({ id, role, stage: workStage, unit = null, units = null, packetInput,
+    async function work({ id, role, stage: workStage, unit = null, units = null, packetInput, tier = "standard",
       identityPacketInput = packetInput, dependencies = [], acceptReviewFindings = false }) {
       workExhausted = false;
       await authorize();
@@ -333,10 +368,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // submission from the prior runner. Batch-only scope fields belong to
       // the new semantic jobs; inserting them into a visual key resubmits it.
       const legacyVisual = role === "visual_reader" && workStage === "VISUAL_READ" && scopeUnits.length === 1;
+      invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
       id = `job:${hash(JSON.stringify({ id, role, stage: workStage, packetInput: identityPacketInput,
         ...(legacyVisual ? {} : { assigned_core_ids: assignedCoreIds, source_locators: sourceLocators }),
         dependencies, instruction: journalRoleInstruction(role),
-        dependency_instructions: dependencies.map(item => journalRoleInstruction(item.role)) }))}`;
+        dependency_instructions: dependencies.map(item => journalRoleInstruction(item.role)),
+        ...(tier === "hardest" ? { tier } : {}) }))}`;
       if (workStage === "REFERENCE_AUDIT") {
         const resultId = `reference:result:${id}`;
         const cached = await readIfPresent(resultId);
@@ -365,12 +402,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         let result;
         try {
+          if (tier === "hardest") {
+            try { await beforeHardestSend(); }
+            catch (error) { if (error?.code === "HARDEST_DAILY_LIMIT") return null; throw error; }
+          }
           result = await port.invoke({ role, packet: buildJournalRolePacket(role, {
             protocol_version: "1.0", output_schema_id: JOURNAL_ROLE_DEFINITIONS[role].outputSchema,
             assigned_core_ids: assignedCoreIds, source_locators: sourceLocators,
             expected_generation: state.generation, controller_provenance_tag: id,
             grant_purpose: grant.purpose, ...packetInput
-          }), outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema, operationKey, grant });
+          }), outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema, operationKey, grant, tier });
         } catch (error) {
           if (error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid") {
             const attempt = firstFailure ? 2 : 1;
@@ -407,7 +448,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           } finally { bytes.fill(0); }
         } });
       try {
-        if (!(await ledger.load())) await controller.initialize({ jobId: id, caseId, corpusId: state.corpus_id, generation: state.generation, workDefinitions: [{ key: role, stage: workStage, role, identity, assigned_core_ids: assignedCoreIds, source_locators: sourceLocators, packet_input: packetInput }, ...dependencies] });
+        if (!(await ledger.load())) await controller.initialize({ jobId: id, caseId, corpusId: state.corpus_id, generation: state.generation, workDefinitions: [{ key: role, stage: workStage, role, tier, identity, assigned_core_ids: assignedCoreIds, source_locators: sourceLocators, packet_input: packetInput }, ...dependencies.map((item) => ({ ...item, tier }))] });
+        const beforeRun = await ledger.load();
+        const pending = beforeRun.snapshot.work_items.find((item) => item.status !== "completed");
+        if (tier === "hardest" && pending?.status === "planned" && pending.attempts === 0) {
+          try { await beforeHardestSend(); }
+          catch (error) { if (error?.code === "HARDEST_DAILY_LIMIT") return null; throw error; }
+        }
         const entry = await controller.runUntilBlocked({ maximumSteps: 8 });
         const unfinished = entry.snapshot.work_items.find((item) => item.status !== "completed");
         // A primary output that asks for smaller windows or more context parks its job, and its
@@ -452,7 +499,19 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         failure = checkFailure(check, result);
         if (!failure) return { result };
       }
-      return { failure };
+      if (!hardestLane.enabled) return { failure };
+      const result = await work({ ...request, id: `${request.id}:hardest`, tier: "hardest" });
+      if (!result) return workExhausted ? { failure, hardest: "failed" } : { blocked: true };
+      const hardestFailure = checkFailure(check, result);
+      state.hardest_outcomes ??= {};
+      if (!state.hardest_outcomes[request.id]) {
+        state.hardest_outcomes[request.id] = hardestFailure ? "failed" : "resolved";
+        state.residuals = { ...(state.residuals ?? {}),
+          hardest_attempted: (state.residuals?.hardest_attempted ?? 0) + 1,
+          hardest_resolved: (state.residuals?.hardest_resolved ?? 0) + (hardestFailure ? 0 : 1) };
+        await save();
+      }
+      return hardestFailure ? { failure: hardestFailure, hardest: "failed" } : { result, hardest: "resolved" };
     }
 
     async function runBatched(plan) {
@@ -709,12 +768,53 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             cycle: cycle + 1
           };
         }
-        const review = results?.[1]?.output;
-        const unresolved = Boolean(bindingFailure)
+        let review = results?.[1]?.output;
+        let unresolved = Boolean(bindingFailure)
           || results?.[0]?.output?.status !== "complete"
           || review?.status !== "sufficient_for_stated_scope"
           || review.assessments.some((assessment) => assessment.critical && assessment.outcome !== "preserved")
           || review.unassessed_ids.length > 0;
+        // A single extraction unit gets the same final repair request once through the hardest
+        // lane before it is admitted as source-only needs_review.
+        if (unresolved && units.length === 1 && hardestLane.enabled) {
+          const identity = identityFor(units);
+          const hardest = await work({
+            id: `extract:batch:${keyId}:hardest`, tier: "hardest",
+            role: "extractor", stage: "EXTRACT", units,
+            packetInput: { core_units: core, adjacent_context: adjacentContext,
+              visual_transcriptions: visualContext, repair_request: repairRequest },
+            dependencies: [{ key: "omission", stage: "OMISSION_CHECK", role: "omission_checker",
+              identity, assigned_core_ids: units.map((item) => item.unit_id), source_locators: locatorsFor(units),
+              packet_input: { core_units: core, adjacent_context: adjacentContext,
+                candidate_extraction: { $work_output: "extractor" }, target_generation: state.generation } }],
+            acceptReviewFindings: true
+          });
+          if (!hardest) return false;
+          results = hardest;
+          bindingFailure = null;
+          try {
+            split = splitBatchExtractionByUnit({ extraction: results[0].output, unitIds: units.map((item) => item.unit_id) });
+            graphsByUnit = new Map(units.map((item) => [item.unit_id,
+              bindUnitExtraction(item, split.get(item.unit_id), results[0].receipt)]));
+          } catch (error) {
+            if (!(error instanceof ValidationError)) throw error;
+            bindingFailure = { code: error.code, details: error.details ?? null };
+          }
+          review = results?.[1]?.output;
+          unresolved = Boolean(bindingFailure) || results?.[0]?.output?.status !== "complete"
+            || review?.status !== "sufficient_for_stated_scope"
+            || review.assessments.some((assessment) => assessment.critical && assessment.outcome !== "preserved")
+            || review.unassessed_ids.length > 0;
+          state.hardest_outcomes ??= {};
+          const outcomeId = `extract:batch:${keyId}`;
+          if (!state.hardest_outcomes[outcomeId]) {
+            state.hardest_outcomes[outcomeId] = unresolved ? "failed" : "resolved";
+            state.residuals = { ...(state.residuals ?? {}),
+              hardest_attempted: (state.residuals?.hardest_attempted ?? 0) + 1,
+              hardest_resolved: (state.residuals?.hardest_resolved ?? 0) + (unresolved ? 0 : 1) };
+            await save();
+          }
+        }
         if (unresolved && units.length > 1) {
           const middle = Math.ceil(units.length / 2);
           return await processBatch(units.slice(0, middle), calibration)
@@ -739,7 +839,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             requested_context: []
           };
           const graph = bindUnitExtraction(unit, admitted, results[0].receipt);
-          await writeOnce(`unit:graph:${unit.unit_id}`, { graph, extraction: results[0], omission: results[1], source_only_unresolved: true });
+          await writeOnce(`unit:graph:${unit.unit_id}`, { graph, extraction: results[0], omission: results[1], source_only_unresolved: true,
+            ...(hardestLane.enabled ? { hardest: "failed" } : {}) });
           if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
           state.stage = "EXTRACT";
           state.blocker = null;
@@ -981,6 +1082,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             // plan; the page is recorded as excluded from visual reading, not left to stop the run.
             state.excluded_visual_pages ??= [];
             if (!state.excluded_visual_pages.includes(pageNumber)) state.excluded_visual_pages.push(pageNumber);
+            state.visual_residuals ??= [];
+            if (!state.visual_residuals.some((item) => item.page_number === pageNumber)) {
+              state.visual_residuals.push({ page_number: pageNumber, reason: read.failure,
+                ...(read.hardest ? { hardest: read.hardest } : {}) });
+            }
           } else {
             // A page read only in part keeps its reading, with the regions it could not read listed
             // in it; it is counted, so the report says how many pages are partly read.
@@ -1173,7 +1279,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           // No attempt gave a usable proposal set: the batch's identities and relations stay as
           // extracted, unreconciled, which leaves the graph valid; the report counts it.
           saved = await writeOnce(batchRef, reconciled.failure
-            ? { unresolved: reconciled.failure, ...scope }
+            ? { unresolved: reconciled.failure, ...scope, ...(reconciled.hardest ? { hardest: reconciled.hardest } : {}) }
             : { ...reconciled.result[0], ...scope });
           savedRef = batchRef;
         }
@@ -1256,6 +1362,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
           const common = { graph_revision: graphRevision, source_only_unresolved: imported.source_only_unresolved, calibration_overlap: plan.calibration.some(u => u.unit_id === unit.unit_id) };
           let outcome = null;
+          let hardest = frozen.hardest;
           let unassessed = frozen.failure ?? null;
           if (!unassessed) {
             const reconciliation = await readIfPresent(`reconcile:result:${unit.unit_id}`);
@@ -1270,11 +1377,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             });
             const fidelity = await checkedWork({ id: `fidelity:final:${unit.unit_id}`, role: "fidelity_auditor", stage: "REFERENCE_AUDIT", unit, packetInput: { frozen_reference: reference.output, supporting_passages: [...original, ...scope.supporting_passages], imported_generation: { generation: state.generation, graph: scope.graph, assessment_target_ids: scope.assessment_target_ids } } }, assess);
             if (fidelity.blocked) return summary();
-            if (fidelity.failure) unassessed = fidelity.failure;
+            if (fidelity.failure) { unassessed = fidelity.failure; hardest = fidelity.hardest; }
             else outcome = { freeze, fidelity: fidelity.result[0], ...assess(fidelity.result) };
           }
           // A unit no attempt could audit is recorded as unassessed, with the reason, and counted.
-          report = await writeOnce(`audit:result:${graphRevision}:${unit.unit_id}`, outcome ? { ...common, ...outcome } : { ...common, unassessed });
+          report = await writeOnce(`audit:result:${graphRevision}:${unit.unit_id}`, outcome ? { ...common, ...outcome }
+            : { ...common, unassessed, ...(hardest ? { hardest } : {}) });
         }
         reports.push({ unit_id: unit.unit_id, ...report });
         if (!state.audit_completed.includes(unit.unit_id)) { state.audit_completed.push(unit.unit_id); state.stage = "REFERENCE_AUDIT"; await save(); }
@@ -1330,6 +1438,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         result = await runJournalPatternPass({
           graph, units, unitGraphs, sourceReader: reader, work,
           stepFailure: () => (workExhausted ? state.blocker : null),
+          hardestLaneEnabled: hardestLane.enabled,
           readIfPresent, writeOnce, counterReceiptSecret: key,
           generation: state.generation,
           representations: Object.fromEntries(plan.parsed.representations.map(item =>
@@ -1344,7 +1453,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // review stayed unresolved; the counts say how many, and the register holds only what was
       // reviewed.
       state.completion.patterns_reviewed = result.status;
-      state.residuals = { ...(state.residuals ?? {}), ...result.counts };
+      state.residuals = { ...(state.residuals ?? {}), ...result.counts,
+        hardest_attempted: (state.residuals?.hardest_attempted ?? 0) + result.counts.hardest_attempted,
+        hardest_resolved: (state.residuals?.hardest_resolved ?? 0) + result.counts.hardest_resolved };
       state.stage = "COMMIT";
       state.blocker = null;
       await save();

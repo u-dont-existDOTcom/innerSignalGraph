@@ -1,6 +1,17 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-27
+Updated: 2026-09-28
+
+## Journal import hardest-case lane — `work`
+
+- **Goal:** implement `docs/superpowers/plans/2026-09-28-journal-hardest-lane.md`: after the ordinary bounded attempts fail, route one final attempt through the configured local Claude Opus lane before recording a residual.
+- **Baseline:** `86c1c5a` (the accepted hardest-lane plan), on top of the completed journal-import finishes work.
+- **Implemented:** standard work identities remain unchanged; hardest work is tiered end to end through the controller, exchange work item, content-free dispatch, admitted-answer evidence and receipt subject. Runtime and pattern checks replay their stored hardest attempt, mark a failed hardest residual, and count attempted/resolved hardest work. Single-unit extraction sends its final repair request through the hardest lane before `needs_review`.
+- **Limit and configuration:** the lane is disabled unless `hardest_lane.enabled` is true. Defaults are model `claude-opus-5-5`, effort `max`, 24-hour expiry and 20 newly sent attempts per UTC day. Durable state and summaries carry the UTC day/count/limit; replay does not count, the limit pauses with `HARDEST_DAILY_LIMIT`, and an injected clock resets it on the next UTC day.
+- **Local worker:** `npm run journal:work:mcp -- --config <private run config> --principal <name> [--tier hardest]` serves only the two journal-work tools over stdio, binds submissions to `local:<name>`, applies the exchange-root protections, and can refuse every non-hardest ID.
+- **Evidence:** synthetic tests cover successful and failed hardest checks, dispatch configuration and subject evidence, durable replay, daily rollover/replay accounting, unchanged lane-disabled end-to-end behavior, and a full stdio round trip with tier filtering and stderr sentinel protection. The targeted journal tests, repository audit, publication audit and journal UI suite pass. The complete `npm test` and `npm run verify` each reach 1,590 passing tests and one skipped test, but this container consistently fails the unrelated Linux process-group teardown assertion in `tests/runtime-service-liveness.test.mjs`; rerunning that file alone reproduces the same orphan-process-group limitation. No private journal material was used.
+- **Safety:** no deployment, installation, `stable` promotion, private run, provider call or external spend occurred. Enabling the lane and starting its worker remain separate owner-controlled operational actions.
+- **Next safe action:** review the pull request, including the recorded container-only process-group teardown limitation. Deployment remains out of scope.
 
 ## Journal import runs that can finish — `claude/journal-import-finishes-20260927`
 
