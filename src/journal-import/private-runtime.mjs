@@ -1267,13 +1267,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             });
           if (frozen.blocked) return summary();
           const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
+          const reconciliation = await readIfPresent(`reconcile:result:${unit.unit_id}`);
+          const scope = createReconciledAuditScope({ graph: frozenGraph, unitGraph: imported.graph,
+            derivationRef: reconciliation?.receipt?.receipt_id, index: scopeIndex });
           const common = { graph_revision: graphRevision, source_only_unresolved: imported.source_only_unresolved, calibration_overlap: plan.calibration.some(u => u.unit_id === unit.unit_id) };
-          let outcome = null;
+          // Even without a valid reference freeze, the deterministic graph scope is known and must
+          // not cross into the session-use generation without an audit.
+          let outcome = frozen.failure ? { untrusted_candidate_ids: scope.assessment_target_ids } : null;
           let unassessed = frozen.failure ?? null;
           if (!unassessed) {
-            const reconciliation = await readIfPresent(`reconcile:result:${unit.unit_id}`);
-            const scope = createReconciledAuditScope({ graph: frozenGraph, unitGraph: imported.graph,
-              derivationRef: reconciliation?.receipt?.receipt_id, index: scopeIndex });
             const reference = frozen.result[0];
             const freeze = { generation: state.generation, reference: reference.output, receipt: reference.receipt, freeze_ref: `freeze:${hash(JSON.stringify(reference.output)).slice(0, 40)}` };
             const assess = ([saved]) => ({
@@ -1299,7 +1301,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                 untrusted_candidate_ids: scope.assessment_target_ids
               };
             }
-            else outcome = { freeze, fidelity: fidelity.result[0], ...assess(fidelity.result) };
+            else {
+              const assessedOutcome = assess(fidelity.result);
+              outcome = { freeze, fidelity: fidelity.result[0], ...assessedOutcome,
+                ...(assessedOutcome.certification.semantically_audited === "pass"
+                  ? {} : { untrusted_candidate_ids: scope.assessment_target_ids }) };
+            }
           }
           // A unit no attempt could audit is recorded as unassessed, with the reason, and counted.
           report = await writeOnce(`audit:result:${graphRevision}:${unit.unit_id}`, outcome ? { ...common, ...outcome, ...(unassessed ? { unassessed } : {}) } : { ...common, unassessed });
@@ -1342,8 +1349,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (state.reviewed_graph_ref) return summary();
       const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
       const auditReport = await readLarge(state.audit_report_ref);
-      const untrusted = new Set(auditReport.reports.flatMap(report =>
-        report.coverage?.untrusted_candidate_ids ?? report.untrusted_candidate_ids ?? []));
+      const untrusted = new Set(auditReport.reports.flatMap(report => [
+        ...(report.coverage?.untrusted_candidate_ids ?? []),
+        ...(report.untrusted_candidate_ids ?? [])
+      ]));
       const excludeUntrusted = (candidateGraph) => ({
         ...candidateGraph,
         nodes: candidateGraph.nodes.filter(node => !untrusted.has(node.id)),

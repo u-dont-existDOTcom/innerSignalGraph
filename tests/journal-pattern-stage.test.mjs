@@ -244,6 +244,48 @@ test("an incomplete or missing candidate assessment cannot settle a pattern as d
     [["unresolved", "PATTERN_REVIEW", "PATTERN_REVIEW_INCOMPLETE"]]);
 });
 
+test("an explicitly unassessed candidate cannot settle a sufficient pattern review", async () => {
+  const graph = fixture("synthetic-graph.json");
+  graph.nodes = graph.nodes.filter(node => node.kind !== "pattern");
+  graph.edges = graph.edges.filter(edge => edge.from !== "pat" && edge.to !== "pat");
+  const representations = fixture("synthetic-sources.json");
+  const unit = { unit_id: "u1", representation_id: "repr", text: representations.repr,
+    start_byte: 0, end_byte: Buffer.byteLength(representations.repr), source_order: 0 };
+  let reviewCalls = 0;
+  const { args } = stageHarness({ graph, representations, units: [unit], unitGraphs: [{ unit_id: "u1", graph }] },
+    (request) => {
+      if (request.role === "reference_reader") {
+        return { output: freezeOutput(), receipt: receipt("freeze", request.id) };
+      }
+      if (request.role === "pattern_builder") {
+        return { output: { schema_version: "1.0", target_generation: generation,
+          patterns: [{ local_id: "candidate", data: {
+            statement: "Invented reports show a bounded contrast.", pattern_kind: "recurrent", scope: "Two invented supports.",
+            support_assertion_ids: ["a1", "a3"], counter_assertion_ids: [], alternative_explanations: ["Other contexts."],
+            observation_gaps: ["Unwritten periods."], disconfirming_question: "Where does this not hold?",
+            disconfirmation: { status: "pending", search_receipt_ref: null }, review_state: "provisional",
+            independent_review_ref: null, producer_ref: "producer:synthetic" }, counterevidence_queries: ["exception"] }],
+          unclassified_assertion_ids: [], coverage_note: "Bounded source.", status: "complete_for_stated_scope" },
+        receipt: receipt("builder", request.id) };
+      }
+      reviewCalls += 1;
+      const patternId = request.packetInput.candidate_patterns[0].id;
+      return { output: { schema_version: "1.0", target_generation: generation, review_role: "pattern_reviewer",
+        assessments: [{ target_id: patternId, outcome: reviewCalls === 1 ? "unassessed" : "preserved",
+          critical: false, finding_type: "none", explanation: "The candidate was not conclusively assessed.", evidence_ids: [] }],
+        proposed_repairs: [], unassessed_ids: reviewCalls === 1 ? [] : [patternId],
+        status: "sufficient_for_stated_scope" }, receipt: receipt("reviewer", request.id) };
+    });
+
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000 });
+
+  assert.equal(reviewCalls, 3);
+  assert.equal(result.status, "partial");
+  assert.equal(result.graph.nodes.some(node => node.kind === "pattern"), false);
+  assert.deepEqual(result.reports.map(report => [report.status, report.stage, report.reason]),
+    [["unresolved", "PATTERN_REVIEW", "PATTERN_REVIEW_INCOMPLETE"]]);
+});
+
 test("a disputed pattern still requires authenticated independent receipts and counterevidence", async () => {
   const graph = fixture("synthetic-graph.json");
   graph.nodes = graph.nodes.filter(node => node.kind !== "pattern");

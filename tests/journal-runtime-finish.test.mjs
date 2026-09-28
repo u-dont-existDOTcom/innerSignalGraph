@@ -102,9 +102,10 @@ function handlers(overrides = {}) {
   };
 }
 
-async function drive(f, roleHandlers, calls = []) {
-  const inferencePort = createMockJournalInferencePort({ handlers: Object.fromEntries(Object.entries(roleHandlers)
-    .map(([role, handler]) => [role, (packet) => { calls.push(role); return handler(packet); }])) });
+async function drive(f, roleHandlers, calls = [], portOptions = {}) {
+  const inferencePort = createMockJournalInferencePort({ ...portOptions,
+    handlers: Object.fromEntries(Object.entries(roleHandlers)
+      .map(([role, handler]) => [role, (packet) => { calls.push(role); return handler(packet); }])) });
   const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
     sourceParser: f.sourceParser, inferencePort, environment: f.environment });
   try {
@@ -112,6 +113,15 @@ async function drive(f, roleHandlers, calls = []) {
     for (const command of ["run", "audit", "patterns", "commit"]) summaries[command] = await runtime.execute(command);
     return summaries;
   } finally { await runtime.close(); }
+}
+
+async function searchPublishedAssertions(f) {
+  const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
+  const corpusId = published.journal_corpora[0].corpus_id;
+  return createJournalPrivateApi({ caseAccessService: f.service }).search({
+    caseId: CASE_ID, corpusId, query: "Synthetic report",
+    purpose: "organize_search", filters: { kinds: ["assertion"] }
+  }, { bearerToken: READER });
 }
 
 test("a clean synthetic import runs from intake to a committed generation", async (t) => {
@@ -161,11 +171,11 @@ test("a disputed pattern settles its review: it stays in the register as dispute
   assert.equal(commit.completion.profile_committed, "pass");
 });
 
-test("a reference that never quotes its source is asked again, and a unit no attempt can audit is counted", async (t) => {
+test("a reference that never quotes its source is retried and its candidate scope is excluded", async (t) => {
   const f = await environment(t);
   const calls = [];
   let finalReferences = 0;
-  const { run, audit, commit } = await drive(f, handlers({
+  const { run, audit, patterns, commit } = await drive(f, handlers({
     // Calibration's reference misquotes once, then quotes exactly; every final audit reference misquotes.
     reference_reader: (packet) => {
       const unit = packet.source_windows[0];
@@ -177,13 +187,31 @@ test("a reference that never quotes its source is asked again, and a unit no att
           anchors: [{ unit_id: unit.unit_id, quote: misquote ? "Words that are not in the source." : unit.text, occurrence: null }],
           importance_reason: "Synthetic.", critical: false }],
         questions: [], unassessed_unit_ids: [] };
-    }
+    },
+    pattern_builder: (packet) => ({ schema_version: "1.0", target_generation: packet.target_generation,
+      patterns: [], unclassified_assertion_ids: [], coverage_note: "Failed-freeze assertions excluded.", status: "complete_for_stated_scope" })
   }), calls);
   assert.deepEqual([run.calibration, run.completion.graph_built], ["pass", "pass"]);
   assert.deepEqual([audit.stage, audit.completion.semantically_audited, audit.blocker], ["PATTERN_BUILD", "partial", null]);
   assert.ok(audit.residuals.audit_unassessed_units > 0);
   assert.ok(finalReferences >= 3, "each audited unit is asked three times before it is recorded as unassessed");
+  assert.ok(patterns.residuals.audit_excluded_records > 0);
   assert.equal(commit.completion.profile_committed, "pass");
+  const result = await searchPublishedAssertions(f);
+  assert.deepEqual(result.items, [], "assertions from a unit whose reference freeze failed must not be published");
+});
+
+test("an unavailable independent-audit certification excludes the affected candidate scope", async (t) => {
+  const f = await environment(t);
+  const { audit, patterns, commit } = await drive(f, handlers({
+    pattern_builder: (packet) => ({ schema_version: "1.0", target_generation: packet.target_generation,
+      patterns: [], unclassified_assertion_ids: [], coverage_note: "Uncertified assertions excluded.", status: "complete_for_stated_scope" })
+  }), [], { contextFactory: () => "mock-context:shared" });
+  assert.equal(audit.completion.semantically_audited, "partial");
+  assert.ok(patterns.residuals.audit_excluded_records > 0);
+  assert.equal(commit.completion.profile_committed, "pass");
+  const result = await searchPublishedAssertions(f);
+  assert.deepEqual(result.items, [], "assertions without an independent audit certification must not be published");
 });
 
 test("a successful reference freeze remains in the unassessed denominator when fidelity exhausts its attempts", async (t) => {
@@ -242,11 +270,6 @@ test("distorted assertions are excluded from the published session-use generatio
   assert.ok(["pass", "partial"].includes(audit.completion.semantically_audited));
   assert.ok(patterns.residuals.audit_excluded_records > 0);
   assert.equal(commit.completion.profile_committed, "pass");
-  const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
-  const corpusId = published.journal_corpora[0].corpus_id;
-  const result = await createJournalPrivateApi({ caseAccessService: f.service }).search({
-    caseId: CASE_ID, corpusId, query: "Synthetic report",
-    purpose: "organize_search", filters: { kinds: ["assertion"] }
-  }, { bearerToken: READER });
+  const result = await searchPublishedAssertions(f);
   assert.deepEqual(result.items, [], "an ordinary consumer must not retrieve audit-failed assertions");
 });

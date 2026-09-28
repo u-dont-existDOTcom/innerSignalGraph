@@ -14,6 +14,7 @@ export const PATTERN_STEP_ATTEMPTS = 3;
 // A review decision that ends a pattern's review: kept as reviewed, or kept and marked disputed.
 // A provisional decision means the review itself was incomplete.
 const SETTLED_DECISIONS = new Set(["reviewed", "disputed"]);
+const CONCLUSIVE_REVIEW_OUTCOMES = new Set(["preserved", "omitted", "distorted"]);
 
 // The code a stored output fails its check with, or null when it passes.
 function failureOf(check, saved) {
@@ -170,10 +171,15 @@ export async function runJournalPatternPass({
       // batch's completion signal.
       requireValue(saved.output.status === "sufficient_for_stated_scope", "PATTERN_REVIEW_INCOMPLETE");
       const assessmentCounts = new Map();
+      const assessmentsById = new Map();
       for (const assessment of saved.output.assessments) {
         assessmentCounts.set(assessment.target_id, (assessmentCounts.get(assessment.target_id) ?? 0) + 1);
+        assessmentsById.set(assessment.target_id, assessment);
       }
-      requireValue(added.created_pattern_ids.every(id => assessmentCounts.get(id) === 1),
+      const explicitlyUnassessed = new Set(saved.output.unassessed_ids);
+      requireValue(added.created_pattern_ids.every(id => assessmentCounts.get(id) === 1
+        && !explicitlyUnassessed.has(id)
+        && CONCLUSIVE_REVIEW_OUTCOMES.has(assessmentsById.get(id)?.outcome)),
         "PATTERN_REVIEW_INCOMPLETE");
       // Semantic disagreement is a settled result, but it cannot substitute for authenticated,
       // independent review and a verified counterevidence search.
