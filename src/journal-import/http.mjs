@@ -1,6 +1,6 @@
 import { ValidationError } from "../core/errors.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES } from "../storage/private-case-access.mjs";
-import { createJournalResultCache, openPrivateJournalGraph } from "./retrieval.mjs";
+import { createJournalResultCache, openPrivateJournalGraph, readJournalCursorSnapshot } from "./retrieval.mjs";
 
 const ID = /^[A-Za-z0-9:_-]{1,160}$/;
 const READ_PURPOSES = new Set([PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH, PRIVATE_JOURNAL_PURPOSES.SESSION_USE]);
@@ -28,15 +28,36 @@ function readPurpose(value) {
   return purpose;
 }
 
-function sameSnapshot(reference, snapshot) {
-  return reference.active_generation === snapshot.generation
-    && reference.manifest_object_id === snapshot.manifest_object_id
-    && reference.visibility_epoch === snapshot.visibility_epoch;
+// A snapshot stays readable while its generation is retained (active, or kept among the previous
+// generations) under the current visibility epoch. Publishing a new generation doesn't end it; a
+// visibility change or a deletion does.
+function snapshotRetained(reference, snapshot) {
+  if (reference.visibility_epoch !== snapshot.visibility_epoch) return false;
+  if (reference.active_generation === snapshot.generation) return reference.manifest_object_id === snapshot.manifest_object_id;
+  return reference.previous_generations.some((item) => item.generation === snapshot.generation && item.manifest_object_id === snapshot.manifest_object_id);
+}
+
+// The snapshot a request reads. A first page reads the active generation. A later page reads the
+// generation its cursor was issued for, even after a newer one is published, so paging a snapshot
+// isn't broken by an ordinary import.
+function readableSnapshot(reference, bound) {
+  if (bound === null || bound.generation === reference.active_generation) {
+    invariant(reference.active_generation != null, "SOURCE_UNAVAILABLE");
+    return {
+      generation: reference.active_generation,
+      manifest_object_id: reference.manifest_object_id,
+      visibility_epoch: reference.visibility_epoch
+    };
+  }
+  invariant(bound.visibility_epoch === reference.visibility_epoch, "CURSOR_SNAPSHOT_INVALID");
+  const retained = [...reference.previous_generations].reverse().find((item) => item.generation === bound.generation);
+  invariant(retained, "CURSOR_SNAPSHOT_INVALID");
+  return { generation: retained.generation, manifest_object_id: retained.manifest_object_id, visibility_epoch: reference.visibility_epoch };
 }
 
 async function recheckSnapshot(caseStore, caseId, corpusId, snapshot) {
   const current = await caseStore.getJournalCorpus(caseId, corpusId);
-  invariant(sameSnapshot(current.reference, snapshot), "CURSOR_STALE");
+  invariant(snapshotRetained(current.reference, snapshot), "CURSOR_STALE");
 }
 
 // A timeline bound, as the reader accepts it: the window includes the whole period each bound names.
@@ -131,17 +152,13 @@ export function createJournalPrivateApi({ caseAccessService, jobController = nul
   // record identifiers only.
   const resultCache = createJournalResultCache();
 
-  const withReader = async ({ caseId, corpusId, purpose }, authContext, operation) => caseAccessService.withJournalCorpus(
+  const withReader = async ({ caseId, corpusId, purpose, cursor = null }, authContext, operation) => caseAccessService.withJournalCorpus(
     checkedId(caseId, "case_id"),
     checkedId(corpusId, "corpus_id"),
     { requiredScope: PRIVATE_CASE_SCOPES.READ, requiredPurpose: readPurpose(purpose) },
     async ({ caseStore, corpusStore, cursorSecret, reference }) => {
-      invariant(reference.active_generation != null, "SOURCE_UNAVAILABLE");
-      const snapshot = {
-        generation: reference.active_generation,
-        manifest_object_id: reference.manifest_object_id,
-        visibility_epoch: reference.visibility_epoch
-      };
+      const bound = readJournalCursorSnapshot({ cursor, cursorSecret, caseId, corpusId, purpose: readPurpose(purpose) });
+      const snapshot = readableSnapshot(reference, bound);
       const reader = await openPrivateJournalGraph({
         corpusStore,
         manifestObjectId: snapshot.manifest_object_id,

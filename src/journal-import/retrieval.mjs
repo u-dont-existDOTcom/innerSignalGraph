@@ -77,6 +77,36 @@ export function createJournalResultCache({ maximumEntries = 32, ttlMs = 15 * 60 
   });
 }
 
+// A cursor's body once its signature, scope and purpose check out. Cursors are signed with the
+// corpus's cursor secret, so a valid one was issued by a reader of this corpus.
+function verifiedCursorBody(cursor, secret, { caseId, corpusId, purpose }) {
+  const parts = typeof cursor === "string" ? cursor.split(".") : [];
+  invariant(parts.length === 2, "CURSOR_INVALID");
+  const expectedMac = createHmac("sha256", secret).update(parts[0]).digest();
+  let actualMac;
+  try { actualMac = Buffer.from(parts[1], "base64url"); }
+  catch { throw new ValidationError("CURSOR_INVALID", { code: "CURSOR_INVALID" }); }
+  invariant(actualMac.byteLength === expectedMac.byteLength && timingSafeEqual(actualMac, expectedMac), "CURSOR_MAC_INVALID");
+  let body;
+  try { body = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8")); }
+  catch { throw new ValidationError("CURSOR_INVALID", { code: "CURSOR_INVALID" }); }
+  invariant(body && typeof body === "object" && !Array.isArray(body), "CURSOR_INVALID");
+  invariant(body.case_id === caseId && body.corpus_id === corpusId, "CURSOR_SCOPE_MISMATCH");
+  invariant(body.purpose === purpose, "CURSOR_PURPOSE_MISMATCH");
+  return body;
+}
+
+// The snapshot a page request's cursor was issued for, so the caller can open that snapshot rather
+// than whichever generation is active now. Null when there is no cursor. The reader still checks
+// the cursor in full (query, filters, offset, expiry) when it serves the page.
+export function readJournalCursorSnapshot({ cursor, cursorSecret, caseId, corpusId, purpose = "organize_search" }) {
+  if (cursor === null || cursor === undefined) return null;
+  invariant(cursorSecret instanceof Uint8Array && cursorSecret.byteLength >= 32, "CURSOR_SECRET_INVALID");
+  const body = verifiedCursorBody(cursor, Buffer.from(cursorSecret), { caseId, corpusId, purpose });
+  invariant(typeof body.generation === "string" && Number.isSafeInteger(body.visibility_epoch), "CURSOR_INVALID");
+  return { generation: body.generation, visibility_epoch: body.visibility_epoch };
+}
+
 export async function openPrivateJournalGraph({
   corpusStore,
   manifestObjectId,
@@ -173,18 +203,7 @@ export async function openPrivateJournalGraph({
     return `${encoded}.${mac}`;
   };
   const parseCursor = (cursor, expected) => {
-    const parts = typeof cursor === "string" ? cursor.split(".") : [];
-    invariant(parts.length === 2, "CURSOR_INVALID");
-    const expectedMac = createHmac("sha256", secret).update(parts[0]).digest();
-    let actualMac;
-    try { actualMac = Buffer.from(parts[1], "base64url"); }
-    catch { throw new ValidationError("CURSOR_INVALID", { code: "CURSOR_INVALID" }); }
-    invariant(actualMac.byteLength === expectedMac.byteLength && timingSafeEqual(actualMac, expectedMac), "CURSOR_MAC_INVALID");
-    let body;
-    try { body = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8")); }
-    catch { throw new ValidationError("CURSOR_INVALID", { code: "CURSOR_INVALID" }); }
-    invariant(body.case_id === caseId && body.corpus_id === corpusId, "CURSOR_SCOPE_MISMATCH");
-    invariant(body.purpose === purpose, "CURSOR_PURPOSE_MISMATCH");
+    const body = verifiedCursorBody(cursor, secret, { caseId, corpusId, purpose });
     invariant(body.generation === generation && body.visibility_epoch === visibilityEpoch, "CURSOR_SNAPSHOT_INVALID");
     invariant(body.query_sha256 === expected.query_sha256 && body.filters_sha256 === expected.filters_sha256 && body.sort === expected.sort, "CURSOR_QUERY_MISMATCH");
     invariant(Number.isSafeInteger(body.offset) && body.offset >= 0 && Number.isSafeInteger(body.expires_at) && now() <= body.expires_at, "CURSOR_EXPIRED_OR_INVALID");

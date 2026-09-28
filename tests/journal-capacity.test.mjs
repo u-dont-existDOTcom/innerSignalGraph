@@ -167,6 +167,61 @@ test("authorized corpus tombstone revokes cached reads and removes all live hand
   assert.deepEqual(createJournalContinuityProjection(after.journal_corpora).corpora, []);
 });
 
+test("a cursor keeps paging its snapshot after a newer generation is published, until a visibility change", async (t) => {
+  const { service } = await accessEnvironment(t);
+  const auth = { bearerToken: TOKEN };
+  const api = createJournalPrivateApi({ caseAccessService: service });
+  await service.createJournalCorpus(CASE_ID, { corpusId: CORPUS_ID, manifestObjectId: "manifest:staging" }, auth);
+  const publish = async (generation, expectedGeneration) => {
+    const synthetic = createSyntheticCalendarGraph({ years: 2, corpusId: CORPUS_ID, generation });
+    const persisted = await service.withJournalCorpus(CASE_ID, CORPUS_ID, {
+      requiredScope: PRIVATE_CASE_SCOPES.WRITE,
+      requiredPurpose: PRIVATE_JOURNAL_PURPOSES.ARCHIVE
+    }, ({ corpusStore }) => persistGraphGeneration({ corpusStore, graph: synthetic.graph, sourceRepresentations: synthetic.representations }), auth);
+    await api.commit({
+      caseId: CASE_ID, corpusId: CORPUS_ID, generation, manifestObjectId: persisted.manifest_object_id,
+      expectedGeneration, permittedUses: ["archive", "organize_search"]
+    }, auth);
+  };
+  const query = { caseId: CASE_ID, corpusId: CORPUS_ID, query: "capacitymarker", pageSize: 3 };
+  const traverse = async () => {
+    const ids = [];
+    let cursor = null;
+    do {
+      const page = await api.search({ ...query, cursor }, auth);
+      ids.push(...page.items.map((item) => item.id));
+      cursor = page.next_cursor;
+    } while (cursor);
+    return ids;
+  };
+
+  await publish("paging-v1", null);
+  const expected = await traverse();
+  assert.ok(expected.length > 6);
+  const first = await api.search(query, auth);
+  assert.deepEqual(first.snapshot, { generation: "paging-v1", visibility_epoch: 0 });
+  const second = await api.search({ ...query, cursor: first.next_cursor }, auth);
+
+  // An ordinary import publishes a newer generation while the client is paging.
+  await publish("paging-v2", "paging-v1");
+  const third = await api.search({ ...query, cursor: second.next_cursor }, auth);
+  assert.deepEqual(third.snapshot, { generation: "paging-v1", visibility_epoch: 0 });
+  assert.deepEqual([...first.items, ...second.items, ...third.items].map((item) => item.id), expected.slice(0, 9));
+  // A first page reads the new generation.
+  assert.deepEqual((await api.search(query, auth)).snapshot, { generation: "paging-v2", visibility_epoch: 0 });
+  // A timeline cursor keeps its snapshot the same way.
+  const timeline = await api.timeline({ caseId: CASE_ID, corpusId: CORPUS_ID, pageSize: 2 }, auth);
+  assert.ok(timeline.next_cursor);
+  assert.deepEqual(timeline.snapshot, { generation: "paging-v2", visibility_epoch: 0 });
+  await publish("paging-v3", "paging-v2");
+  assert.deepEqual((await api.timeline({ caseId: CASE_ID, corpusId: CORPUS_ID, pageSize: 2, cursor: timeline.next_cursor }, auth)).snapshot,
+    { generation: "paging-v2", visibility_epoch: 0 });
+
+  // A visibility change ends every snapshot from the earlier epoch, including one a cursor still names.
+  await service.incrementJournalVisibilityEpoch(CASE_ID, { corpusId: CORPUS_ID, expectedEpoch: 0 }, auth);
+  await assert.rejects(() => api.search({ ...query, cursor: third.next_cursor }, auth), (error) => error.code === "CURSOR_SNAPSHOT_INVALID");
+});
+
 test("incremental recompute excludes tombstones, survives orphan cleanup, and restores an encrypted backup", async (t) => {
   const root = await temporaryRoot("inner-signal-journal-recovery-");
   const restoredRoot = await temporaryRoot("inner-signal-journal-restored-");
