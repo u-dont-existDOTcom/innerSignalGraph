@@ -347,7 +347,7 @@ test('visual-only handoff persists an admitted visual page and resumes semantic 
     warnings:[],image_inventory:[],geometry:{width:100,height:100}}],
   representations:[{representation_id:'synthetic:page:1',text,utf8_byte_length:Buffer.byteLength(text)}]
  });
- const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==','base64');
+ const image=Buffer.alloc((4 * 1024 * 1024) + 257, 73);
  const calls=[];
  let referenceAttempts=0;
  const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,
@@ -404,6 +404,9 @@ test('visual-only handoff persists an admitted visual page and resumes semantic 
   const entry=await legacyLedger.load();
   assert.equal(entry?.snapshot?.work_items[0]?.status,'completed',
    'new visual runner must reuse the exact pre-batch job identity');
+  assert.equal(entry.snapshot.work_items[0].packet_input.page_image_ref.kind,'chunked_image');
+  assert.equal(Object.hasOwn(entry.snapshot.work_items[0].packet_input.page_image_ref,'data_base64'),false);
+  assert.ok(JSON.stringify(entry.snapshot).length < 4 * 1024 * 1024);
   const plan=JSON.parse((await store.reassembleOriginal(checkpoint.visual_plan_ref)).toString());
   assert.equal(plan.units.filter(u=>u.visual).length,1);
  } finally { store.close();key.fill(0); }

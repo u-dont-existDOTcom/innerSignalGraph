@@ -312,7 +312,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // Set when work() returns null because its job can never answer (the output stayed invalid
     // through every retry the job allows), as opposed to a pause the next run may resolve.
     let workExhausted = false;
-    async function work({ id, role, stage: workStage, unit = null, units = null, packetInput, dependencies = [], acceptReviewFindings = false }) {
+    async function work({ id, role, stage: workStage, unit = null, units = null, packetInput,
+      identityPacketInput = packetInput, dependencies = [], acceptReviewFindings = false }) {
       workExhausted = false;
       await authorize();
       const scopeUnits = Array.isArray(units) ? units : (unit ? [unit] : []);
@@ -332,7 +333,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // submission from the prior runner. Batch-only scope fields belong to
       // the new semantic jobs; inserting them into a visual key resubmits it.
       const legacyVisual = role === "visual_reader" && workStage === "VISUAL_READ" && scopeUnits.length === 1;
-      id = `job:${hash(JSON.stringify({ id, role, stage: workStage, packetInput,
+      id = `job:${hash(JSON.stringify({ id, role, stage: workStage, packetInput: identityPacketInput,
         ...(legacyVisual ? {} : { assigned_core_ids: assignedCoreIds, source_locators: sourceLocators }),
         dependencies, instruction: journalRoleInstruction(role),
         dependency_instructions: dependencies.map(item => journalRoleInstruction(item.role)) }))}`;
@@ -402,7 +403,18 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         return [result];
       }
       const ledger = createCorpusJournalJobLedger({ corpusStore: store, jobId: id });
-      const controller = createJournalImportController({ ledger, inferencePort: port, controllerSecret: key, grant, promptVersion: `1.0:${hash(id).slice(0, 24)}`, modelProfile: route?.model ?? "synthetic", beforeInvoke: authorize });
+      const controller = createJournalImportController({ ledger, inferencePort: port, controllerSecret: key, grant,
+        promptVersion: `1.0:${hash(id).slice(0, 24)}`, modelProfile: route?.model ?? "synthetic", beforeInvoke: authorize,
+        resolvePacketInput: async (input) => {
+          const image = input?.page_image_ref;
+          if (image?.kind !== "chunked_image") return input;
+          const bytes = await store.reassembleOriginal(image.object_ref);
+          try {
+            invariant(hash(bytes) === image.sha256 && bytes.length === image.byte_length, "VISUAL_IMAGE_DIGEST_MISMATCH");
+            return { ...input, page_image_ref: { kind: "inline_image", media_type: image.media_type,
+              data_base64: bytes.toString("base64"), sha256: image.sha256 } };
+          } finally { bytes.fill(0); }
+        } });
       try {
         if (!(await ledger.load())) await controller.initialize({ jobId: id, caseId, corpusId: state.corpus_id, generation: state.generation, workDefinitions: [{ key: role, stage: workStage, role, identity, assigned_core_ids: assignedCoreIds, source_locators: sourceLocators, packet_input: packetInput }, ...dependencies] });
         const entry = await controller.runUntilBlocked({ maximumSteps: 8 });
@@ -962,7 +974,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const page = plan.parsed.pages.find((p) => p.page_number === pageNumber);
           const image = await renderVisualPage(await archivedSource(), pageNumber);
           const native = plan.parsed.representations.find((r) => r.representation_id === page.representation_id);
-          const read = await checkedWork({ id: `visual:${pageNumber}`, role: "visual_reader", stage: "VISUAL_READ", unit: { unit_id: `page:${pageNumber}`, representation_id: page.representation_id, start_byte: 0, end_byte: image.length, page_number: pageNumber }, packetInput: { page_image_ref: { kind: "inline_image", media_type: "image/png", data_base64: image.toString("base64"), sha256: hash(image) }, page_geometry: page.geometry, native_text_rendering: native.text, neighbor_pages: [] } },
+          const imageDigest = hash(image);
+          const imageRef = await store.writeChunkedOriginal({ objectId: `visual:image:${pageNumber}`, bytes: image });
+          await writeOnce(`visual:image-ref:${pageNumber}`, imageRef);
+          const legacyPacketInput = { page_image_ref: { kind: "inline_image", media_type: "image/png",
+            data_base64: image.toString("base64"), sha256: imageDigest }, page_geometry: page.geometry,
+            native_text_rendering: native.text, neighbor_pages: [] };
+          const packetInput = { ...legacyPacketInput, page_image_ref: { kind: "chunked_image", media_type: "image/png",
+            object_ref: imageRef, byte_length: image.length, sha256: imageDigest } };
+          const read = await checkedWork({ id: `visual:${pageNumber}`, role: "visual_reader", stage: "VISUAL_READ", unit: { unit_id: `page:${pageNumber}`, representation_id: page.representation_id, start_byte: 0, end_byte: image.length, page_number: pageNumber }, packetInput, identityPacketInput: legacyPacketInput },
             ([saved]) => invariant(saved.output.source_page_id === `page:${pageNumber}`, "VISUAL_PAGE_BINDING_MISMATCH"));
           if (read.blocked) return summary();
           if (read.failure) {
@@ -974,8 +994,6 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             // A page read only in part keeps its reading, with the regions it could not read listed
             // in it; it is counted, so the report says how many pages are partly read.
             await writeOnce(`visual:result:${pageNumber}`, read.result[0]);
-            const imageRef = await store.writeChunkedOriginal({ objectId: `visual:image:${pageNumber}`, bytes: image });
-            await writeOnce(`visual:image-ref:${pageNumber}`, imageRef);
             if (read.result[0].output.page_complete !== true) {
               state.partial_visual_pages ??= [];
               if (!state.partial_visual_pages.includes(pageNumber)) state.partial_visual_pages.push(pageNumber);
