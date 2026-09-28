@@ -330,7 +330,8 @@ export function createJournalImportController({
     const packetDigest = sha256(Buffer.from(JSON.stringify(packet), "utf8"));
     const baseOperationKey = `journal:${work.work_id.slice(5, 45)}:${packetDigest.slice(0, 32)}`;
     const retryEpoch = Number.isSafeInteger(work.retry_epoch) && work.retry_epoch >= 0 ? work.retry_epoch : 0;
-    const operationKey = work.status === "invalid_output" ? `${baseOperationKey}:reserialize`
+    const reserializationKey = `${baseOperationKey}:reserialize${retryEpoch === 0 ? "" : `:${retryEpoch}`}`;
+    const operationKey = work.status === "invalid_output" ? reserializationKey
       : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${retryEpoch}:${work.attempts}`
         : (work.operation_key ?? baseOperationKey);
     const intentSnapshot = clone(entry.snapshot);

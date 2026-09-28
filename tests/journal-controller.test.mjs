@@ -534,6 +534,48 @@ test("each restarted confirmed-unsent budget uses fresh durable operation keys",
   store.close();
 });
 
+test("reserialization after a confirmed-unsent recovery uses the retry epoch's durable key", async () => {
+  const store = await temporaryStore();
+  const jobId = "job:reserialize-retry-epochs";
+  const operationKeys = [];
+  let reserializationCalls = 0;
+  const transport = {
+    capabilities: () => ({ mode: "synthetic-authoritative", authoritative_completion: true }),
+    async invoke(input) {
+      operationKeys.push(input.operationKey);
+      if (!input.operationKey.includes(":reserialize")) {
+        throw new JournalInferencePortError("INVALID_STRUCTURED_OUTPUT", { submissionStatus: "completed_invalid" });
+      }
+      reserializationCalls += 1;
+      if (reserializationCalls < 3) {
+        throw new JournalInferencePortError("RETRYABLE_TRANSPORT", { submissionStatus: "not_submitted" });
+      }
+      return { output: completeExtraction(), receipt: { receipt_id: "receipt:reserialized" } };
+    },
+    async getCompletion() { return { status: "not_submitted" }; }
+  };
+  const open = () => createJournalImportController({
+    ledger: createCorpusJournalJobLedger({ corpusStore: store, jobId }),
+    inferencePort: createDurableJournalInferencePort({ port: transport, corpusStore: store }),
+    controllerSecret: Buffer.alloc(32, 60), grant
+  });
+
+  for (let epoch = 0; epoch < 3; epoch += 1) {
+    const controller = open();
+    if (epoch === 0) await controller.initialize({ ...initialization(), jobId, workDefinitions: [workDefinitions()[0]] });
+    const result = await controller.runUntilBlocked();
+    assert.equal(result.snapshot.work_items[0].retry_epoch, epoch);
+    assert.equal(result.snapshot.work_items[0].status, epoch === 2 ? "completed" : "blocked_authority");
+    controller.close();
+  }
+  assert.equal(reserializationCalls, 3);
+  assert.equal(new Set(operationKeys).size, 6);
+  assert.match(operationKeys[1], /:reserialize$/);
+  assert.match(operationKeys[3], /:reserialize:1$/);
+  assert.match(operationKeys[5], /:reserialize:2$/);
+  store.close();
+});
+
 test("quota, revocation and missing fresh-context route block only the affected semantic work", async (t) => {
   for (const [code, expectedState] of [["QUOTA_PAUSED", "paused_quota"], ["GRANT_REVOKED", "revoked"], ["INFERENCE_ISOLATION_UNAVAILABLE", "blocked_authority"]]) {
     await t.test(code, async () => {

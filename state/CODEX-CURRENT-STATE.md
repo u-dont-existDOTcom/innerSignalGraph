@@ -2,6 +2,15 @@
 
 Updated: 2026-09-28
 
+## Journal import — reserialization retry-epoch review at `6162df1`
+
+- **Goal and finding:** resolve the PR #98 review finding at `src/journal-import/controller.mjs:333`. It was correct. After a confirmed-unsent reserialization and a fresh controller run, an invalid recovered answer reused the epochless `:reserialize` key. The durable port eventually replayed its stored `INFERENCE_RETRY_LIMIT` instead of calling the recovered transport.
+- **Fix:** retain the existing `:reserialize` key for epoch 0 and append the retry epoch for later reserialization calls. The controller's per-run two-attempt bound and unknown-completion behavior are unchanged.
+- **Regression:** `tests/journal-controller.test.mjs` runs three fresh controller instances against one durable store. Each run gets an invalid first answer; the first two reserialization transports confirm no submission, and the third succeeds. On the reviewed code the third run remained `blocked_authority`; with the fix it completes and all six transport operation keys are distinct.
+- **Verification on pinned Node v24.18.0:** the touched controller test file passes 21/21; its other direct controller consumer passes 24 tests with one existing `pdftoppm`-unavailable skip; `npm run journal:ui:test` passes 20/20; `npm run audit:repository` passes with zero errors and the existing warning for unverified hosted GitHub App permissions. `git diff --check` passes. No package failed to load. The initial red regression was observed before the fix; the pinned-Node checks were run after it. The tool shell initially placed Node 26 ahead of the installed Node 24, so the affected checks were explicitly rerun with the pinned executable.
+- **Publication and CI boundary:** the pinned-Node `npm run audit:publication` scanned 765,093 records and failed on the same five historical `credential-pattern` fixtures in `tests/learning-groundwork-privacy.test.mjs` previously recorded in this checkpoint. All five reported commits are non-ancestors of this branch, and this change does not touch that file, history, refs, or audit rules. Per the owner's no-localhost instruction, full `npm test` and `npm run verify` are left to push CI.
+- **Closeout:** this is a project-specific durable-key regression enforced by a focused test; no new transferable Universal rule is claimed. The runner may commit and push the working tree; push CI must run the full gates on the containing commit. No installation, deployment, provider call, private case access, Git ref mutation, therapy/framework policy change, or `stable` change occurred.
+
 ## Journal import — Codex review finding at `a18b27f`
 
 - **Goal and review result:** resolve the remaining PR #98 finding without weakening the no-duplicate-submission boundary. The finding was correct: jobs that exhausted confirmed-unsent `RETRYABLE_TRANSPORT` attempts under the parent controller are persisted as `blocked_authority` without the newly introduced `last_failure`, so the fresh-run recovery predicate skipped them forever.
