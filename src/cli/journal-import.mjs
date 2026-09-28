@@ -208,7 +208,10 @@ export async function configuredJournalDoctorReport(configPath, environment = pr
   let inference;
   try {
     const port = loadJournalInferencePortFromEnvironment({ ...environment }, { caseId: config.target_profile.case_id });
-    try { inference = port.capabilities(); }
+    try {
+      await port.prepare?.();
+      inference = port.capabilities();
+    }
     finally { port.close?.(); }
   } catch (error) {
     inference = { enabled: false, live_inference: false, external_spend_authorized_usd: 0 };

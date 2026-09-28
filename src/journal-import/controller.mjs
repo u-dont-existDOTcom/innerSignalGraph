@@ -293,10 +293,8 @@ export function createJournalImportController({
       }
       // Only a port that knows its outcomes (the connector exchange) reports a stored answer that fails
       // the schema here; it gets the same one schema-bound retry as an invalid answer from invoke().
-      if (completion.status === "invalid_output" && work.attempts < 2) {
-        const next = clone(entry.snapshot);
-        next.work_items.find(({ work_id: workId }) => workId === work.work_id).status = "invalid_output";
-        return persist(next, entry.revision, { state: "retryable_error", stage: work.stage, next_action: `request one schema-bound reserialization for ${work.work_id}`, blocked_reason: "INVALID_STRUCTURED_OUTPUT", responsible_actor: "controller" });
+      if (completion.status === "invalid_output") {
+        return recordFailure(entry, work, { code: "INVALID_STRUCTURED_OUTPUT", submissionStatus: "completed_invalid" });
       }
       if (work.status === "completion_unknown") return entry;
       const next = clone(entry.snapshot);

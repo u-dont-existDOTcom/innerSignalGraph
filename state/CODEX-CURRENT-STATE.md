@@ -2,6 +2,17 @@
 
 Updated: 2026-09-28
 
+## Journal exchange provider — Codex review findings at `fd8e932`
+
+- **Goal:** resolve the two PR #97 review findings while preserving the exchange's bounded retry and private-root validation contracts.
+- **Review result:** both findings were correct. An authoritative `invalid_output` discovered after the second timed-out attempt now passes through the same failure classifier as a synchronous second invalid answer, making the work terminally `blocked_authority` with `INVALID_STRUCTURED_OUTPUT` instead of leaving it indefinitely `completion_unknown`. A regression drives both attempts through delayed completion and fails on the reviewed commit.
+- **Doctor parity:** configured doctor checks now await the inference port's optional `prepare()` before reading capabilities. The connector exchange therefore validates and prepares its root exactly as runtime startup does; a missing, insecure, or in-repository root cannot be reported as an authorized route. A regression uses an in-repository exchange root and fails on the reviewed commit.
+- **Verification:** Node v24.18.0 ran the two touched test files successfully (`tests/journal-controller.test.mjs` and `tests/journal-contracts.test.mjs`). `npm run audit:repository` passed with the existing single warning for unverified hosted GitHub App permissions, and `npm run journal:ui:test` passed 20/20. Adjacent exchange-port/runtime tests cannot run in this sandbox because its `/tmp` is owned by `nobody`; the exchange's intentional trusted-ancestor check returns `JOURNAL_WORK_EXCHANGE_ROOT_INSECURE`. No package was missing. Per the owner directive, `npm test` and `npm run verify` are deferred to push CI because this sandbox cannot run server-backed tests.
+- **Publication audit:** `npm run audit:publication` scanned 744,667 records and reported five pre-existing `credential-pattern` findings in `tests/learning-groundwork-privacy.test.mjs` at historical commits reachable only from `refs/remotes/origin/design/opt-in-community-learning-20260830`. None is introduced or touched by this patch; the ref/history/test was not changed to mask the failure.
+- **Universal guidance:** the live default-branch root bootstrap and accessible task-relevant Universal guidance were fetched. The rule graph resolved test-efficiency to development-assurance and task-time activation to instruction composition; companion files whose web paths returned cache misses were read from the same-day local `origin/main` (`dbda521`). The active lane remained bounded review repair with focused/affected evidence and CI-owned full gates.
+- **Safety:** no deployment, installation, provider call, private case access, therapy/framework policy change, Git ref mutation, or `stable` change occurred.
+- **Next safe action:** the runner may commit and push this working tree; push CI must run `npm test` and `npm run verify`, and the publication audit's unrelated remote-ref findings remain explicit rather than being treated as a passing local gate.
+
 ## Journal exchange provider — required-check repair after `9e112e6`
 
 - **Goal:** repair the PR #97 required-check regression without broadening the connector exchange's trust boundary.
