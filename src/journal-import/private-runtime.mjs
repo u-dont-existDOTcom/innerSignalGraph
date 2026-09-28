@@ -104,6 +104,8 @@ async function removeLegacyPageRenders(root) {
 /** A private operator process owns this runtime. No mutation is added to the MCP. */
 export async function openJournalExecutionRuntime({ config, configPath, environment = process.env, service: suppliedService = null, inferencePort: suppliedPort = null, authContextProvider = null, sourceParser = parseSourceFile, renderVisualPage = renderJournalPdfPage }) {
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
+  // An empty source has nothing to import, so no run of it could finish; doctor reports the same.
+  invariant(Number.isSafeInteger(config.source?.bytes) && config.source.bytes > 0, "JOURNAL_SOURCE_EMPTY");
   invariant(path.isAbsolute(config.execution_root ?? ""), "JOURNAL_EXECUTION_ROOT_REQUIRED");
   const root = path.resolve(config.execution_root);
   const repositoryRoot = path.resolve(new URL("../../", import.meta.url).pathname);

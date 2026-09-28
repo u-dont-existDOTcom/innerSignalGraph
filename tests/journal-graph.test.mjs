@@ -7,7 +7,7 @@ import path from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import { validateJournalGraph } from "../src/journal-import/contracts.mjs";
 import { adaptExtractionToGraph, persistGraphGeneration } from "../src/journal-import/graph.mjs";
-import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
+import { createJournalResultCache, openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 import { transferJournalGeneration } from "../src/journal-import/generation-transfer.mjs";
 import { partitionRepresentation } from "../src/journal-import/partition.mjs";
@@ -196,6 +196,54 @@ test("a timeline page reads its own records and index entries, not a lookup for 
   // One lookup shard, for the record on the page, however many entries the window holds.
   assert.equal(new Set(reads.filter((id) => lookupShards.includes(id))).size, 1);
   reader.close();
+  base.close();
+});
+
+test("pages after the first slice the cached order instead of rescanning every match, one reader per request", async () => {
+  const graph = fixture("synthetic-graph.json");
+  const representations = fixture("synthetic-sources.json");
+  // Matches spread across lookup-index shards: a1 sorts before the fillers, a2 and a3 after them.
+  const colleague = graph.nodes.find((node) => node.id === "colleague");
+  for (let index = 0; index < 150; index += 1) {
+    graph.nodes.push({ ...structuredClone(colleague), id: `a1:filler:${String(index).padStart(3, "0")}`,
+      data: { ...structuredClone(colleague.data), label: `Invented filler ${index}` } });
+  }
+  const base = corpusStore(await temporaryRoot(), graph.case_id, graph.corpus_id, Buffer.alloc(32, 81));
+  const persisted = await persistGraphGeneration({ corpusStore: base, graph, sourceRepresentations: representations, shardTargetBytes: 4096 });
+  const lookupShards = persisted.manifest.indexes.record_lookup.map(({ object_id: objectId }) => objectId);
+  const timeShards = persisted.manifest.indexes.time_known.map(({ object_id: objectId }) => objectId);
+  const pages = async (resultCache, request) => {
+    const reads = [];
+    const counting = { ...base, readJsonObject: async (input) => { reads.push(input.objectId); return base.readJsonObject(input); } };
+    const results = [];
+    let cursor = null;
+    do {
+      reads.length = 0;
+      // A fresh reader per page, as the HTTP facade opens one per request.
+      const reader = await openPrivateJournalGraph({ corpusStore: counting, manifestObjectId: persisted.manifest_object_id, caseId: graph.case_id,
+        corpusId: graph.corpus_id, generation: graph.generation, visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 83), resultCache });
+      const page = await request(reader, cursor);
+      results.push({ ids: page.records.map(({ id }) => id), lookupShards: new Set(reads.filter((id) => lookupShards.includes(id))).size,
+        timeShards: reads.filter((id) => timeShards.includes(id)).length });
+      cursor = page.next_cursor;
+      reader.close();
+    } while (cursor);
+    return results;
+  };
+  const search = (reader, cursor) => reader.search({ query: "help", filters: { kinds: ["assertion"] }, pageSize: 1, cursor, sort: "id" });
+  const cached = await pages(createJournalResultCache(), search);
+  const uncached = await pages(null, search);
+  // The same pages either way; with the cache, a later page reads one lookup shard, for its record.
+  assert.deepEqual(cached.map(({ ids }) => ids), [["a1"], ["a2"], ["a3"]]);
+  assert.deepEqual(uncached.map(({ ids }) => ids), cached.map(({ ids }) => ids));
+  assert.ok(cached[0].lookupShards > 1);
+  assert.deepEqual(cached.slice(1).map((page) => page.lookupShards), [1, 1]);
+  // The timeline's later pages don't read the time index again either.
+  const timeline = (reader, cursor) => reader.timeline({ pageSize: 2, cursor });
+  const cachedTimeline = await pages(createJournalResultCache(), timeline);
+  assert.ok(cachedTimeline.length > 1);
+  assert.ok(cachedTimeline[0].timeShards > 0);
+  assert.deepEqual(cachedTimeline.slice(1).map((page) => page.timeShards), cachedTimeline.slice(1).map(() => 0));
   base.close();
 });
 

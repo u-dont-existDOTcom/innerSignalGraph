@@ -241,4 +241,18 @@ test("doctor reports what a run requires of the config, and paths are judged on 
     stdout: { write: () => {} }, stderr: { write: (chunk) => { stderr += chunk; } }, environment: {}
   }), 1);
   assert.deepEqual(JSON.parse(stderr), { error: "JOURNAL_CONFIG_LOCATION_INVALID" });
+  // An empty source is supported by its parser but has nothing to import, so doctor says so.
+  await fs.writeFile(path.join(privateDirectory, "source", "empty.txt"), "", { mode: 0o600 });
+  const emptyConfig = path.join(privateDirectory, "empty.json");
+  await fs.writeFile(emptyConfig, `${JSON.stringify({
+    schema_version: 1, mode: "synthetic_private_doctor",
+    source: { relative_path: "private/source/empty.txt", sha256: createHash("sha256").update("").digest("hex"), bytes: 0 },
+    target_profile: { case_id: "synthetic-doctor-case" }, private_runtime_root: path.join(directory, "runtime"), max_external_spend_usd: 0,
+    execution_root: path.join(directory, "execution"), existing_grant_ref: "synthetic:grant"
+  })}\n`, { mode: 0o600 });
+  stdout = "";
+  await runJournalImportCli(["doctor", "--config", emptyConfig], {
+    stdout: { write: (chunk) => { stdout += chunk; } }, stderr: { write: () => {} }, environment: {}
+  });
+  assert.ok(JSON.parse(stdout).blockers.includes("JOURNAL_SOURCE_EMPTY"));
 });

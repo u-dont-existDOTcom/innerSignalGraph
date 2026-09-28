@@ -50,6 +50,33 @@ function intersection(lists) {
   return [...new Set(first)].filter((id) => sets.every((set) => set.has(id)));
 }
 
+/**
+ * The ordered results of a search or timeline query, kept so the pages after the first slice them
+ * instead of rebuilding the whole result on every cursor request. Keys name the exact snapshot,
+ * purpose, query and filters, and entries hold record identifiers only, never content. A miss
+ * (expired, evicted, another process) rebuilds the same order, so the cache changes cost, not
+ * results.
+ */
+export function createJournalResultCache({ maximumEntries = 32, ttlMs = 15 * 60 * 1000, now = () => Date.now() } = {}) {
+  invariant(Number.isSafeInteger(maximumEntries) && maximumEntries > 0 && Number.isSafeInteger(ttlMs) && ttlMs > 0, "RESULT_CACHE_INVALID");
+  const entries = new Map();
+  return Object.freeze({
+    get(key) {
+      const entry = entries.get(key);
+      if (!entry) return null;
+      entries.delete(key);
+      if (now() > entry.expiresAt) return null;
+      entries.set(key, entry);
+      return entry.value;
+    },
+    set(key, value) {
+      entries.delete(key);
+      entries.set(key, { value, expiresAt: now() + ttlMs });
+      while (entries.size > maximumEntries) entries.delete(entries.keys().next().value);
+    }
+  });
+}
+
 export async function openPrivateJournalGraph({
   corpusStore,
   manifestObjectId,
@@ -61,12 +88,16 @@ export async function openPrivateJournalGraph({
   cursorSecret,
   assertSnapshotCurrent = async () => true,
   now = () => Date.now(),
-  cursorTtlMs = 15 * 60 * 1000
+  cursorTtlMs = 15 * 60 * 1000,
+  resultCache = null
 }) {
   invariant(corpusStore && typeof corpusStore.readJsonObject === "function", "CORPUS_STORE_INVALID");
   invariant(cursorSecret instanceof Uint8Array && cursorSecret.byteLength >= 32, "CURSOR_SECRET_INVALID");
   invariant(["organize_search", "session_use"].includes(purpose), "RETRIEVAL_PURPOSE_INVALID");
   invariant(typeof assertSnapshotCurrent === "function", "SNAPSHOT_GUARD_INVALID");
+  invariant(resultCache === null || (typeof resultCache.get === "function" && typeof resultCache.set === "function"), "RESULT_CACHE_INVALID");
+  // A cached result belongs to one snapshot, purpose and query: every part of that is in its key.
+  const cacheKey = (...parts) => JSON.stringify([caseId, corpusId, purpose, generation, visibilityEpoch, manifestObjectId, ...parts]);
   const secret = Buffer.from(cursorSecret);
   const cache = new Map();
   const indexMaps = new Map();
@@ -185,32 +216,39 @@ export async function openPrivateJournalGraph({
     const expected = { query_sha256: querySha, filters_sha256: filtersSha, sort };
     const offset = cursor ? parseCursor(cursor, expected).offset : 0;
     const beforeReads = objectReads;
-    const ids = intersection(await Promise.all(terms.map((term) => readIndex("lexical", term))));
-    // Kind, lifecycle and time filters are applied here, before paging, so every page holds only
-    // matches and a filtered search never pages through empty results.
-    const matches = (kind, lifecycle, intervals) => (!effectiveFilters.kinds.length || effectiveFilters.kinds.includes(kind))
-      && effectiveFilters.lifecycles.includes(lifecycle) && inTimeWindow(intervals, effectiveFilters);
-    const facts = await Promise.all(ids.map(lookupFacts));
-    let page;
-    let total;
-    if (facts.every(Boolean)) {
-      // Filter and order from the lookup index, then decrypt only the requested page.
-      const rows = ids.map((id, index) => ({ id, ...facts[index] })).filter((row) => matches(row.kind, row.lifecycle, row.intervals));
-      rows.sort((left, right) => (sort === "source_order"
-        ? (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER) : 0) || left.id.localeCompare(right.id));
-      total = rows.length;
-      page = await Promise.all(rows.slice(offset, offset + pageSize).map(({ id }) => loadRecord(id)));
-    } else {
-      // A generation built before its lookup index carried these facts: decrypt every match.
-      const records = [];
-      for (const id of ids) {
-        const record = await loadRecord(id);
-        if (matches(record.kind, record.lifecycle, knownTimeIntervals(record))) records.push(record);
+    // The first page builds the ordered result; later pages of the same query slice it from the
+    // result cache when the reader has one.
+    const key = cacheKey("search", querySha, filtersSha, sort);
+    let ordered = resultCache?.get(key) ?? null;
+    const decrypted = new Map();
+    if (!ordered) {
+      const ids = intersection(await Promise.all(terms.map((term) => readIndex("lexical", term))));
+      // Kind, lifecycle and time filters are applied here, before paging, so every page holds only
+      // matches and a filtered search never pages through empty results.
+      const matches = (kind, lifecycle, intervals) => (!effectiveFilters.kinds.length || effectiveFilters.kinds.includes(kind))
+        && effectiveFilters.lifecycles.includes(lifecycle) && inTimeWindow(intervals, effectiveFilters);
+      const facts = await Promise.all(ids.map(lookupFacts));
+      if (facts.every(Boolean)) {
+        // Filter and order from the lookup index; only the page is decrypted.
+        const rows = ids.map((id, index) => ({ id, ...facts[index] })).filter((row) => matches(row.kind, row.lifecycle, row.intervals));
+        rows.sort((left, right) => (sort === "source_order"
+          ? (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER) : 0) || left.id.localeCompare(right.id));
+        ordered = rows.map(({ id }) => id);
+      } else {
+        // A generation built before its lookup index carried these facts: decrypt every match.
+        const records = [];
+        for (const id of ids) {
+          const record = await loadRecord(id);
+          if (matches(record.kind, record.lifecycle, knownTimeIntervals(record))) records.push(record);
+        }
+        records.sort((left, right) => resultSort(left, right, sort));
+        for (const record of records) decrypted.set(record.id, record);
+        ordered = records.map(({ id }) => id);
       }
-      records.sort((left, right) => resultSort(left, right, sort));
-      total = records.length;
-      page = records.slice(offset, offset + pageSize);
+      resultCache?.set(key, ordered);
     }
+    const total = ordered.length;
+    const page = await Promise.all(ordered.slice(offset, offset + pageSize).map((id) => decrypted.get(id) ?? loadRecord(id)));
     const nextOffset = offset + page.length;
     const moreAvailable = nextOffset < total;
     const result = Object.freeze({
@@ -259,53 +297,61 @@ export async function openPrivateJournalGraph({
     const querySha = sha256(Buffer.from(JSON.stringify({ from, to }), "utf8"));
     const filtersSha = sha256(Buffer.from(JSON.stringify({ includeUnknown }), "utf8"));
     const offset = cursor ? parseCursor(cursor, { query_sha256: querySha, filters_sha256: filtersSha, sort: "timeline" }).offset : 0;
-    const known = await readIndex("time_known", "known");
-    const unknown = includeUnknown ? await readIndex("time_unknown", "unknown") : [];
-    // An entry is in the window when their periods overlap, each bound covering the whole of its
-    // precision: a window ending "2024-06-01" includes that day, and a record dated "2021-05" is in
-    // a window starting May 10, 2021. A known interval may be open at one end: a missing start is
-    // the unbounded past and a missing end the unbounded future, so a partly dated record stays
-    // inside any window it overlaps.
-    const selected = known.filter((entry) => inTimeWindow([[entry.from, entry.to]], { from, to, include_unknown: true }));
-    // One entry per record and known time interval, labeled with the field or fields that place
-    // it there: a record written on one date about an event on another appears at each, and one
-    // whose two times are equal appears once. A record with no known time at all appears once in
-    // the unknown lane. The index is sorted when the generation is built, so this order is the
-    // same on every page.
-    const entries = [];
-    const knownEntries = new Map();
-    for (const entry of selected) {
-      const key = JSON.stringify([entry.id, entry.from, entry.to]);
-      const existing = knownEntries.get(key);
-      if (existing) { if (!existing.fields.includes(entry.field)) existing.fields.push(entry.field); continue; }
-      const value = { id: entry.id, lane: "known", fields: [entry.field], from: entry.from, to: entry.to, lifecycle: entry.lifecycle };
-      knownEntries.set(key, value);
-      entries.push(value);
-    }
-    const everKnown = new Set(known.map(({ id }) => id));
-    const unknownEntries = new Map();
-    for (const entry of unknown) {
-      if (everKnown.has(entry.id)) continue;
-      const existing = unknownEntries.get(entry.id);
-      if (existing) { if (!existing.fields.includes(entry.field)) existing.fields.push(entry.field); continue; }
-      const value = { id: entry.id, lane: "unknown", fields: [entry.field], from: null, to: null, lifecycle: entry.lifecycle };
-      unknownEntries.set(entry.id, value);
-      entries.push(value);
-    }
-    // Which entries are live comes from the time index itself, which records each entry's
-    // lifecycle, so paging reads no record and makes no lookup per entry; only the page returned is
-    // decrypted. A generation built before the index carried lifecycles falls back to the lookup
-    // index for its entries, and to the records themselves before that.
-    const legacyIds = [...new Set(entries.filter(({ lifecycle }) => typeof lifecycle !== "string").map(({ id }) => id))];
-    const facts = new Map();
-    await Promise.all(legacyIds.map(async (id) => { facts.set(id, await lookupFacts(id)); }));
+    // The first page builds the ordered window; later pages of the same query slice it from the
+    // result cache when the reader has one.
+    const key = cacheKey("timeline", querySha, filtersSha);
+    let live = resultCache?.get(key) ?? null;
     const loaded = new Map();
-    const unindexed = legacyIds.filter((id) => !facts.get(id));
-    for (const record of await Promise.all(unindexed.map(loadRecord))) loaded.set(record.id, record);
-    const live = entries.filter(({ id, lifecycle }) => active(typeof lifecycle === "string" ? { lifecycle } : (facts.get(id) ?? loaded.get(id))));
+    if (!live) {
+      const known = await readIndex("time_known", "known");
+      const unknown = includeUnknown ? await readIndex("time_unknown", "unknown") : [];
+      // An entry is in the window when their periods overlap, each bound covering the whole of its
+      // precision: a window ending "2024-06-01" includes that day, and a record dated "2021-05" is in
+      // a window starting May 10, 2021. A known interval may be open at one end: a missing start is
+      // the unbounded past and a missing end the unbounded future, so a partly dated record stays
+      // inside any window it overlaps.
+      const selected = known.filter((entry) => inTimeWindow([[entry.from, entry.to]], { from, to, include_unknown: true }));
+      // One entry per record and known time interval, labeled with the field or fields that place
+      // it there: a record written on one date about an event on another appears at each, and one
+      // whose two times are equal appears once. A record with no known time at all appears once in
+      // the unknown lane. The index is sorted when the generation is built, so this order is the
+      // same on every page.
+      const entries = [];
+      const knownEntries = new Map();
+      for (const entry of selected) {
+        const entryKey = JSON.stringify([entry.id, entry.from, entry.to]);
+        const existing = knownEntries.get(entryKey);
+        if (existing) { if (!existing.fields.includes(entry.field)) existing.fields.push(entry.field); continue; }
+        const value = { id: entry.id, lane: "known", fields: [entry.field], from: entry.from, to: entry.to, lifecycle: entry.lifecycle };
+        knownEntries.set(entryKey, value);
+        entries.push(value);
+      }
+      const everKnown = new Set(known.map(({ id }) => id));
+      const unknownEntries = new Map();
+      for (const entry of unknown) {
+        if (everKnown.has(entry.id)) continue;
+        const existing = unknownEntries.get(entry.id);
+        if (existing) { if (!existing.fields.includes(entry.field)) existing.fields.push(entry.field); continue; }
+        const value = { id: entry.id, lane: "unknown", fields: [entry.field], from: null, to: null, lifecycle: entry.lifecycle };
+        unknownEntries.set(entry.id, value);
+        entries.push(value);
+      }
+      // Which entries are live comes from the time index itself, which records each entry's
+      // lifecycle, so paging reads no record and makes no lookup per entry; only the page returned is
+      // decrypted. A generation built before the index carried lifecycles falls back to the lookup
+      // index for its entries, and to the records themselves before that.
+      const legacyIds = [...new Set(entries.filter(({ lifecycle }) => typeof lifecycle !== "string").map(({ id }) => id))];
+      const facts = new Map();
+      await Promise.all(legacyIds.map(async (id) => { facts.set(id, await lookupFacts(id)); }));
+      const unindexed = legacyIds.filter((id) => !facts.get(id));
+      for (const record of await Promise.all(unindexed.map(loadRecord))) loaded.set(record.id, record);
+      live = entries.filter(({ id, lifecycle }) => active(typeof lifecycle === "string" ? { lifecycle } : (facts.get(id) ?? loaded.get(id))))
+        .map(({ lifecycle, ...entry }) => entry);
+      resultCache?.set(key, live);
+    }
     const unknownCount = live.filter(({ lane }) => lane === "unknown").length;
     const materialize = async (selection) => Promise.all(selection.map(async ({ id, lane, fields, from: entryFrom, to: entryTo }) =>
-      ({ ...(loaded.get(id) ?? await loadRecord(id)), timeline_entry: { lane, fields, from: entryFrom, to: entryTo } })));
+      ({ ...(loaded.get(id) ?? await loadRecord(id)), timeline_entry: { lane, fields: [...fields], from: entryFrom, to: entryTo } })));
     if (pageSize === null) {
       const records = await materialize(live);
       await assertCurrent();

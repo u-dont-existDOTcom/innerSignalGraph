@@ -187,6 +187,8 @@ function runConfigBlockers(config) {
   if (typeof config.existing_grant_ref !== "string" || !config.existing_grant_ref) blockers.push("JOURNAL_GRANT_REFERENCE_REQUIRED");
   if (typeof config.source?.relative_path !== "string" || !config.source.relative_path
     || !Number.isSafeInteger(config.source.bytes) || !/^[0-9a-f]{64}$/u.test(config.source.sha256 ?? "")) blockers.push("JOURNAL_SOURCE_BINDING_REQUIRED");
+  // An empty source has nothing to import: no unit or page would ever reach a later stage.
+  else if (config.source.bytes <= 0) blockers.push("JOURNAL_SOURCE_EMPTY");
   return blockers;
 }
 

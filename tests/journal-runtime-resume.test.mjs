@@ -446,6 +446,8 @@ test('a run opens only the vault its config names, and never a source inside the
   await fs.mkdir(root,{recursive:true});
   await assert.rejects(()=>openJournalExecutionRuntime({...direct,environment:operatorEnvironment(root)}),error=>error.code!=='JOURNAL_PRIVATE_ROOT_MISMATCH');
  }
+ // An empty source has nothing to import, so no run of it is opened.
+ await assert.rejects(()=>openJournalExecutionRuntime({...f,config:{...f.config,source:{...f.config.source,bytes:0}}}),{code:'JOURNAL_SOURCE_EMPTY'});
  // A source path that climbs into the public checkout is refused before it is opened.
  const checkout=path.resolve(new URL('..',import.meta.url).pathname);
  const inside=path.relative(f.root,path.join(checkout,'package.json'));

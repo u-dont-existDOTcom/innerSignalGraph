@@ -1,6 +1,6 @@
 import { ValidationError } from "../core/errors.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES } from "../storage/private-case-access.mjs";
-import { openPrivateJournalGraph } from "./retrieval.mjs";
+import { createJournalResultCache, openPrivateJournalGraph } from "./retrieval.mjs";
 
 const ID = /^[A-Za-z0-9:_-]{1,160}$/;
 const READ_PURPOSES = new Set([PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH, PRIVATE_JOURNAL_PURPOSES.SESSION_USE]);
@@ -126,6 +126,10 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
 
 export function createJournalPrivateApi({ caseAccessService, jobController = null } = {}) {
   invariant(caseAccessService && typeof caseAccessService.withJournalCorpus === "function", "PRIVATE_CASE_JOURNAL_ACCESS_REQUIRED");
+  // Every request opens its own reader; this cache lets the pages after a query's first slice its
+  // ordered result instead of rebuilding it. Its keys name the snapshot and query, and it holds
+  // record identifiers only.
+  const resultCache = createJournalResultCache();
 
   const withReader = async ({ caseId, corpusId, purpose }, authContext, operation) => caseAccessService.withJournalCorpus(
     checkedId(caseId, "case_id"),
@@ -147,6 +151,7 @@ export function createJournalPrivateApi({ caseAccessService, jobController = nul
         visibilityEpoch: snapshot.visibility_epoch,
         purpose: readPurpose(purpose),
         cursorSecret,
+        resultCache,
         assertSnapshotCurrent: async () => {
           await recheckSnapshot(caseStore, caseId, corpusId, snapshot);
           return true;
