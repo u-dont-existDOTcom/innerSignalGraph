@@ -192,7 +192,9 @@ function runConfigBlockers(config) {
   return blockers;
 }
 
-export async function configuredJournalDoctorReport(configPath, environment = process.env) {
+export async function configuredJournalDoctorReport(configPath, environment = process.env, {
+  inferencePortLoader = loadJournalInferencePortFromEnvironment
+} = {}) {
   const config = await loadPrivateConfig(configPath);
   const blockers = runConfigBlockers(config);
   let source;
@@ -207,7 +209,7 @@ export async function configuredJournalDoctorReport(configPath, environment = pr
   if (operator.blocker) blockers.push(operator.blocker);
   let inference;
   try {
-    const port = loadJournalInferencePortFromEnvironment({ ...environment }, { caseId: config.target_profile.case_id });
+    const port = inferencePortLoader({ ...environment }, { caseId: config.target_profile.case_id });
     try {
       await port.prepare?.();
       inference = port.capabilities();
@@ -217,7 +219,14 @@ export async function configuredJournalDoctorReport(configPath, environment = pr
     inference = { enabled: false, live_inference: false, external_spend_authorized_usd: 0 };
     blockers.push(error?.code ?? "INFERENCE_ISOLATION_UNAVAILABLE");
   }
-  if (!inference.enabled) blockers.push("INFERENCE_ISOLATION_UNAVAILABLE");
+  const inferenceIsolationAvailable = inference.enabled === true
+    && inference.packet_only === true
+    && inference.fresh_context_per_generate === true;
+  const inferenceExecutionProfileAvailable = inference.enabled === true
+    && inference.authenticated_execution_profile_per_generate === true;
+  const inferenceAuthorized = inferenceIsolationAvailable && inferenceExecutionProfileAvailable;
+  if (!inferenceIsolationAvailable) blockers.push("INFERENCE_ISOLATION_UNAVAILABLE");
+  if (inference.enabled && !inferenceExecutionProfileAvailable) blockers.push("JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
   if ((inference.external_spend_authorized_usd ?? 0) > config.max_external_spend_usd) blockers.push("INFERENCE_ALLOWANCE_EXCEEDS_CONFIG");
   return Object.freeze({
     schema_version: 1,
@@ -228,10 +237,10 @@ export async function configuredJournalDoctorReport(configPath, environment = pr
       source_mount: source.available && source.byte_length_matches && source.digest_matches ? "verified" : "unavailable",
       parser: parser.formats[source.format]?.adapter ?? "unsupported",
       private_target: operator.available ? "authorized_operator" : "unavailable",
-      inference_route: inference.enabled ? "authorized" : "unavailable",
-      inference_isolation: inference.packet_only && inference.fresh_context_per_generate ? "packet_only_fresh_context" : "unavailable",
+      inference_route: inferenceAuthorized ? "authorized" : "unavailable",
+      inference_isolation: inferenceIsolationAvailable ? "packet_only_fresh_context" : "unavailable",
       archive_scope: operator.authorized_purposes.includes(PRIVATE_JOURNAL_PURPOSES.ARCHIVE) ? "authorized" : "unavailable",
-      semantic_scope: operator.authorized_purposes.includes(PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH) && inference.enabled ? "authorized" : "unavailable",
+      semantic_scope: operator.authorized_purposes.includes(PRIVATE_JOURNAL_PURPOSES.ORGANIZE_SEARCH) && inferenceAuthorized ? "authorized" : "unavailable",
       version_support: "contracts_loaded"
     },
     blockers: [...new Set(blockers)].sort()

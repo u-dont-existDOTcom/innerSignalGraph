@@ -2,6 +2,19 @@
 
 Updated: 2026-09-28
 
+## Journal exchange provider — Codex review finding at `23a7ce0`
+
+- **Goal:** resolve the remaining PR #97 doctor finding without treating configured route labels as execution or isolation evidence.
+- **Review result:** the finding was correct. The connector exchange reported `enabled: true` even though it cannot attest a fresh context and its current authenticated connector receipt omits the effective model and effort required to admit every answer. Doctor could therefore report an authorized inference route without any inference blocker for a route that runtime use would reject.
+- **Fix:** inference is now doctor-authorized only when the port attests packet-only fresh-context isolation and an authenticated execution profile for every generation. The current connector exchange explicitly reports the latter capability as false, so doctor emits `INFERENCE_ISOLATION_UNAVAILABLE` and `JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED` and keeps both `inference_route` and `semantic_scope` unavailable. Ordinary provider ports retain their existing doctor behavior with an explicit positive capability; deterministic mock receipts declare the same execution-profile property.
+- **Regression:** `tests/journal-contracts.test.mjs` injects the real exchange-port capabilities through an in-memory prepared port. It failed before the production fix because doctor omitted the execution-profile blocker, then passed after the fix while asserting that the inference route, isolation, and semantic scope remain unavailable.
+- **Verification:** the shell initially resolved Node v26.8.1 despite the task precondition; authoritative reruns explicitly placed the installed pinned Node v24.18.0/npm 11.16.0 first on `PATH`. Under that runtime, `tests/journal-contracts.test.mjs` and `tests/journal-controller.test.mjs` pass, `npm run audit:repository` passes with the existing single warning for unverified hosted GitHub App permissions, and `npm run journal:ui:test` passes 20/20. Per the owner directive, `npm test` and `npm run verify` are deferred to push CI because this sandbox cannot run the server-backed files.
+- **Sandbox boundary:** `tests/journal-exchange-port.test.mjs` cannot run here: all 12 cases stop at the unchanged trusted-ancestor check with `JOURNAL_WORK_EXCHANGE_ROOT_INSECURE` because sandbox `/tmp` is owned by `nobody`. No package failed to load, and neither the test nor the exchange-root trust contract was changed.
+- **Publication audit:** the Node v24.18.0 `npm run audit:publication` scan covered 748,069 records and reported the same five pre-existing `credential-pattern` fixtures in historical `tests/learning-groundwork-privacy.test.mjs` commits reachable only from `origin/design/opt-in-community-learning-20260830`. This patch does not touch that ref, history, or test, and the failure was not masked.
+- **Universal guidance and test budget:** the live default-branch Universal root and task-relevant lesson/index/rule-graph guidance were loaded. The canonical test-efficiency observer recorded 508.27 seconds of verification over 917.18 seconds of task time (55.42%); the two all-object publication scans dominate that cost because the pinned-runtime rerun replaced the accidental Node 26 result. No full or mutation suite was run or redundantly forced.
+- **Safety:** no deployment, installation, provider call, private case access, therapy/framework policy change, Git ref mutation, or `stable` change occurred.
+- **Next safe action:** the runner may commit and push this working tree; push CI must run `npm test` and `npm run verify` under Node v24.18.0 and supply the containing-commit publication result.
+
 ## Journal exchange provider — Codex review findings at `fd8e932`
 
 - **Goal:** resolve the two PR #97 review findings while preserving the exchange's bounded retry and private-root validation contracts.

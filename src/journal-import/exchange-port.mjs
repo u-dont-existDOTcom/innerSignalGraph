@@ -88,6 +88,9 @@ export function createExchangeJournalInferencePort({
     // but its receipt does not attest that the dispatcher opened a new chat. Do not let callers
     // treat that receipt as proof of fresh-context isolation.
     fresh_context_per_generate: false,
+    // Desired dispatch labels are not execution evidence. The current connector receipt omits the
+    // effective model and effort, so receiptFor() cannot admit any answer from this route yet.
+    authenticated_execution_profile_per_generate: false,
     // The exchange knows whether an item was answered, is still open, or was closed unanswered.
     authoritative_completion: true,
     external_spend_authorized_usd: 0,
