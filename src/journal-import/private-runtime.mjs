@@ -5,6 +5,7 @@ import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
+import { vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -115,8 +116,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
   let providers, port, store;
   const secretBuffers = [];
   try {
-    await removeLegacyPageRenders(root);
     providers = suppliedService ? null : loadHostedPrivateCaseOperatorProvidersFromEnvironment({ ...environment });
+    // The vault the operator environment points at must be one this run's config names, checked
+    // here as well as in doctor, so a run started directly can't stage into or publish to another.
+    invariant(!providers || vaultRootMatchesConfig(config, providers.rootDir), "JOURNAL_PRIVATE_ROOT_MISMATCH");
+    await removeLegacyPageRenders(root);
     const service = suppliedService ?? createPrivateCaseAccessService({ rootDir: providers.rootDir, authorizationProvider: providers.authorizationProvider, keyProvider: providers.keyProvider });
     const caseId = config.target_profile.case_id;
     const auth = { bearerToken: environment.INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN };
@@ -171,6 +175,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       close: () => semanticPort.close?.()
     }, corpusStore: store });
     const sourcePath = path.resolve(path.dirname(configPath), "..", config.source.relative_path);
+    // The same real-location check doctor makes, here too, since every command opens the source.
+    invariant(isOutside(repositoryRoot, sourcePath), "JOURNAL_SOURCE_LOCATION_INVALID");
     // One no-follow read of the private source, checked against the configured length and digest.
     const readVerifiedSource = async () => {
       const bytes = await withOpenedRegularFile(sourcePath, async (handle, sourceInfo) => {

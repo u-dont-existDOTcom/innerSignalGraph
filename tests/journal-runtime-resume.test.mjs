@@ -423,6 +423,35 @@ test('the staging key and the source are checked and read through one no-follow 
  runtime=await openJournalExecutionRuntime(f);await runtime.close();
 });
 
+test('a run opens only the vault its config names, and never a source inside the checkout',async t=>{
+ const f=await fixture(t);
+ const other=await fs.mkdtemp(path.join(os.tmpdir(),'journal-other-vault-synthetic-'));
+ t.after(()=>fs.rm(other,{recursive:true,force:true}));
+ const operatorEnvironment=root=>({
+  INNER_SIGNAL_PRIVATE_ROOT:root,
+  INNER_SIGNAL_OAUTH_ISSUER:'https://identity.synthetic.example',
+  INNER_SIGNAL_OAUTH_AUDIENCE:'https://private-mcp.synthetic.example',
+  INNER_SIGNAL_OPERATOR_OAUTH_JWKS_JSON:JSON.stringify({keys:[]}),
+  INNER_SIGNAL_OPERATOR_CASE_ACL_JSON:JSON.stringify([{subject:'operator-subject',case_ids:['synthetic-case'],scopes:['case:write'],purposes:['archive','organize_search','session_use']}]),
+  INNER_SIGNAL_CASE_KEYS_JSON:JSON.stringify({'synthetic-case':{routine_kek_base64:Buffer.alloc(32,81).toString('base64'),recovery_secret_base64:Buffer.alloc(32,82).toString('base64')}}),
+  INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN:'synthetic-token'
+ });
+ const {service,...direct}=f;
+ // Started without doctor, against an operator environment naming a different vault: refused
+ // before authorization, and nothing is staged.
+ await assert.rejects(()=>openJournalExecutionRuntime({...direct,environment:operatorEnvironment(other)}),{code:'JOURNAL_PRIVATE_ROOT_MISMATCH'});
+ assert.equal((await fs.readdir(f.config.execution_root)).includes('staging.key'),false);
+ // The vault the config names (or its vaults directory) passes the binding and goes on to authorization.
+ for(const root of [f.config.private_runtime_root,path.join(f.config.private_runtime_root,'vaults')]){
+  await fs.mkdir(root,{recursive:true});
+  await assert.rejects(()=>openJournalExecutionRuntime({...direct,environment:operatorEnvironment(root)}),error=>error.code!=='JOURNAL_PRIVATE_ROOT_MISMATCH');
+ }
+ // A source path that climbs into the public checkout is refused before it is opened.
+ const checkout=path.resolve(new URL('..',import.meta.url).pathname);
+ const inside=path.relative(f.root,path.join(checkout,'package.json'));
+ await assert.rejects(()=>openJournalExecutionRuntime({...f,config:{...f.config,source:{...f.config.source,relative_path:inside}}}),{code:'JOURNAL_SOURCE_LOCATION_INVALID'});
+});
+
 test('visual pages render in memory from the verified archive, and legacy page files are removed', async t => {
  const f=await fixture(t);
  const config={...f.config,visual_hazard_pages:[1]};

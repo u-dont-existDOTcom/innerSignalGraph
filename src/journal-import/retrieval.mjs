@@ -1,7 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { JOURNAL_GRAPH_CONTRACT, isJournalTimeBound, timeBoundStartsByEndOf } from "./contracts.mjs";
-import { lexicalTerms } from "./graph.mjs";
+import { lexicalTerms, readRepresentationDirectory } from "./graph.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const active = (record) => !["deleted", "revoked"].includes(record.lifecycle);
@@ -71,6 +71,10 @@ export async function openPrivateJournalGraph({
   const manifest = await readJson(manifestObjectId);
   invariant(manifest.case_id === caseId && manifest.corpus_id === corpusId, "GRAPH_MANIFEST_SCOPE_MISMATCH");
   invariant(manifest.generation === generation && manifest.visibility_epoch === visibilityEpoch, "GRAPH_SNAPSHOT_MISMATCH");
+
+  // Read once per reader, from the manifest or from the directory object it references.
+  const directoryCache = new Map();
+  const representationDirectory = () => memoized(directoryCache, "directory", () => readRepresentationDirectory(manifest, corpusStore));
 
   const readIndex = async (name, key) => {
     const directory = manifest.indexes[name];
@@ -254,7 +258,7 @@ export async function openPrivateJournalGraph({
       const key = JSON.stringify([entry.id, entry.from, entry.to]);
       const existing = knownEntries.get(key);
       if (existing) { if (!existing.fields.includes(entry.field)) existing.fields.push(entry.field); continue; }
-      const value = { id: entry.id, lane: "known", fields: [entry.field], from: entry.from, to: entry.to };
+      const value = { id: entry.id, lane: "known", fields: [entry.field], from: entry.from, to: entry.to, lifecycle: entry.lifecycle };
       knownEntries.set(key, value);
       entries.push(value);
     }
@@ -264,20 +268,21 @@ export async function openPrivateJournalGraph({
       if (everKnown.has(entry.id)) continue;
       const existing = unknownEntries.get(entry.id);
       if (existing) { if (!existing.fields.includes(entry.field)) existing.fields.push(entry.field); continue; }
-      const value = { id: entry.id, lane: "unknown", fields: [entry.field], from: null, to: null };
+      const value = { id: entry.id, lane: "unknown", fields: [entry.field], from: null, to: null, lifecycle: entry.lifecycle };
       unknownEntries.set(entry.id, value);
       entries.push(value);
     }
-    // Which entries are live comes from the lookup index when the generation records it there, so
-    // only the records being returned are decrypted.
-    const uniqueIds = [...new Set(entries.map(({ id }) => id))];
-    const facts = new Map(uniqueIds.map((id) => [id, null]));
-    await Promise.all(uniqueIds.map(async (id) => { facts.set(id, await lookupFacts(id)); }));
+    // Which entries are live comes from the time index itself, which records each entry's
+    // lifecycle, so paging reads no record and makes no lookup per entry; only the page returned is
+    // decrypted. A generation built before the index carried lifecycles falls back to the lookup
+    // index for its entries, and to the records themselves before that.
+    const legacyIds = [...new Set(entries.filter(({ lifecycle }) => typeof lifecycle !== "string").map(({ id }) => id))];
+    const facts = new Map();
+    await Promise.all(legacyIds.map(async (id) => { facts.set(id, await lookupFacts(id)); }));
     const loaded = new Map();
-    if (![...facts.values()].every(Boolean)) {
-      for (const record of await Promise.all(uniqueIds.map(loadRecord))) loaded.set(record.id, record);
-    }
-    const live = entries.filter(({ id }) => active(facts.get(id) ?? loaded.get(id)));
+    const unindexed = legacyIds.filter((id) => !facts.get(id));
+    for (const record of await Promise.all(unindexed.map(loadRecord))) loaded.set(record.id, record);
+    const live = entries.filter(({ id, lifecycle }) => active(typeof lifecycle === "string" ? { lifecycle } : (facts.get(id) ?? loaded.get(id))));
     const unknownCount = live.filter(({ lane }) => lane === "unknown").length;
     const materialize = async (selection) => Promise.all(selection.map(async ({ id, lane, fields, from: entryFrom, to: entryTo }) =>
       ({ ...(loaded.get(id) ?? await loadRecord(id)), timeline_entry: { lane, fields, from: entryFrom, to: entryTo } })));
@@ -333,12 +338,16 @@ export async function openPrivateJournalGraph({
       else nodes.set(record.id, record);
       if (nodes.size > maximumNodes || edges.size > maximumEdges) return insufficientContext;
       for (const evidenceId of evidenceIds(record)) enqueue(evidenceId);
-      if (!record.kind) continue;
+      // A source's only edges are the containment edges to every one of its passages, so the
+      // closure reaches a source from its passages and does not fan out from it.
+      if (!record.kind || record.kind === "source") continue;
       const adjacentEdgeIds = await readIndex("adjacency", record.id);
       for (const edgeId of adjacentEdgeIds) {
         const edge = await loadRecord(edgeId);
         if (!active(edge)) continue;
-        if (mandatory.has(edge.relation) || edge.relation === "supported_by") {
+        // A passage's provenance: the containment edge from its source, within the same bounds.
+        const containment = edge.relation === "contains" && record.kind === "passage" && edge.to === record.id;
+        if (mandatory.has(edge.relation) || edge.relation === "supported_by" || containment) {
           edges.set(edge.id, edge);
           if (edges.size > maximumEdges) return insufficientContext;
           enqueue(edge.from);
@@ -363,7 +372,7 @@ export async function openPrivateJournalGraph({
     const bytes = await corpusStore.reassembleOriginal(descriptor);
     objectReads += descriptor.chunks.length;
     try {
-      const expected = manifest.source_representations?.[representationId];
+      const expected = (await representationDirectory()).digests[representationId];
       invariant(expected && bytes.length === expected.utf8_byte_length && sha256(bytes) === expected.sha256, "SOURCE_REPRESENTATION_MISMATCH");
       return bytes.toString("utf8");
     } finally { bytes.fill(0); }
@@ -379,7 +388,7 @@ export async function openPrivateJournalGraph({
       const record = await loadRecord(id);
       invariant(record.kind === "passage", "EVIDENCE_RECORD_NOT_PASSAGE");
       invariant(active(record), "EVIDENCE_RECORD_REVOKED");
-      const descriptor = manifest.source_representation_objects?.[record.data.representation_id];
+      const descriptor = (await representationDirectory()).objects[record.data.representation_id];
       invariant(descriptor?.object_id, "SOURCE_REPRESENTATION_UNAVAILABLE");
       const sourceBytes = Buffer.from(await representationText(record.data.representation_id, descriptor), "utf8");
       const slice = sourceBytes.subarray(record.data.start_byte, record.data.end_byte);

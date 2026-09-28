@@ -127,6 +127,72 @@ test("a text source larger than one object is stored in chunks, and its exact sp
   destination.close();
 });
 
+test("a long source keeps its representation maps in a chunked directory, and its spans still resolve and transfer", async () => {
+  const graph = fixture("synthetic-graph.json");
+  const representations = fixture("synthetic-sources.json");
+  // Many more pages than the graph cites, as in a long PDF, with a manifest bound small enough that
+  // their maps no longer fit in it.
+  for (let page = 0; page < 200; page += 1) representations[`representation:page:${page}`] = `Synthetic page ${page}.`;
+  const store = corpusStore(await temporaryRoot(), graph.case_id, graph.corpus_id, Buffer.alloc(32, 51));
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph, sourceRepresentations: representations,
+    shardTargetBytes: 8192, manifestMaximumBytes: 16384 });
+  assert.equal(Object.hasOwn(persisted.manifest, "source_representation_objects"), false);
+  assert.equal(Object.hasOwn(persisted.manifest, "source_representations"), false);
+  assert.equal(persisted.manifest.source_representation_directory.encoding, "json_chunks");
+  assert.ok(Buffer.byteLength(JSON.stringify(persisted.manifest), "utf8") <= 16384);
+  const open = (corpus) => openPrivateJournalGraph({ corpusStore: corpus, manifestObjectId: persisted.manifest_object_id, caseId: graph.case_id,
+    corpusId: graph.corpus_id, generation: graph.generation, visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 53) });
+  const reader = await open(store);
+  const span = (await reader.resolveEvidence(["p4"])).exact_spans[0];
+  assert.equal(span.quote, graph.nodes.find(({ id }) => id === "p4").data.quote);
+  reader.close();
+  const destination = corpusStore(await temporaryRoot(), graph.case_id, graph.corpus_id, Buffer.alloc(32, 55));
+  await transferJournalGeneration({ sourceStore: store, destinationStore: destination, persisted });
+  const copied = await open(destination);
+  assert.equal((await copied.resolveEvidence(["p4"])).exact_spans[0].quote, span.quote);
+  copied.close();
+  // Below the bound the maps stay in the manifest, as before.
+  const small = await persistGraphGeneration({ corpusStore: corpusStore(await temporaryRoot(), graph.case_id, graph.corpus_id, Buffer.alloc(32, 57)),
+    graph, sourceRepresentations: fixture("synthetic-sources.json"), shardTargetBytes: 8192 });
+  assert.equal(Object.hasOwn(small.manifest, "source_representation_directory"), false);
+  assert.ok(small.manifest.source_representation_objects);
+  store.close();
+  destination.close();
+});
+
+test("a timeline page reads its own records and index entries, not a lookup for every entry", async () => {
+  const graph = fixture("synthetic-graph.json");
+  const representations = fixture("synthetic-sources.json");
+  const day = (date, evidence) => ({ raw: date, from: date, to: date, precision: "day", timezone: null, basis: "explicit", evidence_ids: [evidence] });
+  for (const [index, id] of ["a1", "a2", "a3", "a4", "a5", "a6", "a7"].entries()) {
+    graph.nodes.find((node) => node.id === id).data.event_time = day(`2021-05-1${index}`, `p${index + 1}`);
+  }
+  // Records that sort between the first dated record and the rest, so their lookup entries fall in
+  // different shards of the lookup index.
+  const colleague = graph.nodes.find((node) => node.id === "colleague");
+  for (let index = 0; index < 150; index += 1) {
+    graph.nodes.push({ ...structuredClone(colleague), id: `a1:filler:${String(index).padStart(3, "0")}`,
+      data: { ...structuredClone(colleague.data), label: `Invented filler ${index}` } });
+  }
+  const base = corpusStore(await temporaryRoot(), graph.case_id, graph.corpus_id, Buffer.alloc(32, 61));
+  const persisted = await persistGraphGeneration({ corpusStore: base, graph, sourceRepresentations: representations, shardTargetBytes: 4096 });
+  const lookupShards = persisted.manifest.indexes.record_lookup.map(({ object_id: objectId }) => objectId);
+  const shardOf = (id) => persisted.manifest.indexes.record_lookup.find((descriptor) =>
+    id.localeCompare(descriptor.first_key) >= 0 && id.localeCompare(descriptor.last_key) <= 0).object_id;
+  assert.notEqual(shardOf("a1"), shardOf("a7"));
+  const reads = [];
+  const counting = { ...base, readJsonObject: async (input) => { reads.push(input.objectId); return base.readJsonObject(input); } };
+  const reader = await openPrivateJournalGraph({ corpusStore: counting, manifestObjectId: persisted.manifest_object_id, caseId: graph.case_id,
+    corpusId: graph.corpus_id, generation: graph.generation, visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 63) });
+  const page = await reader.timeline({ pageSize: 1, includeUnknown: false });
+  assert.equal(page.total_matches, 7);
+  assert.deepEqual(page.records.map(({ id }) => id), ["a1"]);
+  // One lookup shard, for the record on the page, however many entries the window holds.
+  assert.equal(new Set(reads.filter((id) => lookupShards.includes(id))).size, 1);
+  reader.close();
+  base.close();
+});
+
 test("schema-valid mocked extraction becomes a persistent searchable graph without conflating source order and time", async () => {
   const rootDir = await temporaryRoot();
   const text = "On Monday I asked for help.\n";
@@ -222,6 +288,11 @@ test("encrypted graph generation supports raw search, aliases, unknown time and 
   assert.equal(closure.status, "complete");
   assert.ok(["a1", "a3", "a4", "a5", "p1", "p3", "p4", "p5"].every((id) => closure.nodes.some((node) => node.id === id)));
   assert.ok(["exception", "qualifier", "correction", "support3"].every((id) => closure.edges.some((edge) => edge.id === id)));
+  // Each passage's provenance comes with it: its source and the containment edge. The source does
+  // not pull in its other passages.
+  assert.ok(closure.nodes.some((node) => node.id === "src"));
+  assert.ok(["contains1", "contains3", "contains4", "contains5"].every((id) => closure.edges.some((edge) => edge.id === id)));
+  assert.equal(closure.nodes.some((node) => ["p2", "p6", "p7"].includes(node.id)), false);
   assert.equal((await reader.evidenceGroup(["a3"], { maximumNodes: 2 })).status, "insufficient_context");
   // The closure is bounded in edges too, not only in nodes.
   assert.equal(closure.edges.length > 2, true);

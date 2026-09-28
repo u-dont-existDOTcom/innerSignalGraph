@@ -7,6 +7,7 @@ import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
 import { sourceFormatForPath, sourceParserCapabilities } from "../journal-import/parsers/index.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../journal-import/provider-runtime.mjs";
+import { vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 
@@ -158,10 +159,7 @@ async function inspectOperator(config, environment) {
     keyProvider: providers.keyProvider
   });
   try {
-    const configuredRoots = [config.private_runtime_root, path.resolve(config.private_runtime_root, "vaults"), config.private_runtime_mount]
-      .filter((value) => typeof value === "string")
-      .map((value) => path.resolve(value));
-    if (!configuredRoots.includes(providers.rootDir)) {
+    if (!vaultRootMatchesConfig(config, providers.rootDir)) {
       return Object.freeze({ available: false, authorized_purposes: [], blocker: "OPERATOR_PRIVATE_ROOT_MISMATCH" });
     }
     const authContext = { bearerToken: environment.INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN };

@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto';
 import {ValidationError} from '../core/errors.mjs';
+import {readRepresentationDirectory} from './graph.mjs';
 const digest=b=>createHash('sha256').update(b).digest('hex');
 const requireValue=(condition,code)=>{if(!condition)throw new ValidationError(code,{code});};
 
@@ -11,10 +12,15 @@ export async function transferJournalGeneration({sourceStore,destinationStore,pe
     'JOURNAL_TRANSFER_IDENTITY_MISMATCH');
   requireValue(manifest.case_id===sourceStore.caseId&&manifest.corpus_id===sourceStore.corpusId,
     'JOURNAL_TRANSFER_MANIFEST_MISMATCH');
+  // Chunked objects (a large representation, the representation directory of a long source) are
+  // copied and verified chunk by chunk, like an archive.
+  const chunksOf=ref=>ref.chunks.map(chunk=>({...chunk,object_id:ref.object_id,object_version:ref.object_version}));
+  await authorize();
+  const directory=await readRepresentationDirectory(manifest,sourceStore);
+  const directoryPointer=manifest.source_representation_directory;
   const objects=[...manifest.record_shards,...Object.values(manifest.indexes).flat(),
-    // A large representation is stored as chunks, each copied and verified like an archive chunk.
-    ...Object.values(manifest.source_representation_objects).flatMap(ref=>Array.isArray(ref.chunks)
-      ?ref.chunks.map(chunk=>({...chunk,object_id:ref.object_id,object_version:ref.object_version})):[ref]),
+    ...(directoryPointer?chunksOf(directoryPointer):[]),
+    ...Object.values(directory.objects).flatMap(ref=>Array.isArray(ref.chunks)?chunksOf(ref):[ref]),
     ...manifest.archive_references.flatMap(archive=>archive.chunks.map(chunk=>({...chunk,object_id:archive.object_id,object_version:archive.object_version}))),
     persisted.manifest_reference];
   const seen=new Set();let copied=0,reused=0,bytes=0;

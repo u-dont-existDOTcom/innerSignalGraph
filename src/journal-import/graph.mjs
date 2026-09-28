@@ -198,6 +198,8 @@ function timeEntries(record) {
     result.push({
       id: record.id,
       kind: record.kind,
+      // Carried here so the timeline knows which entries are live without a lookup per record.
+      lifecycle: record.lifecycle,
       field,
       from: time.from,
       to: time.to,
@@ -332,6 +334,27 @@ function contentRef(reference, extra = {}) {
   };
 }
 
+/**
+ * A generation's representation maps: where each representation's text is stored, and the length
+ * and digest it must have. A generation keeps them in its manifest, or, when they are too large for
+ * one object, in a chunked directory object the manifest references.
+ */
+export async function readRepresentationDirectory(manifest, corpusStore) {
+  const pointer = manifest.source_representation_directory;
+  if (!pointer) return { objects: manifest.source_representation_objects ?? {}, digests: manifest.source_representations ?? {} };
+  invariant(pointer.encoding === "json_chunks" && Array.isArray(pointer.chunks) && typeof corpusStore?.reassembleOriginal === "function",
+    "SOURCE_REPRESENTATION_DIRECTORY_INVALID");
+  const bytes = await corpusStore.reassembleOriginal(pointer);
+  let directory;
+  try { directory = JSON.parse(bytes.toString("utf8")); }
+  catch { directory = null; }
+  finally { bytes.fill(0); }
+  const map = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+  invariant(directory?.schema_version === "1.0" && map(directory.source_representation_objects) && map(directory.source_representations),
+    "SOURCE_REPRESENTATION_DIRECTORY_INVALID");
+  return { objects: directory.source_representation_objects, digests: directory.source_representations };
+}
+
 export async function persistGraphGeneration({
   corpusStore,
   graph,
@@ -339,11 +362,14 @@ export async function persistGraphGeneration({
   visibilityEpoch = 0,
   permittedUses = ["archive", "organize_search"],
   archiveReferences = [],
-  shardTargetBytes = DEFAULT_SHARD_TARGET_BYTES
+  shardTargetBytes = DEFAULT_SHARD_TARGET_BYTES,
+  manifestMaximumBytes = JOURNAL_OBJECT_PAYLOAD_MAX_BYTES
 }) {
   invariant(corpusStore && typeof corpusStore.writeJsonObject === "function", "CORPUS_STORE_INVALID");
   invariant(Number.isSafeInteger(visibilityEpoch) && visibilityEpoch >= 0, "VISIBILITY_EPOCH_INVALID");
   invariant(Number.isSafeInteger(shardTargetBytes) && shardTargetBytes >= 4096, "SHARD_TARGET_INVALID");
+  invariant(Number.isSafeInteger(manifestMaximumBytes) && manifestMaximumBytes >= 1024
+    && manifestMaximumBytes <= JOURNAL_OBJECT_PAYLOAD_MAX_BYTES, "MANIFEST_BOUND_INVALID");
   const allowedUses = new Set(["archive", "organize_search", "session_use"]);
   invariant(Array.isArray(permittedUses) && permittedUses.length > 0
     && permittedUses.every((use) => allowedUses.has(use)), "PERMITTED_USES_INVALID");
@@ -411,6 +437,24 @@ export async function persistGraphGeneration({
       sha256: sha256(Buffer.from(text, "utf8"))
     }]))
   };
+  // The two representation maps grow with the page count: a long PDF has an entry per page in each.
+  // When they would take the manifest past one object, they move into a chunked directory object,
+  // and the manifest keeps only the directory's reference.
+  if (Buffer.byteLength(JSON.stringify(manifest), "utf8") > manifestMaximumBytes) {
+    invariant(typeof corpusStore.writeChunkedOriginal === "function", "CORPUS_STORE_INVALID");
+    const directory = await corpusStore.writeChunkedOriginal({
+      objectId: `graph:${generationTag}:representation-directory`,
+      bytes: Buffer.from(JSON.stringify({
+        schema_version: "1.0",
+        source_representation_objects: manifest.source_representation_objects,
+        source_representations: manifest.source_representations
+      }), "utf8")
+    });
+    delete manifest.source_representation_objects;
+    delete manifest.source_representations;
+    manifest.source_representation_directory = { ...structuredClone(directory), encoding: "json_chunks" };
+    invariant(Buffer.byteLength(JSON.stringify(manifest), "utf8") <= manifestMaximumBytes, "GRAPH_MANIFEST_TOO_LARGE");
+  }
   const manifestReference = await corpusStore.writeJsonObject({ objectId: manifestObjectId, value: manifest });
   return Object.freeze({ manifest, manifest_reference: contentRef(manifestReference), manifest_object_id: manifestObjectId });
 }
