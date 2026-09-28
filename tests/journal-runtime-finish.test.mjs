@@ -122,6 +122,36 @@ test("a clean synthetic import runs from intake to a committed generation", asyn
   assert.deepEqual([commit.stage, commit.completion.profile_committed], ["COLD_TEST", "pass"]);
 });
 
+test("the hardest daily limit counts each dependency invocation before it is sent", async (t) => {
+  const f = await environment(t);
+  f.config.hardest_lane = { enabled: true, daily_limit: 1 };
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  const ordinary = handlers({
+    extractor: (packet) => ({ ...handlers().extractor(packet), status: "needs_context",
+      requested_context: [{ unit_id: packet.core_units[0].unit_id, direction: "after", reason: "Synthetic bounded-context request." }] })
+  });
+  const standardPort = createMockJournalInferencePort({ handlers: ordinary });
+  const hardestPort = createMockJournalInferencePort({ handlers: handlers() });
+  const calls = [];
+  const inferencePort = {
+    capabilities: () => hardestPort.capabilities(),
+    getCompletion: (operationKey) => hardestPort.getCompletion(operationKey),
+    invoke(input) {
+      calls.push(`${input.tier}:${input.role}`);
+      return (input.tier === "hardest" ? hardestPort : standardPort).invoke(input);
+    },
+    close() { standardPort.close(); hardestPort.close(); }
+  };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort, environment: f.environment });
+  try {
+    const summary = await runtime.execute("run");
+    assert.equal(summary.blocker, "HARDEST_DAILY_LIMIT");
+    assert.equal(summary.hardest_lane.sent, 1);
+    assert.deepEqual(calls.filter((call) => call.startsWith("hardest:")), ["hardest:extractor"]);
+  } finally { await runtime.close(); }
+});
+
 test("identity questions a bounded neighborhood cannot settle are counted, not a reason to stop", async (t) => {
   const f = await environment(t);
   const { run, commit } = await drive(f, handlers({

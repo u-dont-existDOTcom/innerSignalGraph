@@ -125,6 +125,7 @@ export function createExchangeJournalInferencePort({
   }
 
   function receiptFor(operationKey, entry, stored) {
+    const hardest = entry.tier === "hardest";
     const receiptBody = {
       receipt_id: `receipt:${createHmac("sha256", key).update(`${operationKey}\0${entry.input_sha256}`).digest("hex").slice(0, 40)}`,
       transport: JOURNAL_WORK_TRANSPORT,
@@ -133,8 +134,8 @@ export function createExchangeJournalInferencePort({
       request_context_id: `chatgpt-connector:${stored.receipt.receipt_id}`,
       input_manifest_sha256: entry.input_sha256,
       role_instruction_sha256: sha256(Buffer.from(entry.instruction, "utf8")),
-      configured_model_profile: model,
-      configured_effort: effort,
+      configured_model_profile: hardest ? hardestModel : model,
+      configured_effort: hardest ? hardestEffort : effort,
       effective_model_profile: null,
       effective_effort: null,
       completion_status: "completed",

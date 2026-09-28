@@ -436,7 +436,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       const ledger = createCorpusJournalJobLedger({ corpusStore: store, jobId: id });
       const controller = createJournalImportController({ ledger, inferencePort: port, controllerSecret: key, grant,
-        promptVersion: `1.0:${hash(id).slice(0, 24)}`, modelProfile: route?.model ?? "synthetic", beforeInvoke: authorize,
+        promptVersion: `1.0:${hash(id).slice(0, 24)}`, modelProfile: route?.model ?? "synthetic",
+        beforeInvoke: async ({ work: pendingWork }) => {
+          await authorize();
+          if (pendingWork.tier === "hardest") await beforeHardestSend();
+        },
         resolvePacketInput: async (input) => {
           const image = input?.page_image_ref;
           if (image?.kind !== "chunked_image") return input;
@@ -449,13 +453,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         } });
       try {
         if (!(await ledger.load())) await controller.initialize({ jobId: id, caseId, corpusId: state.corpus_id, generation: state.generation, workDefinitions: [{ key: role, stage: workStage, role, tier, identity, assigned_core_ids: assignedCoreIds, source_locators: sourceLocators, packet_input: packetInput }, ...dependencies.map((item) => ({ ...item, tier }))] });
-        const beforeRun = await ledger.load();
-        const pending = beforeRun.snapshot.work_items.find((item) => item.status !== "completed");
-        if (tier === "hardest" && pending?.status === "planned" && pending.attempts === 0) {
-          try { await beforeHardestSend(); }
-          catch (error) { if (error?.code === "HARDEST_DAILY_LIMIT") return null; throw error; }
-        }
-        const entry = await controller.runUntilBlocked({ maximumSteps: 8 });
+        let entry;
+        try { entry = await controller.runUntilBlocked({ maximumSteps: 8 }); }
+        catch (error) { if (error?.code === "HARDEST_DAILY_LIMIT") return null; throw error; }
         const unfinished = entry.snapshot.work_items.find((item) => item.status !== "completed");
         // A primary output that asks for smaller windows or more context parks its job, and its
         // reviewers never run. The caller repairs or splits such a batch, so it is handed back

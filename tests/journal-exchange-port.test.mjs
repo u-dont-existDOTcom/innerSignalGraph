@@ -290,6 +290,8 @@ test("a hardest call uses its configured tier, model, effort and expiry and reco
   assert.equal(Date.parse(dispatch.expires_at) - Date.parse(dispatch.issued_at), 6 * 60 * 60_000);
   assert.equal(result.receipt.provider_route_receipt.subject, "synthetic-chatgpt-account");
   assert.equal(result.receipt.provider_route_receipt.tier, "hardest");
+  assert.equal(result.receipt.configured_model_profile, "claude-opus-5-5");
+  assert.equal(result.receipt.configured_effort, "max");
 });
 
 test("the exchange route loads from the environment and checks its root before any work", async (t) => {

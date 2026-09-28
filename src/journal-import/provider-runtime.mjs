@@ -106,6 +106,10 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
   const raw = environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON;
   if (raw == null || raw === "") return createDisabledJournalInferencePort();
   const config = parseConfiguration(raw);
+  // The connector exchange dispatches hardest-tier work to its separately configured model.
+  // Generic provider routes have one fixed provider/model and ignore the work tier, so admitting a
+  // hardest lane there would falsely label an ordinary answer as a hardest-model answer.
+  invariant(hardestLane.enabled !== true || config.provider === JOURNAL_EXCHANGE_PROVIDER, "HARDEST_LANE_TRANSPORT_UNSUPPORTED");
   const receiptKey = Buffer.from(secret(environment, "INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64"), "base64");
   invariant(receiptKey.byteLength >= 32, "INFERENCE_RECEIPT_KEY_INVALID");
   if (config.provider === JOURNAL_EXCHANGE_PROVIDER) {
