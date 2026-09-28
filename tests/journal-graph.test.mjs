@@ -127,18 +127,22 @@ test("a text source larger than one object is stored in chunks, and its exact sp
   destination.close();
 });
 
-test("a long source keeps its representation maps in a chunked directory, and its spans still resolve and transfer", async () => {
+test("a long source keeps its representation maps and archive references in a chunked directory, and still resolves and transfers", async () => {
   const graph = fixture("synthetic-graph.json");
   const representations = fixture("synthetic-sources.json");
   // Many more pages than the graph cites, as in a long PDF, with a manifest bound small enough that
   // their maps no longer fit in it.
   for (let page = 0; page < 200; page += 1) representations[`representation:page:${page}`] = `Synthetic page ${page}.`;
   const store = corpusStore(await temporaryRoot(), graph.case_id, graph.corpus_id, Buffer.alloc(32, 51));
+  // The original and its page images, as a scanned source's commit archives them.
+  const archives = [await store.writeChunkedOriginal({ objectId: "original:synthetic", bytes: Buffer.from("Invented original bytes.") }),
+    ...await Promise.all([0, 1, 2].map((page) => store.writeChunkedOriginal({ objectId: `visual:image:${page}`, bytes: Buffer.from(`Invented page image ${page}.`) })))];
   const persisted = await persistGraphGeneration({ corpusStore: store, graph, sourceRepresentations: representations,
-    shardTargetBytes: 8192, manifestMaximumBytes: 16384 });
+    archiveReferences: archives, shardTargetBytes: 8192, manifestMaximumBytes: 16384 });
   assert.equal(Object.hasOwn(persisted.manifest, "source_representation_objects"), false);
   assert.equal(Object.hasOwn(persisted.manifest, "source_representations"), false);
-  assert.equal(persisted.manifest.source_representation_directory.encoding, "json_chunks");
+  assert.equal(Object.hasOwn(persisted.manifest, "archive_references"), false);
+  assert.equal(persisted.manifest.generation_directory.encoding, "json_chunks");
   assert.ok(Buffer.byteLength(JSON.stringify(persisted.manifest), "utf8") <= 16384);
   const open = (corpus) => openPrivateJournalGraph({ corpusStore: corpus, manifestObjectId: persisted.manifest_object_id, caseId: graph.case_id,
     corpusId: graph.corpus_id, generation: graph.generation, visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 53) });
@@ -147,14 +151,16 @@ test("a long source keeps its representation maps in a chunked directory, and it
   assert.equal(span.quote, graph.nodes.find(({ id }) => id === "p4").data.quote);
   reader.close();
   const destination = corpusStore(await temporaryRoot(), graph.case_id, graph.corpus_id, Buffer.alloc(32, 55));
-  await transferJournalGeneration({ sourceStore: store, destinationStore: destination, persisted });
+  const transfer = await transferJournalGeneration({ sourceStore: store, destinationStore: destination, persisted });
+  assert.equal(transfer.archive_count, 4);
+  assert.equal((await destination.reassembleOriginal(archives[3])).toString(), "Invented page image 2.");
   const copied = await open(destination);
   assert.equal((await copied.resolveEvidence(["p4"])).exact_spans[0].quote, span.quote);
   copied.close();
   // Below the bound the maps stay in the manifest, as before.
   const small = await persistGraphGeneration({ corpusStore: corpusStore(await temporaryRoot(), graph.case_id, graph.corpus_id, Buffer.alloc(32, 57)),
     graph, sourceRepresentations: fixture("synthetic-sources.json"), shardTargetBytes: 8192 });
-  assert.equal(Object.hasOwn(small.manifest, "source_representation_directory"), false);
+  assert.equal(Object.hasOwn(small.manifest, "generation_directory"), false);
   assert.ok(small.manifest.source_representation_objects);
   store.close();
   destination.close();
@@ -191,6 +197,48 @@ test("a timeline page reads its own records and index entries, not a lookup for 
   assert.equal(new Set(reads.filter((id) => lookupShards.includes(id))).size, 1);
   reader.close();
   base.close();
+});
+
+test("search applies its time window before paging, so every page holds only matches", async () => {
+  const graph = fixture("synthetic-graph.json");
+  const representations = fixture("synthetic-sources.json");
+  const day = (date, evidence) => ({ raw: date, from: date, to: date, precision: "day", timezone: null, basis: "explicit", evidence_ids: [evidence] });
+  // a1 was written in 2020 about 2024; a3 happened in May 2021; the other assertions are undated.
+  const a1 = graph.nodes.find((node) => node.id === "a1");
+  a1.data.authored_time = day("2020-01-01", "p1");
+  a1.data.event_time = day("2024-06-01", "p1");
+  graph.nodes.find((node) => node.id === "a3").data.event_time = { raw: "May 2021", from: "2021-05", to: "2021-05", precision: "month",
+    timezone: null, basis: "explicit", evidence_ids: ["p3"] };
+  const store = corpusStore(await temporaryRoot(), graph.case_id, graph.corpus_id, Buffer.alloc(32, 71));
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph, sourceRepresentations: representations, shardTargetBytes: 4096 });
+  const reader = await openPrivateJournalGraph({ corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId: graph.case_id,
+    corpusId: graph.corpus_id, generation: graph.generation, visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 73) });
+  const query = "help";
+  const ids = async (filters) => {
+    const found = [];
+    let cursor = null;
+    do {
+      const page = await reader.search({ query, filters: { kinds: ["assertion"], ...filters }, pageSize: 1, cursor, sort: "id" });
+      found.push(...page.records.map(({ id }) => id));
+      cursor = page.next_cursor;
+    } while (cursor);
+    return found;
+  };
+  const everything = await ids({});
+  assert.deepEqual(everything, ["a1", "a2", "a3"]);
+  // Either known time can place a record: a1 is in 2020 by its writing and in 2024 by its event.
+  assert.deepEqual(await ids({ from: "2020-01-01", to: "2020-12-31", include_unknown: false }), ["a1"]);
+  assert.deepEqual(await ids({ from: "2024-06", include_unknown: false }), ["a1"]);
+  // A window inside May 2021 overlaps the record dated only "May 2021".
+  assert.deepEqual(await ids({ from: "2021-05-10", to: "2021-05-12", include_unknown: false }), ["a3"]);
+  // Undated records stay in a window unless unknown time is excluded.
+  assert.equal((await ids({ from: "2021-05-10", to: "2021-05-12" })).length, everything.length - 1);
+  await assert.rejects(() => reader.search({ query, filters: { from: "last summer" } }), /SEARCH_FILTERS_INVALID/);
+  const first = await reader.search({ query, filters: { kinds: ["assertion"] }, pageSize: 1 });
+  await assert.rejects(() => reader.search({ query, filters: { kinds: ["assertion"], from: "2021-05" }, pageSize: 1, cursor: first.next_cursor }),
+    /CURSOR_QUERY_MISMATCH/);
+  reader.close();
+  store.close();
 });
 
 test("schema-valid mocked extraction becomes a persistent searchable graph without conflating source order and time", async () => {

@@ -316,11 +316,21 @@ function packIndex(index, targetBytes) {
 
 // What search and the timeline need to filter and order a record without decrypting it: its
 // kind, lifecycle and source order, the same order the reader sorts by.
+// A record's known time intervals, written and event, as [from, to] pairs; either end may be open.
+export function knownTimeIntervals(record) {
+  if (!["episode", "assertion"].includes(record.kind)) return [];
+  return ["authored_time", "event_time"].map((field) => record.data?.[field])
+    .filter((time) => time && (time.from !== null || time.to !== null))
+    .map((time) => [time.from, time.to]);
+}
+
 function recordLookupFacts(record) {
   return {
     kind: record.kind ?? null,
     lifecycle: record.lifecycle ?? null,
-    order: record.kind === "passage" ? record.data.start_byte : (record.data?.source_order ?? null)
+    order: record.kind === "passage" ? record.data.start_byte : (record.data?.source_order ?? null),
+    // So search can filter by time from the lookup index without reading the record.
+    intervals: knownTimeIntervals(record)
   };
 }
 
@@ -335,24 +345,26 @@ function contentRef(reference, extra = {}) {
 }
 
 /**
- * A generation's representation maps: where each representation's text is stored, and the length
- * and digest it must have. A generation keeps them in its manifest, or, when they are too large for
- * one object, in a chunked directory object the manifest references.
+ * The parts of a generation's manifest that grow with the source: where each representation's
+ * text is stored, the length and digest it must have, and the archived originals (the source and
+ * each page image). A generation keeps them in its manifest, or, when they are too large for one
+ * object, in a chunked directory object the manifest references.
  */
-export async function readRepresentationDirectory(manifest, corpusStore) {
-  const pointer = manifest.source_representation_directory;
-  if (!pointer) return { objects: manifest.source_representation_objects ?? {}, digests: manifest.source_representations ?? {} };
+export async function readGenerationDirectory(manifest, corpusStore) {
+  const pointer = manifest.generation_directory;
+  if (!pointer) return { objects: manifest.source_representation_objects ?? {}, digests: manifest.source_representations ?? {},
+    archives: manifest.archive_references ?? [] };
   invariant(pointer.encoding === "json_chunks" && Array.isArray(pointer.chunks) && typeof corpusStore?.reassembleOriginal === "function",
-    "SOURCE_REPRESENTATION_DIRECTORY_INVALID");
+    "GENERATION_DIRECTORY_INVALID");
   const bytes = await corpusStore.reassembleOriginal(pointer);
   let directory;
   try { directory = JSON.parse(bytes.toString("utf8")); }
   catch { directory = null; }
   finally { bytes.fill(0); }
   const map = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
-  invariant(directory?.schema_version === "1.0" && map(directory.source_representation_objects) && map(directory.source_representations),
-    "SOURCE_REPRESENTATION_DIRECTORY_INVALID");
-  return { objects: directory.source_representation_objects, digests: directory.source_representations };
+  invariant(directory?.schema_version === "1.0" && map(directory.source_representation_objects) && map(directory.source_representations)
+    && Array.isArray(directory.archive_references), "GENERATION_DIRECTORY_INVALID");
+  return { objects: directory.source_representation_objects, digests: directory.source_representations, archives: directory.archive_references };
 }
 
 export async function persistGraphGeneration({
@@ -437,22 +449,25 @@ export async function persistGraphGeneration({
       sha256: sha256(Buffer.from(text, "utf8"))
     }]))
   };
-  // The two representation maps grow with the page count: a long PDF has an entry per page in each.
-  // When they would take the manifest past one object, they move into a chunked directory object,
-  // and the manifest keeps only the directory's reference.
+  // Three parts of the manifest grow with the source: the two representation maps have an entry per
+  // page, and the archive references list the original and every page image with its chunks. When
+  // they would take the manifest past one object, they move together into a chunked directory
+  // object, and the manifest keeps only the directory's reference.
   if (Buffer.byteLength(JSON.stringify(manifest), "utf8") > manifestMaximumBytes) {
     invariant(typeof corpusStore.writeChunkedOriginal === "function", "CORPUS_STORE_INVALID");
     const directory = await corpusStore.writeChunkedOriginal({
-      objectId: `graph:${generationTag}:representation-directory`,
+      objectId: `graph:${generationTag}:directory`,
       bytes: Buffer.from(JSON.stringify({
         schema_version: "1.0",
         source_representation_objects: manifest.source_representation_objects,
-        source_representations: manifest.source_representations
+        source_representations: manifest.source_representations,
+        archive_references: manifest.archive_references
       }), "utf8")
     });
     delete manifest.source_representation_objects;
     delete manifest.source_representations;
-    manifest.source_representation_directory = { ...structuredClone(directory), encoding: "json_chunks" };
+    delete manifest.archive_references;
+    manifest.generation_directory = { ...structuredClone(directory), encoding: "json_chunks" };
     invariant(Buffer.byteLength(JSON.stringify(manifest), "utf8") <= manifestMaximumBytes, "GRAPH_MANIFEST_TOO_LARGE");
   }
   const manifestReference = await corpusStore.writeJsonObject({ objectId: manifestObjectId, value: manifest });

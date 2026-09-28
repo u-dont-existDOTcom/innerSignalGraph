@@ -283,6 +283,30 @@ describe("authenticated journal surface", () => {
     expect(getSubgraph.mock.calls[0][1]).toEqual(["a1"]);
   });
 
+  test("a page with nothing to show still offers the next matches instead of reporting none", async () => {
+    const searchPages = vi.fn<JournalApi["search"]>()
+      .mockImplementationOnce(async () => ({ items: [], next_cursor: "cursor:search:2", more_available: true }))
+      .mockImplementationOnce(async () => ({ items: [assertion], next_cursor: null, more_available: false }));
+    const api = fakeApi({ search: searchPages });
+    const user = userEvent.setup();
+    render(<App context={context} api={api} />);
+    await screen.findByText("1 source verified");
+    await user.type(screen.getByRole("textbox", { name: "Search journal" }), "frontière");
+    await user.click(screen.getByRole("button", { name: "Retrieve evidence" }));
+    expect(await screen.findByText(/Matches page 1 · more matches available/)).toBeTruthy();
+    expect(screen.queryByText(/No evidence was found/)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Next matches" }));
+    expect(await screen.findByText("2 nodes · 1 links")).toBeTruthy();
+  });
+
+  test("either known time, written or event, places a result in the date window", () => {
+    const record: JournalNode = { id: "a11", kind: "assertion", data: {
+      authored_time: { from: "2020-01-01", to: "2020-01-01" }, event_time: { from: "2024-06", to: "2024-06" } } };
+    expect(matchesFilters(record, { ...emptyFilters(), from: "2020-01-01", to: "2020-12-31", includeUnknown: false })).toBe(true);
+    expect(matchesFilters(record, { ...emptyFilters(), from: "2024-06-10", to: "2024-06-12", includeUnknown: false })).toBe(true);
+    expect(matchesFilters(record, { ...emptyFilters(), from: "2022-01-01", to: "2022-12-31", includeUnknown: false })).toBe(false);
+  });
+
   test("lists matches whose evidence closure did not fit instead of reporting none", async () => {
     const api = fakeApi({
       getSubgraph: vi.fn(async () => ({ nodes: [], edges: [], closure_status: "insufficient_context", more_available: true }))

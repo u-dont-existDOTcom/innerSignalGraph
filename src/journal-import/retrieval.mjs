@@ -1,7 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { JOURNAL_GRAPH_CONTRACT, isJournalTimeBound, timeBoundStartsByEndOf } from "./contracts.mjs";
-import { lexicalTerms, readRepresentationDirectory } from "./graph.mjs";
+import { knownTimeIntervals, lexicalTerms, readGenerationDirectory } from "./graph.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const active = (record) => !["deleted", "revoked"].includes(record.lifecycle);
@@ -18,10 +18,29 @@ function invariant(condition, code) {
 }
 
 function stableFilters(filters) {
+  const from = filters?.from ?? null;
+  const to = filters?.to ?? null;
+  const includeUnknown = filters?.include_unknown ?? true;
+  invariant((from === null || isJournalTimeBound(from)) && (to === null || isJournalTimeBound(to))
+    && typeof includeUnknown === "boolean", "SEARCH_FILTERS_INVALID");
   return {
     kinds: Array.isArray(filters?.kinds) ? [...new Set(filters.kinds)].sort() : [],
-    lifecycles: Array.isArray(filters?.lifecycles) ? [...new Set(filters.lifecycles)].sort() : ["active", "candidate", "superseded"]
+    lifecycles: Array.isArray(filters?.lifecycles) ? [...new Set(filters.lifecycles)].sort() : ["active", "candidate", "superseded"],
+    from,
+    to,
+    include_unknown: includeUnknown
   };
+}
+
+// Whether known time intervals place a record in a window: any interval overlapping it, each bound
+// covering the whole of its period. An interval may be open at one end: a missing start is the
+// unbounded past and a missing end the unbounded future. With no known time, a record is in the
+// window only when unknown time is included; with no window, every record is.
+function inTimeWindow(intervals, { from, to, include_unknown: includeUnknown }) {
+  if (from === null && to === null) return true;
+  if (!intervals.length) return includeUnknown;
+  return intervals.some(([start, end]) => (from === null || end === null || timeBoundStartsByEndOf(from, end))
+    && (to === null || start === null || timeBoundStartsByEndOf(start, to)));
 }
 
 function intersection(lists) {
@@ -74,7 +93,7 @@ export async function openPrivateJournalGraph({
 
   // Read once per reader, from the manifest or from the directory object it references.
   const directoryCache = new Map();
-  const representationDirectory = () => memoized(directoryCache, "directory", () => readRepresentationDirectory(manifest, corpusStore));
+  const representationDirectory = () => memoized(directoryCache, "directory", () => readGenerationDirectory(manifest, corpusStore));
 
   const readIndex = async (name, key) => {
     const directory = manifest.indexes[name];
@@ -114,7 +133,7 @@ export async function openPrivateJournalGraph({
   // for a generation built before the index carried them.
   const lookupFacts = async (id) => {
     const [location] = await readIndex("record_lookup", id);
-    return location && typeof location.lifecycle === "string" && Object.hasOwn(location, "order") ? location : null;
+    return location && typeof location.lifecycle === "string" && Object.hasOwn(location, "order") && Array.isArray(location.intervals) ? location : null;
   };
 
   const signCursor = (body) => {
@@ -167,14 +186,16 @@ export async function openPrivateJournalGraph({
     const offset = cursor ? parseCursor(cursor, expected).offset : 0;
     const beforeReads = objectReads;
     const ids = intersection(await Promise.all(terms.map((term) => readIndex("lexical", term))));
-    const matches = (kind, lifecycle) => (!effectiveFilters.kinds.length || effectiveFilters.kinds.includes(kind))
-      && effectiveFilters.lifecycles.includes(lifecycle);
+    // Kind, lifecycle and time filters are applied here, before paging, so every page holds only
+    // matches and a filtered search never pages through empty results.
+    const matches = (kind, lifecycle, intervals) => (!effectiveFilters.kinds.length || effectiveFilters.kinds.includes(kind))
+      && effectiveFilters.lifecycles.includes(lifecycle) && inTimeWindow(intervals, effectiveFilters);
     const facts = await Promise.all(ids.map(lookupFacts));
     let page;
     let total;
     if (facts.every(Boolean)) {
       // Filter and order from the lookup index, then decrypt only the requested page.
-      const rows = ids.map((id, index) => ({ id, ...facts[index] })).filter((row) => matches(row.kind, row.lifecycle));
+      const rows = ids.map((id, index) => ({ id, ...facts[index] })).filter((row) => matches(row.kind, row.lifecycle, row.intervals));
       rows.sort((left, right) => (sort === "source_order"
         ? (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER) : 0) || left.id.localeCompare(right.id));
       total = rows.length;
@@ -184,7 +205,7 @@ export async function openPrivateJournalGraph({
       const records = [];
       for (const id of ids) {
         const record = await loadRecord(id);
-        if (matches(record.kind, record.lifecycle)) records.push(record);
+        if (matches(record.kind, record.lifecycle, knownTimeIntervals(record))) records.push(record);
       }
       records.sort((left, right) => resultSort(left, right, sort));
       total = records.length;
@@ -245,8 +266,7 @@ export async function openPrivateJournalGraph({
     // a window starting May 10, 2021. A known interval may be open at one end: a missing start is
     // the unbounded past and a missing end the unbounded future, so a partly dated record stays
     // inside any window it overlaps.
-    const selected = known.filter((entry) => (from === null || entry.to === null || timeBoundStartsByEndOf(from, entry.to))
-      && (to === null || entry.from === null || timeBoundStartsByEndOf(entry.from, to)));
+    const selected = known.filter((entry) => inTimeWindow([[entry.from, entry.to]], { from, to, include_unknown: true }));
     // One entry per record and known time interval, labeled with the field or fields that place
     // it there: a record written on one date about an event on another appears at each, and one
     // whose two times are equal appears once. A record with no known time at all appears once in

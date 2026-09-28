@@ -56,16 +56,17 @@ function overlapsWindow(interval: Interval, filters: JournalFilters): boolean {
   return true;
 }
 
-function recordInterval(node: JournalNode): Interval | null {
+// A record's known times, written and event, as the service reads them when it filters a search.
+function recordIntervals(node: JournalNode): Interval[] {
   const bound = (value: unknown) => (typeof value === "string" && /^\d{4}/u.test(value) ? value : null);
-  for (const key of ["event_time", "authored_time"]) {
-    const value = node.data?.[key];
-    if (!value || typeof value !== "object") continue;
-    const interval = { from: bound((value as Record<string, unknown>).from), to: bound((value as Record<string, unknown>).to) };
-    if (interval.from || interval.to) return interval;
-  }
+  const intervals = ["authored_time", "event_time"]
+    .map((key) => node.data?.[key])
+    .filter((value): value is Record<string, unknown> => Boolean(value) && typeof value === "object")
+    .map((value) => ({ from: bound(value.from), to: bound(value.to) }))
+    .filter((interval) => interval.from || interval.to);
+  if (intervals.length) return intervals;
   const direct = bound(node.data?.date);
-  return direct ? { from: direct, to: direct } : null;
+  return direct ? [{ from: direct, to: direct }] : [];
 }
 
 export function matchesFilters(node: JournalNode, filters: JournalFilters): boolean {
@@ -77,9 +78,9 @@ export function matchesFilters(node: JournalNode, filters: JournalFilters): bool
     if (entry.lane === "unknown") return filters.includeUnknown || (!filters.from && !filters.to);
     return overlapsWindow(entry, filters);
   }
-  const interval = recordInterval(node);
-  if (!interval) return filters.includeUnknown || (!filters.from && !filters.to);
-  return overlapsWindow(interval, filters);
+  const intervals = recordIntervals(node);
+  if (!intervals.length) return filters.includeUnknown || (!filters.from && !filters.to);
+  return intervals.some((interval) => overlapsWindow(interval, filters));
 }
 
 export interface BoundedGraph {

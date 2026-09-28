@@ -55,7 +55,17 @@ export const JOURNAL_READ_ONLY_MCP_TOOLS = Object.freeze([
         query: { type: "string", minLength: 1, maxLength: 4_000 },
         purpose: { enum: [...READ_PURPOSES] },
         graph_enabled: { type: "boolean", default: true },
-        filters: { type: "object" },
+        filters: {
+          type: "object",
+          description: "Optional; applied before paging, and bound into the cursor.",
+          properties: {
+            kinds: { type: "array", items: { type: "string" } },
+            lifecycles: { type: "array", items: { type: "string" } },
+            from: { type: ["string", "null"], description: TIME_BOUND_DESCRIPTION },
+            to: { type: ["string", "null"], description: TIME_BOUND_DESCRIPTION },
+            include_unknown: { type: "boolean", default: true, description: "Whether a record with no known time stays in a time window." }
+          }
+        },
         page_size: { type: "integer", minimum: 1, maximum: PAGE_SIZE_MAX, default: PAGE_SIZE_DEFAULT },
         cursor: { type: ["string", "null"] }
       }

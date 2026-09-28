@@ -256,8 +256,9 @@ export function App({ context, api = defaultApi }: AppProps) {
   // are still listed, never reported as absent.
   const loadNeighborhood = async (scope: ReadScope, cursor: string | null) => {
     const page = await api.search(scope, cursor);
-    // The filters pick the matches that seed the neighborhood (the service applies the kind filter
-    // as well; dates are applied here). What the closure adds for those matches is shown whole.
+    // The filters pick the matches that seed the neighborhood; the service has applied them before
+    // paging, and they are checked again here. What the closure adds for those matches is shown
+    // whole.
     const seeds = page.items.filter((item) => matchesFilters(item, scope.filters));
     if (!seeds.length) return { page, graph: emptyGraph, snapshot: snapshotKey(page.snapshot) };
     const closure = await api.getSubgraph(scope, seeds.map(({ id }) => id));
@@ -308,7 +309,8 @@ export function App({ context, api = defaultApi }: AppProps) {
       setRawGraph(graph);
       setMatchPage({ number: 1, nextCursor: page.more_available ? page.next_cursor : null });
       setTimeline(nextTimeline);
-      setSearchState(graph.nodes.length ? "ready" : "empty");
+      // A page with nothing to show but more matches after it keeps its "Next matches" control.
+      setSearchState(graph.nodes.length || (page.more_available && page.next_cursor) ? "ready" : "empty");
     } catch (error) {
       if (request !== retrieval.current) return;
       viewSnapshot.current = null;

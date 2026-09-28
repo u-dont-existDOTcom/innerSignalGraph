@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto';
 import {ValidationError} from '../core/errors.mjs';
-import {readRepresentationDirectory} from './graph.mjs';
+import {readGenerationDirectory} from './graph.mjs';
 const digest=b=>createHash('sha256').update(b).digest('hex');
 const requireValue=(condition,code)=>{if(!condition)throw new ValidationError(code,{code});};
 
@@ -12,16 +12,16 @@ export async function transferJournalGeneration({sourceStore,destinationStore,pe
     'JOURNAL_TRANSFER_IDENTITY_MISMATCH');
   requireValue(manifest.case_id===sourceStore.caseId&&manifest.corpus_id===sourceStore.corpusId,
     'JOURNAL_TRANSFER_MANIFEST_MISMATCH');
-  // Chunked objects (a large representation, the representation directory of a long source) are
-  // copied and verified chunk by chunk, like an archive.
+  // Chunked objects (an archive, a large representation, the directory of a long source) are copied
+  // and verified chunk by chunk.
   const chunksOf=ref=>ref.chunks.map(chunk=>({...chunk,object_id:ref.object_id,object_version:ref.object_version}));
   await authorize();
-  const directory=await readRepresentationDirectory(manifest,sourceStore);
-  const directoryPointer=manifest.source_representation_directory;
+  const directory=await readGenerationDirectory(manifest,sourceStore);
+  const directoryPointer=manifest.generation_directory;
   const objects=[...manifest.record_shards,...Object.values(manifest.indexes).flat(),
     ...(directoryPointer?chunksOf(directoryPointer):[]),
     ...Object.values(directory.objects).flatMap(ref=>Array.isArray(ref.chunks)?chunksOf(ref):[ref]),
-    ...manifest.archive_references.flatMap(archive=>archive.chunks.map(chunk=>({...chunk,object_id:archive.object_id,object_version:archive.object_version}))),
+    ...directory.archives.flatMap(chunksOf),
     persisted.manifest_reference];
   const seen=new Set();let copied=0,reused=0,bytes=0;
   for(const ref of objects){
@@ -45,7 +45,7 @@ export async function transferJournalGeneration({sourceStore,destinationStore,pe
       bytes+=plaintext.length;
     }finally{plaintext.fill(0);}
   }
-  for(const archive of manifest.archive_references){
+  for(const archive of directory.archives){
     await authorize();
     for await(const chunk of destinationStore.iterateOriginal(archive))void chunk;
   }
@@ -53,5 +53,5 @@ export async function transferJournalGeneration({sourceStore,destinationStore,pe
   requireValue(JSON.stringify(saved)===JSON.stringify(manifest),'JOURNAL_TRANSFER_MANIFEST_MISMATCH');
   await authorize();
   return {objects_verified:seen.size,copied_objects:copied,reused_objects:reused,plaintext_bytes_verified:bytes,
-    archive_count:manifest.archive_references.length,manifest_verified:true,profile_pointer_published:false};
+    archive_count:directory.archives.length,manifest_verified:true,profile_pointer_published:false};
 }
