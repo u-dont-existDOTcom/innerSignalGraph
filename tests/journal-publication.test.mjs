@@ -11,6 +11,7 @@ import {publishJournalGenerationFromStaging} from '../src/journal-import/publica
 import {createPrivateCaseOrchestrator} from '../src/supervisor/private-case-orchestration.mjs';
 import {createJournalPrivateApi} from '../src/journal-import/http.mjs';
 import {transferJournalGeneration} from '../src/journal-import/generation-transfer.mjs';
+import {createJournalContinuityProjection} from '../src/case-state/journal-continuity.mjs';
 
 const CASE_ID='synthetic-case',CORPUS_ID='corpus:synthetic';
 // The operator's documented grant: case:write only, for the import's three purposes.
@@ -121,6 +122,19 @@ test('a commit refuses a manifest staged before a visibility change instead of a
  const inspection=await service.inspectJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'session_use'},auth);
  assert.equal(inspection.reference.active_generation,null);
  assert.equal(inspection.reference.visibility_epoch,1);
+});
+
+test('a visibility change retires the active generation, so continuity no longer presents it as attached',async t=>{
+ const {service,sourceStore,persisted}=await environment(t);
+ const auth={bearerToken:WRITER};
+ await publishJournalGenerationFromStaging({service,sourceStore,persisted,auth,authorize:async()=>{}});
+ const inspect=async()=>(await service.inspectJournalCorpus(CASE_ID,CORPUS_ID,{requiredScope:'case:write',requiredPurpose:'session_use'},auth)).reference;
+ assert.equal(createJournalContinuityProjection([await inspect()]).mode,'external_reference_only');
+ await service.incrementJournalVisibilityEpoch(CASE_ID,{corpusId:CORPUS_ID,expectedEpoch:0},auth);
+ const revoked=await inspect();
+ assert.equal(revoked.active_generation,null);
+ assert.deepEqual(revoked.previous_generations.at(-1),{generation:persisted.manifest.generation,manifest_object_id:persisted.manifest_object_id});
+ assert.equal(createJournalContinuityProjection([revoked]).mode,'not_attached');
 });
 
 test('a rollback refuses a generation from a revoked visibility epoch and still rolls back within one',async t=>{

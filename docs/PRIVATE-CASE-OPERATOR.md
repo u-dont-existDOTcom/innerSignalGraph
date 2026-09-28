@@ -44,7 +44,7 @@ Start with a non-mutating authorization probe:
 }
 ```
 
-The remaining journal operations are `create_journal_corpus`, `commit_journal_generation`, `rollback_journal_generation`, and `increment_journal_visibility`. Commit reopens and authenticates the staged manifest, applies the expected case revision/generation/visibility checks, and verifies that therapy state, transcript, and candidate records remain unchanged.
+The remaining journal operations are `create_journal_corpus`, `commit_journal_generation`, `rollback_journal_generation`, and `increment_journal_visibility`. Commit reopens and authenticates the staged manifest, applies the expected case revision/generation/visibility checks, and verifies that therapy state, transcript, and candidate records remain unchanged. `increment_journal_visibility` also retires the active generation, since no reader accepts its old epoch. The generation moves to the previous generations, where rollback refuses it, and handoffs stop presenting the corpus as attached until a generation is committed under the new epoch.
 
 Only one writer changes a vault at a time. An InnerSignal server with a private runtime holds the vault's writer lock for as long as it runs, so stop it before an operator write or a journal publication: either one refuses to start with `PRIVATE_ROOT_WRITER_ACTIVE` while the server runs, and the server refuses to start while either is writing. The read-only MCP takes no lock and keeps running.
 

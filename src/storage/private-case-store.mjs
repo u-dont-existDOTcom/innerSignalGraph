@@ -1436,6 +1436,13 @@ export function createEncryptedPrivateCaseStore({
         if (!reference) throw new ValidationError("Journal corpus was not found.", { code: "PRIVATE_CASE_NOT_FOUND" });
         if (reference.visibility_epoch !== expectedEpoch) throw new ValidationError("Journal visibility epoch changed.", { code: "REVISION_CONFLICT" });
         reference.visibility_epoch += 1;
+        // The active generation was published under the old epoch, which no reader accepts any more,
+        // so it stops being active. It moves to the previous generations, where a rollback refuses it
+        // for its epoch, and nothing (a handoff's continuity included) presents it as readable.
+        if (reference.active_generation !== null) {
+          reference.previous_generations.push({ generation: reference.active_generation, manifest_object_id: reference.manifest_object_id });
+          reference.active_generation = null;
+        }
         return candidate;
       });
       return record.journal_corpora.find((item) => item.corpus_id === checkedCorpusId).visibility_epoch;
