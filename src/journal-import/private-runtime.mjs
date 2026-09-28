@@ -1250,7 +1250,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           try {
             for (let i = 0; i < passages.length; i += 200) await reader.resolveEvidence(passages.slice(i, i + 200).map(p => p.id));
             let traversed = 0;
-            for (const index of new Set([0, Math.floor(plan.units.length / 2), plan.units.length - 1])) {
+            // Search probes at the start, middle and end of the native units. A fully scanned source
+            // has none, so there is nothing native to probe; its pages are read visually later.
+            const probes = plan.units.length ? new Set([0, Math.floor(plan.units.length / 2), plan.units.length - 1]) : [];
+            for (const index of probes) {
               const unit = plan.units[index], query = lexicalTerms(unit.text)[0];
               if (!query) continue;
               let cursor = null, found = false;

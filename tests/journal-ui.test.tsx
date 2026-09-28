@@ -15,7 +15,7 @@ import {
   type JournalNode,
   type ReadScope
 } from "../apps/journal-web/src/contracts";
-import { boundAndFilterGraph, emptyFilters, matchesFilters } from "../apps/journal-web/src/model";
+import { boundGraph, emptyFilters, matchesFilters } from "../apps/journal-web/src/model";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const context: JournalContext = Object.freeze({
@@ -260,6 +260,29 @@ describe("authenticated journal surface", () => {
     expect(screen.queryByText(/nodes ·/)).toBeNull();
   });
 
+  test("filters choose the matches that seed the neighborhood, and the closure they bring is shown whole", async () => {
+    const later: JournalNode = { id: "a4", kind: "assertion", lifecycle: "active",
+      data: { statement: "Une remarque d’une autre année.", evidence_ids: ["p4"], event_time: { from: "2025-02-01", to: "2025-02-01" } } };
+    const correction: JournalNode = { id: "a3", kind: "assertion", lifecycle: "active",
+      data: { statement: "Une correction écrite plus tard.", evidence_ids: ["p1"], event_time: { from: "2025-01-10", to: "2025-01-10" } } };
+    const corrects: JournalEdge = { id: "e3", relation: "corrects", from: "a3", to: "a1", evidence_ids: ["p1"] };
+    const getSubgraph = vi.fn<JournalApi["getSubgraph"]>(async () => ({ nodes: [assertion, passage, correction], edges: [edge, corrects],
+      closure_status: "complete", more_available: false }));
+    const api = fakeApi({ search: vi.fn(async () => ({ items: [assertion, later], next_cursor: null, more_available: false })), getSubgraph });
+    const user = userEvent.setup();
+    render(<App context={context} api={api} />);
+    await screen.findByText("1 source verified");
+    await user.type(screen.getByRole("textbox", { name: "Search journal" }), "frontière");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Evidence kind" }), "assertion");
+    fireEvent.change(screen.getByLabelText("From date"), { target: { value: "2024-06-01" } });
+    fireEvent.change(screen.getByLabelText("To date"), { target: { value: "2024-06-30" } });
+    await user.click(screen.getByRole("button", { name: "Retrieve evidence" }));
+    // Only the match inside June 2024 seeds the neighborhood; its passage and its later correction,
+    // which the filters would not select on their own, are shown with it.
+    expect(await screen.findByText("3 nodes · 2 links")).toBeTruthy();
+    expect(getSubgraph.mock.calls[0][1]).toEqual(["a1"]);
+  });
+
   test("lists matches whose evidence closure did not fit instead of reporting none", async () => {
     const api = fakeApi({
       getSubgraph: vi.fn(async () => ({ nodes: [], edges: [], closure_status: "insufficient_context", more_available: true }))
@@ -344,7 +367,7 @@ describe("bounded and hardened rendering", () => {
   test("enforces the 100-node and 200-edge visual limits before rendering", () => {
     const nodes = Array.from({ length: 140 }, (_, index): JournalNode => ({ id: `n${index}`, kind: "passage", data: { quote: `Node ${index}` } }));
     const edges = Array.from({ length: 260 }, (_, index): JournalEdge => ({ id: `e${index}`, relation: "related", from: `n${index % 100}`, to: `n${(index + 1) % 100}` }));
-    const bounded = boundAndFilterGraph({ nodes, edges, closure_status: "complete", more_available: true }, emptyFilters());
+    const bounded = boundGraph({ nodes, edges, closure_status: "complete", more_available: true });
     expect(bounded.nodes).toHaveLength(100);
     expect(bounded.edges).toHaveLength(200);
     expect(bounded.truncated).toBe(true);

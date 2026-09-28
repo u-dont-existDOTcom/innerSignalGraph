@@ -18,7 +18,7 @@ import {
   type TimelineResult
 } from "./contracts";
 import { JournalGraph } from "./JournalGraph";
-import { boundAndFilterGraph, createReadScope, emptyFilters, matchesFilters, nodeEvidenceIds, nodeLabel } from "./model";
+import { boundGraph, createReadScope, emptyFilters, matchesFilters, nodeEvidenceIds, nodeLabel } from "./model";
 
 const defaultApi = createHttpJournalApi();
 const stageOrder: ImportStageName[] = ["archive", "parse", "semantic", "visual", "session_use"];
@@ -203,7 +203,7 @@ export function App({ context, api = defaultApi }: AppProps) {
     return () => { current = false; };
   }, [api, context]);
 
-  const boundedGraph = useMemo(() => boundAndFilterGraph(rawGraph, appliedFilters), [rawGraph, appliedFilters]);
+  const boundedGraph = useMemo(() => boundGraph(rawGraph), [rawGraph]);
   const visibleTimeline = useMemo(
     () => timeline.items.filter((item) => matchesFilters(item, appliedFilters)),
     [timeline.items, appliedFilters]
@@ -256,11 +256,14 @@ export function App({ context, api = defaultApi }: AppProps) {
   // are still listed, never reported as absent.
   const loadNeighborhood = async (scope: ReadScope, cursor: string | null) => {
     const page = await api.search(scope, cursor);
-    if (!page.items.length) return { page, graph: emptyGraph, snapshot: snapshotKey(page.snapshot) };
-    const closure = await api.getSubgraph(scope, page.items.map(({ id }) => id));
+    // The filters pick the matches that seed the neighborhood (the service applies the kind filter
+    // as well; dates are applied here). What the closure adds for those matches is shown whole.
+    const seeds = page.items.filter((item) => matchesFilters(item, scope.filters));
+    if (!seeds.length) return { page, graph: emptyGraph, snapshot: snapshotKey(page.snapshot) };
+    const closure = await api.getSubgraph(scope, seeds.map(({ id }) => id));
     const graph: SubgraphResult = closure.nodes.length
       ? closure
-      : { nodes: page.items, edges: [], closure_status: closure.closure_status, more_available: true };
+      : { nodes: seeds, edges: [], closure_status: closure.closure_status, more_available: true };
     return { page, graph, snapshot: combineSnapshots(snapshotKey(page.snapshot), snapshotKey(closure.coverage)) };
   };
 

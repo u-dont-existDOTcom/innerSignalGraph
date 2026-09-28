@@ -560,6 +560,9 @@ test('a scanned source with no native text reaches its visual pages instead of f
  try {
   const staged=await runtime.execute('stage');
   assert.equal(staged.completion.archive_verified,'pass');
+  // With no native units there is nothing to probe, and verify still checks the raw index.
+  const verified=await runtime.execute('verify');
+  assert.equal(verified.completion.archive_verified,'pass');
   const result=await runtime.execute('visual-only');
   assert.equal(result.stage,'REFERENCE_AUDIT');
   assert.equal(result.completed_visual_pages,1);

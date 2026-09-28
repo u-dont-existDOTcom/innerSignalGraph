@@ -88,8 +88,11 @@ export interface BoundedGraph {
   truncated: boolean;
 }
 
-export function boundAndFilterGraph(graph: SubgraphResult, filters: JournalFilters): BoundedGraph {
-  const nodes = graph.nodes.filter((node) => matchesFilters(node, filters)).slice(0, GRAPH_NODE_LIMIT);
+// Filters choose which matches seed a neighborhood. The neighborhood itself is shown whole: its
+// closure (supporting passages, corrections, qualifications, exceptions) is what makes a match
+// readable, whatever kind or date those companions have, and the service returns it bounded.
+export function boundGraph(graph: SubgraphResult): BoundedGraph {
+  const nodes = graph.nodes.slice(0, GRAPH_NODE_LIMIT);
   const ids = new Set(nodes.map(({ id }) => id));
   const edges = graph.edges
     .filter((edge) => ids.has(edge.from) && ids.has(edge.to))
