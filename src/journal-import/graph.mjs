@@ -324,11 +324,42 @@ export function knownTimeIntervals(record) {
     .map((time) => [time.from, time.to]);
 }
 
-function recordLookupFacts(record) {
+// Where each record falls in source order, as [representation place, byte offset]. A multi-page
+// PDF has one representation per page, and byte offsets restart at zero on each, so an offset alone
+// would interleave the pages. A representation's place is the order in which the graph lists its
+// sources, which follows the import plan. A passage takes its own position; any other record takes
+// the earliest of its evidence passages; a record with neither sorts last.
+function sourceOrderKeys(graph) {
+  const places = new Map();
+  for (const node of graph.nodes) {
+    if (node.kind === "source" && !places.has(node.data.representation_id)) places.set(node.data.representation_id, places.size);
+  }
+  const passages = new Map();
+  for (const node of graph.nodes) {
+    if (node.kind === "passage") passages.set(node.id, [places.get(node.data.representation_id) ?? Number.MAX_SAFE_INTEGER, node.data.start_byte]);
+  }
+  return (record) => {
+    if (record.kind === "passage") return passages.get(record.id) ?? [Number.MAX_SAFE_INTEGER, record.data.start_byte];
+    const evidence = (record.data?.evidence_ids ?? []).map((id) => passages.get(id)).filter(Boolean);
+    if (evidence.length) return evidence.reduce((earliest, key) => (compareSourceOrder(key, earliest) < 0 ? key : earliest));
+    return [Number.MAX_SAFE_INTEGER, Number.isSafeInteger(record.data?.source_order) ? record.data.source_order : Number.MAX_SAFE_INTEGER];
+  };
+}
+
+// Orders two indexed positions. A generation indexed before positions were pairs stored a single
+// number; it compares as that number with no offset, which keeps its old order.
+export function compareSourceOrder(left, right) {
+  const key = (value) => (Array.isArray(value) ? value : [value ?? Number.MAX_SAFE_INTEGER, 0]);
+  const [leftPlace, leftOffset] = key(left);
+  const [rightPlace, rightOffset] = key(right);
+  return leftPlace - rightPlace || leftOffset - rightOffset;
+}
+
+function recordLookupFacts(record, orderOf) {
   return {
     kind: record.kind ?? null,
     lifecycle: record.lifecycle ?? null,
-    order: record.kind === "passage" ? record.data.start_byte : (record.data?.source_order ?? null),
+    order: orderOf(record),
     // So search can filter by time from the lookup index without reading the record.
     intervals: knownTimeIntervals(record)
   };
@@ -391,11 +422,12 @@ export async function persistGraphGeneration({
   const records = [...graph.nodes, ...graph.edges].sort((left, right) => left.id.localeCompare(right.id));
   const recordShards = [];
   const recordLookup = new Map();
+  const orderOf = sourceOrderKeys(graph);
   for (const [index, shard] of packRecords(records, shardTargetBytes).entries()) {
     const objectId = `graph:${generationTag}:records:${String(index).padStart(6, "0")}`;
     const reference = await corpusStore.writeJsonObject({ objectId, value: { schema_version: "1.0", records: shard } });
     recordShards.push(contentRef(reference, { record_count: shard.length }));
-    for (const record of shard) recordLookup.set(record.id, [{ object_id: objectId, ...recordLookupFacts(record) }]);
+    for (const record of shard) recordLookup.set(record.id, [{ object_id: objectId, ...recordLookupFacts(record, orderOf) }]);
   }
   const indexes = { ...buildGraphIndexes(graph), record_lookup: recordLookup };
   const indexDirectories = {};

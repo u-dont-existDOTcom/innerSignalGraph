@@ -1,7 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { JOURNAL_GRAPH_CONTRACT, isJournalTimeBound, timeBoundStartsByEndOf } from "./contracts.mjs";
-import { knownTimeIntervals, lexicalTerms, readGenerationDirectory } from "./graph.mjs";
+import { compareSourceOrder, knownTimeIntervals, lexicalTerms, readGenerationDirectory } from "./graph.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const active = (record) => !["deleted", "revoked"].includes(record.lifecycle);
@@ -250,8 +250,7 @@ export async function openPrivateJournalGraph({
       if (facts.every(Boolean)) {
         // Filter and order from the lookup index; only the page is decrypted.
         const rows = ids.map((id, index) => ({ id, ...facts[index] })).filter((row) => matches(row.kind, row.lifecycle, row.intervals));
-        rows.sort((left, right) => (sort === "source_order"
-          ? (left.order ?? Number.MAX_SAFE_INTEGER) - (right.order ?? Number.MAX_SAFE_INTEGER) : 0) || left.id.localeCompare(right.id));
+        rows.sort((left, right) => (sort === "source_order" ? compareSourceOrder(left.order, right.order) : 0) || left.id.localeCompare(right.id));
         ordered = rows.map(({ id }) => id);
       } else {
         // A generation built before its lookup index carried these facts: decrypt every match.

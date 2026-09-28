@@ -570,6 +570,63 @@ test("the timeline tool returns the cursor for its next page", async () => {
   store.close();
 });
 
+// Two pages of one PDF, each its own representation whose byte offsets start at zero. The first
+// page's passages sit at larger offsets than the second page's.
+function twoPageGraph({ caseId = "pdf-case", corpusId = "pdf-corpus", generation = "pdf-generation" } = {}) {
+  const pages = [
+    { representation: "representation:page-1", page: 1, text: "Front matter of page one, set before it.\nmarker alpha\nmore text on page one\nmarker gamma\n" },
+    { representation: "representation:page-2", page: 2, text: "marker beta\nmarker delta\n" }
+  ];
+  const nodes = [];
+  const passages = [];
+  for (const { representation, page, text } of pages) {
+    nodes.push({
+      id: `source:${representation}`, case_id: caseId, corpus_id: corpusId, version: 1, lifecycle: "active", kind: "source",
+      data: { representation_id: representation, original_object_id: "original:pdf", media_type: "application/pdf", byte_length: Buffer.byteLength(text, "utf8"), parse_status: "readable" }
+    });
+    for (const line of text.split("\n").filter((value) => value.startsWith("marker"))) {
+      const quote = `${line}\n`;
+      const start = Buffer.byteLength(text.slice(0, text.indexOf(quote)), "utf8");
+      passages.push({
+        // IDs sort against the source order, so the order a search returns comes from the index.
+        id: `passage:${line.split(" ")[1] === "alpha" ? "z1" : line.split(" ")[1] === "gamma" ? "y2" : line.split(" ")[1] === "beta" ? "x3" : "w4"}`,
+        case_id: caseId, corpus_id: corpusId, version: 1, lifecycle: "active", kind: "passage",
+        data: {
+          representation_id: representation, unit_id: `unit:${representation}:${start}`, start_byte: start, end_byte: start + Buffer.byteLength(quote, "utf8"),
+          quote, quote_sha256: sha256(Buffer.from(quote, "utf8")),
+          locator: { kind: "native_text", page, bbox: null, original_object_id: "original:pdf", interpretation_status: "native" }
+        }
+      });
+    }
+  }
+  return {
+    graph: { schema_version: "1.0", case_id: caseId, corpus_id: corpusId, generation, nodes: [...nodes, ...passages], edges: [] },
+    representations: Object.fromEntries(pages.map(({ representation, text }) => [representation, text]))
+  };
+}
+
+test("source-order search follows the pages of a multi-page source, not the offsets each page restarts", async () => {
+  const rootDir = await temporaryRoot();
+  const { graph, representations } = twoPageGraph();
+  assert.ok(graph.nodes.find((node) => node.id === "passage:x3").data.start_byte < graph.nodes.find((node) => node.id === "passage:z1").data.start_byte);
+  const store = corpusStore(rootDir, graph.case_id, graph.corpus_id, Buffer.alloc(32, 31));
+  const persisted = await persistGraphGeneration({ corpusStore: store, graph, sourceRepresentations: representations });
+  const reader = await openPrivateJournalGraph({
+    corpusStore: store, manifestObjectId: persisted.manifest_object_id, caseId: graph.case_id, corpusId: graph.corpus_id,
+    generation: graph.generation, visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 33)
+  });
+  const ids = [];
+  let cursor = null;
+  do {
+    const page = await reader.search({ query: "marker", graphEnabled: false, pageSize: 1, cursor });
+    ids.push(...page.records.map(({ id }) => id));
+    cursor = page.next_cursor;
+  } while (cursor);
+  // Page one's passages in their order, then page two's.
+  assert.deepEqual(ids, ["passage:z1", "passage:y2", "passage:x3", "passage:w4"]);
+  reader.close();
+});
+
 test("snapshot cursors traverse 1001 matches without gaps or duplicates and reject another case", async () => {
   const rootDir = await temporaryRoot();
   const first = passageGraph();
