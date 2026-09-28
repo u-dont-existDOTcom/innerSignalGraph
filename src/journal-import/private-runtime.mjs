@@ -356,6 +356,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             await writeOnce(`reference:failure:${id}:${attempt}`, { status: "invalid_output", operation_key: operationKey, attempt });
             state.stage = workStage; state.blocker = "INVALID_STRUCTURED_OUTPUT"; await save(); return null;
           }
+          // An authoritative port can safely wait on this exact operation key: invoke() resumes the
+          // existing submission instead of sending a duplicate. The completion check above is only
+          // a snapshot, so an answer may arrive immediately after it reports unknown.
+          if (completion.status === "unknown" && port.capabilities?.()?.authoritative_completion === true) break;
           if (completion.status !== "not_submitted" || resend > 2) {
             state.stage = workStage; state.blocker = "COMPLETION_UNKNOWN"; await save(); return null;
           }

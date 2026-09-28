@@ -2,6 +2,16 @@
 
 Updated: 2026-09-28
 
+## Journal exchange provider — deterministic-package repair after `fb7b60c`
+
+- **Goal:** repair the sole failing required check on PR #97 without weakening authenticated exchange receipts or resubmitting an outcome whose completion is unknown.
+- **CI evidence and cause:** Verify run `36471366518`, job `109094157398`, passed bootstrap and repository policy, then failed the complete package gate only at `tests/journal-exchange-runtime.test.mjs:121`. Reference recovery made one non-waiting `getCompletion()` observation and returned `COMPLETION_UNKNOWN` when the connector answer arrived immediately after that empty snapshot. The exchange is authoritative and its same operation key is idempotent, so treating the snapshot as a terminal result made the late-answer path timing-dependent.
+- **Fix:** when that snapshot is `unknown` and the port mechanically declares authoritative completion, reference recovery now re-enters `invoke()` with the exact existing operation key. The durable/exchange layers resume and wait on that submission rather than publishing a duplicate. A hermetic runtime regression pins the former race by making `getCompletion()` remain unknown while the resumed `invoke()` returns the answer on that same operation key.
+- **Verification on Node v24.18.0:** the new focused hermetic regression and complete `tests/journal-runtime-resume.test.mjs` pass; the pre-fix affected `tests/journal-contracts.test.mjs`, `tests/journal-controller.test.mjs`, and `tests/journal-subscription-provider.test.mjs` also pass. `npm run journal:ui:test` passes 20/20. `npm run audit:repository` passes with zero errors and the existing single warning for unverified hosted GitHub App permissions. Syntax checks and `git diff --check` pass.
+- **Sandbox boundary:** `tests/journal-exchange-runtime.test.mjs` cannot execute here because sandbox `/tmp` is owned by `nobody`; all three cases stop at the unchanged trusted-ancestor check with `JOURNAL_WORK_EXCHANGE_ROOT_INSECURE`. No package failed to load, and neither the test nor the exchange-root trust contract was weakened to bypass the runner.
+- **Deferred gates:** per the owner directive, `npm test` and `npm run verify` are left to push CI because their server-backed files cannot run in this sandbox. The local publication audit scanned 751,471 records and reported the same five pre-existing `credential-pattern` fixtures in historical `tests/learning-groundwork-privacy.test.mjs` commits reachable from the unrelated remote design branch; this patch does not touch that ref, history, or test, and the failure was not masked.
+- **Safety and next action:** no installation, deployment, provider call, private case access, Git ref mutation, therapy/framework policy change, or `stable` change occurred. The runner may commit and push this working tree; push CI must run the full `npm test` and `npm run verify` gates on the containing commit.
+
 ## Journal exchange provider — Codex review finding at `23a7ce0`
 
 - **Goal:** resolve the remaining PR #97 doctor finding without treating configured route labels as execution or isolation evidence.
