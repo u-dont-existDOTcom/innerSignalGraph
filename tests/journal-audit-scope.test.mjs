@@ -33,3 +33,19 @@ test('missing and distorted candidates remain outside trusted coverage even with
  const result=summarizeFidelityCoverage({reference,review,candidateIds:['bad','missing']});
  assert.equal(result.complete,false);assert.deepEqual(result.unassessed_ids,['missing']);assert.deepEqual(result.untrusted_candidate_ids,['bad','missing']);assert.equal(result.repair_required,true);
 });
+test('duplicate assessments cannot turn an omitted assertion into complete trusted coverage',()=>{
+ const result=summarizeFidelityCoverage({reference:{reference_items:[],unassessed_unit_ids:[]},
+  review:{status:'sufficient_for_stated_scope',unassessed_ids:[],assessments:[
+   {target_id:'assertion',outcome:'omitted',finding_type:'missing_evidence'},
+   {target_id:'assertion',outcome:'preserved',finding_type:'none'}]},candidateIds:['assertion']});
+ assert.equal(result.complete,false);
+ assert.deepEqual(result.untrusted_candidate_ids,['assertion']);
+ assert.equal(result.repair_required,true);
+});
+test('an adverse finding remains unsafe when its outcome says preserved',()=>{
+ const result=summarizeFidelityCoverage({reference:{reference_items:[],unassessed_unit_ids:[]},
+  review:{status:'sufficient_for_stated_scope',unassessed_ids:[],assessments:[
+   {target_id:'assertion',outcome:'preserved',finding_type:'wrong_identity'}]},candidateIds:['assertion']});
+ assert.deepEqual(result.untrusted_candidate_ids,['assertion']);
+ assert.equal(result.repair_required,true);
+});

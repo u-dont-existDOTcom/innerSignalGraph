@@ -32,10 +32,11 @@ const invariant = (v, code) => { if (!v) throw new ValidationError(code, { code 
 // Calibration windows over native-text units. A scanned or image-only source has none at intake;
 // its visual units get windows once the page reader has produced them, so none is a valid start.
 const nativeCalibration = (units) => units.length ? selectCalibrationWindows(units) : [];
-// The graph's parse status for a parsed page. A page whose text needs its reading order or tables
-// reviewed is readable in part; anything unrecognized is recorded as partial, never as readable.
-const PARSE_STATUS_BY_DISPOSITION = Object.freeze({ readable: "readable", visual_pending: "visual_pending", review_required: "partial", unreadable: "unreadable" });
-const parseStatus = (page) => page ? (PARSE_STATUS_BY_DISPOSITION[page.disposition] ?? "partial") : "readable";
+// A native page keeps the parser's disposition. Plain UTF-8 text needs no page record;
+// an unmapped non-text representation has no evidence for a readable status.
+const PARSE_STATUS_BY_DISPOSITION = Object.freeze({ readable: "readable", visual_pending: "visual_pending", review_required: "review_required", unreadable: "unreadable" });
+const parseStatus = (page, mimeType) => page ? (PARSE_STATUS_BY_DISPOSITION[page.disposition] ?? "partial")
+  : (mimeType?.startsWith("text/plain") ? "readable" : "partial");
 const completions = () => Object.fromEntries(["archive_verified", "raw_search_available", "graph_built", "semantically_audited", "patterns_reviewed", "profile_committed", "cold_retrieval_verified", "capacity_tested"].map((k) => [k, "not_run"]));
 
 async function privateJson(file, value) {
@@ -166,10 +167,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     await semanticPort.prepare?.();
     port = createDurableJournalInferencePort({ port: {
       capabilities: () => semanticPort.capabilities(),
-      // Authorization is checked before a call's intent is recorded (the controller's beforeInvoke,
-      // and at the start of every work step), never between the intent and the call: a failure there
-      // would leave a call that never went out looking unanswered forever.
+      // Check immediately before the send, including after the durable intent was written.
+      // A denial there is recorded as not submitted so resume cannot mistake it for a sent call.
       async invoke(input) {
+        try { await authorize(); }
+        catch (error) { error.submissionStatus = "not_submitted"; throw error; }
         const result = await semanticPort.invoke(input);
         // A grant may change during a long application call. Recheck before the
         // durable port admits its result or a dependent role receives it.
@@ -301,7 +303,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const units = plan.units.filter(u => u.representation_id === representation.representation_id);
         const page = plan.parsed.pages.find(p => p.representation_id === representation.representation_id);
         const empty = { schema_version: "1.0", status: "incomplete", assertions: [], entities: [], episodes: [], coverage: units.map(u => ({ unit_id: u.unit_id, disposition: "pending", assertion_local_ids: [], reason: "Semantic processing has not completed." })), requested_context: [] };
-        const graph = adaptExtractionToGraph({ caseId, corpusId: state.corpus_id, generation, source: { id: `source:${hash(representation.representation_id).slice(0, 32)}`, representation_id: representation.representation_id, original_object_id: state.original.object_id, media_type: plan.parsed.source.mime_type, byte_length: representation.utf8_byte_length, parse_status: parseStatus(page), page: page?.page_number ?? null }, units, extraction: empty, producerRef: "mechanical-source-index" });
+        const graph = adaptExtractionToGraph({ caseId, corpusId: state.corpus_id, generation, source: { id: `source:${hash(representation.representation_id).slice(0, 32)}`, representation_id: representation.representation_id, original_object_id: state.original.object_id, media_type: plan.parsed.source.mime_type, byte_length: representation.utf8_byte_length, parse_status: parseStatus(page, plan.parsed.source.mime_type), page: page?.page_number ?? null }, units, extraction: empty, producerRef: "mechanical-source-index" });
         nodes.push(...graph.nodes); edges.push(...graph.edges);
       }
       const graph = { schema_version: "1.0", case_id: caseId, corpus_id: state.corpus_id, generation, nodes, edges };
@@ -587,7 +589,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             original_object_id: representation.visual_image?.object_id ?? state.original.object_id,
             media_type: unit.visual ? "image/png" : plan.parsed.source.mime_type,
             byte_length: representation.utf8_byte_length,
-            parse_status: "readable",
+            parse_status: unit.visual ? "readable" : parseStatus(plan.parsed.pages.find(page =>
+              page.representation_id === unit.representation_id), plan.parsed.source.mime_type),
             page: unit.page_number,
             ...(unit.visual ? { locator_kind: "visual_transcript", interpretation_status: "provisional" } : {})
           },
@@ -710,7 +713,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const review = results[1]?.output;
           if (!bindingFailure && results[0].output.status === "complete"
             && review?.status === "sufficient_for_stated_scope"
-            && !review.assessments.some((assessment) => assessment.outcome !== "preserved")
+            && !review.assessments.some((assessment) => assessment.outcome !== "preserved"
+              || assessment.finding_type !== "none")
             && review.unassessed_ids.length === 0) break;
           repairRequest = {
             previous_extraction: results[0].output,
@@ -723,7 +727,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const unresolved = Boolean(bindingFailure)
           || results?.[0]?.output?.status !== "complete"
           || review?.status !== "sufficient_for_stated_scope"
-          || review.assessments.some((assessment) => assessment.critical && assessment.outcome !== "preserved")
+          || review.assessments.some((assessment) => assessment.outcome !== "preserved"
+            || assessment.finding_type !== "none")
           || review.unassessed_ids.length > 0;
         if (unresolved && units.length > 1) {
           const middle = Math.ceil(units.length / 2);
@@ -840,7 +845,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             }
             if (repaired[0].output.status !== "complete"
               || repairedReview?.status !== "sufficient_for_stated_scope"
-              || repairedReview.assessments.some((assessment) => assessment.outcome !== "preserved")
+              || repairedReview.assessments.some((assessment) => assessment.outcome !== "preserved"
+                || assessment.finding_type !== "none")
               || repairedReview.unassessed_ids.length > 0) continue;
             split = repairedSplit;
             graphsByUnit = repairedGraphs;
@@ -1357,6 +1363,20 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const reconciledGraph = await readLarge(state.reconciled_ref);
       const scopeIndex = createAuditScopeIndex(reconciledGraph);
       const untrusted = new Set();
+      // Unchecked native reading order and tables remain in the archive and raw index.
+      // Their semantic claims need a complete visual inventory before session admission.
+      for (const unit of plan.units) {
+        if (unit.visual) continue;
+        const page = plan.parsed.pages.find(item => item.representation_id === unit.representation_id);
+        if (parseStatus(page, plan.parsed.source.mime_type) === "readable") continue;
+        const visual = page && !state.excluded_visual_pages?.includes(page.page_number)
+          ? await readIfPresent(`visual:result:${page.page_number}`) : null;
+        if (visual?.output?.page_complete === true) continue;
+        const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
+        invariant(imported, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
+        for (const node of imported.graph.nodes) if (["entity", "episode", "assertion"].includes(node.kind))
+          untrusted.add(node.id);
+      }
       for (const report of auditReport.reports) {
         for (const id of [...(report.coverage?.untrusted_candidate_ids ?? []),
           ...(report.untrusted_candidate_ids ?? [])]) untrusted.add(id);

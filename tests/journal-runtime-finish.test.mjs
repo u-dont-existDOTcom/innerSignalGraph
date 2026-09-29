@@ -103,12 +103,12 @@ function handlers(overrides = {}) {
   };
 }
 
-async function drive(f, roleHandlers, calls = [], portOptions = {}) {
+async function drive(f, roleHandlers, calls = [], portOptions = {}, runtimeOptions = {}) {
   const inferencePort = createMockJournalInferencePort({ ...portOptions,
     handlers: Object.fromEntries(Object.entries(roleHandlers)
       .map(([role, handler]) => [role, (packet) => { calls.push(role); return handler(packet); }])) });
   const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
-    sourceParser: f.sourceParser, inferencePort, environment: f.environment });
+    sourceParser: f.sourceParser, inferencePort, environment: f.environment, ...runtimeOptions });
   try {
     const summaries = {};
     for (const command of ["run", "audit", "patterns", "commit"]) summaries[command] = await runtime.execute(command);
@@ -454,4 +454,90 @@ test("distorted assertions are excluded from the published session-use generatio
   assert.equal(commit.completion.profile_committed, "pass");
   const result = await searchPublishedAssertions(f);
   assert.deepEqual(result.items, [], "an ordinary consumer must not retrieve audit-failed assertions");
+});
+
+test("duplicate final fidelity assessments leave an assertion unpublished", async t => {
+  const f = await environment(t);
+  const baseline = handlers();
+  const { audit, commit } = await drive(f, handlers({
+    fidelity_auditor: packet => {
+      const answer = baseline.fidelity_auditor(packet);
+      if (!packet.imported_generation?.assessment_target_ids?.length) return answer;
+      const target = packet.imported_generation.assessment_target_ids[0];
+      return { ...answer, assessments: [...answer.assessments,
+        { target_id: target, outcome: "omitted", critical: false, finding_type: "missing_evidence",
+          explanation: "Synthetic omission.", evidence_ids: [] }] };
+    },
+    pattern_builder: packet => ({ schema_version: "1.0", target_generation: packet.target_generation,
+      patterns: [], unclassified_assertion_ids: [], coverage_note: "Synthetic audit exclusion.",
+      status: "complete_for_stated_scope" })
+  }));
+  assert.equal(audit.completion.semantically_audited, "partial");
+  assert.equal(commit.completion.profile_committed, "pass");
+  assert.deepEqual((await searchPublishedAssertions(f)).items, []);
+});
+
+test("a preserved final fidelity outcome with wrong identity remains untrusted", async t => {
+  const f = await environment(t);
+  const baseline = handlers();
+  const { commit } = await drive(f, handlers({
+    fidelity_auditor: packet => {
+      const answer = baseline.fidelity_auditor(packet);
+      if (!packet.imported_generation?.assessment_target_ids?.length) return answer;
+      const target = packet.imported_generation.assessment_target_ids[0];
+      return { ...answer, assessments: answer.assessments.map(assessment =>
+        assessment.target_id === target ? { ...assessment, finding_type: "wrong_identity" } : assessment) };
+    },
+    pattern_builder: packet => ({ schema_version: "1.0", target_generation: packet.target_generation,
+      patterns: [], unclassified_assertion_ids: [], coverage_note: "Synthetic audit exclusion.",
+      status: "complete_for_stated_scope" })
+  }));
+  assert.equal(commit.completion.profile_committed, "pass");
+  const report = await readAuditReport(f);
+  assert.ok(report.reports.some(unit => unit.coverage?.repair_required
+    && unit.coverage.untrusted_candidate_ids.length > 0));
+  assert.deepEqual((await searchPublishedAssertions(f)).items, []);
+});
+
+test("a PDF page with an excluded required visual check retains raw text but publishes no claims", async t => {
+  const f = await environment(t);
+  const text = TEXTS.join("\n");
+  f.sourceParser = async () => ({ source: { sha256: f.config.source.sha256,
+    byte_length: f.config.source.bytes, mime_type: "application/pdf" }, parser: { version: "synthetic-table" },
+    pages: [{ page_number: 1, representation_id: "synthetic:table:1", disposition: "review_required",
+      warnings: ["structured_table_present"], image_inventory: [], geometry: { width: 100, height: 100 } }],
+    representations: [{ representation_id: "synthetic:table:1", text, utf8_byte_length: Buffer.byteLength(text) }] });
+  const { run, commit } = await drive(f, handlers({
+    visual_reader: () => ({ schema_version: "1.0", source_page_id: "wrong-page", regions: [],
+      page_complete: true, missing_or_uncertain_regions: [] }),
+    pattern_builder: packet => ({ schema_version: "1.0", target_generation: packet.target_generation,
+      patterns: [], unclassified_assertion_ids: [], coverage_note: "Invented table source.",
+      status: "complete_for_stated_scope" })
+  }), [], {}, { renderVisualPage: async () => Buffer.from("synthetic-image") });
+  assert.equal(run.residuals.excluded_visual_pages, 1);
+  assert.equal(commit.completion.profile_committed, "pass");
+  const raw = await readStoredReport(f, "graph_ref");
+  assert.equal(raw.nodes.find(node => node.kind === "source").data.parse_status, "review_required");
+  assert.ok(raw.nodes.some(node => node.kind === "assertion"));
+  const published = await readPublishedRecords(f);
+  assert.equal(published.some(record => record.kind === "assertion"), false);
+  assert.deepEqual((await searchPublishedAssertions(f)).items, []);
+});
+
+test("a PDF representation without page evidence cannot default to readable", async t => {
+  const f = await environment(t);
+  const text = TEXTS.join("\n");
+  f.sourceParser = async () => ({ source: { sha256: f.config.source.sha256,
+    byte_length: f.config.source.bytes, mime_type: "application/pdf" }, parser: { version: "synthetic-missing-page" },
+    pages: [], representations: [{ representation_id: "synthetic:unmapped", text,
+      utf8_byte_length: Buffer.byteLength(text) }] });
+  const { commit } = await drive(f, handlers({
+    pattern_builder: packet => ({ schema_version: "1.0", target_generation: packet.target_generation,
+      patterns: [], unclassified_assertion_ids: [], coverage_note: "Missing page evidence.",
+      status: "complete_for_stated_scope" })
+  }));
+  assert.equal(commit.completion.profile_committed, "pass");
+  const graph = await readStoredReport(f, "graph_ref");
+  assert.equal(graph.nodes.find(node => node.kind === "source").data.parse_status, "partial");
+  assert.deepEqual((await searchPublishedAssertions(f)).items, []);
 });

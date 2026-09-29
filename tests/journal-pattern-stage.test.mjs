@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { runJournalPatternPass } from "../src/journal-import/pattern-stage.mjs";
+import { persistGraphGeneration } from "../src/journal-import/graph.mjs";
+import { openPrivateJournalGraph } from "../src/journal-import/retrieval.mjs";
 
 const fixture = name => JSON.parse(readFileSync(
   new URL(`../schemas/journal-import/fixtures/${name}`, import.meta.url), "utf8"));
@@ -298,6 +301,53 @@ test("failure of one review group leaves other groups' patterns settled", async 
   assert.equal(result.counts.unresolved_batches, 1);
 });
 
+test("a builder theme supported only by a failed review group is withheld", async () => {
+  const harness = reviewPacketHarness(
+    [1, 2, 3].map(index => `Invented pattern ${index}: ${"é".repeat(6_000)}`),
+    (request, output) => request.id.includes("group-2") ? { ...output, status: "incomplete" } : output);
+  const originalWork = harness.args.work;
+  const result = await runJournalPatternPass({ ...harness.args, maximumBytes: 50_000,
+    reviewPacketMaximumBytes: 35_000,
+    work: async request => {
+      const answer = await originalWork(request);
+      if (request.role === "pattern_builder") {
+        answer[0].output.patterns.forEach((pattern, index) => {
+          pattern.data.support_assertion_ids = [index === 1 ? "a3" : "a1"];
+        });
+        answer[0].output.themes = [{ local_id: "failed-only", label: "Invented failed theme",
+          origin: "neutral_induced", assertion_ids: ["a3"] }];
+      }
+      return answer;
+    } });
+  assert.equal(result.graph.nodes.filter(node => node.kind === "pattern").length, 2);
+  assert.equal(result.graph.nodes.some(node => node.kind === "theme" && node.data.label === "Invented failed theme"), false);
+  assert.equal(result.graph.edges.some(edge => edge.relation === "about_theme" &&
+    result.graph.nodes.some(node => node.id === edge.to && node.data.label === "Invented failed theme")), false);
+  const objects = new Map();
+  const corpusStore = { async writeJsonObject({ objectId, value }) {
+    objects.set(objectId, structuredClone(value));
+    const bytes = Buffer.from(JSON.stringify(value));
+    return { object_id: objectId, byte_length: bytes.length,
+      sha256: createHash("sha256").update(bytes).digest("hex") };
+  }, async readJsonObject({ objectId }) { return structuredClone(objects.get(objectId)); } };
+  const persisted = await persistGraphGeneration({ corpusStore, graph: result.graph,
+    sourceRepresentations: fixture("synthetic-sources.json") });
+  const reader = await openPrivateJournalGraph({ corpusStore, manifestObjectId: persisted.manifest_object_id,
+    caseId: result.graph.case_id, corpusId: result.graph.corpus_id, generation: result.graph.generation,
+    visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 7) });
+  const search = await reader.search({ query: "Invented failed theme" });
+  assert.equal(search.records.some(record => record.kind === "theme"), false);
+});
+
+test("a preserved pattern review with an adverse finding cannot activate the pattern", async () => {
+  const { args } = reviewPacketHarness(["Invented pattern with a wrong identity."],
+    (_request, output) => ({ ...output, assessments: output.assessments.map(assessment =>
+      ({ ...assessment, finding_type: "wrong_identity" })) }));
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000 });
+  assert.equal(result.graph.nodes.some(node => node.kind === "pattern"
+    && node.data.review_state === "reviewed"), false);
+});
+
 const freezeOutput = (unassessed = []) => ({ schema_version: "1.0", source_only_first_pass: true,
   reference_items: [], questions: [], unassessed_unit_ids: unassessed });
 const emptyBuild = { schema_version: "1.0", target_generation: generation, patterns: [], unclassified_assertion_ids: [],
@@ -317,6 +367,41 @@ test("a restricted unit may stay unassessed in the source freeze, and no other u
   assert.deepEqual(result.reports.map(report => report.status).sort(), ["reviewed_empty_scope", "unresolved"]);
   assert.equal(result.reports.find(report => report.status === "unresolved").reason, "PATTERN_SOURCE_FREEZE_INCOMPLETE");
   assert.equal(result.counts.unresolved_batches, 1);
+});
+
+test("an unassessed restricted unit cannot support a reviewed pattern", async () => {
+  const scope = twoBatchScope();
+  const { args } = stageHarness(scope, request => {
+    if (request.role === "reference_reader") return {
+      output: freezeOutput(request.units[0].unit_id === "u1" ? ["u1"] : []),
+      receipt: receipt("freeze", request.id) };
+    if (request.role === "pattern_builder") {
+      if (request.units[0].unit_id === "u1") {
+        assert.equal(request.packetInput.validated_graph.nodes.some(node => node.id === "a1"), false);
+        assert.equal(request.packetInput.coverage_ledger.scope_complete, false);
+      }
+      return {
+        output: { schema_version: "1.0", target_generation: generation,
+          patterns: request.units[0].unit_id === "u1" ? [{ local_id: "unsafe", data: {
+            statement: "Invented restricted assertion.", pattern_kind: "descriptive", scope: "One invented report.",
+            support_assertion_ids: ["a1"], counter_assertion_ids: [], alternative_explanations: [],
+            observation_gaps: [], disconfirming_question: "Is this report supported?",
+            disconfirmation: { status: "pending", search_receipt_ref: null }, review_state: "provisional",
+            independent_review_ref: null, producer_ref: "producer:synthetic" },
+            counterevidence_queries: ["exception"] }] : [],
+          unclassified_assertion_ids: [], coverage_note: "Invented source.",
+          status: "complete_for_stated_scope" }, receipt: receipt("builder", request.id) };
+    }
+    return { output: { schema_version: "1.0", target_generation: generation,
+      review_role: "pattern_reviewer", assessments: request.packetInput.candidate_patterns.map(pattern => ({
+        target_id: pattern.id, outcome: "preserved", critical: false, finding_type: "none",
+        explanation: "Synthetic review.", evidence_ids: [] })),
+      proposed_repairs: [], unassessed_ids: [], status: "sufficient_for_stated_scope" },
+      receipt: receipt("reviewer", request.id) };
+  });
+  const result = await runJournalPatternPass(args);
+  assert.equal(result.graph.nodes.some(node => node.kind === "pattern"), false);
+  assert.ok(result.reports.some(report => report.status === "unresolved"));
 });
 
 test("an unresolved batch keeps its candidates out of the graph, and a rerun replays every attempt without asking again", async () => {

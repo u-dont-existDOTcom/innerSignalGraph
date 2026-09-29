@@ -108,22 +108,33 @@ export async function runJournalPatternPass({
     if (freeze.blocked) return { status: "blocked", stage: "REFERENCE_AUDIT", reports };
     if (freeze.failure) { unresolved(batch, "REFERENCE_AUDIT", freeze.failure); continue; }
     const frozen = freeze.saved;
+    const unassessedAssertions = new Set(unitGraphs.filter(part =>
+      frozen.output.unassessed_unit_ids.includes(part.unit_id))
+      .flatMap(part => part.graph.nodes.filter(node => node.kind === "assertion").map(node => node.id)));
+    const eligibleBatchGraph = { ...batch.graph,
+      nodes: batch.graph.nodes.filter(node => !unassessedAssertions.has(node.id)),
+      edges: batch.graph.edges.filter(edge => !unassessedAssertions.has(edge.from)
+        && !unassessedAssertions.has(edge.to)
+        && edge.evidence_ids.every(id => !unassessedAssertions.has(id))) };
+    const allowedAssertionIds = new Set(eligibleBatchGraph.nodes.filter(node => node.kind === "assertion")
+      .map(node => node.id));
 
     const buildId = `pattern:builder:${batch.id}`;
     const build = await checkedStep(buildId, {
       role: "pattern_builder", stage: "PATTERN_BUILD",
       units: batchUnits, packetInput: {
-        validated_graph: batch.graph,
-        episode_theme_matrix: buildEpisodeThemeMatrix(batch.graph),
-        source_retrieval: { source_passages: batch.graph.nodes.filter(node => node.kind === "passage") },
-        coverage_ledger: { assigned_unit_ids: batch.unit_ids, scope_complete: true,
-          source_only_unresolved: false },
+        validated_graph: eligibleBatchGraph,
+        episode_theme_matrix: buildEpisodeThemeMatrix(eligibleBatchGraph),
+        source_retrieval: { source_passages: eligibleBatchGraph.nodes.filter(node => node.kind === "passage") },
+        coverage_ledger: { assigned_unit_ids: batch.unit_ids,
+          scope_complete: frozen.output.unassessed_unit_ids.length === 0,
+          source_only_unresolved: frozen.output.unassessed_unit_ids.length > 0 },
         target_generation: generation, producer_ref: buildId
       }
     }, (saved) => {
       requireValue(saved.output.status === "complete_for_stated_scope", "PATTERN_BUILD_SCOPE_INCOMPLETE");
       const trial = addProvisionalPatterns({ graph, patternResult: saved.output,
-        producerReceipt: saved.receipt, localIdNamespace: batch.id });
+        producerReceipt: saved.receipt, localIdNamespace: batch.id, allowedAssertionIds });
       // Every candidate needs a search for contrary evidence before it can be reviewed.
       for (const id of trial.created_pattern_ids) {
         const queries = trial.counterevidence_queries[id];
@@ -134,9 +145,8 @@ export async function runJournalPatternPass({
     if (build.failure) { unresolved(batch, "PATTERN_BUILD", build.failure); continue; }
     const built = build.saved;
     const added = addProvisionalPatterns({ graph, patternResult: built.output,
-      producerReceipt: built.receipt, localIdNamespace: batch.id });
+      producerReceipt: built.receipt, localIdNamespace: batch.id, allowedAssertionIds });
     if (!added.created_pattern_ids.length) {
-      graph = added.graph;
       reports.push({ batch_id: batch.id, pattern_ids: [], status: "reviewed_empty_scope" });
       continue;
     }
@@ -236,12 +246,24 @@ export async function runJournalPatternPass({
         status: "reviewed", decisions: decision.decisions,
         counter_search_complete: Object.values(groupReceipts).every(receipt => receipt.complete) });
     }
-    if (successful.size) graph = {
-      ...added.graph,
-      nodes: added.graph.nodes.filter(node => !created.has(node.id) || successful.has(node.id))
-        .map(node => resolved.get(node.id) ?? node),
-      edges: added.graph.edges.filter(edge => !created.has(edge.to) || successful.has(edge.to))
-    };
+    if (successful.size) {
+      const acceptedSupport = new Set([...successful].flatMap(id =>
+        (resolved.get(id) ?? candidates.get(id)).data.support_assertion_ids));
+      const createdThemes = new Set(added.created_theme_ids);
+      const themeMembers = new Map([...createdThemes].map(id => [id, []]));
+      for (const edge of added.graph.edges) if (edge.relation === "about_theme" && createdThemes.has(edge.to))
+        themeMembers.get(edge.to).push(edge.from);
+      const keptThemes = new Set([...themeMembers].filter(([, members]) => members.length > 0
+        && members.every(id => acceptedSupport.has(id))).map(([id]) => id));
+      graph = {
+        ...added.graph,
+        nodes: added.graph.nodes.filter(node => (!created.has(node.id) || successful.has(node.id))
+          && (!createdThemes.has(node.id) || keptThemes.has(node.id)))
+          .map(node => resolved.get(node.id) ?? node),
+        edges: added.graph.edges.filter(edge => (!created.has(edge.to) || successful.has(edge.to))
+          && (!createdThemes.has(edge.to) || keptThemes.has(edge.to)))
+      };
+    }
   }
   validateJournalGraph(graph, representations);
   // Pass: every batch settled every candidate, as reviewed or as disputed. Partial: a batch is

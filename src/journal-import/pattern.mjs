@@ -65,11 +65,13 @@ function patternId(generation, localId) {
   return `pattern:${sha256(Buffer.from(`${generation}\0${localId}`, "utf8")).slice(0, 32)}`;
 }
 
-export function addProvisionalPatterns({ graph, patternResult, producerReceipt, localIdNamespace = "" }) {
+export function addProvisionalPatterns({ graph, patternResult, producerReceipt, localIdNamespace = "", allowedAssertionIds = null }) {
   const result = validateJournalSchema("pattern-result", patternResult);
   invariant(result.target_generation === graph.generation, "PATTERN_GENERATION_MISMATCH");
   invariant(isAuthenticatedTransportReceipt(producerReceipt, { generation: graph.generation }), "PATTERN_PRODUCER_RECEIPT_MISSING");
-  const assertions = new Map(graph.nodes.filter((node) => active(node) && node.kind === "assertion" && node.data.review_state !== "disputed").map((node) => [node.id, node]));
+  const assertions = new Map(graph.nodes.filter((node) => active(node) && node.kind === "assertion"
+    && node.data.review_state !== "disputed" && (allowedAssertionIds === null || allowedAssertionIds.has(node.id)))
+    .map((node) => [node.id, node]));
   const next = structuredClone(graph);
   const existingNodeIds = new Set(graph.nodes.map(node=>node.id));
   const created = [];
@@ -216,6 +218,8 @@ export function reviewPatternRegister({
   }
   const contexts = [reviewReceipt, builderReceipt, frozenSourceReceipt].map((receipt) => receipt?.request_context_id).filter(Boolean);
   if (new Set(contexts).size !== contexts.length) receiptReasons.push("INFERENCE_CONTEXT_NOT_INDEPENDENT");
+  invariant(new Set(review.assessments.map(assessment => assessment.target_id)).size === review.assessments.length,
+    "PATTERN_DUPLICATE_ASSESSMENT");
   const assessments = new Map(review.assessments.map((assessment) => [assessment.target_id, assessment]));
   const next = structuredClone(graph);
   const decisions = [];
@@ -226,7 +230,7 @@ export function reviewPatternRegister({
     const counterVerified = verifyCounterReceipt(counterReceipt, counterReceiptSecret, graph.generation, pattern.id);
     counterevidenceVerified &&= counterVerified;
     const unsupported = !assessment || assessment.outcome !== "preserved" || assessment.critical
-      || ["unsupported_claim", "causal_promotion", "duplicate_support", "lost_qualifier"].includes(assessment.finding_type);
+      || assessment.finding_type !== "none";
     if (receiptReasons.length === 0 && counterVerified && !unsupported && review.status === "sufficient_for_stated_scope") {
       pattern.version += 1;
       pattern.lifecycle = "active";

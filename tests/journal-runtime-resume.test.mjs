@@ -137,6 +137,28 @@ test('revocation during a semantic call prevents completed-result admission and 
  }
 });
 
+test('revocation while an intent is written records not submitted before transport',async t=>{
+ const f=await fixture(t);let revoked=false,calls=0,intentId;
+ const service={verifyCaseAccess:async()=>{if(revoked)throw Object.assign(new Error('Synthetic revoked grant'),{code:'GRANT_REVOKED'});}};
+ const port={capabilities:()=>({}),async invoke(){calls++;throw new Error('private packet escaped');},async getCompletion(){return {status:'not_submitted'};}};
+ const rename=fs.rename;
+ fs.rename=async(from,to)=>{
+  const envelope=JSON.parse(await fs.readFile(from,'utf8'));
+  await rename(from,to);
+  if(/^inference:.*:intent$/.test(envelope.object_id)){intentId=envelope.object_id;revoked=true;}
+ };
+ try{
+  const runtime=await openJournalExecutionRuntime({...f,service,inferencePort:port});
+  try{await assert.rejects(()=>runtime.execute('run'),{code:'GRANT_REVOKED'});}finally{await runtime.close();}
+ }finally{fs.rename=rename;}
+ assert.ok(intentId);assert.equal(calls,0);
+ const state=JSON.parse(await fs.readFile(path.join(f.config.execution_root,'state.json'),'utf8'));
+ const key=await fs.readFile(path.join(f.config.execution_root,'staging.key'));
+ const store=createPrivateJournalCorpusStore({rootDir:f.config.execution_root,caseId:state.case_id,corpusId:state.corpus_id,corpusKey:key});
+ try{assert.equal((await store.readJsonObject({objectId:intentId.replace(/:intent$/,':result')})).status,'not_submitted');}
+ finally{await store.close();key.fill(0);}
+});
+
 test('revocation after a reference completion probe prevents its private packet from being sent',async t=>{
  const f=await fixture(t);
  const firstPort={capabilities:()=>({authoritative_completion:true}),

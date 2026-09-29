@@ -60,14 +60,18 @@ export function createReconciledAuditScope({ graph, unitGraph, derivationRef = n
 
 /** Completion and findings remain distinct. No global recall threshold here. */
 export function summarizeFidelityCoverage({ reference, review, candidateIds }) {
-  const assessments=new Map(review.assessments.map(a=>[a.target_id,a]));
+  const assessments=new Map(),duplicates=new Set();
+  for(const assessment of review.assessments){
+    if(assessments.has(assessment.target_id))duplicates.add(assessment.target_id);
+    assessments.set(assessment.target_id,assessment);
+  }
   const expected=[...reference.reference_items.map(i=>i.id),...candidateIds];
-  const unassessed=[...new Set([...expected.filter(id=>!assessments.has(id)||assessments.get(id).outcome==='unassessed'),...review.unassessed_ids])];
+  const unassessed=[...new Set([...expected.filter(id=>!assessments.has(id)||assessments.get(id).outcome==='unassessed'||duplicates.has(id)),...review.unassessed_ids])];
   const unsafe=candidateIds.filter(id=>{
     const assessment=assessments.get(id);
-    return !assessment||assessment.outcome!=='preserved'||assessment.finding_type==='lost_qualifier';
+    return duplicates.has(id)||!assessment||assessment.outcome!=='preserved'||assessment.finding_type!=='none';
   });
-  return {complete:review.status!=='incomplete'&&!reference.unassessed_unit_ids.length&&!unassessed.length,
+  return {complete:review.status!=='incomplete'&&!reference.unassessed_unit_ids.length&&!unassessed.length&&!duplicates.size,
     unassessed_ids:unassessed,untrusted_candidate_ids:unsafe,
-    repair_required:review.status==='repair_required'||review.assessments.some(a=>a.outcome!=='preserved')};
+    repair_required:review.status==='repair_required'||duplicates.size>0||review.assessments.some(a=>a.outcome!=='preserved'||a.finding_type!=='none')};
 }
