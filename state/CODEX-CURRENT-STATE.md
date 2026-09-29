@@ -2,6 +2,17 @@
 
 Updated: 2026-09-29
 
+## PR #98 Codex review round at `f9e7ed5` (2026-09-29)
+
+- **Goal and baseline:** fix only the two owner-confirmed review findings on `claude/journal-import-finishes-20260927` at reviewed commit `f9e7ed5`. The working tree was clean at the start. The Universal root `AGENTS.md` and relevant guidance were readable through a web cache, but fresh GitHub/API routes were unavailable, so a live default-branch read could not be verified; local repository authority and the owner's exact fix governed this round.
+- **Complete audit admission:** a sampled unit's semantic scope is eligible for session use only when certification passes and fidelity coverage is complete. Otherwise its `exclusion_ids` withhold entity, episode, assertion, and reconciled relation records; passage records remain. A complete passing audit still uses only the coverage exclusions for unpreserved targets.
+- **Reconciliation residual:** `reconciliation_unresolved_ids` counts distinct explicit IDs across deduplicated batch reports, independent of `status` and deferred proposals.
+- **Regressions:** both new tests failed at `f9e7ed5`: the owner residual was absent for two unresolved IDs reported for two units of one batch, and a unit with `unassessed_unit_ids`, passing certification, and all targets preserved published an entity. After the fixes, the committed graph excludes that unit's entity, episode, and assertion while retaining its passage, and the residual is `2`.
+- **Local verification on Node v24.18.0:** the touched `tests/journal-runtime-finish.test.mjs` passes 11/11, `npm run journal:ui:test` passes 20/20, and `npm run audit:repository` passes with zero errors and the existing unverified hosted GitHub App permission warning. No package failed to load. The tool shell selected Node 26, so these checks were rerun with the explicit pinned Node 24 path. `git diff --check` passes.
+- **Publication and CI boundary:** pinned-Node `npm run audit:publication` scanned 770,194 records and failed on the same five historical `credential-pattern` findings in `tests/learning-groundwork-privacy.test.mjs` recorded in prior rounds. No unrelated fixture, ref, history, or audit rule was changed. Per the owner's no-localhost instruction, full `npm test` and `npm run verify` remain for push CI on the containing commit.
+- **Verification budget at checkpoint:** the test-efficiency observer recorded 514.53 seconds of commands over 722.54 seconds elapsed (71.21%); five focused and six affected runs include the initial red regressions and the pinned-runtime reruns. No full suite, mutation run, or forced redundant green rerun occurred.
+- **Closeout and next action:** this is a project-specific audit admission and residual-count repair with focused regressions; no transferable Universal rule is claimed. The runner may commit and push this working tree and use its CI results for the full gates. No installation, deployment, provider call, private case access, Git ref mutation, therapy/framework policy change, or `stable` change occurred.
+
 ## PR #98 Codex review round at `90c2a31` (2026-09-29)
 
 - **Goal and baseline:** resolve only the two owner-confirmed review findings on `claude/journal-import-finishes-20260927` at reviewed commit `90c2a31`. The branch was clean at the start of this round. The live Universal architecture repository could not be loaded because this sandbox cannot resolve `github.com`; the supplied owner instructions and local repository authority were used.

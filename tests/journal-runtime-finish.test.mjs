@@ -125,16 +125,18 @@ async function searchPublishedAssertions(f) {
   }, { bearerToken: READER });
 }
 
-async function readAuditReport(f) {
+async function readStoredReport(f, refName) {
   const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
   const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
     corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
   try {
-    const bytes = await store.reassembleOriginal(state.audit_report_ref);
+    const bytes = await store.reassembleOriginal(state[refName]);
     try { return JSON.parse(bytes.toString("utf8")); }
     finally { bytes.fill(0); }
   } finally { await store.close(); }
 }
+
+const readAuditReport = (f) => readStoredReport(f, "audit_report_ref");
 
 async function readPublishedRecords(f) {
   const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
@@ -181,6 +183,29 @@ test("schema-valid reconciliation proposals deferred by graph rules remain visib
   assert.equal(run.completion.graph_built, "pass");
   assert.equal(run.residuals.reconciliation_deferred_proposals, 1);
   assert.equal(commit.completion.profile_committed, "pass");
+});
+
+test("explicit unresolved reconciliation IDs are counted once across reports for a shared batch", async (t) => {
+  const f = await environment(t);
+  f.config.semantic_batching.reconciliation_maximum_units = 2;
+  await fs.writeFile(f.configPath, JSON.stringify(f.config), { mode: 0o600 });
+  const { run } = await drive(f, handlers({
+    reconciler: (packet) => {
+      const assertions = packet.candidates.nodes.filter((node) => node.kind === "assertion");
+      return { schema_version: "1.0", target_generation: packet.expected_generation,
+        proposals: [], unresolved_ids: assertions.length === 2 ? assertions.map((node) => node.id) : [],
+        status: "proposals_complete" };
+    }
+  }));
+  const reports = await readStoredReport(f, "reconciliation_report_ref");
+  const shared = reports.filter((report) => report.batch_ref === reports[0].batch_ref);
+  assert.equal(shared.length, 2);
+  assert.equal(shared[0].status, "proposals_complete");
+  assert.equal(shared[0].unresolved_ids.length, 2);
+  assert.deepEqual(shared[0].unresolved_ids, shared[1].unresolved_ids);
+  assert.equal(run.residuals.reconciliation_unresolved_units, 0);
+  assert.equal(run.residuals.reconciliation_deferred_proposals, 0);
+  assert.equal(run.residuals.reconciliation_unresolved_ids, 2);
 });
 
 test("a disputed pattern settles its review: it stays in the register as disputed and the import commits", async (t) => {
@@ -284,6 +309,46 @@ test("a failed audit withholds one unit's semantic nodes while preserving its pa
   for (const node of failedScope.semantic) assert.ok(!publishedIds.has(node.id), `${node.kind} from failed unit was published`);
   for (const passage of failedScope.passages) assert.ok(publishedIds.has(passage.id), "verbatim passage must remain");
   assert.ok(publishedIds.has(passedScope.find((node) => node.kind === "entity").id), "matching audited entity must remain");
+});
+
+test("an incomplete reference audit with passing certification withholds its semantic nodes and keeps passages", async (t) => {
+  const f = await environment(t);
+  const calls = [];
+  let incompleteScope;
+  const { audit, commit } = await drive(f, handlers({
+    extractor: (packet) => {
+      const extracted = handlers().extractor(packet);
+      return { ...extracted,
+        episodes: packet.core_units.map((unit, index) => ({ local_id: `episode${index}`, label: `Synthetic episode ${index}`,
+          authored_time: unknownTime, event_time: unknownTime, anchors: [{ unit_id: unit.unit_id, quote: unit.text, occurrence: null }] })),
+        assertions: extracted.assertions.map((assertion, index) => ({ ...assertion, episode_local_id: `episode${index}` })) };
+    },
+    reference_reader: (packet) => {
+      const unit = packet.source_windows[0];
+      return { schema_version: "1.0", source_only_first_pass: true,
+        reference_items: [{ id: "reference:synthetic", statement: "Synthetic proposition.", required_qualifiers: [],
+          anchors: [{ unit_id: unit.unit_id, quote: unit.text, occurrence: null }], importance_reason: "Synthetic.", critical: false }],
+        questions: [], unassessed_unit_ids: calls.includes("reconciler") && unit.text === TEXTS[0] ? [unit.unit_id] : [] };
+    },
+    fidelity_auditor: (packet) => {
+      if (packet.imported_generation?.assessment_target_ids && packet.supporting_passages[0].text === TEXTS[0]) {
+        incompleteScope = { unitId: packet.supporting_passages[0].unit_id,
+          semantic: packet.imported_generation.graph.nodes.filter((node) => ["entity", "episode", "assertion"].includes(node.kind)),
+          passages: packet.imported_generation.graph.nodes.filter((node) => node.kind === "passage") };
+      }
+      return handlers().fidelity_auditor(packet);
+    }
+  }), calls);
+  assert.equal(audit.completion.semantically_audited, "partial");
+  assert.equal(commit.completion.profile_committed, "pass");
+  assert.deepEqual(incompleteScope.semantic.map((node) => node.kind).sort(), ["assertion", "entity", "episode"]);
+  const report = (await readAuditReport(f)).reports.find((item) => item.unit_id === incompleteScope.unitId);
+  assert.equal(report.certification.semantically_audited, "pass");
+  assert.equal(report.coverage.complete, false);
+  assert.deepEqual(report.coverage.untrusted_candidate_ids, []);
+  const publishedIds = new Set((await readPublishedRecords(f)).map((record) => record.id));
+  for (const node of incompleteScope.semantic) assert.ok(!publishedIds.has(node.id), `${node.kind} from incomplete audit was published`);
+  for (const passage of incompleteScope.passages) assert.ok(publishedIds.has(passage.id), "verbatim passage must remain");
 });
 
 test("a successful reference freeze remains in the unassessed denominator when fidelity exhausts its attempts", async (t) => {

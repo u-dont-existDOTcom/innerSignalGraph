@@ -1231,6 +1231,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         source_only_units: sourceOnlyUnits,
         reconciliation_needs_context_units: reports.filter(report => report.status === 'needs_context').length,
         reconciliation_unresolved_units: reports.filter(report => report.status === 'unresolved').length,
+        reconciliation_unresolved_ids: new Set([...reconciliationBatches.values()]
+          .flatMap(report => report.unresolved_ids)).size,
         reconciliation_deferred_proposals: [...reconciliationBatches.values()]
           .reduce((count, report) => count + report.deferred_proposals.length, 0) };
       state.stage = 'REFERENCE_AUDIT';
@@ -1303,8 +1305,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             }
             else {
               const assessedOutcome = assess(fidelity.result);
+              // A sampled unit reaches session use only through a complete, passing audit.
               outcome = { freeze, fidelity: fidelity.result[0], ...assessedOutcome,
-                ...(assessedOutcome.certification.semantically_audited === "pass"
+                ...(assessedOutcome.certification.semantically_audited === "pass" && assessedOutcome.coverage.complete === true
                   ? {} : { untrusted_candidate_ids: scope.exclusion_ids }) };
             }
           }
