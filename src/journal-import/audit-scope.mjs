@@ -43,9 +43,14 @@ export function createReconciledAuditScope({ graph, unitGraph, derivationRef = n
   const assessmentTargetIds=[...new Set([
     ...unitGraph.nodes.filter(n=>n.kind==='assertion').map(n=>n.id), ...relationEdges.map(e=>e.id)
   ])];
+  const exclusionIds=[...new Set([
+    ...unitGraph.nodes.filter(n=>['entity','episode','assertion'].includes(n.kind)).map(n=>n.id),
+    ...relationEdges.map(e=>e.id)
+  ])];
   return {
     graph:{...graph,nodes:selectedNodes,edges},
     assessment_target_ids:assessmentTargetIds,
+    exclusion_ids:exclusionIds,
     supporting_passages:selectedNodes.filter(n=>n.kind==='passage').map(n=>({
       passage_id:n.id,unit_id:n.data.unit_id,text:n.data.quote,
       disclosure:n.data.disclosure??'ordinary',locator:n.data.locator

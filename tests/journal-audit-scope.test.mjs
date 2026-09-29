@@ -11,7 +11,21 @@ test('audit uses reconciled version and resolves cross-unit evidence without imp
  assert.equal(scope.graph.nodes.find(n=>n.id==='a').data.support_group_id,'shared');
  assert.ok(scope.graph.nodes.some(n=>n.id==='b'));assert.ok(!scope.graph.nodes.some(n=>n.id==='unrelated'));
  assert.deepEqual(scope.assessment_target_ids,['a','correction']);
+ assert.deepEqual(scope.exclusion_ids,['a','correction']);
  assert.deepEqual(scope.supporting_passages.map(p=>p.passage_id).sort(),['p','q']);
+});
+test('a failed unit excludes its semantic nodes without excluding source or another unit\'s matching entity',()=>{
+ const n=(id,kind,data={})=>({id,kind,data});
+ const failed=[n('failed-entity','entity',{label:'Same person'}),n('failed-episode','episode'),n('failed-assertion','assertion'),n('failed-passage','passage',{unit_id:'failed',representation_id:'rep'})];
+ const passed=n('passed-entity','entity',{label:'Same person'}),source=n('source','source',{representation_id:'rep'});
+ const relation={id:'possible-identity',relation:'possible_same_entity',from:'failed-entity',to:'passed-entity',evidence_ids:['failed-passage'],derivation_ref:'receipt'};
+ const scope=createReconciledAuditScope({graph:{generation:'g',nodes:[...failed,passed,source],edges:[relation]},
+  unitGraph:{nodes:failed,edges:[]},derivationRef:'receipt'});
+ assert.deepEqual(new Set(scope.exclusion_ids),new Set(['failed-entity','failed-episode','failed-assertion','possible-identity']));
+ assert.deepEqual(scope.assessment_target_ids,['failed-assertion','possible-identity']);
+ assert.ok(!scope.exclusion_ids.includes('failed-passage'));
+ assert.ok(!scope.exclusion_ids.includes('source'));
+ assert.ok(!scope.exclusion_ids.includes('passed-entity'));
 });
 test('missing and distorted candidates remain outside trusted coverage even with a sufficient status',()=>{
  const reference={reference_items:[{id:'ref'}],unassessed_unit_ids:[]};

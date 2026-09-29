@@ -8,6 +8,7 @@ import { openJournalExecutionRuntime } from "../src/journal-import/private-runti
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 import { createMockJournalInferencePort } from "../src/journal-import/provider-port.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
+import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 
 // A synthetic import driven from intake to a committed generation through the operator commands,
 // with every role answered by a mock. Each test makes one role answer the way a real journal
@@ -124,6 +125,29 @@ async function searchPublishedAssertions(f) {
   }, { bearerToken: READER });
 }
 
+async function readAuditReport(f) {
+  const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+  const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+    corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+  try {
+    const bytes = await store.reassembleOriginal(state.audit_report_ref);
+    try { return JSON.parse(bytes.toString("utf8")); }
+    finally { bytes.fill(0); }
+  } finally { await store.close(); }
+}
+
+async function readPublishedRecords(f) {
+  const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
+  const corpusId = published.journal_corpora[0].corpus_id;
+  return f.service.withJournalCorpus(CASE_ID, corpusId,
+    { requiredScope: "case:read", requiredPurpose: "organize_search" },
+    async ({ corpusStore, reference }) => {
+      const manifest = await corpusStore.readJsonObject({ objectId: reference.manifest_object_id });
+      const shards = await Promise.all(manifest.record_shards.map(({ object_id }) => corpusStore.readJsonObject({ objectId: object_id })));
+      return shards.flatMap((shard) => shard.records);
+    }, { bearerToken: READER });
+}
+
 test("a clean synthetic import runs from intake to a committed generation", async (t) => {
   const f = await environment(t);
   const { run, audit, patterns, commit } = await drive(f, handlers());
@@ -214,8 +238,62 @@ test("an unavailable independent-audit certification excludes the affected candi
   assert.deepEqual(result.items, [], "assertions without an independent audit certification must not be published");
 });
 
+test("a failed audit withholds one unit's semantic nodes while preserving its passages and a matching audited entity", async (t) => {
+  const f = await environment(t);
+  let failedScope, passedScope;
+  const roleHandlers = handlers({
+    extractor: (packet) => {
+      const extracted = handlers().extractor(packet);
+      return { ...extracted,
+        episodes: packet.core_units.map((unit, index) => ({ local_id: `episode${index}`, label: `Synthetic episode ${index}`,
+          authored_time: unknownTime, event_time: unknownTime, anchors: [{ unit_id: unit.unit_id, quote: unit.text, occurrence: null }] })),
+        assertions: extracted.assertions.map((assertion, index) => ({ ...assertion, episode_local_id: `episode${index}` })) };
+    },
+    fidelity_auditor: (packet) => {
+      if (!packet.imported_generation?.assessment_target_ids) return handlers().fidelity_auditor(packet);
+      const semantic = packet.imported_generation.graph.nodes.filter((node) => ["entity", "episode", "assertion"].includes(node.kind));
+      if (packet.supporting_passages[0].text === TEXTS[0]) {
+        failedScope = { semantic, passages: packet.imported_generation.graph.nodes.filter((node) => node.kind === "passage") };
+        return { ...review("fidelity_auditor", packet), status: "not-a-valid-status" };
+      }
+      if (packet.supporting_passages[0].text === TEXTS[1]) passedScope = semantic;
+      return handlers().fidelity_auditor(packet);
+    }
+  });
+  const inferencePort = createMockJournalInferencePort({ handlers: roleHandlers });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort, environment: f.environment });
+  try {
+    await runtime.execute("run");
+    let audit;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      audit = await runtime.execute("audit");
+      if (audit.stage === "PATTERN_BUILD") break;
+    }
+    assert.equal(audit.stage, "PATTERN_BUILD");
+    await runtime.execute("patterns");
+    const commit = await runtime.execute("commit");
+    assert.equal(commit.completion.profile_committed, "pass");
+  } finally { await runtime.close(); }
+  assert.deepEqual(failedScope.semantic.map((node) => node.kind).sort(), ["assertion", "entity", "episode"]);
+  assert.equal(failedScope.passages.length, 1);
+  assert.equal(passedScope.find((node) => node.kind === "entity").data.label,
+    failedScope.semantic.find((node) => node.kind === "entity").data.label);
+  const records = await readPublishedRecords(f);
+  const publishedIds = new Set(records.map((record) => record.id));
+  for (const node of failedScope.semantic) assert.ok(!publishedIds.has(node.id), `${node.kind} from failed unit was published`);
+  for (const passage of failedScope.passages) assert.ok(publishedIds.has(passage.id), "verbatim passage must remain");
+  assert.ok(publishedIds.has(passedScope.find((node) => node.kind === "entity").id), "matching audited entity must remain");
+});
+
 test("a successful reference freeze remains in the unassessed denominator when fidelity exhausts its attempts", async (t) => {
   const f = await environment(t);
+  const parse = f.sourceParser;
+  f.sourceParser = async (...args) => {
+    const result = await parse(...args);
+    result.pages[0].warnings = ["synthetic targeted challenge"];
+    return result;
+  };
   let failedFidelityAttempts = 0;
   const roleHandlers = handlers({
     reference_reader: (packet) => {
@@ -251,6 +329,9 @@ test("a successful reference freeze remains in the unassessed denominator when f
   assert.ok(failedFidelityAttempts >= 3);
   assert.ok(audit.residuals.audit_unassessed_reference_items > 0,
     "frozen reference items must contribute to the audit's unassessed denominator");
+  const report = await readAuditReport(f);
+  assert.equal(report.targeted_unweighted.unassessed, 1,
+    "a targeted unit with failed fidelity keeps its frozen reference item in targeted totals");
   assert.equal(commit.completion.profile_committed, "pass");
 });
 

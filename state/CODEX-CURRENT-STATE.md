@@ -1,6 +1,16 @@
 # Inner Signal Codex current state
 
-Updated: 2026-09-28
+Updated: 2026-09-29
+
+## PR #98 Codex review round at `90c2a31` (2026-09-29)
+
+- **Goal and baseline:** resolve only the two owner-confirmed review findings on `claude/journal-import-finishes-20260927` at reviewed commit `90c2a31`. The branch was clean at the start of this round. The live Universal architecture repository could not be loaded because this sandbox cannot resolve `github.com`; the supplied owner instructions and local repository authority were used.
+- **Failed audit exclusion:** `createReconciledAuditScope` now returns `exclusion_ids` for the unit's entity, episode, and assertion nodes plus its reconciled relation edges. Reference-freeze failure, exhausted fidelity, and failed certification use those IDs to withhold the whole unit's semantic records. Passage and source nodes remain; `assessment_target_ids` and passing-audit per-assertion coverage exclusions are unchanged.
+- **Targeted totals:** `targeted_unweighted` now sums every targeted report with a `score`, including a successful reference freeze followed by exhausted fidelity. Reports without a trustworthy reference score remain outside the totals.
+- **Regressions:** a synthetic committed generation with one failed unit excludes that unit's entity, episode, and assertion while keeping its passage and the matching entity node of a passed unit. A targeted unit with exhausted fidelity contributes one frozen reference item as unassessed. Both runtime regressions failed at `90c2a31` for the reported reasons, then passed after the fixes; audit-scope tests also pin the exact exclusion set and unchanged scoring targets.
+- **Local verification on Node v24.18.0:** `tests/journal-audit-scope.test.mjs` passes 3/3, `tests/journal-runtime-finish.test.mjs` passes 9/9, `npm run journal:ui:test` passes 20/20, `npm run audit:repository` passes with zero errors and the existing unverified hosted GitHub App permission warning, and `git diff --check` passes. No package failed to load. The tool shell initially selected Node 26, so the affected tests and gates were rerun with the pinned Node 24 executable.
+- **Publication and CI boundary:** the pinned-Node `npm run audit:publication` scanned 768,493 records and failed on the same five historical `credential-pattern` fixtures in `tests/learning-groundwork-privacy.test.mjs` recorded in earlier rounds. All five reported commits are non-ancestors of this branch. No unrelated history, ref, fixture, or audit rule was changed. Per the owner's no-localhost instruction, full `npm test` and `npm run verify` are left to push CI on the containing commit.
+- **Closeout and next action:** this is a project-specific audit-scope and accounting repair with focused regressions; no new transferable Universal rule is claimed. The runner may commit and push this working tree, then use the containing commit's CI for the full gates. No installation, deployment, provider call, private case access, Git ref mutation, therapy/framework policy change, or `stable` change occurred.
 
 ## Journal import — reserialization retry-epoch review at `6162df1`
 

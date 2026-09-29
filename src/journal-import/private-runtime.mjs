@@ -1273,7 +1273,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const common = { graph_revision: graphRevision, source_only_unresolved: imported.source_only_unresolved, calibration_overlap: plan.calibration.some(u => u.unit_id === unit.unit_id) };
           // Even without a valid reference freeze, the deterministic graph scope is known and must
           // not cross into the session-use generation without an audit.
-          let outcome = frozen.failure ? { untrusted_candidate_ids: scope.assessment_target_ids } : null;
+          let outcome = frozen.failure ? { untrusted_candidate_ids: scope.exclusion_ids } : null;
           let unassessed = frozen.failure ?? null;
           if (!unassessed) {
             const reference = frozen.result[0];
@@ -1288,8 +1288,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             if (fidelity.failure) {
               unassessed = fidelity.failure;
               // The source-first freeze is still evidence even when no fidelity attempt succeeds.
-              // Keep its reference weight in the sample denominator, and withhold every candidate
-              // that the failed audit was responsible for checking.
+              // Keep its reference weight in the sample denominator, and withhold the unit's
+              // semantic records and reconciled relations.
               outcome = {
                 freeze,
                 score: {
@@ -1298,14 +1298,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                   critical_miss_count: freeze.reference.reference_items.filter(item => item.critical).length,
                   qualifier_error_count: 0
                 },
-                untrusted_candidate_ids: scope.assessment_target_ids
+                untrusted_candidate_ids: scope.exclusion_ids
               };
             }
             else {
               const assessedOutcome = assess(fidelity.result);
               outcome = { freeze, fidelity: fidelity.result[0], ...assessedOutcome,
                 ...(assessedOutcome.certification.semantically_audited === "pass"
-                  ? {} : { untrusted_candidate_ids: scope.assessment_target_ids }) };
+                  ? {} : { untrusted_candidate_ids: scope.exclusion_ids }) };
             }
           }
           // A unit no attempt could audit is recorded as unassessed, with the reason, and counted.
@@ -1324,7 +1324,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // A successful reference freeze followed by failed fidelity has a real reference denominator,
       // represented entirely as unassessed. A failed freeze has no trustworthy item count to add.
       const sampled = reports.filter(r => probability.has(r.unit_id) && r.score);
-      const auditReport = { generation: state.generation, graph_sha256: graphRevision, probability_unweighted: totals(sampled, false), probability_weighted: totals(sampled, true), targeted_unweighted: totals(assessed.filter(r => sample.targeted_challenge.some(x => x.unit_id === r.unit_id)), false), unassessed_unit_count: reports.length - assessed.length, population_recall_claim: false, reference_completeness: "unknown", reports };
+      const targeted = new Set(sample.targeted_challenge.map(x => x.unit_id));
+      const auditReport = { generation: state.generation, graph_sha256: graphRevision, probability_unweighted: totals(sampled, false), probability_weighted: totals(sampled, true), targeted_unweighted: totals(reports.filter(r => targeted.has(r.unit_id) && r.score), false), unassessed_unit_count: reports.length - assessed.length, population_recall_claim: false, reference_completeness: "unknown", reports };
       state.audit_report_ref = await writeLarge(`audit:report:${randomUUID()}`, auditReport);
       state.completion.semantically_audited = reports.every(r => !r.unassessed && r.certification.semantically_audited === "pass" && r.coverage.complete) ? "pass" : "partial";
       // Findings are recorded and counted rather than stopping the run: the audit measures a sample
