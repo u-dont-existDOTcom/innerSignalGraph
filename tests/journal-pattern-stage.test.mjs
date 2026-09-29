@@ -145,6 +145,135 @@ function stageHarness(scope, answer) {
   };
 }
 
+function reviewPacketHarness(statements, reviewAnswer = null) {
+  const graph = fixture("synthetic-graph.json");
+  graph.nodes = graph.nodes.filter(node => node.kind !== "pattern");
+  graph.edges = graph.edges.filter(edge => edge.from !== "pat" && edge.to !== "pat");
+  const representations = fixture("synthetic-sources.json");
+  const text = representations.repr;
+  const unit = { unit_id: "u1", representation_id: "repr", text,
+    start_byte: 0, end_byte: Buffer.byteLength(text), source_order: 0 };
+  const candidate = (statement, index) => ({ local_id: `candidate-${index + 1}`, data: {
+    statement, pattern_kind: "single_event", scope: "Invented source only.",
+    support_assertion_ids: ["a1", "a3"], counter_assertion_ids: [],
+    alternative_explanations: ["Different invented contexts."],
+    observation_gaps: ["Unwritten periods remain unknown."],
+    disconfirming_question: "Where does this contrast not hold?",
+    disconfirmation: { status: "pending", search_receipt_ref: null },
+    review_state: "provisional", independent_review_ref: null,
+    producer_ref: "producer:synthetic"
+  }, counterevidence_queries: ["invented exception"] });
+  const reviewerRequests = [];
+  const harness = stageHarness({ graph, representations, units: [unit], unitGraphs: [{ unit_id: "u1", graph }] },
+    (request) => {
+      if (request.role === "reference_reader") return {
+        output: freezeOutput(), receipt: receipt("freeze", request.id)
+      };
+      if (request.role === "pattern_builder") return {
+        output: { schema_version: "1.0", target_generation: generation,
+          patterns: statements.map(candidate), unclassified_assertion_ids: [],
+          coverage_note: "Invented bounded source.", status: "complete_for_stated_scope" },
+        receipt: receipt("builder", request.id)
+      };
+      reviewerRequests.push(request);
+      const output = { schema_version: "1.0", target_generation: generation,
+        review_role: "pattern_reviewer", assessments: request.packetInput.candidate_patterns.map(pattern => ({
+          target_id: pattern.id, outcome: "preserved", critical: false,
+          finding_type: "none", explanation: "Synthetic source challenge preserved scope.", evidence_ids: ["p1"]
+        })), proposed_repairs: [], unassessed_ids: [], status: "sufficient_for_stated_scope" };
+      return { output: reviewAnswer?.(request, output) ?? output,
+        receipt: receipt("reviewer", request.id) };
+    });
+  return { ...harness, reviewerRequests };
+}
+
+test("a large pattern batch is reviewed in ordered packets within the byte budget", async () => {
+  const budget = 35_000;
+  const statements = [1, 2, 3].map(index => `Invented pattern ${index}: ${"é".repeat(6_000)}`);
+  const { args, reviewerRequests } = reviewPacketHarness(statements);
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000,
+    reviewPacketMaximumBytes: budget });
+
+  assert.equal(result.status, "pass");
+  assert.ok(reviewerRequests.length > 1);
+  assert.deepEqual(reviewerRequests.flatMap(request =>
+    request.packetInput.candidate_patterns.map(pattern => pattern.data.statement)), statements);
+  assert.deepEqual(reviewerRequests.map(request => request.id.split(":").at(-1)),
+    reviewerRequests.map((_, index) => `group-${index + 1}`));
+  assert.ok(reviewerRequests.every(request => Buffer.byteLength(JSON.stringify(request.packetInput), "utf8") <= budget));
+  assert.ok(reviewerRequests.every(request =>
+    Object.keys(request.packetInput.source_retrieval.counterevidence).join() ===
+    request.packetInput.candidate_patterns.map(pattern => pattern.id).join()));
+  assert.equal(result.graph.nodes.filter(node => node.kind === "pattern").length, 3);
+  assert.equal(result.counts.reviewed_patterns, 3);
+  assert.deepEqual(result.reports.map(report => report.review_group),
+    reviewerRequests.map((_, index) => `group-${index + 1}`));
+  const replay = await runJournalPatternPass({ ...args, maximumBytes: 50_000,
+    reviewPacketMaximumBytes: budget,
+    work: async () => { throw new Error("Grouped durable replay submitted again"); } });
+  assert.deepEqual(replay.graph, result.graph);
+  assert.deepEqual(replay.reports, result.reports);
+});
+
+test("a candidate too large for a review packet stays unresolved while smaller candidates settle", async () => {
+  const budget = 45_000;
+  const { args, reviewerRequests } = reviewPacketHarness([
+    `Small invented pattern: ${"é".repeat(6_000)}`,
+    `Oversized invented pattern: ${"é".repeat(20_000)}`,
+    `Another small invented pattern: ${"é".repeat(6_000)}`
+  ]);
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000,
+    reviewPacketMaximumBytes: budget });
+
+  assert.equal(result.status, "partial");
+  assert.equal(reviewerRequests.length, 2);
+  assert.ok(reviewerRequests.every(request =>
+    Buffer.byteLength(JSON.stringify(request.packetInput), "utf8") <= budget));
+  const oversized = result.reports.find(report => report.reason === "PATTERN_REVIEW_PACKET_TOO_LARGE");
+  assert.equal(oversized.pattern_ids.length, 1);
+  assert.ok(reviewerRequests.every(request =>
+    request.packetInput.candidate_patterns.every(pattern => pattern.id !== oversized.pattern_ids[0])));
+  assert.equal(result.graph.nodes.some(node => node.id === oversized.pattern_ids[0]), false);
+  assert.equal(result.graph.nodes.filter(node => node.kind === "pattern").length, 2);
+  assert.equal(result.counts.reviewed_patterns, 2);
+  assert.equal(result.counts.unresolved_batches, 1);
+});
+
+test("a single review packet retains the pre-existing batch step ID", async () => {
+  const split = reviewPacketHarness([1, 2].map(index =>
+    `Invented pattern ${index}: ${"é".repeat(6_000)}`));
+  await runJournalPatternPass({ ...split.args, maximumBytes: 50_000,
+    reviewPacketMaximumBytes: 35_000 });
+  assert.equal(split.reviewerRequests.length, 2);
+
+  const { args, reviewerRequests } = reviewPacketHarness(["A short invented pattern."]);
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000,
+    reviewPacketMaximumBytes: 35_000 });
+
+  assert.equal(result.status, "pass");
+  assert.equal(reviewerRequests.length, 1);
+  assert.equal(reviewerRequests[0].id, `pattern:reviewer:${result.reports[0].batch_id}`);
+  assert.equal(Object.hasOwn(result.reports[0], "review_group"), false);
+});
+
+test("failure of one review group leaves other groups' patterns settled", async () => {
+  const { args, reviewerRequests } = reviewPacketHarness(
+    [1, 2, 3].map(index => `Invented pattern ${index}: ${"é".repeat(6_000)}`),
+    (request, output) => request.id.endsWith("group-2") || request.id.includes("group-2:attempt:")
+      ? { ...output, status: "incomplete" } : output);
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000,
+    reviewPacketMaximumBytes: 35_000 });
+
+  assert.equal(result.status, "partial");
+  assert.equal(reviewerRequests.filter(request => request.id.includes("group-2")).length, 3);
+  assert.equal(result.reports.find(report => report.review_group === "group-2").reason, "PATTERN_REVIEW_INCOMPLETE");
+  assert.deepEqual(result.reports.filter(report => report.status === "reviewed").map(report => report.review_group),
+    ["group-1", "group-3"]);
+  assert.equal(result.graph.nodes.filter(node => node.kind === "pattern").length, 2);
+  assert.equal(result.counts.reviewed_patterns, 2);
+  assert.equal(result.counts.unresolved_batches, 1);
+});
+
 const freezeOutput = (unassessed = []) => ({ schema_version: "1.0", source_only_first_pass: true,
   reference_items: [], questions: [], unassessed_unit_ids: unassessed });
 const emptyBuild = { schema_version: "1.0", target_generation: generation, patterns: [], unclassified_assertion_ids: [],
