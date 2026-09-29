@@ -743,7 +743,7 @@ test('an incomplete visual inventory is retried while a complete inventory may r
  try {
   const result=await runtime.execute('visual-only');
   assert.deepEqual([result.stage,result.completed_visual_pages,result.blocker],['REFERENCE_AUDIT',3,null]);
-  assert.deepEqual(result.residuals,{excluded_visual_pages:1,partial_visual_pages:0});
+  assert.deepEqual(result.residuals,{excluded_visual_pages:1,partial_visual_pages:1});
   assert.deepEqual(reads.filter(r=>r==='page:1').length,2);
   assert.deepEqual(reads.filter(r=>r==='page:2').length,3);
   assert.deepEqual(reads.filter(r=>r==='page:3').length,3);

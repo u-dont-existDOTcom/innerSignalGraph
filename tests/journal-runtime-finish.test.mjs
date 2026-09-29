@@ -4,9 +4,10 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { ValidationError } from "../src/core/errors.mjs";
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
 import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
-import { createMockJournalInferencePort } from "../src/journal-import/provider-port.mjs";
+import { createMockJournalInferencePort, JournalInferencePortError } from "../src/journal-import/provider-port.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 
@@ -59,6 +60,39 @@ async function environment(t) {
 const unknownTime = { raw: null, from: null, to: null, precision: "unknown", timezone: null, basis: "unresolved", evidence_ids: [] };
 const review = (role, packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation, review_role: role,
   assessments: [], proposed_repairs: [], unassessed_ids: [], status: "sufficient_for_stated_scope" });
+
+function scannedParser(f, pages) {
+  return async () => ({ source: { sha256: f.config.source.sha256,
+    byte_length: f.config.source.bytes, mime_type: "application/pdf" }, parser: { version: "synthetic-scan" },
+    pages: pages.map(page => ({ page_number: page, representation_id: `scan:${page}`,
+      disposition: "visual_pending", warnings: ["no_native_text"], image_inventory: [{ kind: "scan" }],
+      geometry: { width: 100, height: 100 } })),
+    representations: pages.map(page => ({ representation_id: `scan:${page}`, text: "", utf8_byte_length: 0 })) });
+}
+
+function oneUnitParser(f) {
+  const text = TEXTS[0];
+  return async () => ({ source: { sha256: f.config.source.sha256,
+    byte_length: f.config.source.bytes, mime_type: "text/plain" }, parser: { version: "synthetic-one" },
+    pages: [{ page_number: 1, representation_id: "synthetic:one", disposition: "readable", warnings: [], image_inventory: [] }],
+    representations: [{ representation_id: "synthetic:one", text, utf8_byte_length: Buffer.byteLength(text) }] });
+}
+
+function denseExtractor(count) {
+  return packet => {
+    const unit = packet.core_units[0];
+    const assertions = Array.from({ length: count }, (_, index) => ({ local_id: `dense-${index}`,
+      statement: `Synthetic dense statement ${index}: ${"detail ".repeat(28)}`, assertion_kind: "direct_report",
+      narrative_mode: "waking", speaker_local_id: "self", subject_local_ids: ["self"], episode_local_id: null,
+      polarity: "affirmed", qualifiers: [], authored_time: unknownTime, event_time: unknownTime,
+      anchors: [{ unit_id: unit.unit_id, quote: unit.text, occurrence: null }],
+      importance_reasons: ["synthetic"], extraction_confidence: "high" }));
+    return { schema_version: "1.0", status: "complete", entities: [{ local_id: "self", label: "Synthetic diarist",
+      entity_kind: "person", anchors: [{ unit_id: unit.unit_id, quote: unit.text, occurrence: null }] }], episodes: [], assertions,
+      coverage: [{ unit_id: unit.unit_id, disposition: "extracted",
+        assertion_local_ids: assertions.map(item => item.local_id), reason: null }], requested_context: [] };
+  };
+}
 
 // Answers that let every stage finish cleanly; a test overrides the one it exercises.
 function handlers(overrides = {}) {
@@ -423,14 +457,36 @@ test("a successful reference freeze remains in the unassessed denominator when f
       audit = await runtime.execute("audit");
       if (audit.stage === "PATTERN_BUILD") break;
     }
-    await runtime.execute("patterns");
-    commit = await runtime.execute("commit");
   } finally { await runtime.close(); }
+  // Keep the targeted challenge while removing it from the probability sample. The first audit
+  // has already saved the exhausted fidelity disposition; reopening must count that same record.
+  const sample = await readStoredReport(f, "audit_sample_ref");
+  assert.equal(sample.targeted_challenge.length, 1);
+  sample.selected_units = [];
+  sample.inclusion_ledger = [];
+  const statePath = path.join(f.config.execution_root, "state.json");
+  const state = JSON.parse(await fs.readFile(statePath, "utf8"));
+  const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+    corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+  try {
+    state.audit_sample_ref = await store.writeChunkedOriginal({ objectId: "audit:sample:targeted-only-synthetic",
+      bytes: Buffer.from(JSON.stringify(sample)) });
+  } finally { await store.close(); }
+  await fs.writeFile(statePath, JSON.stringify(state), { mode: 0o600 });
+  const resumed = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: createMockJournalInferencePort({ handlers: roleHandlers }),
+    environment: f.environment });
+  try {
+    audit = await resumed.execute("audit");
+    await resumed.execute("patterns");
+    commit = await resumed.execute("commit");
+  } finally { await resumed.close(); }
   assert.equal(audit.completion.semantically_audited, "partial");
   assert.ok(failedFidelityAttempts >= 3);
   assert.ok(audit.residuals.audit_unassessed_reference_items > 0,
     "frozen reference items must contribute to the audit's unassessed denominator");
   const report = await readAuditReport(f);
+  assert.equal(report.probability_unweighted.unassessed, 0);
   assert.equal(report.targeted_unweighted.unassessed, 1,
     "a targeted unit with failed fidelity keeps its frozen reference item in targeted totals");
   assert.equal(commit.completion.profile_committed, "pass");
@@ -540,4 +596,229 @@ test("a PDF representation without page evidence cannot default to readable", as
   const graph = await readStoredReport(f, "graph_ref");
   assert.equal(graph.nodes.find(node => node.kind === "source").data.parse_status, "partial");
   assert.deepEqual((await searchPublishedAssertions(f)).items, []);
+});
+
+test("a scan with every page excluded ends archive-only and reports each reason on resume", async t => {
+  const f = await environment(t);
+  f.sourceParser = scannedParser(f, [1, 2]);
+  let reads = 0;
+  const port = createMockJournalInferencePort({ handlers: handlers({ visual_reader: () => {
+    reads += 1;
+    return { schema_version: "1.0", source_page_id: "wrong-page", regions: [],
+      page_complete: true, missing_or_uncertain_regions: [] };
+  } }) });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment,
+    renderVisualPage: async () => Buffer.from("synthetic-image") });
+  try {
+    const first = await runtime.execute("run");
+    assert.equal(first.stage, "ARCHIVE_ONLY");
+    assert.equal(first.semantic_disposition, "archive_only");
+    assert.equal(first.residuals.excluded_visual_pages, 2);
+    assert.deepEqual(first.excluded_visual_pages, [1, 2].map(page_number =>
+      ({ page_number, reason: "VISUAL_PAGE_BINDING_MISMATCH" })));
+    assert.equal(first.completion.profile_committed, "not_run");
+    const second = await runtime.execute("run");
+    assert.equal(second.stage, "ARCHIVE_ONLY");
+    assert.equal(reads, 6);
+  } finally { await runtime.close(); }
+});
+
+test("an older empty assembled graph resumes to archive-only instead of re-entering reconciliation", async t => {
+  const f = await environment(t);
+  f.sourceParser = scannedParser(f, [1]);
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser,
+    inferencePort: createMockJournalInferencePort({ handlers: handlers({ visual_reader: () => ({
+      schema_version: "1.0", source_page_id: "wrong-page", regions: [], page_complete: true,
+      missing_or_uncertain_regions: [] }) }) }), environment: f.environment,
+    renderVisualPage: async () => Buffer.from("synthetic-image") });
+  try { await runtime.execute("run"); } finally { await runtime.close(); }
+  const statePath = path.join(f.config.execution_root, "state.json");
+  const state = JSON.parse(await fs.readFile(statePath, "utf8"));
+  const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+    corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+  try {
+    state.graph_ref = await store.writeChunkedOriginal({ objectId: "synthetic:legacy-empty-graph",
+      bytes: Buffer.from(JSON.stringify({ schema_version: "1.0", case_id: CASE_ID,
+        corpus_id: state.corpus_id, generation: state.generation, nodes: [], edges: [] })) });
+  } finally { await store.close(); }
+  delete state.semantic_disposition;
+  state.stage = "RECONCILE";
+  await fs.writeFile(statePath, JSON.stringify(state), { mode: 0o600 });
+  const resumed = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser,
+    inferencePort: createMockJournalInferencePort({ handlers: handlers() }), environment: f.environment });
+  try {
+    const run = await resumed.execute("run");
+    assert.equal(run.stage, "ARCHIVE_ONLY");
+    assert.equal(run.blocker, null);
+  } finally { await resumed.close(); }
+});
+
+test("a rendered page over the fixed image bound is excluded once", async t => {
+  const f = await environment(t);
+  f.sourceParser = scannedParser(f, [1]);
+  let renders = 0;
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser,
+    inferencePort: createMockJournalInferencePort({ handlers: handlers() }), environment: f.environment,
+    renderVisualPage: async () => { renders += 1;
+      throw new ValidationError("VISUAL_RENDER_TOO_LARGE", { code: "VISUAL_RENDER_TOO_LARGE" }); } });
+  try {
+    const first = await runtime.execute("run");
+    assert.equal(first.stage, "ARCHIVE_ONLY");
+    assert.deepEqual(first.excluded_visual_pages, [{ page_number: 1, reason: "VISUAL_RENDER_TOO_LARGE" }]);
+    assert.equal((await runtime.execute("run")).stage, "ARCHIVE_ONLY");
+    assert.equal(renders, 1);
+  } finally { await runtime.close(); }
+});
+
+test("an exhausted single-unit calibration freeze leaves source-only evidence and resumes", async t => {
+  const f = await environment(t);
+  f.sourceParser = oneUnitParser(f);
+  let references = 0;
+  const port = createMockJournalInferencePort({ handlers: handlers({ reference_reader: packet => {
+    references += 1;
+    const unit = packet.source_windows[0];
+    return { schema_version: "1.0", source_only_first_pass: true, reference_items: [{
+      id: "bad-reference", statement: "Synthetic mismatch.", required_qualifiers: [],
+      anchors: [{ unit_id: unit.unit_id, quote: "This quote never occurs.", occurrence: null }],
+      importance_reason: "Synthetic.", critical: false }], questions: [], unassessed_unit_ids: [] };
+  } }) });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  try {
+    const first = await runtime.execute("run");
+    assert.equal(first.blocker, null);
+    assert.equal(first.residuals.source_only_units, 1);
+    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
+    assert.equal(references, 3);
+  } finally { await runtime.close(); }
+});
+
+test("definitely unanswered reference submissions settle after the existing bounded attempts", async t => {
+  const f = await environment(t);
+  f.sourceParser = oneUnitParser(f);
+  let submissions = 0;
+  const port = { capabilities: () => ({ authoritative_completion: true }),
+    async invoke() { submissions += 1;
+      throw new JournalInferencePortError("UNAVAILABLE", { submissionStatus: "not_submitted" }); },
+    async getCompletion() { return { status: "not_submitted" }; } };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  try {
+    let run;
+    for (let attempt = 0; attempt < 15; attempt += 1) {
+      run = await runtime.execute("run");
+      if (run.completion.graph_built === "partial") break;
+    }
+    assert.equal(run.blocker, null);
+    assert.equal(run.residuals.source_only_units, 1);
+    assert.equal(submissions, 3, "the resend cap must not open another automatic attempt");
+    const before = submissions;
+    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
+    assert.equal(submissions, before);
+  } finally { await runtime.close(); }
+});
+
+test("visual handoff counts admitted pages separately from excluded pages", async t => {
+  const f = await environment(t);
+  f.sourceParser = scannedParser(f, [1, 2]);
+  const port = createMockJournalInferencePort({ handlers: handlers({ visual_reader: packet => ({
+    schema_version: "1.0", source_page_id: packet.assigned_core_ids[0] === "page:1" ? "page:1" : "wrong-page",
+    regions: [], page_complete: true, missing_or_uncertain_regions: []
+  }) }) });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment,
+    renderVisualPage: async () => Buffer.from("synthetic-image") });
+  try { await runtime.execute("visual-only"); } finally { await runtime.close(); }
+  const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+  assert.deepEqual([state.visual_handoff_ready.admitted, state.visual_handoff_ready.excluded], [1, 1]);
+});
+
+test("a single source packet above 180 KB stays source-only without a second attempt", async t => {
+  const f = await environment(t);
+  f.sourceParser = scannedParser(f, [1]);
+  let reads = 0;
+  const port = createMockJournalInferencePort({ handlers: handlers({ visual_reader: () => {
+    reads += 1;
+    return { schema_version: "1.0", source_page_id: "page:1", regions: [{ region_id: "region:1",
+      bbox: [0, 0, 1, 1], kind: "text", transcription: "A".repeat(185_000),
+      non_graphic_description: null, interpretation_status: "readable", speaker_or_document_label: null,
+      table_cells: [] }], page_complete: true, missing_or_uncertain_regions: [] };
+  } }) });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment,
+    renderVisualPage: async () => Buffer.from("synthetic-image") });
+  try {
+    const first = await runtime.execute("run");
+    assert.equal(first.blocker, null);
+    assert.equal(first.residuals.source_only_units, first.total_units);
+    assert.ok(first.total_units > 0);
+    assert.equal(first.completion.graph_built, "partial");
+    const second = await runtime.execute("run");
+    assert.equal(second.residuals.source_only_units, first.total_units);
+    assert.equal(reads, 1);
+    assert.equal((await runtime.execute("audit")).completion.semantically_audited, "partial");
+    await runtime.execute("patterns");
+    assert.equal((await runtime.execute("commit")).completion.profile_committed, "pass");
+  } finally { await runtime.close(); }
+});
+
+test("a unit above the configured semantic batch bound is recorded source-only", async t => {
+  const f = await environment(t);
+  f.config.semantic_batching = { maximum_bytes: 4096, calibration_maximum_bytes: 4096 };
+  const text = "Synthetic long unit. ".repeat(350);
+  f.sourceParser = async () => ({ source: { sha256: f.config.source.sha256,
+    byte_length: f.config.source.bytes, mime_type: "text/plain" }, parser: { version: "synthetic-long-unit" },
+    pages: [{ page_number: 1, representation_id: "synthetic:long", disposition: "readable", warnings: [], image_inventory: [] }],
+    representations: [{ representation_id: "synthetic:long", text, utf8_byte_length: Buffer.byteLength(text) }] });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser,
+    inferencePort: createMockJournalInferencePort({ handlers: handlers() }), environment: f.environment });
+  try {
+    const run = await runtime.execute("run");
+    assert.equal(run.blocker, null);
+    assert.equal(run.residuals.source_only_units, 1);
+    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
+  } finally { await runtime.close(); }
+});
+
+for (const [label, count, field] of [
+  ["reconciliation packet over 180 KB", 170, "reconciliation_unresolved_units"],
+  ["pattern context over 50 KB", 32, "unresolved_batches"]
+]) test(`a single ${label} settles with a counted residual`, async t => {
+  const f = await environment(t);
+  f.sourceParser = oneUnitParser(f);
+  let reconcilerCalls = 0, patternCalls = 0;
+  const roleHandlers = handlers({ extractor: denseExtractor(count),
+    reconciler: packet => { reconcilerCalls += 1; return handlers().reconciler(packet); },
+    pattern_builder: packet => { patternCalls += 1; return { schema_version: "1.0",
+      target_generation: packet.target_generation, patterns: [], unclassified_assertion_ids: [],
+      coverage_note: "Synthetic dense source.", status: "complete_for_stated_scope" }; } });
+  const port = createMockJournalInferencePort({ handlers: roleHandlers });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  try {
+    const run = await runtime.execute("run");
+    assert.equal(run.blocker, null);
+    if (field === "reconciliation_unresolved_units") {
+      assert.equal(run.residuals[field], 1);
+      assert.equal(reconcilerCalls, 0);
+    }
+    const again = await runtime.execute("run");
+    assert.equal(again.blocker, null);
+    assert.equal(reconcilerCalls, field === "reconciliation_unresolved_units" ? 0 : 1);
+    await runtime.execute("audit");
+    const patterns = await runtime.execute("patterns");
+    if (field === "unresolved_batches") {
+      assert.equal(patterns.residuals[field], 1);
+      assert.equal(patternCalls, 0);
+      const second = await runtime.execute("patterns");
+      assert.equal(second.residuals[field], 1);
+      assert.equal(patternCalls, 0);
+    }
+    assert.equal((await runtime.execute("commit")).completion.profile_committed, "pass");
+  } finally { await runtime.close(); }
 });

@@ -54,9 +54,13 @@ export async function runJournalPatternPass({
   const restrictedUnits = new Set(unitGraphs.filter(({ unit_id: unitId, graph: part }) => part.nodes.some(node =>
     node.kind === "passage" && node.data?.disclosure === "restricted" && node.data.unit_id === unitId))
     .map(({ unit_id: unitId }) => unitId));
-  const batches = createJournalPatternBatches({ graph: reconciledGraph, unitGraphs, maximumBytes });
+  const oversizedUnits = [];
+  const batches = createJournalPatternBatches({ graph: reconciledGraph, unitGraphs, maximumBytes,
+    onOversizedUnit: unitId => oversizedUnits.push(unitId) });
   let graph = structuredClone(reconciledGraph);
-  const reports = [];
+  const reports = oversizedUnits.map(unitId => ({ batch_id: `pattern-unit:${unitId}`,
+    unit_ids: [unitId], pattern_ids: [], status: "unresolved", stage: "PATTERN_BUILD",
+    reason: "PATTERN_UNIT_CONTEXT_EXCEEDS_BOUND" }));
 
   const checkedStep = async (baseId, request, check) => {
     let failure = null;
@@ -70,6 +74,7 @@ export async function runJournalPatternPass({
           // blocker pauses the pass.
           failure = stepFailure();
           if (!failure) return { blocked: true };
+          if (failure === "REFERENCE_RESEND_EXHAUSTED") return { failure };
           continue;
         }
         saved = await writeOnce(id, result[0]);
@@ -271,7 +276,7 @@ export async function runJournalPatternPass({
   const decisions = reports.flatMap(report => report.decisions ?? []);
   return {
     status: reports.every(report => ["reviewed", "reviewed_empty_scope"].includes(report.status)) ? "pass" : "partial",
-    graph, reports, batches: batches.length,
+    graph, reports, batches: batches.length + oversizedUnits.length,
     counts: {
       unresolved_batches: new Set(reports.filter(report => report.status === "unresolved")
         .map(report => report.batch_id)).size,
