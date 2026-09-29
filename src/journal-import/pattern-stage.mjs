@@ -152,7 +152,10 @@ export async function runJournalPatternPass({
     const added = addProvisionalPatterns({ graph, patternResult: built.output,
       producerReceipt: built.receipt, localIdNamespace: batch.id, allowedAssertionIds });
     if (!added.created_pattern_ids.length) {
-      reports.push({ batch_id: batch.id, pattern_ids: [], status: "reviewed_empty_scope" });
+      if (added.created_theme_ids.length) reports.push({ batch_id: batch.id, pattern_ids: [],
+        theme_ids: added.created_theme_ids, status: "unresolved", stage: "PATTERN_REVIEW",
+        reason: "PATTERN_THEME_WITHOUT_REVIEWED_PATTERN" });
+      else reports.push({ batch_id: batch.id, pattern_ids: [], status: "reviewed_empty_scope" });
       continue;
     }
 
@@ -251,6 +254,7 @@ export async function runJournalPatternPass({
         status: "reviewed", decisions: decision.decisions,
         counter_search_complete: Object.values(groupReceipts).every(receipt => receipt.complete) });
     }
+    let keptThemes = new Set();
     if (successful.size) {
       const acceptedSupport = new Set([...successful].flatMap(id =>
         (resolved.get(id) ?? candidates.get(id)).data.support_assertion_ids));
@@ -258,7 +262,7 @@ export async function runJournalPatternPass({
       const themeMembers = new Map([...createdThemes].map(id => [id, []]));
       for (const edge of added.graph.edges) if (edge.relation === "about_theme" && createdThemes.has(edge.to))
         themeMembers.get(edge.to).push(edge.from);
-      const keptThemes = new Set([...themeMembers].filter(([, members]) => members.length > 0
+      keptThemes = new Set([...themeMembers].filter(([, members]) => members.length > 0
         && members.every(id => acceptedSupport.has(id))).map(([id]) => id));
       graph = {
         ...added.graph,
@@ -269,6 +273,10 @@ export async function runJournalPatternPass({
           && (!createdThemes.has(edge.to) || keptThemes.has(edge.to)))
       };
     }
+    const droppedThemes = added.created_theme_ids.filter(id => !keptThemes.has(id));
+    if (droppedThemes.length) reports.push({ batch_id: batch.id, pattern_ids: [],
+      theme_ids: droppedThemes, status: "unresolved", stage: "PATTERN_REVIEW",
+      reason: "PATTERN_THEME_WITHOUT_REVIEWED_PATTERN" });
   }
   validateJournalGraph(graph, representations);
   // Pass: every batch settled every candidate, as reviewed or as disputed. Partial: a batch is
@@ -280,6 +288,7 @@ export async function runJournalPatternPass({
     counts: {
       unresolved_batches: new Set(reports.filter(report => report.status === "unresolved")
         .map(report => report.batch_id)).size,
+      unresolved_themes: new Set(reports.flatMap(report => report.theme_ids ?? [])).size,
       reviewed_patterns: decisions.filter(({ decision }) => decision === "reviewed").length,
       disputed_patterns: decisions.filter(({ decision }) => decision === "disputed").length,
       provisional_patterns: decisions.filter(({ decision }) => decision === "provisional").length

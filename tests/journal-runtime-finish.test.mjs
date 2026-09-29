@@ -242,6 +242,37 @@ test("explicit unresolved reconciliation IDs are counted once across reports for
   assert.equal(run.residuals.reconciliation_unresolved_ids, 2);
 });
 
+test("a replayed reconciliation answer with an invalid receipt exhausts into an unreconciled residual", async t => {
+  const f = await environment(t);
+  const base = createMockJournalInferencePort({ handlers: handlers() });
+  const reconcilerKeys = new Set();
+  let calls = 0;
+  const invalidate = result => ({ ...result, receipt: { ...result.receipt, target_generation: "stale" } });
+  const port = {
+    capabilities: base.capabilities,
+    async invoke(request) {
+      const result = await base.invoke(request);
+      if (request.role !== "reconciler") return result;
+      reconcilerKeys.add(request.operationKey); calls += 1;
+      return invalidate(result);
+    },
+    async getCompletion(key) {
+      const result = await base.getCompletion(key);
+      return reconcilerKeys.has(key) && result.status === "completed" ? invalidate(result) : result;
+    },
+    close: () => base.close()
+  };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  try {
+    const first = await runtime.execute("run");
+    assert.equal(first.blocker, null);
+    assert.ok(first.residuals.reconciliation_unresolved_units > 0);
+    assert.ok((await runtime.execute("run")).residuals.reconciliation_unresolved_units > 0);
+    assert.equal(calls, 3);
+  } finally { await runtime.close(); }
+});
+
 test("a disputed pattern settles its review: it stays in the register as disputed and the import commits", async (t) => {
   const f = await environment(t);
   const { patterns, commit } = await drive(f, handlers({
@@ -343,6 +374,62 @@ test("a failed audit withholds one unit's semantic nodes while preserving its pa
   for (const node of failedScope.semantic) assert.ok(!publishedIds.has(node.id), `${node.kind} from failed unit was published`);
   for (const passage of failedScope.passages) assert.ok(publishedIds.has(passage.id), "verbatim passage must remain");
   assert.ok(publishedIds.has(passedScope.find((node) => node.kind === "entity").id), "matching audited entity must remain");
+});
+
+test("one failed audit keeps a passed pair relation from their shared reconciliation batch", async t => {
+  const f = await environment(t);
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1,
+    reconciliation_maximum_units: 3 };
+  await fs.writeFile(f.configPath, JSON.stringify(f.config), { mode: 0o600 });
+  let pairIds;
+  const roleHandlers = handlers({
+    reconciler: packet => {
+      const nodes = packet.candidates.nodes;
+      const passages = nodes.filter(node => node.kind === "passage");
+      const entities = nodes.filter(node => node.kind === "entity");
+      if (entities.length !== 3) return { schema_version: "1.0", target_generation: packet.expected_generation,
+        proposals: [], unresolved_ids: [], status: "proposals_complete" };
+      const members = TEXTS.map(text => {
+        const passage = passages.find(node => node.data.quote === text);
+        const entity = entities.find(node => node.data.evidence_ids.includes(passage.id));
+        return { entity, passage };
+      });
+      pairIds = members.map(item => item.entity.id);
+      const proposal = (left, right) => ({ operation: "possible_identity", relation: "possible_same_entity",
+        subject_ids: [members[left].entity.id, members[right].entity.id],
+        evidence_ids: [members[left].passage.id], explanation: "Synthetic possible identity.",
+        automatic_retirement_allowed: false });
+      return { schema_version: "1.0", target_generation: packet.expected_generation,
+        proposals: [proposal(0, 1), proposal(1, 2)], unresolved_ids: [], status: "proposals_complete" };
+    },
+    fidelity_auditor: packet => packet.imported_generation?.assessment_target_ids
+      && packet.supporting_passages[0].text === TEXTS[0]
+      ? { ...review("fidelity_auditor", packet), status: "not-a-valid-status" }
+      : handlers().fidelity_auditor(packet)
+  });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser,
+    inferencePort: createMockJournalInferencePort({ handlers: roleHandlers }), environment: f.environment });
+  let commit;
+  try {
+    const run = await runtime.execute("run");
+    assert.equal(run.stage, "REFERENCE_AUDIT", JSON.stringify(run));
+    let audit;
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      audit = await runtime.execute("audit");
+      if (audit.stage === "PATTERN_BUILD") break;
+    }
+    assert.equal(audit.stage, "PATTERN_BUILD", JSON.stringify(audit));
+    await runtime.execute("patterns");
+    commit = await runtime.execute("commit");
+  } finally { await runtime.close(); }
+  assert.equal(commit.completion.profile_committed, "pass");
+  assert.equal(pairIds?.length, 3, "one reconciliation batch must contain all three units");
+  const graph = await readStoredReport(f, "reviewed_graph_ref");
+  const pairs = graph.edges.filter(edge => edge.relation === "possible_same_entity")
+    .map(edge => [edge.from, edge.to].sort().join(":"));
+  assert.ok(!pairs.includes([pairIds[0], pairIds[1]].sort().join(":")));
+  assert.ok(pairs.includes([pairIds[1], pairIds[2]].sort().join(":")));
 });
 
 test("a resumed pre-exclusion audit report withholds an incomplete unit's semantic nodes", async (t) => {
@@ -529,6 +616,81 @@ test("duplicate final fidelity assessments leave an assertion unpublished", asyn
       status: "complete_for_stated_scope" })
   }));
   assert.equal(audit.completion.semantically_audited, "partial");
+  assert.equal(commit.completion.profile_committed, "pass");
+  assert.deepEqual((await searchPublishedAssertions(f)).items, []);
+});
+
+test("duplicate calibration assessments exhaust bounded attempts and remain source-only on resume", async t => {
+  const f = await environment(t);
+  f.sourceParser = oneUnitParser(f);
+  let fidelityCalls = 0;
+  const baseline = handlers();
+  const port = createMockJournalInferencePort({ handlers: handlers({
+    fidelity_auditor: packet => {
+      fidelityCalls += 1;
+      const answer = baseline.fidelity_auditor(packet);
+      const id = packet.imported_generation?.assertions?.[0]?.id;
+      return { ...answer, assessments: id ? [
+        { target_id: id, outcome: "preserved", critical: false, finding_type: "none", explanation: "Synthetic check.", evidence_ids: [] },
+        { target_id: id, outcome: "preserved", critical: false, finding_type: "none", explanation: "Duplicate check.", evidence_ids: [] }
+      ] : answer.assessments };
+    }
+  }) });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  try {
+    const first = await runtime.execute("run");
+    assert.equal(first.blocker, null);
+    assert.equal(first.residuals.source_only_units, 1);
+    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
+    assert.equal(fidelityCalls, 3);
+  } finally { await runtime.close(); }
+});
+
+test("duplicate assessments during calibration repair also exhaust into source-only", async t => {
+  const f = await environment(t);
+  f.sourceParser = oneUnitParser(f);
+  let fidelityCalls = 0;
+  const baseline = handlers();
+  const port = createMockJournalInferencePort({ handlers: handlers({
+    fidelity_auditor: packet => {
+      fidelityCalls += 1;
+      const answer = baseline.fidelity_auditor(packet);
+      if (fidelityCalls === 1) return { ...answer, status: "repair_required" };
+      const id = packet.imported_generation?.assertions?.[0]?.id;
+      const assessment = { target_id: id, outcome: "preserved", critical: false,
+        finding_type: "none", explanation: "Synthetic duplicate.", evidence_ids: [] };
+      return { ...answer, assessments: [assessment, assessment] };
+    }
+  }) });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  try {
+    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
+    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
+    assert.equal(fidelityCalls, 4);
+  } finally { await runtime.close(); }
+});
+
+test("repair-required final audit with preserved targets withholds its unit and counts a residual", async t => {
+  const f = await environment(t);
+  const baseline = handlers();
+  const { audit, patterns, commit } = await drive(f, handlers({
+    fidelity_auditor: packet => {
+      const answer = baseline.fidelity_auditor(packet);
+      return packet.imported_generation?.assessment_target_ids?.length
+        ? { ...answer, status: "repair_required" } : answer;
+    },
+    pattern_builder: packet => ({ schema_version: "1.0", target_generation: packet.target_generation,
+      patterns: [], unclassified_assertion_ids: [], coverage_note: "Synthetic audit exclusion.",
+      status: "complete_for_stated_scope" })
+  }));
+  assert.equal(audit.completion.semantically_audited, "partial");
+  assert.ok(audit.residuals.audit_repair_units > 0);
+  assert.ok(audit.residuals.audit_untrusted_units > 0);
+  assert.ok((await readAuditReport(f)).reports.some(report => report.coverage?.repair_required
+    && report.untrusted_candidate_ids?.length > 0));
+  assert.ok(patterns.residuals.audit_excluded_records > 0);
   assert.equal(commit.completion.profile_committed, "pass");
   assert.deepEqual((await searchPublishedAssertions(f)).items, []);
 });
@@ -735,6 +897,25 @@ test("visual handoff counts admitted pages separately from excluded pages", asyn
   try { await runtime.execute("visual-only"); } finally { await runtime.close(); }
   const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
   assert.deepEqual([state.visual_handoff_ready.admitted, state.visual_handoff_ready.excluded], [1, 1]);
+});
+
+test("visual-only handoff with every scan page excluded ends archive-only immediately", async t => {
+  const f = await environment(t);
+  f.sourceParser = scannedParser(f, [1]);
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser,
+    inferencePort: createMockJournalInferencePort({ handlers: handlers({ visual_reader: () => ({
+      schema_version: "1.0", source_page_id: "wrong-page", regions: [], page_complete: true,
+      missing_or_uncertain_regions: [] }) }) }), environment: f.environment,
+    renderVisualPage: async () => Buffer.from("synthetic-image") });
+  try {
+    const handoff = await runtime.execute("visual-only");
+    assert.equal(handoff.stage, "ARCHIVE_ONLY");
+    assert.equal(handoff.semantic_disposition, "archive_only");
+    assert.doesNotMatch(handoff.next_action, /Resume source-position calibration/);
+    const saved = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+    assert.equal(saved.visual_handoff_ready?.status, undefined);
+  } finally { await runtime.close(); }
 });
 
 test("a single source packet above 180 KB stays source-only without a second attempt", async t => {

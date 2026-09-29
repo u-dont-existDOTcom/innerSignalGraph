@@ -15,7 +15,11 @@ export function createReconciledAuditScope({ graph, unitGraph, derivationRef = n
   const {nodes,edgesByNode,edgesByDerivation,sourcesByRepresentation}=index;
   const chosen = new Set(unitGraph.nodes.map(n => n.id));
   const coreIds = new Set(chosen);
-  const selectedRelations=new Map((edgesByDerivation.get(derivationRef)??[]).map(e=>[e.id,e]));
+  // A batched reconciliation receipt is shared by its units. Only relations touching this unit's
+  // records (including its supporting passages) belong in its audit and exclusion scope.
+  const selectedRelations=new Map((edgesByDerivation.get(derivationRef)??[])
+    .filter(e=>coreIds.has(e.from)||coreIds.has(e.to)||e.evidence_ids.some(id=>coreIds.has(id)))
+    .map(e=>[e.id,e]));
   for(const id of coreIds)for(const edge of edgesByNode.get(id)??[])if(edge.derivation_ref)selectedRelations.set(edge.id,edge);
   const relationEdges=[...selectedRelations.values()];
   for (const edge of relationEdges) {

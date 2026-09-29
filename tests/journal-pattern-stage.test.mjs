@@ -321,6 +321,9 @@ test("a builder theme supported only by a failed review group is withheld", asyn
     } });
   assert.equal(result.graph.nodes.filter(node => node.kind === "pattern").length, 2);
   assert.equal(result.graph.nodes.some(node => node.kind === "theme" && node.data.label === "Invented failed theme"), false);
+  assert.equal(result.counts.unresolved_themes, 1);
+  assert.ok(result.reports.some(report => report.reason === "PATTERN_THEME_WITHOUT_REVIEWED_PATTERN"
+    && report.theme_ids?.length === 1));
   assert.equal(result.graph.edges.some(edge => edge.relation === "about_theme" &&
     result.graph.nodes.some(node => node.id === edge.to && node.data.label === "Invented failed theme")), false);
   const objects = new Map();
@@ -337,6 +340,23 @@ test("a builder theme supported only by a failed review group is withheld", asyn
     visibilityEpoch: 0, cursorSecret: Buffer.alloc(32, 7) });
   const search = await reader.search({ query: "Invented failed theme" });
   assert.equal(search.records.some(record => record.kind === "theme"), false);
+});
+
+test("builder themes without patterns are reported as unresolved and remain unpublished", async () => {
+  const harness = reviewPacketHarness([]);
+  const originalWork = harness.args.work;
+  const result = await runJournalPatternPass({ ...harness.args, maximumBytes: 50_000, work: async request => {
+    const answer = await originalWork(request);
+    if (request.role === "pattern_builder") answer[0].output.themes = [{
+      local_id: "unreviewed", label: "Invented unreviewed theme",
+      origin: "neutral_induced", assertion_ids: ["a1"]
+    }];
+    return answer;
+  } });
+  assert.equal(result.status, "partial");
+  assert.equal(result.counts.unresolved_themes, 1, JSON.stringify(result.reports));
+  assert.ok(result.reports.some(report => report.status === "unresolved" && report.theme_ids?.length === 1));
+  assert.equal(result.graph.nodes.some(node => node.kind === "theme" && node.data.label === "Invented unreviewed theme"), false);
 });
 
 test("a preserved pattern review with an adverse finding cannot activate the pattern", async () => {

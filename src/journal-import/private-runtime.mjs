@@ -800,7 +800,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         if (calibration) {
           const combined = mergeGraphs([...graphsByUnit.values()]);
-          let fidelity = await work({
+          let score;
+          const initialFidelity = await checkedWork({
             id: `fidelity:calibration:batch:${keyId}`,
             role: "fidelity_auditor",
             stage: "REFERENCE_AUDIT",
@@ -814,10 +815,19 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                 entities: combined.nodes.filter((node) => node.kind === "entity")
               }
             }
-          });
-          if (!fidelity) return finishExhausted("CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED");
-          const candidateIds = combined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id);
-          let score = scoreReferenceReview({ referenceResult: reference.output, reviewResult: fidelity[0].output, candidateIds });
+          }, ([saved]) => { score = scoreReferenceReview({ referenceResult: reference.output,
+            reviewResult: saved.output,
+            candidateIds: combined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
+          if (initialFidelity.blocked) return false;
+          if (initialFidelity.failure) {
+            if (units.length > 1) {
+              const middle = Math.ceil(units.length / 2);
+              return await processBatch(units.slice(0, middle), true)
+                && await processBatch(units.slice(middle), true);
+            }
+            return recordSourceOnly(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED");
+          }
+          let fidelity = initialFidelity.result;
           await writeOnce(`calibration:review:batch:${keyId}`, { reference, fidelity: fidelity[0], score, unit_ids: units.map((unit) => unit.unit_id) });
           let calibrationPass = fidelity[0].output.status === "sufficient_for_stated_scope"
             && score.critical_miss_count === 0
@@ -888,7 +898,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             split = repairedSplit;
             graphsByUnit = repairedGraphs;
             const repairedCombined = mergeGraphs([...graphsByUnit.values()]);
-            const repairedFidelity = await work({
+            let repairedScore;
+            const repairedFidelityAttempt = await checkedWork({
               id: `fidelity:calibration-repair:batch:${keyId}:cycle:${auditCycle}`,
               role: "fidelity_auditor",
               stage: "REFERENCE_AUDIT",
@@ -902,15 +913,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                   entities: repairedCombined.nodes.filter((node) => node.kind === "entity")
                 }
               }
-            });
-            if (!repairedFidelity) return finishExhausted("CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED");
-            const repairedCandidateIds = repairedCombined.nodes
-              .filter((node) => node.kind === "assertion").map((node) => node.id);
-            const repairedScore = scoreReferenceReview({
-              referenceResult: reference.output,
-              reviewResult: repairedFidelity[0].output,
-              candidateIds: repairedCandidateIds
-            });
+            }, ([saved]) => { repairedScore = scoreReferenceReview({ referenceResult: reference.output,
+              reviewResult: saved.output,
+              candidateIds: repairedCombined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
+            if (repairedFidelityAttempt.blocked) return false;
+            if (repairedFidelityAttempt.failure)
+              return recordSourceOnly(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED");
+            const repairedFidelity = repairedFidelityAttempt.result;
             await writeOnce(`calibration:repair-review:batch:${keyId}:cycle:${auditCycle}`, {
               reference, fidelity: repairedFidelity[0], score: repairedScore,
               unit_ids: units.map((unit) => unit.unit_id)
@@ -1099,6 +1108,21 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         state.visual_plan_ref = await writeLarge(`visual:plan:${randomUUID()}`, plan);
         state.total_units = plan.units.length; await save();
       } else Object.assign(plan, await readLarge(state.visual_plan_ref));
+      // Older checkpoints completed a page before recording this derived count. Rebuild it from
+      // durable page results so skipped pages retain their uncertainty on every resume.
+      const partialPages = [];
+      for (const pageNumber of state.completed_visual_pages) {
+        if (state.excluded_visual_pages?.includes(pageNumber)) continue;
+        const saved = await readIfPresent(`visual:result:${pageNumber}`);
+        if (saved?.output?.missing_or_uncertain_regions?.length > 0) partialPages.push(pageNumber);
+      }
+      if (JSON.stringify(state.partial_visual_pages ?? []) !== JSON.stringify(partialPages)
+        || state.residuals?.partial_visual_pages !== partialPages.length) {
+        state.partial_visual_pages = partialPages;
+        state.residuals = { ...(state.residuals ?? {}), partial_visual_pages: partialPages.length };
+        await save();
+      }
+      if (plan.units.length === 0) return finishArchiveOnly();
       if (visualOnly) {
         invariant(plan.visual_pages.every((page) => state.completed_visual_pages.includes(page)),
           "JOURNAL_VISUAL_HANDOFF_INCOMPLETE");
@@ -1111,7 +1135,6 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         await save();
         return summary();
       }
-      if (plan.units.length === 0) return finishArchiveOnly();
       return runBatched(plan);
     }
 
@@ -1282,7 +1305,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                 ? { unit: batch.units[0] } : { units: batch.units }),
               packetInput: input,
               acceptReviewFindings: true
-            }, ([primary]) => validateReconciliationResult(primary.output, neighborhood));
+            }, ([primary]) => {
+              validateReconciliationResult(primary.output, neighborhood);
+              // Application checks the receipt again on resume. Reject a bad durable receipt
+              // within this attempt so it cannot throw at the later graph-application step.
+              applyReconciliationResult({ graph, result: primary.output, receipt: primary.receipt });
+            });
             if (reconciled.blocked) return summary();
             // No attempt gave a usable proposal set: the batch's identities and relations stay as
             // extracted, unreconciled, which leaves the graph valid; the report counts it.
@@ -1402,7 +1430,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                 score: scoreReferenceReview({ referenceResult: freeze.reference, reviewResult: saved.output, candidateIds: scope.assessment_target_ids }),
                 coverage: summarizeFidelityCoverage({ reference: freeze.reference, review: saved.output, candidateIds: scope.assessment_target_ids })
               });
-              const fidelity = await checkedWork({ id: `fidelity:final:${unit.unit_id}`, role: "fidelity_auditor", stage: "REFERENCE_AUDIT", unit, packetInput: { frozen_reference: reference.output, supporting_passages: [...original, ...scope.supporting_passages], imported_generation: { generation: state.generation, graph: scope.graph, assessment_target_ids: scope.assessment_target_ids } } }, assess);
+              let assessedOutcome;
+              const fidelity = await checkedWork({ id: `fidelity:final:${unit.unit_id}`, role: "fidelity_auditor", stage: "REFERENCE_AUDIT", unit, packetInput: { frozen_reference: reference.output, supporting_passages: [...original, ...scope.supporting_passages], imported_generation: { generation: state.generation, graph: scope.graph, assessment_target_ids: scope.assessment_target_ids } } }, saved => { assessedOutcome = assess(saved); });
               if (fidelity.blocked) return summary();
               if (fidelity.failure) {
                 unassessed = fidelity.failure;
@@ -1421,10 +1450,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                 };
               }
               else {
-                const assessedOutcome = assess(fidelity.result);
                 // A sampled unit reaches session use only through a complete, passing audit.
                 outcome = { freeze, fidelity: fidelity.result[0], ...assessedOutcome,
                   ...(assessedOutcome.certification.semantically_audited === "pass" && assessedOutcome.coverage.complete === true
+                    && assessedOutcome.coverage.repair_required !== true
                     ? {} : { untrusted_candidate_ids: scope.exclusion_ids }) };
               }
             }
@@ -1448,7 +1477,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const targeted = new Set(sample.targeted_challenge.map(x => x.unit_id));
       const auditReport = { generation: state.generation, graph_sha256: graphRevision, probability_unweighted: totals(sampled, false), probability_weighted: totals(sampled, true), targeted_unweighted: totals(reports.filter(r => targeted.has(r.unit_id) && r.score), false), unassessed_unit_count: reports.length - assessed.length, population_recall_claim: false, reference_completeness: "unknown", reports };
       state.audit_report_ref = await writeLarge(`audit:report:${randomUUID()}`, auditReport);
-      state.completion.semantically_audited = reports.every(r => !r.unassessed && r.certification.semantically_audited === "pass" && r.coverage.complete) ? "pass" : "partial";
+      state.completion.semantically_audited = reports.every(r => !r.unassessed
+        && r.certification.semantically_audited === "pass" && r.coverage.complete
+        && !r.coverage.repair_required) ? "pass" : "partial";
       // Findings are recorded and counted rather than stopping the run: the audit measures a sample
       // of the extraction, and the report carries what it found.
       state.audit_repair_required = assessed.some(r => r.coverage.repair_required || !r.coverage.complete);
@@ -1462,6 +1493,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       state.residuals = { ...(state.residuals ?? {}),
         audit_unassessed_units: reports.length - assessed.length,
+        audit_untrusted_units: reports.filter(r => r.unassessed
+          || r.certification?.semantically_audited !== "pass"
+          || r.coverage?.complete !== true || r.coverage?.repair_required === true).length,
         audit_unassessed_reference_items: unassessedReferenceItems.size,
         audit_repair_units: assessed.filter(r => r.coverage.repair_required || !r.coverage.complete).length };
       state.stage = "PATTERN_BUILD";
@@ -1502,7 +1536,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         // A sampled unit reaches session use only through a complete, passing audit,
         // judged from its report when the patterns stage runs.
         if (Object.hasOwn(report, "unassessed") || report.certification?.semantically_audited !== "pass"
-          || report.coverage?.complete !== true) {
+          || report.coverage?.complete !== true || report.coverage?.repair_required === true) {
           const imported = await readIfPresent(`unit:graph:${report.unit_id}`);
           invariant(imported, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
           const reconciliation = await readIfPresent(`reconcile:result:${report.unit_id}`);

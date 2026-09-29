@@ -758,3 +758,30 @@ test('an incomplete visual inventory is retried while a complete inventory may r
   assert.deepEqual([...new Set(plan.units.filter(u=>u.visual).map(u=>u.page_number))].sort(),[1,2]);
  } finally { store.close();key.fill(0); }
 });
+
+test('a legacy completed visual page rebuilds its partial-page count on resume',async t=>{
+ const f=await fixture(t);
+ const parser=async()=>({source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'application/pdf'},
+  parser:{version:'synthetic-scan'},pages:[{page_number:1,representation_id:'scan:1',disposition:'visual_pending',
+   warnings:['no_native_text'],image_inventory:[{kind:'scan'}],geometry:{width:100,height:100}}],
+  representations:[{representation_id:'scan:1',text:'',utf8_byte_length:0}]});
+ const port=createMockJournalInferencePort({handlers:{visual_reader:()=>({schema_version:'1.0',source_page_id:'page:1',
+  regions:[{region_id:'uncertain',bbox:[0,0,1,1],kind:'unreadable',transcription:null,
+   non_graphic_description:null,interpretation_status:'unreadable',speaker_or_document_label:null,table_cells:[]}],
+  page_complete:true,missing_or_uncertain_regions:['uncertain']})}});
+ let runtime=await openJournalExecutionRuntime({...f,sourceParser:parser,inferencePort:port,
+  renderVisualPage:async()=>Buffer.from('synthetic-image')});
+ try { await runtime.execute('visual-only'); } finally { await runtime.close(); }
+ const statePath=path.join(f.config.execution_root,'state.json');
+ const checkpoint=JSON.parse(await fs.readFile(statePath,'utf8'));
+ delete checkpoint.partial_visual_pages;
+ checkpoint.residuals.partial_visual_pages=0;
+ await fs.writeFile(statePath,JSON.stringify(checkpoint),{mode:0o600});
+ runtime=await openJournalExecutionRuntime({...f,sourceParser:()=>assert.fail('parse replayed'),
+  inferencePort:createDisabledJournalInferencePort()});
+ try {
+  const resumed=await runtime.execute('visual-only');
+  assert.equal(resumed.residuals.partial_visual_pages,1);
+  assert.equal(resumed.stage,'REFERENCE_AUDIT');
+ } finally { await runtime.close(); }
+});
