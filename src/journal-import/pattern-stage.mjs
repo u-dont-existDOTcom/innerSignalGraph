@@ -143,9 +143,9 @@ export async function runJournalPatternPass({
 
     const searchRecords = {}, counterReceipts = {};
     for (const id of added.created_pattern_ids) {
-      // v2 identifies the exhaustive, byte-bounded paginator. Do not replay receipts written by
-      // the former 64-result search, because those receipts can be incomplete.
-      const searchId = `pattern:counter-search:v2:${id}`;
+      // v3 rejects receipts that called a byte-truncated search complete. Do not replay v2 receipts,
+      // which could settle a pattern without every matched counterevidence record.
+      const searchId = `pattern:counter-search:v3:${id}`;
       let saved = await readIfPresent(searchId);
       if (!saved) {
         saved = await executeCounterevidenceSearch({

@@ -137,6 +137,35 @@ test('revocation during a semantic call prevents completed-result admission and 
  }
 });
 
+test('revocation after a reference completion probe prevents its private packet from being sent',async t=>{
+ const f=await fixture(t);
+ const firstPort={capabilities:()=>({authoritative_completion:true}),
+  async invoke(){throw new JournalInferencePortError('COMPLETION_UNKNOWN',{submissionStatus:'unknown'});},
+  async getCompletion(){return {status:'unknown'};}};
+ let runtime=await openJournalExecutionRuntime({...f,inferencePort:firstPort});
+ try{assert.equal((await runtime.execute('run')).blocker,'COMPLETION_UNKNOWN');}finally{await runtime.close();}
+
+ let revoked=false,referenceCalls=0,capabilityChecks=0;
+ const service={verifyCaseAccess:async()=>{
+  if(revoked)throw Object.assign(new Error('Synthetic revoked grant'),{code:'GRANT_REVOKED'});
+ }};
+ const resumedPort={
+  capabilities(){
+   capabilityChecks++;
+   // The work step inspects this snapshot after getCompletion's post-call authorization.
+   if(capabilityChecks===3)revoked=true;
+   return {authoritative_completion:true};
+  },
+  async getCompletion(){return {status:'unknown'};},
+  async invoke(){referenceCalls++;return {output:{schema_version:'1.0',source_only_first_pass:true,
+   reference_items:[],questions:[],unassessed_unit_ids:[]},receipt:{request_id:'synthetic'}};}
+ };
+ runtime=await openJournalExecutionRuntime({...f,service,inferencePort:resumedPort});
+ try{await assert.rejects(()=>runtime.execute('run'),{code:'GRANT_REVOKED'});}finally{await runtime.close();}
+ assert.equal(revoked,true);
+ assert.equal(referenceCalls,0,'the revoked reference packet must never reach the semantic port');
+});
+
 function memoryStore(){const data=new Map();return {data,readJsonObject:async({objectId})=>{if(!data.has(objectId))throw Object.assign(new Error(),{code:'ENOENT'});return structuredClone(data.get(objectId));},writeJsonObject:async({objectId,value})=>{assert.equal(data.has(objectId),false,'immutable record');data.set(objectId,structuredClone(value));}};}
 
 test('unmatched source quotes return to bounded application repair before graph admission',async t=>{

@@ -173,6 +173,7 @@ export async function executeCounterevidenceSearch({ reader, patternId: targetPa
       cursor = page.next_cursor;
     } while (cursor);
   }
+  const complete = matchedIds.size === records.size;
   const body = {
     kind: "counterevidence_search",
     search_receipt_ref: `search:${sha256(Buffer.from(`${generation}\0${targetPatternId}\0${queries.join("\0")}`, "utf8")).slice(0, 40)}`,
@@ -181,8 +182,8 @@ export async function executeCounterevidenceSearch({ reader, patternId: targetPa
     query_sha256: queries.map((query) => sha256(Buffer.from(query.normalize("NFKC"), "utf8"))),
     matched_ids: [...records.keys()].sort(),
     matched_count: matchedIds.size,
-    complete: true,
-    more_available: false
+    complete,
+    more_available: !complete
   };
   const authenticationTag = createHmac("sha256", receiptSecret).update(JSON.stringify(body)).digest("base64url");
   return Object.freeze({ records: [...records.values()], receipt: { ...body, authentication_tag: authenticationTag } });

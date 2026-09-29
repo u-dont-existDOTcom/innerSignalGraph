@@ -374,6 +374,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         let result;
         try {
+          await authorize();
           result = await port.invoke({ role, packet: buildJournalRolePacket(role, {
             protocol_version: "1.0", output_schema_id: JOURNAL_ROLE_DEFINITIONS[role].outputSchema,
             assigned_core_ids: assignedCoreIds, source_locators: sourceLocators,

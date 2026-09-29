@@ -73,10 +73,8 @@ test("pattern pass freezes source before neutral candidates, searches contrary s
       packetInput.candidate_patterns[0].id].complete, true);
     assert.equal(packetInput.source_retrieval.counterevidence[
       packetInput.candidate_patterns[0].id].total_matches, 70);
-    assert.ok(packetInput.source_retrieval.counterevidence[
-      packetInput.candidate_patterns[0].id].records.length < 70);
-    assert.ok(packetInput.source_retrieval.counterevidence[
-      packetInput.candidate_patterns[0].id].records.length > 0);
+    assert.equal(packetInput.source_retrieval.counterevidence[
+      packetInput.candidate_patterns[0].id].records.length, 70);
     return [{ output: { schema_version: "1.0", target_generation: generation,
       review_role: "pattern_reviewer", assessments: [{
         target_id: packetInput.candidate_patterns[0].id, outcome: "preserved",
@@ -88,24 +86,24 @@ test("pattern pass freezes source before neutral candidates, searches contrary s
   };
   const args = { graph, units, unitGraphs, sourceReader, work,
     readIfPresent, writeOnce, counterReceiptSecret: Buffer.alloc(32, 63),
-    generation, representations, counterevidenceMaximumBytes: 5_000 };
+    generation, representations, counterevidenceMaximumBytes: 50_000 };
   const first = await runJournalPatternPass(args);
   assert.deepEqual(calls, ["reference_reader", "pattern_builder", "pattern_reviewer", "pattern_reviewer"]);
   assert.equal(first.status, "pass");
   assert.equal(first.graph.nodes.find(node => node.kind === "pattern").data.review_state, "reviewed");
-  const currentSearchId = [...saved.keys()].find(id => id.startsWith("pattern:counter-search:v2:"));
+  const currentSearchId = [...saved.keys()].find(id => id.startsWith("pattern:counter-search:v3:"));
   assert.ok(currentSearchId);
   const currentSearch = saved.get(currentSearchId);
   saved.delete(currentSearchId);
-  saved.set(currentSearchId.replace(":v2:", ":"), {
+  saved.set(currentSearchId.replace(":v3:", ":v2:"), {
     records: currentSearch.records.slice(0, 64),
-    receipt: { ...currentSearch.receipt, complete: false, more_available: true }
+    receipt: currentSearch.receipt
   });
   const searchesBeforeLegacyReplay = searches.length;
   const second = await runJournalPatternPass({ ...args,
     work: async () => { throw new Error("Durable replay submitted again"); },
     sourceReader });
-  assert.ok(searches.length > searchesBeforeLegacyReplay, "legacy capped search must be replaced");
+  assert.ok(searches.length > searchesBeforeLegacyReplay, "older truncated receipt must be replaced");
   assert.equal(second.status, "pass");
   const third = await runJournalPatternPass({ ...args,
     work: async () => { throw new Error("Durable replay submitted again"); },
@@ -186,6 +184,32 @@ function reviewPacketHarness(statements, reviewAnswer = null) {
     });
   return { ...harness, reviewerRequests };
 }
+
+test("truncated counterevidence stays incomplete and its candidate remains unresolved", async () => {
+  const { args, saved, reviewerRequests } = reviewPacketHarness(["Invented bounded contrast."]);
+  const records = ["first", "second"].map(id => ({ id, text: "é".repeat(350) }));
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000,
+    counterevidenceMaximumBytes: 800,
+    sourceReader: { async search() { return { records, next_cursor: null }; } } });
+
+  const searchId = [...saved.keys()].find(id => id.startsWith("pattern:counter-search:"));
+  assert.ok(searchId);
+  const search = saved.get(searchId);
+  assert.equal(search.records.length, 1);
+  assert.equal(search.receipt.matched_count, 2);
+  assert.equal(search.receipt.complete, false);
+  assert.equal(search.receipt.more_available, true);
+  assert.ok(reviewerRequests.length > 0);
+  assert.ok(reviewerRequests.every(request => {
+    const counter = Object.values(request.packetInput.source_retrieval.counterevidence)[0];
+    return counter.complete === false && counter.more_available === true;
+  }));
+  assert.equal(result.status, "partial");
+  assert.equal(result.counts.unresolved_batches, 1);
+  assert.equal(result.graph.nodes.some(node => node.kind === "pattern"), false);
+  assert.ok(result.reports.some(report => report.status === "unresolved"
+    && report.reason === "PATTERN_REVIEW_EVIDENCE_INVALID"));
+});
 
 test("a large pattern batch is reviewed in ordered packets within the byte budget", async () => {
   const budget = 35_000;
