@@ -311,11 +311,11 @@ test("a failed audit withholds one unit's semantic nodes while preserving its pa
   assert.ok(publishedIds.has(passedScope.find((node) => node.kind === "entity").id), "matching audited entity must remain");
 });
 
-test("an incomplete reference audit with passing certification withholds its semantic nodes and keeps passages", async (t) => {
+test("a resumed pre-exclusion audit report withholds an incomplete unit's semantic nodes", async (t) => {
   const f = await environment(t);
   const calls = [];
-  let incompleteScope;
-  const { audit, commit } = await drive(f, handlers({
+  let incompleteScope, passedScope;
+  const roleHandlers = handlers({
     extractor: (packet) => {
       const extracted = handlers().extractor(packet);
       return { ...extracted,
@@ -336,19 +336,55 @@ test("an incomplete reference audit with passing certification withholds its sem
           semantic: packet.imported_generation.graph.nodes.filter((node) => ["entity", "episode", "assertion"].includes(node.kind)),
           passages: packet.imported_generation.graph.nodes.filter((node) => node.kind === "passage") };
       }
+      if (packet.imported_generation?.assessment_target_ids && packet.supporting_passages[0].text === TEXTS[1])
+        passedScope = { unitId: packet.supporting_passages[0].unit_id,
+          semantic: packet.imported_generation.graph.nodes.filter((node) => ["entity", "episode", "assertion"].includes(node.kind)) };
       return handlers().fidelity_auditor(packet);
     }
-  }), calls);
+  });
+  const inferencePort = createMockJournalInferencePort({ handlers: Object.fromEntries(Object.entries(roleHandlers)
+    .map(([role, handler]) => [role, (packet) => { calls.push(role); return handler(packet); }])) });
+  const openRuntime = () => openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort, environment: f.environment });
+  const first = await openRuntime();
+  let audit;
+  try {
+    await first.execute("run");
+    audit = await first.execute("audit");
+  } finally { await first.close(); }
   assert.equal(audit.completion.semantically_audited, "partial");
-  assert.equal(commit.completion.profile_committed, "pass");
   assert.deepEqual(incompleteScope.semantic.map((node) => node.kind).sort(), ["assertion", "entity", "episode"]);
-  const report = (await readAuditReport(f)).reports.find((item) => item.unit_id === incompleteScope.unitId);
+  const auditReport = await readAuditReport(f);
+  const report = auditReport.reports.find((item) => item.unit_id === incompleteScope.unitId);
   assert.equal(report.certification.semantically_audited, "pass");
   assert.equal(report.coverage.complete, false);
   assert.deepEqual(report.coverage.untrusted_candidate_ids, []);
+  const passedReport = auditReport.reports.find((item) => item.unit_id === passedScope.unitId);
+  assert.equal(passedReport.certification.semantically_audited, "pass");
+  assert.equal(passedReport.coverage.complete, true);
+  const { untrusted_candidate_ids, ...legacyReport } = report;
+  assert.ok(untrusted_candidate_ids.length > 0);
+  auditReport.reports = auditReport.reports.map((item) => item.unit_id === incompleteScope.unitId ? legacyReport : item);
+  const statePath = path.join(f.config.execution_root, "state.json");
+  const state = JSON.parse(await fs.readFile(statePath, "utf8"));
+  const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+    corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+  try {
+    state.audit_report_ref = await store.writeChunkedOriginal({ objectId: "audit:report:legacy-synthetic",
+      bytes: Buffer.from(JSON.stringify(auditReport)) });
+  } finally { await store.close(); }
+  await fs.writeFile(statePath, JSON.stringify(state), { mode: 0o600 });
+  const resumed = await openRuntime();
+  let commit;
+  try {
+    await resumed.execute("patterns");
+    commit = await resumed.execute("commit");
+  } finally { await resumed.close(); }
+  assert.equal(commit.completion.profile_committed, "pass");
   const publishedIds = new Set((await readPublishedRecords(f)).map((record) => record.id));
   for (const node of incompleteScope.semantic) assert.ok(!publishedIds.has(node.id), `${node.kind} from incomplete audit was published`);
   for (const passage of incompleteScope.passages) assert.ok(publishedIds.has(passage.id), "verbatim passage must remain");
+  for (const node of passedScope.semantic) assert.ok(publishedIds.has(node.id), `${node.kind} from passing audit was excluded`);
 });
 
 test("a successful reference freeze remains in the unassessed denominator when fidelity exhausts its attempts", async (t) => {

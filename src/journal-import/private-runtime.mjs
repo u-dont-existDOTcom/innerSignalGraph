@@ -1353,10 +1353,24 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (state.reviewed_graph_ref) return summary();
       const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
       const auditReport = await readLarge(state.audit_report_ref);
-      const untrusted = new Set(auditReport.reports.flatMap(report => [
-        ...(report.coverage?.untrusted_candidate_ids ?? []),
-        ...(report.untrusted_candidate_ids ?? [])
-      ]));
+      const reconciledGraph = await readLarge(state.reconciled_ref);
+      const scopeIndex = createAuditScopeIndex(reconciledGraph);
+      const untrusted = new Set();
+      for (const report of auditReport.reports) {
+        for (const id of [...(report.coverage?.untrusted_candidate_ids ?? []),
+          ...(report.untrusted_candidate_ids ?? [])]) untrusted.add(id);
+        // A sampled unit reaches session use only through a complete, passing audit,
+        // judged from its report when the patterns stage runs.
+        if (Object.hasOwn(report, "unassessed") || report.certification?.semantically_audited !== "pass"
+          || report.coverage?.complete !== true) {
+          const imported = await readIfPresent(`unit:graph:${report.unit_id}`);
+          invariant(imported, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
+          const reconciliation = await readIfPresent(`reconcile:result:${report.unit_id}`);
+          const scope = createReconciledAuditScope({ graph: reconciledGraph, unitGraph: imported.graph,
+            derivationRef: reconciliation?.receipt?.receipt_id, index: scopeIndex });
+          for (const id of scope.exclusion_ids) untrusted.add(id);
+        }
+      }
       const excludeUntrusted = (candidateGraph) => ({
         ...candidateGraph,
         nodes: candidateGraph.nodes.filter(node => !untrusted.has(node.id)),
@@ -1365,7 +1379,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       });
       // Audit failures never cross into the session-use generation. This is an exclusion rather
       // than a staging-only warning, so every consumer sees the same safe graph.
-      const graph = excludeUntrusted(await readLarge(state.reconciled_ref));
+      const graph = excludeUntrusted(reconciledGraph);
       // A unit whose extraction stayed unresolved has no assertions to build patterns from.
       const units = [];
       const unitGraphs = [];
