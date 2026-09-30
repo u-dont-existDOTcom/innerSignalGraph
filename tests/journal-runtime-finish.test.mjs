@@ -361,6 +361,24 @@ test("a reference that never quotes its source is retried and its candidate scop
   assert.deepEqual(result.items, [], "assertions from a unit whose reference freeze failed must not be published");
 });
 
+test("a source-declared unassessed audit unit is counted as unassessed", async (t) => {
+  const f = await environment(t);
+  const calls = [];
+  const { audit, commit } = await drive(f, handlers({
+    reference_reader: (packet) => {
+      const unit = packet.source_windows[0];
+      return { schema_version: "1.0", source_only_first_pass: true, reference_items: [], questions: [],
+        unassessed_unit_ids: calls.includes("reconciler") && unit.text === TEXTS[0] ? [unit.unit_id] : [] };
+    }
+  }), calls);
+  assert.equal(audit.completion.semantically_audited, "partial");
+  assert.equal(audit.residuals.audit_unassessed_units, 1);
+  assert.equal(commit.completion.profile_committed, "pass");
+  const report = await readAuditReport(f);
+  assert.equal(report.unassessed_unit_count, 1);
+  assert.equal(report.reports.filter(unit => unit.freeze?.reference?.unassessed_unit_ids.includes(unit.unit_id)).length, 1);
+});
+
 test("an unresolved single-unit extraction without a reason is unassessed in the final audit", async t => {
   const f = await environment(t);
   const entries = Array.from({ length: 13 }, (_, index) => `Synthetic unit ${String(index).padStart(2, "0")} has unique text.`);

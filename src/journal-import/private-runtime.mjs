@@ -1537,7 +1537,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         for (const key of ["preserved", "omitted", "distorted", "unassessed"]) out[key] += r.score.reference_counts[key] * weight;
         out.critical_misses += r.score.critical_miss_count * weight; out.qualifier_errors += r.score.qualifier_error_count * weight; return out;
       }, { preserved: 0, omitted: 0, distorted: 0, unassessed: 0, critical_misses: 0, qualifier_errors: 0 });
-      const assessed = reports.filter(r => !r.unassessed);
+      const assessed = reports.filter(r => !r.unassessed
+        && !r.freeze?.reference?.unassessed_unit_ids?.includes(r.unit_id));
       // A successful reference freeze followed by failed fidelity has a real reference denominator,
       // represented entirely as unassessed. A failed freeze has no trustworthy item count to add.
       const sampled = reports.filter(r => probability.has(r.unit_id) && r.score);

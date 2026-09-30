@@ -2,6 +2,29 @@
 
 Updated: 2026-09-30
 
+## PR #103 deterministic-package repair after `493ed39` (2026-09-30)
+
+- **Goal and baseline:** Repair the required `deterministic-package` check on the current review-follow-up branch; the runner will commit and push this working tree. The live Universal default-branch `AGENTS.md` and task-relevant guidance were read through the GitHub connector. No packages were installed, and no runtime source, history, ref, or product policy was changed in this repair.
+- **CI cause and fix:** The failed Verify job (run `36663357998`, job `109722705394`) passed repository audit, then failed 1 of 1,658 tests at `tests/journal-exchange-port.test.mjs:190`: `stored.receipt` was undefined. The changed test now invokes the durable port, whose completed-invalid path saves the failure and calls `release()`; `retireWork()` replaces the inbox answer with a receipt-free tombstone. The test had retained assertions from its former direct-port path and read receipt fields after retirement. It now captures the actual connector receipt when the port observes it, checks the absent execution-profile/context fields there, and separately checks the tombstone, retired work/dispatch, and durable `invalid_output` result. No runtime behavior changed.
+- **Local verification on Node 24.18.0:** `npm run audit:repository` passed with zero errors and its existing unverified hosted GitHub App permissions warning. `npm run journal:ui:test` passed 20/20. The in-memory delayed-rejection case in the touched exchange-port file passed 1/1. The complete touched file was attempted but its filesystem-backed cases failed `JOURNAL_WORK_EXCHANGE_ROOT_INSECURE`: this sandbox's `/tmp` ancestor is owned by UID 65534 rather than the test process's UID 1000. No Node package failed to load. `npm run audit:publication` scanned 790,606 records and reported the same five historical `credential-pattern` Git-object findings in `tests/learning-groundwork-privacy.test.mjs` recorded before this repair; those objects are not reachable from this branch head. Full `npm test` and `npm run verify` remain for push CI under the owner's no-localhost restriction. The test-efficiency log is in `/tmp/innersignal-pr103-test-efficiency.jsonl` outside Git.
+- **Stop boundary and lesson closeout:** The scoped test correction and this checkpoint remain in the working tree for the runner. Push CI must rerun the required deterministic package check on the containing commit. This is a project-local test lifecycle assertion repair; no portable Universal rule is proposed.
+
+## Deferred review follow-ups (issues #101 and #102, 2026-09-30)
+
+**Outcome at the authorized working-tree boundary:** All four findings are classified below, three fixed and one already fixed. The runner will commit and push this working tree; full `npm test` and `npm run verify` belong to push CI under the owner's no-localhost constraint. No packages were installed or missing.
+
+### Issue #101 — exchange retry and rejection
+
+- **Finding 1 — fixed:** An expired unanswered final attempt now records a terminal controller failure instead of leaving `completion_unknown` unchanged; a regression covers the delayed second-attempt expiry.
+- **Finding 2 — fixed:** Missing effective model or effort on a completed answer now takes the completed-invalid path, so the durable result is saved before the exchange packet, answer, and dispatch record are retired; regressions cover immediate and delayed observation.
+
+### Issue #102 — visual and audit residuals
+
+- **Finding 1 — already fixed:** An empty post-visual plan reaches `finishArchiveOnly()` before reconciliation or audit; the existing all-scanned exclusion and legacy-empty-graph tests cover the path.
+- **Finding 2 — fixed:** A sampled unit named in its reference freeze's `unassessed_unit_ids` now contributes to the audit's unassessed unit count and residual; a source-declared non-assessment regression covers it.
+
+Targeted regressions passed, including the in-memory delayed exchange rejection. The complete affected controller file passed 22/22, runtime-finish passed 36/36, `npm run journal:ui:test` passed 20/20, and `npm run audit:repository` passed with zero errors and its existing hosted GitHub App permission warning. The exchange-port file's filesystem-backed tests cannot run in this sandbox because `/tmp` has an untrusted owner for `assertJournalWorkExchangeRoot` (`JOURNAL_WORK_EXCHANGE_ROOT_INSECURE`); no package failed to load. `npm run audit:publication` scanned 788,905 records and failed on the same five historical `credential-pattern` Git-object findings in `tests/learning-groundwork-privacy.test.mjs` recorded in prior rounds; this patch changed no history, refs, or scanner rules. The live Universal default-branch pages could only be read through a cached web response; freshness could not be verified from this networkless sandbox. The controller now applies the existing final-attempt failure path to delayed completion, with no new portable Universal rule proposed.
+
 ## PR #98 calibration-gate repair at `4e6f1f2` (2026-09-30)
 
 - **Goal and boundary:** Repair the P1 calibration regression at the reviewed head of `claude/journal-import-finishes-20260927`, preserve prior fixes, and sweep the PR's owner decisions. The runner will commit and push this working tree. This round did not install packages, use real private cases or providers, push, deploy, or promote `stable`. The live Universal default branch was attempted, but only cached web pages were available; a fresh GitHub API read was rejected in this sandbox. The PR description itself was read through `gh pr view 98`.

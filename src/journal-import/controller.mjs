@@ -294,7 +294,9 @@ export function createJournalImportController({
     if (["intent_persisted", "completion_unknown"].includes(work.status)) {
       const completion = await inferencePort.getCompletion(work.operation_key);
       if (completion.status === "completed") return completeWork(entry, work, completion);
-      if (completion.status === "not_submitted" && work.attempts < 2) {
+      if (completion.status === "not_submitted") {
+        if (work.attempts === 2) return recordFailure(entry, work,
+          { code: "INFERENCE_RETRY_LIMIT", submissionStatus: "not_submitted" });
         const next = clone(entry.snapshot);
         next.work_items.find(({ work_id: workId }) => workId === work.work_id).status = "retryable_error";
         return persist(next, entry.revision, { state: "retryable_error", stage: work.stage, next_action: `retry confirmed-unsent work ${work.work_id}`, blocked_reason: "CONFIRMED_NOT_SUBMITTED", responsible_actor: "controller" });

@@ -197,7 +197,12 @@ export function createExchangeJournalInferencePort({
       } catch (cause) {
         return { status: "invalid_output", cause };
       }
-      return { status: "completed", output, receipt: receiptFor(operationKey, entry, stored) };
+      try {
+        return { status: "completed", output, receipt: receiptFor(operationKey, entry, stored) };
+      } catch (cause) {
+        if (cause.code === "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED") return { status: "invalid_output", cause };
+        throw cause;
+      }
     }
     // Retired after its answer was stored durably; the caller holds the answer, not the exchange.
     if (stored?.retired) return { status: "unknown" };
@@ -280,7 +285,7 @@ export function createExchangeJournalInferencePort({
     invoke,
     // "completed" with the output and receipt; "not_submitted" when no item exists or the newest one
     // expired unanswered (the caller may send it again); "invalid_output" when the stored answer
-    // fails the importer's own schema; "unknown" while an item is still open.
+    // fails the importer's schema or lacks verified execution profile; "unknown" while open.
     async getCompletion(operationKey) {
       const observed = await observe(operationKey);
       if (observed.status === "completed") return { status: "completed", output: observed.output, receipt: observed.receipt };
