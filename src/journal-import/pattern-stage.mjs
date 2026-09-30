@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { resolveExactQuote, validateJournalGraph } from "./contracts.mjs";
 import { createJournalPatternBatches } from "./pattern-batches.mjs";
@@ -15,6 +16,7 @@ export const PATTERN_STEP_ATTEMPTS = 3;
 // A provisional decision means the review itself was incomplete.
 const SETTLED_DECISIONS = new Set(["reviewed", "disputed"]);
 const CONCLUSIVE_REVIEW_OUTCOMES = new Set(["preserved", "omitted", "distorted"]);
+const cacheDigest = value => createHash("sha256").update(JSON.stringify(value)).digest("hex").slice(0, 40);
 
 // The code a stored output fails its check with, or null when it passes.
 function failureOf(check, saved) {
@@ -62,10 +64,13 @@ export async function runJournalPatternPass({
     unit_ids: [unitId], pattern_ids: [], status: "unresolved", stage: "PATTERN_BUILD",
     reason: "PATTERN_UNIT_CONTEXT_EXCEEDS_BOUND" }));
 
-  const checkedStep = async (baseId, request, check) => {
+  const checkedStep = async (baseId, request, check, evidence = null) => {
+    // A saved answer is reusable only for the packet and upstream receipts it assessed.
+    // The suffix also prevents pre-binding legacy IDs from being replayed.
+    const scopedId = `${baseId}:packet:${cacheDigest({ schema_version: "1.0", request, evidence })}`;
     let failure = null;
     for (let attempt = 1; attempt <= PATTERN_STEP_ATTEMPTS; attempt += 1) {
-      const id = attempt === 1 ? baseId : `${baseId}:attempt:${attempt}`;
+      const id = attempt === 1 ? scopedId : `${scopedId}:attempt:${attempt}`;
       let saved = await readIfPresent(id);
       if (!saved) {
         const result = await work({ ...request, id });
@@ -145,7 +150,7 @@ export async function runJournalPatternPass({
         const queries = trial.counterevidence_queries[id];
         requireValue(Array.isArray(queries) && queries.length > 0, "PATTERN_COUNTER_QUERY_MISSING");
       }
-    });
+    }, { frozen_receipt: frozen.receipt });
     if (build.blocked) return { status: "blocked", stage: "PATTERN_BUILD", reports };
     if (build.failure) { unresolved(batch, "PATTERN_BUILD", build.failure); continue; }
     const built = build.saved;
@@ -163,7 +168,9 @@ export async function runJournalPatternPass({
     for (const id of added.created_pattern_ids) {
       // v3 rejects receipts that called a byte-truncated search complete. Do not replay v2 receipts,
       // which could settle a pattern without every matched counterevidence record.
-      const searchId = `pattern:counter-search:v3:${id}`;
+      const searchId = `pattern:counter-search:v3:${id}:${cacheDigest({
+        queries: added.counterevidence_queries[id], maximum_bytes: counterevidenceMaximumBytes
+      })}`;
       let saved = await readIfPresent(searchId);
       if (!saved) {
         saved = await executeCounterevidenceSearch({
@@ -242,7 +249,8 @@ export async function runJournalPatternPass({
       const review = await checkedStep(reviewId, {
         role: "pattern_reviewer", stage: "PATTERN_REVIEW",
         units: batchUnits, acceptReviewFindings: true, packetInput: packetFor(ids)
-      }, decide);
+      }, decide, { search_version: "v3", frozen_receipt: frozen.receipt,
+        builder_receipt: built.receipt, counterevidence_receipts: groupReceipts });
       if (review.blocked) return { status: "blocked", stage: "PATTERN_REVIEW", reports };
       // Candidates whose review never produced a usable result stay out of the graph.
       if (review.failure) { unresolved(batch, "PATTERN_REVIEW", review.failure, ids, reviewGroup); continue; }

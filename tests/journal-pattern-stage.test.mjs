@@ -98,7 +98,7 @@ test("pattern pass freezes source before neutral candidates, searches contrary s
   assert.ok(currentSearchId);
   const currentSearch = saved.get(currentSearchId);
   saved.delete(currentSearchId);
-  saved.set(currentSearchId.replace(":v3:", ":v2:"), {
+  saved.set(`pattern:counter-search:v2:${currentSearch.receipt.pattern_id}`, {
     records: currentSearch.records.slice(0, 64),
     receipt: currentSearch.receipt
   });
@@ -188,6 +188,81 @@ function reviewPacketHarness(statements, reviewAnswer = null) {
   return { ...harness, reviewerRequests };
 }
 
+test("resuming a legacy review rechecks the complete v3 counterevidence", async () => {
+  const firstRecords = Array.from({ length: 64 }, (_, index) => ({ id: `counter-${index}`, text: "Invented source." }));
+  const laterRecords = [...firstRecords, ...Array.from({ length: 6 }, (_, index) =>
+    ({ id: `counter-${index + 64}`, text: "Invented contrary source." }))];
+  const harness = reviewPacketHarness(["Invented bounded pattern."], (request, output) => {
+    const records = Object.values(request.packetInput.source_retrieval.counterevidence)[0].records;
+    return records.length > 64 ? { ...output, status: "incomplete" } : output;
+  });
+  const sourceReader = records => ({ async search() { return { records, next_cursor: null }; } });
+  const first = await runJournalPatternPass({ ...harness.args, maximumBytes: 50_000,
+    sourceReader: sourceReader(firstRecords) });
+  assert.equal(first.status, "pass");
+  assert.equal(harness.reviewerRequests.length, 1);
+  const legacyReviewId = `pattern:reviewer:${first.reports[0].batch_id}`;
+  const firstReviewId = harness.reviewerRequests[0].id;
+  harness.saved.set(legacyReviewId, harness.saved.get(firstReviewId));
+  if (firstReviewId !== legacyReviewId) harness.saved.delete(firstReviewId);
+  assert.ok(harness.saved.has(legacyReviewId));
+
+  const v3SearchId = [...harness.saved.keys()].find(id => id.startsWith("pattern:counter-search:v3:"));
+  assert.ok(v3SearchId);
+  const formerSearch = harness.saved.get(v3SearchId);
+  harness.saved.delete(v3SearchId);
+  harness.saved.set(`pattern:counter-search:v2:${formerSearch.receipt.pattern_id}`, formerSearch);
+
+  const resumed = await runJournalPatternPass({ ...harness.args, maximumBytes: 50_000,
+    sourceReader: sourceReader(laterRecords) });
+  assert.equal(harness.reviewerRequests.length, 4, "complete counterevidence needs new bounded review attempts");
+  assert.ok(harness.reviewerRequests.slice(1).every(request =>
+    Object.values(request.packetInput.source_retrieval.counterevidence)[0].records.length === 70));
+  assert.notEqual(harness.reviewerRequests[1].id, legacyReviewId);
+  assert.equal(resumed.status, "partial");
+  assert.equal(resumed.graph.nodes.some(node => node.kind === "pattern"), false);
+});
+
+test("a changed counterevidence byte budget cannot reuse a complete search or review", async () => {
+  const harness = reviewPacketHarness(["Invented bounded pattern."]);
+  const records = ["first", "second"].map(id => ({ id, text: "é".repeat(350) }));
+  let searches = 0;
+  const sourceReader = { async search() { searches += 1; return { records, next_cursor: null }; } };
+  const first = await runJournalPatternPass({ ...harness.args, maximumBytes: 50_000,
+    counterevidenceMaximumBytes: 50_000, sourceReader });
+  assert.equal(first.status, "pass");
+  const resumed = await runJournalPatternPass({ ...harness.args, maximumBytes: 50_000,
+    counterevidenceMaximumBytes: 800, sourceReader });
+
+  assert.equal(searches, 2);
+  assert.equal(harness.reviewerRequests.length, 4);
+  assert.equal(resumed.status, "partial");
+  assert.equal(resumed.graph.nodes.some(node => node.kind === "pattern"), false);
+});
+
+test("a renewed source-freeze receipt forces a new builder and review", async () => {
+  const harness = reviewPacketHarness(["Invented bounded pattern."]);
+  const first = await runJournalPatternPass({ ...harness.args, maximumBytes: 50_000 });
+  assert.equal(first.status, "pass");
+  const freezeId = [...harness.saved.keys()].find(id => id.startsWith("pattern:source-freeze:"));
+  assert.ok(freezeId);
+  harness.saved.delete(freezeId);
+  const originalWork = harness.args.work;
+  const resumed = await runJournalPatternPass({ ...harness.args, maximumBytes: 50_000,
+    work: async request => {
+      const answer = await originalWork(request);
+      if (request.role === "reference_reader") {
+        answer[0].receipt = { ...answer[0].receipt, receipt_id: "receipt:freeze:renewed" };
+      }
+      return answer;
+    } });
+
+  assert.equal(resumed.status, "pass");
+  assert.equal(harness.calls.filter(id => id.startsWith("pattern:builder:")).length, 2);
+  assert.equal(harness.reviewerRequests.length, 2);
+  assert.notEqual(harness.reviewerRequests[0].id, harness.reviewerRequests[1].id);
+});
+
 test("truncated counterevidence stays incomplete and its candidate remains unresolved", async () => {
   const { args, saved, reviewerRequests } = reviewPacketHarness(["Invented bounded contrast."]);
   const records = ["first", "second"].map(id => ({ id, text: "é".repeat(350) }));
@@ -225,8 +300,9 @@ test("a large pattern batch is reviewed in ordered packets within the byte budge
   assert.ok(reviewerRequests.length > 1);
   assert.deepEqual(reviewerRequests.flatMap(request =>
     request.packetInput.candidate_patterns.map(pattern => pattern.data.statement)), statements);
-  assert.deepEqual(reviewerRequests.map(request => request.id.split(":").at(-1)),
+  assert.deepEqual(reviewerRequests.map(request => request.id.match(/group-\d+/)?.[0]),
     reviewerRequests.map((_, index) => `group-${index + 1}`));
+  assert.ok(reviewerRequests.every(request => /:group-\d+:packet:[a-f0-9]{40}$/.test(request.id)));
   assert.ok(reviewerRequests.every(request => Buffer.byteLength(JSON.stringify(request.packetInput), "utf8") <= budget));
   assert.ok(reviewerRequests.every(request =>
     Object.keys(request.packetInput.source_retrieval.counterevidence).join() ===
@@ -266,7 +342,7 @@ test("a candidate too large for a review packet stays unresolved while smaller c
   assert.equal(result.counts.unresolved_batches, 1);
 });
 
-test("a single review packet retains the pre-existing batch step ID", async () => {
+test("a single review packet has a packet-bound ID and no review-group label", async () => {
   const split = reviewPacketHarness([1, 2].map(index =>
     `Invented pattern ${index}: ${"é".repeat(6_000)}`));
   await runJournalPatternPass({ ...split.args, maximumBytes: 50_000,
@@ -279,14 +355,15 @@ test("a single review packet retains the pre-existing batch step ID", async () =
 
   assert.equal(result.status, "pass");
   assert.equal(reviewerRequests.length, 1);
-  assert.equal(reviewerRequests[0].id, `pattern:reviewer:${result.reports[0].batch_id}`);
+  assert.match(reviewerRequests[0].id,
+    new RegExp(`^pattern:reviewer:${result.reports[0].batch_id}:packet:[a-f0-9]{40}$`));
   assert.equal(Object.hasOwn(result.reports[0], "review_group"), false);
 });
 
 test("failure of one review group leaves other groups' patterns settled", async () => {
   const { args, reviewerRequests } = reviewPacketHarness(
     [1, 2, 3].map(index => `Invented pattern ${index}: ${"é".repeat(6_000)}`),
-    (request, output) => request.id.endsWith("group-2") || request.id.includes("group-2:attempt:")
+    (request, output) => request.id.includes(":group-2:")
       ? { ...output, status: "incomplete" } : output);
   const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000,
     reviewPacketMaximumBytes: 35_000 });
