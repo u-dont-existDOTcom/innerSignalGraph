@@ -102,8 +102,8 @@ export async function renderJournalPdfPage(sourceBytes, page) {
   });
 }
 
-// Earlier versions rendered page images to plaintext files under visual/. A completed page's image
-// is already in the encrypted store and an unfinished page is rendered again, so leftovers go.
+// Earlier versions rendered page images to plaintext files under visual/. Persisted page images
+// are already in the encrypted store, so leftovers go.
 async function removeLegacyPageRenders(root) {
   const directory = path.join(root, "visual");
   let info;
@@ -1239,17 +1239,21 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         for (const pageNumber of plan.visual_pages) {
           if (state.completed_visual_pages.includes(pageNumber)) continue;
           const page = plan.parsed.pages.find((p) => p.page_number === pageNumber);
+          let imageRef = await readIfPresent(`visual:image-ref:${pageNumber}`);
           let image;
-          try { image = await renderVisualPage(await archivedSource(), pageNumber); }
-          catch (error) {
-            if (error?.code !== "VISUAL_RENDER_TOO_LARGE") throw error;
-            await excludeVisualPage(pageNumber, error.code);
-            continue;
+          if (imageRef) image = await store.reassembleOriginal(imageRef);
+          else {
+            try { image = await renderVisualPage(await archivedSource(), pageNumber); }
+            catch (error) {
+              if (error?.code !== "VISUAL_RENDER_TOO_LARGE") throw error;
+              await excludeVisualPage(pageNumber, error.code);
+              continue;
+            }
+            imageRef = await store.writeChunkedOriginal({ objectId: `visual:image:${pageNumber}`, bytes: image });
+            await writeOnce(`visual:image-ref:${pageNumber}`, imageRef);
           }
           const native = plan.parsed.representations.find((r) => r.representation_id === page.representation_id);
           const imageDigest = hash(image);
-          const imageRef = await store.writeChunkedOriginal({ objectId: `visual:image:${pageNumber}`, bytes: image });
-          await writeOnce(`visual:image-ref:${pageNumber}`, imageRef);
           const legacyPacketInput = { page_image_ref: { kind: "inline_image", media_type: "image/png",
             data_base64: image.toString("base64"), sha256: imageDigest }, page_geometry: page.geometry,
             native_text_rendering: native.text, neighbor_pages: [] };

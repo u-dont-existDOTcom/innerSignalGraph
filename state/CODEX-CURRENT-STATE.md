@@ -2,6 +2,14 @@
 
 Updated: 2026-09-30
 
+## Deferred review follow-up (issue #104, 2026-09-30)
+
+### Issue #104 — persisted visual page resume
+
+- **Finding 1 — fixed:** An unfinished page now reassembles its saved `visual:image-ref:<page>` before considering a render, so changed renderer bytes cannot collide with the immutable image object; a restart regression failed with `JOURNAL_OBJECT_EXISTS` before the fix and passes after it.
+
+The touched `tests/journal-runtime-resume.test.mjs` passed 29 tests with one existing `pdftoppm` skip; no Node package failed to load. `npm run journal:ui:test` passed 20/20 and `npm run audit:repository` passed with zero errors and its existing hosted-permissions warning. The local `npm run audit:publication` scanned 799,135 records and reported only the five previously recorded historical `credential-pattern` findings in `tests/learning-groundwork-privacy.test.mjs`; all five flagged commits are outside this branch's ancestry. Full `npm test` and `npm run verify` remain for push CI under the owner's no-localhost constraint. Test-cost telemetry is in `/tmp/inner-signal-issue-104-test-efficiency.jsonl` outside Git. The runner will commit and push the working tree; no release or `stable` action is authorized. This is a project-local resume/idempotence fix, with no new Universal rule proposed.
+
 ## Required-check reconciliation for the hardest-case lane at `14b8de3` (2026-09-30)
 
 - **Owner outcome and cause:** Investigate the three reported required-check failures on the existing pull request #99 head without unrelated changes. The authenticated GitHub readback for the exact head `14b8de3035fa798a1b62ee5bcbfb818291f97678` shows two runs per workflow: the earlier CodeQL, repository-policy, and Verify jobs were canceled before any job step ran, and the later runs on the same commit all succeeded. The workflow's existing pull-request concurrency setting cancels earlier in-progress runs for the same PR ref; these canceled duplicates were transient check results, not evidence of a source or workflow-policy defect. No runtime, test, workflow, package, or audit-rule fix is warranted.
