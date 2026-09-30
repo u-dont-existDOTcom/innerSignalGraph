@@ -172,6 +172,24 @@ async function readStoredReport(f, refName) {
 
 const readAuditReport = (f) => readStoredReport(f, "audit_report_ref");
 
+async function assertCalibrationStopped(runtime, f, status, reason, calls) {
+  const first = await runtime.execute("run");
+  assert.equal(first.calibration, "failed");
+  assert.equal(first.blocker, status);
+  assert.equal(first.calibration_failure?.status, status);
+  assert.equal(first.calibration_failure?.reason, reason);
+  assert.equal(first.completion.graph_built, "not_run");
+  assert.equal(first.completion.profile_committed, "not_run");
+  const count = calls.length;
+  assert.deepEqual(await runtime.execute("run"), first);
+  assert.equal(calls.length, count, "resuming a terminal calibration must make no model calls");
+  await assert.rejects(runtime.execute("audit"), { code: "JOURNAL_RECONCILIATION_NOT_READY" });
+  await assert.rejects(runtime.execute("commit"), { code: "JOURNAL_REVIEWED_GENERATION_NOT_READY" });
+  const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
+  assert.equal(published.journal_corpora?.length ?? 0, 0, "nothing is published for session use");
+  return first;
+}
+
 async function readPublishedRecords(f) {
   const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
   const corpusId = published.journal_corpora[0].corpus_id;
@@ -191,6 +209,31 @@ test("a clean synthetic import runs from intake to a committed generation", asyn
   assert.deepEqual([audit.stage, audit.completion.semantically_audited, audit.blocker], ["PATTERN_BUILD", "pass", null]);
   assert.deepEqual([patterns.stage, patterns.completion.patterns_reviewed, patterns.residuals.reviewed_patterns], ["COMMIT", "pass", 1]);
   assert.deepEqual([commit.stage, commit.completion.profile_committed], ["COLD_TEST", "pass"]);
+});
+
+test("commit refuses a saved partial calibration even when later stages are ready", async t => {
+  const f = await environment(t);
+  const port = createMockJournalInferencePort({ handlers: handlers() });
+  const options = { config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: port, environment: f.environment };
+  const runtime = await openJournalExecutionRuntime(options);
+  try {
+    await runtime.execute("run");
+    await runtime.execute("audit");
+    await runtime.execute("patterns");
+  } finally { await runtime.close(); }
+  const statePath = path.join(f.config.execution_root, "state.json");
+  const state = JSON.parse(await fs.readFile(statePath, "utf8"));
+  assert.equal(state.calibration, "pass");
+  assert.equal(state.stage, "COMMIT");
+  state.calibration = "partial";
+  await fs.writeFile(statePath, JSON.stringify(state), { mode: 0o600 });
+  const resumed = await openJournalExecutionRuntime(options);
+  try {
+    await assert.rejects(resumed.execute("commit"), { code: "JOURNAL_REVIEWED_GENERATION_NOT_READY" });
+    const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
+    assert.equal(published.journal_corpora?.length ?? 0, 0);
+  } finally { await resumed.close(); }
 });
 
 test("identity questions a bounded neighborhood cannot settle are counted, not a reason to stop", async (t) => {
@@ -283,6 +326,9 @@ test("a disputed pattern settles its review: it stays in the register as dispute
   }));
   assert.deepEqual([patterns.completion.patterns_reviewed, patterns.residuals.disputed_patterns, patterns.blocker], ["pass", 1, null]);
   assert.equal(commit.completion.profile_committed, "pass");
+  const pattern = (await readPublishedRecords(f)).find(record => record.kind === "pattern");
+  assert.equal(pattern?.lifecycle, "candidate");
+  assert.equal(pattern?.data.review_state, "disputed");
 });
 
 test("a reference that never quotes its source is retried and its candidate scope is excluded", async (t) => {
@@ -326,7 +372,7 @@ test("an unresolved single-unit extraction without a reason is unassessed in the
     representations: entries.map((text, index) => ({ representation_id: `synthetic:unit:${index}`, text,
       utf8_byte_length: Buffer.byteLength(text) })) });
   const baseExtractor = handlers().extractor;
-  const { run, audit } = await drive(f, handlers({ extractor: packet => {
+  const { run, audit, commit } = await drive(f, handlers({ extractor: packet => {
     const result = baseExtractor(packet);
     if (!packet.core_units[0].text.includes("unit 06")) return result;
     return { ...result, status: "incomplete", entities: [], assertions: [],
@@ -337,9 +383,13 @@ test("an unresolved single-unit extraction without a reason is unassessed in the
   assert.equal(audit.completion.semantically_audited, "partial");
   assert.equal(audit.residuals.audit_unassessed_units, 1);
   assert.equal(audit.residuals.audit_untrusted_units, 1);
+  assert.equal(commit.completion.profile_committed, "pass", "resolved units may commit with this residual");
   const report = await readAuditReport(f);
   assert.equal(report.unassessed_unit_count, 1);
   assert.ok(report.reports.some(unit => unit.source_only_unresolved && unit.unassessed === "SOURCE_ONLY_UNRESOLVED"));
+  const records = await readPublishedRecords(f);
+  assert.ok(records.some(record => record.kind === "passage" && record.data.quote.includes("unit 06")),
+    "unresolved source text remains available without publishing a semantic claim for it");
 });
 
 test("an unavailable independent-audit certification excludes the affected candidate scope", async (t) => {
@@ -647,14 +697,16 @@ test("duplicate final fidelity assessments leave an assertion unpublished", asyn
   assert.deepEqual((await searchPublishedAssertions(f)).items, []);
 });
 
-test("duplicate calibration assessments exhaust bounded attempts and remain source-only on resume", async t => {
+test("duplicate calibration assessments exhaust bounded attempts and stop on resume", async t => {
   const f = await environment(t);
   f.sourceParser = oneUnitParser(f);
   let fidelityCalls = 0;
+  const calls = [];
   const baseline = handlers();
   const port = createMockJournalInferencePort({ handlers: handlers({
     fidelity_auditor: packet => {
       fidelityCalls += 1;
+      calls.push("fidelity_auditor");
       const answer = baseline.fidelity_auditor(packet);
       const id = packet.imported_generation?.assertions?.[0]?.id;
       return { ...answer, assessments: id ? [
@@ -666,22 +718,22 @@ test("duplicate calibration assessments exhaust bounded attempts and remain sour
   const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
     service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
   try {
-    const first = await runtime.execute("run");
-    assert.equal(first.blocker, null);
-    assert.equal(first.residuals.source_only_units, 1);
-    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
+    await assertCalibrationStopped(runtime, f, "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED",
+      "FIDELITY_DUPLICATE_ASSESSMENT", calls);
     assert.equal(fidelityCalls, 3);
   } finally { await runtime.close(); }
 });
 
-test("duplicate assessments during calibration repair also exhaust into source-only", async t => {
+test("duplicate assessments during calibration repair stop calibration", async t => {
   const f = await environment(t);
   f.sourceParser = oneUnitParser(f);
   let fidelityCalls = 0;
+  const calls = [];
   const baseline = handlers();
   const port = createMockJournalInferencePort({ handlers: handlers({
     fidelity_auditor: packet => {
       fidelityCalls += 1;
+      calls.push("fidelity_auditor");
       const answer = baseline.fidelity_auditor(packet);
       if (fidelityCalls === 1) return { ...answer, status: "repair_required" };
       const id = packet.imported_generation?.assertions?.[0]?.id;
@@ -693,9 +745,28 @@ test("duplicate assessments during calibration repair also exhaust into source-o
   const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
     service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
   try {
-    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
-    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
+    await assertCalibrationStopped(runtime, f, "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED",
+      "FIDELITY_DUPLICATE_ASSESSMENT", calls);
     assert.equal(fidelityCalls, 4);
+  } finally { await runtime.close(); }
+});
+
+test("a calibration review still requiring repair after bounded cycles stops the run", async t => {
+  const f = await environment(t);
+  f.sourceParser = oneUnitParser(f);
+  const calls = [];
+  const baseline = handlers();
+  const port = createMockJournalInferencePort({ handlers: handlers({
+    fidelity_auditor: packet => {
+      calls.push("fidelity_auditor");
+      return { ...baseline.fidelity_auditor(packet), status: "repair_required" };
+    }
+  }) });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  try {
+    await assertCalibrationStopped(runtime, f, "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", calls);
+    assert.equal(calls.length, 3, "initial review plus two repair cycles");
   } finally { await runtime.close(); }
 });
 
@@ -887,27 +958,42 @@ test("a rendered page over the fixed image bound is excluded once", async t => {
   } finally { await runtime.close(); }
 });
 
-test("an exhausted single-unit calibration freeze leaves source-only evidence and resumes", async t => {
+test("an exhausted single-unit calibration freeze stops the run and replays the stop", async t => {
   const f = await environment(t);
   f.sourceParser = oneUnitParser(f);
   let references = 0;
-  const port = createMockJournalInferencePort({ handlers: handlers({ reference_reader: packet => {
+  const calls = [];
+  const roleHandlers = handlers({ reference_reader: packet => {
     references += 1;
+    calls.push("reference_reader");
     const unit = packet.source_windows[0];
     return { schema_version: "1.0", source_only_first_pass: true, reference_items: [{
       id: "bad-reference", statement: "Synthetic mismatch.", required_qualifiers: [],
       anchors: [{ unit_id: unit.unit_id, quote: "This quote never occurs.", occurrence: null }],
       importance_reason: "Synthetic.", critical: false }], questions: [], unassessed_unit_ids: [] };
-  } }) });
+  } });
+  const port = createMockJournalInferencePort({ handlers: roleHandlers });
   const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
     service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  let first;
   try {
-    const first = await runtime.execute("run");
-    assert.equal(first.blocker, null);
-    assert.equal(first.residuals.source_only_units, 1);
-    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
+    first = await assertCalibrationStopped(runtime, f, "CALIBRATION_REFERENCE_UNRESOLVED", "QUOTE_NOT_FOUND", calls);
     assert.equal(references, 3);
   } finally { await runtime.close(); }
+  const statePath = path.join(f.config.execution_root, "state.json");
+  const interrupted = JSON.parse(await fs.readFile(statePath, "utf8"));
+  interrupted.calibration = "not_run";
+  delete interrupted.calibration_failure;
+  interrupted.blocker = null;
+  await fs.writeFile(statePath, JSON.stringify(interrupted), { mode: 0o600 });
+  const resumed = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser,
+    inferencePort: createMockJournalInferencePort({ handlers: roleHandlers }), environment: f.environment });
+  try {
+    assert.deepEqual(await resumed.execute("run"), first,
+      "a saved source-only calibration unit reconstructs the same terminal stop after restart");
+    assert.equal(references, 3, "restart must not ask the model again");
+  } finally { await resumed.close(); }
 });
 
 test("definitely unanswered reference submissions settle after the existing bounded attempts", async t => {
@@ -924,13 +1010,13 @@ test("definitely unanswered reference submissions settle after the existing boun
     let run;
     for (let attempt = 0; attempt < 15; attempt += 1) {
       run = await runtime.execute("run");
-      if (run.completion.graph_built === "partial") break;
+      if (run.calibration === "failed") break;
     }
-    assert.equal(run.blocker, null);
-    assert.equal(run.residuals.source_only_units, 1);
+    assert.equal(run.blocker, "CALIBRATION_REFERENCE_UNRESOLVED");
+    assert.equal(run.calibration_failure.reason, "REFERENCE_RESEND_EXHAUSTED");
     assert.equal(submissions, 3, "the resend cap must not open another automatic attempt");
     const before = submissions;
-    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
+    assert.equal((await runtime.execute("run")).blocker, "CALIBRATION_REFERENCE_UNRESOLVED");
     assert.equal(submissions, before);
   } finally { await runtime.close(); }
 });
@@ -969,7 +1055,7 @@ test("visual-only handoff with every scan page excluded ends archive-only immedi
   } finally { await runtime.close(); }
 });
 
-test("a single source packet above 180 KB stays source-only without a second attempt", async t => {
+test("a calibration source packet above 180 KB stops without a second attempt", async t => {
   const f = await environment(t);
   f.sourceParser = scannedParser(f, [1]);
   let reads = 0;
@@ -985,20 +1071,18 @@ test("a single source packet above 180 KB stays source-only without a second att
     renderVisualPage: async () => Buffer.from("synthetic-image") });
   try {
     const first = await runtime.execute("run");
-    assert.equal(first.blocker, null);
-    assert.equal(first.residuals.source_only_units, first.total_units);
+    assert.equal(first.blocker, "CALIBRATION_SIZE_BOUND_EXCEEDED");
+    assert.equal(first.calibration_failure.reason, "SEMANTIC_PACKET_OVERSIZE");
     assert.ok(first.total_units > 0);
-    assert.equal(first.completion.graph_built, "partial");
+    assert.equal(first.completion.graph_built, "not_run");
     const second = await runtime.execute("run");
-    assert.equal(second.residuals.source_only_units, first.total_units);
+    assert.deepEqual(second, first);
     assert.equal(reads, 1);
-    assert.equal((await runtime.execute("audit")).completion.semantically_audited, "partial");
-    await runtime.execute("patterns");
-    assert.equal((await runtime.execute("commit")).completion.profile_committed, "pass");
+    await assert.rejects(runtime.execute("commit"), { code: "JOURNAL_REVIEWED_GENERATION_NOT_READY" });
   } finally { await runtime.close(); }
 });
 
-test("a unit above the configured semantic batch bound is recorded source-only", async t => {
+test("a calibration unit above its configured semantic batch bound stops the run", async t => {
   const f = await environment(t);
   f.config.semantic_batching = { maximum_bytes: 4096, calibration_maximum_bytes: 4096 };
   const text = "Synthetic long unit. ".repeat(350);
@@ -1010,10 +1094,14 @@ test("a unit above the configured semantic batch bound is recorded source-only",
     service: f.service, sourceParser: f.sourceParser,
     inferencePort: createMockJournalInferencePort({ handlers: handlers() }), environment: f.environment });
   try {
-    const run = await runtime.execute("run");
-    assert.equal(run.blocker, null);
-    assert.equal(run.residuals.source_only_units, 1);
-    assert.equal((await runtime.execute("run")).residuals.source_only_units, 1);
+    const first = await runtime.execute("run");
+    assert.equal(first.blocker, "CALIBRATION_SIZE_BOUND_EXCEEDED");
+    assert.equal(first.calibration_failure.reason, "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
+    assert.equal(first.completion.graph_built, "not_run");
+    assert.deepEqual(await runtime.execute("run"), first);
+    await assert.rejects(runtime.execute("commit"), { code: "JOURNAL_REVIEWED_GENERATION_NOT_READY" });
+    const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });
+    assert.equal(published.journal_corpora?.length ?? 0, 0);
   } finally { await runtime.close(); }
 });
 

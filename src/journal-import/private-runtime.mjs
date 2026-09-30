@@ -223,6 +223,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       await store.writeJsonObject({ objectId: id, value }); return value;
     };
     const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration,
+      ...(state.calibration_failure ? { calibration_failure: structuredClone(state.calibration_failure) } : {}),
       semantic_disposition: state.semantic_disposition ?? null,
       completed_units: state.completed_units.length, completed_visual_pages: state.completed_visual_pages.length,
       total_units: state.total_units ?? 0, required_visual_pages: state.required_visual_pages ?? 0,
@@ -232,6 +233,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       ...(state.semantic_disposition === "archive_only" ? { next_action: state.next_action } : {}),
       completion: structuredClone(state.completion), blocker: state.blocker,
       residuals: structuredClone(state.residuals ?? {}), external_spend_usd: 0 });
+    const calibrationStopStatus = (reason) => {
+      if (["CALIBRATION_REFERENCE_UNRESOLVED", "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED",
+        "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_ATTEMPTS_EXHAUSTED",
+        "CALIBRATION_EXTRACTION_ATTEMPTS_EXHAUSTED", "CALIBRATION_SIZE_BOUND_EXCEEDED"].includes(reason)) return reason;
+      if (["SEMANTIC_PACKET_OVERSIZE", "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND"].includes(reason))
+        return "CALIBRATION_SIZE_BOUND_EXCEEDED";
+      return "CALIBRATION_REPAIR_REQUIRED";
+    };
 
     async function synchronizeHazards(plan) {
       const pages = new Set([...(config.visual_hazard_pages ?? []), ...(config.parser_hazard_pages ?? [])]);
@@ -627,17 +636,30 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         validateJournalGraph(graph, { [unit.representation_id]: representation.text });
         return graph;
       };
-      const recordSourceOnly = async (unit, reason) => {
+      const recordSourceOnly = async (unit, reason, detail = null) => {
         const sourceOnlyExtraction = { schema_version: "1.0", status: "incomplete", assertions: [], entities: [], episodes: [],
           coverage: [{ unit_id: unit.unit_id, disposition: "needs_review", assertion_local_ids: [],
             reason: `Semantic processing ended for this unit (${reason}); the archived source remains available.` }],
           requested_context: [] };
         const graph = bindUnitExtraction(unit, sourceOnlyExtraction, { receipt_id: `mechanical:source-only:${unit.unit_id}` });
         await writeOnce(`unit:graph:${unit.unit_id}`, { graph, extraction: null, omission: null,
-          source_only_unresolved: true, source_only_reason: reason });
+          source_only_unresolved: true, source_only_reason: reason,
+          ...(detail === null ? {} : { source_only_detail: detail }) });
         if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
         state.stage = "EXTRACT"; state.blocker = null; await save();
         return true;
+      };
+      const setCalibrationStop = async (unitId, status, reason) => {
+        state.calibration = "failed";
+        state.calibration_failure = { unit_id: unitId, status, reason };
+        state.stage = "REFERENCE_AUDIT";
+        state.blocker = status;
+        await save();
+        return false;
+      };
+      const stopCalibration = async (unit, status, reason) => {
+        await recordSourceOnly(unit, status, reason);
+        return setCalibrationStop(unit.unit_id, status, reason);
       };
       const processBatch = async (incoming, calibration = false) => {
         // Reuse the frozen scope even when a crash occurred between writing two
@@ -651,7 +673,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             return await processBatch(units.slice(0, middle), calibration)
               && await processBatch(units.slice(middle), calibration);
           }
-          return recordSourceOnly(units[0], reason);
+          return calibration
+            ? stopCalibration(units[0], reason.startsWith("CALIBRATION_")
+              ? reason : "CALIBRATION_EXTRACTION_ATTEMPTS_EXHAUSTED", reason)
+            : recordSourceOnly(units[0], reason);
         };
         const keyId = batchKey(units);
         const core = units.map((unit) => ({ unit_id: unit.unit_id, text: unit.text }));
@@ -666,7 +691,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             return await processBatch(units.slice(0, middle), calibration)
               && await processBatch(units.slice(middle), calibration);
           }
-          return recordSourceOnly(units[0], "SEMANTIC_PACKET_OVERSIZE");
+          return calibration
+            ? stopCalibration(units[0], "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_PACKET_OVERSIZE")
+            : recordSourceOnly(units[0], "SEMANTIC_PACKET_OVERSIZE");
         }
         let reference = null;
         if (calibration) {
@@ -695,7 +722,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               && await processBatch(units.slice(middle), calibration);
           }
           if (frozen.failure) {
-            return recordSourceOnly(units[0], "CALIBRATION_REFERENCE_UNRESOLVED");
+            return stopCalibration(units[0], "CALIBRATION_REFERENCE_UNRESOLVED", frozen.failure);
           }
           reference = frozen.result[0];
         }
@@ -776,7 +803,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             && await processBatch(units.slice(middle), calibration);
         }
         if (unresolved && calibration) {
-          return recordSourceOnly(units[0], "CALIBRATION_REPAIR_REQUIRED");
+          return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_EXTRACTION_UNRESOLVED");
         }
         if (unresolved) {
           const unit = units[0];
@@ -825,7 +852,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               return await processBatch(units.slice(0, middle), true)
                 && await processBatch(units.slice(middle), true);
             }
-            return recordSourceOnly(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED");
+            return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", initialFidelity.failure);
           }
           let fidelity = initialFidelity.result;
           await writeOnce(`calibration:review:batch:${keyId}`, { reference, fidelity: fidelity[0], score, unit_ids: units.map((unit) => unit.unit_id) });
@@ -918,7 +945,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               candidateIds: repairedCombined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
             if (repairedFidelityAttempt.blocked) return false;
             if (repairedFidelityAttempt.failure)
-              return recordSourceOnly(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED");
+              return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", repairedFidelityAttempt.failure);
             const repairedFidelity = repairedFidelityAttempt.result;
             await writeOnce(`calibration:repair-review:batch:${keyId}:cycle:${auditCycle}`, {
               reference, fidelity: repairedFidelity[0], score: repairedScore,
@@ -933,7 +960,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               && (score.reference_total === 0 || score.provisional_target_met);
           }
           if (!calibrationPass) {
-            return recordSourceOnly(units[0], "CALIBRATION_REPAIR_REQUIRED");
+            return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED");
           }
         }
         for (const unit of units) {
@@ -952,16 +979,30 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         return true;
       };
 
-      for (const unit of oversizedUnits) await recordSourceOnly(unit, "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
+      for (const unit of oversizedUnits.filter(item => calibrationIds.has(item.unit_id))) {
+        await stopCalibration(unit, "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
+        return summary();
+      }
       for (const ids of frozenPlan.calibration_batches) {
         if (!(await processBatch(frozenUnits(ids), true))) return summary();
       }
       if ([...calibrationIds].every((id) => state.completed_units.includes(id))) {
         const calibrationRecords = await Promise.all([...calibrationIds].map(id => readIfPresent(`unit:graph:${id}`)));
-        state.calibration = calibrationRecords.some(record => record?.source_only_unresolved) ? "partial" : "pass";
+        const failedIndex = calibrationRecords.findIndex(record => record?.source_only_unresolved);
+        if (failedIndex >= 0) {
+          const record = calibrationRecords[failedIndex];
+          const status = calibrationStopStatus(record.source_only_reason);
+          await setCalibrationStop([...calibrationIds][failedIndex], status,
+            record.source_only_detail ?? record.source_only_reason ?? "CALIBRATION_UNIT_UNRESOLVED");
+          return summary();
+        }
+        invariant(calibrationRecords.every(Boolean), "CALIBRATION_UNIT_UNRESOLVED");
+        state.calibration = "pass";
         state.blocker = null;
         await save();
       }
+      for (const unit of oversizedUnits.filter(item => !calibrationIds.has(item.unit_id)))
+        await recordSourceOnly(unit, "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
       for (const ids of frozenPlan.regular_batches) {
         if (!(await processBatch(frozenUnits(ids), false))) return summary();
       }
@@ -1018,6 +1059,30 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     async function run({ visualOnly = false } = {}) {
+      if (state.calibration === "failed") return summary();
+      // Older checkpoints could finish calibration as partial and then continue. Preserve their
+      // saved unit outcome, but close the gate before a resumed run reaches later stages.
+      if (state.calibration === "partial") {
+        const savedPlan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
+        let failedUnit = null, reason = "CALIBRATION_UNIT_UNRESOLVED";
+        for (const item of savedPlan.calibration) {
+          const record = await readIfPresent(`unit:graph:${item.unit_id}`);
+          if (record?.source_only_unresolved) {
+            failedUnit = item.unit_id;
+            reason = record.source_only_reason ?? reason;
+            state.calibration_failure = { unit_id: failedUnit, status: calibrationStopStatus(reason),
+              reason: record.source_only_detail ?? reason };
+            break;
+          }
+        }
+        const status = state.calibration_failure?.status ?? calibrationStopStatus(reason);
+        state.calibration = "failed";
+        state.calibration_failure ??= { unit_id: failedUnit, status, reason };
+        state.stage = "REFERENCE_AUDIT";
+        state.blocker = status;
+        await save();
+        return summary();
+      }
       if (visualOnly) invariant(!state.graph_ref && !state.semantic_batch_plan_ref
         && state.completed_units.length === 0 && state.calibration === "not_run"
         && ["INTAKE", "PARSE", "PARTITION", "VISUAL_READ", "REFERENCE_AUDIT"].includes(state.stage),
@@ -1142,6 +1207,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       invariant(state.graph_ref, 'JOURNAL_GRAPH_NOT_READY');
       const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
       if (plan.units.length === 0) return finishArchiveOnly();
+      invariant(state.calibration === "pass", 'JOURNAL_GRAPH_NOT_READY');
       if (state.reconciled_ref) return summary();
       let graph = await readLarge(state.graph_ref);
       const unitGraphs = new Map(), aliases = new Map();
@@ -1378,7 +1444,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     async function audit() {
-      invariant(state.reconciled_ref, "JOURNAL_RECONCILIATION_NOT_READY");
+      invariant(state.calibration === "pass" && state.reconciled_ref, "JOURNAL_RECONCILIATION_NOT_READY");
       const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
       const frozenGraph = await readLarge(state.graph_ref);
       const scopeIndex = createAuditScopeIndex(frozenGraph);
@@ -1507,7 +1573,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     async function patterns() {
       // Patterns are built once the graph is reconciled and audited, whether or not either finished
       // with residuals; those are counted in the report, not a reason to withhold the register.
-      invariant(state.reconciled_ref && state.audit_report_ref
+      invariant(state.calibration === "pass" && state.reconciled_ref && state.audit_report_ref
         && ["pass", "partial"].includes(state.completion.graph_built)
         && ["pass", "partial"].includes(state.completion.semantically_audited),
         "JOURNAL_PATTERN_SOURCE_NOT_READY");
@@ -1598,11 +1664,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     async function commit() {
-      // Every stage ran to its end. A stage that ended with residuals (a unit left source-only, audit
-      // findings, an unresolved pattern batch) is committed as partial, with its counts in the
-      // summary, rather than holding back everything that did resolve.
+      // Calibration must pass. Later stages may commit resolved work with counted partial
+      // outcomes (source-only units, audit findings, or unresolved pattern batches).
       const finished = (status) => ["pass", "partial"].includes(status);
-      invariant(finished(state.calibration) && state.completion.archive_verified === "pass"
+      invariant(state.calibration === "pass" && state.completion.archive_verified === "pass"
         && state.completion.raw_search_available === "pass" && finished(state.completion.graph_built)
         && finished(state.completion.semantically_audited) && finished(state.completion.patterns_reviewed)
         && state.reviewed_graph_ref,
