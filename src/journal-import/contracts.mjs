@@ -18,7 +18,7 @@ export const JOURNAL_SCHEMA_NAMES = Object.freeze([
   "visual-result"
 ]);
 
-const utf8 = new TextDecoder("utf-8", { fatal: true });
+const utf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 const active = (record) => !["deleted", "revoked"].includes(record.lifecycle);
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 

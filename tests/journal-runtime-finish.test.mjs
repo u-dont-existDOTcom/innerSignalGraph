@@ -315,6 +315,33 @@ test("a reference that never quotes its source is retried and its candidate scop
   assert.deepEqual(result.items, [], "assertions from a unit whose reference freeze failed must not be published");
 });
 
+test("an unresolved single-unit extraction without a reason is unassessed in the final audit", async t => {
+  const f = await environment(t);
+  const entries = Array.from({ length: 13 }, (_, index) => `Synthetic unit ${String(index).padStart(2, "0")} has unique text.`);
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  f.sourceParser = async () => ({ source: { sha256: f.config.source.sha256,
+    byte_length: f.config.source.bytes, mime_type: "text/plain" }, parser: { version: "synthetic-unresolved" },
+    pages: entries.map((_, index) => ({ page_number: index + 1, representation_id: `synthetic:unit:${index}`,
+      disposition: "readable", warnings: [], image_inventory: [] })),
+    representations: entries.map((text, index) => ({ representation_id: `synthetic:unit:${index}`, text,
+      utf8_byte_length: Buffer.byteLength(text) })) });
+  const baseExtractor = handlers().extractor;
+  const { run, audit } = await drive(f, handlers({ extractor: packet => {
+    const result = baseExtractor(packet);
+    if (!packet.core_units[0].text.includes("unit 06")) return result;
+    return { ...result, status: "incomplete", entities: [], assertions: [],
+      coverage: packet.core_units.map(unit => ({ unit_id: unit.unit_id, disposition: "needs_review",
+        assertion_local_ids: [], reason: "Synthetic unresolved extraction." })) };
+  } }));
+  assert.equal(run.residuals.source_only_units, 1);
+  assert.equal(audit.completion.semantically_audited, "partial");
+  assert.equal(audit.residuals.audit_unassessed_units, 1);
+  assert.equal(audit.residuals.audit_untrusted_units, 1);
+  const report = await readAuditReport(f);
+  assert.equal(report.unassessed_unit_count, 1);
+  assert.ok(report.reports.some(unit => unit.source_only_unresolved && unit.unassessed === "SOURCE_ONLY_UNRESOLVED"));
+});
+
 test("an unavailable independent-audit certification excludes the affected candidate scope", async (t) => {
   const f = await environment(t);
   const { audit, patterns, commit } = await drive(f, handlers({
@@ -739,6 +766,30 @@ test("a PDF page with an excluded required visual check retains raw text but pub
   assert.ok(raw.nodes.some(node => node.kind === "assertion"));
   const published = await readPublishedRecords(f);
   assert.equal(published.some(record => record.kind === "assertion"), false);
+  assert.deepEqual((await searchPublishedAssertions(f)).items, []);
+});
+
+test("a readable PDF page with an image and failed visual reading keeps native claims out of session use", async t => {
+  const f = await environment(t);
+  const text = TEXTS.join("\n");
+  f.sourceParser = async () => ({ source: { sha256: f.config.source.sha256,
+    byte_length: f.config.source.bytes, mime_type: "application/pdf" }, parser: { version: "synthetic-image" },
+    pages: [{ page_number: 1, representation_id: "synthetic:image:1", disposition: "readable",
+      warnings: [], image_inventory: [{ kind: "image" }], geometry: { width: 100, height: 100 } }],
+    representations: [{ representation_id: "synthetic:image:1", text, utf8_byte_length: Buffer.byteLength(text) }] });
+  const { run, commit } = await drive(f, handlers({
+    visual_reader: () => ({ schema_version: "1.0", source_page_id: "wrong-page", regions: [],
+      page_complete: true, missing_or_uncertain_regions: [] }),
+    pattern_builder: packet => ({ schema_version: "1.0", target_generation: packet.target_generation,
+      patterns: [], unclassified_assertion_ids: [], coverage_note: "Invented image source.",
+      status: "complete_for_stated_scope" })
+  }), [], {}, { renderVisualPage: async () => Buffer.from("synthetic-image") });
+  assert.equal(run.required_visual_pages, 1);
+  assert.equal(run.residuals.excluded_visual_pages, 1);
+  assert.equal(commit.completion.profile_committed, "pass");
+  const raw = await readStoredReport(f, "graph_ref");
+  assert.ok(raw.nodes.some(node => node.kind === "assertion"));
+  assert.equal((await readPublishedRecords(f)).some(record => record.kind === "assertion"), false);
   assert.deepEqual((await searchPublishedAssertions(f)).items, []);
 });
 

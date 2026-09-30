@@ -1396,14 +1396,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         let report = await readIfPresent(`audit:result:${graphRevision}:${unit.unit_id}`);
         if (!report) {
           const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
-          if (imported.source_only_reason) {
+          if (imported.source_only_unresolved) {
             const reconciliation = await readIfPresent(`reconcile:result:${unit.unit_id}`);
             const scope = createReconciledAuditScope({ graph: frozenGraph, unitGraph: imported.graph,
               derivationRef: reconciliation?.receipt?.receipt_id, index: scopeIndex });
             report = await writeOnce(`audit:result:${graphRevision}:${unit.unit_id}`, {
               graph_revision: graphRevision, source_only_unresolved: true,
               calibration_overlap: plan.calibration.some(u => u.unit_id === unit.unit_id),
-              unassessed: imported.source_only_reason, untrusted_candidate_ids: scope.exclusion_ids });
+              unassessed: imported.source_only_reason ?? "SOURCE_ONLY_UNRESOLVED",
+              untrusted_candidate_ids: scope.exclusion_ids });
           } else {
             const visual = await readIfPresent(`visual:result:${unit.page_number}`);
             const original = [{ unit_id: unit.unit_id, text: unit.text }];
@@ -1521,7 +1522,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       for (const unit of plan.units) {
         if (unit.visual) continue;
         const page = plan.parsed.pages.find(item => item.representation_id === unit.representation_id);
-        if (parseStatus(page, plan.parsed.source.mime_type) === "readable") continue;
+        const requiresVisual = page ? plan.visual_pages.includes(page.page_number)
+          : !plan.parsed.source.mime_type?.startsWith("text/plain");
+        if (!requiresVisual) continue;
         const visual = page && !state.excluded_visual_pages?.includes(page.page_number)
           ? await readIfPresent(`visual:result:${page.page_number}`) : null;
         if (visual?.output?.page_complete === true) continue;

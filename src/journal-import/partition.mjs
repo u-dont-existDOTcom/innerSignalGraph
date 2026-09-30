@@ -3,7 +3,7 @@ import { TextDecoder } from "node:util";
 import { ValidationError } from "../core/errors.mjs";
 import { JOURNAL_GRAPH_CONTRACT } from "./contracts.mjs";
 
-const utf8 = new TextDecoder("utf-8", { fatal: true });
+const utf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const defaults = JOURNAL_GRAPH_CONTRACT.source_defaults;
 const continuation = (byte) => (byte & 0xc0) === 0x80;
