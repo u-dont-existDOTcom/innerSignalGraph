@@ -21,12 +21,13 @@ async function setup(t) {
   return { root, exchange };
 }
 
-function work(workId, { expiresAt = "2099-01-02T00:00:00.000Z" } = {}) {
+function work(workId, { expiresAt = "2099-01-02T00:00:00.000Z", tier = "standard" } = {}) {
   return {
     schema_version: 1,
     work_id: workId,
     case_id: "synthetic-journal-case",
     role: "extractor",
+    tier,
     instruction: "Synthetic instruction.",
     packet: { text: SENTINEL },
     output_schema_name: "synthetic-result",
@@ -43,6 +44,7 @@ async function publish(exchange, entry) {
     schema_version: 1,
     work_id: entry.work_id,
     role: entry.role,
+    tier: entry.tier,
     output_schema_name: entry.output_schema_name,
     model: "GPT-5.6 Sol",
     effort: "Pro",
@@ -81,6 +83,15 @@ test("dispatch lists a published item as unanswered and then answered without pa
 
   await exchange.submitResult({ workId: entry.work_id, output: { items: [] }, subject: "synthetic" });
   assert.equal(JSON.parse((await dispatch(root)).stdout).answered, true);
+});
+
+test("dispatch reports the persisted hardest tier to the worker", async (t) => {
+  const { root, exchange } = await setup(t);
+  const entry = work("job:dispatch-cli-hardest-0004", { tier: "hardest" });
+  await publish(exchange, entry);
+  const result = await dispatch(root, true);
+  assert.equal(result.stderr, "");
+  assert.equal(JSON.parse(result.stdout).tier, "hardest");
 });
 
 test("dispatch omits expired and retired items and is silent when none remain", async (t) => {

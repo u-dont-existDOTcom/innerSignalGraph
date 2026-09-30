@@ -1,14 +1,32 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import {
   buildJournalRolePacket,
   createProviderJournalInferencePort
 } from "../src/journal-import/provider-port.mjs";
 import { createChatGptSubscriptionBrowserProvider } from "../src/providers/chatgpt-subscription-browser.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../src/journal-import/provider-runtime.mjs";
+import { createDurableJournalInferencePort } from "../src/journal-import/durable-inference.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+
+function memoryStore() {
+  const data = new Map();
+  return {
+    async readJsonObject({ objectId }) {
+      if (!data.has(objectId)) throw Object.assign(new Error("missing"), { code: "ENOENT" });
+      return structuredClone(data.get(objectId));
+    },
+    async writeJsonObject({ objectId, value }) {
+      assert.equal(data.has(objectId), false, "durable records are immutable");
+      data.set(objectId, structuredClone(value));
+    }
+  };
+}
 
 const grant = Object.freeze({
   grant_id: "grant:synthetic-subscription",
@@ -256,7 +274,10 @@ test("visual reader rejects mismatched image digests before provider submission"
   port.close();
 });
 
-test("runtime binds subscription browser without API credentials and hard-requires zero incremental spend", (t) => {
+test("runtime binds subscription browser without API credentials and hard-requires zero incremental spend", async (t) => {
+  const exchangeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "journal-hardest-route-"));
+  await fs.chmod(exchangeRoot, 0o700);
+  t.after(() => fs.rm(exchangeRoot, { recursive: true, force: true }));
   let options = null;
   const fakeProvider = {
     model: "GPT-5.6 Sol",
@@ -307,6 +328,39 @@ test("runtime binds subscription browser without API credentials and hard-requir
   assert.equal(options.browser.port, 9223);
   assert.equal(port.capabilities().external_spend_authorized_usd, 0);
 
+  const combined = loadJournalInferencePortFromEnvironment({
+    INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify(route),
+    INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: Buffer.alloc(32, 93).toString("base64"),
+    INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: exchangeRoot,
+    INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64: Buffer.alloc(32, 94).toString("base64")
+  }, {
+    caseId: "synthetic-case",
+    hardestLane: { enabled: true, model: "claude-opus-5-5", effort: "max" },
+    providerFactories: { chatgpt_subscription_browser() { return fakeProvider; } }
+  });
+  assert.equal(combined.capabilities().roles.visual_reader.available, true);
+  assert.equal(combined.capabilities().hardest_roles.visual_reader.available, false);
+  assert.equal(combined.capabilities().hardest_fresh_context_per_generate, false);
+  assert.equal(combined.capabilities().hardest_authenticated_execution_profile_per_generate, false);
+  const image = Buffer.from("synthetic-hardest-visual", "utf8");
+  const packet = buildJournalRolePacket("visual_reader", {
+    protocol_version: "1.0",
+    output_schema_id: "visual-result",
+    assigned_core_ids: ["page:synthetic"],
+    source_locators: [],
+    expected_generation: "generation:synthetic",
+    controller_provenance_tag: "work:hardest-visual:synthetic",
+    grant_purpose: "organize_search",
+    page_image_ref: { kind: "inline_image", media_type: "image/png", data_base64: image.toString("base64"), sha256: sha256(image) },
+    page_geometry: { width: 100, height: 100 },
+    native_text_rendering: null,
+    neighbor_pages: []
+  });
+  await assert.rejects(combined.invoke({ role: "visual_reader", packet, outputSchema: "visual-result",
+    operationKey: "operation:hardest-visual:synthetic", grant, tier: "hardest" }),
+  { code: "JOURNAL_EXCHANGE_ROLE_UNSUPPORTED" });
+  combined.close();
+
   assert.throws(() => loadJournalInferencePortFromEnvironment({
     INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify({
       ...route,
@@ -318,6 +372,84 @@ test("runtime binds subscription browser without API credentials and hard-requir
     }),
     INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: Buffer.alloc(32, 93).toString("base64")
   }, { providerFactories: { chatgpt_subscription_browser() { return fakeProvider; } } }), /SUBSCRIPTION_ROUTE_REQUIRES_ZERO_EXTERNAL_SPEND/);
+});
+
+test("a restarted composite route does not treat a browser operation as authoritatively unsent", async (t) => {
+  const exchangeRoot = await fs.mkdtemp(path.join(os.tmpdir(), "journal-composite-authority-"));
+  t.after(() => fs.rm(exchangeRoot, { recursive: true, force: true }));
+  let browserCalls = 0;
+  const provider = {
+    model: "GPT-5.6 Sol",
+    privateInferenceIsolation: {
+      packetOnly: true,
+      freshContextPerGenerate: true,
+      tools: false,
+      filesystem: false,
+      sessionPersistence: false,
+      transport: "chatgpt-subscription-temporary-unpersonalized"
+    },
+    async generate() {
+      browserCalls += 1;
+      throw new Error("synthetic completion ambiguity");
+    }
+  };
+  const route = {
+    schema_version: 1,
+    route_ref: "route:subscription:synthetic",
+    provider: "chatgpt_subscription_browser",
+    model: "GPT-5.6 Sol",
+    effort: "Extra High",
+    timeout_ms: 300_000,
+    max_output_tokens: 20_000,
+    max_external_spend_usd: 0,
+    allowance_evidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    browser: { cdp_host: "127.0.0.1", cdp_port: 9223 }
+  };
+  const environment = {
+    INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify(route),
+    INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: Buffer.alloc(32, 95).toString("base64"),
+    INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: exchangeRoot,
+    INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64: Buffer.alloc(32, 96).toString("base64")
+  };
+  const makePort = () => loadJournalInferencePortFromEnvironment(environment, {
+    caseId: "synthetic-case",
+    hardestLane: { enabled: true },
+    providerFactories: { chatgpt_subscription_browser: () => provider }
+  });
+  const input = {
+    role: "extractor",
+    packet: buildJournalRolePacket("extractor", {
+      protocol_version: "1.0",
+      output_schema_id: "extraction-result",
+      assigned_core_ids: ["unit:synthetic"],
+      source_locators: [{ representation_id: "representation:synthetic", start_byte: 0, end_byte: 19 }],
+      expected_generation: "generation:synthetic",
+      controller_provenance_tag: "work:synthetic",
+      grant_purpose: "organize_search",
+      core_units: [{ unit_id: "unit:synthetic", text: "invented source text" }],
+      adjacent_context: { before: "", after: "" },
+      visual_transcriptions: []
+    }),
+    outputSchema: "extraction-result",
+    operationKey: "operation:browser:completion-unknown",
+    grant
+  };
+  const store = memoryStore();
+  const firstPort = makePort();
+  assert.equal(firstPort.capabilities().authoritative_completion, undefined);
+  await assert.rejects(
+    createDurableJournalInferencePort({ port: firstPort, corpusStore: store }).invoke(input),
+    { code: "COMPLETION_UNKNOWN" }
+  );
+  firstPort.close();
+
+  const restartedPort = makePort();
+  t.after(() => restartedPort.close());
+  await assert.rejects(
+    createDurableJournalInferencePort({ port: restartedPort, corpusStore: store }).invoke(input),
+    { code: "COMPLETION_UNKNOWN" }
+  );
+  assert.equal(browserCalls, 1, "the restart must not send the ambiguous browser call again");
 });
 
 test("subscription provider accepts a desktop Temporary Chat receipt with a private surface locator and no selected tool mode", async () => {

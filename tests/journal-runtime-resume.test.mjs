@@ -167,18 +167,14 @@ test('revocation after a reference completion probe prevents its private packet 
  let runtime=await openJournalExecutionRuntime({...f,inferencePort:firstPort});
  try{assert.equal((await runtime.execute('run')).blocker,'COMPLETION_UNKNOWN');}finally{await runtime.close();}
 
- let revoked=false,referenceCalls=0,capabilityChecks=0;
+ let revoked=false,referenceCalls=0;
  const service={verifyCaseAccess:async()=>{
   if(revoked)throw Object.assign(new Error('Synthetic revoked grant'),{code:'GRANT_REVOKED'});
  }};
  const resumedPort={
-  capabilities(){
-   capabilityChecks++;
-   // The work step inspects this snapshot after getCompletion's post-call authorization.
-   if(capabilityChecks===3)revoked=true;
-   return {authoritative_completion:true};
-  },
-  async getCompletion(){return {status:'unknown'};},
+  capabilities(){return {authoritative_completion:true};},
+  // Access changes after the completion probe; the runtime must check it again before a send.
+  async getCompletion(){revoked=true;return {status:'unknown'};},
   async invoke(){referenceCalls++;return {output:{schema_version:'1.0',source_only_first_pass:true,
    reference_items:[],questions:[],unassessed_unit_ids:[]},receipt:{request_id:'synthetic'}};}
  };
@@ -216,6 +212,39 @@ test('durable port retries only proven non-submissions and reuses completed resu
  durable=createDurableJournalInferencePort({port,corpusStore:store});
  await durable.invoke(request);await durable.invoke(request);assert.equal(calls,2);
  await assert.rejects(()=>durable.invoke({...request,packet:{...request.packet,extra:true}}),{code:'OPERATION_KEY_CONFLICT'});
+});
+
+test('a standard reference audit replays a legacy durable result whose input omitted the default tier',async t=>{
+ const f=await fixture(t);let replayed=false;
+ const review=(role,p)=>({schema_version:'1.0',target_generation:p.expected_generation,review_role:role,assessments:[],proposed_repairs:[],unassessed_ids:[],status:'sufficient_for_stated_scope'});
+ const reference={schema_version:'1.0',source_only_first_pass:true,reference_items:[],questions:[],unassessed_unit_ids:[]};
+ const base=createMockJournalInferencePort({handlers:{
+  reference_reader:()=>assert.fail('the stored legacy reference result must be replayed'),
+  extractor:p=>({schema_version:'1.0',status:'complete',assertions:[],entities:[],episodes:[],coverage:p.core_units.map(u=>({unit_id:u.unit_id,disposition:'no_assertion',assertion_local_ids:[],reason:'Synthetic legacy replay fixture.'})),requested_context:[]}),
+  omission_checker:p=>review('omission_checker',p),fidelity_auditor:p=>review('fidelity_auditor',p),
+  reconciler:p=>({schema_version:'1.0',target_generation:p.expected_generation,proposals:[],unresolved_ids:[],status:'proposals_complete'})
+ }});
+ const legacyStore=memoryStore();
+ const legacyDurable=createDurableJournalInferencePort({corpusStore:legacyStore,port:{
+  capabilities:()=>base.capabilities(),invoke:()=>assert.fail('the durable legacy result must prevent resubmission'),
+  getCompletion:()=>assert.fail('the durable legacy result must be read directly')
+ }});
+ const port={
+  capabilities:()=>base.capabilities(),getCompletion:key=>base.getCompletion(key),
+  invoke(input){
+   if(input.role!=='reference_reader'||replayed)return base.invoke(input);
+   replayed=true;
+   const legacyInput={role:input.role,packet:input.packet,outputSchema:input.outputSchema,operationKey:input.operationKey,grant:input.grant};
+   const prefix=`inference:${createHash('sha256').update(input.operationKey).digest('hex')}:`;
+   legacyStore.data.set(`${prefix}intent`,{operation_key:input.operationKey,input_sha256:createHash('sha256').update(JSON.stringify(legacyInput)).digest('hex'),authoritative_completion:false,recorded_at:'2026-09-27T00:00:00.000Z'});
+   legacyStore.data.set(`${prefix}result`,{status:'completed',output:reference,receipt:{request_id:'legacy-standard-reference'}});
+   return legacyDurable.invoke(input);
+  },
+  close(){legacyDurable.close();base.close();}
+ };
+ const runtime=await openJournalExecutionRuntime({...f,inferencePort:port});
+ try{const result=await runtime.execute('run');assert.equal(result.completion.graph_built,'pass');assert.equal(replayed,true);}
+ finally{await runtime.close();}
 });
 
 test('durable port refuses automatic resubmission after an unknown completion',async()=>{

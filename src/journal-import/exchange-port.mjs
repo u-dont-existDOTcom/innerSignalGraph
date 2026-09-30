@@ -56,6 +56,7 @@ export function createExchangeJournalInferencePort({
   waitMs = DEFAULT_WAIT_MS,
   pollMs = DEFAULT_POLL_MS,
   ttlMs = DEFAULT_TTL_MS,
+  hardestLane = {},
   prepareExchange = null,
   now = () => new Date(),
   sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -71,6 +72,11 @@ export function createExchangeJournalInferencePort({
   for (const value of [waitMs, pollMs, ttlMs]) invariant(Number.isSafeInteger(value) && value >= 0, "JOURNAL_EXCHANGE_TIMING_INVALID");
   invariant(pollMs > 0 && ttlMs > 0, "JOURNAL_EXCHANGE_TIMING_INVALID");
   const key = Buffer.from(receiptKey);
+  const hardestModel = hardestLane.model ?? "claude-opus-5-5";
+  const hardestEffort = hardestLane.effort ?? "max";
+  const hardestTtlMs = (hardestLane.ttl_hours ?? 24) * 60 * 60_000;
+  invariant(typeof hardestModel === "string" && hardestModel.length > 0 && typeof hardestEffort === "string" && hardestEffort.length > 0, "INFERENCE_MODEL_PROFILE_INVALID");
+  invariant(Number.isFinite(hardestTtlMs) && hardestTtlMs >= 60_000, "JOURNAL_EXCHANGE_TIMING_INVALID");
   let exchangePromise = exchange ? Promise.resolve(exchange) : null;
   const ready = () => {
     exchangePromise ??= Promise.resolve().then(() => prepareExchange());
@@ -125,12 +131,22 @@ export function createExchangeJournalInferencePort({
     throw new JournalInferencePortError("JOURNAL_EXCHANGE_RETRY_LIMIT", { submissionStatus: "not_submitted" });
   }
 
-  function receiptFor(operationKey, entry, stored) {
+  async function hasOperation(operationKey) {
+    const store = await ready();
+    for (let successor = 0; successor <= MAX_SUCCESSORS; successor += 1) {
+      const workId = journalExchangeWorkId(operationKey, successor);
+      if ((await store.readWork(workId)) || (await store.readResult(workId))) return true;
+    }
+    return false;
+  }
+
+  function receiptFor(operationKey, entry, stored, dispatch) {
     // The exchange receipt authenticates only what the connector observed. Desired dispatch labels
     // are not evidence of the profile that actually ran, so an answer is inadmissible until a
     // dispatcher/provider receipt carries the effective model and effort and they match the route.
-    invariant(stored.receipt.effective_model_profile === model
-      && stored.receipt.effective_effort === effort, "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+    invariant((dispatch.tier ?? "standard") === (entry.tier ?? "standard")
+      && stored.receipt.effective_model_profile === dispatch.model
+      && stored.receipt.effective_effort === dispatch.effort, "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
     const receiptBody = {
       receipt_id: `receipt:${createHmac("sha256", key).update(`${operationKey}\0${entry.input_sha256}`).digest("hex").slice(0, 40)}`,
       transport: JOURNAL_WORK_TRANSPORT,
@@ -143,8 +159,8 @@ export function createExchangeJournalInferencePort({
         : null,
       input_manifest_sha256: entry.input_sha256,
       role_instruction_sha256: sha256(Buffer.from(entry.instruction, "utf8")),
-      configured_model_profile: model,
-      configured_effort: effort,
+      configured_model_profile: dispatch.model,
+      configured_effort: dispatch.effort,
       effective_model_profile: stored.receipt.effective_model_profile,
       effective_effort: stored.receipt.effective_effort,
       completion_status: "completed",
@@ -157,7 +173,8 @@ export function createExchangeJournalInferencePort({
         connector_receipt_id: stored.receipt.receipt_id,
         received_at: stored.receipt.received_at,
         output_sha256: stored.receipt.output_sha256,
-        subject_sha256: stored.receipt.subject_sha256
+        subject_sha256: stored.receipt.subject_sha256,
+        tier: dispatch.tier ?? "standard"
       },
       cost_usd: 0,
       grant_id: entry.grant_id,
@@ -177,8 +194,9 @@ export function createExchangeJournalInferencePort({
       work_id: entry.work_id,
       role: entry.role,
       output_schema_name: entry.output_schema_name,
-      model,
-      effort,
+      tier: entry.tier ?? "standard",
+      model: entry.tier === "hardest" ? hardestModel : model,
+      effort: entry.tier === "hardest" ? hardestEffort : effort,
       route_ref: routeRef,
       issued_at: entry.issued_at,
       expires_at: entry.expires_at
@@ -197,8 +215,10 @@ export function createExchangeJournalInferencePort({
       } catch (cause) {
         return { status: "invalid_output", cause };
       }
+      const dispatch = (await store.listDispatch()).find((record) => record.work_id === workId);
+      invariant(dispatch, "JOURNAL_EXCHANGE_DISPATCH_MISSING");
       try {
-        return { status: "completed", output, receipt: receiptFor(operationKey, entry, stored) };
+        return { status: "completed", output, receipt: receiptFor(operationKey, entry, stored, dispatch) };
       } catch (cause) {
         if (cause.code === "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED") return { status: "invalid_output", cause };
         throw cause;
@@ -216,7 +236,7 @@ export function createExchangeJournalInferencePort({
     return { status: "pending", workId };
   }
 
-  const invoke = async ({ role, packet, outputSchema, operationKey, grant }) => {
+  const invoke = async ({ role, packet, outputSchema, operationKey, grant, tier = "standard" }) => {
     const definition = JOURNAL_ROLE_DEFINITIONS[role];
     invariant(definition && definition.outputSchema === outputSchema, "JOURNAL_ROLE_OUTPUT_SCHEMA_MISMATCH");
     if (UNSUPPORTED_ROLES.has(role)) {
@@ -225,6 +245,7 @@ export function createExchangeJournalInferencePort({
     const checkedPacket = buildJournalRolePacket(role, packet);
     assertJournalInferenceGrant(grant, role, checkedPacket);
     invariant(typeof operationKey === "string" && operationKey.length > 0, "OPERATION_KEY_INVALID");
+    invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
     const digest = inputDigest(role, checkedPacket, outputSchema, grant);
 
     const { store, workId, entry: existing, stored } = await current(operationKey);
@@ -236,13 +257,14 @@ export function createExchangeJournalInferencePort({
         work_id: workId,
         case_id: caseId,
         role,
+        tier,
         instruction: journalRoleInstruction(role),
         packet: checkedPacket,
         output_schema_name: outputSchema,
         output_schema: journalSchema(outputSchema),
         expected_generation: checkedPacket.expected_generation ?? null,
         issued_at: issuedAt.toISOString(),
-        expires_at: new Date(issuedAt.getTime() + ttlMs).toISOString(),
+        expires_at: new Date(issuedAt.getTime() + (tier === "hardest" ? hardestTtlMs : ttlMs)).toISOString(),
         input_sha256: digest,
         grant_id: grant.grant_id,
         grant_purpose: grant.purpose,
@@ -293,6 +315,7 @@ export function createExchangeJournalInferencePort({
       if (observed.status === "invalid_output") return { status: "invalid_output" };
       return { status: "unknown" };
     },
+    hasOperation,
     // Called once the caller has stored the answer durably: the item is retired and its dispatch
     // record removed, so the connector stops serving it and Mission Control stops offering it.
     async release(operationKey) {
@@ -308,8 +331,8 @@ export function createExchangeJournalInferencePort({
     // Content-free list of open items for status reports.
     async openItems() {
       const store = await ready();
-      return (await store.listDispatch()).map(({ work_id: workId, role, issued_at: issuedAt, expires_at: expiresAt, answered }) => ({
-        work_id: workId, work_file_key: journalWorkFileKey(workId), role, issued_at: issuedAt, expires_at: expiresAt, answered
+      return (await store.listDispatch()).map(({ work_id: workId, role, tier = "standard", issued_at: issuedAt, expires_at: expiresAt, answered }) => ({
+        work_id: workId, work_file_key: journalWorkFileKey(workId), role, tier, issued_at: issuedAt, expires_at: expiresAt, answered
       }));
     },
     close() { key.fill(0); }

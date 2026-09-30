@@ -192,6 +192,9 @@ export function createJournalImportController({
         model_profile: modelProfile,
         grant_purpose: grant.purpose
       };
+      const tier = definition.tier ?? "standard";
+      invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
+      if (tier === "hardest") identity.tier = tier;
       return {
         key: definition.key,
         work_id: computeJournalWorkId(identity, secret),
@@ -199,6 +202,7 @@ export function createJournalImportController({
         role: definition.role,
         output_schema_id: roleDefinition.outputSchema,
         identity,
+        tier,
         assigned_core_ids: clone(definition.assigned_core_ids ?? []),
         source_locators: clone(definition.source_locators ?? []),
         packet_input: clone(definition.packet_input ?? {}),
@@ -345,7 +349,7 @@ export function createJournalImportController({
     work = entry.snapshot.work_items.find(({ work_id: workId }) => workId === work.work_id);
     let result;
     try {
-      result = await inferencePort.invoke({ role: work.role, packet, outputSchema: work.output_schema_id, operationKey, grant });
+      result = await inferencePort.invoke({ role: work.role, packet, outputSchema: work.output_schema_id, operationKey, grant, tier: work.tier ?? "standard" });
     } catch (error) {
       return recordFailure(entry, work, error);
     }
@@ -380,7 +384,9 @@ export function createJournalImportController({
       const legacyFailureCode = blocked?.snapshot.checkpoint.blocked_reason;
       if (work?.status === "blocked_authority" && !lastFailure && typeof work.operation_key === "string"
         && typeof legacyFailureCode === "string" && legacyFailureCode !== "INFERENCE_ISOLATION_UNAVAILABLE"
-        && inferencePort.capabilities?.()?.authoritative_completion === true
+        && (typeof inferencePort.isAuthoritativeCompletion === "function"
+          ? await inferencePort.isAuthoritativeCompletion(work.operation_key)
+          : inferencePort.capabilities?.()?.authoritative_completion === true)
         && (await inferencePort.getCompletion(work.operation_key)).status === "not_submitted") {
         lastFailure = { code: legacyFailureCode, submission_status: "not_submitted" };
       }

@@ -52,12 +52,13 @@ export const JOURNAL_WORK_INSTRUCTIONS = "For a private InnerSignal journal work
 const toolError = (code, message, details = undefined) => ({ toolError: { code, message, ...(details ? { details } : {}) } });
 const value = (result) => ({ value: result });
 
-export function createJournalWorkTools({ exchange, caseId, authorizeCase } = {}) {
+export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier = null } = {}) {
   if (!exchange || typeof exchange.readWork !== "function" || typeof exchange.submitResult !== "function") {
     throw new TypeError("A journal work exchange is required.");
   }
   if (typeof caseId !== "string" || !CASE_ID.test(caseId)) throw new TypeError("A valid journal work case ID is required.");
   if (typeof authorizeCase !== "function") throw new TypeError("authorizeCase is required.");
+  if (tier !== null && !["standard", "hardest"].includes(tier)) throw new TypeError("tier is invalid.");
 
   // One compiled validator per distinct schema. Each gets its own Ajv instance, so two schema
   // versions that share an $id never collide.
@@ -75,7 +76,7 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase } = {})
 
   async function outstanding(workId) {
     const entry = await exchange.readWork(workId);
-    if (!entry || entry.case_id !== caseId) {
+    if (!entry || entry.case_id !== caseId || (tier !== null && (entry.tier ?? "standard") !== tier)) {
       return toolError("JOURNAL_WORK_NOT_FOUND", "This journal work item doesn't exist or is already finished. Stop here.");
     }
     if (exchange.isExpired(entry)) return toolError("JOURNAL_WORK_EXPIRED", "This journal work item has expired. Stop here.");

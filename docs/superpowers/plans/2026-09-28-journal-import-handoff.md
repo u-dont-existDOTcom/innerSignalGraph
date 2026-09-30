@@ -78,7 +78,9 @@ A new relay command, `journal-work`, that turns dispatch records into answered i
 
 ## Task 3: the hardest-case lane (this repository; base: the finishes branch)
 
-This is the design; build it only after the owner gates below are cleared. A step that fails all its standard attempts gets one more attempt, answered by Claude Opus, before it is labeled a residual.
+The owner gates are cleared. `2026-09-28-journal-hardest-lane.md` is the task as Codex builds it, with the decisions filled in; where it differs from this summary, it wins. A step that fails all its standard attempts gets one more attempt, answered by Claude Opus, before it is labeled a residual.
+
+**Merge note (2026-09-30):** The implemented lane retains the later main-branch admission rules. An exchange answer needs mechanically verified effective model, effort, and request-context evidence before it can enter the import. The current local work-submission protocol does not attest those facts, so an enabled real hardest route is unavailable at doctor/runtime admission until that evidence exists. A visual hardest attempt without attachment transport is recorded as not attempted. The daily limit pauses the run at the bound; it does not silently skip work. The exchange hashes the submitter, and the import receipt carries only that digest and tier. The older summary below is historical wherever it describes a different bound or receipt.
 
 **Where it applies:**
 - Every `checkedWork` failure in `src/journal-import/private-runtime.mjs`: the calibration reference after its splits, visual binding, a reconciliation batch, an audited unit.
@@ -125,9 +127,10 @@ This is the design; build it only after the owner gates below are cleared. A ste
 ## Owner gates
 
 - **Deployment** (the exchange spec's Deployment section): create the exchange directory, the secret, the connector mount, the `journal:submit` grant and the scopes; redeploy the connector; reconnect the InnerSignal app in each ChatGPT account. The owner does the reconnect himself, because it signs in to his accounts.
-- **Hardest lane.**
-  - Task 3 sends the passages of each hardest step to Anthropic as well as OpenAI. The owner must confirm that the journal owner's consent covers a second model provider.
-  - The owner also sets the daily cap, and decides whether Claude Code may be signed in on a server or should stay on his laptop.
+- **Hardest lane.** Decided on 2026-09-28; see `2026-09-28-journal-hardest-lane.md`.
+  - The journal owner's consent covers a second model provider, so hardest steps may go to Anthropic as well as OpenAI.
+  - The daily limit is 20 hardest attempts, and past it the run pauses until the next UTC day.
+  - Claude Code runs on the import host, signed in with a long-lived token the owner creates with `claude setup-token` at deployment.
 - **Merges:** each PR, by name.
 
 ## Pilot, once the gates are cleared

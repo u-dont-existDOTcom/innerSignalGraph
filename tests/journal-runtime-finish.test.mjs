@@ -236,6 +236,174 @@ test("commit refuses a saved partial calibration even when later stages are read
   } finally { await resumed.close(); }
 });
 
+test("the hardest daily limit counts each dependency invocation before it is sent", async (t) => {
+  const f = await environment(t);
+  f.config.hardest_lane = { enabled: true, daily_limit: 1 };
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  const ordinary = handlers({
+    extractor: (packet) => ({ ...handlers().extractor(packet), status: "needs_context",
+      requested_context: [{ unit_id: packet.core_units[0].unit_id, direction: "after", reason: "Synthetic bounded-context request." }] })
+  });
+  const standardPort = createMockJournalInferencePort({ handlers: ordinary });
+  const hardestPort = createMockJournalInferencePort({ handlers: handlers() });
+  const calls = [];
+  const inferencePort = {
+    capabilities: () => hardestPort.capabilities(),
+    getCompletion: (operationKey) => hardestPort.getCompletion(operationKey),
+    invoke(input) {
+      calls.push(`${input.tier}:${input.role}`);
+      return (input.tier === "hardest" ? hardestPort : standardPort).invoke(input);
+    },
+    close() { standardPort.close(); hardestPort.close(); }
+  };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort, environment: f.environment });
+  try {
+    const summary = await runtime.execute("run");
+    assert.equal(summary.blocker, "HARDEST_DAILY_LIMIT");
+    assert.equal(summary.hardest_lane.sent, 1);
+    assert.deepEqual(calls.filter((call) => call.startsWith("hardest:")), ["hardest:extractor"]);
+  } finally { await runtime.close(); }
+});
+
+test("a restarted hardest reference recovers its durable intent before charging the daily limit", async (t) => {
+  const f = await environment(t);
+  f.config.hardest_lane = { enabled: true, daily_limit: 1 };
+  const invalidReference = (packet) => ({
+    schema_version: "1.0",
+    source_only_first_pass: true,
+    reference_items: [{ id: "reference:synthetic", statement: "Synthetic invalid reference.", required_qualifiers: [],
+      anchors: [{ unit_id: packet.source_windows[0].unit_id, quote: "Words absent from the source.", occurrence: null }],
+      importance_reason: "Synthetic restart fixture.", critical: false }],
+    questions: [],
+    unassessed_unit_ids: []
+  });
+  let hardestInput = null;
+  let hardestInvocations = 0;
+  const firstMock = createMockJournalInferencePort({ handlers: handlers({ reference_reader: invalidReference }) });
+  const firstPort = {
+    capabilities: () => firstMock.capabilities(),
+    getCompletion: (operationKey) => firstMock.getCompletion(operationKey),
+    isAuthoritativeCompletion: (_operationKey, input) => input?.tier === "hardest",
+    invoke(input) {
+      if (input.role === "reference_reader" && input.tier === "hardest") {
+        hardestInput = structuredClone(input);
+        hardestInvocations += 1;
+        throw new Error("synthetic crash after durable hardest intent");
+      }
+      return firstMock.invoke(input);
+    },
+    close: () => firstMock.close()
+  };
+  let runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: firstPort, environment: f.environment });
+  try {
+    await assert.rejects(runtime.execute("run"), /synthetic crash after durable hardest intent/);
+  } finally { await runtime.close(); }
+  assert.ok(hardestInput);
+  assert.equal(JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"))).hardest_lane.sent, 1);
+
+  const resumedMock = createMockJournalInferencePort({ handlers: handlers() });
+  const resumedPort = {
+    capabilities: () => resumedMock.capabilities(),
+    async getCompletion(operationKey) {
+      if (operationKey === hardestInput.operationKey) {
+        const completed = await resumedMock.invoke(hardestInput);
+        return { status: "completed", ...completed };
+      }
+      return resumedMock.getCompletion(operationKey);
+    },
+    isAuthoritativeCompletion: (_operationKey, input) => input?.tier === "hardest",
+    invoke(input) {
+      if (input.role === "reference_reader" && input.tier === "hardest") hardestInvocations += 1;
+      return resumedMock.invoke(input);
+    },
+    close: () => resumedMock.close()
+  };
+  runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: resumedPort, environment: f.environment });
+  try {
+    const summary = await runtime.execute("run");
+    assert.equal(summary.blocker, null);
+    assert.equal(summary.completion.graph_built, "pass");
+    assert.equal(summary.hardest_lane.sent, 1);
+    assert.equal(summary.residuals.hardest_resolved, 1);
+  } finally { await runtime.close(); }
+  assert.equal(hardestInvocations, 1, "the restart must recover rather than invoke the hardest reference again");
+});
+
+function invalidHardestPort(standardPort, shouldExhaust) {
+  return {
+    capabilities: () => standardPort.capabilities(),
+    getCompletion: (operationKey) => standardPort.getCompletion(operationKey),
+    invoke(input) {
+      if (input.tier === "hardest" && shouldExhaust(input)) {
+        throw new JournalInferencePortError("INVALID_STRUCTURED_OUTPUT", { submissionStatus: "completed_invalid" });
+      }
+      return standardPort.invoke(input);
+    },
+    close() { standardPort.close(); }
+  };
+}
+
+test("an exhausted hardest checked-work attempt is counted and becomes a failed residual", async (t) => {
+  const f = await environment(t);
+  f.config.hardest_lane = { enabled: true };
+  const standard = createMockJournalInferencePort({ handlers: handlers({
+    reconciler: (packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation,
+      proposals: [{ operation: "possible_identity", relation: "possible_same_entity",
+        subject_ids: ["entity:missing:a", "entity:missing:b"], evidence_ids: [],
+        explanation: "Synthetic invalid proposal.", automatic_retirement_allowed: false }],
+      unresolved_ids: [], status: "proposals_complete" })
+  }) });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: invalidHardestPort(standard, ({ role }) => role === "reconciler"), environment: f.environment });
+  try {
+    const summary = await runtime.execute("run");
+    assert.equal(summary.blocker, null);
+    assert.equal(summary.residuals.hardest_attempted, 1);
+    assert.equal(summary.residuals.hardest_resolved, 0);
+    assert.equal(summary.completion.graph_built, "pass");
+  } finally { await runtime.close(); }
+});
+
+test("an exhausted hardest single-unit extraction continues as a source-only residual", async (t) => {
+  const f = await environment(t);
+  f.config.hardest_lane = { enabled: true };
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  const baseParser = f.sourceParser;
+  f.sourceParser = async () => {
+    const parsed = await baseParser();
+    const additions = Array.from({ length: 10 }, (_, index) => {
+      const page = index + 4;
+      const text = page === 7 ? "Synthetic Sunday: one final unresolved entry." : `Synthetic extra page ${page}.`;
+      return { page: { page_number: page, representation_id: `synthetic:page:${page - 1}`, disposition: "readable", warnings: [], image_inventory: [] },
+        representation: { representation_id: `synthetic:page:${page - 1}`, text, utf8_byte_length: Buffer.byteLength(text) } };
+    });
+    return { ...parsed,
+      pages: [...parsed.pages, ...additions.map(({ page }) => page)],
+      representations: [...parsed.representations, ...additions.map(({ representation }) => representation)] };
+  };
+  const normal = handlers();
+  const standard = createMockJournalInferencePort({ handlers: handlers({
+    extractor: (packet) => !packet.core_units[0].text.includes("Sunday") ? normal.extractor(packet) : {
+      ...normal.extractor(packet), status: "needs_context",
+      requested_context: [{ unit_id: packet.core_units[0].unit_id, direction: "after", reason: "Synthetic unresolved unit." }]
+    }
+  }) });
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: invalidHardestPort(standard,
+      ({ role }) => role === "extractor"), environment: f.environment });
+  try {
+    const summary = await runtime.execute("run");
+    assert.equal(summary.blocker, null);
+    assert.equal(summary.completion.graph_built, "partial");
+    assert.equal(summary.residuals.hardest_attempted, 1);
+    assert.equal(summary.residuals.hardest_resolved, 0);
+    assert.equal(summary.residuals.source_only_units, 1);
+  } finally { await runtime.close(); }
+});
+
 test("identity questions a bounded neighborhood cannot settle are counted, not a reason to stop", async (t) => {
   const f = await environment(t);
   const { run, commit } = await drive(f, handlers({

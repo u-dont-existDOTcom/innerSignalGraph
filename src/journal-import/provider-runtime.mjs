@@ -77,7 +77,7 @@ function secret(environment, name) {
 
 // The connector exchange route: work items go to ChatGPT through the private connector tools, and
 // the exchange root and secret are the same ones the connector uses.
-function loadExchangePort(environment, config, receiptKey, caseId) {
+function loadExchangePort(environment, config, receiptKey, caseId, hardestLane) {
   const configuredRoot = secret(environment, "INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT");
   invariant(path.isAbsolute(configuredRoot), "JOURNAL_EXCHANGE_ROOT_INVALID");
   const keys = deriveJournalWorkExchangeKeys(secret(environment, "INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64"));
@@ -90,6 +90,7 @@ function loadExchangePort(environment, config, receiptKey, caseId) {
     model: config.model,
     effort: config.effort,
     waitMs: config.timeout_ms,
+    hardestLane,
     ...(config.exchange?.poll_ms !== undefined ? { pollMs: config.exchange.poll_ms } : {}),
     ...(config.exchange?.ttl_ms !== undefined ? { ttlMs: config.exchange.ttl_ms } : {}),
     // Canonical, private and outside this checkout, checked when the runtime starts.
@@ -101,16 +102,21 @@ function loadExchangePort(environment, config, receiptKey, caseId) {
   });
 }
 
-export function loadJournalInferencePortFromEnvironment(environment = process.env, { providerFactories = PROVIDERS, transportCheckpoint, caseId = null } = {}) {
+export function loadJournalInferencePortFromEnvironment(environment = process.env, { providerFactories = PROVIDERS, transportCheckpoint, caseId = null, hardestLane = {} } = {}) {
   const raw = environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON;
   if (raw == null || raw === "") return createDisabledJournalInferencePort();
   const config = parseConfiguration(raw);
+  invariant(!hardestLane.enabled || ["chatgpt_subscription_browser", JOURNAL_EXCHANGE_PROVIDER].includes(config.provider),
+    "HARDEST_LANE_ROUTE_UNAVAILABLE");
+  // A browser route remains necessary for ordinary image-bearing visual_reader work. The local
+  // hardest exchange cannot carry attachments, so its tier-specific capabilities say that a hardest
+  // visual attempt is unavailable; no hardest call may silently fall through to the standard model.
   const receiptKey = Buffer.from(secret(environment, "INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64"), "base64");
   invariant(receiptKey.byteLength >= 32, "INFERENCE_RECEIPT_KEY_INVALID");
   if (config.provider === JOURNAL_EXCHANGE_PROVIDER) {
     try {
       invariant(typeof caseId === "string" && caseId.length > 0, "JOURNAL_EXCHANGE_CASE_INVALID");
-      return loadExchangePort(environment, config, receiptKey, caseId);
+      return loadExchangePort(environment, config, receiptKey, caseId, hardestLane);
     } finally {
       receiptKey.fill(0);
       if (environment === process.env) delete process.env.INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64;
@@ -145,14 +151,55 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
         generationTimeoutMs: config.timeout_ms
       } : undefined
     });
-    return createProviderJournalInferencePort({
+    const providerPort = createProviderJournalInferencePort({
       provider,
-      receiptKey,
+      receiptKey: Buffer.from(receiptKey),
       routeRef: config.route_ref,
       allowanceEvidence: config.allowance_evidence,
       maxExternalSpendUsd: config.max_external_spend_usd,
       configuredModelProfile: config.model,
       configuredEffort: config.effort
+    });
+    if (!(hardestLane.enabled === true && config.provider === "chatgpt_subscription_browser")) return providerPort;
+    const exchangePort = loadExchangePort(environment, config, Buffer.from(receiptKey), caseId, hardestLane);
+    const operations = new Map();
+    const portFor = (input) => input.tier === "hardest" ? exchangePort : providerPort;
+    return Object.freeze({
+      capabilities() {
+        const hardest = exchangePort.capabilities();
+        return Object.freeze({
+          ...providerPort.capabilities(),
+          hardest_roles: hardest.roles,
+          hardest_fresh_context_per_generate: hardest.fresh_context_per_generate,
+          hardest_authenticated_execution_profile_per_generate: hardest.authenticated_execution_profile_per_generate
+        });
+      },
+      async prepare() { await exchangePort.prepare?.(); },
+      async invoke(input) {
+        const selected = portFor(input);
+        operations.set(input.operationKey, selected);
+        return selected.invoke(input);
+      },
+      async getCompletion(operationKey, { authoritativeCompletion } = {}) {
+        const selected = operations.get(operationKey)
+          ?? (typeof authoritativeCompletion === "boolean" ? (authoritativeCompletion ? exchangePort : providerPort) : null);
+        if (selected) return selected.getCompletion(operationKey);
+        const [exchange, browser] = await Promise.all([
+          exchangePort.getCompletion(operationKey), providerPort.getCompletion(operationKey)
+        ]);
+        return exchange.status !== "not_submitted" ? exchange : browser;
+      },
+      async isAuthoritativeCompletion(operationKey, input = null) {
+        if (input) return portFor(input) === exchangePort;
+        const selected = operations.get(operationKey);
+        if (selected) return selected === exchangePort;
+        return exchangePort.hasOperation(operationKey);
+      },
+      async release(operationKey) {
+        operations.delete(operationKey);
+        await Promise.all([exchangePort.release?.(operationKey), providerPort.release?.(operationKey)]);
+      },
+      close() { operations.clear(); exchangePort.close?.(); providerPort.close(); }
     });
   } finally {
     receiptKey.fill(0);

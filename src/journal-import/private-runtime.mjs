@@ -5,7 +5,7 @@ import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
-import { vaultRootMatchesConfig } from "./run-config.mjs";
+import { normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -38,6 +38,20 @@ const PARSE_STATUS_BY_DISPOSITION = Object.freeze({ readable: "readable", visual
 const parseStatus = (page, mimeType) => page ? (PARSE_STATUS_BY_DISPOSITION[page.disposition] ?? "partial")
   : (mimeType?.startsWith("text/plain") ? "readable" : "partial");
 const completions = () => Object.fromEntries(["archive_verified", "raw_search_available", "graph_built", "semantically_audited", "patterns_reviewed", "profile_committed", "cold_retrieval_verified", "capacity_tested"].map((k) => [k, "not_run"]));
+
+export function applyHardestDailyLimit(state, { now = () => new Date(), dailyLimit, newlySent = true }) {
+  invariant(Number.isSafeInteger(dailyLimit) && dailyLimit >= 1, "HARDEST_LANE_CONFIG_INVALID");
+  const day = now().toISOString().slice(0, 10);
+  if (state.hardest_lane?.day !== day) state.hardest_lane = { day, sent: 0 };
+  if (!newlySent) return true;
+  if (state.hardest_lane.sent >= dailyLimit) {
+    state.blocker = "HARDEST_DAILY_LIMIT";
+    return false;
+  }
+  state.hardest_lane.sent += 1;
+  if (state.blocker === "HARDEST_DAILY_LIMIT") state.blocker = null;
+  return true;
+}
 
 async function privateJson(file, value) {
   const temporary = `${file}.${randomUUID()}.tmp`;
@@ -103,7 +117,7 @@ async function removeLegacyPageRenders(root) {
 }
 
 /** A private operator process owns this runtime. No mutation is added to the MCP. */
-export async function openJournalExecutionRuntime({ config, configPath, environment = process.env, service: suppliedService = null, inferencePort: suppliedPort = null, authContextProvider = null, sourceParser = parseSourceFile, renderVisualPage = renderJournalPdfPage }) {
+export async function openJournalExecutionRuntime({ config, configPath, environment = process.env, service: suppliedService = null, inferencePort: suppliedPort = null, authContextProvider = null, sourceParser = parseSourceFile, renderVisualPage = renderJournalPdfPage, now = () => new Date() }) {
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
   // An empty source has nothing to import, so no run of it could finish; doctor reports the same.
   invariant(Number.isSafeInteger(config.source?.bytes) && config.source.bytes > 0, "JOURNAL_SOURCE_EMPTY");
@@ -156,8 +170,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
     invariant(state.case_id === caseId && state.source_sha256 === config.source.sha256, "JOURNAL_RESUME_BINDING_MISMATCH");
     store = createPrivateJournalCorpusStore({ rootDir: root, caseId, corpusId: state.corpus_id, corpusKey: key, resumeMatchingObjects: true });
+    const hardestLane = normalizeJournalHardestLaneConfig(config);
+    invariant(Number.isSafeInteger(hardestLane.daily_limit) && hardestLane.daily_limit >= 1, "HARDEST_LANE_CONFIG_INVALID");
+    invariant(Number.isFinite(hardestLane.ttl_hours) && hardestLane.ttl_hours > 0, "HARDEST_LANE_CONFIG_INVALID");
     port = suppliedPort ?? loadJournalInferencePortFromEnvironment({ ...environment }, {
       caseId,
+      hardestLane,
       transportCheckpoint: value => store.writeJsonObject({
         objectId: `transport:${hash(value.context.request_id)}:${value.phase}`, value
       })
@@ -165,6 +183,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     const semanticPort = port;
     // The connector exchange checks its root and clears stale temporary files before any work.
     await semanticPort.prepare?.();
+    if (hardestLane.enabled && !suppliedPort) {
+      const capabilities = semanticPort.capabilities();
+      invariant(capabilities.hardest_fresh_context_per_generate === true,
+        "INFERENCE_ISOLATION_UNAVAILABLE");
+      invariant(capabilities.hardest_authenticated_execution_profile_per_generate === true,
+        "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+    }
     port = createDurableJournalInferencePort({ port: {
       capabilities: () => semanticPort.capabilities(),
       // Check immediately before the send, including after the durable intent was written.
@@ -178,12 +203,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         await authorize();
         return result;
       },
-      async getCompletion(operationKey) {
+      async getCompletion(operationKey, options) {
         await authorize();
-        const result = await semanticPort.getCompletion(operationKey);
+        const result = await semanticPort.getCompletion(operationKey, options);
         await authorize();
         return result;
       },
+      isAuthoritativeCompletion: (operationKey, input) => typeof semanticPort.isAuthoritativeCompletion === "function"
+        ? semanticPort.isAuthoritativeCompletion(operationKey, input)
+        : semanticPort.capabilities?.()?.authoritative_completion === true,
       // Lets the port drop its own copy once the durable store holds the answer; moves no content.
       release: (operationKey) => semanticPort.release?.(operationKey),
       close: () => semanticPort.close?.()
@@ -212,7 +240,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     if (!archived) (await readVerifiedSource()).fill(0);
     const grant = { grant_id: config.existing_grant_ref, principal_id: "authorized-private-operator", purpose: "organize_search", allowed_roles: Object.keys(JOURNAL_ROLE_DEFINITIONS), revoked: false, expires_at: null };
     invariant(typeof grant.grant_id === "string" && grant.grant_id.length > 0, "JOURNAL_GRANT_REFERENCE_REQUIRED");
-    const save = async () => { state.updated_at = new Date().toISOString(); await privateJson(stateFile, state); };
+    const save = async () => { state.updated_at = now().toISOString(); await privateJson(stateFile, state); };
     const writeLarge = async (id, value) => store.writeChunkedOriginal({ objectId: id, bytes: Buffer.from(JSON.stringify(value)) });
     const readLarge = async (ref) => { const b = await store.reassembleOriginal(ref); try { return JSON.parse(b.toString("utf8")); } finally { b.fill(0); } };
     const readIfPresent = async (id) => { try { return await store.readJsonObject({ objectId: id }); } catch (e) { if (e.code === "ENOENT") return null; throw e; } };
@@ -221,6 +249,17 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const canonical = (v) => JSON.stringify(v, (k, x) => k === "replay" ? undefined : x);
       if (prior) { invariant(canonical(prior) === canonical(value), "JOURNAL_IMMUTABLE_RESULT_CONFLICT"); return prior; }
       await store.writeJsonObject({ objectId: id, value }); return value;
+    };
+    const hardestStatus = () => {
+      applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit, newlySent: false });
+      return state.hardest_lane;
+    };
+    const beforeHardestSend = async () => {
+      if (!applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit })) {
+        await save();
+        throw new ValidationError("HARDEST_DAILY_LIMIT", { code: "HARDEST_DAILY_LIMIT" });
+      }
+      await save();
     };
     const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration,
       ...(state.calibration_failure ? { calibration_failure: structuredClone(state.calibration_failure) } : {}),
@@ -232,7 +271,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           ?? { page_number, reason: "VISUAL_EXCLUSION_REASON_NOT_RECORDED" }),
       ...(state.semantic_disposition === "archive_only" ? { next_action: state.next_action } : {}),
       completion: structuredClone(state.completion), blocker: state.blocker,
-      residuals: structuredClone(state.residuals ?? {}), external_spend_usd: 0 });
+      residuals: structuredClone(state.residuals ?? {}),
+      hardest_lane: { ...hardestStatus(), daily_limit: hardestLane.daily_limit }, external_spend_usd: 0 });
     const calibrationStopStatus = (reason) => {
       if (["CALIBRATION_REFERENCE_UNRESOLVED", "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED",
         "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_ATTEMPTS_EXHAUSTED",
@@ -332,7 +372,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // Set when work() returns null because its job can never answer (the output stayed invalid
     // through every retry the job allows), as opposed to a pause the next run may resolve.
     let workExhausted = false;
-    async function work({ id, role, stage: workStage, unit = null, units = null, packetInput,
+    async function work({ id, role, stage: workStage, unit = null, units = null, packetInput, tier = "standard",
       identityPacketInput = packetInput, dependencies = [], acceptReviewFindings = false }) {
       workExhausted = false;
       await authorize();
@@ -353,10 +393,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // submission from the prior runner. Batch-only scope fields belong to
       // the new semantic jobs; inserting them into a visual key resubmits it.
       const legacyVisual = role === "visual_reader" && workStage === "VISUAL_READ" && scopeUnits.length === 1;
+      invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
       id = `job:${hash(JSON.stringify({ id, role, stage: workStage, packetInput: identityPacketInput,
         ...(legacyVisual ? {} : { assigned_core_ids: assignedCoreIds, source_locators: sourceLocators }),
         dependencies, instruction: journalRoleInstruction(role),
-        dependency_instructions: dependencies.map(item => journalRoleInstruction(item.role)) }))}`;
+        dependency_instructions: dependencies.map(item => journalRoleInstruction(item.role)),
+        ...(tier === "hardest" ? { tier } : {}) }))}`;
       if (workStage === "REFERENCE_AUDIT") {
         const resultId = `reference:result:${id}`;
         const cached = await readIfPresent(resultId);
@@ -386,7 +428,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           // An authoritative port can safely wait on this exact operation key: invoke() resumes the
           // existing submission instead of sending a duplicate. The completion check above is only
           // a snapshot, so an answer may arrive immediately after it reports unknown.
-          if (completion.status === "unknown" && port.capabilities?.()?.authoritative_completion === true) break;
+          if (completion.status === "unknown" && await port.isAuthoritativeCompletion(operationKey)) break;
           if (completion.status === "not_submitted" && resend > 2) {
             state.stage = workStage; state.blocker = "REFERENCE_RESEND_EXHAUSTED";
             workExhausted = true; await save(); return null;
@@ -398,13 +440,26 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         let result;
         try {
-          await authorize();
+          if (tier === "hardest") {
+            // A crash may leave the durable intent without this direct path's result marker. Recover
+            // or resume that intent before charging a slot; only a confirmed-new send consumes one.
+            const completion = await port.getCompletion(operationKey);
+            if (completion.status === "completed") {
+              const recovered = { output: completion.output, receipt: completion.receipt };
+              await writeOnce(resultId, recovered);
+              state.blocker = null; await save();
+              return [recovered];
+            }
+            try { if (completion.status === "not_submitted") await beforeHardestSend(); }
+            catch (error) { if (error?.code === "HARDEST_DAILY_LIMIT") return null; throw error; }
+          }
           result = await port.invoke({ role, packet: buildJournalRolePacket(role, {
             protocol_version: "1.0", output_schema_id: JOURNAL_ROLE_DEFINITIONS[role].outputSchema,
             assigned_core_ids: assignedCoreIds, source_locators: sourceLocators,
             expected_generation: state.generation, controller_provenance_tag: id,
             grant_purpose: grant.purpose, ...packetInput
-          }), outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema, operationKey, grant });
+          }), outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema, operationKey, grant,
+          ...(tier === "hardest" ? { tier } : {}) });
         } catch (error) {
           if (error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid") {
             const attempt = firstFailure ? 2 : 1;
@@ -417,7 +472,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           }
           // Definitely never answered (an exchange item that expired): record it as open, so the next
           // run confirms that through the port and sends the call again under a fresh key.
-          if (error.submissionStatus === "not_submitted" && port.capabilities?.()?.authoritative_completion === true) {
+          if (error.submissionStatus === "not_submitted" && await port.isAuthoritativeCompletion(operationKey)) {
             await writeOnce(`reference:completion-unknown:${operationKey}`, { status: "not_submitted", operation_key: operationKey });
             state.stage = workStage; state.blocker = error.code ?? "INFERENCE_NOT_SUBMITTED"; await save(); return null;
           }
@@ -429,7 +484,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       const ledger = createCorpusJournalJobLedger({ corpusStore: store, jobId: id });
       const controller = createJournalImportController({ ledger, inferencePort: port, controllerSecret: key, grant,
-        promptVersion: `1.0:${hash(id).slice(0, 24)}`, modelProfile: route?.model ?? "synthetic", beforeInvoke: authorize,
+        promptVersion: `1.0:${hash(id).slice(0, 24)}`, modelProfile: route?.model ?? "synthetic",
+        beforeInvoke: async ({ work: pendingWork }) => {
+          await authorize();
+          if (pendingWork.tier === "hardest") await beforeHardestSend();
+        },
         resolvePacketInput: async (input) => {
           const image = input?.page_image_ref;
           if (image?.kind !== "chunked_image") return input;
@@ -441,8 +500,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           } finally { bytes.fill(0); }
         } });
       try {
-        if (!(await ledger.load())) await controller.initialize({ jobId: id, caseId, corpusId: state.corpus_id, generation: state.generation, workDefinitions: [{ key: role, stage: workStage, role, identity, assigned_core_ids: assignedCoreIds, source_locators: sourceLocators, packet_input: packetInput }, ...dependencies] });
-        const entry = await controller.runUntilBlocked({ maximumSteps: 8 });
+        if (!(await ledger.load())) await controller.initialize({ jobId: id, caseId, corpusId: state.corpus_id, generation: state.generation, workDefinitions: [{ key: role, stage: workStage, role, tier, identity, assigned_core_ids: assignedCoreIds, source_locators: sourceLocators, packet_input: packetInput }, ...dependencies.map((item) => ({ ...item, tier }))] });
+        let entry;
+        try { entry = await controller.runUntilBlocked({ maximumSteps: 8 }); }
+        catch (error) { if (error?.code === "HARDEST_DAILY_LIMIT") return null; throw error; }
         const unfinished = entry.snapshot.work_items.find((item) => item.status !== "completed");
         // A primary output that asks for smaller windows or more context parks its job, and its
         // reviewers never run. The caller repairs or splits such a batch, so it is handed back
@@ -467,6 +528,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         throw error;
       }
     };
+    async function recordHardestOutcome(id, outcome) {
+      state.hardest_outcomes ??= {};
+      if (state.hardest_outcomes[id]) return;
+      state.hardest_outcomes[id] = outcome;
+      state.residuals = { ...(state.residuals ?? {}),
+        hardest_attempted: (state.residuals?.hardest_attempted ?? 0) + 1,
+        hardest_resolved: (state.residuals?.hardest_resolved ?? 0) + (outcome === "resolved" ? 1 : 0) };
+      await save();
+    }
     // A work result is used only once it passes its check. Each attempt has its own ID, so a rerun
     // replays the stored attempts in order, neither using a failed one nor sending it again. After
     // the last attempt the caller decides what the unresolved step means for its stage, instead of
@@ -487,7 +557,21 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         failure = checkFailure(check, result);
         if (!failure) return { result };
       }
-      return { failure };
+      if (!hardestLane.enabled) return { failure };
+      if (port.capabilities?.().hardest_roles?.[request.role]?.available === false) {
+        return { failure, hardest: "not_attempted" };
+      }
+      const result = await work({ ...request, id: `${request.id}:hardest`, tier: "hardest" });
+      if (!result) {
+        if (!workExhausted) return { blocked: true };
+        await recordHardestOutcome(request.id, "failed");
+        state.blocker = null;
+        await save();
+        return { failure, hardest: "failed" };
+      }
+      const hardestFailure = checkFailure(check, result);
+      await recordHardestOutcome(request.id, hardestFailure ? "failed" : "resolved");
+      return hardestFailure ? { failure: hardestFailure, hardest: "failed" } : { result, hardest: "resolved" };
     }
 
     async function runBatched(plan) {
@@ -790,13 +874,53 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             cycle: cycle + 1
           };
         }
-        const review = results?.[1]?.output;
-        const unresolved = Boolean(bindingFailure)
+        let review = results?.[1]?.output;
+        let unresolved = Boolean(bindingFailure)
           || results?.[0]?.output?.status !== "complete"
           || review?.status !== "sufficient_for_stated_scope"
           || review.assessments.some((assessment) => assessment.outcome !== "preserved"
             || assessment.finding_type !== "none")
           || review.unassessed_ids.length > 0;
+        // A single extraction unit gets the same final repair request once through the hardest
+        // lane before it is admitted as source-only needs_review.
+        if (unresolved && units.length === 1 && hardestLane.enabled) {
+          const identity = identityFor(units);
+          const hardest = await work({
+            id: `extract:batch:${keyId}:hardest`, tier: "hardest",
+            role: "extractor", stage: "EXTRACT", units,
+            packetInput: { core_units: core, adjacent_context: adjacentContext,
+              visual_transcriptions: visualContext, repair_request: repairRequest },
+            dependencies: [{ key: "omission", stage: "OMISSION_CHECK", role: "omission_checker",
+              identity, assigned_core_ids: units.map((item) => item.unit_id), source_locators: locatorsFor(units),
+              packet_input: { core_units: core, adjacent_context: adjacentContext,
+                candidate_extraction: { $work_output: "extractor" }, target_generation: state.generation } }],
+            acceptReviewFindings: true
+          });
+          const outcomeId = `extract:batch:${keyId}`;
+          if (!hardest) {
+            if (!workExhausted) return false;
+            state.blocker = null;
+            await recordHardestOutcome(outcomeId, "failed");
+          } else {
+            results = hardest;
+            bindingFailure = null;
+            try {
+              split = splitBatchExtractionByUnit({ extraction: results[0].output, unitIds: units.map((item) => item.unit_id) });
+              graphsByUnit = new Map(units.map((item) => [item.unit_id,
+                bindUnitExtraction(item, split.get(item.unit_id), results[0].receipt)]));
+            } catch (error) {
+              if (!(error instanceof ValidationError)) throw error;
+              bindingFailure = { code: error.code, details: error.details ?? null };
+            }
+            review = results?.[1]?.output;
+            unresolved = Boolean(bindingFailure) || results?.[0]?.output?.status !== "complete"
+              || review?.status !== "sufficient_for_stated_scope"
+              || review.assessments.some((assessment) => assessment.outcome !== "preserved"
+                || assessment.finding_type !== "none")
+              || review.unassessed_ids.length > 0;
+            await recordHardestOutcome(outcomeId, unresolved ? "failed" : "resolved");
+          }
+        }
         if (unresolved && units.length > 1) {
           const middle = Math.ceil(units.length / 2);
           return await processBatch(units.slice(0, middle), calibration)
@@ -818,7 +942,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             requested_context: []
           };
           const graph = bindUnitExtraction(unit, admitted, results[0].receipt);
-          await writeOnce(`unit:graph:${unit.unit_id}`, { graph, extraction: results[0], omission: results[1], source_only_unresolved: true });
+          await writeOnce(`unit:graph:${unit.unit_id}`, { graph, extraction: results[0], omission: results[1], source_only_unresolved: true,
+            ...(hardestLane.enabled ? { hardest: "failed" } : {}) });
           if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
           state.stage = "EXTRACT";
           state.blocker = null;
@@ -1133,8 +1258,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const read = await checkedWork({ id: `visual:${pageNumber}`, role: "visual_reader", stage: "VISUAL_READ", unit: { unit_id: `page:${pageNumber}`, representation_id: page.representation_id, start_byte: 0, end_byte: image.length, page_number: pageNumber }, packetInput, identityPacketInput: legacyPacketInput },
             ([saved]) => {
               invariant(saved.output.source_page_id === `page:${pageNumber}`, "VISUAL_PAGE_BINDING_MISMATCH");
-              // Unreadable regions are valid dispositions. page_complete=false instead means that
-              // at least one visible region has no disposition and the page must be tried again.
+              // Unreadable regions are valid dispositions; an incomplete inventory is not.
               invariant(saved.output.page_complete === true, "VISUAL_PAGE_INVENTORY_INCOMPLETE");
             });
           if (read.blocked) return summary();
@@ -1643,6 +1767,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         result = await runJournalPatternPass({
           graph, units, unitGraphs, sourceReader: reader, work,
           stepFailure: () => (workExhausted ? state.blocker : null),
+          hardestLaneEnabled: hardestLane.enabled,
           readIfPresent, writeOnce, counterReceiptSecret: key,
           generation: state.generation,
           representations: Object.fromEntries(plan.parsed.representations.map(item =>
@@ -1657,7 +1782,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // review stayed unresolved; the counts say how many, and the register holds only what was
       // reviewed.
       state.completion.patterns_reviewed = result.status;
-      state.residuals = { ...(state.residuals ?? {}), audit_excluded_records: untrusted.size, ...result.counts };
+      state.residuals = { ...(state.residuals ?? {}), audit_excluded_records: untrusted.size, ...result.counts,
+        hardest_attempted: (state.residuals?.hardest_attempted ?? 0) + (result.counts.hardest_attempted ?? 0),
+        hardest_resolved: (state.residuals?.hardest_resolved ?? 0) + (result.counts.hardest_resolved ?? 0) };
       state.stage = "COMMIT";
       state.blocker = null;
       await save();

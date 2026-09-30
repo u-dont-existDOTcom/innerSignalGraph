@@ -15,7 +15,13 @@ import { ValidationError } from "../core/errors.mjs";
 export function createDurableJournalInferencePort({ port, corpusStore }) {
   const hash = (v) => createHash("sha256").update(v).digest("hex");
   const id = (key, attempt, suffix) => `inference:${hash(key)}:${attempt === 1 ? "" : `attempt:${attempt}:`}${suffix}`;
-  const authoritative = () => port.capabilities?.()?.authoritative_completion === true;
+  const authoritative = async (operationKey, input = null, intent = null) => {
+    if (typeof intent?.authoritative_completion === "boolean") return intent.authoritative_completion;
+    if (typeof port.isAuthoritativeCompletion === "function") {
+      return (await port.isAuthoritativeCompletion(operationKey, input)) === true;
+    }
+    return port.capabilities?.()?.authoritative_completion === true;
+  };
   const read = async (objectId) => {
     try { return await corpusStore.readJsonObject({ objectId }); }
     catch (e) { if (e.code === "ENOENT") return null; throw e; }
@@ -64,40 +70,49 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
       if (result?.status === "not_submitted") throw new JournalInferencePortError("INFERENCE_RETRY_LIMIT", { submissionStatus: "not_submitted" });
       if (intent) {
         // Resume the same submission; the port neither sends it twice nor loses its answer.
-        if (authoritative()) return settle(input.operationKey, attempt, input);
-        const completion = await port.getCompletion(input.operationKey);
+        const completionIsAuthoritative = await authoritative(input.operationKey, input, intent);
+        if (completionIsAuthoritative) return settle(input.operationKey, attempt, input);
+        const completion = await port.getCompletion(input.operationKey, { authoritativeCompletion: completionIsAuthoritative });
         if (completion.status !== "completed") throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" });
         await writeResult(input.operationKey, attempt, completion);
         await release(input.operationKey);
         return { output: completion.output, receipt: completion.receipt };
       }
-      await corpusStore.writeJsonObject({ objectId: id(input.operationKey, attempt, "intent"), value: { operation_key: input.operationKey, input_sha256: digest, recorded_at: new Date().toISOString() } });
+      const authoritativeCompletion = await authoritative(input.operationKey, input);
+      await corpusStore.writeJsonObject({ objectId: id(input.operationKey, attempt, "intent"), value: {
+        operation_key: input.operationKey,
+        input_sha256: digest,
+        authoritative_completion: authoritativeCompletion,
+        recorded_at: new Date().toISOString()
+      } });
       return settle(input.operationKey, attempt, input);
     },
     async getCompletion(key) {
       const { attempt, intent, result } = await latest(key);
       if (result) {
-        if (result.status === "invalid_output") return authoritative() ? { status: "invalid_output" } : { status: "unknown" };
+        if (result.status === "invalid_output") return (await authoritative(key, null, intent)) ? { status: "invalid_output" } : { status: "unknown" };
         return result;
       }
       if (!intent) return { status: "not_submitted" };
-      const completion = await port.getCompletion(key);
+      const completionIsAuthoritative = await authoritative(key, null, intent);
+      const completion = await port.getCompletion(key, { authoritativeCompletion: completionIsAuthoritative });
       if (completion.status === "completed") {
         await writeResult(key, attempt, completion);
         await release(key);
         return completion;
       }
-      if (authoritative() && completion.status === "not_submitted") {
+      if (completionIsAuthoritative && completion.status === "not_submitted") {
         await writeResult(key, attempt, { status: "not_submitted", code: completion.code ?? "INFERENCE_NOT_SUBMITTED" });
         return { status: "not_submitted" };
       }
-      if (authoritative() && completion.status === "invalid_output") {
+      if (completionIsAuthoritative && completion.status === "invalid_output") {
         await writeResult(key, attempt, { status: "invalid_output", code: "INVALID_STRUCTURED_OUTPUT" });
         await release(key);
         return { status: "invalid_output" };
       }
       return { status: "unknown" };
     },
+    isAuthoritativeCompletion: authoritative,
     close() { return port.close?.(); }
   });
 }

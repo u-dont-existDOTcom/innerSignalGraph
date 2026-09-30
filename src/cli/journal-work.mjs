@@ -21,8 +21,8 @@ async function main() {
   const now = Date.now();
   for (const record of records) {
     if (Date.parse(record.expires_at) <= now) continue;
-    const { work_id, role, output_schema_name, model, effort, issued_at, expires_at, answered } = record;
-    process.stdout.write(`${JSON.stringify({ work_id, role, output_schema_name, model, effort, tier: "standard", issued_at, expires_at, answered })}\n`);
+    const { work_id, role, output_schema_name, model, effort, tier = "standard", issued_at, expires_at, answered } = record;
+    process.stdout.write(`${JSON.stringify({ work_id, role, output_schema_name, model, effort, tier, issued_at, expires_at, answered })}\n`);
   }
 }
 

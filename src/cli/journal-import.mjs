@@ -7,7 +7,7 @@ import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
 import { sourceFormatForPath, sourceParserCapabilities } from "../journal-import/parsers/index.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../journal-import/provider-runtime.mjs";
-import { vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
+import { normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 
@@ -209,7 +209,10 @@ export async function configuredJournalDoctorReport(configPath, environment = pr
   if (operator.blocker) blockers.push(operator.blocker);
   let inference;
   try {
-    const port = inferencePortLoader({ ...environment }, { caseId: config.target_profile.case_id });
+    const port = inferencePortLoader({ ...environment }, {
+      caseId: config.target_profile.case_id,
+      hardestLane: normalizeJournalHardestLaneConfig(config)
+    });
     try {
       await port.prepare?.();
       inference = port.capabilities();
@@ -224,9 +227,16 @@ export async function configuredJournalDoctorReport(configPath, environment = pr
     && inference.fresh_context_per_generate === true;
   const inferenceExecutionProfileAvailable = inference.enabled === true
     && inference.authenticated_execution_profile_per_generate === true;
-  const inferenceAuthorized = inferenceIsolationAvailable && inferenceExecutionProfileAvailable;
+  const hardestEnabled = normalizeJournalHardestLaneConfig(config).enabled;
+  const hardestIsolationAvailable = !hardestEnabled || inference.hardest_fresh_context_per_generate === true;
+  const hardestExecutionProfileAvailable = !hardestEnabled
+    || inference.hardest_authenticated_execution_profile_per_generate === true;
+  const inferenceAuthorized = inferenceIsolationAvailable && inferenceExecutionProfileAvailable
+    && hardestIsolationAvailable && hardestExecutionProfileAvailable;
   if (!inferenceIsolationAvailable) blockers.push("INFERENCE_ISOLATION_UNAVAILABLE");
   if (inference.enabled && !inferenceExecutionProfileAvailable) blockers.push("JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+  if (!hardestIsolationAvailable) blockers.push("INFERENCE_ISOLATION_UNAVAILABLE");
+  if (!hardestExecutionProfileAvailable) blockers.push("JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
   if ((inference.external_spend_authorized_usd ?? 0) > config.max_external_spend_usd) blockers.push("INFERENCE_ALLOWANCE_EXCEEDS_CONFIG");
   return Object.freeze({
     schema_version: 1,

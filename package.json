@@ -14,6 +14,7 @@
     "private-case:operations": "node src/cli/private-case-operations.mjs",
     "private-case:acceptance": "node --test tests/private-case-continuity.test.mjs tests/private-candidate-lifecycle.test.mjs tests/private-case-operator-cli.test.mjs tests/private-case-orchestration.test.mjs tests/private-therapy-runtime.test.mjs tests/private-runtime-environment.test.mjs tests/private-therapy-model-runtime.test.mjs tests/therapy-ledger-privacy.test.mjs",
     "journal:import": "node src/cli/journal-import.mjs",
+    "journal:work:mcp": "node src/cli/journal-work-mcp.mjs",
     "journal:work": "node src/cli/journal-work.mjs",
     "journal:test": "node --test tests/journal-*.test.mjs",
     "journal:ui:build": "vite build --config apps/journal-web/vite.config.ts",

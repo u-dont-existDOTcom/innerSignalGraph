@@ -254,6 +254,29 @@ test("configured doctor blocks an enabled exchange route without authenticated e
   assert.equal(report.capabilities.semantic_scope, "unavailable");
   assert.ok(report.blockers.includes("INFERENCE_ISOLATION_UNAVAILABLE"));
   assert.ok(report.blockers.includes("JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED"));
+
+  const runConfig = JSON.parse(await fs.readFile(configPath, "utf8"));
+  runConfig.hardest_lane = { enabled: true };
+  await fs.writeFile(configPath, `${JSON.stringify(runConfig)}\n`, { mode: 0o600 });
+  let receivedLane;
+  const hardestReport = await configuredJournalDoctorReport(configPath, {}, {
+    inferencePortLoader: (_environment, options) => {
+      receivedLane = options.hardestLane;
+      return {
+        async prepare() {},
+        capabilities: () => ({ enabled: true, packet_only: true,
+          fresh_context_per_generate: true, authenticated_execution_profile_per_generate: true,
+          hardest_fresh_context_per_generate: false,
+          hardest_authenticated_execution_profile_per_generate: false,
+          external_spend_authorized_usd: 0 }),
+        close() {}
+      };
+    }
+  });
+  assert.equal(receivedLane.enabled, true);
+  assert.equal(hardestReport.capabilities.inference_route, "unavailable");
+  assert.ok(hardestReport.blockers.includes("INFERENCE_ISOLATION_UNAVAILABLE"));
+  assert.ok(hardestReport.blockers.includes("JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED"));
 });
 
 test("doctor reports a UTF-8 text source as importable and other non-PDF bytes as unsupported", async (t) => {

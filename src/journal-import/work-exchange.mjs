@@ -180,6 +180,7 @@ function validateWorkEntry(entry) {
   assertJournalWorkId(entry.work_id);
   if (typeof entry.case_id !== "string" || !CASE_ID_PATTERN.test(entry.case_id)) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (typeof entry.role !== "string" || !ROLE_PATTERN.test(entry.role)) fail("JOURNAL_WORK_ENTRY_INVALID");
+  if (entry.tier !== undefined && !["standard", "hardest"].includes(entry.tier)) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (typeof entry.instruction !== "string" || entry.instruction.length === 0
     || Buffer.byteLength(entry.instruction, "utf8") > MAX_INSTRUCTION_BYTES) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (!isPlainObject(entry.packet) || !isPlainObject(entry.output_schema)) fail("JOURNAL_WORK_ENTRY_INVALID");
@@ -196,10 +197,12 @@ const LABEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ._:+-]{0,79}$/u;
 
 function validateDispatchRecord(record) {
   if (!isPlainObject(record) || record.schema_version !== JOURNAL_WORK_EXCHANGE_VERSION) fail("JOURNAL_WORK_DISPATCH_INVALID");
-  const allowed = new Set(["schema_version", "work_id", "role", "output_schema_name", "model", "effort", "route_ref", "issued_at", "expires_at"]);
+  const allowed = new Set(["schema_version", "work_id", "role", "tier", "output_schema_name", "model", "effort", "route_ref", "issued_at", "expires_at"]);
   if (Object.keys(record).some((key) => !allowed.has(key))) fail("JOURNAL_WORK_DISPATCH_INVALID");
   assertJournalWorkId(record.work_id);
   if (typeof record.role !== "string" || !ROLE_PATTERN.test(record.role)) fail("JOURNAL_WORK_DISPATCH_INVALID");
+  if (record.tier !== undefined && !["standard", "hardest"].includes(record.tier)) fail("JOURNAL_WORK_DISPATCH_INVALID");
+  record.tier ??= "standard";
   for (const field of ["output_schema_name", "model", "effort", "route_ref"]) {
     if (typeof record[field] !== "string" || !LABEL_PATTERN.test(record[field])) fail("JOURNAL_WORK_DISPATCH_INVALID");
   }

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -83,13 +83,14 @@ async function setup(t) {
       async readResult(workId) {
         const result = await runtimeExchange.readResult(workId);
         if (!result?.receipt) return result;
+        const dispatch = (await runtimeExchange.listDispatch()).find(record => record.work_id === workId);
         return {
           ...result,
           receipt: {
             ...result.receipt,
             request_context_id: `verified-chat:${workId}`,
-            effective_model_profile: "GPT-5.6 Sol",
-            effective_effort: "Pro"
+            effective_model_profile: dispatch?.model,
+            effective_effort: dispatch?.effort
           }
         };
       }
@@ -163,7 +164,8 @@ test("a role call goes out as a work item and comes back as an authenticated ans
 
   // The dispatch record carries no content: an opaque ID, the role and the route's model and effort.
   const [record] = await environment.connector.listDispatch();
-  assert.deepEqual(Object.keys(record).sort(), ["answered", "effort", "expires_at", "issued_at", "model", "output_schema_name", "role", "route_ref", "schema_version", "work_id"]);
+  assert.deepEqual(Object.keys(record).sort(), ["answered", "effort", "expires_at", "issued_at", "model", "output_schema_name", "role", "route_ref", "schema_version", "tier", "work_id"]);
+  assert.equal(record.tier, "standard");
   assert.equal(record.answered, true);
   const dispatchText = await fs.readFile(path.join(environment.root, "dispatch", `${journalWorkFileKey(record.work_id)}.json`), "utf8");
   assert.ok(!dispatchText.includes("synthetic sentence"));
@@ -219,6 +221,7 @@ test("a delayed answer without execution profile is retired after durable reject
     async readWork() { return entry; },
     async publishWork(work) { entry = work; return { created: true }; },
     async publishDispatch() {},
+    async listDispatch() { return [{ work_id: entry.work_id, model: "GPT-5.6 Sol", effort: "Pro", tier: "standard" }]; },
     async retireWork() { retired = true; }
   };
   const port = createExchangeJournalInferencePort({ exchange, caseId: CASE_ID, receiptKey: randomBytes(32),
@@ -231,6 +234,42 @@ test("a delayed answer without execution profile is retired after durable reject
   assert.equal(retired, true);
   await assert.rejects(durable.invoke(referenceCall()), (error) =>
     error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid");
+});
+
+test("a hardest receipt uses the first dispatch profile after configuration changes", async () => {
+  let entry = null, dispatch = null, answer = null;
+  const exchange = {
+    async readWork() { return entry; },
+    async readResult() { return answer; },
+    async publishWork(value) { entry ??= structuredClone(value); return { created: true }; },
+    async publishDispatch(value) { dispatch ??= structuredClone(value); },
+    async listDispatch() { return dispatch ? [{ ...dispatch, answered: answer !== null }] : []; }
+  };
+  const options = { exchange, caseId: CASE_ID, receiptKey: randomBytes(32),
+    routeRef: "route:synthetic-exchange",
+    allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    model: "GPT-5.6 Sol", effort: "Pro", waitMs: 0 };
+  const operationKey = `${KEY}:hardest:persisted-profile`;
+  const first = createExchangeJournalInferencePort({ ...options,
+    hardestLane: { model: "claude-opus-original", effort: "original-effort", ttl_hours: 6 } });
+  await assert.rejects(first.invoke({ ...referenceCall({ operationKey }), tier: "hardest" }),
+    { code: "COMPLETION_UNKNOWN" });
+  assert.deepEqual([dispatch.tier, dispatch.model, dispatch.effort],
+    ["hardest", "claude-opus-original", "original-effort"]);
+  answer = { output: structuredClone(referenceAnswer), receipt: {
+    receipt_id: "synthetic-receipt", work_file_key: "synthetic-work-file",
+    received_at: "2026-09-30T00:00:00.000Z", output_sha256: "synthetic-output-digest",
+    subject_sha256: "synthetic-principal-digest", request_context_id: "verified-chat:synthetic",
+    effective_model_profile: dispatch.model, effective_effort: dispatch.effort
+  } };
+  const restarted = createExchangeJournalInferencePort({ ...options,
+    hardestLane: { model: "claude-opus-new", effort: "new-effort", ttl_hours: 6 } });
+  const completion = await restarted.getCompletion(operationKey);
+  assert.equal(completion.status, "completed");
+  assert.equal(completion.receipt.configured_model_profile, dispatch.model);
+  assert.equal(completion.receipt.configured_effort, dispatch.effort);
+  assert.equal(completion.receipt.provider_route_receipt.tier, "hardest");
+  assert.equal(completion.receipt.provider_route_receipt.subject, undefined);
 });
 
 test("an invalid dispatcher context identifier is not promoted into an authenticated receipt", async (t) => {
@@ -389,9 +428,56 @@ test("starting the port clears stale temporary files, and open items are listed 
   await assert.rejects(fs.access(stale));
   const items = await port.openItems();
   assert.equal(items.length, 1);
-  assert.deepEqual(Object.keys(items[0]).sort(), ["answered", "expires_at", "issued_at", "role", "work_file_key", "work_id"]);
+  assert.deepEqual(Object.keys(items[0]).sort(), ["answered", "expires_at", "issued_at", "role", "tier", "work_file_key", "work_id"]);
   assert.equal(items[0].work_id, journalExchangeWorkId(KEY));
+  assert.equal(items[0].tier, "standard");
   assert.equal(items[0].answered, false);
+});
+
+test("a hardest call uses its configured tier, model, effort and expiry and records its subject digest", async (t) => {
+  const environment = await setup(t);
+  const port = environment.makePort({ hardestLane: { model: "claude-opus-5-5", effort: "max", ttl_hours: 6 } });
+  const stop = environment.answerInBackground();
+  let result;
+  try { result = await port.invoke({ ...referenceCall({ operationKey: `${KEY}:hardest` }), tier: "hardest" }); }
+  finally { await stop(); }
+  const [dispatch] = await environment.connector.listDispatch();
+  assert.equal(dispatch.tier, "hardest");
+  assert.equal(dispatch.model, "claude-opus-5-5");
+  assert.equal(dispatch.effort, "max");
+  assert.equal(Date.parse(dispatch.expires_at) - Date.parse(dispatch.issued_at), 6 * 60 * 60_000);
+  const stored = await environment.runtimeExchange.readResult(journalExchangeWorkId(`${KEY}:hardest`));
+  assert.equal(stored.receipt.subject_sha256,
+    createHash("sha256").update("subject:synthetic-chatgpt-account").digest("hex"));
+  assert.equal(result.receipt.provider_route_receipt.subject, undefined);
+  assert.equal(result.receipt.provider_route_receipt.tier, "hardest");
+  assert.equal(result.receipt.configured_model_profile, "claude-opus-5-5");
+  assert.equal(result.receipt.configured_effort, "max");
+});
+
+test("a hardest receipt keeps the persisted dispatch model and effort after restart config drift", async (t) => {
+  const environment = await setup(t);
+  const operationKey = `${KEY}:hardest:config-drift`;
+  const first = environment.makePort({
+    waitMs: 0,
+    hardestLane: { model: "claude-opus-original", effort: "original-effort", ttl_hours: 6 }
+  });
+  await assert.rejects(
+    first.invoke({ ...referenceCall({ operationKey }), tier: "hardest" }),
+    { code: "COMPLETION_UNKNOWN" }
+  );
+  first.close();
+  assert.equal(await environment.answerOpenItems(), 1);
+
+  const restarted = environment.makePort({
+    waitMs: 0,
+    hardestLane: { model: "claude-opus-new", effort: "new-effort", ttl_hours: 6 }
+  });
+  t.after(() => restarted.close());
+  const completed = await restarted.getCompletion(operationKey);
+  assert.equal(completed.status, "completed");
+  assert.equal(completed.receipt.configured_model_profile, "claude-opus-original");
+  assert.equal(completed.receipt.configured_effort, "original-effort");
 });
 
 test("the exchange route loads from the environment and checks its root before any work", async (t) => {
