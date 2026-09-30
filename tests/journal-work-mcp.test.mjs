@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -53,7 +53,9 @@ test("the local stdio server completes hardest work, records its principal, filt
   assert.equal(messages[1].result.structuredContent.stored, true);
   assert.equal(messages[2].result.structuredContent.code, "JOURNAL_WORK_NOT_FOUND");
   const stored = await exchange.readResult("journal-work:hardest-synthetic");
-  assert.equal(stored.receipt.subject, "local:opus-worker");
+  assert.equal(stored.receipt.subject_sha256,
+    createHash("sha256").update("subject:local:opus-worker").digest("hex"));
+  assert.equal(stored.receipt.subject, undefined);
   assert.equal(stderr.includes(sentinel), false);
   assert.equal(stderr, "");
 });

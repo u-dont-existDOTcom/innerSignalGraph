@@ -80,6 +80,8 @@ A new relay command, `journal-work`, that turns dispatch records into answered i
 
 The owner gates are cleared. `2026-09-28-journal-hardest-lane.md` is the task as Codex builds it, with the decisions filled in; where it differs from this summary, it wins. A step that fails all its standard attempts gets one more attempt, answered by Claude Opus, before it is labeled a residual.
 
+**Merge note (2026-09-30):** The implemented lane retains the later main-branch admission rules. An exchange answer needs mechanically verified effective model, effort, and request-context evidence before it can enter the import. The current local work-submission protocol does not attest those facts, so an enabled real hardest route is unavailable at doctor/runtime admission until that evidence exists. A visual hardest attempt without attachment transport is recorded as not attempted. The daily limit pauses the run at the bound; it does not silently skip work. The exchange hashes the submitter, and the import receipt carries only that digest and tier. The older summary below is historical wherever it describes a different bound or receipt.
+
 **Where it applies:**
 - Every `checkedWork` failure in `src/journal-import/private-runtime.mjs`: the calibration reference after its splits, visual binding, a reconciliation batch, an audited unit.
 - Every `checkedStep` failure in `src/journal-import/pattern-stage.mjs`.

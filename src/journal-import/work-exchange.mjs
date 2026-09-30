@@ -212,6 +212,65 @@ function validateDispatchRecord(record) {
   return record;
 }
 
+// Mission Control needs only the content-free dispatch queue, never the exchange secret. Keep that
+// reader separate from the encrypted work/result API while applying the same root, queue and opened-
+// file checks as the connector-facing exchange.
+export function createJournalWorkDispatchReader({ root, owner = currentUser() } = {}) {
+  if (typeof root !== "string" || !path.isAbsolute(root)) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
+  const dispatchDirectory = path.join(root, "dispatch");
+
+  async function directoryExists() {
+    let info;
+    try {
+      info = await fs.lstat(dispatchDirectory);
+    } catch (error) {
+      if (error?.code === "ENOENT") return false;
+      throw error;
+    }
+    if (!info.isDirectory()) fail("JOURNAL_WORK_EXCHANGE_QUEUE_INVALID");
+    return true;
+  }
+
+  async function answered(workId) {
+    try {
+      await fs.lstat(path.join(root, "inbox", `${journalWorkFileKey(workId)}.json`));
+      return true;
+    } catch (error) {
+      if (error?.code === "ENOENT" || error?.code === "ENOTDIR") return false;
+      throw error;
+    }
+  }
+
+  return Object.freeze({
+    async listDispatch() {
+      await assertJournalWorkExchangeRoot(root, { owner });
+      if (!(await directoryExists())) return [];
+      const records = [];
+      for (const name of await fs.readdir(dispatchDirectory)) {
+        const match = /^([0-9a-f]{64})\.json$/u.exec(name);
+        if (!match) continue;
+        let bytes;
+        try {
+          bytes = await withOpenedRegularFile(path.join(dispatchDirectory, name), async (handle, info) => {
+            if (info.size > MAX_DISPATCH_BYTES) fail("JOURNAL_WORK_DISPATCH_INVALID");
+            return handle.readFile();
+          });
+        } catch (error) {
+          if (error?.code === "ENOENT") continue;
+          if (error?.code === "ELOOP" || error?.code === "ERR_NOT_REGULAR_FILE") fail("JOURNAL_WORK_DISPATCH_INVALID");
+          throw error;
+        }
+        let value;
+        try { value = validateDispatchRecord(JSON.parse(bytes.toString("utf8"))); }
+        catch { fail("JOURNAL_WORK_DISPATCH_INVALID"); }
+        if (journalWorkFileKey(value.work_id) !== match[1]) fail("JOURNAL_WORK_DISPATCH_INVALID");
+        records.push(Object.freeze({ ...value, answered: await answered(value.work_id) }));
+      }
+      return records.sort((left, right) => Date.parse(left.issued_at) - Date.parse(right.issued_at) || left.work_id.localeCompare(right.work_id));
+    }
+  });
+}
+
 export function createJournalWorkExchange({
   root,
   secret,
@@ -225,6 +284,7 @@ export function createJournalWorkExchange({
   const derived = keys ?? deriveJournalWorkExchangeKeys(secret);
   if (!Buffer.isBuffer(derived?.encryption) || !Buffer.isBuffer(derived?.receipt)) fail("JOURNAL_WORK_EXCHANGE_SECRET_INVALID");
   const QUEUES = Object.freeze({ work: "outbox", result: "inbox", dispatch: "dispatch" });
+  const dispatchReader = createJournalWorkDispatchReader({ root, owner });
   const directory = (kind) => path.join(root, QUEUES[kind]);
   const fileFor = (kind, fileKey) => path.join(directory(kind), `${fileKey}.json`);
 
@@ -387,7 +447,6 @@ export function createJournalWorkExchange({
         work_file_key: fileKey,
         output_sha256: sha256(serialized),
         subject_sha256: sha256(`subject:${subject}`),
-        subject,
         received_at: now().toISOString()
       };
       const receipt = { ...fields, tag: receiptTag(derived.receipt, fields) };
@@ -490,21 +549,7 @@ export function createJournalWorkExchange({
     // Outstanding dispatch records, oldest first, each with whether an answer (or a tombstone) is
     // already stored, so a dispatcher can tell what still needs a chat.
     async listDispatch() {
-      await assertJournalWorkExchangeRoot(root, { owner });
-      if (!(await queueExists("dispatch"))) return [];
-      const records = [];
-      for (const name of await fs.readdir(directory("dispatch"))) {
-        const match = /^([0-9a-f]{64})\.json$/u.exec(name);
-        if (!match) continue;
-        const bytes = await readRegular("dispatch", match[1], MAX_DISPATCH_BYTES);
-        if (!bytes) continue;
-        let value;
-        try { value = validateDispatchRecord(JSON.parse(bytes.toString("utf8"))); }
-        catch { fail("JOURNAL_WORK_DISPATCH_INVALID"); }
-        if (journalWorkFileKey(value.work_id) !== match[1]) fail("JOURNAL_WORK_DISPATCH_INVALID");
-        records.push(Object.freeze({ ...value, answered: await hasResult(value.work_id) }));
-      }
-      return records.sort((left, right) => Date.parse(left.issued_at) - Date.parse(right.issued_at) || left.work_id.localeCompare(right.work_id));
+      return dispatchReader.listDispatch();
     },
 
     removeDispatch,

@@ -208,6 +208,7 @@ export function createJournalImportController({
         packet_input: clone(definition.packet_input ?? {}),
         status: "planned",
         attempts: 0,
+        retry_epoch: 0,
         operation_key: null,
         output: null,
         receipt: null,
@@ -297,17 +298,17 @@ export function createJournalImportController({
     if (["intent_persisted", "completion_unknown"].includes(work.status)) {
       const completion = await inferencePort.getCompletion(work.operation_key);
       if (completion.status === "completed") return completeWork(entry, work, completion);
-      if (completion.status === "not_submitted" && work.attempts < 2) {
+      if (completion.status === "not_submitted") {
+        if (work.attempts === 2) return recordFailure(entry, work,
+          { code: "INFERENCE_RETRY_LIMIT", submissionStatus: "not_submitted" });
         const next = clone(entry.snapshot);
         next.work_items.find(({ work_id: workId }) => workId === work.work_id).status = "retryable_error";
         return persist(next, entry.revision, { state: "retryable_error", stage: work.stage, next_action: `retry confirmed-unsent work ${work.work_id}`, blocked_reason: "CONFIRMED_NOT_SUBMITTED", responsible_actor: "controller" });
       }
       // Only a port that knows its outcomes (the connector exchange) reports a stored answer that fails
       // the schema here; it gets the same one schema-bound retry as an invalid answer from invoke().
-      if (completion.status === "invalid_output" && work.attempts < 2) {
-        const next = clone(entry.snapshot);
-        next.work_items.find(({ work_id: workId }) => workId === work.work_id).status = "invalid_output";
-        return persist(next, entry.revision, { state: "retryable_error", stage: work.stage, next_action: `request one schema-bound reserialization for ${work.work_id}`, blocked_reason: "INVALID_STRUCTURED_OUTPUT", responsible_actor: "controller" });
+      if (completion.status === "invalid_output") {
+        return recordFailure(entry, work, { code: "INVALID_STRUCTURED_OUTPUT", submissionStatus: "completed_invalid" });
       }
       if (work.status === "completion_unknown") return entry;
       const next = clone(entry.snapshot);
@@ -334,8 +335,10 @@ export function createJournalImportController({
     if (beforeInvoke) await beforeInvoke({ work: clone(work) });
     const packetDigest = sha256(Buffer.from(JSON.stringify(packet), "utf8"));
     const baseOperationKey = `journal:${work.work_id.slice(5, 45)}:${packetDigest.slice(0, 32)}`;
-    const operationKey = work.status === "invalid_output" ? `${baseOperationKey}:reserialize`
-      : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${work.attempts}`
+    const retryEpoch = Number.isSafeInteger(work.retry_epoch) && work.retry_epoch >= 0 ? work.retry_epoch : 0;
+    const reserializationKey = `${baseOperationKey}:reserialize${retryEpoch === 0 ? "" : `:${retryEpoch}`}`;
+    const operationKey = work.status === "invalid_output" ? reserializationKey
+      : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${retryEpoch}:${work.attempts}`
         : (work.operation_key ?? baseOperationKey);
     const intentSnapshot = clone(entry.snapshot);
     const intentWork = intentSnapshot.work_items.find(({ work_id: workId }) => workId === work.work_id);
@@ -377,15 +380,26 @@ export function createJournalImportController({
       resumedConfirmedUnsent = true;
       const blocked = await ledger.load();
       const work = blocked?.snapshot.work_items.find(({ status }) => status !== "completed");
-      if (work?.status === "blocked_authority" && work.last_failure?.submission_status === "not_submitted"
-        && work.last_failure.code !== "INFERENCE_ISOLATION_UNAVAILABLE") {
+      let lastFailure = work?.last_failure;
+      const legacyFailureCode = blocked?.snapshot.checkpoint.blocked_reason;
+      if (work?.status === "blocked_authority" && !lastFailure && typeof work.operation_key === "string"
+        && typeof legacyFailureCode === "string" && legacyFailureCode !== "INFERENCE_ISOLATION_UNAVAILABLE"
+        && (typeof inferencePort.isAuthoritativeCompletion === "function"
+          ? await inferencePort.isAuthoritativeCompletion(work.operation_key)
+          : inferencePort.capabilities?.()?.authoritative_completion === true)
+        && (await inferencePort.getCompletion(work.operation_key)).status === "not_submitted") {
+        lastFailure = { code: legacyFailureCode, submission_status: "not_submitted" };
+      }
+      if (work?.status === "blocked_authority" && lastFailure?.submission_status === "not_submitted"
+        && lastFailure.code !== "INFERENCE_ISOLATION_UNAVAILABLE") {
         const next = clone(blocked.snapshot);
         const target = next.work_items.find(({ work_id: workId }) => workId === work.work_id);
         target.status = "retryable_error";
         target.attempts = 0;
+        target.retry_epoch = (Number.isSafeInteger(target.retry_epoch) && target.retry_epoch >= 0 ? target.retry_epoch : 0) + 1;
         target.operation_key = null;
         await persist(next, blocked.revision, { state: "retryable_error", stage: target.stage,
-          next_action: `retry confirmed-unsent work ${target.work_id}`, blocked_reason: target.last_failure.code,
+          next_action: `retry confirmed-unsent work ${target.work_id}`, blocked_reason: lastFailure.code,
           responsible_actor: "controller" });
       }
     }

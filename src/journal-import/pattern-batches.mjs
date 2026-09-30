@@ -4,7 +4,7 @@ import {createAuditScopeIndex,createReconciledAuditScope} from './audit-scope.mj
 
 /** Source-ordered bounded packets. Every unit is assigned; no fact quota or
  * prior pattern hypothesis controls what enters the neutral discovery pass. */
-export function createJournalPatternBatches({graph,unitGraphs,maximumBytes=180000}){
+export function createJournalPatternBatches({graph,unitGraphs,maximumBytes=180000,onOversizedUnit=null}){
   const index=createAuditScopeIndex(graph),batches=[];
   let current={units:[],nodes:new Map(),edges:new Map(),bytes:128};
   const flush=()=>{
@@ -18,7 +18,11 @@ export function createJournalPatternBatches({graph,unitGraphs,maximumBytes=18000
     const cost=(records,map)=>records.reduce((n,r)=>n+(map.has(r.id)?0:Buffer.byteLength(JSON.stringify(r))+1),0);
     let bytes=cost(scope.graph.nodes,current.nodes)+cost(scope.graph.edges,current.edges);
     if(current.units.length&&current.bytes+bytes>maximumBytes){flush();bytes=cost(scope.graph.nodes,current.nodes)+cost(scope.graph.edges,current.edges);}
-    if(current.bytes+bytes>maximumBytes)throw new ValidationError('PATTERN_UNIT_CONTEXT_EXCEEDS_BOUND',{code:'PATTERN_UNIT_CONTEXT_EXCEEDS_BOUND',details:{unit_id}});
+    if(current.bytes+bytes>maximumBytes){
+      if(!onOversizedUnit)throw new ValidationError('PATTERN_UNIT_CONTEXT_EXCEEDS_BOUND',{code:'PATTERN_UNIT_CONTEXT_EXCEEDS_BOUND',details:{unit_id}});
+      onOversizedUnit(unit_id);
+      continue;
+    }
     current.units.push(unit_id);current.bytes+=bytes;
     for(const n of scope.graph.nodes)current.nodes.set(n.id,n);
     for(const e of scope.graph.edges)current.edges.set(e.id,e);

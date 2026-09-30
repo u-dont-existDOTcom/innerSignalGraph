@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -75,8 +75,26 @@ async function setup(t) {
     authorizeCase: async () => ({ principalId: "synthetic-chatgpt-account", scopes: ["case:read", "journal:submit"] })
   });
   const receiptKey = randomBytes(32);
-  const makePort = (options = {}) => createExchangeJournalInferencePort({
-    exchange: runtimeExchange,
+  const makePort = ({ verifiedExecution = true, ...options } = {}) => createExchangeJournalInferencePort({
+    // The deployed connector cannot produce these fields yet. Most port tests model the future
+    // mechanically verified dispatcher receipt; the regression below uses the real receipt.
+    exchange: verifiedExecution ? {
+      ...runtimeExchange,
+      async readResult(workId) {
+        const result = await runtimeExchange.readResult(workId);
+        if (!result?.receipt) return result;
+        const dispatch = (await runtimeExchange.listDispatch()).find(record => record.work_id === workId);
+        return {
+          ...result,
+          receipt: {
+            ...result.receipt,
+            request_context_id: `verified-chat:${workId}`,
+            effective_model_profile: dispatch?.model,
+            effective_effort: dispatch?.effort
+          }
+        };
+      }
+    } : runtimeExchange,
     caseId: CASE_ID,
     receiptKey,
     routeRef: "route:synthetic-exchange",
@@ -131,6 +149,9 @@ test("a role call goes out as a work item and comes back as an authenticated ans
   assert.equal(receipt.completion_status, "completed");
   assert.equal(receipt.cost_usd, 0);
   assert.equal(receipt.configured_model_profile, "GPT-5.6 Sol");
+  assert.equal(receipt.effective_model_profile, "GPT-5.6 Sol");
+  assert.equal(receipt.effective_effort, "Pro");
+  assert.equal(receipt.request_context_id, `verified-chat:${journalExchangeWorkId(KEY)}`);
   assert.equal(receipt.provider_route_receipt.work_id, journalExchangeWorkId(KEY));
   assert.ok(isAuthenticatedTransportReceipt(receipt, { generation: GENERATION, grantId: grant.grant_id }));
 
@@ -154,6 +175,128 @@ test("a role call goes out as a work item and comes back as an authenticated ans
   assert.deepEqual(await environment.connector.listDispatch(), []);
   assert.equal(await environment.connector.readWork(journalExchangeWorkId(KEY)), null);
   assert.deepEqual(await port.getCompletion(KEY), { status: "unknown" });
+});
+
+test("an answer without mechanically verified execution profile is rejected and retired", async (t) => {
+  const environment = await setup(t);
+  let observedReceipt;
+  const port = environment.makePort({
+    verifiedExecution: false,
+    exchange: {
+      ...environment.runtimeExchange,
+      async readResult(workId) {
+        const result = await environment.runtimeExchange.readResult(workId);
+        if (result?.receipt) observedReceipt = result.receipt;
+        return result;
+      }
+    }
+  });
+  const durable = createDurableJournalInferencePort({ port, corpusStore: memoryStore() });
+  const rejected = assert.rejects(durable.invoke(referenceCall()), (error) =>
+    error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid"
+    && error.cause?.code === "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+  while ((await environment.connector.listDispatch()).length === 0) await delay(5);
+  await environment.answerOpenItems();
+  await rejected;
+
+  assert.ok(observedReceipt, "the unverified answer receipt was observed before retirement");
+  assert.equal(observedReceipt.request_context_id, undefined,
+    "an answer receipt must not be promoted into a fresh-chat identifier");
+  assert.equal(observedReceipt.effective_model_profile, undefined);
+  assert.equal(observedReceipt.effective_effort, undefined);
+  const stored = await environment.runtimeExchange.readResult(journalExchangeWorkId(KEY));
+  assert.equal(stored.retired, true);
+  assert.equal(stored.receipt, undefined, "retirement removes the answer receipt");
+  assert.equal(await environment.connector.readWork(journalExchangeWorkId(KEY)), null);
+  assert.deepEqual(await environment.connector.listDispatch(), []);
+  assert.deepEqual(await durable.getCompletion(KEY), { status: "invalid_output" });
+});
+
+test("a delayed answer without execution profile is retired after durable rejection", async () => {
+  let entry = null;
+  let answered = false;
+  let retired = false;
+  const exchange = {
+    async readResult() { return answered ? { output: structuredClone(referenceAnswer), receipt: {} } : null; },
+    async readWork() { return entry; },
+    async publishWork(work) { entry = work; return { created: true }; },
+    async publishDispatch() {},
+    async listDispatch() { return [{ work_id: entry.work_id, model: "GPT-5.6 Sol", effort: "Pro", tier: "standard" }]; },
+    async retireWork() { retired = true; }
+  };
+  const port = createExchangeJournalInferencePort({ exchange, caseId: CASE_ID, receiptKey: randomBytes(32),
+    routeRef: "route:synthetic-exchange", allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    model: "GPT-5.6 Sol", effort: "Pro", waitMs: 0 });
+  const durable = createDurableJournalInferencePort({ port, corpusStore: memoryStore() });
+  await assert.rejects(durable.invoke(referenceCall()), { code: "COMPLETION_UNKNOWN" });
+  answered = true;
+  assert.deepEqual(await durable.getCompletion(KEY), { status: "invalid_output" });
+  assert.equal(retired, true);
+  await assert.rejects(durable.invoke(referenceCall()), (error) =>
+    error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid");
+});
+
+test("a hardest receipt uses the first dispatch profile after configuration changes", async () => {
+  let entry = null, dispatch = null, answer = null;
+  const exchange = {
+    async readWork() { return entry; },
+    async readResult() { return answer; },
+    async publishWork(value) { entry ??= structuredClone(value); return { created: true }; },
+    async publishDispatch(value) { dispatch ??= structuredClone(value); },
+    async listDispatch() { return dispatch ? [{ ...dispatch, answered: answer !== null }] : []; }
+  };
+  const options = { exchange, caseId: CASE_ID, receiptKey: randomBytes(32),
+    routeRef: "route:synthetic-exchange",
+    allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    model: "GPT-5.6 Sol", effort: "Pro", waitMs: 0 };
+  const operationKey = `${KEY}:hardest:persisted-profile`;
+  const first = createExchangeJournalInferencePort({ ...options,
+    hardestLane: { model: "claude-opus-original", effort: "original-effort", ttl_hours: 6 } });
+  await assert.rejects(first.invoke({ ...referenceCall({ operationKey }), tier: "hardest" }),
+    { code: "COMPLETION_UNKNOWN" });
+  assert.deepEqual([dispatch.tier, dispatch.model, dispatch.effort],
+    ["hardest", "claude-opus-original", "original-effort"]);
+  answer = { output: structuredClone(referenceAnswer), receipt: {
+    receipt_id: "synthetic-receipt", work_file_key: "synthetic-work-file",
+    received_at: "2026-09-30T00:00:00.000Z", output_sha256: "synthetic-output-digest",
+    subject_sha256: "synthetic-principal-digest", request_context_id: "verified-chat:synthetic",
+    effective_model_profile: dispatch.model, effective_effort: dispatch.effort
+  } };
+  const restarted = createExchangeJournalInferencePort({ ...options,
+    hardestLane: { model: "claude-opus-new", effort: "new-effort", ttl_hours: 6 } });
+  const completion = await restarted.getCompletion(operationKey);
+  assert.equal(completion.status, "completed");
+  assert.equal(completion.receipt.configured_model_profile, dispatch.model);
+  assert.equal(completion.receipt.configured_effort, dispatch.effort);
+  assert.equal(completion.receipt.provider_route_receipt.tier, "hardest");
+  assert.equal(completion.receipt.provider_route_receipt.subject, undefined);
+});
+
+test("an invalid dispatcher context identifier is not promoted into an authenticated receipt", async (t) => {
+  const environment = await setup(t);
+  const port = environment.makePort({
+    exchange: {
+      ...environment.runtimeExchange,
+      async readResult(workId) {
+        const result = await environment.runtimeExchange.readResult(workId);
+        if (!result?.receipt) return result;
+        return {
+          ...result,
+          receipt: {
+            ...result.receipt,
+            request_context_id: "verified-chat:\nforged-field",
+            effective_model_profile: "GPT-5.6 Sol",
+            effective_effort: "Pro"
+          }
+        };
+      }
+    }
+  });
+  const invocation = port.invoke(referenceCall());
+  while ((await environment.connector.listDispatch()).length === 0) await delay(5);
+  await environment.answerOpenItems();
+  const { receipt } = await invocation;
+  assert.equal(receipt.request_context_id, null);
 });
 
 test("a call left open survives a restart and completes from the exchange, without a second send", async (t) => {
@@ -255,7 +398,22 @@ test("a stored answer that fails the importer's schema is reported as invalid ou
   // Written directly, past the connector's own schema check.
   await environment.runtimeExchange.submitResult({ workId: journalExchangeWorkId(KEY), output: { unexpected: true }, subject: "synthetic" });
   assert.deepEqual(await durable.getCompletion(KEY), { status: "invalid_output" });
+  assert.deepEqual(await environment.connector.listDispatch(), [], "invalid answer retired after its durable failure was recorded");
   await assert.rejects(durable.invoke(referenceCall()), (error) => error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid");
+});
+
+test("an invalid answer observed while invoking is retired after its durable failure is recorded", async (t) => {
+  const environment = await setup(t);
+  const store = memoryStore();
+  const durable = createDurableJournalInferencePort({ port: environment.makePort(), corpusStore: store });
+  const rejected = assert.rejects(durable.invoke(referenceCall()),
+    (error) => error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid");
+  while ((await environment.connector.listDispatch()).length === 0) await delay(5);
+  await environment.runtimeExchange.submitResult({
+    workId: journalExchangeWorkId(KEY), output: { unexpected: true }, subject: "synthetic"
+  });
+  await rejected;
+  assert.deepEqual(await environment.connector.listDispatch(), []);
 });
 
 test("starting the port clears stale temporary files, and open items are listed without content", async (t) => {
@@ -272,13 +430,13 @@ test("starting the port clears stale temporary files, and open items are listed 
   assert.equal(items.length, 1);
   assert.deepEqual(Object.keys(items[0]).sort(), ["answered", "expires_at", "issued_at", "role", "tier", "work_file_key", "work_id"]);
   assert.equal(items[0].work_id, journalExchangeWorkId(KEY));
+  assert.equal(items[0].tier, "standard");
   assert.equal(items[0].answered, false);
 });
 
-test("a hardest call uses its configured tier, model, effort and expiry and records its subject", async (t) => {
+test("a hardest call uses its configured tier, model, effort and expiry and records its subject digest", async (t) => {
   const environment = await setup(t);
-  const now = () => new Date("2026-09-28T12:00:00.000Z");
-  const port = environment.makePort({ now, hardestLane: { model: "claude-opus-5-5", effort: "max", ttl_hours: 6 } });
+  const port = environment.makePort({ hardestLane: { model: "claude-opus-5-5", effort: "max", ttl_hours: 6 } });
   const stop = environment.answerInBackground();
   let result;
   try { result = await port.invoke({ ...referenceCall({ operationKey: `${KEY}:hardest` }), tier: "hardest" }); }
@@ -288,7 +446,10 @@ test("a hardest call uses its configured tier, model, effort and expiry and reco
   assert.equal(dispatch.model, "claude-opus-5-5");
   assert.equal(dispatch.effort, "max");
   assert.equal(Date.parse(dispatch.expires_at) - Date.parse(dispatch.issued_at), 6 * 60 * 60_000);
-  assert.equal(result.receipt.provider_route_receipt.subject, "synthetic-chatgpt-account");
+  const stored = await environment.runtimeExchange.readResult(journalExchangeWorkId(`${KEY}:hardest`));
+  assert.equal(stored.receipt.subject_sha256,
+    createHash("sha256").update("subject:synthetic-chatgpt-account").digest("hex"));
+  assert.equal(result.receipt.provider_route_receipt.subject, undefined);
   assert.equal(result.receipt.provider_route_receipt.tier, "hardest");
   assert.equal(result.receipt.configured_model_profile, "claude-opus-5-5");
   assert.equal(result.receipt.configured_effort, "max");
@@ -348,7 +509,9 @@ test("the exchange route loads from the environment and checks its root before a
   const capabilities = port.capabilities();
   assert.equal(capabilities.transport, "chatgpt_connector_tool");
   assert.equal(capabilities.authoritative_completion, true);
-  assert.equal(capabilities.packet_only && capabilities.fresh_context_per_generate, true);
+  assert.equal(capabilities.packet_only, true);
+  assert.equal(capabilities.fresh_context_per_generate, false,
+    "an authenticated connector receipt does not prove the dispatcher created a fresh chat");
   assert.equal(capabilities.configured_model_profile, "GPT-5.6 Sol");
   assert.equal(capabilities.external_spend_authorized_usd, 0);
   await port.prepare();

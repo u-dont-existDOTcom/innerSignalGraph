@@ -106,6 +106,8 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
   const raw = environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON;
   if (raw == null || raw === "") return createDisabledJournalInferencePort();
   const config = parseConfiguration(raw);
+  invariant(!hardestLane.enabled || ["chatgpt_subscription_browser", JOURNAL_EXCHANGE_PROVIDER].includes(config.provider),
+    "HARDEST_LANE_ROUTE_UNAVAILABLE");
   // A browser route remains necessary for ordinary image-bearing visual_reader work. The local
   // hardest exchange cannot carry attachments, so its tier-specific capabilities say that a hardest
   // visual attempt is unavailable; no hardest call may silently fall through to the standard model.
@@ -164,9 +166,12 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
     const portFor = (input) => input.tier === "hardest" ? exchangePort : providerPort;
     return Object.freeze({
       capabilities() {
+        const hardest = exchangePort.capabilities();
         return Object.freeze({
           ...providerPort.capabilities(),
-          hardest_roles: exchangePort.capabilities().roles
+          hardest_roles: hardest.roles,
+          hardest_fresh_context_per_generate: hardest.fresh_context_per_generate,
+          hardest_authenticated_execution_profile_per_generate: hardest.authenticated_execution_profile_per_generate
         });
       },
       async prepare() { await exchangePort.prepare?.(); },

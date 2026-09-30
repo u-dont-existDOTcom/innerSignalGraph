@@ -228,6 +228,7 @@
             "parse_status": {
               "enum": [
                 "readable",
+                "review_required",
                 "partial",
                 "visual_pending",
                 "unreadable"

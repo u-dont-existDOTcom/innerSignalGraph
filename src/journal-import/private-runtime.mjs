@@ -25,17 +25,18 @@ import { applyReconciliationResult, validateReconciliationResult } from "./recon
 import { createAuditScopeIndex, createReconciledAuditScope, summarizeFidelityCoverage } from "./audit-scope.mjs";
 import { publishJournalGenerationFromStaging } from "./publication.mjs";
 import { runJournalPatternPass } from "./pattern-stage.mjs";
-import { createJournalSemanticBatches, splitBatchExtractionByUnit } from "./semantic-batches.mjs";
+import { createJournalSemanticBatches, journalSemanticUnitCost, splitBatchExtractionByUnit } from "./semantic-batches.mjs";
 
 const hash = (v) => createHash("sha256").update(v).digest("hex");
 const invariant = (v, code) => { if (!v) throw new ValidationError(code, { code }); };
 // Calibration windows over native-text units. A scanned or image-only source has none at intake;
 // its visual units get windows once the page reader has produced them, so none is a valid start.
 const nativeCalibration = (units) => units.length ? selectCalibrationWindows(units) : [];
-// The graph's parse status for a parsed page. A page whose text needs its reading order or tables
-// reviewed is readable in part; anything unrecognized is recorded as partial, never as readable.
-const PARSE_STATUS_BY_DISPOSITION = Object.freeze({ readable: "readable", visual_pending: "visual_pending", review_required: "partial", unreadable: "unreadable" });
-const parseStatus = (page) => page ? (PARSE_STATUS_BY_DISPOSITION[page.disposition] ?? "partial") : "readable";
+// A native page keeps the parser's disposition. Plain UTF-8 text needs no page record;
+// an unmapped non-text representation has no evidence for a readable status.
+const PARSE_STATUS_BY_DISPOSITION = Object.freeze({ readable: "readable", visual_pending: "visual_pending", review_required: "review_required", unreadable: "unreadable" });
+const parseStatus = (page, mimeType) => page ? (PARSE_STATUS_BY_DISPOSITION[page.disposition] ?? "partial")
+  : (mimeType?.startsWith("text/plain") ? "readable" : "partial");
 const completions = () => Object.fromEntries(["archive_verified", "raw_search_available", "graph_built", "semantically_audited", "patterns_reviewed", "profile_committed", "cold_retrieval_verified", "capacity_tested"].map((k) => [k, "not_run"]));
 
 export function applyHardestDailyLimit(state, { now = () => new Date(), dailyLimit, newlySent = true }) {
@@ -182,12 +183,20 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     const semanticPort = port;
     // The connector exchange checks its root and clears stale temporary files before any work.
     await semanticPort.prepare?.();
+    if (hardestLane.enabled && !suppliedPort) {
+      const capabilities = semanticPort.capabilities();
+      invariant(capabilities.hardest_fresh_context_per_generate === true,
+        "INFERENCE_ISOLATION_UNAVAILABLE");
+      invariant(capabilities.hardest_authenticated_execution_profile_per_generate === true,
+        "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+    }
     port = createDurableJournalInferencePort({ port: {
       capabilities: () => semanticPort.capabilities(),
-      // Authorization is checked before a call's intent is recorded (the controller's beforeInvoke,
-      // and at the start of every work step), never between the intent and the call: a failure there
-      // would leave a call that never went out looking unanswered forever.
+      // Check immediately before the send, including after the durable intent was written.
+      // A denial there is recorded as not submitted so resume cannot mistake it for a sent call.
       async invoke(input) {
+        try { await authorize(); }
+        catch (error) { error.submissionStatus = "not_submitted"; throw error; }
         const result = await semanticPort.invoke(input);
         // A grant may change during a long application call. Recheck before the
         // durable port admits its result or a dependent role receives it.
@@ -245,13 +254,32 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit, newlySent: false });
       return state.hardest_lane;
     };
-    const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration, completed_units: state.completed_units.length, completed_visual_pages: state.completed_visual_pages.length, total_units: state.total_units ?? 0, required_visual_pages: state.required_visual_pages ?? 0, completion: structuredClone(state.completion), blocker: state.blocker, residuals: structuredClone(state.residuals ?? {}), hardest_lane: { ...hardestStatus(), daily_limit: hardestLane.daily_limit }, external_spend_usd: 0 });
     const beforeHardestSend = async () => {
       if (!applyHardestDailyLimit(state, { now, dailyLimit: hardestLane.daily_limit })) {
         await save();
         throw new ValidationError("HARDEST_DAILY_LIMIT", { code: "HARDEST_DAILY_LIMIT" });
       }
       await save();
+    };
+    const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration,
+      ...(state.calibration_failure ? { calibration_failure: structuredClone(state.calibration_failure) } : {}),
+      semantic_disposition: state.semantic_disposition ?? null,
+      completed_units: state.completed_units.length, completed_visual_pages: state.completed_visual_pages.length,
+      total_units: state.total_units ?? 0, required_visual_pages: state.required_visual_pages ?? 0,
+      excluded_visual_pages: (state.excluded_visual_pages ?? []).map(page_number =>
+        state.excluded_visual_page_details?.find(item => item.page_number === page_number)
+          ?? { page_number, reason: "VISUAL_EXCLUSION_REASON_NOT_RECORDED" }),
+      ...(state.semantic_disposition === "archive_only" ? { next_action: state.next_action } : {}),
+      completion: structuredClone(state.completion), blocker: state.blocker,
+      residuals: structuredClone(state.residuals ?? {}),
+      hardest_lane: { ...hardestStatus(), daily_limit: hardestLane.daily_limit }, external_spend_usd: 0 });
+    const calibrationStopStatus = (reason) => {
+      if (["CALIBRATION_REFERENCE_UNRESOLVED", "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED",
+        "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_ATTEMPTS_EXHAUSTED",
+        "CALIBRATION_EXTRACTION_ATTEMPTS_EXHAUSTED", "CALIBRATION_SIZE_BOUND_EXCEEDED"].includes(reason)) return reason;
+      if (["SEMANTIC_PACKET_OVERSIZE", "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND"].includes(reason))
+        return "CALIBRATION_SIZE_BOUND_EXCEEDED";
+      return "CALIBRATION_REPAIR_REQUIRED";
     };
 
     async function synchronizeHazards(plan) {
@@ -333,7 +361,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const units = plan.units.filter(u => u.representation_id === representation.representation_id);
         const page = plan.parsed.pages.find(p => p.representation_id === representation.representation_id);
         const empty = { schema_version: "1.0", status: "incomplete", assertions: [], entities: [], episodes: [], coverage: units.map(u => ({ unit_id: u.unit_id, disposition: "pending", assertion_local_ids: [], reason: "Semantic processing has not completed." })), requested_context: [] };
-        const graph = adaptExtractionToGraph({ caseId, corpusId: state.corpus_id, generation, source: { id: `source:${hash(representation.representation_id).slice(0, 32)}`, representation_id: representation.representation_id, original_object_id: state.original.object_id, media_type: plan.parsed.source.mime_type, byte_length: representation.utf8_byte_length, parse_status: parseStatus(page), page: page?.page_number ?? null }, units, extraction: empty, producerRef: "mechanical-source-index" });
+        const graph = adaptExtractionToGraph({ caseId, corpusId: state.corpus_id, generation, source: { id: `source:${hash(representation.representation_id).slice(0, 32)}`, representation_id: representation.representation_id, original_object_id: state.original.object_id, media_type: plan.parsed.source.mime_type, byte_length: representation.utf8_byte_length, parse_status: parseStatus(page, plan.parsed.source.mime_type), page: page?.page_number ?? null }, units, extraction: empty, producerRef: "mechanical-source-index" });
         nodes.push(...graph.nodes); edges.push(...graph.edges);
       }
       const graph = { schema_version: "1.0", case_id: caseId, corpus_id: state.corpus_id, generation, nodes, edges };
@@ -392,7 +420,20 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             state.blocker = null; await save();
             return [recovered];
           }
-          if (completion.status !== "not_submitted" || resend > 2) {
+          if (completion.status === "invalid_output") {
+            const attempt = firstFailure ? 2 : 1;
+            await writeOnce(`reference:failure:${id}:${attempt}`, { status: "invalid_output", operation_key: operationKey, attempt });
+            state.stage = workStage; state.blocker = "INVALID_STRUCTURED_OUTPUT"; await save(); return null;
+          }
+          // An authoritative port can safely wait on this exact operation key: invoke() resumes the
+          // existing submission instead of sending a duplicate. The completion check above is only
+          // a snapshot, so an answer may arrive immediately after it reports unknown.
+          if (completion.status === "unknown" && await port.isAuthoritativeCompletion(operationKey)) break;
+          if (completion.status === "not_submitted" && resend > 2) {
+            state.stage = workStage; state.blocker = "REFERENCE_RESEND_EXHAUSTED";
+            workExhausted = true; await save(); return null;
+          }
+          if (completion.status !== "not_submitted") {
             state.stage = workStage; state.blocker = "COMPLETION_UNKNOWN"; await save(); return null;
           }
           operationKey = `${baseKey}:resend:${resend}`;
@@ -510,14 +551,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           if (!workExhausted) return { blocked: true };
           failure = state.blocker;
           state.blocker = null;
+          if (failure === "REFERENCE_RESEND_EXHAUSTED") return { failure };
           continue;
         }
         failure = checkFailure(check, result);
         if (!failure) return { result };
       }
       if (!hardestLane.enabled) return { failure };
-      // The configured hardest exchange currently cannot deliver image attachments. Preserve the
-      // ordinary visual residual, but say explicitly that no hardest-model attempt occurred.
       if (port.capabilities?.().hardest_roles?.[request.role]?.available === false) {
         return { failure, hardest: "not_attempted" };
       }
@@ -540,19 +580,29 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const maximumUnits = batching.maximum_units ?? 4;
       const calibrationBytes = batching.calibration_maximum_bytes ?? maximumBytes;
       const calibrationUnits = batching.calibration_maximum_units ?? 1;
+      invariant(Number.isSafeInteger(maximumBytes) && maximumBytes >= 4096
+        && Number.isSafeInteger(calibrationBytes) && calibrationBytes >= 4096,
+        "SEMANTIC_BATCH_BYTES_INVALID");
+      invariant(Number.isSafeInteger(maximumUnits) && maximumUnits >= 1
+        && Number.isSafeInteger(calibrationUnits) && calibrationUnits >= 1,
+        "SEMANTIC_BATCH_COUNT_INVALID");
       const nativeUnits = plan.units.filter((unit) => !unit.visual);
       const calibrationIds = new Set(plan.calibration.map((item) => item.unit_id));
       const unitById = new Map(plan.units.map((unit) => [unit.unit_id, unit]));
+      const oversizedUnits = plan.units.filter(unit => journalSemanticUnitCost(unit) >
+        (calibrationIds.has(unit.unit_id) ? calibrationBytes : maximumBytes));
+      const oversizedIds = new Set(oversizedUnits.map(unit => unit.unit_id));
       let frozenPlan;
       if (state.semantic_batch_plan_ref) {
         frozenPlan = await readLarge(state.semantic_batch_plan_ref);
       } else {
         invariant(state.completed_units.length === 0, "JOURNAL_LEGACY_SEMANTIC_MIGRATION_REQUIRED");
-        const calibrationUnitsInOrder = plan.units.filter((unit) => calibrationIds.has(unit.unit_id));
-        const regularUnitsInOrder = plan.units.filter((unit) => !calibrationIds.has(unit.unit_id));
+        const calibrationUnitsInOrder = plan.units.filter((unit) => calibrationIds.has(unit.unit_id) && !oversizedIds.has(unit.unit_id));
+        const regularUnitsInOrder = plan.units.filter((unit) => !calibrationIds.has(unit.unit_id) && !oversizedIds.has(unit.unit_id));
         frozenPlan = {
           schema_version: 1,
           source_unit_ids: plan.units.map((unit) => unit.unit_id),
+          source_only_unit_ids: [...oversizedIds],
           calibration_batches: calibrationUnitsInOrder.length
             ? createJournalSemanticBatches({ units: calibrationUnitsInOrder, maximumBytes: calibrationBytes, maximumUnits: calibrationUnits })
               .map((batch) => batch.unit_ids) : [],
@@ -566,10 +616,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       invariant(frozenPlan.schema_version === 1
         && JSON.stringify(frozenPlan.source_unit_ids) === JSON.stringify(plan.units.map((unit) => unit.unit_id))
+        && JSON.stringify(frozenPlan.source_only_unit_ids ?? []) === JSON.stringify([...oversizedIds])
         && [...frozenPlan.calibration_batches, ...frozenPlan.regular_batches]
           .flat().join("\0") === plan.units
-          .filter((unit) => calibrationIds.has(unit.unit_id)).concat(
-            plan.units.filter((unit) => !calibrationIds.has(unit.unit_id)))
+          .filter((unit) => calibrationIds.has(unit.unit_id) && !oversizedIds.has(unit.unit_id)).concat(
+            plan.units.filter((unit) => !calibrationIds.has(unit.unit_id) && !oversizedIds.has(unit.unit_id)))
           .map((unit) => unit.unit_id).join("\0"),
         "JOURNAL_SEMANTIC_BATCH_PLAN_MISMATCH");
       if (state.visual_handoff_ready?.status === "ready") {
@@ -656,7 +707,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             original_object_id: representation.visual_image?.object_id ?? state.original.object_id,
             media_type: unit.visual ? "image/png" : plan.parsed.source.mime_type,
             byte_length: representation.utf8_byte_length,
-            parse_status: "readable",
+            parse_status: unit.visual ? "readable" : parseStatus(plan.parsed.pages.find(page =>
+              page.representation_id === unit.representation_id), plan.parsed.source.mime_type),
             page: unit.page_number,
             ...(unit.visual ? { locator_kind: "visual_transcript", interpretation_status: "provisional" } : {})
           },
@@ -668,11 +720,48 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         validateJournalGraph(graph, { [unit.representation_id]: representation.text });
         return graph;
       };
+      const recordSourceOnly = async (unit, reason, detail = null) => {
+        const sourceOnlyExtraction = { schema_version: "1.0", status: "incomplete", assertions: [], entities: [], episodes: [],
+          coverage: [{ unit_id: unit.unit_id, disposition: "needs_review", assertion_local_ids: [],
+            reason: `Semantic processing ended for this unit (${reason}); the archived source remains available.` }],
+          requested_context: [] };
+        const graph = bindUnitExtraction(unit, sourceOnlyExtraction, { receipt_id: `mechanical:source-only:${unit.unit_id}` });
+        await writeOnce(`unit:graph:${unit.unit_id}`, { graph, extraction: null, omission: null,
+          source_only_unresolved: true, source_only_reason: reason,
+          ...(detail === null ? {} : { source_only_detail: detail }) });
+        if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
+        state.stage = "EXTRACT"; state.blocker = null; await save();
+        return true;
+      };
+      const setCalibrationStop = async (unitId, status, reason) => {
+        state.calibration = "failed";
+        state.calibration_failure = { unit_id: unitId, status, reason };
+        state.stage = "REFERENCE_AUDIT";
+        state.blocker = status;
+        await save();
+        return false;
+      };
+      const stopCalibration = async (unit, status, reason) => {
+        await recordSourceOnly(unit, status, reason);
+        return setCalibrationStop(unit.unit_id, status, reason);
+      };
       const processBatch = async (incoming, calibration = false) => {
         // Reuse the frozen scope even when a crash occurred between writing two
         // unit records. The completed job and its receipt keep the same identity.
         const units = incoming;
         if (units.every((unit) => state.completed_units.includes(unit.unit_id))) return true;
+        const finishExhausted = async (reason) => {
+          if (!workExhausted) return false;
+          if (units.length > 1) {
+            const middle = Math.ceil(units.length / 2);
+            return await processBatch(units.slice(0, middle), calibration)
+              && await processBatch(units.slice(middle), calibration);
+          }
+          return calibration
+            ? stopCalibration(units[0], reason.startsWith("CALIBRATION_")
+              ? reason : "CALIBRATION_EXTRACTION_ATTEMPTS_EXHAUSTED", reason)
+            : recordSourceOnly(units[0], reason);
+        };
         const keyId = batchKey(units);
         const core = units.map((unit) => ({ unit_id: unit.unit_id, text: unit.text }));
         const adjacentContext = { by_unit: units.map(neighborsFor) };
@@ -686,10 +775,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             return await processBatch(units.slice(0, middle), calibration)
               && await processBatch(units.slice(middle), calibration);
           }
-          state.stage = calibration ? "REFERENCE_AUDIT" : "EXTRACT";
-          state.blocker = "SEMANTIC_PACKET_OVERSIZE";
-          await save();
-          return false;
+          return calibration
+            ? stopCalibration(units[0], "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_PACKET_OVERSIZE")
+            : recordSourceOnly(units[0], "SEMANTIC_PACKET_OVERSIZE");
         }
         let reference = null;
         if (calibration) {
@@ -718,10 +806,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               && await processBatch(units.slice(middle), calibration);
           }
           if (frozen.failure) {
-            state.stage = "REFERENCE_AUDIT";
-            state.blocker = "CALIBRATION_REFERENCE_UNRESOLVED";
-            await save();
-            return false;
+            return stopCalibration(units[0], "CALIBRATION_REFERENCE_UNRESOLVED", frozen.failure);
           }
           reference = frozen.result[0];
         }
@@ -755,7 +840,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             }],
             acceptReviewFindings: true
           });
-          if (!results) return false;
+          if (!results) return finishExhausted("EXTRACTION_ATTEMPTS_EXHAUSTED");
           // The extractor asked for smaller windows or more context: split a batch of several units
           // at once instead of asking again for the same window.
           if (["incomplete", "needs_context"].includes(results[0].output?.status) && units.length > 1) {
@@ -779,7 +864,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const review = results[1]?.output;
           if (!bindingFailure && results[0].output.status === "complete"
             && review?.status === "sufficient_for_stated_scope"
-            && !review.assessments.some((assessment) => assessment.outcome !== "preserved")
+            && !review.assessments.some((assessment) => assessment.outcome !== "preserved"
+              || assessment.finding_type !== "none")
             && review.unassessed_ids.length === 0) break;
           repairRequest = {
             previous_extraction: results[0].output,
@@ -792,7 +878,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         let unresolved = Boolean(bindingFailure)
           || results?.[0]?.output?.status !== "complete"
           || review?.status !== "sufficient_for_stated_scope"
-          || review.assessments.some((assessment) => assessment.critical && assessment.outcome !== "preserved")
+          || review.assessments.some((assessment) => assessment.outcome !== "preserved"
+            || assessment.finding_type !== "none")
           || review.unassessed_ids.length > 0;
         // A single extraction unit gets the same final repair request once through the hardest
         // lane before it is admitted as source-only needs_review.
@@ -828,7 +915,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             review = results?.[1]?.output;
             unresolved = Boolean(bindingFailure) || results?.[0]?.output?.status !== "complete"
               || review?.status !== "sufficient_for_stated_scope"
-              || review.assessments.some((assessment) => assessment.critical && assessment.outcome !== "preserved")
+              || review.assessments.some((assessment) => assessment.outcome !== "preserved"
+                || assessment.finding_type !== "none")
               || review.unassessed_ids.length > 0;
             await recordHardestOutcome(outcomeId, unresolved ? "failed" : "resolved");
           }
@@ -839,10 +927,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             && await processBatch(units.slice(middle), calibration);
         }
         if (unresolved && calibration) {
-          state.stage = "REFERENCE_AUDIT";
-          state.blocker = "CALIBRATION_REPAIR_REQUIRED";
-          await save();
-          return false;
+          return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_EXTRACTION_UNRESOLVED");
         }
         if (unresolved) {
           const unit = units[0];
@@ -867,7 +952,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         if (calibration) {
           const combined = mergeGraphs([...graphsByUnit.values()]);
-          let fidelity = await work({
+          let score;
+          const initialFidelity = await checkedWork({
             id: `fidelity:calibration:batch:${keyId}`,
             role: "fidelity_auditor",
             stage: "REFERENCE_AUDIT",
@@ -881,10 +967,19 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                 entities: combined.nodes.filter((node) => node.kind === "entity")
               }
             }
-          });
-          if (!fidelity) return false;
-          const candidateIds = combined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id);
-          let score = scoreReferenceReview({ referenceResult: reference.output, reviewResult: fidelity[0].output, candidateIds });
+          }, ([saved]) => { score = scoreReferenceReview({ referenceResult: reference.output,
+            reviewResult: saved.output,
+            candidateIds: combined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
+          if (initialFidelity.blocked) return false;
+          if (initialFidelity.failure) {
+            if (units.length > 1) {
+              const middle = Math.ceil(units.length / 2);
+              return await processBatch(units.slice(0, middle), true)
+                && await processBatch(units.slice(middle), true);
+            }
+            return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", initialFidelity.failure);
+          }
+          let fidelity = initialFidelity.result;
           await writeOnce(`calibration:review:batch:${keyId}`, { reference, fidelity: fidelity[0], score, unit_ids: units.map((unit) => unit.unit_id) });
           let calibrationPass = fidelity[0].output.status === "sufficient_for_stated_scope"
             && score.critical_miss_count === 0
@@ -930,7 +1025,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               }],
               acceptReviewFindings: true
             });
-            if (!repaired) return false;
+            if (!repaired) return finishExhausted("CALIBRATION_REPAIR_ATTEMPTS_EXHAUSTED");
             results = repaired;
             const repairedReview = repaired[1]?.output;
             let repairedSplit, repairedGraphs;
@@ -949,12 +1044,14 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             }
             if (repaired[0].output.status !== "complete"
               || repairedReview?.status !== "sufficient_for_stated_scope"
-              || repairedReview.assessments.some((assessment) => assessment.outcome !== "preserved")
+              || repairedReview.assessments.some((assessment) => assessment.outcome !== "preserved"
+                || assessment.finding_type !== "none")
               || repairedReview.unassessed_ids.length > 0) continue;
             split = repairedSplit;
             graphsByUnit = repairedGraphs;
             const repairedCombined = mergeGraphs([...graphsByUnit.values()]);
-            const repairedFidelity = await work({
+            let repairedScore;
+            const repairedFidelityAttempt = await checkedWork({
               id: `fidelity:calibration-repair:batch:${keyId}:cycle:${auditCycle}`,
               role: "fidelity_auditor",
               stage: "REFERENCE_AUDIT",
@@ -968,15 +1065,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                   entities: repairedCombined.nodes.filter((node) => node.kind === "entity")
                 }
               }
-            });
-            if (!repairedFidelity) return false;
-            const repairedCandidateIds = repairedCombined.nodes
-              .filter((node) => node.kind === "assertion").map((node) => node.id);
-            const repairedScore = scoreReferenceReview({
-              referenceResult: reference.output,
-              reviewResult: repairedFidelity[0].output,
-              candidateIds: repairedCandidateIds
-            });
+            }, ([saved]) => { repairedScore = scoreReferenceReview({ referenceResult: reference.output,
+              reviewResult: saved.output,
+              candidateIds: repairedCombined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
+            if (repairedFidelityAttempt.blocked) return false;
+            if (repairedFidelityAttempt.failure)
+              return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", repairedFidelityAttempt.failure);
+            const repairedFidelity = repairedFidelityAttempt.result;
             await writeOnce(`calibration:repair-review:batch:${keyId}:cycle:${auditCycle}`, {
               reference, fidelity: repairedFidelity[0], score: repairedScore,
               unit_ids: units.map((unit) => unit.unit_id)
@@ -990,10 +1085,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               && (score.reference_total === 0 || score.provisional_target_met);
           }
           if (!calibrationPass) {
-            state.stage = "REFERENCE_AUDIT";
-            state.blocker = "CALIBRATION_REPAIR_REQUIRED";
-            await save();
-            return false;
+            return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED");
           }
         }
         for (const unit of units) {
@@ -1012,14 +1104,30 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         return true;
       };
 
+      for (const unit of oversizedUnits.filter(item => calibrationIds.has(item.unit_id))) {
+        await stopCalibration(unit, "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
+        return summary();
+      }
       for (const ids of frozenPlan.calibration_batches) {
         if (!(await processBatch(frozenUnits(ids), true))) return summary();
       }
       if ([...calibrationIds].every((id) => state.completed_units.includes(id))) {
+        const calibrationRecords = await Promise.all([...calibrationIds].map(id => readIfPresent(`unit:graph:${id}`)));
+        const failedIndex = calibrationRecords.findIndex(record => record?.source_only_unresolved);
+        if (failedIndex >= 0) {
+          const record = calibrationRecords[failedIndex];
+          const status = calibrationStopStatus(record.source_only_reason);
+          await setCalibrationStop([...calibrationIds][failedIndex], status,
+            record.source_only_detail ?? record.source_only_reason ?? "CALIBRATION_UNIT_UNRESOLVED");
+          return summary();
+        }
+        invariant(calibrationRecords.every(Boolean), "CALIBRATION_UNIT_UNRESOLVED");
         state.calibration = "pass";
         state.blocker = null;
         await save();
       }
+      for (const unit of oversizedUnits.filter(item => !calibrationIds.has(item.unit_id)))
+        await recordSourceOnly(unit, "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
       for (const ids of frozenPlan.regular_batches) {
         if (!(await processBatch(frozenUnits(ids), false))) return summary();
       }
@@ -1061,7 +1169,45 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       return reconcile();
     }
 
+    async function finishArchiveOnly() {
+      if (state.stage === "ARCHIVE_ONLY" && state.semantic_disposition === "archive_only") return summary();
+      state.semantic_disposition = "archive_only";
+      state.completion.graph_built = "archive_only";
+      if (state.visual_handoff_ready?.status === "ready") state.visual_handoff_ready.status = "archive_only";
+      state.next_action = state.excluded_visual_pages?.length
+        ? "Review the listed excluded pages and explicitly retry them in a new import if needed."
+        : "Review the archived source and submit a new import if semantic processing is needed.";
+      state.stage = "ARCHIVE_ONLY";
+      state.blocker = null;
+      await save();
+      return summary();
+    }
+
     async function run({ visualOnly = false } = {}) {
+      if (state.calibration === "failed") return summary();
+      // Older checkpoints could finish calibration as partial and then continue. Preserve their
+      // saved unit outcome, but close the gate before a resumed run reaches later stages.
+      if (state.calibration === "partial") {
+        const savedPlan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
+        let failedUnit = null, reason = "CALIBRATION_UNIT_UNRESOLVED";
+        for (const item of savedPlan.calibration) {
+          const record = await readIfPresent(`unit:graph:${item.unit_id}`);
+          if (record?.source_only_unresolved) {
+            failedUnit = item.unit_id;
+            reason = record.source_only_reason ?? reason;
+            state.calibration_failure = { unit_id: failedUnit, status: calibrationStopStatus(reason),
+              reason: record.source_only_detail ?? reason };
+            break;
+          }
+        }
+        const status = state.calibration_failure?.status ?? calibrationStopStatus(reason);
+        state.calibration = "failed";
+        state.calibration_failure ??= { unit_id: failedUnit, status, reason };
+        state.stage = "REFERENCE_AUDIT";
+        state.blocker = status;
+        await save();
+        return summary();
+      }
       if (visualOnly) invariant(!state.graph_ref && !state.semantic_batch_plan_ref
         && state.completed_units.length === 0 && state.calibration === "not_run"
         && ["INTAKE", "PARSE", "PARTITION", "VISUAL_READ", "REFERENCE_AUDIT"].includes(state.stage),
@@ -1078,11 +1224,28 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         invariant(verifiedSource.length === config.source.bytes && hash(verifiedSource) === config.source.sha256, "ORIGINAL_REASSEMBLY_MISMATCH");
         return verifiedSource;
       };
+      const excludeVisualPage = async (pageNumber, reason) => {
+        state.excluded_visual_pages ??= [];
+        if (!state.excluded_visual_pages.includes(pageNumber)) state.excluded_visual_pages.push(pageNumber);
+        state.excluded_visual_page_details ??= [];
+        if (!state.excluded_visual_page_details.some(item => item.page_number === pageNumber))
+          state.excluded_visual_page_details.push({ page_number: pageNumber, reason });
+        state.residuals = { ...(state.residuals ?? {}), excluded_visual_pages: state.excluded_visual_pages.length,
+          partial_visual_pages: state.partial_visual_pages?.length ?? 0 };
+        if (!state.completed_visual_pages.includes(pageNumber)) state.completed_visual_pages.push(pageNumber);
+        state.stage = "VISUAL_READ"; state.blocker = null; await save();
+      };
       try {
         for (const pageNumber of plan.visual_pages) {
           if (state.completed_visual_pages.includes(pageNumber)) continue;
           const page = plan.parsed.pages.find((p) => p.page_number === pageNumber);
-          const image = await renderVisualPage(await archivedSource(), pageNumber);
+          let image;
+          try { image = await renderVisualPage(await archivedSource(), pageNumber); }
+          catch (error) {
+            if (error?.code !== "VISUAL_RENDER_TOO_LARGE") throw error;
+            await excludeVisualPage(pageNumber, error.code);
+            continue;
+          }
           const native = plan.parsed.representations.find((r) => r.representation_id === page.representation_id);
           const imageDigest = hash(image);
           const imageRef = await store.writeChunkedOriginal({ objectId: `visual:image:${pageNumber}`, bytes: image });
@@ -1093,23 +1256,21 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const packetInput = { ...legacyPacketInput, page_image_ref: { kind: "chunked_image", media_type: "image/png",
             object_ref: imageRef, byte_length: image.length, sha256: imageDigest } };
           const read = await checkedWork({ id: `visual:${pageNumber}`, role: "visual_reader", stage: "VISUAL_READ", unit: { unit_id: `page:${pageNumber}`, representation_id: page.representation_id, start_byte: 0, end_byte: image.length, page_number: pageNumber }, packetInput, identityPacketInput: legacyPacketInput },
-            ([saved]) => invariant(saved.output.source_page_id === `page:${pageNumber}`, "VISUAL_PAGE_BINDING_MISMATCH"));
+            ([saved]) => {
+              invariant(saved.output.source_page_id === `page:${pageNumber}`, "VISUAL_PAGE_BINDING_MISMATCH");
+              // Unreadable regions are valid dispositions; an incomplete inventory is not.
+              invariant(saved.output.page_complete === true, "VISUAL_PAGE_INVENTORY_INCOMPLETE");
+            });
           if (read.blocked) return summary();
           if (read.failure) {
             // No reading of this page could be bound to it. Its native text, if any, stays in the
             // plan; the page is recorded as excluded from visual reading, not left to stop the run.
-            state.excluded_visual_pages ??= [];
-            if (!state.excluded_visual_pages.includes(pageNumber)) state.excluded_visual_pages.push(pageNumber);
-            state.visual_residuals ??= [];
-            if (!state.visual_residuals.some((item) => item.page_number === pageNumber)) {
-              state.visual_residuals.push({ page_number: pageNumber, reason: read.failure,
-                ...(read.hardest ? { hardest: read.hardest } : {}) });
-            }
+            await excludeVisualPage(pageNumber, read.failure);
+            continue;
           } else {
-            // A page read only in part keeps its reading, with the regions it could not read listed
-            // in it; it is counted, so the report says how many pages are partly read.
+            // A complete inventory may still label individual regions uncertain or unreadable.
             await writeOnce(`visual:result:${pageNumber}`, read.result[0]);
-            if (read.result[0].output.page_complete !== true) {
+            if (read.result[0].output.missing_or_uncertain_regions.length > 0) {
               state.partial_visual_pages ??= [];
               if (!state.partial_visual_pages.includes(pageNumber)) state.partial_visual_pages.push(pageNumber);
             }
@@ -1136,11 +1297,27 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         state.visual_plan_ref = await writeLarge(`visual:plan:${randomUUID()}`, plan);
         state.total_units = plan.units.length; await save();
       } else Object.assign(plan, await readLarge(state.visual_plan_ref));
+      // Older checkpoints completed a page before recording this derived count. Rebuild it from
+      // durable page results so skipped pages retain their uncertainty on every resume.
+      const partialPages = [];
+      for (const pageNumber of state.completed_visual_pages) {
+        if (state.excluded_visual_pages?.includes(pageNumber)) continue;
+        const saved = await readIfPresent(`visual:result:${pageNumber}`);
+        if (saved?.output?.missing_or_uncertain_regions?.length > 0) partialPages.push(pageNumber);
+      }
+      if (JSON.stringify(state.partial_visual_pages ?? []) !== JSON.stringify(partialPages)
+        || state.residuals?.partial_visual_pages !== partialPages.length) {
+        state.partial_visual_pages = partialPages;
+        state.residuals = { ...(state.residuals ?? {}), partial_visual_pages: partialPages.length };
+        await save();
+      }
+      if (plan.units.length === 0) return finishArchiveOnly();
       if (visualOnly) {
         invariant(plan.visual_pages.every((page) => state.completed_visual_pages.includes(page)),
           "JOURNAL_VISUAL_HANDOFF_INCOMPLETE");
         state.visual_handoff_ready = { schema_version: 1, status: "ready", visual_plan_ref: state.visual_plan_ref,
-          admitted: state.completed_visual_pages.length, excluded: state.excluded_visual_pages?.length ?? 0 };
+          admitted: state.completed_visual_pages.filter(page => !state.excluded_visual_pages?.includes(page)).length,
+          excluded: state.excluded_visual_pages?.length ?? 0 };
         state.stage = "REFERENCE_AUDIT";
         state.next_action = "Resume source-position calibration from this saved visual plan with the integrated semantic runtime.";
         state.blocker = null;
@@ -1151,9 +1328,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     async function reconcile() {
-      if (state.reconciled_ref) return summary();
       invariant(state.graph_ref, 'JOURNAL_GRAPH_NOT_READY');
       const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
+      if (plan.units.length === 0) return finishArchiveOnly();
+      invariant(state.calibration === "pass", 'JOURNAL_GRAPH_NOT_READY');
+      if (state.reconciled_ref) return summary();
       let graph = await readLarge(state.graph_ref);
       const unitGraphs = new Map(), aliases = new Map();
       const unitIndex = new Map(plan.units.map((unit, index) => [unit.unit_id, index]));
@@ -1193,11 +1372,27 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         batchIds = frozen.batches;
       } else {
         const batchConfig = config.semantic_batching ?? {};
-        batchIds = createJournalSemanticBatches({
-          units: plan.units,
-          maximumBytes: batchConfig.reconciliation_maximum_bytes ?? 32_000,
-          maximumUnits: batchConfig.reconciliation_maximum_units ?? 8
-        }).map(batch => batch.unit_ids);
+        const maximumBytes = batchConfig.reconciliation_maximum_bytes ?? 32_000;
+        const maximumUnits = batchConfig.reconciliation_maximum_units ?? 8;
+        invariant(Number.isSafeInteger(maximumBytes) && maximumBytes >= 4096,
+          'SEMANTIC_BATCH_BYTES_INVALID');
+        invariant(Number.isSafeInteger(maximumUnits) && maximumUnits >= 1,
+          'SEMANTIC_BATCH_COUNT_INVALID');
+        batchIds = [];
+        let pending = [];
+        const flush = () => {
+          if (!pending.length) return;
+          batchIds.push(...createJournalSemanticBatches({ units: pending, maximumBytes, maximumUnits })
+            .map(batch => batch.unit_ids));
+          pending = [];
+        };
+        for (const unit of plan.units) {
+          if (unitGraphs.get(unit.unit_id).source_only_unresolved || journalSemanticUnitCost(unit) > maximumBytes) {
+            flush();
+            batchIds.push([unit.unit_id]);
+          } else pending.push(unit);
+        }
+        flush();
         state.reconciliation_batch_plan_ref = await writeLarge(
           'reconciliation:batch-plan:' + randomUUID(),
           { schema_version: 1, source_unit_ids: plan.units.map(unit => unit.unit_id), batches: batchIds });
@@ -1226,6 +1421,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           state.blocker = 'JOURNAL_LEGACY_RECONCILIATION_MIGRATION_REQUIRED';
           await save();
           return summary();
+        }
+        if (!saved && batch.units.some(unit => unitGraphs.get(unit.unit_id).source_only_unresolved)) {
+          if (batch.units.length > 1) {
+            for (const unit of [...batch.units].reverse()) queue.unshift({ units: [unit] });
+            continue;
+          }
+          saved = await writeOnce(batchRef, { source_only: true,
+            reason: unitGraphs.get(unitIds[0]).source_only_reason ?? 'SOURCE_ONLY_UNRESOLVED',
+            selected_unit_ids: unitIds, neighborhood_complete: false, batch_unit_ids: unitIds });
         }
         if (!saved) {
           const selected = new Set(unitIds), omittedNeighbors = new Set();
@@ -1266,6 +1470,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             },
             target_generation: state.generation
           };
+          const scope = {
+            selected_unit_ids: [...selected],
+            neighborhood_complete: omittedNeighbors.size === 0,
+            batch_unit_ids: unitIds
+          };
           if (Buffer.byteLength(JSON.stringify(input)) > 180_000 && batch.units.length > 1) {
             const middle = Math.ceil(batch.units.length / 2);
             queue.unshift({ units: batch.units.slice(middle) });
@@ -1273,39 +1482,41 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             continue;
           }
           if (Buffer.byteLength(JSON.stringify(input)) > 180_000) {
-            state.stage = 'RECONCILE';
-            state.blocker = 'JOURNAL_RECONCILIATION_PACKET_OVERSIZE';
-            await save();
-            return summary();
+            saved = await writeOnce(batchRef, { unresolved: 'JOURNAL_RECONCILIATION_PACKET_OVERSIZE', ...scope });
+            savedRef = batchRef;
           }
-          const reconciled = await checkedWork({
-            id: state.reconciliation_mode === 'per_unit_v1'
-              ? 'reconcile:' + unitIds[0] : 'reconcile:batch:' + keyId,
-            role: 'reconciler',
-            stage: 'RECONCILE',
-            ...(state.reconciliation_mode === 'per_unit_v1'
-              ? { unit: batch.units[0] } : { units: batch.units }),
-            packetInput: input,
-            acceptReviewFindings: true
-          }, ([primary]) => validateReconciliationResult(primary.output, neighborhood));
-          if (reconciled.blocked) return summary();
-          const scope = {
-            selected_unit_ids: [...selected],
-            neighborhood_complete: omittedNeighbors.size === 0,
-            batch_unit_ids: unitIds
-          };
-          // No attempt gave a usable proposal set: the batch's identities and relations stay as
-          // extracted, unreconciled, which leaves the graph valid; the report counts it.
-          saved = await writeOnce(batchRef, reconciled.failure
-            ? { unresolved: reconciled.failure, ...scope, ...(reconciled.hardest ? { hardest: reconciled.hardest } : {}) }
-            : { ...reconciled.result[0], ...scope });
-          savedRef = batchRef;
+          if (!saved) {
+            const reconciled = await checkedWork({
+              id: state.reconciliation_mode === 'per_unit_v1'
+                ? 'reconcile:' + unitIds[0] : 'reconcile:batch:' + keyId,
+              role: 'reconciler',
+              stage: 'RECONCILE',
+              ...(state.reconciliation_mode === 'per_unit_v1'
+                ? { unit: batch.units[0] } : { units: batch.units }),
+              packetInput: input,
+              acceptReviewFindings: true
+            }, ([primary]) => {
+              validateReconciliationResult(primary.output, neighborhood);
+              // Application checks the receipt again on resume. Reject a bad durable receipt
+              // within this attempt so it cannot throw at the later graph-application step.
+              applyReconciliationResult({ graph, result: primary.output, receipt: primary.receipt });
+            });
+            if (reconciled.blocked) return summary();
+            // No attempt gave a usable proposal set: the batch's identities and relations stay as
+            // extracted, unreconciled, which leaves the graph valid; the report counts it.
+            saved = await writeOnce(batchRef, reconciled.failure
+              ? { unresolved: reconciled.failure, ...scope }
+              : { ...reconciled.result[0], ...scope });
+            savedRef = batchRef;
+          }
         }
         for (const unit of batch.units) {
           if (!(await readIfPresent('reconcile:result:' + unit.unit_id)))
             await writeOnce('reconcile:result:' + unit.unit_id, saved);
         }
-        const applied = saved.unresolved
+        const applied = saved.source_only
+          ? { graph, status: 'source_only', unresolved_ids: [], deferred_proposals: [] }
+          : saved.unresolved
           ? { graph, status: 'unresolved', unresolved_ids: [], deferred_proposals: [] }
           : applyReconciliationResult({ graph, result: saved.output, receipt: saved.receipt });
         graph = applied.graph;
@@ -1340,10 +1551,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // stayed unresolved leaves the graph itself partial.
       const sourceOnlyUnits = [...unitGraphs.values()].filter(record => record.source_only_unresolved).length;
       state.completion.graph_built = sourceOnlyUnits > 0 ? 'partial' : 'pass';
+      const reconciliationBatches = new Map();
+      for (const report of reports) reconciliationBatches.set(report.batch_ref, report);
       state.residuals = { ...(state.residuals ?? {}),
         source_only_units: sourceOnlyUnits,
         reconciliation_needs_context_units: reports.filter(report => report.status === 'needs_context').length,
-        reconciliation_unresolved_units: reports.filter(report => report.status === 'unresolved').length };
+        reconciliation_unresolved_units: reports.filter(report => report.status === 'unresolved').length,
+        reconciliation_unresolved_ids: new Set([...reconciliationBatches.values()]
+          .flatMap(report => report.unresolved_ids)).size,
+        reconciliation_deferred_proposals: [...reconciliationBatches.values()]
+          .reduce((count, report) => count + report.deferred_proposals.length, 0) };
       state.stage = 'REFERENCE_AUDIT';
       state.blocker = null;
       await save();
@@ -1351,7 +1568,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     async function audit() {
-      invariant(state.reconciled_ref, "JOURNAL_RECONCILIATION_NOT_READY");
+      invariant(state.calibration === "pass" && state.reconciled_ref, "JOURNAL_RECONCILIATION_NOT_READY");
       const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
       const frozenGraph = await readLarge(state.graph_ref);
       const scopeIndex = createAuditScopeIndex(frozenGraph);
@@ -1368,39 +1585,72 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       for (const unit of plan.units.filter(u => selected.has(u.unit_id))) {
         let report = await readIfPresent(`audit:result:${graphRevision}:${unit.unit_id}`);
         if (!report) {
-          const visual = await readIfPresent(`visual:result:${unit.page_number}`);
-          const original = [{ unit_id: unit.unit_id, text: unit.text }];
-          const frozen = await checkedWork({ id: `reference:final:${unit.unit_id}`, role: "reference_reader", stage: "REFERENCE_AUDIT", unit, packetInput: { source_windows: original, adjacent_context: unit.context, visual_context: visual ? [visual.output] : [], neutral_reading_instructions: [] } },
-            ([saved]) => {
-              for (const item of saved.output.reference_items) for (const anchor of item.anchors) {
-                invariant(anchor.unit_id === unit.unit_id, "REFERENCE_ANCHOR_OUTSIDE_SOURCE_PACKET"); resolveExactQuote(unit.text, anchor.quote, anchor.occurrence);
-              }
-            });
-          if (frozen.blocked) return summary();
           const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
-          const common = { graph_revision: graphRevision, source_only_unresolved: imported.source_only_unresolved, calibration_overlap: plan.calibration.some(u => u.unit_id === unit.unit_id) };
-          let outcome = null;
-          let hardest = frozen.hardest;
-          let unassessed = frozen.failure ?? null;
-          if (!unassessed) {
+          if (imported.source_only_unresolved) {
             const reconciliation = await readIfPresent(`reconcile:result:${unit.unit_id}`);
             const scope = createReconciledAuditScope({ graph: frozenGraph, unitGraph: imported.graph,
               derivationRef: reconciliation?.receipt?.receipt_id, index: scopeIndex });
-            const reference = frozen.result[0];
-            const freeze = { generation: state.generation, reference: reference.output, receipt: reference.receipt, freeze_ref: `freeze:${hash(JSON.stringify(reference.output)).slice(0, 40)}` };
-            const assess = ([saved]) => ({
-              certification: certifyIndependentAudit({ generation: state.generation, referenceFreeze: freeze, fidelityOutput: saved.output, fidelityReceipt: saved.receipt, producerReceipt: imported.extraction.receipt, grantId: grant.grant_id }),
-              score: scoreReferenceReview({ referenceResult: freeze.reference, reviewResult: saved.output, candidateIds: scope.assessment_target_ids }),
-              coverage: summarizeFidelityCoverage({ reference: freeze.reference, review: saved.output, candidateIds: scope.assessment_target_ids })
-            });
-            const fidelity = await checkedWork({ id: `fidelity:final:${unit.unit_id}`, role: "fidelity_auditor", stage: "REFERENCE_AUDIT", unit, packetInput: { frozen_reference: reference.output, supporting_passages: [...original, ...scope.supporting_passages], imported_generation: { generation: state.generation, graph: scope.graph, assessment_target_ids: scope.assessment_target_ids } } }, assess);
-            if (fidelity.blocked) return summary();
-            if (fidelity.failure) { unassessed = fidelity.failure; hardest = fidelity.hardest; }
-            else outcome = { freeze, fidelity: fidelity.result[0], ...assess(fidelity.result) };
+            report = await writeOnce(`audit:result:${graphRevision}:${unit.unit_id}`, {
+              graph_revision: graphRevision, source_only_unresolved: true,
+              calibration_overlap: plan.calibration.some(u => u.unit_id === unit.unit_id),
+              unassessed: imported.source_only_reason ?? "SOURCE_ONLY_UNRESOLVED",
+              untrusted_candidate_ids: scope.exclusion_ids });
+          } else {
+            const visual = await readIfPresent(`visual:result:${unit.page_number}`);
+            const original = [{ unit_id: unit.unit_id, text: unit.text }];
+            const frozen = await checkedWork({ id: `reference:final:${unit.unit_id}`, role: "reference_reader", stage: "REFERENCE_AUDIT", unit, packetInput: { source_windows: original, adjacent_context: unit.context, visual_context: visual ? [visual.output] : [], neutral_reading_instructions: [] } },
+              ([saved]) => {
+                for (const item of saved.output.reference_items) for (const anchor of item.anchors) {
+                  invariant(anchor.unit_id === unit.unit_id, "REFERENCE_ANCHOR_OUTSIDE_SOURCE_PACKET"); resolveExactQuote(unit.text, anchor.quote, anchor.occurrence);
+                }
+              });
+            if (frozen.blocked) return summary();
+            const reconciliation = await readIfPresent(`reconcile:result:${unit.unit_id}`);
+            const scope = createReconciledAuditScope({ graph: frozenGraph, unitGraph: imported.graph,
+              derivationRef: reconciliation?.receipt?.receipt_id, index: scopeIndex });
+            const common = { graph_revision: graphRevision, source_only_unresolved: imported.source_only_unresolved, calibration_overlap: plan.calibration.some(u => u.unit_id === unit.unit_id) };
+            // Even without a valid reference freeze, the deterministic graph scope is known and must
+            // not cross into the session-use generation without an audit.
+            let outcome = frozen.failure ? { untrusted_candidate_ids: scope.exclusion_ids } : null;
+            let unassessed = frozen.failure ?? null;
+            if (!unassessed) {
+              const reference = frozen.result[0];
+              const freeze = { generation: state.generation, reference: reference.output, receipt: reference.receipt, freeze_ref: `freeze:${hash(JSON.stringify(reference.output)).slice(0, 40)}` };
+              const assess = ([saved]) => ({
+                certification: certifyIndependentAudit({ generation: state.generation, referenceFreeze: freeze, fidelityOutput: saved.output, fidelityReceipt: saved.receipt, producerReceipt: imported.extraction.receipt, grantId: grant.grant_id }),
+                score: scoreReferenceReview({ referenceResult: freeze.reference, reviewResult: saved.output, candidateIds: scope.assessment_target_ids }),
+                coverage: summarizeFidelityCoverage({ reference: freeze.reference, review: saved.output, candidateIds: scope.assessment_target_ids })
+              });
+              let assessedOutcome;
+              const fidelity = await checkedWork({ id: `fidelity:final:${unit.unit_id}`, role: "fidelity_auditor", stage: "REFERENCE_AUDIT", unit, packetInput: { frozen_reference: reference.output, supporting_passages: [...original, ...scope.supporting_passages], imported_generation: { generation: state.generation, graph: scope.graph, assessment_target_ids: scope.assessment_target_ids } } }, saved => { assessedOutcome = assess(saved); });
+              if (fidelity.blocked) return summary();
+              if (fidelity.failure) {
+                unassessed = fidelity.failure;
+                // The source-first freeze is still evidence even when no fidelity attempt succeeds.
+                // Keep its reference weight in the sample denominator, and withhold the unit's
+                // semantic records and reconciled relations.
+                outcome = {
+                  freeze,
+                  score: {
+                    reference_total: freeze.reference.reference_items.length,
+                    reference_counts: { preserved: 0, omitted: 0, distorted: 0, unassessed: freeze.reference.reference_items.length },
+                    critical_miss_count: freeze.reference.reference_items.filter(item => item.critical).length,
+                    qualifier_error_count: 0
+                  },
+                  untrusted_candidate_ids: scope.exclusion_ids
+                };
+              }
+              else {
+                // A sampled unit reaches session use only through a complete, passing audit.
+                outcome = { freeze, fidelity: fidelity.result[0], ...assessedOutcome,
+                  ...(assessedOutcome.certification.semantically_audited === "pass" && assessedOutcome.coverage.complete === true
+                    && assessedOutcome.coverage.repair_required !== true
+                    ? {} : { untrusted_candidate_ids: scope.exclusion_ids }) };
+              }
+            }
+            // A unit no attempt could audit is recorded as unassessed, with the reason, and counted.
+            report = await writeOnce(`audit:result:${graphRevision}:${unit.unit_id}`, outcome ? { ...common, ...outcome, ...(unassessed ? { unassessed } : {}) } : { ...common, unassessed });
           }
-          // A unit no attempt could audit is recorded as unassessed, with the reason, and counted.
-          report = await writeOnce(`audit:result:${graphRevision}:${unit.unit_id}`, outcome ? { ...common, ...outcome }
-            : { ...common, unassessed, ...(hardest ? { hardest } : {}) });
         }
         reports.push({ unit_id: unit.unit_id, ...report });
         if (!state.audit_completed.includes(unit.unit_id)) { state.audit_completed.push(unit.unit_id); state.stage = "REFERENCE_AUDIT"; await save(); }
@@ -1411,16 +1661,34 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         for (const key of ["preserved", "omitted", "distorted", "unassessed"]) out[key] += r.score.reference_counts[key] * weight;
         out.critical_misses += r.score.critical_miss_count * weight; out.qualifier_errors += r.score.qualifier_error_count * weight; return out;
       }, { preserved: 0, omitted: 0, distorted: 0, unassessed: 0, critical_misses: 0, qualifier_errors: 0 });
-      const assessed = reports.filter(r => !r.unassessed);
-      const sampled = assessed.filter(r => probability.has(r.unit_id));
-      const auditReport = { generation: state.generation, graph_sha256: graphRevision, probability_unweighted: totals(sampled, false), probability_weighted: totals(sampled, true), targeted_unweighted: totals(assessed.filter(r => sample.targeted_challenge.some(x => x.unit_id === r.unit_id)), false), unassessed_unit_count: reports.length - assessed.length, population_recall_claim: false, reference_completeness: "unknown", reports };
+      const assessed = reports.filter(r => !r.unassessed
+        && !r.freeze?.reference?.unassessed_unit_ids?.includes(r.unit_id));
+      // A successful reference freeze followed by failed fidelity has a real reference denominator,
+      // represented entirely as unassessed. A failed freeze has no trustworthy item count to add.
+      const sampled = reports.filter(r => probability.has(r.unit_id) && r.score);
+      const targeted = new Set(sample.targeted_challenge.map(x => x.unit_id));
+      const auditReport = { generation: state.generation, graph_sha256: graphRevision, probability_unweighted: totals(sampled, false), probability_weighted: totals(sampled, true), targeted_unweighted: totals(reports.filter(r => targeted.has(r.unit_id) && r.score), false), unassessed_unit_count: reports.length - assessed.length, population_recall_claim: false, reference_completeness: "unknown", reports };
       state.audit_report_ref = await writeLarge(`audit:report:${randomUUID()}`, auditReport);
-      state.completion.semantically_audited = reports.every(r => !r.unassessed && r.certification.semantically_audited === "pass" && r.coverage.complete) ? "pass" : "partial";
+      state.completion.semantically_audited = reports.every(r => !r.unassessed
+        && r.certification.semantically_audited === "pass" && r.coverage.complete
+        && !r.coverage.repair_required) ? "pass" : "partial";
       // Findings are recorded and counted rather than stopping the run: the audit measures a sample
       // of the extraction, and the report carries what it found.
       state.audit_repair_required = assessed.some(r => r.coverage.repair_required || !r.coverage.complete);
+      const unassessedReferenceItems = new Set();
+      for (const report of reports) {
+        const items = report.freeze?.reference?.reference_items ?? [];
+        const assessedIds = new Set(report.fidelity?.output?.assessments
+          ?.filter(item => item.outcome !== "unassessed").map(item => item.target_id) ?? []);
+        for (const item of items) if (!assessedIds.has(item.id))
+          unassessedReferenceItems.add(`${report.unit_id}\0${item.id}`);
+      }
       state.residuals = { ...(state.residuals ?? {}),
         audit_unassessed_units: reports.length - assessed.length,
+        audit_untrusted_units: reports.filter(r => r.unassessed
+          || r.certification?.semantically_audited !== "pass"
+          || r.coverage?.complete !== true || r.coverage?.repair_required === true).length,
+        audit_unassessed_reference_items: unassessedReferenceItems.size,
         audit_repair_units: assessed.filter(r => r.coverage.repair_required || !r.coverage.complete).length };
       state.stage = "PATTERN_BUILD";
       state.blocker = null;
@@ -1430,13 +1698,56 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     async function patterns() {
       // Patterns are built once the graph is reconciled and audited, whether or not either finished
       // with residuals; those are counted in the report, not a reason to withhold the register.
-      invariant(state.reconciled_ref && state.audit_report_ref
+      invariant(state.calibration === "pass" && state.reconciled_ref && state.audit_report_ref
         && ["pass", "partial"].includes(state.completion.graph_built)
         && ["pass", "partial"].includes(state.completion.semantically_audited),
         "JOURNAL_PATTERN_SOURCE_NOT_READY");
       if (state.reviewed_graph_ref) return summary();
       const plan = await readLarge(state.visual_plan_ref ?? state.parsed_ref);
-      const graph = await readLarge(state.reconciled_ref);
+      const auditReport = await readLarge(state.audit_report_ref);
+      const reconciledGraph = await readLarge(state.reconciled_ref);
+      const scopeIndex = createAuditScopeIndex(reconciledGraph);
+      const untrusted = new Set();
+      // Unchecked native reading order and tables remain in the archive and raw index.
+      // Their semantic claims need a complete visual inventory before session admission.
+      for (const unit of plan.units) {
+        if (unit.visual) continue;
+        const page = plan.parsed.pages.find(item => item.representation_id === unit.representation_id);
+        const requiresVisual = page ? plan.visual_pages.includes(page.page_number)
+          : !plan.parsed.source.mime_type?.startsWith("text/plain");
+        if (!requiresVisual) continue;
+        const visual = page && !state.excluded_visual_pages?.includes(page.page_number)
+          ? await readIfPresent(`visual:result:${page.page_number}`) : null;
+        if (visual?.output?.page_complete === true) continue;
+        const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
+        invariant(imported, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
+        for (const node of imported.graph.nodes) if (["entity", "episode", "assertion"].includes(node.kind))
+          untrusted.add(node.id);
+      }
+      for (const report of auditReport.reports) {
+        for (const id of [...(report.coverage?.untrusted_candidate_ids ?? []),
+          ...(report.untrusted_candidate_ids ?? [])]) untrusted.add(id);
+        // A sampled unit reaches session use only through a complete, passing audit,
+        // judged from its report when the patterns stage runs.
+        if (Object.hasOwn(report, "unassessed") || report.certification?.semantically_audited !== "pass"
+          || report.coverage?.complete !== true || report.coverage?.repair_required === true) {
+          const imported = await readIfPresent(`unit:graph:${report.unit_id}`);
+          invariant(imported, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
+          const reconciliation = await readIfPresent(`reconcile:result:${report.unit_id}`);
+          const scope = createReconciledAuditScope({ graph: reconciledGraph, unitGraph: imported.graph,
+            derivationRef: reconciliation?.receipt?.receipt_id, index: scopeIndex });
+          for (const id of scope.exclusion_ids) untrusted.add(id);
+        }
+      }
+      const excludeUntrusted = (candidateGraph) => ({
+        ...candidateGraph,
+        nodes: candidateGraph.nodes.filter(node => !untrusted.has(node.id)),
+        edges: candidateGraph.edges.filter(edge => !untrusted.has(edge.id)
+          && !untrusted.has(edge.from) && !untrusted.has(edge.to))
+      });
+      // Audit failures never cross into the session-use generation. This is an exclusion rather
+      // than a staging-only warning, so every consumer sees the same safe graph.
+      const graph = excludeUntrusted(reconciledGraph);
       // A unit whose extraction stayed unresolved has no assertions to build patterns from.
       const units = [];
       const unitGraphs = [];
@@ -1445,7 +1756,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         invariant(record, "JOURNAL_PATTERN_UNIT_UNRESOLVED");
         if (record.source_only_unresolved) continue;
         units.push(unit);
-        unitGraphs.push({ unit_id: unit.unit_id, graph: record.graph });
+        unitGraphs.push({ unit_id: unit.unit_id, graph: excludeUntrusted(record.graph) });
       }
       const reader = await openPrivateJournalGraph({ corpusStore: store,
         manifestObjectId: state.persisted.manifest_object_id, caseId,
@@ -1471,9 +1782,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // review stayed unresolved; the counts say how many, and the register holds only what was
       // reviewed.
       state.completion.patterns_reviewed = result.status;
-      state.residuals = { ...(state.residuals ?? {}), ...result.counts,
-        hardest_attempted: (state.residuals?.hardest_attempted ?? 0) + result.counts.hardest_attempted,
-        hardest_resolved: (state.residuals?.hardest_resolved ?? 0) + result.counts.hardest_resolved };
+      state.residuals = { ...(state.residuals ?? {}), audit_excluded_records: untrusted.size, ...result.counts,
+        hardest_attempted: (state.residuals?.hardest_attempted ?? 0) + (result.counts.hardest_attempted ?? 0),
+        hardest_resolved: (state.residuals?.hardest_resolved ?? 0) + (result.counts.hardest_resolved ?? 0) };
       state.stage = "COMMIT";
       state.blocker = null;
       await save();
@@ -1481,9 +1792,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     }
 
     async function commit() {
-      // Every stage ran to its end. A stage that ended with residuals (a unit left source-only, audit
-      // findings, an unresolved pattern batch) is committed as partial, with its counts in the
-      // summary, rather than holding back everything that did resolve.
+      // Calibration must pass. Later stages may commit resolved work with counted partial
+      // outcomes (source-only units, audit findings, or unresolved pattern batches).
       const finished = (status) => ["pass", "partial"].includes(status);
       invariant(state.calibration === "pass" && state.completion.archive_verified === "pass"
         && state.completion.raw_search_available === "pass" && finished(state.completion.graph_built)

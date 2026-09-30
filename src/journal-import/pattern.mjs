@@ -65,11 +65,13 @@ function patternId(generation, localId) {
   return `pattern:${sha256(Buffer.from(`${generation}\0${localId}`, "utf8")).slice(0, 32)}`;
 }
 
-export function addProvisionalPatterns({ graph, patternResult, producerReceipt, localIdNamespace = "" }) {
+export function addProvisionalPatterns({ graph, patternResult, producerReceipt, localIdNamespace = "", allowedAssertionIds = null }) {
   const result = validateJournalSchema("pattern-result", patternResult);
   invariant(result.target_generation === graph.generation, "PATTERN_GENERATION_MISMATCH");
   invariant(isAuthenticatedTransportReceipt(producerReceipt, { generation: graph.generation }), "PATTERN_PRODUCER_RECEIPT_MISSING");
-  const assertions = new Map(graph.nodes.filter((node) => active(node) && node.kind === "assertion" && node.data.review_state !== "disputed").map((node) => [node.id, node]));
+  const assertions = new Map(graph.nodes.filter((node) => active(node) && node.kind === "assertion"
+    && node.data.review_state !== "disputed" && (allowedAssertionIds === null || allowedAssertionIds.has(node.id)))
+    .map((node) => [node.id, node]));
   const next = structuredClone(graph);
   const existingNodeIds = new Set(graph.nodes.map(node=>node.id));
   const created = [];
@@ -173,6 +175,7 @@ export async function executeCounterevidenceSearch({ reader, patternId: targetPa
       cursor = page.next_cursor;
     } while (cursor);
   }
+  const complete = matchedIds.size === records.size;
   const body = {
     kind: "counterevidence_search",
     search_receipt_ref: `search:${sha256(Buffer.from(`${generation}\0${targetPatternId}\0${queries.join("\0")}`, "utf8")).slice(0, 40)}`,
@@ -181,8 +184,8 @@ export async function executeCounterevidenceSearch({ reader, patternId: targetPa
     query_sha256: queries.map((query) => sha256(Buffer.from(query.normalize("NFKC"), "utf8"))),
     matched_ids: [...records.keys()].sort(),
     matched_count: matchedIds.size,
-    complete: true,
-    more_available: false
+    complete,
+    more_available: !complete
   };
   const authenticationTag = createHmac("sha256", receiptSecret).update(JSON.stringify(body)).digest("base64url");
   return Object.freeze({ records: [...records.values()], receipt: { ...body, authentication_tag: authenticationTag } });
@@ -215,15 +218,19 @@ export function reviewPatternRegister({
   }
   const contexts = [reviewReceipt, builderReceipt, frozenSourceReceipt].map((receipt) => receipt?.request_context_id).filter(Boolean);
   if (new Set(contexts).size !== contexts.length) receiptReasons.push("INFERENCE_CONTEXT_NOT_INDEPENDENT");
+  invariant(new Set(review.assessments.map(assessment => assessment.target_id)).size === review.assessments.length,
+    "PATTERN_DUPLICATE_ASSESSMENT");
   const assessments = new Map(review.assessments.map((assessment) => [assessment.target_id, assessment]));
   const next = structuredClone(graph);
   const decisions = [];
+  let counterevidenceVerified = true;
   for (const pattern of next.nodes.filter((node) => active(node) && node.kind === "pattern")) {
     const assessment = assessments.get(pattern.id);
     const counterReceipt = counterevidenceReceipts[pattern.id];
     const counterVerified = verifyCounterReceipt(counterReceipt, counterReceiptSecret, graph.generation, pattern.id);
+    counterevidenceVerified &&= counterVerified;
     const unsupported = !assessment || assessment.outcome !== "preserved" || assessment.critical
-      || ["unsupported_claim", "causal_promotion", "duplicate_support", "lost_qualifier"].includes(assessment.finding_type);
+      || assessment.finding_type !== "none";
     if (receiptReasons.length === 0 && counterVerified && !unsupported && review.status === "sufficient_for_stated_scope") {
       pattern.version += 1;
       pattern.lifecycle = "active";
@@ -234,6 +241,14 @@ export function reviewPatternRegister({
     } else {
       pattern.version += 1;
       pattern.data.review_state = unsupported ? "disputed" : "provisional";
+      // An explicit, complete dispute is still a settled independent review. Preserve the
+      // authenticated reviewer and counterevidence receipts just as we do for a preserved pattern;
+      // otherwise the published node claims a dispute without retaining the evidence that settled it.
+      if (unsupported && receiptReasons.length === 0 && counterVerified
+        && review.status === "sufficient_for_stated_scope") {
+        pattern.data.independent_review_ref = reviewReceipt.receipt_id;
+        pattern.data.disconfirmation = { status: "complete", search_receipt_ref: counterReceipt.search_receipt_ref };
+      }
       decisions.push({ pattern_id: pattern.id, decision: pattern.data.review_state, reasons: [
         ...receiptReasons,
         ...(counterVerified ? [] : ["COUNTEREVIDENCE_SEARCH_INCOMPLETE_OR_UNAUTHENTICATED"]),
@@ -241,5 +256,10 @@ export function reviewPatternRegister({
       ] });
     }
   }
-  return Object.freeze({ graph: next, decisions, patterns_reviewed: decisions.every(({ decision }) => decision === "reviewed") ? "pass" : "partial" });
+  return Object.freeze({
+    graph: next,
+    decisions,
+    review_evidence_verified: receiptReasons.length === 0 && counterevidenceVerified,
+    patterns_reviewed: decisions.every(({ decision }) => decision === "reviewed") ? "pass" : "partial"
+  });
 }

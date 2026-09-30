@@ -96,6 +96,7 @@ export function createMockJournalInferencePort({
     mode: "mock",
     enabled: true,
     live_inference: false,
+    authenticated_execution_profile_per_generate: true,
     external_spend_authorized_usd: 0,
     transport_receipts: "mock_hmac",
     roles: Object.fromEntries(Object.entries(JOURNAL_ROLE_DEFINITIONS).map(([role, definition]) => [role, {
@@ -261,6 +262,7 @@ export function createProviderJournalInferencePort({
     transport: isolation.transport,
     packet_only: true,
     fresh_context_per_generate: true,
+    authenticated_execution_profile_per_generate: true,
     external_spend_authorized_usd: maxExternalSpendUsd,
     allowance_ref: allowanceEvidence.authorization_ref,
     configured_model_profile: modelProfile,

@@ -14,7 +14,13 @@ import {
   validateJournalSchema,
   verifyUtf8Coverage
 } from "../src/journal-import/contracts.mjs";
-import { journalImportHelp, parseJournalImportArgs, runJournalImportCli } from "../src/cli/journal-import.mjs";
+import {
+  configuredJournalDoctorReport,
+  journalImportHelp,
+  parseJournalImportArgs,
+  runJournalImportCli
+} from "../src/cli/journal-import.mjs";
+import { createExchangeJournalInferencePort } from "../src/journal-import/exchange-port.mjs";
 
 const load = async (name) => JSON.parse(await readFile(new URL(`../schemas/journal-import/fixtures/${name}`, import.meta.url), "utf8"));
 const root = path.resolve(new URL("..", import.meta.url).pathname);
@@ -160,14 +166,13 @@ test("configured doctor verifies the private source while reporting missing oper
   assert.deepEqual(report.blockers, ["INFERENCE_ISOLATION_UNAVAILABLE", "OPERATOR_ENVIRONMENT_UNAVAILABLE"]);
 });
 
-test("doctor checks the configured hardest exchange for a subscription browser run", async (t) => {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-journal-doctor-hardest-"));
+test("configured doctor prepares the exchange before authorizing its inference route", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-journal-doctor-exchange-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
   const privateDirectory = path.join(directory, "private");
-  const sourceDirectory = path.join(privateDirectory, "source");
-  await fs.mkdir(sourceDirectory, { recursive: true, mode: 0o700 });
-  const bytes = Buffer.from("synthetic private journal", "utf8");
-  await fs.writeFile(path.join(sourceDirectory, "journal.txt"), bytes, { mode: 0o600 });
+  await fs.mkdir(path.join(privateDirectory, "source"), { recursive: true, mode: 0o700 });
+  const bytes = Buffer.from("Synthetic private journal entry.\n", "utf8");
+  await fs.writeFile(path.join(privateDirectory, "source", "journal.txt"), bytes, { mode: 0o600 });
   const configPath = path.join(privateDirectory, "run-config.json");
   await fs.writeFile(configPath, `${JSON.stringify({
     schema_version: 1,
@@ -181,48 +186,97 @@ test("doctor checks the configured hardest exchange for a subscription browser r
     private_runtime_root: path.join(directory, "runtime"),
     execution_root: path.join(directory, "execution"),
     existing_grant_ref: "synthetic:grant",
-    max_external_spend_usd: 0,
-    hardest_lane: { enabled: true, model: "claude-opus-5-5", effort: "max", ttl_hours: 24, daily_limit: 20 }
+    max_external_spend_usd: 0
   })}\n`, { mode: 0o600 });
   const route = {
     schema_version: 1,
-    route_ref: "route:subscription:synthetic",
-    provider: "chatgpt_subscription_browser",
+    provider: "chatgpt_connector_exchange",
+    route_ref: "route:synthetic-exchange",
     model: "GPT-5.6 Sol",
     effort: "Pro",
-    timeout_ms: 300_000,
-    max_output_tokens: 20_000,
+    timeout_ms: 60_000,
     max_external_spend_usd: 0,
-    allowance_evidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
-    browser: { cdp_host: "127.0.0.1", cdp_port: 9223 }
+    allowance_evidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 }
   };
   let stdout = "";
-  assert.equal(await runJournalImportCli(["doctor", "--config", configPath], {
+  const code = await runJournalImportCli(["doctor", "--config", configPath], {
     stdout: { write: (chunk) => { stdout += chunk; } },
     stderr: { write: () => {} },
     environment: {
       INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify(route),
-      INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: Buffer.alloc(32, 97).toString("base64")
+      INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: Buffer.alloc(32, 73).toString("base64"),
+      INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: root,
+      INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64: Buffer.alloc(32, 75).toString("base64")
     }
-  }), 0);
+  });
+  assert.equal(code, 0);
   const report = JSON.parse(stdout);
   assert.equal(report.capabilities.inference_route, "unavailable");
-  assert.ok(report.blockers.includes("INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT_REQUIRED"));
+  assert.ok(report.blockers.includes("JOURNAL_WORK_EXCHANGE_ROOT_INSIDE_REPOSITORY"));
+});
 
-  stdout = "";
-  assert.equal(await runJournalImportCli(["doctor", "--config", configPath], {
-    stdout: { write: (chunk) => { stdout += chunk; } },
-    stderr: { write: () => {} },
-    environment: {
-      INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify(route),
-      INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: Buffer.alloc(32, 97).toString("base64"),
-      INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: path.join(root, "doctor-hardest-exchange"),
-      INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64: Buffer.alloc(32, 98).toString("base64")
+test("configured doctor blocks an enabled exchange route without authenticated execution and isolation evidence", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-journal-doctor-unverified-exchange-"));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const privateDirectory = path.join(directory, "private");
+  await fs.mkdir(path.join(privateDirectory, "source"), { recursive: true, mode: 0o700 });
+  const bytes = Buffer.from("Synthetic private journal entry.\n", "utf8");
+  await fs.writeFile(path.join(privateDirectory, "source", "journal.txt"), bytes, { mode: 0o600 });
+  const configPath = path.join(privateDirectory, "run-config.json");
+  await fs.writeFile(configPath, `${JSON.stringify({
+    schema_version: 1,
+    mode: "synthetic_private_doctor",
+    source: {
+      relative_path: "private/source/journal.txt",
+      sha256: createHash("sha256").update(bytes).digest("hex"),
+      bytes: bytes.byteLength
+    },
+    target_profile: { case_id: "synthetic-doctor-case" },
+    private_runtime_root: path.join(directory, "runtime"),
+    execution_root: path.join(directory, "execution"),
+    existing_grant_ref: "synthetic:grant",
+    max_external_spend_usd: 0
+  })}\n`, { mode: 0o600 });
+  const port = createExchangeJournalInferencePort({
+    exchange: { async removeStaleTemporaries() {} },
+    caseId: "synthetic-doctor-case",
+    receiptKey: Buffer.alloc(32, 73),
+    routeRef: "route:synthetic-exchange",
+    allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    model: "GPT-5.6 Sol",
+    effort: "Pro"
+  });
+  const report = await configuredJournalDoctorReport(configPath, {}, {
+    inferencePortLoader: () => port
+  });
+  assert.equal(report.capabilities.inference_route, "unavailable");
+  assert.equal(report.capabilities.inference_isolation, "unavailable");
+  assert.equal(report.capabilities.semantic_scope, "unavailable");
+  assert.ok(report.blockers.includes("INFERENCE_ISOLATION_UNAVAILABLE"));
+  assert.ok(report.blockers.includes("JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED"));
+
+  const runConfig = JSON.parse(await fs.readFile(configPath, "utf8"));
+  runConfig.hardest_lane = { enabled: true };
+  await fs.writeFile(configPath, `${JSON.stringify(runConfig)}\n`, { mode: 0o600 });
+  let receivedLane;
+  const hardestReport = await configuredJournalDoctorReport(configPath, {}, {
+    inferencePortLoader: (_environment, options) => {
+      receivedLane = options.hardestLane;
+      return {
+        async prepare() {},
+        capabilities: () => ({ enabled: true, packet_only: true,
+          fresh_context_per_generate: true, authenticated_execution_profile_per_generate: true,
+          hardest_fresh_context_per_generate: false,
+          hardest_authenticated_execution_profile_per_generate: false,
+          external_spend_authorized_usd: 0 }),
+        close() {}
+      };
     }
-  }), 0);
-  const unsafeRoot = JSON.parse(stdout);
-  assert.equal(unsafeRoot.capabilities.inference_route, "unavailable");
-  assert.ok(unsafeRoot.blockers.includes("JOURNAL_WORK_EXCHANGE_ROOT_INSIDE_REPOSITORY"));
+  });
+  assert.equal(receivedLane.enabled, true);
+  assert.equal(hardestReport.capabilities.inference_route, "unavailable");
+  assert.ok(hardestReport.blockers.includes("INFERENCE_ISOLATION_UNAVAILABLE"));
+  assert.ok(hardestReport.blockers.includes("JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED"));
 });
 
 test("doctor reports a UTF-8 text source as importable and other non-PDF bytes as unsupported", async (t) => {

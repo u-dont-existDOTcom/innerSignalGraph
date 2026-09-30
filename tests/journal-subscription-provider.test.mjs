@@ -340,6 +340,8 @@ test("runtime binds subscription browser without API credentials and hard-requir
   });
   assert.equal(combined.capabilities().roles.visual_reader.available, true);
   assert.equal(combined.capabilities().hardest_roles.visual_reader.available, false);
+  assert.equal(combined.capabilities().hardest_fresh_context_per_generate, false);
+  assert.equal(combined.capabilities().hardest_authenticated_execution_profile_per_generate, false);
   const image = Buffer.from("synthetic-hardest-visual", "utf8");
   const packet = buildJournalRolePacket("visual_reader", {
     protocol_version: "1.0",

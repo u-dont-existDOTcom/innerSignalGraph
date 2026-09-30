@@ -28,6 +28,7 @@ const MAX_SUCCESSORS = 8;
 // Images reach ChatGPT only as attachments, which the connector cannot deliver yet.
 const UNSUPPORTED_ROLES = new Set(["visual_reader"]);
 const CASE_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,79}$/u;
+const REQUEST_CONTEXT_ID_PATTERN = /^[\x21-\x7e]{1,256}$/u;
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -89,7 +90,13 @@ export function createExchangeJournalInferencePort({
     route_ref: routeRef,
     transport: JOURNAL_WORK_TRANSPORT,
     packet_only: true,
-    fresh_context_per_generate: true,
+    // The connector authenticates the submitting account and binds the answer to this work item,
+    // but its receipt does not attest that the dispatcher opened a new chat. Do not let callers
+    // treat that receipt as proof of fresh-context isolation.
+    fresh_context_per_generate: false,
+    // Desired dispatch labels are not execution evidence. The current connector receipt omits the
+    // effective model and effort, so receiptFor() cannot admit any answer from this route yet.
+    authenticated_execution_profile_per_generate: false,
     // The exchange knows whether an item was answered, is still open, or was closed unanswered.
     authoritative_completion: true,
     external_spend_authorized_usd: 0,
@@ -134,18 +141,28 @@ export function createExchangeJournalInferencePort({
   }
 
   function receiptFor(operationKey, entry, stored, dispatch) {
+    // The exchange receipt authenticates only what the connector observed. Desired dispatch labels
+    // are not evidence of the profile that actually ran, so an answer is inadmissible until a
+    // dispatcher/provider receipt carries the effective model and effort and they match the route.
+    invariant((dispatch.tier ?? "standard") === (entry.tier ?? "standard")
+      && stored.receipt.effective_model_profile === dispatch.model
+      && stored.receipt.effective_effort === dispatch.effort, "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
     const receiptBody = {
       receipt_id: `receipt:${createHmac("sha256", key).update(`${operationKey}\0${entry.input_sha256}`).digest("hex").slice(0, 40)}`,
       transport: JOURNAL_WORK_TRANSPORT,
       request_id: stored.receipt.receipt_id,
-      // Each item is handed to its own fresh chat; the connector receipt names that submission.
-      request_context_id: `chatgpt-connector:${stored.receipt.receipt_id}`,
+      // A unique answer receipt does not prove a unique chat. Leave this unverified unless a
+      // dispatcher/provider receipt mechanically supplies the actual request context.
+      request_context_id: typeof stored.receipt.request_context_id === "string"
+        && REQUEST_CONTEXT_ID_PATTERN.test(stored.receipt.request_context_id)
+        ? stored.receipt.request_context_id
+        : null,
       input_manifest_sha256: entry.input_sha256,
       role_instruction_sha256: sha256(Buffer.from(entry.instruction, "utf8")),
       configured_model_profile: dispatch.model,
       configured_effort: dispatch.effort,
-      effective_model_profile: null,
-      effective_effort: null,
+      effective_model_profile: stored.receipt.effective_model_profile,
+      effective_effort: stored.receipt.effective_effort,
       completion_status: "completed",
       target_generation: entry.expected_generation,
       token_evidence: null,
@@ -157,7 +174,6 @@ export function createExchangeJournalInferencePort({
         received_at: stored.receipt.received_at,
         output_sha256: stored.receipt.output_sha256,
         subject_sha256: stored.receipt.subject_sha256,
-        subject: stored.receipt.subject,
         tier: dispatch.tier ?? "standard"
       },
       cost_usd: 0,
@@ -193,15 +209,20 @@ export function createExchangeJournalInferencePort({
     const { store, workId, entry, stored } = await current(operationKey);
     if (stored?.output) {
       invariant(entry, "JOURNAL_EXCHANGE_ENTRY_MISSING");
-      const dispatch = (await store.listDispatch()).find((record) => record.work_id === workId);
-      invariant(dispatch, "JOURNAL_EXCHANGE_DISPATCH_MISSING");
       let output;
       try {
         output = validateJournalSchema(entry.output_schema_name, stored.output);
       } catch (cause) {
         return { status: "invalid_output", cause };
       }
-      return { status: "completed", output, receipt: receiptFor(operationKey, entry, stored, dispatch) };
+      const dispatch = (await store.listDispatch()).find((record) => record.work_id === workId);
+      invariant(dispatch, "JOURNAL_EXCHANGE_DISPATCH_MISSING");
+      try {
+        return { status: "completed", output, receipt: receiptFor(operationKey, entry, stored, dispatch) };
+      } catch (cause) {
+        if (cause.code === "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED") return { status: "invalid_output", cause };
+        throw cause;
+      }
     }
     // Retired after its answer was stored durably; the caller holds the answer, not the exchange.
     if (stored?.retired) return { status: "unknown" };
@@ -286,7 +307,7 @@ export function createExchangeJournalInferencePort({
     invoke,
     // "completed" with the output and receipt; "not_submitted" when no item exists or the newest one
     // expired unanswered (the caller may send it again); "invalid_output" when the stored answer
-    // fails the importer's own schema; "unknown" while an item is still open.
+    // fails the importer's schema or lacks verified execution profile; "unknown" while open.
     async getCompletion(operationKey) {
       const observed = await observe(operationKey);
       if (observed.status === "completed") return { status: "completed", output: observed.output, receipt: observed.receipt };

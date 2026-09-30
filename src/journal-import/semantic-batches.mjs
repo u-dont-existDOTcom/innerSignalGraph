@@ -7,7 +7,7 @@ const invariant = (condition, code, details = undefined) => {
 };
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
-function unitCost(unit) {
+export function journalSemanticUnitCost(unit) {
   return Buffer.byteLength(unit.text ?? "", "utf8")
     + Buffer.byteLength(JSON.stringify({
       unit_id: unit.unit_id,
@@ -49,7 +49,7 @@ export function createJournalSemanticBatches({
     current = []; bytes = 0;
   };
   for (const unit of ordered) {
-    const cost = unitCost(unit);
+    const cost = journalSemanticUnitCost(unit);
     invariant(cost <= maximumBytes, "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND", { unit_id: unit.unit_id });
     if (current.length && (current.length >= maximumUnits || bytes + cost > maximumBytes)) flush();
     current.push(unit); bytes += cost;
