@@ -288,7 +288,11 @@ test("matrix and pattern register require distinct support, counterevidence sear
     counterevidenceReceipts: { [createdId]: search.receipt },
     counterReceiptSecret: counterSecret
   });
-  assert.equal(disputed.graph.nodes.find(({ id }) => id === createdId).data.review_state, "disputed");
+  const disputedNode = disputed.graph.nodes.find(({ id }) => id === createdId);
+  assert.equal(disputedNode.data.review_state, "disputed");
+  assert.equal(disputedNode.data.independent_review_ref, "receipt:review2");
+  assert.deepEqual(disputedNode.data.disconfirmation,
+    { status: "complete", search_receipt_ref: search.receipt.search_receipt_ref });
   assert.equal(disputed.patterns_reviewed, "partial");
 
   const sameContext = reviewPatternRegister({

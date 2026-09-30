@@ -147,12 +147,18 @@ export function createJournalImportController({
   grant,
   promptVersion = "1.0",
   modelProfile = "mock-deterministic",
-  afterInvokeBeforeCheckpoint = null
+  resolvePacketInput = async (packetInput) => packetInput,
+  afterInvokeBeforeCheckpoint = null,
+  // Runs before an intent is recorded. A failure here, such as an expired authorization, stops the
+  // step with nothing persisted: no attempt is spent and no call is left in an unknown state.
+  beforeInvoke = null
 }) {
   invariant(ledger && typeof ledger.load === "function" && typeof ledger.append === "function", "JOURNAL_LEDGER_INVALID");
   invariant(inferencePort && typeof inferencePort.invoke === "function" && typeof inferencePort.getCompletion === "function", "INFERENCE_PORT_INVALID");
   invariant(controllerSecret instanceof Uint8Array && controllerSecret.byteLength >= 32, "CONTROLLER_SECRET_INVALID");
+  invariant(typeof resolvePacketInput === "function", "PACKET_INPUT_RESOLVER_INVALID");
   const secret = Buffer.from(controllerSecret);
+  let resumedConfirmedUnsent = false;
 
   const persist = async (snapshot, expectedRevision, checkpointOverride = {}) => {
     const next = clone(snapshot);
@@ -198,6 +204,7 @@ export function createJournalImportController({
         packet_input: clone(definition.packet_input ?? {}),
         status: "planned",
         attempts: 0,
+        retry_epoch: 0,
         operation_key: null,
         output: null,
         receipt: null,
@@ -249,6 +256,7 @@ export function createJournalImportController({
     const target = next.work_items.find(({ work_id: workId }) => workId === work.work_id);
     const code = typeof error?.code === "string" ? error.code : "INFERENCE_FAILED";
     const submissionStatus = error?.submissionStatus ?? error?.details?.submission_status ?? "unknown";
+    target.last_failure = { code, submission_status: submissionStatus };
     if (code === "QUOTA_PAUSED") {
       target.status = "paused_quota";
       return persist(next, entry.revision, { state: "paused_quota", stage: target.stage, next_action: "resume after authorized allowance is available", blocked_reason: code, responsible_actor: "owner" });
@@ -304,7 +312,7 @@ export function createJournalImportController({
     invariant(["planned", "retryable_error", "invalid_output"].includes(work.status), "WORK_STATE_INVALID");
     invariant(work.attempts < 2, "WORK_RETRY_LIMIT_EXCEEDED");
     const workByKey = new Map(entry.snapshot.work_items.map((item) => [item.key, item]));
-    const roleInput = materialize(work.packet_input, workByKey);
+    const roleInput = await resolvePacketInput(materialize(work.packet_input, workByKey), { work: clone(work) });
     for (const field of ["protocol_version", "output_schema_id", "assigned_core_ids", "source_locators", "expected_generation", "controller_provenance_tag", "grant_purpose"]) {
       invariant(!Object.hasOwn(roleInput, field), "CONTROLLER_PACKET_FIELD_OVERRIDE");
     }
@@ -318,10 +326,13 @@ export function createJournalImportController({
       grant_purpose: grant.purpose,
       ...roleInput
     });
+    if (beforeInvoke) await beforeInvoke({ work: clone(work) });
     const packetDigest = sha256(Buffer.from(JSON.stringify(packet), "utf8"));
     const baseOperationKey = `journal:${work.work_id.slice(5, 45)}:${packetDigest.slice(0, 32)}`;
-    const operationKey = work.status === "invalid_output" ? `${baseOperationKey}:reserialize`
-      : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${work.attempts}`
+    const retryEpoch = Number.isSafeInteger(work.retry_epoch) && work.retry_epoch >= 0 ? work.retry_epoch : 0;
+    const reserializationKey = `${baseOperationKey}:reserialize${retryEpoch === 0 ? "" : `:${retryEpoch}`}`;
+    const operationKey = work.status === "invalid_output" ? reserializationKey
+      : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${retryEpoch}:${work.attempts}`
         : (work.operation_key ?? baseOperationKey);
     const intentSnapshot = clone(entry.snapshot);
     const intentWork = intentSnapshot.work_items.find(({ work_id: workId }) => workId === work.work_id);
@@ -357,6 +368,33 @@ export function createJournalImportController({
   };
 
   const runUntilBlocked = async ({ maximumSteps = 100 } = {}) => {
+    // A controller instance is one run. A prior run that exhausted only definitely-unsent
+    // attempts may try again with a fresh transport; an ambiguous submission remains parked.
+    if (!resumedConfirmedUnsent) {
+      resumedConfirmedUnsent = true;
+      const blocked = await ledger.load();
+      const work = blocked?.snapshot.work_items.find(({ status }) => status !== "completed");
+      let lastFailure = work?.last_failure;
+      const legacyFailureCode = blocked?.snapshot.checkpoint.blocked_reason;
+      if (work?.status === "blocked_authority" && !lastFailure && typeof work.operation_key === "string"
+        && typeof legacyFailureCode === "string" && legacyFailureCode !== "INFERENCE_ISOLATION_UNAVAILABLE"
+        && inferencePort.capabilities?.()?.authoritative_completion === true
+        && (await inferencePort.getCompletion(work.operation_key)).status === "not_submitted") {
+        lastFailure = { code: legacyFailureCode, submission_status: "not_submitted" };
+      }
+      if (work?.status === "blocked_authority" && lastFailure?.submission_status === "not_submitted"
+        && lastFailure.code !== "INFERENCE_ISOLATION_UNAVAILABLE") {
+        const next = clone(blocked.snapshot);
+        const target = next.work_items.find(({ work_id: workId }) => workId === work.work_id);
+        target.status = "retryable_error";
+        target.attempts = 0;
+        target.retry_epoch = (Number.isSafeInteger(target.retry_epoch) && target.retry_epoch >= 0 ? target.retry_epoch : 0) + 1;
+        target.operation_key = null;
+        await persist(next, blocked.revision, { state: "retryable_error", stage: target.stage,
+          next_action: `retry confirmed-unsent work ${target.work_id}`, blocked_reason: lastFailure.code,
+          responsible_actor: "controller" });
+      }
+    }
     for (let count = 0; count < maximumSteps; count += 1) {
       const before = await ledger.load();
       invariant(before, "JOURNAL_JOB_NOT_INITIALIZED");

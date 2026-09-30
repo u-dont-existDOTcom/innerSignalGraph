@@ -2,7 +2,9 @@ import fs from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { TextDecoder } from "node:util";
 
-const utf8 = new TextDecoder("utf-8", { fatal: true });
+// The byte-order mark is kept as text: every passage is a byte span of the source, so the text
+// must be exactly the bytes. Stripping it shifted every span and broke the length check.
+const utf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
 const digest = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
 export async function parseUtf8File({ inputPath, inputBytes, byteLimit }) {

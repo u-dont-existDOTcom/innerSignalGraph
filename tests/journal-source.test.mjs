@@ -7,6 +7,8 @@ import { createHash } from "node:crypto";
 import { parseSourceFile, sourceParserCapabilities } from "../src/journal-import/parsers/index.mjs";
 import { partitionRepresentation, verifyRepresentationCoverage } from "../src/journal-import/partition.mjs";
 import { resolveUnitQuote } from "../src/journal-import/anchors.mjs";
+import { splitUtf8, verifyUtf8Coverage, validateJournalGraph } from "../src/journal-import/contracts.mjs";
+import { adaptExtractionToGraph } from "../src/journal-import/graph.mjs";
 import { createSourceManifest, verifySourceManifest } from "../src/journal-import/source-manifest.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
@@ -149,4 +151,42 @@ test("the parser reads verified bytes over IPC exactly as it reads the same file
   assert.deepEqual(fromBytes.representations, fromFile.representations);
   await assert.rejects(() => parseSourceFile({ inputPath, inputBytes: bytes, format: "text" }), /SOURCE_INPUT_INVALID/);
   await assert.rejects(() => parseSourceFile({ inputBytes: bytes, format: "text", byteLimit: bytes.length - 1 }), /SOURCE_BYTE_LIMIT_EXCEEDED/);
+});
+
+test("a UTF-8 text source that starts with a byte-order mark keeps it, so its spans still match its bytes", async () => {
+  const bytes = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from("Entrée inventée.\nDeuxième ligne.\n", "utf8")]);
+  const parsed = await parseSourceFile({ inputBytes: bytes, format: "text" });
+  const [representation] = parsed.representations;
+  assert.equal(representation.utf8_byte_length, bytes.length);
+  assert.equal(Buffer.byteLength(representation.text, "utf8"), bytes.length);
+  const units = partitionRepresentation({ representationId: representation.representation_id, text: representation.text });
+  assert.equal(verifyRepresentationCoverage(representation.text, units).complete, true);
+});
+
+test("an exact anchor in the first unit of a BOM-prefixed file keeps its original byte offset", async () => {
+  const bytes = Buffer.from([0xef, 0xbb, 0xbf, 0x41, 0x42, 0x43]);
+  const parsed = await parseSourceFile({ inputBytes: bytes, format: "text" });
+  const representation = parsed.representations[0];
+  const units = partitionRepresentation({ representationId: representation.representation_id, text: representation.text });
+  assert.equal(units[0].text, "\ufeffABC");
+  assert.equal(verifyRepresentationCoverage(representation.text, units).complete, true);
+  const smallUnits = splitUtf8(representation.text);
+  assert.equal(smallUnits[0].text, "\ufeffABC");
+  assert.equal(verifyUtf8Coverage(representation.text, smallUnits).byte_coverage, 1);
+  const anchor = resolveUnitQuote(units, { unit_id: units[0].unit_id, quote: "ABC" });
+  assert.deepEqual([anchor.start_byte, anchor.end_byte], [3, 6]);
+  assert.equal(bytes.subarray(anchor.start_byte, anchor.end_byte).toString("utf8"), "ABC");
+  const graph = adaptExtractionToGraph({ caseId: "bom-case", corpusId: "bom-corpus", generation: "bom-generation",
+    source: { id: "source:bom", representation_id: representation.representation_id,
+      original_object_id: "original:bom", media_type: "text/plain", byte_length: bytes.length,
+      parse_status: "readable" }, units,
+    extraction: { schema_version: "1.0", status: "complete", assertions: [], episodes: [],
+      entities: [{ local_id: "synthetic", label: "Synthetic subject", entity_kind: "person",
+        anchors: [{ unit_id: units[0].unit_id, quote: "ABC", occurrence: null },
+          { unit_id: units[0].unit_id, quote: "\ufeffABC", occurrence: null }] }],
+      coverage: [{ unit_id: units[0].unit_id, disposition: "extracted", assertion_local_ids: [], reason: null }],
+      requested_context: [] } });
+  assert.ok(graph.nodes.some(node => node.kind === "passage" && node.data.start_byte === 0
+    && node.data.end_byte === 6 && node.data.quote === "\ufeffABC"));
+  assert.doesNotThrow(() => validateJournalGraph(graph, { [representation.representation_id]: representation.text }));
 });

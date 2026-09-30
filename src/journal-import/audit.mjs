@@ -94,19 +94,23 @@ export function selectCalibrationWindows(units, count = JOURNAL_GRAPH_CONTRACT.a
 export function scoreReferenceReview({ referenceResult, reviewResult, candidateIds = [] }) {
   const reference = validateJournalSchema("reference-result", referenceResult);
   const review = validateJournalSchema("review-result", reviewResult);
+  invariant(new Set(review.assessments.map(assessment => assessment.target_id)).size === review.assessments.length,
+    "FIDELITY_DUPLICATE_ASSESSMENT");
   const assessmentById = new Map(review.assessments.map((assessment) => [assessment.target_id, assessment]));
   const counts = { preserved: 0, omitted: 0, distorted: 0, unassessed: 0 };
   let criticalMisses = 0;
   let qualifierErrors = 0;
   for (const item of reference.reference_items) {
     const assessment = assessmentById.get(item.id);
-    const outcome = assessment?.outcome ?? "unassessed";
+    const outcome = assessment?.outcome === "preserved" && assessment.finding_type !== "none"
+      ? "distorted" : (assessment?.outcome ?? "unassessed");
     counts[outcome] += 1;
     if (item.critical && outcome !== "preserved") criticalMisses += 1;
     if (assessment?.finding_type === "lost_qualifier") qualifierErrors += 1;
   }
   const candidateAssessments = candidateIds.map((id) => assessmentById.get(id));
-  const candidatePreserved = candidateAssessments.filter(({ outcome } = {}) => outcome === "preserved").length;
+  const candidatePreserved = candidateAssessments.filter(({ outcome, finding_type } = {}) =>
+    outcome === "preserved" && finding_type === "none").length;
   const total = reference.reference_items.length;
   return Object.freeze({
     reference_total: total,

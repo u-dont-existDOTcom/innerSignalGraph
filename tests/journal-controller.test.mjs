@@ -16,6 +16,7 @@ import {
 } from "../src/journal-import/provider-port.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../src/journal-import/provider-runtime.mjs";
+import { createDurableJournalInferencePort } from "../src/journal-import/durable-inference.mjs";
 
 const grant = Object.freeze({
   grant_id: "grant:synthetic",
@@ -411,6 +412,170 @@ test("known-unsent transport failure retries twice at most and malformed output 
   });
 });
 
+test("a fresh run resets exhausted confirmed-unsent retries but never resends an unknown completion", async (t) => {
+  await t.test("confirmed unsent resumes with a fresh budget", async () => {
+    const ledger = createMemoryJournalJobLedger();
+    let failedInvokes = 0;
+    const failedPort = {
+      capabilities: () => ({ mode: "synthetic-unsent" }),
+      async invoke() { failedInvokes += 1; throw new JournalInferencePortError("RETRYABLE_TRANSPORT", { submissionStatus: "not_submitted" }); },
+      async getCompletion() { return { status: "not_submitted" }; }
+    };
+    const first = createJournalImportController({ ledger, inferencePort: failedPort, controllerSecret: Buffer.alloc(32, 55), grant });
+    await first.initialize({ ...initialization(), jobId: "job:fresh-run-unsent", workDefinitions: [workDefinitions()[0]] });
+    const exhausted = await first.runUntilBlocked();
+    assert.equal(exhausted.snapshot.work_items[0].status, "blocked_authority");
+    assert.equal(failedInvokes, 2);
+    first.close();
+
+    let recoveredInvokes = 0;
+    const recoveredPort = createMockJournalInferencePort({ handlers: { extractor() { recoveredInvokes += 1; return completeExtraction(); } } });
+    const second = createJournalImportController({ ledger, inferencePort: recoveredPort, controllerSecret: Buffer.alloc(32, 55), grant });
+    const completed = await second.runUntilBlocked();
+    assert.equal(completed.snapshot.work_items[0].status, "completed");
+    assert.equal(completed.snapshot.work_items[0].attempts, 1);
+    assert.equal(recoveredInvokes, 1);
+    second.close(); recoveredPort.close();
+  });
+
+  await t.test("a legacy confirmed-unsent snapshot resumes after authoritative confirmation", async () => {
+    const ledger = createMemoryJournalJobLedger();
+    const failedPort = {
+      capabilities: () => ({ mode: "synthetic-authoritative", authoritative_completion: true }),
+      async invoke() { throw new JournalInferencePortError("RETRYABLE_TRANSPORT", { submissionStatus: "not_submitted" }); },
+      async getCompletion() { return { status: "not_submitted" }; }
+    };
+    const first = createJournalImportController({ ledger, inferencePort: failedPort, controllerSecret: Buffer.alloc(32, 56), grant });
+    await first.initialize({ ...initialization(), jobId: "job:legacy-unsent", workDefinitions: [workDefinitions()[0]] });
+    const exhausted = await first.runUntilBlocked();
+    first.close();
+
+    const legacySnapshot = structuredClone(exhausted.snapshot);
+    delete legacySnapshot.work_items[0].last_failure;
+    delete legacySnapshot.work_items[0].retry_epoch;
+    await ledger.append(legacySnapshot, exhausted.revision);
+
+    const completionChecks = [];
+    let recoveredInvokes = 0;
+    const recoveredPort = {
+      capabilities: () => ({ mode: "synthetic-authoritative", authoritative_completion: true }),
+      async invoke() {
+        recoveredInvokes += 1;
+        return { output: completeExtraction(), receipt: { receipt_id: "receipt:legacy-recovered" } };
+      },
+      async getCompletion(operationKey) {
+        completionChecks.push(operationKey);
+        return { status: "not_submitted" };
+      }
+    };
+    const second = createJournalImportController({ ledger, inferencePort: recoveredPort, controllerSecret: Buffer.alloc(32, 56), grant });
+    const completed = await second.runUntilBlocked();
+    assert.equal(completed.snapshot.work_items[0].status, "completed");
+    assert.equal(completed.snapshot.work_items[0].attempts, 1);
+    assert.equal(completed.snapshot.work_items[0].retry_epoch, 1);
+    assert.deepEqual(completionChecks, [legacySnapshot.work_items[0].operation_key]);
+    assert.equal(recoveredInvokes, 1);
+    second.close();
+  });
+
+  await t.test("unknown completion remains parked", async () => {
+    const ledger = createMemoryJournalJobLedger();
+    let invokes = 0;
+    const port = {
+      capabilities: () => ({ mode: "synthetic-unknown" }),
+      async invoke() { invokes += 1; throw new JournalInferencePortError("COMPLETION_UNKNOWN", { submissionStatus: "unknown" }); },
+      async getCompletion() { return { status: "unknown" }; }
+    };
+    const first = createJournalImportController({ ledger, inferencePort: port, controllerSecret: Buffer.alloc(32, 57), grant });
+    await first.initialize({ ...initialization(), jobId: "job:fresh-run-unknown", workDefinitions: [workDefinitions()[0]] });
+    await first.runUntilBlocked(); first.close();
+    const second = createJournalImportController({ ledger, inferencePort: port, controllerSecret: Buffer.alloc(32, 57), grant });
+    const parked = await second.runUntilBlocked();
+    assert.equal(parked.snapshot.work_items[0].status, "completion_unknown");
+    assert.equal(invokes, 1);
+    second.close();
+  });
+});
+
+test("each restarted confirmed-unsent budget uses fresh durable operation keys", async () => {
+  const store = await temporaryStore();
+  const ledger = () => createCorpusJournalJobLedger({ corpusStore: store, jobId: "job:retry-epochs" });
+  const operationKeys = [];
+  let available = false;
+  const transport = {
+    capabilities: () => ({ mode: "synthetic-authoritative", authoritative_completion: true }),
+    async invoke(input) {
+      operationKeys.push(input.operationKey);
+      if (!available) throw new JournalInferencePortError("RETRYABLE_TRANSPORT", { submissionStatus: "not_submitted" });
+      return { output: completeExtraction(), receipt: { receipt_id: "receipt:recovered" } };
+    },
+    async getCompletion() { return { status: "not_submitted" }; }
+  };
+  const open = () => createJournalImportController({
+    ledger: ledger(),
+    inferencePort: createDurableJournalInferencePort({ port: transport, corpusStore: store }),
+    controllerSecret: Buffer.alloc(32, 59), grant
+  });
+
+  for (let run = 0; run < 3; run += 1) {
+    const controller = open();
+    if (run === 0) await controller.initialize({ ...initialization(), jobId: "job:retry-epochs", workDefinitions: [workDefinitions()[0]] });
+    const blocked = await controller.runUntilBlocked();
+    assert.equal(blocked.snapshot.work_items[0].status, "blocked_authority");
+    controller.close();
+  }
+  available = true;
+  const recovered = open();
+  const completed = await recovered.runUntilBlocked();
+  assert.equal(completed.snapshot.work_items[0].status, "completed");
+  assert.equal(new Set(operationKeys).size, operationKeys.length);
+  assert.equal(operationKeys.length, 7);
+  recovered.close();
+  store.close();
+});
+
+test("reserialization after a confirmed-unsent recovery uses the retry epoch's durable key", async () => {
+  const store = await temporaryStore();
+  const jobId = "job:reserialize-retry-epochs";
+  const operationKeys = [];
+  let reserializationCalls = 0;
+  const transport = {
+    capabilities: () => ({ mode: "synthetic-authoritative", authoritative_completion: true }),
+    async invoke(input) {
+      operationKeys.push(input.operationKey);
+      if (!input.operationKey.includes(":reserialize")) {
+        throw new JournalInferencePortError("INVALID_STRUCTURED_OUTPUT", { submissionStatus: "completed_invalid" });
+      }
+      reserializationCalls += 1;
+      if (reserializationCalls < 3) {
+        throw new JournalInferencePortError("RETRYABLE_TRANSPORT", { submissionStatus: "not_submitted" });
+      }
+      return { output: completeExtraction(), receipt: { receipt_id: "receipt:reserialized" } };
+    },
+    async getCompletion() { return { status: "not_submitted" }; }
+  };
+  const open = () => createJournalImportController({
+    ledger: createCorpusJournalJobLedger({ corpusStore: store, jobId }),
+    inferencePort: createDurableJournalInferencePort({ port: transport, corpusStore: store }),
+    controllerSecret: Buffer.alloc(32, 60), grant
+  });
+
+  for (let epoch = 0; epoch < 3; epoch += 1) {
+    const controller = open();
+    if (epoch === 0) await controller.initialize({ ...initialization(), jobId, workDefinitions: [workDefinitions()[0]] });
+    const result = await controller.runUntilBlocked();
+    assert.equal(result.snapshot.work_items[0].retry_epoch, epoch);
+    assert.equal(result.snapshot.work_items[0].status, epoch === 2 ? "completed" : "blocked_authority");
+    controller.close();
+  }
+  assert.equal(reserializationCalls, 3);
+  assert.equal(new Set(operationKeys).size, 6);
+  assert.match(operationKeys[1], /:reserialize$/);
+  assert.match(operationKeys[3], /:reserialize:1$/);
+  assert.match(operationKeys[5], /:reserialize:2$/);
+  store.close();
+});
+
 test("quota, revocation and missing fresh-context route block only the affected semantic work", async (t) => {
   for (const [code, expectedState] of [["QUOTA_PAUSED", "paused_quota"], ["GRANT_REVOKED", "revoked"], ["INFERENCE_ISOLATION_UNAVAILABLE", "blocked_authority"]]) {
     await t.test(code, async () => {
@@ -429,4 +594,32 @@ test("quota, revocation and missing fresh-context route block only the affected 
       controller.close();
     });
   }
+});
+
+test("an authorization failure before a call spends no attempt and leaves nothing unknown", async () => {
+  const store = await temporaryStore();
+  let calls = 0;
+  const handlers = { extractor: () => { calls += 1; return completeExtraction(); }, omission_checker: omissionResult, reconciler: reconciliationResult };
+  const open = (deny) => {
+    // A fresh process: the provider port's own memory is empty, as after a restart.
+    const inferencePort = createDurableJournalInferencePort({ port: createMockJournalInferencePort({ handlers }), corpusStore: store });
+    return createJournalImportController({
+      ledger: createCorpusJournalJobLedger({ corpusStore: store, jobId: "job:synthetic" }),
+      inferencePort, controllerSecret: Buffer.alloc(32, 43), grant,
+      beforeInvoke: async () => { if (deny) throw Object.assign(new Error("synthetic expired authorization"), { code: "PRIVATE_CASE_ACCESS_DENIED" }); }
+    });
+  };
+  const first = open(true);
+  await first.initialize(initialization());
+  await assert.rejects(first.runUntilBlocked(), { code: "PRIVATE_CASE_ACCESS_DENIED" });
+  const stopped = await createCorpusJournalJobLedger({ corpusStore: store, jobId: "job:synthetic" }).load();
+  assert.deepEqual(stopped.snapshot.work_items.map(({ status, attempts }) => [status, attempts]), [["planned", 0], ["planned", 0], ["planned", 0]]);
+  assert.equal(calls, 0);
+  first.close();
+  const second = open(false);
+  const done = await second.runUntilBlocked();
+  assert.deepEqual(done.snapshot.work_items.map(({ status }) => status), ["completed", "completed", "completed"]);
+  assert.equal(calls, 1);
+  second.close();
+  store.close();
 });

@@ -11,11 +11,56 @@ test('audit uses reconciled version and resolves cross-unit evidence without imp
  assert.equal(scope.graph.nodes.find(n=>n.id==='a').data.support_group_id,'shared');
  assert.ok(scope.graph.nodes.some(n=>n.id==='b'));assert.ok(!scope.graph.nodes.some(n=>n.id==='unrelated'));
  assert.deepEqual(scope.assessment_target_ids,['a','correction']);
+ assert.deepEqual(scope.exclusion_ids,['a','correction']);
  assert.deepEqual(scope.supporting_passages.map(p=>p.passage_id).sort(),['p','q']);
+});
+test('a failed unit excludes its semantic nodes without excluding source or another unit\'s matching entity',()=>{
+ const n=(id,kind,data={})=>({id,kind,data});
+ const failed=[n('failed-entity','entity',{label:'Same person'}),n('failed-episode','episode'),n('failed-assertion','assertion'),n('failed-passage','passage',{unit_id:'failed',representation_id:'rep'})];
+ const passed=n('passed-entity','entity',{label:'Same person'}),source=n('source','source',{representation_id:'rep'});
+ const relation={id:'possible-identity',relation:'possible_same_entity',from:'failed-entity',to:'passed-entity',evidence_ids:['failed-passage'],derivation_ref:'receipt'};
+ const scope=createReconciledAuditScope({graph:{generation:'g',nodes:[...failed,passed,source],edges:[relation]},
+  unitGraph:{nodes:failed,edges:[]},derivationRef:'receipt'});
+ assert.deepEqual(new Set(scope.exclusion_ids),new Set(['failed-entity','failed-episode','failed-assertion','possible-identity']));
+ assert.deepEqual(scope.assessment_target_ids,['failed-assertion','possible-identity']);
+ assert.ok(!scope.exclusion_ids.includes('failed-passage'));
+ assert.ok(!scope.exclusion_ids.includes('source'));
+ assert.ok(!scope.exclusion_ids.includes('passed-entity'));
+});
+test('a shared reconciliation receipt does not make a failed unit exclude a passed pair relation',()=>{
+ const n=(id,kind,data={})=>({id,kind,data});
+ const nodes=[n('a','entity'),n('b','entity'),n('c','entity'),n('pa','passage',{unit_id:'A',representation_id:'rep'}),
+  n('pb','passage',{unit_id:'B',representation_id:'rep'}),n('pc','passage',{unit_id:'C',representation_id:'rep'}),
+  n('source','source',{representation_id:'rep'})];
+ const edges=[{id:'a-b',relation:'possible_same_entity',from:'a',to:'b',evidence_ids:['pa'],derivation_ref:'shared'},
+  {id:'b-c',relation:'possible_same_entity',from:'b',to:'c',evidence_ids:['pb','pc'],derivation_ref:'shared'}];
+ const graph={generation:'g',nodes,edges};
+ const scope=createReconciledAuditScope({graph,unitGraph:{nodes:[nodes[0],nodes[3]],edges:[]},derivationRef:'shared'});
+ assert.ok(scope.exclusion_ids.includes('a-b'));
+ assert.ok(!scope.exclusion_ids.includes('b-c'));
+ assert.ok(!scope.assessment_target_ids.includes('b-c'));
+ const excluded=new Set(scope.exclusion_ids);
+ assert.deepEqual(edges.filter(edge=>!excluded.has(edge.id)&&!excluded.has(edge.from)&&!excluded.has(edge.to)).map(edge=>edge.id),['b-c']);
 });
 test('missing and distorted candidates remain outside trusted coverage even with a sufficient status',()=>{
  const reference={reference_items:[{id:'ref'}],unassessed_unit_ids:[]};
  const review={status:'sufficient_for_stated_scope',unassessed_ids:[],assessments:[{target_id:'ref',outcome:'preserved'},{target_id:'bad',outcome:'distorted',finding_type:'wrong_person'}]};
  const result=summarizeFidelityCoverage({reference,review,candidateIds:['bad','missing']});
  assert.equal(result.complete,false);assert.deepEqual(result.unassessed_ids,['missing']);assert.deepEqual(result.untrusted_candidate_ids,['bad','missing']);assert.equal(result.repair_required,true);
+});
+test('duplicate assessments cannot turn an omitted assertion into complete trusted coverage',()=>{
+ const result=summarizeFidelityCoverage({reference:{reference_items:[],unassessed_unit_ids:[]},
+  review:{status:'sufficient_for_stated_scope',unassessed_ids:[],assessments:[
+   {target_id:'assertion',outcome:'omitted',finding_type:'missing_evidence'},
+   {target_id:'assertion',outcome:'preserved',finding_type:'none'}]},candidateIds:['assertion']});
+ assert.equal(result.complete,false);
+ assert.deepEqual(result.untrusted_candidate_ids,['assertion']);
+ assert.equal(result.repair_required,true);
+});
+test('an adverse finding remains unsafe when its outcome says preserved',()=>{
+ const result=summarizeFidelityCoverage({reference:{reference_items:[],unassessed_unit_ids:[]},
+  review:{status:'sufficient_for_stated_scope',unassessed_ids:[],assessments:[
+   {target_id:'assertion',outcome:'preserved',finding_type:'wrong_identity'}]},candidateIds:['assertion']});
+ assert.deepEqual(result.untrusted_candidate_ids,['assertion']);
+ assert.equal(result.repair_required,true);
 });
