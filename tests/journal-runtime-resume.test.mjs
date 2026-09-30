@@ -615,6 +615,49 @@ test('visual pages render in memory from the verified archive, and legacy page f
  assert.deepEqual(left,[]);
 });
 
+test('an unfinished visual page reuses its persisted image after a renderer change', async t => {
+ const f=await fixture(t);
+ const config={...f.config,visual_hazard_pages:[1]};
+ const text='Synthetic source page.';
+ const parser=async()=>({
+  source:{sha256:f.config.source.sha256,byte_length:f.config.source.bytes,mime_type:'text/plain'},
+  parser:{version:'synthetic-visual'},
+  pages:[{page_number:1,representation_id:'synthetic:page:1',disposition:'readable',
+   warnings:[],image_inventory:[],geometry:{width:100,height:100}}],
+  representations:[{representation_id:'synthetic:page:1',text,utf8_byte_length:Buffer.byteLength(text)}]
+ });
+ const image=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==','base64');
+ let interrupt=false;
+ const service={verifyCaseAccess:async()=>{
+  if(interrupt) throw Object.assign(new Error('Synthetic interruption after image persistence.'),{code:'GRANT_REVOKED'});
+  return {};
+ }};
+ let runtime=await openJournalExecutionRuntime({...f,config,service,sourceParser:parser,
+  renderVisualPage:async()=>{interrupt=true;return image;}});
+ try { await assert.rejects(()=>runtime.execute('visual-only'),{code:'GRANT_REVOKED'}); }
+ finally { await runtime.close(); }
+ const checkpoint=JSON.parse(await fs.readFile(path.join(config.execution_root,'state.json')));
+ assert.deepEqual(checkpoint.completed_visual_pages,[]);
+ const key=await fs.readFile(path.join(config.execution_root,'staging.key'));
+ const store=createPrivateJournalCorpusStore({rootDir:config.execution_root,
+  caseId:checkpoint.case_id,corpusId:checkpoint.corpus_id,corpusKey:key});
+ try { assert.ok(await store.readJsonObject({objectId:'visual:image-ref:1'})); }
+ finally { store.close();key.fill(0); }
+ interrupt=false;
+ let renders=0,receivedImage=null;
+ const port=createMockJournalInferencePort({handlers:{visual_reader:p=>{
+  receivedImage=Buffer.from(p.page_image_ref.data_base64,'base64');
+  return {schema_version:'1.0',source_page_id:'page:1',regions:[],page_complete:true,
+   missing_or_uncertain_regions:[]};
+ }}});
+ runtime=await openJournalExecutionRuntime({...f,config,service,sourceParser:()=>assert.fail('must not reparse'),
+  renderVisualPage:async()=>{renders+=1;return Buffer.from('different renderer output');},inferencePort:port});
+ try { assert.equal((await runtime.execute('visual-only')).completed_visual_pages,1); }
+ finally { await runtime.close(); }
+ assert.equal(renders,0);
+ assert.deepEqual(receivedImage,image);
+});
+
 test('the page renderer reads the source on stdin and returns the image on stdout',
  {skip:spawnSync('pdftoppm',['-v']).error?'pdftoppm is not installed':false},async()=>{
  const pdf=await fs.readFile(new URL('../guides/vagal-blitz-source.pdf',import.meta.url));
