@@ -2,6 +2,22 @@
 
 Updated: 2026-09-30
 
+## Deferred review follow-ups (issues #101 and #102, 2026-09-30)
+
+**Outcome at the authorized working-tree boundary:** All four findings are classified below, three fixed and one already fixed. The runner will commit and push this working tree; full `npm test` and `npm run verify` belong to push CI under the owner's no-localhost constraint. No packages were installed or missing.
+
+### Issue #101 — exchange retry and rejection
+
+- **Finding 1 — fixed:** An expired unanswered final attempt now records a terminal controller failure instead of leaving `completion_unknown` unchanged; a regression covers the delayed second-attempt expiry.
+- **Finding 2 — fixed:** Missing effective model or effort on a completed answer now takes the completed-invalid path, so the durable result is saved before the exchange packet, answer, and dispatch record are retired; regressions cover immediate and delayed observation.
+
+### Issue #102 — visual and audit residuals
+
+- **Finding 1 — already fixed:** An empty post-visual plan reaches `finishArchiveOnly()` before reconciliation or audit; the existing all-scanned exclusion and legacy-empty-graph tests cover the path.
+- **Finding 2 — fixed:** A sampled unit named in its reference freeze's `unassessed_unit_ids` now contributes to the audit's unassessed unit count and residual; a source-declared non-assessment regression covers it.
+
+Targeted regressions passed, including the in-memory delayed exchange rejection. The complete affected controller file passed 22/22, runtime-finish passed 36/36, `npm run journal:ui:test` passed 20/20, and `npm run audit:repository` passed with zero errors and its existing hosted GitHub App permission warning. The exchange-port file's filesystem-backed tests cannot run in this sandbox because `/tmp` has an untrusted owner for `assertJournalWorkExchangeRoot` (`JOURNAL_WORK_EXCHANGE_ROOT_INSECURE`); no package failed to load. `npm run audit:publication` scanned 788,905 records and failed on the same five historical `credential-pattern` Git-object findings in `tests/learning-groundwork-privacy.test.mjs` recorded in prior rounds; this patch changed no history, refs, or scanner rules. The live Universal default-branch pages could only be read through a cached web response; freshness could not be verified from this networkless sandbox. The controller now applies the existing final-attempt failure path to delayed completion, with no new portable Universal rule proposed.
+
 ## PR #98 calibration-gate repair at `4e6f1f2` (2026-09-30)
 
 - **Goal and boundary:** Repair the P1 calibration regression at the reviewed head of `claude/journal-import-finishes-20260927`, preserve prior fixes, and sweep the PR's owner decisions. The runner will commit and push this working tree. This round did not install packages, use real private cases or providers, push, deploy, or promote `stable`. The live Universal default branch was attempted, but only cached web pages were available; a fresh GitHub API read was rejected in this sandbox. The PR description itself was read through `gh pr view 98`.

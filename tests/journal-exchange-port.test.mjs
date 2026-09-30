@@ -175,12 +175,13 @@ test("a role call goes out as a work item and comes back as an authenticated ans
   assert.deepEqual(await port.getCompletion(KEY), { status: "unknown" });
 });
 
-test("an answer without mechanically verified execution profile and context is not admitted", async (t) => {
+test("an answer without mechanically verified execution profile is rejected and retired", async (t) => {
   const environment = await setup(t);
   const port = environment.makePort({ verifiedExecution: false });
-  const rejected = assert.rejects(port.invoke(referenceCall()), {
-    code: "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED"
-  });
+  const durable = createDurableJournalInferencePort({ port, corpusStore: memoryStore() });
+  const rejected = assert.rejects(durable.invoke(referenceCall()), (error) =>
+    error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid"
+    && error.cause?.code === "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
   while ((await environment.connector.listDispatch()).length === 0) await delay(5);
   await environment.answerOpenItems();
   await rejected;
@@ -190,6 +191,33 @@ test("an answer without mechanically verified execution profile and context is n
     "an answer receipt must not be promoted into a fresh-chat identifier");
   assert.equal(stored.receipt.effective_model_profile, undefined);
   assert.equal(stored.receipt.effective_effort, undefined);
+  assert.equal(stored.retired, true);
+  assert.equal(await environment.connector.readWork(journalExchangeWorkId(KEY)), null);
+  assert.deepEqual(await environment.connector.listDispatch(), []);
+  assert.deepEqual(await durable.getCompletion(KEY), { status: "invalid_output" });
+});
+
+test("a delayed answer without execution profile is retired after durable rejection", async () => {
+  let entry = null;
+  let answered = false;
+  let retired = false;
+  const exchange = {
+    async readResult() { return answered ? { output: structuredClone(referenceAnswer), receipt: {} } : null; },
+    async readWork() { return entry; },
+    async publishWork(work) { entry = work; return { created: true }; },
+    async publishDispatch() {},
+    async retireWork() { retired = true; }
+  };
+  const port = createExchangeJournalInferencePort({ exchange, caseId: CASE_ID, receiptKey: randomBytes(32),
+    routeRef: "route:synthetic-exchange", allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    model: "GPT-5.6 Sol", effort: "Pro", waitMs: 0 });
+  const durable = createDurableJournalInferencePort({ port, corpusStore: memoryStore() });
+  await assert.rejects(durable.invoke(referenceCall()), { code: "COMPLETION_UNKNOWN" });
+  answered = true;
+  assert.deepEqual(await durable.getCompletion(KEY), { status: "invalid_output" });
+  assert.equal(retired, true);
+  await assert.rejects(durable.invoke(referenceCall()), (error) =>
+    error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid");
 });
 
 test("an invalid dispatcher context identifier is not promoted into an authenticated receipt", async (t) => {

@@ -410,6 +410,35 @@ test("known-unsent transport failure retries twice at most and malformed output 
     assert.equal(invokes, 2);
     controller.close();
   });
+
+  await t.test("an expired second attempt leaves completion unknown only until confirmed unsent", async () => {
+    let invokes = 0;
+    let completionStatus = "unknown";
+    const port = {
+      capabilities: () => ({ mode: "synthetic-delayed-expiry", authoritative_completion: true }),
+      async invoke() {
+        invokes += 1;
+        throw new JournalInferencePortError(invokes === 1 ? "JOURNAL_WORK_EXPIRED" : "COMPLETION_UNKNOWN",
+          { submissionStatus: invokes === 1 ? "not_submitted" : "unknown" });
+      },
+      async getCompletion() { return { status: completionStatus }; }
+    };
+    const ledger = createMemoryJournalJobLedger();
+    const controller = createJournalImportController({ ledger, inferencePort: port, controllerSecret: Buffer.alloc(32, 58), grant });
+    await controller.initialize({ ...initialization(), jobId: "job:delayed-expired-final", workDefinitions: [workDefinitions()[0]] });
+
+    let result = await controller.runUntilBlocked();
+    assert.equal(result.snapshot.work_items[0].attempts, 2);
+    assert.equal(result.snapshot.work_items[0].status, "completion_unknown");
+    completionStatus = "not_submitted";
+    result = await controller.step();
+    assert.equal(result.snapshot.work_items[0].status, "blocked_authority");
+    assert.equal(result.snapshot.checkpoint.state, "blocked_authority");
+    assert.equal(result.snapshot.checkpoint.blocked_reason, "INFERENCE_RETRY_LIMIT");
+    assert.equal((await controller.step()).revision, result.revision);
+    assert.equal(invokes, 2);
+    controller.close();
+  });
 });
 
 test("a fresh run resets exhausted confirmed-unsent retries but never resends an unknown completion", async (t) => {
