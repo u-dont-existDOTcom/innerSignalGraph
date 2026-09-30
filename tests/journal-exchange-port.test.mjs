@@ -177,7 +177,18 @@ test("a role call goes out as a work item and comes back as an authenticated ans
 
 test("an answer without mechanically verified execution profile is rejected and retired", async (t) => {
   const environment = await setup(t);
-  const port = environment.makePort({ verifiedExecution: false });
+  let observedReceipt;
+  const port = environment.makePort({
+    verifiedExecution: false,
+    exchange: {
+      ...environment.runtimeExchange,
+      async readResult(workId) {
+        const result = await environment.runtimeExchange.readResult(workId);
+        if (result?.receipt) observedReceipt = result.receipt;
+        return result;
+      }
+    }
+  });
   const durable = createDurableJournalInferencePort({ port, corpusStore: memoryStore() });
   const rejected = assert.rejects(durable.invoke(referenceCall()), (error) =>
     error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid"
@@ -186,12 +197,14 @@ test("an answer without mechanically verified execution profile is rejected and 
   await environment.answerOpenItems();
   await rejected;
 
-  const stored = await environment.runtimeExchange.readResult(journalExchangeWorkId(KEY));
-  assert.equal(stored.receipt.request_context_id, undefined,
+  assert.ok(observedReceipt, "the unverified answer receipt was observed before retirement");
+  assert.equal(observedReceipt.request_context_id, undefined,
     "an answer receipt must not be promoted into a fresh-chat identifier");
-  assert.equal(stored.receipt.effective_model_profile, undefined);
-  assert.equal(stored.receipt.effective_effort, undefined);
+  assert.equal(observedReceipt.effective_model_profile, undefined);
+  assert.equal(observedReceipt.effective_effort, undefined);
+  const stored = await environment.runtimeExchange.readResult(journalExchangeWorkId(KEY));
   assert.equal(stored.retired, true);
+  assert.equal(stored.receipt, undefined, "retirement removes the answer receipt");
   assert.equal(await environment.connector.readWork(journalExchangeWorkId(KEY)), null);
   assert.deepEqual(await environment.connector.listDispatch(), []);
   assert.deepEqual(await durable.getCompletion(KEY), { status: "invalid_output" });
