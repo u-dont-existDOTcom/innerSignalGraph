@@ -14,6 +14,28 @@ import { isOutside } from "../core/private-path.mjs";
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const ENV_KEY = /^[A-Z][A-Z0-9_]{0,127}$/u;
 const DEFAULT_REFRESH_MARGIN_MS = 60_000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
+// The hosted operator settings the runtime needs besides the token. Sign-in is attempted only when
+// they are all present and the JSON ones parse, so a local configuration error is reported as itself
+// and credentials are never sent for a command that can't start.
+const OPERATOR_SETTING_NAMES = Object.freeze([
+  "INNER_SIGNAL_PRIVATE_ROOT",
+  "INNER_SIGNAL_OAUTH_ISSUER",
+  "INNER_SIGNAL_OAUTH_AUDIENCE",
+  "INNER_SIGNAL_OPERATOR_OAUTH_JWKS_JSON",
+  "INNER_SIGNAL_OPERATOR_CASE_ACL_JSON",
+  "INNER_SIGNAL_CASE_KEYS_JSON"
+]);
+
+function operatorSettingsReady(environment) {
+  for (const name of OPERATOR_SETTING_NAMES) {
+    if (typeof environment[name] !== "string" || environment[name].length === 0) return false;
+    if (name.endsWith("_JSON")) {
+      try { JSON.parse(environment[name]); } catch { return false; }
+    }
+  }
+  return path.isAbsolute(environment.INNER_SIGNAL_PRIVATE_ROOT);
+}
 const MAX_ENV_FILE_BYTES = 1024 * 1024;
 
 function fail(code) {
@@ -68,8 +90,10 @@ export function createOperatorTokenProvider({
   scope = null,
   fetchImpl = globalThis.fetch,
   now = () => Date.now(),
-  refreshMarginMs = DEFAULT_REFRESH_MARGIN_MS
+  refreshMarginMs = DEFAULT_REFRESH_MARGIN_MS,
+  requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS
 } = {}) {
+  if (!Number.isSafeInteger(requestTimeoutMs) || requestTimeoutMs < 1) fail("OPERATOR_REQUEST_TIMEOUT_INVALID");
   const endpoint = tokenEndpoint(issuer);
   if (typeof clientId !== "string" || clientId.length === 0) fail("OPERATOR_CLIENT_INVALID");
   if (typeof clientSecret !== "string" || clientSecret.length === 0) fail("OPERATOR_CLIENT_INVALID");
@@ -82,18 +106,32 @@ export function createOperatorTokenProvider({
   async function fetchToken() {
     const form = new URLSearchParams({ grant_type: "client_credentials", client_id: clientId, client_secret: clientSecret });
     if (scope) form.set("scope", scope);
+    // A stalled endpoint must not hold up the run: the request and its body read share one deadline,
+    // after which an early renewal falls back to the token still in hand.
+    const controller = new AbortController();
+    let timer;
+    const deadline = new Promise((_, reject) => {
+      timer = setTimeout(() => { controller.abort(); reject(new Error("timeout")); }, requestTimeoutMs);
+      timer.unref?.();
+    });
     let response;
-    try {
-      response = await fetchImpl(endpoint, {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
-        body: form.toString(),
-        redirect: "error"
-      });
-    } catch { fail("OPERATOR_TOKEN_UNAVAILABLE"); }
-    if (!response?.ok) fail("OPERATOR_TOKEN_UNAVAILABLE");
     let body;
-    try { body = await response.json(); } catch { fail("OPERATOR_TOKEN_RESPONSE_INVALID"); }
+    try {
+      try {
+        response = await Promise.race([fetchImpl(endpoint, {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded", accept: "application/json" },
+          body: form.toString(),
+          redirect: "error",
+          signal: controller.signal
+        }), deadline]);
+      } catch { fail("OPERATOR_TOKEN_UNAVAILABLE"); }
+      if (!response?.ok) fail("OPERATOR_TOKEN_UNAVAILABLE");
+      try { body = await Promise.race([response.json(), deadline]); } catch { fail("OPERATOR_TOKEN_RESPONSE_INVALID"); }
+    } finally {
+      clearTimeout(timer);
+      deadline.catch(() => {});
+    }
     const token = body?.access_token;
     const lifetime = body?.expires_in;
     if (typeof token !== "string" || token.length === 0 || !/^[\x21-\x7e]+$/u.test(token)) fail("OPERATOR_TOKEN_RESPONSE_INVALID");
@@ -139,7 +177,7 @@ export async function prepareJournalOperatorEnvironment(environment = process.en
   const clientId = environment.INNER_SIGNAL_OPERATOR_CLIENT_ID;
   const clientSecret = environment.INNER_SIGNAL_OPERATOR_CLIENT_SECRET;
   delete environment.INNER_SIGNAL_OPERATOR_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return Object.freeze({ environment, authContextProvider: null });
+  if (!clientId || !clientSecret || !operatorSettingsReady(environment)) return Object.freeze({ environment, authContextProvider: null });
   const authContextProvider = createOperatorTokenProvider({
     issuer: environment.INNER_SIGNAL_OAUTH_ISSUER,
     clientId,

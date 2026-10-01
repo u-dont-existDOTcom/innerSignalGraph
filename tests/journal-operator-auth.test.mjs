@@ -12,6 +12,14 @@ import {
 
 const SECRET = "SENTINEL-OPERATOR-SECRET-7Q";
 const ISSUER = "https://auth.example.test/realms/synthetic";
+// The hosted operator settings sign-in needs besides the client credentials (synthetic values).
+const OPERATOR_SETTINGS = [
+  "INNER_SIGNAL_PRIVATE_ROOT=/synthetic/private/vault",
+  "INNER_SIGNAL_OAUTH_AUDIENCE=synthetic-audience",
+  "INNER_SIGNAL_OPERATOR_OAUTH_JWKS_JSON={\"keys\":[]}",
+  "INNER_SIGNAL_OPERATOR_CASE_ACL_JSON=[]",
+  "INNER_SIGNAL_CASE_KEYS_JSON={}"
+];
 
 async function privateDir(t) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), "journal-operator-auth-"));
@@ -110,7 +118,8 @@ test("unavailable commands are refused before any env file is read or token requ
   const file = await envFile(dir, "operator.env", [
     `INNER_SIGNAL_OAUTH_ISSUER=${ISSUER}`,
     "INNER_SIGNAL_OPERATOR_CLIENT_ID=operator",
-    `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`
+    `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`,
+    ...OPERATOR_SETTINGS
   ].join("\n"));
   const server = tokenServer();
   const originalFetch = globalThis.fetch;
@@ -149,7 +158,8 @@ test("a missing or unresolved config fails before any env file is read or token 
   const file = await envFile(dir, "operator.env", [
     `INNER_SIGNAL_OAUTH_ISSUER=${ISSUER}`,
     "INNER_SIGNAL_OPERATOR_CLIENT_ID=operator",
-    `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`
+    `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`,
+    ...OPERATOR_SETTINGS
   ].join("\n"));
   const unresolved = await envFile(dir, "unresolved.json", "{}");
   const resolvedButUnrunnable = await envFile(dir, "unrunnable.json", JSON.stringify({
@@ -175,6 +185,50 @@ test("a missing or unresolved config fails before any env file is read or token 
     assert.ok(!errors.includes(SECRET));
   }
   assert.equal(server.calls.length, 0);
+});
+
+test("a stalled token endpoint times out, and an early renewal falls back to the valid token", async () => {
+  let clock = 0;
+  let stall = false;
+  let served = 0;
+  const fetchImpl = (url, init) => {
+    if (stall) return new Promise((_, reject) => init.signal.addEventListener("abort", () => reject(new Error(SECRET))));
+    served += 1;
+    return Promise.resolve({ ok: true, json: async () => ({ access_token: `token-${served}`, token_type: "Bearer", expires_in: 300 }) });
+  };
+  const provider = createOperatorTokenProvider({ issuer: ISSUER, clientId: "operator", clientSecret: SECRET,
+    fetchImpl, now: () => clock, requestTimeoutMs: 50 });
+  assert.deepEqual(await provider(), { bearerToken: "token-1" });
+  stall = true;
+  clock = 250_000;
+  const started = Date.now();
+  assert.deepEqual(await provider(), { bearerToken: "token-1" });
+  assert.ok(Date.now() - started < 2_000);
+  clock = 400_000;
+  await assert.rejects(provider, (error) => error.code === "OPERATOR_TOKEN_UNAVAILABLE" && !error.message.includes(SECRET));
+});
+
+test("sign-in waits until the other operator settings are present and well formed", async (t) => {
+  const dir = await privateDir(t);
+  for (const broken of [
+    OPERATOR_SETTINGS.filter((line) => !line.startsWith("INNER_SIGNAL_OAUTH_AUDIENCE=")),
+    OPERATOR_SETTINGS.map((line) => line.startsWith("INNER_SIGNAL_CASE_KEYS_JSON=") ? "INNER_SIGNAL_CASE_KEYS_JSON={not json" : line),
+    OPERATOR_SETTINGS.map((line) => line.startsWith("INNER_SIGNAL_PRIVATE_ROOT=") ? "INNER_SIGNAL_PRIVATE_ROOT=relative/vault" : line)
+  ]) {
+    const file = await envFile(dir, `broken-${Math.random().toString(16).slice(2)}.env`, [
+      `INNER_SIGNAL_OAUTH_ISSUER=${ISSUER}`,
+      "INNER_SIGNAL_OPERATOR_CLIENT_ID=operator",
+      `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`,
+      ...broken
+    ].join("\n"));
+    const server = tokenServer();
+    const environment = {};
+    const prepared = await prepareJournalOperatorEnvironment(environment, { envFiles: [file], fetchImpl: server.fetchImpl });
+    assert.equal(prepared.authContextProvider, null);
+    assert.equal(server.calls.length, 0);
+    assert.equal(Object.hasOwn(environment, "INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN"), false);
+    assert.equal(Object.hasOwn(environment, "INNER_SIGNAL_OPERATOR_CLIENT_SECRET"), false);
+  }
 });
 
 test("concurrent callers share one token request", async () => {
@@ -205,6 +259,7 @@ test("preparing the environment fills from env files in place, fetches the first
     `INNER_SIGNAL_OAUTH_ISSUER=${ISSUER}`,
     "INNER_SIGNAL_OPERATOR_CLIENT_ID=operator",
     `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`,
+    ...OPERATOR_SETTINGS,
     "ALREADY_SET=from-file"
   ].join("\n"));
   const environment = { ALREADY_SET: "from-process" };
@@ -234,7 +289,8 @@ test("the CLI loads --env-file and hands the renewing provider to the runtime", 
   const file = await envFile(dir, "operator.env", [
     `INNER_SIGNAL_OAUTH_ISSUER=${ISSUER}`,
     "INNER_SIGNAL_OPERATOR_CLIENT_ID=operator",
-    `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`
+    `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`,
+    ...OPERATOR_SETTINGS
   ].join("\n"));
   const server = tokenServer();
   const originalFetch = globalThis.fetch;
