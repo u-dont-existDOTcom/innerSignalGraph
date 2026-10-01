@@ -6,12 +6,13 @@ import { OpenAIProvider } from "../providers/openai.mjs";
 import { createChatGptSubscriptionBrowserProvider } from "../providers/chatgpt-subscription-browser.mjs";
 import { createChatGptSubscriptionCdpTransport } from "./chatgpt-subscription-cdp.mjs";
 import { createChatGptSubscriptionDesktopCdpTransport } from "./chatgpt-subscription-desktop-cdp.mjs";
-import { createDisabledJournalInferencePort, createProviderJournalInferencePort } from "./provider-port.mjs";
-import { JOURNAL_EXCHANGE_PROVIDER, createExchangeJournalInferencePort } from "./exchange-port.mjs";
+import { JOURNAL_ROLE_DEFINITIONS, createDisabledJournalInferencePort, createProviderJournalInferencePort } from "./provider-port.mjs";
+import { JOURNAL_EXCHANGE_PROVIDER, JOURNAL_CODEX_EXCHANGE_PROVIDER, createExchangeJournalInferencePort } from "./exchange-port.mjs";
 import {
   assertJournalWorkExchangeRoot,
   createJournalWorkExchange,
   deriveJournalWorkExchangeKeys,
+  journalWorkExchangeSecret,
   resolveJournalWorkExchangeRoot
 } from "./work-exchange.mjs";
 
@@ -41,7 +42,8 @@ function parseConfiguration(value) {
   catch { throw new ValidationError("JOURNAL_INFERENCE_ROUTE_CONFIG_INVALID", { code: "JOURNAL_INFERENCE_ROUTE_CONFIG_INVALID" }); }
   invariant(parsed && typeof parsed === "object" && !Array.isArray(parsed), "JOURNAL_INFERENCE_ROUTE_CONFIG_INVALID");
   invariant(parsed.schema_version === 1, "JOURNAL_INFERENCE_ROUTE_VERSION_UNSUPPORTED");
-  const exchangeRoute = parsed.provider === JOURNAL_EXCHANGE_PROVIDER;
+  const codexRoute = parsed.provider === JOURNAL_CODEX_EXCHANGE_PROVIDER;
+  const exchangeRoute = parsed.provider === JOURNAL_EXCHANGE_PROVIDER || codexRoute;
   invariant(exchangeRoute || Object.hasOwn(PROVIDERS, parsed.provider), "JOURNAL_INFERENCE_PROVIDER_UNSUPPORTED");
   for (const field of ["route_ref", "model", "effort"]) invariant(typeof parsed[field] === "string" && parsed[field].length > 0, "JOURNAL_INFERENCE_ROUTE_CONFIG_INVALID");
   invariant(Number.isFinite(parsed.max_external_spend_usd) && parsed.max_external_spend_usd >= 0, "INFERENCE_SPEND_LIMIT_INVALID");
@@ -58,6 +60,17 @@ function parseConfiguration(value) {
     invariant(exchange && typeof exchange === "object" && !Array.isArray(exchange), "JOURNAL_EXCHANGE_CONFIG_INVALID");
     if (exchange.poll_ms !== undefined) invariant(Number.isSafeInteger(exchange.poll_ms) && exchange.poll_ms >= 250 && exchange.poll_ms <= 60_000, "JOURNAL_EXCHANGE_CONFIG_INVALID");
     if (exchange.ttl_ms !== undefined) invariant(Number.isSafeInteger(exchange.ttl_ms) && exchange.ttl_ms >= 60_000 && exchange.ttl_ms <= 7 * 24 * 3_600_000, "JOURNAL_EXCHANGE_CONFIG_INVALID");
+  }
+  if (codexRoute) {
+    invariant(/^[a-z0-9][a-z0-9.-]{0,63}$/u.test(parsed.model), "JOURNAL_CODEX_MODEL_INVALID");
+    const efforts = new Set(["low", "medium", "high", "xhigh", "max"]);
+    invariant(efforts.has(parsed.effort), "JOURNAL_CODEX_EFFORT_INVALID");
+    if (parsed.role_effort !== undefined) {
+      invariant(parsed.role_effort && typeof parsed.role_effort === "object" && !Array.isArray(parsed.role_effort), "JOURNAL_CODEX_ROLE_EFFORT_INVALID");
+      for (const [role, effort] of Object.entries(parsed.role_effort)) {
+        invariant(Object.hasOwn(JOURNAL_ROLE_DEFINITIONS, role) && efforts.has(effort), "JOURNAL_CODEX_ROLE_EFFORT_INVALID");
+      }
+    }
   }
   if (parsed.provider === "chatgpt_subscription_browser") {
     invariant(parsed.max_external_spend_usd === 0, "SUBSCRIPTION_ROUTE_REQUIRES_ZERO_EXTERNAL_SPEND");
@@ -80,7 +93,11 @@ function secret(environment, name) {
 function loadExchangePort(environment, config, receiptKey, caseId, hardestLane) {
   const configuredRoot = secret(environment, "INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT");
   invariant(path.isAbsolute(configuredRoot), "JOURNAL_EXCHANGE_ROOT_INVALID");
-  const keys = deriveJournalWorkExchangeKeys(secret(environment, "INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64"));
+  invariant(!(environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64 !== undefined
+    && environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE !== undefined), "JOURNAL_WORK_EXCHANGE_SECRET_CONFLICT");
+  invariant(Boolean(environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64 || environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE), "INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64_REQUIRED");
+  const keys = environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64
+    ? deriveJournalWorkExchangeKeys(environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64) : null;
   if (environment === process.env) delete process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64;
   return createExchangeJournalInferencePort({
     caseId,
@@ -91,13 +108,14 @@ function loadExchangePort(environment, config, receiptKey, caseId, hardestLane) 
     effort: config.effort,
     waitMs: config.timeout_ms,
     hardestLane,
+    ...(config.provider === JOURNAL_CODEX_EXCHANGE_PROVIDER ? { executionAttestation: "codex_exec", roleEffort: config.role_effort ?? {} } : {}),
     ...(config.exchange?.poll_ms !== undefined ? { pollMs: config.exchange.poll_ms } : {}),
     ...(config.exchange?.ttl_ms !== undefined ? { ttlMs: config.exchange.ttl_ms } : {}),
     // Canonical, private and outside this checkout, checked when the runtime starts.
     prepareExchange: async () => {
       const root = await resolveJournalWorkExchangeRoot(configuredRoot, { outside: repositoryRoot });
       await assertJournalWorkExchangeRoot(root);
-      return createJournalWorkExchange({ root, keys });
+      return createJournalWorkExchange({ root, keys: keys ?? deriveJournalWorkExchangeKeys(await journalWorkExchangeSecret(environment)) });
     }
   });
 }
@@ -113,7 +131,7 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
   // visual attempt is unavailable; no hardest call may silently fall through to the standard model.
   const receiptKey = Buffer.from(secret(environment, "INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64"), "base64");
   invariant(receiptKey.byteLength >= 32, "INFERENCE_RECEIPT_KEY_INVALID");
-  if (config.provider === JOURNAL_EXCHANGE_PROVIDER) {
+  if (config.provider === JOURNAL_EXCHANGE_PROVIDER || config.provider === JOURNAL_CODEX_EXCHANGE_PROVIDER) {
     try {
       invariant(typeof caseId === "string" && caseId.length > 0, "JOURNAL_EXCHANGE_CASE_INVALID");
       return loadExchangePort(environment, config, receiptKey, caseId, hardestLane);

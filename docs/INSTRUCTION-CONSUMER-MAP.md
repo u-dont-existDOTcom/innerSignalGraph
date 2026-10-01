@@ -23,6 +23,7 @@ Current owner and task requirements remain highest. `AGENTS.md`, `.github/codex-
 | Approved private candidate | Delivery controller and person receiving the response | Exact approved candidate text or authorized discriminator | Candidate identity/version checks, fresh independent audit, approval state, delivery record, and no hidden producer trace crossing the boundary |
 | Hypnosis guide, entry/readiness rules, and waking-return contract | Specialist hypnosis pipeline only | Hypnosis-specific stages | Hypnosis schemas, readiness/consent gates, stop/return behavior, tests, and stable installation authority |
 | Guide Packet sources, evidence, decision cases, and model-role contracts | Guide Packet verifier, compiler, independent reviewer, conditional escalation, and owner decision UI | Stage-specific verified packet fields only | Packet hashes/schema, exact model resolution, stage receipts, decision cards, owner approval, install verification, and rollback |
+| Journal role instruction, schema, and authorized source packet | Configured journal import role through the local Codex exec exchange | One ephemeral request that fetches the exact work item through the two-tool stdio MCP server; no repository governance document enters the packet | Request-pinned model and role effort, dedicated Codex home, constrained tools and environment, sealed staged answer, event admission, and authenticated `codex-thread:` receipt before importer use |
 
 ## Boundary invariants
 

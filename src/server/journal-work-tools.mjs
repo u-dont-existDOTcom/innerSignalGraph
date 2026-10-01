@@ -52,7 +52,7 @@ export const JOURNAL_WORK_INSTRUCTIONS = "For a private InnerSignal journal work
 const toolError = (code, message, details = undefined) => ({ toolError: { code, message, ...(details ? { details } : {}) } });
 const value = (result) => ({ value: result });
 
-export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier = null } = {}) {
+export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier = null, stageDir = null } = {}) {
   if (!exchange || typeof exchange.readWork !== "function" || typeof exchange.submitResult !== "function") {
     throw new TypeError("A journal work exchange is required.");
   }
@@ -125,7 +125,9 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
         total_errors: validate.errors?.length ?? errors.length
       });
     }
-    const stored = await exchange.submitResult({ workId, output, subject: authorization.principalId });
+    const stored = stageDir
+      ? await exchange.stageResult({ stageDir, workId, output })
+      : await exchange.submitResult({ workId, output, subject: authorization.principalId });
     return value({
       work_id: workId,
       ...stored,
