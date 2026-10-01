@@ -10,10 +10,10 @@ import {
 } from "./provider-port.mjs";
 import { JOURNAL_WORK_TRANSPORT, journalWorkFileKey } from "./work-exchange.mjs";
 
-// An inference port that hands each role call to ChatGPT through the private connector tools instead
-// of driving a browser. invoke() publishes an encrypted work item and a content-free dispatch record;
-// Mission Control gives the item to a fresh chat, which fetches the packet and stores its answer
-// through the connector; the port reads the answer from the exchange. Completion is therefore known,
+// An inference port that publishes role calls through the private exchange. The ChatGPT connector
+// and the Codex exec worker use distinct admission evidence over the same encrypted work format.
+// invoke() publishes an encrypted work item and a content-free dispatch record; the port reads its
+// answer from the exchange. Completion is therefore known,
 // not guessed: an answer is stored or it is not, and a restarted runtime reads it from the exchange.
 //
 // Re-sending is safe because the route is flat-rate and an item's first stored answer wins. An item
@@ -21,6 +21,7 @@ import { JOURNAL_WORK_TRANSPORT, journalWorkFileKey } from "./work-exchange.mjs"
 // so the caller's retry publishes a successor under the same operation key.
 
 export const JOURNAL_EXCHANGE_PROVIDER = "chatgpt_connector_exchange";
+export const JOURNAL_CODEX_EXCHANGE_PROVIDER = "codex_exec_exchange";
 const DEFAULT_WAIT_MS = 45 * 60_000;
 const DEFAULT_POLL_MS = 5_000;
 const DEFAULT_TTL_MS = 24 * 60 * 60_000;
@@ -29,6 +30,7 @@ const MAX_SUCCESSORS = 8;
 const UNSUPPORTED_ROLES = new Set(["visual_reader"]);
 const CASE_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,79}$/u;
 const REQUEST_CONTEXT_ID_PATTERN = /^[\x21-\x7e]{1,256}$/u;
+const CODEX_CONTEXT_ID_PATTERN = /^codex-thread:[0-9A-Za-z-]{8,64}$/u;
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -57,6 +59,8 @@ export function createExchangeJournalInferencePort({
   pollMs = DEFAULT_POLL_MS,
   ttlMs = DEFAULT_TTL_MS,
   hardestLane = {},
+  executionAttestation = null,
+  roleEffort = {},
   prepareExchange = null,
   now = () => new Date(),
   sleep = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
@@ -88,15 +92,15 @@ export function createExchangeJournalInferencePort({
     enabled: true,
     live_inference: true,
     route_ref: routeRef,
-    transport: JOURNAL_WORK_TRANSPORT,
+    transport: executionAttestation === "codex_exec" ? JOURNAL_CODEX_EXCHANGE_PROVIDER : JOURNAL_WORK_TRANSPORT,
     packet_only: true,
-    // The connector authenticates the submitting account and binds the answer to this work item,
-    // but its receipt does not attest that the dispatcher opened a new chat. Do not let callers
-    // treat that receipt as proof of fresh-context isolation.
-    fresh_context_per_generate: false,
-    // Desired dispatch labels are not execution evidence. The current connector receipt omits the
-    // effective model and effort, so receiptFor() cannot admit any answer from this route yet.
-    authenticated_execution_profile_per_generate: false,
+    // The connector receipt does not attest that the dispatcher opened a fresh chat. The Codex
+    // worker supplies request-pinned evidence and a new ephemeral thread under its own route.
+    fresh_context_per_generate: executionAttestation === "codex_exec",
+    // Desired dispatch labels alone are not execution evidence. The connector remains blocked;
+    // the Codex route admits only its worker-authenticated request-pinned receipt.
+    authenticated_execution_profile_per_generate: executionAttestation === "codex_exec",
+    ...(executionAttestation === "codex_exec" ? { execution_profile_evidence: "codex_exec_request_pinned" } : {}),
     // The exchange knows whether an item was answered, is still open, or was closed unanswered.
     authoritative_completion: true,
     external_spend_authorized_usd: 0,
@@ -145,11 +149,18 @@ export function createExchangeJournalInferencePort({
     // are not evidence of the profile that actually ran, so an answer is inadmissible until a
     // dispatcher/provider receipt carries the effective model and effort and they match the route.
     invariant((dispatch.tier ?? "standard") === (entry.tier ?? "standard")
+      && (executionAttestation !== "codex_exec" || (dispatch.model === model
+        && dispatch.effort === (roleEffort[entry.role] ?? effort)))
       && stored.receipt.effective_model_profile === dispatch.model
       && stored.receipt.effective_effort === dispatch.effort, "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+    if (executionAttestation === "codex_exec") {
+      invariant(stored.receipt.profile_evidence === "codex_exec_request_pinned"
+        && typeof stored.receipt.request_context_id === "string"
+        && CODEX_CONTEXT_ID_PATTERN.test(stored.receipt.request_context_id), "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+    }
     const receiptBody = {
       receipt_id: `receipt:${createHmac("sha256", key).update(`${operationKey}\0${entry.input_sha256}`).digest("hex").slice(0, 40)}`,
-      transport: JOURNAL_WORK_TRANSPORT,
+      transport: executionAttestation === "codex_exec" ? JOURNAL_CODEX_EXCHANGE_PROVIDER : JOURNAL_WORK_TRANSPORT,
       request_id: stored.receipt.receipt_id,
       // A unique answer receipt does not prove a unique chat. Leave this unverified unless a
       // dispatcher/provider receipt mechanically supplies the actual request context.
@@ -163,6 +174,7 @@ export function createExchangeJournalInferencePort({
       configured_effort: dispatch.effort,
       effective_model_profile: stored.receipt.effective_model_profile,
       effective_effort: stored.receipt.effective_effort,
+      ...(executionAttestation === "codex_exec" ? { execution_profile_evidence: stored.receipt.profile_evidence } : {}),
       completion_status: "completed",
       target_generation: entry.expected_generation,
       token_evidence: null,
@@ -197,7 +209,7 @@ export function createExchangeJournalInferencePort({
       output_schema_name: entry.output_schema_name,
       tier: entry.tier ?? "standard",
       model: entry.tier === "hardest" ? hardestModel : model,
-      effort: entry.tier === "hardest" ? hardestEffort : effort,
+      effort: entry.tier === "hardest" ? hardestEffort : (roleEffort[entry.role] ?? effort),
       route_ref: routeRef,
       issued_at: entry.issued_at,
       expires_at: entry.expires_at

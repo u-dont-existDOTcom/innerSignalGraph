@@ -4,7 +4,7 @@ import readline from "node:readline";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { assertJournalWorkExchangeRoot, createJournalWorkExchange,
-  resolveJournalWorkExchangeRoot } from "../journal-import/work-exchange.mjs";
+  journalWorkExchangeSecret, resolveJournalWorkExchangeRoot } from "../journal-import/work-exchange.mjs";
 import { createJournalWorkTools } from "../server/journal-work-tools.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -20,11 +20,14 @@ export function parseJournalWorkMcpArgs(argv) {
   const configPath = option(argv, "--config");
   const principal = option(argv, "--principal");
   const tier = option(argv, "--tier");
+  const stageDir = option(argv, "--stage-dir");
   if (!configPath || !path.isAbsolute(configPath) || !PRINCIPAL.test(principal ?? "")
-    || (tier !== null && !["standard", "hardest"].includes(tier))) {
+    || (tier !== null && !["standard", "hardest"].includes(tier))
+    || (argv.includes("--stage-dir") && (stageDir === null || !path.isAbsolute(stageDir) || tier === "hardest"
+      || argv.filter((value) => value === "--stage-dir").length !== 1))) {
     throw new Error("Usage: journal:work:mcp -- --config <absolute private run config> --principal <name> [--tier hardest]");
   }
-  return { configPath: path.normalize(configPath), principal, tier };
+  return { configPath: path.normalize(configPath), principal, tier, stageDir };
 }
 
 function response(id, result) { return { jsonrpc: "2.0", id, result }; }
@@ -45,13 +48,13 @@ export async function runJournalWorkMcp(argv, {
   const caseId = config?.target_profile?.case_id;
   if (!CASE_ID.test(caseId ?? "")) throw new Error("Private journal configuration has no valid target case.");
   const configuredRoot = environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT;
-  const secret = environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64;
-  if (!configuredRoot || !path.isAbsolute(configuredRoot) || !secret) throw new Error("Journal work exchange configuration is unavailable.");
+  if (!configuredRoot || !path.isAbsolute(configuredRoot)) throw new Error("Journal work exchange configuration is unavailable.");
+  const secret = await journalWorkExchangeSecret(environment);
   const root = await resolveJournalWorkExchangeRoot(configuredRoot, { outside: repositoryRoot });
   await assertJournalWorkExchangeRoot(root);
   const exchange = createJournalWorkExchange({ root, secret });
   await exchange.removeStaleTemporaries();
-  const tools = createJournalWorkTools({ exchange, caseId, tier: args.tier,
+  const tools = createJournalWorkTools({ exchange, caseId, tier: args.tier, stageDir: args.stageDir,
     authorizeCase: async () => ({ principalId: `local:${args.principal}` }) });
   const send = (message) => stdout.write(`${JSON.stringify(message)}\n`);
   const lines = readline.createInterface({ input: stdin, crlfDelay: Infinity, terminal: false });

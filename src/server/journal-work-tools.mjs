@@ -52,7 +52,7 @@ export const JOURNAL_WORK_INSTRUCTIONS = "For a private InnerSignal journal work
 const toolError = (code, message, details = undefined) => ({ toolError: { code, message, ...(details ? { details } : {}) } });
 const value = (result) => ({ value: result });
 
-export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier = null } = {}) {
+export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier = null, stageDir = null } = {}) {
   if (!exchange || typeof exchange.readWork !== "function" || typeof exchange.submitResult !== "function") {
     throw new TypeError("A journal work exchange is required.");
   }
@@ -91,6 +91,7 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
       return value({ work_id: workId, status: "already_submitted", message: "An answer for this item is already stored. Stop here." });
     }
     const { entry } = found;
+    if (stageDir) await exchange.markPacketFetched({ stageDir, workId });
     return value({
       work_id: workId,
       status: "ready",
@@ -125,7 +126,17 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
         total_errors: validate.errors?.length ?? errors.length
       });
     }
-    const stored = await exchange.submitResult({ workId, output, subject: authorization.principalId });
+    let stored;
+    try {
+      stored = stageDir
+        ? await exchange.stageResult({ stageDir, workId, output })
+        : await exchange.submitResult({ workId, output, subject: authorization.principalId });
+    } catch (error) {
+      if (error?.code === "JOURNAL_WORK_PACKET_NOT_FETCHED") {
+        return toolError(error.code, "Fetch this work item's packet before submitting its answer.");
+      }
+      throw error;
+    }
     return value({
       work_id: workId,
       ...stored,

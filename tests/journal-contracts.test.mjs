@@ -103,7 +103,7 @@ test("each present time bound is checked, and a closed interval may not end befo
 
 test("CLI grammar requires private absolute config outside mock doctor", () => {
   assert.deepEqual(parseJournalImportArgs(["doctor", "--mock"]), {
-    command: "doctor", configPath: null, mock: true, json: false
+    command: "doctor", configPath: null, mock: true, json: false, envFiles: []
   });
   assert.throws(() => parseJournalImportArgs(["run"]), /private --config path is required/);
   assert.throws(() => parseJournalImportArgs(["run", "--config", "relative.json"]), /absolute private path/);

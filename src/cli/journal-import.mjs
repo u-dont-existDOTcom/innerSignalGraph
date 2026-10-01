@@ -7,6 +7,7 @@ import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
 import { sourceFormatForPath, sourceParserCapabilities } from "../journal-import/parsers/index.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../journal-import/provider-runtime.mjs";
+import { prepareJournalOperatorEnvironment } from "../journal-import/operator-auth.mjs";
 import { journalSemanticConcurrency, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -40,7 +41,7 @@ export function journalImportHelp() {
     "InnerSignal private journal importer",
     "",
     "Usage:",
-    "  npm run journal:import -- <command> --config /absolute/private/run.json",
+    "  npm run journal:import -- <command> --config /absolute/private/run.json [--env-file /absolute/private/file.env ...]",
     "  npm run journal:import -- doctor --mock",
     "",
     `Commands: ${JOURNAL_IMPORT_COMMANDS.filter((command) => !JOURNAL_IMPORT_PLANNED_COMMANDS.includes(command)).join(", ")}`,
@@ -57,12 +58,16 @@ export function parseJournalImportArgs(argv) {
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) return Object.freeze({ help: true });
   const command = args.shift();
   if (!JOURNAL_IMPORT_COMMANDS.includes(command)) throw new ValidationError("Unknown journal import command.", { code: "JOURNAL_COMMAND_UNKNOWN" });
-  const options = { command, configPath: null, mock: false, json: false };
+  const options = { command, configPath: null, mock: false, json: false, envFiles: [] };
   while (args.length) {
     const flag = args.shift();
     if (flag === "--mock") options.mock = true;
     else if (flag === "--json") options.json = true;
-    else if (flag === "--config") {
+    else if (flag === "--env-file") {
+      const envFile = args.shift();
+      if (!envFile || !path.isAbsolute(envFile)) throw new ValidationError("--env-file must be followed by an absolute private path.", { code: "JOURNAL_ENV_FILE_PATH_INVALID" });
+      options.envFiles.push(path.normalize(envFile));
+    } else if (flag === "--config") {
       const configPath = args.shift();
       if (!configPath || !path.isAbsolute(configPath)) throw new ValidationError("--config must be followed by an absolute private path.", { code: "JOURNAL_CONFIG_PATH_INVALID" });
       options.configPath = path.normalize(configPath);
@@ -71,8 +76,9 @@ export function parseJournalImportArgs(argv) {
     }
   }
   if (options.mock && command !== "doctor") throw new ValidationError("--mock is supported only by doctor.", { code: "JOURNAL_MOCK_SCOPE_INVALID" });
+  if (options.mock && options.envFiles.length > 0) throw new ValidationError("--env-file is not used with --mock.", { code: "JOURNAL_MOCK_SCOPE_INVALID" });
   if (!options.mock && !options.configPath) throw new ValidationError("A private --config path is required.", { code: "JOURNAL_CONFIG_REQUIRED" });
-  return Object.freeze(options);
+  return Object.freeze({ ...options, envFiles: Object.freeze(options.envFiles) });
 }
 
 export function mockJournalDoctorReport() {
@@ -270,17 +276,28 @@ export async function runJournalImportCli(argv, { stdout = process.stdout, stder
       stdout.write(`${JSON.stringify(mockJournalDoctorReport())}\n`);
       return 0;
     }
-    if (parsed.command === "doctor") {
-      stdout.write(`${JSON.stringify(await configuredJournalDoctorReport(parsed.configPath, environment))}\n`);
-      return 0;
-    }
+    // Unavailable commands are refused before any private file is read or any sign-in is attempted.
     if (JOURNAL_IMPORT_PLANNED_COMMANDS.includes(parsed.command)) {
       throw new ValidationError("This journal import command isn't available yet.", { code: "JOURNAL_COMMAND_NOT_AVAILABLE" });
     }
-    // The configured one-shot operator owns writes. The MCP remains read-only.
+    // The private config is checked before any env file is read or any sign-in is attempted. Doctor
+    // reports run-config blockers itself; every other command stops on the first one here, with the
+    // same code the run would give.
     const config = await loadPrivateConfig(parsed.configPath);
+    if (parsed.command !== "doctor") {
+      const [blocker] = runConfigBlockers(config);
+      if (blocker) throw new ValidationError("The private journal configuration can't open a run.", { code: blocker });
+    }
+    // Private env files and the operator's renewing sign-in, for doctor and every run command.
+    const prepared = await prepareJournalOperatorEnvironment(environment, { envFiles: parsed.envFiles, config });
+    if (parsed.command === "doctor") {
+      stdout.write(`${JSON.stringify(await configuredJournalDoctorReport(parsed.configPath, prepared.environment))}\n`);
+      return 0;
+    }
+    // The configured one-shot operator owns writes. The MCP remains read-only.
     const openRuntime = runtimeFactory ?? (await import("../journal-import/private-runtime.mjs")).openJournalExecutionRuntime;
-    const runtime = await openRuntime({ config, configPath: parsed.configPath, environment });
+    const runtime = await openRuntime({ config, configPath: parsed.configPath, environment: prepared.environment,
+      ...(prepared.authContextProvider ? { authContextProvider: prepared.authContextProvider } : {}) });
     try { stdout.write(`${JSON.stringify(await runtime.execute(parsed.command))}\n`); }
     finally { await runtime.close(); }
     return 0;

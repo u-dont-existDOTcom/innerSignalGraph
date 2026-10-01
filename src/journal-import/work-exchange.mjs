@@ -117,6 +117,26 @@ export function deriveJournalWorkExchangeKeys(secret) {
   }
 }
 
+export async function journalWorkExchangeSecret(environment) {
+  const inline = environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64;
+  const file = environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE;
+  if (inline !== undefined && file !== undefined) fail("JOURNAL_WORK_EXCHANGE_SECRET_CONFLICT");
+  if (inline) return inline;
+  if (typeof file !== "string" || !path.isAbsolute(file)) fail("JOURNAL_WORK_EXCHANGE_SECRET_FILE_INVALID");
+  try {
+    return await withOpenedRegularFile(file, async (handle, info) => {
+      if ((info.mode & 0o077) !== 0 || (currentUser() !== null && info.uid !== currentUser())) {
+        fail("JOURNAL_WORK_EXCHANGE_SECRET_FILE_INSECURE");
+      }
+      if (info.size > 4096) fail("JOURNAL_WORK_EXCHANGE_SECRET_FILE_INVALID");
+      return (await handle.readFile("utf8")).trim();
+    });
+  } catch (error) {
+    if (["ELOOP", "ERR_NOT_REGULAR_FILE"].includes(error?.code)) fail("JOURNAL_WORK_EXCHANGE_SECRET_FILE_INVALID");
+    throw error;
+  }
+}
+
 // Public on purpose: a watcher without keys can check for an answer by file name.
 export function journalWorkFileKey(workId) {
   return sha256(`inner-signal:journal-work:${assertJournalWorkId(workId)}`);
@@ -289,6 +309,35 @@ export function createJournalWorkExchange({
   const directory = (kind) => path.join(root, QUEUES[kind]);
   const fileFor = (kind, fileKey) => path.join(directory(kind), `${fileKey}.json`);
 
+  async function stagePath(stageDir, workId) {
+    if (typeof stageDir !== "string" || !path.isAbsolute(stageDir)) fail("JOURNAL_WORK_STAGE_DIR_INVALID");
+    let info;
+    try { info = await fs.lstat(stageDir); }
+    catch { fail("JOURNAL_WORK_STAGE_DIR_INVALID"); }
+    if (!info.isDirectory() || (info.mode & 0o777) !== 0o700 || (owner !== null && info.uid !== owner)
+      || await fs.realpath(stageDir) !== stageDir) fail("JOURNAL_WORK_STAGE_DIR_INSECURE");
+    return path.join(stageDir, `${journalWorkFileKey(workId)}.json`);
+  }
+
+  async function fetchMarkerPath(stageDir, workId) {
+    await stagePath(stageDir, workId);
+    return path.join(stageDir, `${journalWorkFileKey(workId)}.fetched`);
+  }
+
+  async function requireFetchMarker(stageDir, workId) {
+    const marker = await fetchMarkerPath(stageDir, workId);
+    try {
+      await withOpenedRegularFile(marker, async (_handle, info) => {
+        if ((info.mode & 0o777) !== 0o600 || (owner !== null && info.uid !== owner)
+          || info.size === 0 || info.size > 256) fail("JOURNAL_WORK_PACKET_NOT_FETCHED");
+      });
+    } catch (error) {
+      if (error?.code === "JOURNAL_WORK_PACKET_NOT_FETCHED") throw error;
+      fail("JOURNAL_WORK_PACKET_NOT_FETCHED");
+    }
+    return marker;
+  }
+
   async function syncPath(dir) {
     const handle = await fs.open(dir, "r");
     try { await handle.sync(); }
@@ -452,12 +501,18 @@ export function createJournalWorkExchange({
 
     // Connector side: store a validated answer with a receipt the runtime can authenticate.
     // The subject is hashed; the output is never logged or returned.
-    async submitResult({ workId, output, subject }) {
+    async submitResult({ workId, output, subject, execution }) {
       const fileKey = journalWorkFileKey(workId);
       if (!isPlainObject(output)) fail("JOURNAL_WORK_OUTPUT_INVALID");
       const serialized = JSON.stringify(output);
       if (Buffer.byteLength(serialized, "utf8") > MAX_JOURNAL_RESULT_BYTES) fail("JOURNAL_WORK_OUTPUT_TOO_LARGE");
       if (typeof subject !== "string" || subject.length === 0) fail("JOURNAL_WORK_SUBJECT_REQUIRED");
+      if (execution !== undefined && (!isPlainObject(execution)
+        || Object.keys(execution).length !== 4
+        || ["profile_evidence", "effective_model_profile", "effective_effort", "request_context_id"].some((field) =>
+          typeof execution[field] !== "string" || !/^[\x20-\x7e]{1,128}$/u.test(execution[field])))) {
+        fail("JOURNAL_WORK_EXECUTION_INVALID");
+      }
       const fields = {
         receipt_id: `journal-work-receipt:${randomUUID()}`,
         transport: JOURNAL_WORK_TRANSPORT,
@@ -465,7 +520,8 @@ export function createJournalWorkExchange({
         work_file_key: fileKey,
         output_sha256: sha256(serialized),
         subject_sha256: sha256(`subject:${subject}`),
-        received_at: now().toISOString()
+        received_at: now().toISOString(),
+        ...(execution ?? {})
       };
       const receipt = { ...fields, tag: receiptTag(derived.receipt, fields) };
       const stored = await publish("result", fileKey, seal(derived.encryption, "result", fileKey, {
@@ -477,6 +533,65 @@ export function createJournalWorkExchange({
       return Object.freeze(stored
         ? { stored: true, already: false, receipt_id: receipt.receipt_id, received_at: receipt.received_at }
         : { stored: true, already: true });
+    },
+
+    async markPacketFetched({ stageDir, workId }) {
+      const marker = await fetchMarkerPath(stageDir, workId);
+      const temporary = path.join(stageDir, `${TEMPORARY_PREFIX}${randomUUID()}`);
+      const handle = await fs.open(temporary, "wx", 0o600);
+      try { await handle.writeFile(JSON.stringify({ nonce: randomUUID(), at: now().toISOString() })); await handle.sync(); }
+      catch (error) { await handle.close(); await fs.unlink(temporary).catch(() => {}); throw error; }
+      await handle.close();
+      try { await fs.link(temporary, marker); }
+      catch (error) { if (error?.code !== "EEXIST") throw error; }
+      finally { await fs.unlink(temporary).catch(() => {}); await syncPath(stageDir); }
+      await requireFetchMarker(stageDir, workId);
+    },
+
+    async stageResult({ stageDir, workId, output }) {
+      const destination = await stagePath(stageDir, workId);
+      await requireFetchMarker(stageDir, workId);
+      if (!isPlainObject(output)) fail("JOURNAL_WORK_OUTPUT_INVALID");
+      const serialized = JSON.stringify(output);
+      if (Buffer.byteLength(serialized, "utf8") > MAX_JOURNAL_RESULT_BYTES) fail("JOURNAL_WORK_OUTPUT_TOO_LARGE");
+      const fileKey = journalWorkFileKey(workId);
+      const temporary = path.join(stageDir, `${TEMPORARY_PREFIX}${randomUUID()}`);
+      const handle = await fs.open(temporary, "wx", 0o600);
+      try {
+        await handle.writeFile(seal(derived.encryption, "stage", fileKey, { work_id: workId, output }));
+        await handle.sync();
+      } catch (error) {
+        await handle.close();
+        await fs.unlink(temporary).catch(() => {});
+        throw error;
+      }
+      await handle.close();
+      try {
+        await fs.link(temporary, destination);
+        return Object.freeze({ stored: true, already: false });
+      } catch (error) {
+        if (error?.code === "EEXIST") return Object.freeze({ stored: true, already: true });
+        throw error;
+      } finally {
+        await fs.unlink(temporary).catch(() => {});
+        await syncPath(stageDir);
+      }
+    },
+
+    async promoteStaged({ stageDir, workId, subject, execution }) {
+      const filename = await stagePath(stageDir, workId);
+      const marker = await requireFetchMarker(stageDir, workId);
+      const bytes = await withOpenedRegularFile(filename, async (handle, info) => {
+        if (info.size > MAX_WORK_BYTES || (info.mode & 0o077) !== 0) fail("JOURNAL_WORK_STAGE_INVALID");
+        return handle.readFile();
+      });
+      const staged = open(derived.encryption, "stage", journalWorkFileKey(workId), bytes);
+      if (!isPlainObject(staged) || staged.work_id !== workId || !isPlainObject(staged.output)) fail("JOURNAL_WORK_STAGE_INVALID");
+      const result = await this.submitResult({ workId, output: staged.output, subject, execution });
+      await fs.unlink(filename);
+      await fs.unlink(marker);
+      await syncPath(stageDir);
+      return result;
     },
 
     // Runtime side: read an answer and authenticate its connector receipt. Null when none arrived;
