@@ -274,14 +274,15 @@ export async function runJournalImportCli(argv, { stdout = process.stdout, stder
       stdout.write(`${JSON.stringify(mockJournalDoctorReport())}\n`);
       return 0;
     }
+    // Unavailable commands are refused before any private file is read or any sign-in is attempted.
+    if (JOURNAL_IMPORT_PLANNED_COMMANDS.includes(parsed.command)) {
+      throw new ValidationError("This journal import command isn't available yet.", { code: "JOURNAL_COMMAND_NOT_AVAILABLE" });
+    }
     // Private env files and the operator's renewing sign-in, for doctor and every run command.
     const prepared = await prepareJournalOperatorEnvironment(environment, { envFiles: parsed.envFiles });
     if (parsed.command === "doctor") {
       stdout.write(`${JSON.stringify(await configuredJournalDoctorReport(parsed.configPath, prepared.environment))}\n`);
       return 0;
-    }
-    if (JOURNAL_IMPORT_PLANNED_COMMANDS.includes(parsed.command)) {
-      throw new ValidationError("This journal import command isn't available yet.", { code: "JOURNAL_COMMAND_NOT_AVAILABLE" });
     }
     // The configured one-shot operator owns writes. The MCP remains read-only.
     const config = await loadPrivateConfig(parsed.configPath);

@@ -91,6 +91,40 @@ test("the operator token is fetched with client credentials and renewed before i
   assert.equal(server.calls[0].redirect, "error");
 });
 
+test("short-lived tokens are still reused until halfway through their life", async () => {
+  let clock = 0;
+  const server = tokenServer({ lifetimes: [30, 30] });
+  const provider = createOperatorTokenProvider({ issuer: ISSUER, clientId: "operator", clientSecret: SECRET,
+    fetchImpl: server.fetchImpl, now: () => clock });
+  await provider();
+  clock = 14_000;
+  await provider();
+  assert.equal(server.calls.length, 1);
+  clock = 15_000;
+  assert.deepEqual(await provider(), { bearerToken: "token-2" });
+  assert.equal(server.calls.length, 2);
+});
+
+test("unavailable commands are refused before any env file is read or token requested", async (t) => {
+  const dir = await privateDir(t);
+  const file = await envFile(dir, "operator.env", [
+    `INNER_SIGNAL_OAUTH_ISSUER=${ISSUER}`,
+    "INNER_SIGNAL_OPERATOR_CLIENT_ID=operator",
+    `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`
+  ].join("\n"));
+  const server = tokenServer();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = server.fetchImpl;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let errors = "";
+  const code = await runJournalImportCli(["export", "--config", path.join(dir, "run.json"), "--env-file", file], {
+    environment: {}, stdout: { write: () => {} }, stderr: { write: (chunk) => { errors += chunk; } }
+  });
+  assert.equal(code, 1);
+  assert.equal(JSON.parse(errors).error, "JOURNAL_COMMAND_NOT_AVAILABLE");
+  assert.equal(server.calls.length, 0);
+});
+
 test("concurrent callers share one token request", async () => {
   const server = tokenServer();
   const provider = createOperatorTokenProvider({ issuer: ISSUER, clientId: "operator", clientSecret: SECRET, fetchImpl: server.fetchImpl });

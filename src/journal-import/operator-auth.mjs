@@ -99,12 +99,16 @@ export function createOperatorTokenProvider({
     if (typeof token !== "string" || token.length === 0 || !/^[\x21-\x7e]+$/u.test(token)) fail("OPERATOR_TOKEN_RESPONSE_INVALID");
     if (typeof body?.token_type === "string" && body.token_type.toLowerCase() !== "bearer") fail("OPERATOR_TOKEN_RESPONSE_INVALID");
     if (!Number.isFinite(lifetime) || lifetime <= 0) fail("OPERATOR_TOKEN_RESPONSE_INVALID");
-    current = { token, expiresAt: now() + lifetime * 1000 };
+    const lifetimeMs = lifetime * 1000;
+    // Renew a margin before expiry, but never sooner than halfway through the token's life, so a
+    // short-lived token is still reused for a while instead of being requested on every check.
+    const fetchedAt = now();
+    current = { token, expiresAt: fetchedAt + lifetimeMs, renewAt: fetchedAt + Math.max(lifetimeMs - refreshMarginMs, lifetimeMs / 2) };
     return current;
   }
 
   return async function operatorAuthContext() {
-    if (!current || now() >= current.expiresAt - refreshMarginMs) {
+    if (!current || now() >= current.renewAt) {
       pending ??= fetchToken().finally(() => { pending = null; });
       await pending;
     }
