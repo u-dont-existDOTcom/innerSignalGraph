@@ -39,6 +39,7 @@ The transition report names the fully gated private candidate, the public visibi
 ## Plans and specifications
 
 - `superpowers/plans/`: implementation plans
+- `superpowers/plans/2026-10-01-journal-codex-lane.md`: request-pinned Codex exec exchange, staged-answer admission, and synthetic worker regressions
 - `superpowers/specs/`: accepted design specifications
 
 ## Obsidian graph authoring

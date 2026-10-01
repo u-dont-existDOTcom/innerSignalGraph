@@ -147,10 +147,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     };
     await authorize();
     const route = environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON ? JSON.parse(environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON) : null;
-    // Either subscription route: the desktop app driven over CDP, or the connector exchange that
-    // Mission Control hands to fresh chats. Model, effort and zero spend are the same for both.
-    if (!suppliedPort && route) invariant(["chatgpt_subscription_browser", "chatgpt_connector_exchange"].includes(route.provider)
-      && route.model === "GPT-5.6 Sol" && route.effort === "Pro" && route.max_external_spend_usd === 0, "JOURNAL_SUBSCRIPTION_ROUTE_REQUIRED");
+    // The two ChatGPT routes retain their exact subscription model and effort pin. The Codex exec
+    // exchange has its own validated request pin; every supported route remains zero spend.
+    if (!suppliedPort && route) invariant(
+      (route.provider === "codex_exec_exchange" && route.max_external_spend_usd === 0)
+      || (["chatgpt_subscription_browser", "chatgpt_connector_exchange"].includes(route.provider)
+        && route.model === "GPT-5.6 Sol" && route.effort === "Pro" && route.max_external_spend_usd === 0),
+      "JOURNAL_SUBSCRIPTION_ROUTE_REQUIRED");
     const keyFile = path.join(root, "staging.key");
     try { await fs.writeFile(keyFile, randomBytes(32), { flag: "wx", mode: 0o600 }); } catch (e) { if (e.code !== "EEXIST") throw e; }
     // One no-follow handle for the check and the read, so the key can't be swapped in between.
