@@ -6,9 +6,10 @@ const answer = { schema_version: "1.0", source_only_first_pass: true, reference_
   questions: [], unassessed_unit_ids: [] };
 
 export function exchangeHarness({ caseId = "synthetic-case", defaultAnswer = answer,
-  waitMs = 1000, onDispatch = () => {}, now = () => new Date(), ttlMs } = {}) {
+  waitMs = 1000, onDispatch = () => {}, failDispatch = false, now = () => new Date(), ttlMs } = {}) {
   const work = new Map(), results = new Map(), dispatch = new Map();
   const successful = new Map();
+  const published = [];
   const exchange = {
     async removeStaleTemporaries() {},
     readWork: async id => structuredClone(work.get(id) ?? null),
@@ -16,10 +17,12 @@ export function exchangeHarness({ caseId = "synthetic-case", defaultAnswer = ans
     async publishWork(entry) {
       if (work.has(entry.work_id)) return { created: false };
       work.set(entry.work_id, structuredClone(entry));
+      published.push(structuredClone(entry));
       successful.set(entry.work_id, (successful.get(entry.work_id) ?? 0) + 1);
       return { created: true };
     },
     async publishDispatch(record) {
+      if (failDispatch) throw new Error("synthetic dispatch failure");
       dispatch.set(record.work_id, structuredClone(record));
       onDispatch({ work, results, dispatch });
     },
@@ -29,8 +32,8 @@ export function exchangeHarness({ caseId = "synthetic-case", defaultAnswer = ans
       results.set(id, { retired: true, unanswered: true }); dispatch.delete(id);
       return { closed: true };
     },
-    async retireWork(id) {
-      results.set(id, { retired: true }); dispatch.delete(id);
+    async retireWork(id, { superseded = false } = {}) {
+      results.set(id, { retired: true, ...(superseded ? { superseded: true } : {}) }); dispatch.delete(id);
       work.delete(id);
     }
   };
@@ -49,5 +52,5 @@ export function exchangeHarness({ caseId = "synthetic-case", defaultAnswer = ans
     } });
   };
   const port = makePort();
-  return { port, makePort, work, results, dispatch, successful, answerWork };
+  return { port, makePort, work, results, dispatch, successful, published, answerWork };
 }

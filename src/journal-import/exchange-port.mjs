@@ -125,7 +125,7 @@ export function createExchangeJournalInferencePort({
     for (let successor = 0; successor <= MAX_SUCCESSORS; successor += 1) {
       const workId = journalExchangeWorkId(operationKey, successor);
       const stored = await store.readResult(workId);
-      if (stored?.retired && stored.unanswered) continue;
+      if (stored?.retired && (stored.unanswered || stored.superseded)) continue;
       return { store, workId, successor, entry: await store.readWork(workId), stored };
     }
     throw new JournalInferencePortError("JOURNAL_EXCHANGE_RETRY_LIMIT", { submissionStatus: "not_submitted" });
@@ -253,7 +253,22 @@ export function createExchangeJournalInferencePort({
 
   async function publish(input, { dispatchNew = false } = {}) {
     const { role, packet, outputSchema, operationKey, grant, tier, digest } = input;
-    const { store, workId, successor, entry: existing, stored } = await current(operationKey);
+    let selected = await current(operationKey);
+    // A speculative item carries no durable caller intent. Replace it on the same operation key
+    // before the sequential caller creates an intent or spends a controller attempt.
+    while (!dispatchNew && selected.entry?.origin === "lookahead"
+      && (selected.entry.input_sha256 !== digest
+        || (!selected.stored && Date.parse(selected.entry.expires_at) <= now().getTime()))) {
+      if (selected.stored?.output) {
+        // The answer belongs to the old grant/input and has no durable caller intent.
+        await selected.store.retireWork(selected.workId, { superseded: true });
+      } else {
+        // If an answer wins the close race, the next iteration retires that stale answer.
+        await selected.store.closeUnanswered(selected.workId);
+      }
+      selected = await current(operationKey);
+    }
+    const { store, workId, successor, entry: existing, stored } = selected;
     if (dispatchNew && successor > 0)
       throw new JournalInferencePortError("JOURNAL_PREFETCH_RETRY_UNSUPPORTED", { submissionStatus: "not_submitted" });
     if (existing) invariant(existing.input_sha256 === digest, "OPERATION_KEY_CONFLICT");
@@ -266,7 +281,8 @@ export function createExchangeJournalInferencePort({
         expected_generation: packet.expected_generation ?? null,
         issued_at: issuedAt.toISOString(),
         expires_at: new Date(issuedAt.getTime() + (tier === "hardest" ? hardestTtlMs : ttlMs)).toISOString(),
-        input_sha256: digest, grant_id: grant.grant_id, grant_purpose: grant.purpose, route_ref: routeRef
+        input_sha256: digest, grant_id: grant.grant_id, grant_purpose: grant.purpose, route_ref: routeRef,
+        ...(dispatchNew ? { origin: "lookahead" } : {})
       };
       try {
         const { created } = await store.publishWork(entry);
@@ -274,10 +290,21 @@ export function createExchangeJournalInferencePort({
           const winner = await store.readWork(workId);
           if (winner) invariant(winner.input_sha256 === digest, "OPERATION_KEY_CONFLICT");
         }
-        if (dispatchNew) await ensureDispatch(store, created ? entry : await store.readWork(workId));
+        if (dispatchNew) {
+          const publishedEntry = created ? entry : await store.readWork(workId);
+          try { await ensureDispatch(store, publishedEntry); }
+          catch (cause) {
+            // The work item is already published. Keep its lookahead slot occupied until its
+            // answer, retirement, expiry or runtime close resolves it.
+            const error = new JournalInferencePortError("JOURNAL_EXCHANGE_UNAVAILABLE",
+              { submissionStatus: "unknown", cause });
+            error.workPublished = publishedEntry?.origin === "lookahead";
+            throw error;
+          }
+        }
         return { published: created, workId };
       } catch (cause) {
-        if (cause instanceof ValidationError) throw cause;
+        if (cause instanceof ValidationError || cause.workPublished) throw cause;
         throw new JournalInferencePortError("JOURNAL_EXCHANGE_UNAVAILABLE", { submissionStatus: "not_submitted", cause });
       }
     }
@@ -304,6 +331,7 @@ export function createExchangeJournalInferencePort({
       return { status: "completed", output };
     }
     if (stored?.retired) return { status: "retired" };
+    if (entry && Date.parse(entry.expires_at) <= now().getTime()) return { status: "expired" };
     return { status: entry ? "pending" : "not_submitted" };
   }
 

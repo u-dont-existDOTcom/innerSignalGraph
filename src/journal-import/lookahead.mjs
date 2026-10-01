@@ -11,6 +11,7 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
   const wake = new Set();
   let closed = false;
   let errors = 0;
+  let publication = Promise.resolve();
   const pause = () => new Promise(resolve => {
     const timer = setTimeout(() => { wake.delete(stop); resolve(); }, pollMs);
     const stop = () => { clearTimeout(timer); wake.delete(stop); resolve(); };
@@ -18,10 +19,24 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
   });
   const send = async (request) => {
     if (closed) return null;
-    await authorize();
-    if (closed) return null;
-    const result = await port.prefetch({ ...request, grant, tier: "standard" });
-    if (result?.published) sent.add(request.operationKey);
+    try {
+      // Check access immediately before each publication, including when several lookahead
+      // tasks become ready together and an earlier send changes access state.
+      const task = publication.then(async () => {
+        if (closed) return null;
+        await authorize();
+        if (closed) return null;
+        return port.prefetch({ ...request, grant, tier: "standard" });
+      });
+      publication = task.then(() => {}, () => {});
+      const result = await task;
+      if (!result) return null;
+      if (result?.published) sent.add(request.operationKey);
+    } catch (error) {
+      if (!error.workPublished) throw error;
+      sent.add(request.operationKey);
+      errors += 1;
+    }
     for (;;) {
       if (closed) return null;
       const peek = await port.peek(request.operationKey);

@@ -181,6 +181,7 @@ function validateWorkEntry(entry) {
   if (typeof entry.case_id !== "string" || !CASE_ID_PATTERN.test(entry.case_id)) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (typeof entry.role !== "string" || !ROLE_PATTERN.test(entry.role)) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (entry.tier !== undefined && !["standard", "hardest"].includes(entry.tier)) fail("JOURNAL_WORK_ENTRY_INVALID");
+  if (entry.origin !== undefined && entry.origin !== "lookahead") fail("JOURNAL_WORK_ENTRY_INVALID");
   if (typeof entry.instruction !== "string" || entry.instruction.length === 0
     || Buffer.byteLength(entry.instruction, "utf8") > MAX_INSTRUCTION_BYTES) fail("JOURNAL_WORK_ENTRY_INVALID");
   if (!isPlainObject(entry.packet) || !isPlainObject(entry.output_schema)) fail("JOURNAL_WORK_ENTRY_INVALID");
@@ -472,7 +473,9 @@ export function createJournalWorkExchange({
         fail("JOURNAL_WORK_RESULT_INVALID");
       }
       if (record.retired === true) {
-        return Object.freeze({ retired: true, retired_at: record.retired_at, unanswered: record.unanswered === true });
+        return Object.freeze({ retired: true, retired_at: record.retired_at,
+          unanswered: record.unanswered === true,
+          ...(record.superseded === true ? { superseded: true } : {}) });
       }
       const { tag, ...fields } = record.receipt ?? {};
       if (typeof tag !== "string" || fields.work_file_key !== fileKey || fields.transport !== JOURNAL_WORK_TRANSPORT
@@ -488,7 +491,7 @@ export function createJournalWorkExchange({
     // by an encrypted tombstone in one rename, so its name never goes missing: a duplicate submission
     // still in flight finds the name taken and cannot leave a late answer behind. The tombstone holds
     // no answer text. Then the work item is removed, so the connector stops serving it.
-    async retireWork(workId) {
+    async retireWork(workId, { superseded = false } = {}) {
       const fileKey = journalWorkFileKey(workId);
       await ensureDirectory("result");
       await ensureDirectory("work");
@@ -496,6 +499,7 @@ export function createJournalWorkExchange({
         schema_version: JOURNAL_WORK_EXCHANGE_VERSION,
         work_id: workId,
         retired: true,
+        ...(superseded ? { superseded: true } : {}),
         retired_at: now().toISOString()
       });
       const temporary = await writeTemporary("result", tombstone);

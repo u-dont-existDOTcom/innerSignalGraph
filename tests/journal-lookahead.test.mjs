@@ -145,7 +145,7 @@ test("peek reports invalid answers without retiring or dispatching", async () =>
   h.port.close();
 });
 
-test("peek leaves an expired unanswered item open for the sequential path", async () => {
+test("an expired lookahead item is replaced before the sequential send", async () => {
   let time = Date.parse("2026-10-01T00:00:00.000Z");
   const h = exchangeHarness({ now: () => new Date(time), ttlMs: 10 });
   const snapshot = snapshotFor();
@@ -154,17 +154,71 @@ test("peek leaves an expired unanswered item open for the sequential path", asyn
     operationKey, grant });
   const id = journalExchangeWorkId(operationKey);
   time += 11;
-  assert.deepEqual(await h.port.peek(operationKey), { status: "pending" });
+  assert.deepEqual(await h.port.peek(operationKey), { status: "expired" });
   assert.equal(h.results.has(id), false);
   assert.equal(h.dispatch.has(id), true);
-  assert.deepEqual(await h.port.getCompletion(operationKey),
-    { status: "not_submitted", code: "JOURNAL_WORK_EXPIRED" });
+  const waiting = h.port.invoke({ role: "reference_reader", packet,
+    outputSchema: "reference-result", operationKey, grant });
+  await until(() => h.dispatch.has(journalExchangeWorkId(operationKey, 1)));
+  h.answerWork(journalExchangeWorkId(operationKey, 1));
+  assert.deepEqual((await waiting).output, answer);
   assert.equal(h.results.get(id).retired, true);
   await assert.rejects(h.port.prefetch({ role: "reference_reader", packet,
     outputSchema: "reference-result", operationKey, grant }),
   { code: "JOURNAL_PREFETCH_RETRY_UNSUPPORTED" });
-  assert.equal(h.work.has(journalExchangeWorkId(operationKey, 1)), false);
+  assert.equal(h.work.has(journalExchangeWorkId(operationKey, 1)), true);
   h.port.close();
+});
+
+test("a changed grant replaces unanswered or answered speculative work without a key conflict", async () => {
+  for (const answered of [false, true]) {
+    const h = exchangeHarness();
+    const snapshot = snapshotFor();
+    const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+    const input = { role: "reference_reader", packet, outputSchema: "reference-result", operationKey, grant };
+    await h.port.prefetch(input);
+    if (answered) h.answerWork(journalExchangeWorkId(operationKey));
+    const changed = { ...grant, grant_id: "synthetic:changed" };
+    const waiting = h.port.invoke({ ...input, grant: changed });
+    const successor = journalExchangeWorkId(operationKey, 1);
+    await until(() => h.dispatch.has(successor));
+    h.answerWork(successor);
+    assert.deepEqual((await waiting).output, answer);
+    assert.equal(h.results.get(journalExchangeWorkId(operationKey)).retired, true);
+    assert.equal(h.results.get(journalExchangeWorkId(operationKey)).superseded ?? false, answered);
+    h.port.close();
+  }
+});
+
+test("controller consumes expired or changed lookahead work on its first attempt", async () => {
+  for (const variant of ["expired", "changed-grant"]) {
+    let time = Date.parse("2026-10-01T00:00:00.000Z");
+    const h = exchangeHarness({ now: () => new Date(time), ttlMs: 10 });
+    const snapshot = snapshotFor();
+    const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+    await h.port.prefetch({ role: "reference_reader", packet,
+      outputSchema: "reference-result", operationKey, grant });
+    if (variant === "expired") time += 11;
+    const controllerGrant = variant === "changed-grant"
+      ? { ...grant, grant_id: "synthetic:new-grant" } : grant;
+    const ledger = createMemoryJournalJobLedger();
+    const controller = createJournalImportController({ ledger, inferencePort: h.port,
+      controllerSecret: secret, grant: controllerGrant, promptVersion: snapshot.prompt_version,
+      modelProfile: "synthetic" });
+    await controller.initialize({ jobId, caseId: "synthetic-case", corpusId: "synthetic-corpus",
+      generation: "generation:synthetic", workDefinitions: [{ key: request.role,
+        stage: request.stage, role: request.role, identity: journalWorkPlan(request).identity,
+        assigned_core_ids: [unit.unit_id], source_locators: journalWorkPlan(request).sourceLocators,
+        packet_input: packetInput }] });
+    const running = controller.runUntilBlocked();
+    await until(() => h.dispatch.has(journalExchangeWorkId(operationKey, 1)));
+    h.answerWork(journalExchangeWorkId(operationKey, 1));
+    const result = await running;
+    assert.equal(result.snapshot.work_items[0].status, "completed", variant);
+    assert.equal(result.snapshot.work_items[0].attempts, 1, variant);
+    assert.equal(result.snapshot.work_items[0].operation_key, operationKey, variant);
+    controller.close(); h.port.close();
+  }
 });
 
 test("lookahead uses a pure snapshot and never persists controller or durable records", async (t) => {
@@ -257,6 +311,61 @@ test("retry states, revocation, and capacity bound stop lookahead sends", async 
   h.port.close();
 });
 
+test("a work item keeps its lookahead slot when dispatch publication fails", async () => {
+  const h = exchangeHarness({ failDispatch: true });
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  const direct = { role: "reference_reader", packet, outputSchema: "reference-result",
+    operationKey, grant };
+  const lookahead = createJournalLookahead({ limit: 2, port: h.port, grant,
+    authorize: async () => {}, pollMs: 1,
+    prepare: async descriptor => ({ direct: descriptor.direct }) });
+  lookahead.ahead([{ jobId: "first", direct }]);
+  await until(() => h.work.size === 1);
+  lookahead.ahead([{ jobId: "second", direct: { ...direct, operationKey: `${operationKey}:second` } }]);
+  await tick();
+  assert.equal(h.work.size, 1);
+  assert.equal(lookahead.summary().sent, 1);
+  assert.equal(lookahead.summary().errors, 1);
+  await lookahead.close();
+  h.port.close();
+});
+
+test("an expired lookahead item frees its task slot", async () => {
+  let time = Date.parse("2026-10-01T00:00:00.000Z");
+  const h = exchangeHarness({ now: () => new Date(time), ttlMs: 10 });
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  const direct = { role: "reference_reader", packet, outputSchema: "reference-result",
+    operationKey, grant };
+  const lookahead = createJournalLookahead({ limit: 2, port: h.port, grant,
+    authorize: async () => {}, pollMs: 1,
+    prepare: async descriptor => ({ direct: descriptor.direct }) });
+  lookahead.ahead([{ jobId: "first", direct }]);
+  await until(() => h.work.size === 1);
+  time += 11;
+  const second = { jobId: "second", direct: { ...direct, operationKey: `${operationKey}:second` } };
+  await until(async () => {
+    lookahead.ahead([second]);
+    return h.work.size === 2;
+  });
+  await lookahead.close();
+  h.port.close();
+});
+
+test("a future descriptor read error is counted inside lookahead", async () => {
+  const h = exchangeHarness();
+  const lookahead = createJournalLookahead({ limit: 2, port: h.port, grant,
+    authorize: async () => {}, pollMs: 1,
+    prepare: descriptor => descriptor.build() });
+  assert.doesNotThrow(() => lookahead.ahead([{ jobId: "future",
+    build: async () => { throw new Error("synthetic future read failed"); } }]));
+  await until(() => lookahead.summary().errors === 1);
+  assert.equal(h.work.size, 0);
+  await lookahead.close();
+  h.port.close();
+});
+
 test("a closed lookahead resumes the same pending exchange item on a new run", async () => {
   const h = exchangeHarness();
   const snapshot = snapshotFor();
@@ -326,13 +435,15 @@ test("resumed unsent and invalid epochs keep their sequential operation keys", a
       controllerSecret: secret, grant, promptVersion: snapshot.prompt_version,
       modelProfile: snapshot.model_profile });
     if (withLookahead) {
+      const prefetched = [];
       const ahead = createJournalLookahead({ limit: 4, grant, port: {
-        async prefetch() { assert.fail("retry was prefetched"); },
+        async prefetch(input) { prefetched.push(input.operationKey); },
         async peek() { return { status: "not_submitted" }; } },
         authorize: async () => {}, prepare: async () => ({ snapshot }) });
       ahead.ahead([{ jobId }]);
       await tick();
       await ahead.close();
+      assert.deepEqual(prefetched, []);
       assert.equal(ahead.summary().sent, 0);
     }
     const result = await controller.runUntilBlocked();

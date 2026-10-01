@@ -11,6 +11,8 @@ import { createMockJournalInferencePort, JournalInferencePortError } from "../sr
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 import { exchangeHarness } from "./fixtures/journal-lookahead-exchange.mjs";
+import { journalExchangeWorkId } from "../src/journal-import/exchange-port.mjs";
+import { createDeterministicAuditSample } from "../src/journal-import/audit.mjs";
 
 // A synthetic import driven from intake to a committed generation through the operator commands,
 // with every role answered by a mock. Each test makes one role answer the way a real journal
@@ -218,6 +220,22 @@ test("exchange lookahead preserves the synthetic import and sequential identitie
       configPath: f.configPath, service: f.service, inferencePort: port,
       sourceParser: f.sourceParser, environment: f.environment });
       const run = await runtime.execute("run");
+      // Both copies audit the same sampled units, even when the sample omits units.
+      const beforeAudit = JSON.parse(await fs.readFile(path.join(executionRoot, "state.json"), "utf8"));
+      const corpus = createPrivateJournalCorpusStore({ rootDir: executionRoot, caseId: CASE_ID,
+        corpusId: beforeAudit.corpus_id,
+        corpusKey: await fs.readFile(path.join(executionRoot, "staging.key")) });
+      try {
+        const bytes = await corpus.reassembleOriginal(beforeAudit.visual_plan_ref ?? beforeAudit.parsed_ref);
+        let plan;
+        try { plan = JSON.parse(bytes.toString("utf8")); } finally { bytes.fill(0); }
+        const units = plan.units.map(unit => ({ ...unit,
+          duplicate_group_id: `duplicate:${sha256(unit.text)}` }));
+        const sample = createDeterministicAuditSample({ units, seed: "synthetic-fixed-audit-seed" });
+        beforeAudit.audit_sample_ref = await corpus.writeChunkedOriginal({
+          objectId: "audit:sample:fixed-lookahead", bytes: Buffer.from(JSON.stringify(sample)) });
+      } finally { await corpus.close(); }
+      await fs.writeFile(path.join(executionRoot, "state.json"), JSON.stringify(beforeAudit), { mode: 0o600 });
       const audit = await runtime.execute("audit");
       const patterns = await runtime.execute("patterns");
       const commit = await runtime.execute("commit");
@@ -257,11 +275,164 @@ test("exchange lookahead preserves the synthetic import and sequential identitie
   assert.equal(parallel.duplicatePublishes, 0);
   assert.ok(parallel.run.lookahead.sent > 0);
   assert.ok(parallel.run.lookahead.used > 0);
+  assert.equal(parallel.run.lookahead.unused, 0);
+  const invokedKeys = new Set(parallel.invoked.map(call => call.key));
+  assert.ok(parallel.prefetched.every(call => invokedKeys.has(call.key)),
+    "every prefetched operation must be invoked by the sequential run");
   assert.ok(parallel.run.lookahead.concurrency === 4);
   assert.ok(parallel.audit.lookahead.sent >= parallel.run.lookahead.sent);
   assert.ok(parallel.audit.lookahead.used >= parallel.run.lookahead.used);
   assert.ok(parallel.rounds < sequential.rounds,
     `expected parallel dispatch rounds ${parallel.rounds} < ${sequential.rounds}`);
+});
+
+test("reference audit replaces expired or changed speculative work on its original job key", async (t) => {
+  for (const variant of ["expired", "changed-grant", "answered-changed-grant"]) {
+    const f = await environment(t);
+    let time = Date.parse("2026-10-01T00:00:00.000Z");
+    let replaced = false;
+    let staleId = null;
+    const roleHandlers = handlers();
+    let h;
+    h = exchangeHarness({ now: () => new Date(time), ttlMs: 10_000,
+      onDispatch: ({ work, dispatch, results }) => {
+        for (const id of dispatch.keys()) if (!results.has(id) && id !== staleId
+          && work.get(id).origin !== "lookahead") {
+          const item = work.get(id);
+          h.answerWork(id, roleHandlers[item.role](item.packet));
+        }
+      } });
+    const port = { ...h.port, async invoke(input) {
+      if (!replaced && input.role === "reference_reader") {
+        replaced = true;
+        await h.port.prefetch({ ...input, grant: variant !== "expired"
+          ? { ...input.grant, grant_id: "synthetic:previous-grant" } : input.grant });
+        staleId = [...h.work.keys()].at(-1);
+        if (variant === "expired") time += 10_001;
+        if (variant === "answered-changed-grant") h.answerWork(staleId);
+      }
+      return h.port.invoke(input);
+    } };
+    const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+      service: f.service, sourceParser: f.sourceParser, inferencePort: port,
+      environment: f.environment });
+    try {
+      const run = await runtime.execute("run");
+      assert.equal(run.blocker, null, variant);
+      assert.equal(run.completion.graph_built, "pass", variant);
+      assert.equal(h.results.get(staleId).retired, true, variant);
+      assert.equal(h.successful.get(`${staleId}:r1`), 1, variant);
+    } finally { await runtime.close(); }
+  }
+});
+
+test("real lookahead prepare checks access and writes no corpus objects", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) => `Synthetic access entry ${index}: a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_concurrency = 4;
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  let revoked = false;
+  let h;
+  const roleHandlers = handlers();
+  h = exchangeHarness({ onDispatch: ({ work, dispatch, results }) => {
+    for (const id of dispatch.keys()) if (!results.has(id) && work.get(id).origin !== "lookahead")
+      h.answerWork(id, roleHandlers[work.get(id).role](work.get(id).packet));
+  } });
+  const objectCount = async () => {
+    const root = path.join(f.config.execution_root, ".journal-corpora");
+    try { return (await fs.readdir(root, { recursive: true })).filter(name => name.endsWith(".journal-object.json")).length; }
+    catch (error) { if (error.code === "ENOENT") return 0; throw error; }
+  };
+  const counts = [];
+  const port = { ...h.port,
+    async invoke(input) { await new Promise(resolve => setTimeout(resolve, 150)); return h.port.invoke(input); },
+    async prefetch(input) {
+      const before = await objectCount();
+      const result = await h.port.prefetch(input);
+      counts.push([before, await objectCount()]);
+      revoked = true;
+      return result;
+    } };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port,
+    environment: f.environment, authContextProvider: async () => ({ bearerToken: revoked ? "revoked-synthetic" : WRITER }) });
+  try { await assert.rejects(runtime.execute("run"), { code: "PRIVATE_CASE_ACCESS_DENIED" }); }
+  finally { await runtime.close(); }
+  assert.equal(counts.length, 1);
+  assert.equal(counts[0][1], counts[0][0]);
+  assert.equal([...h.work.values()].filter(item => item.origin === "lookahead").length, 1);
+});
+
+test("hardest lane run never prefetches a hardest work item", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) => `Synthetic hardest entry ${index}: a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_concurrency = 4;
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  f.config.hardest_lane = { enabled: true, daily_limit: 8 };
+  const normal = handlers();
+  let h;
+  h = exchangeHarness({ onDispatch: ({ work, dispatch, results }) => {
+    for (const id of dispatch.keys()) if (!results.has(id)) {
+      const item = work.get(id);
+      let output = normal[item.role](item.packet);
+      if (item.role === "extractor" && item.tier !== "hardest"
+        && item.packet.core_units.some(unit => unit.text === entries[2]))
+        output = { ...output, status: "needs_context", requested_context: [{
+          unit_id: item.packet.core_units[0].unit_id, direction: "after", reason: "Synthetic context." }] };
+      h.answerWork(id, output);
+    }
+  } });
+  const port = { ...h.port,
+    async invoke(input) { await new Promise(resolve => setTimeout(resolve, 150)); return h.port.invoke(input); } };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort: port,
+    environment: f.environment });
+  try { await runtime.execute("run"); } finally { await runtime.close(); }
+  assert.ok(h.published.some(item => item.tier === "hardest"));
+  assert.ok(h.published.some(item => item.origin === "lookahead"));
+  assert.ok(h.published.every(item => item.origin !== "lookahead" || item.tier !== "hardest"));
+});
+
+test("runtime close and reopen reuses each published work item", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) => `Synthetic restart entry ${index}: a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_concurrency = 4;
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  let hold = false, resumed = false;
+  const roleHandlers = handlers();
+  let h;
+  h = exchangeHarness({ waitMs: 30, onDispatch: ({ work, dispatch, results }) => {
+    if ([...work.values()].some(item => item.origin === "lookahead")) hold = true;
+    if (hold && !resumed) return;
+    for (const id of dispatch.keys()) if (!results.has(id))
+      h.answerWork(id, roleHandlers[work.get(id).role](work.get(id).packet));
+  } });
+  const options = { config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, environment: f.environment };
+  const logicalKeys = new Set();
+  const delayed = base => ({ ...base,
+    async invoke(input) { logicalKeys.add(input.operationKey);
+      await new Promise(resolve => setTimeout(resolve, 150)); return base.invoke(input); },
+    async prefetch(input) { logicalKeys.add(input.operationKey); return base.prefetch(input); } });
+  let runtime = await openJournalExecutionRuntime({ ...options, inferencePort: delayed(h.port) });
+  let firstSummary;
+  try { firstSummary = await runtime.execute("run"); } finally { await runtime.close(); }
+  assert.ok(hold, "the first runtime must close with speculative work pending");
+  assert.equal(firstSummary.blocker, "COMPLETION_UNKNOWN");
+  resumed = true;
+  for (const id of h.dispatch.keys()) if (!h.results.has(id))
+    h.answerWork(id, roleHandlers[h.work.get(id).role](h.work.get(id).packet));
+  runtime = await openJournalExecutionRuntime({ ...options, inferencePort: delayed(h.makePort()) });
+  try {
+    const run = await runtime.execute("run");
+    assert.equal(run.completion.graph_built, "pass");
+  } finally { await runtime.close(); }
+  assert.ok([...h.successful.values()].every(count => count === 1));
+  for (const key of logicalKeys) {
+    const baseId = journalExchangeWorkId(key);
+    assert.equal([...h.successful].filter(([id]) => id === baseId || id.startsWith(`${baseId}:r`))
+      .reduce((total, [, count]) => total + count, 0), 1, key);
+  }
 });
 
 async function searchPublishedAssertions(f) {

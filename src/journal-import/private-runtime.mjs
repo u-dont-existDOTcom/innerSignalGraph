@@ -221,7 +221,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     let lookahead = null;
     const lookaheadSupported = semanticConcurrency > 1
       && typeof semanticPort.prefetch === "function" && typeof semanticPort.peek === "function";
-    const lookaheadSent = new Set(), lookaheadUsed = new Set();
+    const lookaheadSent = lookaheadSupported ? new Set() : null;
+    const lookaheadUsed = lookaheadSupported ? new Set() : null;
     let lookaheadErrors = 0;
     port = createDurableJournalInferencePort({ port: {
       capabilities: () => semanticPort.capabilities(),
@@ -230,8 +231,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       async invoke(input) {
         try { await authorize(); }
         catch (error) { error.submissionStatus = "not_submitted"; throw error; }
-        lookahead?.markUsed(input.operationKey);
-        lookaheadUsed.add(input.operationKey);
+        if (lookaheadSupported) {
+          lookahead?.markUsed(input.operationKey);
+          lookaheadUsed.add(input.operationKey);
+        }
         const result = await semanticPort.invoke(input);
         // A grant may change during a long application call. Recheck before the
         // durable port admits its result or a dependent role receives it.
@@ -442,16 +445,18 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       ? createJournalLookahead({ limit: semanticConcurrency, port: semanticPort, authorize,
         grant, pollMs: semanticPort.pollMs ?? 5_000,
         prepare: async (descriptor) => {
-          const request = descriptor.request;
+          const planned = descriptor.build ? await descriptor.build() : descriptor;
+          if (!planned) return null;
+          const request = planned.request;
           const prepared = journalWorkPlan(request);
-          if (request.stage === "REFERENCE_AUDIT" && request.role === "reference_reader") {
+          if (request.stage === "REFERENCE_AUDIT") {
             if (await readIfPresent(`reference:result:${prepared.jobId}`)
               || await readIfPresent(`reference:failure:${prepared.jobId}:1`)
               || await readIfPresent(`reference:failure:${prepared.jobId}:2`)
               || await readIfPresent(`reference:completion-unknown:${prepared.jobId}`)) return null;
             return { direct: { role: request.role, packet: referencePacketFor(request, prepared),
               outputSchema: JOURNAL_ROLE_DEFINITIONS[request.role].outputSchema,
-              operationKey: prepared.jobId }, next: descriptor.next };
+              operationKey: prepared.jobId }, next: planned.next };
           }
           const ledger = createCorpusJournalJobLedger({ corpusStore: store, jobId: prepared.jobId });
           const existing = await ledger.load();
@@ -1194,11 +1199,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         await recordSourceOnly(unit, "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
       for (let index = 0; index < frozenPlan.regular_batches.length; index += 1) {
         if (lookahead) {
-          const upcoming = [];
-          for (const ids of frozenPlan.regular_batches.slice(index + 1, index + 1 + semanticConcurrency * 2)) {
-            const descriptor = await initialExtractionDescriptor(ids);
-            if (descriptor) upcoming.push(descriptor);
-          }
+          const upcoming = frozenPlan.regular_batches.slice(index + 1, index + 1 + semanticConcurrency * 2)
+            .map(ids => ({ jobId: `lookahead:batch:${hash(ids.join("\0"))}`,
+              build: () => initialExtractionDescriptor(ids) }));
           lookahead.ahead(upcoming);
         }
         if (!(await processBatch(frozenUnits(frozenPlan.regular_batches[index]), false))) return summary();
@@ -1697,11 +1700,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       for (let index = 0; index < auditUnits.length; index += 1) {
         const unit = auditUnits[index];
         if (lookahead) {
-          const upcoming = [];
-          for (const nextUnit of auditUnits.slice(index + 1, index + 1 + semanticConcurrency * 2)) {
-            const descriptor = await auditDescriptor(nextUnit);
-            if (descriptor) upcoming.push(descriptor);
-          }
+          const upcoming = auditUnits.slice(index + 1, index + 1 + semanticConcurrency * 2)
+            .map(nextUnit => ({ jobId: `lookahead:audit:${nextUnit.unit_id}`,
+              build: () => auditDescriptor(nextUnit) }));
           lookahead.ahead(upcoming);
         }
         let report = await readIfPresent(`audit:result:${graphRevision}:${unit.unit_id}`);
