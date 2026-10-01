@@ -12,6 +12,7 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
   let closed = false;
   let errors = 0;
   let publication = Promise.resolve();
+  let scheduling = Promise.resolve();
   const pause = () => new Promise(resolve => {
     const timer = setTimeout(() => { wake.delete(stop); resolve(); }, pollMs);
     const stop = () => { clearTimeout(timer); wake.delete(stop); resolve(); };
@@ -45,14 +46,17 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
       await pause();
     }
   };
-  const walk = async (descriptor) => {
-    const planned = await prepare(descriptor);
-    if (!planned || closed) return;
+  const walk = async (planned) => {
+    if (closed) return;
     if (planned.direct) {
+      if (planned.direct.tier === "hardest") return;
       const output = await send(planned.direct);
       if (output && planned.next && !closed) {
         const next = await planned.next(output);
-        if (next) await walk(next);
+        if (next) {
+          const preparedNext = await prepare(next);
+          if (preparedNext) await walk(preparedNext);
+        }
       }
       return;
     }
@@ -75,15 +79,26 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
   return Object.freeze({
     ahead(descriptors) {
       if (closed) return;
-      for (const descriptor of descriptors) {
-        if (running.size >= limit - 1) break;
-        if (running.has(descriptor.jobId) || finished.has(descriptor.jobId)) continue;
-        const task = walk(descriptor).catch(() => { errors += 1; }).finally(() => {
-          running.delete(descriptor.jobId);
-          finished.add(descriptor.jobId);
-        });
-        running.set(descriptor.jobId, task);
-      }
+      // Build candidates outside task slots. A cached or source-only candidate does not consume
+      // capacity, but this call still starts only the next available work, in descriptor order.
+      scheduling = scheduling.then(async () => {
+        for (const descriptor of descriptors) {
+          if (closed || running.size >= limit - 1) break;
+          if (running.has(descriptor.jobId) || finished.has(descriptor.jobId)) continue;
+          let planned;
+          try { planned = await prepare(descriptor); }
+          catch { errors += 1; finished.add(descriptor.jobId); continue; }
+          if (!planned || planned.direct?.tier === "hardest") {
+            finished.add(descriptor.jobId);
+            continue;
+          }
+          const task = walk(planned).catch(() => { errors += 1; }).finally(() => {
+            running.delete(descriptor.jobId);
+            finished.add(descriptor.jobId);
+          });
+          running.set(descriptor.jobId, task);
+        }
+      });
     },
     markUsed(operationKey) { used.add(operationKey); },
     sentOperationKeys() { return [...sent]; },
@@ -96,6 +111,7 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
     async close() {
       closed = true;
       for (const stop of [...wake]) stop();
+      await scheduling;
       await Promise.allSettled([...running.values()]);
     }
   });

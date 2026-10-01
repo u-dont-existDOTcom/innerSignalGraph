@@ -190,6 +190,55 @@ test("a changed grant replaces unanswered or answered speculative work without a
   }
 });
 
+test("a retired answer with a surviving work file conflicts without a close loop", async () => {
+  const h = exchangeHarness({ maxCloseAttempts: 1 });
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  const input = { role: "reference_reader", packet, outputSchema: "reference-result", operationKey, grant };
+  await h.port.prefetch(input);
+  const id = journalExchangeWorkId(operationKey);
+  // retireWork wrote its tombstone, then crashed before unlinking the speculative work file.
+  h.results.set(id, { retired: true });
+  await assert.rejects(h.port.invoke({ ...input, grant: { ...grant, grant_id: "synthetic:new-grant" } }),
+    { code: "OPERATION_KEY_CONFLICT" });
+  assert.equal(h.closeAttempts(), 0);
+  assert.equal(h.work.size, 1);
+  h.port.close();
+});
+
+test("a failed close race cannot spin beyond the successor limit", async () => {
+  const h = exchangeHarness({ closeNeverSucceeds: true, maxCloseAttempts: 8 });
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  const input = { role: "reference_reader", packet, outputSchema: "reference-result", operationKey, grant };
+  await h.port.prefetch(input);
+  await assert.rejects(h.port.invoke({ ...input, grant: { ...grant, grant_id: "synthetic:changed" } }),
+    { code: "JOURNAL_EXCHANGE_RETRY_LIMIT" });
+  assert.equal(h.closeAttempts(), 8);
+  h.port.close();
+});
+
+test("an adopted speculative item keeps main's conflict and expiry behavior across port restart", async () => {
+  let time = Date.parse("2026-10-01T00:00:00.000Z");
+  const h = exchangeHarness({ waitMs: 0, now: () => new Date(time), ttlMs: 10 });
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  const input = { role: "reference_reader", packet, outputSchema: "reference-result", operationKey, grant };
+  await h.port.prefetch(input);
+  await assert.rejects(h.port.invoke(input), { code: "COMPLETION_UNKNOWN" });
+  const id = journalExchangeWorkId(operationKey);
+  assert.equal(h.adopted.has(id), true);
+  const restarted = h.makePort();
+  await assert.rejects(restarted.invoke({ ...input, grant: { ...grant, grant_id: "synthetic:changed" } }),
+    { code: "OPERATION_KEY_CONFLICT" });
+  time += 11;
+  await assert.rejects(restarted.invoke(input), { code: "JOURNAL_WORK_EXPIRED", submissionStatus: "not_submitted" });
+  assert.equal(h.results.get(id).unanswered, true);
+  assert.equal(h.work.has(journalExchangeWorkId(operationKey, 1)), false,
+    "the adopted invocation spends its attempt before a successor is sent");
+  restarted.close(); h.port.close();
+});
+
 test("controller consumes expired or changed lookahead work on its first attempt", async () => {
   for (const variant of ["expired", "changed-grant"]) {
     let time = Date.parse("2026-10-01T00:00:00.000Z");
@@ -362,6 +411,29 @@ test("a future descriptor read error is counted inside lookahead", async () => {
     build: async () => { throw new Error("synthetic future read failed"); } }]));
   await until(() => lookahead.summary().errors === 1);
   assert.equal(h.work.size, 0);
+  await lookahead.close();
+  h.port.close();
+});
+
+test("empty descriptors leave slots for later work and hardest direct requests are skipped", async () => {
+  const h = exchangeHarness();
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  const direct = { role: "reference_reader", packet, outputSchema: "reference-result", operationKey };
+  const prepared = [];
+  const lookahead = createJournalLookahead({ limit: 2, port: h.port, grant,
+    authorize: async () => {}, pollMs: 1,
+    prepare: async descriptor => {
+      prepared.push(descriptor.jobId);
+      return descriptor.jobId === "empty" ? null : { direct: descriptor.direct };
+    } });
+  lookahead.ahead([{ jobId: "empty" },
+    { jobId: "hardest", direct: { ...direct, operationKey: `${operationKey}:hardest`, tier: "hardest" } },
+    { jobId: "standard", direct }]);
+  await until(() => h.dispatch.has(journalExchangeWorkId(operationKey)));
+  assert.deepEqual(prepared, ["empty", "hardest", "standard"]);
+  assert.equal(h.work.has(journalExchangeWorkId(`${operationKey}:hardest`)), false);
+  h.answerWork(journalExchangeWorkId(operationKey));
   await lookahead.close();
   h.port.close();
 });

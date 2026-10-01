@@ -284,7 +284,7 @@ export function createJournalWorkExchange({
   if (typeof root !== "string" || !path.isAbsolute(root)) fail("JOURNAL_WORK_EXCHANGE_ROOT_INVALID");
   const derived = keys ?? deriveJournalWorkExchangeKeys(secret);
   if (!Buffer.isBuffer(derived?.encryption) || !Buffer.isBuffer(derived?.receipt)) fail("JOURNAL_WORK_EXCHANGE_SECRET_INVALID");
-  const QUEUES = Object.freeze({ work: "outbox", result: "inbox", dispatch: "dispatch" });
+  const QUEUES = Object.freeze({ work: "outbox", result: "inbox", dispatch: "dispatch", adopted: "adopted" });
   const dispatchReader = createJournalWorkDispatchReader({ root, owner });
   const directory = (kind) => path.join(root, QUEUES[kind]);
   const fileFor = (kind, fileKey) => path.join(directory(kind), `${fileKey}.json`);
@@ -405,6 +405,23 @@ export function createJournalWorkExchange({
   }
 
   return Object.freeze({
+    // A content-free durable marker distinguishes an adopted speculative item from one that the
+    // sequential caller has never resumed. First-write-wins keeps adoption across restarts.
+    async markAdopted(workId) {
+      const fileKey = journalWorkFileKey(workId);
+      await publish("adopted", fileKey, seal(derived.encryption, "adopted", fileKey, {
+        schema_version: JOURNAL_WORK_EXCHANGE_VERSION, work_id: workId, adopted: true
+      }));
+    },
+    async isAdopted(workId) {
+      const fileKey = journalWorkFileKey(workId);
+      const bytes = await readRegular("adopted", fileKey, MAX_DISPATCH_BYTES);
+      if (!bytes) return false;
+      const record = open(derived.encryption, "adopted", fileKey, bytes);
+      if (record.schema_version !== JOURNAL_WORK_EXCHANGE_VERSION || record.work_id !== workId || record.adopted !== true)
+        fail("JOURNAL_WORK_ENTRY_INVALID");
+      return true;
+    },
     root,
 
     // Runtime side: publish one role call. Re-publishing the same work ID keeps the first entry.
@@ -566,7 +583,7 @@ export function createJournalWorkExchange({
       await assertJournalWorkExchangeRoot(root, { owner });
       const cutoff = Date.now() - olderThanMs;
       let removed = 0;
-      for (const kind of ["work", "result", "dispatch"]) {
+      for (const kind of ["work", "result", "dispatch", "adopted"]) {
         if (!(await queueExists(kind))) continue;
         let removedHere = 0;
         for (const name of await fs.readdir(directory(kind))) {

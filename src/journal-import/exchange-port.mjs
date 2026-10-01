@@ -187,6 +187,7 @@ export function createExchangeJournalInferencePort({
   // Only the runtime removes dispatch records (when it retires or closes an item), so one successful
   // publication per item and process is enough; the exchange keeps the first record anyway.
   const dispatched = new Set();
+  const adopted = new Set();
   async function ensureDispatch(store, entry) {
     if (dispatched.has(entry.work_id)) return;
     await store.publishDispatch({
@@ -256,9 +257,16 @@ export function createExchangeJournalInferencePort({
     let selected = await current(operationKey);
     // A speculative item carries no durable caller intent. Replace it on the same operation key
     // before the sequential caller creates an intent or spends a controller attempt.
-    while (!dispatchNew && selected.entry?.origin === "lookahead"
+    for (let replacements = 0; !dispatchNew && selected.entry?.origin === "lookahead"
       && (selected.entry.input_sha256 !== digest
-        || (!selected.stored && Date.parse(selected.entry.expires_at) <= now().getTime()))) {
+        || (!selected.stored && Date.parse(selected.entry.expires_at) <= now().getTime())); replacements += 1) {
+      // A consumed answer can leave its work file behind if retirement stopped after writing the
+      // tombstone. It is no longer speculative, even though the old work file says it was.
+      if (selected.stored?.retired && !selected.stored.unanswered && !selected.stored.superseded)
+        invariant(false, "OPERATION_KEY_CONFLICT");
+      if (adopted.has(selected.workId) || await selected.store.isAdopted?.(selected.workId)) break;
+      if (replacements >= MAX_SUCCESSORS)
+        throw new JournalInferencePortError("JOURNAL_EXCHANGE_RETRY_LIMIT", { submissionStatus: "not_submitted" });
       if (selected.stored?.output) {
         // The answer belongs to the old grant/input and has no durable caller intent.
         await selected.store.retireWork(selected.workId, { superseded: true });
@@ -272,6 +280,14 @@ export function createExchangeJournalInferencePort({
     if (dispatchNew && successor > 0)
       throw new JournalInferencePortError("JOURNAL_PREFETCH_RETRY_UNSUPPORTED", { submissionStatus: "not_submitted" });
     if (existing) invariant(existing.input_sha256 === digest, "OPERATION_KEY_CONFLICT");
+    if (stored?.retired && !stored.unanswered && !stored.superseded)
+      invariant(false, "OPERATION_KEY_CONFLICT");
+    // The first sequential invoke with the same input adopts a speculative item. Persist that
+    // fact in the exchange so a resumed invoke cannot replace it on a changed grant or expiry.
+    if (!dispatchNew && existing?.origin === "lookahead") {
+      await store.markAdopted?.(workId);
+      adopted.add(workId);
+    }
     if (!existing && !stored) {
       const issuedAt = now();
       const entry = {

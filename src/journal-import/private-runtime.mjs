@@ -448,6 +448,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const planned = descriptor.build ? await descriptor.build() : descriptor;
           if (!planned) return null;
           const request = planned.request;
+          if (request.tier === "hardest") return null;
           const prepared = journalWorkPlan(request);
           if (request.stage === "REFERENCE_AUDIT") {
             if (await readIfPresent(`reference:result:${prepared.jobId}`)

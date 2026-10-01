@@ -63,6 +63,20 @@ test("a published work item and its answer round-trip with an authenticated rece
   assert.equal(result.receipt.tag.length, 64);
 });
 
+test("adoption marker is durable and contains no plaintext work ID", async (t) => {
+  const root = await tempRoot(t);
+  const sharedSecret = secret();
+  const first = createJournalWorkExchange({ root, secret: sharedSecret });
+  await first.publishWork(workEntry({ origin: "lookahead" }));
+  assert.equal(await first.isAdopted(WORK_ID), false);
+  await first.markAdopted(WORK_ID);
+  const restarted = createJournalWorkExchange({ root, secret: sharedSecret });
+  assert.equal(await restarted.isAdopted(WORK_ID), true);
+  const files = await fs.readdir(path.join(root, "adopted"));
+  assert.deepEqual(files, [`${journalWorkFileKey(WORK_ID)}.json`]);
+  assert.equal((await fs.readFile(path.join(root, "adopted", files[0]), "utf8")).includes(WORK_ID), false);
+});
+
 test("the first answer wins, and re-publishing a work item keeps the first entry", async (t) => {
   const root = await tempRoot(t);
   const exchange = createJournalWorkExchange({ root, secret: secret() });

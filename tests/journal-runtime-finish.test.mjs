@@ -11,6 +11,7 @@ import { createMockJournalInferencePort, JournalInferencePortError } from "../sr
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 import { exchangeHarness } from "./fixtures/journal-lookahead-exchange.mjs";
+import { createJournalLookahead } from "../src/journal-import/lookahead.mjs";
 import { journalExchangeWorkId } from "../src/journal-import/exchange-port.mjs";
 import { createDeterministicAuditSample } from "../src/journal-import/audit.mjs";
 
@@ -22,6 +23,19 @@ const CASE_ID = "synthetic-case";
 const WRITER = "synthetic-operator-token";
 const READER = "synthetic-reader-token";
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const randomObjectRef = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gu;
+async function corpusObjectIds(executionRoot) {
+  const root = path.join(executionRoot, ".journal-corpora");
+  let files;
+  try { files = (await fs.readdir(root, { recursive: true })).filter(name => name.endsWith(".journal-object.json")); }
+  catch (error) { if (error.code === "ENOENT") return []; throw error; }
+  return (await Promise.all(files.map(async name => JSON.parse(await fs.readFile(path.join(root, name), "utf8")).object_id))).sort();
+}
+function assertSameCorpusObjects(actual, expected) {
+  assert.equal(actual.length, expected.length, "lookahead changed the corpus object count");
+  const stable = ids => ids.map(id => id.replace(randomObjectRef, "<random-ref>")).sort();
+  assert.deepEqual(stable(actual), stable(expected), "lookahead changed the corpus object IDs");
+}
 const TEXTS = [
   "Synthetic Monday: I walked by the river and felt calm.",
   "Synthetic Wednesday: I walked by the river again and felt calm.",
@@ -244,8 +258,9 @@ test("exchange lookahead preserves the synthetic import and sequential identitie
         execution_root: executionRoot } }, "reviewed_graph_ref");
       const auditReport = await readStoredReport({ ...f, config: { ...f.config,
         execution_root: executionRoot } }, "audit_report_ref");
+      const objectIds = await corpusObjectIds(executionRoot);
       return { run, audit, patterns, commit, state, graph, auditReport,
-        invoked, prefetched, rounds,
+        objectIds, invoked, prefetched, rounds,
         maxOutstanding,
         duplicatePublishes: [...h.successful.values()].filter(count => count > 1).length };
     } finally { stopped = true; await runtime?.close(); await answering; }
@@ -268,6 +283,7 @@ test("exchange lookahead preserves the synthetic import and sequential identitie
   assert.deepEqual(parallel.audit.residuals, sequential.audit.residuals);
   assert.deepEqual(parallel.patterns.residuals, sequential.patterns.residuals);
   assert.deepEqual(parallel.invoked, sequential.invoked);
+  assertSameCorpusObjects(parallel.objectIds, sequential.objectIds);
   assert.equal(sequential.prefetched.length, 0);
   assert.ok(parallel.prefetched.length > 0);
   assert.ok(parallel.prefetched.every(call => call.tier === "standard"));
@@ -284,6 +300,26 @@ test("exchange lookahead preserves the synthetic import and sequential identitie
   assert.ok(parallel.audit.lookahead.used >= parallel.run.lookahead.used);
   assert.ok(parallel.rounds < sequential.rounds,
     `expected parallel dispatch rounds ${parallel.rounds} < ${sequential.rounds}`);
+});
+
+test("corpus parity detects a prepare that writes an object", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "synthetic-lookahead-mutation-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const corpus = createPrivateJournalCorpusStore({ rootDir: root, caseId: CASE_ID,
+    corpusId: "synthetic-corpus", corpusKey: Buffer.alloc(32, 19) });
+  t.after(() => corpus.close());
+  const before = await corpusObjectIds(root);
+  const lookahead = createJournalLookahead({ limit: 2, port: { prefetch() {} },
+    authorize: async () => {}, grant: {}, prepare: async () => {
+      await corpus.writeJsonObject({ objectId: "synthetic:unexpected-lookahead-write", value: { synthetic: true } });
+      return null;
+  } });
+  lookahead.ahead([{ jobId: "synthetic-mutation" }]);
+  for (let attempts = 0; attempts < 100 && (await corpusObjectIds(root)).length === 0; attempts += 1)
+    await new Promise(resolve => setTimeout(resolve, 2));
+  await lookahead.close();
+  const after = await corpusObjectIds(root);
+  assert.throws(() => assertSameCorpusObjects(after, before), /lookahead changed the corpus object count/u);
 });
 
 test("reference audit replaces expired or changed speculative work on its original job key", async (t) => {

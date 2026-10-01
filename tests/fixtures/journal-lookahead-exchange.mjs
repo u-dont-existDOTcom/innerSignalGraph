@@ -6,11 +6,15 @@ const answer = { schema_version: "1.0", source_only_first_pass: true, reference_
   questions: [], unassessed_unit_ids: [] };
 
 export function exchangeHarness({ caseId = "synthetic-case", defaultAnswer = answer,
-  waitMs = 1000, onDispatch = () => {}, failDispatch = false, now = () => new Date(), ttlMs } = {}) {
-  const work = new Map(), results = new Map(), dispatch = new Map();
+  waitMs = 1000, onDispatch = () => {}, failDispatch = false, now = () => new Date(), ttlMs,
+  maxCloseAttempts = Infinity, closeNeverSucceeds = false } = {}) {
+  const work = new Map(), results = new Map(), dispatch = new Map(), adopted = new Set();
   const successful = new Map();
+  let closeAttempts = 0;
   const published = [];
   const exchange = {
+    async markAdopted(id) { adopted.add(id); },
+    async isAdopted(id) { return adopted.has(id); },
     async removeStaleTemporaries() {},
     readWork: async id => structuredClone(work.get(id) ?? null),
     readResult: async id => structuredClone(results.get(id) ?? null),
@@ -28,6 +32,9 @@ export function exchangeHarness({ caseId = "synthetic-case", defaultAnswer = ans
     },
     async listDispatch() { return [...dispatch.values()].map(item => structuredClone(item)); },
     async closeUnanswered(id) {
+      closeAttempts += 1;
+      if (closeAttempts > maxCloseAttempts) throw new Error("synthetic repeated close");
+      if (closeNeverSucceeds) return { closed: false };
       if (results.has(id)) return { closed: false };
       results.set(id, { retired: true, unanswered: true }); dispatch.delete(id);
       return { closed: true };
@@ -52,5 +59,6 @@ export function exchangeHarness({ caseId = "synthetic-case", defaultAnswer = ans
     } });
   };
   const port = makePort();
-  return { port, makePort, work, results, dispatch, successful, published, answerWork };
+  return { port, makePort, work, results, dispatch, adopted, successful, published, answerWork,
+    closeAttempts: () => closeAttempts };
 }
