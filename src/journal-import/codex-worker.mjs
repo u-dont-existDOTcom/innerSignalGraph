@@ -125,7 +125,7 @@ export function parseCodexResetTime(message, nowMs) {
 
 export function codexEventReader(workId = null) {
   const state = { threads: [], completed: false, bad: null, errorSeen: false, hasErrorMessage: false,
-    finalErrorLimited: false, resetAt: null, packetFetched: false, packetBeforeLastSubmit: false,
+    finalErrorLimited: false, resetAt: null, packetFetched: false, packetBeforeFirstSubmit: false, submitSeen: false,
     usage: Object.fromEntries(USAGE_FIELDS.map((field) => [field, 0])) };
   function noteFailure(message) {
     if (typeof message !== "string") return;
@@ -165,7 +165,9 @@ export function codexEventReader(workId = null) {
         if (event.type === "item.completed" && item.status === "completed"
           && item.arguments?.work_id === workId && item.error == null && item.result?.isError !== true) {
           if (item.tool === "get_journal_work_packet") state.packetFetched = true;
-          else state.packetBeforeLastSubmit = state.packetFetched;
+          // The first accepted submit is the one the exchange keeps (first write wins), so the packet
+          // must have been fetched before it; a later fetch or submit can't make up for it.
+          else if (!state.submitSeen) { state.submitSeen = true; state.packetBeforeFirstSubmit = state.packetFetched; }
         }
         return;
       }
@@ -393,7 +395,7 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
       else if (events.state.threads.length !== 1) outcome = "rejected:THREAD_COUNT";
       else if (threadReused) outcome = "rejected:THREAD_REUSED";
       else if (!events.state.completed) outcome = "rejected:TURN_INCOMPLETE";
-      else if (!events.state.packetBeforeLastSubmit) outcome = "rejected:PACKET_NOT_FETCHED";
+      else if (!events.state.packetBeforeFirstSubmit) outcome = "rejected:PACKET_NOT_FETCHED";
       else if (!await fs.lstat(path.join(stageDir, `${journalWorkFileKey(record.work_id)}.json`)).then(() => true, () => false)) {
         outcome = "rejected:STAGE_MISSING";
       } else {

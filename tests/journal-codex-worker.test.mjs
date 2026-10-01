@@ -273,7 +273,7 @@ test("realistic Codex event sequence is admitted and error items are refused", (
     cache_write_input_tokens: 0, output_tokens: 2, reasoning_output_tokens: 1 } });
   assert.equal(accepted.state.bad, null);
   assert.equal(accepted.state.completed, true);
-  assert.equal(accepted.state.packetBeforeLastSubmit, true);
+  assert.equal(accepted.state.packetBeforeFirstSubmit, true);
   assert.deepEqual(accepted.state.usage, { input_tokens: 3, cached_input_tokens: 1,
     output_tokens: 2, reasoning_output_tokens: 1 });
   assert.equal(JSON.stringify(accepted.state).includes(SENTINEL), false);
@@ -284,13 +284,19 @@ test("realistic Codex event sequence is admitted and error items are refused", (
     [{ tool: "get_journal_work_packet", work_id: "job:synthetic-events", status: "failed" },
       { tool: "submit_journal_work_result", work_id: "job:synthetic-events" }],
     [{ tool: "submit_journal_work_result", work_id: "job:synthetic-events" },
-      { tool: "get_journal_work_packet", work_id: "job:synthetic-events" }]
+      { tool: "get_journal_work_packet", work_id: "job:synthetic-events" }],
+    // The first accepted submit is what the exchange keeps, so a later fetch and resubmit can't
+    // admit it.
+    [{ tool: "get_journal_work_packet", work_id: "job:synthetic-events", status: "failed" },
+      { tool: "submit_journal_work_result", work_id: "job:synthetic-events" },
+      { tool: "get_journal_work_packet", work_id: "job:synthetic-events" },
+      { tool: "submit_journal_work_result", work_id: "job:synthetic-events" }]
   ]) {
     const reader = codexEventReader("job:synthetic-events");
     for (const entry of sequence) emit(reader, { type: "item.completed", item: {
       type: "mcp_tool_call", server: "journal", tool: entry.tool,
       arguments: { work_id: entry.work_id, output: SENTINEL }, status: entry.status ?? "completed" } });
-    assert.equal(reader.state.packetBeforeLastSubmit, false);
+    assert.equal(reader.state.packetBeforeFirstSubmit, false);
     assert.equal(JSON.stringify(reader.state).includes(SENTINEL), false);
   }
   const rerouted = codexEventReader();
