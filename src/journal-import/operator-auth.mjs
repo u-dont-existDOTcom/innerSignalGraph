@@ -110,7 +110,11 @@ export function createOperatorTokenProvider({
   return async function operatorAuthContext() {
     if (!current || now() >= current.renewAt) {
       pending ??= fetchToken().finally(() => { pending = null; });
-      await pending;
+      try { await pending; }
+      catch (error) {
+        // A failed early renewal keeps a token that is still valid; a later check tries again.
+        if (!current || now() >= current.expiresAt) throw error;
+      }
     }
     return { bearerToken: current.token };
   };

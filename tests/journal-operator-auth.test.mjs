@@ -125,6 +125,53 @@ test("unavailable commands are refused before any env file is read or token requ
   assert.equal(server.calls.length, 0);
 });
 
+test("a failed early renewal keeps the still-valid token and retries on a later check", async () => {
+  let clock = 0;
+  let failNext = false;
+  const server = tokenServer({ lifetimes: [300, 300] });
+  const fetchImpl = async (url, init) => {
+    if (failNext) { failNext = false; throw new Error(SECRET); }
+    return server.fetchImpl(url, init);
+  };
+  const provider = createOperatorTokenProvider({ issuer: ISSUER, clientId: "operator", clientSecret: SECRET, fetchImpl, now: () => clock });
+  assert.deepEqual(await provider(), { bearerToken: "token-1" });
+  clock = 250_000;
+  failNext = true;
+  assert.deepEqual(await provider(), { bearerToken: "token-1" });
+  assert.deepEqual(await provider(), { bearerToken: "token-2" });
+  clock = 250_000 + 300_000;
+  failNext = true;
+  await assert.rejects(provider, { code: "OPERATOR_TOKEN_UNAVAILABLE" });
+});
+
+test("a missing or unresolved config fails before any env file is read or token requested", async (t) => {
+  const dir = await privateDir(t);
+  const file = await envFile(dir, "operator.env", [
+    `INNER_SIGNAL_OAUTH_ISSUER=${ISSUER}`,
+    "INNER_SIGNAL_OPERATOR_CLIENT_ID=operator",
+    `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`
+  ].join("\n"));
+  const unresolved = await envFile(dir, "unresolved.json", "{}");
+  const server = tokenServer();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = server.fetchImpl;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  for (const [command, configPath, expected] of [
+    ["status", path.join(dir, "missing.json"), null],
+    ["doctor", unresolved, "JOURNAL_CONFIG_UNRESOLVED"],
+    ["run", unresolved, "JOURNAL_CONFIG_UNRESOLVED"]
+  ]) {
+    let errors = "";
+    const code = await runJournalImportCli([command, "--config", configPath, "--env-file", file], {
+      environment: {}, stdout: { write: () => {} }, stderr: { write: (chunk) => { errors += chunk; } }
+    });
+    assert.equal(code, 1);
+    if (expected) assert.equal(JSON.parse(errors).error, expected);
+    assert.ok(!errors.includes(SECRET));
+  }
+  assert.equal(server.calls.length, 0);
+});
+
 test("concurrent callers share one token request", async () => {
   const server = tokenServer();
   const provider = createOperatorTokenProvider({ issuer: ISSUER, clientId: "operator", clientSecret: SECRET, fetchImpl: server.fetchImpl });
