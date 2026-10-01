@@ -89,7 +89,8 @@ if (scenario === "timeout") {
   spawn(process.execPath, ["-e", "setTimeout(() => require('fs').writeFileSync(process.argv[1], 'bad'), 1500)", ${JSON.stringify(path.join(base, "survived"))}], { stdio: "ignore" });
 }
 const answer = scenario === "reference" ? ${JSON.stringify(ANSWER)} : { ok: true };
-const toolOrder = scenario === "submit_only" ? ["submit_journal_work_result"]
+const submitOnly = scenario === "submit_only" || (scenario === "same_thread_mixed" && workId.endsWith("-first"));
+const toolOrder = submitOnly ? ["submit_journal_work_result"]
   : scenario === "fetch_after_submit" ? ["submit_journal_work_result", "get_journal_work_packet"]
   : ["get_journal_work_packet", "submit_journal_work_result"];
 const calls = toolOrder.map((name, index) => ({
@@ -102,7 +103,7 @@ if (mcp.error) process.exit(7);
 if (mcp.stderr.includes(${JSON.stringify(SENTINEL)})) process.exit(11);
 if (mcp.status !== 0) process.exit(7);
 const replies = mcp.stdout.trim().split(String.fromCharCode(10)).map(JSON.parse);
-if (!["submit_only", "fetch_other", "failed_fetch", "fetch_after_submit"].includes(scenario)
+if (!submitOnly && !["fetch_other", "failed_fetch", "fetch_after_submit"].includes(scenario)
   && (replies[0].result.structuredContent.status !== "ready" || replies[1].result.structuredContent.stored !== true)) process.exit(8);
 const stageDir = mcpArgs[mcpArgs.indexOf("--stage-dir") + 1];
 fs.appendFileSync(trace, JSON.stringify({ phase: "staged", exists: fs.readdirSync(stageDir).some(name => name.endsWith(".json")),
@@ -111,7 +112,8 @@ if (scenario === "timeout") {
   setInterval(() => {}, 1000);
 } else {
   if (scenario === "slow") await new Promise(resolve => setTimeout(resolve, 150));
-  if (scenario !== "missing_thread") console.log(JSON.stringify({ type: "thread.started", thread_id: randomUUID() }));
+  if (scenario !== "missing_thread") console.log(JSON.stringify({ type: "thread.started",
+    thread_id: ["same_thread", "same_thread_mixed"].includes(scenario) ? "00000000-0000-4000-8000-000000000001" : randomUUID() }));
   if (scenario === "two_threads") console.log(JSON.stringify({ type: "thread.started", thread_id: randomUUID() }));
   console.log(JSON.stringify({ type: "turn.started" }));
   for (const [index, call] of calls.entries()) {
@@ -495,6 +497,40 @@ test("worker honors concurrency three for five items", async (t) => {
   }
   assert.ok(maximum > 1 && maximum <= 3);
   assert.equal((await f.logs()).filter((item) => item.outcome === "answered").length, 5);
+});
+
+test("one Codex thread ID backs at most one answer, even across concurrent runs", async (t) => {
+  const f = await setup(t);
+  for (let index = 0; index < 3; index += 1) await f.publish(`job:synthetic-same-thread-${index}`);
+  const fake = await f.fake("same_thread");
+  await runJournalCodexWorker(f.args(fake, ["--once", "--concurrency", "3"]), { environment: f.environment });
+  const outcomes = (await f.logs()).map((item) => item.outcome);
+  assert.equal(outcomes.filter((outcome) => outcome === "answered").length, 1);
+  assert.ok(outcomes.filter((outcome) => outcome === "rejected:THREAD_REUSED").length >= 2);
+  const answered = [];
+  for (let index = 0; index < 3; index += 1) {
+    if (await f.exchange.hasResult(`job:synthetic-same-thread-${index}`)) answered.push(index);
+  }
+  assert.equal(answered.length, 1);
+});
+
+test("a thread ID seen in a rejected run can't back a later answer", async (t) => {
+  const f = await setup(t);
+  await f.publish("job:synthetic-thread-first");
+  // The worker takes the oldest issue time first; keep the rejected item strictly older.
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  await f.publish("job:synthetic-thread-second");
+  const fake = await f.fake("same_thread_mixed");
+  await runJournalCodexWorker(f.args(fake, ["--once", "--concurrency", "1"]), { environment: f.environment });
+  const logs = await f.logs();
+  const outcomes = (workId) => logs.filter((item) => item.work_id === workId).map((item) => item.outcome);
+  const first = outcomes("job:synthetic-thread-first");
+  const second = outcomes("job:synthetic-thread-second");
+  assert.equal(first[0], "rejected:PACKET_NOT_FETCHED");
+  assert.ok(second.length > 0 && second.every((outcome) => outcome === "rejected:THREAD_REUSED"));
+  assert.ok(first.slice(1).every((outcome) => outcome === "rejected:THREAD_REUSED"));
+  assert.equal(await f.exchange.hasResult("job:synthetic-thread-first"), false);
+  assert.equal(await f.exchange.hasResult("job:synthetic-thread-second"), false);
 });
 
 test("import command runs without a shell and records only exit code and duration", async (t) => {

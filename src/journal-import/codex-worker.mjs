@@ -374,6 +374,10 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
         cwd: runDir, env: { PATH: environment.PATH ?? "", HOME: environment.HOME ?? "", LANG: environment.LANG ?? "C", CODEX_HOME: options.codexHome },
         timeoutMs: options.timeoutMs, onLine: events.accept, activeGroups
       });
+      // Reserve every thread ID this run reported before any further await, whatever its outcome, so
+      // one Codex thread can never back two answers, in concurrent runs or in a later retry.
+      const threadReused = events.state.threads.some((id) => seenThreads.has(id));
+      for (const id of events.state.threads) seenThreads.add(id);
       if (result.code !== 0 && !events.state.hasErrorMessage) events.noteFailure(result.stderrLast);
       if (stopping) outcome = "stopped";
       else if (result.problem) outcome = `rejected:${result.problem}`;
@@ -387,13 +391,12 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
       else if (result.code !== 0) outcome = "rejected:EXIT_NONZERO";
       else if (events.state.bad) outcome = `rejected:${events.state.bad}`;
       else if (events.state.threads.length !== 1) outcome = "rejected:THREAD_COUNT";
-      else if (seenThreads.has(events.state.threads[0])) outcome = "rejected:THREAD_REUSED";
+      else if (threadReused) outcome = "rejected:THREAD_REUSED";
       else if (!events.state.completed) outcome = "rejected:TURN_INCOMPLETE";
       else if (!events.state.packetBeforeLastSubmit) outcome = "rejected:PACKET_NOT_FETCHED";
       else if (!await fs.lstat(path.join(stageDir, `${journalWorkFileKey(record.work_id)}.json`)).then(() => true, () => false)) {
         outcome = "rejected:STAGE_MISSING";
       } else {
-        seenThreads.add(events.state.threads[0]);
         const stored = await exchange.promoteStaged({ stageDir, workId: record.work_id, subject: "local:codex-standard",
           execution: { profile_evidence: "codex_exec_request_pinned", effective_model_profile: record.model,
             effective_effort: record.effort, request_context_id: `codex-thread:${events.state.threads[0]}` } });
