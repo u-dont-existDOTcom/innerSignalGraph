@@ -280,8 +280,8 @@ export function createExchangeJournalInferencePort({
     if (dispatchNew && successor > 0)
       throw new JournalInferencePortError("JOURNAL_PREFETCH_RETRY_UNSUPPORTED", { submissionStatus: "not_submitted" });
     if (existing) invariant(existing.input_sha256 === digest, "OPERATION_KEY_CONFLICT");
-    if (stored?.retired && !stored.unanswered && !stored.superseded)
-      invariant(false, "OPERATION_KEY_CONFLICT");
+    // A consumed and retired answer without a work file behaves as on main: no new item is
+    // published, and observe() reports the completion as unknown to the caller.
     // The first sequential invoke with the same input adopts a speculative item. Persist that
     // fact in the exchange so a resumed invoke cannot replace it on a changed grant or expiry.
     if (!dispatchNew && existing?.origin === "lookahead") {

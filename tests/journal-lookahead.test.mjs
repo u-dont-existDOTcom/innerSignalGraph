@@ -206,6 +206,22 @@ test("a retired answer with a surviving work file conflicts without a close loop
   h.port.close();
 });
 
+test("a consumed answer whose work file is gone reports an unknown completion, as on main", async () => {
+  const h = exchangeHarness({ maxCloseAttempts: 1 });
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  const input = { role: "reference_reader", packet, outputSchema: "reference-result", operationKey, grant };
+  const id = journalExchangeWorkId(operationKey);
+  // An earlier run's answer was used and retired: tombstone present, work file removed.
+  h.results.set(id, { retired: true });
+  for (const call of [input, { ...input, grant: { ...grant, grant_id: "synthetic:other-grant" } }]) {
+    await assert.rejects(h.port.invoke(call), { code: "COMPLETION_UNKNOWN" });
+  }
+  assert.equal(h.work.size, 0);
+  assert.equal(h.closeAttempts(), 0);
+  h.port.close();
+});
+
 test("a failed close race cannot spin beyond the successor limit", async () => {
   const h = exchangeHarness({ closeNeverSucceeds: true, maxCloseAttempts: 8 });
   const snapshot = snapshotFor();
