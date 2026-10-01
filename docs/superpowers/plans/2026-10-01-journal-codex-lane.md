@@ -68,15 +68,17 @@ Logic in `src/journal-import/codex-worker.mjs`, command in `src/cli/journal-code
 ### Configuration
 - `--config <absolute private run config>`, as for `journal:work:mcp`.
 - The exchange root and secret file from the environment (section 3).
-- `--codex-home <absolute dir>` (required): mode 0700, owned by the user, holding `auth.json`. The worker refuses to start if it holds `AGENTS.md` or `config.toml`.
+- `--codex-home <absolute dir>` (required): mode 0700, owned by the user, holding `auth.json`. The worker refuses to start if it holds `AGENTS.md`, `AGENTS.override.md`, `config.toml`, or a non-empty `skills/` directory.
+- `--work-dir <absolute dir>` (required): mode 0700, owned by the user. The worker creates its own private 0700 run parent here, canonicalizes created run paths, and removes stale run parents older than one hour at startup.
 - `--codex-bin` (default `codex`), `--concurrency` (default 2, 1 to 8), `--timeout-ms` (default 1,800,000), `--poll-ms` (default 5,000), `--limit-backoff-ms` (default 1,800,000), `--log <absolute file>` (default stderr), `--once` (handle what is listed now, then exit), `--max-items <n>`.
 - `--import-command-json '<JSON array>'` (optional): a command, run without a shell, that starts one import run.
+- `--import-env-names <comma-separated names>` passes only the named variables to the import process in addition to `PATH`, `HOME`, and `LANG`. `--import-timeout-ms` sets its separate timeout; by default the import has no timeout. The import command is normally a private wrapper that loads its own environment files. Node's `--env-file` can be used by that wrapper before `src/cli/journal-import.mjs` (the `journal:import` entry point); the worker does not load those files.
 
 ### Choosing items
 Every `--poll-ms`, read the content-free dispatch listing. Take records that are unanswered, unexpired, `tier: "standard"`, not already running in this worker, and have a model and effort matching the section 1 patterns. Oldest `issued_at` first. Run up to `--concurrency` at once. The worker runs exactly the model and effort each record names; it has no model setting of its own.
 
 ### One run
-1. Make a new private temporary directory (0700) for the run, with a `stage/` directory inside (0700).
+1. Make a new private directory (0700) under the worker-owned parent in `--work-dir`, with a `stage/` directory inside (0700).
 2. Spawn Codex without a shell, stdin from `/dev/null`, process group of its own, environment limited to `PATH`, `HOME`, `LANG` and `CODEX_HOME=<--codex-home>`:
 
    ```text
@@ -84,8 +86,9 @@ Every `--poll-ms`, read the content-free dispatch listing. Take records that are
      -s read-only -C <run dir> -m <record.model>
      -c model_reasoning_effort="<record.effort>" -c web_search="disabled" -c service_tier="default"
      -c approval_policy="never"
+     -c project_doc_max_bytes=0 -c project_root_markers=[]
      -c mcp_servers.journal.command="<node executable>"
-     -c mcp_servers.journal.args=["<checkout>/src/cli/journal-work-mcp.mjs","--config","<config>","--principal","codex-standard","--stage-dir","<run dir>/stage"]
+     -c mcp_servers.journal.args=["<checkout>/src/cli/journal-work-mcp.mjs","--config","<config>","--principal","codex-standard","--tier","standard","--stage-dir","<run dir>/stage"]
      -c mcp_servers.journal.env={INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT="<root>",INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE="<secret file>"}
      -c mcp_servers.journal.default_tools_approval_mode="approve"
      --disable <feature> (once for each feature listed below)
@@ -96,11 +99,11 @@ Every `--poll-ms`, read the content-free dispatch listing. Take records that are
 
    The instruction is the existing fixed one, with the work ID filled in:
    > Private InnerSignal journal work item `<work_id>`. Call get_journal_work_packet with this work_id, follow its instruction using only its packet, then submit your JSON answer with submit_journal_work_result. If it lists schema problems, fix them and submit again. Reply only: done.
-3. Read stdout as JSON lines, with a bound on line length and total size. Keep only event types, item types, MCP server and tool names, statuses, the `thread_id` and the `turn.completed` usage numbers. Never keep or log any text field.
+3. Read stdout as JSON lines, with a bound on line length and total size. Accept `turn.started`, `item.started`, and `item.updated` as lifecycle events while applying the item allowlist to every item event. Keep only event types, item types, MCP server and tool names, statuses, the `thread_id` and the `turn.completed` usage numbers. Never keep or log any text field.
 4. **Admission.** Promote the staged answer only when all of these hold:
    - exit code 0, and no timeout;
    - exactly one `thread.started` with a `thread_id`, a `turn.completed`, and no `turn.failed` or `error` event;
-   - every item is an `agent_message`, a `reasoning` item, a `todo_list` item (Codex's own plan, which reaches nothing outside the run), or an `mcp_tool_call` to server `journal` with tool `get_journal_work_packet` or `submit_journal_work_result`;
+   - every item is an `agent_message`, a `reasoning` item, a `todo_list` item (Codex's own plan, which reaches nothing outside the run), or an `mcp_tool_call` to server `journal` with tool `get_journal_work_packet` or `submit_journal_work_result`; `error` items are refused, including a "model rerouted" report;
    - a staged answer exists for this work ID.
 
    Then call `promoteStaged` with subject `local:codex-standard` and
@@ -111,10 +114,10 @@ Every `--poll-ms`, read the content-free dispatch listing. Take records that are
 6. On timeout, kill the whole process group.
 
 ### Usage limits
-If a run fails with HTTP 429 or a usage-limit error, record `limited`, start no new runs until the reset time the error gives (parse only the time) or for `--limit-backoff-ms`, and let running ones finish.
+If a run fails with a final HTTP 429 or usage-limit error, record `limited`, start no new runs until the reset time in Codex's local-time `Try again at ...` message or for `--limit-backoff-ms`, and let running ones finish. Limited runs do not consume the item's three-attempt budget. A completed turn with a staged answer is not limited merely because stderr contains a transient retried 429.
 
 ### Import runs
-With `--import-command-json`, start one import run when the worker starts and after each promoted answer, unless one started by this worker is still running. Record only its exit code and duration.
+With `--import-command-json`, start one import run when the worker starts and after each promoted answer. If an import is still running, mark a rerun pending and start one more when it exits. Record only its exit code and duration.
 
 ### Log
 One JSON line per run: `at`, `work_id`, `role`, `model`, `effort`, `outcome` (`answered`, `already_answered`, `rejected:<reason code>`, `timeout`, `error`, `limited`), `duration_ms`, and the four usage numbers (`input_tokens`, `cached_input_tokens`, `output_tokens`, `reasoning_output_tokens`). Nothing else.

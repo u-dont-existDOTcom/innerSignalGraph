@@ -272,6 +272,38 @@ test("a hardest receipt uses the first dispatch profile after configuration chan
   assert.equal(completion.receipt.provider_route_receipt.subject, undefined);
 });
 
+test("Codex receipt refuses a dispatch profile that differs from the configured route", async () => {
+  let entry = null, dispatch = null, answer = null;
+  const exchange = {
+    async readWork() { return entry; },
+    async readResult() { return answer; },
+    async publishWork(value) { entry ??= structuredClone(value); return { created: true }; },
+    async publishDispatch(value) { dispatch ??= structuredClone(value); },
+    async listDispatch() { return dispatch ? [{ ...dispatch, answered: answer !== null }] : []; }
+  };
+  const options = { exchange, caseId: CASE_ID, receiptKey: randomBytes(32), routeRef: "route:synthetic-codex",
+    allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    model: "gpt-6-sol", effort: "medium", roleEffort: { reference_reader: "high" },
+    executionAttestation: "codex_exec", waitMs: 0 };
+  const port = createExchangeJournalInferencePort(options);
+  await assert.rejects(port.invoke(referenceCall({ operationKey: `${KEY}:codex-config` })),
+    { code: "COMPLETION_UNKNOWN" });
+  assert.equal(dispatch.effort, "high");
+  answer = { output: structuredClone(referenceAnswer), receipt: {
+    receipt_id: "synthetic-receipt", work_file_key: "synthetic-work-file",
+    received_at: "2026-10-01T00:00:00.000Z", output_sha256: "synthetic-output-digest",
+    subject_sha256: "synthetic-principal-digest", request_context_id: "codex-thread:12345678",
+    profile_evidence: "codex_exec_request_pinned", effective_model_profile: dispatch.model,
+    effective_effort: dispatch.effort
+  } };
+  assert.equal((await port.getCompletion(`${KEY}:codex-config`)).status, "completed");
+  const changed = createExchangeJournalInferencePort({ ...options, model: "gpt-6-astra" });
+  const invalid = await changed.getCompletion(`${KEY}:codex-config`);
+  assert.equal(invalid.status, "invalid_output");
+  await assert.rejects(changed.invoke(referenceCall({ operationKey: `${KEY}:codex-config` })),
+    { code: "INVALID_STRUCTURED_OUTPUT" });
+});
+
 test("an invalid dispatcher context identifier is not promoted into an authenticated receipt", async (t) => {
   const environment = await setup(t);
   const port = environment.makePort({

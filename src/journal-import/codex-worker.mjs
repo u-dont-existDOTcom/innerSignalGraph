@@ -1,6 +1,5 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
@@ -36,8 +35,8 @@ function numberOption(argv, flag, fallback, min, max) {
 }
 
 export function parseJournalCodexWorkerArgs(argv) {
-  const known = new Set(["--config", "--codex-home", "--codex-bin", "--concurrency", "--timeout-ms", "--poll-ms",
-    "--limit-backoff-ms", "--log", "--once", "--max-items", "--import-command-json"]);
+  const known = new Set(["--config", "--codex-home", "--work-dir", "--codex-bin", "--concurrency", "--timeout-ms", "--poll-ms",
+    "--limit-backoff-ms", "--log", "--once", "--max-items", "--import-command-json", "--import-env-names", "--import-timeout-ms"]);
   const options = {};
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
@@ -45,7 +44,7 @@ export function parseJournalCodexWorkerArgs(argv) {
     options[flag] = flag === "--once" ? true : argv[++index];
     if (options[flag] === undefined) throw failure("JOURNAL_CODEX_OPTION_INVALID");
   }
-  for (const flag of ["--config", "--codex-home"]) {
+  for (const flag of ["--config", "--codex-home", "--work-dir"]) {
     if (typeof options[flag] !== "string" || !path.isAbsolute(options[flag])) throw failure("JOURNAL_CODEX_OPTION_INVALID");
   }
   if (options["--log"] && !path.isAbsolute(options["--log"])) throw failure("JOURNAL_CODEX_OPTION_INVALID");
@@ -60,12 +59,18 @@ export function parseJournalCodexWorkerArgs(argv) {
       throw failure("JOURNAL_CODEX_IMPORT_COMMAND_INVALID");
     }
   }
-  return Object.freeze({ configPath: options["--config"], codexHome: options["--codex-home"], codexBin,
+  const importEnvNames = options["--import-env-names"] === undefined ? [] : options["--import-env-names"].split(",");
+  if (importEnvNames.some((name) => !/^[A-Za-z_][A-Za-z0-9_]*$/u.test(name))) throw failure("JOURNAL_CODEX_OPTION_INVALID");
+  return Object.freeze({ configPath: options["--config"], codexHome: options["--codex-home"],
+    workDir: options["--work-dir"], codexBin,
     concurrency: numberOption(argv, "--concurrency", 2, 1, 8),
     timeoutMs: numberOption(argv, "--timeout-ms", 1_800_000, 1, 3_600_000),
     pollMs: numberOption(argv, "--poll-ms", 5_000, 1, 60_000),
     limitBackoffMs: numberOption(argv, "--limit-backoff-ms", 1_800_000, 1, 86_400_000),
     maxItems: numberOption(argv, "--max-items", Number.MAX_SAFE_INTEGER, 1, Number.MAX_SAFE_INTEGER),
+    importTimeoutMs: options["--import-timeout-ms"] === undefined ? null
+      : numberOption(argv, "--import-timeout-ms", null, 1, 86_400_000),
+    importEnvNames: [...new Set(importEnvNames)],
     log: options["--log"] ?? null, once: Boolean(options["--once"]), importCommand });
 }
 
@@ -75,15 +80,34 @@ export function codexExecArgs({ record, runDir, configPath, root, secretFile }) 
     "-s", "read-only", "-C", runDir, "-m", record.model,
     "-c", `model_reasoning_effort=${stringArg(record.effort)}`, "-c", 'web_search="disabled"',
     "-c", 'service_tier="default"', "-c", 'approval_policy="never"',
+    "-c", "project_doc_max_bytes=0", "-c", "project_root_markers=[]",
     "-c", `mcp_servers.journal.command=${stringArg(process.execPath)}`,
-    "-c", `mcp_servers.journal.args=${stringArg([mcpCli, "--config", configPath, "--principal", "codex-standard", "--stage-dir", path.join(runDir, "stage")])}`,
+    "-c", `mcp_servers.journal.args=${stringArg([mcpCli, "--config", configPath, "--principal", "codex-standard", "--tier", "standard", "--stage-dir", path.join(runDir, "stage")])}`,
     "-c", `mcp_servers.journal.env={INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT=${stringArg(root)},INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE=${stringArg(secretFile)}}`,
     "-c", 'mcp_servers.journal.default_tools_approval_mode="approve"',
     ...CODEX_DISABLED_FEATURES.flatMap((feature) => ["--disable", feature]), instruction];
 }
 
-function parseResetTime(message, nowMs) {
+export function parseCodexResetTime(message, nowMs) {
   if (typeof message !== "string") return null;
+  const codexDate = message.match(/Try again at\s+([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?,\s*(20\d\d)\s+(\d{1,2}):(\d{2})\s*(AM|PM)\b/iu);
+  if (codexDate) {
+    const month = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+      .indexOf(codexDate[1].slice(0, 3).toLowerCase());
+    const hour = Number(codexDate[4]) % 12 + (codexDate[6].toUpperCase() === "PM" ? 12 : 0);
+    if (month >= 0 && Number(codexDate[4]) >= 1 && Number(codexDate[4]) <= 12
+      && Number(codexDate[5]) < 60) {
+      const target = new Date(Number(codexDate[3]), month, Number(codexDate[2]), hour, Number(codexDate[5]));
+      if (target.getMonth() === month && target.getDate() === Number(codexDate[2]) && target.getTime() > nowMs) return target.getTime();
+    }
+  }
+  const codexClock = message.match(/Try again at\s+(\d{1,2}):(\d{2})\s*(AM|PM)\b/iu);
+  if (codexClock && Number(codexClock[1]) >= 1 && Number(codexClock[1]) <= 12 && Number(codexClock[2]) < 60) {
+    const target = new Date(nowMs);
+    target.setHours(Number(codexClock[1]) % 12 + (codexClock[3].toUpperCase() === "PM" ? 12 : 0), Number(codexClock[2]), 0, 0);
+    if (target.getTime() <= nowMs) target.setDate(target.getDate() + 1);
+    return target.getTime();
+  }
   const iso = message.match(/(?:reset[^\n]{0,80}?)(20\d\d-\d\d-\d\dT\d\d:\d\d(?::\d\d)?(?:\.\d+)?Z)/iu);
   if (iso) return Date.parse(iso[1]);
   const seconds = message.match(/(?:reset|retry)[^\n]{0,40}?(?:in|after)\s+(\d+)\s*(?:seconds?|s)\b/iu);
@@ -99,13 +123,14 @@ function parseResetTime(message, nowMs) {
 }
 
 export function codexEventReader() {
-  const state = { threads: [], completed: false, bad: null, limited: false, resetAt: null,
+  const state = { threads: [], completed: false, bad: null, errorSeen: false, hasErrorMessage: false,
+    finalErrorLimited: false, resetAt: null,
     usage: Object.fromEntries(USAGE_FIELDS.map((field) => [field, 0])) };
-  function noteLimit(message) {
-    if (/\b429\b|usage[ -]?limit|rate[ -]?limit/iu.test(message)) {
-      state.limited = true;
-      state.resetAt = parseResetTime(message, Date.now());
-    }
+  function noteFailure(message) {
+    if (typeof message !== "string") return;
+    if (message) state.hasErrorMessage = true;
+    state.finalErrorLimited = /\b429\b|usage[ -]?limit|rate[ -]?limit/iu.test(message);
+    state.resetAt = state.finalErrorLimited ? parseCodexResetTime(message, Date.now()) : null;
   }
   function accept(line) {
     let event;
@@ -115,6 +140,8 @@ export function codexEventReader() {
     if (event.type === "thread.started") {
       if (typeof event.thread_id !== "string" || !THREAD.test(event.thread_id)) state.bad = "THREAD_INVALID";
       else state.threads.push(event.thread_id);
+    } else if (event.type === "turn.started") {
+      // Codex emits this on every turn; it contains no execution evidence.
     } else if (event.type === "turn.completed") {
       state.completed = true;
       for (const field of USAGE_FIELDS) {
@@ -123,44 +150,52 @@ export function codexEventReader() {
         if (Number.isSafeInteger(value) && value >= 0) state.usage[field] = value;
       }
     } else if (event.type === "turn.failed" || event.type === "error") {
-      state.bad = event.type === "turn.failed" ? "TURN_FAILED" : "EVENT_ERROR";
+      state.bad ??= event.type === "turn.failed" ? "TURN_FAILED" : "EVENT_ERROR";
+      state.errorSeen = true;
       const message = event.error?.message ?? event.message ?? "";
-      noteLimit(message);
-    } else if (event.type.startsWith("item.")) {
+      if (message) noteFailure(message);
+    } else if (["item.started", "item.updated", "item.completed"].includes(event.type)) {
       const item = event.item;
       if (!item || typeof item !== "object") { state.bad = "ITEM_INVALID"; return; }
+      if (item.type === "error") { state.bad ??= "ITEM_ERROR"; state.errorSeen = true; noteFailure(item.message ?? ""); return; }
       if (["agent_message", "reasoning", "todo_list"].includes(item.type)) return;
       if (item.type === "mcp_tool_call" && item.server === "journal"
         && ["get_journal_work_packet", "submit_journal_work_result"].includes(item.tool)) return;
-      state.bad = "ITEM_FORBIDDEN";
+      state.bad ??= "ITEM_FORBIDDEN";
     } else state.bad = "EVENT_FORBIDDEN";
   }
-  return { state, accept, noteLimit };
+  return { state, accept, noteFailure };
 }
 
 async function checkCodexHome(home) {
   const info = await fs.lstat(home);
   if (!info.isDirectory() || (info.mode & 0o777) !== 0o700 || (process.getuid && info.uid !== process.getuid())
     || await fs.realpath(home) !== home) throw failure("JOURNAL_CODEX_HOME_INSECURE");
-  for (const forbidden of ["AGENTS.md", "config.toml"]) {
+  for (const forbidden of ["AGENTS.md", "AGENTS.override.md", "config.toml"]) {
     if (await fs.lstat(path.join(home, forbidden)).then(() => true, (error) => error?.code === "ENOENT" ? false : Promise.reject(error))) {
       throw failure("JOURNAL_CODEX_HOME_CONTAMINATED");
     }
+  }
+  const skills = path.join(home, "skills");
+  const skillsInfo = await fs.lstat(skills).catch((error) => error?.code === "ENOENT" ? null : Promise.reject(error));
+  if (skillsInfo && (!skillsInfo.isDirectory() || (await fs.readdir(skills)).length > 0)) {
+    throw failure("JOURNAL_CODEX_HOME_CONTAMINATED");
   }
   await withOpenedRegularFile(path.join(home, "auth.json"), async (_handle, stat) => {
     if ((stat.mode & 0o077) !== 0) throw failure("JOURNAL_CODEX_HOME_INSECURE");
   });
 }
 
-function runProcess(command, args, { cwd, env, timeoutMs, onLine, onStderr = () => {} }) {
+function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups }) {
   return new Promise((resolve) => {
     const started = Date.now();
     let child;
     try { child = spawn(command, args, { cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"], shell: false }); }
     catch { resolve({ code: null, timedOut: false, problem: "SPAWN_FAILED", durationMs: Date.now() - started }); return; }
     let line = "", total = 0, problem = null, timedOut = false;
-    const killGroup = () => { try { process.kill(-child.pid, "SIGKILL"); } catch { child.kill("SIGKILL"); } };
-    const timer = setTimeout(() => { timedOut = true; killGroup(); }, timeoutMs);
+    const killGroup = () => { try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { child.kill("SIGKILL"); } };
+    activeGroups?.add(killGroup);
+    const timer = timeoutMs === null ? null : setTimeout(() => { timedOut = true; killGroup(); }, timeoutMs);
     child.once("error", () => { problem = "SPAWN_FAILED"; });
     child.stdout?.setEncoding("utf8");
     child.stdout?.on("data", (chunk) => {
@@ -180,17 +215,39 @@ function runProcess(command, args, { cwd, env, timeoutMs, onLine, onStderr = () 
     child.stderr?.setEncoding("utf8");
     child.stderr?.on("data", (chunk) => {
       stderrTail = (stderrTail + chunk).slice(-512);
-      onStderr(stderrTail);
     }); // Only transiently inspect for a limit; never retain or print packet or answer text.
-    child.once("close", (code) => { clearTimeout(timer); if (line.length) onLine(line); resolve({ code, timedOut, problem,
-      durationMs: Date.now() - started }); });
+    child.once("close", (code) => { if (timer) clearTimeout(timer); activeGroups?.delete(killGroup);
+      if (line.length) onLine(line);
+      resolve({ code, timedOut, problem, stderrLast: stderrTail.trim().split("\n").at(-1) ?? "",
+        durationMs: Date.now() - started }); });
   });
+}
+
+async function privateDirectory(directory, code) {
+  const info = await fs.lstat(directory);
+  if (!info.isDirectory() || (info.mode & 0o777) !== 0o700
+    || (process.getuid && info.uid !== process.getuid())) throw failure(code);
+  return fs.realpath(directory);
+}
+
+async function removeStaleRuns(workDir) {
+  const before = Date.now() - 3_600_000;
+  for (const name of await fs.readdir(workDir)) {
+    if (!/^inner-signal-codex-[A-Za-z0-9]+$/u.test(name)) continue;
+    const target = path.join(workDir, name);
+    const info = await fs.lstat(target).catch((error) => error?.code === "ENOENT" ? null : Promise.reject(error));
+    if (info?.isDirectory() && info.mtimeMs < before && (process.getuid === undefined || info.uid === process.getuid())) {
+      await fs.rm(target, { recursive: true, force: true });
+    }
+  }
 }
 
 export async function runJournalCodexWorker(argv, { environment = process.env, stderr = process.stderr,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = {}) {
   const options = parseJournalCodexWorkerArgs(argv);
   await checkCodexHome(options.codexHome);
+  const workDir = await privateDirectory(options.workDir, "JOURNAL_CODEX_WORK_DIR_INSECURE");
+  await removeStaleRuns(workDir);
   await withOpenedRegularFile(options.configPath, async (_handle, info) => {
     if ((info.mode & 0o077) !== 0) throw failure("JOURNAL_CODEX_CONFIG_INSECURE");
   });
@@ -205,43 +262,56 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
   const exchange = createJournalWorkExchange({ root, secret });
   const dispatch = createJournalWorkDispatchReader({ root });
   const logHandle = options.log ? await fs.open(options.log, "a", 0o600) : null;
+  const privateParent = await fs.realpath(await fs.mkdtemp(path.join(workDir, "inner-signal-codex-")));
+  await fs.chmod(privateParent, 0o700);
   let logTail = Promise.resolve();
   const log = async (record) => {
     const bytes = `${JSON.stringify(record)}\n`;
     logTail = logTail.then(() => { if (logHandle) return logHandle.writeFile(bytes); stderr.write(bytes); });
     await logTail;
   };
-  let importRun = null;
+  const activeGroups = new Set();
+  let stopping = false;
+  const stop = () => { stopping = true; for (const kill of activeGroups) kill(); };
+  process.on("SIGTERM", stop);
+  process.on("SIGINT", stop);
+  let importRun = null, importPending = false;
   function startImport() {
-    if (!options.importCommand || importRun) return;
+    if (!options.importCommand || stopping) return;
+    if (importRun) { importPending = true; return; }
     const started = Date.now();
+    const importEnv = { PATH: environment.PATH ?? "", HOME: environment.HOME ?? "", LANG: environment.LANG ?? "C" };
+    for (const name of options.importEnvNames) if (environment[name] !== undefined) importEnv[name] = environment[name];
     importRun = runProcess(options.importCommand[0], options.importCommand.slice(1), {
-      cwd: repositoryRoot, env: { PATH: environment.PATH ?? "", HOME: environment.HOME ?? "", LANG: environment.LANG ?? "C" },
-      timeoutMs: options.timeoutMs, onLine: () => {}
+      cwd: repositoryRoot, env: importEnv,
+      timeoutMs: options.importTimeoutMs, onLine: () => {}, activeGroups
     }).then(async ({ code }) => {
       await log({ at: new Date().toISOString(), kind: "import", exit_code: code, duration_ms: Date.now() - started });
-    }).finally(() => { importRun = null; });
+    }).catch(() => {}).finally(() => { importRun = null; if (importPending && !stopping) { importPending = false; startImport(); } });
   }
   const running = new Map(), attempts = new Map(), seenThreads = new Set();
   let completed = 0, limitedUntil = 0;
-  const initial = options.once ? new Set((await dispatch.listDispatch()).map((record) => record.work_id)) : null;
-  startImport();
+  let initial = null;
 
   async function one(record) {
     const started = Date.now();
-    const runDir = await fs.mkdtemp(path.join(os.tmpdir(), "inner-signal-codex-"));
-    await fs.chmod(runDir, 0o700);
-    const stageDir = path.join(runDir, "stage");
-    await fs.mkdir(stageDir, { mode: 0o700 });
     const events = codexEventReader();
     let outcome = "error";
+    let runDir = null;
     try {
+      runDir = await fs.realpath(await fs.mkdtemp(path.join(privateParent, "run-")));
+      await fs.chmod(runDir, 0o700);
+      const stageDir = path.join(runDir, "stage");
+      await fs.mkdir(stageDir, { mode: 0o700 });
       const result = await runProcess(options.codexBin, codexExecArgs({ record, runDir, configPath: options.configPath, root, secretFile }), {
         cwd: runDir, env: { PATH: environment.PATH ?? "", HOME: environment.HOME ?? "", LANG: environment.LANG ?? "C", CODEX_HOME: options.codexHome },
-        timeoutMs: options.timeoutMs, onLine: events.accept, onStderr: events.noteLimit
+        timeoutMs: options.timeoutMs, onLine: events.accept, activeGroups
       });
+      if (result.code !== 0 && !events.state.hasErrorMessage) events.noteFailure(result.stderrLast);
       if (result.timedOut) outcome = "timeout";
-      else if (events.state.limited && (result.code !== 0 || events.state.bad)) {
+      else if (!events.state.completed && events.state.finalErrorLimited
+        && [null, "TURN_FAILED", "EVENT_ERROR", "ITEM_ERROR"].includes(events.state.bad)
+        && (result.code !== 0 || events.state.errorSeen)) {
         outcome = "limited";
         limitedUntil = Math.max(limitedUntil, events.state.resetAt ?? Date.now() + options.limitBackoffMs);
       } else if (result.problem) outcome = `rejected:${result.problem}`;
@@ -262,7 +332,7 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
       }
     } catch { outcome = "error"; }
     finally {
-      await fs.rm(runDir, { recursive: true, force: true });
+      if (runDir) await fs.rm(runDir, { recursive: true, force: true });
       await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role, model: record.model,
         effort: record.effort, outcome, duration_ms: Date.now() - started, ...events.state.usage });
     }
@@ -270,6 +340,8 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
   }
 
   try {
+    initial = options.once ? new Set((await dispatch.listDispatch()).map((record) => record.work_id)) : null;
+    startImport();
     for (;;) {
       const now = Date.now();
       if (now >= limitedUntil && completed < options.maxItems) {
@@ -280,19 +352,32 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
           if (record.answered || record.tier !== "standard" || Date.parse(record.expires_at) <= now
             || !MODEL.test(record.model) || !EFFORTS.has(record.effort)
             || running.has(record.work_id) || (attempts.get(record.work_id) ?? 0) >= 3) continue;
-          attempts.set(record.work_id, (attempts.get(record.work_id) ?? 0) + 1);
-          const pending = one(record).finally(() => { running.delete(record.work_id); completed += 1; });
+          const pending = one(record).catch(async () => {
+            await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
+              model: record.model, effort: record.effort, outcome: "error", duration_ms: 0,
+              ...Object.fromEntries(USAGE_FIELDS.map((field) => [field, 0])) }).catch(() => {});
+            return "error";
+          }).then((outcome) => { if (outcome !== "limited") attempts.set(record.work_id, (attempts.get(record.work_id) ?? 0) + 1); })
+            .finally(() => { running.delete(record.work_id); completed += 1; });
           running.set(record.work_id, pending);
         }
       }
-      if (options.once || completed >= options.maxItems) {
+      if (stopping || options.once || completed >= options.maxItems) {
         if (!running.size) break;
         await Promise.race(running.values());
       } else {
         await sleep(Math.max(options.pollMs, limitedUntil - Date.now(), 1));
       }
     }
-    if (importRun) await importRun;
+    while (importRun) await importRun;
     return 0;
-  } finally { await logHandle?.close(); }
+  } finally {
+    process.off("SIGTERM", stop);
+    process.off("SIGINT", stop);
+    stop();
+    await Promise.allSettled(running.values());
+    if (importRun) await importRun.catch(() => {});
+    await fs.rm(privateParent, { recursive: true, force: true });
+    await logHandle?.close();
+  }
 }

@@ -8,7 +8,7 @@ import path from "node:path";
 import { createJournalWorkExchange, journalWorkExchangeSecret, journalWorkFileKey } from "../src/journal-import/work-exchange.mjs";
 import { createExchangeJournalInferencePort, journalExchangeWorkId } from "../src/journal-import/exchange-port.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../src/journal-import/provider-runtime.mjs";
-import { codexEventReader, codexExecArgs, CODEX_DISABLED_FEATURES, parseJournalCodexWorkerArgs,
+import { codexEventReader, codexExecArgs, CODEX_DISABLED_FEATURES, parseCodexResetTime, parseJournalCodexWorkerArgs,
   runJournalCodexWorker } from "../src/journal-import/codex-worker.mjs";
 import { parseJournalWorkMcpArgs } from "../src/cli/journal-work-mcp.mjs";
 import { configuredJournalDoctorReport } from "../src/cli/journal-import.mjs";
@@ -42,8 +42,10 @@ async function setup(t) {
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const root = path.join(base, "exchange");
   const home = path.join(base, "codex-home");
+  const workDir = path.join(base, "work");
   await fs.mkdir(root, { mode: 0o700 });
   await fs.mkdir(home, { mode: 0o700 });
+  await fs.mkdir(workDir, { mode: 0o700 });
   await fs.writeFile(path.join(home, "auth.json"), "{}", { mode: 0o600 });
   const secret = randomBytes(32).toString("base64");
   const secretFile = path.join(base, "secret.txt");
@@ -55,7 +57,7 @@ async function setup(t) {
   const exchange = createJournalWorkExchange({ root, secret });
   const environment = { PATH: `${path.dirname(process.execPath)}:${process.env.PATH}`, HOME: base, LANG: "C",
     INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: root, INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: secretFile };
-  const args = (fake, extra = []) => ["--config", configPath, "--codex-home", home, "--codex-bin", fake,
+  const args = (fake, extra = []) => ["--config", configPath, "--codex-home", home, "--work-dir", workDir, "--codex-bin", fake,
     "--log", log, "--poll-ms", "10", ...extra];
   async function publish(workId, role = "reference_reader") {
     const entry = manualWork(workId, role);
@@ -74,6 +76,7 @@ const args = process.argv.slice(2);
 const scenario = ${JSON.stringify(scenario)};
 const trace = ${JSON.stringify(trace)};
 const configs = args.filter((arg, index) => args[index - 1] === "-c");
+if (!configs.includes("project_doc_max_bytes=0") || !configs.includes("project_root_markers=[]")) process.exit(12);
 const mcpArgs = JSON.parse(configs.find(value => value.startsWith("mcp_servers.journal.args=")).split("=").slice(1).join("="));
 const envConfig = configs.find(value => value.startsWith("mcp_servers.journal.env="));
 const fromConfig = (key) => JSON.parse(envConfig.match(new RegExp(key + '=("[^"]*")'))[1]);
@@ -95,20 +98,37 @@ if (mcp.stderr.includes(${JSON.stringify(SENTINEL)})) process.exit(11);
 if (mcp.status !== 0) process.exit(7);
 const replies = mcp.stdout.trim().split(String.fromCharCode(10)).map(JSON.parse);
 if (replies[0].result.structuredContent.status !== "ready" || replies[1].result.structuredContent.stored !== true) process.exit(8);
+const stageDir = mcpArgs[mcpArgs.indexOf("--stage-dir") + 1];
+fs.appendFileSync(trace, JSON.stringify({ phase: "staged", exists: fs.readdirSync(stageDir).length === 1 }) + String.fromCharCode(10));
 if (scenario === "timeout") {
   setInterval(() => {}, 1000);
 } else {
   if (scenario === "slow") await new Promise(resolve => setTimeout(resolve, 150));
   if (scenario !== "missing_thread") console.log(JSON.stringify({ type: "thread.started", thread_id: randomUUID() }));
+  if (scenario === "two_threads") console.log(JSON.stringify({ type: "thread.started", thread_id: randomUUID() }));
+  console.log(JSON.stringify({ type: "turn.started" }));
   const itemType = ({ web_search: "web_search", command_execution: "command_execution", other_server: "mcp_tool_call", other_tool: "mcp_tool_call" })[scenario] || "mcp_tool_call";
-  console.log(JSON.stringify({ type: "item.completed", item: { type: itemType,
+  const item = { type: itemType,
     server: scenario === "other_server" ? "outside" : "journal",
     tool: scenario === "other_tool" ? "other_tool" : "submit_journal_work_result",
-    text: ${JSON.stringify(SENTINEL)} } }));
+    text: ${JSON.stringify(SENTINEL)} };
+  console.log(JSON.stringify({ type: "item.started", item }));
+  console.log(JSON.stringify({ type: "item.updated", item }));
+  console.log(JSON.stringify({ type: "item.completed", item }));
+  if (scenario === "error_item") {
+    const errorItem = { type: "error", message: "model rerouted" };
+    console.log(JSON.stringify({ type: "item.started", item: errorItem }));
+    console.log(JSON.stringify({ type: "item.completed", item: errorItem }));
+  }
   if (scenario === "turn_failed") console.log(JSON.stringify({ type: "turn.failed" }));
-  else if (scenario.startsWith("limit")) console.log(JSON.stringify({ type: "error", message: scenario === "limit_reset" ? "HTTP 429; reset in 1 seconds" : "usage limit" }));
-  else console.log(JSON.stringify({ type: "turn.completed", usage: { input_tokens: 3, cached_input_tokens: 1, output_tokens: 2, reasoning_output_tokens: 1 } }));
-  console.log(JSON.stringify({ type: "item.completed", item: { type: "agent_message", text: ${JSON.stringify(SENTINEL)} } }));
+  else if (scenario === "error_event") console.log(JSON.stringify({ type: "error", message: "synthetic failure" }));
+  else if (scenario === "limit_default" || (scenario === "limit_then_success" && fs.readFileSync(trace, "utf8").split('"phase":"start"').length <= 4)) {
+    console.log(JSON.stringify({ type: "error", message: "You've hit your usage limit. Try again later." }));
+  } else if (scenario !== "missing_turn") console.log(JSON.stringify({ type: "turn.completed", usage: { input_tokens: 3, cached_input_tokens: 1, cache_write_input_tokens: 0, output_tokens: 2, reasoning_output_tokens: 1 } }));
+  if (scenario === "transient429") process.stderr.write("HTTP 429 retried successfully" + String.fromCharCode(10));
+  const message = { type: "agent_message", text: ${JSON.stringify(SENTINEL)} };
+  console.log(JSON.stringify({ type: "item.started", item: message }));
+  console.log(JSON.stringify({ type: "item.completed", item: message }));
   fs.appendFileSync(trace, JSON.stringify({ phase: "end", at: Date.now() }) + String.fromCharCode(10));
   if (scenario === "nonzero") process.exit(9);
 }
@@ -117,7 +137,7 @@ if (scenario === "timeout") {
     return filename;
   }
   const logs = async () => (await fs.readFile(log, "utf8")).trim().split("\n").map(JSON.parse);
-  return { base, root, home, secret, secretFile, configPath, log, trace, exchange, environment, args, publish, fake, logs };
+  return { base, root, home, workDir, secret, secretFile, configPath, log, trace, exchange, environment, args, publish, fake, logs };
 }
 
 test("Codex route validates model and role effort, while ChatGPT connector admission remains blocked", () => {
@@ -155,14 +175,20 @@ test("doctor authorizes Codex execution evidence without relaxing ChatGPT blocke
     source: { relative_path: "private/source/journal.txt", sha256: createHash("sha256").update(bytes).digest("hex"), bytes: bytes.length },
     target_profile: { case_id: "synthetic-case" }, private_runtime_root: path.join(base, "runtime"),
     execution_root: path.join(base, "execution"), existing_grant_ref: "synthetic:grant", max_external_spend_usd: 0 }), { mode: 0o600 });
-  const port = (executionAttestation) => createExchangeJournalInferencePort({
-    exchange: { async removeStaleTemporaries() {} }, caseId: "synthetic-case", receiptKey: randomBytes(32),
-    routeRef: "route:codex", allowanceEvidence, model: "gpt-6-sol", effort: "medium", executionAttestation
-  });
-  const codex = await configuredJournalDoctorReport(config, {}, { inferencePortLoader: () => port("codex_exec") });
+  const root = path.join(base, "exchange");
+  await fs.mkdir(root, { mode: 0o700 });
+  const route = { schema_version: 1, provider: "codex_exec_exchange", route_ref: "route:codex", model: "gpt-6-sol",
+    effort: "medium", timeout_ms: 60_000, max_external_spend_usd: 0, allowance_evidence: allowanceEvidence };
+  const environment = { INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify(route),
+    INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: randomBytes(32).toString("base64"),
+    INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: root,
+    INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64: randomBytes(32).toString("base64") };
+  const codex = await configuredJournalDoctorReport(config, environment);
   assert.equal(codex.capabilities.inference_route, "authorized");
   assert.equal(codex.blockers.includes("JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED"), false);
-  const chat = await configuredJournalDoctorReport(config, {}, { inferencePortLoader: () => port(null) });
+  const chat = await configuredJournalDoctorReport(config, { ...environment,
+    INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify({ ...route, provider: "chatgpt_connector_exchange",
+      model: "GPT-5.6 Sol", effort: "Pro" }) });
   assert.equal(chat.capabilities.inference_route, "unavailable");
   assert.ok(chat.blockers.includes("JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED"));
   assert.ok(chat.blockers.includes("INFERENCE_ISOLATION_UNAVAILABLE"));
@@ -175,8 +201,9 @@ test("exact Codex arguments disable all forbidden features and pass only secret 
   assert.deepEqual(args, ["exec", "--json", "--ephemeral", "--skip-git-repo-check", "--ignore-user-config",
     "--ignore-rules", "--strict-config", "-s", "read-only", "-C", "/tmp/run", "-m", "gpt-6-sol",
     "-c", 'model_reasoning_effort="high"', "-c", 'web_search="disabled"', "-c", 'service_tier="default"',
-    "-c", 'approval_policy="never"', "-c", `mcp_servers.journal.command=${JSON.stringify(process.execPath)}`,
-    "-c", `mcp_servers.journal.args=${JSON.stringify([mcpCli, "--config", "/tmp/config", "--principal", "codex-standard", "--stage-dir", "/tmp/run/stage"])}`,
+    "-c", 'approval_policy="never"', "-c", "project_doc_max_bytes=0", "-c", "project_root_markers=[]",
+    "-c", `mcp_servers.journal.command=${JSON.stringify(process.execPath)}`,
+    "-c", `mcp_servers.journal.args=${JSON.stringify([mcpCli, "--config", "/tmp/config", "--principal", "codex-standard", "--tier", "standard", "--stage-dir", "/tmp/run/stage"])}`,
     "-c", 'mcp_servers.journal.env={INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT="/tmp/exchange",INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE="/tmp/secret"}',
     "-c", 'mcp_servers.journal.default_tools_approval_mode="approve"',
     ...CODEX_DISABLED_FEATURES.flatMap((feature) => ["--disable", feature]),
@@ -190,10 +217,35 @@ test("exact Codex arguments disable all forbidden features and pass only secret 
   assert.ok(args.includes('mcp_servers.journal.default_tools_approval_mode="approve"'));
   assert.ok(args.at(-1).includes(record.work_id));
   assert.equal(args.join(" ").includes(SENTINEL), false);
-  assert.equal(parseJournalCodexWorkerArgs(["--config", "/tmp/config", "--codex-home", "/tmp/home"]).limitBackoffMs, 1_800_000);
+  const defaults = parseJournalCodexWorkerArgs(["--config", "/tmp/config", "--codex-home", "/tmp/home",
+    "--work-dir", "/tmp/work"]);
+  assert.equal(defaults.limitBackoffMs, 1_800_000);
+  assert.equal(defaults.importTimeoutMs, null);
+  assert.deepEqual(defaults.importEnvNames, []);
+  assert.throws(() => parseJournalCodexWorkerArgs(["--config", "/tmp/config", "--codex-home", "/tmp/home"]),
+    { code: "JOURNAL_CODEX_OPTION_INVALID" });
 });
 
-test("event admission keeps only metadata and rejects forbidden items and missing thread", () => {
+test("realistic Codex event sequence is admitted and error items are refused", () => {
+  const accepted = codexEventReader();
+  const emit = (reader, event) => reader.accept(JSON.stringify(event));
+  emit(accepted, { type: "thread.started", thread_id: "12345678" });
+  emit(accepted, { type: "turn.started" });
+  for (const item of [{ type: "mcp_tool_call", server: "journal", tool: "get_journal_work_packet" },
+    { type: "mcp_tool_call", server: "journal", tool: "submit_journal_work_result" },
+    { type: "agent_message", text: SENTINEL }]) {
+    for (const type of ["item.started", "item.updated", "item.completed"]) emit(accepted, { type, item });
+  }
+  emit(accepted, { type: "turn.completed", usage: { input_tokens: 3, cached_input_tokens: 1,
+    cache_write_input_tokens: 0, output_tokens: 2, reasoning_output_tokens: 1 } });
+  assert.equal(accepted.state.bad, null);
+  assert.equal(accepted.state.completed, true);
+  assert.deepEqual(accepted.state.usage, { input_tokens: 3, cached_input_tokens: 1,
+    output_tokens: 2, reasoning_output_tokens: 1 });
+  assert.equal(JSON.stringify(accepted.state).includes(SENTINEL), false);
+  const rerouted = codexEventReader();
+  emit(rerouted, { type: "item.started", item: { type: "error", message: "model rerouted" } });
+  assert.equal(rerouted.state.bad, "ITEM_ERROR");
   for (const type of ["web_search", "command_execution", "mcp_tool_call"]) {
     const reader = codexEventReader();
     reader.accept(JSON.stringify({ type: "item.completed", item: { type, server: "outside", tool: "other", text: SENTINEL } }));
@@ -202,7 +254,8 @@ test("event admission keeps only metadata and rejects forbidden items and missin
   }
   const reader = codexEventReader();
   reader.accept(JSON.stringify({ type: "error", message: "HTTP 429; reset in 1 seconds " + SENTINEL }));
-  assert.equal(reader.state.limited, true);
+  assert.equal(reader.state.bad, "EVENT_ERROR");
+  assert.equal(reader.state.finalErrorLimited, true);
   assert.ok(reader.state.resetAt > Date.now());
   assert.equal(JSON.stringify(reader.state).includes(SENTINEL), false);
 });
@@ -250,6 +303,14 @@ test("secret file refuses links, loose modes, and competing inline settings", as
 
 test("worker round trip admits a request-pinned Codex receipt and keeps content out of output", async (t) => {
   const f = await setup(t);
+  await fs.writeFile(path.join(f.base, "AGENTS.md"), "synthetic planted instruction");
+  await fs.mkdir(path.join(f.base, ".git"));
+  const alias = path.join(f.base, "alias");
+  await fs.symlink(f.base, alias);
+  const stale = path.join(f.workDir, "inner-signal-codex-OLD");
+  await fs.mkdir(stale, { mode: 0o700 });
+  const old = new Date(Date.now() - 2 * 3_600_000);
+  await fs.utimes(stale, old, old);
   const port = createExchangeJournalInferencePort({ exchange: f.exchange, caseId: "synthetic-case", receiptKey: randomBytes(32),
     routeRef: "route:codex", allowanceEvidence, model: "gpt-6-sol", effort: "medium", roleEffort: { reference_reader: "high" },
     executionAttestation: "codex_exec", waitMs: 1, pollMs: 1 });
@@ -260,10 +321,13 @@ test("worker round trip admits a request-pinned Codex receipt and keeps content 
   assert.equal(dispatch[0].work_id, journalExchangeWorkId(call.operationKey));
   const fake = await f.fake("reference");
   const workerCli = path.resolve(new URL("../src/cli/journal-codex-worker.mjs", import.meta.url).pathname);
-  const worker = spawnSync(process.execPath, [workerCli, ...f.args(fake, ["--once"])], {
+  const workerArgs = f.args(fake, ["--once"]);
+  workerArgs[workerArgs.indexOf("--work-dir") + 1] = path.join(alias, "work");
+  const worker = spawnSync(process.execPath, [workerCli, ...workerArgs], {
     env: f.environment, encoding: "utf8", timeout: 20_000
   });
   assert.equal(worker.status, 0, worker.stderr);
+  await assert.rejects(fs.access(stale));
   assert.equal(worker.stdout.includes(SENTINEL), false);
   assert.equal(worker.stderr.includes(SENTINEL), false);
   const completed = await port.getCompletion(call.operationKey);
@@ -285,8 +349,28 @@ test("worker round trip admits a request-pinned Codex receipt and keeps content 
   assert.equal((await port.getCompletion(unverified.operationKey)).status, "invalid_output");
 });
 
+test("a completed turn with a transient 429 in stderr is admitted and default logs stay content free", async (t) => {
+  const f = await setup(t);
+  await f.publish("job:synthetic-transient");
+  const fake = await f.fake("transient429");
+  const captured = [];
+  const args = f.args(fake, ["--once"]);
+  args.splice(args.indexOf("--log"), 2);
+  await runJournalCodexWorker(args, { environment: f.environment, stderr: { write: (chunk) => captured.push(chunk) } });
+  const lines = captured.join("");
+  assert.equal(lines.includes(SENTINEL), false);
+  assert.equal(JSON.parse(lines.trim()).outcome, "answered");
+  assert.ok(await f.exchange.readResult("job:synthetic-transient"));
+});
+
 test("worker rejects every disallowed execution without leaving an answer or stage", async (t) => {
-  for (const scenario of ["web_search", "command_execution", "other_server", "other_tool", "nonzero", "missing_thread", "turn_failed", "timeout"]) {
+  const reasons = { web_search: "rejected:ITEM_FORBIDDEN", command_execution: "rejected:ITEM_FORBIDDEN",
+    other_server: "rejected:ITEM_FORBIDDEN", other_tool: "rejected:ITEM_FORBIDDEN",
+    nonzero: "rejected:EXIT_NONZERO", missing_thread: "rejected:THREAD_COUNT",
+    two_threads: "rejected:THREAD_COUNT", missing_turn: "rejected:TURN_INCOMPLETE",
+    turn_failed: "rejected:TURN_FAILED", error_event: "rejected:EVENT_ERROR",
+    error_item: "rejected:ITEM_ERROR", timeout: "timeout" };
+  for (const [scenario, reason] of Object.entries(reasons)) {
     await t.test(scenario, async (subtest) => {
       const f = await setup(subtest);
       const workId = `job:synthetic-${scenario}`;
@@ -295,11 +379,16 @@ test("worker rejects every disallowed execution without leaving an answer or sta
       await runJournalCodexWorker(f.args(fake, ["--once", "--max-items", "1", "--timeout-ms", scenario === "timeout" ? "500" : "20000"]),
         { environment: f.environment });
       assert.equal(await f.exchange.readResult(workId), null);
-      assert.equal((await f.logs())[0].outcome.startsWith("rejected:") || (await f.logs())[0].outcome === "timeout", true);
+      const logText = await fs.readFile(f.log, "utf8");
+      assert.equal(logText.includes(SENTINEL), false);
+      assert.equal((await f.logs())[0].outcome, reason);
       const trace = await fs.readFile(f.trace, "utf8").catch(() => "");
       if (scenario === "timeout") assert.ok(trace, "the fake run must start before the timeout");
       if (trace) {
-        const args = JSON.parse(trace.split("\n")[0]).args;
+        const entries = trace.trim().split("\n").map(JSON.parse);
+        assert.equal(entries.find((entry) => entry.phase === "staged")?.exists, true,
+          "the sealed answer must exist before refusal cleanup");
+        const args = entries[0].args;
         await assert.rejects(fs.access(args[args.indexOf("-C") + 1]));
       }
       if (scenario === "timeout") {
@@ -313,12 +402,16 @@ test("worker rejects every disallowed execution without leaving an answer or sta
 test("worker refuses contaminated Codex homes", async (t) => {
   const f = await setup(t);
   const fake = await f.fake();
-  for (const name of ["AGENTS.md", "config.toml"]) {
+  for (const name of ["AGENTS.md", "AGENTS.override.md", "config.toml"]) {
     await fs.writeFile(path.join(f.home, name), "synthetic", { mode: 0o600 });
     await assert.rejects(runJournalCodexWorker(f.args(fake, ["--once"]), { environment: f.environment }),
       { code: "JOURNAL_CODEX_HOME_CONTAMINATED" });
     await fs.unlink(path.join(f.home, name));
   }
+  await fs.mkdir(path.join(f.home, "skills"), { mode: 0o700 });
+  await fs.writeFile(path.join(f.home, "skills", "synthetic.txt"), "synthetic");
+  await assert.rejects(runJournalCodexWorker(f.args(fake, ["--once"]), { environment: f.environment }),
+    { code: "JOURNAL_CODEX_HOME_CONTAMINATED" });
 });
 
 test("worker honors concurrency three for five items", async (t) => {
@@ -328,7 +421,8 @@ test("worker honors concurrency three for five items", async (t) => {
   await runJournalCodexWorker(f.args(fake, ["--once", "--concurrency", "3"]), { environment: f.environment });
   const entries = (await fs.readFile(f.trace, "utf8")).trim().split("\n").map(JSON.parse);
   let overlap = 0, maximum = 0;
-  for (const item of entries.sort((a, b) => a.at - b.at || (a.phase === "end" ? -1 : 1))) {
+  for (const item of entries.filter((entry) => ["start", "end"].includes(entry.phase))
+    .sort((a, b) => a.at - b.at || (a.phase === "end" ? -1 : 1))) {
     overlap += item.phase === "start" ? 1 : -1;
     maximum = Math.max(maximum, overlap);
   }
@@ -338,18 +432,20 @@ test("worker honors concurrency three for five items", async (t) => {
 
 test("import command runs without a shell and records only exit code and duration", async (t) => {
   const f = await setup(t);
+  f.environment.SYNTHETIC_IMPORT_TOKEN = "allowed";
   await f.publish("job:synthetic-import");
   const fake = await f.fake();
   const marker = path.join(f.base, "import-count");
   const command = [process.execPath, "-e",
-    "const fs=require('node:fs'); fs.appendFileSync(process.argv[1], 'x'); setTimeout(()=>{}, 500)", marker];
-  await runJournalCodexWorker(f.args(fake, ["--once", "--import-command-json", JSON.stringify(command)]),
+    "const fs=require('node:fs'); if(process.env.SYNTHETIC_IMPORT_TOKEN!=='allowed'||process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE)process.exit(2); fs.appendFileSync(process.argv[1], 'x'); setTimeout(()=>{}, 500)", marker];
+  await runJournalCodexWorker(f.args(fake, ["--once", "--import-command-json", JSON.stringify(command),
+    "--import-env-names", "SYNTHETIC_IMPORT_TOKEN", "--import-timeout-ms", "2000"]),
     { environment: f.environment });
-  assert.ok((await fs.readFile(marker, "utf8")).startsWith("x"));
+  assert.equal(await fs.readFile(marker, "utf8"), "xx");
   const records = await f.logs();
   assert.equal(records.filter((item) => item.outcome === "answered").length, 1);
   const imports = records.filter((item) => item.kind === "import");
-  assert.ok(imports.length >= 1);
+  assert.equal(imports.length, 2);
   for (const item of imports) {
     assert.equal(item.exit_code, 0);
     assert.equal(typeof item.duration_ms, "number");
@@ -357,20 +453,21 @@ test("import command runs without a shell and records only exit code and duratio
   }
 });
 
-test("usage limit pauses new runs until reset and uses bounded backoff without reset", async (t) => {
-  for (const scenario of ["limit_reset", "limit_default"]) {
-    await t.test(scenario, async (subtest) => {
-      const f = await setup(subtest);
-      await f.publish("job:synthetic-limit");
-      const fake = await f.fake(scenario);
-      const started = Date.now();
-      await runJournalCodexWorker(f.args(fake, ["--max-items", "2", "--concurrency", "1", "--limit-backoff-ms", "150"]),
-        { environment: f.environment });
-      const trace = (await fs.readFile(f.trace, "utf8")).trim().split("\n").map(JSON.parse).filter((item) => item.phase === "start");
-      assert.equal(trace.length, 2);
-      assert.ok(trace[1].at - trace[0].at >= (scenario === "limit_reset" ? 850 : 100));
-      assert.ok(Date.now() - started >= (scenario === "limit_reset" ? 850 : 100));
-      assert.deepEqual((await f.logs()).map((item) => item.outcome), ["limited", "limited"]);
-    });
-  }
+test("usage limit parses Codex's local reset messages and does not consume item attempts", async (t) => {
+  const now = new Date(2026, 9, 3, 15, 44, 0).getTime();
+  assert.equal(parseCodexResetTime("You've hit your usage limit. Try again at 3:45 PM.", now),
+    new Date(2026, 9, 3, 15, 45, 0).getTime());
+  assert.equal(parseCodexResetTime("You've hit your usage limit. Try again at Oct 3rd, 2026 9:00 AM.", now), null);
+  assert.equal(parseCodexResetTime("You've hit your usage limit. Try again at Oct 4th, 2026 9:00 AM.", now),
+    new Date(2026, 9, 4, 9, 0).getTime());
+  const f = await setup(t);
+  await f.publish("job:synthetic-limit");
+  const fake = await f.fake("limit_then_success");
+  await runJournalCodexWorker(f.args(fake, ["--max-items", "4", "--concurrency", "1", "--limit-backoff-ms", "150"]),
+    { environment: f.environment });
+  const trace = (await fs.readFile(f.trace, "utf8")).trim().split("\n").map(JSON.parse).filter((item) => item.phase === "start");
+  assert.equal(trace.length, 4);
+  assert.ok(trace[1].at - trace[0].at >= 100);
+  assert.deepEqual((await f.logs()).filter((item) => item.work_id).map((item) => item.outcome),
+    ["limited", "limited", "limited", "answered"]);
 });

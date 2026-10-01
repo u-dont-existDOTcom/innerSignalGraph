@@ -149,6 +149,8 @@ export function createExchangeJournalInferencePort({
     // are not evidence of the profile that actually ran, so an answer is inadmissible until a
     // dispatcher/provider receipt carries the effective model and effort and they match the route.
     invariant((dispatch.tier ?? "standard") === (entry.tier ?? "standard")
+      && (executionAttestation !== "codex_exec" || (dispatch.model === model
+        && dispatch.effort === (roleEffort[entry.role] ?? effort)))
       && stored.receipt.effective_model_profile === dispatch.model
       && stored.receipt.effective_effort === dispatch.effort, "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
     if (executionAttestation === "codex_exec") {
