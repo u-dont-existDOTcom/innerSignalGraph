@@ -278,8 +278,14 @@ export async function runJournalImportCli(argv, { stdout = process.stdout, stder
     if (JOURNAL_IMPORT_PLANNED_COMMANDS.includes(parsed.command)) {
       throw new ValidationError("This journal import command isn't available yet.", { code: "JOURNAL_COMMAND_NOT_AVAILABLE" });
     }
-    // The private config is checked before any env file is read or any sign-in is attempted.
+    // The private config is checked before any env file is read or any sign-in is attempted. Doctor
+    // reports run-config blockers itself; every other command stops on the first one here, with the
+    // same code the run would give.
     const config = await loadPrivateConfig(parsed.configPath);
+    if (parsed.command !== "doctor") {
+      const [blocker] = runConfigBlockers(config);
+      if (blocker) throw new ValidationError("The private journal configuration can't open a run.", { code: blocker });
+    }
     // Private env files and the operator's renewing sign-in, for doctor and every run command.
     const prepared = await prepareJournalOperatorEnvironment(environment, { envFiles: parsed.envFiles });
     if (parsed.command === "doctor") {

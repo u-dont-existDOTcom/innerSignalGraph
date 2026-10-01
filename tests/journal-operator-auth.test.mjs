@@ -152,6 +152,10 @@ test("a missing or unresolved config fails before any env file is read or token 
     `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`
   ].join("\n"));
   const unresolved = await envFile(dir, "unresolved.json", "{}");
+  const resolvedButUnrunnable = await envFile(dir, "unrunnable.json", JSON.stringify({
+    schema_version: 1, target_profile: { case_id: "synthetic-case" }, private_runtime_root: path.join(dir, "vault"),
+    max_external_spend_usd: 5
+  }));
   const server = tokenServer();
   const originalFetch = globalThis.fetch;
   globalThis.fetch = server.fetchImpl;
@@ -159,7 +163,8 @@ test("a missing or unresolved config fails before any env file is read or token 
   for (const [command, configPath, expected] of [
     ["status", path.join(dir, "missing.json"), null],
     ["doctor", unresolved, "JOURNAL_CONFIG_UNRESOLVED"],
-    ["run", unresolved, "JOURNAL_CONFIG_UNRESOLVED"]
+    ["run", unresolved, "JOURNAL_CONFIG_UNRESOLVED"],
+    ["run", resolvedButUnrunnable, "JOURNAL_ZERO_SPEND_REQUIRED"]
   ]) {
     let errors = "";
     const code = await runJournalImportCli([command, "--config", configPath, "--env-file", file], {
@@ -222,7 +227,9 @@ test("preparing the environment fills from env files in place, fetches the first
 test("the CLI loads --env-file and hands the renewing provider to the runtime", async (t) => {
   const dir = await privateDir(t);
   const configPath = await envFile(dir, "run.json", JSON.stringify({
-    schema_version: 1, target_profile: { case_id: "synthetic-case" }, private_runtime_root: path.join(dir, "vault")
+    schema_version: 1, target_profile: { case_id: "synthetic-case" }, private_runtime_root: path.join(dir, "vault"),
+    max_external_spend_usd: 0, execution_root: path.join(dir, "execution"), existing_grant_ref: "synthetic-grant",
+    source: { relative_path: "source.txt", bytes: 1, sha256: "0".repeat(64) }
   }));
   const file = await envFile(dir, "operator.env", [
     `INNER_SIGNAL_OAUTH_ISSUER=${ISSUER}`,
