@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
+import { vaultRootMatchesConfig } from "./run-config.mjs";
 
 // Operator sign-in for long journal runs. The runtime checks case access before every semantic send,
 // and a client-credentials token lasts minutes while a run lasts hours, so the operator's token is
@@ -27,14 +28,16 @@ const OPERATOR_SETTING_NAMES = Object.freeze([
   "INNER_SIGNAL_CASE_KEYS_JSON"
 ]);
 
-function operatorSettingsReady(environment) {
+function operatorSettingsReady(environment, config) {
   for (const name of OPERATOR_SETTING_NAMES) {
     if (typeof environment[name] !== "string" || environment[name].length === 0) return false;
     if (name.endsWith("_JSON")) {
       try { JSON.parse(environment[name]); } catch { return false; }
     }
   }
-  return path.isAbsolute(environment.INNER_SIGNAL_PRIVATE_ROOT);
+  if (!path.isAbsolute(environment.INNER_SIGNAL_PRIVATE_ROOT)) return false;
+  // The vault the settings name must be the one the run config names, as the runtime will check.
+  return config === null || vaultRootMatchesConfig(config, environment.INNER_SIGNAL_PRIVATE_ROOT);
 }
 const MAX_ENV_FILE_BYTES = 1024 * 1024;
 
@@ -165,6 +168,7 @@ export function createOperatorTokenProvider({
 // secret stays in the provider and is removed from the environment.
 export async function prepareJournalOperatorEnvironment(environment = process.env, {
   envFiles = [],
+  config = null,
   fetchImpl = globalThis.fetch,
   now = () => Date.now()
 } = {}) {
@@ -177,7 +181,7 @@ export async function prepareJournalOperatorEnvironment(environment = process.en
   const clientId = environment.INNER_SIGNAL_OPERATOR_CLIENT_ID;
   const clientSecret = environment.INNER_SIGNAL_OPERATOR_CLIENT_SECRET;
   delete environment.INNER_SIGNAL_OPERATOR_CLIENT_SECRET;
-  if (!clientId || !clientSecret || !operatorSettingsReady(environment)) return Object.freeze({ environment, authContextProvider: null });
+  if (!clientId || !clientSecret || !operatorSettingsReady(environment, config)) return Object.freeze({ environment, authContextProvider: null });
   const authContextProvider = createOperatorTokenProvider({
     issuer: environment.INNER_SIGNAL_OAUTH_ISSUER,
     clientId,

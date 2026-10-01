@@ -279,13 +279,44 @@ test("preparing the environment fills from env files in place, fetches the first
   assert.deepEqual(plain, { A: "1" });
 });
 
-test("the CLI loads --env-file and hands the renewing provider to the runtime", async (t) => {
-  const dir = await privateDir(t);
-  const configPath = await envFile(dir, "run.json", JSON.stringify({
-    schema_version: 1, target_profile: { case_id: "synthetic-case" }, private_runtime_root: path.join(dir, "vault"),
+function runnableConfig(dir, vaultRoot) {
+  return JSON.stringify({
+    schema_version: 1, target_profile: { case_id: "synthetic-case" }, private_runtime_root: vaultRoot,
     max_external_spend_usd: 0, execution_root: path.join(dir, "execution"), existing_grant_ref: "synthetic-grant",
     source: { relative_path: "source.txt", bytes: 1, sha256: "0".repeat(64) }
-  }));
+  });
+}
+
+test("sign-in waits when the settings name a different vault from the run config", async (t) => {
+  const dir = await privateDir(t);
+  const configPath = await envFile(dir, "run.json", runnableConfig(dir, path.join(dir, "other-vault")));
+  const file = await envFile(dir, "operator.env", [
+    `INNER_SIGNAL_OAUTH_ISSUER=${ISSUER}`,
+    "INNER_SIGNAL_OPERATOR_CLIENT_ID=operator",
+    `INNER_SIGNAL_OPERATOR_CLIENT_SECRET=${SECRET}`,
+    ...OPERATOR_SETTINGS
+  ].join("\n"));
+  const server = tokenServer();
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = server.fetchImpl;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let seen = null;
+  const code = await runJournalImportCli(["status", "--config", configPath, "--env-file", file], {
+    environment: {}, stdout: { write: () => {} }, stderr: { write: () => {} },
+    runtimeFactory: async (input) => {
+      seen = input;
+      return { execute: async () => ({ stage: "INTAKE" }), close: async () => {} };
+    }
+  });
+  assert.equal(code, 0);
+  assert.equal(server.calls.length, 0);
+  assert.equal(Object.hasOwn(seen, "authContextProvider"), false);
+  assert.equal(Object.hasOwn(seen.environment, "INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN"), false);
+});
+
+test("the CLI loads --env-file and hands the renewing provider to the runtime", async (t) => {
+  const dir = await privateDir(t);
+  const configPath = await envFile(dir, "run.json", runnableConfig(dir, "/synthetic/private/vault"));
   const file = await envFile(dir, "operator.env", [
     `INNER_SIGNAL_OAUTH_ISSUER=${ISSUER}`,
     "INNER_SIGNAL_OPERATOR_CLIENT_ID=operator",

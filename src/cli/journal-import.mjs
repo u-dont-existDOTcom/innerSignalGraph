@@ -287,7 +287,7 @@ export async function runJournalImportCli(argv, { stdout = process.stdout, stder
       if (blocker) throw new ValidationError("The private journal configuration can't open a run.", { code: blocker });
     }
     // Private env files and the operator's renewing sign-in, for doctor and every run command.
-    const prepared = await prepareJournalOperatorEnvironment(environment, { envFiles: parsed.envFiles });
+    const prepared = await prepareJournalOperatorEnvironment(environment, { envFiles: parsed.envFiles, config });
     if (parsed.command === "doctor") {
       stdout.write(`${JSON.stringify(await configuredJournalDoctorReport(parsed.configPath, prepared.environment))}\n`);
       return 0;
