@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -89,17 +89,24 @@ if (scenario === "timeout") {
   spawn(process.execPath, ["-e", "setTimeout(() => require('fs').writeFileSync(process.argv[1], 'bad'), 1500)", ${JSON.stringify(path.join(base, "survived"))}], { stdio: "ignore" });
 }
 const answer = scenario === "reference" ? ${JSON.stringify(ANSWER)} : { ok: true };
-const calls = ["get_journal_work_packet", "submit_journal_work_result"].map((name, index) => ({
-  jsonrpc: "2.0", id: index + 1, method: "tools/call", params: { name, arguments: index ? { work_id: workId, output: answer } : { work_id: workId } }
+const toolOrder = scenario === "submit_only" ? ["submit_journal_work_result"]
+  : scenario === "fetch_after_submit" ? ["submit_journal_work_result", "get_journal_work_packet"]
+  : ["get_journal_work_packet", "submit_journal_work_result"];
+const calls = toolOrder.map((name, index) => ({
+  jsonrpc: "2.0", id: index + 1, method: "tools/call", params: { name,
+    arguments: name === "submit_journal_work_result" ? { work_id: workId, output: answer }
+      : { work_id: scenario === "fetch_other" ? "job:synthetic-other-fetch" : scenario === "failed_fetch" ? "job:synthetic-absent" : workId } }
 }));
 const mcp = spawnSync(process.execPath, mcpArgs, { env, input: calls.map(JSON.stringify).join(String.fromCharCode(10)) + String.fromCharCode(10), encoding: "utf8" });
 if (mcp.error) process.exit(7);
 if (mcp.stderr.includes(${JSON.stringify(SENTINEL)})) process.exit(11);
 if (mcp.status !== 0) process.exit(7);
 const replies = mcp.stdout.trim().split(String.fromCharCode(10)).map(JSON.parse);
-if (replies[0].result.structuredContent.status !== "ready" || replies[1].result.structuredContent.stored !== true) process.exit(8);
+if (!["submit_only", "fetch_other", "failed_fetch", "fetch_after_submit"].includes(scenario)
+  && (replies[0].result.structuredContent.status !== "ready" || replies[1].result.structuredContent.stored !== true)) process.exit(8);
 const stageDir = mcpArgs[mcpArgs.indexOf("--stage-dir") + 1];
-fs.appendFileSync(trace, JSON.stringify({ phase: "staged", exists: fs.readdirSync(stageDir).length === 1 }) + String.fromCharCode(10));
+fs.appendFileSync(trace, JSON.stringify({ phase: "staged", exists: fs.readdirSync(stageDir).some(name => name.endsWith(".json")),
+  replies: replies.map(reply => reply.result.structuredContent.code || reply.result.structuredContent.status || "stored") }) + String.fromCharCode(10));
 if (scenario === "timeout") {
   setInterval(() => {}, 1000);
 } else {
@@ -107,14 +114,17 @@ if (scenario === "timeout") {
   if (scenario !== "missing_thread") console.log(JSON.stringify({ type: "thread.started", thread_id: randomUUID() }));
   if (scenario === "two_threads") console.log(JSON.stringify({ type: "thread.started", thread_id: randomUUID() }));
   console.log(JSON.stringify({ type: "turn.started" }));
-  const itemType = ({ web_search: "web_search", command_execution: "command_execution", other_server: "mcp_tool_call", other_tool: "mcp_tool_call" })[scenario] || "mcp_tool_call";
-  const item = { type: itemType,
-    server: scenario === "other_server" ? "outside" : "journal",
-    tool: scenario === "other_tool" ? "other_tool" : "submit_journal_work_result",
-    text: ${JSON.stringify(SENTINEL)} };
-  console.log(JSON.stringify({ type: "item.started", item }));
-  console.log(JSON.stringify({ type: "item.updated", item }));
-  console.log(JSON.stringify({ type: "item.completed", item }));
+  for (const [index, call] of calls.entries()) {
+    const itemType = ({ web_search: "web_search", command_execution: "command_execution", other_server: "mcp_tool_call", other_tool: "mcp_tool_call" })[scenario] || "mcp_tool_call";
+    const item = { type: itemType, server: scenario === "other_server" ? "outside" : "journal",
+      tool: scenario === "other_tool" ? "other_tool" : call.params.name,
+      arguments: call.params.arguments, status: "in_progress", text: ${JSON.stringify(SENTINEL)} };
+    console.log(JSON.stringify({ type: "item.started", item }));
+    console.log(JSON.stringify({ type: "item.updated", item }));
+    console.log(JSON.stringify({ type: "item.completed", item: { ...item,
+      status: scenario === "failed_fetch" && index === 0 ? "failed" : "completed",
+      error: replies[index].result.isError ? "synthetic tool error" : undefined } }));
+  }
   if (scenario === "error_item") {
     const errorItem = { type: "error", message: "model rerouted" };
     console.log(JSON.stringify({ type: "item.started", item: errorItem }));
@@ -138,6 +148,25 @@ if (scenario === "timeout") {
   }
   const logs = async () => (await fs.readFile(log, "utf8")).trim().split("\n").map(JSON.parse);
   return { base, root, home, workDir, secret, secretFile, configPath, log, trace, exchange, environment, args, publish, fake, logs };
+}
+
+async function until(check, timeoutMs = 10_000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    if (await check()) return;
+    if (Date.now() >= deadline) throw new Error("Synthetic condition was not reached");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+}
+
+function spawnWorker(f, fake, extra = []) {
+  const cli = path.resolve(new URL("../src/cli/journal-codex-worker.mjs", import.meta.url).pathname);
+  const child = spawn(process.execPath, [cli, ...f.args(fake, extra)], { env: f.environment, stdio: "ignore" });
+  const closed = new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("close", (code) => resolve(code));
+  });
+  return { child, closed };
 }
 
 test("Codex route validates model and role effort, while ChatGPT connector admission remains blocked", () => {
@@ -227,12 +256,14 @@ test("exact Codex arguments disable all forbidden features and pass only secret 
 });
 
 test("realistic Codex event sequence is admitted and error items are refused", () => {
-  const accepted = codexEventReader();
+  const accepted = codexEventReader("job:synthetic-events");
   const emit = (reader, event) => reader.accept(JSON.stringify(event));
   emit(accepted, { type: "thread.started", thread_id: "12345678" });
   emit(accepted, { type: "turn.started" });
-  for (const item of [{ type: "mcp_tool_call", server: "journal", tool: "get_journal_work_packet" },
-    { type: "mcp_tool_call", server: "journal", tool: "submit_journal_work_result" },
+  for (const item of [{ type: "mcp_tool_call", server: "journal", tool: "get_journal_work_packet",
+    arguments: { work_id: "job:synthetic-events" }, status: "completed" },
+    { type: "mcp_tool_call", server: "journal", tool: "submit_journal_work_result",
+      arguments: { work_id: "job:synthetic-events", output: SENTINEL }, status: "completed" },
     { type: "agent_message", text: SENTINEL }]) {
     for (const type of ["item.started", "item.updated", "item.completed"]) emit(accepted, { type, item });
   }
@@ -240,9 +271,26 @@ test("realistic Codex event sequence is admitted and error items are refused", (
     cache_write_input_tokens: 0, output_tokens: 2, reasoning_output_tokens: 1 } });
   assert.equal(accepted.state.bad, null);
   assert.equal(accepted.state.completed, true);
+  assert.equal(accepted.state.packetBeforeLastSubmit, true);
   assert.deepEqual(accepted.state.usage, { input_tokens: 3, cached_input_tokens: 1,
     output_tokens: 2, reasoning_output_tokens: 1 });
   assert.equal(JSON.stringify(accepted.state).includes(SENTINEL), false);
+  for (const sequence of [
+    [{ tool: "submit_journal_work_result", work_id: "job:synthetic-events" }],
+    [{ tool: "get_journal_work_packet", work_id: "job:synthetic-other" },
+      { tool: "submit_journal_work_result", work_id: "job:synthetic-events" }],
+    [{ tool: "get_journal_work_packet", work_id: "job:synthetic-events", status: "failed" },
+      { tool: "submit_journal_work_result", work_id: "job:synthetic-events" }],
+    [{ tool: "submit_journal_work_result", work_id: "job:synthetic-events" },
+      { tool: "get_journal_work_packet", work_id: "job:synthetic-events" }]
+  ]) {
+    const reader = codexEventReader("job:synthetic-events");
+    for (const entry of sequence) emit(reader, { type: "item.completed", item: {
+      type: "mcp_tool_call", server: "journal", tool: entry.tool,
+      arguments: { work_id: entry.work_id, output: SENTINEL }, status: entry.status ?? "completed" } });
+    assert.equal(reader.state.packetBeforeLastSubmit, false);
+    assert.equal(JSON.stringify(reader.state).includes(SENTINEL), false);
+  }
   const rerouted = codexEventReader();
   emit(rerouted, { type: "item.started", item: { type: "error", message: "model rerouted" } });
   assert.equal(rerouted.state.bad, "ITEM_ERROR");
@@ -263,6 +311,9 @@ test("realistic Codex event sequence is admitted and error items are refused", (
 test("staging is sealed, first-write-wins, and rejects unsafe directories; execution receipt is tagged", async (t) => {
   const f = await setup(t);
   const stage = path.join(f.base, "stage"); await fs.mkdir(stage, { mode: 0o700 });
+  await assert.rejects(f.exchange.stageResult({ stageDir: stage, workId: "job:synthetic-stage", output: { ok: true } }),
+    { code: "JOURNAL_WORK_PACKET_NOT_FETCHED" });
+  await f.exchange.markPacketFetched({ stageDir: stage, workId: "job:synthetic-stage" });
   await f.exchange.stageResult({ stageDir: stage, workId: "job:synthetic-stage", output: { ok: true } });
   assert.deepEqual(await f.exchange.stageResult({ stageDir: stage, workId: "job:synthetic-stage", output: { ok: false } }),
     { stored: true, already: true });
@@ -275,10 +326,15 @@ test("staging is sealed, first-write-wins, and rejects unsafe directories; execu
   await fs.unlink(path.join(f.root, "inbox", `${journalWorkFileKey("job:synthetic-stage")}.json`));
   const execution = { profile_evidence: "codex_exec_request_pinned", effective_model_profile: "gpt-6-sol",
     effective_effort: "high", request_context_id: "codex-thread:12345678" };
+  await fs.unlink(path.join(stage, `${journalWorkFileKey("job:synthetic-stage")}.fetched`));
+  await assert.rejects(f.exchange.promoteStaged({ stageDir: stage, workId: "job:synthetic-stage",
+    subject: "local:codex-standard", execution }), { code: "JOURNAL_WORK_PACKET_NOT_FETCHED" });
+  await f.exchange.markPacketFetched({ stageDir: stage, workId: "job:synthetic-stage" });
   await f.exchange.promoteStaged({ stageDir: stage, workId: "job:synthetic-stage", subject: "local:codex-standard", execution });
   const receipt = (await f.exchange.readResult("job:synthetic-stage")).receipt;
   assert.deepEqual(Object.fromEntries(Object.keys(execution).map((key) => [key, receipt[key]])), execution);
   await assert.rejects(fs.access(path.join(stage, `${journalWorkFileKey("job:synthetic-stage")}.json`)));
+  await assert.rejects(fs.access(path.join(stage, `${journalWorkFileKey("job:synthetic-stage")}.fetched`)));
   const loose = path.join(f.base, "loose"); await fs.mkdir(loose, { mode: 0o750 });
   await assert.rejects(f.exchange.stageResult({ stageDir: loose, workId: "job:synthetic-other", output: {} }),
     { code: "JOURNAL_WORK_STAGE_DIR_INSECURE" });
@@ -309,6 +365,7 @@ test("worker round trip admits a request-pinned Codex receipt and keeps content 
   await fs.symlink(f.base, alias);
   const stale = path.join(f.workDir, "inner-signal-codex-OLD");
   await fs.mkdir(stale, { mode: 0o700 });
+  await fs.writeFile(path.join(stale, "worker.lock"), "", { mode: 0o600 });
   const old = new Date(Date.now() - 2 * 3_600_000);
   await fs.utimes(stale, old, old);
   const port = createExchangeJournalInferencePort({ exchange: f.exchange, caseId: "synthetic-case", receiptKey: randomBytes(32),
@@ -364,7 +421,9 @@ test("a completed turn with a transient 429 in stderr is admitted and default lo
 });
 
 test("worker rejects every disallowed execution without leaving an answer or stage", async (t) => {
-  const reasons = { web_search: "rejected:ITEM_FORBIDDEN", command_execution: "rejected:ITEM_FORBIDDEN",
+  const reasons = { submit_only: "rejected:PACKET_NOT_FETCHED", fetch_other: "rejected:PACKET_NOT_FETCHED",
+    failed_fetch: "rejected:PACKET_NOT_FETCHED", fetch_after_submit: "rejected:PACKET_NOT_FETCHED",
+    web_search: "rejected:ITEM_FORBIDDEN", command_execution: "rejected:ITEM_FORBIDDEN",
     other_server: "rejected:ITEM_FORBIDDEN", other_tool: "rejected:ITEM_FORBIDDEN",
     nonzero: "rejected:EXIT_NONZERO", missing_thread: "rejected:THREAD_COUNT",
     two_threads: "rejected:THREAD_COUNT", missing_turn: "rejected:TURN_INCOMPLETE",
@@ -375,6 +434,7 @@ test("worker rejects every disallowed execution without leaving an answer or sta
       const f = await setup(subtest);
       const workId = `job:synthetic-${scenario}`;
       await f.publish(workId);
+      if (scenario === "fetch_other") await f.exchange.publishWork(manualWork("job:synthetic-other-fetch"));
       const fake = await f.fake(scenario);
       await runJournalCodexWorker(f.args(fake, ["--once", "--max-items", "1", "--timeout-ms", scenario === "timeout" ? "500" : "20000"]),
         { environment: f.environment });
@@ -386,8 +446,12 @@ test("worker rejects every disallowed execution without leaving an answer or sta
       if (scenario === "timeout") assert.ok(trace, "the fake run must start before the timeout");
       if (trace) {
         const entries = trace.trim().split("\n").map(JSON.parse);
-        assert.equal(entries.find((entry) => entry.phase === "staged")?.exists, true,
-          "the sealed answer must exist before refusal cleanup");
+        assert.equal(entries.find((entry) => entry.phase === "staged")?.exists,
+          !["submit_only", "fetch_other", "failed_fetch", "fetch_after_submit"].includes(scenario),
+          "only fetched packets can yield sealed answers");
+        if (["submit_only", "fetch_other", "failed_fetch", "fetch_after_submit"].includes(scenario)) {
+          assert.ok(entries.find((entry) => entry.phase === "staged")?.replies.includes("JOURNAL_WORK_PACKET_NOT_FETCHED"));
+        }
         const args = entries[0].args;
         await assert.rejects(fs.access(args[args.indexOf("-C") + 1]));
       }
@@ -409,6 +473,9 @@ test("worker refuses contaminated Codex homes", async (t) => {
     await fs.unlink(path.join(f.home, name));
   }
   await fs.mkdir(path.join(f.home, "skills"), { mode: 0o700 });
+  await fs.mkdir(path.join(f.home, "skills", ".system"), { mode: 0o700 });
+  await fs.writeFile(path.join(f.home, "skills", ".system", ".codex-system-skills.marker"), "synthetic");
+  await runJournalCodexWorker(f.args(fake, ["--once"]), { environment: f.environment });
   await fs.writeFile(path.join(f.home, "skills", "synthetic.txt"), "synthetic");
   await assert.rejects(runJournalCodexWorker(f.args(fake, ["--once"]), { environment: f.environment }),
     { code: "JOURNAL_CODEX_HOME_CONTAMINATED" });
@@ -436,11 +503,19 @@ test("import command runs without a shell and records only exit code and duratio
   await f.publish("job:synthetic-import");
   const fake = await f.fake();
   const marker = path.join(f.base, "import-count");
+  const release = path.join(f.base, "release-import");
   const command = [process.execPath, "-e",
-    "const fs=require('node:fs'); if(process.env.SYNTHETIC_IMPORT_TOKEN!=='allowed'||process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE)process.exit(2); fs.appendFileSync(process.argv[1], 'x'); setTimeout(()=>{}, 500)", marker];
-  await runJournalCodexWorker(f.args(fake, ["--once", "--import-command-json", JSON.stringify(command),
-    "--import-env-names", "SYNTHETIC_IMPORT_TOKEN", "--import-timeout-ms", "2000"]),
+    "const fs=require('node:fs'); if(process.env.SYNTHETIC_IMPORT_TOKEN!=='allowed'||process.env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE)process.exit(2); const first=!fs.existsSync(process.argv[1]); fs.appendFileSync(process.argv[1], 'x'); if(first){const poll=setInterval(()=>{if(fs.existsSync(process.argv[2])){clearInterval(poll);process.exit(0)}},10)}", marker, release];
+  const worker = runJournalCodexWorker(f.args(fake, ["--once", "--import-command-json", JSON.stringify(command),
+    "--import-env-names", "SYNTHETIC_IMPORT_TOKEN", "--import-timeout-ms", "20000"]),
     { environment: f.environment });
+  let waitingError;
+  try {
+    await until(async () => (await fs.readFile(f.log, "utf8").catch(() => "")).includes('"outcome":"answered"'));
+  } catch (error) { waitingError = error; }
+  await fs.writeFile(release, "synthetic");
+  await worker;
+  if (waitingError) throw waitingError;
   assert.equal(await fs.readFile(marker, "utf8"), "xx");
   const records = await f.logs();
   assert.equal(records.filter((item) => item.outcome === "answered").length, 1);
@@ -463,11 +538,85 @@ test("usage limit parses Codex's local reset messages and does not consume item 
   const f = await setup(t);
   await f.publish("job:synthetic-limit");
   const fake = await f.fake("limit_then_success");
-  await runJournalCodexWorker(f.args(fake, ["--max-items", "4", "--concurrency", "1", "--limit-backoff-ms", "150"]),
+  await runJournalCodexWorker(f.args(fake, ["--once", "--max-items", "4", "--concurrency", "1", "--limit-backoff-ms", "150"]),
     { environment: f.environment });
   const trace = (await fs.readFile(f.trace, "utf8")).trim().split("\n").map(JSON.parse).filter((item) => item.phase === "start");
   assert.equal(trace.length, 4);
   assert.ok(trace[1].at - trace[0].at >= 100);
   assert.deepEqual((await f.logs()).filter((item) => item.work_id).map((item) => item.outcome),
     ["limited", "limited", "limited", "answered"]);
+});
+
+test("once waits through a limit and finishes its initial items without counting limited runs", async (t) => {
+  const f = await setup(t);
+  await f.publish("job:synthetic-once-a");
+  await f.publish("job:synthetic-once-b");
+  const fake = await f.fake("limit_then_success");
+  await runJournalCodexWorker(f.args(fake, ["--once", "--max-items", "2", "--concurrency", "1",
+    "--limit-backoff-ms", "40"]), { environment: f.environment });
+  const logs = (await f.logs()).filter((item) => item.work_id);
+  assert.equal(logs.filter((item) => item.outcome === "limited").length, 3);
+  assert.equal(logs.filter((item) => item.outcome === "answered").length, 2);
+  assert.ok(await f.exchange.readResult("job:synthetic-once-a"));
+  assert.ok(await f.exchange.readResult("job:synthetic-once-b"));
+});
+
+test("usage limits stop after twelve retries for one item", async (t) => {
+  const f = await setup(t);
+  await f.publish("job:synthetic-limit-cap");
+  const fake = await f.fake("limit_default");
+  await runJournalCodexWorker(f.args(fake, ["--once", "--limit-backoff-ms", "1"]), { environment: f.environment });
+  assert.equal((await f.logs()).filter((item) => item.outcome === "limited").length, 12);
+  assert.equal(await f.exchange.readResult("job:synthetic-limit-cap"), null);
+});
+
+test("SIGTERM stops scheduling, wakes backoff, and records stopped without charging an attempt", async (t) => {
+  const f = await setup(t);
+  await f.publish("job:synthetic-signal-a");
+  await f.publish("job:synthetic-signal-b");
+  const slow = await f.fake("timeout");
+  const running = spawnWorker(f, slow, ["--concurrency", "1", "--timeout-ms", "20000"]);
+  t.after(() => { if (running.child.exitCode === null) running.child.kill("SIGKILL"); });
+  await until(async () => (await fs.readFile(f.trace, "utf8").catch(() => "")).includes('"phase":"start"'));
+  running.child.kill("SIGTERM");
+  assert.equal(await running.closed, 143);
+  const starts = (await fs.readFile(f.trace, "utf8")).match(/"phase":"start"/gu) ?? [];
+  assert.equal(starts.length, 1);
+  assert.equal((await f.logs()).filter((item) => item.work_id)[0].outcome, "stopped");
+  assert.equal((await fs.readdir(f.workDir)).length, 0);
+
+  const limited = await f.fake("limit_default");
+  const backedOff = spawnWorker(f, limited, ["--concurrency", "1", "--limit-backoff-ms", "60000"]);
+  t.after(() => { if (backedOff.child.exitCode === null) backedOff.child.kill("SIGKILL"); });
+  await until(async () => (await f.logs()).some((item) => item.outcome === "limited"));
+  const at = Date.now();
+  backedOff.child.kill("SIGTERM");
+  assert.equal(await backedOff.closed, 143);
+  assert.ok(Date.now() - at < 3000);
+  assert.equal((await fs.readdir(f.workDir)).length, 0);
+});
+
+test("stale sweep preserves a locked sibling and removes it after the lock releases", async (t) => {
+  const f = await setup(t);
+  const sibling = path.join(f.workDir, "inner-signal-codex-LIVE");
+  await fs.mkdir(sibling, { mode: 0o700 });
+  const lock = path.join(sibling, "worker.lock");
+  await fs.writeFile(lock, "", { mode: 0o600 });
+  const holder = spawn("flock", ["-n", lock, "sh", "-c", "printf 'ready\\n'; cat >/dev/null"],
+    { stdio: ["pipe", "pipe", "ignore"] });
+  t.after(() => { holder.stdin.end(); if (holder.exitCode === null) holder.kill("SIGKILL"); });
+  await new Promise((resolve, reject) => {
+    holder.stdout.once("data", resolve);
+    holder.once("error", reject);
+    holder.once("close", () => reject(new Error("Synthetic lock was not acquired")));
+  });
+  const old = new Date(Date.now() - 2 * 3_600_000);
+  await fs.utimes(sibling, old, old);
+  const fake = await f.fake();
+  await runJournalCodexWorker(f.args(fake, ["--once"]), { environment: f.environment });
+  assert.ok((await fs.stat(sibling)).isDirectory());
+  holder.stdin.end();
+  await new Promise((resolve) => holder.once("close", resolve));
+  await runJournalCodexWorker(f.args(fake, ["--once"]), { environment: f.environment });
+  await assert.rejects(fs.access(sibling));
 });

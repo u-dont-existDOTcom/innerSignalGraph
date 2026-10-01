@@ -14,6 +14,7 @@ const THREAD = /^[0-9A-Za-z-]{8,64}$/u;
 const MAX_LINE = 1024 * 1024;
 const MAX_STREAM = 16 * 1024 * 1024;
 const USAGE_FIELDS = ["input_tokens", "cached_input_tokens", "output_tokens", "reasoning_output_tokens"];
+const MAX_LIMIT_RETRIES = 12;
 
 export const CODEX_DISABLED_FEATURES = Object.freeze([
   "apps", "auth_elicitation", "browser_use", "browser_use_external", "browser_use_full_cdp_access",
@@ -122,9 +123,9 @@ export function parseCodexResetTime(message, nowMs) {
   return null;
 }
 
-export function codexEventReader() {
+export function codexEventReader(workId = null) {
   const state = { threads: [], completed: false, bad: null, errorSeen: false, hasErrorMessage: false,
-    finalErrorLimited: false, resetAt: null,
+    finalErrorLimited: false, resetAt: null, packetFetched: false, packetBeforeLastSubmit: false,
     usage: Object.fromEntries(USAGE_FIELDS.map((field) => [field, 0])) };
   function noteFailure(message) {
     if (typeof message !== "string") return;
@@ -160,7 +161,14 @@ export function codexEventReader() {
       if (item.type === "error") { state.bad ??= "ITEM_ERROR"; state.errorSeen = true; noteFailure(item.message ?? ""); return; }
       if (["agent_message", "reasoning", "todo_list"].includes(item.type)) return;
       if (item.type === "mcp_tool_call" && item.server === "journal"
-        && ["get_journal_work_packet", "submit_journal_work_result"].includes(item.tool)) return;
+        && ["get_journal_work_packet", "submit_journal_work_result"].includes(item.tool)) {
+        if (event.type === "item.completed" && item.status === "completed"
+          && item.arguments?.work_id === workId && item.error == null && item.result?.isError !== true) {
+          if (item.tool === "get_journal_work_packet") state.packetFetched = true;
+          else state.packetBeforeLastSubmit = state.packetFetched;
+        }
+        return;
+      }
       state.bad ??= "ITEM_FORBIDDEN";
     } else state.bad = "EVENT_FORBIDDEN";
   }
@@ -178,8 +186,14 @@ async function checkCodexHome(home) {
   }
   const skills = path.join(home, "skills");
   const skillsInfo = await fs.lstat(skills).catch((error) => error?.code === "ENOENT" ? null : Promise.reject(error));
-  if (skillsInfo && (!skillsInfo.isDirectory() || (await fs.readdir(skills)).length > 0)) {
+  if (skillsInfo && (!skillsInfo.isDirectory() || await fs.realpath(skills) !== skills
+    || (await fs.readdir(skills)).some((name) => name !== ".system"))) {
     throw failure("JOURNAL_CODEX_HOME_CONTAMINATED");
+  }
+  if (skillsInfo && (await fs.readdir(skills)).includes(".system")) {
+    const system = path.join(skills, ".system");
+    const info = await fs.lstat(system);
+    if (!info.isDirectory() || await fs.realpath(system) !== system) throw failure("JOURNAL_CODEX_HOME_CONTAMINATED");
   }
   await withOpenedRegularFile(path.join(home, "auth.json"), async (_handle, stat) => {
     if ((stat.mode & 0o077) !== 0) throw failure("JOURNAL_CODEX_HOME_INSECURE");
@@ -237,17 +251,54 @@ async function removeStaleRuns(workDir) {
     const target = path.join(workDir, name);
     const info = await fs.lstat(target).catch((error) => error?.code === "ENOENT" ? null : Promise.reject(error));
     if (info?.isDirectory() && info.mtimeMs < before && (process.getuid === undefined || info.uid === process.getuid())) {
-      await fs.rm(target, { recursive: true, force: true });
+      const lock = path.join(target, "worker.lock");
+      const lockInfo = await fs.lstat(lock).catch((error) => error?.code === "ENOENT" ? null : Promise.reject(error));
+      if (!lockInfo?.isFile() || (lockInfo.mode & 0o777) !== 0o600
+        || (process.getuid && lockInfo.uid !== process.getuid())) continue;
+      await new Promise((resolve, reject) => {
+        const child = spawn("flock", ["-n", lock, "rm", "-rf", "--", target], { stdio: "ignore" });
+        child.once("error", reject);
+        child.once("close", () => resolve()); // A locked live sibling returns nonzero and is preserved.
+      });
     }
   }
 }
 
+async function lockWorkerDirectory(directory) {
+  const lock = path.join(directory, "worker.lock");
+  const handle = await fs.open(lock, "wx", 0o600);
+  await handle.close();
+  const child = spawn("flock", ["-n", lock, "sh", "-c", "printf 'ready\\n'; cat >/dev/null"],
+    { stdio: ["pipe", "pipe", "ignore"] });
+  try {
+    await new Promise((resolve, reject) => {
+      let ready = false, output = "";
+      child.stdout.setEncoding("utf8");
+      child.stdout.on("data", (chunk) => {
+        output += chunk;
+        if (output.includes("\n")) {
+          if (output.startsWith("ready\n")) { ready = true; resolve(); }
+          else reject(failure("JOURNAL_CODEX_WORK_DIR_INSECURE"));
+        } else if (output.length > 16) reject(failure("JOURNAL_CODEX_WORK_DIR_INSECURE"));
+      });
+      child.once("error", reject);
+      child.once("close", () => { if (!ready) reject(failure("JOURNAL_CODEX_WORK_DIR_INSECURE")); });
+    });
+  } catch (error) { child.stdin.end(); child.kill(); throw error; }
+  return async () => {
+    child.stdin.end();
+    await new Promise((resolve) => {
+      if (child.exitCode !== null || child.signalCode !== null) resolve();
+      else child.once("close", resolve);
+    });
+  };
+}
+
 export async function runJournalCodexWorker(argv, { environment = process.env, stderr = process.stderr,
-  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = {}) {
+} = {}) {
   const options = parseJournalCodexWorkerArgs(argv);
   await checkCodexHome(options.codexHome);
   const workDir = await privateDirectory(options.workDir, "JOURNAL_CODEX_WORK_DIR_INSECURE");
-  await removeStaleRuns(workDir);
   await withOpenedRegularFile(options.configPath, async (_handle, info) => {
     if ((info.mode & 0o077) !== 0) throw failure("JOURNAL_CODEX_CONFIG_INSECURE");
   });
@@ -264,6 +315,13 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
   const logHandle = options.log ? await fs.open(options.log, "a", 0o600) : null;
   const privateParent = await fs.realpath(await fs.mkdtemp(path.join(workDir, "inner-signal-codex-")));
   await fs.chmod(privateParent, 0o700);
+  let unlockWorkerDirectory;
+  try { unlockWorkerDirectory = await lockWorkerDirectory(privateParent); }
+  catch (error) {
+    await fs.rm(privateParent, { recursive: true, force: true });
+    await logHandle?.close();
+    throw error;
+  }
   let logTail = Promise.resolve();
   const log = async (record) => {
     const bytes = `${JSON.stringify(record)}\n`;
@@ -271,10 +329,18 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
     await logTail;
   };
   const activeGroups = new Set();
-  let stopping = false;
-  const stop = () => { stopping = true; for (const kill of activeGroups) kill(); };
-  process.on("SIGTERM", stop);
-  process.on("SIGINT", stop);
+  let stopping = false, stopSignal = null, wake = null;
+  const stop = (signal = null) => { stopping = true; stopSignal ??= signal;
+    if (wake) { const resume = wake; wake = null; resume(); }
+    for (const kill of activeGroups) kill(); };
+  const wait = (ms) => new Promise((resolve) => {
+    const timer = setTimeout(() => { wake = null; resolve(); }, ms);
+    wake = () => { clearTimeout(timer); resolve(); };
+  });
+  const onTerm = () => stop("SIGTERM");
+  const onInt = () => stop("SIGINT");
+  process.on("SIGTERM", onTerm);
+  process.on("SIGINT", onInt);
   let importRun = null, importPending = false;
   function startImport() {
     if (!options.importCommand || stopping) return;
@@ -289,13 +355,13 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
       await log({ at: new Date().toISOString(), kind: "import", exit_code: code, duration_ms: Date.now() - started });
     }).catch(() => {}).finally(() => { importRun = null; if (importPending && !stopping) { importPending = false; startImport(); } });
   }
-  const running = new Map(), attempts = new Map(), seenThreads = new Set();
+  const running = new Map(), attempts = new Map(), limits = new Map(), seenThreads = new Set();
   let completed = 0, limitedUntil = 0;
   let initial = null;
 
   async function one(record) {
     const started = Date.now();
-    const events = codexEventReader();
+    const events = codexEventReader(record.work_id);
     let outcome = "error";
     let runDir = null;
     try {
@@ -303,23 +369,27 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
       await fs.chmod(runDir, 0o700);
       const stageDir = path.join(runDir, "stage");
       await fs.mkdir(stageDir, { mode: 0o700 });
+      if (stopping) { outcome = "stopped"; return outcome; }
       const result = await runProcess(options.codexBin, codexExecArgs({ record, runDir, configPath: options.configPath, root, secretFile }), {
         cwd: runDir, env: { PATH: environment.PATH ?? "", HOME: environment.HOME ?? "", LANG: environment.LANG ?? "C", CODEX_HOME: options.codexHome },
         timeoutMs: options.timeoutMs, onLine: events.accept, activeGroups
       });
       if (result.code !== 0 && !events.state.hasErrorMessage) events.noteFailure(result.stderrLast);
-      if (result.timedOut) outcome = "timeout";
+      if (stopping) outcome = "stopped";
+      else if (result.problem) outcome = `rejected:${result.problem}`;
+      else if (result.timedOut) outcome = "timeout";
       else if (!events.state.completed && events.state.finalErrorLimited
         && [null, "TURN_FAILED", "EVENT_ERROR", "ITEM_ERROR"].includes(events.state.bad)
         && (result.code !== 0 || events.state.errorSeen)) {
         outcome = "limited";
         limitedUntil = Math.max(limitedUntil, events.state.resetAt ?? Date.now() + options.limitBackoffMs);
-      } else if (result.problem) outcome = `rejected:${result.problem}`;
+      }
       else if (result.code !== 0) outcome = "rejected:EXIT_NONZERO";
       else if (events.state.bad) outcome = `rejected:${events.state.bad}`;
       else if (events.state.threads.length !== 1) outcome = "rejected:THREAD_COUNT";
       else if (seenThreads.has(events.state.threads[0])) outcome = "rejected:THREAD_REUSED";
       else if (!events.state.completed) outcome = "rejected:TURN_INCOMPLETE";
+      else if (!events.state.packetBeforeLastSubmit) outcome = "rejected:PACKET_NOT_FETCHED";
       else if (!await fs.lstat(path.join(stageDir, `${journalWorkFileKey(record.work_id)}.json`)).then(() => true, () => false)) {
         outcome = "rejected:STAGE_MISSING";
       } else {
@@ -330,7 +400,7 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
         outcome = stored.already ? "already_answered" : "answered";
         if (outcome === "answered") startImport();
       }
-    } catch { outcome = "error"; }
+    } catch { outcome = stopping ? "stopped" : "error"; }
     finally {
       if (runDir) await fs.rm(runDir, { recursive: true, force: true });
       await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role, model: record.model,
@@ -340,44 +410,58 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
   }
 
   try {
+    await removeStaleRuns(workDir);
     initial = options.once ? new Set((await dispatch.listDispatch()).map((record) => record.work_id)) : null;
     startImport();
     for (;;) {
+      if (stopping) break;
       const now = Date.now();
       if (now >= limitedUntil && completed < options.maxItems) {
         const records = await dispatch.listDispatch();
         for (const record of records) {
+          if (stopping) break;
           if (running.size >= options.concurrency || completed + running.size >= options.maxItems) break;
           if (initial && !initial.has(record.work_id)) continue;
           if (record.answered || record.tier !== "standard" || Date.parse(record.expires_at) <= now
             || !MODEL.test(record.model) || !EFFORTS.has(record.effort)
-            || running.has(record.work_id) || (attempts.get(record.work_id) ?? 0) >= 3) continue;
+            || running.has(record.work_id) || (attempts.get(record.work_id) ?? 0) >= 3
+            || (limits.get(record.work_id) ?? 0) >= MAX_LIMIT_RETRIES) continue;
           const pending = one(record).catch(async () => {
             await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
               model: record.model, effort: record.effort, outcome: "error", duration_ms: 0,
               ...Object.fromEntries(USAGE_FIELDS.map((field) => [field, 0])) }).catch(() => {});
             return "error";
-          }).then((outcome) => { if (outcome !== "limited") attempts.set(record.work_id, (attempts.get(record.work_id) ?? 0) + 1); })
-            .finally(() => { running.delete(record.work_id); completed += 1; });
+          }).then((outcome) => {
+            if (outcome === "limited") limits.set(record.work_id, (limits.get(record.work_id) ?? 0) + 1);
+            else if (outcome !== "stopped") { attempts.set(record.work_id, (attempts.get(record.work_id) ?? 0) + 1); completed += 1; }
+          }).finally(() => { running.delete(record.work_id); });
           running.set(record.work_id, pending);
         }
       }
-      if (stopping || options.once || completed >= options.maxItems) {
-        if (!running.size) break;
-        await Promise.race(running.values());
-      } else {
-        await sleep(Math.max(options.pollMs, limitedUntil - Date.now(), 1));
+      if (stopping || completed >= options.maxItems) { if (!running.size) break; await Promise.race(running.values()); continue; }
+      if (running.size) { await Promise.race(running.values()); continue; }
+      if (options.once) {
+        const records = await dispatch.listDispatch();
+        const remaining = records.some((record) => initial.has(record.work_id) && !record.answered
+          && record.tier === "standard" && Date.parse(record.expires_at) > Date.now()
+          && MODEL.test(record.model) && EFFORTS.has(record.effort)
+          && (attempts.get(record.work_id) ?? 0) < 3 && (limits.get(record.work_id) ?? 0) < MAX_LIMIT_RETRIES);
+        if (!remaining) break;
       }
+      await wait(Math.max(options.pollMs, limitedUntil - Date.now(), 1));
     }
     while (importRun) await importRun;
-    return 0;
+    return stopSignal === "SIGINT" ? 130 : stopSignal === "SIGTERM" ? 143 : 0;
   } finally {
-    process.off("SIGTERM", stop);
-    process.off("SIGINT", stop);
-    stop();
-    await Promise.allSettled(running.values());
-    if (importRun) await importRun.catch(() => {});
-    await fs.rm(privateParent, { recursive: true, force: true });
-    await logHandle?.close();
+    try {
+      stop();
+      await Promise.allSettled(running.values());
+      if (importRun) await importRun.catch(() => {});
+      try { await fs.rm(privateParent, { recursive: true, force: true }); }
+      finally { await unlockWorkerDirectory(); await logHandle?.close(); }
+    } finally {
+      process.off("SIGTERM", onTerm);
+      process.off("SIGINT", onInt);
+    }
   }
 }

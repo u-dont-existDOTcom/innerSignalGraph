@@ -318,6 +318,25 @@ export function createJournalWorkExchange({
     return path.join(stageDir, `${journalWorkFileKey(workId)}.json`);
   }
 
+  async function fetchMarkerPath(stageDir, workId) {
+    await stagePath(stageDir, workId);
+    return path.join(stageDir, `${journalWorkFileKey(workId)}.fetched`);
+  }
+
+  async function requireFetchMarker(stageDir, workId) {
+    const marker = await fetchMarkerPath(stageDir, workId);
+    try {
+      await withOpenedRegularFile(marker, async (_handle, info) => {
+        if ((info.mode & 0o777) !== 0o600 || (owner !== null && info.uid !== owner)
+          || info.size === 0 || info.size > 256) fail("JOURNAL_WORK_PACKET_NOT_FETCHED");
+      });
+    } catch (error) {
+      if (error?.code === "JOURNAL_WORK_PACKET_NOT_FETCHED") throw error;
+      fail("JOURNAL_WORK_PACKET_NOT_FETCHED");
+    }
+    return marker;
+  }
+
   async function syncPath(dir) {
     const handle = await fs.open(dir, "r");
     try { await handle.sync(); }
@@ -498,8 +517,22 @@ export function createJournalWorkExchange({
         : { stored: true, already: true });
     },
 
+    async markPacketFetched({ stageDir, workId }) {
+      const marker = await fetchMarkerPath(stageDir, workId);
+      const temporary = path.join(stageDir, `${TEMPORARY_PREFIX}${randomUUID()}`);
+      const handle = await fs.open(temporary, "wx", 0o600);
+      try { await handle.writeFile(JSON.stringify({ nonce: randomUUID(), at: now().toISOString() })); await handle.sync(); }
+      catch (error) { await handle.close(); await fs.unlink(temporary).catch(() => {}); throw error; }
+      await handle.close();
+      try { await fs.link(temporary, marker); }
+      catch (error) { if (error?.code !== "EEXIST") throw error; }
+      finally { await fs.unlink(temporary).catch(() => {}); await syncPath(stageDir); }
+      await requireFetchMarker(stageDir, workId);
+    },
+
     async stageResult({ stageDir, workId, output }) {
       const destination = await stagePath(stageDir, workId);
+      await requireFetchMarker(stageDir, workId);
       if (!isPlainObject(output)) fail("JOURNAL_WORK_OUTPUT_INVALID");
       const serialized = JSON.stringify(output);
       if (Buffer.byteLength(serialized, "utf8") > MAX_JOURNAL_RESULT_BYTES) fail("JOURNAL_WORK_OUTPUT_TOO_LARGE");
@@ -529,6 +562,7 @@ export function createJournalWorkExchange({
 
     async promoteStaged({ stageDir, workId, subject, execution }) {
       const filename = await stagePath(stageDir, workId);
+      const marker = await requireFetchMarker(stageDir, workId);
       const bytes = await withOpenedRegularFile(filename, async (handle, info) => {
         if (info.size > MAX_WORK_BYTES || (info.mode & 0o077) !== 0) fail("JOURNAL_WORK_STAGE_INVALID");
         return handle.readFile();
@@ -537,6 +571,7 @@ export function createJournalWorkExchange({
       if (!isPlainObject(staged) || staged.work_id !== workId || !isPlainObject(staged.output)) fail("JOURNAL_WORK_STAGE_INVALID");
       const result = await this.submitResult({ workId, output: staged.output, subject, execution });
       await fs.unlink(filename);
+      await fs.unlink(marker);
       await syncPath(stageDir);
       return result;
     },

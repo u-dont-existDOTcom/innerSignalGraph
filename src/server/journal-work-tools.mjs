@@ -91,6 +91,7 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
       return value({ work_id: workId, status: "already_submitted", message: "An answer for this item is already stored. Stop here." });
     }
     const { entry } = found;
+    if (stageDir) await exchange.markPacketFetched({ stageDir, workId });
     return value({
       work_id: workId,
       status: "ready",
@@ -125,9 +126,17 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
         total_errors: validate.errors?.length ?? errors.length
       });
     }
-    const stored = stageDir
-      ? await exchange.stageResult({ stageDir, workId, output })
-      : await exchange.submitResult({ workId, output, subject: authorization.principalId });
+    let stored;
+    try {
+      stored = stageDir
+        ? await exchange.stageResult({ stageDir, workId, output })
+        : await exchange.submitResult({ workId, output, subject: authorization.principalId });
+    } catch (error) {
+      if (error?.code === "JOURNAL_WORK_PACKET_NOT_FETCHED") {
+        return toolError(error.code, "Fetch this work item's packet before submitting its answer.");
+      }
+      throw error;
+    }
     return value({
       work_id: workId,
       ...stored,
