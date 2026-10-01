@@ -10,6 +10,7 @@ import { createJournalPrivateApi } from "../src/journal-import/http.mjs";
 import { createMockJournalInferencePort, JournalInferencePortError } from "../src/journal-import/provider-port.mjs";
 import { createPrivateCaseAccessService, loadDevelopmentPrivateCaseProviders } from "../src/storage/private-case-access.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
+import { exchangeHarness } from "./fixtures/journal-lookahead-exchange.mjs";
 
 // A synthetic import driven from intake to a committed generation through the operator commands,
 // with every role answered by a mock. Each test makes one role answer the way a real journal
@@ -25,12 +26,12 @@ const TEXTS = [
   "Synthetic Friday: I stayed home and wrote a letter."
 ];
 
-async function environment(t) {
+async function environment(t, entries = TEXTS) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "journal-finish-synthetic-"));
   await fs.chmod(root, 0o700);
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.mkdir(path.join(root, "private"), { mode: 0o700 });
-  const text = TEXTS.join("\n");
+  const text = entries.join("\n");
   await fs.writeFile(path.join(root, "private", "source.txt"), text, { mode: 0o600 });
   const credentialsPath = path.join(root, "credentials.json");
   await fs.writeFile(credentialsPath, `${JSON.stringify({ schema_version: 1, root_dir: path.join(root, "vaults"), grants: [
@@ -51,8 +52,8 @@ async function environment(t) {
   // One page per entry, so each is its own unit.
   const sourceParser = async () => ({
     source: { sha256: config.source.sha256, byte_length: config.source.bytes, mime_type: "text/plain" }, parser: { version: "synthetic-finish" },
-    pages: TEXTS.map((_, index) => ({ page_number: index + 1, representation_id: `synthetic:page:${index}`, disposition: "readable", warnings: [], image_inventory: [] })),
-    representations: TEXTS.map((entry, index) => ({ representation_id: `synthetic:page:${index}`, text: entry, utf8_byte_length: Buffer.byteLength(entry) }))
+    pages: entries.map((_, index) => ({ page_number: index + 1, representation_id: `synthetic:page:${index}`, disposition: "readable", warnings: [], image_inventory: [] })),
+    representations: entries.map((entry, index) => ({ representation_id: `synthetic:page:${index}`, text: entry, utf8_byte_length: Buffer.byteLength(entry) }))
   });
   return { root, config, configPath, service, sourceParser, environment: { INNER_SIGNAL_PRIVATE_CASE_OPERATION_TOKEN: WRITER } };
 }
@@ -149,6 +150,119 @@ async function drive(f, roleHandlers, calls = [], portOptions = {}, runtimeOptio
     return summaries;
   } finally { await runtime.close(); }
 }
+
+test("unsupported inference ports report sequential fallback at requested concurrency", async (t) => {
+  const f = await environment(t);
+  f.config.semantic_concurrency = 4;
+  const result = await drive(f, handlers());
+  assert.equal(result.run.lookahead, "unsupported_port");
+  assert.equal(result.commit.completion.profile_committed, "pass");
+  await assert.rejects(openJournalExecutionRuntime({ config: { ...f.config, semantic_concurrency: 9 },
+    configPath: f.configPath, service: f.service, sourceParser: f.sourceParser,
+    inferencePort: createMockJournalInferencePort({ handlers: handlers() }), environment: f.environment }),
+  { code: "JOURNAL_SEMANTIC_CONCURRENCY_INVALID" });
+});
+
+test("exchange lookahead preserves the synthetic import and sequential identities", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) =>
+    `Synthetic journal entry ${index}: I walked by the river and observed a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  const stagePort = createMockJournalInferencePort({ handlers: handlers() });
+  const staged = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, inferencePort: stagePort, sourceParser: f.sourceParser,
+    environment: f.environment });
+  try { await staged.execute("stage"); } finally { await staged.close(); }
+  const executionRoots = [path.join(f.root, "sequential"), path.join(f.root, "parallel")];
+  for (const executionRoot of executionRoots)
+    await fs.cp(f.config.execution_root, executionRoot, { recursive: true });
+  const runCase = async (semanticConcurrency, executionRoot) => {
+    let maxOutstanding = 0;
+    const h = exchangeHarness({ waitMs: 30_000,
+      onDispatch: ({ dispatch, results }) => {
+        maxOutstanding = Math.max(maxOutstanding,
+          [...dispatch.keys()].filter(id => !results.has(id)).length);
+      } });
+    const roleHandlers = handlers();
+    const invoked = [], prefetched = [];
+    const port = { ...h.port,
+      async invoke(input) { invoked.push({ role: input.role, key: input.operationKey });
+        return h.port.invoke(input); },
+      async prefetch(input) { prefetched.push({ role: input.role, key: input.operationKey,
+        tier: input.tier });
+        return h.port.prefetch(input); } };
+    let stopped = false, rounds = 0, seed = 17;
+    const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32; };
+    const answering = (async () => {
+      while (!stopped) {
+        let pending = [...h.dispatch.keys()].filter(id => !h.results.has(id));
+        if (pending.length) {
+          // One fake transport round collects concurrent dispatches before answering them.
+          await new Promise(resolve => setTimeout(resolve, 12));
+          pending = [...h.dispatch.keys()].filter(id => !h.results.has(id))
+            .sort(() => random() - 0.5);
+          rounds += 1;
+          await Promise.all(pending.map(async id => {
+            await new Promise(resolve => setTimeout(resolve, 20 + Math.floor(random() * 12)));
+            const item = h.work.get(id);
+            if (item && h.dispatch.has(id) && !h.results.has(id))
+              h.answerWork(id, roleHandlers[item.role](item.packet));
+          }));
+        } else await new Promise(resolve => setTimeout(resolve, 15));
+      }
+    })();
+    let runtime;
+    try {
+      runtime = await openJournalExecutionRuntime({ config: { ...f.config,
+        semantic_concurrency: semanticConcurrency, execution_root: executionRoot },
+      configPath: f.configPath, service: f.service, inferencePort: port,
+      sourceParser: f.sourceParser, environment: f.environment });
+      const run = await runtime.execute("run");
+      const audit = await runtime.execute("audit");
+      const patterns = await runtime.execute("patterns");
+      const commit = await runtime.execute("commit");
+      const state = JSON.parse(await fs.readFile(path.join(executionRoot, "state.json"), "utf8"));
+      const graph = await readStoredReport({ ...f, config: { ...f.config,
+        execution_root: executionRoot } }, "reviewed_graph_ref");
+      const auditReport = await readStoredReport({ ...f, config: { ...f.config,
+        execution_root: executionRoot } }, "audit_report_ref");
+      return { run, audit, patterns, commit, state, graph, auditReport,
+        invoked, prefetched, rounds,
+        maxOutstanding,
+        duplicatePublishes: [...h.successful.values()].filter(count => count > 1).length };
+    } finally { stopped = true; await runtime?.close(); await answering; }
+  };
+  const sequential = await runCase(1, executionRoots[0]);
+  const parallel = await runCase(4, executionRoots[1]);
+  assert.equal(sequential.run.completion.graph_built, "pass");
+  assert.equal(parallel.run.completion.graph_built, "pass");
+  assert.deepEqual(parallel.graph, sequential.graph);
+  assert.equal(parallel.commit.completion.profile_committed, "pass");
+  assert.equal(sequential.commit.completion.profile_committed, "pass");
+  assert.equal(parallel.state.reviewed_persisted.manifest.graph_sha256,
+    sequential.state.reviewed_persisted.manifest.graph_sha256);
+  assert.deepEqual(parallel.auditReport.probability_unweighted,
+    sequential.auditReport.probability_unweighted);
+  assert.deepEqual(parallel.auditReport.probability_weighted,
+    sequential.auditReport.probability_weighted);
+  assert.equal(parallel.auditReport.unassessed_unit_count,
+    sequential.auditReport.unassessed_unit_count);
+  assert.deepEqual(parallel.audit.residuals, sequential.audit.residuals);
+  assert.deepEqual(parallel.patterns.residuals, sequential.patterns.residuals);
+  assert.deepEqual(parallel.invoked, sequential.invoked);
+  assert.equal(sequential.prefetched.length, 0);
+  assert.ok(parallel.prefetched.length > 0);
+  assert.ok(parallel.prefetched.every(call => call.tier === "standard"));
+  assert.ok(parallel.maxOutstanding <= 4);
+  assert.equal(parallel.duplicatePublishes, 0);
+  assert.ok(parallel.run.lookahead.sent > 0);
+  assert.ok(parallel.run.lookahead.used > 0);
+  assert.ok(parallel.run.lookahead.concurrency === 4);
+  assert.ok(parallel.audit.lookahead.sent >= parallel.run.lookahead.sent);
+  assert.ok(parallel.audit.lookahead.used >= parallel.run.lookahead.used);
+  assert.ok(parallel.rounds < sequential.rounds,
+    `expected parallel dispatch rounds ${parallel.rounds} < ${sequential.rounds}`);
+});
 
 async function searchPublishedAssertions(f) {
   const published = await f.service.loadPrivateRuntimeCase(CASE_ID, { bearerToken: READER });

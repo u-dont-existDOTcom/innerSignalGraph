@@ -7,7 +7,7 @@ import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
 import { sourceFormatForPath, sourceParserCapabilities } from "../journal-import/parsers/index.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../journal-import/provider-runtime.mjs";
-import { normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
+import { journalSemanticConcurrency, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "../journal-import/run-config.mjs";
 import { PRIVATE_CASE_SCOPES, PRIVATE_JOURNAL_PURPOSES, createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 
@@ -181,6 +181,8 @@ async function inspectOperator(config, environment) {
 // passes a config that every real command would then refuse.
 function runConfigBlockers(config) {
   const blockers = [];
+  try { journalSemanticConcurrency(config); }
+  catch (error) { blockers.push(error.code ?? "JOURNAL_SEMANTIC_CONCURRENCY_INVALID"); }
   if (config.max_external_spend_usd !== 0) blockers.push("JOURNAL_ZERO_SPEND_REQUIRED");
   if (typeof config.execution_root !== "string" || !path.isAbsolute(config.execution_root)) blockers.push("JOURNAL_EXECUTION_ROOT_REQUIRED");
   else if (!outsideRepository(config.execution_root)) blockers.push("JOURNAL_EXECUTION_ROOT_PRIVATE_REQUIRED");

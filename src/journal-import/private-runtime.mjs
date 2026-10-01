@@ -5,13 +5,14 @@ import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
-import { normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
+import { journalSemanticConcurrency, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
 import { createPrivateCaseAccessService } from "../storage/private-case-access.mjs";
 import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs";
-import { createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
+import { buildJournalJobSnapshot, createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
+import { createJournalLookahead } from "./lookahead.mjs";
 import { JOURNAL_ROLE_DEFINITIONS, buildJournalRolePacket, journalRoleInstruction } from "./provider-port.mjs";
 import { parseSourceFile, sourceFormatForPath } from "./parsers/index.mjs";
 import { partitionRepresentation, verifyRepresentationCoverage } from "./partition.mjs";
@@ -38,6 +39,32 @@ const PARSE_STATUS_BY_DISPOSITION = Object.freeze({ readable: "readable", visual
 const parseStatus = (page, mimeType) => page ? (PARSE_STATUS_BY_DISPOSITION[page.disposition] ?? "partial")
   : (mimeType?.startsWith("text/plain") ? "readable" : "partial");
 const completions = () => Object.fromEntries(["archive_verified", "raw_search_available", "graph_built", "semantically_audited", "patterns_reviewed", "profile_committed", "cold_retrieval_verified", "capacity_tested"].map((k) => [k, "not_run"]));
+
+// Keep this identity calculation shared by work() and lookahead. Its property order is part of
+// existing persisted job IDs, including the visual reader's older single-unit identity.
+export function journalWorkPlan({ id, role, stage, unit = null, units = null, packetInput,
+  identityPacketInput = packetInput, dependencies = [], tier = "standard" }) {
+  const scopeUnits = Array.isArray(units) ? units : (unit ? [unit] : []);
+  invariant(scopeUnits.length > 0, "JOURNAL_WORK_SCOPE_INVALID");
+  const assignedCoreIds = scopeUnits.map(item => item.unit_id);
+  const sourceLocators = scopeUnits.map(item => ({ representation_id: item.representation_id,
+    page: item.page_number ?? null, start_byte: item.start_byte, end_byte: item.end_byte }));
+  const identity = scopeUnits.length === 1
+    ? { source_representation: scopeUnits[0].representation_id,
+        core_range: { start_byte: scopeUnits[0].start_byte, end_byte: scopeUnits[0].end_byte } }
+    : { source_representation: `batch:${hash(assignedCoreIds.join("\0")).slice(0, 40)}`,
+        core_range: { start_byte: 0, end_byte: scopeUnits.reduce((total, item) => total + Math.max(0, item.end_byte - item.start_byte), 0) } };
+  const legacyVisual = role === "visual_reader" && stage === "VISUAL_READ" && scopeUnits.length === 1;
+  invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
+  const jobId = `job:${hash(JSON.stringify({ id, role, stage, packetInput: identityPacketInput,
+    ...(legacyVisual ? {} : { assigned_core_ids: assignedCoreIds, source_locators: sourceLocators }),
+    dependencies, instruction: journalRoleInstruction(role),
+    dependency_instructions: dependencies.map(item => journalRoleInstruction(item.role)),
+    ...(tier === "hardest" ? { tier } : {}) }))}`;
+  return { jobId, scopeUnits, assignedCoreIds, sourceLocators, identity };
+}
+
+export const journalJobId = request => journalWorkPlan(request).jobId;
 
 export function applyHardestDailyLimit(state, { now = () => new Date(), dailyLimit, newlySent = true }) {
   invariant(Number.isSafeInteger(dailyLimit) && dailyLimit >= 1, "HARDEST_LANE_CONFIG_INVALID");
@@ -118,6 +145,7 @@ async function removeLegacyPageRenders(root) {
 
 /** A private operator process owns this runtime. No mutation is added to the MCP. */
 export async function openJournalExecutionRuntime({ config, configPath, environment = process.env, service: suppliedService = null, inferencePort: suppliedPort = null, authContextProvider = null, sourceParser = parseSourceFile, renderVisualPage = renderJournalPdfPage, now = () => new Date() }) {
+  const semanticConcurrency = journalSemanticConcurrency(config);
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
   // An empty source has nothing to import, so no run of it could finish; doctor reports the same.
   invariant(Number.isSafeInteger(config.source?.bytes) && config.source.bytes > 0, "JOURNAL_SOURCE_EMPTY");
@@ -190,6 +218,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       invariant(capabilities.hardest_authenticated_execution_profile_per_generate === true,
         "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
     }
+    let lookahead = null;
+    const lookaheadSupported = semanticConcurrency > 1
+      && typeof semanticPort.prefetch === "function" && typeof semanticPort.peek === "function";
+    const lookaheadSent = new Set(), lookaheadUsed = new Set();
+    let lookaheadErrors = 0;
     port = createDurableJournalInferencePort({ port: {
       capabilities: () => semanticPort.capabilities(),
       // Check immediately before the send, including after the durable intent was written.
@@ -197,6 +230,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       async invoke(input) {
         try { await authorize(); }
         catch (error) { error.submissionStatus = "not_submitted"; throw error; }
+        lookahead?.markUsed(input.operationKey);
+        lookaheadUsed.add(input.operationKey);
         const result = await semanticPort.invoke(input);
         // A grant may change during a long application call. Recheck before the
         // durable port admits its result or a dependent role receives it.
@@ -261,6 +296,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       await save();
     };
+    const lookaheadSummary = () => {
+      const sent = new Set([...lookaheadSent, ...(lookahead?.sentOperationKeys() ?? [])]);
+      let used = 0;
+      for (const key of sent) if (lookaheadUsed.has(key)) used += 1;
+      return { concurrency: semanticConcurrency, sent: sent.size, used,
+        unused: sent.size - used, errors: lookaheadErrors + (lookahead?.summary().errors ?? 0) };
+    };
     const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration,
       ...(state.calibration_failure ? { calibration_failure: structuredClone(state.calibration_failure) } : {}),
       semantic_disposition: state.semantic_disposition ?? null,
@@ -272,7 +314,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       ...(state.semantic_disposition === "archive_only" ? { next_action: state.next_action } : {}),
       completion: structuredClone(state.completion), blocker: state.blocker,
       residuals: structuredClone(state.residuals ?? {}),
-      hardest_lane: { ...hardestStatus(), daily_limit: hardestLane.daily_limit }, external_spend_usd: 0 });
+      hardest_lane: { ...hardestStatus(), daily_limit: hardestLane.daily_limit }, external_spend_usd: 0,
+      lookahead: semanticConcurrency === 1
+        ? { concurrency: 1, sent: 0, used: 0, unused: 0 }
+        : (lookaheadSupported ? lookaheadSummary() : "unsupported_port") });
     const calibrationStopStatus = (reason) => {
       if (["CALIBRATION_REFERENCE_UNRESOLVED", "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED",
         "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_ATTEMPTS_EXHAUSTED",
@@ -372,33 +417,60 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // Set when work() returns null because its job can never answer (the output stayed invalid
     // through every retry the job allows), as opposed to a pause the next run may resolve.
     let workExhausted = false;
+    const resolveWorkPacketInput = async (input) => {
+      const image = input?.page_image_ref;
+      if (image?.kind !== "chunked_image") return input;
+      const bytes = await store.reassembleOriginal(image.object_ref);
+      try {
+        invariant(hash(bytes) === image.sha256 && bytes.length === image.byte_length, "VISUAL_IMAGE_DIGEST_MISMATCH");
+        return { ...input, page_image_ref: { kind: "inline_image", media_type: image.media_type,
+          data_base64: bytes.toString("base64"), sha256: image.sha256 } };
+      } finally { bytes.fill(0); }
+    };
+    const workDefinitionsFor = (request, prepared) => [{
+      key: request.role, stage: request.stage, role: request.role, tier: request.tier ?? "standard",
+      identity: prepared.identity, assigned_core_ids: prepared.assignedCoreIds,
+      source_locators: prepared.sourceLocators, packet_input: request.packetInput
+    }, ...(request.dependencies ?? []).map(item => ({ ...item, tier: request.tier ?? "standard" }))];
+    const referencePacketFor = (request, prepared) => buildJournalRolePacket(request.role, {
+      protocol_version: "1.0", output_schema_id: JOURNAL_ROLE_DEFINITIONS[request.role].outputSchema,
+      assigned_core_ids: prepared.assignedCoreIds, source_locators: prepared.sourceLocators,
+      expected_generation: state.generation, controller_provenance_tag: prepared.jobId,
+      grant_purpose: grant.purpose, ...request.packetInput
+    });
+    const createRunLookahead = () => lookaheadSupported
+      ? createJournalLookahead({ limit: semanticConcurrency, port: semanticPort, authorize,
+        grant, pollMs: semanticPort.pollMs ?? 5_000,
+        prepare: async (descriptor) => {
+          const request = descriptor.request;
+          const prepared = journalWorkPlan(request);
+          if (request.stage === "REFERENCE_AUDIT" && request.role === "reference_reader") {
+            if (await readIfPresent(`reference:result:${prepared.jobId}`)
+              || await readIfPresent(`reference:failure:${prepared.jobId}:1`)
+              || await readIfPresent(`reference:failure:${prepared.jobId}:2`)
+              || await readIfPresent(`reference:completion-unknown:${prepared.jobId}`)) return null;
+            return { direct: { role: request.role, packet: referencePacketFor(request, prepared),
+              outputSchema: JOURNAL_ROLE_DEFINITIONS[request.role].outputSchema,
+              operationKey: prepared.jobId }, next: descriptor.next };
+          }
+          const ledger = createCorpusJournalJobLedger({ corpusStore: store, jobId: prepared.jobId });
+          const existing = await ledger.load();
+          const snapshot = existing?.snapshot ?? buildJournalJobSnapshot({
+            jobId: prepared.jobId, caseId, corpusId: state.corpus_id, generation: state.generation,
+            workDefinitions: workDefinitionsFor(request, prepared), controllerSecret: key, grant,
+            promptVersion: `1.0:${hash(prepared.jobId).slice(0, 24)}`,
+            modelProfile: route?.model ?? "synthetic"
+          });
+          return { snapshot, resolvePacketInput: resolveWorkPacketInput };
+        } }) : null;
     async function work({ id, role, stage: workStage, unit = null, units = null, packetInput, tier = "standard",
       identityPacketInput = packetInput, dependencies = [], acceptReviewFindings = false }) {
       workExhausted = false;
       await authorize();
-      const scopeUnits = Array.isArray(units) ? units : (unit ? [unit] : []);
-      invariant(scopeUnits.length > 0, "JOURNAL_WORK_SCOPE_INVALID");
-      const assignedCoreIds = scopeUnits.map((item) => item.unit_id);
-      const sourceLocators = scopeUnits.map((item) => ({
-        representation_id: item.representation_id,
-        page: item.page_number ?? null,
-        start_byte: item.start_byte,
-        end_byte: item.end_byte
-      }));
-      const identity = scopeUnits.length === 1
-        ? { source_representation: scopeUnits[0].representation_id, core_range: { start_byte: scopeUnits[0].start_byte, end_byte: scopeUnits[0].end_byte } }
-        : { source_representation: `batch:${hash(assignedCoreIds.join("\0")).slice(0, 40)}`,
-            core_range: { start_byte: 0, end_byte: scopeUnits.reduce((total, item) => total + Math.max(0, item.end_byte - item.start_byte), 0) } };
-      // Visual jobs must retain the pre-batch identity, including an unknown
-      // submission from the prior runner. Batch-only scope fields belong to
-      // the new semantic jobs; inserting them into a visual key resubmits it.
-      const legacyVisual = role === "visual_reader" && workStage === "VISUAL_READ" && scopeUnits.length === 1;
-      invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
-      id = `job:${hash(JSON.stringify({ id, role, stage: workStage, packetInput: identityPacketInput,
-        ...(legacyVisual ? {} : { assigned_core_ids: assignedCoreIds, source_locators: sourceLocators }),
-        dependencies, instruction: journalRoleInstruction(role),
-        dependency_instructions: dependencies.map(item => journalRoleInstruction(item.role)),
-        ...(tier === "hardest" ? { tier } : {}) }))}`;
+      const { jobId, assignedCoreIds, sourceLocators, identity } = journalWorkPlan({
+        id, role, stage: workStage, unit, units, packetInput, identityPacketInput, dependencies, tier
+      });
+      id = jobId;
       if (workStage === "REFERENCE_AUDIT") {
         const resultId = `reference:result:${id}`;
         const cached = await readIfPresent(resultId);
@@ -453,12 +525,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             try { if (completion.status === "not_submitted") await beforeHardestSend(); }
             catch (error) { if (error?.code === "HARDEST_DAILY_LIMIT") return null; throw error; }
           }
-          result = await port.invoke({ role, packet: buildJournalRolePacket(role, {
-            protocol_version: "1.0", output_schema_id: JOURNAL_ROLE_DEFINITIONS[role].outputSchema,
-            assigned_core_ids: assignedCoreIds, source_locators: sourceLocators,
-            expected_generation: state.generation, controller_provenance_tag: id,
-            grant_purpose: grant.purpose, ...packetInput
-          }), outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema, operationKey, grant,
+          result = await port.invoke({ role, packet: referencePacketFor({ role, packetInput }, { jobId: id, assignedCoreIds, sourceLocators }),
+            outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema, operationKey, grant,
           ...(tier === "hardest" ? { tier } : {}) });
         } catch (error) {
           if (error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid") {
@@ -489,18 +557,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           await authorize();
           if (pendingWork.tier === "hardest") await beforeHardestSend();
         },
-        resolvePacketInput: async (input) => {
-          const image = input?.page_image_ref;
-          if (image?.kind !== "chunked_image") return input;
-          const bytes = await store.reassembleOriginal(image.object_ref);
-          try {
-            invariant(hash(bytes) === image.sha256 && bytes.length === image.byte_length, "VISUAL_IMAGE_DIGEST_MISMATCH");
-            return { ...input, page_image_ref: { kind: "inline_image", media_type: image.media_type,
-              data_base64: bytes.toString("base64"), sha256: image.sha256 } };
-          } finally { bytes.fill(0); }
-        } });
+        resolvePacketInput: resolveWorkPacketInput });
       try {
-        if (!(await ledger.load())) await controller.initialize({ jobId: id, caseId, corpusId: state.corpus_id, generation: state.generation, workDefinitions: [{ key: role, stage: workStage, role, tier, identity, assigned_core_ids: assignedCoreIds, source_locators: sourceLocators, packet_input: packetInput }, ...dependencies.map((item) => ({ ...item, tier }))] });
+        if (!(await ledger.load())) await controller.initialize({ jobId: id, caseId, corpusId: state.corpus_id, generation: state.generation,
+          workDefinitions: workDefinitionsFor({ role, stage: workStage, tier, packetInput, dependencies },
+            { identity, assignedCoreIds, sourceLocators }) });
         let entry;
         try { entry = await controller.runUntilBlocked({ maximumSteps: 8 }); }
         catch (error) { if (error?.code === "HARDEST_DAILY_LIMIT") return null; throw error; }
@@ -679,6 +740,35 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         start_byte: unit.start_byte,
         end_byte: unit.end_byte
       }));
+      const extractionRequestFor = ({ units, keyId, core, adjacentContext, visualContext,
+        cycle = 0, repairRequest = null }) => ({
+        id: `extract:batch:${keyId}:cycle:${cycle}`,
+        role: "extractor", stage: "EXTRACT", units,
+        packetInput: {
+          core_units: core, adjacent_context: adjacentContext,
+          visual_transcriptions: visualContext,
+          ...(repairRequest ? { repair_request: repairRequest } : {})
+        },
+        dependencies: [{
+          key: "omission", stage: "OMISSION_CHECK", role: "omission_checker",
+          identity: identityFor(units), assigned_core_ids: units.map(unit => unit.unit_id),
+          source_locators: locatorsFor(units),
+          packet_input: { core_units: core, adjacent_context: adjacentContext,
+            candidate_extraction: { $work_output: "extractor" }, target_generation: state.generation }
+        }],
+        acceptReviewFindings: true
+      });
+      const initialExtractionDescriptor = async (ids) => {
+        const units = frozenUnits(ids);
+        const core = units.map(unit => ({ unit_id: unit.unit_id, text: unit.text }));
+        const adjacentContext = { by_unit: units.map(neighborsFor) };
+        const visualContext = await visualContextFor(units);
+        if (Buffer.byteLength(JSON.stringify({ core_units: core, adjacent_context: adjacentContext,
+          visual_transcriptions: visualContext })) > 180_000) return null;
+        const request = extractionRequestFor({ units, keyId: batchKey(units), core,
+          adjacentContext, visualContext });
+        return { jobId: journalJobId(request), request };
+      };
       const mergeGraphs = (graphs) => {
         const nodes = new Map(), edges = new Map();
         for (const graph of graphs) {
@@ -812,34 +902,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         let results, repairRequest, split, graphsByUnit, bindingFailure;
         for (let cycle = 0; cycle <= 2; cycle += 1) {
-          const identity = identityFor(units);
-          results = await work({
-            id: `extract:batch:${keyId}:cycle:${cycle}`,
-            role: "extractor",
-            stage: "EXTRACT",
-            units,
-            packetInput: {
-              core_units: core,
-              adjacent_context: adjacentContext,
-              visual_transcriptions: visualContext,
-              ...(repairRequest ? { repair_request: repairRequest } : {})
-            },
-            dependencies: [{
-              key: "omission",
-              stage: "OMISSION_CHECK",
-              role: "omission_checker",
-              identity,
-              assigned_core_ids: units.map((unit) => unit.unit_id),
-              source_locators: locatorsFor(units),
-              packet_input: {
-                core_units: core,
-                adjacent_context: adjacentContext,
-                candidate_extraction: { $work_output: "extractor" },
-                target_generation: state.generation
-              }
-            }],
-            acceptReviewFindings: true
-          });
+          results = await work(extractionRequestFor({ units, keyId, core, adjacentContext,
+            visualContext, cycle, repairRequest }));
           if (!results) return finishExhausted("EXTRACTION_ATTEMPTS_EXHAUSTED");
           // The extractor asked for smaller windows or more context: split a batch of several units
           // at once instead of asking again for the same window.
@@ -1128,8 +1192,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       for (const unit of oversizedUnits.filter(item => !calibrationIds.has(item.unit_id)))
         await recordSourceOnly(unit, "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
-      for (const ids of frozenPlan.regular_batches) {
-        if (!(await processBatch(frozenUnits(ids), false))) return summary();
+      for (let index = 0; index < frozenPlan.regular_batches.length; index += 1) {
+        if (lookahead) {
+          const upcoming = [];
+          for (const ids of frozenPlan.regular_batches.slice(index + 1, index + 1 + semanticConcurrency * 2)) {
+            const descriptor = await initialExtractionDescriptor(ids);
+            if (descriptor) upcoming.push(descriptor);
+          }
+          lookahead.ahead(upcoming);
+        }
+        if (!(await processBatch(frozenUnits(frozenPlan.regular_batches[index]), false))) return summary();
       }
 
       const nodes = new Map(), edges = new Map();
@@ -1585,8 +1657,53 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       }
       const sample = await readLarge(state.audit_sample_ref);
       const selected = new Set([...sample.selected_units.map(u => u.unit_id), ...sample.targeted_challenge.map(u => u.unit_id)]);
+      const referenceRequestFor = (unit, visual) => ({
+        id: `reference:final:${unit.unit_id}`, role: "reference_reader", stage: "REFERENCE_AUDIT", unit,
+        packetInput: { source_windows: [{ unit_id: unit.unit_id, text: unit.text }],
+          adjacent_context: unit.context, visual_context: visual ? [visual.output] : [],
+          neutral_reading_instructions: [] }
+      });
+      const checkReferenceAnchors = (unit, output) => {
+        for (const item of output.reference_items) for (const anchor of item.anchors) {
+          invariant(anchor.unit_id === unit.unit_id, "REFERENCE_ANCHOR_OUTSIDE_SOURCE_PACKET");
+          resolveExactQuote(unit.text, anchor.quote, anchor.occurrence);
+        }
+      };
+      const fidelityRequestFor = (unit, reference, scope) => ({
+        id: `fidelity:final:${unit.unit_id}`, role: "fidelity_auditor", stage: "REFERENCE_AUDIT", unit,
+        packetInput: { frozen_reference: reference,
+          supporting_passages: [{ unit_id: unit.unit_id, text: unit.text }, ...scope.supporting_passages],
+          imported_generation: { generation: state.generation, graph: scope.graph,
+            assessment_target_ids: scope.assessment_target_ids } }
+      });
+      const auditDescriptor = async (unit) => {
+        if (await readIfPresent(`audit:result:${graphRevision}:${unit.unit_id}`)) return null;
+        const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
+        if (!imported || imported.source_only_unresolved) return null;
+        const visual = await readIfPresent(`visual:result:${unit.page_number}`);
+        const request = referenceRequestFor(unit, visual);
+        return { jobId: journalJobId(request), request,
+          next: async (reference) => {
+            checkReferenceAnchors(unit, reference);
+            const reconciliation = await readIfPresent(`reconcile:result:${unit.unit_id}`);
+            const scope = createReconciledAuditScope({ graph: frozenGraph, unitGraph: imported.graph,
+              derivationRef: reconciliation?.receipt?.receipt_id, index: scopeIndex });
+            const nextRequest = fidelityRequestFor(unit, reference, scope);
+            return { jobId: journalJobId(nextRequest), request: nextRequest };
+          } };
+      };
       const reports = [];
-      for (const unit of plan.units.filter(u => selected.has(u.unit_id))) {
+      const auditUnits = plan.units.filter(u => selected.has(u.unit_id));
+      for (let index = 0; index < auditUnits.length; index += 1) {
+        const unit = auditUnits[index];
+        if (lookahead) {
+          const upcoming = [];
+          for (const nextUnit of auditUnits.slice(index + 1, index + 1 + semanticConcurrency * 2)) {
+            const descriptor = await auditDescriptor(nextUnit);
+            if (descriptor) upcoming.push(descriptor);
+          }
+          lookahead.ahead(upcoming);
+        }
         let report = await readIfPresent(`audit:result:${graphRevision}:${unit.unit_id}`);
         if (!report) {
           const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
@@ -1601,13 +1718,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               untrusted_candidate_ids: scope.exclusion_ids });
           } else {
             const visual = await readIfPresent(`visual:result:${unit.page_number}`);
-            const original = [{ unit_id: unit.unit_id, text: unit.text }];
-            const frozen = await checkedWork({ id: `reference:final:${unit.unit_id}`, role: "reference_reader", stage: "REFERENCE_AUDIT", unit, packetInput: { source_windows: original, adjacent_context: unit.context, visual_context: visual ? [visual.output] : [], neutral_reading_instructions: [] } },
-              ([saved]) => {
-                for (const item of saved.output.reference_items) for (const anchor of item.anchors) {
-                  invariant(anchor.unit_id === unit.unit_id, "REFERENCE_ANCHOR_OUTSIDE_SOURCE_PACKET"); resolveExactQuote(unit.text, anchor.quote, anchor.occurrence);
-                }
-              });
+            const frozen = await checkedWork(referenceRequestFor(unit, visual),
+              ([saved]) => checkReferenceAnchors(unit, saved.output));
             if (frozen.blocked) return summary();
             const reconciliation = await readIfPresent(`reconcile:result:${unit.unit_id}`);
             const scope = createReconciledAuditScope({ graph: frozenGraph, unitGraph: imported.graph,
@@ -1626,7 +1738,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
                 coverage: summarizeFidelityCoverage({ reference: freeze.reference, review: saved.output, candidateIds: scope.assessment_target_ids })
               });
               let assessedOutcome;
-              const fidelity = await checkedWork({ id: `fidelity:final:${unit.unit_id}`, role: "fidelity_auditor", stage: "REFERENCE_AUDIT", unit, packetInput: { frozen_reference: reference.output, supporting_passages: [...original, ...scope.supporting_passages], imported_generation: { generation: state.generation, graph: scope.graph, assessment_target_ids: scope.assessment_target_ids } } }, saved => { assessedOutcome = assess(saved); });
+              const fidelity = await checkedWork(fidelityRequestFor(unit, reference.output, scope),
+                saved => { assessedOutcome = assess(saved); });
               if (fidelity.blocked) return summary();
               if (fidelity.failure) {
                 unassessed = fidelity.failure;
@@ -1836,12 +1949,25 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       await save(); return summary();
     }
 
+    const executeSemantic = async (action) => {
+      lookahead = createRunLookahead();
+      try { await action(); }
+      finally {
+        if (lookahead) {
+          await lookahead.close();
+          for (const key of lookahead.sentOperationKeys()) lookaheadSent.add(key);
+          lookaheadErrors += lookahead.summary().errors;
+          lookahead = null;
+        }
+      }
+      return summary();
+    };
     return Object.freeze({
       async execute(command) {
         if (["inventory", "stage"].includes(command)) return stage();
-        if (command === "run") return run();
+        if (command === "run") return lookaheadSupported ? executeSemantic(() => run()) : run();
         if (command === "visual-only") return run({ visualOnly: true });
-        if (command === "audit") return audit();
+        if (command === "audit") return lookaheadSupported ? executeSemantic(() => audit()) : audit();
         if (command === "patterns") return patterns();
         if (command === "commit") return commit();
         if (["status", "report", "delete-plan"].includes(command)) {
@@ -1885,7 +2011,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         throw new ValidationError("JOURNAL_STAGE_NOT_READY", { code: "JOURNAL_STAGE_NOT_READY" });
       },
-      async close() { store.close(); port.close?.(); providers?.close(); secretBuffers.forEach((b) => b.fill(0)); await lock.release(); }
+      async close() { await lookahead?.close(); store.close(); port.close?.(); providers?.close(); secretBuffers.forEach((b) => b.fill(0)); await lock.release(); }
     });
   } catch (e) { store?.close(); port?.close?.(); providers?.close(); secretBuffers.forEach((b) => b.fill(0)); await lock.release(); throw e; }
 }

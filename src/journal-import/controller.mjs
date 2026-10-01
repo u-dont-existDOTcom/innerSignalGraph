@@ -103,7 +103,7 @@ function materialize(value, workByKey) {
   return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, materialize(item, workByKey)]));
 }
 
-function outputComplete(role, output) {
+export function outputComplete(role, output) {
   if (role === "extractor") return output.status === "complete";
   if (role === "omission_checker") return output.status === "sufficient_for_stated_scope";
   if (role === "reconciler") return output.status === "proposals_complete";
@@ -140,6 +140,83 @@ function checkpointFor(snapshot, override = {}) {
   return validateJournalSchema("checkpoint", checkpoint);
 }
 
+// Pure plan construction is also used by lookahead. It must never append a ledger entry.
+export function buildJournalJobSnapshot({ jobId, caseId, corpusId, generation, workDefinitions,
+  completion = {}, controllerSecret, grant, promptVersion = "1.0", modelProfile = "mock-deterministic" }) {
+  invariant(typeof jobId === "string" && /^[A-Za-z0-9:_-]{1,160}$/.test(jobId), "JOB_ID_INVALID");
+  invariant(Array.isArray(workDefinitions) && workDefinitions.length > 0, "WORK_PLAN_EMPTY");
+  let previousRank = -1;
+  const keys = new Set();
+  const workItems = workDefinitions.map((definition) => {
+    invariant(typeof definition.key === "string" && !keys.has(definition.key), "WORK_KEY_INVALID_OR_DUPLICATE");
+    keys.add(definition.key);
+    const rank = stageRank(definition.stage);
+    invariant(rank >= previousRank, "WORK_STAGE_ORDER_INVALID");
+    previousRank = rank;
+    const roleDefinition = JOURNAL_ROLE_DEFINITIONS[definition.role];
+    invariant(roleDefinition, "JOURNAL_ROLE_UNKNOWN");
+    journalRoleInstruction(definition.role);
+    invariant(definition.identity && typeof definition.identity === "object", "WORK_IDENTITY_INCOMPLETE");
+    const identity = {
+      case_id: caseId,
+      corpus_id: corpusId,
+      source_representation: definition.identity.source_representation,
+      core_range: clone(definition.identity.core_range),
+      role: definition.role,
+      prompt_version: promptVersion,
+      model_profile: modelProfile,
+      grant_purpose: grant.purpose
+    };
+    const tier = definition.tier ?? "standard";
+    invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
+    if (tier === "hardest") identity.tier = tier;
+    return {
+      key: definition.key,
+      work_id: computeJournalWorkId(identity, controllerSecret),
+      stage: definition.stage,
+      role: definition.role,
+      output_schema_id: roleDefinition.outputSchema,
+      identity,
+      tier,
+      assigned_core_ids: clone(definition.assigned_core_ids ?? []),
+      source_locators: clone(definition.source_locators ?? []),
+      packet_input: clone(definition.packet_input ?? {}),
+      status: "planned", attempts: 0, retry_epoch: 0, operation_key: null,
+      output: null, receipt: null, prior_outputs: []
+    };
+  });
+  return {
+    schema_version: "1.0", job_id: jobId, case_id: caseId, corpus_id: corpusId, generation,
+    prompt_version: promptVersion, model_profile: modelProfile,
+    plan_sha256: sha256(Buffer.from(JSON.stringify(workItems.map(({ packet_input: packetInput, ...item }) => ({
+      ...item, packet_input_sha256: sha256(Buffer.from(JSON.stringify(packetInput), "utf8"))
+    }))), "utf8")),
+    completion: { ...emptyCompletion(), ...completion }, work_items: workItems, checkpoint: null
+  };
+}
+
+export async function planJournalOperation({ work, snapshot, grant,
+  resolvePacketInput = async (input) => input }) {
+  const workByKey = new Map(snapshot.work_items.map((item) => [item.key, item]));
+  const roleInput = await resolvePacketInput(materialize(work.packet_input, workByKey), { work: clone(work) });
+  for (const field of ["protocol_version", "output_schema_id", "assigned_core_ids", "source_locators", "expected_generation", "controller_provenance_tag", "grant_purpose"])
+    invariant(!Object.hasOwn(roleInput, field), "CONTROLLER_PACKET_FIELD_OVERRIDE");
+  const packet = buildJournalRolePacket(work.role, {
+    protocol_version: "1.0", output_schema_id: work.output_schema_id,
+    assigned_core_ids: work.assigned_core_ids, source_locators: work.source_locators,
+    expected_generation: snapshot.generation, controller_provenance_tag: work.work_id,
+    grant_purpose: grant.purpose, ...roleInput
+  });
+  const packetDigest = sha256(Buffer.from(JSON.stringify(packet), "utf8"));
+  const baseOperationKey = `journal:${work.work_id.slice(5, 45)}:${packetDigest.slice(0, 32)}`;
+  const retryEpoch = Number.isSafeInteger(work.retry_epoch) && work.retry_epoch >= 0 ? work.retry_epoch : 0;
+  const reserializationKey = `${baseOperationKey}:reserialize${retryEpoch === 0 ? "" : `:${retryEpoch}`}`;
+  const operationKey = work.status === "invalid_output" ? reserializationKey
+    : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${retryEpoch}:${work.attempts}`
+      : (work.operation_key ?? baseOperationKey);
+  return { packet, operationKey };
+}
+
 export function createJournalImportController({
   ledger,
   inferencePort,
@@ -166,72 +243,9 @@ export function createJournalImportController({
     return ledger.append(next, expectedRevision);
   };
 
-  const initialize = async ({ jobId, caseId, corpusId, generation, workDefinitions, completion = {} }) => {
+  const initialize = async (input) => {
     invariant((await ledger.load()) === null, "JOURNAL_JOB_ALREADY_EXISTS");
-    invariant(typeof jobId === "string" && /^[A-Za-z0-9:_-]{1,160}$/.test(jobId), "JOB_ID_INVALID");
-    invariant(Array.isArray(workDefinitions) && workDefinitions.length > 0, "WORK_PLAN_EMPTY");
-    let previousRank = -1;
-    const keys = new Set();
-    const workItems = workDefinitions.map((definition) => {
-      invariant(typeof definition.key === "string" && !keys.has(definition.key), "WORK_KEY_INVALID_OR_DUPLICATE");
-      keys.add(definition.key);
-      const rank = stageRank(definition.stage);
-      invariant(rank >= previousRank, "WORK_STAGE_ORDER_INVALID");
-      previousRank = rank;
-      const roleDefinition = JOURNAL_ROLE_DEFINITIONS[definition.role];
-      invariant(roleDefinition, "JOURNAL_ROLE_UNKNOWN");
-      journalRoleInstruction(definition.role);
-      invariant(definition.identity && typeof definition.identity === "object", "WORK_IDENTITY_INCOMPLETE");
-      const identity = {
-        case_id: caseId,
-        corpus_id: corpusId,
-        source_representation: definition.identity.source_representation,
-        core_range: clone(definition.identity.core_range),
-        role: definition.role,
-        prompt_version: promptVersion,
-        model_profile: modelProfile,
-        grant_purpose: grant.purpose
-      };
-      const tier = definition.tier ?? "standard";
-      invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
-      if (tier === "hardest") identity.tier = tier;
-      return {
-        key: definition.key,
-        work_id: computeJournalWorkId(identity, secret),
-        stage: definition.stage,
-        role: definition.role,
-        output_schema_id: roleDefinition.outputSchema,
-        identity,
-        tier,
-        assigned_core_ids: clone(definition.assigned_core_ids ?? []),
-        source_locators: clone(definition.source_locators ?? []),
-        packet_input: clone(definition.packet_input ?? {}),
-        status: "planned",
-        attempts: 0,
-        retry_epoch: 0,
-        operation_key: null,
-        output: null,
-        receipt: null,
-        prior_outputs: []
-      };
-    });
-    const snapshot = {
-      schema_version: "1.0",
-      job_id: jobId,
-      case_id: caseId,
-      corpus_id: corpusId,
-      generation,
-      prompt_version: promptVersion,
-      model_profile: modelProfile,
-      plan_sha256: sha256(Buffer.from(JSON.stringify(workItems.map(({ packet_input: packetInput, ...item }) => ({
-        ...item,
-        packet_input_sha256: sha256(Buffer.from(JSON.stringify(packetInput), "utf8"))
-      }))), "utf8")),
-      completion: { ...emptyCompletion(), ...completion },
-      work_items: workItems,
-      checkpoint: null
-    };
-    return persist(snapshot, -1);
+    return persist(buildJournalJobSnapshot({ ...input, controllerSecret: secret, grant, promptVersion, modelProfile }), -1);
   };
 
   const completeWork = async (entry, work, result) => {
@@ -317,29 +331,10 @@ export function createJournalImportController({
     }
     invariant(["planned", "retryable_error", "invalid_output"].includes(work.status), "WORK_STATE_INVALID");
     invariant(work.attempts < 2, "WORK_RETRY_LIMIT_EXCEEDED");
-    const workByKey = new Map(entry.snapshot.work_items.map((item) => [item.key, item]));
-    const roleInput = await resolvePacketInput(materialize(work.packet_input, workByKey), { work: clone(work) });
-    for (const field of ["protocol_version", "output_schema_id", "assigned_core_ids", "source_locators", "expected_generation", "controller_provenance_tag", "grant_purpose"]) {
-      invariant(!Object.hasOwn(roleInput, field), "CONTROLLER_PACKET_FIELD_OVERRIDE");
-    }
-    const packet = buildJournalRolePacket(work.role, {
-      protocol_version: "1.0",
-      output_schema_id: work.output_schema_id,
-      assigned_core_ids: work.assigned_core_ids,
-      source_locators: work.source_locators,
-      expected_generation: entry.snapshot.generation,
-      controller_provenance_tag: work.work_id,
-      grant_purpose: grant.purpose,
-      ...roleInput
+    const { packet, operationKey } = await planJournalOperation({
+      work, snapshot: entry.snapshot, grant, resolvePacketInput
     });
     if (beforeInvoke) await beforeInvoke({ work: clone(work) });
-    const packetDigest = sha256(Buffer.from(JSON.stringify(packet), "utf8"));
-    const baseOperationKey = `journal:${work.work_id.slice(5, 45)}:${packetDigest.slice(0, 32)}`;
-    const retryEpoch = Number.isSafeInteger(work.retry_epoch) && work.retry_epoch >= 0 ? work.retry_epoch : 0;
-    const reserializationKey = `${baseOperationKey}:reserialize${retryEpoch === 0 ? "" : `:${retryEpoch}`}`;
-    const operationKey = work.status === "invalid_output" ? reserializationKey
-      : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${retryEpoch}:${work.attempts}`
-        : (work.operation_key ?? baseOperationKey);
     const intentSnapshot = clone(entry.snapshot);
     const intentWork = intentSnapshot.work_items.find(({ work_id: workId }) => workId === work.work_id);
     intentWork.status = "intent_persisted";

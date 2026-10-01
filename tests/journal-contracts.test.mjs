@@ -164,6 +164,11 @@ test("configured doctor verifies the private source while reporting missing oper
   assert.equal(report.capabilities.private_target, "unavailable");
   assert.equal(report.capabilities.inference_route, "unavailable");
   assert.deepEqual(report.blockers, ["INFERENCE_ISOLATION_UNAVAILABLE", "OPERATOR_ENVIRONMENT_UNAVAILABLE"]);
+  const invalid = JSON.parse(await fs.readFile(configPath, "utf8"));
+  invalid.semantic_concurrency = 0;
+  await fs.writeFile(configPath, `${JSON.stringify(invalid)}\n`, { mode: 0o600 });
+  const invalidReport = await configuredJournalDoctorReport(configPath, {});
+  assert.ok(invalidReport.blockers.includes("JOURNAL_SEMANTIC_CONCURRENCY_INVALID"));
 });
 
 test("configured doctor prepares the exchange before authorizing its inference route", async (t) => {
