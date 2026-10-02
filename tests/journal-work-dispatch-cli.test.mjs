@@ -43,6 +43,7 @@ async function publish(exchange, entry) {
   await exchange.publishDispatch({
     schema_version: 1,
     work_id: entry.work_id,
+    ...(entry.tier === "hardest" ? { attempt_identity: "a".repeat(48) } : {}),
     role: entry.role,
     tier: entry.tier,
     output_schema_name: entry.output_schema_name,
@@ -92,6 +93,7 @@ test("dispatch reports the persisted hardest tier to the worker", async (t) => {
   const result = await dispatch(root, true);
   assert.equal(result.stderr, "");
   assert.equal(JSON.parse(result.stdout).tier, "hardest");
+  assert.equal(JSON.parse(result.stdout).attempt_identity, "a".repeat(48));
 });
 
 test("dispatch omits expired and retired items and is silent when none remain", async (t) => {

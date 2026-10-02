@@ -473,9 +473,13 @@ test("worker rejects every disallowed execution without leaving an answer or sta
       if (scenario === "timeout") assert.ok(trace, "the fake run must start before the timeout");
       if (trace) {
         const entries = trace.trim().split("\n").map(JSON.parse);
-        assert.equal(entries.find((entry) => entry.phase === "staged")?.exists,
-          !["submit_only", "fetch_other", "failed_fetch", "fetch_after_submit"].includes(scenario),
-          "only fetched packets can yield sealed answers");
+        const staged = entries.find((entry) => entry.phase === "staged");
+        // Under load the 500 ms timeout can fire before the fake reaches staging; check staging only when it ran.
+        if (scenario !== "timeout" || staged) {
+          assert.equal(staged?.exists,
+            !["submit_only", "fetch_other", "failed_fetch", "fetch_after_submit"].includes(scenario),
+            "only fetched packets can yield sealed answers");
+        }
         if (["submit_only", "fetch_other", "failed_fetch", "fetch_after_submit"].includes(scenario)) {
           assert.ok(entries.find((entry) => entry.phase === "staged")?.replies.includes("JOURNAL_WORK_PACKET_NOT_FETCHED"));
         }

@@ -596,6 +596,30 @@ test("packet preflight refuses before the Claude executable starts", async (t) =
   assert.ok(logs.every(item => item.outcome === "rejected:PACKET_TOO_LARGE" && item.model_reached === false));
 });
 
+test("attempt commands use the worker's identity once the runtime removed the dispatch record", async (t) => {
+  const f = await fixture(t);
+  const environment = { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root };
+  await assert.rejects(f.port.invoke({ ...call("job:synthetic-gone"), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const [record] = await f.exchange.listDispatch();
+  const claim = "22222222-2222-4222-8222-222222222222";
+  const command = async (name, args = []) => {
+    let output = "";
+    await runJournalWork([name, "--work-id", record.work_id, ...args], { environment,
+      stdout: { write: value => { output += value; } } });
+    return JSON.parse(output);
+  };
+  const identity = ["--attempt-identity", record.attempt_identity];
+  assert.equal((await command("attempt-reserve", [...identity, "--claim", claim])).claimed, true);
+  await command("attempt-mark", [...identity, "--claim", claim]);
+  await f.exchange.removeDispatch(record.work_id);
+  assert.equal((await f.exchange.listDispatch()).length, 0);
+  await assert.rejects(command("attempt-status"), { code: "JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED" });
+  assert.equal((await command("attempt-status", identity)).status, "attempted");
+  // A new reservation still needs the live dispatch record.
+  await assert.rejects(command("attempt-reserve", [...identity, "--claim", claim]),
+    { code: "JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED" });
+});
+
 test("attempt status, exclusive reservations, corrupt markers, stale temps and operator clearing", async (t) => {
   const f = await fixture(t);
   const environment = { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root };
@@ -619,6 +643,9 @@ test("attempt status, exclusive reservations, corrupt markers, stale temps and o
   const { attempt_identity: _identity, ...legacy } = JSON.parse(await fs.readFile(marker, "utf8"));
   await fs.writeFile(marker, JSON.stringify(legacy));
   assert.equal((await command("attempt-status")).status, "reserved");
+  // While the dispatch record exists, a supplied identity must match it.
+  await assert.rejects(command("attempt-status", ["--attempt-identity", "b".repeat(48)]), { code: "JOURNAL_WORK_ATTEMPT_INVALID" });
+  assert.equal((await command("attempt-status", ["--attempt-identity", record.attempt_identity])).status, "reserved");
   // A reference-audit resend changes the work ID, while dispatch identity stays fixed.
   await assert.rejects(f.port.invoke({ ...call("job:synthetic-marker:resend:1"), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
   const resendRecord = (await f.exchange.listDispatch()).find(item => item.work_id !== workId);

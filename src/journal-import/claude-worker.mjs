@@ -353,7 +353,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       // Validate the profile before creating a stage or invoking the provider.
       claudePrintArgs({ record, mcpConfig: "/tmp/placeholder" });
       if (!/^[0-9a-f]{48}$/u.test(record.attempt_identity ?? "")) fail("JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED");
-      const reservation = await host("attempt-reserve", ["--work-id", record.work_id, "--claim", claim,
+      const reservation = await host("attempt-reserve", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim,
         "--timeout-ms", String(options.timeoutMs)]);
       if (reservation[0]?.claimed !== true) { outcome = "already_attempted"; return outcome; }
       claimed = true;
@@ -383,7 +383,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
             reachedModel = true;
             // Await the durable mark while stdout is paused, before accepting
             // further events or allowing the child result to be admitted.
-            await host("attempt-mark", ["--work-id", record.work_id, "--claim", claim]);
+            await host("attempt-mark", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim]);
           }
           if (isolationRefused) return false;
         }, activeGroups
@@ -420,10 +420,10 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           : reader.state.limitReset ?? Date.now() + options.limitBackoffMs);
         if (claimed) {
           try {
-            await host("attempt-release", ["--work-id", record.work_id, "--claim", claim]);
+            await host("attempt-release", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim]);
             claimed = false;
           } catch {
-            pendingReleases.set(record.work_id, claim);
+            pendingReleases.set(record.work_id, { claim, identity: record.attempt_identity });
             await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_release_failed" });
           }
         }
@@ -466,11 +466,11 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     finally {
       if (claimed && isolationRefused) {
         outcome = "isolation_refused";
-        try { await host("attempt-refuse", ["--work-id", record.work_id, "--claim", claim]); }
+        try { await host("attempt-refuse", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim]); }
         catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_refuse_failed" }); }
       } else if (claimed && !reachedModel && !observed?.limitSeen && outcome !== "limited") {
         try {
-          await host("attempt-release", ["--work-id", record.work_id, "--claim", claim]); claimed = false;
+          await host("attempt-release", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim]); claimed = false;
           pendingReleases.delete(record.work_id);
         }
         catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_release_failed" }); }
@@ -508,9 +508,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     const initial = options.once ? new Set((await host("dispatch", ["--json"])).map((record) => record.work_id)) : null;
     for (;;) {
       if (stopping || completed >= options.maxItems) break;
-      for (const [workId, claim] of pendingReleases) {
+      for (const [workId, { claim, identity }] of pendingReleases) {
         try {
-          await host("attempt-release", ["--work-id", workId, "--claim", claim]);
+          await host("attempt-release", ["--work-id", workId, "--attempt-identity", identity, "--claim", claim]);
           pendingReleases.delete(workId);
         } catch { /* Keep the limited outcome and reservation; retry on the next loop. */ }
       }
@@ -523,10 +523,11 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       const records = await host("dispatch", ["--json"]);
       let record = records.find((item) => (!initial || initial.has(item.work_id)) && !item.answered
         && item.tier === "hardest" && item.model === MODEL && item.effort === "max"
+        && /^[0-9a-f]{48}$/u.test(item.attempt_identity ?? "")
         && Date.parse(item.expires_at) > Date.now()
         && !pendingReleases.has(item.work_id)
         && (attempts.get(item.work_id) ?? 0) < 3 && (limits.get(item.work_id) ?? 0) < MAX_LIMIT_RETRIES);
-      const marker = record ? (await host("attempt-status", ["--work-id", record.work_id]))[0] : null;
+      const marker = record ? (await host("attempt-status", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity]))[0] : null;
       if (record && marker?.attempted) {
         attempts.set(record.work_id, 3);
         await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
@@ -544,7 +545,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       else if (["already_attempted", "isolation_refused"].includes(outcome)) attempts.set(record.work_id, 3);
       else if (outcome !== "stopped") {
         attempts.set(record.work_id, (attempts.get(record.work_id) ?? 0) + 1);
-        if ((await host("attempt-status", ["--work-id", record.work_id]))[0]?.attempted) {
+        if ((await host("attempt-status", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity]))[0]?.attempted) {
           attempts.set(record.work_id, 3); completed += 1;
         }
       }

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
+import { constants as fsConstants } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
@@ -184,6 +185,15 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
       if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 3_600_000) fail("JOURNAL_WORK_ATTEMPT_INVALID");
       options.splice(timeoutIndex, 2);
     }
+    // The worker passes the identity it read from the dispatch record, because the runtime removes the
+    // record once the item is answered or retired. While the record exists, the two must agree.
+    const identityIndex = options.indexOf("--attempt-identity");
+    let suppliedIdentity = null;
+    if (identityIndex >= 0) {
+      suppliedIdentity = options[identityIndex + 1];
+      if (!/^[0-9a-f]{48}$/u.test(suppliedIdentity ?? "")) fail("JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED");
+      options.splice(identityIndex, 2);
+    }
     const operatorCommand = ["attempt-status", "attempt-clear"].includes(command);
     const parsed = flags(options, operatorCommand ? ["--work-id"] : ["--work-id", "--claim"]);
     const value = parsed["--work-id"];
@@ -191,7 +201,15 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     if (!operatorCommand && !/^[0-9a-f-]{36}$/u.test(parsed["--claim"])) fail("JOURNAL_WORK_ATTEMPT_INVALID");
     const directory = await attemptDirectory(root);
     const dispatch = (await createJournalWorkDispatchReader({ root }).listDispatch()).find(item => item.work_id === workId);
-    const identity = journalAttemptIdentity(dispatch);
+    let identity;
+    if (dispatch) {
+      identity = journalAttemptIdentity(dispatch);
+      if (suppliedIdentity !== null && suppliedIdentity !== identity) fail("JOURNAL_WORK_ATTEMPT_INVALID");
+    } else if (command !== "attempt-reserve" && suppliedIdentity !== null) {
+      identity = suppliedIdentity;
+    } else {
+      fail("JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED");
+    }
     const marker = path.join(directory, `${journalAttemptMarkerKey(identity)}.json`);
     if (command === "attempt-reserve") {
       let claimed = true;
@@ -202,9 +220,14 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     }
     let status = null, ageSeconds = null;
     try {
-      const info = await fs.lstat(marker);
-      ageSeconds = Math.max(0, (Date.now() - info.mtimeMs) / 1000);
-      try { status = JSON.parse(await fs.readFile(marker, "utf8")); } catch { status = { status: "attempted" }; }
+      // One no-follow handle supplies both the age and the content, so the two can't diverge.
+      const handle = await fs.open(marker, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
+      try {
+        const info = await handle.stat();
+        if (!info.isFile()) fail("JOURNAL_WORK_ATTEMPT_INVALID");
+        ageSeconds = Math.max(0, (Date.now() - info.mtimeMs) / 1000);
+        try { status = JSON.parse(await handle.readFile("utf8")); } catch { status = { status: "attempted" }; }
+      } finally { await handle.close(); }
       const legacyIdentity = /^journal-work:([0-9a-f]{48})(?::r[1-8])?$/u.exec(status?.work_id ?? "")?.[1];
       if (!status || (status.attempt_identity ?? legacyIdentity) !== identity
         || !["reserved", "attempted", "isolation_refused"].includes(status.status)

@@ -164,7 +164,8 @@ test("a role call goes out as a work item and comes back as an authenticated ans
 
   // The dispatch record carries no content: an opaque ID, the role and the route's model and effort.
   const [record] = await environment.connector.listDispatch();
-  assert.deepEqual(Object.keys(record).sort(), ["answered", "effort", "expires_at", "issued_at", "model", "output_schema_name", "role", "route_ref", "schema_version", "tier", "work_id"]);
+  assert.deepEqual(Object.keys(record).sort(), ["answered", "attempt_identity", "effort", "expires_at", "issued_at", "model", "output_schema_name", "role", "route_ref", "schema_version", "tier", "work_id"]);
+  assert.match(record.attempt_identity, /^[0-9a-f]{48}$/u);
   assert.equal(record.tier, "standard");
   assert.equal(record.answered, true);
   const dispatchText = await fs.readFile(path.join(environment.root, "dispatch", `${journalWorkFileKey(record.work_id)}.json`), "utf8");
