@@ -364,7 +364,8 @@ test("staging is sealed, first-write-wins, and rejects unsafe directories; execu
   assert.deepEqual(await f.exchange.stageResult({ stageDir: stage, workId: "job:synthetic-stage", output: { ok: false } }),
     { stored: true, already: true });
   const staged = await fs.readFile(path.join(stage, `${journalWorkFileKey("job:synthetic-stage")}.json`), "utf8");
-  assert.equal(staged.includes("ok"), false);
+  // The staged file holds ciphertext; check for the plaintext key, since random base64 can contain "ok".
+  assert.equal(staged.includes('"ok":'), false);
   await fs.mkdir(path.join(f.root, "inbox"), { mode: 0o700 });
   await fs.copyFile(path.join(stage, `${journalWorkFileKey("job:synthetic-stage")}.json`),
     path.join(f.root, "inbox", `${journalWorkFileKey("job:synthetic-stage")}.json`));

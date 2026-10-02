@@ -463,10 +463,11 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         cwd: runDir, env: { ...processEnv, XDG_CACHE_HOME: path.join(runDir, "cache") },
         maxLineBytes: MAX_CLAUDE_LINE_BYTES, maxStreamBytes: 4 * MAX_CLAUDE_LINE_BYTES, killOnClose: true,
         onSpawn: async pid => {
+          // Retain the group first, so a failure below still leads to the confirmed-group-gone path.
+          childGroup = pid;
           const owner = await linuxProcessIdentity(process.pid), child = await linuxProcessIdentity(pid);
           if (!owner || !child || child.group !== pid) fail("JOURNAL_CLAUDE_PROCESS_RECORD_INVALID");
           await writeAttemptMarker(path.join(runDir, "process-group.json"), { owner, child }, true);
-          childGroup = pid;
         },
         timeoutMs: options.timeoutMs, onLine: async (line, kill) => {
           reader.accept(line);
