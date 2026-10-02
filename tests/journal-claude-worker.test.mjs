@@ -11,7 +11,7 @@ import { createJournalWorkExchange } from "../src/journal-import/work-exchange.m
 import { createExchangeJournalInferencePort, journalExchangeAttemptIdentity } from "../src/journal-import/exchange-port.mjs";
 import { claudeMcpConfiguration, claudePrintArgs, claudeResultReader, parseJournalClaudeWorkerArgs,
   runJournalClaudeWorker, assertClaudeRunPath, claudeRunSlug, cleanClaudePersistence,
-  sweepClaudePersistence, CLAUDE_PROVIDER_BACKOFF_MS, CLAUDE_PAUSED_EXIT_CODE, CLAUDE_SETUP_REFUSED_EXIT_CODE } from "../src/journal-import/claude-worker.mjs";
+  sweepClaudePersistence, CLAUDE_PROVIDER_BACKOFF_MS, CLAUDE_PAUSED_EXIT_CODE, CLAUDE_SETUP_REFUSED_EXIT_CODE, CLAUDE_CLEANUP_FAILED_EXIT_CODE } from "../src/journal-import/claude-worker.mjs";
 import { journalAttemptIdentity, journalAttemptMarkerKey, runJournalWork, releaseAttemptMarker, writeAttemptMarker } from "../src/cli/journal-work.mjs";
 import { runJournalWorkMcp } from "../src/cli/journal-work-mcp.mjs";
 import { createJournalWorkTools, JOURNAL_WORK_TOOL_DEFINITIONS, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../src/server/journal-work-tools.mjs";
@@ -111,6 +111,11 @@ if (["project_file", "fallback_cache"].includes(scenario)) {
     : path.join(process.env.HOME, ".cache", "claude-cli-nodejs", slug, "mcp-logs-journal");
   fs.mkdirSync(target, { recursive: true });
   fs.writeFileSync(path.join(target, "synthetic.txt"), ["SYNTHETIC", "CLAUDE", "PRIVATE", "SENTINEL", "DO", "NOT", "LOG"].join("_"));
+}
+if (scenario === "cleanup_unreadable") {
+  // A fallback-cache root that is a file makes the post-run cleanup unable to inspect it.
+  fs.mkdirSync(path.join(process.env.HOME, ".cache"), { recursive: true });
+  fs.writeFileSync(path.join(process.env.HOME, ".cache", "claude-cli-nodejs"), "not a directory");
 }
 if (scenario === "no_init_then_success") {
   const marker = ${JSON.stringify(path.join(laptop, "no-init-count"))};
@@ -543,6 +548,19 @@ test("a recent unspent reservation is left to its owner", async (t) => {
   const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
   assert.deepEqual(logs.map(item => item.outcome), ["reserved"]);
   assert.notEqual((await f.port.getCompletion(key)).status, "completed");
+});
+
+test("a persistence cleanup that fails refuses the result and stops the worker", async (t) => {
+  const f = await fixture(t, "cleanup_unreadable");
+  const keys = ["job:synthetic-cleanup-first", "job:synthetic-cleanup-second"];
+  for (const operationKey of keys) {
+    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  }
+  assert.equal(await runJournalClaudeWorker(f.args.map((value) => value === "1" ? "2" : value), { environment: f.environment }),
+    CLAUDE_CLEANUP_FAILED_EXIT_CODE);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["rejected:LOCAL_PERSISTENCE"], "the second item is not started");
+  for (const key of keys) assert.notEqual((await f.port.getCompletion(key)).status, "completed");
 });
 
 test("SIGINT wakes the poll sleep and returns exit code 130", async (t) => {

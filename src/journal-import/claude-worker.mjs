@@ -511,8 +511,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         // Leave the evidence for startup recovery and stop the worker once this item is refused.
         if (!groupGone) { persisted = true; groupAlive = true; cleanupFailed = true; preserveParent = true; }
         else {
+          // A cleanup that can't inspect or remove an artifact may leave plaintext behind: refuse and stop.
           try { persisted = await cleanClaudePersistence(processEnv.HOME, runDir); persistenceChecked = true; }
-          catch { persisted = true; }
+          catch { persisted = true; cleanupFailed = true; }
           // The run dir holds Claude's redirected cache and session files; remove it before admission. If it
           // can't be removed, refuse the result and stop the worker rather than leave it behind and carry on.
           try { await fs.rm(runDir, { recursive: true, force: true }); }
@@ -610,7 +611,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       if (runDir && !groupAlive) {
         if (!persistenceChecked) {
           try { if (await cleanClaudePersistence(processEnv.HOME, runDir)) outcome = "rejected:LOCAL_PERSISTENCE"; }
-          catch { outcome = "rejected:LOCAL_PERSISTENCE"; }
+          catch { outcome = "rejected:LOCAL_PERSISTENCE"; cleanupFailed = true; }
         }
         try { await fs.rm(runDir, { recursive: true, force: true }); }
         catch { cleanupFailed = true; await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "run_remove_failed" }); }
