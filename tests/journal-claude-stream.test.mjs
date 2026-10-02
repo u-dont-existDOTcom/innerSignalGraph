@@ -348,19 +348,24 @@ test("startup recovery fails closed on a markerless run whose worker lock is not
   await fs.access(runDir);
 });
 
-test("every reported session is recorded, and more than eight refuses the run", () => {
+test("with a reserved session, any event reporting another session refuses the run", () => {
   const record = { model: "claude-opus-5-5", work_id: "job:synthetic" };
-  const reader = claudeResultReader(record);
-  reader.accept(JSON.stringify({ type: "system", subtype: "init", mcp_servers: [{ name: "journal", status: "connected" }],
-    tools: ["mcp__journal__get_journal_work_packet", "mcp__journal__submit_journal_work_result"], skills: [], slash_commands: [],
-    session_id: "session-00" }));
-  for (let index = 1; index <= 7; index += 1) {
-    reader.accept(JSON.stringify({ type: "system", subtype: "status", session_id: `session-0${index}` }));
+  const expected = "0f8fad5b-d9cb-469f-a165-70867728950e";
+  const init = { type: "system", subtype: "init", mcp_servers: [{ name: "journal", status: "connected" }],
+    tools: ["mcp__journal__get_journal_work_packet", "mcp__journal__submit_journal_work_result"], skills: [], slash_commands: [] };
+  const result = { type: "result", is_error: false, subtype: "success", modelUsage: { "claude-opus-5-5": { outputTokens: 1 } } };
+  const accepted = claudeResultReader(record, null, expected);
+  accepted.accept(JSON.stringify({ ...init, session_id: expected }));
+  accepted.accept(JSON.stringify({ ...result, session_id: expected }));
+  assert.equal(accepted.state.bad, null);
+  assert.equal(accepted.state.session, expected);
+  for (const events of [
+    [{ ...init, session_id: "12345678" }, { ...result, session_id: expected }],
+    [{ ...init, session_id: expected }, { type: "system", subtype: "status", session_id: null }, { ...result, session_id: expected }],
+    [{ ...init, session_id: expected }, { ...result, session_id: "12345678" }],
+    [{ ...init, session_id: expected }, { ...result }]]) {
+    const reader = claudeResultReader(record, null, expected);
+    for (const event of events) reader.accept(JSON.stringify(event));
+    assert.equal(reader.state.bad, "SESSION_INVALID");
   }
-  assert.equal(reader.state.sessions.size, 8);
-  assert.equal(reader.state.sessionOverflow, false);
-  reader.accept(JSON.stringify({ type: "system", subtype: "status", session_id: "session-08" }));
-  assert.deepEqual([...reader.state.sessions].at(-1), "session-08", "the session past the cap is recorded too");
-  assert.equal(reader.state.sessionOverflow, true);
-  assert.equal(reader.state.bad, "SESSION_INVALID");
 });

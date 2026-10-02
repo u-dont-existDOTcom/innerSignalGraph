@@ -67,7 +67,21 @@ const failFirst = (name, count, code) => {
   fs.writeFileSync(marker, String(seen + 1));
   if (seen < count) process.exit(code);
 };
-if (${JSON.stringify(scenario)} === "session_reserve_failure" && args.at(-1).includes("'session-reserve'")) failFirst("session-reserve", 2, 39);
+if (${JSON.stringify(scenario)} === "session_reserve_failure" && args.at(-1).includes("'session-reserve'")) failFirst("session-reserve", 1, 39);
+if (${JSON.stringify(scenario)} === "session_stolen" && args.at(-1).includes("'promote'")) {
+  // Another item takes this run's session reservation between Claude's run and promotion.
+  const directory = path.join(${JSON.stringify(root)}, "claude-sessions");
+  for (const name of fs.readdirSync(directory)) fs.writeFileSync(path.join(directory, name), JSON.stringify({ work_id: "job:synthetic-other-item" }));
+}
+if (${JSON.stringify(scenario)} === "release_unsaved" && args.at(-1).includes("'attempt-release'")) {
+  // The first failed release also leaves the laptop unable to save its claim; the second restores that.
+  const pending = path.join(${JSON.stringify(workDir)}, "pending-releases"), moved = pending + ".moved";
+  const marker = path.join(${JSON.stringify(laptop)}, "release-unsaved-count");
+  const seen = fs.existsSync(marker) ? Number(fs.readFileSync(marker, "utf8")) : 0;
+  fs.writeFileSync(marker, String(seen + 1));
+  if (seen === 0) { fs.renameSync(pending, moved); fs.writeFileSync(pending, ""); process.exit(40); }
+  if (seen === 1) { fs.rmSync(pending); fs.renameSync(moved, pending); process.exit(40); }
+}
 if (${JSON.stringify(scenario)} === "release_failure_restart" && args.at(-1).includes("'attempt-release'")) failFirst("attempt-release", 2, 40);
 if (["release_failure", "no_init_release_failure"].includes(${JSON.stringify(scenario)}) && args.at(-1).includes("attempt-release")) {
   const marker = ${JSON.stringify(path.join(laptop, "release-fail-count"))};
@@ -108,15 +122,16 @@ if (scenario === "isolation_then_success") {
   if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); scenario = "tools_extra"; }
   else scenario = "ok";
 }
-if (scenario === "unstaged_then_ok") {
-  const marker = ${JSON.stringify(path.join(laptop, "unstaged-count"))};
-  if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); scenario = "nothing_staged"; }
-  else scenario = "ok";
-}
-const limitScenarios = ["limit_then_success", "assistant_limit", "http429", "rate_event_seconds", "rate_event_ms", "release_failure", "release_failure_restart"];
-// Claude reports one session per run, in init and result alike; the run after a limit starts a new session.
-const sessionId = limitScenarios.includes(scenario) && fs.existsSync(${JSON.stringify(path.join(laptop, "limit-count"))})
-  ? "87654321" : "12345678";
+const limitScenarios = ["limit_then_success", "assistant_limit", "http429", "rate_event_seconds", "rate_event_ms", "release_failure",
+  "release_failure_restart", "release_unsaved"];
+// Claude Code reports the session the worker requested in every event; "foreign_session" simulates one that doesn't.
+fs.appendFileSync(${JSON.stringify(path.join(laptop, "claude-starts"))}, "x");
+const requested = args[args.indexOf("--session-id") + 1];
+const sessionId = scenario === "foreign_session" ? "12345678" : requested;
+const { createHash } = await import("node:crypto");
+const reservation = path.join(${JSON.stringify(root)}, "claude-sessions",
+  createHash("sha256").update("inner-signal:claude-session:claude-session:" + requested).digest("hex") + ".json");
+if (!fs.existsSync(reservation)) process.exit(41); // the session must be reserved on the host before Claude starts
 const slug = process.cwd().replace(/[^A-Za-z0-9]/g, "-");
 const project = path.join(process.env.HOME, ".claude", "projects", slug);
 fs.mkdirSync(project, { recursive: true });
@@ -182,7 +197,7 @@ if (limitScenarios.includes(scenario)) {
   const counter = ${JSON.stringify(path.join(laptop, "limit-count"))};
   if (!fs.existsSync(counter)) {
     fs.writeFileSync(counter, "1");
-    if (["assistant_limit", "release_failure", "release_failure_restart"].includes(scenario)) console.log(JSON.stringify({ type: "assistant", error: "rate_limit" }));
+    if (["assistant_limit", "release_failure", "release_failure_restart", "release_unsaved"].includes(scenario)) console.log(JSON.stringify({ type: "assistant", error: "rate_limit" }));
     if (scenario.startsWith("rate_event")) console.log(JSON.stringify({ type: "rate_limit_event", status: "limited",
       resetsAt: scenario === "rate_event_seconds" ? (Date.now() + 100) / 1000 : Date.now() + 100 }));
     console.log(JSON.stringify({ type: "result", is_error: true,
@@ -243,10 +258,10 @@ else {
   return { base, host, laptop, root, workDir, secret, secretFile, config, trace, sshTrace, log, exchange, port, environment, args };
 }
 
-// The work dir keeps only the worker's two pending-action directories, empty once the host confirmed everything.
+// The work dir keeps only the worker's pending-release directory, empty once the host confirmed every release.
 async function assertWorkDirClean(workDir, extra = []) {
-  assert.deepEqual((await fs.readdir(workDir)).sort(), [...extra, "pending-releases", "pending-sessions"].sort());
-  for (const name of ["pending-releases", "pending-sessions"]) assert.deepEqual(await fs.readdir(path.join(workDir, name)), []);
+  assert.deepEqual((await fs.readdir(workDir)).sort(), [...extra, "pending-releases"].sort());
+  assert.deepEqual(await fs.readdir(path.join(workDir, "pending-releases")), []);
 }
 
 async function scanFiles(directory) {
@@ -272,7 +287,12 @@ test("synthetic SSH and Claude executables parse without private text", async (t
 
 test("Claude arguments map only the pinned hardest profile and remote MCP holds no secret", () => {
   const record = { attempt_identity: "a".repeat(48), work_id: "job:synthetic", tier: "hardest", model: "claude-opus-5-5", effort: "max" };
-  const args = claudePrintArgs({ record, mcpConfig: "/tmp/mcp.json" });
+  const sessionId = "0f8fad5b-d9cb-469f-a165-70867728950e";
+  const args = claudePrintArgs({ record, mcpConfig: "/tmp/mcp.json", sessionId });
+  assert.deepEqual(args.slice(args.indexOf("--session-id"), args.indexOf("--session-id") + 2), ["--session-id", sessionId]);
+  for (const bad of [undefined, "12345678", "0F8FAD5B-D9CB-469F-A165-70867728950E"]) {
+    assert.throws(() => claudePrintArgs({ record, mcpConfig: "/tmp/mcp.json", sessionId: bad }), { code: "JOURNAL_CLAUDE_SESSION_INVALID" });
+  }
   assert.deepEqual(args.slice(args.indexOf("--model"), args.indexOf("--model") + 4), ["--model", "opus", "--effort", "max"]);
   assert.ok(args.includes("--strict-mcp-config") && args.includes("--no-session-persistence"));
   for (const flag of ["--verbose", "--disable-slash-commands", "--include-hook-events"]) assert.ok(args.includes(flag));
@@ -280,7 +300,7 @@ test("Claude arguments map only the pinned hardest profile and remote MCP holds 
   assert.deepEqual(args.slice(args.indexOf("--setting-sources"), args.indexOf("--setting-sources") + 4),
     ["--setting-sources", "", "--settings", '{"disableAllHooks":true}']);
   assert.deepEqual(args.slice(args.indexOf("--tools"), args.indexOf("--tools") + 2), ["--tools", ""]);
-  assert.throws(() => claudePrintArgs({ record: { ...record, model: "claude-unmapped" }, mcpConfig: "/tmp/mcp.json" }),
+  assert.throws(() => claudePrintArgs({ record: { ...record, model: "claude-unmapped" }, mcpConfig: "/tmp/mcp.json", sessionId }),
     { code: "JOURNAL_CLAUDE_PROFILE_INVALID" });
   const remoteArgs = ["--agent", "claude", "--remote", "host",
     "--remote-checkout", "/host/repo", "--remote-config", "/host/config", "--work-dir", "/tmp/work"];
@@ -458,53 +478,45 @@ test("attempt marker survives a worker restart and prevents a second model run",
   assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted");
 });
 
-test("one worker refuses a session ID reused for a second hardest item", async (t) => {
+test("each run uses a fresh session that the host reserved before Claude started", async (t) => {
   const f = await fixture(t);
   const keys = ["job:synthetic-session-first", "job:synthetic-session-second"];
   for (const operationKey of keys) {
     await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
   }
+  // The synthetic Claude exits 41 unless its requested session is already reserved on the host.
   await runJournalClaudeWorker(f.args.map((value) => value === "1" ? "2" : value), { environment: f.environment });
   const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
-  assert.deepEqual(logs.map((item) => item.outcome), ["answered", "rejected:SESSION_REUSED"]);
-  assert.equal((await f.port.getCompletion(keys[0])).status, "completed");
-  assert.equal((await f.port.getCompletion(keys[1])).status, "exhausted");
+  assert.deepEqual(logs.map((item) => item.outcome), ["answered", "answered"]);
+  const contexts = await Promise.all(keys.map(async (operationKey) =>
+    (await f.port.getCompletion(operationKey)).receipt.request_context_id));
+  assert.ok(contexts.every((context) => /^claude-session:[0-9a-f-]{36}$/u.test(context)));
+  assert.notEqual(contexts[0], contexts[1]);
+  assert.equal((await fs.readdir(path.join(f.root, "claude-sessions"))).length, 2);
 });
 
-test("a session reported by a rejected run can't back another item after a restart", async (t) => {
-  const f = await fixture(t, "unstaged_then_ok");
-  const keys = ["job:synthetic-rejected-session-first", "job:synthetic-rejected-session-second"];
-  for (const operationKey of keys) {
-    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
-  }
-  // Separate worker processes (each with an empty in-process session set): the first run fetches the packet
-  // but stages nothing, and the second reports the same session for the other item.
-  await runJournalClaudeWorker(f.args, { environment: f.environment });
+test("a run whose events report a session other than the reserved one is refused", async (t) => {
+  const f = await fixture(t, "foreign_session");
+  const operationKey = "job:synthetic-foreign-session";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
   await runJournalClaudeWorker(f.args, { environment: f.environment });
   const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
-  assert.deepEqual(logs.map((item) => item.outcome), ["rejected:STAGE_MISSING", "rejected:SESSION_REUSED"]);
-  assert.notEqual(logs[0].work_id, logs[1].work_id);
-  for (const operationKey of keys) assert.notEqual((await f.port.getCompletion(operationKey)).status, "completed");
-  assert.equal((await fs.readdir(path.join(f.root, "claude-sessions"))).length, 1);
+  assert.deepEqual(logs.map((item) => item.outcome), ["rejected:SESSION_INVALID"]);
+  assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted");
 });
 
-test("a session reservation the host didn't confirm is kept on disk and finished by the next worker", async (t) => {
+test("a failed session reservation stops the item before Claude starts", async (t) => {
   const f = await fixture(t, "session_reserve_failure");
-  const keys = ["job:synthetic-pending-session-first", "job:synthetic-pending-session-second"];
-  for (const operationKey of keys) {
-    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
-  }
-  const pending = path.join(f.workDir, "pending-sessions");
-  // The first worker's reservation and its retry both fail: the run is not admitted and the worker pauses.
-  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 75);
-  assert.equal((await fs.readdir(pending)).length, 1);
-  // The next worker reserves the pending session before taking the other item, which reports the same session.
-  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
-  assert.deepEqual(await fs.readdir(pending), []);
+  const operationKey = "job:synthetic-session-reserve-failure";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  // The first attempt fails at the reservation, before Claude starts, and releases its unspent claim; the retry
+  // reserves a fresh session and answers.
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
   const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
-  assert.deepEqual(logs.map((item) => item.outcome), ["error", "rejected:SESSION_REUSED"]);
-  for (const operationKey of keys) assert.notEqual((await f.port.getCompletion(operationKey)).status, "completed");
-  assert.equal((await fs.readdir(path.join(f.root, "claude-sessions"))).length, 1);
+  assert.deepEqual(logs.map((item) => item.outcome), ["error", "answered"]);
+  assert.equal(logs[0].model_reached, false);
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "x", "Claude started once, for the retry");
+  assert.equal((await f.port.getCompletion(operationKey)).status, "completed");
 });
 
 test("a release that still failed when a paused worker exited is finished by the next worker", async (t) => {
@@ -524,22 +536,32 @@ test("a release that still failed when a paused worker exited is finished by the
   assert.deepEqual(logs.map((item) => item.outcome), ["attempt_release_failed", "limited", "answered"]);
 });
 
-test("a session ID reused by a second worker process is refused at promotion on the host", async (t) => {
-  const f = await fixture(t);
-  const keys = ["job:synthetic-cross-session-first", "job:synthetic-cross-session-second"];
-  for (const operationKey of keys) {
-    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
-  }
-  // Two separate worker runs (each with an empty in-process session set), one item each, same fake session.
-  await runJournalClaudeWorker(f.args, { environment: f.environment });
+test("promotion is refused when another item owns the run's session", async (t) => {
+  const f = await fixture(t, "session_stolen");
+  const operationKey = "job:synthetic-session-stolen";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
   await runJournalClaudeWorker(f.args, { environment: f.environment });
   const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
-  assert.deepEqual(logs.map((item) => item.outcome), ["answered", "rejected:SESSION_REUSED"]);
-  assert.equal((await f.port.getCompletion(keys[0])).status, "completed");
-  assert.notEqual((await f.port.getCompletion(keys[1])).status, "completed");
+  assert.deepEqual(logs.map((item) => item.outcome), ["rejected:SESSION_REUSED"]);
+  assert.notEqual((await f.port.getCompletion(operationKey)).status, "completed");
   const sessions = await fs.readdir(path.join(f.root, "claude-sessions"));
   assert.equal(sessions.length, 1);
   assert.match(sessions[0], /^[0-9a-f]{64}\.json$/u);
+});
+
+test("a worker that can't save a failed release's claim retries before exiting", async (t) => {
+  const f = await fixture(t, "release_unsaved");
+  const operationKey = "job:synthetic-release-unsaved";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  // Limited; the release fails and its claim can't be saved. The paused --once worker retries until the claim is
+  // saved and released instead of exiting with it only in memory.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 75);
+  await assertWorkDirClean(f.workDir);
+  // Nothing was stranded, so the next worker takes the item at once and answers it.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  assert.equal((await f.port.getCompletion(operationKey)).status, "completed");
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["pending_release_unsaved", "attempt_release_failed", "limited", "answered"]);
 });
 
 test("stale worker directories are swept and opening the log cleans the new parent", async (t) => {
