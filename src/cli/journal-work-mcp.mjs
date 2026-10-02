@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { assertJournalWorkExchangeRoot, createJournalWorkExchange,
   journalWorkExchangeSecret, resolveJournalWorkExchangeRoot } from "../journal-import/work-exchange.mjs";
-import { createJournalWorkTools } from "../server/journal-work-tools.mjs";
+import { createJournalWorkTools, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../server/journal-work-tools.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/u;
@@ -67,7 +67,8 @@ export async function runJournalWorkMcp(argv, {
       send(response(request.id, { protocolVersion: "2025-06-18", capabilities: { tools: { listChanged: false } },
         serverInfo: { name: "inner-signal-journal-work", version: "1.0" } }));
     } else if (request.method === "tools/list") {
-      send(response(request.id, { tools: tools.definitions }));
+      send(response(request.id, { tools: tools.definitions.map((tool) => ({ ...tool,
+        _meta: { "anthropic/maxResultSizeChars": MAX_JOURNAL_TOOL_RESULT_CHARS } })) }));
     } else if (request.method === "tools/call") {
       const outcome = await tools.call(request.params?.name, request.params?.arguments ?? {}, {});
       send(response(request.id, toolResult(outcome)));

@@ -202,30 +202,32 @@ async function checkCodexHome(home) {
   });
 }
 
-export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups }) {
+export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups,
+  maxLineBytes = MAX_LINE, maxStreamBytes = MAX_STREAM, killOnClose = false }) {
   return new Promise((resolve) => {
     const started = Date.now();
     let child;
     try { child = spawn(command, args, { cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"], shell: false }); }
     catch { resolve({ code: null, timedOut: false, problem: "SPAWN_FAILED", durationMs: Date.now() - started }); return; }
-    let line = "", total = 0, problem = null, timedOut = false;
+    let line = "", total = 0, problem = null, timedOut = false, refused = false;
     const killGroup = () => { try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { child.kill("SIGKILL"); } };
     activeGroups?.add(killGroup);
     const timer = timeoutMs === null ? null : setTimeout(() => { timedOut = true; killGroup(); }, timeoutMs);
     child.once("error", () => { problem = "SPAWN_FAILED"; });
     child.stdout?.setEncoding("utf8");
     child.stdout?.on("data", (chunk) => {
+      if (refused) return;
       total += Buffer.byteLength(chunk);
-      if (total > MAX_STREAM) { problem = "EVENT_STREAM_TOO_LARGE"; killGroup(); return; }
+      if (total > maxStreamBytes) { problem = "EVENT_STREAM_TOO_LARGE"; killGroup(); return; }
       line += chunk;
       for (;;) {
         const at = line.indexOf("\n");
         if (at < 0) break;
         const next = line.slice(0, at); line = line.slice(at + 1);
-        if (Buffer.byteLength(next) > MAX_LINE) { problem = "EVENT_LINE_TOO_LARGE"; killGroup(); return; }
-        onLine(next);
+        if (Buffer.byteLength(next) > maxLineBytes) { problem = "EVENT_LINE_TOO_LARGE"; killGroup(); return; }
+        if (onLine(next) === false) { refused = true; line = ""; killGroup(); return; }
       }
-      if (Buffer.byteLength(line) > MAX_LINE) { problem = "EVENT_LINE_TOO_LARGE"; killGroup(); }
+      if (Buffer.byteLength(line) > maxLineBytes) { problem = "EVENT_LINE_TOO_LARGE"; killGroup(); }
     });
     let stderrTail = "";
     child.stderr?.setEncoding("utf8");
@@ -233,7 +235,8 @@ export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeG
       stderrTail = (stderrTail + chunk).slice(-512);
     }); // Only transiently inspect for a limit; never retain or print packet or answer text.
     child.once("close", (code) => { if (timer) clearTimeout(timer); activeGroups?.delete(killGroup);
-      if (line.length) onLine(line);
+      if (killOnClose) killGroup();
+      if (!refused && line.length) onLine(line);
       resolve({ code, timedOut, problem, stderrLast: stderrTail.trim().split("\n").at(-1) ?? "",
         durationMs: Date.now() - started }); });
   });

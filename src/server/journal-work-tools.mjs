@@ -12,6 +12,26 @@ import { JOURNAL_WORK_ID_PATTERN, MAX_JOURNAL_RESULT_BYTES } from "../journal-im
 const WORK_ID_SCHEMA = Object.freeze({ type: "string", pattern: JOURNAL_WORK_ID_PATTERN.source });
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/u;
 const MAX_REPORTED_SCHEMA_ERRORS = 25;
+// Above the 180,000-byte extraction/reconciliation and 50,000-byte pattern bounds,
+// including instruction/schema/context. The encrypted exchange entry itself is capped at 4 MiB.
+export const MAX_JOURNAL_TOOL_RESULT_CHARS = 4 * 1024 * 1024;
+export function journalWorkPacketValue(entry) {
+  return { work_id: entry.work_id, status: "ready", role: entry.role, instruction: entry.instruction,
+    packet: entry.packet, output_schema: entry.output_schema, expected_generation: entry.expected_generation,
+    expires_at: entry.expires_at, submit_with: "submit_journal_work_result" };
+}
+
+// Retain array indices only; property segments are fixed tokens, never supplied key names.
+function schemaErrorPath(instancePath, output) {
+  let current = output;
+  return instancePath ? instancePath.split("/").map((part, index) => {
+    if (index === 0) return "";
+    const key = part.replaceAll("~1", "/").replaceAll("~0", "~");
+    const safe = Array.isArray(current) && /^(?:0|[1-9][0-9]*)$/u.test(key) ? key : "property";
+    current = current?.[key];
+    return safe;
+  }).join("/") : "/";
+}
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const isPlainObject = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
@@ -91,18 +111,12 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
       return value({ work_id: workId, status: "already_submitted", message: "An answer for this item is already stored. Stop here." });
     }
     const { entry } = found;
+    const packet = journalWorkPacketValue(entry);
+    if ((entry.tier ?? tier) === "hardest" && JSON.stringify(packet).length > MAX_JOURNAL_TOOL_RESULT_CHARS) {
+      return toolError("JOURNAL_WORK_PACKET_TOO_LARGE", "JOURNAL_WORK_PACKET_TOO_LARGE");
+    }
     if (stageDir) await exchange.markPacketFetched({ stageDir, workId });
-    return value({
-      work_id: workId,
-      status: "ready",
-      role: entry.role,
-      instruction: entry.instruction,
-      packet: entry.packet,
-      output_schema: entry.output_schema,
-      expected_generation: entry.expected_generation,
-      expires_at: entry.expires_at,
-      submit_with: "submit_journal_work_result"
-    });
+    return value(packet);
   }
 
   async function submit(workId, output, authContext) {
@@ -115,11 +129,9 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
     }
     const validate = validatorFor(found.entry.output_schema);
     if (!validate(output)) {
-      const errors = (validate.errors ?? []).slice(0, MAX_REPORTED_SCHEMA_ERRORS).map(({ instancePath, keyword, message, params }) => ({
-        instance_path: instancePath || "/",
-        keyword,
-        message,
-        params
+      const errors = (validate.errors ?? []).slice(0, MAX_REPORTED_SCHEMA_ERRORS).map(({ instancePath, keyword }) => ({
+        instance_path: schemaErrorPath(instancePath, output),
+        keyword
       }));
       return toolError("JOURNAL_OUTPUT_SCHEMA_INVALID", "The answer does not satisfy output_schema. Fix these problems and submit again.", {
         errors,
@@ -158,7 +170,7 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
       }
       if (name === "get_journal_work_packet") return getPacket(workId, authContext);
       if (name === "submit_journal_work_result") return submit(workId, args?.output, authContext);
-      return toolError("MCP_TOOL_NOT_FOUND", `Unknown journal work tool ${name}.`);
+      return toolError("MCP_TOOL_NOT_FOUND", "Unknown journal work tool.");
     }
   });
 }

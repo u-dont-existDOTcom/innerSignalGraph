@@ -159,7 +159,7 @@ test("submissions are schema-checked so the model can fix them, and the first va
   const problems = invalid.body.result.structuredContent;
   assert.equal(problems.code, "JOURNAL_OUTPUT_SCHEMA_INVALID");
   assert.ok(problems.errors.some((error) => error.keyword === "additionalProperties"));
-  assert.ok(problems.errors.some((error) => error.instance_path === "/items/0" && error.keyword === "type"));
+  assert.ok(problems.errors.some((error) => error.instance_path === "/property/0" && error.keyword === "type"));
   assert.equal(await exchange.hasResult(WORK_ID), false);
 
   const stored = await call(url, "submit_journal_work_result", { work_id: WORK_ID, output: { items: ["a", "b"] } }, "full");

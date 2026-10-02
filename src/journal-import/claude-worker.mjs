@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { lockWorkerDirectory, parseCodexResetTime, privateDirectory, removeStaleRuns, runProcess } from "./codex-worker.mjs";
+import { MAX_JOURNAL_TOOL_RESULT_CHARS } from "../server/journal-work-tools.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const MODEL = "claude-opus-5-5";
@@ -10,6 +11,8 @@ const SESSION = /^[0-9A-Za-z-]{8,64}$/u;
 const HOST = /^(?:[A-Za-z0-9_][A-Za-z0-9_.-]*@)?[A-Za-z0-9_][A-Za-z0-9_.-]*$/u;
 const BIN = /^[A-Za-z0-9_./-]+$/u;
 const MAX_LIMIT_RETRIES = 12;
+// Two copies of a packet can appear in a stream line, each JSON-escaped by up to 6x.
+export const MAX_CLAUDE_LINE_BYTES = 12 * MAX_JOURNAL_TOOL_RESULT_CHARS + 1024 * 1024;
 const fail = (code) => { throw Object.assign(new Error(code), { code }); };
 
 function number(value, fallback, min, max) {
@@ -74,42 +77,67 @@ export function claudePrintArgs({ record, mcpConfig }) {
 }
 
 export function claudeResultReader(record) {
-  const state = { bad: null, initialized: false, resultSeen: false, session: null, reportedSession: null, model: null,
+  const state = { bad: null, initialized: false, reachedModel: false, claudeCodeVersion: null,
+    resultSeen: false, session: null, reportedSession: null, model: null,
     packetFetched: false, packetBeforeFirstSubmit: false, submitSeen: false, hookCount: 0,
     servers: [], tools: [], skillCount: 0, slashCount: 0, pluginCount: 0, agentCount: 0,
     usage: { input_tokens: 0, cached_input_tokens: 0, output_tokens: 0, total_cost_usd: 0 },
     limitReset: null, limitSeen: false };
-  let first = true;
+  function resetTime(value) {
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) return value < 1e12 ? value * 1000 : value;
+    return null;
+  }
+  function hasUsage(value) {
+    if (!value || typeof value !== "object") return false;
+    return Object.entries(value).some(([key, item]) =>
+      (/tokens|cost/iu.test(key) && typeof item === "number" && Number.isFinite(item) && item !== 0)
+      || (item && typeof item === "object" && hasUsage(item)));
+  }
   function accept(line) {
     if (!line.trim()) return;
     let event;
-    try { event = JSON.parse(line); } catch { state.bad ??= first ? "ISOLATION" : "EVENT_JSON_INVALID"; first = false; return; }
-    if (!event || typeof event !== "object") { state.bad ??= first ? "ISOLATION" : "EVENT_INVALID"; first = false; return; }
-    if (first) {
-      first = false;
-      if (event.type !== "system" || event.subtype !== "init") {
-        state.bad = "ISOLATION";
-        if (event.type !== "result") return;
-      } else {
-        state.initialized = true;
-        state.servers = Array.isArray(event.mcp_servers) ? event.mcp_servers.map((server) =>
-          ({ name: server?.name, status: server?.status })) : [];
-        state.tools = Array.isArray(event.tools) ? event.tools : [];
-        for (const [key, field] of [["skills", "skillCount"], ["slash_commands", "slashCount"],
-          ["plugins", "pluginCount"], ["agents", "agentCount"]]) {
-          state[field] = Array.isArray(event[key]) ? event[key].length : -1;
-        }
-        if (JSON.stringify(state.servers) !== JSON.stringify([{ name: "journal", status: "connected" }])
-          || state.tools.length !== TOOLS.length || !state.tools.every((name) => typeof name === "string")
-          || !TOOLS.every((name) => state.tools.includes(name))
-          || state.skillCount !== 0 || state.slashCount !== 0) state.bad = "ISOLATION";
-        return;
-      }
-    }
-    if (event.type === "system" && event.subtype === "init") { state.bad ??= "ISOLATION"; return; }
+    try { event = JSON.parse(line); } catch { state.bad ??= !state.initialized ? "ISOLATION" : "EVENT_JSON_INVALID"; return; }
+    if (!event || typeof event !== "object" || Array.isArray(event)) { state.bad ??= !state.initialized ? "ISOLATION" : "EVENT_INVALID"; return; }
+    if (event.type === "assistant" || event.type === "user" || event.type === "result"
+      || hasUsage(event.usage) || hasUsage(event.modelUsage) || hasUsage(event.message?.usage)) state.reachedModel = true;
     if ((typeof event.type === "string" && event.type.startsWith("hook"))
       || (typeof event.subtype === "string" && event.subtype.startsWith("hook"))) {
       state.hookCount += 1; state.bad = "ISOLATION"; return;
+    }
+    if (event.type === "assistant" && event.error === "rate_limit") state.limitSeen = true;
+    if (event.type === "rate_limit_event") {
+      const status = event.status ?? event.rate_limit_info?.status;
+      if (typeof status === "string" && (status === "rejected"
+        || (/limited/iu.test(status) && !/^not[_ -]limited$/iu.test(status)))) {
+        state.limitSeen = true;
+        state.limitReset = resetTime(event.resetsAt ?? event.rate_limit_info?.resetsAt) ?? state.limitReset;
+      }
+    }
+    if (event.type === "system" && event.subtype === "init") {
+      if (state.initialized) { state.bad = "ISOLATION"; return; }
+      state.initialized = true;
+      if (/^[0-9]+\.[0-9]+\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$/u.test(event.claude_code_version ?? "")) {
+        state.claudeCodeVersion = event.claude_code_version;
+      }
+      state.servers = Array.isArray(event.mcp_servers) ? event.mcp_servers.map((server) =>
+        ({ name: server?.name, status: server?.status })) : [];
+      state.tools = Array.isArray(event.tools) ? event.tools : [];
+      for (const [key, field] of [["skills", "skillCount"], ["slash_commands", "slashCount"],
+        ["plugins", "pluginCount"], ["agents", "agentCount"]]) {
+        state[field] = Array.isArray(event[key]) ? event[key].length : -1;
+      }
+      if (JSON.stringify(state.servers) !== JSON.stringify([{ name: "journal", status: "connected" }])
+        || state.tools.length !== TOOLS.length || !state.tools.every((name) => typeof name === "string")
+        || !TOOLS.every((name) => state.tools.includes(name))
+        || state.skillCount !== 0 || state.slashCount !== 0) state.bad = "ISOLATION";
+      return;
+    }
+    if (!state.initialized) {
+      if (event.type === "system") {
+        if (["message", "content", "text", "result"].some((key) => Object.hasOwn(event, key))) state.bad = "ISOLATION";
+        return;
+      }
+      if (event.type === "assistant" || event.type === "user" || event.type === "tool_use") { state.bad = "ISOLATION"; return; }
     }
     if (state.resultSeen) { state.bad ??= "RESULT_NOT_LAST"; return; }
     const uses = event.type === "tool_use" ? [event] : event.type === "assistant"
@@ -117,7 +145,7 @@ export function claudeResultReader(record) {
     for (const use of uses) {
       const name = use.name;
       const workId = use.input?.work_id;
-      if (!TOOLS.includes(name)) { state.bad ??= "ISOLATION"; continue; }
+      if (!TOOLS.includes(name)) { state.bad = "ISOLATION"; continue; }
       if (workId !== record.work_id) { state.bad ??= "WORK_ID_MISMATCH"; continue; }
       if (name === TOOLS[0] && workId === record.work_id) state.packetFetched = true;
       if (name === TOOLS[1] && workId === record.work_id && !state.submitSeen) {
@@ -132,9 +160,10 @@ export function claudeResultReader(record) {
       event.error?.code, event.error?.type, event.error?.message,
       ...(Array.isArray(event.errors) ? event.errors.flatMap((item) => [item?.code, item?.type, item?.message]) : [])];
     const limitMessage = limitFields.filter((item) => typeof item === "string").join(" ");
-    if (event.is_error === true && /\b429\b|usage[_ -]?limit|rate[_ -]?limit/iu.test(limitMessage)) {
+    if (event.is_error === true && (event.api_error_status === 429
+      || /\b429\b|usage[_ -]?limit|rate[_ -]?limit/iu.test(limitMessage))) {
       state.limitSeen = true;
-      state.limitReset = parseCodexResetTime(limitMessage, Date.now());
+      state.limitReset = resetTime(event.resetsAt) ?? parseCodexResetTime(limitMessage, Date.now()) ?? state.limitReset;
     }
     if (event.is_error !== false || event.subtype !== "success") { state.bad ??= "RESULT_UNSUCCESSFUL"; return; }
     if (!SESSION.test(event.session_id ?? "")) { state.bad ??= "SESSION_INVALID"; return; }
@@ -168,8 +197,44 @@ export function claudeResultReader(record) {
   return { state, accept };
 }
 
+export const claudeRunSlug = (directory) => path.resolve(directory).replace(/[^A-Za-z0-9]/gu, "-");
+function persistenceRoots(home) {
+  return [path.join(home, ".claude", "projects"), path.join(home, ".cache", "claude-cli-nodejs")];
+}
+async function containsFile(directory) {
+  for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
+    if (!entry.isDirectory() || await containsFile(path.join(directory, entry.name))) return true;
+  }
+  return false;
+}
+async function cleanPersistence(home, runDir) {
+  let persisted = false, cleanupError = null;
+  for (const root of persistenceRoots(home)) {
+    const directory = path.join(root, claudeRunSlug(runDir));
+    try {
+      try { persisted = await containsFile(directory) || persisted; }
+      finally { await fs.rm(directory, { recursive: true, force: true }); }
+    } catch (error) { if (error?.code !== "ENOENT") cleanupError ??= error; }
+  }
+  if (cleanupError) throw cleanupError;
+  return persisted;
+}
+async function sweepPersistence(home, workDir) {
+  const prefix = claudeRunSlug(path.join(workDir, "inner-signal-claude-"));
+  for (const root of persistenceRoots(home)) {
+    let names;
+    try { names = await fs.readdir(root); } catch (error) { if (error?.code === "ENOENT") continue; throw error; }
+    for (const name of names) {
+      if (name.startsWith(prefix) && /^[A-Za-z0-9]{6}-run-[A-Za-z0-9]{6}$/u.test(name.slice(prefix.length))) {
+        await fs.rm(path.join(root, name), { recursive: true, force: true });
+      }
+    }
+  }
+}
+
 export async function runJournalClaudeWorker(argv, { environment = process.env, stderr = process.stderr } = {}) {
   const options = parseJournalClaudeWorkerArgs(argv);
+  if (!path.isAbsolute(environment.HOME ?? "")) fail("JOURNAL_CLAUDE_HOME_INVALID");
   const workDir = await privateDirectory(options.workDir, "JOURNAL_CLAUDE_WORK_DIR_INSECURE");
   if (!options.remote) {
     if (!environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT || !environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE
@@ -195,7 +260,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   const processEnv = { PATH: environment.PATH ?? "", HOME: environment.HOME ?? "", LANG: environment.LANG ?? "C" };
   const activeGroups = new Set();
   let stopping = false, stopSignal = null, wake = null, limitedUntil = 0, completed = 0;
-  const attempts = new Map(), limits = new Map(), seenSessions = new Set();
+  const attempts = new Map(), limits = new Map(), seenSessions = new Set(), pendingReleases = new Map();
   const stop = (signal) => { stopping = true; stopSignal ??= signal;
     if (wake) { const resume = wake; wake = null; resume(); }
     for (const kill of activeGroups) kill(); };
@@ -219,7 +284,10 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT,
         INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE },
       timeoutMs: options.timeoutMs, onLine: (line) => { if (line.trim()) lines.push(line); }, activeGroups });
-    if (result.code !== 0 || result.problem || result.timedOut) fail("JOURNAL_CLAUDE_HOST_UNAVAILABLE");
+    if (result.code !== 0 || result.problem || result.timedOut) {
+      // A host call killed by a stop signal is a stop, not a host outage.
+      fail(stopping ? "JOURNAL_CLAUDE_STOPPED" : "JOURNAL_CLAUDE_HOST_UNAVAILABLE");
+    }
     try { return lines.map((line) => JSON.parse(line)); } catch { fail("JOURNAL_CLAUDE_HOST_RESPONSE_INVALID"); }
   }
 
@@ -228,14 +296,18 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     let stageDir = null, runDir = null, outcome = "error";
     let observed = null;
     const claim = randomUUID();
-    let claimed = false, initialized = false;
+    let claimed = false, reachedModel = false, isolationRefused = false, persisted = false, persistenceChecked = false;
     let usage = { input_tokens: 0, cached_input_tokens: 0, output_tokens: 0, total_cost_usd: 0 };
     try {
       // Validate the profile before creating a stage or invoking the provider.
       claudePrintArgs({ record, mcpConfig: "/tmp/placeholder" });
-      const reservation = await host("attempt-reserve", ["--work-id", record.work_id, "--claim", claim]);
+      const reservation = await host("attempt-reserve", ["--work-id", record.work_id, "--claim", claim,
+        "--timeout-ms", String(options.timeoutMs)]);
       if (reservation[0]?.claimed !== true) { outcome = "already_attempted"; return outcome; }
       claimed = true;
+      if ((await host("packet-check", ["--work-id", record.work_id]))[0]?.allowed !== true) {
+        outcome = "rejected:PACKET_TOO_LARGE"; return outcome;
+      }
       const created = await host("stage-create");
       stageDir = created[0]?.stage_dir;
       if (typeof stageDir !== "string" || !path.isAbsolute(stageDir)) fail("JOURNAL_CLAUDE_HOST_RESPONSE_INVALID");
@@ -245,24 +317,25 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       await fs.writeFile(mcpConfig, JSON.stringify(claudeMcpConfiguration(options, stageDir, environment)), { flag: "wx", mode: 0o600 });
       const reader = claudeResultReader(record);
       observed = reader.state;
-      let marking = Promise.resolve();
-      const result = await runProcess(options.claudeBin, claudePrintArgs({ record, mcpConfig }), {
-        cwd: runDir, env: processEnv, timeoutMs: options.timeoutMs, onLine: (line) => {
-          const before = reader.state.initialized;
+      let result;
+      try { result = await runProcess(options.claudeBin, claudePrintArgs({ record, mcpConfig }), {
+        cwd: runDir, env: { ...processEnv, XDG_CACHE_HOME: path.join(runDir, "cache") },
+        maxLineBytes: MAX_CLAUDE_LINE_BYTES, maxStreamBytes: 4 * MAX_CLAUDE_LINE_BYTES, killOnClose: true,
+        timeoutMs: options.timeoutMs, onLine: (line) => {
           reader.accept(line);
-          if (!before && reader.state.initialized) {
-            initialized = true;
-            marking = host("attempt-mark", ["--work-id", record.work_id, "--claim", claim]).then(() => null, (error) => error);
-          }
+          reachedModel = reader.state.reachedModel;
+          if (reader.state.bad === "ISOLATION") { isolationRefused = true; return false; }
         }, activeGroups
-      });
+      }); } finally {
+        // This finally runs before admission/promotion, even when the child failed.
+        try { persisted = await cleanPersistence(processEnv.HOME, runDir); persistenceChecked = true; }
+        catch { persisted = true; }
+      }
       if (reader.state.reportedSession) {
         const reused = seenSessions.has(reader.state.reportedSession);
         seenSessions.add(reader.state.reportedSession);
         if (reused) reader.state.bad ??= "SESSION_REUSED";
       }
-      const markError = await marking;
-      if (markError) throw markError;
       usage = reader.state.usage;
       if (result.code !== 0 && !reader.state.resultSeen) {
         let error;
@@ -274,42 +347,64 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           reader.state.limitReset = parseCodexResetTime(fields, Date.now());
         }
       }
-      if (stopping) outcome = "stopped";
-      else if (result.timedOut) outcome = "timeout";
-      else if (reader.state.initialized && (reader.state.bad === "ISOLATION" || reader.state.hookCount)) outcome = "rejected:ISOLATION";
-      else if (reader.state.limitSeen) {
-        outcome = "limited";
+      if (isolationRefused) {
+        outcome = "isolation_refused";
+      } else if (reader.state.limitSeen) {
+        outcome = persisted ? "rejected:LOCAL_PERSISTENCE" : "limited";
         limitedUntil = Math.max(limitedUntil, reader.state.limitReset ?? Date.now() + options.limitBackoffMs);
         if (claimed) {
-          await host("attempt-release", ["--work-id", record.work_id, "--claim", claim]);
-          claimed = false;
+          try {
+            await host("attempt-release", ["--work-id", record.work_id, "--claim", claim]);
+            claimed = false;
+          } catch {
+            pendingReleases.set(record.work_id, claim);
+            await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_release_failed" });
+          }
         }
-      } else if (result.problem) outcome = `rejected:${result.problem}`;
-      else if (reader.state.bad === "ISOLATION" || !reader.state.initialized || reader.state.hookCount) outcome = "rejected:ISOLATION";
-      else if (result.code !== 0) outcome = "rejected:EXIT_NONZERO";
-      else if (reader.state.bad) outcome = `rejected:${reader.state.bad}`;
-      else if (!reader.state.session) outcome = "rejected:RESULT_MISSING";
-      else if (!reader.state.packetBeforeFirstSubmit) outcome = "rejected:PACKET_NOT_FETCHED";
-      else {
-        const status = await host("stage-check", ["--work-id", record.work_id, "--stage-dir", stageDir]);
-        if (status[0]?.packet_fetched !== true) outcome = "rejected:PACKET_NOT_FETCHED";
-        else if (status[0]?.staged !== true) outcome = "rejected:STAGE_MISSING";
+      } else {
+        if (reachedModel) await host("attempt-mark", ["--work-id", record.work_id, "--claim", claim]);
+        if (persisted) outcome = "rejected:LOCAL_PERSISTENCE";
+        else if (stopping) outcome = "stopped";
+        else if (result.timedOut) outcome = "timeout";
+        else if (result.problem) outcome = `rejected:${result.problem}`;
+        else if (!reader.state.initialized) outcome = "rejected:ISOLATION";
+        else if (result.code !== 0) outcome = "rejected:EXIT_NONZERO";
+        else if (reader.state.bad) outcome = `rejected:${reader.state.bad}`;
+        else if (!reader.state.session) outcome = "rejected:RESULT_MISSING";
+        else if (!reader.state.packetBeforeFirstSubmit) outcome = "rejected:PACKET_NOT_FETCHED";
         else {
-          const execution = { profile_evidence: "claude_code_model_usage_reported",
-            effective_model_profile: reader.state.model, effective_effort: record.effort,
-            request_context_id: `claude-session:${reader.state.session}` };
-          const promoted = await host("promote", ["--work-id", record.work_id, "--stage-dir", stageDir,
-            "--execution-json", JSON.stringify(execution), "--subject", "local:claude-hardest"]);
-          outcome = promoted[0]?.answered ? "answered" : promoted[0]?.already ? "already_answered" : "error";
+          const status = await host("stage-check", ["--work-id", record.work_id, "--stage-dir", stageDir]);
+          if (status[0]?.packet_fetched !== true) outcome = "rejected:PACKET_NOT_FETCHED";
+          else if (status[0]?.staged !== true) outcome = "rejected:STAGE_MISSING";
+          else {
+            const execution = { profile_evidence: "claude_code_model_usage_reported",
+              effective_model_profile: reader.state.model, effective_effort: record.effort,
+              request_context_id: `claude-session:${reader.state.session}` };
+            const promoted = await host("promote", ["--work-id", record.work_id, "--stage-dir", stageDir,
+              "--execution-json", JSON.stringify(execution), "--subject", "local:claude-hardest"]);
+            outcome = promoted[0]?.answered ? "answered" : promoted[0]?.already ? "already_answered" : "error";
+          }
         }
       }
-    } catch { outcome = stopping ? "stopped" : "error"; }
+    } catch {
+      if (outcome !== "limited" && !isolationRefused) {
+        outcome = persisted ? "rejected:LOCAL_PERSISTENCE" : stopping ? "stopped" : "error";
+      }
+    }
     finally {
-      if (claimed && !initialized) {
+      if (claimed && isolationRefused) {
+        outcome = "isolation_refused";
+        try { await host("attempt-refuse", ["--work-id", record.work_id, "--claim", claim]); }
+        catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_refuse_failed" }); }
+      } else if (claimed && !reachedModel && !observed?.limitSeen && outcome !== "limited") {
         try { await host("attempt-release", ["--work-id", record.work_id, "--claim", claim]); claimed = false; }
         catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_release_failed" }); }
       }
       if (runDir) {
+        if (!persistenceChecked) {
+          try { if (await cleanPersistence(processEnv.HOME, runDir)) outcome = "rejected:LOCAL_PERSISTENCE"; }
+          catch { outcome = "rejected:LOCAL_PERSISTENCE"; }
+        }
         try { await fs.rm(runDir, { recursive: true, force: true }); }
         catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "run_remove_failed" }); }
       }
@@ -325,6 +420,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         skill_count: observed?.skillCount ?? 0, slash_command_count: observed?.slashCount ?? 0,
         plugin_count: observed?.pluginCount ?? 0, agent_count: observed?.agentCount ?? 0,
         hook_event_count: observed?.hookCount ?? 0,
+        claude_code_version: observed?.claudeCodeVersion ?? null, model_reached: reachedModel,
         ...usage, cost_kind: "subscription_cost_equivalent_not_charged" });
     }
     return outcome;
@@ -332,10 +428,17 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
 
   try {
     await removeStaleRuns(workDir, "inner-signal-claude-");
+    await sweepPersistence(processEnv.HOME, workDir);
     await host("stage-sweep");
     const initial = options.once ? new Set((await host("dispatch", ["--json"])).map((record) => record.work_id)) : null;
     for (;;) {
       if (stopping || completed >= options.maxItems) break;
+      for (const [workId, claim] of pendingReleases) {
+        try {
+          await host("attempt-release", ["--work-id", workId, "--claim", claim]);
+          pendingReleases.delete(workId);
+        } catch { /* Keep the limited outcome and reservation; retry on the next loop. */ }
+      }
       if (Date.now() < limitedUntil) {
         await wait(Math.min(options.pollMs, limitedUntil - Date.now()));
         continue;
@@ -344,20 +447,24 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       let record = records.find((item) => (!initial || initial.has(item.work_id)) && !item.answered
         && item.tier === "hardest" && item.model === MODEL && item.effort === "max"
         && Date.parse(item.expires_at) > Date.now()
+        && !pendingReleases.has(item.work_id)
         && (attempts.get(item.work_id) ?? 0) < 3 && (limits.get(item.work_id) ?? 0) < MAX_LIMIT_RETRIES);
-      if (record && (await host("attempt-status", ["--work-id", record.work_id]))[0]?.attempted) {
+      const marker = record ? (await host("attempt-status", ["--work-id", record.work_id]))[0] : null;
+      if (record && marker?.attempted) {
         attempts.set(record.work_id, 3);
         await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
-          model: record.model, effort: record.effort, outcome: "already_attempted", duration_ms: 0 });
+          model: record.model, effort: record.effort,
+          outcome: marker.status === "isolation_refused" ? "isolation_refused" : "already_attempted", duration_ms: 0 });
         continue;
       }
       if (!record) {
-        if (options.once) break;
+        if (options.once && !pendingReleases.size) break;
         await wait(options.pollMs);
         continue;
       }
       const outcome = await one(record);
       if (outcome === "limited") limits.set(record.work_id, (limits.get(record.work_id) ?? 0) + 1);
+      else if (["already_attempted", "isolation_refused"].includes(outcome)) attempts.set(record.work_id, 3);
       else if (outcome !== "stopped") {
         attempts.set(record.work_id, (attempts.get(record.work_id) ?? 0) + 1);
         if ((await host("attempt-status", ["--work-id", record.work_id]))[0]?.attempted) {
@@ -366,6 +473,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       }
     }
     return stopSignal === "SIGINT" ? 130 : stopSignal === "SIGTERM" ? 143 : 0;
+  } catch (error) {
+    if (error?.code !== "JOURNAL_CLAUDE_STOPPED") throw error;
+    return stopSignal === "SIGINT" ? 130 : 143;
   } finally {
     stop();
     process.off("SIGINT", onInt);

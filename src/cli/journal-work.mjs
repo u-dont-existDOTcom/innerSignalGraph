@@ -6,6 +6,7 @@ import {
   assertJournalWorkExchangeRoot, assertJournalWorkId, createJournalWorkDispatchReader,
   createJournalWorkExchange, journalWorkExchangeSecret, journalWorkFileKey, resolveJournalWorkExchangeRoot
 } from "../journal-import/work-exchange.mjs";
+import { journalWorkPacketValue, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../server/journal-work-tools.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const STAGE_NAME = /^stage-[0-9a-f-]{36}$/u;
@@ -48,14 +49,46 @@ async function syncDirectory(directory) {
   finally { await handle.close(); }
 }
 
-async function writeAttemptMarker(marker, value, exclusive = false) {
-  const target = exclusive ? marker : `${marker}.${randomUUID()}.tmp`;
+export async function writeAttemptMarker(marker, value, exclusive = false) {
+  const target = `${marker}.${randomUUID()}.tmp`;
   const handle = await fs.open(target, "wx", 0o600);
   try { await handle.writeFile(JSON.stringify(value)); await handle.sync(); }
   catch (error) { await handle.close(); await fs.unlink(target).catch(() => {}); throw error; }
   await handle.close();
-  if (!exclusive) await fs.rename(target, marker);
+  try {
+    if (exclusive) await fs.link(target, marker);
+    else await fs.rename(target, marker);
+  } finally { await fs.unlink(target).catch((error) => { if (error?.code !== "ENOENT") throw error; }); }
   await syncDirectory(path.dirname(marker));
+}
+
+// Exchange work IDs encode the stable operation digest; :rN is an expired-item resend.
+// Other dispatch producers expose no operation identity, so their exact work ID is the key.
+export function journalAttemptIdentity(workId) {
+  return /^journal-work:[0-9a-f]{48}(?::r[1-8])?$/u.test(workId) ? workId.replace(/:r[1-8]$/u, "") : workId;
+}
+
+async function sweepAttemptTemporaries(directory) {
+  for (const name of await fs.readdir(directory)) {
+    if (!/^[0-9a-f]{64}\.json\.[0-9a-f-]{36}\.tmp$/u.test(name)) continue;
+    const target = path.join(directory, name);
+    try {
+      const info = await fs.lstat(target);
+      if (info.isFile() && info.mtimeMs < Date.now() - 3_600_000) await fs.unlink(target);
+    } catch (error) { if (error?.code !== "ENOENT") throw error; }
+  }
+}
+
+async function attemptDirectory(root) {
+  const directory = path.join(root, "claude-attempts");
+  await fs.mkdir(directory, { mode: 0o700 }).catch((error) => { if (error?.code !== "EEXIST") throw error; });
+  const info = await fs.lstat(directory);
+  if (!info.isDirectory() || (info.mode & 0o777) !== 0o700
+    || (process.getuid && info.uid !== process.getuid()) || await fs.realpath(directory) !== directory) {
+    fail("JOURNAL_WORK_ATTEMPT_DIR_INSECURE");
+  }
+  await sweepAttemptTemporaries(directory);
+  return directory;
 }
 
 async function sweepStages(root) {
@@ -68,12 +101,14 @@ async function sweepStages(root) {
   for (const name of await fs.readdir(parent)) {
     if (!STAGE_NAME.test(name)) continue;
     const target = path.join(parent, name);
-    const info = await fs.lstat(target);
-    if (info.isDirectory() && (info.mode & 0o777) === 0o700
-      && (!process.getuid || info.uid === process.getuid()) && info.mtimeMs < Date.now() - ttl) {
-      await fs.rm(target, { recursive: true, force: false });
-      removed += 1;
-    }
+    try {
+      const info = await fs.lstat(target);
+      if (info.isDirectory() && (info.mode & 0o777) === 0o700
+        && (!process.getuid || info.uid === process.getuid()) && info.mtimeMs < Date.now() - ttl) {
+        await fs.rm(target, { recursive: true, force: false });
+        removed += 1;
+      }
+    } catch (error) { if (error?.code !== "ENOENT") throw error; }
   }
   return removed;
 }
@@ -103,44 +138,81 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     return;
   }
   if (command === "stage-sweep" && options.length === 0) {
+    await attemptDirectory(root);
     stdout.write(`${JSON.stringify({ removed: await sweepStages(root) })}\n`);
     return;
   }
-  if (["attempt-status", "attempt-reserve", "attempt-mark", "attempt-release"].includes(command)) {
-    const parsed = flags(options, command === "attempt-status" ? ["--work-id"] : ["--work-id", "--claim"]);
+  if (command === "packet-check") {
+    const parsed = flags(options, ["--work-id"]);
+    const exchange = createJournalWorkExchange({ root, secret: await journalWorkExchangeSecret(environment) });
+    const entry = await exchange.readWork(assertJournalWorkId(parsed["--work-id"]));
+    const allowed = Boolean(entry && entry.tier === "hardest" && !exchange.isExpired(entry)
+      && JSON.stringify(journalWorkPacketValue(entry)).length <= MAX_JOURNAL_TOOL_RESULT_CHARS);
+    stdout.write(`${JSON.stringify({ allowed })}\n`);
+    return;
+  }
+  if (["attempt-status", "attempt-reserve", "attempt-mark", "attempt-refuse", "attempt-release", "attempt-clear"].includes(command)) {
+    const timeoutIndex = options.indexOf("--timeout-ms");
+    let timeoutMs = 1_800_000;
+    if (command === "attempt-reserve" && timeoutIndex >= 0) {
+      timeoutMs = Number(options[timeoutIndex + 1]);
+      if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 3_600_000) fail("JOURNAL_WORK_ATTEMPT_INVALID");
+      options.splice(timeoutIndex, 2);
+    }
+    const operatorCommand = ["attempt-status", "attempt-clear"].includes(command);
+    const parsed = flags(options, operatorCommand ? ["--work-id"] : ["--work-id", "--claim"]);
     const value = parsed["--work-id"];
     const workId = assertJournalWorkId(value);
-    if (command !== "attempt-status" && !/^[0-9a-f-]{36}$/u.test(parsed["--claim"])) fail("JOURNAL_WORK_ATTEMPT_INVALID");
-    const directory = path.join(root, "claude-attempts");
-    await fs.mkdir(directory, { mode: 0o700 }).catch((error) => { if (error?.code !== "EEXIST") throw error; });
-    const info = await fs.lstat(directory);
-    if (!info.isDirectory() || (info.mode & 0o777) !== 0o700
-      || (process.getuid && info.uid !== process.getuid()) || await fs.realpath(directory) !== directory) {
-      fail("JOURNAL_WORK_ATTEMPT_DIR_INSECURE");
-    }
-    const marker = path.join(directory, `${journalWorkFileKey(workId)}.json`);
+    if (!operatorCommand && !/^[0-9a-f-]{36}$/u.test(parsed["--claim"])) fail("JOURNAL_WORK_ATTEMPT_INVALID");
+    const directory = await attemptDirectory(root);
+    const marker = path.join(directory, `${journalWorkFileKey(journalAttemptIdentity(workId))}.json`);
     if (command === "attempt-reserve") {
       let claimed = true;
-      try { await writeAttemptMarker(marker, { work_id: workId, status: "reserved", claim: parsed["--claim"] }, true); }
+      try { await writeAttemptMarker(marker, { work_id: workId, status: "reserved", claim: parsed["--claim"], timeout_ms: timeoutMs }, true); }
       catch (error) { if (error?.code === "EEXIST") claimed = false; else throw error; }
       stdout.write(`${JSON.stringify({ claimed })}\n`);
       return;
     }
-    const status = await fs.readFile(marker, "utf8").then((bytes) => JSON.parse(bytes), (error) => {
-      if (error?.code === "ENOENT") return null;
-      throw error;
-    });
-    if (status && (status.work_id !== workId || !["reserved", "attempted"].includes(status.status))) {
-      fail("JOURNAL_WORK_ATTEMPT_INVALID");
-    }
-    if (command !== "attempt-status" && status?.claim !== parsed["--claim"]) fail("JOURNAL_WORK_ATTEMPT_INVALID");
-    if (command === "attempt-mark" && status?.status === "reserved") {
-      await writeAttemptMarker(marker, { ...status, status: "attempted" });
-    } else if (command === "attempt-release") {
+    let status = null, ageSeconds = null;
+    try {
+      const info = await fs.lstat(marker);
+      ageSeconds = Math.max(0, (Date.now() - info.mtimeMs) / 1000);
+      try { status = JSON.parse(await fs.readFile(marker, "utf8")); } catch { status = { status: "attempted" }; }
+      if (!status || journalAttemptIdentity(status.work_id ?? "") !== journalAttemptIdentity(workId)
+        || !["reserved", "attempted", "isolation_refused"].includes(status.status)
+        || !/^[0-9a-f-]{36}$/u.test(status.claim ?? "")
+        || (status.timeout_ms !== undefined && (!Number.isSafeInteger(status.timeout_ms)
+          || status.timeout_ms < 1 || status.timeout_ms > 3_600_000))) status = { status: "attempted" };
+    } catch (error) { if (error?.code !== "ENOENT") throw error; }
+    if (command === "attempt-clear") {
+      if (status?.status !== "isolation_refused"
+        && !(status?.status === "reserved" && ageSeconds * 1000 > (status.timeout_ms ?? 1_800_000))) {
+        fail("JOURNAL_WORK_ATTEMPT_CLEAR_REFUSED");
+      }
       await fs.unlink(marker);
       await syncDirectory(directory);
+      stdout.write('{"cleared":true}\n');
+      return;
     }
-    stdout.write(`${JSON.stringify({ attempted: status !== null })}\n`);
+    if (command === "attempt-release" && status === null) {
+      stdout.write('{"attempted":false,"status":"none","age_seconds":null}\n');
+      return;
+    }
+    if (!operatorCommand && status?.claim !== parsed["--claim"]) fail("JOURNAL_WORK_ATTEMPT_INVALID");
+    if (command === "attempt-mark" && status?.status === "reserved") {
+      await writeAttemptMarker(marker, { ...status, status: "attempted" });
+      status.status = "attempted";
+    } else if (command === "attempt-refuse") {
+      if (!["reserved", "isolation_refused"].includes(status.status)) fail("JOURNAL_WORK_ATTEMPT_INVALID");
+      await writeAttemptMarker(marker, { ...status, status: "isolation_refused" });
+      status.status = "isolation_refused";
+    } else if (command === "attempt-release") {
+      if (status.status !== "reserved") fail("JOURNAL_WORK_ATTEMPT_INVALID");
+      await fs.unlink(marker);
+      await syncDirectory(directory);
+      status = null; ageSeconds = null;
+    }
+    stdout.write(`${JSON.stringify({ attempted: status !== null, status: status?.status ?? "none", age_seconds: ageSeconds })}\n`);
     return;
   }
   if (command === "stage-remove") {
