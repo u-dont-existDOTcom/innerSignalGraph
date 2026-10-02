@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { claudeResultReader, claudeRunSlug, MAX_CLAUDE_LINE_BYTES, waitForProcessGroupGone } from "../src/journal-import/claude-worker.mjs";
+import { claudeResultReader, claudeRunSlug, MAX_CLAUDE_LINE_BYTES, sweepClaudeProcessGroups, waitForProcessGroupGone } from "../src/journal-import/claude-worker.mjs";
 import { runProcess } from "../src/journal-import/codex-worker.mjs";
 import { journalAttemptIdentity, journalAttemptMarkerKey, writeAttemptMarker } from "../src/cli/journal-work.mjs";
 import { journalWorkFileKey } from "../src/journal-import/work-exchange.mjs";
@@ -237,4 +237,30 @@ test("a recorded process group is killed and confirmed gone before persistence i
   // An already-gone group and a missing record are both treated as gone.
   assert.equal(await waitForProcessGroupGone(leader.pid, 100), true);
   assert.equal(await waitForProcessGroupGone(null), true);
+});
+
+test("startup recovery kills a recorded group whose leader exited but whose helper survives", async (t) => {
+  const { spawn } = await import("node:child_process");
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "journal-sweep-leader-"));
+  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  const workDir = path.join(base, "work"), home = path.join(base, "home");
+  const runDir = path.join(workDir, "inner-signal-claude-ABCDEF", "run-GHIJKL");
+  await fs.mkdir(runDir, { recursive: true, mode: 0o700 });
+  await fs.chmod(path.join(workDir, "inner-signal-claude-ABCDEF"), 0o700);
+  await fs.mkdir(home, { mode: 0o700 });
+  // A detached leader spawns a same-group helper and exits at once.
+  const leader = spawn(process.execPath, ["-e",
+    "require('node:child_process').spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' }).unref();"],
+  { detached: true, stdio: "ignore" });
+  const pgid = leader.pid;
+  const start = (await fs.readFile(`/proc/${pgid}/stat`, "utf8")).split(") ")[1].trim().split(/\s+/u)[19];
+  await new Promise(resolve => leader.once("exit", resolve));
+  await new Promise(resolve => setTimeout(resolve, 200));
+  assert.doesNotThrow(() => process.kill(-pgid, 0), "the helper must still be alive in the group");
+  // The recorded owner is a worker that no longer exists.
+  await fs.writeFile(path.join(runDir, "process-group.json"),
+    JSON.stringify({ owner: { pid: 2147483646, start: "0" }, child: { pid: pgid, start } }), { mode: 0o600 });
+  await sweepClaudeProcessGroups(workDir, home);
+  assert.throws(() => process.kill(-pgid, 0), { code: "ESRCH" });
+  await assert.rejects(fs.access(runDir));
 });

@@ -344,10 +344,14 @@ export async function sweepClaudeProcessGroups(workDir, home) {
       const owner = await linuxProcessIdentity(record.owner?.pid);
       if (owner?.start === record.owner?.start && owner.state !== "Z") continue;
       const child = await linuxProcessIdentity(record.child?.pid);
-      // Linux start time prevents a stale record from killing a reused PID.
-      if (child?.start === record.child?.start && child.group === child.pid) {
-        // Leave the run for a later start if its group can't be confirmed gone before scanning.
-        if (!(await waitForProcessGroupGone(child.pid))) continue;
+      // Linux start time prevents a stale record from killing a reused PID. If the leader is gone, the
+      // recorded PGID can only still exist as the original group (a PID isn't reused while its group has
+      // members), so surviving helpers are killed too. Leave the run for a later start if the group can't
+      // be confirmed gone before scanning.
+      const leaderGone = child === null;
+      const leaderIsOurs = child?.start === record.child?.start && child?.group === child?.pid;
+      if ((leaderGone || leaderIsOurs) && Number.isSafeInteger(record.child?.pid)) {
+        if (!(await waitForProcessGroupGone(record.child.pid))) continue;
       }
       await cleanClaudePersistence(home, runDir);
       await fs.rm(runDir, { recursive: true, force: true });
