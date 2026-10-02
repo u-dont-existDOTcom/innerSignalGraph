@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -335,6 +336,41 @@ export async function waitForProcessGroupGone(pgid, timeoutMs = 10_000) {
   }
 }
 
+// Whether a live worker holds the parent's lock (flock -n fails while it is held). Null when the lock is not the
+// private regular file lockWorkerDirectory creates, so the caller can't tell and must fail closed.
+async function workerLockHeld(parentDir) {
+  const lock = path.join(parentDir, "worker.lock");
+  let info;
+  try { info = await fs.lstat(lock); } catch (error) { if (error?.code === "ENOENT") return false; throw error; }
+  if (!info.isFile() || (info.mode & 0o777) !== 0o600 || (process.getuid && info.uid !== process.getuid())) return null;
+  return new Promise((resolve, reject) => {
+    const child = spawn("flock", ["-n", lock, "true"], { stdio: "ignore" });
+    child.once("error", reject);
+    child.once("close", (code) => resolve(code !== 0));
+  });
+}
+
+// Process groups of live processes whose working directory is the run directory or inside it. Claude always
+// runs with its run directory as cwd, so this finds an orphan even when its process record was never written.
+// Returns null if /proc can't be listed.
+export async function processGroupsWorkingIn(directory, procRoot = "/proc") {
+  let names;
+  try { names = await fs.readdir(procRoot); } catch { return null; }
+  const groups = new Set();
+  for (const name of names) {
+    if (!/^[0-9]+$/u.test(name)) continue;
+    let cwd, stat;
+    try {
+      cwd = await fs.readlink(path.join(procRoot, name, "cwd"));
+      stat = await fs.readFile(path.join(procRoot, name, "stat"), "utf8");
+    } catch { continue; }
+    if (cwd !== directory && !cwd.startsWith(directory + path.sep)) continue;
+    const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(/\s+/u);
+    if (!["Z", "X", "x"].includes(fields[0])) groups.add(Number(fields[2]));
+  }
+  return groups;
+}
+
 export async function sweepClaudeProcessGroups(workDir, home) {
   // Parents holding a run whose group could not be confirmed gone; callers must not delete them.
   const unresolved = new Set();
@@ -359,7 +395,23 @@ export async function sweepClaudeProcessGroups(workDir, home) {
           }
           return JSON.parse(await handle.readFile("utf8"));
         });
-      } catch (error) { if (error?.code === "ENOENT") continue; throw error; }
+      } catch (error) {
+        if (error?.code !== "ENOENT") throw error;
+        // No process record: the worker may have died between starting Claude and writing it. A live
+        // worker's run (lock held) is left alone. Otherwise kill any process still working in the run
+        // directory and confirm its group gone; if that can't be confirmed, keep the run and fail closed.
+        const held = await workerLockHeld(directory);
+        if (held === null) { unresolved.add(parent); continue; }
+        if (held) continue;
+        const groups = await processGroupsWorkingIn(await fs.realpath(runDir));
+        if (groups === null) { unresolved.add(parent); continue; }
+        let gone = true;
+        for (const group of groups) gone = (await waitForProcessGroupGone(group)) && gone;
+        if (!gone) { unresolved.add(parent); continue; }
+        await cleanClaudePersistence(home, runDir);
+        await fs.rm(runDir, { recursive: true, force: true });
+        continue;
+      }
       const owner = await linuxProcessIdentity(record.owner?.pid);
       if (owner?.start === record.owner?.start && owner.state !== "Z") continue;
       const child = await linuxProcessIdentity(record.child?.pid);

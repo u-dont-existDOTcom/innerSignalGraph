@@ -881,3 +881,7 @@ This is import/runtime infrastructure only. It changes no therapy, graph, produc
   - **Live attempts and late stops (Codex review):**
     - An `attempted` marker younger than its run timeout plus ten minutes is treated as a sibling's run in progress. The item is left open (logged once as `attempt_in_progress`) and is closed as spent only once stale. A crashed worker's item is therefore closed after that window, not at once.
     - The worker checks for a requested stop immediately before starting Claude and before each item, so a late stop signal can't start a run.
+  - **Missing process record (Codex review P1):** A worker killed after starting Claude but before writing `process-group.json` no longer leaves an orphan that startup skips.
+    - If the dead worker's lock is free, startup recovery kills every process group that has a live process working in that run directory, and confirms each one gone before cleaning up.
+    - A held lock means a live worker, and its run is left alone.
+    - The run is kept and startup stops with exit 74 if the lock isn't the private file the worker creates, `/proc` can't be read, or a group outlives the wait.

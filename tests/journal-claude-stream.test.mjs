@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { claudeResultReader, claudeRunSlug, MAX_CLAUDE_LINE_BYTES, processGroupHasLiveMember, sweepClaudeProcessGroups, waitForProcessGroupGone } from "../src/journal-import/claude-worker.mjs";
-import { runProcess } from "../src/journal-import/codex-worker.mjs";
+import { claudeResultReader, claudeRunSlug, MAX_CLAUDE_LINE_BYTES, processGroupHasLiveMember, processGroupsWorkingIn, sweepClaudeProcessGroups, waitForProcessGroupGone } from "../src/journal-import/claude-worker.mjs";
+import { lockWorkerDirectory, runProcess } from "../src/journal-import/codex-worker.mjs";
 import { journalAttemptIdentity, journalAttemptMarkerKey, writeAttemptMarker } from "../src/cli/journal-work.mjs";
 import { journalWorkFileKey } from "../src/journal-import/work-exchange.mjs";
 import { journalExchangeAttemptIdentity, journalExchangeWorkId } from "../src/journal-import/exchange-port.mjs";
@@ -282,4 +282,68 @@ test("a process group whose only remaining members are zombies counts as gone", 
   assert.equal(await processGroupHasLiveMember(4242, proc), true, "a member in uninterruptible sleep can still act");
   assert.equal(await processGroupHasLiveMember(5555, proc), false, "no members at all");
   assert.equal(await processGroupHasLiveMember(4242, path.join(proc, "missing")), true, "unreadable /proc keeps waiting");
+});
+
+test("processes working inside a run directory are found by their cwd", async (t) => {
+  const proc = await fs.mkdtemp(path.join(os.tmpdir(), "journal-fake-proc-cwd-"));
+  t.after(() => fs.rm(proc, { recursive: true, force: true }));
+  const run = path.join(proc, "work", "run-ABCDEF");
+  await fs.mkdir(path.join(run, "cache"), { recursive: true });
+  const add = async (pid, cwd, state, pgrp) => {
+    await fs.mkdir(path.join(proc, String(pid)), { recursive: true });
+    await fs.symlink(cwd, path.join(proc, String(pid), "cwd"));
+    await fs.writeFile(path.join(proc, String(pid), "stat"), `${pid} (x) ${state} 1 ${pgrp} ${pgrp} 0`);
+  };
+  await add(201, run, "S", 900);
+  await add(202, path.join(run, "cache"), "R", 901);
+  await add(203, path.join(run, "cache"), "Z", 902);
+  await add(204, path.join(proc, "work", "run-ABCDEFG"), "S", 903);
+  assert.deepEqual([...await processGroupsWorkingIn(run, proc)].sort(), [900, 901]);
+  assert.equal(await processGroupsWorkingIn(run, path.join(proc, "missing")), null);
+});
+
+for (const held of [false, true]) {
+  test(`startup recovery ${held ? "leaves" : "kills"} a markerless run whose worker lock is ${held ? "held" : "free"}`, async (t) => {
+    const { spawn } = await import("node:child_process");
+    const base = await fs.mkdtemp(path.join(os.tmpdir(), "journal-markerless-"));
+    const workDir = path.join(base, "work"), home = path.join(base, "home");
+    const parent = path.join(workDir, "inner-signal-claude-MRKLSS"), runDir = path.join(parent, "run-ORPHAN");
+    await fs.mkdir(runDir, { recursive: true, mode: 0o700 });
+    await fs.chmod(parent, 0o700);
+    await fs.mkdir(home, { mode: 0o700 });
+    const unlock = held ? await lockWorkerDirectory(parent) : null;
+    if (!held) await fs.writeFile(path.join(parent, "worker.lock"), "", { mode: 0o600 });
+    // The orphan: a detached process working in the run directory, with no process-group.json written.
+    const orphan = spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { cwd: runDir, detached: true, stdio: "ignore" });
+    t.after(async () => {
+      try { process.kill(-orphan.pid, "SIGKILL"); } catch { /* gone */ }
+      if (unlock) await unlock();
+      await fs.rm(base, { recursive: true, force: true });
+    });
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const unresolved = await sweepClaudeProcessGroups(workDir, home);
+    assert.equal(unresolved.size, 0);
+    if (held) {
+      await fs.access(runDir);
+      assert.equal(await processGroupHasLiveMember(orphan.pid), true, "a live worker's run is left alone");
+    } else {
+      await assert.rejects(fs.access(runDir));
+      assert.equal(await processGroupHasLiveMember(orphan.pid), false, "the orphan is killed before the scan");
+    }
+  });
+}
+
+test("startup recovery fails closed on a markerless run whose worker lock is not a private file", async (t) => {
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "journal-markerless-badlock-"));
+  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  const workDir = path.join(base, "work"), home = path.join(base, "home");
+  const parent = path.join(workDir, "inner-signal-claude-BADLCK"), runDir = path.join(parent, "run-ORPHAN");
+  await fs.mkdir(runDir, { recursive: true, mode: 0o700 });
+  await fs.chmod(parent, 0o700);
+  await fs.mkdir(home, { mode: 0o700 });
+  await fs.writeFile(path.join(parent, "worker.lock"), "");
+  await fs.chmod(path.join(parent, "worker.lock"), 0o644);
+  const unresolved = await sweepClaudeProcessGroups(workDir, home);
+  assert.deepEqual([...unresolved], ["inner-signal-claude-BADLCK"]);
+  await fs.access(runDir);
 });
