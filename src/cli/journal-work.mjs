@@ -143,11 +143,19 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
   }
   if (command === "session-reserve") {
     // The worker reserves every session a run reported before classifying it, so a session that may have seen
-    // a packet can't back a later item even when its own run was rejected.
-    const parsed = flags(options, ["--work-id", "--session-context"]);
-    const workId = assertJournalWorkId(parsed["--work-id"]);
-    if (!CONTEXT.test(parsed["--session-context"])) fail("JOURNAL_WORK_EXECUTION_INVALID");
-    const reserved = await reserveClaudeSession(root, parsed["--session-context"], workId);
+    // a packet can't back a later item even when its own run was rejected. Every context is reserved where
+    // possible; the result is false if any of them belongs to another item.
+    let workId = null;
+    const contexts = new Set();
+    for (let i = 0; i < options.length; i += 2) {
+      const [name, value] = [options[i], options[i + 1]];
+      if (name === "--work-id" && workId === null && value !== undefined) workId = assertJournalWorkId(value);
+      else if (name === "--session-context" && CONTEXT.test(value ?? "") && contexts.size < 16) contexts.add(value);
+      else fail("JOURNAL_WORK_COMMAND_INVALID");
+    }
+    if (workId === null || contexts.size === 0) fail("JOURNAL_WORK_COMMAND_INVALID");
+    let reserved = true;
+    for (const context of contexts) reserved = (await reserveClaudeSession(root, context, workId)) && reserved;
     stdout.write(`${JSON.stringify(reserved ? { reserved: true } : { reserved: false, session_reused: true })}\n`);
     return;
   }

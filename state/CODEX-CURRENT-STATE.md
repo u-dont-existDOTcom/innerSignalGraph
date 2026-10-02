@@ -889,6 +889,10 @@ This is import/runtime infrastructure only. It changes no therapy, graph, produc
   - **Sessions of rejected runs and failed releases (Codex review):**
     - The worker reserves every session a run reports, through the new host command `session-reserve`, before classifying the run. A session from a rejected run (for example `STAGE_MISSING`) can no longer back another item's answer after a restart; promotion still reserves it too.
     - A release that fails after a non-limit failure before the model is queued and retried by the main loop, as after a provider outage. That reservation is not counted as a spent attempt, and pending releases are retried once more before the worker stops at its item limit.
+  - **Durable pending host actions (Codex review):**
+    - Each session a run reports is written to a 0600 file under `<work-dir>/pending-sessions/` before the worker reads further events. The file is removed only once the host confirms the reservation. Until then the worker takes no new item and retries each poll; `--once` exits paused (75), and the next worker reserves it before any work.
+    - A run reporting more than eight distinct sessions is refused as `SESSION_INVALID`. The ninth is recorded too, and the worker stops reading the run.
+    - A failed release is kept in `<work-dir>/pending-releases/` with its claim, so a worker that exits paused or for sign-in doesn't strand the reservation. The next worker releases it, and an entry past the time its reservation becomes reclaimable is dropped.
 
 
 ## Journal fidelity recovery (2026-10-02, working-tree candidate)
