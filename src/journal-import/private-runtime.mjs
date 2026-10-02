@@ -1214,6 +1214,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
 
     async function recalibrate() {
       invariant(state.calibration === "failed", "JOURNAL_RECALIBRATE_NOT_FAILED");
+      // An older checkpoint could close a partial calibration after its graph already existed. A
+      // retry there would reopen a gate that later stages assume passed, so it is refused.
+      invariant(!state.graph_ref && !state.reconciled_ref && !state.persisted, "JOURNAL_RECALIBRATE_AFTER_GRAPH");
       invariant(Number.isSafeInteger(calibrationEpoch()) && calibrationEpoch() >= 0
         && calibrationEpoch() < Number.MAX_SAFE_INTEGER, "JOURNAL_CALIBRATION_EPOCH_INVALID");
       const failure = state.calibration_failure;

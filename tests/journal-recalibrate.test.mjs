@@ -225,6 +225,23 @@ test("epoch zero preserves the existing job, operation and object identities", a
   });
 });
 
+test("recalibrate is refused once a graph exists, so a gate later stages assume passed is never reopened", async (t) => {
+  const f = await fixture(t);
+  let runtime = await f.open(mockPort({ fail: true, calls: [] }));
+  try { assert.equal((await runtime.execute("run")).calibration, "failed"); }
+  finally { await runtime.close(); }
+  // An older checkpoint could carry a built graph alongside a calibration that was closed afterwards.
+  const stateFile = path.join(f.config.execution_root, "state.json");
+  const state = await checkpoint(f.config);
+  await fs.writeFile(stateFile, JSON.stringify({ ...state, graph_ref: { synthetic: true } }), { mode: 0o600 });
+  runtime = await f.open(mockPort({ calls: [] }));
+  try { await assert.rejects(runtime.execute("recalibrate"), { code: "JOURNAL_RECALIBRATE_AFTER_GRAPH" }); }
+  finally { await runtime.close(); }
+  const after = await checkpoint(f.config);
+  assert.equal(after.calibration, "failed");
+  assert.equal(after.calibration_epoch ?? 0, 0);
+});
+
 test("recalibrate refuses other states and bad configs before env-file loading or sign-in", async (t) => {
   const f = await fixture(t);
   const runtime = await f.open(mockPort({ calls: [] }));
