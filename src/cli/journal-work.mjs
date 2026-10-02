@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -73,6 +73,17 @@ async function sweepStages(root) {
     } catch (error) { if (error?.code !== "ENOENT") throw error; }
   }
   return removed;
+}
+
+async function sessionDirectory(root) {
+  const directory = path.join(root, "claude-sessions");
+  await fs.mkdir(directory, { mode: 0o700 }).catch(error => { if (error?.code !== "EEXIST") throw error; });
+  const info = await fs.lstat(directory);
+  if (!info.isDirectory() || (info.mode & 0o777) !== 0o700
+    || (process.getuid && info.uid !== process.getuid()) || await fs.realpath(directory) !== directory) {
+    fail("JOURNAL_WORK_SESSION_DIR_INSECURE");
+  }
+  return directory;
 }
 
 export async function runJournalWork(argv, { environment = process.env, stdout = process.stdout } = {}) {
@@ -229,6 +240,21 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     if (dispatch.answered) {
       stdout.write('{"answered":false,"already":true}\n');
       return;
+    }
+    // One Claude session may back at most one promoted answer, across worker processes and restarts.
+    // The reservation is content-free (a hash of the session context) and idempotent for the same item.
+    const sessions = await sessionDirectory(root);
+    const sessionMarker = path.join(sessions,
+      `${createHash("sha256").update(`inner-signal:claude-session:${execution.request_context_id}`).digest("hex")}.json`);
+    try { await writeAttemptMarker(sessionMarker, { work_id: workId }, true); }
+    catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+      let owner = null;
+      try { owner = JSON.parse(await fs.readFile(sessionMarker, "utf8")).work_id; } catch { owner = null; }
+      if (owner !== workId) {
+        stdout.write('{"answered":false,"already":false,"session_reused":true}\n');
+        return;
+      }
     }
     const result = await exchange.promoteStaged({ stageDir, workId, execution, subject: parsed["--subject"] });
     stdout.write(`${JSON.stringify({ answered: !result.already, already: result.already })}\n`);

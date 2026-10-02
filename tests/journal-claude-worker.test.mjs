@@ -429,6 +429,24 @@ test("one worker refuses a session ID reused for a second hardest item", async (
   assert.equal((await f.port.getCompletion(keys[1])).status, "exhausted");
 });
 
+test("a session ID reused by a second worker process is refused at promotion on the host", async (t) => {
+  const f = await fixture(t);
+  const keys = ["job:synthetic-cross-session-first", "job:synthetic-cross-session-second"];
+  for (const operationKey of keys) {
+    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  }
+  // Two separate worker runs (each with an empty in-process session set), one item each, same fake session.
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["answered", "rejected:SESSION_REUSED"]);
+  assert.equal((await f.port.getCompletion(keys[0])).status, "completed");
+  assert.notEqual((await f.port.getCompletion(keys[1])).status, "completed");
+  const sessions = await fs.readdir(path.join(f.root, "claude-sessions"));
+  assert.equal(sessions.length, 1);
+  assert.match(sessions[0], /^[0-9a-f]{64}\.json$/u);
+});
+
 test("stale worker directories are swept and opening the log cleans the new parent", async (t) => {
   const f = await fixture(t);
   const stale = path.join(f.workDir, "inner-signal-claude-AAAAAA");

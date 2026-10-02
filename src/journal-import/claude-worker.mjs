@@ -480,7 +480,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         // must be gone first, so a lingering helper can't write after the scan; if it isn't, refuse admission.
         let groupGone = false;
         try { groupGone = await waitForProcessGroupGone(childGroup); } catch { groupGone = false; }
-        if (!groupGone) { persisted = true; groupAlive = true; }
+        // Leave the evidence for startup recovery and stop the worker once this item is refused.
+        if (!groupGone) { persisted = true; groupAlive = true; cleanupFailed = true; }
         else {
           try { persisted = await cleanClaudePersistence(processEnv.HOME, runDir); persistenceChecked = true; }
           catch { persisted = true; }
@@ -556,7 +557,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
               request_context_id: `claude-session:${reader.state.session}` };
             const promoted = await host("promote", ["--work-id", record.work_id, "--stage-dir", stageDir,
               "--execution-json", JSON.stringify(execution), "--subject", "local:claude-hardest"]);
-            outcome = promoted[0]?.answered ? "answered" : promoted[0]?.already ? "already_answered" : "error";
+            outcome = promoted[0]?.answered ? "answered" : promoted[0]?.already ? "already_answered"
+              : promoted[0]?.session_reused ? "rejected:SESSION_REUSED" : "error";
           }
         }
       }
@@ -577,7 +579,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         }
         catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_release_failed" }); }
       }
-      if (runDir) {
+      if (runDir && !groupAlive) {
         if (!persistenceChecked) {
           try { if (await cleanClaudePersistence(processEnv.HOME, runDir)) outcome = "rejected:LOCAL_PERSISTENCE"; }
           catch { outcome = "rejected:LOCAL_PERSISTENCE"; }
