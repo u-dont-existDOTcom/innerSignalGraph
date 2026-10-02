@@ -61,7 +61,7 @@ if (${JSON.stringify(scenario)} === "oversize_packet" && args.at(-1).includes("p
 if (${JSON.stringify(scenario)} === "expired_packet" && args.at(-1).includes("packet-check")) {
   console.log('{"allowed":false,"packet_length":null,"reason":"expired"}'); process.exit(0);
 }
-if (${JSON.stringify(scenario)} === "release_failure" && args.at(-1).includes("attempt-release")) {
+if (["release_failure", "no_init_release_failure"].includes(${JSON.stringify(scenario)}) && args.at(-1).includes("attempt-release")) {
   const marker = ${JSON.stringify(path.join(laptop, "release-fail-count"))};
   if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); process.exit(37); }
 }
@@ -100,6 +100,15 @@ if (scenario === "isolation_then_success") {
   if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); scenario = "tools_extra"; }
   else scenario = "ok";
 }
+if (scenario === "unstaged_then_ok") {
+  const marker = ${JSON.stringify(path.join(laptop, "unstaged-count"))};
+  if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); scenario = "nothing_staged"; }
+  else scenario = "ok";
+}
+const limitScenarios = ["limit_then_success", "assistant_limit", "http429", "rate_event_seconds", "rate_event_ms", "release_failure"];
+// Claude reports one session per run, in init and result alike; the run after a limit starts a new session.
+const sessionId = limitScenarios.includes(scenario) && fs.existsSync(${JSON.stringify(path.join(laptop, "limit-count"))})
+  ? "87654321" : "12345678";
 const slug = process.cwd().replace(/[^A-Za-z0-9]/g, "-");
 const project = path.join(process.env.HOME, ".claude", "projects", slug);
 fs.mkdirSync(project, { recursive: true });
@@ -117,14 +126,14 @@ if (scenario === "cleanup_unreadable") {
   fs.mkdirSync(path.join(process.env.HOME, ".cache"), { recursive: true });
   fs.writeFileSync(path.join(process.env.HOME, ".cache", "claude-cli-nodejs"), "not a directory");
 }
-if (scenario === "no_init_then_success") {
+if (["no_init_then_success", "no_init_release_failure"].includes(scenario)) {
   const marker = ${JSON.stringify(path.join(laptop, "no-init-count"))};
   if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); process.exit(36); }
 }
 const init = { type: "system", subtype: "init", mcp_servers: [{ name: "journal", status: "connected" }],
   tools: ["mcp__journal__get_journal_work_packet", "mcp__journal__submit_journal_work_result"],
   skills: [], slash_commands: [], plugins: [{ name: "synthetic" }], agents: [{ name: "synthetic" }],
-  claude_code_version: "2.1.287", session_id: "12345678" };
+  claude_code_version: "2.1.287", session_id: sessionId };
 if (scenario === "ui_invalidate") console.log(JSON.stringify({ type: "system", subtype: "ui_invalidate" }));
 if (scenario === "init_missing") { console.log(JSON.stringify({ type: "result", is_error: false, subtype: "success" })); process.exit(0); }
 if (scenario === "server_extra") init.mcp_servers.push({ name: "other", status: "connected" });
@@ -172,7 +181,7 @@ if (["limit_then_success", "assistant_limit", "http429", "rate_event_seconds", "
       subtype: scenario === "http429" ? "success" : "error_during_execution",
       api_error_status: scenario === "http429" ? 429 : undefined,
       error: scenario === "limit_then_success" ? { code: "usage_limit", message: "usage limit reset in 1 seconds" } : undefined,
-      session_id: "12345678", modelUsage: {}, result: "synthetic reply" }));
+      session_id: sessionId, modelUsage: {}, result: "synthetic reply" }));
     process.exit(1);
   }
 }
@@ -208,8 +217,7 @@ else {
   if (scenario === "zero_output") usage["claude-opus-5-5"].outputTokens = 0;
   if (scenario === "helper_zero") usage["helper-model"] = { outputTokens: 0 };
   console.log(JSON.stringify({ type: "result", is_error: scenario === "is_error",
-    subtype: "success", session_id: scenario === "missing_session" ? null
-      : ["limit_then_success", "assistant_limit", "http429", "rate_event_seconds", "rate_event_ms", "release_failure"].includes(scenario) ? "87654321" : "12345678",
+    subtype: "success", session_id: scenario === "missing_session" ? null : sessionId,
     modelUsage: usage, total_cost_usd: 0.25, result: scenario === "reply_limit_words" ? "usage limit rate limit 429"
       : ["SYNTHETIC", "CLAUDE", "PRIVATE", "SENTINEL", "DO", "NOT", "LOG"].join("_") }));
 }
@@ -364,7 +372,7 @@ for (const scenario of ["reply_limit_words", "helper_zero", "ui_invalidate", "la
   });
 }
 
-for (const scenario of ["no_init_then_success", "ssh_prestart_retry"]) {
+for (const scenario of ["no_init_then_success", "ssh_prestart_retry", "no_init_release_failure"]) {
   test(`${scenario} retries before a model attempt`, async (t) => {
     const f = await fixture(t, scenario);
     const operationKey = `job:synthetic-${scenario}`;
@@ -372,7 +380,9 @@ for (const scenario of ["no_init_then_success", "ssh_prestart_retry"]) {
     await runJournalClaudeWorker(f.args, { environment: f.environment });
     assert.equal((await f.port.getCompletion(operationKey)).status, "completed");
     const outcomes = (await fs.readFile(f.log, "utf8")).trim().split("\n").map((line) => JSON.parse(line).outcome);
-    assert.deepEqual(outcomes, [scenario === "no_init_then_success" ? "rejected:ISOLATION" : "error", "answered"]);
+    // A release that fails after a pre-model failure is retried by the main loop, so the item is run again.
+    assert.deepEqual(outcomes, { no_init_then_success: ["rejected:ISOLATION", "answered"], ssh_prestart_retry: ["error", "answered"],
+      no_init_release_failure: ["attempt_release_failed", "rejected:ISOLATION", "answered"] }[scenario]);
   });
 }
 
@@ -445,6 +455,23 @@ test("one worker refuses a session ID reused for a second hardest item", async (
   assert.deepEqual(logs.map((item) => item.outcome), ["answered", "rejected:SESSION_REUSED"]);
   assert.equal((await f.port.getCompletion(keys[0])).status, "completed");
   assert.equal((await f.port.getCompletion(keys[1])).status, "exhausted");
+});
+
+test("a session reported by a rejected run can't back another item after a restart", async (t) => {
+  const f = await fixture(t, "unstaged_then_ok");
+  const keys = ["job:synthetic-rejected-session-first", "job:synthetic-rejected-session-second"];
+  for (const operationKey of keys) {
+    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  }
+  // Separate worker processes (each with an empty in-process session set): the first run fetches the packet
+  // but stages nothing, and the second reports the same session for the other item.
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["rejected:STAGE_MISSING", "rejected:SESSION_REUSED"]);
+  assert.notEqual(logs[0].work_id, logs[1].work_id);
+  for (const operationKey of keys) assert.notEqual((await f.port.getCompletion(operationKey)).status, "completed");
+  assert.equal((await fs.readdir(path.join(f.root, "claude-sessions"))).length, 1);
 });
 
 test("a session ID reused by a second worker process is refused at promotion on the host", async (t) => {

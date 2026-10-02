@@ -886,3 +886,6 @@ This is import/runtime infrastructure only. It changes no therapy, graph, produc
     - A held lock means a live worker, and its run is left alone.
     - The run is kept and startup stops with exit 74 if the lock isn't the private file the worker creates, `/proc` can't be read, or a group outlives the wait.
   - **Host Node executable:** Remote mode now requires `--remote-node <absolute host path>`. Every host command and the MCP server run under that executable instead of a bare `node`, because the import host's noninteractive SSH `PATH` resolves `node` to Node 20. It can also be a host wrapper that sets the exchange-root and secret-file variables, so neither path has to be in the laptop's arguments.
+  - **Sessions of rejected runs and failed releases (Codex review):**
+    - The worker reserves every session a run reports, through the new host command `session-reserve`, before classifying the run. A session from a rejected run (for example `STAGE_MISSING`) can no longer back another item's answer after a restart; promotion still reserves it too.
+    - A release that fails after a non-limit failure before the model is queued and retried by the main loop, as after a provider outage. That reservation is not counted as a spent attempt, and pending releases are retried once more before the worker stops at its item limit.
