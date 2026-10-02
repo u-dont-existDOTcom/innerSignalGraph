@@ -112,7 +112,7 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     const workId = assertJournalWorkId(value);
     if (command !== "attempt-status" && !/^[0-9a-f-]{36}$/u.test(parsed["--claim"])) fail("JOURNAL_WORK_ATTEMPT_INVALID");
     const directory = path.join(root, "claude-attempts");
-    await fs.mkdir(directory, { mode: 0o700 });
+    await fs.mkdir(directory, { mode: 0o700 }).catch((error) => { if (error?.code !== "EEXIST") throw error; });
     const info = await fs.lstat(directory);
     if (!info.isDirectory() || (info.mode & 0o777) !== 0o700
       || (process.getuid && info.uid !== process.getuid()) || await fs.realpath(directory) !== directory) {
