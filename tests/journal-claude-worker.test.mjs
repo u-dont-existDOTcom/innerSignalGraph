@@ -465,6 +465,32 @@ test("an already answered promotion has its own content-free worker outcome", as
   assert.ok(!JSON.stringify(logs).includes(SENTINEL));
 });
 
+test("a live sibling reservation is skipped until it is released, then answered by the same worker", async (t) => {
+  const f = await fixture(t);
+  const key = "job:synthetic-live-sibling";
+  await assert.rejects(f.port.invoke({ ...call(key), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const [record] = await f.exchange.listDispatch();
+  const claim = "33333333-3333-4333-8333-333333333333";
+  const environment = { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root };
+  const identity = ["--attempt-identity", record.attempt_identity];
+  await runJournalWork(["attempt-reserve", "--work-id", record.work_id, ...identity, "--claim", claim], { environment, stdout: { write() {} } });
+  const args = f.args.filter(value => value !== "--once");
+  args.splice(args.indexOf("--poll-ms") + 1, 1, "100");
+  const pending = runJournalClaudeWorker(args, { environment: f.environment });
+  // The sibling releases its reservation after a pre-model outage; this worker must take the item.
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline && !(await fs.readFile(f.log, "utf8").catch(() => "")).includes('"outcome":"reserved"')) {
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  await new Promise(resolve => setTimeout(resolve, 250));
+  await runJournalWork(["attempt-release", "--work-id", record.work_id, ...identity, "--claim", claim], { environment, stdout: { write() {} } });
+  assert.equal(await pending, 0);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.equal(logs[0].outcome, "reserved");
+  assert.equal(logs.at(-1).outcome, "answered");
+  assert.equal((await f.port.getCompletion(key)).status, "completed");
+});
+
 test("SIGINT wakes the poll sleep and returns exit code 130", async (t) => {
   const f = await fixture(t);
   const args = f.args.filter((value) => value !== "--once");

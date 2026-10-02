@@ -21,6 +21,7 @@ export const CLAUDE_PAUSED_EXIT_CODE = 75;
 // The run was refused at init (isolation) before reaching the model: the local Claude Code setup changed.
 // The item keeps a clearable hold and stays open; an operator fixes the setup and runs attempt-clear.
 export const CLAUDE_SETUP_REFUSED_EXIT_CODE = 78;
+export const CLAUDE_CLEANUP_FAILED_EXIT_CODE = 74;
 const fail = (code) => { throw Object.assign(new Error(code), { code }); };
 
 function providerFailure(event) {
@@ -384,7 +385,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   };
   const processEnv = { PATH: environment.PATH ?? "", HOME: environment.HOME ?? "", LANG: environment.LANG ?? "C" };
   const activeGroups = new Set();
-  let stopping = false, stopSignal = null, wake = null, limitedUntil = 0, completed = 0, signInNeeded = false, setupRefused = false, heldOpen = false;
+  let stopping = false, stopSignal = null, wake = null, limitedUntil = 0, completed = 0, signInNeeded = false, setupRefused = false, heldOpen = false, cleanupFailed = false;
+  // Items whose reservation belongs to a live sibling are skipped until this time, not given up on.
+  const skipUntil = new Map();
   const attempts = new Map(), limits = new Map(), seenSessions = new Set(), pendingReleases = new Map();
   const stop = (signal) => { stopping = true; stopSignal ??= signal;
     if (wake) { const resume = wake; wake = null; resume(); }
@@ -481,6 +484,10 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         else {
           try { persisted = await cleanClaudePersistence(processEnv.HOME, runDir); persistenceChecked = true; }
           catch { persisted = true; }
+          // The run dir holds Claude's redirected cache and session files; remove it before admission. If it
+          // can't be removed, refuse the result and stop the worker rather than leave it behind and carry on.
+          try { await fs.rm(runDir, { recursive: true, force: true }); }
+          catch { persisted = true; cleanupFailed = true; }
         }
       }
       if (reader.state.reportedSession) {
@@ -576,7 +583,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           catch { outcome = "rejected:LOCAL_PERSISTENCE"; }
         }
         try { await fs.rm(runDir, { recursive: true, force: true }); }
-        catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "run_remove_failed" }); }
+        catch { cleanupFailed = true; await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "run_remove_failed" }); }
       }
       if (stageDir) {
         try { await host("stage-remove", ["--stage-dir", stageDir]); }
@@ -628,12 +635,21 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         && item.tier === "hardest" && item.model === MODEL && item.effort === "max"
         && /^[0-9a-f]{48}$/u.test(item.attempt_identity ?? "")
         && Date.parse(item.expires_at) > Date.now()
-        && !pendingReleases.has(item.work_id)
+        && !pendingReleases.has(item.work_id) && (skipUntil.get(item.work_id) ?? 0) <= Date.now()
         && (attempts.get(item.work_id) ?? 0) < 3 && (limits.get(item.work_id) ?? 0) < MAX_LIMIT_RETRIES);
       const marker = record ? (await host("attempt-status", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity]))[0] : null;
       if (record && marker?.attempted) {
-        attempts.set(record.work_id, 3);
         const spent = marker.packet_fetched === true || marker.model_reached === true;
+        const staleSpentReservation = marker.status === "reserved" && marker.packet_fetched === true
+          && (marker.age_seconds ?? 0) * 1000 >= (marker.timeout_ms ?? 1_800_000) + 600_000;
+        if (marker.status === "reserved" && !staleSpentReservation) {
+          // A live sibling owns it; it may still release the reservation after a pre-model outage.
+          skipUntil.set(record.work_id, Date.now() + options.pollMs);
+          await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
+            model: record.model, effort: record.effort, outcome: "reserved", duration_ms: 0 });
+          continue;
+        }
+        attempts.set(record.work_id, 3);
         // A hold left by a run refused at init, before the model, stays open for an operator to clear.
         // The setup may still be broken, so stop without closing it or trying further items (exit 78).
         if (marker.status === "isolation_refused" && !spent) {
@@ -662,7 +678,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         continue;
       }
       const outcome = await one(record);
-      if (setupRefused) break;
+      if (setupRefused || cleanupFailed) break;
       if (["limited", "provider_unavailable", "sign_in_needed"].includes(outcome)) limits.set(record.work_id, (limits.get(record.work_id) ?? 0) + 1);
       else if (["reserved", "already_attempted", "isolation_refused", "rejected:PACKET_TOO_LARGE"].includes(outcome)) attempts.set(record.work_id, 3);
       else if (outcome !== "stopped") {
@@ -673,7 +689,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       }
     }
     // 77 is the content-free sign-in-required exit status for the operator.
-    return stopSignal === "SIGINT" ? 130 : stopSignal === "SIGTERM" ? 143 : signInNeeded ? 77
+    // 74 is the content-free status for a run directory the worker could not remove.
+    return stopSignal === "SIGINT" ? 130 : stopSignal === "SIGTERM" ? 143 : cleanupFailed ? CLAUDE_CLEANUP_FAILED_EXIT_CODE
+      : signInNeeded ? 77
       : setupRefused || heldOpen ? CLAUDE_SETUP_REFUSED_EXIT_CODE
       : options.once && Date.now() < limitedUntil ? CLAUDE_PAUSED_EXIT_CODE : 0;
   } catch (error) {
