@@ -104,7 +104,7 @@ export function claudePrintArgs({ record, mcpConfig, sessionId }) {
 
 export function claudeResultReader(record, expectedPacketLength = null, expectedSession = null) {
   const state = { bad: null, initialized: false, reachedModel: false, claudeCodeVersion: null,
-    resultSeen: false, session: null, model: null,
+    resultSeen: false, session: null, sessionMismatch: false, model: null,
     packetFetched: false, packetBeforeFirstSubmit: false, submitSeen: false, hookCount: 0,
     servers: [], tools: [], skillCount: 0, slashCount: 0, pluginCount: 0, agentCount: 0,
     usage: { input_tokens: 0, cached_input_tokens: 0, output_tokens: 0, total_cost_usd: 0 },
@@ -124,8 +124,11 @@ export function claudeResultReader(record, expectedPacketLength = null, expected
     let event;
     try { event = JSON.parse(line); } catch { state.bad ??= !state.initialized ? "ISOLATION" : "EVENT_JSON_INVALID"; return; }
     if (!event || typeof event !== "object" || Array.isArray(event)) { state.bad ??= !state.initialized ? "ISOLATION" : "EVENT_INVALID"; return; }
-    // The worker chose and reserved this run's session before starting Claude; every event must report it.
-    if (expectedSession !== null && Object.hasOwn(event, "session_id") && event.session_id !== expectedSession) {
+    // The worker chose and reserved this run's session before starting Claude; every event must report it. A
+    // foreign session is an isolation failure, so the run is killed before it can be served the packet.
+    if (expectedSession !== null && typeof event.session_id === "string" && event.session_id !== expectedSession) {
+      state.sessionMismatch = true; state.bad = "ISOLATION";
+    } else if (expectedSession !== null && Object.hasOwn(event, "session_id") && event.session_id !== expectedSession) {
       state.bad ??= "SESSION_INVALID";
     }
     const synthetic = event.message?.model === "<synthetic>";
@@ -395,6 +398,8 @@ async function pendingDirectory(workDir, name) {
 const validWorkId = (value) => { try { assertJournalWorkId(value); return true; } catch { return false; } };
 const plainObject = (value, keys) => value && typeof value === "object" && !Array.isArray(value)
   && Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
+export const validPendingRefusal = (value) => plainObject(value, ["work_id", "attempt_identity", "claim"])
+  && validWorkId(value.work_id) && /^[0-9a-f]{48}$/u.test(value.attempt_identity ?? "") && /^[0-9a-f-]{36}$/u.test(value.claim ?? "");
 export const validPendingRelease = (value) => plainObject(value, ["work_id", "attempt_identity", "claim", "expires_at"])
   && validWorkId(value.work_id) && /^[0-9a-f]{48}$/u.test(value.attempt_identity ?? "")
   && /^[0-9a-f-]{36}$/u.test(value.claim ?? "") && Number.isSafeInteger(value.expires_at);
@@ -503,6 +508,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     if (!configInfo.isFile() || (configInfo.mode & 0o077) !== 0) fail("JOURNAL_CLAUDE_CONFIG_INSECURE");
   }
   const pendingReleasesDir = await pendingDirectory(workDir, "pending-releases");
+  const pendingRefusalsDir = await pendingDirectory(workDir, "pending-refusals");
   const parent = await fs.mkdtemp(path.join(workDir, "inner-signal-claude-"));
   await fs.chmod(parent, 0o700);
   let logHandle, unlockWorkerDirectory;
@@ -571,6 +577,19 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     pendingReleases.set(workId, entry);
     await persistRelease(workId, entry);
     if (!entry.saved) await log({ at: new Date().toISOString(), work_id: workId, outcome: "pending_release_unsaved" });
+  }
+  // A hold for an isolation refusal before the model that the host didn't record is kept on disk. The next start
+  // applies it and stops before taking any item, so nothing runs under the refused setup until an operator acts.
+  async function applyPendingRefusal(file, value) {
+    try {
+      await host("attempt-refuse", ["--work-id", value.work_id, "--attempt-identity", value.attempt_identity, "--claim", value.claim]);
+    } catch {
+      // Already held, or the marker is gone: nothing is left to apply. Otherwise keep it for the next start.
+      const status = (await host("attempt-status", ["--work-id", value.work_id, "--attempt-identity", value.attempt_identity]))[0]?.status;
+      if (status !== "none" && status !== "isolation_refused") return false;
+    }
+    await fs.rm(file, { force: true });
+    return true;
   }
   async function releaseSettled(workId, claim) {
     pendingReleases.delete(workId);
@@ -735,7 +754,15 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       if (claimed && isolationRefused) {
         outcome = "isolation_refused";
         try { await host("attempt-refuse", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim]); }
-        catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_refuse_failed" }); }
+        catch {
+          await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_refuse_failed" });
+          if (!reachedModel) {
+            try {
+              await writeAttemptMarker(path.join(pendingRefusalsDir, `${claim}.json`),
+                { work_id: record.work_id, attempt_identity: record.attempt_identity, claim });
+            } catch { cleanupFailed = true; }
+          }
+        }
       } else if (claimed && !reachedModel && !observed?.limitSeen && outcome !== "limited") {
         try {
           await host("attempt-release", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim]); claimed = false;
@@ -776,6 +803,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         plugin_count: observed?.pluginCount ?? 0, agent_count: observed?.agentCount ?? 0,
         hook_event_count: observed?.hookCount ?? 0,
         claude_code_version: observed?.claudeCodeVersion ?? null, model_reached: reachedModel, process_group_alive: groupAlive,
+        session_mismatch: observed?.sessionMismatch === true,
         ...usage, cost_kind: "subscription_cost_equivalent_not_charged" });
     }
     return outcome;
@@ -786,6 +814,15 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     await removeStaleRuns(workDir, "inner-signal-claude-", { keep: unresolved });
     if (unresolved.size > 0) { cleanupFailed = true; preserveParent = false; return CLAUDE_CLEANUP_FAILED_EXIT_CODE; }
     await sweepClaudePersistence(processEnv.HOME, workDir);
+    const refusals = await readPendingEntries(pendingRefusalsDir, validPendingRefusal);
+    if (refusals.length > 0) {
+      for (const { file, value } of refusals) {
+        try { await applyPendingRefusal(file, value); } catch { /* The host is unavailable: keep it for the next start. */ }
+      }
+      heldOpen = true;
+      await log({ at: new Date().toISOString(), outcome: "isolation_refusal_pending", count: refusals.length });
+      return CLAUDE_SETUP_REFUSED_EXIT_CODE;
+    }
     for (const { file, value } of await readPendingEntries(pendingReleasesDir, validPendingRelease)) {
       if (value.expires_at <= Date.now()) await fs.rm(file, { force: true });
       else pendingReleases.set(value.work_id, { claim: value.claim, identity: value.attempt_identity, expiresAt: value.expires_at, saved: true });

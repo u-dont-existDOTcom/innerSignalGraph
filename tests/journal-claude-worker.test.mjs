@@ -68,6 +68,7 @@ const failFirst = (name, count, code) => {
   if (seen < count) process.exit(code);
 };
 if (${JSON.stringify(scenario)} === "session_reserve_failure" && args.at(-1).includes("'session-reserve'")) failFirst("session-reserve", 1, 39);
+if (${JSON.stringify(scenario)} === "refuse_failure" && args.at(-1).includes("'attempt-refuse'")) failFirst("attempt-refuse", 1, 42);
 if (${JSON.stringify(scenario)} === "session_stolen" && args.at(-1).includes("'promote'")) {
   // Another item takes this run's session reservation between Claude's run and promotion.
   const directory = path.join(${JSON.stringify(root)}, "claude-sessions");
@@ -161,7 +162,7 @@ if (scenario === "ui_invalidate") console.log(JSON.stringify({ type: "system", s
 if (scenario === "init_missing") { console.log(JSON.stringify({ type: "result", is_error: false, subtype: "success" })); process.exit(0); }
 if (scenario === "server_extra") init.mcp_servers.push({ name: "other", status: "connected" });
 if (scenario === "server_disconnected") init.mcp_servers[0].status = "disconnected";
-if (scenario === "tools_extra") init.tools.push("Bash");
+if (["tools_extra", "refuse_failure"].includes(scenario)) init.tools.push("Bash");
 if (scenario === "skills_present") init.skills.push("synthetic");
 if (scenario === "slashes_present") init.slash_commands.push("synthetic");
 console.log(JSON.stringify(init));
@@ -188,7 +189,8 @@ if (scenario === "reach_then_hang") {
 }
 if (scenario === "hook_event") console.log(JSON.stringify({ type: "hook_started", hook_name: "synthetic" }));
 // Give the parent a chance to kill the process group before any packet tool call.
-if (["server_extra", "server_disconnected", "tools_extra", "skills_present", "slashes_present", "hook_event"].includes(scenario)) {
+if (["server_extra", "server_disconnected", "tools_extra", "skills_present", "slashes_present", "hook_event", "foreign_session",
+  "refuse_failure"].includes(scenario)) {
   await new Promise(resolve => setTimeout(resolve, 250));
   fs.writeFileSync(${JSON.stringify(path.join(laptop, "packet-called-after-refusal"))}, "bad");
 }
@@ -258,10 +260,10 @@ else {
   return { base, host, laptop, root, workDir, secret, secretFile, config, trace, sshTrace, log, exchange, port, environment, args };
 }
 
-// The work dir keeps only the worker's pending-release directory, empty once the host confirmed every release.
+// The work dir keeps only the worker's pending-action directories, empty once the host confirmed everything.
 async function assertWorkDirClean(workDir, extra = []) {
-  assert.deepEqual((await fs.readdir(workDir)).sort(), [...extra, "pending-releases"].sort());
-  assert.deepEqual(await fs.readdir(path.join(workDir, "pending-releases")), []);
+  assert.deepEqual((await fs.readdir(workDir)).sort(), [...extra, "pending-refusals", "pending-releases"].sort());
+  for (const name of ["pending-refusals", "pending-releases"]) assert.deepEqual(await fs.readdir(path.join(workDir, name)), []);
 }
 
 async function scanFiles(directory) {
@@ -428,6 +430,7 @@ test("packet-free and failed Claude admissions never promote staged answers", as
     init_missing: "rejected:ISOLATION", server_extra: "isolation_refused",
     server_disconnected: "isolation_refused", tools_extra: "isolation_refused",
     skills_present: "isolation_refused", slashes_present: "isolation_refused", hook_event: "isolation_refused",
+    foreign_session: "isolation_refused",
     project_file: "rejected:LOCAL_PERSISTENCE", fallback_cache: "rejected:LOCAL_PERSISTENCE" };
   for (const [scenario, expected] of Object.entries(outcomes)) {
     await t.test(scenario, async (child) => {
@@ -495,14 +498,26 @@ test("each run uses a fresh session that the host reserved before Claude started
   assert.equal((await fs.readdir(path.join(f.root, "claude-sessions"))).length, 2);
 });
 
-test("a run whose events report a session other than the reserved one is refused", async (t) => {
-  const f = await fixture(t, "foreign_session");
-  const operationKey = "job:synthetic-foreign-session";
-  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
-  await runJournalClaudeWorker(f.args, { environment: f.environment });
+test("an isolation hold the host didn't record is applied by the next start before any item runs", async (t) => {
+  const f = await fixture(t, "refuse_failure");
+  for (const operationKey of ["job:synthetic-refuse-first", "job:synthetic-refuse-second"]) {
+    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  }
+  const pending = path.join(f.workDir, "pending-refusals");
+  // Refused at init, but the host's attempt-refuse fails: the hold is kept on disk and the worker stops.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  assert.equal((await fs.readdir(pending)).length, 1);
+  // The next start records the hold on the host and stops again without starting Claude for any item.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  assert.deepEqual(await fs.readdir(pending), []);
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "x");
   const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
-  assert.deepEqual(logs.map((item) => item.outcome), ["rejected:SESSION_INVALID"]);
-  assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted");
+  assert.deepEqual(logs.map((item) => item.outcome), ["attempt_refuse_failed", "isolation_refused", "isolation_refusal_pending"]);
+  const held = logs[1].work_id;
+  let status = "";
+  await runJournalWork(["attempt-status", "--work-id", held], { environment: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root },
+    stdout: { write: (value) => { status += value; } } });
+  assert.equal(JSON.parse(status).status, "isolation_refused");
 });
 
 test("a failed session reservation stops the item before Claude starts", async (t) => {
