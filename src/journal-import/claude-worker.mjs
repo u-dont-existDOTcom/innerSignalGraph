@@ -43,7 +43,7 @@ function number(value, fallback, min, max) {
 
 export function parseJournalClaudeWorkerArgs(argv) {
   const flags = new Set(["--agent", "--config", "--work-dir", "--claude-bin", "--remote", "--remote-checkout",
-    "--remote-config", "--ssh-bin", "--log", "--once", "--max-items", "--timeout-ms", "--poll-ms", "--limit-backoff-ms"]);
+    "--remote-config", "--remote-node", "--ssh-bin", "--log", "--once", "--max-items", "--timeout-ms", "--poll-ms", "--limit-backoff-ms"]);
   const options = {};
   for (let i = 0; i < argv.length; i++) {
     const name = argv[i];
@@ -55,14 +55,17 @@ export function parseJournalClaudeWorkerArgs(argv) {
     || (options["--log"] && !path.isAbsolute(options["--log"]))) fail("JOURNAL_CLAUDE_OPTION_INVALID");
   const remote = options["--remote"] ?? null;
   if (remote) {
+    // A noninteractive SSH PATH can resolve a bare `node` to another runtime, so the host's Node executable (or a
+    // host wrapper that also sets the exchange environment) is named explicitly.
     if (!HOST.test(remote) || !path.isAbsolute(options["--remote-checkout"] ?? "")
-      || !path.isAbsolute(options["--remote-config"] ?? "") || options["--config"]) fail("JOURNAL_CLAUDE_OPTION_INVALID");
+      || !path.isAbsolute(options["--remote-config"] ?? "") || !path.isAbsolute(options["--remote-node"] ?? "")
+      || !BIN.test(options["--remote-node"]) || options["--config"]) fail("JOURNAL_CLAUDE_OPTION_INVALID");
   } else if (!path.isAbsolute(options["--config"] ?? "")
-    || options["--remote-checkout"] || options["--remote-config"]) fail("JOURNAL_CLAUDE_OPTION_INVALID");
+    || options["--remote-checkout"] || options["--remote-config"] || options["--remote-node"]) fail("JOURNAL_CLAUDE_OPTION_INVALID");
   const claudeBin = options["--claude-bin"] ?? "claude";
   const sshBin = options["--ssh-bin"] ?? "ssh";
   if (!BIN.test(claudeBin) || !BIN.test(sshBin)) fail("JOURNAL_CLAUDE_OPTION_INVALID");
-  return { remote, checkout: options["--remote-checkout"] ?? repositoryRoot,
+  return { remote, remoteNode: options["--remote-node"] ?? null, checkout: options["--remote-checkout"] ?? repositoryRoot,
     configPath: options["--remote-config"] ?? options["--config"], workDir: options["--work-dir"],
     claudeBin, sshBin, log: options["--log"] ?? null, once: Boolean(options["--once"]),
     maxItems: number(options["--max-items"], Number.MAX_SAFE_INTEGER, 1, Number.MAX_SAFE_INTEGER),
@@ -79,7 +82,7 @@ export function claudeMcpConfiguration(options, stageDir, environment) {
   const args = [path.join(options.checkout, "src/cli/journal-work-mcp.mjs"),
     "--config", options.configPath, "--principal", "claude-hardest", "--tier", "hardest", "--stage-dir", stageDir];
   return { mcpServers: { journal: options.remote
-    ? { command: options.sshBin, args: [...sshOptions, options.remote, ["node", ...args].map(quote).join(" ")] }
+    ? { command: options.sshBin, args: [...sshOptions, options.remote, [options.remoteNode, ...args].map(quote).join(" ")] }
     : { command: process.execPath, args,
       env: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT,
         INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE } } } };
@@ -479,7 +482,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   process.on("SIGTERM", onTerm);
 
   async function host(command, values = []) {
-    const commandArgs = [options.remote ? "node" : process.execPath,
+    const commandArgs = [options.remote ? options.remoteNode : process.execPath,
       path.join(options.checkout, "src/cli/journal-work.mjs"), command, ...values];
     const executable = options.remote ? options.sshBin : commandArgs.shift();
     const args = options.remote

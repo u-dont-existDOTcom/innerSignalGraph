@@ -885,3 +885,4 @@ This is import/runtime infrastructure only. It changes no therapy, graph, produc
     - If the dead worker's lock is free, startup recovery kills every process group that has a live process working in that run directory, and confirms each one gone before cleaning up.
     - A held lock means a live worker, and its run is left alone.
     - The run is kept and startup stops with exit 74 if the lock isn't the private file the worker creates, `/proc` can't be read, or a group outlives the wait.
+  - **Host Node executable:** Remote mode now requires `--remote-node <absolute host path>`. Every host command and the MCP server run under that executable instead of a bare `node`, because the import host's noninteractive SSH `PATH` resolves `node` to Node 20. It can also be a host wrapper that sets the exchange-root and secret-file variables, so neither path has to be in the laptop's arguments.

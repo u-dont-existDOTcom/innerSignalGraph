@@ -222,7 +222,7 @@ else {
   const environment = { PATH: `${path.dirname(process.execPath)}:${process.env.PATH}`,
     HOME: laptop, LANG: "C" };
   const args = ["--agent", "claude", "--remote", "synthetic-host", "--remote-checkout", checkout,
-    "--remote-config", config, "--work-dir", workDir, "--ssh-bin", ssh, "--claude-bin", claude,
+    "--remote-config", config, "--remote-node", process.execPath, "--work-dir", workDir, "--ssh-bin", ssh, "--claude-bin", claude,
     "--log", log, "--once", "--max-items", "1", "--poll-ms", "10", "--timeout-ms", "2500"];
   return { base, host, laptop, root, workDir, secret, secretFile, config, trace, sshTrace, log, exchange, port, environment, args };
 }
@@ -260,10 +260,17 @@ test("Claude arguments map only the pinned hardest profile and remote MCP holds 
   assert.deepEqual(args.slice(args.indexOf("--tools"), args.indexOf("--tools") + 2), ["--tools", ""]);
   assert.throws(() => claudePrintArgs({ record: { ...record, model: "claude-unmapped" }, mcpConfig: "/tmp/mcp.json" }),
     { code: "JOURNAL_CLAUDE_PROFILE_INVALID" });
-  const options = parseJournalClaudeWorkerArgs(["--agent", "claude", "--remote", "host",
-    "--remote-checkout", "/host/repo", "--remote-config", "/host/config", "--work-dir", "/tmp/work"]);
+  const remoteArgs = ["--agent", "claude", "--remote", "host",
+    "--remote-checkout", "/host/repo", "--remote-config", "/host/config", "--work-dir", "/tmp/work"];
+  for (const extra of [[], ["--remote-node", "node"], ["--remote-node", "/host/node bin"]]) {
+    assert.throws(() => parseJournalClaudeWorkerArgs([...remoteArgs, ...extra]), { code: "JOURNAL_CLAUDE_OPTION_INVALID" });
+  }
+  assert.throws(() => parseJournalClaudeWorkerArgs(["--agent", "claude", "--config", "/laptop/config", "--work-dir", "/tmp/work",
+    "--remote-node", "/host/node"]), { code: "JOURNAL_CLAUDE_OPTION_INVALID" });
+  const options = parseJournalClaudeWorkerArgs([...remoteArgs, "--remote-node", "/host/node-journal"]);
   assert.equal(options.limitBackoffMs, 30 * 60_000);
   const mcp = JSON.stringify(claudeMcpConfiguration(options, "/host/stage", {}));
+  assert.ok(mcp.includes("'/host/node-journal' '/host/repo/src/cli/journal-work-mcp.mjs'"));
   assert.ok(mcp.includes("BatchMode=yes") && mcp.includes("ClearAllForwardings=yes")
     && mcp.includes("ForwardAgent=no") && mcp.includes("ForwardX11=no"));
   assert.ok(!mcp.includes("INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET"));
@@ -331,6 +338,8 @@ test("remote fake Claude answers hardest work; host keeps secret, laptop output 
   // Worker-run ssh gets PATH, HOME and LANG only; the MCP ssh that Claude starts also inherits the run-local XDG_CACHE_HOME.
   assert.ok(sshTrace.trim().split("\n").map(JSON.parse).every((entry) =>
     ["HOME,LANG,PATH", "HOME,LANG,PATH,XDG_CACHE_HOME"].includes(entry.env.join(","))));
+  // Every host command and the MCP server run under the named host Node executable, never a bare `node`.
+  assert.ok(sshTrace.trim().split("\n").map(JSON.parse).every((entry) => entry.args.at(-1).startsWith(`'${process.execPath}' '`)));
   for (const channel of [JSON.stringify(f.args), JSON.stringify(trace), sshTrace, log, stderr,
     await fs.readFile(path.join(f.laptop, "ssh-fake.mjs"), "utf8")]) {
     assert.ok(!channel.includes(f.secret));

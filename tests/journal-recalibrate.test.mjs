@@ -567,7 +567,7 @@ for (const outcome of ["resolves", "fails", "refused", "rejected"]) {
     const exchange = createJournalWorkExchange({ root, secret });
     const runtime = await f.open(undefined, false, environment);
     const seen = new Set(), tiers = [], workerArgs = ["--agent", "claude", "--remote", "synthetic-host",
-      "--remote-checkout", checkout, "--remote-config", f.configPath, "--work-dir", workDir,
+      "--remote-checkout", checkout, "--remote-config", f.configPath, "--remote-node", process.execPath, "--work-dir", workDir,
       "--ssh-bin", ssh, "--claude-bin", claude, "--once", "--max-items", "1", "--timeout-ms", "5000", "--log", path.join(home, "worker-log.jsonl")];
     let completed = false, summary, failure, refusedAt = null;
     const running = runtime.execute("run").then((value) => { summary = value; completed = true; },
