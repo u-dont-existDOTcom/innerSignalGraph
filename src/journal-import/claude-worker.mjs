@@ -174,10 +174,9 @@ export function claudeResultReader(record, expectedPacketLength = null) {
       const workId = use.input?.work_id;
       if (!TOOLS.includes(name)) { state.bad = "ISOLATION"; continue; }
       if (workId !== record.work_id) { state.bad ??= "WORK_ID_MISMATCH"; continue; }
-      if (name === TOOLS[0] && workId === record.work_id) {
-        state.packetFetched = true;
-        if (typeof use.id === "string") packetCalls.add(use.id);
-      }
+      // A fetch counts only once its successful tool_result arrives (below); a submit issued in the same
+      // assistant event as the fetch, before the model could see the packet, is not packet-backed.
+      if (name === TOOLS[0] && workId === record.work_id && typeof use.id === "string") packetCalls.add(use.id);
       if (name === TOOLS[1] && workId === record.work_id && !state.submitSeen) {
         state.submitSeen = true; state.packetBeforeFirstSubmit = state.packetFetched;
       }
@@ -191,6 +190,7 @@ export function claudeResultReader(record, expectedPacketLength = null) {
         state.packetLength = textLength;
         packetCalls.delete(part.tool_use_id);
         if (expectedPacketLength !== null && textLength !== expectedPacketLength) state.bad ??= "PACKET_TRUNCATED";
+        else if (part.is_error !== true) state.packetFetched = true;
       }
     }
     if (event.type !== "result") return;

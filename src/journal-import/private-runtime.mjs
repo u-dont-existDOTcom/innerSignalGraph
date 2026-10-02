@@ -401,9 +401,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // Set when work() returns null because its job can never answer (the output stayed invalid
     // through every retry the job allows), as opposed to a pause the next run may resolve.
     let workExhausted = false;
+    // Set with workExhausted when the job's primary item had already completed, so a refusal that came
+    // from a dependent item (for example, its packet grew too large) still counts the primary call.
+    let workPrimaryCompleted = false;
     async function work({ id, role, stage: workStage, unit = null, units = null, packetInput, tier = "standard",
       identityPacketInput = packetInput, dependencies = [], acceptReviewFindings = false }) {
       workExhausted = false;
+      workPrimaryCompleted = false;
       await authorize();
       const scopeUnits = Array.isArray(units) ? units : (unit ? [unit] : []);
       invariant(scopeUnits.length > 0, "JOURNAL_WORK_SCOPE_INVALID");
@@ -559,6 +563,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           state.stage = unfinished.stage; state.blocker = entry.snapshot.checkpoint.blocked_reason ?? "OUTPUT_INCOMPLETE";
           workExhausted = unfinished.status === "blocked_authority"
             && ["INVALID_STRUCTURED_OUTPUT", "JOURNAL_WORK_PACKET_TOO_LARGE", "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED"].includes(state.blocker);
+          workPrimaryCompleted = primary?.status === "completed";
           await save();
           return null;
         }
@@ -860,7 +865,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           }
           reference = frozen.result[0];
         }
-        let results, repairRequest, split, graphsByUnit, bindingFailure, hardestRefusal = null;
+        let results, repairRequest, split, graphsByUnit, bindingFailure, hardestRefusal = null, hardestDependentRefusal = null;
         for (let cycle = 0; cycle <= 2; cycle += 1) {
           const identity = identityFor(units);
           results = await work({
@@ -949,7 +954,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const outcomeId = epochId(`extract:batch:${keyId}`, calibration);
           if (!hardest) {
             if (!workExhausted) return false;
-            hardestRefusal = state.blocker === "JOURNAL_WORK_PACKET_TOO_LARGE" ? state.blocker : null;
+            // A size refusal before the hardest extractor ran leaves the attempt unspent; one from the
+            // dependent omission packet after the extractor completed consumed it and counts as failed.
+            const sizeRefusal = state.blocker === "JOURNAL_WORK_PACKET_TOO_LARGE";
+            hardestRefusal = sizeRefusal && !workPrimaryCompleted ? state.blocker : null;
+            hardestDependentRefusal = sizeRefusal && workPrimaryCompleted ? state.blocker : null;
             state.blocker = null;
             if (!hardestRefusal) await recordHardestOutcome(outcomeId, "failed");
           } else {
@@ -995,7 +1004,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const graph = bindUnitExtraction(unit, admitted, results[0].receipt);
           await writeUnitRecord(unit.unit_id, { graph, extraction: results[0], omission: results[1], source_only_unresolved: true,
             ...(hardestLane.enabled ? { hardest: hardestRefusal ? "not_attempted" : "failed" } : {}),
-            ...(hardestRefusal ? { unresolved_reason: hardestRefusal } : {}) });
+            ...((hardestRefusal ?? hardestDependentRefusal) ? { unresolved_reason: hardestRefusal ?? hardestDependentRefusal } : {}) });
           if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
           state.stage = "EXTRACT";
           state.blocker = null;

@@ -111,11 +111,15 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
     if ((entry.tier ?? tier) === "hardest" && JSON.stringify(packet).length > MAX_HARDEST_PACKET_CHARS) {
       return toolError("JOURNAL_WORK_PACKET_TOO_LARGE", "JOURNAL_WORK_PACKET_TOO_LARGE");
     }
-    if (stageDir) await exchange.markPacketFetched({ stageDir, workId });
-    if (entry.tier === "hardest") {
-      const record = (await exchange.listDispatch()).find(item => item.work_id === workId);
-      await markAttemptPacketFetched(exchange.root, record);
+    // A hardest packet is served only after its attempt marker records the fetch, so a dispatch record
+    // with a valid attempt identity must exist first; otherwise refuse with a content-free tool error.
+    const record = entry.tier === "hardest"
+      ? (await exchange.listDispatch()).find(item => item.work_id === workId) : null;
+    if (entry.tier === "hardest" && !/^[0-9a-f]{48}$/u.test(record?.attempt_identity ?? "")) {
+      return toolError("JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED", "JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED");
     }
+    if (stageDir) await exchange.markPacketFetched({ stageDir, workId });
+    if (record) await markAttemptPacketFetched(exchange.root, record);
     return value(packet);
   }
 

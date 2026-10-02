@@ -227,6 +227,8 @@ test("an invalid hardest dispatch cannot stall the Codex worker", async t => {
   const fake = await f.fake();
   assert.equal(await runJournalCodexWorker(f.args(fake, ["--once"]), { environment: f.environment }), 0);
   assert.ok((await f.exchange.readResult("job:synthetic-valid-standard"))?.output);
+  // The counter belongs to each reader; list through the test's own exchange to observe the skip.
+  assert.ok(!(await f.exchange.listDispatch()).some(record => record.work_id === invalidId));
   assert.ok(f.exchange.invalidDispatchCount() >= 1);
   assert.ok(!(await fs.readFile(f.log, "utf8")).includes(SENTINEL));
 });

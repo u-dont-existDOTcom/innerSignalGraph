@@ -75,10 +75,10 @@ test("exact Claude limit event shapes, seconds/ms reset times and no-reset defau
 test("a 1.5 MB tool-result line preserves assistant fetch/submit and the final result", async (t) => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "journal-stream-test-"));
   t.after(() => fs.rm(directory, { recursive: true, force: true }));
-  const toolUse = name => ({ type: "assistant", message: { content: [{ type: "tool_use", name, input: { work_id: record.work_id } }] } });
-  const events = [init, toolUse(init.tools[0]),
-    { type: "user", message: { content: [{ type: "tool_result", content: "x".repeat(1_500_000) }] } },
-    toolUse(init.tools[1]),
+  const toolUse = (name, id) => ({ type: "assistant", message: { content: [{ type: "tool_use", id, name, input: { work_id: record.work_id } }] } });
+  const events = [init, toolUse(init.tools[0], "toolu_get"),
+    { type: "user", message: { content: [{ type: "tool_result", tool_use_id: "toolu_get", content: "x".repeat(1_500_000) }] } },
+    toolUse(init.tools[1], "toolu_submit"),
     { type: "result", is_error: false, subtype: "success", session_id: "12345678",
       modelUsage: { [record.model]: { outputTokens: 1 } } }];
   const fixture = path.join(directory, "events.json");
@@ -196,3 +196,29 @@ for (const status of [401, 403, 500, 503, 529]) {
     assert.ok(!JSON.stringify(reader.state).includes("SYNTHETIC_PROVIDER_SENTINEL"));
   });
 }
+
+test("a submit issued before the fetch result arrived is not packet-backed", () => {
+  const fetchUse = { type: "tool_use", id: "toolu_fetch", name: "mcp__journal__get_journal_work_packet", input: { work_id: record.work_id } };
+  const submitUse = { type: "tool_use", id: "toolu_submit", name: "mcp__journal__submit_journal_work_result", input: { work_id: record.work_id } };
+  const fetchResult = { type: "tool_result", tool_use_id: "toolu_fetch", content: "x".repeat(10) };
+  // Parallel calls: fetch and submit in one assistant event, results afterwards.
+  const parallel = claudeResultReader(record, 10);
+  feed(parallel, init);
+  feed(parallel, { type: "assistant", message: { model: record.model, content: [fetchUse, submitUse] } });
+  feed(parallel, { type: "user", message: { content: [fetchResult] } });
+  assert.equal(parallel.state.packetBeforeFirstSubmit, false);
+  // Sequential calls: the fetch result precedes the submit.
+  const sequential = claudeResultReader(record, 10);
+  feed(sequential, init);
+  feed(sequential, { type: "assistant", message: { model: record.model, content: [fetchUse] } });
+  feed(sequential, { type: "user", message: { content: [fetchResult] } });
+  feed(sequential, { type: "assistant", message: { model: record.model, content: [submitUse] } });
+  assert.equal(sequential.state.packetBeforeFirstSubmit, true);
+  // A failed fetch result does not count.
+  const failed = claudeResultReader(record, null);
+  feed(failed, init);
+  feed(failed, { type: "assistant", message: { model: record.model, content: [fetchUse] } });
+  feed(failed, { type: "user", message: { content: [{ ...fetchResult, is_error: true }] } });
+  feed(failed, { type: "assistant", message: { model: record.model, content: [submitUse] } });
+  assert.equal(failed.state.packetBeforeFirstSubmit, false);
+});
