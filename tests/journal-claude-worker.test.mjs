@@ -7,11 +7,11 @@ import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import { createJournalWorkExchange } from "../src/journal-import/work-exchange.mjs";
-import { createExchangeJournalInferencePort } from "../src/journal-import/exchange-port.mjs";
+import { createExchangeJournalInferencePort, journalExchangeAttemptIdentity } from "../src/journal-import/exchange-port.mjs";
 import { claudeMcpConfiguration, claudePrintArgs, claudeResultReader, parseJournalClaudeWorkerArgs,
-  runJournalClaudeWorker } from "../src/journal-import/claude-worker.mjs";
-import { journalAttemptIdentity, runJournalWork } from "../src/cli/journal-work.mjs";
-import { journalWorkFileKey } from "../src/journal-import/work-exchange.mjs";
+  runJournalClaudeWorker, assertClaudeRunPath, claudeRunSlug, cleanClaudePersistence,
+  sweepClaudePersistence, CLAUDE_PROVIDER_BACKOFF_MS } from "../src/journal-import/claude-worker.mjs";
+import { journalAttemptIdentity, journalAttemptMarkerKey, runJournalWork, releaseAttemptMarker, writeAttemptMarker } from "../src/cli/journal-work.mjs";
 import { runJournalWorkMcp } from "../src/cli/journal-work-mcp.mjs";
 import { JOURNAL_WORK_TOOL_DEFINITIONS, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../src/server/journal-work-tools.mjs";
 
@@ -124,6 +124,22 @@ if (scenario === "tools_extra") init.tools.push("Bash");
 if (scenario === "skills_present") init.skills.push("synthetic");
 if (scenario === "slashes_present") init.slash_commands.push("synthetic");
 console.log(JSON.stringify(init));
+if (/^http(?:401|403|500|503|529)$/.test(scenario)) {
+  const status = Number(scenario.slice(4));
+  console.log(JSON.stringify({ type: "assistant", error: status < 500 ? "authentication_failed" : "api_error",
+    message: { model: "<synthetic>", usage: { input_tokens: 0, output_tokens: 0 },
+      content: [{ type: "text", text: "API Error: " + status + " SYNTHETIC_PROVIDER_SENTINEL" }] } }));
+  console.log(JSON.stringify({ type: "result", subtype: "success", is_error: true,
+    api_error_status: status, usage: { input_tokens: 0, output_tokens: 0 }, modelUsage: {},
+    errors: ["API Error: " + status + " SYNTHETIC_PROVIDER_SENTINEL"] }));
+  process.exit(1);
+}
+if (scenario === "reach_then_hang") {
+  console.log(JSON.stringify({ type: "assistant", message: { model: "claude-opus-5-5",
+    usage: { input_tokens: 1, output_tokens: 0 }, content: [{ type: "text", text: "SYNTHETIC_MODEL_SENTINEL" }] } }));
+  setInterval(() => {}, 1000);
+  await new Promise(() => {});
+}
 if (scenario === "hook_event") console.log(JSON.stringify({ type: "hook_started", hook_name: "synthetic" }));
 // Give the parent a chance to kill the process group before any packet tool call.
 if (["server_extra", "server_disconnected", "tools_extra", "skills_present", "slashes_present", "hook_event"].includes(scenario)) {
@@ -157,12 +173,20 @@ else {
   const requests = names.map((name, index) => ({ jsonrpc: "2.0", id: index + 1, method: "tools/call",
     params: { name, arguments: name === "submit_journal_work_result"
       ? { work_id: workId, output: ${JSON.stringify(ANSWER)} } : { work_id: workId } } }));
-  for (const name of (scenario === "nothing_staged" ? [...names, "submit_journal_work_result"] : names)) console.log(JSON.stringify({ type: "assistant", message: { content: [
-    { type: "tool_use", name: "mcp__journal__" + name, input: { work_id: workId } }] } }));
   const result = spawnSync(server.command, server.args, { encoding: "utf8",
     input: requests.map(JSON.stringify).join("\\n") + "\\n", env: process.env });
   if (result.status !== 0) process.exit(32);
   const replies = result.stdout.trim().split("\\n").map(JSON.parse);
+  for (const [index, name] of (scenario === "nothing_staged" ? [...names, "submit_journal_work_result"] : names).entries()) {
+    console.log(JSON.stringify({ type: "assistant", message: { model: "claude-opus-5-5", content: [
+      { type: "tool_use", id: "tool-" + index, name: "mcp__journal__" + name, input: { work_id: workId } }] } }));
+    if (replies[index]) {
+      const content = name === "get_journal_work_packet" && scenario === "packet_truncated"
+        ? "SYNTHETIC_PREVIEW" : replies[index].result.content;
+      console.log(JSON.stringify({ type: "user", message: { content: [
+        { type: "tool_result", tool_use_id: "tool-" + index, content }] } }));
+    }
+  }
   if (scenario === "packet_free"
     && replies[0].result.structuredContent.code !== "JOURNAL_WORK_PACKET_NOT_FETCHED") process.exit(33);
   const usage = { "claude-opus-5-5": { inputTokens: 2, cacheReadInputTokens: 1, outputTokens: 3 } };
@@ -211,7 +235,7 @@ test("synthetic SSH and Claude executables parse without private text", async (t
 });
 
 test("Claude arguments map only the pinned hardest profile and remote MCP holds no secret", () => {
-  const record = { work_id: "job:synthetic", tier: "hardest", model: "claude-opus-5-5", effort: "max" };
+  const record = { attempt_identity: "a".repeat(48), work_id: "job:synthetic", tier: "hardest", model: "claude-opus-5-5", effort: "max" };
   const args = claudePrintArgs({ record, mcpConfig: "/tmp/mcp.json" });
   assert.deepEqual(args.slice(args.indexOf("--model"), args.indexOf("--model") + 4), ["--model", "opus", "--effort", "max"]);
   assert.ok(args.includes("--strict-mcp-config") && args.includes("--no-session-persistence"));
@@ -331,7 +355,7 @@ for (const scenario of ["no_init_then_success", "ssh_prestart_retry"]) {
 
 test("packet-free and failed Claude admissions never promote staged answers", async (t) => {
   const outcomes = { packet_free: "rejected:PACKET_NOT_FETCHED", submit_before_fetch: "rejected:PACKET_NOT_FETCHED",
-    nothing_staged: "rejected:STAGE_MISSING", is_error: "rejected:RESULT_UNSUCCESSFUL",
+    packet_truncated: "rejected:PACKET_TRUNCATED", nothing_staged: "rejected:STAGE_MISSING", is_error: "rejected:RESULT_UNSUCCESSFUL",
     second_model: "rejected:MODEL_USAGE_INVALID", zero_output: "rejected:MODEL_USAGE_INVALID",
     missing_session: "rejected:SESSION_INVALID", timeout: "timeout",
     init_missing: "rejected:ISOLATION", server_extra: "isolation_refused",
@@ -365,7 +389,7 @@ test("Claude usage limit waits for the reset without spending an item attempt", 
   const f = await fixture(t, "limit_then_success");
   const operationKey = "job:synthetic-claude-limit";
   await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
-  await runJournalClaudeWorker([...f.args, "--limit-backoff-ms", "1000"], { environment: f.environment });
+  await runJournalClaudeWorker([...f.args.filter(value => value !== "--once"), "--limit-backoff-ms", "1000"], { environment: f.environment });
   assert.equal((await f.port.getCompletion(operationKey)).status, "completed");
   const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
   assert.deepEqual(logs.map(({ outcome }) => outcome), ["limited", "answered"]);
@@ -545,7 +569,7 @@ for (const scenario of ["assistant_limit", "http429", "rate_event_seconds", "rat
     const f = await fixture(t, scenario);
     const operationKey = `job:synthetic-${scenario}`;
     await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
-    await runJournalClaudeWorker([...f.args, "--limit-backoff-ms", "100"], { environment: f.environment });
+    await runJournalClaudeWorker([...f.args.filter(value => value !== "--once"), "--limit-backoff-ms", "100"], { environment: f.environment });
     assert.equal((await f.port.getCompletion(operationKey)).status, "completed");
     const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
     assert.deepEqual(logs.filter(item => item.cost_kind).map(item => item.outcome), ["limited", "answered"]);
@@ -575,7 +599,9 @@ test("packet preflight refuses before the Claude executable starts", async (t) =
 test("attempt status, exclusive reservations, corrupt markers, stale temps and operator clearing", async (t) => {
   const f = await fixture(t);
   const environment = { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root };
-  const workId = "journal-work:" + "a".repeat(48);
+  await assert.rejects(f.port.invoke({ ...call("job:synthetic-marker"), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const [record] = await f.exchange.listDispatch();
+  const workId = record.work_id;
   const claim = "11111111-1111-4111-8111-111111111111";
   const command = async (name, args = []) => {
     let output = "";
@@ -589,12 +615,20 @@ test("attempt status, exclusive reservations, corrupt markers, stale temps and o
   assert.deepEqual(results.map(item => item.claimed).sort(), [false, true]);
   assert.equal((await command("attempt-status")).status, "reserved");
   const directory = path.join(f.root, "claude-attempts");
-  const marker = path.join(directory, journalWorkFileKey(journalAttemptIdentity(workId)) + ".json");
-  // A resend has the same stable operation identity encoded in its work ID.
+  const marker = path.join(directory, journalAttemptMarkerKey(journalAttemptIdentity(record)) + ".json");
+  const { attempt_identity: _identity, ...legacy } = JSON.parse(await fs.readFile(marker, "utf8"));
+  await fs.writeFile(marker, JSON.stringify(legacy));
+  assert.equal((await command("attempt-status")).status, "reserved");
+  // A reference-audit resend changes the work ID, while dispatch identity stays fixed.
+  await assert.rejects(f.port.invoke({ ...call("job:synthetic-marker:resend:1"), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const resendRecord = (await f.exchange.listDispatch()).find(item => item.work_id !== workId);
   let resend = "";
-  await runJournalWork(["attempt-status", "--work-id", workId + ":r1"], { environment,
+  await runJournalWork(["attempt-status", "--work-id", resendRecord.work_id], { environment,
     stdout: { write: value => { resend += value; } } });
   assert.equal(JSON.parse(resend).status, "reserved");
+  await assert.rejects(command("attempt-clear"), { code: "JOURNAL_WORK_ATTEMPT_CLEAR_REFUSED" });
+  const nearlyClearable = new Date(Date.now() - 2 * 60000 - 600000 + 5000);
+  await fs.utimes(marker, nearlyClearable, nearlyClearable);
   await assert.rejects(command("attempt-clear"), { code: "JOURNAL_WORK_ATTEMPT_CLEAR_REFUSED" });
   const old = new Date(Date.now() - 3_601_000);
   await fs.utimes(marker, old, old);
@@ -607,7 +641,8 @@ test("attempt status, exclusive reservations, corrupt markers, stale temps and o
   await command("attempt-reserve", ["--claim", claim]);
   await command("attempt-mark", ["--claim", claim]);
   await assert.rejects(command("attempt-clear"), { code: "JOURNAL_WORK_ATTEMPT_CLEAR_REFUSED" });
-  await assert.rejects(command("attempt-refuse", ["--claim", claim]), { code: "JOURNAL_WORK_ATTEMPT_INVALID" });
+  await command("attempt-refuse", ["--claim", claim]);
+  assert.equal((await command("attempt-status")).status, "isolation_refused");
   await fs.writeFile(marker, JSON.stringify({ work_id: workId, claim, status: "reserved", timeout_ms: -1 }));
   assert.equal((await command("attempt-status")).status, "attempted");
   await assert.rejects(command("attempt-clear"), { code: "JOURNAL_WORK_ATTEMPT_CLEAR_REFUSED" });
@@ -638,7 +673,7 @@ test("already attempted, corrupt and isolation-refused items do not consume max-
   await runJournalWork(["attempt-mark", "--work-id", records[0].work_id, "--claim", claim],
     { environment, stdout: { write() {} } });
   await fs.writeFile(path.join(f.root, "claude-attempts",
-    journalWorkFileKey(journalAttemptIdentity(records[1].work_id)) + ".json"), "{");
+    journalAttemptMarkerKey(journalAttemptIdentity(records[1])) + ".json"), "{");
   await runJournalWork(["attempt-refuse", "--work-id", records[2].work_id, "--claim", claim],
     { environment, stdout: { write() {} } });
   await runJournalClaudeWorker(f.args, { environment: f.environment });
@@ -671,5 +706,142 @@ test("leftover project and fallback cache files for this worker prefix are swept
   for (const root of [path.join(f.laptop, ".claude", "projects"), path.join(f.laptop, ".cache", "claude-cli-nodejs")]) {
     await assert.rejects(fs.access(path.join(root, slug)));
     assert.equal(await fs.readFile(path.join(root, "unrelated", "keep.txt"), "utf8"), "keep");
+  }
+});
+
+for (const status of [401, 403, 500, 503, 529]) {
+  test(`HTTP ${status} releases its reservation and pauses/stops before burning sibling items`, async t => {
+    const f = await fixture(t, `http${status}`);
+    for (const index of [1, 2, 3]) {
+      await assert.rejects(f.port.invoke({ ...call(`job:synthetic-http${status}-${index}`), tier: "hardest" }),
+        { code: "COMPLETION_UNKNOWN" });
+    }
+    const started = Date.now();
+    const result = await runJournalClaudeWorker(f.args.map(value => value === "1" ? "3" : value), { environment: f.environment });
+    assert.equal(result, status < 500 ? 77 : 0);
+    assert.ok(Date.now() - started < 10_000, "--once waited out a provider pause");
+    assert.equal(CLAUDE_PROVIDER_BACKOFF_MS, 300_000);
+    const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+    assert.deepEqual(logs.map(item => item.outcome), [status < 500 ? "sign_in_needed" : "provider_unavailable"]);
+    assert.equal(logs[0].model_reached, false);
+    assert.deepEqual(await fs.readdir(path.join(f.root, "claude-attempts")), []);
+    const commands = await fs.readFile(f.sshTrace, "utf8");
+    assert.ok(commands.includes("attempt-release"));
+    assert.ok(!commands.includes("attempt-mark"));
+    assert.ok(!JSON.stringify(logs).includes("SYNTHETIC_PROVIDER_SENTINEL"));
+  });
+}
+
+test("an attempt is marked while Claude is still running and killed-run session files are removed", async t => {
+  const f = await fixture(t, "reach_then_hang");
+  await assert.rejects(f.port.invoke({ ...call("job:synthetic-reach-hang"), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const [record] = await f.exchange.listDispatch();
+  const pending = runJournalClaudeWorker(f.args, { environment: f.environment });
+  let status;
+  const deadline = Date.now() + 5000;
+  while (Date.now() < deadline) {
+    status = await fs.readFile(path.join(f.root, "claude-attempts", journalAttemptMarkerKey(record.attempt_identity) + ".json"), "utf8")
+      .then(JSON.parse).catch(() => null);
+    if (status?.status === "attempted") break;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  assert.equal(status?.status, "attempted");
+  assert.ok((await fs.readdir(f.workDir)).length > 0, "Claude already exited before the mark was observed");
+  process.emit("SIGINT");
+  assert.equal(await pending, 130);
+  assert.deepEqual(await fs.readdir(f.workDir), []);
+  assert.ok(!JSON.stringify(status).includes("SYNTHETIC_MODEL_SENTINEL"));
+});
+
+for (const scenario of ["nothing_staged", "tools_extra"]) {
+  test(`reference-audit resends retain the ${scenario === "tools_extra" ? "isolation" : "attempt"} hold`, async t => {
+    const f = await fixture(t, scenario);
+    const baseKey = `job:synthetic-resend-${scenario}`;
+    await assert.rejects(f.port.invoke({ ...call(baseKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+    await runJournalClaudeWorker(f.args, { environment: f.environment });
+    const before = await fs.readFile(f.trace, "utf8");
+    await assert.rejects(f.port.invoke({ ...call(`${baseKey}:resend:1`), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+    const records = await f.exchange.listDispatch();
+    assert.notEqual(records[0].work_id, records[1].work_id);
+    assert.equal(records[0].attempt_identity, records[1].attempt_identity);
+    await runJournalClaudeWorker(f.args, { environment: f.environment });
+    assert.equal(await fs.readFile(f.trace, "utf8"), before);
+    const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+    assert.equal(logs.at(-1).outcome, scenario === "tools_extra" ? "isolation_refused" : "already_attempted");
+  });
+}
+
+test("startup refuses non-Linux platforms and paths whose longest real run slug exceeds 200", async t => {
+  for (const platform of ["darwin", "win32", "freebsd"]) {
+    await assert.rejects(runJournalClaudeWorker([], { platform }), { code: "JOURNAL_CLAUDE_LINUX_REQUIRED" });
+  }
+  const suffix = path.join("inner-signal-claude-XXXXXX", "run-XXXXXX");
+  assert.doesNotThrow(() => assertClaudeRunPath("/" + "x".repeat(200 - suffix.length - 2)));
+  assert.throws(() => assertClaudeRunPath("/" + "x".repeat(201 - suffix.length - 2)),
+    { code: "JOURNAL_CLAUDE_RUN_PATH_TOO_LONG" });
+  const f = await fixture(t);
+  const long = path.join(f.workDir, "x".repeat(150));
+  await fs.mkdir(long, { mode: 0o700 });
+  const alias = path.join(f.workDir, "short");
+  await fs.symlink(long, alias);
+  // Startup's directory contract deliberately refuses symlink work dirs. Test
+  // the realpath bound on the physical directory and its canonical projection.
+  const realDir = await fs.realpath(alias);
+  assert.throws(() => assertClaudeRunPath(realDir), { code: "JOURNAL_CLAUDE_RUN_PATH_TOO_LONG" });
+  await assert.rejects(runJournalClaudeWorker(f.args.map(value => value === f.workDir ? long : value),
+    { environment: f.environment }), { code: "JOURNAL_CLAUDE_RUN_PATH_TOO_LONG" });
+  await assert.rejects(fs.access(f.trace));
+});
+
+test("persistence cleanup recognizes exact and truncated-plus-hash slugs", async t => {
+  const f = await fixture(t);
+  const runDir = path.join(f.workDir, "x".repeat(150), "inner-signal-claude-AAAAAA", "run-BBBBBB");
+  const slug = claudeRunSlug(runDir);
+  assert.ok(slug.length > 200);
+  const root = path.join(f.laptop, ".claude", "projects");
+  for (const name of [slug, slug.slice(0, 200) + "-1234abcd"]) {
+    await fs.mkdir(path.join(root, name), { recursive: true });
+    await fs.writeFile(path.join(root, name, "synthetic.txt"), SENTINEL);
+  }
+  assert.equal(await cleanClaudePersistence(f.laptop, runDir), true);
+  assert.deepEqual(await fs.readdir(root), []);
+});
+
+test("startup persistence sweep preserves a live sibling's project and fallback cache evidence", async t => {
+  const f = await fixture(t);
+  const runDir = path.join(f.workDir, "inner-signal-claude-AAAAAA", "run-BBBBBB");
+  await fs.mkdir(runDir, { recursive: true, mode: 0o700 });
+  const roots = [path.join(f.laptop, ".claude", "projects"), path.join(f.laptop, ".cache", "claude-cli-nodejs")];
+  for (const root of roots) {
+    await fs.mkdir(path.join(root, claudeRunSlug(runDir)), { recursive: true });
+    await fs.writeFile(path.join(root, claudeRunSlug(runDir), "synthetic.txt"), SENTINEL);
+  }
+  await sweepClaudePersistence(f.laptop, f.workDir);
+  for (const root of roots) assert.equal(await fs.readFile(path.join(root, claudeRunSlug(runDir), "synthetic.txt"), "utf8"), SENTINEL);
+  await fs.rm(runDir, { recursive: true });
+  await sweepClaudePersistence(f.laptop, f.workDir);
+  for (const root of roots) await assert.rejects(fs.access(path.join(root, claudeRunSlug(runDir))));
+});
+
+test("release cannot erase a concurrent mark, either before or after its rename", async t => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "journal-release-race-"));
+  t.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const marker = path.join(directory, "marker.json"), claim = "11111111-1111-4111-8111-111111111111";
+  const reserved = { claim, status: "reserved" };
+  const rename = fs.rename.bind(fs);
+  for (const phase of ["before", "after"]) {
+    await writeAttemptMarker(marker, reserved);
+    const mock = t.mock.method(fs, "rename", async (source, target) => {
+      if (source === marker) {
+        if (phase === "before") await writeAttemptMarker(marker, { ...reserved, status: "attempted" });
+        await rename(source, target);
+        if (phase === "after") await writeAttemptMarker(marker, { ...reserved, status: "attempted" });
+      } else await rename(source, target);
+    });
+    if (phase === "before") await assert.rejects(releaseAttemptMarker(marker, claim), { code: "JOURNAL_WORK_ATTEMPT_INVALID" });
+    else await releaseAttemptMarker(marker, claim);
+    mock.mock.restore();
+    assert.equal(JSON.parse(await fs.readFile(marker, "utf8")).status, "attempted");
+    assert.deepEqual(await fs.readdir(directory), ["marker.json"]);
   }
 });

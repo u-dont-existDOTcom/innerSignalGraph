@@ -13,6 +13,7 @@ import { createPrivateCaseAccessService } from "../storage/private-case-access.m
 import { loadJournalInferencePortFromEnvironment } from "./provider-runtime.mjs";
 import { createCorpusJournalJobLedger, createJournalImportController } from "./controller.mjs";
 import { JOURNAL_ROLE_DEFINITIONS, buildJournalRolePacket, journalRoleInstruction } from "./provider-port.mjs";
+import { hardestJournalRequestFits } from "./packet-bounds.mjs";
 import { parseSourceFile, sourceFormatForPath } from "./parsers/index.mjs";
 import { partitionRepresentation, verifyRepresentationCoverage } from "./partition.mjs";
 import { selectCalibrationWindows, scoreReferenceReview, createDeterministicAuditSample, certifyIndependentAudit } from "./audit.mjs";
@@ -422,6 +423,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // the new semantic jobs; inserting them into a visual key resubmits it.
       const legacyVisual = role === "visual_reader" && workStage === "VISUAL_READ" && scopeUnits.length === 1;
       invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
+      if (tier === "hardest" && !hardestJournalRequestFits({ role, units: scopeUnits, packetInput }, state.generation, grant.purpose)) {
+        state.stage = workStage; state.blocker = "JOURNAL_WORK_PACKET_TOO_LARGE";
+        workExhausted = true; await save(); return null;
+      }
       id = `job:${hash(JSON.stringify({ id, role, stage: workStage, packetInput: identityPacketInput,
         ...(legacyVisual ? {} : { assigned_core_ids: assignedCoreIds, source_locators: sourceLocators }),
         dependencies, instruction: journalRoleInstruction(role),
@@ -540,7 +545,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const parked = acceptReviewFindings && primary?.status === "needs_context" && primary.output && primary.receipt;
         if (unfinished && !parked && !(acceptReviewFindings && entry.snapshot.work_items.every(item => item.output && item.receipt))) {
           state.stage = unfinished.stage; state.blocker = entry.snapshot.checkpoint.blocked_reason ?? "OUTPUT_INCOMPLETE";
-          workExhausted = unfinished.status === "blocked_authority" && state.blocker === "INVALID_STRUCTURED_OUTPUT";
+          workExhausted = unfinished.status === "blocked_authority"
+            && ["INVALID_STRUCTURED_OUTPUT", "JOURNAL_WORK_PACKET_TOO_LARGE"].includes(state.blocker);
           await save();
           return null;
         }
@@ -589,13 +595,17 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       if (port.capabilities?.().hardest_roles?.[request.role]?.available === false) {
         return { failure, hardest: "not_attempted" };
       }
+      if (!hardestJournalRequestFits(request, state.generation, grant.purpose)) {
+        return { failure: "JOURNAL_WORK_PACKET_TOO_LARGE", hardest: "not_attempted" };
+      }
       const result = await work({ ...request, id: derivedId(request.id, "hardest"), tier: "hardest" });
       if (!result) {
         if (!workExhausted) return { blocked: true };
+        const terminal = state.blocker ?? failure;
         await recordHardestOutcome(request.id, "failed");
         state.blocker = null;
         await save();
-        return { failure, hardest: "failed" };
+        return { failure: terminal, hardest: "failed" };
       }
       const hardestFailure = checkFailure(check, result);
       await recordHardestOutcome(request.id, hardestFailure ? "failed" : "resolved");
@@ -838,7 +848,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           }
           reference = frozen.result[0];
         }
-        let results, repairRequest, split, graphsByUnit, bindingFailure;
+        let results, repairRequest, split, graphsByUnit, bindingFailure, hardestRefusal = null;
         for (let cycle = 0; cycle <= 2; cycle += 1) {
           const identity = identityFor(units);
           results = await work({
@@ -927,8 +937,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const outcomeId = epochId(`extract:batch:${keyId}`, calibration);
           if (!hardest) {
             if (!workExhausted) return false;
+            hardestRefusal = state.blocker === "JOURNAL_WORK_PACKET_TOO_LARGE" ? state.blocker : null;
             state.blocker = null;
-            await recordHardestOutcome(outcomeId, "failed");
+            if (!hardestRefusal) await recordHardestOutcome(outcomeId, "failed");
           } else {
             results = hardest;
             bindingFailure = null;
@@ -955,7 +966,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             && await processBatch(units.slice(middle), calibration);
         }
         if (unresolved && calibration) {
-          return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_EXTRACTION_UNRESOLVED");
+          return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", hardestRefusal ?? "CALIBRATION_EXTRACTION_UNRESOLVED");
         }
         if (unresolved) {
           const unit = units[0];
@@ -971,7 +982,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           };
           const graph = bindUnitExtraction(unit, admitted, results[0].receipt);
           await writeUnitRecord(unit.unit_id, { graph, extraction: results[0], omission: results[1], source_only_unresolved: true,
-            ...(hardestLane.enabled ? { hardest: "failed" } : {}) });
+            ...(hardestLane.enabled ? { hardest: hardestRefusal ? "not_attempted" : "failed" } : {}),
+            ...(hardestRefusal ? { unresolved_reason: hardestRefusal } : {}) });
           if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
           state.stage = "EXTRACT";
           state.blocker = null;

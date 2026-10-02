@@ -5,8 +5,9 @@ import os from "node:os";
 import path from "node:path";
 import { claudeResultReader, claudeRunSlug, MAX_CLAUDE_LINE_BYTES } from "../src/journal-import/claude-worker.mjs";
 import { runProcess } from "../src/journal-import/codex-worker.mjs";
-import { journalAttemptIdentity, writeAttemptMarker } from "../src/cli/journal-work.mjs";
-import { journalExchangeWorkId } from "../src/journal-import/exchange-port.mjs";
+import { journalAttemptIdentity, journalAttemptMarkerKey, writeAttemptMarker } from "../src/cli/journal-work.mjs";
+import { journalWorkFileKey } from "../src/journal-import/work-exchange.mjs";
+import { journalExchangeAttemptIdentity, journalExchangeWorkId } from "../src/journal-import/exchange-port.mjs";
 
 const record = { work_id: "job:synthetic-stream", model: "claude-opus-5-5" };
 const init = { type: "system", subtype: "init", claude_code_version: "2.1.287",
@@ -26,7 +27,7 @@ test("content-free system events before init are accepted, and init alone never 
     const premature = claudeResultReader(record);
     feed(premature, { type, message: { content: "SYNTHETIC_PRIVATE_STREAM_SENTINEL" } });
     assert.equal(premature.state.bad, "ISOLATION");
-    assert.equal(premature.state.reachedModel, true);
+    assert.equal(premature.state.reachedModel, false);
     assert.ok(!JSON.stringify(premature.state).includes("SYNTHETIC_PRIVATE_STREAM_SENTINEL"));
   }
   const bad = claudeResultReader(record);
@@ -35,11 +36,22 @@ test("content-free system events before init are accepted, and init alone never 
   assert.equal(bad.state.reachedModel, false);
 });
 
-test("any result or nonzero usage reaches the model regardless of init position", () => {
-  for (const event of [{ type: "result", is_error: true }, { type: "system", subtype: "usage", usage: { input_tokens: 1 } }]) {
+test("only token usage on a real model or a real tool use reaches the model", () => {
+  for (const event of [{ type: "assistant", message: { model: record.model, usage: { input_tokens: 1 } } },
+    { type: "result", modelUsage: { [record.model]: { outputTokens: 1 } } },
+    { type: "tool_use", name: init.tools[0], input: { work_id: record.work_id } }]) {
     const reader = claudeResultReader(record);
+    feed(reader, init);
     feed(reader, event);
     assert.equal(reader.state.reachedModel, true);
+  }
+  for (const event of [{ type: "result", is_error: true, usage: { input_tokens: 0, output_tokens: 0 } },
+    { type: "user", message: { content: "SYNTHETIC_USER_SENTINEL" } },
+    { type: "assistant", message: { model: "<synthetic>", usage: { input_tokens: 1 } } },
+    { type: "assistant", message: { model: record.model, usage: { total_cost_usd: 1 } } }]) {
+    const reader = claudeResultReader(record);
+    feed(reader, init); feed(reader, event);
+    assert.equal(reader.state.reachedModel, false);
   }
 });
 
@@ -105,10 +117,18 @@ test("the first isolation violation kills the fake Claude and its group before a
 
 test("attempt identity survives expired-item successors, and Claude slugs match the measured mapping", () => {
   for (let successor = 0; successor <= 8; successor++) {
-    assert.equal(journalAttemptIdentity(journalExchangeWorkId("synthetic-operation", successor)),
-      journalExchangeWorkId("synthetic-operation"));
+    assert.equal(journalAttemptIdentity({ work_id: journalExchangeWorkId("synthetic-operation", successor),
+      attempt_identity: journalExchangeAttemptIdentity("synthetic-operation:resend:2") }),
+      journalExchangeAttemptIdentity("synthetic-operation"));
   }
-  assert.equal(journalAttemptIdentity("job:synthetic-work"), "job:synthetic-work");
+  for (const suffix of [":resend:1", ":resend:2", ":unsent-retry:0:1", ":reserialize", ":reserialize:1:resend:1"]) {
+    assert.equal(journalExchangeAttemptIdentity("synthetic-operation" + suffix),
+      journalExchangeAttemptIdentity("synthetic-operation"));
+  }
+  assert.throws(() => journalAttemptIdentity({ work_id: "job:synthetic-work" }),
+    { code: "JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED" });
+  assert.equal(journalAttemptMarkerKey(journalExchangeAttemptIdentity("synthetic-operation")),
+    journalWorkFileKey(journalExchangeWorkId("synthetic-operation")));
   assert.equal(claudeRunSlug("/tmp/tmp.AbC"), "-tmp-tmp-AbC");
 });
 
@@ -126,3 +146,53 @@ test("exclusive attempt writes expose only complete JSON and leave no temporary 
   assert.equal(JSON.parse(await fs.readFile(marker, "utf8")).status, "attempted");
   assert.deepEqual(await fs.readdir(directory), ["attempt.json"]);
 });
+
+test("five-megabyte stream lines are scanned in linear time well under one second", async () => {
+  const { boundedLineReader } = await import("../src/journal-import/codex-worker.mjs");
+  const payload = JSON.stringify({ type: "user", content: "SYNTHETIC_LINE_SENTINEL".repeat(250_000) });
+  assert.ok(Buffer.byteLength(payload) >= 5_000_000);
+  let length = 0;
+  const reader = boundedLineReader({ maxLineBytes: MAX_CLAUDE_LINE_BYTES,
+    maxStreamBytes: 4 * MAX_CLAUDE_LINE_BYTES, onLine: line => { length = JSON.parse(line).content.length; } });
+  const started = performance.now();
+  for (let offset = 0; offset < payload.length; offset += 4096) {
+    assert.equal(await reader.accept(payload.slice(offset, offset + 4096)), true);
+  }
+  await reader.accept("\n");
+  const elapsed = performance.now() - started;
+  assert.equal(length, 250_000 * "SYNTHETIC_LINE_SENTINEL".length);
+  assert.ok(elapsed < 500, `five-megabyte line took ${elapsed.toFixed(1)} ms`);
+});
+
+test("packet tool results retain only exact lengths and reject a preview", () => {
+  for (const content of ["SYNTHETIC_FULL_PACKET", "PREVIEW"]) {
+    const reader = claudeResultReader(record, "SYNTHETIC_FULL_PACKET".length);
+    feed(reader, init);
+    feed(reader, { type: "assistant", message: { model: record.model, content: [{ type: "tool_use",
+      id: "packet-call", name: init.tools[0], input: { work_id: record.work_id } }] } });
+    // An unrelated tool's text cannot satisfy the packet check.
+    feed(reader, { type: "user", message: { content: [{ type: "tool_result", tool_use_id: "other",
+      content: "SYNTHETIC_FULL_PACKET" }] } });
+    assert.equal(reader.state.packetLength, null);
+    feed(reader, { type: "user", message: { content: [{ type: "tool_result", tool_use_id: "packet-call",
+      content: [{ type: "text", text: content }] }] } });
+    assert.equal(reader.state.packetLength, content.length);
+    assert.equal(reader.state.bad, content === "PREVIEW" ? "PACKET_TRUNCATED" : null);
+    assert.ok(!JSON.stringify(reader.state).includes(content));
+  }
+});
+
+for (const status of [401, 403, 500, 503, 529]) {
+  test(`real CLI synthetic assistant and zero-usage error result for HTTP ${status} never reach the model`, () => {
+    const reader = claudeResultReader(record);
+    feed(reader, init);
+    feed(reader, { type: "assistant", error: "api_error", message: { model: "<synthetic>",
+      usage: { input_tokens: 0, output_tokens: 0 }, content: [{ type: "text",
+        text: `API Error: ${status} SYNTHETIC_PROVIDER_SENTINEL` }] } });
+    feed(reader, { type: "result", is_error: true, subtype: "success", api_error_status: status,
+      usage: { input_tokens: 0, output_tokens: 0 }, modelUsage: {}, errors: [`API Error: ${status}`] });
+    assert.equal(reader.state.reachedModel, false);
+    assert.equal(reader.state.providerStatus, status);
+    assert.ok(!JSON.stringify(reader.state).includes("SYNTHETIC_PROVIDER_SENTINEL"));
+  });
+}

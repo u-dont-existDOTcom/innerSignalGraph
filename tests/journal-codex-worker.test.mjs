@@ -205,6 +205,7 @@ test("Codex worker leaves a hardest dispatch for the Claude worker", async (t) =
   const entry = { ...manualWork(workId), tier: "hardest" };
   await f.exchange.publishWork(entry);
   await f.exchange.publishDispatch({ schema_version: 1, work_id: workId, role: entry.role, tier: "hardest",
+    attempt_identity: "a".repeat(48),
     output_schema_name: entry.output_schema_name, model: "claude-opus-5-5", effort: "max", route_ref: "route:codex",
     issued_at: entry.issued_at, expires_at: entry.expires_at });
   const fake = await f.fake();

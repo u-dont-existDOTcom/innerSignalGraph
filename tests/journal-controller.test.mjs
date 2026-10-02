@@ -697,3 +697,26 @@ test("an authorization failure before a call spends no attempt and leaves nothin
   second.close();
   store.close();
 });
+
+test("a materialized hardest dependency that exceeds the packet cap is unresolved before invocation", async () => {
+  const ledger = createMemoryJournalJobLedger();
+  let invocations = 0, slots = 0;
+  const port = createMockJournalInferencePort({ handlers: { extractor: async () => {
+    invocations += 1;
+    const result = completeExtraction();
+    result.coverage[0].reason = "SYNTHETIC_DEPENDENCY_SENTINEL".repeat(20_000);
+    return result;
+  }, omission_checker: async () => { invocations += 1; return omissionResult(); } } });
+  const controller = createJournalImportController({ ledger, inferencePort: port, grant,
+    controllerSecret: Buffer.alloc(32, 7), beforeInvoke: async () => { slots += 1; } });
+  await controller.initialize({ jobId: "job:synthetic-packet-bound", caseId: "synthetic-case",
+    corpusId: "corpus:synthetic", generation: "generation:synthetic",
+    workDefinitions: workDefinitions().slice(0, 2).map(item => ({ ...item, tier: "hardest" })) });
+  const result = await controller.runUntilBlocked();
+  assert.equal(result.snapshot.checkpoint.blocked_reason, "JOURNAL_WORK_PACKET_TOO_LARGE");
+  assert.equal(result.snapshot.work_items[1].status, "blocked_authority");
+  assert.equal(result.snapshot.work_items[1].attempts, 0);
+  assert.equal(invocations, 1);
+  assert.equal(slots, 1);
+  controller.close();
+});

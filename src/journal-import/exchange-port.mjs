@@ -9,6 +9,7 @@ import {
   journalRoleInstruction
 } from "./provider-port.mjs";
 import { JOURNAL_WORK_TRANSPORT, journalWorkFileKey } from "./work-exchange.mjs";
+import { hardestJournalPacketFits } from "./packet-bounds.mjs";
 
 // An inference port that publishes role calls through the private exchange. The ChatGPT connector
 // and the Codex exec worker use distinct admission evidence over the same encrypted work format.
@@ -46,6 +47,11 @@ export function journalExchangeWorkId(operationKey, successor = 0) {
   invariant(Number.isSafeInteger(successor) && successor >= 0 && successor <= MAX_SUCCESSORS, "JOURNAL_EXCHANGE_SUCCESSOR_INVALID");
   const base = `journal-work:${sha256(`inner-signal:journal-exchange-operation:${operationKey}`).slice(0, 48)}`;
   return successor === 0 ? base : `${base}:r${successor}`;
+}
+
+export function journalExchangeAttemptIdentity(operationKey) {
+  const baseKey = operationKey.replace(/(?::resend:[1-9][0-9]*|:unsent-retry:[0-9]+:[0-9]+|:reserialize(?::[0-9]+)?)+$/u, "");
+  return sha256(`inner-signal:journal-exchange-operation:${baseKey}`).slice(0, 48);
 }
 
 export function createExchangeJournalInferencePort({
@@ -214,11 +220,12 @@ export function createExchangeJournalInferencePort({
   // Only the runtime removes dispatch records (when it retires or closes an item), so one successful
   // publication per item and process is enough; the exchange keeps the first record anyway.
   const dispatched = new Set();
-  async function ensureDispatch(store, entry) {
+  async function ensureDispatch(store, entry, operationKey) {
     if (dispatched.has(entry.work_id)) return;
     await store.publishDispatch({
       schema_version: 1,
       work_id: entry.work_id,
+      attempt_identity: journalExchangeAttemptIdentity(operationKey),
       role: entry.role,
       output_schema_name: entry.output_schema_name,
       tier: entry.tier ?? "standard",
@@ -259,7 +266,7 @@ export function createExchangeJournalInferencePort({
       // An answer won the race; read it on the next observation.
       return closed ? { status: "not_submitted", code: "JOURNAL_WORK_EXPIRED" } : observe(operationKey);
     }
-    await ensureDispatch(store, entry);
+    await ensureDispatch(store, entry, operationKey);
     return { status: "pending", workId };
   }
 
@@ -273,6 +280,9 @@ export function createExchangeJournalInferencePort({
     assertJournalInferenceGrant(grant, role, checkedPacket);
     invariant(typeof operationKey === "string" && operationKey.length > 0, "OPERATION_KEY_INVALID");
     invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
+    if (tier === "hardest" && !hardestJournalPacketFits(role, checkedPacket)) {
+      throw new JournalInferencePortError("JOURNAL_WORK_PACKET_TOO_LARGE", { submissionStatus: "not_submitted" });
+    }
     const digest = inputDigest(role, checkedPacket, outputSchema, grant);
 
     const { store, workId, entry: existing, stored } = await current(operationKey);

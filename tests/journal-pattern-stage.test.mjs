@@ -751,3 +751,62 @@ test("a pattern residual records a failed hardest attempt", async () => {
   const residual = result.reports.find((report) => report.status === "unresolved");
   assert.equal(residual.hardest, "failed");
 });
+
+test("hardest pattern review splits groups using the complete fetch envelope", async () => {
+  const { hardestJournalRequestFits } = await import("../src/journal-import/packet-bounds.mjs");
+  const statements = [1, 2, 3].map(index => `SYNTHETIC_PATTERN_${index}_` + "x".repeat(210_000));
+  const { args, reviewerRequests } = reviewPacketHarness(statements, (request, output) =>
+    request.tier === "hardest" ? output : { ...output, status: "incomplete" });
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000, hardestLaneEnabled: true });
+  assert.equal(result.status, "pass");
+  assert.ok(new Set(reviewerRequests.map(request => request.packetInput.candidate_patterns.map(item => item.id).join())).size > 1);
+  assert.ok(reviewerRequests.every(request => hardestJournalRequestFits(request, generation)));
+  assert.ok(reviewerRequests.some(request => request.tier === "hardest"));
+});
+
+test("an indivisible oversized pattern review stays unresolved without calling Claude", async () => {
+  const { args, reviewerRequests } = reviewPacketHarness(["SYNTHETIC_PATTERN_SENTINEL".repeat(25_000)]);
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000, hardestLaneEnabled: true });
+  assert.equal(result.status, "partial");
+  assert.equal(reviewerRequests.length, 0);
+  assert.equal(result.counts.hardest_attempted, 0);
+  assert.equal(result.reports[0].reason, "PATTERN_REVIEW_PACKET_TOO_LARGE");
+});
+
+test("an indivisible oversized source freeze records a code before hardest work", async () => {
+  const { args } = reviewPacketHarness([]);
+  args.units[0].text += "SYNTHETIC_SOURCE_SENTINEL".repeat(25_000);
+  args.representations.repr = args.units[0].text;
+  args.units[0].end_byte = Buffer.byteLength(args.units[0].text);
+  args.graph.nodes.find(node => node.kind === "source").data.byte_length = args.units[0].end_byte;
+  const requests = [];
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000, hardestLaneEnabled: true,
+    work: async request => {
+      requests.push(request);
+      return [{ output: freezeOutput(["u1"]), receipt: receipt("freeze", request.id) }];
+    } });
+  assert.equal(result.status, "partial");
+  assert.equal(requests.length, 3);
+  assert.ok(requests.every(request => request.tier !== "hardest"));
+  assert.equal(result.reports[0].reason, "JOURNAL_WORK_PACKET_TOO_LARGE");
+  assert.equal(result.reports[0].hardest, "not_attempted");
+});
+
+test("pattern source and builder batches split before a hardest envelope would overflow", async () => {
+  const { hardestJournalRequestFits } = await import("../src/journal-import/packet-bounds.mjs");
+  const scope = twoBatchScope();
+  const source = scope.representations.repr + "SYNTHETIC_BATCH_SOURCE".repeat(12_000);
+  scope.representations.repr = source;
+  scope.graph.nodes.find(node => node.kind === "source").data.byte_length = Buffer.byteLength(source);
+  for (const unit of scope.units) { unit.text = source; unit.end_byte = Buffer.byteLength(source); }
+  const requests = [];
+  const { args } = stageHarness(scope, request => {
+    requests.push(request);
+    return { output: request.role === "reference_reader" ? freezeOutput() : emptyBuild,
+      receipt: receipt(request.role, request.id) };
+  });
+  const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000, hardestLaneEnabled: true });
+  assert.equal(result.status, "pass");
+  assert.equal(result.batches, 2);
+  assert.ok(requests.every(request => request.units.length === 1 && hardestJournalRequestFits(request, generation)));
+});

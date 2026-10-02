@@ -6,7 +6,7 @@ import {
   assertJournalWorkExchangeRoot, assertJournalWorkId, createJournalWorkDispatchReader,
   createJournalWorkExchange, journalWorkExchangeSecret, journalWorkFileKey, resolveJournalWorkExchangeRoot
 } from "../journal-import/work-exchange.mjs";
-import { journalWorkPacketValue, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../server/journal-work-tools.mjs";
+import { journalWorkPacketValue, MAX_HARDEST_PACKET_CHARS } from "../journal-import/packet-bounds.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const STAGE_NAME = /^stage-[0-9a-f-]{36}$/u;
@@ -62,10 +62,34 @@ export async function writeAttemptMarker(marker, value, exclusive = false) {
   await syncDirectory(path.dirname(marker));
 }
 
-// Exchange work IDs encode the stable operation digest; :rN is an expired-item resend.
-// Other dispatch producers expose no operation identity, so their exact work ID is the key.
-export function journalAttemptIdentity(workId) {
-  return /^journal-work:[0-9a-f]{48}(?::r[1-8])?$/u.test(workId) ? workId.replace(/:r[1-8]$/u, "") : workId;
+// The explicit dispatch identity covers both reference :resend:N keys and :rN
+// successors. Hardest records must never fall back to their changing work IDs.
+export function journalAttemptIdentity(record) {
+  if (!/^[0-9a-f]{48}$/u.test(record?.attempt_identity ?? "")) fail("JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED");
+  return record.attempt_identity;
+}
+
+// Keep the earlier worker's marker filename for the base digest. Adding an
+// explicit dispatch identity must not reset existing attempted/isolation holds.
+export const journalAttemptMarkerKey = identity => journalWorkFileKey(`journal-work:${identity}`);
+
+export async function releaseAttemptMarker(marker, claim) {
+  const temporary = `${marker}.${randomUUID()}.tmp`;
+  try { await fs.rename(marker, temporary); }
+  catch (error) { if (error?.code === "ENOENT") return; throw error; }
+  try {
+    const value = JSON.parse(await fs.readFile(temporary, "utf8"));
+    if (value.claim !== claim || value.status !== "reserved") fail("JOURNAL_WORK_ATTEMPT_INVALID");
+  } catch (error) {
+    // A mark that won before the rename must survive. A concurrent mark that
+    // recreated the canonical path is already safe; never overwrite it.
+    try { await fs.link(temporary, marker); }
+    catch (restoreError) { if (restoreError?.code !== "EEXIST") throw restoreError; }
+    throw error;
+  } finally {
+    await fs.unlink(temporary);
+    await syncDirectory(path.dirname(marker));
+  }
 }
 
 async function sweepAttemptTemporaries(directory) {
@@ -124,8 +148,8 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     const now = Date.now();
     for (const record of records) {
       if (Date.parse(record.expires_at) <= now) continue;
-      const { work_id, role, output_schema_name, model, effort, tier = "standard", issued_at, expires_at, answered } = record;
-      stdout.write(`${JSON.stringify({ work_id, role, output_schema_name, model, effort, tier, issued_at, expires_at, answered })}\n`);
+      const { work_id, attempt_identity, role, output_schema_name, model, effort, tier = "standard", issued_at, expires_at, answered } = record;
+      stdout.write(`${JSON.stringify({ work_id, attempt_identity, role, output_schema_name, model, effort, tier, issued_at, expires_at, answered })}\n`);
     }
     return;
   }
@@ -146,9 +170,10 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     const parsed = flags(options, ["--work-id"]);
     const exchange = createJournalWorkExchange({ root, secret: await journalWorkExchangeSecret(environment) });
     const entry = await exchange.readWork(assertJournalWorkId(parsed["--work-id"]));
+    const packetLength = entry ? JSON.stringify(journalWorkPacketValue(entry)).length : null;
     const allowed = Boolean(entry && entry.tier === "hardest" && !exchange.isExpired(entry)
-      && JSON.stringify(journalWorkPacketValue(entry)).length <= MAX_JOURNAL_TOOL_RESULT_CHARS);
-    stdout.write(`${JSON.stringify({ allowed })}\n`);
+      && packetLength <= MAX_HARDEST_PACKET_CHARS);
+    stdout.write(`${JSON.stringify({ allowed, packet_length: packetLength })}\n`);
     return;
   }
   if (["attempt-status", "attempt-reserve", "attempt-mark", "attempt-refuse", "attempt-release", "attempt-clear"].includes(command)) {
@@ -165,10 +190,12 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     const workId = assertJournalWorkId(value);
     if (!operatorCommand && !/^[0-9a-f-]{36}$/u.test(parsed["--claim"])) fail("JOURNAL_WORK_ATTEMPT_INVALID");
     const directory = await attemptDirectory(root);
-    const marker = path.join(directory, `${journalWorkFileKey(journalAttemptIdentity(workId))}.json`);
+    const dispatch = (await createJournalWorkDispatchReader({ root }).listDispatch()).find(item => item.work_id === workId);
+    const identity = journalAttemptIdentity(dispatch);
+    const marker = path.join(directory, `${journalAttemptMarkerKey(identity)}.json`);
     if (command === "attempt-reserve") {
       let claimed = true;
-      try { await writeAttemptMarker(marker, { work_id: workId, status: "reserved", claim: parsed["--claim"], timeout_ms: timeoutMs }, true); }
+      try { await writeAttemptMarker(marker, { work_id: workId, attempt_identity: identity, status: "reserved", claim: parsed["--claim"], timeout_ms: timeoutMs }, true); }
       catch (error) { if (error?.code === "EEXIST") claimed = false; else throw error; }
       stdout.write(`${JSON.stringify({ claimed })}\n`);
       return;
@@ -178,15 +205,17 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
       const info = await fs.lstat(marker);
       ageSeconds = Math.max(0, (Date.now() - info.mtimeMs) / 1000);
       try { status = JSON.parse(await fs.readFile(marker, "utf8")); } catch { status = { status: "attempted" }; }
-      if (!status || journalAttemptIdentity(status.work_id ?? "") !== journalAttemptIdentity(workId)
+      const legacyIdentity = /^journal-work:([0-9a-f]{48})(?::r[1-8])?$/u.exec(status?.work_id ?? "")?.[1];
+      if (!status || (status.attempt_identity ?? legacyIdentity) !== identity
         || !["reserved", "attempted", "isolation_refused"].includes(status.status)
         || !/^[0-9a-f-]{36}$/u.test(status.claim ?? "")
         || (status.timeout_ms !== undefined && (!Number.isSafeInteger(status.timeout_ms)
           || status.timeout_ms < 1 || status.timeout_ms > 3_600_000))) status = { status: "attempted" };
+      else status.attempt_identity = identity;
     } catch (error) { if (error?.code !== "ENOENT") throw error; }
     if (command === "attempt-clear") {
       if (status?.status !== "isolation_refused"
-        && !(status?.status === "reserved" && ageSeconds * 1000 > (status.timeout_ms ?? 1_800_000))) {
+        && !(status?.status === "reserved" && ageSeconds * 1000 >= 2 * (status.timeout_ms ?? 1_800_000) + 600_000)) {
         fail("JOURNAL_WORK_ATTEMPT_CLEAR_REFUSED");
       }
       await fs.unlink(marker);
@@ -203,13 +232,12 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
       await writeAttemptMarker(marker, { ...status, status: "attempted" });
       status.status = "attempted";
     } else if (command === "attempt-refuse") {
-      if (!["reserved", "isolation_refused"].includes(status.status)) fail("JOURNAL_WORK_ATTEMPT_INVALID");
+      if (!["reserved", "attempted", "isolation_refused"].includes(status.status)) fail("JOURNAL_WORK_ATTEMPT_INVALID");
       await writeAttemptMarker(marker, { ...status, status: "isolation_refused" });
       status.status = "isolation_refused";
     } else if (command === "attempt-release") {
       if (status.status !== "reserved") fail("JOURNAL_WORK_ATTEMPT_INVALID");
-      await fs.unlink(marker);
-      await syncDirectory(directory);
+      await releaseAttemptMarker(marker, parsed["--claim"]);
       status = null; ageSeconds = null;
     }
     stdout.write(`${JSON.stringify({ attempted: status !== null, status: status?.status ?? "none", age_seconds: ageSeconds })}\n`);

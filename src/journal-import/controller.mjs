@@ -3,6 +3,7 @@ import { ValidationError } from "../core/errors.mjs";
 import { acquirePrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { validateJournalSchema } from "./contracts.mjs";
 import { buildJournalRolePacket, JOURNAL_ROLE_DEFINITIONS, journalRoleInstruction } from "./provider-port.mjs";
+import { hardestJournalPacketFits } from "./packet-bounds.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const semanticStages = Object.freeze(["VISUAL_READ", "EXTRACT", "OMISSION_CHECK", "RECONCILE", "REFERENCE_AUDIT", "PATTERN_BUILD", "PATTERN_REVIEW", "COLD_TEST"]);
@@ -332,6 +333,13 @@ export function createJournalImportController({
       grant_purpose: grant.purpose,
       ...roleInput
     });
+    if (work.tier === "hardest" && !hardestJournalPacketFits(work.role, packet)) {
+      const next = clone(entry.snapshot);
+      next.work_items.find(item => item.work_id === work.work_id).status = "blocked_authority";
+      return persist(next, entry.revision, { state: "blocked_authority", stage: work.stage,
+        next_action: "record unresolved packet bound", blocked_reason: "JOURNAL_WORK_PACKET_TOO_LARGE",
+        responsible_actor: "controller" });
+    }
     if (beforeInvoke) await beforeInvoke({ work: clone(work) });
     const packetDigest = sha256(Buffer.from(JSON.stringify(packet), "utf8"));
     const baseOperationKey = `journal:${work.work_id.slice(5, 45)}:${packetDigest.slice(0, 32)}`;

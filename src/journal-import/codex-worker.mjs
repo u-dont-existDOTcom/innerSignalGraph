@@ -202,6 +202,34 @@ async function checkCodexHome(home) {
   });
 }
 
+export function boundedLineReader({ onLine, maxLineBytes = MAX_LINE, maxStreamBytes = MAX_STREAM }) {
+  let fragments = [], lineBytes = 0, total = 0, refused = false;
+  const state = { problem: null };
+  const reject = code => { state.problem = code; refused = true; fragments = []; return false; };
+  return { state, async accept(chunk) {
+    if (refused) return false;
+    total += Buffer.byteLength(chunk);
+    if (total > maxStreamBytes) return reject("EVENT_STREAM_TOO_LARGE");
+    // Scan only the new chunk, and join each completed line exactly once.
+    let start = 0;
+    while (start < chunk.length) {
+      const at = chunk.indexOf("\n", start);
+      const part = chunk.slice(start, at < 0 ? chunk.length : at);
+      lineBytes += Buffer.byteLength(part);
+      if (lineBytes > maxLineBytes) return reject("EVENT_LINE_TOO_LARGE");
+      fragments.push(part);
+      if (at < 0) break;
+      const next = fragments.join(""); fragments = []; lineBytes = 0;
+      if (await onLine(next) === false) { refused = true; return false; }
+      start = at + 1;
+    }
+    return true;
+  }, async finish() {
+    if (!refused && fragments.length) await onLine(fragments.join(""));
+    fragments = [];
+  } };
+}
+
 export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups,
   maxLineBytes = MAX_LINE, maxStreamBytes = MAX_STREAM, killOnClose = false }) {
   return new Promise((resolve) => {
@@ -209,34 +237,33 @@ export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeG
     let child;
     try { child = spawn(command, args, { cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"], shell: false }); }
     catch { resolve({ code: null, timedOut: false, problem: "SPAWN_FAILED", durationMs: Date.now() - started }); return; }
-    let line = "", total = 0, problem = null, timedOut = false, refused = false;
+    let problem = null, timedOut = false, refused = false;
+    let processing = Promise.resolve();
     const killGroup = () => { try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { child.kill("SIGKILL"); } };
+    const reader = boundedLineReader({ onLine: line => onLine(line, killGroup), maxLineBytes, maxStreamBytes });
     activeGroups?.add(killGroup);
     const timer = timeoutMs === null ? null : setTimeout(() => { timedOut = true; killGroup(); }, timeoutMs);
     child.once("error", () => { problem = "SPAWN_FAILED"; });
     child.stdout?.setEncoding("utf8");
     child.stdout?.on("data", (chunk) => {
       if (refused) return;
-      total += Buffer.byteLength(chunk);
-      if (total > maxStreamBytes) { problem = "EVENT_STREAM_TOO_LARGE"; killGroup(); return; }
-      line += chunk;
-      for (;;) {
-        const at = line.indexOf("\n");
-        if (at < 0) break;
-        const next = line.slice(0, at); line = line.slice(at + 1);
-        if (Buffer.byteLength(next) > maxLineBytes) { problem = "EVENT_LINE_TOO_LARGE"; killGroup(); return; }
-        if (onLine(next) === false) { refused = true; line = ""; killGroup(); return; }
-      }
-      if (Buffer.byteLength(line) > maxLineBytes) { problem = "EVENT_LINE_TOO_LARGE"; killGroup(); }
+      child.stdout.pause();
+      processing = processing.then(async () => {
+        if (refused) return;
+        if (await reader.accept(chunk) === false) { problem = reader.state.problem; refused = true; killGroup(); }
+      }).catch(() => { problem = "EVENT_HANDLER_FAILED"; refused = true; killGroup(); })
+        .finally(() => { child.stdout.resume(); });
     });
     let stderrTail = "";
     child.stderr?.setEncoding("utf8");
     child.stderr?.on("data", (chunk) => {
       stderrTail = (stderrTail + chunk).slice(-512);
     }); // Only transiently inspect for a limit; never retain or print packet or answer text.
-    child.once("close", (code) => { if (timer) clearTimeout(timer); activeGroups?.delete(killGroup);
+    child.once("close", async (code) => { if (timer) clearTimeout(timer);
       if (killOnClose) killGroup();
-      if (!refused && line.length) onLine(line);
+      await processing;
+      try { await reader.finish(); } catch { problem = "EVENT_HANDLER_FAILED"; }
+      activeGroups?.delete(killGroup);
       resolve({ code, timedOut, problem, stderrLast: stderrTail.trim().split("\n").at(-1) ?? "",
         durationMs: Date.now() - started }); });
   });

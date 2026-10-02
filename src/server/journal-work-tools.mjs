@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import Ajv2020 from "ajv/dist/2020.js";
 import { PRIVATE_CASE_SCOPES } from "../storage/private-case-access.mjs";
 import { JOURNAL_WORK_ID_PATTERN, MAX_JOURNAL_RESULT_BYTES } from "../journal-import/work-exchange.mjs";
+import { journalWorkPacketValue, MAX_HARDEST_PACKET_CHARS } from "../journal-import/packet-bounds.mjs";
+export { journalWorkPacketValue, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../journal-import/packet-bounds.mjs";
 
 // Two connector tools for the private journal import. ChatGPT fetches one work item (instruction,
 // packet, output schema), does the role's work in a fresh chat, and submits its JSON answer. The
@@ -12,14 +14,6 @@ import { JOURNAL_WORK_ID_PATTERN, MAX_JOURNAL_RESULT_BYTES } from "../journal-im
 const WORK_ID_SCHEMA = Object.freeze({ type: "string", pattern: JOURNAL_WORK_ID_PATTERN.source });
 const CASE_ID = /^[a-z0-9][a-z0-9_-]{0,79}$/u;
 const MAX_REPORTED_SCHEMA_ERRORS = 25;
-// Above the 180,000-byte extraction/reconciliation and 50,000-byte pattern bounds,
-// including instruction/schema/context. The encrypted exchange entry itself is capped at 4 MiB.
-export const MAX_JOURNAL_TOOL_RESULT_CHARS = 4 * 1024 * 1024;
-export function journalWorkPacketValue(entry) {
-  return { work_id: entry.work_id, status: "ready", role: entry.role, instruction: entry.instruction,
-    packet: entry.packet, output_schema: entry.output_schema, expected_generation: entry.expected_generation,
-    expires_at: entry.expires_at, submit_with: "submit_journal_work_result" };
-}
 
 // Retain array indices only; property segments are fixed tokens, never supplied key names.
 function schemaErrorPath(instancePath, output) {
@@ -112,7 +106,7 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
     }
     const { entry } = found;
     const packet = journalWorkPacketValue(entry);
-    if ((entry.tier ?? tier) === "hardest" && JSON.stringify(packet).length > MAX_JOURNAL_TOOL_RESULT_CHARS) {
+    if ((entry.tier ?? tier) === "hardest" && JSON.stringify(packet).length > MAX_HARDEST_PACKET_CHARS) {
       return toolError("JOURNAL_WORK_PACKET_TOO_LARGE", "JOURNAL_WORK_PACKET_TOO_LARGE");
     }
     if (stageDir) await exchange.markPacketFetched({ stageDir, workId });

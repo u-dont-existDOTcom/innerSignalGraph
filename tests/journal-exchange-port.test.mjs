@@ -613,3 +613,36 @@ test("the exchange route loads from the environment and checks its root before a
   await fs.chmod(exchangeRoot, 0o755);
   await assert.rejects(loadJournalInferencePortFromEnvironment(environment(), { caseId: CASE_ID }).prepare(), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
 });
+
+test("every supported hardest role refuses an indivisible oversized complete packet before publication", async () => {
+  const { JOURNAL_ROLE_DEFINITIONS } = await import("../src/journal-import/provider-port.mjs");
+  const roles = Object.keys(JOURNAL_ROLE_DEFINITIONS).filter(role => role !== "visual_reader");
+  const port = createExchangeJournalInferencePort({ exchange: {
+    async readWork() { throw new Error("oversized hardest work reached the exchange"); },
+    async publishWork() { throw new Error("oversized hardest work was published"); }
+  }, caseId: CASE_ID, receiptKey: Buffer.alloc(32, 41), routeRef: "route:synthetic",
+    allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    model: "gpt-6-sol", effort: "medium", waitMs: 0, executionAttestation: "codex_exec" });
+  for (const role of roles) {
+    const definition = JOURNAL_ROLE_DEFINITIONS[role];
+    const request = referenceCall();
+    request.packet = Object.fromEntries(Object.entries(request.packet).filter(([key]) =>
+      !JOURNAL_ROLE_DEFINITIONS.reference_reader.fields.includes(key)));
+    request.packet.output_schema_id = definition.outputSchema;
+    request.packet[definition.fields.find(field => field !== "phase")] = { text: "SYNTHETIC_PACKET_SENTINEL".repeat(25_000) };
+    if (role === "pattern_reviewer") request.packet.phase = "B";
+    await assert.rejects(port.invoke({ ...request, role, outputSchema: definition.outputSchema,
+      grant: { ...grant, allowed_roles: roles }, tier: "hardest" }), { code: "JOURNAL_WORK_PACKET_TOO_LARGE" });
+  }
+});
+
+test("a hardest dispatch without explicit attempt identity is refused", async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "journal-dispatch-identity-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const exchange = createJournalWorkExchange({ root, secret: Buffer.alloc(32, 41).toString("base64") });
+  await assert.rejects(exchange.publishDispatch({ schema_version: 1, work_id: "job:synthetic-missing-identity",
+    role: "reference_reader", tier: "hardest", output_schema_name: "reference-result",
+    model: "claude-opus-5-5", effort: "max", route_ref: "route:synthetic",
+    issued_at: "2026-10-01T00:00:00.000Z", expires_at: "2099-01-01T00:00:00.000Z" }),
+  { code: "JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED" });
+});

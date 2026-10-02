@@ -58,3 +58,24 @@ test("the Claude size guard does not change the standard Codex fetch contract", 
     submit_with: "submit_journal_work_result" } });
   assert.equal(fetched, 1);
 });
+
+test("hardest complete packet boundary is 450,000 characters, below the 500,000 tool declaration", async () => {
+  const { journalWorkPacketValue, MAX_HARDEST_PACKET_CHARS } = await import("../src/journal-import/packet-bounds.mjs");
+  assert.equal(MAX_JOURNAL_TOOL_RESULT_CHARS, 500_000);
+  assert.equal(MAX_HARDEST_PACKET_CHARS, 450_000);
+  for (const extra of [0, 1]) {
+    const entry = { case_id: "synthetic-case", work_id: workId, tier: "hardest", role: "extractor",
+      instruction: "SYNTHETIC_INSTRUCTION", packet: { text: "" }, output_schema: { type: "object" },
+      expected_generation: "synthetic-generation", expires_at: "2099-01-01T00:00:00.000Z" };
+    entry.packet.text = "x".repeat(MAX_HARDEST_PACKET_CHARS - JSON.stringify(journalWorkPacketValue(entry)).length + extra);
+    let fetched = false;
+    const tools = createJournalWorkTools({ caseId: entry.case_id, tier: "hardest", stageDir: "/synthetic-stage",
+      authorizeCase: async () => ({ principalId: "synthetic" }), exchange: {
+        readWork: async () => entry, isExpired: () => false, hasResult: async () => false,
+        submitResult: async () => {}, markPacketFetched: async () => { fetched = true; } } });
+    const result = await tools.call("get_journal_work_packet", { work_id: workId });
+    assert.equal(fetched, extra === 0);
+    if (extra) assert.equal(result.toolError.code, "JOURNAL_WORK_PACKET_TOO_LARGE");
+    else assert.equal(JSON.stringify(result.value).length, MAX_HARDEST_PACKET_CHARS);
+  }
+});

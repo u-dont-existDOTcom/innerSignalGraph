@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { lockWorkerDirectory, parseCodexResetTime, privateDirectory, removeStaleRuns, runProcess } from "./codex-worker.mjs";
-import { MAX_JOURNAL_TOOL_RESULT_CHARS } from "../server/journal-work-tools.mjs";
+import { MAX_HARDEST_PACKET_CHARS } from "./packet-bounds.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const MODEL = "claude-opus-5-5";
@@ -11,8 +11,10 @@ const SESSION = /^[0-9A-Za-z-]{8,64}$/u;
 const HOST = /^(?:[A-Za-z0-9_][A-Za-z0-9_.-]*@)?[A-Za-z0-9_][A-Za-z0-9_.-]*$/u;
 const BIN = /^[A-Za-z0-9_./-]+$/u;
 const MAX_LIMIT_RETRIES = 12;
-// Two copies of a packet can appear in a stream line, each JSON-escaped by up to 6x.
-export const MAX_CLAUDE_LINE_BYTES = 12 * MAX_JOURNAL_TOOL_RESULT_CHARS + 1024 * 1024;
+// Three copies of a serialized packet appear in a stream line. Its JSON quotes
+// and escapes can double on embedding; UTF-8 costs up to 3 bytes per code unit.
+export const MAX_CLAUDE_LINE_BYTES = 3 * 4 * MAX_HARDEST_PACKET_CHARS + 1024 * 1024;
+export const CLAUDE_PROVIDER_BACKOFF_MS = 5 * 60_000;
 const fail = (code) => { throw Object.assign(new Error(code), { code }); };
 
 function number(value, fallback, min, max) {
@@ -76,30 +78,47 @@ export function claudePrintArgs({ record, mcpConfig }) {
     "--permission-mode", "dontAsk", "--no-session-persistence"];
 }
 
-export function claudeResultReader(record) {
+export function claudeResultReader(record, expectedPacketLength = null) {
   const state = { bad: null, initialized: false, reachedModel: false, claudeCodeVersion: null,
     resultSeen: false, session: null, reportedSession: null, model: null,
     packetFetched: false, packetBeforeFirstSubmit: false, submitSeen: false, hookCount: 0,
     servers: [], tools: [], skillCount: 0, slashCount: 0, pluginCount: 0, agentCount: 0,
     usage: { input_tokens: 0, cached_input_tokens: 0, output_tokens: 0, total_cost_usd: 0 },
-    limitReset: null, limitSeen: false };
+    packetLength: null, providerStatus: null, limitReset: null, limitSeen: false };
+  const packetCalls = new Set();
   function resetTime(value) {
     if (typeof value === "number" && Number.isFinite(value) && value > 0) return value < 1e12 ? value * 1000 : value;
     return null;
   }
   function hasUsage(value) {
     if (!value || typeof value !== "object") return false;
-    return Object.entries(value).some(([key, item]) =>
-      (/tokens|cost/iu.test(key) && typeof item === "number" && Number.isFinite(item) && item !== 0)
-      || (item && typeof item === "object" && hasUsage(item)));
+    return [value.input_tokens, value.output_tokens, value.inputTokens, value.outputTokens]
+      .some(item => Number.isFinite(item) && item > 0);
   }
   function accept(line) {
     if (!line.trim()) return;
     let event;
     try { event = JSON.parse(line); } catch { state.bad ??= !state.initialized ? "ISOLATION" : "EVENT_JSON_INVALID"; return; }
     if (!event || typeof event !== "object" || Array.isArray(event)) { state.bad ??= !state.initialized ? "ISOLATION" : "EVENT_INVALID"; return; }
-    if (event.type === "assistant" || event.type === "user" || event.type === "result"
-      || hasUsage(event.usage) || hasUsage(event.modelUsage) || hasUsage(event.message?.usage)) state.reachedModel = true;
+    const synthetic = event.message?.model === "<synthetic>";
+    const model = event.message?.model ?? event.model;
+    if (!synthetic && typeof model === "string" && model !== "<synthetic>"
+      && (hasUsage(event.message?.usage) || hasUsage(event.usage))) state.reachedModel = true;
+    if (event.modelUsage && typeof event.modelUsage === "object"
+      && Object.entries(event.modelUsage).some(([name, usage]) => name !== "<synthetic>" && hasUsage(usage))) {
+      state.reachedModel = true;
+    }
+    if (event.error || event.is_error === true) {
+      const errorText = [typeof event.error === "string" ? event.error : null,
+        event.error?.code, event.error?.type, event.error?.message,
+        ...(Array.isArray(event.errors) ? event.errors.flatMap(item => typeof item === "string"
+          ? [item] : [item?.code, item?.type, item?.message]) : []),
+        ...(synthetic && Array.isArray(event.message?.content)
+          ? event.message.content.filter(part => part?.type === "text").map(part => part.text) : [])]
+        .filter(item => typeof item === "string").join(" ");
+      const status = event.api_error_status ?? Number(errorText.match(/\b(401|403|5[0-9]{2})\b/u)?.[1]);
+      if ([401, 403].includes(status) || (status >= 500 && status <= 599)) state.providerStatus = status;
+    }
     if ((typeof event.type === "string" && event.type.startsWith("hook"))
       || (typeof event.subtype === "string" && event.subtype.startsWith("hook"))) {
       state.hookCount += 1; state.bad = "ISOLATION"; return;
@@ -143,13 +162,28 @@ export function claudeResultReader(record) {
     const uses = event.type === "tool_use" ? [event] : event.type === "assistant"
       ? (Array.isArray(event.message?.content) ? event.message.content.filter((part) => part?.type === "tool_use") : []) : [];
     for (const use of uses) {
+      if (!synthetic) state.reachedModel = true;
       const name = use.name;
       const workId = use.input?.work_id;
       if (!TOOLS.includes(name)) { state.bad = "ISOLATION"; continue; }
       if (workId !== record.work_id) { state.bad ??= "WORK_ID_MISMATCH"; continue; }
-      if (name === TOOLS[0] && workId === record.work_id) state.packetFetched = true;
+      if (name === TOOLS[0] && workId === record.work_id) {
+        state.packetFetched = true;
+        if (typeof use.id === "string") packetCalls.add(use.id);
+      }
       if (name === TOOLS[1] && workId === record.work_id && !state.submitSeen) {
         state.submitSeen = true; state.packetBeforeFirstSubmit = state.packetFetched;
+      }
+    }
+    if (event.type === "user" && Array.isArray(event.message?.content)) {
+      for (const part of event.message.content) {
+        if (part?.type !== "tool_result" || !packetCalls.has(part.tool_use_id)) continue;
+        const textLength = typeof part.content === "string" ? part.content.length
+          : Array.isArray(part.content) ? part.content.reduce((sum, item) =>
+            sum + (item?.type === "text" && typeof item.text === "string" ? item.text.length : 0), 0) : 0;
+        state.packetLength = textLength;
+        packetCalls.delete(part.tool_use_id);
+        if (expectedPacketLength !== null && textLength !== expectedPacketLength) state.bad ??= "PACKET_TRUNCATED";
       }
     }
     if (event.type !== "result") return;
@@ -207,35 +241,52 @@ async function containsFile(directory) {
   }
   return false;
 }
-async function cleanPersistence(home, runDir) {
+export function assertClaudeRunPath(workDir) {
+  const longestRun = path.join(workDir, "inner-signal-claude-XXXXXX", "run-XXXXXX");
+  if (claudeRunSlug(longestRun).length > 200) fail("JOURNAL_CLAUDE_RUN_PATH_TOO_LONG");
+}
+export async function cleanClaudePersistence(home, runDir) {
   let persisted = false, cleanupError = null;
+  const slug = claudeRunSlug(runDir);
   for (const root of persistenceRoots(home)) {
-    const directory = path.join(root, claudeRunSlug(runDir));
     try {
-      try { persisted = await containsFile(directory) || persisted; }
-      finally { await fs.rm(directory, { recursive: true, force: true }); }
+      const names = await fs.readdir(root);
+      for (const name of names) {
+        if (name !== slug && !(slug.length > 200 && name.startsWith(slug.slice(0, 200))
+          && /^[-_A-Za-z0-9]{1,80}$/u.test(name.slice(200)))) continue;
+        const directory = path.join(root, name);
+        try { persisted = await containsFile(directory) || persisted; }
+        finally { await fs.rm(directory, { recursive: true, force: true }); }
+      }
     } catch (error) { if (error?.code !== "ENOENT") cleanupError ??= error; }
   }
   if (cleanupError) throw cleanupError;
   return persisted;
 }
-async function sweepPersistence(home, workDir) {
+export async function sweepClaudePersistence(home, workDir) {
   const prefix = claudeRunSlug(path.join(workDir, "inner-signal-claude-"));
   for (const root of persistenceRoots(home)) {
     let names;
     try { names = await fs.readdir(root); } catch (error) { if (error?.code === "ENOENT") continue; throw error; }
     for (const name of names) {
-      if (name.startsWith(prefix) && /^[A-Za-z0-9]{6}-run-[A-Za-z0-9]{6}$/u.test(name.slice(prefix.length))) {
+      const suffix = name.startsWith(prefix) ? /^([A-Za-z0-9]{6})-run-([A-Za-z0-9]{6})$/u.exec(name.slice(prefix.length)) : null;
+      if (suffix) {
+        const runDir = path.join(workDir, `inner-signal-claude-${suffix[1]}`, `run-${suffix[2]}`);
+        try { await fs.lstat(runDir); continue; }
+        catch (error) { if (error?.code !== "ENOENT") throw error; }
         await fs.rm(path.join(root, name), { recursive: true, force: true });
       }
     }
   }
 }
 
-export async function runJournalClaudeWorker(argv, { environment = process.env, stderr = process.stderr } = {}) {
+export async function runJournalClaudeWorker(argv, { environment = process.env, stderr = process.stderr,
+  platform = process.platform } = {}) {
+  if (platform !== "linux") fail("JOURNAL_CLAUDE_LINUX_REQUIRED");
   const options = parseJournalClaudeWorkerArgs(argv);
   if (!path.isAbsolute(environment.HOME ?? "")) fail("JOURNAL_CLAUDE_HOME_INVALID");
   const workDir = await privateDirectory(options.workDir, "JOURNAL_CLAUDE_WORK_DIR_INSECURE");
+  assertClaudeRunPath(workDir);
   if (!options.remote) {
     if (!environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT || !environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE
       || environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_BASE64 !== undefined) fail("JOURNAL_CLAUDE_EXCHANGE_CONFIG_INVALID");
@@ -259,7 +310,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   };
   const processEnv = { PATH: environment.PATH ?? "", HOME: environment.HOME ?? "", LANG: environment.LANG ?? "C" };
   const activeGroups = new Set();
-  let stopping = false, stopSignal = null, wake = null, limitedUntil = 0, completed = 0;
+  let stopping = false, stopSignal = null, wake = null, limitedUntil = 0, completed = 0, signInNeeded = false;
   const attempts = new Map(), limits = new Map(), seenSessions = new Set(), pendingReleases = new Map();
   const stop = (signal) => { stopping = true; stopSignal ??= signal;
     if (wake) { const resume = wake; wake = null; resume(); }
@@ -301,13 +352,17 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     try {
       // Validate the profile before creating a stage or invoking the provider.
       claudePrintArgs({ record, mcpConfig: "/tmp/placeholder" });
+      if (!/^[0-9a-f]{48}$/u.test(record.attempt_identity ?? "")) fail("JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED");
       const reservation = await host("attempt-reserve", ["--work-id", record.work_id, "--claim", claim,
         "--timeout-ms", String(options.timeoutMs)]);
       if (reservation[0]?.claimed !== true) { outcome = "already_attempted"; return outcome; }
       claimed = true;
-      if ((await host("packet-check", ["--work-id", record.work_id]))[0]?.allowed !== true) {
+      const packetCheck = (await host("packet-check", ["--work-id", record.work_id]))[0];
+      if (packetCheck?.allowed !== true) {
         outcome = "rejected:PACKET_TOO_LARGE"; return outcome;
       }
+      if (!Number.isSafeInteger(packetCheck.packet_length) || packetCheck.packet_length < 1
+        || packetCheck.packet_length > MAX_HARDEST_PACKET_CHARS) fail("JOURNAL_CLAUDE_HOST_RESPONSE_INVALID");
       const created = await host("stage-create");
       stageDir = created[0]?.stage_dir;
       if (typeof stageDir !== "string" || !path.isAbsolute(stageDir)) fail("JOURNAL_CLAUDE_HOST_RESPONSE_INVALID");
@@ -315,20 +370,26 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       await fs.chmod(runDir, 0o700);
       const mcpConfig = path.join(runDir, "mcp.json");
       await fs.writeFile(mcpConfig, JSON.stringify(claudeMcpConfiguration(options, stageDir, environment)), { flag: "wx", mode: 0o600 });
-      const reader = claudeResultReader(record);
+      const reader = claudeResultReader(record, packetCheck.packet_length);
       observed = reader.state;
       let result;
       try { result = await runProcess(options.claudeBin, claudePrintArgs({ record, mcpConfig }), {
         cwd: runDir, env: { ...processEnv, XDG_CACHE_HOME: path.join(runDir, "cache") },
         maxLineBytes: MAX_CLAUDE_LINE_BYTES, maxStreamBytes: 4 * MAX_CLAUDE_LINE_BYTES, killOnClose: true,
-        timeoutMs: options.timeoutMs, onLine: (line) => {
+        timeoutMs: options.timeoutMs, onLine: async (line, kill) => {
           reader.accept(line);
-          reachedModel = reader.state.reachedModel;
-          if (reader.state.bad === "ISOLATION") { isolationRefused = true; return false; }
+          if (reader.state.bad === "ISOLATION") { isolationRefused = true; kill(); }
+          if (!reachedModel && reader.state.reachedModel) {
+            reachedModel = true;
+            // Await the durable mark while stdout is paused, before accepting
+            // further events or allowing the child result to be admitted.
+            await host("attempt-mark", ["--work-id", record.work_id, "--claim", claim]);
+          }
+          if (isolationRefused) return false;
         }, activeGroups
       }); } finally {
         // This finally runs before admission/promotion, even when the child failed.
-        try { persisted = await cleanPersistence(processEnv.HOME, runDir); persistenceChecked = true; }
+        try { persisted = await cleanClaudePersistence(processEnv.HOME, runDir); persistenceChecked = true; }
         catch { persisted = true; }
       }
       if (reader.state.reportedSession) {
@@ -349,9 +410,14 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       }
       if (isolationRefused) {
         outcome = "isolation_refused";
-      } else if (reader.state.limitSeen) {
-        outcome = persisted ? "rejected:LOCAL_PERSISTENCE" : "limited";
-        limitedUntil = Math.max(limitedUntil, reader.state.limitReset ?? Date.now() + options.limitBackoffMs);
+      } else if ((reader.state.providerStatus !== null || reader.state.limitSeen) && !reachedModel) {
+        const unavailable = reader.state.providerStatus !== null;
+        const needsSignIn = [401, 403].includes(reader.state.providerStatus);
+        signInNeeded = needsSignIn;
+        outcome = persisted ? "rejected:LOCAL_PERSISTENCE" : needsSignIn ? "sign_in_needed"
+          : unavailable ? "provider_unavailable" : "limited";
+        limitedUntil = Math.max(limitedUntil, unavailable ? Date.now() + CLAUDE_PROVIDER_BACKOFF_MS
+          : reader.state.limitReset ?? Date.now() + options.limitBackoffMs);
         if (claimed) {
           try {
             await host("attempt-release", ["--work-id", record.work_id, "--claim", claim]);
@@ -362,8 +428,13 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           }
         }
       } else {
-        if (reachedModel) await host("attempt-mark", ["--work-id", record.work_id, "--claim", claim]);
-        if (persisted) outcome = "rejected:LOCAL_PERSISTENCE";
+        if (reader.state.limitSeen || reader.state.providerStatus !== null) {
+          limitedUntil = Math.max(limitedUntil, Date.now() + (reader.state.providerStatus !== null
+            ? CLAUDE_PROVIDER_BACKOFF_MS : options.limitBackoffMs));
+          signInNeeded = [401, 403].includes(reader.state.providerStatus);
+        }
+        if (reader.state.bad === "PACKET_TRUNCATED") outcome = "rejected:PACKET_TRUNCATED";
+        else if (persisted) outcome = "rejected:LOCAL_PERSISTENCE";
         else if (stopping) outcome = "stopped";
         else if (result.timedOut) outcome = "timeout";
         else if (result.problem) outcome = `rejected:${result.problem}`;
@@ -372,6 +443,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         else if (reader.state.bad) outcome = `rejected:${reader.state.bad}`;
         else if (!reader.state.session) outcome = "rejected:RESULT_MISSING";
         else if (!reader.state.packetBeforeFirstSubmit) outcome = "rejected:PACKET_NOT_FETCHED";
+        else if (reader.state.packetLength !== packetCheck.packet_length) outcome = "rejected:PACKET_TRUNCATED";
         else {
           const status = await host("stage-check", ["--work-id", record.work_id, "--stage-dir", stageDir]);
           if (status[0]?.packet_fetched !== true) outcome = "rejected:PACKET_NOT_FETCHED";
@@ -397,12 +469,15 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         try { await host("attempt-refuse", ["--work-id", record.work_id, "--claim", claim]); }
         catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_refuse_failed" }); }
       } else if (claimed && !reachedModel && !observed?.limitSeen && outcome !== "limited") {
-        try { await host("attempt-release", ["--work-id", record.work_id, "--claim", claim]); claimed = false; }
+        try {
+          await host("attempt-release", ["--work-id", record.work_id, "--claim", claim]); claimed = false;
+          pendingReleases.delete(record.work_id);
+        }
         catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_release_failed" }); }
       }
       if (runDir) {
         if (!persistenceChecked) {
-          try { if (await cleanPersistence(processEnv.HOME, runDir)) outcome = "rejected:LOCAL_PERSISTENCE"; }
+          try { if (await cleanClaudePersistence(processEnv.HOME, runDir)) outcome = "rejected:LOCAL_PERSISTENCE"; }
           catch { outcome = "rejected:LOCAL_PERSISTENCE"; }
         }
         try { await fs.rm(runDir, { recursive: true, force: true }); }
@@ -428,7 +503,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
 
   try {
     await removeStaleRuns(workDir, "inner-signal-claude-");
-    await sweepPersistence(processEnv.HOME, workDir);
+    await sweepClaudePersistence(processEnv.HOME, workDir);
     await host("stage-sweep");
     const initial = options.once ? new Set((await host("dispatch", ["--json"])).map((record) => record.work_id)) : null;
     for (;;) {
@@ -439,7 +514,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           pendingReleases.delete(workId);
         } catch { /* Keep the limited outcome and reservation; retry on the next loop. */ }
       }
+      if (signInNeeded) break;
       if (Date.now() < limitedUntil) {
+        if (options.once) break;
         await wait(Math.min(options.pollMs, limitedUntil - Date.now()));
         continue;
       }
@@ -463,7 +540,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         continue;
       }
       const outcome = await one(record);
-      if (outcome === "limited") limits.set(record.work_id, (limits.get(record.work_id) ?? 0) + 1);
+      if (["limited", "provider_unavailable", "sign_in_needed"].includes(outcome)) limits.set(record.work_id, (limits.get(record.work_id) ?? 0) + 1);
       else if (["already_attempted", "isolation_refused"].includes(outcome)) attempts.set(record.work_id, 3);
       else if (outcome !== "stopped") {
         attempts.set(record.work_id, (attempts.get(record.work_id) ?? 0) + 1);
@@ -472,7 +549,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         }
       }
     }
-    return stopSignal === "SIGINT" ? 130 : stopSignal === "SIGTERM" ? 143 : 0;
+    // 77 is the content-free sign-in-required exit status for the operator.
+    return stopSignal === "SIGINT" ? 130 : stopSignal === "SIGTERM" ? 143 : signInNeeded ? 77 : 0;
   } catch (error) {
     if (error?.code !== "JOURNAL_CLAUDE_STOPPED") throw error;
     return stopSignal === "SIGINT" ? 130 : 143;

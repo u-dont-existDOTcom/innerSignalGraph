@@ -217,12 +217,14 @@ const LABEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ._:+-]{0,79}$/u;
 
 function validateDispatchRecord(record) {
   if (!isPlainObject(record) || record.schema_version !== JOURNAL_WORK_EXCHANGE_VERSION) fail("JOURNAL_WORK_DISPATCH_INVALID");
-  const allowed = new Set(["schema_version", "work_id", "role", "tier", "output_schema_name", "model", "effort", "route_ref", "issued_at", "expires_at"]);
+  const allowed = new Set(["schema_version", "work_id", "attempt_identity", "role", "tier", "output_schema_name", "model", "effort", "route_ref", "issued_at", "expires_at"]);
   if (Object.keys(record).some((key) => !allowed.has(key))) fail("JOURNAL_WORK_DISPATCH_INVALID");
   assertJournalWorkId(record.work_id);
   if (typeof record.role !== "string" || !ROLE_PATTERN.test(record.role)) fail("JOURNAL_WORK_DISPATCH_INVALID");
   if (record.tier !== undefined && !["standard", "hardest"].includes(record.tier)) fail("JOURNAL_WORK_DISPATCH_INVALID");
   record.tier ??= "standard";
+  if ((record.attempt_identity !== undefined || record.tier === "hardest")
+    && !/^[0-9a-f]{48}$/u.test(record.attempt_identity ?? "")) fail("JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED");
   for (const field of ["output_schema_name", "model", "effort", "route_ref"]) {
     if (typeof record[field] !== "string" || !LABEL_PATTERN.test(record[field])) fail("JOURNAL_WORK_DISPATCH_INVALID");
   }
