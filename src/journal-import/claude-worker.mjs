@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -10,6 +11,7 @@ import { writeAttemptMarker } from "./attempt-markers.mjs";
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const MODEL = "claude-opus-5-5";
 const SESSION = /^[0-9A-Za-z-]{8,64}$/u;
+const MAX_REPORTED_SESSIONS = 8;
 const HOST = /^(?:[A-Za-z0-9_][A-Za-z0-9_.-]*@)?[A-Za-z0-9_][A-Za-z0-9_.-]*$/u;
 const BIN = /^[A-Za-z0-9_./-]+$/u;
 const MAX_LIMIT_RETRIES = 12;
@@ -42,7 +44,7 @@ function number(value, fallback, min, max) {
 
 export function parseJournalClaudeWorkerArgs(argv) {
   const flags = new Set(["--agent", "--config", "--work-dir", "--claude-bin", "--remote", "--remote-checkout",
-    "--remote-config", "--ssh-bin", "--log", "--once", "--max-items", "--timeout-ms", "--poll-ms", "--limit-backoff-ms"]);
+    "--remote-config", "--remote-node", "--ssh-bin", "--log", "--once", "--max-items", "--timeout-ms", "--poll-ms", "--limit-backoff-ms"]);
   const options = {};
   for (let i = 0; i < argv.length; i++) {
     const name = argv[i];
@@ -54,14 +56,17 @@ export function parseJournalClaudeWorkerArgs(argv) {
     || (options["--log"] && !path.isAbsolute(options["--log"]))) fail("JOURNAL_CLAUDE_OPTION_INVALID");
   const remote = options["--remote"] ?? null;
   if (remote) {
+    // A noninteractive SSH PATH can resolve a bare `node` to another runtime, so the host's Node executable (or a
+    // host wrapper that also sets the exchange environment) is named explicitly.
     if (!HOST.test(remote) || !path.isAbsolute(options["--remote-checkout"] ?? "")
-      || !path.isAbsolute(options["--remote-config"] ?? "") || options["--config"]) fail("JOURNAL_CLAUDE_OPTION_INVALID");
+      || !path.isAbsolute(options["--remote-config"] ?? "") || !path.isAbsolute(options["--remote-node"] ?? "")
+      || !BIN.test(options["--remote-node"]) || options["--config"]) fail("JOURNAL_CLAUDE_OPTION_INVALID");
   } else if (!path.isAbsolute(options["--config"] ?? "")
-    || options["--remote-checkout"] || options["--remote-config"]) fail("JOURNAL_CLAUDE_OPTION_INVALID");
+    || options["--remote-checkout"] || options["--remote-config"] || options["--remote-node"]) fail("JOURNAL_CLAUDE_OPTION_INVALID");
   const claudeBin = options["--claude-bin"] ?? "claude";
   const sshBin = options["--ssh-bin"] ?? "ssh";
   if (!BIN.test(claudeBin) || !BIN.test(sshBin)) fail("JOURNAL_CLAUDE_OPTION_INVALID");
-  return { remote, checkout: options["--remote-checkout"] ?? repositoryRoot,
+  return { remote, remoteNode: options["--remote-node"] ?? null, checkout: options["--remote-checkout"] ?? repositoryRoot,
     configPath: options["--remote-config"] ?? options["--config"], workDir: options["--work-dir"],
     claudeBin, sshBin, log: options["--log"] ?? null, once: Boolean(options["--once"]),
     maxItems: number(options["--max-items"], Number.MAX_SAFE_INTEGER, 1, Number.MAX_SAFE_INTEGER),
@@ -78,7 +83,7 @@ export function claudeMcpConfiguration(options, stageDir, environment) {
   const args = [path.join(options.checkout, "src/cli/journal-work-mcp.mjs"),
     "--config", options.configPath, "--principal", "claude-hardest", "--tier", "hardest", "--stage-dir", stageDir];
   return { mcpServers: { journal: options.remote
-    ? { command: options.sshBin, args: [...sshOptions, options.remote, ["node", ...args].map(quote).join(" ")] }
+    ? { command: options.sshBin, args: [...sshOptions, options.remote, [options.remoteNode, ...args].map(quote).join(" ")] }
     : { command: process.execPath, args,
       env: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT,
         INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE } } } };
@@ -96,7 +101,7 @@ export function claudePrintArgs({ record, mcpConfig }) {
 
 export function claudeResultReader(record, expectedPacketLength = null) {
   const state = { bad: null, initialized: false, reachedModel: false, claudeCodeVersion: null,
-    resultSeen: false, session: null, reportedSession: null, model: null,
+    resultSeen: false, session: null, reportedSession: null, sessions: new Set(), model: null,
     packetFetched: false, packetBeforeFirstSubmit: false, submitSeen: false, hookCount: 0,
     servers: [], tools: [], skillCount: 0, slashCount: 0, pluginCount: 0, agentCount: 0,
     usage: { input_tokens: 0, cached_input_tokens: 0, output_tokens: 0, total_cost_usd: 0 },
@@ -116,6 +121,11 @@ export function claudeResultReader(record, expectedPacketLength = null) {
     let event;
     try { event = JSON.parse(line); } catch { state.bad ??= !state.initialized ? "ISOLATION" : "EVENT_JSON_INVALID"; return; }
     if (!event || typeof event !== "object" || Array.isArray(event)) { state.bad ??= !state.initialized ? "ISOLATION" : "EVENT_INVALID"; return; }
+    // Every distinct session a run reports is reserved on the host before the run is classified.
+    if (SESSION.test(event.session_id ?? "") && !state.sessions.has(event.session_id)) {
+      if (state.sessions.size >= MAX_REPORTED_SESSIONS) state.bad ??= "SESSION_INVALID";
+      else state.sessions.add(event.session_id);
+    }
     const synthetic = event.message?.model === "<synthetic>";
     const model = event.message?.model ?? event.model;
     if (!synthetic && typeof model === "string" && model !== "<synthetic>"
@@ -335,6 +345,41 @@ export async function waitForProcessGroupGone(pgid, timeoutMs = 10_000) {
   }
 }
 
+// Whether a live worker holds the parent's lock (flock -n fails while it is held). Null when the lock is not the
+// private regular file lockWorkerDirectory creates, so the caller can't tell and must fail closed.
+async function workerLockHeld(parentDir) {
+  const lock = path.join(parentDir, "worker.lock");
+  let info;
+  try { info = await fs.lstat(lock); } catch (error) { if (error?.code === "ENOENT") return false; throw error; }
+  if (!info.isFile() || (info.mode & 0o777) !== 0o600 || (process.getuid && info.uid !== process.getuid())) return null;
+  return new Promise((resolve, reject) => {
+    const child = spawn("flock", ["-n", lock, "true"], { stdio: "ignore" });
+    child.once("error", reject);
+    child.once("close", (code) => resolve(code !== 0));
+  });
+}
+
+// Process groups of live processes whose working directory is the run directory or inside it. Claude always
+// runs with its run directory as cwd, so this finds an orphan even when its process record was never written.
+// Returns null if /proc can't be listed.
+export async function processGroupsWorkingIn(directory, procRoot = "/proc") {
+  let names;
+  try { names = await fs.readdir(procRoot); } catch { return null; }
+  const groups = new Set();
+  for (const name of names) {
+    if (!/^[0-9]+$/u.test(name)) continue;
+    let cwd, stat;
+    try {
+      cwd = await fs.readlink(path.join(procRoot, name, "cwd"));
+      stat = await fs.readFile(path.join(procRoot, name, "stat"), "utf8");
+    } catch { continue; }
+    if (cwd !== directory && !cwd.startsWith(directory + path.sep)) continue;
+    const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(/\s+/u);
+    if (!["Z", "X", "x"].includes(fields[0])) groups.add(Number(fields[2]));
+  }
+  return groups;
+}
+
 export async function sweepClaudeProcessGroups(workDir, home) {
   // Parents holding a run whose group could not be confirmed gone; callers must not delete them.
   const unresolved = new Set();
@@ -359,7 +404,23 @@ export async function sweepClaudeProcessGroups(workDir, home) {
           }
           return JSON.parse(await handle.readFile("utf8"));
         });
-      } catch (error) { if (error?.code === "ENOENT") continue; throw error; }
+      } catch (error) {
+        if (error?.code !== "ENOENT") throw error;
+        // No process record: the worker may have died between starting Claude and writing it. A live
+        // worker's run (lock held) is left alone. Otherwise kill any process still working in the run
+        // directory and confirm its group gone; if that can't be confirmed, keep the run and fail closed.
+        const held = await workerLockHeld(directory);
+        if (held === null) { unresolved.add(parent); continue; }
+        if (held) continue;
+        const groups = await processGroupsWorkingIn(await fs.realpath(runDir));
+        if (groups === null) { unresolved.add(parent); continue; }
+        let gone = true;
+        for (const group of groups) gone = (await waitForProcessGroupGone(group)) && gone;
+        if (!gone) { unresolved.add(parent); continue; }
+        await cleanClaudePersistence(home, runDir);
+        await fs.rm(runDir, { recursive: true, force: true });
+        continue;
+      }
       const owner = await linuxProcessIdentity(record.owner?.pid);
       if (owner?.start === record.owner?.start && owner.state !== "Z") continue;
       const child = await linuxProcessIdentity(record.child?.pid);
@@ -427,7 +488,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   process.on("SIGTERM", onTerm);
 
   async function host(command, values = []) {
-    const commandArgs = [options.remote ? "node" : process.execPath,
+    const commandArgs = [options.remote ? options.remoteNode : process.execPath,
       path.join(options.checkout, "src/cli/journal-work.mjs"), command, ...values];
     const executable = options.remote ? options.sshBin : commandArgs.shift();
     const args = options.remote
@@ -522,10 +583,14 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           catch { persisted = true; cleanupFailed = true; }
         }
       }
-      if (reader.state.reportedSession) {
-        const reused = seenSessions.has(reader.state.reportedSession);
-        seenSessions.add(reader.state.reportedSession);
-        if (reused) reader.state.bad ??= "SESSION_REUSED";
+      // Reserve every reported session on the host before classifying the run, so a session that may have seen
+      // the packet can't back a later item's answer after a restart, even when this run is rejected.
+      for (const session of reader.state.sessions) {
+        const reused = seenSessions.has(session);
+        seenSessions.add(session);
+        const reserved = (await host("session-reserve", ["--work-id", record.work_id,
+          "--session-context", `claude-session:${session}`]))[0];
+        if (reused || reserved?.reserved !== true) reader.state.bad ??= "SESSION_REUSED";
       }
       usage = reader.state.usage;
       if (result.code !== 0 && !reader.state.resultSeen) {
@@ -608,7 +673,12 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           await host("attempt-release", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim]); claimed = false;
           pendingReleases.delete(record.work_id);
         }
-        catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_release_failed" }); }
+        catch {
+          // Retry it from the main loop, as after a provider outage, rather than leave a fresh reservation
+          // that later workers would treat as a live sibling's.
+          pendingReleases.set(record.work_id, { claim, identity: record.attempt_identity });
+          await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_release_failed" });
+        }
       }
       if (runDir && !groupAlive) {
         if (!persistenceChecked) {
@@ -651,13 +721,15 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     await host("stage-sweep");
     const initial = options.once ? new Set((await host("dispatch", ["--json"])).map((record) => record.work_id)) : null;
     for (;;) {
-      if (stopping || completed >= options.maxItems) break;
+      if (stopping) break;
+      // Failed releases are retried first, including once more before the worker stops at its item limit.
       for (const [workId, { claim, identity }] of pendingReleases) {
         try {
           await host("attempt-release", ["--work-id", workId, "--attempt-identity", identity, "--claim", claim]);
           pendingReleases.delete(workId);
-        } catch { /* Keep the limited outcome and reservation; retry on the next loop. */ }
+        } catch { /* Keep the reservation; retry on the next loop. */ }
       }
+      if (stopping || completed >= options.maxItems) break;
       if (signInNeeded) break;
       if (Date.now() < limitedUntil) {
         if (options.once) break;
@@ -749,7 +821,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       }
       else if (outcome !== "stopped") {
         attempts.set(record.work_id, (attempts.get(record.work_id) ?? 0) + 1);
-        if ((await host("attempt-status", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity]))[0]?.attempted) {
+        // A reservation still waiting for its release is this worker's own, not a spent attempt.
+        if (!pendingReleases.has(record.work_id)
+          && (await host("attempt-status", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity]))[0]?.attempted) {
           attempts.set(record.work_id, 3); completed += 1;
         }
       }

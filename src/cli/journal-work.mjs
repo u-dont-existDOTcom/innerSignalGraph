@@ -86,6 +86,20 @@ async function sessionDirectory(root) {
   return directory;
 }
 
+// One Claude session may back at most one item, across worker processes and restarts. The reservation is
+// content-free (a hash of the session context) and idempotent for the same item; false means another item owns it.
+async function reserveClaudeSession(root, context, workId) {
+  const sessions = await sessionDirectory(root);
+  const marker = path.join(sessions, `${createHash("sha256").update(`inner-signal:claude-session:${context}`).digest("hex")}.json`);
+  try { await writeAttemptMarker(marker, { work_id: workId }, true); return true; }
+  catch (error) {
+    if (error?.code !== "EEXIST") throw error;
+    let owner = null;
+    try { owner = JSON.parse(await fs.readFile(marker, "utf8")).work_id; } catch { owner = null; }
+    return owner === workId;
+  }
+}
+
 export async function runJournalWork(argv, { environment = process.env, stdout = process.stdout } = {}) {
   const [command, ...options] = argv;
   const configuredRoot = environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT;
@@ -125,6 +139,16 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     const reason = !entry ? "missing" : entry.tier !== "hardest" ? "tier" : exchange.isExpired(entry) ? "expired"
       : packetLength > MAX_HARDEST_PACKET_CHARS ? "too_large" : null;
     stdout.write(`${JSON.stringify({ allowed: reason === null, packet_length: packetLength, reason })}\n`);
+    return;
+  }
+  if (command === "session-reserve") {
+    // The worker reserves every session a run reported before classifying it, so a session that may have seen
+    // a packet can't back a later item even when its own run was rejected.
+    const parsed = flags(options, ["--work-id", "--session-context"]);
+    const workId = assertJournalWorkId(parsed["--work-id"]);
+    if (!CONTEXT.test(parsed["--session-context"])) fail("JOURNAL_WORK_EXECUTION_INVALID");
+    const reserved = await reserveClaudeSession(root, parsed["--session-context"], workId);
+    stdout.write(`${JSON.stringify(reserved ? { reserved: true } : { reserved: false, session_reused: true })}\n`);
     return;
   }
   if (["attempt-status", "attempt-reserve", "attempt-mark", "attempt-refuse", "attempt-release", "attempt-clear"].includes(command)) {
@@ -244,19 +268,9 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
       return;
     }
     // One Claude session may back at most one promoted answer, across worker processes and restarts.
-    // The reservation is content-free (a hash of the session context) and idempotent for the same item.
-    const sessions = await sessionDirectory(root);
-    const sessionMarker = path.join(sessions,
-      `${createHash("sha256").update(`inner-signal:claude-session:${execution.request_context_id}`).digest("hex")}.json`);
-    try { await writeAttemptMarker(sessionMarker, { work_id: workId }, true); }
-    catch (error) {
-      if (error?.code !== "EEXIST") throw error;
-      let owner = null;
-      try { owner = JSON.parse(await fs.readFile(sessionMarker, "utf8")).work_id; } catch { owner = null; }
-      if (owner !== workId) {
-        stdout.write('{"answered":false,"already":false,"session_reused":true}\n');
-        return;
-      }
+    if (!(await reserveClaudeSession(root, execution.request_context_id, workId))) {
+      stdout.write('{"answered":false,"already":false,"session_reused":true}\n');
+      return;
     }
     const result = await exchange.promoteStaged({ stageDir, workId, execution, subject: parsed["--subject"] });
     stdout.write(`${JSON.stringify({ answered: !result.already, already: result.already })}\n`);
