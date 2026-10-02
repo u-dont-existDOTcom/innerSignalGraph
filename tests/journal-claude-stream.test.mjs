@@ -347,3 +347,20 @@ test("startup recovery fails closed on a markerless run whose worker lock is not
   assert.deepEqual([...unresolved], ["inner-signal-claude-BADLCK"]);
   await fs.access(runDir);
 });
+
+test("every reported session is recorded, and more than eight refuses the run", () => {
+  const record = { model: "claude-opus-5-5", work_id: "job:synthetic" };
+  const reader = claudeResultReader(record);
+  reader.accept(JSON.stringify({ type: "system", subtype: "init", mcp_servers: [{ name: "journal", status: "connected" }],
+    tools: ["mcp__journal__get_journal_work_packet", "mcp__journal__submit_journal_work_result"], skills: [], slash_commands: [],
+    session_id: "session-00" }));
+  for (let index = 1; index <= 7; index += 1) {
+    reader.accept(JSON.stringify({ type: "system", subtype: "status", session_id: `session-0${index}` }));
+  }
+  assert.equal(reader.state.sessions.size, 8);
+  assert.equal(reader.state.sessionOverflow, false);
+  reader.accept(JSON.stringify({ type: "system", subtype: "status", session_id: "session-08" }));
+  assert.deepEqual([...reader.state.sessions].at(-1), "session-08", "the session past the cap is recorded too");
+  assert.equal(reader.state.sessionOverflow, true);
+  assert.equal(reader.state.bad, "SESSION_INVALID");
+});

@@ -141,3 +141,22 @@ test("dispatch rejects missing and unsafe roots with only a content-free error c
     return true;
   });
 });
+
+test("session-reserve records every session context and reports one owned by another item", async (t) => {
+  const { root } = await setup(t);
+  const run = (args) => execFileAsync(process.execPath, [cli, "session-reserve", ...args], {
+    cwd: repositoryRoot, env: { ...process.env, INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: root } });
+  const reserve = async (workId, ...sessions) => JSON.parse((await run(["--work-id", workId,
+    ...sessions.flatMap((session) => ["--session-context", `claude-session:${session}`])])).stdout);
+  assert.deepEqual(await reserve("job:synthetic-first", "aaaaaaaa"), { reserved: true });
+  assert.deepEqual(await reserve("job:synthetic-first", "aaaaaaaa"), { reserved: true }, "idempotent for the same item");
+  assert.deepEqual(await reserve("job:synthetic-second", "aaaaaaaa", "bbbbbbbb"), { reserved: false, session_reused: true });
+  // The context not owned elsewhere was still reserved for the second item.
+  assert.deepEqual(await reserve("job:synthetic-third", "bbbbbbbb"), { reserved: false, session_reused: true });
+  assert.deepEqual(await reserve("job:synthetic-second", "bbbbbbbb"), { reserved: true });
+  assert.equal((await fs.readdir(path.join(root, "claude-sessions"))).length, 2);
+  for (const bad of [[], ["--work-id", "job:synthetic-first"], ["--work-id", "job:synthetic-first", "--session-context", "not-a-context"],
+    ["--work-id", "job:synthetic-first", "--work-id", "job:synthetic-other", "--session-context", "claude-session:cccccccc"]]) {
+    await assert.rejects(run(bad), (error) => error.stderr.trim() === "JOURNAL_WORK_COMMAND_INVALID");
+  }
+});
