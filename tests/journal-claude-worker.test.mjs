@@ -10,7 +10,7 @@ import { createJournalWorkExchange } from "../src/journal-import/work-exchange.m
 import { createExchangeJournalInferencePort, journalExchangeAttemptIdentity } from "../src/journal-import/exchange-port.mjs";
 import { claudeMcpConfiguration, claudePrintArgs, claudeResultReader, parseJournalClaudeWorkerArgs,
   runJournalClaudeWorker, assertClaudeRunPath, claudeRunSlug, cleanClaudePersistence,
-  sweepClaudePersistence, CLAUDE_PROVIDER_BACKOFF_MS, CLAUDE_PAUSED_EXIT_CODE } from "../src/journal-import/claude-worker.mjs";
+  sweepClaudePersistence, CLAUDE_PROVIDER_BACKOFF_MS, CLAUDE_PAUSED_EXIT_CODE, CLAUDE_SETUP_REFUSED_EXIT_CODE } from "../src/journal-import/claude-worker.mjs";
 import { journalAttemptIdentity, journalAttemptMarkerKey, runJournalWork, releaseAttemptMarker, writeAttemptMarker } from "../src/cli/journal-work.mjs";
 import { runJournalWorkMcp } from "../src/cli/journal-work-mcp.mjs";
 import { createJournalWorkTools, JOURNAL_WORK_TOOL_DEFINITIONS, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../src/server/journal-work-tools.mjs";
@@ -372,9 +372,12 @@ test("packet-free and failed Claude admissions never promote staged answers", as
       const f = await fixture(child, scenario);
       const operationKey = `job:synthetic-${scenario}`;
       await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
-      await runJournalClaudeWorker(f.args, { environment: f.environment });
+      const exitCode = await runJournalClaudeWorker(f.args, { environment: f.environment });
+      // A run refused at init before the model keeps the item open behind a clearable hold and stops the worker.
+      const beforeModel = expected === "isolation_refused";
       assert.equal((await f.port.getCompletion(operationKey)).status,
-        ["timeout", "init_missing"].includes(scenario) ? "unknown" : "exhausted");
+        ["timeout", "init_missing"].includes(scenario) || beforeModel ? "unknown" : "exhausted");
+      if (beforeModel) assert.equal(exitCode, CLAUDE_SETUP_REFUSED_EXIT_CODE);
       const log = await fs.readFile(f.log, "utf8");
       assert.equal(JSON.parse(log.trim().split("\n").at(-1)).outcome, expected);
       assert.ok(!log.includes(SENTINEL) && !log.includes(f.secret));
@@ -384,7 +387,7 @@ test("packet-free and failed Claude admissions never promote staged answers", as
       if (expected === "isolation_refused") {
         assert.equal(JSON.parse(log.trim().split("\n").at(-1)).model_reached, false);
         const before = await fs.readFile(f.trace, "utf8");
-        await runJournalClaudeWorker(f.args, { environment: f.environment });
+        assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
         assert.equal(await fs.readFile(f.trace, "utf8"), before);
       }
     });
@@ -629,6 +632,18 @@ test("provider status comes only from status fields and connection codes", () =>
   const structured = claudeResultReader(record);
   structured.accept(JSON.stringify({ type: "result", is_error: true, error: { status: 503 } }));
   assert.equal(structured.state.providerStatus, 503);
+  // Claude Code 2.1.287 reports a refused connection only as a synthetic assistant error label.
+  for (const [label, connection, status] of [["server_error", true, null], ["unknown", true, null], ["authentication_failed", false, 401]]) {
+    const synthetic = claudeResultReader(record);
+    synthetic.accept(JSON.stringify({ type: "assistant", error: label, message: { model: "<synthetic>", content: [] } }));
+    assert.equal(synthetic.state.providerConnectionFailed, connection, label);
+    assert.equal(synthetic.state.providerStatus, status, label);
+    assert.equal(synthetic.state.reachedModel, false, label);
+  }
+  // The same label on a real (non-synthetic) model event is not a provider outage.
+  const real = claudeResultReader(record);
+  real.accept(JSON.stringify({ type: "assistant", error: "server_error", message: { model: record.model, content: [] } }));
+  assert.equal(real.state.providerConnectionFailed, false);
 });
 
 test("a crash after hardest packet fetch leaves a reservation that cannot be cleared", async t => {
@@ -794,15 +809,24 @@ test("already attempted, corrupt and isolation-refused items do not consume max-
   assert.equal(logs.at(-1).work_id, records[3].work_id);
 });
 
-test("a fresh isolation refusal does not consume max-items before the next item", async (t) => {
+test("a fresh isolation refusal before the model stops the worker and leaves the item open", async (t) => {
   const f = await fixture(t, "isolation_then_success");
   for (const operationKey of ["job:synthetic-isolation-first", "job:synthetic-isolation-second"]) {
     await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
   }
-  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
   const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
-  assert.deepEqual(logs.map(item => item.outcome), ["isolation_refused", "answered"]);
+  assert.deepEqual(logs.map(item => item.outcome), ["isolation_refused"]);
   assert.equal(logs[0].model_reached, false);
+  // Neither item is closed: the refused one waits behind a clearable hold, the other was never started.
+  for (const operationKey of ["job:synthetic-isolation-first", "job:synthetic-isolation-second"]) {
+    assert.equal((await f.port.getCompletion(operationKey)).status, "unknown");
+  }
+  const [refused] = (await f.exchange.listDispatch()).filter(record => record.work_id === logs[0].work_id);
+  let cleared = "";
+  await runJournalWork(["attempt-clear", "--work-id", refused.work_id], { environment: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root },
+    stdout: { write: value => { cleared += value; } } });
+  assert.equal(JSON.parse(cleared).cleared, true);
 });
 
 test("leftover project and fallback cache files for this worker prefix are swept", async (t) => {
@@ -913,13 +937,17 @@ for (const scenario of ["nothing_staged", "tools_extra"]) {
     await assert.rejects(f.port.invoke({ ...call(baseKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
     await runJournalClaudeWorker(f.args, { environment: f.environment });
     const before = await fs.readFile(f.trace, "utf8");
+    const baseWorkId = JSON.parse((await fs.readFile(f.log, "utf8")).trim().split("\n")[0]).work_id;
     for (const resend of [1, 2]) {
       await assert.rejects(f.port.invoke({ ...call(`${baseKey}:resend:${resend}`), tier: "hardest" }),
         { code: "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED", submissionStatus: "exhausted" });
       assert.deepEqual(await f.port.getCompletion(`${baseKey}:resend:${resend}`, { tier: "hardest" }),
         { status: "exhausted", code: "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED" });
     }
-    assert.deepEqual(await f.exchange.listDispatch(), [], "consumed identities never publish a resend");
+    // Resends of a held identity are never published. An isolation refusal before the model keeps the
+    // base item open behind its clearable hold; an attempted item was closed.
+    assert.deepEqual((await f.exchange.listDispatch()).map(record => record.work_id),
+      scenario === "tools_extra" ? [baseWorkId] : [], "consumed identities never publish a resend");
     await runJournalClaudeWorker(f.args, { environment: f.environment });
     assert.equal(await fs.readFile(f.trace, "utf8"), before);
     const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);

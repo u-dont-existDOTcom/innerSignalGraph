@@ -18,6 +18,9 @@ const MAX_LIMIT_RETRIES = 12;
 export const MAX_CLAUDE_LINE_BYTES = 3 * 4 * MAX_HARDEST_PACKET_CHARS + 1024 * 1024;
 export const CLAUDE_PROVIDER_BACKOFF_MS = 5 * 60_000;
 export const CLAUDE_PAUSED_EXIT_CODE = 75;
+// The run was refused at init (isolation) before reaching the model: the local Claude Code setup changed.
+// The item keeps a clearable hold and stays open; an operator fixes the setup and runs attempt-clear.
+export const CLAUDE_SETUP_REFUSED_EXIT_CODE = 78;
 const fail = (code) => { throw Object.assign(new Error(code), { code }); };
 
 function providerFailure(event) {
@@ -125,6 +128,11 @@ export function claudeResultReader(record, expectedPacketLength = null) {
       if ([401, 403].includes(status) || (status >= 500 && status <= 599)) state.providerStatus = status;
       if (status === 429) state.limitSeen = true;
       state.providerConnectionFailed ||= connectionFailed;
+      // Claude Code reports some failures only through a synthetic assistant event's error label.
+      if (synthetic && typeof event.error === "string") {
+        if (event.error === "authentication_failed") state.providerStatus ??= 401;
+        else if (["server_error", "unknown"].includes(event.error)) state.providerConnectionFailed = true;
+      }
     }
     if ((typeof event.type === "string" && event.type.startsWith("hook"))
       || (typeof event.subtype === "string" && event.subtype.startsWith("hook"))) {
@@ -363,7 +371,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   };
   const processEnv = { PATH: environment.PATH ?? "", HOME: environment.HOME ?? "", LANG: environment.LANG ?? "C" };
   const activeGroups = new Set();
-  let stopping = false, stopSignal = null, wake = null, limitedUntil = 0, completed = 0, signInNeeded = false;
+  let stopping = false, stopSignal = null, wake = null, limitedUntil = 0, completed = 0, signInNeeded = false, setupRefused = false, heldOpen = false;
   const attempts = new Map(), limits = new Map(), seenSessions = new Set(), pendingReleases = new Map();
   const stop = (signal) => { stopping = true; stopSignal ??= signal;
     if (wake) { const resume = wake; wake = null; resume(); }
@@ -553,7 +561,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         try { await host("stage-remove", ["--stage-dir", stageDir]); }
         catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "stage_remove_failed" }); }
       }
-      if (["already_attempted", "isolation_refused", "rejected:PACKET_TOO_LARGE"].includes(outcome)
+      const unreachedIsolation = outcome === "isolation_refused" && !reachedModel;
+      if (unreachedIsolation) setupRefused = true;
+      else if (["already_attempted", "isolation_refused", "rejected:PACKET_TOO_LARGE"].includes(outcome)
         || (reachedModel && !["answered", "already_answered"].includes(outcome))) {
         try { await host("close-unanswered", ["--work-id", record.work_id]); }
         catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "item_close_failed" }); }
@@ -602,11 +612,26 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       const marker = record ? (await host("attempt-status", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity]))[0] : null;
       if (record && marker?.attempted) {
         attempts.set(record.work_id, 3);
-        // A live sibling may own a reservation. Only terminal holds close here.
-        if (marker.status !== "reserved") await host("close-unanswered", ["--work-id", record.work_id]);
+        const spent = marker.packet_fetched === true || marker.model_reached === true;
+        // A hold left by a run refused at init, before the model, stays open for an operator to clear;
+        // skip it without closing, and report the setup problem in the exit status.
+        if (marker.status === "isolation_refused" && !spent) {
+          heldOpen = true;
+          await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
+            model: record.model, effort: record.effort, outcome: "isolation_refused", duration_ms: 0 });
+          continue;
+        }
+        // A live sibling may own a reservation; a reservation whose packet was served and whose run is long
+        // past its timeout belongs to a dead worker and has spent the attempt.
+        const staleSpent = marker.status === "reserved" && marker.packet_fetched === true
+          && (marker.age_seconds ?? 0) * 1000 >= (marker.timeout_ms ?? 1_800_000) + 600_000;
+        if (marker.status !== "reserved" || staleSpent) {
+          try { await host("close-unanswered", ["--work-id", record.work_id]); }
+          catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "item_close_failed" }); }
+        }
         await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
           model: record.model, effort: record.effort,
-          outcome: marker.status === "reserved" ? "reserved"
+          outcome: marker.status === "reserved" ? (staleSpent ? "stale_reservation_closed" : "reserved")
             : marker.status === "isolation_refused" ? "isolation_refused" : "already_attempted", duration_ms: 0 });
         continue;
       }
@@ -616,6 +641,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         continue;
       }
       const outcome = await one(record);
+      if (setupRefused) break;
       if (["limited", "provider_unavailable", "sign_in_needed"].includes(outcome)) limits.set(record.work_id, (limits.get(record.work_id) ?? 0) + 1);
       else if (["reserved", "already_attempted", "isolation_refused", "rejected:PACKET_TOO_LARGE"].includes(outcome)) attempts.set(record.work_id, 3);
       else if (outcome !== "stopped") {
@@ -627,6 +653,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     }
     // 77 is the content-free sign-in-required exit status for the operator.
     return stopSignal === "SIGINT" ? 130 : stopSignal === "SIGTERM" ? 143 : signInNeeded ? 77
+      : setupRefused || heldOpen ? CLAUDE_SETUP_REFUSED_EXIT_CODE
       : options.once && Date.now() < limitedUntil ? CLAUDE_PAUSED_EXIT_CODE : 0;
   } catch (error) {
     if (error?.code !== "JOURNAL_CLAUDE_STOPPED") throw error;

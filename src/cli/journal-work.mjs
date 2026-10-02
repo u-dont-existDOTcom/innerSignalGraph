@@ -184,7 +184,9 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
         await releaseAttemptMarker(marker, parsed["--claim"]);
         status = null; ageSeconds = null;
       }
-      stdout.write(`${JSON.stringify({ attempted: status !== null, status: status?.status ?? "none", age_seconds: ageSeconds })}\n`);
+      stdout.write(`${JSON.stringify({ attempted: status !== null, status: status?.status ?? "none", age_seconds: ageSeconds,
+        packet_fetched: status?.packet_fetched === true, model_reached: status?.model_reached === true,
+        timeout_ms: status?.timeout_ms ?? null })}\n`);
     });
   }
   if (command === "close-unanswered") {

@@ -847,3 +847,9 @@ This is import/runtime infrastructure only. It changes no therapy, graph, produc
   - **Packet without an identity:** The stdio work server refuses a hardest packet without a valid dispatch `attempt_identity`, using a content-free tool error, before it touches any marker.
   - **Test fixes:** The MCP and invalid-dispatch tests were corrected for the identity requirement and the per-reader skip counter.
   - **Results:** With a normally owned temporary root, `npm run journal:test` passes 483/483 (including every Claude worker, exchange, recalibrate and pattern-stage case the drafting sandbox couldn't run), and `audit:repository` and `audit:publication` pass.
+- **Supervisor follow-up on 81ace27 (2026-10-02):** The fifth independent review re-ran the real Claude Code 2.1.287 CLI against a fake API and a full calibration on the Codex route. It found that an isolation refusal at init, before any model reach, closed the item as exhausted and moved on, so a Claude Code update that changed init would have permanently failed every hardest item.
+  - **Refusal before model reach:** the item now stays open behind a clearable hold, and the worker exits **78** (setup refused). Later workers skip the hold and also exit 78. The operator fixes the setup and runs `attempt-clear` within the item's TTL. A refusal after model reach still closes the item as spent.
+  - **Synthetic error labels:** `server_error` and `unknown` pause like an outage, and `authentication_failed` stops for sign-in.
+  - **Dead workers:** a reservation whose packet was served and that is older than its timeout plus ten minutes is closed as spent.
+  - **Status and closing:** `attempt-status` reports `packet_fetched`, `model_reached` and `timeout_ms`, and main-loop close failures are logged instead of ending the worker.
+  - **Results:** `npm run journal:test` passes on Node 24.18.0.
