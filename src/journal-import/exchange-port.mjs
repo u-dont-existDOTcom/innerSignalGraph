@@ -31,6 +31,7 @@ const UNSUPPORTED_ROLES = new Set(["visual_reader"]);
 const CASE_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,79}$/u;
 const REQUEST_CONTEXT_ID_PATTERN = /^[\x21-\x7e]{1,256}$/u;
 const CODEX_CONTEXT_ID_PATTERN = /^codex-thread:[0-9A-Za-z-]{8,64}$/u;
+const CLAUDE_CONTEXT_ID_PATTERN = /^claude-session:[0-9A-Za-z-]{8,64}$/u;
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -95,12 +96,18 @@ export function createExchangeJournalInferencePort({
     transport: executionAttestation === "codex_exec" ? JOURNAL_CODEX_EXCHANGE_PROVIDER : JOURNAL_WORK_TRANSPORT,
     packet_only: true,
     // The connector receipt does not attest that the dispatcher opened a fresh chat. The Codex
-    // worker supplies request-pinned evidence and a new ephemeral thread under its own route.
+    // route uses an ephemeral Codex thread for standard work and a new Claude session for hardest work.
     fresh_context_per_generate: executionAttestation === "codex_exec",
     // Desired dispatch labels alone are not execution evidence. The connector remains blocked;
-    // the Codex route admits only its worker-authenticated request-pinned receipt.
+    // the Codex route admits the worker's tier-specific receipt only after profile checks.
     authenticated_execution_profile_per_generate: executionAttestation === "codex_exec",
     ...(executionAttestation === "codex_exec" ? { execution_profile_evidence: "codex_exec_request_pinned" } : {}),
+    hardest_roles: Object.fromEntries(Object.entries(JOURNAL_ROLE_DEFINITIONS).map(([role, definition]) => [role, {
+      output_schema_id: definition.outputSchema, instruction_installed: true, available: !UNSUPPORTED_ROLES.has(role)
+    }])),
+    hardest_fresh_context_per_generate: executionAttestation === "codex_exec",
+    hardest_authenticated_execution_profile_per_generate: executionAttestation === "codex_exec",
+    ...(executionAttestation === "codex_exec" ? { hardest_execution_profile_evidence: "claude_code_model_usage_reported" } : {}),
     // The exchange knows whether an item was answered, is still open, or was closed unanswered.
     authoritative_completion: true,
     external_spend_authorized_usd: 0,
@@ -149,14 +156,22 @@ export function createExchangeJournalInferencePort({
     // are not evidence of the profile that actually ran, so an answer is inadmissible until a
     // dispatcher/provider receipt carries the effective model and effort and they match the route.
     invariant((dispatch.tier ?? "standard") === (entry.tier ?? "standard")
-      && (executionAttestation !== "codex_exec" || (dispatch.model === model
-        && dispatch.effort === (roleEffort[entry.role] ?? effort)))
+      && (executionAttestation !== "codex_exec" || (dispatch.tier === "hardest"
+        ? dispatch.model === hardestModel && dispatch.effort === hardestEffort
+        : dispatch.model === model && dispatch.effort === (roleEffort[entry.role] ?? effort)))
       && stored.receipt.effective_model_profile === dispatch.model
       && stored.receipt.effective_effort === dispatch.effort, "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+    if (stored.receipt.profile_evidence === "claude_code_model_usage_reported") {
+      invariant(executionAttestation === "codex_exec" && dispatch.tier === "hardest",
+        "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+    }
     if (executionAttestation === "codex_exec") {
-      invariant(stored.receipt.profile_evidence === "codex_exec_request_pinned"
-        && typeof stored.receipt.request_context_id === "string"
-        && CODEX_CONTEXT_ID_PATTERN.test(stored.receipt.request_context_id), "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+      const valid = dispatch.tier === "hardest"
+        ? stored.receipt.profile_evidence === "claude_code_model_usage_reported"
+          && CLAUDE_CONTEXT_ID_PATTERN.test(stored.receipt.request_context_id ?? "")
+        : stored.receipt.profile_evidence === "codex_exec_request_pinned"
+          && CODEX_CONTEXT_ID_PATTERN.test(stored.receipt.request_context_id ?? "");
+      invariant(valid, "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
     }
     const receiptBody = {
       receipt_id: `receipt:${createHmac("sha256", key).update(`${operationKey}\0${entry.input_sha256}`).digest("hex").slice(0, 40)}`,

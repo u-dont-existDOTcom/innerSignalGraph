@@ -40,6 +40,7 @@ The transition report names the fully gated private candidate, the public visibi
 
 - `superpowers/plans/`: implementation plans
 - `superpowers/plans/2026-10-01-journal-codex-lane.md`: request-pinned Codex exec exchange, staged-answer admission, and synthetic worker regressions
+- `superpowers/plans/2026-10-01-journal-claude-lane-and-supervision.md`: implemented Claude hardest lane on the Codex exchange; supervisor tier and command remain deferred
 - `superpowers/plans/2026-10-01-journal-recalibrate.md`: explicit calibration retry with epoch-scoped identities and append-only unit records
 - `superpowers/specs/`: accepted design specifications
 

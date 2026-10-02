@@ -202,7 +202,7 @@ async function checkCodexHome(home) {
   });
 }
 
-function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups }) {
+export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups }) {
   return new Promise((resolve) => {
     const started = Date.now();
     let child;
@@ -239,7 +239,7 @@ function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups }
   });
 }
 
-async function privateDirectory(directory, code) {
+export async function privateDirectory(directory, code) {
   const info = await fs.lstat(directory);
   if (!info.isDirectory() || (info.mode & 0o777) !== 0o700
     || (process.getuid && info.uid !== process.getuid())) throw failure(code);
@@ -298,6 +298,15 @@ async function lockWorkerDirectory(directory) {
 
 export async function runJournalCodexWorker(argv, { environment = process.env, stderr = process.stderr,
 } = {}) {
+  if (argv.includes("--agent")) {
+    const index = argv.indexOf("--agent");
+    if (argv[index + 1] === "claude") {
+      const { runJournalClaudeWorker } = await import("./claude-worker.mjs");
+      return runJournalClaudeWorker(argv, { environment, stderr });
+    }
+    if (argv[index + 1] !== "codex") throw failure("JOURNAL_WORK_AGENT_INVALID");
+    argv = [...argv.slice(0, index), ...argv.slice(index + 2)];
+  }
   const options = parseJournalCodexWorkerArgs(argv);
   await checkCodexHome(options.codexHome);
   const workDir = await privateDirectory(options.workDir, "JOURNAL_CODEX_WORK_DIR_INSECURE");

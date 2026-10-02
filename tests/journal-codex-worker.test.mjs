@@ -188,11 +188,29 @@ test("Codex route validates model and role effort, while ChatGPT connector admis
     { code: "JOURNAL_CODEX_MODEL_INVALID" });
   assert.throws(() => loadJournalInferencePortFromEnvironment(env({ ...route, role_effort: { unknown_role: "high" } }), { caseId: "synthetic-case" }),
     { code: "JOURNAL_CODEX_ROLE_EFFORT_INVALID" });
-  assert.throws(() => loadJournalInferencePortFromEnvironment(env(route), { caseId: "synthetic-case", hardestLane: { enabled: true } }),
-    { code: "HARDEST_LANE_ROUTE_UNAVAILABLE" });
+  const hardest = loadJournalInferencePortFromEnvironment(env(route), { caseId: "synthetic-case", hardestLane: { enabled: true } });
+  assert.equal(hardest.capabilities().hardest_fresh_context_per_generate, true);
+  assert.equal(hardest.capabilities().hardest_authenticated_execution_profile_per_generate, true);
+  assert.equal(hardest.capabilities().hardest_execution_profile_evidence, "claude_code_model_usage_reported");
+  assert.throws(() => loadJournalInferencePortFromEnvironment(env(route), { caseId: "synthetic-case",
+    hardestLane: { enabled: true, model: "claude-other", effort: "max" } }), { code: "HARDEST_LANE_CONFIG_INVALID" });
   const chat = loadJournalInferencePortFromEnvironment(env({ ...route, provider: "chatgpt_connector_exchange", model: "GPT-5.6 Sol", effort: "Pro" }), { caseId: "synthetic-case" });
   assert.equal(chat.capabilities().fresh_context_per_generate, false);
   assert.equal(chat.capabilities().authenticated_execution_profile_per_generate, false);
+});
+
+test("Codex worker leaves a hardest dispatch for the Claude worker", async (t) => {
+  const f = await setup(t);
+  const workId = "job:synthetic-hardest-only";
+  const entry = { ...manualWork(workId), tier: "hardest" };
+  await f.exchange.publishWork(entry);
+  await f.exchange.publishDispatch({ schema_version: 1, work_id: workId, role: entry.role, tier: "hardest",
+    output_schema_name: entry.output_schema_name, model: "claude-opus-5-5", effort: "max", route_ref: "route:codex",
+    issued_at: entry.issued_at, expires_at: entry.expires_at });
+  const fake = await f.fake();
+  await runJournalCodexWorker(f.args(fake, ["--once"]), { environment: f.environment });
+  assert.equal(await f.exchange.readResult(workId), null);
+  assert.equal(await fs.readFile(f.trace, "utf8").catch(() => ""), "");
 });
 
 test("doctor authorizes Codex execution evidence without relaxing ChatGPT blockers", async (t) => {
@@ -349,7 +367,7 @@ test("staging is sealed, first-write-wins, and rejects unsafe directories; execu
   const link = path.join(f.base, "link"); await fs.symlink(stage, link);
   await assert.rejects(f.exchange.stageResult({ stageDir: link, workId: "job:synthetic-other", output: {} }),
     { code: "JOURNAL_WORK_STAGE_DIR_INSECURE" });
-  assert.throws(() => parseJournalWorkMcpArgs(["--config", f.configPath, "--principal", "codex-standard", "--tier", "hardest", "--stage-dir", stage]));
+  assert.equal(parseJournalWorkMcpArgs(["--config", f.configPath, "--principal", "claude-hardest", "--tier", "hardest", "--stage-dir", stage]).stageDir, stage);
 });
 
 test("secret file refuses links, loose modes, and competing inline settings", async (t) => {

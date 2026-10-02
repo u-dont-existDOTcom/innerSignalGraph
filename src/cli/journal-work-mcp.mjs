@@ -23,7 +23,7 @@ export function parseJournalWorkMcpArgs(argv) {
   const stageDir = option(argv, "--stage-dir");
   if (!configPath || !path.isAbsolute(configPath) || !PRINCIPAL.test(principal ?? "")
     || (tier !== null && !["standard", "hardest"].includes(tier))
-    || (argv.includes("--stage-dir") && (stageDir === null || !path.isAbsolute(stageDir) || tier === "hardest"
+    || (argv.includes("--stage-dir") && (stageDir === null || !path.isAbsolute(stageDir)
       || argv.filter((value) => value === "--stage-dir").length !== 1))) {
     throw new Error("Usage: journal:work:mcp -- --config <absolute private run config> --principal <name> [--tier hardest]");
   }

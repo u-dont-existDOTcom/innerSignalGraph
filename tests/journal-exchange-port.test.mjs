@@ -304,6 +304,35 @@ test("Codex receipt refuses a dispatch profile that differs from the configured 
     { code: "INVALID_STRUCTURED_OUTPUT" });
 });
 
+test("Codex exchange admits reported Claude evidence only for hardest work", async () => {
+  let entry = null, dispatch = null, answer = null;
+  const exchange = {
+    async readWork() { return entry; }, async readResult() { return answer; },
+    async publishWork(value) { entry = structuredClone(value); return { created: true }; },
+    async publishDispatch(value) { dispatch = structuredClone(value); },
+    async listDispatch() { return dispatch ? [{ ...dispatch, answered: answer !== null }] : []; }
+  };
+  const options = { exchange, caseId: CASE_ID, receiptKey: randomBytes(32), routeRef: "route:synthetic-codex",
+    allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    model: "gpt-6-sol", effort: "medium", executionAttestation: "codex_exec", waitMs: 0,
+    hardestLane: { model: "claude-opus-5-5", effort: "max" } };
+  const port = createExchangeJournalInferencePort(options);
+  const operationKey = `${KEY}:claude-hardest`;
+  await assert.rejects(port.invoke({ ...referenceCall({ operationKey }), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  assert.deepEqual([dispatch.tier, dispatch.model, dispatch.effort], ["hardest", "claude-opus-5-5", "max"]);
+  answer = { output: structuredClone(referenceAnswer), receipt: {
+    receipt_id: "synthetic-receipt", work_file_key: "synthetic-work-file", received_at: "2026-10-02T00:00:00.000Z",
+    output_sha256: "synthetic-output-digest", subject_sha256: "synthetic-principal-digest",
+    request_context_id: "claude-session:12345678", profile_evidence: "claude_code_model_usage_reported",
+    effective_model_profile: dispatch.model, effective_effort: dispatch.effort
+  } };
+  assert.equal((await port.getCompletion(operationKey)).status, "completed");
+  const connector = createExchangeJournalInferencePort({ ...options, executionAttestation: null });
+  assert.equal((await connector.getCompletion(operationKey)).status, "invalid_output");
+  dispatch.tier = "standard";
+  assert.equal((await port.getCompletion(operationKey)).status, "invalid_output");
+});
+
 test("an invalid dispatcher context identifier is not promoted into an authenticated receipt", async (t) => {
   const environment = await setup(t);
   const port = environment.makePort({

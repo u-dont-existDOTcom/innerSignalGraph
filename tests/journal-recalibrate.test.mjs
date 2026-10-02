@@ -139,6 +139,39 @@ test("failed calibration retries with fresh answers and continues without reread
   } finally { await runtime.close(); }
 });
 
+for (const resolves of [true, false]) {
+  test(`synthetic Codex route gives failed standard extraction one Claude hardest attempt (${resolves ? "resolves" : "fails"})`, async (t) => {
+    const f = await fixture(t);
+    f.config.hardest_lane = { enabled: true, daily_limit: 20 };
+    f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+    const standardCalls = [], claudeCalls = [], seen = [], selected = new Map();
+    const standard = mockPort({ fail: true, calls: standardCalls });
+    const claude = mockPort({ fail: !resolves, calls: claudeCalls });
+    const port = {
+      capabilities: () => ({ ...standard.capabilities(), transport: "codex_exec_exchange",
+        hardest_fresh_context_per_generate: true, hardest_authenticated_execution_profile_per_generate: true }),
+      async invoke(input) {
+        seen.push({ role: input.role, tier: input.tier ?? "standard" });
+        const target = input.tier === "hardest" ? claude : standard;
+        selected.set(input.operationKey, target);
+        return target.invoke(input);
+      },
+      getCompletion(operationKey) { return (selected.get(operationKey) ?? standard).getCompletion(operationKey); },
+      isAuthoritativeCompletion: () => false,
+      close() { standard.close(); claude.close(); }
+    };
+    const runtime = await f.open(port);
+    try {
+      const summary = await runtime.execute("run");
+      assert.equal(seen.filter(({ role, tier }) => role === "extractor" && tier === "standard").length, 3);
+      assert.equal(seen.filter(({ role, tier }) => role === "extractor" && tier === "hardest").length, 1);
+      assert.equal(summary.calibration, resolves ? "pass" : "failed");
+      assert.equal(summary.calibration_failure?.reason, resolves ? undefined : "CALIBRATION_EXTRACTION_UNRESOLVED");
+      assert.equal(summary.hardest_lane.sent >= 1, true);
+    } finally { await runtime.close(); }
+  });
+}
+
 test("a second failed calibration can advance to epoch two, and readers use current calibration records", async (t) => {
   const f = await fixture(t, { pages: 16 });
   const attempts = [];

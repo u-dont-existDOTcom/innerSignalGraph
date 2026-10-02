@@ -1,6 +1,6 @@
 # Journal import: the Claude lane, supervisor review, and retiring routine review
 
-Date: 2026-10-01. Author: Claude (Opus), for implementation by Codex. Status: task, built on the Codex exec lane (`2026-10-01-journal-codex-lane.md`). Classification: public design; no private data.
+Date: 2026-10-01. Author: Claude (Opus), for implementation by Codex. Status: sections 1 and 2 implemented for the hardest tier on 2026-10-02; supervisor tier, section 3, and section 4 deferred by the owner. Built on the Codex exec lane (`2026-10-01-journal-codex-lane.md`). Classification: public design; no private data.
 
 ## Owner decisions
 
@@ -17,7 +17,7 @@ Date: 2026-10-01. Author: Claude (Opus), for implementation by Codex. Status: ta
 
 As in the Codex lane plan: no journal text, packets or answers in Git, logs or PR text; synthetic tests with sentinels; unchanged job IDs and operation keys for existing work; the listed gates pass; a state entry and a `docs/INDEX.md` line with its SHA-256 binding.
 
-## 1. The Claude lane
+## 1. The Claude lane — implemented for hardest work
 
 Generalize the worker to `--agent codex|claude` (keep `journal:work:codex` as the Codex default).
 
@@ -37,12 +37,14 @@ Generalize the worker to `--agent codex|claude` (keep `journal:work:codex` as th
 
   Dispatch labels for this lane: model `claude-opus-5-5`, effort `max`. The Claude Code model argument is `opus`; map the label explicitly and refuse any other.
 - **Admission.** Exit 0; `is_error` false and `subtype` `success`; a `session_id`; `modelUsage` contains the record's model and no other model with output tokens; a staged answer exists. Keep only those fields and the token counts; never keep `result`.
-- **Evidence.** `execution: { profile_evidence: "claude_code_model_usage_reported", effective_model_profile: <the model key from modelUsage>, effective_effort: record.effort, request_context_id: "claude-session:" + session_id }`, subject `local:claude-<tier>`. The exchange port accepts this evidence kind for the `hardest` and `supervisor` tiers only.
+- **Evidence.** `execution: { profile_evidence: "claude_code_model_usage_reported", effective_model_profile: <the model key from modelUsage>, effective_effort: record.effort, request_context_id: "claude-session:" + session_id }`, subject `local:claude-hardest`. The exchange port accepts this evidence kind for the `hardest` tier on the Codex route. Supervisor admission is deferred.
 - **Usage limits.** As the Codex lane, parsing only a reset time. The usage log adds `total_cost_usd`, labelled everywhere as a cost equivalent that a subscription doesn't charge.
 
-## 2. Tiers
+The implemented worker is `npm run journal:work:claude -- --remote <ssh host> --remote-checkout <host checkout> --remote-config <host private config> --work-dir <laptop private work dir>`. The host must provide the exchange-root and secret-file environment variables to its noninteractive SSH command. The remote worker passes no exchange secret or secret-file path in its command arguments or laptop MCP configuration. The content-free host commands are `journal:work -- dispatch --json`, `stage-create`, `stage-check`, `promote`, and `stage-remove`. `total_cost_usd` is recorded with `cost_kind: subscription_cost_equivalent_not_charged`.
 
-- The exchange, dispatch records and work server accept a third tier, `supervisor`. `--tier supervisor` on the work server serves only supervisor items.
+## 2. Tiers — hardest implemented; supervisor deferred
+
+- The proposed third tier, `supervisor`, is deferred to the later supervisor task by the 2026-10-02 owner instruction. The exchange, dispatch records, and work server still accept only `standard` and `hardest`.
 - On a `codex_exec_exchange` route, `hardest_lane.enabled` becomes available: hardest items carry model `claude-opus-5-5` and effort `max`, and `hardest_fresh_context_per_generate` and `hardest_authenticated_execution_profile_per_generate` are true. The daily limit and pause keep their current behaviour.
 
 ## 3. `npm run journal:import -- supervise --config <cfg> [--sample <n>]`
@@ -67,8 +69,8 @@ Proposed defaults; the owner can change them.
 
 ## Tests
 
-1. A fake `claude` executable, reached through a fake SSH command that runs the host side locally: round trip for a supervisor item and a hardest item, with response-reported evidence admitted only for those tiers.
+1. A fake `claude` executable, reached through a fake SSH command that runs the host side locally: round trip for a hardest item, with response-reported evidence admitted only for that tier on the Codex route. The supervisor case belongs to the deferred supervisor task.
 2. Admission refusals: `is_error`, a second model with output tokens, a missing session ID, nothing staged, timeout.
 3. The secret never appears in arguments or on the laptop side; the mapped model argument; an unmapped label refused.
-4. `supervise`: a deterministic stratified sample that includes audited units; reuse on rerun; agreement and stage-attribution counts on a synthetic graph with planted omissions and distortions; content-free summary checked with a sentinel.
+4. Deferred with section 3: `supervise` sampling, agreement, stage-attribution and summary tests.
 5. Hardest lane on the Codex route: enabled, daily limit pause, replay without resend.
