@@ -853,3 +853,4 @@ This is import/runtime infrastructure only. It changes no therapy, graph, produc
   - **Dead workers:** a reservation whose packet was served and that is older than its timeout plus ten minutes is closed as spent.
   - **Status and closing:** `attempt-status` reports `packet_fetched`, `model_reached` and `timeout_ms`, and main-loop close failures are logged instead of ending the worker.
   - **Results:** `npm run journal:test` passes on Node 24.18.0.
+  - **Process group before the scan:** Before the persistence scan and admission, the worker kills Claude's recorded process group and waits until no member remains (up to 10 s). If the group outlives that wait, the run is refused (`process_group_alive` in the content-free log). Startup recovery does the same, and leaves a run for a later start if its group can't be confirmed gone (Codex review P1).

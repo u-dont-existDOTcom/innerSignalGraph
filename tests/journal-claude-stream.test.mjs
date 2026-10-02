@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { claudeResultReader, claudeRunSlug, MAX_CLAUDE_LINE_BYTES } from "../src/journal-import/claude-worker.mjs";
+import { claudeResultReader, claudeRunSlug, MAX_CLAUDE_LINE_BYTES, waitForProcessGroupGone } from "../src/journal-import/claude-worker.mjs";
 import { runProcess } from "../src/journal-import/codex-worker.mjs";
 import { journalAttemptIdentity, journalAttemptMarkerKey, writeAttemptMarker } from "../src/cli/journal-work.mjs";
 import { journalWorkFileKey } from "../src/journal-import/work-exchange.mjs";
@@ -221,4 +221,20 @@ test("a submit issued before the fetch result arrived is not packet-backed", () 
   feed(failed, { type: "user", message: { content: [{ ...fetchResult, is_error: true }] } });
   feed(failed, { type: "assistant", message: { model: record.model, content: [submitUse] } });
   assert.equal(failed.state.packetBeforeFirstSubmit, false);
+});
+
+test("a recorded process group is killed and confirmed gone before persistence is scanned", async () => {
+  const { spawn } = await import("node:child_process");
+  // A detached group whose leader spawns a lingering member, standing in for an MCP helper.
+  const leader = spawn(process.execPath, ["-e",
+    "require('node:child_process').spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' }); setInterval(() => {}, 1000);"],
+  { detached: true, stdio: "ignore" });
+  await new Promise(resolve => setTimeout(resolve, 300));
+  const started = Date.now();
+  assert.equal(await waitForProcessGroupGone(leader.pid, 5000), true);
+  assert.throws(() => process.kill(-leader.pid, 0), { code: "ESRCH" });
+  assert.ok(Date.now() - started < 5000);
+  // An already-gone group and a missing record are both treated as gone.
+  assert.equal(await waitForProcessGroupGone(leader.pid, 100), true);
+  assert.equal(await waitForProcessGroupGone(null), true);
 });

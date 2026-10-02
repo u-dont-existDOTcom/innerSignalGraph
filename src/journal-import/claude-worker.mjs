@@ -304,6 +304,19 @@ async function linuxProcessIdentity(pid) {
   } catch (error) { if (["ENOENT", "ESRCH"].includes(error?.code)) return null; throw error; }
 }
 
+// Kill a recorded process group and wait until no member remains, so nothing the run started can still
+// write a persistence artifact after the scan. Returns false if the group outlives the deadline.
+export async function waitForProcessGroupGone(pgid, timeoutMs = 10_000) {
+  if (!Number.isSafeInteger(pgid) || pgid < 2) return true;
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try { process.kill(-pgid, "SIGKILL"); }
+    catch (error) { if (error?.code === "ESRCH") return true; throw error; }
+    if (Date.now() >= deadline) return false;
+    await new Promise(resolve => setTimeout(resolve, 25));
+  }
+}
+
 export async function sweepClaudeProcessGroups(workDir, home) {
   for (const parent of await fs.readdir(workDir)) {
     if (!/^inner-signal-claude-[A-Za-z0-9]{6}$/u.test(parent)) continue;
@@ -332,8 +345,8 @@ export async function sweepClaudeProcessGroups(workDir, home) {
       const child = await linuxProcessIdentity(record.child?.pid);
       // Linux start time prevents a stale record from killing a reused PID.
       if (child?.start === record.child?.start && child.group === child.pid) {
-        try { process.kill(-child.pid, "SIGKILL"); }
-        catch (error) { if (error?.code !== "ESRCH") throw error; }
+        // Leave the run for a later start if its group can't be confirmed gone before scanning.
+        if (!(await waitForProcessGroupGone(child.pid))) continue;
       }
       await cleanClaudePersistence(home, runDir);
       await fs.rm(runDir, { recursive: true, force: true });
@@ -409,6 +422,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     let observed = null;
     const claim = randomUUID();
     let claimed = false, reachedModel = false, isolationRefused = false, persisted = false, persistenceChecked = false;
+    let childGroup = null, groupAlive = false;
     let usage = { input_tokens: 0, cached_input_tokens: 0, output_tokens: 0, total_cost_usd: 0 };
     try {
       // Validate the profile before creating a stage or invoking the provider.
@@ -445,6 +459,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           const owner = await linuxProcessIdentity(process.pid), child = await linuxProcessIdentity(pid);
           if (!owner || !child || child.group !== pid) fail("JOURNAL_CLAUDE_PROCESS_RECORD_INVALID");
           await writeAttemptMarker(path.join(runDir, "process-group.json"), { owner, child }, true);
+          childGroup = pid;
         },
         timeoutMs: options.timeoutMs, onLine: async (line, kill) => {
           reader.accept(line);
@@ -458,9 +473,15 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           if (isolationRefused) return false;
         }, activeGroups
       }); } finally {
-        // This finally runs before admission/promotion, even when the child failed.
-        try { persisted = await cleanClaudePersistence(processEnv.HOME, runDir); persistenceChecked = true; }
-        catch { persisted = true; }
+        // This finally runs before admission/promotion, even when the child failed. The whole process group
+        // must be gone first, so a lingering helper can't write after the scan; if it isn't, refuse admission.
+        let groupGone = false;
+        try { groupGone = await waitForProcessGroupGone(childGroup); } catch { groupGone = false; }
+        if (!groupGone) { persisted = true; groupAlive = true; }
+        else {
+          try { persisted = await cleanClaudePersistence(processEnv.HOME, runDir); persistenceChecked = true; }
+          catch { persisted = true; }
+        }
       }
       if (reader.state.reportedSession) {
         const reused = seenSessions.has(reader.state.reportedSession);
@@ -576,7 +597,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         skill_count: observed?.skillCount ?? 0, slash_command_count: observed?.slashCount ?? 0,
         plugin_count: observed?.pluginCount ?? 0, agent_count: observed?.agentCount ?? 0,
         hook_event_count: observed?.hookCount ?? 0,
-        claude_code_version: observed?.claudeCodeVersion ?? null, model_reached: reachedModel,
+        claude_code_version: observed?.claudeCodeVersion ?? null, model_reached: reachedModel, process_group_alive: groupAlive,
         ...usage, cost_kind: "subscription_cost_equivalent_not_charged" });
     }
     return outcome;
