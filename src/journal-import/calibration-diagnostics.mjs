@@ -21,7 +21,7 @@ function schemaEnums(value, found = new Set()) {
 // gets a fixed placeholder instead of changing a recoverable failure into a runtime exception.
 const bindingCodes = new Set([
   "BINDING_FAILURE_CODE_UNRECOGNIZED",
-  "JOURNAL_SCHEMA_INVALID", "DUPLICATE_LOCAL_ASSERTION_ID", "MISSING_LOCAL_SPEAKER",
+  "JOURNAL_SCHEMA_INVALID", "JOURNAL_SCHEMA_UNKNOWN", "DUPLICATE_LOCAL_ASSERTION_ID", "MISSING_LOCAL_SPEAKER",
   "MISSING_LOCAL_SUBJECT", "MISSING_LOCAL_EPISODE", "ANCHOR_OUTSIDE_ASSIGNED_UNITS",
   "DUPLICATE_UNIT_COVERAGE", "COVERAGE_UNKNOWN_ASSERTION", "UNIT_COVERAGE_INCOMPLETE",
   "BATCH_EXTRACTION_CROSS_UNIT_PROPOSAL", "BATCH_EXTRACTION_UNIT_IDS_INVALID",
@@ -43,14 +43,18 @@ const bindingCodes = new Set([
   "CORRECTION_WITHOUT_CORRECTION_ASSERTION", "CAUSAL_PROMOTION",
   "INTENTION_CONFUSED_WITH_EFFECTIVE_ACTION", "TIME_MISSING", "REPRESENTATIONS_INVALID",
   "UNITS_INVALID", "RESTRICTED_UNIT_INVALID", "RESTRICTED_STATEMENT_INVALID",
-  "RESTRICTED_REVIEW_STATE_INVALID"
+  "RESTRICTED_REVIEW_STATE_INVALID", "JOURNAL_REPRESENTATION_MISSING", "VALIDATION_ERROR",
+  "PATTERN_REVIEW_EVIDENCE_MISSING", "PASS_STRUCTURAL_GRAPH_ONLY"
 ]);
-const permittedValues = new Set([...schemaEnums(extractionSchema), ...schemaEnums(reviewSchema), ...bindingCodes]);
+const blockerCodes = new Set(["INVALID_STRUCTURED_OUTPUT", "OUTPUT_INCOMPLETE",
+  "REFERENCE_RESEND_EXHAUSTED", "COMPLETION_UNKNOWN", "HARDEST_DAILY_LIMIT"]);
+const permittedValues = new Set([...schemaEnums(extractionSchema), ...schemaEnums(reviewSchema), ...bindingCodes, ...blockerCodes]);
 const permittedKeys = new Set([
-  "cycles", "cycle", "hardest", "findings_per_cycle", "extraction", "omission",
+  "cycles", "cycle", "hardest", "fidelity_cycles", "fidelity", "findings_per_cycle", "extraction", "omission", "invalid", "blocker_code",
   "binding_failure_code", "status", "assertions", "entities", "episodes",
-  "requested_context", "coverage_by_disposition", "assessments_by_outcome",
-  "assessments_by_finding_type", "proposed_repairs", "unassessed", "findings",
+  "requested_context", "coverage_by_disposition", "assessments_by_outcome_and_finding_type",
+  "critical_assessments", "proposed_repairs", "unassessed", "findings",
+  "critical_miss_count", "qualifier_error_count", "target_met",
   ...coverageDispositions, ...outcomes, ...findingTypes
 ]);
 
@@ -61,7 +65,7 @@ export function validateCalibrationDiagnostics(value) {
       if (!permittedValues.has(item)) throw new ValidationError("JOURNAL_DIAGNOSTICS_STRING_UNSAFE", { code: "JOURNAL_DIAGNOSTICS_STRING_UNSAFE" });
       return;
     }
-    if (typeof item === "number" && Number.isSafeInteger(item) && item >= 0) return;
+    if (typeof item === "boolean" || (typeof item === "number" && Number.isSafeInteger(item) && item >= 0)) return;
     if (Array.isArray(item)) { for (const child of item) walk(child); return; }
     if (item && typeof item === "object" && Object.getPrototypeOf(item) === Object.prototype) {
       for (const [key, child] of Object.entries(item)) {
@@ -83,7 +87,7 @@ const countBy = (items, field, values) => Object.fromEntries(values.map((value) 
 export function extractionCycleDiagnostics(results, bindingFailureCode = null) {
   const extraction = results?.[0]?.output ?? null;
   const review = results?.[1]?.output ?? null;
-  return validateCalibrationDiagnostics({
+  return {
     extraction: extraction ? {
       status: extraction.status,
       assertions: extraction.assertions.length,
@@ -94,8 +98,9 @@ export function extractionCycleDiagnostics(results, bindingFailureCode = null) {
     } : null,
     omission: review ? {
       status: review.status,
-      assessments_by_outcome: countBy(review.assessments, "outcome", outcomes),
-      assessments_by_finding_type: countBy(review.assessments, "finding_type", findingTypes),
+      assessments_by_outcome_and_finding_type: Object.fromEntries(outcomes.map((outcome) => [outcome,
+        countBy(review.assessments.filter((item) => item.outcome === outcome), "finding_type", findingTypes)])),
+      critical_assessments: review.assessments.filter((item) => item.critical === true).length,
       proposed_repairs: review.proposed_repairs.length,
       unassessed: review.unassessed_ids.length,
       findings: review.assessments.filter((item) => item.outcome !== "preserved" || item.finding_type !== "none").length
@@ -103,13 +108,30 @@ export function extractionCycleDiagnostics(results, bindingFailureCode = null) {
     } : null,
     binding_failure_code: bindingFailureCode === null ? null
       : bindingCodes.has(bindingFailureCode) ? bindingFailureCode : "BINDING_FAILURE_CODE_UNRECOGNIZED"
-  });
+  };
 }
 
-export function unresolvedExtractionDiagnostics(cycles, hardest = null) {
-  return validateCalibrationDiagnostics({
+export function fidelityCycleDiagnostics(status, score, targetMet) {
+  return { status, critical_miss_count: score.critical_miss_count,
+    qualifier_error_count: score.qualifier_error_count,
+    unassessed: score.reference_counts.unassessed, target_met: targetMet };
+}
+
+export function unresolvedExtractionDiagnostics(cycles, hardest = null, fidelityCycles = []) {
+  const value = {
     cycles,
     hardest,
-    findings_per_cycle: cycles.map(({ omission }) => omission?.findings ?? 0)
-  });
+    fidelity_cycles: fidelityCycles,
+    findings_per_cycle: cycles.map(({ omission, binding_failure_code }) =>
+      binding_failure_code || !omission ? null : omission.findings)
+  };
+  try { return validateCalibrationDiagnostics(value); }
+  catch (error) {
+    if (!(error instanceof ValidationError)) throw error;
+    return { invalid: true };
+  }
+}
+
+export function diagnosticBlockerCode(code) {
+  return blockerCodes.has(code) ? code : null;
 }
