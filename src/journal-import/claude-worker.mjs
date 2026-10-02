@@ -481,6 +481,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       await fs.writeFile(mcpConfig, JSON.stringify(claudeMcpConfiguration(options, stageDir, environment)), { flag: "wx", mode: 0o600 });
       const reader = claudeResultReader(record, packetCheck.packet_length);
       observed = reader.state;
+      // A stop requested after the last host call must not start Claude: its group could not be signalled.
+      if (stopping) { outcome = "stopped"; return outcome; }
       let result;
       try { result = await runProcess(options.claudeBin, claudePrintArgs({ record, mcpConfig }), {
         cwd: runDir, env: { ...processEnv, XDG_CACHE_HOME: path.join(runDir, "cache") },
@@ -511,8 +513,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         // Leave the evidence for startup recovery and stop the worker once this item is refused.
         if (!groupGone) { persisted = true; groupAlive = true; cleanupFailed = true; preserveParent = true; }
         else {
+          // A cleanup that can't inspect or remove an artifact may leave plaintext behind: refuse and stop.
           try { persisted = await cleanClaudePersistence(processEnv.HOME, runDir); persistenceChecked = true; }
-          catch { persisted = true; }
+          catch { persisted = true; cleanupFailed = true; }
           // The run dir holds Claude's redirected cache and session files; remove it before admission. If it
           // can't be removed, refuse the result and stop the worker rather than leave it behind and carry on.
           try { await fs.rm(runDir, { recursive: true, force: true }); }
@@ -610,7 +613,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       if (runDir && !groupAlive) {
         if (!persistenceChecked) {
           try { if (await cleanClaudePersistence(processEnv.HOME, runDir)) outcome = "rejected:LOCAL_PERSISTENCE"; }
-          catch { outcome = "rejected:LOCAL_PERSISTENCE"; }
+          catch { outcome = "rejected:LOCAL_PERSISTENCE"; cleanupFailed = true; }
         }
         try { await fs.rm(runDir, { recursive: true, force: true }); }
         catch { cleanupFailed = true; await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "run_remove_failed" }); }
@@ -695,6 +698,18 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           }
           continue;
         }
+        // An attempted marker younger than its run timeout plus ten minutes may belong to a sibling that is
+        // still fetching or answering: leave the item open until the next poll and close it only once stale.
+        if (marker.status === "attempted"
+          && (marker.age_seconds ?? 0) * 1000 < (marker.timeout_ms ?? 1_800_000) + 600_000) {
+          skipped.add(record.work_id);
+          if (!reservedLogged.has(record.work_id)) {
+            reservedLogged.add(record.work_id);
+            await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
+              model: record.model, effort: record.effort, outcome: "attempt_in_progress", duration_ms: 0 });
+          }
+          continue;
+        }
         attempts.set(record.work_id, 3);
         // A hold left by a run refused at init, before the model, stays open for an operator to clear.
         // The setup may still be broken, so stop without closing it or trying further items (exit 78).
@@ -724,6 +739,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         skipped.clear();
         continue;
       }
+      if (stopping) break;
       const outcome = await one(record);
       if (setupRefused || cleanupFailed) break;
       if (["limited", "provider_unavailable", "sign_in_needed"].includes(outcome)) limits.set(record.work_id, (limits.get(record.work_id) ?? 0) + 1);

@@ -11,7 +11,7 @@ import { createJournalWorkExchange } from "../src/journal-import/work-exchange.m
 import { createExchangeJournalInferencePort, journalExchangeAttemptIdentity } from "../src/journal-import/exchange-port.mjs";
 import { claudeMcpConfiguration, claudePrintArgs, claudeResultReader, parseJournalClaudeWorkerArgs,
   runJournalClaudeWorker, assertClaudeRunPath, claudeRunSlug, cleanClaudePersistence,
-  sweepClaudePersistence, CLAUDE_PROVIDER_BACKOFF_MS, CLAUDE_PAUSED_EXIT_CODE, CLAUDE_SETUP_REFUSED_EXIT_CODE } from "../src/journal-import/claude-worker.mjs";
+  sweepClaudePersistence, CLAUDE_PROVIDER_BACKOFF_MS, CLAUDE_PAUSED_EXIT_CODE, CLAUDE_SETUP_REFUSED_EXIT_CODE, CLAUDE_CLEANUP_FAILED_EXIT_CODE } from "../src/journal-import/claude-worker.mjs";
 import { journalAttemptIdentity, journalAttemptMarkerKey, runJournalWork, releaseAttemptMarker, writeAttemptMarker } from "../src/cli/journal-work.mjs";
 import { runJournalWorkMcp } from "../src/cli/journal-work-mcp.mjs";
 import { createJournalWorkTools, JOURNAL_WORK_TOOL_DEFINITIONS, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../src/server/journal-work-tools.mjs";
@@ -111,6 +111,11 @@ if (["project_file", "fallback_cache"].includes(scenario)) {
     : path.join(process.env.HOME, ".cache", "claude-cli-nodejs", slug, "mcp-logs-journal");
   fs.mkdirSync(target, { recursive: true });
   fs.writeFileSync(path.join(target, "synthetic.txt"), ["SYNTHETIC", "CLAUDE", "PRIVATE", "SENTINEL", "DO", "NOT", "LOG"].join("_"));
+}
+if (scenario === "cleanup_unreadable") {
+  // A fallback-cache root that is a file makes the post-run cleanup unable to inspect it.
+  fs.mkdirSync(path.join(process.env.HOME, ".cache"), { recursive: true });
+  fs.writeFileSync(path.join(process.env.HOME, ".cache", "claude-cli-nodejs"), "not a directory");
 }
 if (scenario === "no_init_then_success") {
   const marker = ${JSON.stringify(path.join(laptop, "no-init-count"))};
@@ -545,6 +550,19 @@ test("a recent unspent reservation is left to its owner", async (t) => {
   assert.notEqual((await f.port.getCompletion(key)).status, "completed");
 });
 
+test("a persistence cleanup that fails refuses the result and stops the worker", async (t) => {
+  const f = await fixture(t, "cleanup_unreadable");
+  const keys = ["job:synthetic-cleanup-first", "job:synthetic-cleanup-second"];
+  for (const operationKey of keys) {
+    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  }
+  assert.equal(await runJournalClaudeWorker(f.args.map((value) => value === "1" ? "2" : value), { environment: f.environment }),
+    CLAUDE_CLEANUP_FAILED_EXIT_CODE);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["rejected:LOCAL_PERSISTENCE"], "the second item is not started");
+  for (const key of keys) assert.notEqual((await f.port.getCompletion(key)).status, "completed");
+});
+
 test("SIGINT wakes the poll sleep and returns exit code 130", async (t) => {
   const f = await fixture(t);
   const args = f.args.filter((value) => value !== "--once");
@@ -915,6 +933,11 @@ test("already attempted, corrupt and isolation-refused items do not consume max-
     journalAttemptMarkerKey(journalAttemptIdentity(records[1])) + ".json"), "{");
   await runJournalWork(["attempt-refuse", "--work-id", records[2].work_id, "--claim", claim],
     { environment, stdout: { write() {} } });
+  // The attempted and corrupt markers belong to runs long past their timeout (dead workers).
+  const stale = new Date(Date.now() - 2 * 3_600_000);
+  for (const record of records.slice(0, 2)) {
+    await fs.utimes(path.join(f.root, "claude-attempts", journalAttemptMarkerKey(journalAttemptIdentity(record)) + ".json"), stale, stale);
+  }
   // The unspent isolation hold stops the worker (exit 78) before it tries the next item.
   assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
   let logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
@@ -1045,6 +1068,17 @@ test("startup kills the recorded Claude group left by a SIGKILLed worker", async
   await assert.rejects(fs.access(runDir));
   const proc = await fs.readFile(`/proc/${group}/stat`, "utf8").catch(error => error.code === "ENOENT" ? null : Promise.reject(error));
   assert.ok(proc === null || proc.slice(proc.lastIndexOf(")") + 2).startsWith("Z "), "leftover Claude survived startup");
+  // The attempted marker is young, so the item is treated as possibly in progress and left open.
+  assert.equal((await f.port.getCompletion(key)).status, "unknown");
+  let logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.equal(logs.at(-1).outcome, "attempt_in_progress");
+  // Once it is older than the run timeout plus ten minutes, the next worker closes it as spent.
+  const marker = path.join(f.root, "claude-attempts", journalAttemptMarkerKey(dispatch.attempt_identity) + ".json");
+  const stale = new Date(Date.now() - 2 * 3_600_000);
+  await fs.utimes(marker, stale, stale);
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.equal(logs.at(-1).outcome, "already_attempted");
   assert.equal((await f.port.getCompletion(key)).status, "exhausted");
 });
 
