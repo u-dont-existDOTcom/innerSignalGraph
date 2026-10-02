@@ -54,7 +54,8 @@ const permittedKeys = new Set([
   "binding_failure_code", "status", "assertions", "entities", "episodes",
   "requested_context", "coverage_by_disposition", "assessments_by_outcome_and_finding_type",
   "critical_assessments", "proposed_repairs", "unassessed", "findings",
-  "critical_miss_count", "qualifier_error_count", "target_met",
+  "critical_miss_count", "qualifier_error_count", "reference_total", "reference_counts",
+  "preserved", "omitted", "distorted", "recall_target_met", "calibration_pass",
   ...coverageDispositions, ...outcomes, ...findingTypes
 ]);
 
@@ -111,10 +112,15 @@ export function extractionCycleDiagnostics(results, bindingFailureCode = null) {
   };
 }
 
-export function fidelityCycleDiagnostics(status, score, targetMet) {
+export function fidelityCycleDiagnostics(status, score, calibrationPass) {
+  const { preserved, omitted, distorted, unassessed } = score.reference_counts;
   return { status, critical_miss_count: score.critical_miss_count,
     qualifier_error_count: score.qualifier_error_count,
-    unassessed: score.reference_counts.unassessed, target_met: targetMet };
+    unassessed,
+    reference_total: score.reference_total,
+    reference_counts: { preserved, omitted, distorted, unassessed },
+    recall_target_met: score.reference_total === 0 ? null : score.provisional_target_met,
+    calibration_pass: calibrationPass };
 }
 
 export function unresolvedExtractionDiagnostics(cycles, hardest = null, fidelityCycles = []) {

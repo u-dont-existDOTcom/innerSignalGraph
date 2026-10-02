@@ -8,7 +8,7 @@ import { runJournalImportCli } from "../src/cli/journal-import.mjs";
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
 import { createMockJournalInferencePort, journalRoleInstruction } from "../src/journal-import/provider-port.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
-import { extractionCycleDiagnostics, unresolvedExtractionDiagnostics, validateCalibrationDiagnostics } from "../src/journal-import/calibration-diagnostics.mjs";
+import { extractionCycleDiagnostics, fidelityCycleDiagnostics, unresolvedExtractionDiagnostics, validateCalibrationDiagnostics } from "../src/journal-import/calibration-diagnostics.mjs";
 
 const sha = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -169,6 +169,17 @@ test("failed calibration retains three content-free cycle snapshots in state, su
     { invalid: true });
   assert.equal(extractionCycleDiagnostics(null, sentinel).binding_failure_code,
     "BINDING_FAILURE_CODE_UNRECOGNIZED");
+  for (const unsafe of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 60, 1n, new Date(0), () => 1, undefined]) {
+    assert.throws(() => validateCalibrationDiagnostics({ cycles: [{ assertions: unsafe }] }),
+      { code: "JOURNAL_DIAGNOSTICS_VALUE_UNSAFE" });
+  }
+  const recallMet = fidelityCycleDiagnostics("repair_required", { critical_miss_count: 0, qualifier_error_count: 0,
+    reference_total: 2, reference_counts: { preserved: 2, omitted: 0, distorted: 0, unassessed: 0 },
+    provisional_target_met: true, reference_recall: 1 }, false);
+  assert.deepEqual(validateCalibrationDiagnostics({ fidelity_cycles: [{ cycle: 0, fidelity: recallMet }] })
+    .fidelity_cycles[0].fidelity, { status: "repair_required", critical_miss_count: 0, qualifier_error_count: 0,
+    unassessed: 0, reference_total: 2, reference_counts: { preserved: 2, omitted: 0, distorted: 0, unassessed: 0 },
+    recall_target_met: true, calibration_pass: false });
 });
 
 test("failed hardest extraction has its own count snapshot", async (t) => {
@@ -231,8 +242,11 @@ test("fidelity repairs retain every extraction, review and audit snapshot", asyn
     assert.deepEqual(diagnostics.fidelity_cycles.map((cycle) => cycle.extraction.entities), [0, 1, 0]);
     assert.deepEqual(diagnostics.fidelity_cycles.map((cycle) => cycle.omission.findings), [0, 0, 0]);
     assert.equal(diagnostics.fidelity_cycles[1].binding_failure_code, "QUOTE_NOT_FOUND");
-    assert.deepEqual(diagnostics.fidelity_cycles.map((cycle) => cycle.fidelity?.target_met ?? null),
+    assert.deepEqual(diagnostics.fidelity_cycles.map((cycle) => cycle.fidelity?.calibration_pass ?? null),
       [false, null, false]);
+    assert.deepEqual(diagnostics.fidelity_cycles.filter((cycle) => cycle.fidelity).map((cycle) =>
+      [cycle.fidelity.reference_total, cycle.fidelity.recall_target_met]), [[0, null], [0, null]]);
+    assert.deepEqual(diagnostics.fidelity_cycles.map((cycle) => cycle.blocker_code), [null, null, null]);
     assert.deepEqual(diagnostics.fidelity_cycles.filter((cycle) => cycle.fidelity).map((cycle) =>
       [cycle.fidelity.status, cycle.fidelity.critical_miss_count,
         cycle.fidelity.qualifier_error_count, cycle.fidelity.unassessed]),

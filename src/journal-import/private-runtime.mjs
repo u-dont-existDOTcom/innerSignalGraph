@@ -1031,7 +1031,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             candidateIds: combined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
           if (initialFidelity.blocked) return false;
           if (initialFidelity.failure) {
-            fidelityCycles.push({ cycle: 0, ...extractionCycleDiagnostics(results), fidelity: null });
+            fidelityCycles.push({ cycle: 0, ...extractionCycleDiagnostics(results), blocker_code: null, fidelity: null });
             if (units.length > 1) {
               const middle = Math.ceil(units.length / 2);
               return await processBatch(units.slice(0, middle), true)
@@ -1046,7 +1046,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             && score.qualifier_error_count === 0
             && score.reference_counts.unassessed === 0
             && (score.reference_total === 0 || score.provisional_target_met);
-          fidelityCycles.push({ cycle: 0, ...extractionCycleDiagnostics(results),
+          fidelityCycles.push({ cycle: 0, ...extractionCycleDiagnostics(results), blocker_code: null,
             fidelity: fidelityCycleDiagnostics(fidelity[0].output.status, score, calibrationPass) });
           if (!calibrationPass && units.length > 1) {
             const middle = Math.ceil(units.length / 2);
@@ -1094,7 +1094,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             }
             results = repaired;
             const repairedReview = repaired[1]?.output;
-            const repairSnapshot = { cycle: auditCycle, ...extractionCycleDiagnostics(repaired), fidelity: null };
+            const repairSnapshot = { cycle: auditCycle, ...extractionCycleDiagnostics(repaired), blocker_code: null, fidelity: null };
             fidelityCycles.push(repairSnapshot);
             let repairedSplit, repairedGraphs;
             try {
