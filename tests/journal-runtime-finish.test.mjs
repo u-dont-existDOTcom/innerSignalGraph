@@ -1009,6 +1009,162 @@ test("a calibration review still requiring repair after bounded cycles stops the
   } finally { await runtime.close(); }
 });
 
+for (const [enabled, passes] of [[true, true], [true, false], [false, true]]) {
+  test(`exhausted fidelity repairs: hardest ${enabled ? (passes ? "resolves" : "fails") : "disabled"}`, async t => {
+    const f = await environment(t);
+    f.sourceParser = oneUnitParser(f);
+    f.config.hardest_lane = { enabled };
+    const baseline = handlers();
+    const calls = [];
+    const base = createMockJournalInferencePort({ handlers: handlers({
+      extractor: packet => {
+        const output = baseline.extractor(packet);
+        if (packet.repair_request?.cycle === "fidelity-hardest") {
+          assert.equal(packet.repair_request.fidelity_review.status, "repair_required");
+          assert.equal(packet.repair_request.omission_review.status, "sufficient_for_stated_scope");
+          assert.deepEqual(packet.repair_request.previous_extraction, baseline.extractor(packet));
+          output.assertions[0].statement = "Synthetic hardest repaired report.";
+        }
+        return output;
+      },
+      fidelity_auditor: packet => ({ ...baseline.fidelity_auditor(packet),
+        status: passes && packet.imported_generation.assertions.some(node =>
+          node.data.statement === "Synthetic hardest repaired report.")
+          ? "sufficient_for_stated_scope" : "repair_required" })
+    }) });
+    const port = { capabilities: base.capabilities, getCompletion: base.getCompletion,
+      invoke(input) { calls.push(input); return base.invoke(input); }, close: base.close };
+    const options = { config: f.config, configPath: f.configPath, service: f.service,
+      sourceParser: f.sourceParser, inferencePort: port, environment: f.environment };
+    const runtime = await openJournalExecutionRuntime(options);
+    try {
+      const result = enabled && passes ? await runtime.execute("run")
+        : await assertCalibrationStopped(runtime, f, "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", calls);
+      assert.equal(result.calibration, enabled && passes ? "pass" : "failed");
+      assert.equal(result.residuals.hardest_attempted ?? 0, enabled ? 1 : 0);
+      assert.equal(result.residuals.hardest_resolved ?? 0, enabled && passes ? 1 : 0);
+      assert.equal(calls.filter(call => call.role === "extractor").length, enabled ? 4 : 3);
+      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, enabled ? 4 : 3);
+      assert.deepEqual(calls.filter(call => call.tier === "hardest").map(call => call.role),
+        enabled ? ["extractor", "omission_checker"] : []);
+      let diagnostics = result.calibration_failure?.diagnostics;
+      if (enabled && passes) {
+        assert.equal(result.completion.graph_built, "pass");
+        const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+        const key = await fs.readFile(path.join(f.config.execution_root, "staging.key"));
+        const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root,
+          caseId: CASE_ID, corpusId: state.corpus_id, corpusKey: key });
+        try { diagnostics = (await store.readJsonObject({ objectId: `unit:graph:${state.completed_units[0]}` })).diagnostics; }
+        finally { store.close(); key.fill(0); }
+        const count = calls.length;
+        assert.equal((await runtime.execute("run")).calibration, "pass");
+        assert.equal(calls.length, count, "passing hardest repair is replayed without a second send");
+      }
+      assert.deepEqual(diagnostics.fidelity_cycles.map(cycle => cycle.cycle), [0, 1, 2]);
+      assert.deepEqual(diagnostics.fidelity_cycles.slice(1).map(cycle => cycle.extraction_changed), [false, false]);
+      assert.equal(diagnostics.reaudit, null);
+      if (enabled) {
+        assert.equal(diagnostics.hardest_fidelity.extraction_changed, true);
+        assert.equal(diagnostics.hardest_fidelity.fidelity.calibration_pass, passes);
+      } else assert.equal(diagnostics.hardest_fidelity, null);
+    } finally { await runtime.close(); }
+  });
+}
+
+test("the Codex-route hardest fidelity repair pauses at its dependent daily limit and resumes", async t => {
+  const f = await environment(t);
+  f.sourceParser = oneUnitParser(f);
+  f.config.hardest_lane = { enabled: true, daily_limit: 1 };
+  const baseline = handlers();
+  let day = "2026-10-02T12:00:00Z";
+  const calls = [];
+  const base = createMockJournalInferencePort({ handlers: handlers({
+    extractor: packet => {
+      const output = baseline.extractor(packet);
+      if (packet.repair_request?.cycle === "fidelity-hardest")
+        output.assertions[0].statement = "Synthetic hardest repaired report.";
+      return output;
+    }, fidelity_auditor: packet => ({ ...baseline.fidelity_auditor(packet),
+      status: packet.imported_generation.assertions.some(node => node.data.statement === "Synthetic hardest repaired report.")
+        ? "sufficient_for_stated_scope" : "repair_required" })
+  }) });
+  const port = { capabilities: () => ({ ...base.capabilities(), transport: "codex_exec_exchange",
+      hardest_fresh_context_per_generate: true, hardest_authenticated_execution_profile_per_generate: true }),
+    getCompletion: base.getCompletion,
+    invoke(input) { calls.push(input); return base.invoke(input); }, close: base.close };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: port, environment: f.environment, now: () => new Date(day) });
+  try {
+    const paused = await runtime.execute("run");
+    assert.equal(paused.blocker, "HARDEST_DAILY_LIMIT");
+    assert.equal(paused.calibration, "not_run");
+    assert.equal(paused.calibration_failure, undefined);
+    assert.equal(paused.residuals.hardest_attempted ?? 0, 0);
+    assert.equal(paused.hardest_lane.sent, 1);
+    assert.deepEqual(calls.filter(call => call.tier === "hardest").map(call => call.role), ["extractor"]);
+    const count = calls.length;
+    assert.equal((await runtime.execute("run")).blocker, "HARDEST_DAILY_LIMIT");
+    assert.equal(calls.length, count);
+    day = "2026-10-03T12:00:00Z";
+    const resumed = await runtime.execute("run");
+    assert.equal(resumed.calibration, "pass");
+    assert.equal(resumed.residuals.hardest_attempted, 1);
+    assert.equal(resumed.residuals.hardest_resolved, 1);
+    assert.equal(resumed.hardest_lane.sent, 1);
+    assert.deepEqual(calls.filter(call => call.tier === "hardest").map(call => call.role), ["extractor", "omission_checker"]);
+  } finally { await runtime.close(); }
+});
+
+for (const failure of ["packet-before-extractor", "packet-after-extractor", "spent", "binding", "omission"]) {
+  test(`hardest fidelity repair retains ${failure} refusal and outcome accounting`, async t => {
+    const f = await environment(t);
+    f.sourceParser = oneUnitParser(f);
+    f.config.hardest_lane = { enabled: true };
+    const baseline = handlers();
+    const calls = [];
+    const base = createMockJournalInferencePort({ handlers: handlers({
+      extractor: packet => {
+        const output = baseline.extractor(packet);
+        if (failure === "packet-before-extractor" && packet.repair_request?.cycle === "fidelity-2")
+          output.coverage[0].reason = "PRIVATE_SYNTHETIC_SENTINEL".repeat(24_000);
+        if (packet.repair_request?.cycle === "fidelity-hardest") {
+          if (failure === "packet-after-extractor") output.coverage[0].reason = "PRIVATE_SYNTHETIC_SENTINEL".repeat(24_000);
+          if (failure === "binding") output.assertions[0].anchors[0].quote = "PRIVATE_SYNTHETIC_SENTINEL_ABSENT";
+          if (failure === "omission") output.coverage[0].reason = "hardest";
+        }
+        return output;
+      },
+      omission_checker: packet => ({ ...baseline.omission_checker(packet),
+        status: failure === "omission" && packet.candidate_extraction.coverage[0].reason === "hardest"
+          ? "repair_required" : "sufficient_for_stated_scope" }),
+      fidelity_auditor: packet => ({ ...baseline.fidelity_auditor(packet), status: "repair_required" })
+    }) });
+    const port = { capabilities: base.capabilities, getCompletion: base.getCompletion,
+      invoke(input) {
+        calls.push(input);
+        if (input.tier === "hardest" && input.role === "extractor") {
+          if (failure === "spent") throw new JournalInferencePortError("JOURNAL_HARDEST_ATTEMPT_EXHAUSTED", { submissionStatus: "exhausted" });
+        }
+        return base.invoke(input);
+      }, close: base.close };
+    const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+      sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+    try {
+      const stopped = await assertCalibrationStopped(runtime, f, "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", calls);
+      assert.equal(stopped.residuals.hardest_attempted ?? 0, failure === "packet-before-extractor" ? 0 : 1);
+      assert.equal(stopped.residuals.hardest_resolved ?? 0, 0);
+      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, 3);
+      const snapshot = stopped.calibration_failure.diagnostics.hardest_fidelity;
+      if (failure.startsWith("packet-")) assert.equal(snapshot.blocker_code, "JOURNAL_WORK_PACKET_TOO_LARGE");
+      if (failure === "spent") assert.equal(snapshot.blocker_code, "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED");
+      if (failure === "binding") assert.equal(snapshot.binding_failure_code, "QUOTE_NOT_FOUND");
+      if (failure === "omission") assert.equal(snapshot.omission.status, "repair_required");
+      assert.equal(snapshot.extraction_changed, failure === "packet-before-extractor" || failure === "spent" ? null : true);
+      assert.equal(JSON.stringify(stopped).includes("PRIVATE_SYNTHETIC_SENTINEL"), false);
+    } finally { await runtime.close(); }
+  });
+}
+
 test("repair-required final audit with preserved targets withholds its unit and counts a residual", async t => {
   const f = await environment(t);
   const baseline = handlers();

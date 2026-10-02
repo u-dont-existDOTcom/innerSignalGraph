@@ -53,6 +53,7 @@ const blockerCodes = new Set(["INVALID_STRUCTURED_OUTPUT", "OUTPUT_INCOMPLETE",
 const permittedValues = new Set([...schemaEnums(extractionSchema), ...schemaEnums(reviewSchema), ...bindingCodes, ...blockerCodes]);
 const permittedKeys = new Set([
   "cycles", "cycle", "hardest", "fidelity_cycles", "fidelity", "findings_per_cycle", "extraction", "omission", "invalid", "blocker_code",
+  "reaudit", "hardest_fidelity", "extraction_changed",
   "binding_failure_code", "status", "assertions", "entities", "episodes",
   "requested_context", "coverage_by_disposition", "assessments_by_outcome_and_finding_type",
   "critical_assessments", "proposed_repairs", "unassessed", "findings",
@@ -86,6 +87,8 @@ export function validateCalibrationDiagnostics(value) {
 const countBy = (items, field, values) => Object.fromEntries(values.map((value) => [
   value, items.filter((item) => item[field] === value).length
 ]));
+const assessmentCounts = (review) => Object.fromEntries(outcomes.map((outcome) => [outcome,
+  countBy(review.assessments.filter((item) => item.outcome === outcome), "finding_type", findingTypes)]));
 
 export function extractionCycleDiagnostics(results, bindingFailureCode = null) {
   const extraction = results?.[0]?.output ?? null;
@@ -101,8 +104,7 @@ export function extractionCycleDiagnostics(results, bindingFailureCode = null) {
     } : null,
     omission: review ? {
       status: review.status,
-      assessments_by_outcome_and_finding_type: Object.fromEntries(outcomes.map((outcome) => [outcome,
-        countBy(review.assessments.filter((item) => item.outcome === outcome), "finding_type", findingTypes)])),
+      assessments_by_outcome_and_finding_type: assessmentCounts(review),
       critical_assessments: review.assessments.filter((item) => item.critical === true).length,
       proposed_repairs: review.proposed_repairs.length,
       unassessed: review.unassessed_ids.length,
@@ -114,9 +116,10 @@ export function extractionCycleDiagnostics(results, bindingFailureCode = null) {
   };
 }
 
-export function fidelityCycleDiagnostics(status, score, calibrationPass) {
+export function fidelityCycleDiagnostics(review, score, calibrationPass) {
   const { preserved, omitted, distorted, unassessed } = score.reference_counts;
-  return { status, critical_miss_count: score.critical_miss_count,
+  return { status: review.status, assessments_by_outcome_and_finding_type: assessmentCounts(review),
+    critical_miss_count: score.critical_miss_count,
     qualifier_error_count: score.qualifier_error_count,
     unassessed,
     reference_total: score.reference_total,
@@ -125,11 +128,13 @@ export function fidelityCycleDiagnostics(status, score, calibrationPass) {
     calibration_pass: calibrationPass };
 }
 
-export function unresolvedExtractionDiagnostics(cycles, hardest = null, fidelityCycles = []) {
+export function unresolvedExtractionDiagnostics(cycles, hardest = null, fidelityCycles = [], reaudit = null, hardestFidelity = null) {
   const value = {
     cycles,
     hardest,
     fidelity_cycles: fidelityCycles,
+    reaudit,
+    hardest_fidelity: hardestFidelity,
     findings_per_cycle: cycles.map(({ omission, binding_failure_code }) =>
       binding_failure_code || !omission ? null : omission.findings)
   };
