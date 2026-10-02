@@ -4,7 +4,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
-import { removeStaleRuns } from "../src/journal-import/codex-worker.mjs";
+import { lockWorkerDirectory, removeStaleRuns } from "../src/journal-import/codex-worker.mjs";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import { createJournalWorkExchange } from "../src/journal-import/work-exchange.mjs";
@@ -1289,4 +1289,23 @@ test("release cannot erase a concurrent mark, either before or after its rename"
     assert.equal(JSON.parse(await fs.readFile(marker, "utf8")).status, "attempted");
     assert.deepEqual(await fs.readdir(directory), ["marker.json"]);
   }
+});
+
+test("startup leaves a live sibling's parent older than an hour, with its run, untouched", async (t) => {
+  const f = await fixture(t);
+  // A long-running sibling: its parent is more than an hour old, it holds the worker lock and has a run in flight.
+  const sibling = path.join(f.workDir, "inner-signal-claude-LIVESB");
+  const run = path.join(sibling, "run-INFLGT");
+  await fs.mkdir(run, { recursive: true, mode: 0o700 });
+  await fs.chmod(sibling, 0o700);
+  await fs.writeFile(path.join(run, "process-group.json"), JSON.stringify({
+    owner: { pid: process.pid, start: (await fs.readFile("/proc/self/stat", "utf8")).split(") ")[1].split(" ")[19] },
+    child: { pid: process.pid, start: "0" } }), { mode: 0o600 });
+  const unlock = await lockWorkerDirectory(sibling);
+  t.after(() => unlock());
+  const old = new Date(Date.now() - 2 * 3_600_000);
+  await fs.utimes(sibling, old, old);
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  await fs.access(path.join(run, "process-group.json"));
+  assert.ok((await fs.readdir(f.workDir)).includes("inner-signal-claude-LIVESB"));
 });
