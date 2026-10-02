@@ -278,10 +278,11 @@ export async function privateDirectory(directory, code) {
   return fs.realpath(directory);
 }
 
-export async function removeStaleRuns(workDir, prefix = "inner-signal-codex-") {
+export async function removeStaleRuns(workDir, prefix = "inner-signal-codex-", { keep = new Set() } = {}) {
   const before = Date.now() - 3_600_000;
   for (const name of await fs.readdir(workDir)) {
     if (!name.startsWith(prefix) || !/^[A-Za-z0-9]+$/u.test(name.slice(prefix.length))) continue;
+    if (keep.has(name)) continue;
     const target = path.join(workDir, name);
     const info = await fs.lstat(target).catch((error) => error?.code === "ENOENT" ? null : Promise.reject(error));
     if (info?.isDirectory() && info.mtimeMs < before && (process.getuid === undefined || info.uid === process.getuid())) {

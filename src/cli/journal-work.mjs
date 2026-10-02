@@ -120,9 +120,11 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     const exchange = createJournalWorkExchange({ root, secret: await journalWorkExchangeSecret(environment) });
     const entry = await exchange.readWork(assertJournalWorkId(parsed["--work-id"]));
     const packetLength = entry ? JSON.stringify(journalWorkPacketValue(entry)).length : null;
-    const allowed = Boolean(entry && entry.tier === "hardest" && !exchange.isExpired(entry)
-      && packetLength <= MAX_HARDEST_PACKET_CHARS);
-    stdout.write(`${JSON.stringify({ allowed, packet_length: packetLength })}\n`);
+    // The reason separates a confirmed oversize packet (the attempt is spent and the item closed) from an
+    // item that expired, vanished or is not hardest (the reservation is released and nothing is closed).
+    const reason = !entry ? "missing" : entry.tier !== "hardest" ? "tier" : exchange.isExpired(entry) ? "expired"
+      : packetLength > MAX_HARDEST_PACKET_CHARS ? "too_large" : null;
+    stdout.write(`${JSON.stringify({ allowed: reason === null, packet_length: packetLength, reason })}\n`);
     return;
   }
   if (["attempt-status", "attempt-reserve", "attempt-mark", "attempt-refuse", "attempt-release", "attempt-clear"].includes(command)) {

@@ -319,6 +319,8 @@ export async function waitForProcessGroupGone(pgid, timeoutMs = 10_000) {
 }
 
 export async function sweepClaudeProcessGroups(workDir, home) {
+  // Parents holding a run whose group could not be confirmed gone; callers must not delete them.
+  const unresolved = new Set();
   for (const parent of await fs.readdir(workDir)) {
     if (!/^inner-signal-claude-[A-Za-z0-9]{6}$/u.test(parent)) continue;
     const directory = path.join(workDir, parent);
@@ -351,12 +353,13 @@ export async function sweepClaudeProcessGroups(workDir, home) {
       const leaderGone = child === null;
       const leaderIsOurs = child?.start === record.child?.start && child?.group === child?.pid;
       if ((leaderGone || leaderIsOurs) && Number.isSafeInteger(record.child?.pid)) {
-        if (!(await waitForProcessGroupGone(record.child.pid))) continue;
+        if (!(await waitForProcessGroupGone(record.child.pid))) { unresolved.add(parent); continue; }
       }
       await cleanClaudePersistence(home, runDir);
       await fs.rm(runDir, { recursive: true, force: true });
     }
   }
+  return unresolved;
 }
 
 export async function runJournalClaudeWorker(argv, { environment = process.env, stderr = process.stderr,
@@ -389,7 +392,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   };
   const processEnv = { PATH: environment.PATH ?? "", HOME: environment.HOME ?? "", LANG: environment.LANG ?? "C" };
   const activeGroups = new Set();
-  let stopping = false, stopSignal = null, wake = null, limitedUntil = 0, completed = 0, signInNeeded = false, setupRefused = false, heldOpen = false, cleanupFailed = false;
+  let stopping = false, stopSignal = null, wake = null, limitedUntil = 0, completed = 0, signInNeeded = false, setupRefused = false, heldOpen = false, cleanupFailed = false,
+    preserveParent = false;
   // Items whose reservation belongs to a live sibling are skipped until this time, not given up on.
   const skipUntil = new Map();
   const attempts = new Map(), limits = new Map(), seenSessions = new Set(), pendingReleases = new Map();
@@ -445,7 +449,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       claimed = true;
       const packetCheck = (await host("packet-check", ["--work-id", record.work_id]))[0];
       if (packetCheck?.allowed !== true) {
-        outcome = "rejected:PACKET_TOO_LARGE"; return outcome;
+        outcome = packetCheck?.reason === "too_large" ? "rejected:PACKET_TOO_LARGE" : "rejected:PACKET_UNAVAILABLE";
+        return outcome;
       }
       if (!Number.isSafeInteger(packetCheck.packet_length) || packetCheck.packet_length < 1
         || packetCheck.packet_length > MAX_HARDEST_PACKET_CHARS) fail("JOURNAL_CLAUDE_HOST_RESPONSE_INVALID");
@@ -486,7 +491,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         let groupGone = false;
         try { groupGone = await waitForProcessGroupGone(childGroup); } catch { groupGone = false; }
         // Leave the evidence for startup recovery and stop the worker once this item is refused.
-        if (!groupGone) { persisted = true; groupAlive = true; cleanupFailed = true; }
+        if (!groupGone) { persisted = true; groupAlive = true; cleanupFailed = true; preserveParent = true; }
         else {
           try { persisted = await cleanClaudePersistence(processEnv.HOME, runDir); persistenceChecked = true; }
           catch { persisted = true; }
@@ -618,8 +623,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   }
 
   try {
-    await sweepClaudeProcessGroups(workDir, processEnv.HOME);
-    await removeStaleRuns(workDir, "inner-signal-claude-");
+    const unresolved = await sweepClaudeProcessGroups(workDir, processEnv.HOME);
+    await removeStaleRuns(workDir, "inner-signal-claude-", { keep: unresolved });
+    if (unresolved.size > 0) { cleanupFailed = true; preserveParent = false; return CLAUDE_CLEANUP_FAILED_EXIT_CODE; }
     await sweepClaudePersistence(processEnv.HOME, workDir);
     await host("stage-sweep");
     const initial = options.once ? new Set((await host("dispatch", ["--json"])).map((record) => record.work_id)) : null;
@@ -687,7 +693,10 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       const outcome = await one(record);
       if (setupRefused || cleanupFailed) break;
       if (["limited", "provider_unavailable", "sign_in_needed"].includes(outcome)) limits.set(record.work_id, (limits.get(record.work_id) ?? 0) + 1);
-      else if (["reserved", "already_attempted", "isolation_refused", "rejected:PACKET_TOO_LARGE"].includes(outcome)) attempts.set(record.work_id, 3);
+      else if (outcome === "reserved") skipUntil.set(record.work_id, Date.now() + options.pollMs);
+      else if (["already_attempted", "isolation_refused", "rejected:PACKET_TOO_LARGE", "rejected:PACKET_UNAVAILABLE"].includes(outcome)) {
+        attempts.set(record.work_id, 3);
+      }
       else if (outcome !== "stopped") {
         attempts.set(record.work_id, (attempts.get(record.work_id) ?? 0) + 1);
         if ((await host("attempt-status", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity]))[0]?.attempted) {
@@ -708,7 +717,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     stop();
     process.off("SIGINT", onInt);
     process.off("SIGTERM", onTerm);
-    try { await fs.rm(parent, { recursive: true, force: true }); }
+    // A surviving process group keeps its run directory (with process-group.json) for startup recovery.
+    try { if (!preserveParent) await fs.rm(parent, { recursive: true, force: true }); }
     finally { await unlockWorkerDirectory(); await logHandle?.close(); }
   }
 }

@@ -4,6 +4,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
+import { removeStaleRuns } from "../src/journal-import/codex-worker.mjs";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import { createJournalWorkExchange } from "../src/journal-import/work-exchange.mjs";
@@ -55,7 +56,10 @@ const args = process.argv.slice(2);
 fs.appendFileSync(${JSON.stringify(sshTrace)}, JSON.stringify({ args, env: Object.keys(process.env).sort() }) + "\\n");
 if (${JSON.stringify(scenario)} === "stage_remove_failure" && args.at(-1).includes("stage-remove")) process.exit(34);
 if (${JSON.stringify(scenario)} === "oversize_packet" && args.at(-1).includes("packet-check")) {
-  console.log('{"allowed":false}'); process.exit(0);
+  console.log('{"allowed":false,"packet_length":500000,"reason":"too_large"}'); process.exit(0);
+}
+if (${JSON.stringify(scenario)} === "expired_packet" && args.at(-1).includes("packet-check")) {
+  console.log('{"allowed":false,"packet_length":null,"reason":"expired"}'); process.exit(0);
 }
 if (${JSON.stringify(scenario)} === "release_failure" && args.at(-1).includes("attempt-release")) {
   const marker = ${JSON.stringify(path.join(laptop, "release-fail-count"))};
@@ -650,6 +654,38 @@ test("packet preflight refuses before the Claude executable starts", async (t) =
   assert.ok(logs.every(item => item.outcome === "rejected:PACKET_TOO_LARGE" && item.model_reached === false));
   assert.equal((await f.port.getCompletion("job:synthetic-oversize")).status, "exhausted");
   assert.deepEqual(await f.exchange.listDispatch(), []);
+});
+
+test("an item that expires before Claude starts is released, not recorded as oversize", async (t) => {
+  const f = await fixture(t, "expired_packet");
+  const key = "job:synthetic-expired-before-start";
+  await assert.rejects(f.port.invoke({ ...call(key), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  await assert.rejects(fs.access(f.trace));
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map(item => item.outcome), ["rejected:PACKET_UNAVAILABLE"]);
+  // Not closed: the runtime follows its normal expired-item path.
+  assert.notEqual((await f.port.getCompletion(key)).status, "exhausted");
+  const [record] = await f.exchange.listDispatch();
+  let status = "";
+  await runJournalWork(["attempt-status", "--work-id", record.work_id], { environment: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root },
+    stdout: { write: value => { status += value; } } });
+  assert.equal(JSON.parse(status).status, "none", "the reservation is released");
+});
+
+test("startup cleanup keeps parents named as unresolved", async (t) => {
+  const base = await fs.mkdtemp(path.join(os.tmpdir(), "journal-stale-keep-"));
+  t.after(() => fs.rm(base, { recursive: true, force: true }));
+  const old = new Date(Date.now() - 2 * 3_600_000);
+  for (const name of ["inner-signal-claude-KEEPME", "inner-signal-claude-DROPME"]) {
+    const directory = path.join(base, name);
+    await fs.mkdir(directory, { mode: 0o700 });
+    await fs.writeFile(path.join(directory, "worker.lock"), "", { mode: 0o600 });
+    await fs.utimes(directory, old, old);
+  }
+  await removeStaleRuns(base, "inner-signal-claude-", { keep: new Set(["inner-signal-claude-KEEPME"]) });
+  await fs.access(path.join(base, "inner-signal-claude-KEEPME"));
+  await assert.rejects(fs.access(path.join(base, "inner-signal-claude-DROPME")));
 });
 
 for (const code of ["ECONNREFUSED", "ENOTFOUND"]) {
