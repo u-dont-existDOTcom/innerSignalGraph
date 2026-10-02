@@ -26,6 +26,7 @@ import { createAuditScopeIndex, createReconciledAuditScope, summarizeFidelityCov
 import { publishJournalGenerationFromStaging } from "./publication.mjs";
 import { runJournalPatternPass } from "./pattern-stage.mjs";
 import { createJournalSemanticBatches, journalSemanticUnitCost, splitBatchExtractionByUnit } from "./semantic-batches.mjs";
+import { extractionCycleDiagnostics, fidelityCycleDiagnostics, unresolvedExtractionDiagnostics, diagnosticBlockerCode } from "./calibration-diagnostics.mjs";
 
 const hash = (v) => createHash("sha256").update(v).digest("hex");
 const invariant = (v, code) => { if (!v) throw new ValidationError(code, { code }); };
@@ -250,7 +251,17 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     const writeOnce = async (id, value) => {
       const prior = await readIfPresent(id);
       const canonical = (v) => JSON.stringify(v, (k, x) => k === "replay" ? undefined : x);
-      if (prior) { invariant(canonical(prior) === canonical(value), "JOURNAL_IMMUTABLE_RESULT_CONFLICT"); return prior; }
+      if (prior) {
+        let legacyDiagnosticsOnly = false;
+        if (id.startsWith("unit:graph:") && !Object.hasOwn(prior, "diagnostics")
+          && Object.hasOwn(value, "diagnostics")) {
+          const withoutDiagnostics = { ...value };
+          delete withoutDiagnostics.diagnostics;
+          legacyDiagnosticsOnly = canonical(prior) === canonical(withoutDiagnostics);
+        }
+        invariant(canonical(prior) === canonical(value) || legacyDiagnosticsOnly, "JOURNAL_IMMUTABLE_RESULT_CONFLICT");
+        return prior;
+      }
       await store.writeJsonObject({ objectId: id, value }); return value;
     };
     const calibrationEpoch = () => state.calibration_epoch ?? 0;
@@ -290,6 +301,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     };
     const summary = () => ({ schema_version: 1, stage: state.stage, calibration: state.calibration,
       calibration_epoch: calibrationEpoch(), calibration_history_length: state.calibration_history?.length ?? 0,
+      ...(state.calibration_history?.length ? { previous_failure:
+        structuredClone(state.calibration_history.at(-1).previous_failure) } : {}),
       ...(state.calibration_failure ? { calibration_failure: structuredClone(state.calibration_failure) } : {}),
       semantic_disposition: state.semantic_disposition ?? null,
       completed_units: state.completed_units.length, completed_visual_pages: state.completed_visual_pages.length,
@@ -400,9 +413,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
     // Set when work() returns null because its job can never answer (the output stayed invalid
     // through every retry the job allows), as opposed to a pause the next run may resolve.
     let workExhausted = false;
+    let incompleteWorkResults = null;
     async function work({ id, role, stage: workStage, unit = null, units = null, packetInput, tier = "standard",
       identityPacketInput = packetInput, dependencies = [], acceptReviewFindings = false }) {
       workExhausted = false;
+      incompleteWorkResults = null;
       await authorize();
       const scopeUnits = Array.isArray(units) ? units : (unit ? [unit] : []);
       invariant(scopeUnits.length > 0, "JOURNAL_WORK_SCOPE_INVALID");
@@ -539,6 +554,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const [primary] = entry.snapshot.work_items;
         const parked = acceptReviewFindings && primary?.status === "needs_context" && primary.output && primary.receipt;
         if (unfinished && !parked && !(acceptReviewFindings && entry.snapshot.work_items.every(item => item.output && item.receipt))) {
+          incompleteWorkResults = entry.snapshot.work_items.map((item) => ({ output: item.output ?? null, receipt: item.receipt ?? null }));
           state.stage = unfinished.stage; state.blocker = entry.snapshot.checkpoint.blocked_reason ?? "OUTPUT_INCOMPLETE";
           workExhausted = unfinished.status === "blocked_authority" && state.blocker === "INVALID_STRUCTURED_OUTPUT";
           await save();
@@ -748,7 +764,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         validateJournalGraph(graph, { [unit.representation_id]: representation.text });
         return graph;
       };
-      const recordSourceOnly = async (unit, reason, detail = null) => {
+      const recordSourceOnly = async (unit, reason, detail = null, diagnostics = unresolvedExtractionDiagnostics([])) => {
         const sourceOnlyExtraction = { schema_version: "1.0", status: "incomplete", assertions: [], entities: [], episodes: [],
           coverage: [{ unit_id: unit.unit_id, disposition: "needs_review", assertion_local_ids: [],
             reason: `Semantic processing ended for this unit (${reason}); the archived source remains available.` }],
@@ -756,28 +772,34 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         const graph = bindUnitExtraction(unit, sourceOnlyExtraction, { receipt_id: `mechanical:source-only:${unit.unit_id}` });
         await writeUnitRecord(unit.unit_id, { graph, extraction: null, omission: null,
           source_only_unresolved: true, source_only_reason: reason,
+          diagnostics,
           ...(detail === null ? {} : { source_only_detail: detail }) });
         if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
         state.stage = "EXTRACT"; state.blocker = null; await save();
         return true;
       };
-      const setCalibrationStop = async (unitId, status, reason) => {
+      const setCalibrationStop = async (unitId, status, reason, diagnostics) => {
         state.calibration = "failed";
-        state.calibration_failure = { unit_id: unitId, status, reason };
+        state.calibration_failure = { unit_id: unitId, status, reason,
+          ...(diagnostics ? { diagnostics } : {}) };
         state.stage = "REFERENCE_AUDIT";
         state.blocker = status;
         await save();
         return false;
       };
-      const stopCalibration = async (unit, status, reason) => {
-        await recordSourceOnly(unit, status, reason);
-        return setCalibrationStop(unit.unit_id, status, reason);
+      const stopCalibration = async (unit, status, reason, diagnostics = unresolvedExtractionDiagnostics([])) => {
+        await recordSourceOnly(unit, status, reason, diagnostics);
+        return setCalibrationStop(unit.unit_id, status, reason, diagnostics);
       };
       const processBatch = async (incoming, calibration = false) => {
         // Reuse the frozen scope even when a crash occurred between writing two
         // unit records. The completed job and its receipt keep the same identity.
         const units = incoming;
         if (units.every((unit) => state.completed_units.includes(unit.unit_id))) return true;
+        const cycles = [];
+        let hardestDiagnostics = null;
+        const fidelityCycles = [];
+        const diagnostics = () => unresolvedExtractionDiagnostics(cycles, hardestDiagnostics, fidelityCycles);
         const finishExhausted = async (reason) => {
           if (!workExhausted) return false;
           if (units.length > 1) {
@@ -787,8 +809,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           }
           return calibration
             ? stopCalibration(units[0], reason.startsWith("CALIBRATION_")
-              ? reason : "CALIBRATION_EXTRACTION_ATTEMPTS_EXHAUSTED", reason)
-            : recordSourceOnly(units[0], reason);
+              ? reason : "CALIBRATION_EXTRACTION_ATTEMPTS_EXHAUSTED", reason, diagnostics())
+            : recordSourceOnly(units[0], reason, null, diagnostics());
         };
         const keyId = batchKey(units);
         const core = units.map((unit) => ({ unit_id: unit.unit_id, text: unit.text }));
@@ -868,7 +890,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             }],
             acceptReviewFindings: true
           });
-          if (!results) return finishExhausted("EXTRACTION_ATTEMPTS_EXHAUSTED");
+          if (!results) {
+            cycles.push({ cycle, ...extractionCycleDiagnostics(incompleteWorkResults),
+              blocker_code: diagnosticBlockerCode(state.blocker) });
+            return finishExhausted("EXTRACTION_ATTEMPTS_EXHAUSTED");
+          }
           // The extractor asked for smaller windows or more context: split a batch of several units
           // at once instead of asking again for the same window.
           if (["incomplete", "needs_context"].includes(results[0].output?.status) && units.length > 1) {
@@ -890,6 +916,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             bindingFailure = { code: error.code, details: error.details ?? null };
           }
           const review = results[1]?.output;
+          cycles.push({ cycle, ...extractionCycleDiagnostics(results, bindingFailure?.code ?? null), blocker_code: null });
           if (!bindingFailure && results[0].output.status === "complete"
             && review?.status === "sufficient_for_stated_scope"
             && !review.assessments.some((assessment) => assessment.outcome !== "preserved"
@@ -926,6 +953,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           });
           const outcomeId = epochId(`extract:batch:${keyId}`, calibration);
           if (!hardest) {
+            hardestDiagnostics = { ...extractionCycleDiagnostics(incompleteWorkResults),
+              blocker_code: diagnosticBlockerCode(state.blocker) };
             if (!workExhausted) return false;
             state.blocker = null;
             await recordHardestOutcome(outcomeId, "failed");
@@ -940,6 +969,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               if (!(error instanceof ValidationError)) throw error;
               bindingFailure = { code: error.code, details: error.details ?? null };
             }
+            hardestDiagnostics = { ...extractionCycleDiagnostics(hardest, bindingFailure?.code ?? null), blocker_code: null };
             review = results?.[1]?.output;
             unresolved = Boolean(bindingFailure) || results?.[0]?.output?.status !== "complete"
               || review?.status !== "sufficient_for_stated_scope"
@@ -955,7 +985,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             && await processBatch(units.slice(middle), calibration);
         }
         if (unresolved && calibration) {
-          return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_EXTRACTION_UNRESOLVED");
+          return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_EXTRACTION_UNRESOLVED", diagnostics());
         }
         if (unresolved) {
           const unit = units[0];
@@ -971,6 +1001,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           };
           const graph = bindUnitExtraction(unit, admitted, results[0].receipt);
           await writeUnitRecord(unit.unit_id, { graph, extraction: results[0], omission: results[1], source_only_unresolved: true,
+            diagnostics: diagnostics(),
             ...(hardestLane.enabled ? { hardest: "failed" } : {}) });
           if (!state.completed_units.includes(unit.unit_id)) state.completed_units.push(unit.unit_id);
           state.stage = "EXTRACT";
@@ -1000,12 +1031,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             candidateIds: combined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
           if (initialFidelity.blocked) return false;
           if (initialFidelity.failure) {
+            fidelityCycles.push({ cycle: 0, ...extractionCycleDiagnostics(results), blocker_code: null, fidelity: null });
             if (units.length > 1) {
               const middle = Math.ceil(units.length / 2);
               return await processBatch(units.slice(0, middle), true)
                 && await processBatch(units.slice(middle), true);
             }
-            return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", initialFidelity.failure);
+            return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", initialFidelity.failure, diagnostics());
           }
           let fidelity = initialFidelity.result;
           await writeOnce(epochId(`calibration:review:batch:${keyId}`, true), { reference, fidelity: fidelity[0], score, unit_ids: units.map((unit) => unit.unit_id) });
@@ -1014,6 +1046,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             && score.qualifier_error_count === 0
             && score.reference_counts.unassessed === 0
             && (score.reference_total === 0 || score.provisional_target_met);
+          fidelityCycles.push({ cycle: 0, ...extractionCycleDiagnostics(results), blocker_code: null,
+            fidelity: fidelityCycleDiagnostics(fidelity[0].output.status, score, calibrationPass) });
           if (!calibrationPass && units.length > 1) {
             const middle = Math.ceil(units.length / 2);
             return await processBatch(units.slice(0, middle), true)
@@ -1053,9 +1087,15 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               }],
               acceptReviewFindings: true
             });
-            if (!repaired) return finishExhausted("CALIBRATION_REPAIR_ATTEMPTS_EXHAUSTED");
+            if (!repaired) {
+              fidelityCycles.push({ cycle: auditCycle, ...extractionCycleDiagnostics(incompleteWorkResults),
+                blocker_code: diagnosticBlockerCode(state.blocker), fidelity: null });
+              return finishExhausted("CALIBRATION_REPAIR_ATTEMPTS_EXHAUSTED");
+            }
             results = repaired;
             const repairedReview = repaired[1]?.output;
+            const repairSnapshot = { cycle: auditCycle, ...extractionCycleDiagnostics(repaired), blocker_code: null, fidelity: null };
+            fidelityCycles.push(repairSnapshot);
             let repairedSplit, repairedGraphs;
             try {
               repairedSplit = splitBatchExtractionByUnit({
@@ -1068,6 +1108,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               ]));
             } catch (error) {
               if (!(error instanceof ValidationError)) throw error;
+              repairSnapshot.binding_failure_code = extractionCycleDiagnostics(repaired, error.code).binding_failure_code;
               continue;
             }
             if (repaired[0].output.status !== "complete"
@@ -1098,7 +1139,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               candidateIds: repairedCombined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
             if (repairedFidelityAttempt.blocked) return false;
             if (repairedFidelityAttempt.failure)
-              return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", repairedFidelityAttempt.failure);
+              return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", repairedFidelityAttempt.failure, diagnostics());
             const repairedFidelity = repairedFidelityAttempt.result;
             await writeOnce(epochId(`calibration:repair-review:batch:${keyId}:cycle:${auditCycle}`, true), {
               reference, fidelity: repairedFidelity[0], score: repairedScore,
@@ -1111,9 +1152,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               && score.qualifier_error_count === 0
               && score.reference_counts.unassessed === 0
               && (score.reference_total === 0 || score.provisional_target_met);
+            repairSnapshot.fidelity = fidelityCycleDiagnostics(fidelity[0].output.status, score, calibrationPass);
           }
           if (!calibrationPass) {
-            return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED");
+            return stopCalibration(units[0], "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", diagnostics());
           }
         }
         for (const unit of units) {
@@ -1146,7 +1188,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           const record = calibrationRecords[failedIndex];
           const status = calibrationStopStatus(record.source_only_reason);
           await setCalibrationStop([...calibrationIds][failedIndex], status,
-            record.source_only_detail ?? record.source_only_reason ?? "CALIBRATION_UNIT_UNRESOLVED");
+            record.source_only_detail ?? record.source_only_reason ?? "CALIBRATION_UNIT_UNRESOLVED",
+            record.diagnostics);
           return summary();
         }
         invariant(calibrationRecords.every(Boolean), "CALIBRATION_UNIT_UNRESOLVED");
@@ -1226,7 +1269,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       state.calibration_epoch = calibrationEpoch() + 1;
       state.calibration_history ??= [];
       state.calibration_history.push({ epoch: state.calibration_epoch, at: now().toISOString(),
-        previous_failure: { status: failure.status, reason: failure.reason } });
+        previous_failure: { status: failure.status, reason: failure.reason,
+          ...(failure.diagnostics ? { diagnostics: failure.diagnostics } : {}) } });
       state.calibration = "not_run";
       delete state.calibration_failure;
       state.blocker = null;
@@ -1248,7 +1292,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             failedUnit = item.unit_id;
             reason = record.source_only_reason ?? reason;
             state.calibration_failure = { unit_id: failedUnit, status: calibrationStopStatus(reason),
-              reason: record.source_only_detail ?? reason };
+              reason: record.source_only_detail ?? reason,
+              ...(record.diagnostics ? { diagnostics: record.diagnostics } : {}) };
             break;
           }
         }

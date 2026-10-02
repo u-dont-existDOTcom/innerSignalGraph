@@ -401,6 +401,16 @@ test("an exhausted hardest single-unit extraction continues as a source-only res
     assert.equal(summary.residuals.hardest_attempted, 1);
     assert.equal(summary.residuals.hardest_resolved, 0);
     assert.equal(summary.residuals.source_only_units, 1);
+    const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+    const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+      corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+    try {
+      const records = await Promise.all(state.completed_units.map((id) => store.readJsonObject({ objectId: `unit:graph:${id}` })));
+      const unresolved = records.filter((record) => record.source_only_unresolved);
+      assert.equal(unresolved.length, 1);
+      assert.deepEqual(unresolved[0].diagnostics.cycles.map((cycle) => cycle.cycle), [0, 1, 2]);
+      assert.equal(unresolved[0].diagnostics.hardest.extraction, null);
+    } finally { await store.close(); }
   } finally { await runtime.close(); }
 });
 
