@@ -613,13 +613,13 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       if (record && marker?.attempted) {
         attempts.set(record.work_id, 3);
         const spent = marker.packet_fetched === true || marker.model_reached === true;
-        // A hold left by a run refused at init, before the model, stays open for an operator to clear;
-        // skip it without closing, and report the setup problem in the exit status.
+        // A hold left by a run refused at init, before the model, stays open for an operator to clear.
+        // The setup may still be broken, so stop without closing it or trying further items (exit 78).
         if (marker.status === "isolation_refused" && !spent) {
           heldOpen = true;
           await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
             model: record.model, effort: record.effort, outcome: "isolation_refused", duration_ms: 0 });
-          continue;
+          break;
         }
         // A live sibling may own a reservation; a reservation whose packet was served and whose run is long
         // past its timeout belongs to a dead worker and has spent the attempt.

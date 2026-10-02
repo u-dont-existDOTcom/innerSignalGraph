@@ -803,10 +803,16 @@ test("already attempted, corrupt and isolation-refused items do not consume max-
     journalAttemptMarkerKey(journalAttemptIdentity(records[1])) + ".json"), "{");
   await runJournalWork(["attempt-refuse", "--work-id", records[2].work_id, "--claim", claim],
     { environment, stdout: { write() {} } });
-  await runJournalClaudeWorker(f.args, { environment: f.environment });
-  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
-  assert.deepEqual(logs.map(item => item.outcome), ["already_attempted", "already_attempted", "isolation_refused", "answered"]);
-  assert.equal(logs.at(-1).work_id, records[3].work_id);
+  // The unspent isolation hold stops the worker (exit 78) before it tries the next item.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  let logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map(item => item.outcome), ["already_attempted", "already_attempted", "isolation_refused"]);
+  // Once the operator clears the hold, the next worker answers that item (the skipped ones were closed
+  // on the first pass and didn't use up the single allowed item).
+  await runJournalWork(["attempt-clear", "--work-id", records[2].work_id], { environment, stdout: { write() {} } });
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.slice(3).map(item => [item.work_id, item.outcome]), [[records[2].work_id, "answered"]]);
 });
 
 test("a fresh isolation refusal before the model stops the worker and leaves the item open", async (t) => {
