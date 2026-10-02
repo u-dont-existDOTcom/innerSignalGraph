@@ -214,6 +214,23 @@ test("Codex worker leaves a hardest dispatch for the Claude worker", async (t) =
   assert.equal(await fs.readFile(f.trace, "utf8").catch(() => ""), "");
 });
 
+test("an invalid hardest dispatch cannot stall the Codex worker", async t => {
+  const f = await setup(t);
+  await f.publish("job:synthetic-valid-standard");
+  const invalidId = "job:synthetic-invalid-hardest";
+  const entry = manualWork(invalidId);
+  await fs.writeFile(path.join(f.root, "dispatch", `${journalWorkFileKey(invalidId)}.json`), JSON.stringify({
+    schema_version: 1, work_id: invalidId, role: entry.role, tier: "hardest",
+    output_schema_name: entry.output_schema_name, model: "claude-opus-5-5", effort: "max",
+    route_ref: "route:codex", issued_at: entry.issued_at, expires_at: entry.expires_at
+  }), { mode: 0o600 });
+  const fake = await f.fake();
+  assert.equal(await runJournalCodexWorker(f.args(fake, ["--once"]), { environment: f.environment }), 0);
+  assert.ok((await f.exchange.readResult("job:synthetic-valid-standard"))?.output);
+  assert.ok(f.exchange.invalidDispatchCount() >= 1);
+  assert.ok(!(await fs.readFile(f.log, "utf8")).includes(SENTINEL));
+});
+
 test("doctor authorizes Codex execution evidence without relaxing ChatGPT blockers", async (t) => {
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "journal-codex-doctor-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));

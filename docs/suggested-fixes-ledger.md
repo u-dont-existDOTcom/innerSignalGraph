@@ -9,3 +9,5 @@
 | Item | Outcome | Destination | Date | Note |
 | --- | --- | --- | --- | --- |
 | `2026-09-30-claim-integrity-checks.md` | Owner question OPEN | `OWNER-QUESTIONS.md`, question 1; separate proposal PR #96 | 2026-10-02 | Explicit owner request. Exact proposed wording is available for approval with warmth/length tradeoffs. This branch changes journal-worker infrastructure only; no therapy prompt or served-protocol edit, adoption, decline or deferral is implied. |
+
+2026-10-02 (fourth review round): The available web surface returned a cached default-branch Universal root and selected rules, but the live lane listing, queue method, and known item path returned errors/cache misses. Live freshness and new queue items could not be verified. The previously recorded claim-integrity owner question remains OPEN; no new disposition or therapy change is inferred. Reconcile the current lane at the next connected review.

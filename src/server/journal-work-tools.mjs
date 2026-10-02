@@ -3,6 +3,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 import { PRIVATE_CASE_SCOPES } from "../storage/private-case-access.mjs";
 import { JOURNAL_WORK_ID_PATTERN, MAX_JOURNAL_RESULT_BYTES } from "../journal-import/work-exchange.mjs";
 import { journalWorkPacketValue, MAX_HARDEST_PACKET_CHARS } from "../journal-import/packet-bounds.mjs";
+import { markJournalAttemptPacketFetched } from "../journal-import/attempt-markers.mjs";
 export { journalWorkPacketValue, MAX_JOURNAL_TOOL_RESULT_CHARS } from "../journal-import/packet-bounds.mjs";
 
 // Two connector tools for the private journal import. ChatGPT fetches one work item (instruction,
@@ -66,7 +67,8 @@ export const JOURNAL_WORK_INSTRUCTIONS = "For a private InnerSignal journal work
 const toolError = (code, message, details = undefined) => ({ toolError: { code, message, ...(details ? { details } : {}) } });
 const value = (result) => ({ value: result });
 
-export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier = null, stageDir = null } = {}) {
+export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier = null, stageDir = null,
+  markAttemptPacketFetched = markJournalAttemptPacketFetched } = {}) {
   if (!exchange || typeof exchange.readWork !== "function" || typeof exchange.submitResult !== "function") {
     throw new TypeError("A journal work exchange is required.");
   }
@@ -110,6 +112,10 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
       return toolError("JOURNAL_WORK_PACKET_TOO_LARGE", "JOURNAL_WORK_PACKET_TOO_LARGE");
     }
     if (stageDir) await exchange.markPacketFetched({ stageDir, workId });
+    if (entry.tier === "hardest") {
+      const record = (await exchange.listDispatch()).find(item => item.work_id === workId);
+      await markAttemptPacketFetched(exchange.root, record);
+    }
     return value(packet);
   }
 

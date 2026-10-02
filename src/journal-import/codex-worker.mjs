@@ -231,7 +231,7 @@ export function boundedLineReader({ onLine, maxLineBytes = MAX_LINE, maxStreamBy
 }
 
 export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups,
-  maxLineBytes = MAX_LINE, maxStreamBytes = MAX_STREAM, killOnClose = false }) {
+  maxLineBytes = MAX_LINE, maxStreamBytes = MAX_STREAM, killOnClose = false, onSpawn = null }) {
   return new Promise((resolve) => {
     const started = Date.now();
     let child;
@@ -240,6 +240,8 @@ export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeG
     let problem = null, timedOut = false, refused = false;
     let processing = Promise.resolve();
     const killGroup = () => { try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { child.kill("SIGKILL"); } };
+    if (onSpawn && child.pid) processing = Promise.resolve().then(() => onSpawn(child.pid))
+      .catch(() => { problem = "PROCESS_RECORD_FAILED"; refused = true; killGroup(); });
     const reader = boundedLineReader({ onLine: line => onLine(line, killGroup), maxLineBytes, maxStreamBytes });
     activeGroups?.add(killGroup);
     const timer = timeoutMs === null ? null : setTimeout(() => { timedOut = true; killGroup(); }, timeoutMs);

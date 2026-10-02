@@ -647,3 +647,26 @@ test("a hardest dispatch without explicit attempt identity is refused", async t 
     issued_at: "2026-10-01T00:00:00.000Z", expires_at: "2099-01-01T00:00:00.000Z" }),
   { code: "JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED" });
 });
+
+test("a worker's terminal unanswered tombstone immediately exhausts the durable port", async () => {
+  let publications = 0, sleeps = 0;
+  const exchange = {
+    async readWork() { return null; },
+    async readResult(workId) { return { work_id: workId, retired: true, unanswered: true, exhausted: true }; },
+    async publishWork() { publications += 1; },
+    async listDispatch() { return []; }
+  };
+  const port = createExchangeJournalInferencePort({ exchange, caseId: CASE_ID, receiptKey: Buffer.alloc(32, 41),
+    routeRef: "route:synthetic", model: "gpt-6-sol", effort: "medium", executionAttestation: "codex_exec",
+    allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    waitMs: 86_400_000, sleep: async () => { sleeps += 1; assert.fail("terminal item waited"); } });
+  const store = memoryStore();
+  const durable = createDurableJournalInferencePort({ port, corpusStore: store });
+  const request = { ...referenceCall(), tier: "hardest" };
+  await assert.rejects(durable.invoke(request), { code: "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED", submissionStatus: "exhausted" });
+  const restarted = createDurableJournalInferencePort({ port, corpusStore: store });
+  assert.deepEqual(await restarted.getCompletion(KEY), { status: "exhausted", code: "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED" });
+  await assert.rejects(restarted.invoke(request), { submissionStatus: "exhausted" });
+  assert.equal(publications, 0);
+  assert.equal(sleeps, 0);
+});

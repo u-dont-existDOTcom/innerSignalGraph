@@ -7,7 +7,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createJournalWorkExchange } from "../src/journal-import/work-exchange.mjs";
+import { createJournalWorkExchange, journalWorkFileKey } from "../src/journal-import/work-exchange.mjs";
 
 const execFileAsync = promisify(execFile);
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -94,6 +94,25 @@ test("dispatch reports the persisted hardest tier to the worker", async (t) => {
   assert.equal(result.stderr, "");
   assert.equal(JSON.parse(result.stdout).tier, "hardest");
   assert.equal(JSON.parse(result.stdout).attempt_identity, "a".repeat(48));
+});
+
+test("dispatch skips bad records and counts them without printing their contents", async t => {
+  const { root, exchange } = await setup(t);
+  const entry = work("job:synthetic-valid-dispatch");
+  await publish(exchange, entry);
+  const badId = "job:synthetic-missing-identity";
+  const original = (await exchange.listDispatch())[0];
+  const { answered, ...fields } = original;
+  await fs.writeFile(path.join(root, "dispatch", `${journalWorkFileKey(badId)}.json`),
+    JSON.stringify({ ...fields, work_id: badId, tier: "hardest" }), { mode: 0o600 });
+  await fs.writeFile(path.join(root, "dispatch", `${"b".repeat(64)}.json`), SENTINEL, { mode: 0o600 });
+  const records = await exchange.listDispatch();
+  assert.deepEqual(records.map(record => record.work_id), [entry.work_id]);
+  assert.equal(exchange.invalidDispatchCount(), 2);
+  const result = await dispatch(root, true);
+  assert.equal(JSON.parse(result.stdout).work_id, entry.work_id);
+  assert.equal(result.stderr, "");
+  assert.ok(!result.stdout.includes(SENTINEL));
 });
 
 test("dispatch omits expired and retired items and is silent when none remain", async (t) => {

@@ -68,13 +68,19 @@ test("hardest complete packet boundary is 450,000 characters, below the 500,000 
       instruction: "SYNTHETIC_INSTRUCTION", packet: { text: "" }, output_schema: { type: "object" },
       expected_generation: "synthetic-generation", expires_at: "2099-01-01T00:00:00.000Z" };
     entry.packet.text = "x".repeat(MAX_HARDEST_PACKET_CHARS - JSON.stringify(journalWorkPacketValue(entry)).length + extra);
-    let fetched = false;
+    let fetched = false, attemptFetched = false;
+    const record = { work_id: workId, attempt_identity: "a".repeat(48) };
     const tools = createJournalWorkTools({ caseId: entry.case_id, tier: "hardest", stageDir: "/synthetic-stage",
+      markAttemptPacketFetched: async (root, dispatch) => {
+        assert.equal(root, "/synthetic-exchange"); assert.deepEqual(dispatch, record); attemptFetched = true;
+      },
       authorizeCase: async () => ({ principalId: "synthetic" }), exchange: {
+        root: "/synthetic-exchange", listDispatch: async () => [record],
         readWork: async () => entry, isExpired: () => false, hasResult: async () => false,
         submitResult: async () => {}, markPacketFetched: async () => { fetched = true; } } });
     const result = await tools.call("get_journal_work_packet", { work_id: workId });
     assert.equal(fetched, extra === 0);
+    assert.equal(attemptFetched, extra === 0);
     if (extra) assert.equal(result.toolError.code, "JOURNAL_WORK_PACKET_TOO_LARGE");
     else assert.equal(JSON.stringify(result.value).length, MAX_HARDEST_PACKET_CHARS);
   }

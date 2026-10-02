@@ -263,7 +263,10 @@ export function createJournalWorkDispatchReader({ root, owner = currentUser() } 
     }
   }
 
+  let invalidRecords = 0;
   return Object.freeze({
+    // Content-free cumulative count; a malformed record cannot halt either lane.
+    invalidRecordCount: () => invalidRecords,
     async listDispatch() {
       await assertJournalWorkExchangeRoot(root, { owner });
       if (!(await directoryExists())) return [];
@@ -279,13 +282,15 @@ export function createJournalWorkDispatchReader({ root, owner = currentUser() } 
           });
         } catch (error) {
           if (error?.code === "ENOENT") continue;
-          if (error?.code === "ELOOP" || error?.code === "ERR_NOT_REGULAR_FILE") fail("JOURNAL_WORK_DISPATCH_INVALID");
+          if (["ELOOP", "ERR_NOT_REGULAR_FILE", "JOURNAL_WORK_DISPATCH_INVALID"].includes(error?.code)) {
+            invalidRecords += 1; continue;
+          }
           throw error;
         }
         let value;
         try { value = validateDispatchRecord(JSON.parse(bytes.toString("utf8"))); }
-        catch { fail("JOURNAL_WORK_DISPATCH_INVALID"); }
-        if (journalWorkFileKey(value.work_id) !== match[1]) fail("JOURNAL_WORK_DISPATCH_INVALID");
+        catch { invalidRecords += 1; continue; }
+        if (journalWorkFileKey(value.work_id) !== match[1]) { invalidRecords += 1; continue; }
         records.push(Object.freeze({ ...value, answered: await answered(value.work_id) }));
       }
       return records.sort((left, right) => Date.parse(left.issued_at) - Date.parse(right.issued_at) || left.work_id.localeCompare(right.work_id));
@@ -609,7 +614,8 @@ export function createJournalWorkExchange({
         fail("JOURNAL_WORK_RESULT_INVALID");
       }
       if (record.retired === true) {
-        return Object.freeze({ retired: true, retired_at: record.retired_at, unanswered: record.unanswered === true });
+        return Object.freeze({ retired: true, retired_at: record.retired_at, unanswered: record.unanswered === true,
+          ...(record.exhausted === true ? { exhausted: true } : {}) });
       }
       const { tag, ...fields } = record.receipt ?? {};
       if (typeof tag !== "string" || fields.work_file_key !== fileKey || fields.transport !== JOURNAL_WORK_TRANSPORT
@@ -654,7 +660,7 @@ export function createJournalWorkExchange({
     // only if no answer arrived first. The tombstone is linked into place like an answer, so an answer
     // and the closing can never both win. Returns { closed: false } when an answer (or an earlier
     // tombstone) already holds the name; the caller then reads it.
-    async closeUnanswered(workId) {
+    async closeUnanswered(workId, { exhausted = false } = {}) {
       const fileKey = journalWorkFileKey(workId);
       await ensureDirectory("work");
       const closed = await publish("result", fileKey, seal(derived.encryption, "result", fileKey, {
@@ -662,6 +668,7 @@ export function createJournalWorkExchange({
         work_id: workId,
         retired: true,
         unanswered: true,
+        ...(exhausted ? { exhausted: true } : {}),
         retired_at: now().toISOString()
       }));
       if (!closed) return Object.freeze({ closed: false });
@@ -688,6 +695,8 @@ export function createJournalWorkExchange({
     async listDispatch() {
       return dispatchReader.listDispatch();
     },
+
+    invalidDispatchCount: () => dispatchReader.invalidRecordCount(),
 
     removeDispatch,
 

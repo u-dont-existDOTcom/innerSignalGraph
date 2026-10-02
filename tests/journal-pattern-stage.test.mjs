@@ -764,6 +764,18 @@ test("hardest pattern review splits groups using the complete fetch envelope", a
   assert.ok(reviewerRequests.some(request => request.tier === "hardest"));
 });
 
+test("documented hardest-lane bounds also split standard review groups and change their scope IDs", async () => {
+  const statements = [1, 2, 3].map(index => `SYNTHETIC_STANDARD_PATTERN_${index}_` + "x".repeat(210_000));
+  const standard = reviewPacketHarness(statements);
+  const enabled = reviewPacketHarness(statements);
+  assert.equal((await runJournalPatternPass({ ...standard.args, maximumBytes: 50_000, hardestLaneEnabled: false })).status, "pass");
+  assert.equal((await runJournalPatternPass({ ...enabled.args, maximumBytes: 50_000, hardestLaneEnabled: true })).status, "pass");
+  assert.equal(standard.reviewerRequests.length, 1);
+  assert.ok(enabled.reviewerRequests.length > 1);
+  assert.ok(enabled.reviewerRequests.every(request => request.tier !== "hardest"));
+  assert.ok(enabled.reviewerRequests.every(request => request.id !== standard.reviewerRequests[0].id));
+});
+
 test("an indivisible oversized pattern review stays unresolved without calling Claude", async () => {
   const { args, reviewerRequests } = reviewPacketHarness(["SYNTHETIC_PATTERN_SENTINEL".repeat(25_000)]);
   const result = await runJournalPatternPass({ ...args, maximumBytes: 50_000, hardestLaneEnabled: true });

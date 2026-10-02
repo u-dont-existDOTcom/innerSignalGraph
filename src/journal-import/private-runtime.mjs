@@ -446,12 +446,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         // An earlier run left this call open. Ask the port before blocking: a connector answer may
         // have arrived since, and a call that is definitely unanswered is sent again under a new key.
         for (let resend = 1; await readIfPresent(`reference:completion-unknown:${operationKey}`); resend += 1) {
-          const completion = await port.getCompletion(operationKey);
+          const completion = await port.getCompletion(operationKey, { tier });
           if (completion.status === "completed") {
             const recovered = { output: completion.output, receipt: completion.receipt };
             await writeOnce(resultId, recovered);
             state.blocker = null; await save();
             return [recovered];
+          }
+          if (completion.status === "exhausted") {
+            state.stage = workStage; state.blocker = completion.code;
+            workExhausted = true; await save(); return null;
           }
           if (completion.status === "invalid_output") {
             const attempt = firstFailure ? 2 : 1;
@@ -476,12 +480,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           if (tier === "hardest") {
             // A crash may leave the durable intent without this direct path's result marker. Recover
             // or resume that intent before charging a slot; only a confirmed-new send consumes one.
-            const completion = await port.getCompletion(operationKey);
+            const completion = await port.getCompletion(operationKey, { tier });
             if (completion.status === "completed") {
               const recovered = { output: completion.output, receipt: completion.receipt };
               await writeOnce(resultId, recovered);
               state.blocker = null; await save();
               return [recovered];
+            }
+            if (completion.status === "exhausted") {
+              state.stage = workStage; state.blocker = completion.code;
+              workExhausted = true; await save(); return null;
             }
             try { if (completion.status === "not_submitted") await beforeHardestSend(); }
             catch (error) { if (error?.code === "HARDEST_DAILY_LIMIT") return null; throw error; }
@@ -494,6 +502,10 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           }), outputSchema: JOURNAL_ROLE_DEFINITIONS[role].outputSchema, operationKey, grant,
           ...(tier === "hardest" ? { tier } : {}) });
         } catch (error) {
+          if (error.submissionStatus === "exhausted") {
+            state.stage = workStage; state.blocker = error.code;
+            workExhausted = true; await save(); return null;
+          }
           if (error.code === "INVALID_STRUCTURED_OUTPUT" && error.submissionStatus === "completed_invalid") {
             const attempt = firstFailure ? 2 : 1;
             await writeOnce(`reference:failure:${id}:${attempt}`, { status: "invalid_output", operation_key: operationKey, attempt });
@@ -546,7 +558,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (unfinished && !parked && !(acceptReviewFindings && entry.snapshot.work_items.every(item => item.output && item.receipt))) {
           state.stage = unfinished.stage; state.blocker = entry.snapshot.checkpoint.blocked_reason ?? "OUTPUT_INCOMPLETE";
           workExhausted = unfinished.status === "blocked_authority"
-            && ["INVALID_STRUCTURED_OUTPUT", "JOURNAL_WORK_PACKET_TOO_LARGE"].includes(state.blocker);
+            && ["INVALID_STRUCTURED_OUTPUT", "JOURNAL_WORK_PACKET_TOO_LARGE", "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED"].includes(state.blocker);
           await save();
           return null;
         }

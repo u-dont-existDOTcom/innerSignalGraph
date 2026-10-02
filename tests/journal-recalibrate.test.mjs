@@ -6,6 +6,8 @@ import os from "node:os";
 import path from "node:path";
 import { createJournalWorkExchange } from "../src/journal-import/work-exchange.mjs";
 import { runJournalClaudeWorker } from "../src/journal-import/claude-worker.mjs";
+import { createExchangeJournalInferencePort, journalExchangeWorkId } from "../src/journal-import/exchange-port.mjs";
+import { runJournalWork } from "../src/cli/journal-work.mjs";
 import test from "node:test";
 import { runJournalImportCli } from "../src/cli/journal-import.mjs";
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
@@ -48,7 +50,14 @@ async function fixture(t, { pages = 1, visual = false } = {}) {
       inferencePort: port }) };
 }
 
-function mockPort({ fail = false, calls }) {
+function invalidReferenceItems(packet) {
+  return [{ id: "reference:synthetic-missing-quote", statement: "Synthetic unsupported quote.",
+    required_qualifiers: [], anchors: [{ unit_id: packet.assigned_core_ids[0],
+      quote: "SYNTHETIC_ABSENT_QUOTE_SENTINEL", occurrence: null }],
+    importance_reason: "Synthetic calibration failure.", critical: false }];
+}
+
+function mockPort({ fail = false, failReference = false, calls }) {
   const review = (role, packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation,
     review_role: role, assessments: [], proposed_repairs: [], unassessed_ids: [],
     status: "sufficient_for_stated_scope" });
@@ -58,8 +67,8 @@ function mockPort({ fail = false, calls }) {
         transcription: "Synthetic image text.", non_graphic_description: null,
         interpretation_status: "readable", speaker_or_document_label: null, table_cells: [] }],
       page_complete: true, missing_or_uncertain_regions: [] }),
-    reference_reader: () => ({ schema_version: "1.0", source_only_first_pass: true,
-      reference_items: [], questions: [], unassessed_unit_ids: [] }),
+    reference_reader: packet => ({ schema_version: "1.0", source_only_first_pass: true,
+      reference_items: failReference ? invalidReferenceItems(packet) : [], questions: [], unassessed_unit_ids: [] }),
     extractor: (packet) => ({ schema_version: "1.0", status: fail ? "incomplete" : "complete",
       assertions: [], entities: [], episodes: [],
       coverage: packet.core_units.map((unit) => ({ unit_id: unit.unit_id,
@@ -158,8 +167,84 @@ function exchangeAnswer(entry) {
   assert.fail(`unexpected synthetic role ${entry.role}`);
 }
 
-for (const resolves of [true, false]) {
-  test(`environment-loaded Codex exchange and fake SSH Claude hardest extraction (${resolves ? "resolves" : "fails"})`, async (t) => {
+for (const role of ["reference_reader", "extractor"]) {
+  test(`exhausted hardest ${role} preflight stops calibration with zero new slots`, async t => {
+    const f = await fixture(t);
+    f.config.hardest_lane = { enabled: true, daily_limit: 20 };
+    const calls = [];
+    const base = mockPort({ fail: role === "extractor", failReference: role === "reference_reader", calls });
+    const port = { ...base, isAuthoritativeCompletion: async () => true,
+      async getCompletion(key, options) {
+        if (options?.tier === "hardest") return { status: "exhausted", code: "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED" };
+        return base.getCompletion(key);
+      } };
+    const runtime = await f.open(port);
+    try {
+      const result = await runtime.execute("run");
+      assert.equal(result.calibration, "failed");
+      assert.equal(result.hardest_lane.sent, 0);
+      assert.equal(calls.filter(call => call.role === role).length, 3);
+      assert.equal(result.residuals.hardest_attempted, 1);
+      assert.equal(result.residuals.hardest_resolved, 0);
+    } finally { await runtime.close(); }
+  });
+}
+
+for (const heldStatus of ["attempted", "isolation_refused"]) {
+  test(`reference-audit recovery of an ${heldStatus} hardest identity consumes no resend slots`, async t => {
+    const f = await fixture(t);
+    f.config.hardest_lane = { enabled: true, daily_limit: 20 };
+    const root = path.join(path.dirname(f.configPath), "exchange");
+    await fs.mkdir(root, { mode: 0o700 });
+    const exchange = createJournalWorkExchange({ root, secret: randomBytes(32) });
+    const raw = createExchangeJournalInferencePort({ exchange, caseId: "synthetic-case", receiptKey: randomBytes(32),
+      routeRef: "route:synthetic", model: "gpt-6-sol", effort: "medium", executionAttestation: "codex_exec", waitMs: 0,
+      allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 } });
+    const makePort = () => ({ ...raw, close() {}, async invoke(input) {
+      try { return await raw.invoke(input); }
+      catch (error) {
+        if (error.code !== "COMPLETION_UNKNOWN" || input.tier === "hardest") throw error;
+        const workId = journalExchangeWorkId(input.operationKey);
+        const entry = await exchange.readWork(workId);
+        const output = exchangeAnswer(entry);
+        if (entry.role === "reference_reader") output.reference_items = invalidReferenceItems(entry.packet);
+        await exchange.submitResult({ workId, output, subject: "local:synthetic-codex",
+          execution: { profile_evidence: "codex_exec_request_pinned", effective_model_profile: "gpt-6-sol",
+            effective_effort: "medium", request_context_id: "codex-thread:synthetic12345678" } });
+        return raw.invoke(input);
+      }
+    } });
+    let runtime = await f.open(makePort());
+    const first = await runtime.execute("run");
+    assert.equal(first.blocker, "COMPLETION_UNKNOWN");
+    assert.equal(first.hardest_lane.sent, 1);
+    const [record] = await exchange.listDispatch();
+    assert.equal(record.tier, "hardest");
+    assert.equal(record.role, "reference_reader");
+    const claim = "11111111-1111-4111-8111-111111111111";
+    for (const command of ["attempt-reserve", heldStatus === "attempted" ? "attempt-mark" : "attempt-refuse"]) {
+      await runJournalWork([command, "--work-id", record.work_id, "--claim", claim],
+        { environment: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: root }, stdout: { write() {} } });
+    }
+    // Model an older expired unanswered item, rather than the new terminal close.
+    await exchange.closeUnanswered(record.work_id);
+    await runtime.close();
+    runtime = await f.open(makePort(), true);
+    try {
+      const started = Date.now();
+      const resumed = await runtime.execute("run");
+      assert.equal(resumed.calibration, "failed");
+      assert.equal(resumed.calibration_failure.reason, "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED");
+      assert.equal(resumed.hardest_lane.sent, 1, "a refused resend charged a daily slot");
+      assert.ok(Date.now() - started < 5000, "resend waited for expiry");
+      assert.deepEqual(await exchange.listDispatch(), []);
+    } finally { await runtime.close(); raw.close(); }
+  });
+}
+
+for (const outcome of ["resolves", "fails", "refused", "rejected"]) {
+  const resolves = outcome === "resolves", refused = outcome === "refused", rejected = outcome === "rejected";
+  test(`environment-loaded Codex exchange and fake SSH Claude hardest extraction (${outcome})`, async (t) => {
     const f = await fixture(t);
     f.config.hardest_lane = { enabled: true, daily_limit: 20 };
     f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
@@ -173,9 +258,9 @@ for (const resolves of [true, false]) {
     await fs.mkdir(workDir, { recursive: true, mode: 0o700 });
     const ssh = path.join(home, "ssh.mjs"), claude = path.join(home, "claude.mjs");
     const checkout = path.resolve(new URL("..", import.meta.url).pathname);
-    await fs.writeFile(path.join(home, "fixture.json"), JSON.stringify({ root, secretFile, resolves }), { mode: 0o600 });
+    await fs.writeFile(path.join(home, "fixture.json"), JSON.stringify({ root, secretFile, resolves, refused, rejected }), { mode: 0o600 });
     await fs.writeFile(ssh, `#!${process.execPath}\nimport fs from "node:fs";\nimport { spawnSync } from "node:child_process";\nconst fixture = JSON.parse(fs.readFileSync(new URL("./fixture.json", import.meta.url), "utf8"));\nconst args = process.argv.slice(2);\nif (!args.includes("ForwardAgent=no") || !args.includes("ForwardX11=no")) process.exit(31);\nconst result = spawnSync("/bin/sh", ["-c", args.at(-1)], { encoding: "utf8", input: fs.readFileSync(0), env: { PATH: process.env.PATH, HOME: process.env.HOME, LANG: process.env.LANG, INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: fixture.root, INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: fixture.secretFile } });\nprocess.stdout.write(result.stdout ?? ""); process.stderr.write(result.stderr ?? ""); process.exit(result.status ?? 1);\n`, { mode: 0o700 });
-    await fs.writeFile(claude, `#!${process.execPath}\nimport fs from "node:fs";\nimport { spawnSync } from "node:child_process";\nconst { resolves } = JSON.parse(fs.readFileSync(new URL("./fixture.json", import.meta.url), "utf8"));\nconst args = process.argv.slice(2);\nconst config = JSON.parse(fs.readFileSync(args[args.indexOf("--mcp-config") + 1], "utf8"));\nconst workId = args[args.indexOf("-p") + 1].match(/item ([^ .]+)/)[1];\nconsole.log(JSON.stringify({ type: "system", subtype: "init", mcp_servers: [{ name: "journal", status: "connected" }], tools: ["mcp__journal__get_journal_work_packet", "mcp__journal__submit_journal_work_result"], skills: [], slash_commands: [], plugins: [], agents: [] }));\nconst server = config.mcpServers.journal;\nconst call = (name, arguments_) => { const result = spawnSync(server.command, server.args, { encoding: "utf8", env: process.env, input: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: arguments_ } }) + "\\n" }); if (result.status !== 0) process.exit(32); return JSON.parse(result.stdout.trim()).result.structuredContent; };\nconsole.log(JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", id: "packet-call", name: "mcp__journal__get_journal_work_packet", input: { work_id: workId } }] } }));\nconst fetched = call("get_journal_work_packet", { work_id: workId });\nconsole.log(JSON.stringify({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: "packet-call", content: JSON.stringify(fetched) }] } }));\nconst review = (role) => ({ schema_version: "1.0", target_generation: fetched.packet.expected_generation, review_role: role, assessments: [], proposed_repairs: [], unassessed_ids: [], status: "sufficient_for_stated_scope" });\nconst output = ["omission_checker", "fidelity_auditor"].includes(fetched.role) ? review(fetched.role) : { schema_version: "1.0", status: resolves ? "complete" : "incomplete", assertions: [], entities: [], episodes: [], requested_context: [], coverage: fetched.packet.core_units.map((unit) => ({ unit_id: unit.unit_id, disposition: resolves ? "no_assertion" : "pending", assertion_local_ids: [], reason: "Synthetic hardest extraction." })) };\nconsole.log(JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "mcp__journal__submit_journal_work_result", input: { work_id: workId } }] } }));\nconst submitted = call("submit_journal_work_result", { work_id: workId, output });\nif (submitted.code) process.exit(33);\nconsole.log(JSON.stringify({ type: "result", is_error: false, subtype: "success", session_id: "synthetic12345678", modelUsage: { "claude-opus-5-5": { inputTokens: 1, outputTokens: 2 } }, usage: { input_tokens: 1, output_tokens: 2 } }));\n`, { mode: 0o700 });
+    await fs.writeFile(claude, `#!${process.execPath}\nimport fs from "node:fs";\nimport { spawnSync } from "node:child_process";\nconst { resolves, refused, rejected } = JSON.parse(fs.readFileSync(new URL("./fixture.json", import.meta.url), "utf8"));\nconst args = process.argv.slice(2);\nconst config = JSON.parse(fs.readFileSync(args[args.indexOf("--mcp-config") + 1], "utf8"));\nconst workId = args[args.indexOf("-p") + 1].match(/item ([^ .]+)/)[1];\nconsole.log(JSON.stringify({ type: "system", subtype: "init", mcp_servers: [{ name: "journal", status: "connected" }], tools: ["mcp__journal__get_journal_work_packet", "mcp__journal__submit_journal_work_result", ...(refused ? ["Bash"] : [])], skills: [], slash_commands: [], plugins: [], agents: [] }));\nconst server = config.mcpServers.journal;\nconst call = (name, arguments_) => { const result = spawnSync(server.command, server.args, { encoding: "utf8", env: process.env, input: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: arguments_ } }) + "\\n" }); if (result.status !== 0) process.exit(32); return JSON.parse(result.stdout.trim()).result.structuredContent; };\nconsole.log(JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", id: "packet-call", name: "mcp__journal__get_journal_work_packet", input: { work_id: workId } }] } }));\nconst fetched = call("get_journal_work_packet", { work_id: workId });\nconsole.log(JSON.stringify({ type: "user", message: { content: [{ type: "tool_result", tool_use_id: "packet-call", content: JSON.stringify(fetched) }] } }));\nconst review = (role) => ({ schema_version: "1.0", target_generation: fetched.packet.expected_generation, review_role: role, assessments: [], proposed_repairs: [], unassessed_ids: [], status: "sufficient_for_stated_scope" });\nconst output = ["omission_checker", "fidelity_auditor"].includes(fetched.role) ? review(fetched.role) : { schema_version: "1.0", status: resolves ? "complete" : "incomplete", assertions: [], entities: [], episodes: [], requested_context: [], coverage: fetched.packet.core_units.map((unit) => ({ unit_id: unit.unit_id, disposition: resolves ? "no_assertion" : "pending", assertion_local_ids: [], reason: "Synthetic hardest extraction." })) };\nconsole.log(JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "mcp__journal__submit_journal_work_result", input: { work_id: workId } }] } }));\nconst submitted = call("submit_journal_work_result", { work_id: workId, output });\nif (submitted.code) process.exit(33);\nconsole.log(JSON.stringify({ type: "result", is_error: false, subtype: "success", session_id: "synthetic12345678", modelUsage: { [rejected ? "claude-other-synthetic" : "claude-opus-5-5"]: { inputTokens: 1, outputTokens: 2 } }, usage: { input_tokens: 1, output_tokens: 2 } }));\n`, { mode: 0o700 });
     for (const program of [ssh, claude]) {
       const checked = spawnSync(process.execPath, ["--check", program], { encoding: "utf8" });
       assert.equal(checked.status, 0, checked.stderr);
@@ -194,7 +279,7 @@ for (const resolves of [true, false]) {
     const seen = new Set(), tiers = [], workerArgs = ["--agent", "claude", "--remote", "synthetic-host",
       "--remote-checkout", checkout, "--remote-config", f.configPath, "--work-dir", workDir,
       "--ssh-bin", ssh, "--claude-bin", claude, "--once", "--max-items", "1", "--timeout-ms", "5000", "--log", path.join(home, "worker-log.jsonl")];
-    let completed = false, summary, failure;
+    let completed = false, summary, failure, refusedAt = null;
     const running = runtime.execute("run").then((value) => { summary = value; completed = true; },
       (error) => { failure = error; completed = true; });
     try {
@@ -206,6 +291,7 @@ for (const resolves of [true, false]) {
           tiers.push([record.role, record.tier]);
           if (record.tier === "hardest") {
             assert.equal(await runJournalClaudeWorker(workerArgs, { environment: laptopEnvironment }), 0);
+            if (refused || rejected) refusedAt = Date.now();
           } else {
             const entry = await exchange.readWork(record.work_id);
             await exchange.submitResult({ workId: record.work_id, output: exchangeAnswer(entry), subject: "local:synthetic-codex",
@@ -225,7 +311,15 @@ for (const resolves of [true, false]) {
       const outcomes = (await fs.readFile(path.join(home, "worker-log.jsonl"), "utf8")).trim().split("\n")
         .map((line) => JSON.parse(line).outcome);
       assert.ok(outcomes.length >= 1);
-      assert.deepEqual(outcomes, outcomes.map(() => "answered"), "every hardest item is admitted from the Claude worker");
+      assert.deepEqual(outcomes, outcomes.map(() => refused ? "isolation_refused" : rejected ? "rejected:MODEL_USAGE_INVALID" : "answered"));
+      if (refused || rejected) {
+        assert.ok(Date.now() - refusedAt < 5000, "closed hardest item waited for its TTL");
+        assert.equal(summary.hardest_lane.sent, 1, "refusal never charges a resend slot");
+        assert.deepEqual(await exchange.listDispatch(), []);
+        const resumed = await runtime.execute("run");
+        assert.equal(resumed.calibration, "failed");
+        assert.equal(resumed.hardest_lane.sent, 1);
+      }
     } finally { await runtime.close(); await running; }
   });
 }
