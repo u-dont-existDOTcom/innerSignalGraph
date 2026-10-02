@@ -307,7 +307,8 @@ test("Codex receipt refuses a dispatch profile that differs from the configured 
 test("Codex exchange admits reported Claude evidence only for hardest work", async () => {
   let entry = null, dispatch = null, answer = null;
   const exchange = {
-    async readWork() { return entry; }, async readResult() { return answer; },
+    async readWork(workId) { return entry?.work_id === workId ? entry : null; },
+    async readResult(workId) { return entry?.work_id === workId ? answer : null; },
     async publishWork(value) { entry = structuredClone(value); return { created: true }; },
     async publishDispatch(value) { dispatch = structuredClone(value); },
     async listDispatch() { return dispatch ? [{ ...dispatch, answered: answer !== null }] : []; }
@@ -329,8 +330,22 @@ test("Codex exchange admits reported Claude evidence only for hardest work", asy
   assert.equal((await port.getCompletion(operationKey)).status, "completed");
   const connector = createExchangeJournalInferencePort({ ...options, executionAttestation: null });
   assert.equal((await connector.getCompletion(operationKey)).status, "invalid_output");
-  dispatch.tier = "standard";
-  assert.equal((await port.getCompletion(operationKey)).status, "invalid_output");
+  answer = { ...answer, receipt: { ...answer.receipt, profile_evidence: "codex_exec_request_pinned",
+    request_context_id: "codex-thread:12345678" } };
+  assert.equal((await port.getCompletion(operationKey)).status, "invalid_output",
+    "request-pinned Codex evidence cannot answer hardest work");
+  const standardKey = `${KEY}:claude-standard`;
+  answer = null;
+  await assert.rejects(port.invoke(referenceCall({ operationKey: standardKey })), { code: "COMPLETION_UNKNOWN" });
+  assert.equal(dispatch.tier, "standard");
+  answer = { output: structuredClone(referenceAnswer), receipt: {
+    receipt_id: "synthetic-standard-receipt", work_file_key: "synthetic-standard-work-file",
+    received_at: "2026-10-02T00:00:00.000Z", output_sha256: "synthetic-output-digest",
+    subject_sha256: "synthetic-principal-digest", request_context_id: "claude-session:12345678",
+    profile_evidence: "claude_code_model_usage_reported", effective_model_profile: dispatch.model,
+    effective_effort: dispatch.effort
+  } };
+  assert.equal((await port.getCompletion(standardKey)).status, "invalid_output");
 });
 
 test("an invalid dispatcher context identifier is not promoted into an authenticated receipt", async (t) => {

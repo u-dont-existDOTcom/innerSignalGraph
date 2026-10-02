@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
+import { createHash, randomBytes } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { createJournalWorkExchange } from "../src/journal-import/work-exchange.mjs";
+import { runJournalClaudeWorker } from "../src/journal-import/claude-worker.mjs";
 import test from "node:test";
 import { runJournalImportCli } from "../src/cli/journal-import.mjs";
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
@@ -39,7 +42,7 @@ async function fixture(t, { pages = 1, visual = false } = {}) {
   const service = { verifyCaseAccess: async () => ({}) };
   const image = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL/nwAAAABJRU5ErkJggg==", "base64");
   return { config, configPath, service, parser, image,
-    open: (port, resumed = false) => openJournalExecutionRuntime({ config, configPath, service,
+    open: (port, resumed = false, environment = process.env) => openJournalExecutionRuntime({ config, configPath, service, environment,
       sourceParser: resumed ? () => assert.fail("source must not be reparsed") : parser,
       renderVisualPage: resumed ? () => assert.fail("visual page must not be reread") : async () => image,
       inferencePort: port }) };
@@ -139,36 +142,86 @@ test("failed calibration retries with fresh answers and continues without reread
   } finally { await runtime.close(); }
 });
 
+function exchangeAnswer(entry) {
+  const packet = entry.packet;
+  const review = (role) => ({ schema_version: "1.0", target_generation: packet.expected_generation,
+    review_role: role, assessments: [], proposed_repairs: [], unassessed_ids: [], status: "sufficient_for_stated_scope" });
+  if (entry.role === "reference_reader") return { schema_version: "1.0", source_only_first_pass: true,
+    reference_items: [], questions: [], unassessed_unit_ids: [] };
+  if (entry.role === "extractor") return { schema_version: "1.0", status: "incomplete",
+    assertions: [], entities: [], episodes: [], requested_context: [],
+    coverage: packet.core_units.map((unit) => ({ unit_id: unit.unit_id,
+      disposition: "pending", assertion_local_ids: [], reason: "Synthetic failed standard cycle." })) };
+  if (entry.role === "omission_checker" || entry.role === "fidelity_auditor") return review(entry.role);
+  if (entry.role === "reconciler") return { schema_version: "1.0", target_generation: packet.expected_generation,
+    proposals: [], unresolved_ids: [], status: "proposals_complete" };
+  assert.fail(`unexpected synthetic role ${entry.role}`);
+}
+
 for (const resolves of [true, false]) {
-  test(`synthetic Codex route gives failed standard extraction one Claude hardest attempt (${resolves ? "resolves" : "fails"})`, async (t) => {
+  test(`environment-loaded Codex exchange and fake SSH Claude hardest extraction (${resolves ? "resolves" : "fails"})`, async (t) => {
     const f = await fixture(t);
     f.config.hardest_lane = { enabled: true, daily_limit: 20 };
     f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
-    const standardCalls = [], claudeCalls = [], seen = [], selected = new Map();
-    const standard = mockPort({ fail: true, calls: standardCalls });
-    const claude = mockPort({ fail: !resolves, calls: claudeCalls });
-    const port = {
-      capabilities: () => ({ ...standard.capabilities(), transport: "codex_exec_exchange",
-        hardest_fresh_context_per_generate: true, hardest_authenticated_execution_profile_per_generate: true }),
-      async invoke(input) {
-        seen.push({ role: input.role, tier: input.tier ?? "standard" });
-        const target = input.tier === "hardest" ? claude : standard;
-        selected.set(input.operationKey, target);
-        return target.invoke(input);
-      },
-      getCompletion(operationKey) { return (selected.get(operationKey) ?? standard).getCompletion(operationKey); },
-      isAuthoritativeCompletion: () => false,
-      close() { standard.close(); claude.close(); }
-    };
-    const runtime = await f.open(port);
+    const root = path.join(path.dirname(f.configPath), "exchange");
+    await fs.mkdir(root, { mode: 0o700 });
+    const secret = randomBytes(32).toString("base64");
+    const secretFile = path.join(path.dirname(f.configPath), "secret");
+    await fs.writeFile(secretFile, secret, { mode: 0o600 });
+    const home = path.join(path.dirname(f.configPath), "laptop");
+    const workDir = path.join(home, "work");
+    await fs.mkdir(workDir, { recursive: true, mode: 0o700 });
+    const ssh = path.join(home, "ssh.mjs"), claude = path.join(home, "claude.mjs");
+    const checkout = path.resolve(new URL("..", import.meta.url).pathname);
+    await fs.writeFile(ssh, `#!${process.execPath}\nimport { spawnSync } from "node:child_process";\nimport path from "node:path";\nconst args = process.argv.slice(2);\nif (!args.includes("ForwardAgent=no") || !args.includes("ForwardX11=no")) process.exit(31);\nconst result = spawnSync("/bin/sh", ["-c", args.at(-1)], { encoding: "utf8", env: { PATH: process.env.PATH, HOME: process.env.HOME, LANG: process.env.LANG, INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: ${JSON.stringify(root)}, INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: path.join(path.dirname(${JSON.stringify(f.configPath)}), "secret") } });\nprocess.stdout.write(result.stdout ?? ""); process.stderr.write(result.stderr ?? ""); process.exit(result.status ?? 1);\n`, { mode: 0o700 });
+    await fs.writeFile(claude, `#!${process.execPath}\nimport fs from "node:fs";\nimport { spawnSync } from "node:child_process";\nconst args = process.argv.slice(2);\nconst config = JSON.parse(fs.readFileSync(args[args.indexOf("--mcp-config") + 1], "utf8"));\nconst workId = args[args.indexOf("-p") + 1].match(/item ([^ .]+)/)[1];\nconsole.log(JSON.stringify({ type: "system", subtype: "init", mcp_servers: [{ name: "journal", status: "connected" }], tools: ["mcp__journal__get_journal_work_packet", "mcp__journal__submit_journal_work_result"], skills: [], slash_commands: [], plugins: [], agents: [] }));\nconst server = config.mcpServers.journal;\nconst call = (name, arguments_) => { const result = spawnSync(server.command, server.args, { encoding: "utf8", env: process.env, input: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: arguments_ } }) + "\\n" }); if (result.status !== 0) process.exit(32); return JSON.parse(result.stdout.trim()).result.structuredContent; };\nconsole.log(JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "mcp__journal__get_journal_work_packet", input: { work_id: workId } }] } }));\nconst fetched = call("get_journal_work_packet", { work_id: workId });\nconst output = { schema_version: "1.0", status: ${JSON.stringify(resolves ? "complete" : "incomplete")}, assertions: [], entities: [], episodes: [], requested_context: [], coverage: fetched.packet.core_units.map((unit) => ({ unit_id: unit.unit_id, disposition: ${JSON.stringify(resolves ? "no_assertion" : "pending")}, assertion_local_ids: [], reason: "Synthetic hardest extraction." })) };\nconsole.log(JSON.stringify({ type: "assistant", message: { content: [{ type: "tool_use", name: "mcp__journal__submit_journal_work_result", input: { work_id: workId } }] } }));\nconst submitted = call("submit_journal_work_result", { work_id: workId, output });\nif (submitted.code) process.exit(33);\nconsole.log(JSON.stringify({ type: "result", is_error: false, subtype: "success", session_id: "synthetic12345678", modelUsage: { "claude-opus-5-5": { inputTokens: 1, outputTokens: 2 } }, usage: { input_tokens: 1, output_tokens: 2 } }));\n`, { mode: 0o700 });
+    for (const program of [ssh, claude]) {
+      const checked = spawnSync(process.execPath, ["--check", program], { encoding: "utf8" });
+      assert.equal(checked.status, 0, checked.stderr);
+    }
+    const environment = { PATH: `${path.dirname(process.execPath)}:${process.env.PATH}`, HOME: home, LANG: "C",
+      INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: root,
+      INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: secretFile,
+      INNER_SIGNAL_JOURNAL_INFERENCE_RECEIPT_KEY_BASE64: randomBytes(32).toString("base64"),
+      INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON: JSON.stringify({ schema_version: 1,
+        provider: "codex_exec_exchange", route_ref: "route:synthetic-codex", model: "gpt-6-sol", effort: "medium",
+        max_external_spend_usd: 0, allowance_evidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+        timeout_ms: 60_000, exchange: { poll_ms: 250, ttl_ms: 60_000 } }) };
+    const laptopEnvironment = { PATH: environment.PATH, HOME: home, LANG: "C" };
+    const exchange = createJournalWorkExchange({ root, secret });
+    const runtime = await f.open(undefined, false, environment);
+    const seen = new Set(), tiers = [], workerArgs = ["--agent", "claude", "--remote", "synthetic-host",
+      "--remote-checkout", checkout, "--remote-config", f.configPath, "--work-dir", workDir,
+      "--ssh-bin", ssh, "--claude-bin", claude, "--once", "--max-items", "1", "--timeout-ms", "5000"];
+    let completed = false, summary, failure;
+    const running = runtime.execute("run").then((value) => { summary = value; completed = true; },
+      (error) => { failure = error; completed = true; });
     try {
-      const summary = await runtime.execute("run");
-      assert.equal(seen.filter(({ role, tier }) => role === "extractor" && tier === "standard").length, 3);
-      assert.equal(seen.filter(({ role, tier }) => role === "extractor" && tier === "hardest").length, 1);
+      const deadline = Date.now() + 90_000;
+      while (!completed && Date.now() < deadline) {
+        for (const record of await exchange.listDispatch()) {
+          if (record.answered || seen.has(record.work_id)) continue;
+          seen.add(record.work_id);
+          tiers.push([record.role, record.tier]);
+          if (record.tier === "hardest") {
+            assert.equal(await runJournalClaudeWorker(workerArgs, { environment: laptopEnvironment }), 0);
+          } else {
+            const entry = await exchange.readWork(record.work_id);
+            await exchange.submitResult({ workId: record.work_id, output: exchangeAnswer(entry), subject: "local:synthetic-codex",
+              execution: { profile_evidence: "codex_exec_request_pinned", effective_model_profile: record.model,
+                effective_effort: record.effort, request_context_id: `codex-thread:synthetic${seen.size}00000000` } });
+          }
+        }
+        if (!completed) await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      assert.equal(completed, true, "synthetic exchange run timed out");
+      if (failure) throw failure;
+      assert.equal(tiers.filter(([role, tier]) => role === "extractor" && tier === "standard").length, 3);
+      assert.equal(tiers.filter(([role, tier]) => role === "extractor" && tier === "hardest").length, 1);
       assert.equal(summary.calibration, resolves ? "pass" : "failed");
       assert.equal(summary.calibration_failure?.reason, resolves ? undefined : "CALIBRATION_EXTRACTION_UNRESOLVED");
-      assert.equal(summary.hardest_lane.sent >= 1, true);
-    } finally { await runtime.close(); }
+      assert.ok(summary.hardest_lane.sent >= 1);
+    } finally { await runtime.close(); await running; }
   });
 }
 

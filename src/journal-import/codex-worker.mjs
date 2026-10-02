@@ -246,10 +246,10 @@ export async function privateDirectory(directory, code) {
   return fs.realpath(directory);
 }
 
-async function removeStaleRuns(workDir) {
+export async function removeStaleRuns(workDir, prefix = "inner-signal-codex-") {
   const before = Date.now() - 3_600_000;
   for (const name of await fs.readdir(workDir)) {
-    if (!/^inner-signal-codex-[A-Za-z0-9]+$/u.test(name)) continue;
+    if (!name.startsWith(prefix) || !/^[A-Za-z0-9]+$/u.test(name.slice(prefix.length))) continue;
     const target = path.join(workDir, name);
     const info = await fs.lstat(target).catch((error) => error?.code === "ENOENT" ? null : Promise.reject(error));
     if (info?.isDirectory() && info.mtimeMs < before && (process.getuid === undefined || info.uid === process.getuid())) {
@@ -266,7 +266,7 @@ async function removeStaleRuns(workDir) {
   }
 }
 
-async function lockWorkerDirectory(directory) {
+export async function lockWorkerDirectory(directory) {
   const lock = path.join(directory, "worker.lock");
   const handle = await fs.open(lock, "wx", 0o600);
   await handle.close();

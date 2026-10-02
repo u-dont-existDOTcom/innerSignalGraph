@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   assertJournalWorkExchangeRoot, assertJournalWorkId, createJournalWorkDispatchReader,
-  createJournalWorkExchange, journalWorkExchangeSecret, resolveJournalWorkExchangeRoot
+  createJournalWorkExchange, journalWorkExchangeSecret, journalWorkFileKey, resolveJournalWorkExchangeRoot
 } from "../journal-import/work-exchange.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -42,6 +42,42 @@ async function checkedStage(root, stageDir) {
   return stageDir;
 }
 
+async function syncDirectory(directory) {
+  const handle = await fs.open(directory, "r");
+  try { await handle.sync(); }
+  finally { await handle.close(); }
+}
+
+async function writeAttemptMarker(marker, value, exclusive = false) {
+  const target = exclusive ? marker : `${marker}.${randomUUID()}.tmp`;
+  const handle = await fs.open(target, "wx", 0o600);
+  try { await handle.writeFile(JSON.stringify(value)); await handle.sync(); }
+  catch (error) { await handle.close(); await fs.unlink(target).catch(() => {}); throw error; }
+  await handle.close();
+  if (!exclusive) await fs.rename(target, marker);
+  await syncDirectory(path.dirname(marker));
+}
+
+async function sweepStages(root) {
+  const parent = await stageParent(root);
+  const records = await createJournalWorkDispatchReader({ root }).listDispatch();
+  const durations = records.map((record) => Date.parse(record.expires_at) - Date.parse(record.issued_at))
+    .filter((value) => Number.isFinite(value) && value > 0);
+  const ttl = durations.length ? Math.max(...durations) : 24 * 3_600_000;
+  let removed = 0;
+  for (const name of await fs.readdir(parent)) {
+    if (!STAGE_NAME.test(name)) continue;
+    const target = path.join(parent, name);
+    const info = await fs.lstat(target);
+    if (info.isDirectory() && (info.mode & 0o777) === 0o700
+      && (!process.getuid || info.uid === process.getuid()) && info.mtimeMs < Date.now() - ttl) {
+      await fs.rm(target, { recursive: true, force: false });
+      removed += 1;
+    }
+  }
+  return removed;
+}
+
 export async function runJournalWork(argv, { environment = process.env, stdout = process.stdout } = {}) {
   const [command, ...options] = argv;
   const configuredRoot = environment.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT;
@@ -59,10 +95,52 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     return;
   }
   if (command === "stage-create" && options.length === 0) {
+    await sweepStages(root);
     const parent = await stageParent(root);
     const stageDir = path.join(parent, `stage-${randomUUID()}`);
     await fs.mkdir(stageDir, { mode: 0o700 });
     stdout.write(`${JSON.stringify({ stage_dir: stageDir })}\n`);
+    return;
+  }
+  if (command === "stage-sweep" && options.length === 0) {
+    stdout.write(`${JSON.stringify({ removed: await sweepStages(root) })}\n`);
+    return;
+  }
+  if (["attempt-status", "attempt-reserve", "attempt-mark", "attempt-release"].includes(command)) {
+    const parsed = flags(options, command === "attempt-status" ? ["--work-id"] : ["--work-id", "--claim"]);
+    const value = parsed["--work-id"];
+    const workId = assertJournalWorkId(value);
+    if (command !== "attempt-status" && !/^[0-9a-f-]{36}$/u.test(parsed["--claim"])) fail("JOURNAL_WORK_ATTEMPT_INVALID");
+    const directory = path.join(root, "claude-attempts");
+    await fs.mkdir(directory, { mode: 0o700 });
+    const info = await fs.lstat(directory);
+    if (!info.isDirectory() || (info.mode & 0o777) !== 0o700
+      || (process.getuid && info.uid !== process.getuid()) || await fs.realpath(directory) !== directory) {
+      fail("JOURNAL_WORK_ATTEMPT_DIR_INSECURE");
+    }
+    const marker = path.join(directory, `${journalWorkFileKey(workId)}.json`);
+    if (command === "attempt-reserve") {
+      let claimed = true;
+      try { await writeAttemptMarker(marker, { work_id: workId, status: "reserved", claim: parsed["--claim"] }, true); }
+      catch (error) { if (error?.code === "EEXIST") claimed = false; else throw error; }
+      stdout.write(`${JSON.stringify({ claimed })}\n`);
+      return;
+    }
+    const status = await fs.readFile(marker, "utf8").then((bytes) => JSON.parse(bytes), (error) => {
+      if (error?.code === "ENOENT") return null;
+      throw error;
+    });
+    if (status && (status.work_id !== workId || !["reserved", "attempted"].includes(status.status))) {
+      fail("JOURNAL_WORK_ATTEMPT_INVALID");
+    }
+    if (command !== "attempt-status" && status?.claim !== parsed["--claim"]) fail("JOURNAL_WORK_ATTEMPT_INVALID");
+    if (command === "attempt-mark" && status?.status === "reserved") {
+      await writeAttemptMarker(marker, { ...status, status: "attempted" });
+    } else if (command === "attempt-release") {
+      await fs.unlink(marker);
+      await syncDirectory(directory);
+    }
+    stdout.write(`${JSON.stringify({ attempted: status !== null })}\n`);
     return;
   }
   if (command === "stage-remove") {
@@ -85,12 +163,16 @@ export async function runJournalWork(argv, { environment = process.env, stdout =
     try { execution = JSON.parse(parsed["--execution-json"]); } catch { fail("JOURNAL_WORK_EXECUTION_INVALID"); }
     const dispatch = (await createJournalWorkDispatchReader({ root }).listDispatch()).find((item) => item.work_id === workId);
     if (dispatch?.tier !== "hardest" || dispatch.model !== "claude-opus-5-5" || dispatch.effort !== "max"
-      || dispatch.answered || Date.parse(dispatch.expires_at) <= Date.now()
+      || Date.parse(dispatch.expires_at) <= Date.now()
       || parsed["--subject"] !== "local:claude-hardest"
       || execution?.profile_evidence !== "claude_code_model_usage_reported"
       || execution.effective_model_profile !== dispatch.model || execution.effective_effort !== dispatch.effort
       || !CONTEXT.test(execution.request_context_id ?? "") || Object.keys(execution).length !== 4) {
       fail("JOURNAL_WORK_EXECUTION_INVALID");
+    }
+    if (dispatch.answered) {
+      stdout.write('{"answered":false,"already":true}\n');
+      return;
     }
     const result = await exchange.promoteStaged({ stageDir, workId, execution, subject: parsed["--subject"] });
     stdout.write(`${JSON.stringify({ answered: !result.already, already: result.already })}\n`);

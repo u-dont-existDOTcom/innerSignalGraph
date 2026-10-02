@@ -236,7 +236,7 @@ test("commit refuses a saved partial calibration even when later stages are read
   } finally { await resumed.close(); }
 });
 
-test("the hardest daily limit counts each dependency invocation before it is sent", async (t) => {
+test("the Codex route hardest daily limit counts each dependency invocation before it is sent", async (t) => {
   const f = await environment(t);
   f.config.hardest_lane = { enabled: true, daily_limit: 1 };
   f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
@@ -248,7 +248,9 @@ test("the hardest daily limit counts each dependency invocation before it is sen
   const hardestPort = createMockJournalInferencePort({ handlers: handlers() });
   const calls = [];
   const inferencePort = {
-    capabilities: () => hardestPort.capabilities(),
+    capabilities: () => ({ ...hardestPort.capabilities(), transport: "codex_exec_exchange",
+      hardest_fresh_context_per_generate: true,
+      hardest_authenticated_execution_profile_per_generate: true }),
     getCompletion: (operationKey) => hardestPort.getCompletion(operationKey),
     invoke(input) {
       calls.push(`${input.tier}:${input.role}`);

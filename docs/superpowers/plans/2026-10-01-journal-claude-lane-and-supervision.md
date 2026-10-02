@@ -8,10 +8,13 @@ Date: 2026-10-01. Author: Claude (Opus), for implementation by Codex. Status: se
 - 2026-10-01: the supervisor review uses Claude Opus at max effort.
 - 2026-10-01: the goal is to improve the import so that routine supervisor review isn't needed. The review is a measurement that drives fixes, not a permanent stage.
 
-## What a Claude Code run can prove (probed 2026-10-01, Claude Code 2.1.286)
+## What a Claude Code run can prove (content-free probe 2026-10-02, Claude Code 2.1.286)
 
-- `claude -p ... --output-format json` reports `is_error`, `subtype`, `num_turns`, a `session_id`, and `modelUsage` keyed by the model that actually answered. That is response-reported model evidence, stronger than the Codex lane's request-pinned evidence. Effort is still request-pinned (`--effort`).
-- With `--no-session-persistence`, `--strict-mcp-config`, `--tools ""` and only the two journal tools allowed, a run against a synthetic two-tool server fetched the packet and submitted the answer. A sentinel string in the packet appeared nowhere under `~/.claude` or in `~/.claude.json` afterwards.
+- `--output-format stream-json --verbose` emits a first `system/init` event with MCP server names and statuses, tools, skills, slash commands, plugins, agents and session ID; its final `result` event carries `is_error`, `subtype`, `session_id`, `modelUsage` and usage. `--include-hook-events` reports hook lifecycle events. The worker discards all response, packet, and answer content while parsing these lines in memory.
+- The owner's current customizations still load with the earlier flags: 3 plugins, 20 skills, 57 slash commands and 5 agents, and plugin hooks are present. `--safe-mode` was rejected because it also removes the configured MCP server and tools. `--bare` was rejected because it requires API-key authentication while this lane uses the owner's sign-in.
+- `--setting-sources "" --settings '{"disableAllHooks":true}' --disable-slash-commands` with `--strict-mcp-config --tools ""` yielded exactly `journal:connected` and the two journal tools, zero skills and slash commands. Plugins and agents still appeared in init, but agents have no accessible tools and hooks are disabled. A run is refused as `rejected:ISOLATION` if init is not first, that exact server/tool set differs, skills or slash commands are present, or any hook event appears.
+- The SSH probe authenticated with only `PATH`, `HOME` and `LANG`, `BatchMode=yes`, and a key file without an agent. Every SSH invocation also disables agent and X11 forwarding.
+- The worker requires a fetched packet before the first submit for that work ID, plus the host's fetch marker and staged answer. The host reserves a content-free per-work-ID marker before Claude starts and marks it attempted on init, so concurrent workers and restarts cannot run a second Opus attempt. A usage-limit result or a normal no-init failure releases the reservation; an unresolved reservation after a killed worker fails closed.
 
 ## Rules
 
@@ -29,18 +32,19 @@ Generalize the worker to `--agent codex|claude` (keep `journal:work:codex` as th
 - **The run.** In a new empty temporary directory, without a shell, environment limited to `PATH`, `HOME` and `LANG`:
 
   ```text
-  claude -p "<instruction>" --model <record.model> --effort <record.effort> --output-format json
+  claude -p "<instruction>" --model <record.model> --effort <record.effort> --output-format stream-json --verbose
+    --setting-sources "" --settings '{"disableAllHooks":true}' --disable-slash-commands --include-hook-events
     --mcp-config <0600 file> --strict-mcp-config --tools ""
     --allowedTools mcp__journal__get_journal_work_packet mcp__journal__submit_journal_work_result
     --permission-mode dontAsk --no-session-persistence
   ```
 
   Dispatch labels for this lane: model `claude-opus-5-5`, effort `max`. The Claude Code model argument is `opus`; map the label explicitly and refuse any other.
-- **Admission.** Exit 0; `is_error` false and `subtype` `success`; a `session_id`; `modelUsage` contains the record's model and no other model with output tokens; a staged answer exists. Keep only those fields and the token counts; never keep `result`.
+- **Admission.** Exit 0; the exact isolation init; no hook events; `is_error` false and `subtype` `success`; a new `session_id`; `modelUsage` contains the record's model with positive output tokens and no other model with output tokens; fetch before first submit and a staged answer exist. Keep only content-free fields; never keep `result`.
 - **Evidence.** `execution: { profile_evidence: "claude_code_model_usage_reported", effective_model_profile: <the model key from modelUsage>, effective_effort: record.effort, request_context_id: "claude-session:" + session_id }`, subject `local:claude-hardest`. The exchange port accepts this evidence kind for the `hardest` tier on the Codex route. Supervisor admission is deferred.
 - **Usage limits.** As the Codex lane, parsing only a reset time. The usage log adds `total_cost_usd`, labelled everywhere as a cost equivalent that a subscription doesn't charge.
 
-The implemented worker is `npm run journal:work:claude -- --remote <ssh host> --remote-checkout <host checkout> --remote-config <host private config> --work-dir <laptop private work dir>`. The host must provide the exchange-root and secret-file environment variables to its noninteractive SSH command. The remote worker passes no exchange secret or secret-file path in its command arguments or laptop MCP configuration. The content-free host commands are `journal:work -- dispatch --json`, `stage-create`, `stage-check`, `promote`, and `stage-remove`. `total_cost_usd` is recorded with `cost_kind: subscription_cost_equivalent_not_charged`.
+The implemented worker is `npm run journal:work:claude -- --remote <ssh host> --remote-checkout <host checkout> --remote-config <host private config> --work-dir <laptop private work dir>`. The host must provide the exchange-root and secret-file environment variables to its noninteractive SSH command. The remote worker passes no exchange secret or secret-file path in its command arguments or laptop MCP configuration. The content-free host commands are `journal:work -- dispatch --json`, `stage-create`, `stage-check`, `stage-sweep`, `promote`, `stage-remove`, and the attempt-marker commands. `total_cost_usd` is recorded with `cost_kind: subscription_cost_equivalent_not_charged`.
 
 ## 2. Tiers — hardest implemented; supervisor deferred
 

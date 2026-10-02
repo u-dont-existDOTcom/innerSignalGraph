@@ -578,12 +578,22 @@ export function createJournalWorkExchange({
 
     async stagedStatus({ stageDir, workId }) {
       const filename = await stagePath(stageDir, workId);
-      await requireFetchMarker(stageDir, workId);
-      await withOpenedRegularFile(filename, async (_handle, info) => {
-        if (info.size === 0 || info.size > MAX_WORK_BYTES || (info.mode & 0o777) !== 0o600
-          || (owner !== null && info.uid !== owner)) fail("JOURNAL_WORK_STAGE_INVALID");
-      });
-      return { staged: true, packet_fetched: true };
+      let fetched = true, staged = true;
+      try { await requireFetchMarker(stageDir, workId); }
+      catch (error) {
+        if (error?.code !== "JOURNAL_WORK_PACKET_NOT_FETCHED") throw error;
+        fetched = false;
+      }
+      try {
+        await withOpenedRegularFile(filename, async (_handle, info) => {
+          if (info.size === 0 || info.size > MAX_WORK_BYTES || (info.mode & 0o777) !== 0o600
+            || (owner !== null && info.uid !== owner)) fail("JOURNAL_WORK_STAGE_INVALID");
+        });
+      } catch (error) {
+        if (error?.code !== "ENOENT") throw error;
+        staged = false;
+      }
+      return { staged, packet_fetched: fetched };
     },
 
     // Runtime side: read an answer and authenticate its connector receipt. Null when none arrived;
