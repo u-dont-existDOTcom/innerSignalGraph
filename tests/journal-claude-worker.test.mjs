@@ -513,6 +513,38 @@ test("a live sibling reservation is skipped until it is released, then answered 
   assert.equal((await f.port.getCompletion(key)).status, "completed");
 });
 
+test("a stale unspent reservation left by a dead worker is reclaimed and the item answered", async (t) => {
+  const f = await fixture(t);
+  const key = "job:synthetic-stale-unspent";
+  await assert.rejects(f.port.invoke({ ...call(key), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const [record] = await f.exchange.listDispatch();
+  const environment = { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root };
+  await runJournalWork(["attempt-reserve", "--work-id", record.work_id, "--attempt-identity", record.attempt_identity,
+    "--claim", "44444444-4444-4444-8444-444444444444", "--timeout-ms", "60000"], { environment, stdout: { write() {} } });
+  // Older than twice the 60 s run timeout plus ten minutes, with no packet served and no model reached.
+  const marker = path.join(f.root, "claude-attempts", journalAttemptMarkerKey(journalAttemptIdentity(record)) + ".json");
+  const old = new Date(Date.now() - 13 * 60_000);
+  await fs.utimes(marker, old, old);
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map(item => item.outcome), ["stale_reservation_reclaimed", "answered"]);
+  assert.equal((await f.port.getCompletion(key)).status, "completed");
+});
+
+test("a recent unspent reservation is left to its owner", async (t) => {
+  const f = await fixture(t);
+  const key = "job:synthetic-recent-unspent";
+  await assert.rejects(f.port.invoke({ ...call(key), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const [record] = await f.exchange.listDispatch();
+  await runJournalWork(["attempt-reserve", "--work-id", record.work_id, "--attempt-identity", record.attempt_identity,
+    "--claim", "55555555-5555-4555-8555-555555555555", "--timeout-ms", "60000"],
+  { environment: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root }, stdout: { write() {} } });
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map(item => item.outcome), ["reserved"]);
+  assert.notEqual((await f.port.getCompletion(key)).status, "completed");
+});
+
 test("SIGINT wakes the poll sleep and returns exit code 130", async (t) => {
   const f = await fixture(t);
   const args = f.args.filter((value) => value !== "--once");

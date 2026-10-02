@@ -307,12 +307,29 @@ async function linuxProcessIdentity(pid) {
 
 // Kill a recorded process group and wait until no member remains, so nothing the run started can still
 // write a persistence artifact after the scan. Returns false if the group outlives the deadline.
+// True if any process in the group can still run. Zombies (and dead entries) can't do filesystem I/O; on
+// hosts whose PID 1 or subreaper doesn't reap, killed helpers can stay zombies and keep the group "alive"
+// for kill(2). If /proc can't be listed, assume a live member so the caller keeps waiting.
+export async function processGroupHasLiveMember(pgid, procRoot = "/proc") {
+  let names;
+  try { names = await fs.readdir(procRoot); } catch { return true; }
+  for (const name of names) {
+    if (!/^[0-9]+$/u.test(name)) continue;
+    let stat;
+    try { stat = await fs.readFile(path.join(procRoot, name, "stat"), "utf8"); } catch { continue; }
+    const fields = stat.slice(stat.lastIndexOf(")") + 2).trim().split(/\s+/u);
+    if (Number(fields[2]) === pgid && !["Z", "X", "x"].includes(fields[0])) return true;
+  }
+  return false;
+}
+
 export async function waitForProcessGroupGone(pgid, timeoutMs = 10_000) {
   if (!Number.isSafeInteger(pgid) || pgid < 2) return true;
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     try { process.kill(-pgid, "SIGKILL"); }
     catch (error) { if (error?.code === "ESRCH") return true; throw error; }
+    if (!(await processGroupHasLiveMember(pgid))) return true;
     if (Date.now() >= deadline) return false;
     await new Promise(resolve => setTimeout(resolve, 25));
   }
@@ -394,8 +411,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   const activeGroups = new Set();
   let stopping = false, stopSignal = null, wake = null, limitedUntil = 0, completed = 0, signInNeeded = false, setupRefused = false, heldOpen = false, cleanupFailed = false,
     preserveParent = false;
-  // Items whose reservation belongs to a live sibling are skipped until this time, not given up on.
-  const skipUntil = new Map();
+  // Items whose reservation belongs to a live sibling are skipped until the worker has next waited one poll
+  // (not given up on, and not re-checked in a tight loop); each such reservation is logged once.
+  const skipped = new Set(), reservedLogged = new Set();
   const attempts = new Map(), limits = new Map(), seenSessions = new Set(), pendingReleases = new Map();
   const stop = (signal) => { stopping = true; stopSignal ??= signal;
     if (wake) { const resume = wake; wake = null; resume(); }
@@ -648,7 +666,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         && item.tier === "hardest" && item.model === MODEL && item.effort === "max"
         && /^[0-9a-f]{48}$/u.test(item.attempt_identity ?? "")
         && Date.parse(item.expires_at) > Date.now()
-        && !pendingReleases.has(item.work_id) && (skipUntil.get(item.work_id) ?? 0) <= Date.now()
+        && !pendingReleases.has(item.work_id) && !skipped.has(item.work_id)
         && (attempts.get(item.work_id) ?? 0) < 3 && (limits.get(item.work_id) ?? 0) < MAX_LIMIT_RETRIES);
       const marker = record ? (await host("attempt-status", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity]))[0] : null;
       if (record && marker?.attempted) {
@@ -656,10 +674,25 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         const staleSpentReservation = marker.status === "reserved" && marker.packet_fetched === true
           && (marker.age_seconds ?? 0) * 1000 >= (marker.timeout_ms ?? 1_800_000) + 600_000;
         if (marker.status === "reserved" && !staleSpentReservation) {
-          // A live sibling owns it; it may still release the reservation after a pre-model outage.
-          skipUntil.set(record.work_id, Date.now() + options.pollMs);
-          await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
-            model: record.model, effort: record.effort, outcome: "reserved", duration_ms: 0 });
+          // An unspent reservation (no packet served, no model reached) older than twice its run timeout
+          // plus ten minutes belongs to a dead worker: reclaim it, so successors of the same identity can run.
+          const staleUnspent = !spent
+            && (marker.age_seconds ?? 0) * 1000 >= 2 * (marker.timeout_ms ?? 1_800_000) + 600_000;
+          let reclaimed = false;
+          if (staleUnspent) {
+            try {
+              reclaimed = (await host("attempt-clear", ["--work-id", record.work_id,
+                "--attempt-identity", record.attempt_identity]))[0]?.cleared === true;
+            } catch { reclaimed = false; }
+          }
+          // Otherwise a live sibling owns it; it may still release the reservation after a pre-model outage.
+          if (!reclaimed) skipped.add(record.work_id);
+          const outcome = reclaimed ? "stale_reservation_reclaimed" : staleUnspent ? "stale_reservation_reclaim_failed" : "reserved";
+          if (outcome !== "reserved" || !reservedLogged.has(record.work_id)) {
+            if (outcome === "reserved") reservedLogged.add(record.work_id);
+            await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
+              model: record.model, effort: record.effort, outcome, duration_ms: 0 });
+          }
           continue;
         }
         attempts.set(record.work_id, 3);
@@ -688,12 +721,13 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       if (!record) {
         if (options.once && !pendingReleases.size) break;
         await wait(options.pollMs);
+        skipped.clear();
         continue;
       }
       const outcome = await one(record);
       if (setupRefused || cleanupFailed) break;
       if (["limited", "provider_unavailable", "sign_in_needed"].includes(outcome)) limits.set(record.work_id, (limits.get(record.work_id) ?? 0) + 1);
-      else if (outcome === "reserved") skipUntil.set(record.work_id, Date.now() + options.pollMs);
+      else if (outcome === "reserved") skipped.add(record.work_id);
       else if (["already_attempted", "isolation_refused", "rejected:PACKET_TOO_LARGE", "rejected:PACKET_UNAVAILABLE"].includes(outcome)) {
         attempts.set(record.work_id, 3);
       }

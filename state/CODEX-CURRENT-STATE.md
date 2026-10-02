@@ -872,3 +872,8 @@ This is import/runtime infrastructure only. It changes no therapy, graph, produc
     - Startup excludes parents holding an unresolved group from the stale-run sweep. It refuses to start (exit 74) while such a group survives.
     - `packet-check` reports a reason. Only a confirmed oversize packet is refused as `PACKET_TOO_LARGE` and closed. An item that expired, vanished or isn't hardest is released as `PACKET_UNAVAILABLE` and left to the runtime's expiry path.
     - A reservation lost to a race is skipped only until the next poll.
+  - **Merge with #118, stale reservations, zombie groups (Codex review):** Main, with the calibration diagnostics from #118, is merged in. The hardest refusal codes are allowed in the diagnostics.
+    - An unspent reservation (no packet served, no model reached) older than twice its run timeout plus ten minutes is reclaimed automatically, so successors of the same identity can run.
+    - A live sibling's reservation is skipped until the worker next waits one poll, and is logged once. Before, a poll interval shorter than a host round-trip made the worker re-pick it in a tight loop.
+    - A process group whose remaining members are all zombies counts as gone, for hosts whose PID 1 doesn't reap.
+    - With a normally owned temporary root, `npm run journal:test` passes 501/501.

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { claudeResultReader, claudeRunSlug, MAX_CLAUDE_LINE_BYTES, sweepClaudeProcessGroups, waitForProcessGroupGone } from "../src/journal-import/claude-worker.mjs";
+import { claudeResultReader, claudeRunSlug, MAX_CLAUDE_LINE_BYTES, processGroupHasLiveMember, sweepClaudeProcessGroups, waitForProcessGroupGone } from "../src/journal-import/claude-worker.mjs";
 import { runProcess } from "../src/journal-import/codex-worker.mjs";
 import { journalAttemptIdentity, journalAttemptMarkerKey, writeAttemptMarker } from "../src/cli/journal-work.mjs";
 import { journalWorkFileKey } from "../src/journal-import/work-exchange.mjs";
@@ -232,7 +232,8 @@ test("a recorded process group is killed and confirmed gone before persistence i
   await new Promise(resolve => setTimeout(resolve, 300));
   const started = Date.now();
   assert.equal(await waitForProcessGroupGone(leader.pid, 5000), true);
-  assert.throws(() => process.kill(-leader.pid, 0), { code: "ESRCH" });
+  // On hosts whose PID 1 doesn't reap, killed members can linger as zombies; none may still run.
+  assert.equal(await processGroupHasLiveMember(leader.pid), false);
   assert.ok(Date.now() - started < 5000);
   // An already-gone group and a missing record are both treated as gone.
   assert.equal(await waitForProcessGroupGone(leader.pid, 100), true);
@@ -256,11 +257,29 @@ test("startup recovery kills a recorded group whose leader exited but whose help
   const start = (await fs.readFile(`/proc/${pgid}/stat`, "utf8")).split(") ")[1].trim().split(/\s+/u)[19];
   await new Promise(resolve => leader.once("exit", resolve));
   await new Promise(resolve => setTimeout(resolve, 200));
-  assert.doesNotThrow(() => process.kill(-pgid, 0), "the helper must still be alive in the group");
+  assert.equal(await processGroupHasLiveMember(pgid), true, "the helper must still be alive in the group");
   // The recorded owner is a worker that no longer exists.
   await fs.writeFile(path.join(runDir, "process-group.json"),
     JSON.stringify({ owner: { pid: 2147483646, start: "0" }, child: { pid: pgid, start } }), { mode: 0o600 });
   await sweepClaudeProcessGroups(workDir, home);
-  assert.throws(() => process.kill(-pgid, 0), { code: "ESRCH" });
+  assert.equal(await processGroupHasLiveMember(pgid), false);
   await assert.rejects(fs.access(runDir));
+});
+
+test("a process group whose only remaining members are zombies counts as gone", async (t) => {
+  const proc = await fs.mkdtemp(path.join(os.tmpdir(), "journal-fake-proc-"));
+  t.after(() => fs.rm(proc, { recursive: true, force: true }));
+  const write = async (pid, comm, state, pgrp) => {
+    await fs.mkdir(path.join(proc, String(pid)), { recursive: true });
+    await fs.writeFile(path.join(proc, String(pid), "stat"), `${pid} (${comm}) ${state} 1 ${pgrp} ${pgrp} 0 -1 0 0 0 0 0 0 0 0 0 0 1 0 12345 0 0`);
+  };
+  await write(101, "node helper", "Z", 4242);
+  await write(102, "odd ) name", "Z", 4242);
+  await write(103, "other", "S", 7777);
+  await fs.writeFile(path.join(proc, "self"), "not a process directory");
+  assert.equal(await processGroupHasLiveMember(4242, proc), false, "zombie-only group");
+  await write(104, "still running", "D", 4242);
+  assert.equal(await processGroupHasLiveMember(4242, proc), true, "a member in uninterruptible sleep can still act");
+  assert.equal(await processGroupHasLiveMember(5555, proc), false, "no members at all");
+  assert.equal(await processGroupHasLiveMember(4242, path.join(proc, "missing")), true, "unreadable /proc keeps waiting");
 });
