@@ -878,3 +878,6 @@ This is import/runtime infrastructure only. It changes no therapy, graph, produc
     - A process group whose remaining members are all zombies counts as gone, for hosts whose PID 1 doesn't reap.
     - With a normally owned temporary root, `npm run journal:test` passes 501/501.
   - **Failed persistence cleanup (Codex review):** If the post-run persistence cleanup itself fails, because an artifact can't be inspected or removed, the result is refused and the worker stops with exit 74 instead of continuing with private packets.
+  - **Live attempts and late stops (Codex review):**
+    - An `attempted` marker younger than its run timeout plus ten minutes is treated as a sibling's run in progress. The item is left open (logged once as `attempt_in_progress`) and is closed as spent only once stale. A crashed worker's item is therefore closed after that window, not at once.
+    - The worker checks for a requested stop immediately before starting Claude and before each item, so a late stop signal can't start a run.

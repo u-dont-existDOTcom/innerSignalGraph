@@ -933,6 +933,11 @@ test("already attempted, corrupt and isolation-refused items do not consume max-
     journalAttemptMarkerKey(journalAttemptIdentity(records[1])) + ".json"), "{");
   await runJournalWork(["attempt-refuse", "--work-id", records[2].work_id, "--claim", claim],
     { environment, stdout: { write() {} } });
+  // The attempted and corrupt markers belong to runs long past their timeout (dead workers).
+  const stale = new Date(Date.now() - 2 * 3_600_000);
+  for (const record of records.slice(0, 2)) {
+    await fs.utimes(path.join(f.root, "claude-attempts", journalAttemptMarkerKey(journalAttemptIdentity(record)) + ".json"), stale, stale);
+  }
   // The unspent isolation hold stops the worker (exit 78) before it tries the next item.
   assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
   let logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
@@ -1063,6 +1068,17 @@ test("startup kills the recorded Claude group left by a SIGKILLed worker", async
   await assert.rejects(fs.access(runDir));
   const proc = await fs.readFile(`/proc/${group}/stat`, "utf8").catch(error => error.code === "ENOENT" ? null : Promise.reject(error));
   assert.ok(proc === null || proc.slice(proc.lastIndexOf(")") + 2).startsWith("Z "), "leftover Claude survived startup");
+  // The attempted marker is young, so the item is treated as possibly in progress and left open.
+  assert.equal((await f.port.getCompletion(key)).status, "unknown");
+  let logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.equal(logs.at(-1).outcome, "attempt_in_progress");
+  // Once it is older than the run timeout plus ten minutes, the next worker closes it as spent.
+  const marker = path.join(f.root, "claude-attempts", journalAttemptMarkerKey(dispatch.attempt_identity) + ".json");
+  const stale = new Date(Date.now() - 2 * 3_600_000);
+  await fs.utimes(marker, stale, stale);
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.equal(logs.at(-1).outcome, "already_attempted");
   assert.equal((await f.port.getCompletion(key)).status, "exhausted");
 });
 
