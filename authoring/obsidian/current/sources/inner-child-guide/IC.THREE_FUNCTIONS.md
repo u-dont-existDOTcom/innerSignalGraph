@@ -12,7 +12,7 @@ section_hash: d8d3048a1540ca60516bcc01d8b7f05fbd009dfc36ae2ec5ed0ebadd340a53d5
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.GUIDE_LATER
-projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
+projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
 ---
 
 # The Three Adult Functions

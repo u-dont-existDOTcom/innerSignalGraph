@@ -16,6 +16,8 @@ export const CASE_VARIABLE_ENUMS = Object.freeze({
   altered_capacity: ["coherent", "limited", "impaired", "unknown"],
   altered_medical_status: ["stable", "concerning", "unknown"],
   altered_action_pressure: ["present", "absent", "unknown"],
+  altered_state_transfer: ["not_in_play", "state_bound", "fading", "partial", "integrated", "unknown"],
+  altered_repeat_motive: ["not_in_play", "new_exploration", "restore_access", "mixed", "unknown"],
   sleep_deprivation: ["present", "absent", "unknown"],
   inner_adult_access: ["available", "partial", "low", "unknown"],
   witness_capacity: ["present", "partial", "absent", "unknown"],

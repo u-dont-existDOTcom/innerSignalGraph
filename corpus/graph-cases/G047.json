@@ -1,0 +1,53 @@
+{
+  "id": "G047",
+  "title": "state-bound inner-child credibility routes to sober transfer before reflexive repetition",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "altered_phase": "aftermath",
+    "altered_capacity": "unknown",
+    "altered_medical_status": "stable",
+    "altered_action_pressure": "absent",
+    "altered_state_transfer": "state_bound",
+    "altered_repeat_motive": "restore_access",
+    "inner_adult_access": "partial",
+    "witness_capacity": "present",
+    "love_access": "limited",
+    "deep_love_access": "state_dependent",
+    "child_love_inclusion": "partial",
+    "self_directed_love": "inaccessible",
+    "protective_response": "present",
+    "credibility_conflict": "present",
+    "coherent_child_state": "present",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "present",
+    "attention_loop": "absent",
+    "inward_attention_effect": "helps",
+    "current_intent": "integration",
+    "support_available": "present",
+    "body_capacity": "adequate",
+    "target_type": "developmental",
+    "bypass_risk": "absent"
+  },
+  "expected": {
+    "primary": "ROUTE.ALTERED_STATE_TRANSFER",
+    "selectedIncludes": [
+      "ROUTE.ALTERED_STATE_TRANSFER",
+      "ROUTE.ALTERED_AFTERMATH"
+    ],
+    "requiredNuancePatterns": [
+      "experientially credible",
+      "not permanent reproduction",
+      "does not assume sober InnerSignal can replace"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "historically or metaphysically true",
+      "another altered-state session is necessary"
+    ]
+  }
+}

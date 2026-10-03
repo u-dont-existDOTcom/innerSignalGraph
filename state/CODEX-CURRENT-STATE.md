@@ -1,6 +1,19 @@
 # Inner Signal Codex current state
 
-Updated: 2026-10-01
+Updated: 2026-10-03
+
+
+## State-dependent altered-state transfer (2026-10-03)
+
+- **Owner outcome:** Build the newly resolved state-dependent credibility / sober-transfer model into InnerSignal so altered-state work can be prepared for and integrated without assuming that sober InnerSignal can replace altered-state methods or that repeated sessions are automatically pathological.
+- **Implemented behavior:** Added altered_state_transfer (state-bound, fading, partial, integrated) and altered_repeat_motive (new exploration, restore access, mixed) to formulation. Added an executable cross-guide transfer route that preserves private experiential credibility while keeping external historical/metaphysical claims evidence-bound; prepares Nurturer/Protector/Guide/guard/closure capacity before planned altered work; preserves newly accessible material during coherent altered work; and targets sober carryover afterward. Before repetition it distinguishes genuinely new exploration from primarily trying to regain a known state, conviction, love, memory access, or inner relationship.
+- **Safety / scope:** The route does not prescribe redosing, escalation, or recreation of an altered state; does not infer addiction, avoidance, dependence, or failed integration from repetition alone; does not turn somatic intensity or felt certainty into external proof; and does not claim that preparation/integration can replace altered-state therapy for every person or reduce the number of sessions required.
+- **Authority/provenance:** The owner approved building this resolved model on 2026-10-03. Its repository representation is a synthesized owner-approved cross-guide amendment, not a verbatim owner quotation. The preserved 2026-09-25 public guide capture remains byte-authoritative and was not rewritten; the new behavior is carried by the owner-amendment, candidate graph, formulation contract, generated projections, plugin reference, and tests.
+- **Regression coverage:** G047 requires a safe sober restore-access case to route through altered-state transfer with the experiential-credibility/external-certainty distinction. G048 requires integrated prior access plus genuinely new planned work to remain on altered-state preparation rather than being mislabeled as a restore-access loop. Direct graph and tier-routing tests cover the same boundary.
+- **Generated projection:** Authoring projection regenerated from the changed authority inputs; current projection input SHA-256 is 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437. The packaged plugin map is synchronized byte-for-byte with the generated canonical map.
+- **Validation:** Final npm run verify PASS on the completed runtime tree: 1,745/1,745 automated tests passed, 32/32 graph regressions passed, authoring validation/check/maps passed, immutable Guide Packet archives passed, mock therapy/hypnosis replays passed, web and autopilot smokes passed, fake-CLI autopilot recorded the expected 74-node/103-edge/32-case graph, runtime fingerprint/package hygiene passed, and the verifier ended VERDICT: PASS. npm run audit:repository also passed with zero errors; its one warning is the pre-existing hosted GitHub App permission state being unverified from repository files.
+- **Publication boundary:** This work targets development main only. It does not install, release, or modify stable, and it makes no clinical-efficacy or session-count claim.
+
 
 ## Journal import Codex exec lane (2026-10-01, this pull request)
 
