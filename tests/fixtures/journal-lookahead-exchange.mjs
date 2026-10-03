@@ -7,7 +7,7 @@ const answer = { schema_version: "1.0", source_only_first_pass: true, reference_
 
 export function exchangeHarness({ caseId = "synthetic-case", defaultAnswer = answer,
   waitMs = 1000, onDispatch = () => {}, failDispatch = false, now = () => new Date(), ttlMs,
-  maxCloseAttempts = Infinity, closeNeverSucceeds = false } = {}) {
+  maxCloseAttempts = Infinity, closeNeverSucceeds = false, beforePublish = () => {} } = {}) {
   const work = new Map(), results = new Map(), dispatch = new Map(), adopted = new Set();
   const successful = new Map();
   let closeAttempts = 0;
@@ -19,6 +19,7 @@ export function exchangeHarness({ caseId = "synthetic-case", defaultAnswer = ans
     readWork: async id => structuredClone(work.get(id) ?? null),
     readResult: async id => structuredClone(results.get(id) ?? null),
     async publishWork(entry) {
+      beforePublish(entry, work);
       if (work.has(entry.work_id)) return { created: false };
       work.set(entry.work_id, structuredClone(entry));
       published.push(structuredClone(entry));

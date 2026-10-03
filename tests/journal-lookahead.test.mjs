@@ -258,6 +258,29 @@ test("an adopted speculative item keeps main's conflict and expiry behavior acro
   restarted.close(); h.port.close();
 });
 
+test("a sequential call that loses the publish race to a speculative item adopts it", async () => {
+  let time = Date.parse("2026-10-01T00:00:00.000Z");
+  const h = exchangeHarness({ waitMs: 0, now: () => new Date(time), ttlMs: 10,
+    // The lookahead publishes the same item between the sequential call's read and its own publication.
+    beforePublish: (entry, work) => {
+      if (entry.origin !== "lookahead" && !work.has(entry.work_id))
+        work.set(entry.work_id, { ...structuredClone(entry), origin: "lookahead" });
+    } });
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  const input = { role: "reference_reader", packet, outputSchema: "reference-result", operationKey, grant };
+  await assert.rejects(h.port.invoke(input), { code: "COMPLETION_UNKNOWN" });
+  const id = journalExchangeWorkId(operationKey);
+  assert.equal(h.work.get(id).origin, "lookahead");
+  assert.equal(h.adopted.has(id), true);
+  time += 11;
+  const restarted = h.makePort();
+  await assert.rejects(restarted.invoke(input), { code: "JOURNAL_WORK_EXPIRED", submissionStatus: "not_submitted" });
+  assert.equal(h.work.has(journalExchangeWorkId(operationKey, 1)), false,
+    "the adopted item expires as the sequential call's own attempt; no successor is sent for it");
+  restarted.close(); h.port.close();
+});
+
 test("controller consumes expired or changed lookahead work on its first attempt", async () => {
   for (const variant of ["expired", "changed-grant"]) {
     let time = Date.parse("2026-10-01T00:00:00.000Z");

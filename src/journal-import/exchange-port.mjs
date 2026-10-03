@@ -356,6 +356,12 @@ export function createExchangeJournalInferencePort({
         if (!created) {
           const winner = await store.readWork(workId);
           if (winner) invariant(winner.input_sha256 === digest, "OPERATION_KEY_CONFLICT");
+          // A sequential call that lost the publish race to a speculative item adopts it, as it would have
+          // had it seen the item first, so a later expiry or restart can't replace it with a second call.
+          if (!dispatchNew && winner?.origin === "lookahead") {
+            await store.markAdopted?.(workId);
+            adopted.add(workId);
+          }
         }
         if (dispatchNew) {
           const publishedEntry = created ? entry : await store.readWork(workId);
