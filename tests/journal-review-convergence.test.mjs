@@ -675,10 +675,10 @@ test("withholdFlaggedItems: any finding withholds, and so does an unassessed ID"
   assert.equal(unassessed.residuals.unassessed, 1);
 });
 
-test("withholdFlaggedItems: a proposed repair alone does not withhold anything", () => {
+test("withholdFlaggedItems: an item the review still asks to repair is withheld even when its verdict reads preserved", () => {
   const result = withhold({ reviews: [{ review: review({ assessments: [ok("a2", "later")], repairs: [repairFor("a2")] }) }] });
-  assert.deepEqual(ids(result.extraction.assertions), ["a1", "a2", "a3", "a4"]);
-  assert.deepEqual(result.withheldItems, []);
+  assert.deepEqual(ids(result.extraction.assertions), ["a1", "a3", "a4"]);
+  assert.deepEqual(result.withheldItems.map((item) => item.localId), ["a2"]);
 });
 
 test("withholdFlaggedItems: a flagged speaker entity withholds the assertions it speaks and is dropped", () => {
@@ -1358,4 +1358,25 @@ test("extractionItemChanges: a removed assertion that shares its ID with a kept 
   assert.deepEqual(result.removed.map((item) => [item.kind, item.localId]), [["assertion", "e-lamp"]]);
   assert.equal(record(result, "assertion", "a2").changed, false, "a2's subject is the kept entity e-lamp");
   assert.equal(record(result, "assertion", "a3").changed, false);
+});
+
+test("withholdFlaggedItems: time evidence follows the graph's precedence when IDs repeat across kinds", () => {
+  // The graph resolves a kindless evidence ID to an assertion first, then an episode, then an entity.
+  const base = storyItems();
+  const timed = (item, ids) => ({ ...item, event_time: { ...item.event_time, evidence_ids: ids } });
+  const items = {
+    entities: base.entities,
+    episodes: [...base.episodes, episode("x", U2, "the ferry home")],
+    assertions: [...base.assertions.slice(0, 3), timed(base.assertions[3], ["x"]),
+      assertion("x", U1, "Maren walked out to Pell Point before breakfast.", { subjects: ["e-maren"] })]
+  };
+  // Episode x is flagged but assertion x is kept: "x" still means the kept assertion, so nothing moves.
+  const episodeOnly = withholdFlaggedItems({ extraction: story(items), unitIds: [U1, U2],
+    reviews: [{ review: review({ assessments: [flag("episode:x", "later")] }), targetOf: (kind, id) => `${kind}:${id}` }] });
+  assert.deepEqual(ids(episodeOnly.extraction.episodes).includes("x"), false);
+  assert.deepEqual(episodeOnly.extraction.assertions.find((item) => item.local_id === "a4").event_time.evidence_ids, ["x"]);
+  // Both are withheld: "x" pointed at the assertion, so it moves to the assertion's unit.
+  const both = withholdFlaggedItems({ extraction: story(items), unitIds: [U1, U2],
+    reviews: [{ review: review({ assessments: [flag("x", "later")] }) }] });
+  assert.deepEqual(both.extraction.assertions.find((item) => item.local_id === "a4").event_time.evidence_ids, [U1]);
 });

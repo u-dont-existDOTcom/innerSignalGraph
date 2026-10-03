@@ -191,7 +191,8 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   };
 }
 
-// When repairs run out: withhold the items the final reviews still flag and keep the rest of the extraction.
+// When repairs run out: withhold the items the final reviews still flag (a finding, an unassessed ID or a proposed
+// repair) and keep the rest of the extraction.
 // A flagged entity or episode withholds the assertions that depend on it. A finding on a unit, or on a target
 // that isn't an item (such as a frozen reference item, attributed to the unit when there is only one), is an
 // omission gap: the unit is marked needs_review and its archived source stays available. A kept item's time
@@ -217,8 +218,9 @@ export function withholdFlaggedItems({ extraction, reviews, unitIds }) {
         located.set(target, [...(located.get(target) ?? []), { field, item }]);
       }
     }
+    // A target the review still asks to repair is flagged too, even when its verdict reads preserved.
     const targets = [...review.assessments.filter(assessmentIsFinding).map((assessment) => assessment.target_id),
-      ...review.unassessed_ids];
+      ...review.unassessed_ids, ...review.proposed_repairs.map((repair) => repair.target_id)];
     unassessed += review.unassessed_ids.length;
     for (const target of new Set(targets)) {
       const found = located.get(target);
@@ -234,12 +236,14 @@ export function withholdFlaggedItems({ extraction, reviews, unitIds }) {
   const dependent = extraction.assertions.filter((assertion) => !withheld.assertions.has(assertion.local_id)
     && dependsOnWithheld(assertion));
   for (const assertion of dependent) withheld.assertions.add(assertion.local_id);
-  const withheldUnit = new Map();
-  for (const [field] of ITEM_FIELDS) {
-    for (const item of extraction[field]) {
-      if (withheld[field].has(item.local_id)) withheldUnit.set(item.local_id, anchorUnitIds(item)[0]);
-    }
+  // Time evidence names a local ID without its kind; the graph resolves it to an assertion first, then an episode,
+  // then an entity. Only an ID whose resolved item is withheld points at that item's unit instead.
+  const resolved = new Map();
+  for (const field of ["entities", "episodes", "assertions"]) {
+    for (const item of extraction[field]) resolved.set(item.local_id, { field, item });
   }
+  const withheldUnit = new Map([...resolved].filter(([, { field, item }]) => withheld[field].has(item.local_id))
+    .map(([id, { item }]) => [id, anchorUnitIds(item)[0]]));
   const retime = (time) => ({ ...time, evidence_ids: [...new Set(time.evidence_ids.map((id) => withheldUnit.get(id) ?? id))] });
   const assertions = extraction.assertions.filter((item) => !withheld.assertions.has(item.local_id))
     .map((item) => ({ ...item, authored_time: retime(item.authored_time), event_time: retime(item.event_time) }));
