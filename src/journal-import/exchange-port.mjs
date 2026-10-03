@@ -9,6 +9,8 @@ import {
   journalRoleInstruction
 } from "./provider-port.mjs";
 import { JOURNAL_WORK_TRANSPORT, journalWorkFileKey } from "./work-exchange.mjs";
+import { hardestJournalPacketFits } from "./packet-bounds.mjs";
+import { readJournalAttemptMarker, journalAttemptConsumed, HARDEST_ATTEMPT_EXHAUSTED } from "./attempt-markers.mjs";
 
 // An inference port that publishes role calls through the private exchange. The ChatGPT connector
 // and the Codex exec worker use distinct admission evidence over the same encrypted work format.
@@ -31,6 +33,7 @@ const UNSUPPORTED_ROLES = new Set(["visual_reader"]);
 const CASE_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,79}$/u;
 const REQUEST_CONTEXT_ID_PATTERN = /^[\x21-\x7e]{1,256}$/u;
 const CODEX_CONTEXT_ID_PATTERN = /^codex-thread:[0-9A-Za-z-]{8,64}$/u;
+const CLAUDE_CONTEXT_ID_PATTERN = /^claude-session:[0-9A-Za-z-]{8,64}$/u;
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -45,6 +48,11 @@ export function journalExchangeWorkId(operationKey, successor = 0) {
   invariant(Number.isSafeInteger(successor) && successor >= 0 && successor <= MAX_SUCCESSORS, "JOURNAL_EXCHANGE_SUCCESSOR_INVALID");
   const base = `journal-work:${sha256(`inner-signal:journal-exchange-operation:${operationKey}`).slice(0, 48)}`;
   return successor === 0 ? base : `${base}:r${successor}`;
+}
+
+export function journalExchangeAttemptIdentity(operationKey) {
+  const baseKey = operationKey.replace(/(?::resend:[1-9][0-9]*|:unsent-retry:[0-9]+:[0-9]+|:reserialize(?::[0-9]+)?)+$/u, "");
+  return sha256(`inner-signal:journal-exchange-operation:${baseKey}`).slice(0, 48);
 }
 
 export function createExchangeJournalInferencePort({
@@ -95,12 +103,18 @@ export function createExchangeJournalInferencePort({
     transport: executionAttestation === "codex_exec" ? JOURNAL_CODEX_EXCHANGE_PROVIDER : JOURNAL_WORK_TRANSPORT,
     packet_only: true,
     // The connector receipt does not attest that the dispatcher opened a fresh chat. The Codex
-    // worker supplies request-pinned evidence and a new ephemeral thread under its own route.
+    // route uses an ephemeral Codex thread for standard work and a new Claude session for hardest work.
     fresh_context_per_generate: executionAttestation === "codex_exec",
     // Desired dispatch labels alone are not execution evidence. The connector remains blocked;
-    // the Codex route admits only its worker-authenticated request-pinned receipt.
+    // the Codex route admits the worker's tier-specific receipt only after profile checks.
     authenticated_execution_profile_per_generate: executionAttestation === "codex_exec",
     ...(executionAttestation === "codex_exec" ? { execution_profile_evidence: "codex_exec_request_pinned" } : {}),
+    hardest_roles: Object.fromEntries(Object.entries(JOURNAL_ROLE_DEFINITIONS).map(([role, definition]) => [role, {
+      output_schema_id: definition.outputSchema, instruction_installed: true, available: !UNSUPPORTED_ROLES.has(role)
+    }])),
+    hardest_fresh_context_per_generate: executionAttestation === "codex_exec",
+    hardest_authenticated_execution_profile_per_generate: executionAttestation === "codex_exec",
+    ...(executionAttestation === "codex_exec" ? { hardest_execution_profile_evidence: "claude_code_model_usage_reported" } : {}),
     // The exchange knows whether an item was answered, is still open, or was closed unanswered.
     authoritative_completion: true,
     external_spend_authorized_usd: 0,
@@ -129,7 +143,7 @@ export function createExchangeJournalInferencePort({
     for (let successor = 0; successor <= MAX_SUCCESSORS; successor += 1) {
       const workId = journalExchangeWorkId(operationKey, successor);
       const stored = await store.readResult(workId);
-      if (stored?.retired && stored.unanswered) continue;
+      if (stored?.retired && stored.unanswered && !stored.exhausted) continue;
       return { store, workId, successor, entry: await store.readWork(workId), stored };
     }
     throw new JournalInferencePortError("JOURNAL_EXCHANGE_RETRY_LIMIT", { submissionStatus: "not_submitted" });
@@ -149,14 +163,22 @@ export function createExchangeJournalInferencePort({
     // are not evidence of the profile that actually ran, so an answer is inadmissible until a
     // dispatcher/provider receipt carries the effective model and effort and they match the route.
     invariant((dispatch.tier ?? "standard") === (entry.tier ?? "standard")
-      && (executionAttestation !== "codex_exec" || (dispatch.model === model
-        && dispatch.effort === (roleEffort[entry.role] ?? effort)))
+      && (executionAttestation !== "codex_exec" || (dispatch.tier === "hardest"
+        ? dispatch.model === hardestModel && dispatch.effort === hardestEffort
+        : dispatch.model === model && dispatch.effort === (roleEffort[entry.role] ?? effort)))
       && stored.receipt.effective_model_profile === dispatch.model
       && stored.receipt.effective_effort === dispatch.effort, "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+    if (stored.receipt.profile_evidence === "claude_code_model_usage_reported") {
+      invariant(executionAttestation === "codex_exec" && dispatch.tier === "hardest",
+        "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+    }
     if (executionAttestation === "codex_exec") {
-      invariant(stored.receipt.profile_evidence === "codex_exec_request_pinned"
-        && typeof stored.receipt.request_context_id === "string"
-        && CODEX_CONTEXT_ID_PATTERN.test(stored.receipt.request_context_id), "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
+      const valid = dispatch.tier === "hardest"
+        ? stored.receipt.profile_evidence === "claude_code_model_usage_reported"
+          && CLAUDE_CONTEXT_ID_PATTERN.test(stored.receipt.request_context_id ?? "")
+        : stored.receipt.profile_evidence === "codex_exec_request_pinned"
+          && CODEX_CONTEXT_ID_PATTERN.test(stored.receipt.request_context_id ?? "");
+      invariant(valid, "JOURNAL_EXCHANGE_EXECUTION_PROFILE_UNVERIFIED");
     }
     const receiptBody = {
       receipt_id: `receipt:${createHmac("sha256", key).update(`${operationKey}\0${entry.input_sha256}`).digest("hex").slice(0, 40)}`,
@@ -199,11 +221,12 @@ export function createExchangeJournalInferencePort({
   // Only the runtime removes dispatch records (when it retires or closes an item), so one successful
   // publication per item and process is enough; the exchange keeps the first record anyway.
   const dispatched = new Set();
-  async function ensureDispatch(store, entry) {
+  async function ensureDispatch(store, entry, operationKey) {
     if (dispatched.has(entry.work_id)) return;
     await store.publishDispatch({
       schema_version: 1,
       work_id: entry.work_id,
+      attempt_identity: journalExchangeAttemptIdentity(operationKey),
       role: entry.role,
       output_schema_name: entry.output_schema_name,
       tier: entry.tier ?? "standard",
@@ -217,7 +240,7 @@ export function createExchangeJournalInferencePort({
   }
 
   // What the exchange says about the newest item for this key, without waiting.
-  async function observe(operationKey) {
+  async function observe(operationKey, { tier = "standard" } = {}) {
     const { store, workId, entry, stored } = await current(operationKey);
     if (stored?.output) {
       invariant(entry, "JOURNAL_EXCHANGE_ENTRY_MISSING");
@@ -237,14 +260,19 @@ export function createExchangeJournalInferencePort({
       }
     }
     // Retired after its answer was stored durably; the caller holds the answer, not the exchange.
+    if (stored?.exhausted) return { status: "exhausted", code: HARDEST_ATTEMPT_EXHAUSTED };
     if (stored?.retired) return { status: "unknown" };
+    if (!entry && tier === "hardest" && executionAttestation === "codex_exec" && store.root) {
+      const { status } = await readJournalAttemptMarker(store.root, journalExchangeAttemptIdentity(operationKey));
+      if (journalAttemptConsumed(status)) return { status: "exhausted", code: HARDEST_ATTEMPT_EXHAUSTED };
+    }
     if (!entry) return { status: "not_submitted" };
     if (Date.parse(entry.expires_at) <= now().getTime()) {
       const { closed } = await store.closeUnanswered(workId);
       // An answer won the race; read it on the next observation.
       return closed ? { status: "not_submitted", code: "JOURNAL_WORK_EXPIRED" } : observe(operationKey);
     }
-    await ensureDispatch(store, entry);
+    await ensureDispatch(store, entry, operationKey);
     return { status: "pending", workId };
   }
 
@@ -258,11 +286,20 @@ export function createExchangeJournalInferencePort({
     assertJournalInferenceGrant(grant, role, checkedPacket);
     invariant(typeof operationKey === "string" && operationKey.length > 0, "OPERATION_KEY_INVALID");
     invariant(tier === "standard" || tier === "hardest", "WORK_TIER_INVALID");
+    if (tier === "hardest" && !hardestJournalPacketFits(role, checkedPacket)) {
+      throw new JournalInferencePortError("JOURNAL_WORK_PACKET_TOO_LARGE", { submissionStatus: "not_submitted" });
+    }
     const digest = inputDigest(role, checkedPacket, outputSchema, grant);
 
     const { store, workId, entry: existing, stored } = await current(operationKey);
     if (existing) invariant(existing.input_sha256 === digest, "OPERATION_KEY_CONFLICT");
     if (!existing && !stored) {
+      // Host-side preflight is authoritative even for new reference resends.
+      // No publication, Claude run, or daily slot is due for a consumed identity.
+      const completion = await observe(operationKey, { tier });
+      if (completion.status === "exhausted") {
+        throw new JournalInferencePortError(completion.code, { submissionStatus: "exhausted" });
+      }
       const issuedAt = now();
       const entry = {
         schema_version: 1,
@@ -297,10 +334,13 @@ export function createExchangeJournalInferencePort({
 
     const deadline = Date.now() + waitMs;
     for (;;) {
-      const observed = await observe(operationKey);
+      const observed = await observe(operationKey, { tier });
       if (observed.status === "completed") return { output: observed.output, receipt: observed.receipt };
       if (observed.status === "invalid_output") {
         throw new JournalInferencePortError("INVALID_STRUCTURED_OUTPUT", { submissionStatus: "completed_invalid", cause: observed.cause });
+      }
+      if (observed.status === "exhausted") {
+        throw new JournalInferencePortError(observed.code, { submissionStatus: "exhausted" });
       }
       if (observed.status === "not_submitted") {
         throw new JournalInferencePortError(observed.code ?? "INFERENCE_NOT_SUBMITTED", { submissionStatus: "not_submitted" });
@@ -320,11 +360,12 @@ export function createExchangeJournalInferencePort({
     // "completed" with the output and receipt; "not_submitted" when no item exists or the newest one
     // expired unanswered (the caller may send it again); "invalid_output" when the stored answer
     // fails the importer's schema or lacks verified execution profile; "unknown" while open.
-    async getCompletion(operationKey) {
-      const observed = await observe(operationKey);
+    async getCompletion(operationKey, options) {
+      const observed = await observe(operationKey, options);
       if (observed.status === "completed") return { status: "completed", output: observed.output, receipt: observed.receipt };
       if (observed.status === "not_submitted") return { status: "not_submitted", code: observed.code ?? "INFERENCE_NOT_SUBMITTED" };
       if (observed.status === "invalid_output") return { status: "invalid_output" };
+      if (observed.status === "exhausted") return { status: "exhausted", code: observed.code };
       return { status: "unknown" };
     },
     hasOperation,

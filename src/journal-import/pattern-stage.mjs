@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { ValidationError } from "../core/errors.mjs";
 import { resolveExactQuote, validateJournalGraph } from "./contracts.mjs";
 import { createJournalPatternBatches } from "./pattern-batches.mjs";
+import { hardestJournalRequestFits } from "./packet-bounds.mjs";
 import { addProvisionalPatterns, buildEpisodeThemeMatrix,
   executeCounterevidenceSearch, reviewPatternRegister } from "./pattern.mjs";
 
@@ -57,8 +58,34 @@ export async function runJournalPatternPass({
     node.kind === "passage" && node.data?.disclosure === "restricted" && node.data.unit_id === unitId))
     .map(({ unit_id: unitId }) => unitId));
   const oversizedUnits = [];
-  const batches = createJournalPatternBatches({ graph: reconciledGraph, unitGraphs, maximumBytes,
+  const initialBatches = createJournalPatternBatches({ graph: reconciledGraph, unitGraphs, maximumBytes,
     onOversizedUnit: unitId => oversizedUnits.push(unitId) });
+  const batches = [];
+  const boundBatch = batch => {
+    if (!hardestLaneEnabled) { batches.push(batch); return; }
+    const batchUnits = batch.unit_ids.map(id => byId.get(id));
+    requireValue(batchUnits.every(Boolean), "PATTERN_BATCH_UNIT_MISSING");
+    const freezeFits = hardestJournalRequestFits({ role: "reference_reader", units: batchUnits,
+      packetInput: { source_windows: batchUnits.map(unit => ({ unit_id: unit.unit_id, text: unit.text })),
+        adjacent_context: { before: "", after: "" }, visual_context: [], neutral_reading_instructions: [] }
+    }, generation);
+    const builderFits = hardestJournalRequestFits({ role: "pattern_builder", units: batchUnits,
+      packetInput: { validated_graph: batch.graph, episode_theme_matrix: buildEpisodeThemeMatrix(batch.graph),
+        source_retrieval: { source_passages: batch.graph.nodes.filter(node => node.kind === "passage") },
+        coverage_ledger: { assigned_unit_ids: batch.unit_ids, scope_complete: false, source_only_unresolved: true },
+        target_generation: generation, producer_ref: "x".repeat(256) }
+    }, generation);
+    if ((freezeFits && builderFits) || batch.unit_ids.length === 1) {
+      batches.push(batch); return;
+    }
+    const middle = Math.ceil(batch.unit_ids.length / 2);
+    for (const ids of [batch.unit_ids.slice(0, middle), batch.unit_ids.slice(middle)]) {
+      const selected = new Set(ids);
+      for (const smaller of createJournalPatternBatches({ graph: reconciledGraph, maximumBytes,
+        unitGraphs: unitGraphs.filter(part => selected.has(part.unit_id)) })) boundBatch(smaller);
+    }
+  };
+  for (const batch of initialBatches) boundBatch(batch);
   let graph = structuredClone(reconciledGraph);
   const reports = oversizedUnits.map(unitId => ({ batch_id: `pattern-unit:${unitId}`,
     unit_ids: [unitId], pattern_ids: [], status: "unresolved", stage: "PATTERN_BUILD",
@@ -90,6 +117,9 @@ export async function runJournalPatternPass({
       if (!failure) return { saved, attempts: attempt };
     }
     if (!hardestLaneEnabled) return { failure };
+    if (!hardestJournalRequestFits(request, generation)) {
+      return { failure: "JOURNAL_WORK_PACKET_TOO_LARGE", hardest: "not_attempted" };
+    }
     const id = `${scopedId}:hardest`;
     let saved = await readIfPresent(id);
     if (!saved) {
@@ -212,7 +242,9 @@ export async function runJournalPatternPass({
       source_retrieval: { source_graph: batch.graph,
         counterevidence: Object.fromEntries(ids.map(id => [id, searchRecords[id]])) }
     });
-    const fits = ids => Buffer.byteLength(JSON.stringify(packetFor(ids)), "utf8") <= reviewPacketMaximumBytes;
+    const fits = ids => Buffer.byteLength(JSON.stringify(packetFor(ids)), "utf8") <= reviewPacketMaximumBytes
+      && (!hardestLaneEnabled || hardestJournalRequestFits({ role: "pattern_reviewer",
+        units: batchUnits, packetInput: packetFor(ids) }, generation));
     const groups = [], oversized = [];
     let current = [];
     for (const id of added.created_pattern_ids) {

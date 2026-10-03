@@ -46,9 +46,9 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
       await release(key);
       return output;
     } catch (e) {
-      if (["not_submitted", "completed_invalid"].includes(e.submissionStatus)) {
+      if (["not_submitted", "completed_invalid", "exhausted"].includes(e.submissionStatus)) {
         await writeResult(key, attempt, {
-          status: e.submissionStatus === "not_submitted" ? "not_submitted" : "invalid_output", code: e.code
+          status: e.submissionStatus === "completed_invalid" ? "invalid_output" : e.submissionStatus, code: e.code
         });
         if (e.submissionStatus === "completed_invalid") await release(key);
       }
@@ -66,6 +66,7 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
       if (first && first.input_sha256 !== digest) throw new ValidationError("OPERATION_KEY_CONFLICT", { code: "OPERATION_KEY_CONFLICT" });
       const { attempt, intent, result } = await latest(input.operationKey);
       if (result?.status === "completed") return { output: result.output, receipt: { ...result.receipt, replay: true } };
+      if (result?.status === "exhausted") throw new JournalInferencePortError(result.code, { submissionStatus: "exhausted" });
       if (result?.status === "invalid_output") throw new JournalInferencePortError("INVALID_STRUCTURED_OUTPUT", { submissionStatus: "completed_invalid" });
       if (result?.status === "not_submitted") throw new JournalInferencePortError("INFERENCE_RETRY_LIMIT", { submissionStatus: "not_submitted" });
       if (intent) {
@@ -87,15 +88,23 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
       } });
       return settle(input.operationKey, attempt, input);
     },
-    async getCompletion(key) {
+    async getCompletion(key, options = {}) {
       const { attempt, intent, result } = await latest(key);
       if (result) {
+        if (result.status === "not_submitted" && options.tier === "hardest" && await authoritative(key, null, intent)) {
+          return port.getCompletion(key, options);
+        }
         if (result.status === "invalid_output") return (await authoritative(key, null, intent)) ? { status: "invalid_output" } : { status: "unknown" };
         return result;
       }
-      if (!intent) return { status: "not_submitted" };
+      if (!intent) {
+        // Hardest resends must consult the host's identity hold before the runtime
+        // charges a slot, even when this new key has no durable intent yet.
+        if (options.tier === "hardest" && await authoritative(key)) return port.getCompletion(key, options);
+        return { status: "not_submitted" };
+      }
       const completionIsAuthoritative = await authoritative(key, null, intent);
-      const completion = await port.getCompletion(key, { authoritativeCompletion: completionIsAuthoritative });
+      const completion = await port.getCompletion(key, { ...options, authoritativeCompletion: completionIsAuthoritative });
       if (completion.status === "completed") {
         await writeResult(key, attempt, completion);
         await release(key);
@@ -109,6 +118,10 @@ export function createDurableJournalInferencePort({ port, corpusStore }) {
         await writeResult(key, attempt, { status: "invalid_output", code: "INVALID_STRUCTURED_OUTPUT" });
         await release(key);
         return { status: "invalid_output" };
+      }
+      if (completionIsAuthoritative && completion.status === "exhausted") {
+        await writeResult(key, attempt, { status: "exhausted", code: completion.code });
+        return completion;
       }
       return { status: "unknown" };
     },

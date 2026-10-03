@@ -16,6 +16,7 @@
     "journal:import": "node src/cli/journal-import.mjs",
     "journal:work:mcp": "node src/cli/journal-work-mcp.mjs",
     "journal:work:codex": "node src/cli/journal-codex-worker.mjs",
+    "journal:work:claude": "node src/cli/journal-codex-worker.mjs --agent claude",
     "journal:work": "node src/cli/journal-work.mjs",
     "journal:test": "node --test tests/journal-*.test.mjs",
     "journal:ui:build": "vite build --config apps/journal-web/vite.config.ts",

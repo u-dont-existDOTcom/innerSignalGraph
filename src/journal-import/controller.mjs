@@ -3,6 +3,7 @@ import { ValidationError } from "../core/errors.mjs";
 import { acquirePrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { validateJournalSchema } from "./contracts.mjs";
 import { buildJournalRolePacket, JOURNAL_ROLE_DEFINITIONS, journalRoleInstruction } from "./provider-port.mjs";
+import { hardestJournalPacketFits } from "./packet-bounds.mjs";
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const semanticStages = Object.freeze(["VISUAL_READ", "EXTRACT", "OMISSION_CHECK", "RECONCILE", "REFERENCE_AUDIT", "PATTERN_BUILD", "PATTERN_REVIEW", "COLD_TEST"]);
@@ -298,6 +299,9 @@ export function createJournalImportController({
     if (["intent_persisted", "completion_unknown"].includes(work.status)) {
       const completion = await inferencePort.getCompletion(work.operation_key);
       if (completion.status === "completed") return completeWork(entry, work, completion);
+      if (completion.status === "exhausted") {
+        return recordFailure(entry, work, { code: completion.code, submissionStatus: "exhausted" });
+      }
       if (completion.status === "not_submitted") {
         if (work.attempts === 2) return recordFailure(entry, work,
           { code: "INFERENCE_RETRY_LIMIT", submissionStatus: "not_submitted" });
@@ -332,7 +336,13 @@ export function createJournalImportController({
       grant_purpose: grant.purpose,
       ...roleInput
     });
-    if (beforeInvoke) await beforeInvoke({ work: clone(work) });
+    if (work.tier === "hardest" && !hardestJournalPacketFits(work.role, packet)) {
+      const next = clone(entry.snapshot);
+      next.work_items.find(item => item.work_id === work.work_id).status = "blocked_authority";
+      return persist(next, entry.revision, { state: "blocked_authority", stage: work.stage,
+        next_action: "record unresolved packet bound", blocked_reason: "JOURNAL_WORK_PACKET_TOO_LARGE",
+        responsible_actor: "controller" });
+    }
     const packetDigest = sha256(Buffer.from(JSON.stringify(packet), "utf8"));
     const baseOperationKey = `journal:${work.work_id.slice(5, 45)}:${packetDigest.slice(0, 32)}`;
     const retryEpoch = Number.isSafeInteger(work.retry_epoch) && work.retry_epoch >= 0 ? work.retry_epoch : 0;
@@ -340,6 +350,14 @@ export function createJournalImportController({
     const operationKey = work.status === "invalid_output" ? reserializationKey
       : work.status === "retryable_error" ? `${baseOperationKey}:unsent-retry:${retryEpoch}:${work.attempts}`
         : (work.operation_key ?? baseOperationKey);
+    if (work.tier === "hardest") {
+      const completion = await inferencePort.getCompletion(operationKey, { tier: "hardest" });
+      if (completion.status === "completed") return completeWork(entry, work, completion);
+      if (completion.status === "exhausted") {
+        return recordFailure(entry, work, { code: completion.code, submissionStatus: "exhausted" });
+      }
+      if (beforeInvoke && completion.status === "not_submitted") await beforeInvoke({ work: clone(work), operationKey });
+    } else if (beforeInvoke) await beforeInvoke({ work: clone(work), operationKey });
     const intentSnapshot = clone(entry.snapshot);
     const intentWork = intentSnapshot.work_items.find(({ work_id: workId }) => workId === work.work_id);
     intentWork.status = "intent_persisted";

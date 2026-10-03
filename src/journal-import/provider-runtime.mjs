@@ -124,8 +124,12 @@ export function loadJournalInferencePortFromEnvironment(environment = process.en
   const raw = environment.INNER_SIGNAL_JOURNAL_INFERENCE_ROUTE_JSON;
   if (raw == null || raw === "") return createDisabledJournalInferencePort();
   const config = parseConfiguration(raw);
-  invariant(!hardestLane.enabled || ["chatgpt_subscription_browser", JOURNAL_EXCHANGE_PROVIDER].includes(config.provider),
+  invariant(!hardestLane.enabled || ["chatgpt_subscription_browser", JOURNAL_EXCHANGE_PROVIDER, JOURNAL_CODEX_EXCHANGE_PROVIDER].includes(config.provider),
     "HARDEST_LANE_ROUTE_UNAVAILABLE");
+  if (hardestLane.enabled && config.provider === JOURNAL_CODEX_EXCHANGE_PROVIDER) {
+    invariant((hardestLane.model ?? "claude-opus-5-5") === "claude-opus-5-5" && (hardestLane.effort ?? "max") === "max",
+      "HARDEST_LANE_CONFIG_INVALID");
+  }
   // A browser route remains necessary for ordinary image-bearing visual_reader work. The local
   // hardest exchange cannot carry attachments, so its tier-specific capabilities say that a hardest
   // visual attempt is unavailable; no hardest call may silently fall through to the standard model.

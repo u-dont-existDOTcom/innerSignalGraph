@@ -236,7 +236,7 @@ test("commit refuses a saved partial calibration even when later stages are read
   } finally { await resumed.close(); }
 });
 
-test("the hardest daily limit counts each dependency invocation before it is sent", async (t) => {
+test("the Codex route hardest daily limit counts each dependency invocation before it is sent", async (t) => {
   const f = await environment(t);
   f.config.hardest_lane = { enabled: true, daily_limit: 1 };
   f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
@@ -248,7 +248,9 @@ test("the hardest daily limit counts each dependency invocation before it is sen
   const hardestPort = createMockJournalInferencePort({ handlers: handlers() });
   const calls = [];
   const inferencePort = {
-    capabilities: () => hardestPort.capabilities(),
+    capabilities: () => ({ ...hardestPort.capabilities(), transport: "codex_exec_exchange",
+      hardest_fresh_context_per_generate: true,
+      hardest_authenticated_execution_profile_per_generate: true }),
     getCompletion: (operationKey) => hardestPort.getCompletion(operationKey),
     invoke(input) {
       calls.push(`${input.tier}:${input.role}`);
@@ -411,6 +413,47 @@ test("an exhausted hardest single-unit extraction continues as a source-only res
       assert.deepEqual(unresolved[0].diagnostics.cycles.map((cycle) => cycle.cycle), [0, 1, 2]);
       assert.equal(unresolved[0].diagnostics.hardest.extraction, null);
     } finally { await store.close(); }
+  } finally { await runtime.close(); }
+});
+
+test("a hardest extraction whose omission packet grows too large still counts as an attempted hardest call", async (t) => {
+  const f = await environment(t);
+  f.config.hardest_lane = { enabled: true };
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  const normal = handlers();
+  const unresolvedSunday = (packet) => !packet.core_units[0].text.includes("Synthetic Sunday") ? normal.extractor(packet) : {
+    ...normal.extractor(packet), status: "needs_context",
+    requested_context: [{ unit_id: packet.core_units[0].unit_id, direction: "after", reason: "Synthetic unresolved unit." }]
+  };
+  const baseParser = f.sourceParser;
+  f.sourceParser = async () => {
+    const parsed = await baseParser();
+    const text = "Synthetic Sunday: one final unresolved entry.";
+    return { ...parsed,
+      pages: [...parsed.pages, { page_number: parsed.pages.length + 1, representation_id: "synthetic:page:sunday", disposition: "readable", warnings: [], image_inventory: [] }],
+      representations: [...parsed.representations, { representation_id: "synthetic:page:sunday", text, utf8_byte_length: Buffer.byteLength(text) }] };
+  };
+  const standard = createMockJournalInferencePort({ handlers: handlers({ extractor: unresolvedSunday }) });
+  // The hardest extractor completes, but its long (schema-valid) output makes the omission packet exceed the bound.
+  const hardest = createMockJournalInferencePort({ handlers: handlers({ extractor: (packet) => ({
+    ...normal.extractor(packet),
+    coverage: normal.extractor(packet).coverage.map((item) => ({ ...item, reason: "x".repeat(460_000) })) }) }) });
+  const port = {
+    capabilities: () => standard.capabilities(),
+    getCompletion: async (operationKey) => (await standard.getCompletion(operationKey)) ?? hardest.getCompletion(operationKey),
+    invoke: (input) => (input.tier === "hardest" ? hardest : standard).invoke(input),
+    close() { standard.close(); hardest.close(); }
+  };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+  try {
+    const summary = await runtime.execute("run");
+    // The unit is a calibration unit: calibration stops as unresolved (not as an unspent size refusal),
+    // and the consumed hardest call is counted.
+    assert.equal(summary.calibration, "failed");
+    assert.equal(summary.calibration_failure.reason, "CALIBRATION_EXTRACTION_UNRESOLVED");
+    assert.equal(summary.residuals.hardest_attempted, 1);
+    assert.equal(summary.residuals.hardest_resolved, 0);
   } finally { await runtime.close(); }
 });
 

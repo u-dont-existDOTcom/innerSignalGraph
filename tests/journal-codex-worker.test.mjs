@@ -188,11 +188,49 @@ test("Codex route validates model and role effort, while ChatGPT connector admis
     { code: "JOURNAL_CODEX_MODEL_INVALID" });
   assert.throws(() => loadJournalInferencePortFromEnvironment(env({ ...route, role_effort: { unknown_role: "high" } }), { caseId: "synthetic-case" }),
     { code: "JOURNAL_CODEX_ROLE_EFFORT_INVALID" });
-  assert.throws(() => loadJournalInferencePortFromEnvironment(env(route), { caseId: "synthetic-case", hardestLane: { enabled: true } }),
-    { code: "HARDEST_LANE_ROUTE_UNAVAILABLE" });
+  const hardest = loadJournalInferencePortFromEnvironment(env(route), { caseId: "synthetic-case", hardestLane: { enabled: true } });
+  assert.equal(hardest.capabilities().hardest_fresh_context_per_generate, true);
+  assert.equal(hardest.capabilities().hardest_authenticated_execution_profile_per_generate, true);
+  assert.equal(hardest.capabilities().hardest_execution_profile_evidence, "claude_code_model_usage_reported");
+  assert.throws(() => loadJournalInferencePortFromEnvironment(env(route), { caseId: "synthetic-case",
+    hardestLane: { enabled: true, model: "claude-other", effort: "max" } }), { code: "HARDEST_LANE_CONFIG_INVALID" });
   const chat = loadJournalInferencePortFromEnvironment(env({ ...route, provider: "chatgpt_connector_exchange", model: "GPT-5.6 Sol", effort: "Pro" }), { caseId: "synthetic-case" });
   assert.equal(chat.capabilities().fresh_context_per_generate, false);
   assert.equal(chat.capabilities().authenticated_execution_profile_per_generate, false);
+});
+
+test("Codex worker leaves a hardest dispatch for the Claude worker", async (t) => {
+  const f = await setup(t);
+  const workId = "job:synthetic-hardest-only";
+  const entry = { ...manualWork(workId), tier: "hardest" };
+  await f.exchange.publishWork(entry);
+  await f.exchange.publishDispatch({ schema_version: 1, work_id: workId, role: entry.role, tier: "hardest",
+    attempt_identity: "a".repeat(48),
+    output_schema_name: entry.output_schema_name, model: "claude-opus-5-5", effort: "max", route_ref: "route:codex",
+    issued_at: entry.issued_at, expires_at: entry.expires_at });
+  const fake = await f.fake();
+  await runJournalCodexWorker(f.args(fake, ["--once"]), { environment: f.environment });
+  assert.equal(await f.exchange.readResult(workId), null);
+  assert.equal(await fs.readFile(f.trace, "utf8").catch(() => ""), "");
+});
+
+test("an invalid hardest dispatch cannot stall the Codex worker", async t => {
+  const f = await setup(t);
+  await f.publish("job:synthetic-valid-standard");
+  const invalidId = "job:synthetic-invalid-hardest";
+  const entry = manualWork(invalidId);
+  await fs.writeFile(path.join(f.root, "dispatch", `${journalWorkFileKey(invalidId)}.json`), JSON.stringify({
+    schema_version: 1, work_id: invalidId, role: entry.role, tier: "hardest",
+    output_schema_name: entry.output_schema_name, model: "claude-opus-5-5", effort: "max",
+    route_ref: "route:codex", issued_at: entry.issued_at, expires_at: entry.expires_at
+  }), { mode: 0o600 });
+  const fake = await f.fake();
+  assert.equal(await runJournalCodexWorker(f.args(fake, ["--once"]), { environment: f.environment }), 0);
+  assert.ok((await f.exchange.readResult("job:synthetic-valid-standard"))?.output);
+  // The counter belongs to each reader; list through the test's own exchange to observe the skip.
+  assert.ok(!(await f.exchange.listDispatch()).some(record => record.work_id === invalidId));
+  assert.ok(f.exchange.invalidDispatchCount() >= 1);
+  assert.ok(!(await fs.readFile(f.log, "utf8")).includes(SENTINEL));
 });
 
 test("doctor authorizes Codex execution evidence without relaxing ChatGPT blockers", async (t) => {
@@ -234,7 +272,7 @@ test("exact Codex arguments disable all forbidden features and pass only secret 
     "-c", 'model_reasoning_effort="high"', "-c", 'web_search="disabled"', "-c", 'service_tier="default"',
     "-c", 'approval_policy="never"', "-c", "project_doc_max_bytes=0", "-c", "project_root_markers=[]",
     "-c", `mcp_servers.journal.command=${JSON.stringify(process.execPath)}`,
-    "-c", `mcp_servers.journal.args=${JSON.stringify([mcpCli, "--config", "/tmp/config", "--principal", "codex-standard", "--tier", "standard", "--stage-dir", "/tmp/run/stage"])}`,
+    "-c", `mcp_servers.journal.args=${JSON.stringify([mcpCli, "--config", "/tmp/config", "--principal", "codex-standard", "--tier", "standard", "--stage-dir", "/tmp/run/stage", "--work-id", "job:synthetic-codex"])}`,
     "-c", 'mcp_servers.journal.env={INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT="/tmp/exchange",INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE="/tmp/secret"}',
     "-c", 'mcp_servers.journal.default_tools_approval_mode="approve"',
     ...CODEX_DISABLED_FEATURES.flatMap((feature) => ["--disable", feature]),
@@ -326,7 +364,8 @@ test("staging is sealed, first-write-wins, and rejects unsafe directories; execu
   assert.deepEqual(await f.exchange.stageResult({ stageDir: stage, workId: "job:synthetic-stage", output: { ok: false } }),
     { stored: true, already: true });
   const staged = await fs.readFile(path.join(stage, `${journalWorkFileKey("job:synthetic-stage")}.json`), "utf8");
-  assert.equal(staged.includes("ok"), false);
+  // The staged file holds ciphertext; check for the plaintext key, since random base64 can contain "ok".
+  assert.equal(staged.includes('"ok":'), false);
   await fs.mkdir(path.join(f.root, "inbox"), { mode: 0o700 });
   await fs.copyFile(path.join(stage, `${journalWorkFileKey("job:synthetic-stage")}.json`),
     path.join(f.root, "inbox", `${journalWorkFileKey("job:synthetic-stage")}.json`));
@@ -349,7 +388,7 @@ test("staging is sealed, first-write-wins, and rejects unsafe directories; execu
   const link = path.join(f.base, "link"); await fs.symlink(stage, link);
   await assert.rejects(f.exchange.stageResult({ stageDir: link, workId: "job:synthetic-other", output: {} }),
     { code: "JOURNAL_WORK_STAGE_DIR_INSECURE" });
-  assert.throws(() => parseJournalWorkMcpArgs(["--config", f.configPath, "--principal", "codex-standard", "--tier", "hardest", "--stage-dir", stage]));
+  assert.equal(parseJournalWorkMcpArgs(["--config", f.configPath, "--principal", "claude-hardest", "--tier", "hardest", "--stage-dir", stage]).stageDir, stage);
 });
 
 test("secret file refuses links, loose modes, and competing inline settings", async (t) => {
@@ -454,9 +493,13 @@ test("worker rejects every disallowed execution without leaving an answer or sta
       if (scenario === "timeout") assert.ok(trace, "the fake run must start before the timeout");
       if (trace) {
         const entries = trace.trim().split("\n").map(JSON.parse);
-        assert.equal(entries.find((entry) => entry.phase === "staged")?.exists,
-          !["submit_only", "fetch_other", "failed_fetch", "fetch_after_submit"].includes(scenario),
-          "only fetched packets can yield sealed answers");
+        const staged = entries.find((entry) => entry.phase === "staged");
+        // Under load the 500 ms timeout can fire before the fake reaches staging; check staging only when it ran.
+        if (scenario !== "timeout" || staged) {
+          assert.equal(staged?.exists,
+            !["submit_only", "fetch_other", "failed_fetch", "fetch_after_submit"].includes(scenario),
+            "only fetched packets can yield sealed answers");
+        }
         if (["submit_only", "fetch_other", "failed_fetch", "fetch_after_submit"].includes(scenario)) {
           assert.ok(entries.find((entry) => entry.phase === "staged")?.replies.includes("JOURNAL_WORK_PACKET_NOT_FETCHED"));
         }

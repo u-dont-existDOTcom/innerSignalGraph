@@ -164,7 +164,8 @@ test("a role call goes out as a work item and comes back as an authenticated ans
 
   // The dispatch record carries no content: an opaque ID, the role and the route's model and effort.
   const [record] = await environment.connector.listDispatch();
-  assert.deepEqual(Object.keys(record).sort(), ["answered", "effort", "expires_at", "issued_at", "model", "output_schema_name", "role", "route_ref", "schema_version", "tier", "work_id"]);
+  assert.deepEqual(Object.keys(record).sort(), ["answered", "attempt_identity", "effort", "expires_at", "issued_at", "model", "output_schema_name", "role", "route_ref", "schema_version", "tier", "work_id"]);
+  assert.match(record.attempt_identity, /^[0-9a-f]{48}$/u);
   assert.equal(record.tier, "standard");
   assert.equal(record.answered, true);
   const dispatchText = await fs.readFile(path.join(environment.root, "dispatch", `${journalWorkFileKey(record.work_id)}.json`), "utf8");
@@ -302,6 +303,50 @@ test("Codex receipt refuses a dispatch profile that differs from the configured 
   assert.equal(invalid.status, "invalid_output");
   await assert.rejects(changed.invoke(referenceCall({ operationKey: `${KEY}:codex-config` })),
     { code: "INVALID_STRUCTURED_OUTPUT" });
+});
+
+test("Codex exchange admits reported Claude evidence only for hardest work", async () => {
+  let entry = null, dispatch = null, answer = null;
+  const exchange = {
+    async readWork(workId) { return entry?.work_id === workId ? entry : null; },
+    async readResult(workId) { return entry?.work_id === workId ? answer : null; },
+    async publishWork(value) { entry = structuredClone(value); return { created: true }; },
+    async publishDispatch(value) { dispatch = structuredClone(value); },
+    async listDispatch() { return dispatch ? [{ ...dispatch, answered: answer !== null }] : []; }
+  };
+  const options = { exchange, caseId: CASE_ID, receiptKey: randomBytes(32), routeRef: "route:synthetic-codex",
+    allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    model: "gpt-6-sol", effort: "medium", executionAttestation: "codex_exec", waitMs: 0,
+    hardestLane: { model: "claude-opus-5-5", effort: "max" } };
+  const port = createExchangeJournalInferencePort(options);
+  const operationKey = `${KEY}:claude-hardest`;
+  await assert.rejects(port.invoke({ ...referenceCall({ operationKey }), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  assert.deepEqual([dispatch.tier, dispatch.model, dispatch.effort], ["hardest", "claude-opus-5-5", "max"]);
+  answer = { output: structuredClone(referenceAnswer), receipt: {
+    receipt_id: "synthetic-receipt", work_file_key: "synthetic-work-file", received_at: "2026-10-02T00:00:00.000Z",
+    output_sha256: "synthetic-output-digest", subject_sha256: "synthetic-principal-digest",
+    request_context_id: "claude-session:12345678", profile_evidence: "claude_code_model_usage_reported",
+    effective_model_profile: dispatch.model, effective_effort: dispatch.effort
+  } };
+  assert.equal((await port.getCompletion(operationKey)).status, "completed");
+  const connector = createExchangeJournalInferencePort({ ...options, executionAttestation: null });
+  assert.equal((await connector.getCompletion(operationKey)).status, "invalid_output");
+  answer = { ...answer, receipt: { ...answer.receipt, profile_evidence: "codex_exec_request_pinned",
+    request_context_id: "codex-thread:12345678" } };
+  assert.equal((await port.getCompletion(operationKey)).status, "invalid_output",
+    "request-pinned Codex evidence cannot answer hardest work");
+  const standardKey = `${KEY}:claude-standard`;
+  answer = null;
+  await assert.rejects(port.invoke(referenceCall({ operationKey: standardKey })), { code: "COMPLETION_UNKNOWN" });
+  assert.equal(dispatch.tier, "standard");
+  answer = { output: structuredClone(referenceAnswer), receipt: {
+    receipt_id: "synthetic-standard-receipt", work_file_key: "synthetic-standard-work-file",
+    received_at: "2026-10-02T00:00:00.000Z", output_sha256: "synthetic-output-digest",
+    subject_sha256: "synthetic-principal-digest", request_context_id: "claude-session:12345678",
+    profile_evidence: "claude_code_model_usage_reported", effective_model_profile: dispatch.model,
+    effective_effort: dispatch.effort
+  } };
+  assert.equal((await port.getCompletion(standardKey)).status, "invalid_output");
 });
 
 test("an invalid dispatcher context identifier is not promoted into an authenticated receipt", async (t) => {
@@ -568,4 +613,60 @@ test("the exchange route loads from the environment and checks its root before a
   // So is a root other users can reach.
   await fs.chmod(exchangeRoot, 0o755);
   await assert.rejects(loadJournalInferencePortFromEnvironment(environment(), { caseId: CASE_ID }).prepare(), { code: "JOURNAL_WORK_EXCHANGE_ROOT_INSECURE" });
+});
+
+test("every supported hardest role refuses an indivisible oversized complete packet before publication", async () => {
+  const { JOURNAL_ROLE_DEFINITIONS } = await import("../src/journal-import/provider-port.mjs");
+  const roles = Object.keys(JOURNAL_ROLE_DEFINITIONS).filter(role => role !== "visual_reader");
+  const port = createExchangeJournalInferencePort({ exchange: {
+    async readWork() { throw new Error("oversized hardest work reached the exchange"); },
+    async publishWork() { throw new Error("oversized hardest work was published"); }
+  }, caseId: CASE_ID, receiptKey: Buffer.alloc(32, 41), routeRef: "route:synthetic",
+    allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    model: "gpt-6-sol", effort: "medium", waitMs: 0, executionAttestation: "codex_exec" });
+  for (const role of roles) {
+    const definition = JOURNAL_ROLE_DEFINITIONS[role];
+    const request = referenceCall();
+    request.packet = Object.fromEntries(Object.entries(request.packet).filter(([key]) =>
+      !JOURNAL_ROLE_DEFINITIONS.reference_reader.fields.includes(key)));
+    request.packet.output_schema_id = definition.outputSchema;
+    request.packet[definition.fields.find(field => field !== "phase")] = { text: "SYNTHETIC_PACKET_SENTINEL".repeat(25_000) };
+    if (role === "pattern_reviewer") request.packet.phase = "B";
+    await assert.rejects(port.invoke({ ...request, role, outputSchema: definition.outputSchema,
+      grant: { ...grant, allowed_roles: roles }, tier: "hardest" }), { code: "JOURNAL_WORK_PACKET_TOO_LARGE" });
+  }
+});
+
+test("a hardest dispatch without explicit attempt identity is refused", async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "journal-dispatch-identity-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const exchange = createJournalWorkExchange({ root, secret: Buffer.alloc(32, 41).toString("base64") });
+  await assert.rejects(exchange.publishDispatch({ schema_version: 1, work_id: "job:synthetic-missing-identity",
+    role: "reference_reader", tier: "hardest", output_schema_name: "reference-result",
+    model: "claude-opus-5-5", effort: "max", route_ref: "route:synthetic",
+    issued_at: "2026-10-01T00:00:00.000Z", expires_at: "2099-01-01T00:00:00.000Z" }),
+  { code: "JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED" });
+});
+
+test("a worker's terminal unanswered tombstone immediately exhausts the durable port", async () => {
+  let publications = 0, sleeps = 0;
+  const exchange = {
+    async readWork() { return null; },
+    async readResult(workId) { return { work_id: workId, retired: true, unanswered: true, exhausted: true }; },
+    async publishWork() { publications += 1; },
+    async listDispatch() { return []; }
+  };
+  const port = createExchangeJournalInferencePort({ exchange, caseId: CASE_ID, receiptKey: Buffer.alloc(32, 41),
+    routeRef: "route:synthetic", model: "gpt-6-sol", effort: "medium", executionAttestation: "codex_exec",
+    allowanceEvidence: { authorization_ref: "allowance:synthetic", maximum_incremental_cost_usd: 0 },
+    waitMs: 86_400_000, sleep: async () => { sleeps += 1; assert.fail("terminal item waited"); } });
+  const store = memoryStore();
+  const durable = createDurableJournalInferencePort({ port, corpusStore: store });
+  const request = { ...referenceCall(), tier: "hardest" };
+  await assert.rejects(durable.invoke(request), { code: "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED", submissionStatus: "exhausted" });
+  const restarted = createDurableJournalInferencePort({ port, corpusStore: store });
+  assert.deepEqual(await restarted.getCompletion(KEY), { status: "exhausted", code: "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED" });
+  await assert.rejects(restarted.invoke(request), { submissionStatus: "exhausted" });
+  assert.equal(publications, 0);
+  assert.equal(sleeps, 0);
 });

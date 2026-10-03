@@ -47,7 +47,9 @@ const bindingCodes = new Set([
   "PATTERN_REVIEW_EVIDENCE_MISSING", "PASS_STRUCTURAL_GRAPH_ONLY"
 ]);
 const blockerCodes = new Set(["INVALID_STRUCTURED_OUTPUT", "OUTPUT_INCOMPLETE",
-  "REFERENCE_RESEND_EXHAUSTED", "COMPLETION_UNKNOWN", "HARDEST_DAILY_LIMIT"]);
+  "REFERENCE_RESEND_EXHAUSTED", "COMPLETION_UNKNOWN", "HARDEST_DAILY_LIMIT",
+  // Hardest-lane refusals from the Claude lane.
+  "JOURNAL_WORK_PACKET_TOO_LARGE", "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED"]);
 const permittedValues = new Set([...schemaEnums(extractionSchema), ...schemaEnums(reviewSchema), ...bindingCodes, ...blockerCodes]);
 const permittedKeys = new Set([
   "cycles", "cycle", "hardest", "fidelity_cycles", "fidelity", "findings_per_cycle", "extraction", "omission", "invalid", "blocker_code",

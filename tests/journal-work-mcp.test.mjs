@@ -28,7 +28,13 @@ test("the local stdio server completes hardest work, records its principal, filt
   await fs.mkdir(root, { mode: 0o700 });
   const secret = randomBytes(32).toString("base64");
   const exchange = createJournalWorkExchange({ root, secret });
-  await exchange.publishWork(work("journal-work:hardest-synthetic", "hardest"));
+  const hardest = work("journal-work:hardest-synthetic", "hardest");
+  await exchange.publishWork(hardest);
+  await exchange.publishDispatch({ schema_version: 1, work_id: hardest.work_id, attempt_identity: "c".repeat(48),
+    role: hardest.role, tier: "hardest", output_schema_name: hardest.output_schema_name, model: "claude-opus-5-5",
+    effort: "max", route_ref: "route:synthetic", issued_at: hardest.issued_at, expires_at: hardest.expires_at });
+  // A hardest item without a dispatch identity must not be served.
+  await exchange.publishWork(work("journal-work:hardest-unidentified", "hardest"));
   await exchange.publishWork(work("journal-work:standard-synthetic", "standard"));
   const config = path.join(base, "run.json");
   await fs.writeFile(config, JSON.stringify({ schema_version: 1, target_profile: { case_id: "synthetic-case" } }), { mode: 0o600 });
@@ -43,7 +49,8 @@ test("the local stdio server completes hardest work, records its principal, filt
   const requests = [
     { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "get_journal_work_packet", arguments: { work_id: "journal-work:hardest-synthetic" } } },
     { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "submit_journal_work_result", arguments: { work_id: "journal-work:hardest-synthetic", output: { ok: true } } } },
-    { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "get_journal_work_packet", arguments: { work_id: "journal-work:standard-synthetic" } } }
+    { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "get_journal_work_packet", arguments: { work_id: "journal-work:standard-synthetic" } } },
+    { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "get_journal_work_packet", arguments: { work_id: "journal-work:hardest-unidentified" } } }
   ];
   child.stdin.end(`${requests.map(JSON.stringify).join("\n")}\n`);
   const code = await new Promise((resolve) => child.once("exit", resolve));
@@ -52,6 +59,8 @@ test("the local stdio server completes hardest work, records its principal, filt
   assert.equal(messages[0].result.structuredContent.status, "ready");
   assert.equal(messages[1].result.structuredContent.stored, true);
   assert.equal(messages[2].result.structuredContent.code, "JOURNAL_WORK_NOT_FOUND");
+  assert.equal(messages[3].result.structuredContent.code, "JOURNAL_WORK_ATTEMPT_IDENTITY_REQUIRED");
+  assert.equal(JSON.stringify(messages[3]).includes(sentinel), false);
   const stored = await exchange.readResult("journal-work:hardest-synthetic");
   assert.equal(stored.receipt.subject_sha256,
     createHash("sha256").update("subject:local:opus-worker").digest("hex"));
