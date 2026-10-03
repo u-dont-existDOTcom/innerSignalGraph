@@ -9,7 +9,7 @@ import { createJournalWorkExchange, journalWorkExchangeSecret, journalWorkFileKe
 import { createExchangeJournalInferencePort, journalExchangeWorkId } from "../src/journal-import/exchange-port.mjs";
 import { loadJournalInferencePortFromEnvironment } from "../src/journal-import/provider-runtime.mjs";
 import { codexEventReader, codexExecArgs, CODEX_DISABLED_FEATURES, parseCodexResetTime, parseJournalCodexWorkerArgs,
-  runJournalCodexWorker } from "../src/journal-import/codex-worker.mjs";
+  runJournalCodexWorker, trackForeignAnswers } from "../src/journal-import/codex-worker.mjs";
 import { parseJournalWorkMcpArgs } from "../src/cli/journal-work-mcp.mjs";
 import { configuredJournalDoctorReport } from "../src/cli/journal-import.mjs";
 
@@ -110,6 +110,12 @@ if (!submitOnly && !["fetch_other", "failed_fetch", "fetch_after_submit"].includ
 const stageDir = mcpArgs[mcpArgs.indexOf("--stage-dir") + 1];
 fs.appendFileSync(trace, JSON.stringify({ phase: "staged", exists: fs.readdirSync(stageDir).some(name => name.endsWith(".json")),
   replies: replies.map(reply => reply.result.structuredContent.code || reply.result.structuredContent.status || "stored") }) + String.fromCharCode(10));
+if (scenario === "stored_first") {
+  // Another worker publishes this item's answer before this run's staged answer is promoted.
+  const { createJournalWorkExchange, journalWorkExchangeSecret } = await import(${JSON.stringify(new URL("../src/journal-import/work-exchange.mjs", import.meta.url).href)});
+  const other = createJournalWorkExchange({ root: env.INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT, secret: await journalWorkExchangeSecret(env) });
+  await other.submitResult({ workId, output: answer, subject: "synthetic-other-worker" });
+}
 if (scenario === "timeout") {
   setInterval(() => {}, 1000);
 } else {
@@ -631,6 +637,41 @@ test("an answer stored by another worker starts one import run", async (t) => {
   await new Promise((resolve) => setTimeout(resolve, 200));
   assert.equal(await imports(), "xx", "one run per new answer, not one per poll");
   assert.equal(await f.exchange.readResult("job:synthetic-foreign-answer") !== null, true);
+  running.child.kill("SIGTERM");
+  assert.equal(await running.closed, 143);
+});
+
+test("foreign answers count from a baseline read before the startup import", () => {
+  let runs = 0;
+  const answered = (workId) => ({ work_id: workId, answered: true });
+  const answers = trackForeignAnswers([answered("job:synthetic-before"), { work_id: "job:synthetic-open", answered: false }],
+    () => { runs += 1; });
+  // The startup import covers the baseline. An answer stored after it starts a run even on the first poll.
+  answers.notice([answered("job:synthetic-before"), answered("job:synthetic-open")]);
+  assert.equal(runs, 1);
+  answers.notice([answered("job:synthetic-before"), answered("job:synthetic-open")]);
+  assert.equal(runs, 1, "one run per new answer, not one per poll");
+  // The worker started the run itself for an answer it handled.
+  answers.handled("job:synthetic-handled");
+  answers.notice([answered("job:synthetic-handled")]);
+  assert.equal(runs, 1);
+  answers.notice([answered("job:synthetic-a"), answered("job:synthetic-b")]);
+  assert.equal(runs, 2, "several new answers in one poll start one run");
+});
+
+test("an answer another worker stored first still starts one import run", async (t) => {
+  const f = await setup(t);
+  await f.publish("job:synthetic-stored-first");
+  const fake = await f.fake("stored_first");
+  const marker = path.join(f.base, "import-count");
+  const command = [process.execPath, "-e", "require('node:fs').appendFileSync(process.argv[1], 'x')", marker];
+  const running = spawnWorker(f, fake, ["--import-command-json", JSON.stringify(command)]);
+  t.after(() => { if (running.child.exitCode === null) running.child.kill("SIGKILL"); });
+  const imports = async () => fs.readFile(marker, "utf8").catch(() => "");
+  await until(async () => (await fs.readFile(f.log, "utf8").catch(() => "")).includes('"outcome":"already_answered"'));
+  await until(async () => (await imports()) === "xx");
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  assert.equal(await imports(), "xx", "the dispatch scan does not start a second run for it");
   running.child.kill("SIGTERM");
   assert.equal(await running.closed, 143);
 });
