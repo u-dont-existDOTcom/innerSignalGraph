@@ -52,7 +52,7 @@ The lookahead must compute the same packet and the same operation key as the seq
   - For a `REFERENCE_AUDIT` request, which the runtime sends without a controller, it skips the request if a cached result, a failure marker or a completion-unknown marker exists. Otherwise the operation key is the job ID, as in `work()`.
   - A chain continues past an answer only when the loop's own check on that answer passes (section 4, per loop). Otherwise it stops; the sequential run will retry under a different job ID.
 - A task ends when its chain ends, when `peek` reports `retired` (the sequential run took the answer), on any error, or when the run closes. Errors are counted, never thrown, and never logged with content. Once its item is published, a failing exchange read doesn't end the task: it keeps its slot and polls again, counting the failing stretch once. An item whose dispatch record failed to publish keeps its slot too, and the task calls `prefetch` again after each pause until the record is published, since no worker can answer the item without it.
-- At most `limit - 1` lookahead items are outstanding (published and unanswered) at once.
+- At most `limit - 1` lookahead calls are outstanding or answered but not yet used by the sequential run, together, at once (since 2026-10-03, after review; before, only outstanding calls counted, so fast answers let a calibration round send well past its failure limit). An answer stops counting once the sequential run invokes its operation key (`markUsed`). A chain goes on to its next call only while that stays within the bound.
 
 ### Loops covered
 

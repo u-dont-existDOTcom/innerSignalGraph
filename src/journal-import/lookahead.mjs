@@ -8,6 +8,11 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
   const finished = new Set();
   const sent = new Set();
   const used = new Set();
+  // Answers that arrived but that the sequential run hasn't used yet. They count against the bound with the
+  // running tasks, so at most `limit - 1` calls are outstanding or waiting unused at any time, also when a
+  // calibration round stops at its failure limit.
+  const held = new Set();
+  const room = () => running.size + held.size <= limit - 1;
   const wake = new Set();
   let closed = false;
   let errors = 0;
@@ -74,7 +79,10 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
         continue;
       }
       failing = false;
-      if (peek.status === "completed") return peek.output;
+      if (peek.status === "completed") {
+        if (!used.has(request.operationKey)) held.add(request.operationKey);
+        return peek.output;
+      }
       if (peek.status !== "pending") return null;
       await pause();
     }
@@ -84,7 +92,8 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
     if (planned.direct) {
       if (planned.direct.tier === "hardest") return;
       const output = await send(planned.direct);
-      if (output && planned.next && !closed) {
+      // A chain goes on to its next call only while that keeps within the bound.
+      if (output && planned.next && !closed && room()) {
         const next = await planned.next(output);
         if (next) {
           const preparedNext = await prepare(next);
@@ -94,12 +103,15 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
       return;
     }
     const snapshot = structuredClone(planned.snapshot);
+    let sentOne = false;
     for (const work of snapshot.work_items) {
       if (closed || work.tier === "hardest") return;
       if (work.status === "completed") continue;
       // A retry, reserialization or parked job belongs entirely to the sequential controller.
       if (work.status !== "planned" || work.attempts !== 0
         || work.operation_key !== null || work.retry_epoch !== 0) return;
+      if (sentOne && !room()) return;
+      sentOne = true;
       const { packet, operationKey } = await planJournalOperation({
         work, snapshot, grant, resolvePacketInput: planned.resolvePacketInput
       });
@@ -113,7 +125,7 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
   // starts in descriptor order while slots are free.
   const fill = () => {
     scheduling = scheduling.then(async () => {
-      while (!closed && running.size < limit - 1 && pending.length) {
+      while (!closed && running.size + held.size < limit - 1 && pending.length) {
         const descriptor = pending.shift();
         if (running.has(descriptor.jobId) || finished.has(descriptor.jobId)) continue;
         let planned;
@@ -140,7 +152,10 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
       pending = [...descriptors];
       fill();
     },
-    markUsed(operationKey) { used.add(operationKey); },
+    markUsed(operationKey) {
+      used.add(operationKey);
+      if (held.delete(operationKey)) fill();
+    },
     sentOperationKeys() { return [...sent]; },
     summary() {
       let consumed = 0;

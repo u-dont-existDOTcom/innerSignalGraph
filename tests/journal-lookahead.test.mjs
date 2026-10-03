@@ -483,10 +483,32 @@ test("a speculative item gets its dispatch record once publication recovers, kee
   dispatchFails = false;
   await until(() => h.dispatch.has(id));
   h.answerWork(id);
+  lookahead.markUsed(operationKey);
   await until(() => h.work.size === 2);
   assert.equal(lookahead.summary().sent, 2);
   await lookahead.close();
   h.port.close();
+});
+
+test("answers the sequential run hasn't used yet count against the lookahead bound", async (t) => {
+  const h = exchangeHarness();
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  const descriptors = Array.from({ length: 5 }, (_, index) => ({ jobId: `bounded:${index}`,
+    direct: { role: "reference_reader", packet, outputSchema: "reference-result",
+      operationKey: `${operationKey}:bounded:${index}`, grant } }));
+  const lookahead = createJournalLookahead({ limit: 3, port: h.port, grant, authorize: async () => {}, pollMs: 1,
+    prepare: async descriptor => ({ direct: descriptor.direct }) });
+  t.after(() => lookahead.close());
+  lookahead.ahead(descriptors);
+  await until(() => h.dispatch.size === 2);
+  for (const id of [...h.dispatch.keys()]) h.answerWork(id);
+  for (let index = 0; index < 20; index += 1) await tick();
+  assert.equal(h.work.size, 2, "two answered but unused calls fill the bound of limit - 1");
+  lookahead.markUsed(descriptors[0].direct.operationKey);
+  await until(() => h.work.size === 3);
+  for (let index = 0; index < 20; index += 1) await tick();
+  assert.equal(h.work.size, 3, "using one answer frees exactly one place");
 });
 
 test("a published lookahead item keeps its slot while reading the exchange fails", async (t) => {
@@ -510,6 +532,7 @@ test("a published lookahead item keeps its slot while reading the exchange fails
   assert.equal(lookahead.summary().errors, 1, "one failing stretch counts once");
   readFails = false;
   h.answerWork(journalExchangeWorkId(operationKey));
+  lookahead.markUsed(operationKey);
   await until(() => h.work.size === 2);
   await lookahead.close();
   h.port.close();
@@ -612,6 +635,7 @@ test("a revoked access check prevents further lookahead publication", async () =
   // Access is revoked while the first item is out; when its slot frees, the next descriptor is refused.
   authorized = false;
   h.answerWork(journalExchangeWorkId(descriptors[0].direct.operationKey));
+  lookahead.markUsed(descriptors[0].direct.operationKey);
   await until(() => lookahead.summary().errors === 1);
   await lookahead.close();
   assert.equal(h.dispatch.size, 1);
@@ -633,11 +657,14 @@ test("a slot that frees up takes the next descriptor without another ahead call"
   lookahead.ahead(descriptors);
   await until(() => h.dispatch.size === 1);
   assert.equal(h.dispatch.has(journalExchangeWorkId("synthetic:extraction")), false, "one slot at a time");
+  // The sequential run uses the answer, which frees its place in the bound.
   h.answerWork(journalExchangeWorkId("synthetic:reference"));
+  lookahead.markUsed("synthetic:reference");
   await until(() => h.dispatch.has(journalExchangeWorkId("synthetic:extraction")));
   // A newer view of upcoming work replaces descriptors that never started.
   lookahead.ahead([]);
   h.answerWork(journalExchangeWorkId("synthetic:extraction"));
+  lookahead.markUsed("synthetic:extraction");
   await until(() => lookahead.summary().sent === 2 && [...h.results.keys()].length === 2);
   await new Promise(resolve => setTimeout(resolve, 20));
   assert.equal(h.dispatch.has(journalExchangeWorkId("synthetic:later")), false);

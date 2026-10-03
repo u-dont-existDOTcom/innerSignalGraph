@@ -27,6 +27,8 @@ export const CODEX_DISABLED_FEATURES = Object.freeze([
 
 function failure(code) { return Object.assign(new Error(code), { code }); }
 function stringArg(value) { return JSON.stringify(value); }
+// A poll interval that never keeps the process alive on its own.
+function delay(ms) { return new Promise((resolve) => { setTimeout(resolve, ms).unref?.(); }); }
 function numberOption(argv, flag, fallback, min, max) {
   const at = argv.indexOf(flag);
   if (at < 0) return fallback;
@@ -371,7 +373,12 @@ export async function lockWorkerDirectory(directory) {
 export function trackForeignAnswers(baseline, onForeign) {
   const seen = new Set(baseline.filter((record) => record.answered).map((record) => record.work_id));
   return Object.freeze({
-    handled(workId) { seen.add(workId); },
+    // Marks an answer this worker will start the run for; true when a poll already started one.
+    handled(workId) {
+      const noticed = seen.has(workId);
+      seen.add(workId);
+      return noticed;
+    },
     notice(records) {
       let foreign = false;
       for (const record of records) {
@@ -506,9 +513,9 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
             effective_effort: record.effort, request_context_id: `codex-thread:${events.state.threads[0]}` } });
         outcome = stored.already ? "already_answered" : "answered";
         // Start the import run either way: a worker that stored the answer first may have no import
-        // command, or may have stopped after publishing it.
-        answers?.handled(record.work_id);
-        startImport();
+        // command, or may have stopped after publishing it. A poll that already noticed the answer
+        // started that run.
+        if (!answers?.handled(record.work_id)) startImport();
       }
     } catch { outcome = stopping ? "stopped" : "error"; }
     finally {
@@ -555,7 +562,12 @@ export async function runJournalCodexWorker(argv, { environment = process.env, s
         }
       }
       if (stopping || completed >= options.maxItems) { if (!running.size) break; await Promise.race(running.values()); continue; }
-      if (running.size) { await Promise.race(running.values()); continue; }
+      if (running.size) {
+        // A worker that watches for other workers' answers, and for its periodic import, keeps polling while
+        // its own runs are in flight, instead of waiting for one of them to end.
+        await Promise.race(answers ? [...running.values(), delay(options.pollMs)] : running.values());
+        continue;
+      }
       if (options.once) {
         const records = await dispatch.listDispatch();
         const remaining = records.some((record) => initial.has(record.work_id) && !record.answered

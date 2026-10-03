@@ -120,6 +120,7 @@ if (scenario === "timeout") {
   setInterval(() => {}, 1000);
 } else {
   if (scenario === "slow") await new Promise(resolve => setTimeout(resolve, 150));
+  if (scenario === "very_slow") await new Promise(resolve => setTimeout(resolve, 4000));
   if (scenario !== "missing_thread") console.log(JSON.stringify({ type: "thread.started",
     thread_id: ["same_thread", "same_thread_mixed"].includes(scenario) ? "00000000-0000-4000-8000-000000000001" : randomUUID() }));
   if (scenario === "two_threads") console.log(JSON.stringify({ type: "thread.started", thread_id: randomUUID() }));
@@ -663,9 +664,11 @@ test("foreign answers count from a baseline read before the startup import", () 
   answers.notice([answered("job:synthetic-before"), answered("job:synthetic-open")]);
   assert.equal(runs, 1, "one run per new answer, not one per poll");
   // The worker started the run itself for an answer it handled.
-  answers.handled("job:synthetic-handled");
+  assert.equal(answers.handled("job:synthetic-handled"), false);
   answers.notice([answered("job:synthetic-handled")]);
   assert.equal(runs, 1);
+  // An answer a poll already noticed has its run.
+  assert.equal(answers.handled("job:synthetic-open"), true);
   answers.notice([answered("job:synthetic-a"), answered("job:synthetic-b")]);
   assert.equal(runs, 2, "several new answers in one poll start one run");
 });
@@ -700,6 +703,27 @@ test("a periodic import run starts when no answer would start one, and runs neve
   const imports = async () => fs.readFile(marker, "utf8").catch(() => "");
   await until(async () => (await imports()).length >= 3);
   assert.equal((await imports()).includes("!"), false);
+  running.child.kill("SIGTERM");
+  assert.equal(await running.closed, 143);
+});
+
+test("another worker's answer starts an import run while this worker's own runs are in flight", async (t) => {
+  const f = await setup(t);
+  await f.publish("job:synthetic-busy");
+  await f.publish("job:synthetic-busy-foreign", "reference_reader", "hardest");
+  const fake = await f.fake("very_slow");
+  const marker = path.join(f.base, "import-count");
+  const command = [process.execPath, "-e", "require('node:fs').appendFileSync(process.argv[1], 'x')", marker];
+  const running = spawnWorker(f, fake, ["--import-command-json", JSON.stringify(command), "--concurrency", "1"]);
+  t.after(() => { if (running.child.exitCode === null) running.child.kill("SIGKILL"); });
+  const imports = async () => fs.readFile(marker, "utf8").catch(() => "");
+  const trace = async () => (await fs.readFile(f.trace, "utf8").catch(() => "")).trim().split("\n").filter(Boolean)
+    .map(JSON.parse);
+  await until(async () => (await trace()).some((item) => item.phase === "staged") && (await imports()) === "x");
+  await f.exchange.submitResult({ workId: "job:synthetic-busy-foreign", output: { ok: true }, subject: "synthetic" });
+  // The slow run takes four seconds more; the answer is noticed on the next poll, before it ends.
+  await until(async () => (await imports()) === "xx", 2_500);
+  assert.equal((await trace()).some((item) => item.phase === "end"), false);
   running.child.kill("SIGTERM");
   assert.equal(await running.closed, 143);
 });
