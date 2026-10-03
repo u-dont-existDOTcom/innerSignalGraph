@@ -1299,3 +1299,63 @@ test("extractionItemChanges: an assertion whose time evidence names a changed or
   assert.equal(record(result, "assertion", "a4").changed, true, "a4's time came from a3");
   assert.equal(record(result, "assertion", "a1").changed, false);
 });
+
+test("scopeReviewAfterRepair: an earlier finding on an item stays open when the new review leaves the item out", () => {
+  const earlier = review({ assessments: [flag("a2", "earlier"), ok("a1", "earlier")] });
+  const later = review({ assessments: [ok("a1", "later")] }); // a2 unchanged and not mentioned
+  const result = scope({ review: later, previousReview: earlier, extraction: story() });
+  assert.equal(verdictOn(result, "a2").explanation, "earlier verdict on a2.");
+  assert.equal(result.review.status, "repair_required");
+});
+
+test("scopeReviewAfterRepair: an earlier finding on a renamed item stays open under its new ID", () => {
+  const earlier = review({ assessments: [flag("a2", "earlier")] });
+  const result = scope({ review: review({ assessments: [] }), previousReview: earlier,
+    extraction: story(renamed(storyItems(), "assertions", "a2", "a2-v2")) });
+  assert.deepEqual(targetsIn(result), ["a2-v2"]);
+  assert.equal(result.review.status, "repair_required");
+});
+
+test("scopeReviewAfterRepair: an earlier finding goes with an item the repair removed", () => {
+  const earlier = review({ assessments: [flag("a2", "earlier")] });
+  const result = scope({ review: review({ assessments: [] }), previousReview: earlier,
+    extraction: story(without(storyItems(), "assertions", "a2")) });
+  assert.equal(verdictOn(result, "a2"), undefined);
+  assert.equal(result.review.status, "sufficient_for_stated_scope");
+});
+
+test("scopeReviewAfterRepair: an earlier unit-level omission closes unless the review names the unit again", () => {
+  const earlier = review({ assessments: [flag(U2, "earlier")] });
+  const repaired = story(added(storyItems(), "assertions", assertion("a5", U2, "The ferry boat was late.", { subjects: ["e-boat"] })));
+  const result = scope({ review: review({ assessments: [ok("a5", "later")] }), previousReview: earlier, extraction: repaired });
+  assert.equal(verdictOn(result, U2), undefined);
+  assert.equal(result.review.status, "sufficient_for_stated_scope");
+});
+
+test("scopeReviewAfterRepair: an earlier unassessed item stays unassessed until the review assesses it", () => {
+  const earlier = review({ unassessed: ["a3"] });
+  const result = scope({ review: review({ assessments: [ok("a1", "later")] }), previousReview: earlier, extraction: story() });
+  assert.deepEqual(result.review.unassessed_ids, ["a3"]);
+  assert.equal(result.review.status, "repair_required");
+});
+
+test("withholdFlaggedItems: a flagged entity with no dependent assertion still marks its unit needs_review", () => {
+  const source = story();
+  const result = withholdFlaggedItems({ extraction: source, unitIds: [U1, U2],
+    reviews: [{ review: review({ assessments: [flag("e-dock", "later")] }) }] });
+  assert.deepEqual(ids(result.extraction.assertions), ids(source.assertions));
+  assert.equal(ids(result.extraction.entities).includes("e-dock"), false);
+  const coverage = coverageOf(result, U2);
+  assert.equal(coverage.disposition, "needs_review");
+  assert.match(coverage.reason, /flagged 0 assertion\(s\) and 1 other item\(s\), which were withheld/u);
+});
+
+test("extractionItemChanges: a removed assertion that shares its ID with a kept entity leaves that entity's assertions unchanged", () => {
+  const items = storyItems();
+  const before = story(added(items, "assertions", assertion("e-lamp", U1, "The lamp at the point was lit by nine.",
+    { subjects: ["e-maren"] })));
+  const result = extractionItemChanges(before, story(items));
+  assert.deepEqual(result.removed.map((item) => [item.kind, item.localId]), [["assertion", "e-lamp"]]);
+  assert.equal(record(result, "assertion", "a2").changed, false, "a2's subject is the kept entity e-lamp");
+  assert.equal(record(result, "assertion", "a3").changed, false);
+});

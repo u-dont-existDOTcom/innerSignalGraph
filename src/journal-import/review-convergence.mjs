@@ -76,10 +76,11 @@ export function extractionItemChanges(previous, current) {
   // until nothing more changes.
   const changedIds = { assertion: new Set(), entity: new Set(), episode: new Set() };
   for (const item of items) if (item.changed) changedIds[item.kind].add(item.localId);
-  const goneIds = new Set(removed.map((item) => item.localId));
-  const touched = (id) => goneIds.has(id) || changedIds.assertion.has(id) || changedIds.entity.has(id)
-    || changedIds.episode.has(id);
-  const entityTouched = (id) => goneIds.has(id) || changedIds.entity.has(id);
+  // Local IDs are unique only within a kind, so removals are tracked per kind too. Time evidence can name any kind.
+  const goneIds = { assertion: new Set(), entity: new Set(), episode: new Set() };
+  for (const item of removed) goneIds[item.kind].add(item.localId);
+  const touched = (id) => ["assertion", "entity", "episode"].some((kind) => goneIds[kind].has(id) || changedIds[kind].has(id));
+  const entityTouched = (id) => goneIds.entity.has(id) || changedIds.entity.has(id);
   const timeIds = (item) => [...(item.authored_time?.evidence_ids ?? []), ...(item.event_time?.evidence_ids ?? [])];
   const sources = { assertion: new Map((current?.assertions ?? []).map((item) => [item.local_id, item])),
     episode: new Map((current?.episodes ?? []).map((item) => [item.local_id, item])) };
@@ -90,7 +91,7 @@ export function extractionItemChanges(previous, current) {
       const source = sources[record.kind].get(record.localId);
       const depends = timeIds(source).some(touched) || (record.kind === "assertion"
         && (entityTouched(source.speaker_local_id) || source.subject_local_ids.some(entityTouched)
-          || (source.episode_local_id !== null && (goneIds.has(source.episode_local_id)
+          || (source.episode_local_id !== null && (goneIds.episode.has(source.episode_local_id)
             || changedIds.episode.has(source.episode_local_id)))));
       if (!depends) continue;
       record.changed = true;
@@ -153,6 +154,30 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
     carried += 1;
     return false;
   });
+  // An earlier open finding on an item that is still there stays open until the new review reassesses that item: a
+  // review that leaves a flagged item out hasn't shown the defect is gone. A finding on an item the repair removed
+  // goes with the item. A finding on a unit or on a target that isn't an item is different: a repair answers an
+  // omission with new items, which the review assesses under their own IDs, so it stays open only if the review
+  // names that target again. (The fidelity score already counts a reference item the review leaves out as
+  // unassessed.)
+  const mentioned = new Set([...review.assessments.map((assessment) => assessment.target_id), ...review.unassessed_ids]);
+  const currentTarget = new Map();
+  for (const [target, entries] of byTarget) {
+    for (const entry of entries) if (entry.previousTarget !== null) currentTarget.set(entry.previousTarget, target);
+  }
+  const stillThere = (target) => currentTarget.has(target) || byTarget.has(target);
+  const counted = new Set(assessments.map((assessment) => assessment.target_id));
+  for (const prior of previousReview.assessments.filter(assessmentIsFinding)) {
+    const target = currentTarget.get(prior.target_id) ?? prior.target_id;
+    if (mentioned.has(target) || counted.has(target) || !stillThere(prior.target_id)) continue;
+    assessments.push({ ...prior, target_id: target });
+    counted.add(target);
+  }
+  for (const id of previousReview.unassessed_ids) {
+    const target = currentTarget.get(id) ?? id;
+    if (mentioned.has(target) || unassessed.includes(target) || !stillThere(id)) continue;
+    unassessed.push(target);
+  }
   const proposedRepairs = review.proposed_repairs.filter((repair) => place(repair.target_id).inScope);
   const open = assessments.some(assessmentIsFinding) || unassessed.length > 0 || proposedRepairs.length > 0;
   // An incomplete review that names nothing it left can't be placed, so it stays incomplete.
@@ -232,14 +257,16 @@ export function withholdFlaggedItems({ extraction, reviews, unitIds }) {
       }
     }
   }
-  const withheldByUnit = new Map([...residualsByUnit].map(([unitId, counts]) => [unitId, counts.withheld_assertions]));
   const kept = new Set(assertions.map((item) => item.local_id));
+  // A unit that lost any item to withholding, or has a gap, is marked for review.
   const coverage = extraction.coverage.map((item) => {
-    const held = withheldByUnit.get(item.unit_id) ?? 0, open = gaps.get(item.unit_id) ?? 0;
+    const counts = residualsByUnit.get(item.unit_id);
+    const held = counts?.withheld_assertions ?? 0, open = gaps.get(item.unit_id) ?? 0;
+    const others = (counts?.withheld_entities ?? 0) + (counts?.withheld_episodes ?? 0);
     const assertionLocalIds = item.assertion_local_ids.filter((id) => kept.has(id));
-    if (!held && !open) return { ...item, assertion_local_ids: assertionLocalIds };
+    if (!held && !others && !open) return { ...item, assertion_local_ids: assertionLocalIds };
     return { ...item, disposition: "needs_review", assertion_local_ids: assertionLocalIds,
-      reason: `After the repair attempts, review still flagged ${held} assertion(s), which were withheld, and found ${open} possible omission(s); the archived source keeps this unit's full text.` };
+      reason: `After the repair attempts, review still flagged ${held} assertion(s)${others ? ` and ${others} other item(s)` : ""}, which were withheld, and found ${open} possible omission(s); the archived source keeps this unit's full text.` };
   });
   const withheldItems = ITEM_FIELDS.flatMap(([field, kind]) => extraction[field]
     .filter((item) => withheld[field].has(item.local_id))
