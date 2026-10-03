@@ -1,0 +1,34 @@
+{
+  "id": "G048",
+  "title": "integrated prior opening with genuinely new planned work does not trigger restoration loop",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "activation": "low",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "altered_phase": "planned",
+    "altered_capacity": "unknown",
+    "altered_medical_status": "stable",
+    "altered_action_pressure": "absent",
+    "altered_state_transfer": "integrated",
+    "altered_repeat_motive": "new_exploration",
+    "inner_adult_access": "available",
+    "witness_capacity": "present",
+    "self_directed_love": "safe",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "present",
+    "attention_loop": "absent",
+    "current_intent": "altered_state",
+    "support_available": "present",
+    "body_capacity": "adequate"
+  },
+  "expected": {
+    "primary": "ROUTE.ALTERED_PREPARATION",
+    "selectedExcludes": [
+      "ROUTE.ALTERED_STATE_TRANSFER"
+    ]
+  }
+}

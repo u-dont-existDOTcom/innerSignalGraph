@@ -7,13 +7,13 @@ source_id: AMEND.IC.BORROW_LOVE_EXTERNAL
 guide_id: owner-amendments
 heading: AMEND.IC.BORROW_LOVE_EXTERNAL
 source_role: owner-approved-extension
-source_hash: c47a275840e39cb00b2c09b76872a9d031bb4d30e6b459e7dcc21e578efb49c3
+source_hash: ef5a0b3c85a8cdab853ea710b5f3d9a3e76d5d8c8238ddedc329c73fbb03f0d4
 section_hash: 81a6b117249bf2af08794814d9eae8c094acaa117102de10d9e897c7c925b18d
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.BORROW_LOVE
   - ROUTE.INFLUENCE_LOVE_CAPACITY
-projection_input_sha256: f92fac6d9a09658ed5bdf982583a7f102b5005e9145db5db141020e10a873b87
+projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
 ---
 
 # AMEND.IC.BORROW_LOVE_EXTERNAL
