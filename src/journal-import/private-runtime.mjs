@@ -2188,7 +2188,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       const residualTotal = (field) => residualUnits.reduce((sum, record) => sum + (record.review_residuals[field] ?? 0), 0);
       state.residuals = { ...(state.residuals ?? {}),
         source_only_units: sourceOnlyUnits,
-        review_withheld_units: residualUnits.length,
+        review_residual_units: residualUnits.length,
         review_withheld_assertions: residualTotal('withheld_assertions'),
         review_omission_gaps: residualTotal('omission_gaps'),
         reconciliation_needs_context_units: reports.filter(report => report.status === 'needs_context').length,

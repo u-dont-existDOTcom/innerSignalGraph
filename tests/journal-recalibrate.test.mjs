@@ -1503,7 +1503,10 @@ test("a unit that fails its own reference check without a critical miss still le
   try {
     const result = await runtime.execute("run");
     assert.equal(result.calibration, "pass");
-    assert.equal(result.completion.graph_built, "pass");
+    // The failed unit's missed item is a recorded gap, so the graph is partial and says why.
+    assert.equal(result.completion.graph_built, "partial");
+    assert.equal(result.residuals.review_residual_units, 1);
+    assert.equal(result.residuals.review_omission_gaps, 1);
     assert.equal(Object.hasOwn(result, "calibration_failure"), false);
     assert.deepEqual(result.calibration_gate, { scored_batches: 2, reference_total: 40, preserved: 39, omitted: 1,
       distorted: 0, unassessed: 0, critical_miss_count: 0, qualifier_error_count: 0, recall_target_met: true,

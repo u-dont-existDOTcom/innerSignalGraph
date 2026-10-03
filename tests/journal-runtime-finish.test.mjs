@@ -1378,7 +1378,7 @@ test("duplicate calibration assessments exhaust bounded attempts and stop on res
   } finally { await runtime.close(); }
 });
 
-test("duplicate assessments during calibration repair stop calibration", async t => {
+test("duplicate assessments during a calibration repair are never accepted, and the unit keeps its earlier audit", async t => {
   const f = await environment(t);
   f.sourceParser = oneUnitParser(f);
   let fidelityCalls = 0;
@@ -1401,9 +1401,13 @@ test("duplicate assessments during calibration repair stop calibration", async t
   const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
     service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
   try {
-    await assertCalibrationStopped(runtime, f, "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED",
-      "FIDELITY_DUPLICATE_ASSESSMENT", calls);
+    // The repair's audits repeat an assessment until its attempts run out, so none of them counts. The repairs
+    // end there, and the unit keeps its first audit, which kept the critical item.
+    const result = await runtime.execute("run");
     assert.equal(fidelityCalls, 4);
+    assert.equal(result.calibration, "pass");
+    assert.equal(result.calibration_gate.critical_miss_count, 0);
+    assert.equal(result.calibration_gate.preserved, result.calibration_gate.reference_total);
   } finally { await runtime.close(); }
 });
 
@@ -2087,7 +2091,9 @@ const unitExtraction = (unit, assertions, { entities = [diarist(unit)], status =
   requested_context: requestedContext });
 // A unit keeps its cycle diagnostics on its record only when something else happened to it (here an answered
 // context request); the answer widens the source window and leaves the review scope alone.
-const contextRequest = (unit) => [{ unit_id: unit.unit_id, direction: "after", reason: "Synthetic context request." }];
+// Visual context for a native-text unit can never be supplied, so it is answered `unavailable`: the pass records
+// its diagnostics, and the next review stays scoped (newly supplied context would make it count whole).
+const contextRequest = (unit) => [{ unit_id: unit.unit_id, direction: "visual", reason: "Synthetic context request." }];
 // The regular unit's omission review: a finding on each flagged target (a target, or a target and its finding
 // type), and the candidate's other assertions kept.
 const flaggingReview = (packet, flagged) => {
@@ -2201,8 +2207,11 @@ test("a unit still flagged after every cycle and the hardest lane withholds the 
     omission: () => ["x"]
   }), (config) => { config.hardest_lane = { enabled: true }; });
   assert.equal(run.blocker, null);
-  assert.equal(run.completion.graph_built, "pass");
+  // Withholding leaves the graph partial and says why.
+  assert.equal(run.completion.graph_built, "partial");
   assert.equal(run.residuals.source_only_units, 0);
+  assert.equal(run.residuals.review_residual_units, 1);
+  assert.equal(run.residuals.review_withheld_assertions, 1);
   // Every cycle, the hardest answer and its one repair at that tier all left X flagged.
   assert.deepEqual(calls.filter((call) => call.tier === "hardest").map((call) => call.role),
     ["extractor", "omission_checker", "extractor", "omission_checker"]);

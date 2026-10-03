@@ -41,7 +41,7 @@ multiplies that: even 99% per unit gives 0.99^162, about 20%. The gate could not
    drops flagged entities and episodes with the assertions that depend on them, repoints time evidence that named a
    withheld item to that item's unit, and marks each affected unit `needs_review` with a counts-only reason; the
    archived source stays searchable. The unit record holds `review_residuals` counts, and the assembled graph is
-   marked partial with `review_withheld_units`, `review_withheld_assertions` and `review_omission_gaps` in its
+   marked partial with `review_residual_units`, `review_withheld_assertions` and `review_omission_gaps` in its
    residuals. A hardest answer that doesn't finish or bind never replaces a last standard pass that did. An extraction that isn't
    complete or doesn't bind, or a review that is incomplete without naming what it left, still makes the unit
    source-only. Several units unresolved after their passes are still split in halves.
