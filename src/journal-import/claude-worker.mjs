@@ -403,7 +403,7 @@ async function pendingDirectory(workDir, name) {
 const validWorkId = (value) => { try { assertJournalWorkId(value); return true; } catch { return false; } };
 const plainObject = (value, keys) => value && typeof value === "object" && !Array.isArray(value)
   && Object.keys(value).length === keys.length && keys.every((key) => Object.hasOwn(value, key));
-export const validPendingRefusal = (value) => plainObject(value, ["work_id", "attempt_identity", "claim"])
+export const validPendingHold = (value) => plainObject(value, ["work_id", "attempt_identity", "claim"])
   && validWorkId(value.work_id) && /^[0-9a-f]{48}$/u.test(value.attempt_identity ?? "") && /^[0-9a-f-]{36}$/u.test(value.claim ?? "");
 export const validPendingRelease = (value) => plainObject(value, ["work_id", "attempt_identity", "claim", "expires_at"])
   && validWorkId(value.work_id) && /^[0-9a-f]{48}$/u.test(value.attempt_identity ?? "")
@@ -514,6 +514,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   }
   const pendingReleasesDir = await pendingDirectory(workDir, "pending-releases");
   const pendingRefusalsDir = await pendingDirectory(workDir, "pending-refusals");
+  const pendingSpendsDir = await pendingDirectory(workDir, "pending-spends");
+  const holdDirectories = { refuse: pendingRefusalsDir, spend: pendingSpendsDir };
   const parent = await fs.mkdtemp(path.join(workDir, "inner-signal-claude-"));
   await fs.chmod(parent, 0o700);
   let logHandle, unlockWorkerDirectory;
@@ -536,7 +538,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   // Items whose reservation belongs to a live sibling are skipped until the worker has next waited one poll
   // (not given up on, and not re-checked in a tight loop); each such reservation is logged once.
   const skipped = new Set(), reservedLogged = new Set();
-  const attempts = new Map(), limits = new Map(), pendingReleases = new Map(), unrecordedRefusals = [];
+  const attempts = new Map(), limits = new Map(), pendingReleases = new Map(), unrecordedHolds = [];
+  let holdsPending = false;
   const stop = (signal) => { stopping = true; stopSignal ??= signal;
     if (wake) { const resume = wake; wake = null; resume(); }
     for (const kill of activeGroups) kill(); };
@@ -583,35 +586,45 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     await persistRelease(workId, entry);
     if (!entry.saved) await log({ at: new Date().toISOString(), work_id: workId, outcome: "pending_release_unsaved" });
   }
-  // A hold for an isolation refusal before the model that the host didn't record is kept on disk. The next start
-  // applies it and stops before taking any item, so nothing runs under the refused setup until an operator acts.
-  async function applyPendingRefusal(file, value) {
-    try {
-      await host("attempt-refuse", ["--work-id", value.work_id, "--attempt-identity", value.attempt_identity, "--claim", value.claim]);
-    } catch {
-      // Already held, or the marker is gone: nothing is left to apply. Otherwise keep it for the next start.
-      const status = (await host("attempt-status", ["--work-id", value.work_id, "--attempt-identity", value.attempt_identity]))[0]?.status;
-      if (status !== "none" && status !== "isolation_refused") return false;
+  // Host records a run's reservation must not lose: "refuse" is the hold for an isolation refusal before the
+  // model; "spend" records that the model was reached (and closes the item), so the attempt can't be reclaimed as
+  // unspent. Either is kept on disk if the host didn't take it. True once the host has it, or has nothing to apply.
+  async function applyHold(kind, hold) {
+    const ids = ["--work-id", hold.work_id, "--attempt-identity", hold.attempt_identity];
+    try { await host(kind === "refuse" ? "attempt-refuse" : "attempt-mark", [...ids, "--claim", hold.claim]); }
+    catch {
+      const status = (await host("attempt-status", ids))[0];
+      const recorded = kind === "refuse" ? status?.status === "isolation_refused" : status?.model_reached === true;
+      if (status?.status !== "none" && !recorded) return false;
     }
-    await fs.rm(file, { force: true });
+    if (kind === "spend") {
+      try { await host("close-unanswered", ["--work-id", hold.work_id]); }
+      catch { /* The attempt is recorded as spent; a later worker closes the stale item. */ }
+    }
     return true;
+  }
+  async function keepHold(kind, hold) {
+    try { await writeAttemptMarker(path.join(holdDirectories[kind], `${hold.claim}.json`), hold); }
+    catch {
+      // Neither the host nor the disk has it: retried before the worker stops or takes another item.
+      unrecordedHolds.push({ kind, hold });
+      await log({ at: new Date().toISOString(), work_id: hold.work_id, outcome: kind === "refuse" ? "isolation_refusal_unsaved" : "attempt_spend_unsaved" });
+    }
   }
   // A hold that neither the host nor the disk took is retried, on both, until one succeeds. Until then the worker
   // neither stops nor takes another item, except on a stop signal.
-  async function settleUnrecordedRefusals() {
-    while (unrecordedRefusals.length > 0 && !stopping) {
-      for (const hold of [...unrecordedRefusals]) {
+  async function settleUnrecordedHolds() {
+    while (unrecordedHolds.length > 0 && !stopping) {
+      for (const entry of [...unrecordedHolds]) {
         let settled = false;
-        try {
-          await host("attempt-refuse", ["--work-id", hold.work_id, "--attempt-identity", hold.attempt_identity, "--claim", hold.claim]);
-          settled = true;
-        } catch {
-          try { await writeAttemptMarker(path.join(pendingRefusalsDir, `${hold.claim}.json`), hold); settled = true; }
+        try { settled = await applyHold(entry.kind, entry.hold); } catch { settled = false; }
+        if (!settled) {
+          try { await writeAttemptMarker(path.join(holdDirectories[entry.kind], `${entry.hold.claim}.json`), entry.hold); settled = true; }
           catch { /* retry after the next poll */ }
         }
-        if (settled) unrecordedRefusals.splice(unrecordedRefusals.indexOf(hold), 1);
+        if (settled) unrecordedHolds.splice(unrecordedHolds.indexOf(entry), 1);
       }
-      if (unrecordedRefusals.length > 0 && !stopping) await wait(options.pollMs);
+      if (unrecordedHolds.length > 0 && !stopping) await wait(options.pollMs);
     }
   }
   async function releaseSettled(workId, claim) {
@@ -624,7 +637,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     let stageDir = null, runDir = null, outcome = "error";
     let observed = null;
     const claim = randomUUID();
-    let claimed = false, reachedModel = false, isolationRefused = false, persisted = false, persistenceChecked = false;
+    let claimed = false, reachedModel = false, markFailed = false, isolationRefused = false, persisted = false, persistenceChecked = false;
     let childGroup = null, groupAlive = false;
     let usage = { input_tokens: 0, cached_input_tokens: 0, output_tokens: 0, total_cost_usd: 0 };
     try {
@@ -684,7 +697,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
             reachedModel = true;
             // Await the durable mark while stdout is paused, before accepting
             // further events or allowing the child result to be admitted.
-            await host("attempt-mark", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim]);
+            try { await host("attempt-mark", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim]); }
+            catch (error) { markFailed = true; throw error; }
           }
           if (isolationRefused) return false;
         }, activeGroups
@@ -782,15 +796,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         try { await host("attempt-refuse", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity, "--claim", claim]); }
         catch {
           await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_refuse_failed" });
-          if (!reachedModel) {
-            const hold = { work_id: record.work_id, attempt_identity: record.attempt_identity, claim };
-            try { await writeAttemptMarker(path.join(pendingRefusalsDir, `${claim}.json`), hold); }
-            catch {
-              // Neither the host nor the disk has it: retried before the worker stops or takes another item.
-              unrecordedRefusals.push(hold);
-              await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "isolation_refusal_unsaved" });
-            }
-          }
+          if (!reachedModel) await keepHold("refuse", { work_id: record.work_id, attempt_identity: record.attempt_identity, claim });
         }
       } else if (claimed && !reachedModel && !observed?.limitSeen && outcome !== "limited") {
         try {
@@ -804,6 +810,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "attempt_release_failed" });
         }
       }
+      // The model was reached but the host never recorded it: keep that, so the attempt can't be reclaimed as unspent.
+      if (claimed && markFailed) await keepHold("spend", { work_id: record.work_id, attempt_identity: record.attempt_identity, claim });
       if (runDir && !groupAlive) {
         if (!persistenceChecked) {
           try { if (await cleanClaudePersistence(processEnv.HOME, runDir)) outcome = "rejected:LOCAL_PERSISTENCE"; }
@@ -843,10 +851,11 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     await removeStaleRuns(workDir, "inner-signal-claude-", { keep: unresolved });
     if (unresolved.size > 0) { cleanupFailed = true; preserveParent = false; return CLAUDE_CLEANUP_FAILED_EXIT_CODE; }
     await sweepClaudePersistence(processEnv.HOME, workDir);
-    const refusals = await readPendingEntries(pendingRefusalsDir, validPendingRefusal);
+    const refusals = await readPendingEntries(pendingRefusalsDir, validPendingHold);
     if (refusals.length > 0) {
       for (const { file, value } of refusals) {
-        try { await applyPendingRefusal(file, value); } catch { /* The host is unavailable: keep it for the next start. */ }
+        try { if (await applyHold("refuse", value)) await fs.rm(file, { force: true }); }
+        catch { /* The host is unavailable: keep it for the next start. */ }
       }
       heldOpen = true;
       await log({ at: new Date().toISOString(), outcome: "isolation_refusal_pending", count: refusals.length });
@@ -872,6 +881,18 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       }
       // A claim that is neither released nor saved would be lost on exit: wait and retry rather than exit or work.
       if (!stopping && [...pendingReleases.values()].some((entry) => !entry.saved)) { await wait(options.pollMs); continue; }
+      // A kept "spend" must reach the host before any new item (fail closed); retried each poll.
+      holdsPending = false;
+      for (const { file, value } of await readPendingEntries(pendingSpendsDir, validPendingHold)) {
+        let applied = false;
+        try { applied = await applyHold("spend", value); } catch { applied = false; }
+        if (applied) await fs.rm(file, { force: true }); else holdsPending = true;
+      }
+      if (holdsPending && !stopping && completed < options.maxItems) {
+        if (options.once) break;
+        await wait(options.pollMs);
+        continue;
+      }
       if (stopping || completed >= options.maxItems) break;
       if (signInNeeded) break;
       if (Date.now() < limitedUntil) {
@@ -956,7 +977,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       }
       if (stopping) break;
       const outcome = await one(record);
-      await settleUnrecordedRefusals();
+      await settleUnrecordedHolds();
       if (setupRefused || cleanupFailed) break;
       if (["limited", "provider_unavailable", "sign_in_needed"].includes(outcome)) limits.set(record.work_id, (limits.get(record.work_id) ?? 0) + 1);
       else if (outcome === "reserved") skipped.add(record.work_id);
@@ -977,7 +998,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     return stopSignal === "SIGINT" ? 130 : stopSignal === "SIGTERM" ? 143 : cleanupFailed ? CLAUDE_CLEANUP_FAILED_EXIT_CODE
       : signInNeeded ? 77
       : setupRefused || heldOpen ? CLAUDE_SETUP_REFUSED_EXIT_CODE
-      : options.once && Date.now() < limitedUntil ? CLAUDE_PAUSED_EXIT_CODE : 0;
+      : options.once && (Date.now() < limitedUntil || holdsPending) ? CLAUDE_PAUSED_EXIT_CODE : 0;
   } catch (error) {
     if (error?.code !== "JOURNAL_CLAUDE_STOPPED") throw error;
     return stopSignal === "SIGINT" ? 130 : 143;

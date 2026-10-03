@@ -69,6 +69,8 @@ const failFirst = (name, count, code) => {
 };
 if (${JSON.stringify(scenario)} === "session_reserve_failure" && args.at(-1).includes("'session-reserve'")) failFirst("session-reserve", 1, 39);
 if (${JSON.stringify(scenario)} === "refuse_failure" && args.at(-1).includes("'attempt-refuse'")) failFirst("attempt-refuse", 1, 42);
+if (${JSON.stringify(scenario)} === "mark_failure" && args.at(-1).includes("'attempt-mark'")) failFirst("attempt-mark", 2, 43);
+if (${JSON.stringify(scenario)} === "mark_failure" && args.at(-1).includes("'close-unanswered'")) failFirst("close-unanswered", 1, 44);
 if (${JSON.stringify(scenario)} === "refuse_unsaved" && args.at(-1).includes("'attempt-refuse'")) {
   // The first failed refusal also leaves the laptop unable to save the hold; the second restores that.
   const pending = path.join(${JSON.stringify(workDir)}, "pending-refusals"), moved = pending + ".moved";
@@ -273,9 +275,10 @@ else {
 }
 
 // The work dir keeps only the worker's pending-action directories, empty once the host confirmed everything.
+const PENDING_DIRECTORIES = ["pending-refusals", "pending-releases", "pending-spends"];
 async function assertWorkDirClean(workDir, extra = []) {
-  assert.deepEqual((await fs.readdir(workDir)).sort(), [...extra, "pending-refusals", "pending-releases"].sort());
-  for (const name of ["pending-refusals", "pending-releases"]) assert.deepEqual(await fs.readdir(path.join(workDir, name)), []);
+  assert.deepEqual((await fs.readdir(workDir)).sort(), [...extra, ...PENDING_DIRECTORIES].sort());
+  for (const name of PENDING_DIRECTORIES) assert.deepEqual(await fs.readdir(path.join(workDir, name)), []);
 }
 
 async function scanFiles(directory) {
@@ -548,6 +551,25 @@ test("a hold that neither the host nor the disk took is retried before the worke
   const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
   assert.deepEqual(logs.map((item) => item.outcome),
     ["attempt_refuse_failed", "isolation_refusal_unsaved", "isolation_refused", "isolation_refusal_pending"]);
+});
+
+test("a model reach the host didn't record is kept and recorded before any further item", async (t) => {
+  const f = await fixture(t, "mark_failure");
+  const operationKey = "job:synthetic-mark-failure";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const pending = path.join(f.workDir, "pending-spends");
+  // The mark fails at model reach (the run is killed) and so does the close: the spend is kept on disk, its retry
+  // fails too, and the --once worker exits paused instead of leaving an apparently unspent reservation.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_PAUSED_EXIT_CODE);
+  assert.equal((await fs.readdir(pending)).length, 1);
+  // The next start records the spent attempt on the host and closes the item; Claude never runs again.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  assert.deepEqual(await fs.readdir(pending), []);
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "x");
+  assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted");
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["item_close_failed", "rejected:EVENT_HANDLER_FAILED"]);
+  assert.equal(logs[1].model_reached, true);
 });
 
 test("a run whose preflight outlasts its limit releases the reservation without starting Claude", async (t) => {
