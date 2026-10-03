@@ -1088,7 +1088,7 @@ test("a request for the earlier text is answered with a wider window and the nex
   } finally { await runtime.close(); }
 });
 
-test("context that does not exist is answered as unavailable, then as already answered, with no extra pass", async t => {
+test("context that does not exist stays unavailable when asked again, with no extra pass", async t => {
   const f = await fixture(t);
   const calls = [];
   const runtime = await f.open(mockPort({ calls, extractor: (packet) => noAssertions(packet, "needs_context", "Synthetic.",
@@ -1101,9 +1101,9 @@ test("context that does not exist is answered as unavailable, then as already an
       .map((call) => call.packet.repair_request?.context_response ?? null);
     assert.deepEqual(responses, [null,
       [{ unit_id: unitId, direction: "before", status: "unavailable" }, { unit_id: unitId, direction: "visual", status: "unavailable" }],
-      [{ unit_id: unitId, direction: "before", status: "already_answered" }, { unit_id: unitId, direction: "visual", status: "already_answered" }]]);
+      [{ unit_id: unitId, direction: "before", status: "unavailable" }, { unit_id: unitId, direction: "visual", status: "unavailable" }]]);
     assert.deepEqual(failed.calibration_failure.diagnostics.cycles.map((cycle) => cycle.context_answer),
-      [{ ...noAnswer, unavailable: 2 }, { ...noAnswer, already_answered: 2 }, { ...noAnswer, already_answered: 2 }]);
+      [{ ...noAnswer, unavailable: 2 }, { ...noAnswer, unavailable: 2 }, { ...noAnswer, unavailable: 2 }]);
     assert.deepEqual(failed.calibration_failure.diagnostics.cycles[0].extraction.requested_context_by_direction,
       { before: 2, after: 0, visual: 1, whole_entry: 0 });
   } finally { await runtime.close(); }
@@ -1325,15 +1325,18 @@ test("a later chunk of a long page transcription gets the earlier chunks of the 
   } finally { await runtime.close(); }
 });
 
-test("context supplied to a fidelity repair earns one more standard repair that receives it", async t => {
+test("context supplied to a fidelity repair earns one more standard repair that also gets its binding failure", async t => {
   const f = await fixture(t, { pages: 3 });
   const calls = [];
   const unknown = { raw: null, from: null, to: null, precision: "unknown", timezone: null, basis: "unresolved", evidence_ids: [] };
   const runtime = await f.open(mockPort({ calls,
     extractor: (packet) => {
       const unit = packet.core_units[0];
-      if (packet.repair_request?.cycle === "fidelity-2")
-        return noAssertions(packet, "needs_context", "Synthetic.", [{ unit_id: unit.unit_id, direction: "before", reason: "Synthetic." }]);
+      // The second repair asks for the earlier text and also quotes something that isn't in the source.
+      if (packet.repair_request?.cycle === "fidelity-2") return { ...noAssertions(packet, "needs_context", "Synthetic.",
+        [{ unit_id: unit.unit_id, direction: "before", reason: "Synthetic." }]),
+        entities: [{ local_id: "self", label: "Synthetic diarist", entity_kind: "person",
+          anchors: [{ unit_id: unit.unit_id, quote: "Synthetic quote absent from source.", occurrence: null }] }] };
       if (packet.repair_request?.cycle !== "fidelity-3") return noAssertions(packet, "complete");
       const anchor = { unit_id: unit.unit_id, quote: unit.text, occurrence: null };
       return { schema_version: "1.0", status: "complete",
@@ -1358,12 +1361,15 @@ test("context supplied to a fidelity repair earns one more standard repair that 
       && call.packet.repair_request).map((call) => call.packet);
     assert.deepEqual(repairs.map((packet) => packet.repair_request.cycle), ["fidelity-1", "fidelity-2", "fidelity-3"]);
     assert.deepEqual(repairs[2].repair_request.context_response, [{ unit_id: third.unit_id, direction: "before", status: "supplied" }]);
+    assert.equal(repairs[2].repair_request.mechanical_failure.code, "QUOTE_NOT_FOUND");
+    assert.equal(Object.hasOwn(repairs[1].repair_request, "mechanical_failure"), false);
     assert.equal(repairs[2].adjacent_context.by_unit[0].before, `${first.text}\n\n${second.text}`);
     assert.equal(calls.some((call) => call.tier === "hardest"), false);
     const record = await withStore(f.config, (store) => store.readJsonObject({ objectId: `unit:graph:${third.unit_id}` }));
     assert.equal(record.source_only_unresolved, false);
     assert.deepEqual(record.diagnostics.fidelity_cycles.map((cycle) => cycle.cycle), [0, 1, 2, 3]);
     assert.deepEqual(record.diagnostics.fidelity_cycles[2].context_answer, { ...noAnswer, supplied: 1 });
+    assert.equal(record.diagnostics.fidelity_cycles[2].binding_failure_code, "QUOTE_NOT_FOUND");
     assert.equal(record.diagnostics.fidelity_cycles[3].fidelity.calibration_pass, true);
   } finally { await runtime.close(); }
 });

@@ -31,8 +31,9 @@ no journal text leaked, and fix the process so that a supervisor review is not n
    never consumes a repair attempt. An answer that would push the packet over the existing 180 KB
    source bound is withdrawn and reported `unavailable`. A batch of several units that names its
    needed context is answered instead of split; one that asks for smaller windows, names nothing,
-   or gets nothing new is still split as before. Calibration fidelity repairs answer context too, and
-   a first supplied answer there also earns one more standard repair.
+   or gets nothing new is still split as before. Calibration fidelity repairs answer context too (and pass on
+   a binding failure as `mechanical_failure`), and a first supplied answer there also earns one more
+   standard repair. A repeated request reads `already_answered` only after something was supplied.
 2. **The hardest tier repairs its own answer once.** When the hardest extraction (or the hardest
    fidelity repair) is left unresolved by its own omission review, binding or a context request,
    it gets one repair at the same tier with that review, the binding failure and any context

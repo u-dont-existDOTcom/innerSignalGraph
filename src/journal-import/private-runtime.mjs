@@ -976,7 +976,9 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         // The extractor's context requests are answered once per unit and direction: a wider window of the source
         // text (before, after, or both for a whole entry) or the neighbouring pages' visual transcriptions. The
         // answer says what was supplied and what can't be, so the next pass completes rather than asking again.
-        const answeredContext = new Set();
+        // The status each unit and direction last got, so a repeated request reads `already_answered` only after
+        // something was supplied, and `unavailable` while nothing ever could be.
+        const answeredContext = new Map();
         const answerContext = async (output) => {
           const response = [];
           let supplied = false, overBound = false;
@@ -1010,9 +1012,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               added = false;
               overBound = true;
             }
-            response.push({ unit_id: request.unit_id, direction: request.direction,
-              status: added ? "supplied" : answeredContext.has(key) ? "already_answered" : "unavailable" });
-            answeredContext.add(key);
+            const earlier = answeredContext.get(key);
+            const status = added ? "supplied"
+              : earlier === "supplied" || earlier === "already_answered" ? "already_answered" : "unavailable";
+            response.push({ unit_id: request.unit_id, direction: request.direction, status });
+            answeredContext.set(key, status);
             supplied ||= added;
           }
           return { response, supplied, overBound };
@@ -1225,7 +1229,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           if (!calibrationPass && units.length > 1) return halves();
           // Context a repair asks for is answered in the next repair request, and a first supplied answer earns
           // one more standard repair, as in the extraction passes.
-          let contextResponse = null, standardRepairs = 2, repairContextSupplied = false;
+          let contextResponse = null, bindingFeedback = null, standardRepairs = 2, repairContextSupplied = false;
           for (let auditCycle = 1; !calibrationPass && auditCycle <= standardRepairs + (hardestLane.enabled ? 1 : 0);
             auditCycle += 1) {
             const hardestRepair = auditCycle > standardRepairs;
@@ -1238,9 +1242,11 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               omission_review: results[1].output,
               fidelity_review: fidelityReview,
               cycle: hardestRepair ? "fidelity-hardest" : `fidelity-${auditCycle}`,
+              ...(bindingFeedback ? { mechanical_failure: bindingFeedback } : {}),
               ...(contextResponse ? { context_response: contextResponse } : {})
             }, hardestRepair ? "hardest" : "standard");
             contextResponse = null;
+            bindingFeedback = null;
             if (!repaired) {
               const snapshot = { ...extractionCycleDiagnostics(incompleteWorkResults),
                 extraction_changed: extractionChanged(previousExtraction, incompleteWorkResults?.[0]?.output),
@@ -1277,13 +1283,12 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
               }
             }
             results = repaired;
-            if (bound.failure) {
-              if (hardestRepair) await recordHardestOutcome(repairId, "failed");
-              continue;
-            }
-            if (unresolvedOutcome(repaired, null)) {
+            // An unresolved standard repair passes its binding failure and an answer to its context request to the
+            // next repair.
+            if (unresolvedOutcome(repaired, bound.failure)) {
               if (hardestRepair) await recordHardestOutcome(repairId, "failed");
               else {
+                bindingFeedback = bound.failure;
                 const answer = await answerContext(repaired[0].output);
                 if (answer.response.length) {
                   repairSnapshot.context_answer = contextAnswerCounts(answer.response);
