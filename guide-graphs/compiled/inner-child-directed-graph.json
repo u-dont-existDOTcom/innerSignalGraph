@@ -565,7 +565,7 @@
     },
     {
       "id": "IC.MEET_GUARD",
-      "title": "Meet the protective response before pushing deeper",
+      "title": "Hear the protective response without automatically obeying it",
       "kind": "decision-node",
       "tier": 3,
       "priority": 93,
@@ -596,16 +596,19 @@
         "IC.GUARDS",
         "IC.BOTTOM_UP_SEQUENCE",
         "IC.ESCAPE_URGE",
-        "AMEND.CROSS.LITERATURE_TASK_PROGRESS"
+        "AMEND.CROSS.LITERATURE_TASK_PROGRESS",
+        "AMEND.CROSS.PROTECTIVE_ALARM_CALIBRATION"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Treat cynicism, numbness, anger, scrolling, substances, planning, sleep, or dissociation as information about what the system expects.",
         "Ask what the part predicts will happen if it steps back; acknowledge before answering.",
-        "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking."
+        "A still-present protector may permit an agreed small step. Notice its current stance instead of requiring it to disappear, and recheck if permission is withdrawn. Presence alone does not prove continued blocking.",
+        "For ordinary-life decisions, treat anxiety and other protective alarms as information about expected danger or overload rather than commands or truth detectors; hear what they are trying to protect, then compare the prediction with evidence, current capacity and later outcomes."
       ],
       "avoid": [
-        "Do not classify the voice more confidently than the transcript supports or push past it."
+        "Do not classify the voice more confidently than the transcript supports or push past it.",
+        "Do not equate listening to a protective alarm with obeying it, and do not use prediction-testing to push past a protector's no to deeper processing or altered-state work, or past hesitation about touch or sex."
       ],
       "successSignals": [
         "The protective response can be heard without running the session or being exiled."
@@ -621,10 +624,13 @@
         ],
         "blockNodes": [],
         "requiredNuance": [
-          "The contempt may be child, protector, adult evaluator, or blend."
+          "The contempt may be child, protector, adult evaluator, or blend.",
+          "Protective intent and predictive accuracy are separate: an alarm can be understandable and still be mistaken, outdated, or overprotective.",
+          "Consent, immediate safety and possible medical red flags outrank an experiment with the alarm; use a cheap reversible precaution first and interpret afterward."
         ],
         "forbiddenOverclaims": [
-          "Do not definitively label a cynical voice as a guard."
+          "Do not definitively label a cynical voice as a guard.",
+          "Do not claim that anxiety or another protective alarm proves the feared conclusion is true."
         ],
         "deferralUnless": [
           {
@@ -1072,7 +1078,7 @@
     },
     {
       "id": "IC.GUIDE_LATER",
-      "title": "Bring in direction after warmth, safety, and a coherent child exist",
+      "title": "Bring in direction without demanding mental perfection",
       "kind": "decision-node",
       "tier": 7,
       "priority": 55,
@@ -1117,19 +1123,22 @@
         "AMEND.IC.WELLBEING_HORIZON",
         "AMEND.IC.REALIZATION_LOVE_INTEGRATION",
         "AMEND.IC.INTUITION_ANALYTIC_INTEGRATION",
-        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION"
+        "AMEND.IC.EXTERNAL_GUIDE_SMART_MANIPULATION",
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE"
       ],
       "authority": "author-framework",
       "recommendations": [
         "Use the Guide for standards, difficult growth, art, nature, education, values, and belonging that does not require self-betrayal.",
         "When curiosity is genuine, the Guide may support exploration of deeper wellbeing, love, spiritual practice, realization, nature, or tradition without prescribing a metaphysical conclusion.",
-        "Borrow from outer guides selectively. A strong intuitive click is information, not proof; when intuition and evidence diverge or outside authority starts displacing independent judgment, route to intuition/trust calibration before increasing the stakes."
+        "Borrow from outer guides selectively. A strong intuitive click is information, not proof; when intuition and evidence diverge or outside authority starts displacing independent judgment, route to intuition/trust calibration before increasing the stakes.",
+        "Use standards for chosen conduct and cultivation rather than demanding a perfectly clean stream of thoughts or sensations; distinguish what appears from what the person endorses, intends, identifies with, or chooses to act on."
       ],
       "avoid": [
         "Do not activate direction so early that it becomes spiritual bypass or an inherited critic in ceremonial clothing.",
         "Do not escalate spiritual abstraction or attainment because love feels inaccessible.",
         "Do not treat explicit demands for surrender as the only authority risk; voluntary judgment transfer can occur through praise, mirroring, pity, attraction, rescue hopes, confession, humor, or spiritual charisma.",
-        "Do not use an intuitive or mystical style as an exemption from ordinary contradiction, track-record, scope, and boundary checks."
+        "Do not use an intuitive or mystical style as an exemption from ordinary contradiction, track-record, scope, and boundary checks.",
+        "Do not turn the Guide into mental-purity policing that treats unwanted thoughts, contradictory sensations, or imperfect first responses as proof of bad identity."
       ],
       "successSignals": [
         "Direction increases life participation without exiling the child, and outside guidance strengthens rather than replaces the person’s capacity to evaluate truth, boundaries, and trust."
@@ -1147,7 +1156,9 @@
         ],
         "requiredNuance": [
           "Spiritual exploration is optional when the person’s current horizon feels sufficient; when realization is already present, assess whether it deepens accessible love and reaches the child rather than assuming attainment itself integrates the wound.",
-          "An external guide may contribute real wisdom while remaining trustworthy only in a limited domain. The internal Guide keeps authority corrigible by evidence and does not outsource true/false judgment to charisma, intuition, or specialness."
+          "An external guide may contribute real wisdom while remaining trustworthy only in a limited domain. The internal Guide keeps authority corrigible by evidence and does not outsource true/false judgment to charisma, intuition, or specialness.",
+          "Mental health and mature guidance concern the relationship to mental events and the ability to choose skillful action; involuntary occurrence alone is not endorsement or identity.",
+          "Occurrence-versus-endorsement distinctions do not suspend current-intent, planning, consent or safety routing; reported intention and behavior still matter."
         ]
       },
       "defaultQuestion": ""

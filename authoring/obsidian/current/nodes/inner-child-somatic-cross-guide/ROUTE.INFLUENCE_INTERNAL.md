@@ -5,7 +5,7 @@ projection_mode: current
 generated: true
 graph_id: inner-child-somatic-cross-guide
 node_id: ROUTE.INFLUENCE_INTERNAL
-title: Route internal influence through existing process maps
+title: Separate inner experience from interpretation before routing
 kind: decision-node
 tier: 3
 priority: 96
@@ -19,18 +19,22 @@ graph_tags:
 source_refs:
   - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
   - AMEND.CROSS.INFLUENCE_PROTECTION_LOVE
+  - AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
 regression_refs:
   - G015
   - G016
   - G017
   - G018
   - G025
-base_record_sha256: e9f35463702464428be82df9a43623c3212fad8cb1136c81f2d7087492b0f16d
-base_graph_sha256: 09fcd58a61e13de924524b56a428337b92056447695e679b980b90dca2a35d55
-projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
+  - G049
+  - G054
+  - G055
+base_record_sha256: 4d8d14c1beec4e5aecdf03a706a0f481b0df27f5b7141c7aa37db0624259ef4e
+base_graph_sha256: 4821f2937e5b6f34b1c4fe27c10e23870372b9542efce8f35b0682d29b9dd367
+projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146fdff438765
 ---
 
-# Route internal influence through existing process maps
+# Separate inner experience from interpretation before routing
 
 > [!warning] Generated current-state projection — do not edit. Create a proposal from this node.
 
@@ -50,17 +54,22 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
   },
   "avoid": [
     "Do not convert an internal part, compulsion, urge, thought loop, or somatic pattern into an entity claim without the user's evidence.",
-    "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model."
+    "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model.",
+    "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen."
   ],
   "defaultQuestion": "Does this behave more like a coherent inner position, an urge or compulsion, or the same thought loop running again without new output?",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [
-      "Do not claim that every internal influence is an inner child, Protector, trauma memory, or psychiatric symptom."
+      "Do not claim that every internal influence is an inner child, Protector, trauma memory, or psychiatric symptom.",
+      "Do not claim that involuntary intrusive content establishes identity, intention or endorsement.",
+      "Do not call a transient thought, feeling or sensation the person's true state merely because it is vivid or distressing."
     ],
     "requiredNuance": [
-      "Internal influence is a route into the existing inner-child, somatic, and metacognitive architecture, not a new modality department."
+      "Internal influence is a route into the existing inner-child, somatic, and metacognitive architecture, not a new modality department.",
+      "Experience, interpretation and chosen action are distinct layers; uncertainty about interpretation can remain while action still follows evidence and values.",
+      "Separating occurrence from endorsement does not suspend current-intent, planning, consent or safety routing; reported intention, planning and behavior remain consequential."
     ]
   },
   "questionPolicy": {
@@ -69,7 +78,10 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
   },
   "recommendations": [
     "For parts, compulsions, urges, or loops, use the least elaborate existing inner-child, somatic, or metacognitive route that fits the maintaining process.",
-    "Meet a coherent protective position relationally, regulate embodied activation by dose and response, and leave repetitive no-output loops unanswered instead of manufacturing an external agent."
+    "Meet a coherent protective position relationally, regulate embodied activation by dose and response, and leave repetitive no-output loops unanswered instead of manufacturing an external agent.",
+    "Separate the occurrence of a thought, image, urge or sensation from the interpretation placed on it and from the action chosen next; a felt state can be completely real as an experience without being self-interpreting proof of identity, intention, endorsement, love, danger or required action.",
+    "When shame is attached to intrusive material, protect against identity fusion and reassurance loops rather than asking the person to construct the feared moral verdict about what the material supposedly proves.",
+    "Give the occurrence-versus-endorsement distinction once when useful; if the person asks for the same certainty again without new evidence, route to the checking stop rule rather than repeating reassurance."
   ],
   "successSignals": [
     "The selected route matches the actual internal process and produces more choice, useful information, or disengagement from a maintenance loop."
@@ -83,3 +95,5 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
 [[current/governance/amendments/AMEND.CROSS.THREE_WAY_THERAPY_ROUTING]]
 
 [[current/governance/amendments/AMEND.CROSS.INFLUENCE_PROTECTION_LOVE]]
+
+[[current/governance/amendments/AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE]]

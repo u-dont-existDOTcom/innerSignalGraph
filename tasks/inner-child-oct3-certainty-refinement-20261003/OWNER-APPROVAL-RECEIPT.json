@@ -1,0 +1,22 @@
+{
+  "contractVersion": "inner-child-oct3-certainty-refinement-owner-approval-v1",
+  "approvalDate": "2026-10-03",
+  "approvalScope": "inner-child-guide-source-plus-inner-signal-map-and-rules",
+  "ownerInstructionSummary": "Owner instructed synchronization of the exact October 3 Inner Child Substack source, minimal guide edits from the recent therapy learnings, immediate corresponding rule/map edits, independent Claude review before finishing, and validated clipboard-helper plus diff delivery.",
+  "integrationBaseSha": "2485163d00a8ffb0e3a21540653900db6a921972",
+  "approvedBehavior": [
+    "Distinguish thoughts and sensations from their interpretation, identity verdict, endorsement, and chosen action.",
+    "Treat behavioral certainty tests as checking when they perform the same reassurance function as rumination, while preserving genuine exploration and useful exposure or ERP.",
+    "Keep social practice reciprocal and authenticity graded by demonstrated trust; preserve healthy support and co-regulation.",
+    "Treat protective anxiety as information rather than an oracle while preserving consent, immediate safety, medical red flags, and a protector's no to deeper work.",
+    "Do not equate mental health with thought or sensation purity; emphasize skillful chosen action, learning, repair, and non-permanent identity judgments.",
+    "Use person-specific psychoactive adverse history in future risk decisions without blanket anti-drug rules or abrupt-stop advice.",
+    "Match benefit and causal claims to observed duration and carryover rather than inflating brief relief into resolution or mechanism proof."
+  ],
+  "guideSourceEditAuthorizedByThisReceipt": true,
+  "developmentMainIntegrationAuthorized": true,
+  "installationAuthorized": false,
+  "deploymentAuthorized": false,
+  "stablePromotionAuthorized": false,
+  "privateTherapyMaterialIncluded": false
+}

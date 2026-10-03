@@ -1,9 +1,9 @@
 {
-  "version": "source-layout-v4-2026-09-16",
+  "version": "source-layout-v5-2026-10-03",
   "textGuides": [
     {
       "guideId": "inner-child-guide",
-      "file": "inner-child-guide-2026-09-25.txt",
+      "file": "inner-child-guide-2026-10-03-r2.txt",
       "sections": [
         {
           "id": "IC.CHICKEN_EGG",
@@ -11,7 +11,7 @@
         },
         {
           "id": "IC.HELPER_AUTHORITY",
-          "heading": "Don\u2019t Give the Inner Adult Away"
+          "heading": "Don’t Give the Inner Adult Away"
         },
         {
           "id": "IC.BEFORE_DEEP",
@@ -43,7 +43,7 @@
         },
         {
           "id": "IC.BORROW_LOVE",
-          "heading": "Borrow Love\u2014or Borrow the Perspective of Care"
+          "heading": "Borrow Love—or Borrow the Perspective of Care"
         },
         {
           "id": "IC.SPIRITUAL_LOAN",
@@ -95,7 +95,7 @@
         },
         {
           "id": "IC.NO_CLEAR_CHILD",
-          "heading": "Sometimes There Isn\u2019t a Clear Child Yet"
+          "heading": "Sometimes There Isn’t a Clear Child Yet"
         },
         {
           "id": "IC.IDENTITY_PLAY",
@@ -193,7 +193,7 @@
         },
         {
           "id": "SOM.PHASE2",
-          "heading": "Phase 2: Daily Regulation and Discharge \u2014 Keep the Pressure Low"
+          "heading": "Phase 2: Daily Regulation and Discharge — Keep the Pressure Low"
         },
         {
           "id": "SOM.EFT",
@@ -209,11 +209,11 @@
         },
         {
           "id": "SOM.STACK",
-          "heading": "The Discharge \u2192 Settle Stack"
+          "heading": "The Discharge → Settle Stack"
         },
         {
           "id": "SOM.BUTOH_EXTERNAL",
-          "heading": "Optional External Practice: Butoh-Informed Expressive Movement / Ecstatic Movement + Enactment \u2014 Experimental"
+          "heading": "Optional External Practice: Butoh-Informed Expressive Movement / Ecstatic Movement + Enactment — Experimental"
         },
         {
           "id": "SOM.PHASE3",
@@ -267,7 +267,7 @@
       "sections": [
         {
           "id": "ALT.INTRO",
-          "heading": "Altered States / Bad Trips \u2014 Operational Map Source"
+          "heading": "Altered States / Bad Trips — Operational Map Source"
         },
         {
           "id": "ALT.TRIAGE",

@@ -1,0 +1,34 @@
+{
+  "contractVersion": "inner-signal-source-sync-v2",
+  "guideId": "inner-child-guide",
+  "capturedAt": "2026-10-03",
+  "sourceKind": "owner-supplied-substack-editor-html",
+  "ownerBaseline": {
+    "rawCapture": {
+      "path": "guides/source-captures/inner-child-guide-2026-10-03.substack.html",
+      "sha256": "3a61bb2aa6aa9ff1ec35efbce8077430a2432e1908f16a8e55153454b56ec867"
+    },
+    "operationalText": {
+      "path": "guides/inner-child-guide-2026-10-03.txt",
+      "sha256": "925b056aeb7a9adc882952608388587c420c6eb09418722f676505dc35f25e90",
+      "visibleBlocks": 482,
+      "characters": 102055
+    }
+  },
+  "activeRevision": {
+    "rawCapture": {
+      "path": "guides/source-captures/inner-child-guide-2026-10-03-r2.substack.html",
+      "sha256": "49efd4ef0350e0bd575104ff6382cab030db0014afa136b643e4ead6758221ad"
+    },
+    "operationalText": {
+      "path": "guides/inner-child-guide-2026-10-03-r2.txt",
+      "sha256": "cbd4cac90a10cb31cc2b8a9291bd53963a69e729dc22d5e7b3227f3bddbc414b",
+      "visibleBlocks": 493,
+      "characters": 108968
+    },
+    "version": "owner-latest-humanized-2026-10-03-r2"
+  },
+  "extractor": "tasks/reparenting-strategy-refinement-20260925/extract_substack_source.py",
+  "semanticStatus": "owner-approved-certainty-authenticity-refinement-r2",
+  "note": "The exact owner-supplied Oct 3 capture remains separately pinned. The active r1 adds only owner-authorized guide semantics. This development-main source change does not install or promote stable."
+}

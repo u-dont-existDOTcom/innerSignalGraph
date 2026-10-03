@@ -1,0 +1,44 @@
+{
+  "id": "G050",
+  "title": "social exposure used as certainty test keeps contact but removes the test",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "inner_adult_access": "partial",
+    "witness_capacity": "present",
+    "coherent_child_state": "present",
+    "body_capacity": "adequate",
+    "current_intent": "conversation",
+    "other_person_central": "yes",
+    "influence_domain": "ordinary_social",
+    "actionable_problem": "absent",
+    "unresolved_inner_material": "absent",
+    "attention_loop": "present",
+    "inward_attention_effect": "neutral",
+    "thinking_yield": "repetitive_no_new_output",
+    "relational_check_status": "completed"
+  },
+  "expected": {
+    "primary": "ROUTE.LEAVE_ALONE",
+    "selectedIncludes": [
+      "ROUTE.INFLUENCE_SOCIAL_PROTECTION"
+    ],
+    "selectedExcludes": [
+      "ROUTE.RELATIONAL_REALITY_CHECK"
+    ],
+    "requiredNuancePatterns": [
+      "ordinary reciprocal contact",
+      "not require social withdrawal",
+      "Genuine exploration"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "outside help unnecessary"
+    ]
+  }
+}

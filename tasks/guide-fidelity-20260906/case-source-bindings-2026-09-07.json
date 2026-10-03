@@ -1,8 +1,8 @@
 {
-  "version": 2,
-  "sourceFile": "guides/inner-child-guide-2026-09-25.txt",
-  "sourceSha256": "2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1",
-  "purpose": "Bind the unchanged synthetic fidelity cases to the exact owner-supplied 2026-09-25 inner-child article while preserving their existing source refs, user turns, required functions and calibration controls.",
+  "version": 3,
+  "sourceFile": "guides/inner-child-guide-2026-10-03-r2.txt",
+  "sourceSha256": "cbd4cac90a10cb31cc2b8a9291bd53963a69e729dc22d5e7b3227f3bddbc414b",
+  "purpose": "Bind the unchanged synthetic fidelity cases to the exact active 2026-10-03 r2 inner-child article while preserving their existing source refs, user turns, required functions and calibration controls.",
   "additionalSourceRefs": {
     "GF01": [
       "IC.CHECKING_LOOP"

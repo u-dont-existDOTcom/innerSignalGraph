@@ -20,11 +20,14 @@ source_refs:
   - ALT.AFTERMATH
   - ALT.EPISTEMICS
   - AMEND.CROSS.STATE_DEPENDENT_TRANSFER
+  - AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD
 regression_refs:
   - G047
-base_record_sha256: aaac713590fe6116d935d70adfb9856d9fef207fc1943fc52ee2bab2d7d0f5be
-base_graph_sha256: 09fcd58a61e13de924524b56a428337b92056447695e679b980b90dca2a35d55
-projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
+  - G052
+  - G059
+base_record_sha256: b650dca7006320d10ee7e1e0a698bd655fe4c8cacf9f396026a981d9e81d0773
+base_graph_sha256: 4821f2937e5b6f34b1c4fe27c10e23870372b9542efce8f35b0682d29b9dd367
+projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146fdff438765
 ---
 
 # Integrate altered-state aftermath from facts toward meaning and small life changes
@@ -59,17 +62,21 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
   },
   "avoid": [
     "Do not recommend another psychedelic, cannabis, ketamine, intense breathwork, extreme fasting, sleep deprivation, extreme meditation/stretching, or another ceremony as the reflexive fix for ongoing destabilization.",
-    "Do not treat one night’s certainty as a diagnosis, recovered fact, or permanent metaphysical conclusion."
+    "Do not treat one night’s certainty as a diagnosis, recovered fact, or permanent metaphysical conclusion.",
+    "Do not turn one person's adverse history into a blanket rule against all psychoactive substances, and do not advise abrupt discontinuation of prescribed medication or anything the person is physically dependent on without appropriate medical guidance."
   ],
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [
-      "Do not call persistent or dangerous symptoms a normal integration process without appropriate assessment."
+      "Do not call persistent or dangerous symptoms a normal integration process without appropriate assessment.",
+      "Do not claim that one adverse psychoactive reaction proves every psychoactive substance is unsafe for that person.",
+      "Do not imply that apparent stabilization makes retesting a substance safe after a psychotic-type or persisting perceptual reaction."
     ],
     "requiredNuance": [
-      "The public bad-trips guide can provide fuller reading, but referral never replaces current safety, medical, or professional support when those are needed."
+      "The public bad-trips guide can provide fuller reading, but referral never replaces current safety, medical, or professional support when those are needed.",
+      "Substance-specific adverse history can change the risk-benefit judgment even when the same substance also produced experiences the person valued."
     ]
   },
   "recommendations": [
@@ -77,7 +84,9 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
     "Record facts first—what was taken or practiced, timing when known, setting, events, triggers, what helped, and what worsened the state—then consider emotional, relational, spiritual, or practical meaning.",
     "Separate lingering anxiety, sleep disruption, derealization/depersonalization, visual symptoms, shame/social disconnection, existential shock, trauma material, psychosis-like beliefs, and somatic hyperarousal because they can require different support.",
     "Translate useful insight into small behavioral changes rather than measuring integration by how cosmic the explanation sounds.",
-    "Ask what became experientially credible or accessible in the state and what is now state-bound, fading, partially available, or usable soberly; when access is fading, treat that gap as an integration target before assuming another altered state is the default next step."
+    "Ask what became experientially credible or accessible in the state and what is now state-bound, fading, partially available, or usable soberly; when access is fading, treat that gap as an integration target before assuming another altered state is the default next step.",
+    "Treat one psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—as enough reason not to retest that substance without professional assessment, even after apparent stabilization; weigh that history when considering other psychoactives that can also disturb reality testing. Repeated milder confusion or dissociation also matters.",
+    "Seek prompt professional help when symptoms are severe, risky or make safety uncertain; persistence or recurrence while sober strengthens the need for assessment."
   ],
   "successSignals": [
     "Ordinary functioning and sleep recover, facts and interpretations remain distinguishable, and any retained insight produces proportionate behavior rather than escalating practice."
@@ -93,3 +102,5 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
 [[current/sources/altered-states-map-source/ALT.EPISTEMICS]]
 
 [[current/governance/amendments/AMEND.CROSS.STATE_DEPENDENT_TRANSFER]]
+
+[[current/governance/amendments/AMEND.CROSS.PSYCHOACTIVE_ADVERSE_TRACK_RECORD]]

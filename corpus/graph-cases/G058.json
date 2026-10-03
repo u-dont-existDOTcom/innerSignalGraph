@@ -1,0 +1,27 @@
+{
+  "id": "G058",
+  "title": "one prior psychotic-type reaction is a planning gate for another psychoactive",
+  "variables": {
+    "present_safety": "safe",
+    "orientation": "oriented",
+    "ability_to_stop": "yes",
+    "ability_to_return": "yes",
+    "suicidal_state": "absent",
+    "activation": "moderate",
+    "dissociation": "none",
+    "altered_state": "sober",
+    "altered_phase": "planned",
+    "current_intent": "altered_state",
+    "support_available": "present",
+    "sleep_deprivation": "absent"
+  },
+  "expected": {
+    "primary": "ROUTE.ALTERED_PREPARATION",
+    "requiredNuancePatterns": [
+      "person-level vulnerability"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "different psychoactive is automatically safe"
+    ]
+  }
+}

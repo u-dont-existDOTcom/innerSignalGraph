@@ -16,10 +16,11 @@ graph_tags:
   - stop-rule
 source_refs:
   - AMEND.CROSS.THREE_WAY_THERAPY_ROUTING
+  - AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
 regression_refs: []
-base_record_sha256: 97af1b6ca44e660f2509eb1caf53c3116c311a2eafe63516fa6fb23d7f9883b0
-base_graph_sha256: 09fcd58a61e13de924524b56a428337b92056447695e679b980b90dca2a35d55
-projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22d98103437
+base_record_sha256: 37c9639936b1af97e42408c458bfb3ff76cc3409694ea8e73e981534af65e30f
+base_graph_sha256: 4821f2937e5b6f34b1c4fe27c10e23870372b9542efce8f35b0682d29b9dd367
+projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146fdff438765
 ---
 
 # Discriminate processing, action, and non-engagement
@@ -83,7 +84,8 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
   },
   "avoid": [
     "Do not assume repeated analysis is problem-solving merely because the topic is important.",
-    "Do not label refusal to process as healthy non-engagement until concrete problems and clearly avoided material have been checked."
+    "Do not label refusal to process as healthy non-engagement until concrete problems and clearly avoided material have been checked.",
+    "Do not treat behavioral effort as automatically productive merely because it is outward or difficult; an action can still be the same reassurance or certainty computation in behavioral form."
   ],
   "defaultQuestion": "Is this thinking giving you genuinely new information, a decision, or an action—or are we running the same computation again; and is there a concrete problem to act on or clearly avoided material to contact?",
   "effects": {
@@ -93,7 +95,10 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
       "Do not claim that one branch is universally superior to the others."
     ],
     "requiredNuance": [
-      "The three movements can alternate over time; this is a routing decision for the current maintaining process, not a permanent personality classification."
+      "The three movements can alternate over time; this is a routing decision for the current maintaining process, not a permanent personality classification.",
+      "The relevant distinction is function, not whether the checking happens in thought or behavior.",
+      "Ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is not checking unless a repetitive certainty-seeking pattern is actually present.",
+      "Exposure or clinician-guided ERP remains compatible with this route: remove covert checking and reassurance rather than avoiding the relevant situation."
     ]
   },
   "questionPolicy": {
@@ -102,10 +107,12 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
   },
   "recommendations": [
     "Before prescribing another technique, discriminate whether the next useful movement is inward processing, outward action, or leaving a self-maintaining loop unanswered.",
-    "Use output rather than intensity as the stop rule: useful thinking should yield new information, a decision, an action, or genuinely changed contact with previously avoided material."
+    "Use output rather than intensity as the stop rule: useful thinking should yield new information, a decision, an action, or genuinely changed contact with previously avoided material.",
+    "Discriminate genuine inquiry from certainty-seeking: genuine inquiry can update with evidence and tolerate an unresolved answer, while a checking loop tends to rerun the same question, use the body, other people or repeated actions as tests, and obtain only short-lived reassurance."
   ],
   "successSignals": [
-    "The case can be classified into one primary movement without forcing every difficulty into a therapy technique."
+    "The case can be classified into one primary movement without forcing every difficulty into a therapy technique.",
+    "The person can leave an interpretation unresolved when no new evidence is available and choose the next useful action without first obtaining complete internal certainty."
   ]
 }
 ```
@@ -114,3 +121,5 @@ projection_input_sha256: 8d617820e7bd9b59137c81fa8c7239a7c4995a62bc5c51265e60b22
 ## Source navigation
 
 [[current/governance/amendments/AMEND.CROSS.THREE_WAY_THERAPY_ROUTING]]
+
+[[current/governance/amendments/AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE]]
