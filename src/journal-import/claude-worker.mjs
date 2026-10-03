@@ -555,7 +555,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   // Items whose reservation belongs to a live sibling are skipped until the worker has next waited one poll
   // (not given up on, and not re-checked in a tight loop); each such reservation is logged once.
   const skipped = new Set(), reservedLogged = new Set();
-  const attempts = new Map(), limits = new Map(), pendingReleases = new Map(), unrecordedHolds = [];
+  const attempts = new Map(), limits = new Map(), pendingReleases = new Map(), unrecordedHolds = [], closeRetries = new Set();
   let holdsPending = false;
   const stop = (signal) => { stopping = true; stopSignal ??= signal;
     if (wake) { const resume = wake; wake = null; resume(); }
@@ -855,7 +855,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           recorded = (await host("attempt-status", ["--work-id", record.work_id, "--attempt-identity", record.attempt_identity]))[0]
             ?.model_reached === true;
         } catch { recorded = false; }
-        if (!recorded) await keepHold("spend", { work_id: record.work_id, attempt_identity: record.attempt_identity, claim });
+        // Confirmed on the host (only the reply was lost): the mark stands, and a failed close below is kept.
+        if (recorded) markFailed = false;
+        else await keepHold("spend", { work_id: record.work_id, attempt_identity: record.attempt_identity, claim });
       }
       if (runDir && !groupAlive) {
         if (!persistenceChecked) {
@@ -968,6 +970,10 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         continue;
       }
       const records = await host("dispatch", ["--json"]);
+      // A close retry ends once its item is gone or answered (closed by this or another worker).
+      for (const workId of closeRetries) {
+        if (!records.some((item) => item.work_id === workId && !item.answered)) closeRetries.delete(workId);
+      }
       let record = records.find((item) => (!initial || initial.has(item.work_id)) && !item.answered
         && item.tier === "hardest" && item.model === MODEL && item.effort === "max"
         && /^[0-9a-f]{48}$/u.test(item.attempt_identity ?? "")
@@ -1027,8 +1033,15 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         const staleSpent = marker.status === "reserved" && marker.packet_fetched === true
           && (marker.age_seconds ?? 0) * 1000 >= (marker.timeout_ms ?? 1_800_000) + 600_000;
         if (marker.status !== "reserved" || staleSpent) {
-          try { await host("close-unanswered", ["--work-id", record.work_id]); }
-          catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "item_close_failed" }); }
+          try { await host("close-unanswered", ["--work-id", record.work_id]); closeRetries.delete(record.work_id); }
+          catch {
+            // Its marker and open item stay on the host, so the close is retried after the next poll (and by any
+            // later start); a --once worker waits for it.
+            attempts.delete(record.work_id);
+            skipped.add(record.work_id);
+            closeRetries.add(record.work_id);
+            await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "item_close_failed" });
+          }
         }
         await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
           model: record.model, effort: record.effort,
@@ -1037,7 +1050,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         continue;
       }
       if (!record) {
-        if (options.once && !pendingReleases.size) break;
+        if (options.once && !pendingReleases.size && !closeRetries.size) break;
         await wait(options.pollMs);
         skipped.clear();
         continue;

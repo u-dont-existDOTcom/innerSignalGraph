@@ -72,6 +72,7 @@ if (${JSON.stringify(scenario)} === "refuse_failure" && args.at(-1).includes("'a
 if (${JSON.stringify(scenario)} === "mark_failure" && args.at(-1).includes("'attempt-mark'")) failFirst("attempt-mark", 2, 43);
 if (${JSON.stringify(scenario)} === "mark_failure" && args.at(-1).includes("'close-unanswered'")) failFirst("close-unanswered", 1, 44);
 if (${JSON.stringify(scenario)} === "unstaged_close_failure" && args.at(-1).includes("'close-unanswered'")) failFirst("close-unanswered", 1, 44);
+if (["mark_reply_lost", "stale_close_failure"].includes(${JSON.stringify(scenario)}) && args.at(-1).includes("'close-unanswered'")) failFirst("close-unanswered", 1, 44);
 if (${JSON.stringify(scenario)} === "refuse_unsaved_slow" && args.at(-1).includes("'attempt-refuse'")) {
   // Three refusals fail, slowly after the first; the first also makes the hold unsavable and the third restores that.
   const pending = path.join(${JSON.stringify(workDir)}, "pending-refusals"), moved = pending + ".moved";
@@ -133,6 +134,11 @@ const result = spawnSync("/bin/sh", ["-c", args.at(-1)], { encoding: "utf8", inp
     INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: path.join(path.dirname(${JSON.stringify(config)}), "secret") } });
 process.stdout.write(result.stdout ?? "");
 process.stderr.write(result.stderr ?? "");
+if (${JSON.stringify(scenario)} === "mark_reply_lost" && args.at(-1).includes("'attempt-mark'")) {
+  // The host applies the first mark, but its reply is lost on the way back.
+  const marker = path.join(${JSON.stringify(laptop)}, "mark-reply-lost");
+  if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); process.exit(45); }
+}
 process.exit(result.status ?? 1);
 `, { mode: 0o700 });
   await fs.writeFile(claude, `#!${process.execPath}
@@ -673,6 +679,36 @@ test("a graceful stop waits until an unsaved hold is saved", async (t) => {
   assert.equal(await running, 130);
   // The stop didn't drop the hold: the worker kept retrying until the disk took it.
   assert.equal((await fs.readdir(path.join(f.workDir, "pending-refusals"))).length, 1);
+});
+
+test("a close that fails after a mark whose reply was lost is still retried", async (t) => {
+  const f = await fixture(t, "mark_reply_lost");
+  const operationKey = "job:synthetic-mark-reply-lost";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["item_close_failed", "rejected:EVENT_HANDLER_FAILED"]);
+  assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted", "the kept close was retried");
+  await assertWorkDirClean(f.workDir);
+});
+
+test("a failed close of a stale attempted item is retried after the next poll", async (t) => {
+  const f = await fixture(t, "stale_close_failure");
+  const operationKey = "job:synthetic-stale-close";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const [record] = await f.exchange.listDispatch();
+  // A dead worker's attempt: model reached, never closed, and past the sibling-run window.
+  const marker = path.join(f.root, "claude-attempts", journalAttemptMarkerKey(journalAttemptIdentity(record)) + ".json");
+  await fs.mkdir(path.dirname(marker), { recursive: true, mode: 0o700 });
+  await writeAttemptMarker(marker, { work_id: record.work_id, attempt_identity: journalAttemptIdentity(record), status: "attempted",
+    claim: "55555555-5555-4555-8555-555555555555", timeout_ms: 2500, model_reached: true });
+  const old = new Date(Date.now() - 11 * 60_000);
+  await fs.utimes(marker, old, old);
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["item_close_failed", "already_attempted", "already_attempted"]);
+  assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted");
+  await assert.rejects(fs.access(path.join(f.laptop, "claude-starts")), "Claude never ran");
 });
 
 test("a run whose preflight outlasts its limit releases the reservation without starting Claude", async (t) => {
