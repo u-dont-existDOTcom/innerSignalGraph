@@ -11,7 +11,7 @@ import { writeLedger } from "./ledger.mjs";
 const HARD_INTENTS = new Set(["deep_dialogue", "hypnosis", "memory_processing", "photo_work", "altered_state", "advanced_release"]);
 const CRITICAL_DELTA_FIELDS = [
   "present_safety", "orientation", "ability_to_stop", "ability_to_return", "activation", "dissociation", "altered_state",
-  "altered_phase", "altered_capacity", "altered_medical_status", "altered_action_pressure", "sleep_deprivation",
+  "altered_phase", "altered_capacity", "altered_medical_status", "altered_action_pressure", "altered_state_transfer", "altered_repeat_motive", "sleep_deprivation",
   "memory_source_risk", "current_intent", "credibility_conflict", "age_agency_ambiguity", "resentment_toward_younger_self",
   "inner_adult_access", "witness_capacity", "protective_response", "self_directed_love", "credibility_evidence_state",
   "internal_speaker_relation", "target_type", "other_person_central", "relational_capacity_evidence",
@@ -53,6 +53,8 @@ export function classifyTherapyTier(snapshot, requested = "auto", session = {}) 
   const importantUnknown = Math.max(0, ...(snapshot?.unknowns ?? []).map((item) => item.importance ?? 0));
   const reviewedSignal = Boolean(snapshot?.path_update || snapshot?._path_prior) || Boolean(snapshot?.turn_task) || v.spiritual_struggle === "present" || v.protective_response === "present"
     || v.altered_state === "altered"
+    || ["state_bound", "fading", "partial"].includes(v.altered_state_transfer)
+    || ["restore_access", "mixed"].includes(v.altered_repeat_motive)
     || v.self_directed_love === "unsafe"
     || v.credibility_conflict === "present"
     || v.emotional_takeover_pressure === "present"

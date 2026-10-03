@@ -11,9 +11,9 @@ test("inner-child and somatic sources compile into a validated directed-graph bu
   assert.equal(bundle.contractVersion, "guide-graph-v1");
   assert.equal(bundle.version, "inner-child-somatic-pilot-2026-08-09-r5");
   assert.equal(bundle.stats.graphCount, 3);
-  assert.equal(bundle.stats.nodeCount, 73);
-  assert.equal(bundle.stats.edgeCount, 99);
-  assert.equal(bundle.stats.ownerAmendmentCount, 39);
+  assert.equal(bundle.stats.nodeCount, 74);
+  assert.equal(bundle.stats.edgeCount, 103);
+  assert.equal(bundle.stats.ownerAmendmentCount, 40);
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "inner-child-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "somatic-sequencing-guide"));
   assert.ok(bundle.sourceMaps.some((item) => item.guideId === "altered-states-map-source"));
@@ -29,7 +29,7 @@ test("compiled guide-graph bundles contain no wall-clock build metadata", async 
 test("all authored branch cases pass the deterministic graph planner", async () => {
   const result = await runGraphRegressionSuite();
   assert.equal(result.ok, true, JSON.stringify(result.results.filter((item) => !item.ok), null, 2));
-  assert.equal(result.count, 30);
+  assert.equal(result.count, 32);
 });
 
 test("borrowed spiritual love preserves devotion, agency transfer, ontology humility, and ordinary safety", async () => {
@@ -284,4 +284,43 @@ test("music overwhelm stops the cue and broader safety still outranks it", async
 
   const unsafe = planFromGraphs({ graphs: bundle.graphs, variables: { ...base, orientation: "disoriented" } });
   assert.equal(unsafe.primaryJob.id, "IC.SAFETY_ORIENTATION");
+});
+
+
+test("state-bound therapeutic credibility routes to sober transfer without nullifying private meaning", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      activation: "moderate", dissociation: "none", altered_state: "sober", altered_phase: "aftermath",
+      altered_medical_status: "stable", altered_action_pressure: "absent",
+      altered_state_transfer: "fading", altered_repeat_motive: "restore_access",
+      current_intent: "integration", inner_adult_access: "partial", witness_capacity: "present",
+      actionable_problem: "absent", unresolved_inner_material: "present", inward_attention_effect: "helps"
+    }
+  });
+  assert.equal(plan.primaryJob.id, "ROUTE.ALTERED_STATE_TRANSFER");
+  assert.ok(plan.requiredNuance.some((item) => /experiential credibility and external factual certainty/i.test(item)));
+  assert.ok(plan.requiredNuance.some((item) => /not permanent reproduction of the altered state/i.test(item)));
+  assert.ok(plan.avoid.some((item) => /do not dismiss the altered-state insight/i.test(item)));
+  assert.ok(plan.avoid.some((item) => /do not prescribe repeating, redosing, escalating/i.test(item)));
+});
+
+test("integrated prior access plus genuinely new planned work stays on preparation rather than restore-access routing", async () => {
+  bundle ??= await compileGuideGraphs({ write: false });
+  const plan = planFromGraphs({
+    graphs: bundle.graphs,
+    variables: {
+      present_safety: "safe", orientation: "oriented", ability_to_stop: "yes", ability_to_return: "yes",
+      activation: "low", dissociation: "none", altered_state: "sober", altered_phase: "planned",
+      altered_medical_status: "stable", altered_action_pressure: "absent",
+      altered_state_transfer: "integrated", altered_repeat_motive: "new_exploration",
+      current_intent: "altered_state", inner_adult_access: "available", support_available: "present"
+    }
+  });
+  assert.equal(plan.primaryJob.id, "ROUTE.ALTERED_PREPARATION");
+  assert.equal(plan.selectedNodes.some((item) => item.id === "ROUTE.ALTERED_STATE_TRANSFER"), false);
+  const preparation = plan.selectedNodes.find((item) => item.id === "ROUTE.ALTERED_PREPARATION");
+  assert.ok(preparation.recommendations.some((item) => /somewhere to land/i.test(item)));
 });

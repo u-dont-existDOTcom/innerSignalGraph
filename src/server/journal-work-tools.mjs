@@ -67,7 +67,7 @@ export const JOURNAL_WORK_INSTRUCTIONS = "For a private InnerSignal journal work
 const toolError = (code, message, details = undefined) => ({ toolError: { code, message, ...(details ? { details } : {}) } });
 const value = (result) => ({ value: result });
 
-export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier = null, stageDir = null,
+export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier = null, stageDir = null, workId: assignedWorkId = null,
   markAttemptPacketFetched = markJournalAttemptPacketFetched } = {}) {
   if (!exchange || typeof exchange.readWork !== "function" || typeof exchange.submitResult !== "function") {
     throw new TypeError("A journal work exchange is required.");
@@ -75,6 +75,7 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
   if (typeof caseId !== "string" || !CASE_ID.test(caseId)) throw new TypeError("A valid journal work case ID is required.");
   if (typeof authorizeCase !== "function") throw new TypeError("authorizeCase is required.");
   if (tier !== null && !["standard", "hardest"].includes(tier)) throw new TypeError("tier is invalid.");
+  if (assignedWorkId !== null && !JOURNAL_WORK_ID_PATTERN.test(assignedWorkId)) throw new TypeError("workId is invalid.");
 
   // One compiled validator per distinct schema. Each gets its own Ajv instance, so two schema
   // versions that share an $id never collide.
@@ -171,6 +172,11 @@ export function createJournalWorkTools({ exchange, caseId, authorizeCase, tier =
       const workId = args?.work_id;
       if (typeof workId !== "string" || !JOURNAL_WORK_ID_PATTERN.test(workId)) {
         return toolError("JOURNAL_WORK_ID_INVALID", "work_id is missing or malformed. Use the exact work_id you were given.");
+      }
+      // A server started for one item serves and accepts only that item: nothing of another item is read,
+      // served or marked as fetched.
+      if (assignedWorkId !== null && workId !== assignedWorkId) {
+        return toolError("JOURNAL_WORK_SCOPE_MISMATCH", "This server handles only the work_id you were given. Stop here.");
       }
       if (name === "get_journal_work_packet") return getPacket(workId, authContext);
       if (name === "submit_journal_work_result") return submit(workId, args?.output, authContext);

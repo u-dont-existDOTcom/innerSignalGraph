@@ -30,11 +30,11 @@ function call(operationKey) {
       adjacent_context: { by_unit: [] }, visual_context: [], neutral_reading_instructions: [] } };
 }
 
-async function fixture(t, scenario = "ok") {
+async function fixture(t, scenario = "ok", { workName = "work" } = {}) {
   const base = await fs.mkdtemp(path.join(os.tmpdir(), "journal-claude-test-"));
   t.after(() => fs.rm(base, { recursive: true, force: true }));
   const host = path.join(base, "host"), laptop = path.join(base, "laptop");
-  const root = path.join(host, "exchange"), workDir = path.join(laptop, "work");
+  const root = path.join(host, "exchange"), workDir = path.join(laptop, workName);
   await fs.mkdir(root, { recursive: true, mode: 0o700 });
   await fs.mkdir(workDir, { recursive: true, mode: 0o700 });
   const secret = randomBytes(32).toString("base64");
@@ -69,6 +69,33 @@ const failFirst = (name, count, code) => {
 };
 if (${JSON.stringify(scenario)} === "session_reserve_failure" && args.at(-1).includes("'session-reserve'")) failFirst("session-reserve", 1, 39);
 if (${JSON.stringify(scenario)} === "refuse_failure" && args.at(-1).includes("'attempt-refuse'")) failFirst("attempt-refuse", 1, 42);
+if (${JSON.stringify(scenario)} === "mark_failure" && args.at(-1).includes("'attempt-mark'")) failFirst("attempt-mark", 2, 43);
+if (${JSON.stringify(scenario)} === "mark_failure" && args.at(-1).includes("'close-unanswered'")) failFirst("close-unanswered", 1, 44);
+if (${JSON.stringify(scenario)} === "unstaged_close_failure" && args.at(-1).includes("'close-unanswered'")) failFirst("close-unanswered", 1, 44);
+if (["mark_reply_lost", "stale_close_failure"].includes(${JSON.stringify(scenario)}) && args.at(-1).includes("'close-unanswered'")) failFirst("close-unanswered", 1, 44);
+if (${JSON.stringify(scenario)} === "refuse_unsaved_slow" && args.at(-1).includes("'attempt-refuse'")) {
+  // Three refusals fail, slowly after the first; the first also makes the hold unsavable and the third restores that.
+  const pending = path.join(${JSON.stringify(workDir)}, "pending-refusals"), moved = pending + ".moved";
+  const marker = path.join(${JSON.stringify(laptop)}, "refuse-slow-count");
+  const seen = fs.existsSync(marker) ? Number(fs.readFileSync(marker, "utf8")) : 0;
+  fs.writeFileSync(marker, String(seen + 1));
+  if (seen > 0 && seen < 3) await new Promise((resolve) => setTimeout(resolve, 700));
+  if (seen === 0) { fs.renameSync(pending, moved); fs.writeFileSync(pending, ""); }
+  if (seen === 2) { fs.rmSync(pending); fs.renameSync(moved, pending); }
+  if (seen < 3) process.exit(42);
+}
+if (${JSON.stringify(scenario)} === "refuse_unsaved" && args.at(-1).includes("'attempt-refuse'")) {
+  // The first failed refusal also leaves the laptop unable to save the hold; the second restores that.
+  const pending = path.join(${JSON.stringify(workDir)}, "pending-refusals"), moved = pending + ".moved";
+  const marker = path.join(${JSON.stringify(laptop)}, "refuse-unsaved-count");
+  const seen = fs.existsSync(marker) ? Number(fs.readFileSync(marker, "utf8")) : 0;
+  fs.writeFileSync(marker, String(seen + 1));
+  if (seen === 0) { fs.renameSync(pending, moved); fs.writeFileSync(pending, ""); process.exit(42); }
+  if (seen === 1) { fs.rmSync(pending); fs.renameSync(moved, pending); process.exit(42); }
+}
+if (${JSON.stringify(scenario)} === "slow_preflight" && /'(?:stage-create|session-reserve)'/.test(args.at(-1))) {
+  await new Promise((resolve) => setTimeout(resolve, 1500)); // each within the host-call timeout, together past the preflight limit
+}
 if (${JSON.stringify(scenario)} === "session_stolen" && args.at(-1).includes("'promote'")) {
   // Another item takes this run's session reservation between Claude's run and promotion.
   const directory = path.join(${JSON.stringify(root)}, "claude-sessions");
@@ -84,7 +111,7 @@ if (${JSON.stringify(scenario)} === "release_unsaved" && args.at(-1).includes("'
   if (seen === 1) { fs.rmSync(pending); fs.renameSync(moved, pending); process.exit(40); }
 }
 if (${JSON.stringify(scenario)} === "release_failure_restart" && args.at(-1).includes("'attempt-release'")) failFirst("attempt-release", 2, 40);
-if (["release_failure", "no_init_release_failure"].includes(${JSON.stringify(scenario)}) && args.at(-1).includes("attempt-release")) {
+if (["release_failure", "init_exit_release_failure"].includes(${JSON.stringify(scenario)}) && args.at(-1).includes("attempt-release")) {
   const marker = ${JSON.stringify(path.join(laptop, "release-fail-count"))};
   if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); process.exit(37); }
 }
@@ -107,6 +134,11 @@ const result = spawnSync("/bin/sh", ["-c", args.at(-1)], { encoding: "utf8", inp
     INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_SECRET_FILE: path.join(path.dirname(${JSON.stringify(config)}), "secret") } });
 process.stdout.write(result.stdout ?? "");
 process.stderr.write(result.stderr ?? "");
+if (${JSON.stringify(scenario)} === "mark_reply_lost" && args.at(-1).includes("'attempt-mark'")) {
+  // The host applies the first mark, but its reply is lost on the way back.
+  const marker = path.join(${JSON.stringify(laptop)}, "mark-reply-lost");
+  if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); process.exit(45); }
+}
 process.exit(result.status ?? 1);
 `, { mode: 0o700 });
   await fs.writeFile(claude, `#!${process.execPath}
@@ -118,6 +150,7 @@ const config = JSON.parse(fs.readFileSync(args[args.indexOf("--mcp-config") + 1]
 const workId = args[args.indexOf("-p") + 1].match(/item ([^ .]+)/)[1];
 fs.writeFileSync(${JSON.stringify(trace)}, JSON.stringify({ args, env: Object.keys(process.env).sort(), config }));
 let scenario = ${JSON.stringify(scenario)};
+if (scenario === "unstaged_close_failure") scenario = "nothing_staged";
 if (scenario === "isolation_then_success") {
   const marker = ${JSON.stringify(path.join(laptop, "isolation-count"))};
   if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); scenario = "tools_extra"; }
@@ -150,22 +183,27 @@ if (scenario === "cleanup_unreadable") {
   fs.mkdirSync(path.join(process.env.HOME, ".cache"), { recursive: true });
   fs.writeFileSync(path.join(process.env.HOME, ".cache", "claude-cli-nodejs"), "not a directory");
 }
-if (["no_init_then_success", "no_init_release_failure"].includes(scenario)) {
+if (scenario === "no_init_then_success") {
   const marker = ${JSON.stringify(path.join(laptop, "no-init-count"))};
   if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); process.exit(36); }
 }
 const init = { type: "system", subtype: "init", mcp_servers: [{ name: "journal", status: "connected" }],
   tools: ["mcp__journal__get_journal_work_packet", "mcp__journal__submit_journal_work_result"],
   skills: [], slash_commands: [], plugins: [{ name: "synthetic" }], agents: [{ name: "synthetic" }],
-  claude_code_version: "2.1.287", session_id: sessionId };
+  claude_code_version: "2.1.287", ...(scenario === "init_without_session" ? {} : { session_id: sessionId }) };
 if (scenario === "ui_invalidate") console.log(JSON.stringify({ type: "system", subtype: "ui_invalidate" }));
 if (scenario === "init_missing") { console.log(JSON.stringify({ type: "result", is_error: false, subtype: "success" })); process.exit(0); }
 if (scenario === "server_extra") init.mcp_servers.push({ name: "other", status: "connected" });
 if (scenario === "server_disconnected") init.mcp_servers[0].status = "disconnected";
-if (["tools_extra", "refuse_failure"].includes(scenario)) init.tools.push("Bash");
+if (["tools_extra", "refuse_failure", "refuse_unsaved", "refuse_unsaved_slow"].includes(scenario)) init.tools.push("Bash");
 if (scenario === "skills_present") init.skills.push("synthetic");
 if (scenario === "slashes_present") init.slash_commands.push("synthetic");
 console.log(JSON.stringify(init));
+if (scenario === "init_exit_release_failure") {
+  // The first run stops after a clean init, before the model: a failure that is not an isolation refusal.
+  const marker = ${JSON.stringify(path.join(laptop, "init-exit-count"))};
+  if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); process.exit(36); }
+}
 if (["ECONNREFUSED", "ENOTFOUND"].includes(scenario)) {
   console.log(JSON.stringify({ type: "result", is_error: true, error: { code: scenario },
     usage: { input_tokens: 0, output_tokens: 0 }, modelUsage: {} }));
@@ -190,7 +228,7 @@ if (scenario === "reach_then_hang") {
 if (scenario === "hook_event") console.log(JSON.stringify({ type: "hook_started", hook_name: "synthetic" }));
 // Give the parent a chance to kill the process group before any packet tool call.
 if (["server_extra", "server_disconnected", "tools_extra", "skills_present", "slashes_present", "hook_event", "foreign_session",
-  "refuse_failure"].includes(scenario)) {
+  "init_without_session", "refuse_failure", "refuse_unsaved", "refuse_unsaved_slow"].includes(scenario)) {
   await new Promise(resolve => setTimeout(resolve, 250));
   fs.writeFileSync(${JSON.stringify(path.join(laptop, "packet-called-after-refusal"))}, "bad");
 }
@@ -214,20 +252,27 @@ if (limitScenarios.includes(scenario)) {
 if (${JSON.stringify(scenario)} === "timeout") setInterval(() => {}, 1000);
 else {
   const server = config.mcpServers.journal;
+  // "other_item" names the other open item's work_id, which the run's scoped server must refuse.
+  const requestId = scenario === "other_item"
+    ? JSON.parse(fs.readFileSync(${JSON.stringify(path.join(laptop, "work-ids.json"))}, "utf8")).find((id) => id !== workId) : workId;
   const names = scenario === "packet_free" ? ["submit_journal_work_result"]
     : scenario === "submit_before_fetch" ? ["submit_journal_work_result", "get_journal_work_packet"]
     : scenario === "nothing_staged" ? ["get_journal_work_packet"]
     : ["get_journal_work_packet", "submit_journal_work_result"];
   const requests = names.map((name, index) => ({ jsonrpc: "2.0", id: index + 1, method: "tools/call",
     params: { name, arguments: name === "submit_journal_work_result"
-      ? { work_id: workId, output: ${JSON.stringify(ANSWER)} } : { work_id: workId } } }));
+      ? { work_id: workId, output: ${JSON.stringify(ANSWER)} } : { work_id: requestId } } }));
   const result = spawnSync(server.command, server.args, { encoding: "utf8",
     input: requests.map(JSON.stringify).join("\\n") + "\\n", env: process.env });
   if (result.status !== 0) process.exit(32);
   const replies = result.stdout.trim().split("\\n").map(JSON.parse);
+  if (scenario === "other_item") fs.writeFileSync(${JSON.stringify(path.join(laptop, "other-item-reply"))},
+    String(replies[0].result.structuredContent?.code));
   for (const [index, name] of (scenario === "nothing_staged" ? [...names, "submit_journal_work_result"] : names).entries()) {
     console.log(JSON.stringify({ type: "assistant", message: { model: "claude-opus-5-5", content: [
-      { type: "tool_use", id: "tool-" + index, name: "mcp__journal__" + name, input: { work_id: workId } }] } }));
+      { type: "tool_use", id: "tool-" + index, name: "mcp__journal__" + name,
+        input: { work_id: name === "get_journal_work_packet" ? requestId : workId } }] } }));
+    if (scenario === "late_hook" && index === 0) console.log(JSON.stringify({ type: "hook_started", hook_name: "synthetic" }));
     if (replies[index]) {
       const content = name === "get_journal_work_packet" && scenario === "packet_truncated"
         ? "SYNTHETIC_PREVIEW" : replies[index].result.content;
@@ -242,7 +287,7 @@ else {
   if (scenario === "zero_output") usage["claude-opus-5-5"].outputTokens = 0;
   if (scenario === "helper_zero") usage["helper-model"] = { outputTokens: 0 };
   console.log(JSON.stringify({ type: "result", is_error: scenario === "is_error",
-    subtype: "success", session_id: scenario === "missing_session" ? null : sessionId,
+    subtype: "success", ...(scenario === "missing_session" ? {} : { session_id: sessionId }),
     modelUsage: usage, total_cost_usd: 0.25, result: scenario === "reply_limit_words" ? "usage limit rate limit 429"
       : ["SYNTHETIC", "CLAUDE", "PRIVATE", "SENTINEL", "DO", "NOT", "LOG"].join("_") }));
 }
@@ -261,9 +306,10 @@ else {
 }
 
 // The work dir keeps only the worker's pending-action directories, empty once the host confirmed everything.
+const PENDING_DIRECTORIES = ["pending-refusals", "pending-releases", "pending-spends", "setup-refusals"];
 async function assertWorkDirClean(workDir, extra = []) {
-  assert.deepEqual((await fs.readdir(workDir)).sort(), [...extra, "pending-refusals", "pending-releases"].sort());
-  for (const name of ["pending-refusals", "pending-releases"]) assert.deepEqual(await fs.readdir(path.join(workDir, name)), []);
+  assert.deepEqual((await fs.readdir(workDir)).sort(), [...extra, ...PENDING_DIRECTORIES].sort());
+  for (const name of PENDING_DIRECTORIES) assert.deepEqual(await fs.readdir(path.join(workDir, name)), []);
 }
 
 async function scanFiles(directory) {
@@ -313,7 +359,9 @@ test("Claude arguments map only the pinned hardest profile and remote MCP holds 
     "--remote-node", "/host/node"]), { code: "JOURNAL_CLAUDE_OPTION_INVALID" });
   const options = parseJournalClaudeWorkerArgs([...remoteArgs, "--remote-node", "/host/node-journal"]);
   assert.equal(options.limitBackoffMs, 30 * 60_000);
-  const mcp = JSON.stringify(claudeMcpConfiguration(options, "/host/stage", {}));
+  assert.throws(() => claudeMcpConfiguration(options, "/host/stage", {}), { code: "JOURNAL_CLAUDE_OPTION_INVALID" });
+  const mcp = JSON.stringify(claudeMcpConfiguration(options, "/host/stage", {}, "job:synthetic-scoped"));
+  assert.ok(mcp.includes("'--work-id' 'job:synthetic-scoped'"), "the work server is scoped to the run's item");
   assert.ok(mcp.includes("'/host/node-journal' '/host/repo/src/cli/journal-work-mcp.mjs'"));
   assert.ok(mcp.includes("BatchMode=yes") && mcp.includes("ClearAllForwardings=yes")
     && mcp.includes("ForwardAgent=no") && mcp.includes("ForwardX11=no"));
@@ -408,7 +456,7 @@ for (const scenario of ["reply_limit_words", "helper_zero", "ui_invalidate", "la
   });
 }
 
-for (const scenario of ["no_init_then_success", "ssh_prestart_retry", "no_init_release_failure"]) {
+for (const scenario of ["ssh_prestart_retry", "init_exit_release_failure"]) {
   test(`${scenario} retries before a model attempt`, async (t) => {
     const f = await fixture(t, scenario);
     const operationKey = `job:synthetic-${scenario}`;
@@ -417,8 +465,8 @@ for (const scenario of ["no_init_then_success", "ssh_prestart_retry", "no_init_r
     assert.equal((await f.port.getCompletion(operationKey)).status, "completed");
     const outcomes = (await fs.readFile(f.log, "utf8")).trim().split("\n").map((line) => JSON.parse(line).outcome);
     // A release that fails after a pre-model failure is retried by the main loop, so the item is run again.
-    assert.deepEqual(outcomes, { no_init_then_success: ["rejected:ISOLATION", "answered"], ssh_prestart_retry: ["error", "answered"],
-      no_init_release_failure: ["attempt_release_failed", "rejected:ISOLATION", "answered"] }[scenario]);
+    assert.deepEqual(outcomes, { ssh_prestart_retry: ["error", "answered"],
+      init_exit_release_failure: ["attempt_release_failed", "rejected:EXIT_NONZERO", "answered"] }[scenario]);
   });
 }
 
@@ -427,10 +475,10 @@ test("packet-free and failed Claude admissions never promote staged answers", as
     packet_truncated: "rejected:PACKET_TRUNCATED", nothing_staged: "rejected:STAGE_MISSING", is_error: "rejected:RESULT_UNSUCCESSFUL",
     second_model: "rejected:MODEL_USAGE_INVALID", zero_output: "rejected:MODEL_USAGE_INVALID",
     missing_session: "rejected:SESSION_INVALID", timeout: "timeout",
-    init_missing: "rejected:ISOLATION", server_extra: "isolation_refused",
+    init_missing: "isolation_refused", no_init_then_success: "isolation_refused", server_extra: "isolation_refused",
     server_disconnected: "isolation_refused", tools_extra: "isolation_refused",
     skills_present: "isolation_refused", slashes_present: "isolation_refused", hook_event: "isolation_refused",
-    foreign_session: "isolation_refused",
+    foreign_session: "isolation_refused", init_without_session: "isolation_refused",
     project_file: "rejected:LOCAL_PERSISTENCE", fallback_cache: "rejected:LOCAL_PERSISTENCE" };
   for (const [scenario, expected] of Object.entries(outcomes)) {
     await t.test(scenario, async (child) => {
@@ -518,6 +566,168 @@ test("an isolation hold the host didn't record is applied by the next start befo
   await runJournalWork(["attempt-status", "--work-id", held], { environment: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root },
     stdout: { write: (value) => { status += value; } } });
   assert.equal(JSON.parse(status).status, "isolation_refused");
+});
+
+test("a hold that neither the host nor the disk took is retried before the worker stops", async (t) => {
+  const f = await fixture(t, "refuse_unsaved");
+  for (const operationKey of ["job:synthetic-refuse-unsaved-first", "job:synthetic-refuse-unsaved-second"]) {
+    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  }
+  const pending = path.join(f.workDir, "pending-refusals");
+  // The refusal fails and the hold can't be saved; the worker retries both and saves it before stopping.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  assert.equal((await fs.readdir(pending)).length, 1);
+  // The next start records it on the host and stops without starting Claude for any item.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  assert.deepEqual(await fs.readdir(pending), []);
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "x");
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome),
+    ["attempt_refuse_failed", "isolation_refusal_unsaved", "isolation_refused", "isolation_refusal_pending"]);
+});
+
+test("a model reach the host didn't record is kept and recorded before any further item", async (t) => {
+  const f = await fixture(t, "mark_failure");
+  const operationKey = "job:synthetic-mark-failure";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const pending = path.join(f.workDir, "pending-spends");
+  // The mark fails at model reach (the run is killed) and so does the close: the spend is kept on disk, its retry
+  // fails too, and the --once worker exits paused instead of leaving an apparently unspent reservation.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_PAUSED_EXIT_CODE);
+  assert.equal((await fs.readdir(pending)).length, 1);
+  // The next start records the spent attempt on the host and closes the item; Claude never runs again.
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  assert.deepEqual(await fs.readdir(pending), []);
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "x");
+  assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted");
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["item_close_failed", "rejected:EVENT_HANDLER_FAILED"]);
+  assert.equal(logs[1].model_reached, true);
+});
+
+test("a project folder Claude creates under a work dir with a character outside the BMP is still found", async (t) => {
+  const f = await fixture(t, "project_file", { workName: "work-\u{1F600}" });
+  const operationKey = "job:synthetic-emoji-work-dir";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["rejected:LOCAL_PERSISTENCE"]);
+  assert.notEqual((await f.port.getCompletion(operationKey)).status, "completed");
+  for (const bytes of await scanFiles(f.laptop)) assert.ok(!bytes.includes(Buffer.from(SENTINEL)));
+});
+
+test("a run that names another item is stopped, and its scoped server reads nothing of that item", async (t) => {
+  const f = await fixture(t, "other_item");
+  for (const operationKey of ["job:synthetic-own-item", "job:synthetic-other-open-item"]) {
+    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  }
+  const records = await f.exchange.listDispatch();
+  await fs.writeFile(path.join(f.laptop, "work-ids.json"), JSON.stringify(records.map((record) => record.work_id)));
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["rejected:WORK_ID_MISMATCH"]);
+  assert.equal(logs[0].model_reached, true);
+  assert.equal(await fs.readFile(path.join(f.laptop, "other-item-reply"), "utf8"), "JOURNAL_WORK_SCOPE_MISMATCH");
+  // The other item was never fetched: no attempt marker exists for it, and it stays open.
+  const other = records.find((record) => record.work_id !== logs[0].work_id);
+  let status = "";
+  await runJournalWork(["attempt-status", "--work-id", other.work_id], { environment: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root },
+    stdout: { write: (value) => { status += value; } } });
+  assert.equal(JSON.parse(status).status, "none");
+});
+
+test("an isolation violation after model reach closes the item and stops the worker", async (t) => {
+  const f = await fixture(t, "late_hook");
+  for (const operationKey of ["job:synthetic-late-hook-first", "job:synthetic-late-hook-second"]) {
+    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  }
+  assert.equal(await runJournalClaudeWorker(f.args.map((value) => value === "1" ? "2" : value), { environment: f.environment }),
+    CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["isolation_refused"]);
+  assert.equal(logs[0].model_reached, true);
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "x", "no further item ran under the bad setup");
+  const statuses = await Promise.all(["job:synthetic-late-hook-first", "job:synthetic-late-hook-second"]
+    .map(async (operationKey) => (await f.port.getCompletion(operationKey)).status));
+  assert.deepEqual(statuses.sort(), ["exhausted", "unknown"]);
+  // A restart refuses at once while the setup refusal is kept, and runs again only once an operator removes it.
+  const refusals = path.join(f.workDir, "setup-refusals");
+  assert.equal((await fs.readdir(refusals)).length, 1);
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  assert.equal(JSON.parse((await fs.readFile(f.log, "utf8")).trim().split("\n").at(-1)).outcome, "setup_refused");
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "x");
+  for (const name of await fs.readdir(refusals)) await fs.rm(path.join(refusals, name));
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "xx", "cleared, the next item ran (and was refused again)");
+});
+
+test("a failed close of a spent item is retried before the worker takes another item", async (t) => {
+  const f = await fixture(t, "unstaged_close_failure");
+  const operationKey = "job:synthetic-close-retry";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["item_close_failed", "rejected:STAGE_MISSING"]);
+  assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted", "the retried close wrote the tombstone");
+  await assertWorkDirClean(f.workDir);
+});
+
+test("a graceful stop waits until an unsaved hold is saved", async (t) => {
+  const f = await fixture(t, "refuse_unsaved_slow");
+  await assert.rejects(f.port.invoke({ ...call("job:synthetic-stop-unsaved"), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const running = runJournalClaudeWorker(f.args, { environment: f.environment });
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline && !(await fs.readFile(f.log, "utf8").catch(() => "")).includes("isolation_refusal_unsaved")) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  process.emit("SIGINT");
+  assert.equal(await running, 130);
+  // The stop didn't drop the hold: the worker kept retrying until the disk took it.
+  assert.equal((await fs.readdir(path.join(f.workDir, "pending-refusals"))).length, 1);
+});
+
+test("a close that fails after a mark whose reply was lost is still retried", async (t) => {
+  const f = await fixture(t, "mark_reply_lost");
+  const operationKey = "job:synthetic-mark-reply-lost";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["item_close_failed", "rejected:EVENT_HANDLER_FAILED"]);
+  assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted", "the kept close was retried");
+  await assertWorkDirClean(f.workDir);
+});
+
+test("a failed close of a stale attempted item is retried after the next poll", async (t) => {
+  const f = await fixture(t, "stale_close_failure");
+  const operationKey = "job:synthetic-stale-close";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  const [record] = await f.exchange.listDispatch();
+  // A dead worker's attempt: model reached, never closed, and past the sibling-run window.
+  const marker = path.join(f.root, "claude-attempts", journalAttemptMarkerKey(journalAttemptIdentity(record)) + ".json");
+  await fs.mkdir(path.dirname(marker), { recursive: true, mode: 0o700 });
+  await writeAttemptMarker(marker, { work_id: record.work_id, attempt_identity: journalAttemptIdentity(record), status: "attempted",
+    claim: "55555555-5555-4555-8555-555555555555", timeout_ms: 2500, model_reached: true });
+  const old = new Date(Date.now() - 11 * 60_000);
+  await fs.utimes(marker, old, old);
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["item_close_failed", "already_attempted", "already_attempted"]);
+  assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted");
+  await assert.rejects(fs.access(path.join(f.laptop, "claude-starts")), "Claude never ran");
+});
+
+test("a run whose preflight outlasts its limit releases the reservation without starting Claude", async (t) => {
+  const f = await fixture(t, "slow_preflight");
+  const operationKey = "job:synthetic-slow-preflight";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  // The fixture's 2.5 s run timeout bounds the preflight; two 1.5 s host calls exceed it every attempt.
+  await runJournalClaudeWorker(f.args, { environment: f.environment });
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["preflight_expired", "preflight_expired", "preflight_expired"]);
+  assert.ok(logs.every((item) => item.model_reached === false));
+  await assert.rejects(fs.access(path.join(f.laptop, "claude-starts")), "Claude never started");
+  assert.equal((await f.port.getCompletion(operationKey)).status, "unknown");
+  await assertWorkDirClean(f.workDir);
 });
 
 test("a failed session reservation stops the item before Claude starts", async (t) => {
@@ -1095,7 +1305,7 @@ test("a fresh isolation refusal before the model stops the worker and leaves the
 
 test("leftover project and fallback cache files for this worker prefix are swept", async (t) => {
   const f = await fixture(t);
-  const slug = path.join(f.workDir, "inner-signal-claude-AAAAAA", "run-BBBBBB").replace(/[^A-Za-z0-9]/gu, "-");
+  const slug = path.join(f.workDir, "inner-signal-claude-AAAAAA", "run-BBBBBB").replace(/[^A-Za-z0-9]/g, "-");
   for (const root of [path.join(f.laptop, ".claude", "projects"), path.join(f.laptop, ".cache", "claude-cli-nodejs")]) {
     await fs.mkdir(path.join(root, slug), { recursive: true });
     await fs.writeFile(path.join(root, slug, "synthetic.txt"), SENTINEL);
@@ -1227,7 +1437,8 @@ for (const scenario of ["nothing_staged", "tools_extra"]) {
     await runJournalClaudeWorker(f.args, { environment: f.environment });
     assert.equal(await fs.readFile(f.trace, "utf8"), before);
     const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
-    assert.equal(logs.at(-1).outcome, scenario === "tools_extra" ? "isolation_refused" : "rejected:STAGE_MISSING");
+    // After an isolation refusal the next start stops at once on the kept setup refusal.
+    assert.equal(logs.at(-1).outcome, scenario === "tools_extra" ? "setup_refused" : "rejected:STAGE_MISSING");
   });
 }
 

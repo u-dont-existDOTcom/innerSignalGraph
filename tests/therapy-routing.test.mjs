@@ -84,3 +84,17 @@ test("fully structured credibility ambiguity can use reviewed mode instead of Op
   assert.equal(routing.tier, "reviewed");
   assert.match(routing.reason, /graph-structured/i);
 });
+
+
+test("state-dependent restore-access work receives reviewed formulation rather than fast or forensic routing", () => {
+  const routing = classifyTherapyTier({
+    variables: baseVariables({
+      altered_state_transfer: "fading",
+      altered_repeat_motive: "restore_access",
+      current_intent: "integration"
+    }),
+    unknowns: []
+  }, "auto");
+  assert.equal(routing.tier, "reviewed");
+  assert.equal(routing.forced, false);
+});
