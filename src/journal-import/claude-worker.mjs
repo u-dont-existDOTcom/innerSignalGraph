@@ -770,6 +770,11 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
           reader.state.limitReset = parseCodexResetTime(fields, Date.now());
         }
       }
+      // Claude ran but never emitted its mandatory init (a crash before it, an empty stream, or a changed stream
+      // format): the setup is unverified, so this goes the isolation-refusal way and nothing more runs on it.
+      // (A stop, a timeout, or our own failure to record the process before release are not this.)
+      if (!isolationRefused && !reader.state.initialized && !stopping && !result.timedOut
+        && result.problem !== "PROCESS_RECORD_FAILED") isolationRefused = true;
       if (isolationRefused) {
         outcome = "isolation_refused";
       } else if ((reader.state.providerStatus !== null || reader.state.providerConnectionFailed || reader.state.limitSeen) && !reachedModel) {
@@ -800,7 +805,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         else if (stopping) outcome = "stopped";
         else if (result.timedOut) outcome = "timeout";
         else if (result.problem) outcome = `rejected:${result.problem}`;
-        else if (!reader.state.initialized) outcome = "rejected:ISOLATION";
+        else if (!reader.state.initialized) outcome = "rejected:ISOLATION"; // a timeout or our own record failure
         else if (reader.state.abort) outcome = `rejected:${reader.state.bad}`; // the worker ended the run itself
         else if (result.code !== 0) outcome = "rejected:EXIT_NONZERO";
         else if (reader.state.bad) outcome = `rejected:${reader.state.bad}`;

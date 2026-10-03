@@ -111,7 +111,7 @@ if (${JSON.stringify(scenario)} === "release_unsaved" && args.at(-1).includes("'
   if (seen === 1) { fs.rmSync(pending); fs.renameSync(moved, pending); process.exit(40); }
 }
 if (${JSON.stringify(scenario)} === "release_failure_restart" && args.at(-1).includes("'attempt-release'")) failFirst("attempt-release", 2, 40);
-if (["release_failure", "no_init_release_failure"].includes(${JSON.stringify(scenario)}) && args.at(-1).includes("attempt-release")) {
+if (["release_failure", "init_exit_release_failure"].includes(${JSON.stringify(scenario)}) && args.at(-1).includes("attempt-release")) {
   const marker = ${JSON.stringify(path.join(laptop, "release-fail-count"))};
   if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); process.exit(37); }
 }
@@ -183,7 +183,7 @@ if (scenario === "cleanup_unreadable") {
   fs.mkdirSync(path.join(process.env.HOME, ".cache"), { recursive: true });
   fs.writeFileSync(path.join(process.env.HOME, ".cache", "claude-cli-nodejs"), "not a directory");
 }
-if (["no_init_then_success", "no_init_release_failure"].includes(scenario)) {
+if (scenario === "no_init_then_success") {
   const marker = ${JSON.stringify(path.join(laptop, "no-init-count"))};
   if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); process.exit(36); }
 }
@@ -199,6 +199,11 @@ if (["tools_extra", "refuse_failure", "refuse_unsaved", "refuse_unsaved_slow"].i
 if (scenario === "skills_present") init.skills.push("synthetic");
 if (scenario === "slashes_present") init.slash_commands.push("synthetic");
 console.log(JSON.stringify(init));
+if (scenario === "init_exit_release_failure") {
+  // The first run stops after a clean init, before the model: a failure that is not an isolation refusal.
+  const marker = ${JSON.stringify(path.join(laptop, "init-exit-count"))};
+  if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); process.exit(36); }
+}
 if (["ECONNREFUSED", "ENOTFOUND"].includes(scenario)) {
   console.log(JSON.stringify({ type: "result", is_error: true, error: { code: scenario },
     usage: { input_tokens: 0, output_tokens: 0 }, modelUsage: {} }));
@@ -451,7 +456,7 @@ for (const scenario of ["reply_limit_words", "helper_zero", "ui_invalidate", "la
   });
 }
 
-for (const scenario of ["no_init_then_success", "ssh_prestart_retry", "no_init_release_failure"]) {
+for (const scenario of ["ssh_prestart_retry", "init_exit_release_failure"]) {
   test(`${scenario} retries before a model attempt`, async (t) => {
     const f = await fixture(t, scenario);
     const operationKey = `job:synthetic-${scenario}`;
@@ -460,8 +465,8 @@ for (const scenario of ["no_init_then_success", "ssh_prestart_retry", "no_init_r
     assert.equal((await f.port.getCompletion(operationKey)).status, "completed");
     const outcomes = (await fs.readFile(f.log, "utf8")).trim().split("\n").map((line) => JSON.parse(line).outcome);
     // A release that fails after a pre-model failure is retried by the main loop, so the item is run again.
-    assert.deepEqual(outcomes, { no_init_then_success: ["rejected:ISOLATION", "answered"], ssh_prestart_retry: ["error", "answered"],
-      no_init_release_failure: ["attempt_release_failed", "rejected:ISOLATION", "answered"] }[scenario]);
+    assert.deepEqual(outcomes, { ssh_prestart_retry: ["error", "answered"],
+      init_exit_release_failure: ["attempt_release_failed", "rejected:EXIT_NONZERO", "answered"] }[scenario]);
   });
 }
 
@@ -470,7 +475,7 @@ test("packet-free and failed Claude admissions never promote staged answers", as
     packet_truncated: "rejected:PACKET_TRUNCATED", nothing_staged: "rejected:STAGE_MISSING", is_error: "rejected:RESULT_UNSUCCESSFUL",
     second_model: "rejected:MODEL_USAGE_INVALID", zero_output: "rejected:MODEL_USAGE_INVALID",
     missing_session: "rejected:SESSION_INVALID", timeout: "timeout",
-    init_missing: "rejected:ISOLATION", server_extra: "isolation_refused",
+    init_missing: "isolation_refused", no_init_then_success: "isolation_refused", server_extra: "isolation_refused",
     server_disconnected: "isolation_refused", tools_extra: "isolation_refused",
     skills_present: "isolation_refused", slashes_present: "isolation_refused", hook_event: "isolation_refused",
     foreign_session: "isolation_refused", init_without_session: "isolation_refused",
