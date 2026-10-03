@@ -1501,18 +1501,29 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         return failures;
       };
       calibrationFailures = (await calibrationFailureRecords()).length;
-      for (const unit of oversizedUnits.filter((item) => calibrationIds.has(item.unit_id)
-        && !state.completed_units.includes(item.unit_id))) {
+      // Oversized calibration units fail where they fall in the source, between the batches, so the failure
+      // limit never skips units that come before them.
+      const unitPosition = new Map(plan.units.map((unit, index) => [unit.unit_id, index]));
+      const calibrationSteps = [
+        ...oversizedUnits.filter((item) => calibrationIds.has(item.unit_id))
+          .map((unit) => ({ position: unitPosition.get(unit.unit_id), oversized: unit })),
+        ...frozenPlan.calibration_batches.map((ids) => ({
+          position: Math.min(...ids.map((id) => unitPosition.get(id))), ids }))
+      ].sort((left, right) => left.position - right.position);
+      for (let index = 0; index < calibrationSteps.length; index += 1) {
         if (calibrationFailures >= failureLimit) break;
-        await failCalibrationUnit(unit, "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
-      }
-      for (let index = 0; index < frozenPlan.calibration_batches.length; index += 1) {
-        if (calibrationFailures >= failureLimit) break;
-        if (lookahead) {
-          lookahead.ahead(frozenPlan.calibration_batches.slice(index + 1, index + 1 + semanticConcurrency)
-            .flatMap(calibrationDescriptors));
+        const step = calibrationSteps[index];
+        if (step.oversized) {
+          if (!state.completed_units.includes(step.oversized.unit_id)) {
+            await failCalibrationUnit(step.oversized, "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
+          }
+          continue;
         }
-        if (!(await processBatch(frozenUnits(frozenPlan.calibration_batches[index]), true))) return summary();
+        if (lookahead) {
+          lookahead.ahead(calibrationSteps.slice(index + 1).filter((item) => item.ids).slice(0, semanticConcurrency)
+            .flatMap((item) => calibrationDescriptors(item.ids)));
+        }
+        if (!(await processBatch(frozenUnits(step.ids), true))) return summary();
       }
       const calibrationFailed = await calibrationFailureRecords();
       if (calibrationFailed.length) {

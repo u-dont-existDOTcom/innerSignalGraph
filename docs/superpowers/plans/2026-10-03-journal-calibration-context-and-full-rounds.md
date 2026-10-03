@@ -41,7 +41,7 @@ no journal text leaked, and fix the process so that a supervisor review is not n
 3. **Calibration rounds run to the end.** A failing calibration unit is recorded as source-only
    with its reason and diagnostics, and calibration continues with the next unit. The gate closes
    after the round, or earlier once `calibration_failure_limit` units have failed (default 3, so a
-   systematic fault costs at most three units); the limit also stops the rest of a split batch. An invalid limit is refused when a run opens and reported by doctor, before any import step or provider call. `calibration_failure` keeps the first failure's
+   systematic fault costs at most three units); the limit also stops the rest of a split batch. An invalid limit is refused when a run opens and reported by doctor, before any import step or provider call. An oversized calibration unit fails where it falls in the source, between the batches, so reaching the limit never skips earlier units. `calibration_failure` keeps the first failure's
    fields and adds `failed_units`, `completed_calibration_units`, `calibration_units` and
    `failures`; `recalibrate` keeps them in the history. Regular batches still start only after
    every calibration unit passes, and the pass predicate and recall target are unchanged.

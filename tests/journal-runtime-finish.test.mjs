@@ -1906,6 +1906,38 @@ test("a calibration unit above its configured semantic batch bound stops the run
   } finally { await runtime.close(); }
 });
 
+test("an oversized calibration unit fails in source order, after the calibration units before it", async t => {
+  const f = await environment(t);
+  f.config.semantic_batching = { maximum_bytes: 4096, calibration_maximum_bytes: 4096 };
+  f.config.calibration_failure_limit = 1;
+  const short = "Synthetic short entry: I walked by the river and observed a blue cup.";
+  const long = "Synthetic long unit. ".repeat(350);
+  f.sourceParser = async () => ({ source: { sha256: f.config.source.sha256,
+    byte_length: f.config.source.bytes, mime_type: "text/plain" }, parser: { version: "synthetic-ordered-units" },
+    pages: [
+      { page_number: 1, representation_id: "synthetic:short", disposition: "readable", warnings: [], image_inventory: [] },
+      { page_number: 2, representation_id: "synthetic:long", disposition: "readable", warnings: [], image_inventory: [] }],
+    representations: [
+      { representation_id: "synthetic:short", text: short, utf8_byte_length: Buffer.byteLength(short) },
+      { representation_id: "synthetic:long", text: long, utf8_byte_length: Buffer.byteLength(long) }] });
+  const mock = createMockJournalInferencePort({ handlers: handlers() });
+  const roles = [];
+  const inferencePort = { capabilities: () => mock.capabilities(),
+    getCompletion: (operationKey) => mock.getCompletion(operationKey),
+    invoke(input) { roles.push(input.role); return mock.invoke(input); },
+    close: () => mock.close() };
+  const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
+    service: f.service, sourceParser: f.sourceParser, inferencePort, environment: f.environment });
+  try {
+    const first = await runtime.execute("run");
+    assert.equal(first.blocker, "CALIBRATION_SIZE_BOUND_EXCEEDED");
+    assert.equal(first.calibration_failure.failed_units, 1);
+    assert.equal(first.calibration_failure.completed_calibration_units, 2,
+      "the unit before the oversized one is checked before the limit stops the round");
+    assert.ok(roles.includes("extractor"));
+  } finally { await runtime.close(); }
+});
+
 for (const [label, count, field] of [
   ["reconciliation packet over 180 KB", 170, "reconciliation_unresolved_units"],
   ["pattern context over 50 KB", 32, "unresolved_batches"]
