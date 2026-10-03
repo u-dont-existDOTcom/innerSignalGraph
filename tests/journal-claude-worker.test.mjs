@@ -295,7 +295,7 @@ else {
 }
 
 // The work dir keeps only the worker's pending-action directories, empty once the host confirmed everything.
-const PENDING_DIRECTORIES = ["pending-refusals", "pending-releases", "pending-spends"];
+const PENDING_DIRECTORIES = ["pending-refusals", "pending-releases", "pending-spends", "setup-refusals"];
 async function assertWorkDirClean(workDir, extra = []) {
   assert.deepEqual((await fs.readdir(workDir)).sort(), [...extra, ...PENDING_DIRECTORIES].sort());
   for (const name of PENDING_DIRECTORIES) assert.deepEqual(await fs.readdir(path.join(workDir, name)), []);
@@ -639,6 +639,15 @@ test("an isolation violation after model reach closes the item and stops the wor
   const statuses = await Promise.all(["job:synthetic-late-hook-first", "job:synthetic-late-hook-second"]
     .map(async (operationKey) => (await f.port.getCompletion(operationKey)).status));
   assert.deepEqual(statuses.sort(), ["exhausted", "unknown"]);
+  // A restart refuses at once while the setup refusal is kept, and runs again only once an operator removes it.
+  const refusals = path.join(f.workDir, "setup-refusals");
+  assert.equal((await fs.readdir(refusals)).length, 1);
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  assert.equal(JSON.parse((await fs.readFile(f.log, "utf8")).trim().split("\n").at(-1)).outcome, "setup_refused");
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "x");
+  for (const name of await fs.readdir(refusals)) await fs.rm(path.join(refusals, name));
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "xx", "cleared, the next item ran (and was refused again)");
 });
 
 test("a failed close of a spent item is retried before the worker takes another item", async (t) => {
@@ -1387,7 +1396,8 @@ for (const scenario of ["nothing_staged", "tools_extra"]) {
     await runJournalClaudeWorker(f.args, { environment: f.environment });
     assert.equal(await fs.readFile(f.trace, "utf8"), before);
     const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
-    assert.equal(logs.at(-1).outcome, scenario === "tools_extra" ? "isolation_refused" : "rejected:STAGE_MISSING");
+    // After an isolation refusal the next start stops at once on the kept setup refusal.
+    assert.equal(logs.at(-1).outcome, scenario === "tools_extra" ? "setup_refused" : "rejected:STAGE_MISSING");
   });
 }
 

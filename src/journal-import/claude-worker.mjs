@@ -529,7 +529,10 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   const pendingReleasesDir = await pendingDirectory(workDir, "pending-releases");
   const pendingRefusalsDir = await pendingDirectory(workDir, "pending-refusals");
   const pendingSpendsDir = await pendingDirectory(workDir, "pending-spends");
-  const holdDirectories = { refuse: pendingRefusalsDir, spend: pendingSpendsDir };
+  // One record per isolation refusal, before or after model reach. While any exists, the worker won't start; an
+  // operator removes it after fixing the Claude setup (and clears a held item on the host with attempt-clear).
+  const setupRefusalsDir = await pendingDirectory(workDir, "setup-refusals");
+  const holdDirectories = { refuse: pendingRefusalsDir, spend: pendingSpendsDir, setup: setupRefusalsDir };
   const parent = await fs.mkdtemp(path.join(workDir, "inner-signal-claude-"));
   await fs.chmod(parent, 0o700);
   let logHandle, unlockWorkerDirectory;
@@ -604,6 +607,7 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
   // model; "spend" records that the model was reached (and closes the item), so the attempt can't be reclaimed as
   // unspent. Either is kept on disk if the host didn't take it. True once the host has it, or has nothing to apply.
   async function applyHold(kind, hold) {
+    if (kind === "setup") return false; // kept on this computer only, so it must reach the disk
     const ids = ["--work-id", hold.work_id, "--attempt-identity", hold.attempt_identity];
     try { await host(kind === "refuse" ? "attempt-refuse" : "attempt-mark", [...ids, "--claim", hold.claim]); }
     catch {
@@ -621,7 +625,8 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
     catch {
       // Neither the host nor the disk has it: retried before the worker stops or takes another item.
       unrecordedHolds.push({ kind, hold });
-      await log({ at: new Date().toISOString(), work_id: hold.work_id, outcome: kind === "refuse" ? "isolation_refusal_unsaved" : "attempt_spend_unsaved" });
+      await log({ at: new Date().toISOString(), work_id: hold.work_id,
+        outcome: { refuse: "isolation_refusal_unsaved", spend: "attempt_spend_unsaved", setup: "setup_refusal_unsaved" }[kind] });
     }
   }
   // A hold that neither the host nor the disk took is retried, on both, until one succeeds. Until then the worker
@@ -867,7 +872,11 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       // Any isolation violation stops the worker. Whether the model was reached decides only the item's fate: a
       // refusal before the model keeps a clearable hold, one after it closes the item as spent.
       const isolation = outcome === "isolation_refused";
-      if (isolation) setupRefused = true;
+      if (isolation) {
+        setupRefused = true;
+        // Kept across restarts: no later start may run another item under this setup until an operator clears it.
+        await keepHold("setup", { work_id: record.work_id, attempt_identity: record.attempt_identity, claim });
+      }
       if (!(isolation && !reachedModel) && (["already_attempted", "isolation_refused", "rejected:PACKET_TOO_LARGE"].includes(outcome)
         || (reachedModel && !["answered", "already_answered"].includes(outcome)))) {
         try { await host("close-unanswered", ["--work-id", record.work_id]); }
@@ -907,6 +916,16 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       }
       heldOpen = true;
       await log({ at: new Date().toISOString(), outcome: "isolation_refusal_pending", count: refusals.length });
+      return CLAUDE_SETUP_REFUSED_EXIT_CODE;
+    }
+    const setupRefusals = await readPendingEntries(setupRefusalsDir, validPendingHold);
+    if (setupRefusals.length > 0) {
+      // Record any kept spend on the host first (best effort); then stop until an operator clears the refusal.
+      for (const { file, value } of await readPendingEntries(pendingSpendsDir, validPendingHold)) {
+        try { if (await applyHold("spend", value)) await fs.rm(file, { force: true }); } catch { /* kept for later */ }
+      }
+      heldOpen = true;
+      await log({ at: new Date().toISOString(), outcome: "setup_refused", count: setupRefusals.length });
       return CLAUDE_SETUP_REFUSED_EXIT_CODE;
     }
     for (const { file, value } of await readPendingEntries(pendingReleasesDir, validPendingRelease)) {
