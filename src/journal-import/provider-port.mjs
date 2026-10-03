@@ -17,7 +17,7 @@ const requiredCommon = Object.freeze([
 export const JOURNAL_ROLE_DEFINITIONS = Object.freeze({
   visual_reader: Object.freeze({ outputSchema: "visual-result", fields: ["page_image_ref", "page_geometry", "native_text_rendering", "neighbor_pages"] }),
   extractor: Object.freeze({ outputSchema: "extraction-result", fields: ["core_units", "adjacent_context", "visual_transcriptions", "repair_request"] }),
-  omission_checker: Object.freeze({ outputSchema: "review-result", fields: ["core_units", "adjacent_context", "candidate_extraction", "target_generation"] }),
+  omission_checker: Object.freeze({ outputSchema: "review-result", fields: ["core_units", "adjacent_context", "visual_transcriptions", "candidate_extraction", "target_generation"] }),
   reference_reader: Object.freeze({ outputSchema: "reference-result", fields: ["source_windows", "adjacent_context", "visual_context", "neutral_reading_instructions"] }),
   fidelity_auditor: Object.freeze({ outputSchema: "review-result", fields: ["frozen_reference", "supporting_passages", "imported_generation"] }),
   reconciler: Object.freeze({ outputSchema: "reconciliation-result", fields: ["candidates", "neighborhood_evidence", "target_generation"] }),

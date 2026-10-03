@@ -6,6 +6,9 @@ const reviewSchema = journalSchema("review-result");
 const coverageDispositions = extractionSchema.properties.coverage.items.properties.disposition.enum;
 const outcomes = reviewSchema.properties.assessments.items.properties.outcome.enum;
 const findingTypes = reviewSchema.properties.assessments.items.properties.finding_type.enum;
+const contextDirections = extractionSchema.properties.requested_context.items.properties.direction.enum;
+// How the controller answered an extractor's context requests (controller values, never model output).
+const contextAnswerStatuses = ["supplied", "unavailable", "already_answered"];
 
 function schemaEnums(value, found = new Set()) {
   if (Array.isArray(value)) {
@@ -53,7 +56,8 @@ const blockerCodes = new Set(["INVALID_STRUCTURED_OUTPUT", "OUTPUT_INCOMPLETE",
 const permittedValues = new Set([...schemaEnums(extractionSchema), ...schemaEnums(reviewSchema), ...bindingCodes, ...blockerCodes]);
 const permittedKeys = new Set([
   "cycles", "cycle", "hardest", "fidelity_cycles", "fidelity", "findings_per_cycle", "extraction", "omission", "invalid", "blocker_code",
-  "reaudit", "hardest_fidelity", "extraction_changed",
+  "reaudit", "hardest_fidelity", "extraction_changed", "repair", "context_answer",
+  "requested_context_by_direction", ...contextDirections, ...contextAnswerStatuses,
   "binding_failure_code", "status", "assertions", "entities", "episodes",
   "requested_context", "coverage_by_disposition", "assessments_by_outcome_and_finding_type",
   "critical_assessments", "proposed_repairs", "unassessed", "findings",
@@ -100,6 +104,7 @@ export function extractionCycleDiagnostics(results, bindingFailureCode = null) {
       entities: extraction.entities.length,
       episodes: extraction.episodes.length,
       requested_context: extraction.requested_context.length,
+      requested_context_by_direction: countBy(extraction.requested_context, "direction", contextDirections),
       coverage_by_disposition: countBy(extraction.coverage, "disposition", coverageDispositions)
     } : null,
     omission: review ? {
@@ -114,6 +119,10 @@ export function extractionCycleDiagnostics(results, bindingFailureCode = null) {
     binding_failure_code: bindingFailureCode === null ? null
       : bindingCodes.has(bindingFailureCode) ? bindingFailureCode : "BINDING_FAILURE_CODE_UNRECOGNIZED"
   };
+}
+
+export function contextAnswerCounts(response) {
+  return countBy(response, "status", contextAnswerStatuses);
 }
 
 export function fidelityCycleDiagnostics(review, score, calibrationPass) {

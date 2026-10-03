@@ -410,7 +410,12 @@ test("an exhausted hardest single-unit extraction continues as a source-only res
       const records = await Promise.all(state.completed_units.map((id) => store.readJsonObject({ objectId: `unit:graph:${id}` })));
       const unresolved = records.filter((record) => record.source_only_unresolved);
       assert.equal(unresolved.length, 1);
-      assert.deepEqual(unresolved[0].diagnostics.cycles.map((cycle) => cycle.cycle), [0, 1, 2]);
+      // The window after the unit was supplied once, which earns one more pass; later asks are already answered.
+      assert.deepEqual(unresolved[0].diagnostics.cycles.map((cycle) => cycle.cycle), [0, 1, 2, 3]);
+      assert.deepEqual(unresolved[0].diagnostics.cycles.map((cycle) => cycle.context_answer),
+        [{ supplied: 1, unavailable: 0, already_answered: 0 }, ...Array(3).fill({ supplied: 0, unavailable: 0, already_answered: 1 })]);
+      assert.deepEqual(unresolved[0].diagnostics.cycles[0].extraction.requested_context_by_direction,
+        { before: 0, after: 1, visual: 0, whole_entry: 0 });
       assert.equal(unresolved[0].diagnostics.hardest.extraction, null);
     } finally { await store.close(); }
   } finally { await runtime.close(); }
@@ -1153,8 +1158,19 @@ for (const failure of ["packet-before-extractor", "packet-after-extractor", "spe
       const stopped = await assertCalibrationStopped(runtime, f, "CALIBRATION_REPAIR_REQUIRED", "CALIBRATION_REPAIR_CYCLES_EXHAUSTED", calls);
       assert.equal(stopped.residuals.hardest_attempted ?? 0, failure === "packet-before-extractor" ? 0 : 1);
       assert.equal(stopped.residuals.hardest_resolved ?? 0, 0);
-      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, 3);
+      // A hardest repair that its own binding or review leaves unresolved is repaired once more at the same
+      // tier; here that repair passes its review and gets the fourth audit.
+      const repairedAgain = ["binding", "omission"].includes(failure);
+      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, repairedAgain ? 4 : 3);
       const snapshot = stopped.calibration_failure.diagnostics.hardest_fidelity;
+      if (repairedAgain) {
+        assert.equal(snapshot.repair.binding_failure_code, null);
+        assert.equal(snapshot.repair.omission.status, "sufficient_for_stated_scope");
+        assert.equal(snapshot.repair.extraction_changed, true);
+        assert.equal(snapshot.fidelity.calibration_pass, false);
+        assert.deepEqual(calls.filter(call => call.tier === "hardest").map(call => call.role),
+          ["extractor", "omission_checker", "extractor", "omission_checker"]);
+      } else assert.equal(Object.hasOwn(snapshot, "repair"), false);
       if (failure.startsWith("packet-")) assert.equal(snapshot.blocker_code, "JOURNAL_WORK_PACKET_TOO_LARGE");
       if (failure === "spent") assert.equal(snapshot.blocker_code, "JOURNAL_HARDEST_ATTEMPT_EXHAUSTED");
       if (failure === "binding") assert.equal(snapshot.binding_failure_code, "QUOTE_NOT_FOUND");
