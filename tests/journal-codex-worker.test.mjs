@@ -298,8 +298,19 @@ test("exact Codex arguments disable all forbidden features and pass only secret 
     "--work-dir", "/tmp/work"]);
   assert.equal(defaults.limitBackoffMs, 1_800_000);
   assert.equal(defaults.importTimeoutMs, null);
+  assert.equal(defaults.importIntervalMs, null);
   assert.deepEqual(defaults.importEnvNames, []);
   assert.throws(() => parseJournalCodexWorkerArgs(["--config", "/tmp/config", "--codex-home", "/tmp/home"]),
+    { code: "JOURNAL_CODEX_OPTION_INVALID" });
+  const base = ["--config", "/tmp/config", "--codex-home", "/tmp/home", "--work-dir", "/tmp/work"];
+  const importing = [...base, "--import-command-json", JSON.stringify(["/bin/true"])];
+  assert.equal(parseJournalCodexWorkerArgs([...importing, "--import-interval-ms", "900000"]).importIntervalMs, 900_000);
+  // A periodic import needs an import command and a long-running worker.
+  assert.throws(() => parseJournalCodexWorkerArgs([...base, "--import-interval-ms", "900000"]),
+    { code: "JOURNAL_CODEX_OPTION_INVALID" });
+  assert.throws(() => parseJournalCodexWorkerArgs([...importing, "--once", "--import-interval-ms", "900000"]),
+    { code: "JOURNAL_CODEX_OPTION_INVALID" });
+  assert.throws(() => parseJournalCodexWorkerArgs([...importing, "--import-interval-ms", "0"]),
     { code: "JOURNAL_CODEX_OPTION_INVALID" });
 });
 
@@ -672,6 +683,42 @@ test("an answer another worker stored first still starts one import run", async 
   await until(async () => (await imports()) === "xx");
   await new Promise((resolve) => setTimeout(resolve, 200));
   assert.equal(await imports(), "xx", "the dispatch scan does not start a second run for it");
+  running.child.kill("SIGTERM");
+  assert.equal(await running.closed, 143);
+});
+
+test("a periodic import run starts when no answer would start one, and runs never overlap", async (t) => {
+  const f = await setup(t);
+  const fake = await f.fake();
+  const marker = path.join(f.base, "import-count");
+  const lock = path.join(f.base, "import-lock");
+  const command = [process.execPath, "-e",
+    "const fs=require('node:fs'); const [marker, lock]=process.argv.slice(1); try { fs.mkdirSync(lock); } catch { fs.appendFileSync(marker, '!'); process.exit(0); } fs.appendFileSync(marker, 'x'); setTimeout(() => fs.rmdirSync(lock), 50);",
+    marker, lock];
+  const running = spawnWorker(f, fake, ["--import-command-json", JSON.stringify(command), "--import-interval-ms", "100"]);
+  t.after(() => { if (running.child.exitCode === null) running.child.kill("SIGKILL"); });
+  const imports = async () => fs.readFile(marker, "utf8").catch(() => "");
+  await until(async () => (await imports()).length >= 3);
+  assert.equal((await imports()).includes("!"), false);
+  running.child.kill("SIGTERM");
+  assert.equal(await running.closed, 143);
+});
+
+test("another worker's answer starts an import run during a usage limit", async (t) => {
+  const f = await setup(t);
+  await f.publish("job:synthetic-limited");
+  await f.publish("job:synthetic-limit-foreign", "reference_reader", "hardest");
+  const fake = await f.fake("limit_default");
+  const marker = path.join(f.base, "import-count");
+  const command = [process.execPath, "-e", "require('node:fs').appendFileSync(process.argv[1], 'x')", marker];
+  const running = spawnWorker(f, fake, ["--import-command-json", JSON.stringify(command), "--limit-backoff-ms", "60000"]);
+  t.after(() => { if (running.child.exitCode === null) running.child.kill("SIGKILL"); });
+  const imports = async () => fs.readFile(marker, "utf8").catch(() => "");
+  await until(async () => (await fs.readFile(f.log, "utf8").catch(() => "")).includes('"outcome":"limited"')
+    && (await imports()) === "x");
+  await f.exchange.submitResult({ workId: "job:synthetic-limit-foreign", output: { ok: true }, subject: "synthetic" });
+  // The limit holds back new runs for a minute; the answer is still noticed on the next poll.
+  await until(async () => (await imports()) === "xx", 5_000);
   running.child.kill("SIGTERM");
   assert.equal(await running.closed, 143);
 });
