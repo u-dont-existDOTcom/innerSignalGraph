@@ -187,6 +187,12 @@
       "toNode": "fad208e1fd6ac965434d1fd534933e6993607228c1b907cef7a3390e0a81d527"
     },
     {
+      "fromNode": "eddac1f2c8c9c7471e630eb2350ef9873d0a5fb9579f013bcf2da3b91ddd52f9",
+      "id": "320e01b40631a99d2c39e66a6066346140ff03dc684ea9f48c19e9bc20c1fc76",
+      "label": "prepares-for-later-sober-transfer",
+      "toNode": "3747f0a7fbc9e17ff177c95840b96f58ba18dc0af5524d5af39f5613c112fcc3"
+    },
+    {
       "fromNode": "0b91e582b6ce736b73684b167fce07c2cf0aa838abef94d580f41111fca249f5",
       "id": "379a3403a875b6e57fa1724c15c4a501c3f05cb6fe990ec42b2cd6f2c4947e91",
       "label": "enables",
@@ -209,6 +215,12 @@
       "id": "407425a28f148560e64008f3c5a32f8007e3d87c166d54fa7b3f3b0078a0acc6",
       "label": "slows-high-stakes-transfer",
       "toNode": "b9f791ed662f63154471b7e468c6177af78cf2fd75ad85fc4f95b949f202a1ef"
+    },
+    {
+      "fromNode": "25dc25b5ff45482449e43cdd91dc5d508c2b94ba9f1d4afea7b9a9a24bbcc109",
+      "id": "40f5e4dcc7df701e195836bfb662e2a627d96310798f1db22c4ba7ad8fb215ce",
+      "label": "followed-by-sober-transfer",
+      "toNode": "3747f0a7fbc9e17ff177c95840b96f58ba18dc0af5524d5af39f5613c112fcc3"
     },
     {
       "fromNode": "38a66c980c1aed36d63f20d2720597f8073064448804593acdbbe7a57900f019",
@@ -379,6 +391,12 @@
       "toNode": "368d4c270b3c4e401ee218c2fca876a4a13a3e8c998f27d8c63407dedb521323"
     },
     {
+      "fromNode": "3747f0a7fbc9e17ff177c95840b96f58ba18dc0af5524d5af39f5613c112fcc3",
+      "id": "8d441a3769c8805893d1e6e84afdc429e52aaa29624c150e16b423b4c970dbbd",
+      "label": "may-rehearse-accessed-adult-function",
+      "toNode": "2a03381cc78f2c6078e26149917d8c8e17d706c168dfaae4a27221b5f7e82b96"
+    },
+    {
       "fromNode": "8a4a8b14b42a648563b260ffe7b98bcfdd338a5882cd50fcce17afbef86e2aba",
       "id": "90e8bf697a5cc2bb5dda14a13cb6ac528c0ac15456a584007faefee471e6b661",
       "label": "offers-alternative",
@@ -473,6 +491,12 @@
       "id": "b87b024a8f311a6b8e84cc313fa907084e39512a335c22034bdc53f37708e11f",
       "label": "gates",
       "toNode": "fcba1feab4cd2459b1cdd6f4b85860718bc6056ae31e83b0e626feac5ebce401"
+    },
+    {
+      "fromNode": "3747f0a7fbc9e17ff177c95840b96f58ba18dc0af5524d5af39f5613c112fcc3",
+      "id": "c48e57ac0afba6d0e438435e10b7971be01216362d78808d878043051087b9e7",
+      "label": "may-build-sober-credibility",
+      "toNode": "a7544fa40f30aa4a52437359f14b02a5723e0360d56036d7f247f64683921fdd"
     },
     {
       "fromNode": "a7544fa40f30aa4a52437359f14b02a5723e0360d56036d7f247f64683921fdd",
@@ -684,7 +708,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1320
+      "y": 1540
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.SUICIDAL_SELF_DEATH_INQUIRY.md",
@@ -720,7 +744,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1100
+      "y": 1320
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STABLE_THERAPY.md",
@@ -766,6 +790,15 @@
       "width": 300,
       "x": 880,
       "y": 1100
+    },
+    {
+      "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_STATE_TRANSFER.md",
+      "height": 140,
+      "id": "3747f0a7fbc9e17ff177c95840b96f58ba18dc0af5524d5af39f5613c112fcc3",
+      "type": "file",
+      "width": 300,
+      "x": 5080,
+      "y": 880
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.RELATIONAL_REALITY_CHECK.md",
@@ -839,7 +872,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1980
+      "y": 2200
     },
     {
       "file": "current/nodes/inner-child-somatic-cross-guide/ROUTE.ALTERED_AFTERMATH.md",
@@ -848,7 +881,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 2200
+      "y": 2420
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.AQUATIC_BODYWORK.md",
@@ -885,7 +918,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1540
+      "y": 1760
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.ADVANCED_RELEASE_BLOCK.md",
@@ -921,7 +954,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 880
+      "y": 1100
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.GENTLE_SHAKING.md",
@@ -1023,7 +1056,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 2420
+      "y": 2640
     },
     {
       "file": "current/nodes/somatic-directed-graph/SOM.RESOURCE_BRAINSPOTTING.md",
@@ -1133,7 +1166,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 2640
+      "y": 2860
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.ADULT_APPRENTICE.md",
@@ -1297,7 +1330,7 @@
       "type": "file",
       "width": 300,
       "x": 5080,
-      "y": 1760
+      "y": 1980
     },
     {
       "file": "current/nodes/inner-child-directed-graph/IC.DRAFT_EDITOR.md",

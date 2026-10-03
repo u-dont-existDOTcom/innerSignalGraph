@@ -998,6 +998,16 @@
           "excerpt": "Review is critical. Notice recognition, repair, missed and kept promises, and what should change next without turning review into a trial. No mandatory morning/evening cadence is established.",
           "status": "owner-approved",
           "domain": "inner-child"
+        },
+        {
+          "id": "AMEND.CROSS.STATE_DEPENDENT_TRANSFER",
+          "heading": "AMEND.CROSS.STATE_DEPENDENT_TRANSFER",
+          "lineStart": null,
+          "lineEnd": null,
+          "sha256": "4d961182586685374399ddb00e1442dcf02cfbcac88fc98618aae6b5aecc1f60",
+          "excerpt": "Treat state-dependent therapeutic access as a transfer problem, not automatically as evidence that the altered experience was false or that another altered state is required. Some people can understand an inner-child, compassion, grief, spiritual, or trauma-related insight soberly yet experience it as emotionally real or credible only in an altered state; after the state ends, ordinary cognition may dismiss it or lose access to the position from which it felt true. Before planned altered-state work, familiarize the person with the relevant Nurturer, Protector, Guide, guard, safety, and closure map so newly accessible material has somewhere to land; preparation does not demand a particular revelation. During a coherent and physically stable altered state, follow the live therapeutic task and preserve what becomes accessible without repeatedly interrupting private meaning-making with forensic caveats. When an accusation, confrontation, public disclosure, medical or legal action, or another consequential external claim depends on historical or ontological certainty, preserve ordinary evidence and sober review. Afterward, distinguish an experience that occurred once from state-bound access, fading access, partial sober transfer, and integrated sober access. Record what changed and translate a small part into sober relationship, protection, practice, or action. Before another altered-state session, distinguish genuinely new exploration from mainly trying to recover a known state, conviction, love, or relationship. Repetition alone does not prove avoidance, dependence, or failed integration. When the main function is restoring access, work on the transfer failure first and define what sober carryover would count as progress rather than reflexively escalating or recreating the state. This framework does not claim that preparation or integration can replace altered-state methods for every person, or that it will reduce the number of sessions any individual needs.",
+          "status": "owner-approved",
+          "domain": "cross-guide"
         }
       ]
     },
@@ -6653,14 +6663,16 @@
           },
           "sourceRefs": [
             "ALT.AFTERMATH",
-            "ALT.EPISTEMICS"
+            "ALT.EPISTEMICS",
+            "AMEND.CROSS.STATE_DEPENDENT_TRANSFER"
           ],
           "authority": "author-framework",
           "recommendations": [
             "Use sleep, food, water, warmth, routine, sober support, and ordinary contact before another ceremony or destabilizing practice.",
             "Record facts first—what was taken or practiced, timing when known, setting, events, triggers, what helped, and what worsened the state—then consider emotional, relational, spiritual, or practical meaning.",
             "Separate lingering anxiety, sleep disruption, derealization/depersonalization, visual symptoms, shame/social disconnection, existential shock, trauma material, psychosis-like beliefs, and somatic hyperarousal because they can require different support.",
-            "Translate useful insight into small behavioral changes rather than measuring integration by how cosmic the explanation sounds."
+            "Translate useful insight into small behavioral changes rather than measuring integration by how cosmic the explanation sounds.",
+            "Ask what became experientially credible or accessible in the state and what is now state-bound, fading, partially available, or usable soberly; when access is fading, treat that gap as an integration target before assuming another altered state is the default next step."
           ],
           "avoid": [
             "Do not recommend another psychedelic, cannabis, ketamine, intense breathwork, extreme fasting, sleep deprivation, extreme meditation/stretching, or another ceremony as the reflexive fix for ongoing destabilization.",
@@ -6684,6 +6696,99 @@
             ],
             "requiredNuance": [
               "The public bad-trips guide can provide fuller reading, but referral never replaces current safety, medical, or professional support when those are needed."
+            ]
+          },
+          "defaultQuestion": ""
+        },
+        {
+          "id": "ROUTE.ALTERED_STATE_TRANSFER",
+          "title": "Transfer altered-state access into sober credibility and capacity",
+          "kind": "decision-node",
+          "tier": 3,
+          "priority": 98,
+          "activation": {
+            "any": [
+              {
+                "field": "altered_state_transfer",
+                "op": "in",
+                "value": [
+                  "state_bound",
+                  "fading",
+                  "partial"
+                ]
+              },
+              {
+                "field": "altered_repeat_motive",
+                "op": "in",
+                "value": [
+                  "restore_access",
+                  "mixed"
+                ]
+              }
+            ],
+            "none": [
+              {
+                "field": "present_safety",
+                "op": "eq",
+                "value": "unsafe"
+              },
+              {
+                "field": "orientation",
+                "op": "eq",
+                "value": "disoriented"
+              },
+              {
+                "field": "altered_state",
+                "op": "eq",
+                "value": "altered"
+              }
+            ]
+          },
+          "sourceRefs": [
+            "AMEND.CROSS.STATE_DEPENDENT_TRANSFER",
+            "IC.ALTERED_STATES",
+            "ALT.PREPARATION",
+            "ALT.AFTERMATH",
+            "ALT.EPISTEMICS"
+          ],
+          "authority": "author-framework",
+          "recommendations": [
+            "Name exactly what became experientially real, credible, or accessible in the altered state and what the ordinary mind now dismisses, doubts, or cannot feel; preserve the person’s own wording rather than replacing it with an interpretation.",
+            "Separate experienced once, state-bound access, fading access, partial sober transfer, and integrated sober access. Treat the gap as a transfer target without declaring the altered experience either false or externally proven.",
+            "Rehearse the smallest sober version of the newly accessed capacity or relationship—for example one Nurturer, Protector, or Guide response, one grief contact, one act of self-protection, or one ordinary-life behavior that expresses the insight—without demanding reproduction of the altered state.",
+            "Before another altered-state session, distinguish genuinely new exploration from mainly trying to remember, re-believe, re-feel, or recover a state or relationship already encountered. When restoration is the main function, work on what blocks sober transfer and define what carryover would count as progress before treating repetition as the default.",
+            "If another altered-state session is chosen for genuinely new work, begin from what was already learned rather than resetting the therapeutic map to zero; prepare the adult capacities and integration container that were missing last time."
+          ],
+          "avoid": [
+            "Do not dismiss the altered-state insight merely because sober access or conviction fades, and do not require the person to deny what felt therapeutically real.",
+            "Do not treat felt certainty, somatic intensity, or restored access as external proof of a historical memory, diagnosis, metaphysical claim, or another person’s conduct.",
+            "Do not prescribe repeating, redosing, escalating, or recreating an altered state merely to restore conviction, love, memory access, or emotional reality.",
+            "Do not label repeated altered-state work avoidance, addiction, dependence, or failed integration solely because it is repeated; determine its reported function and consequences."
+          ],
+          "successSignals": [
+            "Some part of the newly accessed care, meaning, protection, grief, or relational stance becomes usable in ordinary life without requiring the altered state to make it believable.",
+            "The person can distinguish whether another altered-state session is sought for genuinely new work or mainly to restore access to something already known."
+          ],
+          "tags": [
+            "altered-state",
+            "integration",
+            "state-dependent-access",
+            "sober-transfer",
+            "repetition-loop"
+          ],
+          "effects": {
+            "blockNodes": [],
+            "deferNodes": [],
+            "forbiddenOverclaims": [
+              "Do not claim that successful sober transfer proves the altered-state interpretation was historically or metaphysically true.",
+              "Do not claim that failed sober transfer proves another altered-state session is necessary, or that transfer work can replace altered-state therapy for every person."
+            ],
+            "requiredNuance": [
+              "Experiential credibility and external factual certainty are different. Preserve the therapeutic relationship to what became real without turning felt certainty into proof of an external event.",
+              "A state can make care, grief, innocence, protection, meaning, or an inner relationship experientially credible without by itself establishing an external historical or ontological fact.",
+              "The transfer target is usable ordinary-life access to the therapeutic capacity or relationship, not permanent reproduction of the altered state.",
+              "Additional altered-state work may still be useful for genuinely new material or for people who cannot access the same work soberly; this route does not assume sober InnerSignal can replace the altered-state method.",
+              "When no consequential external claim depends on factual certainty, epistemic caution should remain available without being repeated so insistently that it disrupts the live therapeutic relationship to the experience."
             ]
           },
           "defaultQuestion": ""
@@ -6780,13 +6885,16 @@
             ]
           },
           "sourceRefs": [
-            "ALT.PREPARATION"
+            "ALT.PREPARATION",
+            "AMEND.CROSS.STATE_DEPENDENT_TRANSFER"
           ],
           "authority": "author-framework",
           "recommendations": [
             "Plan rest and timing, physical safety, environment, support, and what would require outside help before the session begins.",
             "Use intention without demanding a particular revelation, memory, emotional arc, or spiritual result; support stays low-directivity and consent-based.",
-            "Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended."
+            "Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended.",
+            "Familiarize the person soberly with any relevant inner-child, guard, Nurturer, Protector, or Guide map and practice at least one small adult function, so newly accessible material has somewhere to land without requiring belief in advance.",
+            "Choose a simple way to preserve what becomes newly real or accessible and name what useful sober carryover would look like afterward; this is a container for whatever happens, not a demand for a breakthrough."
           ],
           "avoid": [
             "Do not use ceremony planning once an acute crisis has started; return to acute triage instead.",
@@ -6859,13 +6967,15 @@
           "sourceRefs": [
             "ALT.CAPACITY",
             "ALT.EPISTEMICS",
-            "IC.ALTERED_STATES"
+            "IC.ALTERED_STATES",
+            "AMEND.CROSS.STATE_DEPENDENT_TRANSFER"
           ],
           "authority": "author-framework",
           "recommendations": [
             "Do not terminate or flatten therapy merely because the person discloses an altered state; continue responsive therapeutic work at the depth their current orientation, stopping capacity, and agency support.",
             "Keep altered-state insights, memories, symbols, intuitions, and metaphysical conclusions provisional where external truth matters; use ordinary evidence after the state when consequences depend on them.",
-            "Reduce depth immediately if orientation, stopping capacity, physical stability, reality testing, or ordinary agency begins to deteriorate."
+            "Reduce depth immediately if orientation, stopping capacity, physical stability, reality testing, or ordinary agency begins to deteriorate.",
+            "When something becomes newly emotionally real or credible—such as the younger self, innocence, grief, care, protection, or meaning—stay with the live therapeutic task and preserve the exact change for later sober transfer rather than repeatedly interrupting private processing with factual caveats."
           ],
           "avoid": [
             "Do not automatically substitute generic grounding for the user’s actual therapeutic question when capacity is demonstrably intact.",
@@ -6887,7 +6997,8 @@
               "Do not equate articulate writing with full medical stability or intact judgment in every domain."
             ],
             "requiredNuance": [
-              "Altered state is a routing variable, not by itself evidence of incapacity. Coherence in text is still not a medical exam; explicit physical stability remains a separate requirement."
+              "Altered state is a routing variable, not by itself evidence of incapacity. Coherence in text is still not a medical exam; explicit physical stability remains a separate requirement.",
+              "Experiential credibility and external factual certainty are different. Epistemic caution should protect consequential claims without needlessly nullifying a live private therapeutic experience."
             ]
           },
           "defaultQuestion": ""
@@ -7113,6 +7224,26 @@
           "from": "ROUTE.ALTERED_ACTION_LOCK",
           "relation": "defers-consequential-meaning-to-sober-review",
           "to": "ROUTE.ALTERED_AFTERMATH"
+        },
+        {
+          "from": "ROUTE.ALTERED_PREPARATION",
+          "relation": "prepares-for-later-sober-transfer",
+          "to": "ROUTE.ALTERED_STATE_TRANSFER"
+        },
+        {
+          "from": "ROUTE.ALTERED_STABLE_THERAPY",
+          "relation": "followed-by-sober-transfer",
+          "to": "ROUTE.ALTERED_STATE_TRANSFER"
+        },
+        {
+          "from": "ROUTE.ALTERED_STATE_TRANSFER",
+          "relation": "may-rehearse-accessed-adult-function",
+          "to": "IC.BORROW_ONE_FUNCTION"
+        },
+        {
+          "from": "ROUTE.ALTERED_STATE_TRANSFER",
+          "relation": "may-build-sober-credibility",
+          "to": "IC.CREDIBILITY_REPAIR"
         }
       ],
       "taskPolicyVersion": 1,
@@ -7122,9 +7253,9 @@
   ],
   "stats": {
     "graphCount": 3,
-    "nodeCount": 73,
-    "edgeCount": 99,
-    "sourceSectionCount": 117,
-    "ownerAmendmentCount": 39
+    "nodeCount": 74,
+    "edgeCount": 103,
+    "sourceSectionCount": 118,
+    "ownerAmendmentCount": 40
   }
 }
