@@ -109,7 +109,8 @@
           "Do not treat disagreement, emotional intensity, one mistake, a diagnosis, or the user's disappointment as proof of emotional immaturity.",
           "Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character.",
           "Do not claim that seeking healthy support or mutual co-regulation makes another person a reassurance machine or invalidates the relationship.",
-          "Do not claim that relief from acceptance or nonjudgment proves romantic love, compatibility, or earned trust."
+          "Do not claim that relief from acceptance or nonjudgment proves romantic love, compatibility, or earned trust.",
+          "Do not claim that social-anxiety or exposure practice overrides consent, requires sexual or romantic contact, or requires disclosure in an unsafe relationship."
         ],
         "requiredNuance": [
           "Relational capacity is not motive or diagnosis. The relevant evidence is what the person has demonstrated in the domain at issue, especially under disagreement, limits, accountability, and repair.",
@@ -144,7 +145,9 @@
       },
       "sourceRefs": [
         "AMEND.CROSS.RELATIONAL_REALITY_CHECK",
-        "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE"
+        "AMEND.CROSS.INFLUENCE_PROTECTION_LOVE",
+        "AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE",
+        "AMEND.CROSS.RELATIONAL_PRACTICE_AUTHENTICITY"
       ],
       "authority": "owner-approved-extension",
       "recommendations": [
@@ -154,7 +157,8 @@
       ],
       "avoid": [
         "Do not use love, forgiveness, compassion, spiritual aspiration, or the wish not to hate as a substitute for physical or social safety.",
-        "Do not advise the person to approach, tolerate, remain with, or reopen access to danger in order to prove love."
+        "Do not advise the person to approach, tolerate, remain with, or reopen access to danger in order to prove love.",
+        "Do not dismiss or steer genuine attraction, sexual orientation, or gender identity because it is unwanted, stigmatized, confusing, or conflicts with expectations."
       ],
       "successSignals": [
         "Care and practical protection can coexist without one canceling the other.",
@@ -170,10 +174,13 @@
         "deferNodes": [],
         "blockNodes": [],
         "requiredNuance": [
-          "Remaining loving or refusing hatred under unavoidable harm is a spiritual aspiration, not ordinary safety advice and not a reason to accept preventable exposure."
+          "Remaining loving or refusing hatred under unavoidable harm is a spiritual aspiration, not ordinary safety advice and not a reason to accept preventable exposure.",
+          "Ordinary protection and relational reality checking must remain neutral about sexual orientation and gender identity; distress or stigma is not evidence that an identity is intrusive or unreal."
         ],
         "forbiddenOverclaims": [
-          "Do not say or imply that sufficient love makes practical protection, boundaries, distance, refusal, or outside help unnecessary."
+          "Do not say or imply that sufficient love makes practical protection, boundaries, distance, refusal, or outside help unnecessary.",
+          "Do not claim that genuine attraction, sexual orientation, or gender identity is merely intrusive or unreal because it is unwanted, stigmatized, confusing, or conflicts with personal or community expectations.",
+          "Do not steer the person toward or away from any sexual orientation or gender identity."
         ]
       },
       "defaultQuestion": ""
@@ -209,7 +216,8 @@
       "avoid": [
         "Do not convert an internal part, compulsion, urge, thought loop, or somatic pattern into an entity claim without the user's evidence.",
         "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model.",
-        "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen."
+        "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen.",
+        "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values."
       ],
       "successSignals": [
         "The selected route matches the actual internal process and produces more choice, useful information, or disengagement from a maintenance loop."
@@ -233,7 +241,9 @@
           "Do not claim that every internal influence is an inner child, Protector, trauma memory, or psychiatric symptom.",
           "Do not claim that involuntary intrusive content establishes identity, intention or endorsement.",
           "Do not call a transient thought, feeling or sensation the person's true state merely because it is vivid or distressing.",
-          "Do not claim that ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is checking merely because certainty is unavailable."
+          "Do not claim that ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is checking merely because certainty is unavailable.",
+          "Do not claim that genuine attraction, orientation, or gender identity is merely intrusive or unreal because it is unwanted, stigmatized, confusing, or value-conflicting.",
+          "Do not steer the person toward or away from any sexual orientation or gender identity under the guise of distinguishing intrusive content from identity."
         ]
       },
       "defaultQuestion": "Does this behave more like a coherent inner position, an urge or compulsion, or the same thought loop running again without new output?",
@@ -461,7 +471,8 @@
       "avoid": [
         "Do not call thought suppression, denial, emotional numbing, or ignoring a medical, safety, relational, or practical problem 'leaving it alone'.",
         "Do not treat reduced attention to symptoms as proof that the underlying condition is cured.",
-        "Do not answer a checking loop by declaring which transient sensation is the person's true state, and do not use another person as a diagnostic instrument for a question that the loop will simply reopen."
+        "Do not answer a checking loop by declaring which transient sensation is the person's true state, and do not use another person as a diagnostic instrument for a question that the loop will simply reopen.",
+        "Do not use ERP or anti-avoidance language to override consent, continue touch or sex the person wants to stop, remain in concrete danger, or skip evaluation of a possible medical red flag."
       ],
       "successSignals": [
         "Checking and reassurance decrease while flexible attention, ordinary activity, relationships, and functioning increase.",
@@ -490,11 +501,13 @@
           "Leaving the checking operation alone does not require social withdrawal; ordinary reciprocal contact and values-based action can continue without turning them into tests.",
           "Genuine exploration of sexuality, orientation, gender, attraction or relationship fit is not checking merely because certainty is unavailable.",
           "Exposure or clinician-guided ERP can continue when appropriate; leave the certainty-checking operation unanswered rather than avoiding the relevant situation.",
-          "Exposure or clinician-guided ERP remains compatible with this route: keep useful exposure when appropriate and drop reassurance, covert testing and repeated verdict-seeking rather than avoiding the situation."
+          "Exposure or clinician-guided ERP remains compatible with this route: keep useful exposure when appropriate and drop reassurance, covert testing and repeated verdict-seeking rather than avoiding the situation.",
+          "Exposure never requires continuing touch or sex the person wants to stop, staying in concrete danger, or skipping a check of a possible medical red flag."
         ],
         "forbiddenOverclaims": [
           "Do not claim that rumination or attention caused all symptoms, or that every persistent symptom should simply be ignored.",
-          "Do not claim that completing a date, sexual encounter, exposure or other test proves identity, attraction, normality, safety, worth or certainty."
+          "Do not claim that completing a date, sexual encounter, exposure or other test proves identity, attraction, normality, safety, worth or certainty.",
+          "Do not claim that ERP, exposure, or anti-avoidance requires continuing touch or sex after the person wants to stop, staying in concrete danger, or skipping medical evaluation of a possible red flag."
         ]
       },
       "defaultQuestion": ""
@@ -557,7 +570,8 @@
         "Do not use action as a way to deny clearly unresolved inner material that continues to drive the problem.",
         "Do not treat noncompletion as lack of motivation or a protective part before examining practical barriers; do not treat task completion or immediate mood improvement as the sole evidence of benefit.",
         "Do not call a social, romantic or sexual action healthy exposure merely because it is difficult when its main function is reassurance, self-testing or using another person to regulate uncertainty.",
-        "Do not turn uncertainty-driven avoidance into the remedy for a checking loop when safe, useful exposure or ordinary contact remains appropriate."
+        "Do not turn uncertainty-driven avoidance into the remedy for a checking loop when safe, useful exposure or ordinary contact remains appropriate.",
+        "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation."
       ],
       "successSignals": [
         "A decision, boundary, request, repair, plan, or other observable action changes the real situation.",
@@ -574,13 +588,15 @@
         "deferNodes": [],
         "forbiddenOverclaims": [
           "Do not reduce every emotional problem to productivity or behavioral execution.",
-          "Do not claim that brief relief from an action establishes durable improvement, resolution, or a causal mechanism."
+          "Do not claim that brief relief from an action establishes durable improvement, resolution, or a causal mechanism.",
+          "Do not claim that useful exposure requires continuing touch or sex after the person wants to stop, staying in concrete danger, or skipping a medical check of a possible red flag."
         ],
         "requiredNuance": [
           "A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job.",
           "Outward action is judged by its function and consequences, not by courage or exposure intensity alone.",
           "Clinician-guided ERP or other useful exposure is compatible with this route: keep the exposure when appropriate and drop the checking function.",
-          "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking."
+          "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking.",
+          "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation."
         ]
       },
       "defaultQuestion": "What is the next observable action that could actually change this situation?",
@@ -1074,11 +1090,16 @@
         "forbiddenOverclaims": [
           "Do not call persistent or dangerous symptoms a normal integration process without appropriate assessment.",
           "Do not claim that one adverse psychoactive reaction proves every psychoactive substance is unsafe for that person.",
-          "Do not imply that apparent stabilization makes retesting a substance safe after a psychotic-type or persisting perceptual reaction."
+          "Do not imply that apparent stabilization makes retesting a substance safe after a psychotic-type or persisting perceptual reaction.",
+          "Do not imply that repeated psychotic-type reactions are required before a prior episode matters.",
+          "Do not advise abrupt discontinuation of prescribed medication or a substance the person is physically dependent on."
         ],
         "requiredNuance": [
           "The public bad-trips guide can provide fuller reading, but referral never replaces current safety, medical, or professional support when those are needed.",
-          "Substance-specific adverse history can change the risk-benefit judgment even when the same substance also produced experiences the person valued."
+          "Substance-specific adverse history can change the risk-benefit judgment even when the same substance also produced experiences the person valued.",
+          "One psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—is enough to gate retesting the same substance pending professional assessment; repeated episodes are not required.",
+          "Severe, current, risky, or safety-uncertain psychotic-type symptoms call for prompt professional or emergency assessment.",
+          "Caution about a psychoactive adverse reaction must not become advice to abruptly stop prescribed medication or a physically dependent substance; appropriate medical guidance may be required."
         ]
       },
       "defaultQuestion": ""
@@ -1279,12 +1300,14 @@
         "Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended.",
         "Familiarize the person soberly with any relevant inner-child, guard, Nurturer, Protector, or Guide map and practice at least one small adult function, so newly accessible material has somewhere to land without requiring belief in advance.",
         "Choose a simple way to preserve what becomes newly real or accessible and name what useful sober carryover would look like afterward; this is a container for whatever happens, not a demand for a breakthrough.",
-        "Before planning another altered-state session, ask about prior voices, paranoia, major loss of reality testing, persistent perceptual disturbance, or repeated destabilizing confusion/dissociation from psychoactive substances; one psychotic-type or persisting perceptual reaction warrants professional assessment before retesting that substance and should inform consideration of other psychoactives that can disturb reality testing."
+        "Before planning another altered-state session, ask about prior voices, paranoia, major loss of reality testing, persistent perceptual disturbance, or repeated destabilizing confusion/dissociation from psychoactive substances; one psychotic-type or persisting perceptual reaction warrants professional assessment before retesting that substance and should inform consideration of other psychoactives that can disturb reality testing.",
+        "If psychotic-type or perceptual symptoms are current, severe, risky, or make safety uncertain, prioritize prompt professional or emergency assessment over planning another altered-state session."
       ],
       "avoid": [
         "Do not use ceremony planning once an acute crisis has started; return to acute triage instead.",
         "Do not make a sitter, playlist, spiritual frame, or expected insight into an authority the person cannot stop or change.",
-        "Do not treat feeling stable now as proof that retesting is safe after a psychotic-type or persisting perceptual reaction, and do not convert that history into a blanket anti-drug rule."
+        "Do not treat feeling stable now as proof that retesting is safe after a psychotic-type or persisting perceptual reaction, and do not convert that history into a blanket anti-drug rule.",
+        "Do not advise abrupt discontinuation of prescribed medication or anything the person is physically dependent on; stopping may require medical guidance."
       ],
       "successSignals": [
         "The session has clear safety, consent, stopping, closure, and integration boundaries before altered-state work begins."
@@ -1299,10 +1322,15 @@
         "blockNodes": [],
         "deferNodes": [],
         "forbiddenOverclaims": [
-          "Do not claim that a different psychoactive is automatically safe merely because the prior severe reaction involved another substance."
+          "Do not claim that a different psychoactive is automatically safe merely because the prior severe reaction involved another substance.",
+          "Do not imply that repeated psychotic-type reactions are required before a prior episode matters for retest planning.",
+          "Do not advise abrupt discontinuation of prescribed medication or a substance the person is physically dependent on."
         ],
         "requiredNuance": [
-          "Psychoactive risk is informed by both substance-specific history and person-level vulnerability; the response remains proportional rather than universally prohibitive."
+          "Psychoactive risk is informed by both substance-specific history and person-level vulnerability; the response remains proportional rather than universally prohibitive.",
+          "One psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—is enough to gate retesting the same substance pending professional assessment; repeated episodes are not required.",
+          "Severe, current, risky, or safety-uncertain psychotic-type symptoms call for prompt professional or emergency assessment rather than another altered-state experiment.",
+          "The altered-state gate must not be implemented through abrupt stopping of prescribed medication or a physically dependent substance; appropriate medical guidance may be required."
         ]
       },
       "defaultQuestion": ""

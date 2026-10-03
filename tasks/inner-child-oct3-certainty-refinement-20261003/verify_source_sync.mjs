@@ -19,8 +19,8 @@ export async function verifyOct3SourceSync({ projectRoot = root, candidateText }
 
   assert.equal(hash(baselineRaw), receipt.ownerBaseline.rawCapture.sha256, "Oct 3 owner raw capture hash mismatch");
   assert.equal(hash(baselineText), receipt.ownerBaseline.operationalText.sha256, "Oct 3 synchronized baseline text hash mismatch");
-  assert.equal(hash(activeRaw), receipt.activeRevision.rawCapture.sha256, "Oct 3 r2 raw capture hash mismatch");
-  assert.equal(hash(activeText), receipt.activeRevision.operationalText.sha256, "Oct 3 r2 operational guide text hash mismatch");
+  assert.equal(hash(activeRaw), receipt.activeRevision.rawCapture.sha256, "Oct 3 r3 raw capture hash mismatch");
+  assert.equal(hash(activeText), receipt.activeRevision.operationalText.sha256, "Oct 3 r3 operational guide text hash mismatch");
   assert.ok(baselineRaw.toString("utf8").startsWith('<div contenteditable="true"'), "Owner baseline no longer begins with the captured Substack editor root");
   assert.ok(activeRaw.toString("utf8").startsWith('<div contenteditable="true"'), "Active revision no longer begins with the Substack editor root");
 

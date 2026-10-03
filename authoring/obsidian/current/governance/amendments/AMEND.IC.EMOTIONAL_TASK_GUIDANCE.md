@@ -6,9 +6,9 @@ generated: true
 amendment_id: AMEND.IC.EMOTIONAL_TASK_GUIDANCE
 status: owner-approved
 domain: inner-child
-base_record_sha256: b5e5af18e34c37d56bca4aec813f8f4009b3403382c1974b0c1a1bc64e7883e3
-source_file_sha256: e70371bf8e90df99b8735aef80bc4629581ac0a5f8375e8af2766c8067ad8ebd
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+base_record_sha256: 689f67b74a177aecb57dcd2ae741118f173819534f67f21a8afbbe9a5a5d2df4
+source_file_sha256: 7a98b11d63200582dd2dd9fa9b0c011244be3ac96b98d8186ff5ff151d069505
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # AMEND.IC.EMOTIONAL_TASK_GUIDANCE
@@ -24,6 +24,6 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
     "status": "owner-approved",
     "text": "Carry bounded original emotional-task guidance and change signals into the response path: unclear feeling, reported self-treatment, interruption, unmet relational need or care for anguish, without imposing a part or history. Use the reported marker, an agreed small step, the person’s response and a partial change point. Preserve justified emotion and valid accountability; do not assume all anger hides sadness or that tears mean improvement. Adapt intrusive care instead of intensifying it. Non-cruelty may begin love, not replace it; include attunement, delight and supported exploration. Stop or reduce depth when orientation or stopping capacity is lost. Emotion-focused therapy is not tapping EFT."
   },
-  "version": "2026-10-03-certainty-authenticity-r2"
+  "version": "2026-10-03-certainty-authenticity-r3"
 }
 ```

@@ -17,18 +17,18 @@
   },
   "activeRevision": {
     "rawCapture": {
-      "path": "guides/source-captures/inner-child-guide-2026-10-03-r2.substack.html",
-      "sha256": "49efd4ef0350e0bd575104ff6382cab030db0014afa136b643e4ead6758221ad"
+      "path": "guides/source-captures/inner-child-guide-2026-10-03-r3.substack.html",
+      "sha256": "c8138b47ff38de516d73545c7696642e28adc841a79a8fe2842e1407c9fbd6b6"
     },
     "operationalText": {
-      "path": "guides/inner-child-guide-2026-10-03-r2.txt",
-      "sha256": "cbd4cac90a10cb31cc2b8a9291bd53963a69e729dc22d5e7b3227f3bddbc414b",
-      "visibleBlocks": 493,
-      "characters": 108968
+      "path": "guides/inner-child-guide-2026-10-03-r3.txt",
+      "sha256": "3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb",
+      "visibleBlocks": 494,
+      "characters": 109681
     },
-    "version": "owner-latest-humanized-2026-10-03-r2"
+    "version": "owner-latest-humanized-2026-10-03-r3"
   },
   "extractor": "tasks/reparenting-strategy-refinement-20260925/extract_substack_source.py",
-  "semanticStatus": "owner-approved-certainty-authenticity-refinement-r2",
+  "semanticStatus": "owner-approved-certainty-authenticity-refinement-r3",
   "note": "The exact owner-supplied Oct 3 capture remains separately pinned. The active r1 adds only owner-authorized guide semantics. This development-main source change does not install or promote stable."
 }

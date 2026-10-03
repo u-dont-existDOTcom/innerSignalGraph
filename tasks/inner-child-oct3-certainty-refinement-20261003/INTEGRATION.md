@@ -12,7 +12,7 @@ Synchronize the exact owner-supplied October 3 Inner Child Substack source, make
 
 ## Source preservation
 
-The exact unedited owner capture and deterministic visible-text projection are retained separately from the edited r2 source. The source-sync receipt in this task pins all four hashes and preserves the September 25 source as history.
+The exact unedited owner capture and deterministic visible-text projection are retained separately from the edited r3 source. The source-sync receipt in this task pins all four hashes and preserves the September 25 source as history.
 
 The guide edit is additive/minimal at article scale. The final visible-text comparison against the exact October 3 owner baseline has eight changed regions: seven insertions and one paragraph replacement/extension. Native Substack objects are not rewritten.
 
@@ -42,7 +42,7 @@ The human map visibly reflects the compiled changes through the existing node ti
 - G049-G061 cover sensation/identity verdicts, behavioral checking, social certainty tests, protective-alarm limits, psychoactive adverse history, brief relief, ERP, genuine exploration, co-regulation, consent/no, pre-session severe-reaction gating, non-blanket medication/substance caution, generalized outcome horizons, and acceptance-relief vs love/compatibility/trust.
 - Authoring projection/validation/check/maps-check: PASS.
 - Rebased focused source/fidelity/protocol suite: 33/33 PASS.
-- Guide-fidelity source binding was updated to the exact r2 source hash; isolated fidelity suite: 13/13 PASS.
+- Guide-fidelity source binding was updated to the exact r3 source hash; isolated fidelity suite: 13/13 PASS.
 - Repository audit: PASS with zero errors and the existing hosted GitHub App permission warning only.
 - `git diff --check`: PASS.
 
@@ -50,11 +50,11 @@ The human map visibly reflects the compiled changes through the existing node ti
 
 First exact-model Claude Opus 5.5 / max-effort review: FIX_REQUIRED. Its load-bearing findings were implemented, including psychoactive-history scope, consent/medical floors, co-regulation preservation, ERP/non-avoidance, heading hierarchy repair, Buddhist-source correction, amendment separation, generalized outcome horizon, and expanded regressions.
 
-Second exact-model Claude Opus 5.5 / max-effort review of the corrected r2 packet: PENDING at the time this ledger draft was written.
+Second exact-model Claude Opus 5.5 / max-effort review of the corrected r3 packet: PENDING at the time this ledger draft was written.
 
 ## Publication-support artifacts
 
-See `DELIVERY-RECEIPT.md`. The canonical v4 clipboard helper and v4 commentable diff are stored in the owner's HDD `Téléchargements` directory and are hash-bound to the final r2 archival HTML.
+See `DELIVERY-RECEIPT.md`. The canonical v4 clipboard helper and v4 commentable diff are stored in the owner's HDD `Téléchargements` directory and are hash-bound to the final r3 archival HTML.
 
 ## Boundaries
 

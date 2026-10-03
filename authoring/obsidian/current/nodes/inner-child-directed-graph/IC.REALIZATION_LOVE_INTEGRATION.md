@@ -27,7 +27,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 53c9410fd7cd8698d0a9b3de898361fd39f9dd5c8eb5c268bd82f39cc319c0e2
 base_graph_sha256: 705e3128dad34c17dac83871e9a9a0350eb97c0c53a5dee07bc43d995b651bb6
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # Keep realization, doctrine, and community answerable to lived love

@@ -25,9 +25,9 @@ regression_refs:
   - G047
   - G052
   - G059
-base_record_sha256: b650dca7006320d10ee7e1e0a698bd655fe4c8cacf9f396026a981d9e81d0773
-base_graph_sha256: c2df953667889a1a8f2a6216ef37bed8f0c6361c23ffbb90b12c7e3d7a3ae381
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+base_record_sha256: bd4e7e949b20c6e2f1acc2e26bed5507048e7fc27bb7de526cd5b28290f2a4ef
+base_graph_sha256: 56b6c779e5768764339d46718e808a66c206c9c9dc0ae3ffdc42e8c1717c4883
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # Integrate altered-state aftermath from facts toward meaning and small life changes
@@ -72,11 +72,16 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
     "forbiddenOverclaims": [
       "Do not call persistent or dangerous symptoms a normal integration process without appropriate assessment.",
       "Do not claim that one adverse psychoactive reaction proves every psychoactive substance is unsafe for that person.",
-      "Do not imply that apparent stabilization makes retesting a substance safe after a psychotic-type or persisting perceptual reaction."
+      "Do not imply that apparent stabilization makes retesting a substance safe after a psychotic-type or persisting perceptual reaction.",
+      "Do not imply that repeated psychotic-type reactions are required before a prior episode matters.",
+      "Do not advise abrupt discontinuation of prescribed medication or a substance the person is physically dependent on."
     ],
     "requiredNuance": [
       "The public bad-trips guide can provide fuller reading, but referral never replaces current safety, medical, or professional support when those are needed.",
-      "Substance-specific adverse history can change the risk-benefit judgment even when the same substance also produced experiences the person valued."
+      "Substance-specific adverse history can change the risk-benefit judgment even when the same substance also produced experiences the person valued.",
+      "One psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—is enough to gate retesting the same substance pending professional assessment; repeated episodes are not required.",
+      "Severe, current, risky, or safety-uncertain psychotic-type symptoms call for prompt professional or emergency assessment.",
+      "Caution about a psychoactive adverse reaction must not become advice to abruptly stop prescribed medication or a physically dependent substance; appropriate medical guidance may be required."
     ]
   },
   "recommendations": [

@@ -29,9 +29,9 @@ regression_refs:
   - G049
   - G054
   - G055
-base_record_sha256: 5ac116ca2c8fee13fc67f919edb6484460a42dc79a4f1e805c587aa28b24ca42
-base_graph_sha256: c2df953667889a1a8f2a6216ef37bed8f0c6361c23ffbb90b12c7e3d7a3ae381
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+base_record_sha256: a6d1b3debcdd132a2e3698b7f116f00933a6f3f634d6d1dda1f5121bc567f560
+base_graph_sha256: 56b6c779e5768764339d46718e808a66c206c9c9dc0ae3ffdc42e8c1717c4883
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # Separate inner experience from interpretation before routing
@@ -55,7 +55,8 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
   "avoid": [
     "Do not convert an internal part, compulsion, urge, thought loop, or somatic pattern into an entity claim without the user's evidence.",
     "Do not manufacture a part when an ordinary thought, practical problem, or maintenance loop is the simpler sufficient model.",
-    "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen."
+    "Do not decide which transient thought or sensation is the 'real' one for the person, and do not become a reassurance device for certainty that the next fluctuation will reopen.",
+    "Do not dismiss genuine attraction, orientation, gender identity, or another meaningful self-experience as merely intrusive or 'not the real you' because it is unwanted, stigmatized, confusing, or conflicts with personal or community values."
   ],
   "defaultQuestion": "Does this behave more like a coherent inner position, an urge or compulsion, or the same thought loop running again without new output?",
   "effects": {
@@ -65,7 +66,9 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
       "Do not claim that every internal influence is an inner child, Protector, trauma memory, or psychiatric symptom.",
       "Do not claim that involuntary intrusive content establishes identity, intention or endorsement.",
       "Do not call a transient thought, feeling or sensation the person's true state merely because it is vivid or distressing.",
-      "Do not claim that ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is checking merely because certainty is unavailable."
+      "Do not claim that ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is checking merely because certainty is unavailable.",
+      "Do not claim that genuine attraction, orientation, or gender identity is merely intrusive or unreal because it is unwanted, stigmatized, confusing, or value-conflicting.",
+      "Do not steer the person toward or away from any sexual orientation or gender identity under the guise of distinguishing intrusive content from identity."
     ],
     "requiredNuance": [
       "Internal influence is a route into the existing inner-child, somatic, and metacognitive architecture, not a new modality department.",

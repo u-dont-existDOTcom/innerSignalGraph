@@ -5,9 +5,9 @@
   "sources": [
     {
       "id": "inner-child-guide",
-      "version": "owner-latest-humanized-2026-10-03-r2",
-      "file": "inner-child-guide-2026-10-03-r2.txt",
-      "sha256": "cbd4cac90a10cb31cc2b8a9291bd53963a69e729dc22d5e7b3227f3bddbc414b",
+      "version": "owner-latest-humanized-2026-10-03-r3",
+      "file": "inner-child-guide-2026-10-03-r3.txt",
+      "sha256": "3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb",
       "role": "primary-framework",
       "format": "text"
     },
@@ -38,7 +38,7 @@
     },
     {
       "id": "owner-amendments",
-      "version": "2026-10-03-certainty-authenticity-r2",
+      "version": "2026-10-03-certainty-authenticity-r3",
       "file": "owner-amendments.json",
       "role": "owner-approved-extension",
       "format": "json"
@@ -52,7 +52,7 @@
       "format": "json"
     }
   ],
-  "notes": "The active inner-child article is the owner-supplied 2026-10-03 Substack editor capture plus the owner-authorized 2026-10-03 certainty/authenticity refinement. The exact unedited owner capture remains preserved at guides/source-captures/inner-child-guide-2026-10-03.substack.html (SHA-256 3a61bb2aa6aa9ff1ec35efbce8077430a2432e1908f16a8e55153454b56ec867). The edited archival source is guides/source-captures/inner-child-guide-2026-10-03-r2.substack.html (SHA-256 49efd4ef0350e0bd575104ff6382cab030db0014afa136b643e4ead6758221ad); its active visible-text projection is guides/inner-child-guide-2026-10-03-r2.txt. Earlier source snapshots remain retained. Source synchronization and development-main graph changes do not themselves install a Guide Packet or promote stable.",
+  "notes": "The active inner-child article is the owner-supplied 2026-10-03 Substack editor capture plus the owner-authorized 2026-10-03 certainty/authenticity refinement after two independent Opus safety reviews. The exact unedited owner capture remains preserved at guides/source-captures/inner-child-guide-2026-10-03.substack.html (SHA-256 3a61bb2aa6aa9ff1ec35efbce8077430a2432e1908f16a8e55153454b56ec867). The active edited archival source is guides/source-captures/inner-child-guide-2026-10-03-r3.substack.html (SHA-256 c8138b47ff38de516d73545c7696642e28adc841a79a8fe2842e1407c9fbd6b6); its visible-text projection is guides/inner-child-guide-2026-10-03-r3.txt. Earlier source snapshots, including the rejected r2 review candidate, remain retained. Source synchronization and development-main graph changes do not themselves install a Guide Packet or promote stable.",
   "sourceHistory": [
     {
       "id": "inner-child-guide",
@@ -83,6 +83,12 @@
       "version": "owner-supplied-2026-10-03-before-current-edit",
       "file": "inner-child-guide-2026-10-03.txt",
       "sha256": "925b056aeb7a9adc882952608388587c420c6eb09418722f676505dc35f25e90"
+    },
+    {
+      "id": "inner-child-guide",
+      "version": "owner-latest-humanized-2026-10-03-r2",
+      "file": "inner-child-guide-2026-10-03-r2.txt",
+      "sha256": "cbd4cac90a10cb31cc2b8a9291bd53963a69e729dc22d5e7b3227f3bddbc414b"
     }
   ]
 }

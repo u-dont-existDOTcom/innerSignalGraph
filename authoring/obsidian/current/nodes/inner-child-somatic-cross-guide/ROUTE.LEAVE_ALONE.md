@@ -30,9 +30,9 @@ regression_refs:
   - G050
   - G054
   - G055
-base_record_sha256: d227d62e6f7ca2c663a74df6bbaa785890a1b03e9f13b905a24ae5ba0bfeda13
-base_graph_sha256: c2df953667889a1a8f2a6216ef37bed8f0c6361c23ffbb90b12c7e3d7a3ae381
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+base_record_sha256: f316befa93de3b7a0079ae76cfcc3796ad6f2ff76ccf718664730a807b52cfc7
+base_graph_sha256: 56b6c779e5768764339d46718e808a66c206c9c9dc0ae3ffdc42e8c1717c4883
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # Leave certainty-checking loops unanswered and re-enter ordinary life
@@ -56,7 +56,8 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
   "avoid": [
     "Do not call thought suppression, denial, emotional numbing, or ignoring a medical, safety, relational, or practical problem 'leaving it alone'.",
     "Do not treat reduced attention to symptoms as proof that the underlying condition is cured.",
-    "Do not answer a checking loop by declaring which transient sensation is the person's true state, and do not use another person as a diagnostic instrument for a question that the loop will simply reopen."
+    "Do not answer a checking loop by declaring which transient sensation is the person's true state, and do not use another person as a diagnostic instrument for a question that the loop will simply reopen.",
+    "Do not use ERP or anti-avoidance language to override consent, continue touch or sex the person wants to stop, remain in concrete danger, or skip evaluation of a possible medical red flag."
   ],
   "defaultQuestion": "",
   "effects": {
@@ -71,7 +72,8 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
     ],
     "forbiddenOverclaims": [
       "Do not claim that rumination or attention caused all symptoms, or that every persistent symptom should simply be ignored.",
-      "Do not claim that completing a date, sexual encounter, exposure or other test proves identity, attraction, normality, safety, worth or certainty."
+      "Do not claim that completing a date, sexual encounter, exposure or other test proves identity, attraction, normality, safety, worth or certainty.",
+      "Do not claim that ERP, exposure, or anti-avoidance requires continuing touch or sex after the person wants to stop, staying in concrete danger, or skipping medical evaluation of a possible red flag."
     ],
     "requiredNuance": [
       "For some people, the imagined need to keep finding or performing therapy can itself become part of the maintaining attention loop.",
@@ -80,7 +82,8 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
       "Leaving the checking operation alone does not require social withdrawal; ordinary reciprocal contact and values-based action can continue without turning them into tests.",
       "Genuine exploration of sexuality, orientation, gender, attraction or relationship fit is not checking merely because certainty is unavailable.",
       "Exposure or clinician-guided ERP can continue when appropriate; leave the certainty-checking operation unanswered rather than avoiding the relevant situation.",
-      "Exposure or clinician-guided ERP remains compatible with this route: keep useful exposure when appropriate and drop reassurance, covert testing and repeated verdict-seeking rather than avoiding the situation."
+      "Exposure or clinician-guided ERP remains compatible with this route: keep useful exposure when appropriate and drop reassurance, covert testing and repeated verdict-seeking rather than avoiding the situation.",
+      "Exposure never requires continuing touch or sex the person wants to stop, staying in concrete danger, or skipping a check of a possible medical red flag."
     ]
   },
   "recommendations": [

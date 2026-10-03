@@ -26,9 +26,9 @@ regression_refs:
   - G014
   - G033
   - G060
-base_record_sha256: 5dd5a785995a0df6dcbd48e480c6f5df5b2b6688dbcdc1d90a2981f753b055e5
-base_graph_sha256: c2df953667889a1a8f2a6216ef37bed8f0c6361c23ffbb90b12c7e3d7a3ae381
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+base_record_sha256: b63626c2c67d82dbf821fa306dff28ddf7cd3a311c8aae138b6ca9313642496c
+base_graph_sha256: 56b6c779e5768764339d46718e808a66c206c9c9dc0ae3ffdc42e8c1717c4883
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # Act on the concrete problem
@@ -75,7 +75,8 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
     "Do not use action as a way to deny clearly unresolved inner material that continues to drive the problem.",
     "Do not treat noncompletion as lack of motivation or a protective part before examining practical barriers; do not treat task completion or immediate mood improvement as the sole evidence of benefit.",
     "Do not call a social, romantic or sexual action healthy exposure merely because it is difficult when its main function is reassurance, self-testing or using another person to regulate uncertainty.",
-    "Do not turn uncertainty-driven avoidance into the remedy for a checking loop when safe, useful exposure or ordinary contact remains appropriate."
+    "Do not turn uncertainty-driven avoidance into the remedy for a checking loop when safe, useful exposure or ordinary contact remains appropriate.",
+    "Do not use exposure or anti-avoidance framing to override consent, continue touch or sex the person wants to stop, stay in concrete danger, or skip medical evaluation."
   ],
   "defaultQuestion": "What is the next observable action that could actually change this situation?",
   "effects": {
@@ -83,13 +84,15 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
     "deferNodes": [],
     "forbiddenOverclaims": [
       "Do not reduce every emotional problem to productivity or behavioral execution.",
-      "Do not claim that brief relief from an action establishes durable improvement, resolution, or a causal mechanism."
+      "Do not claim that brief relief from an action establishes durable improvement, resolution, or a causal mechanism.",
+      "Do not claim that useful exposure requires continuing touch or sex after the person wants to stop, staying in concrete danger, or skipping a medical check of a possible red flag."
     ],
     "requiredNuance": [
       "A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job.",
       "Outward action is judged by its function and consequences, not by courage or exposure intensity alone.",
       "Clinician-guided ERP or other useful exposure is compatible with this route: keep the exposure when appropriate and drop the checking function.",
-      "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking."
+      "Outcome tracking should be brief and bounded so measurement itself does not become reassurance or symptom checking.",
+      "Consent, immediate safety, and possible medical red flags set a floor beneath exposure: useful exposure never requires continuing touch or sex after a no, staying in concrete danger, or skipping needed medical evaluation."
     ]
   },
   "questionPolicy": {

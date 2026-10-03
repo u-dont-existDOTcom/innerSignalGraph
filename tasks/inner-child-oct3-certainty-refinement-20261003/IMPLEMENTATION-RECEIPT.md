@@ -16,13 +16,13 @@ Status: task-branch implementation pending final merge gates
   - SHA-256: `3a61bb2aa6aa9ff1ec35efbce8077430a2432e1908f16a8e55153454b56ec867`
 - Exact synchronized Oct 3 text projection: `guides/inner-child-guide-2026-10-03.txt`
   - SHA-256: `925b056aeb7a9adc882952608388587c420c6eb09418722f676505dc35f25e90`
-- Active edited source: `guides/source-captures/inner-child-guide-2026-10-03-r2.substack.html`
-  - SHA-256: `49efd4ef0350e0bd575104ff6382cab030db0014afa136b643e4ead6758221ad`
-- Active edited text projection: `guides/inner-child-guide-2026-10-03-r2.txt`
-  - SHA-256: `cbd4cac90a10cb31cc2b8a9291bd53963a69e729dc22d5e7b3227f3bddbc414b`
+- Active edited source: `guides/source-captures/inner-child-guide-2026-10-03-r3.substack.html`
+  - SHA-256: `c8138b47ff38de516d73545c7696642e28adc841a79a8fe2842e1407c9fbd6b6`
+- Active edited text projection: `guides/inner-child-guide-2026-10-03-r3.txt`
+  - SHA-256: `3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb`
 - September 25 and September 7 sources remain byte-pinned as historical sources.
 
-The r2 prose delta is intentionally small: 8 changed regions in the text projection. Native Substack objects were inventoried before and after; all 10 retained identical type/order/content signatures: 4 images, 2 native uploaded videos, 2 Substack video-post embeds, and 2 YouTube embeds.
+The r3 prose delta is intentionally small: 8 changed regions in the text projection. Native Substack objects were inventoried before and after; all 10 retained identical type/order/content signatures: 4 images, 2 native uploaded videos, 2 Substack video-post embeds, and 2 YouTube embeds.
 
 ## Generalized semantics implemented
 
@@ -90,7 +90,7 @@ The guide-graph corpus now has 45/45 passing cases. New cases G049-G061 cover:
 - Authoring project / validate / check / maps-check: PASS.
 - Therapy lesson verification: 5/5 PASS.
 - Impacted source/graph/projection/protocol/benchmark/context slice: 59/59 PASS.
-- Guide fidelity isolated: 13/13 PASS after rebinding fidelity cases to the active r2 source.
+- Guide fidelity isolated: 13/13 PASS after rebinding fidelity cases to the active r3 source.
 - Git diff whitespace check: PASS.
 - Native Substack object inventory: exact signatures preserved for all 10 objects.
 
@@ -98,8 +98,8 @@ The guide-graph corpus now has 45/45 passing cases. New cases G049-G061 cover:
 
 Saved in the owner's HDD Downloads directory:
 
-- `Inner-Child-Guide-Oct3-r2-Substack-Helper.html`
-  - SHA-256: `e7c2750bebaf4a00a7fd7d1503fe5e707979d4012d1387a42079a6475440458b`
+- `Inner-Child-Guide-Oct3-r3-Substack-Helper.html`
+  - SHA-256: `4d3336fd84eee0c6ba91d039a90a7097ba5301f2c0c7185382cfc4ff9ab6aaa0`
   - Canonical helper: `joel-substack-transfer-helper-v4`
   - Static source/conversion verification: PASS
   - Headless clipboard interaction: PASS for ClipboardItem/Blob and execCommand rich-DOM fallback
@@ -107,14 +107,14 @@ Saved in the owner's HDD Downloads directory:
   - 2 native uploaded videos remain explicit manual insertion steps
   - Final Opera-to-Substack reconstruction is intentionally not claimed by static/browser tests
 
-- `Inner-Child-Guide-Oct3-r2-Commentable-Diff.html`
-  - SHA-256: `4a36458192bf62119c38212dd5019976979784afba83cfd3a3522b6d42795071`
-  - 12 changed-passages-only review rows
+- `Inner-Child-Guide-Oct3-r3-Commentable-Diff.html`
+  - SHA-256: `972885fe70a713a928e9c47c6ae2d1fa9991e1b35b20c30c57b6f06b3934e75a`
+  - 13 changed-passages-only review rows
   - Exact local-file Chromium regression: PASS for comments, selected-text attachment, Keep/Remove/Brainstorm, sliders, reasoning, search, copy/export, reload persistence, and no console/page errors
 
 ## Independent review history
 
-First exact Claude Opus 5.5 max/safe-mode review: FIX_REQUIRED. Its load-bearing findings were implemented in r2, including consent/safety floors, preserved co-regulation, ERP compatibility, stronger psychoactive adverse-history handling, corrected Buddhist framing, split amendments, and broader outcome-horizon routing.
+First exact Claude Opus 5.5 max/safe-mode review: FIX_REQUIRED. Its load-bearing findings were implemented in r3, including consent/safety floors, preserved co-regulation, ERP compatibility, stronger psychoactive adverse-history handling, corrected Buddhist framing, split amendments, and broader outcome-horizon routing.
 
 Final exact Opus 5.5 review: pending at the moment this receipt was drafted; record the final verdict before merge.
 

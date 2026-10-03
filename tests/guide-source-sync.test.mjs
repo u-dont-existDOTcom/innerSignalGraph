@@ -21,15 +21,15 @@ test("historical September 25 source remains pinned byte for byte", async () => 
   assert.equal(hash(text), "2a743d9ec9f45ba12ce78f29f64eef84dfe930589281992ad530b01f0f2969a1");
 });
 
-test("current October 3 r2 source preserves the exact owner baseline and active edited bytes", async () => {
+test("current October 3 r3 source preserves the exact owner baseline and active edited bytes", async () => {
   const result = await verifyOct3SourceSync();
   assert.equal(result.status, "PASS");
   assert.equal(result.sourceHistoryPreserved, true);
-  assert.equal(result.semanticStatus, "owner-approved-certainty-authenticity-refinement-r2");
+  assert.equal(result.semanticStatus, "owner-approved-certainty-authenticity-refinement-r3");
 });
 
 test("current source preservation proof rejects both loss and unapproved extra wording", async () => {
-  const text = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-03-r2.txt", import.meta.url), "utf8");
+  const text = await fs.readFile(new URL("../guides/inner-child-guide-2026-10-03-r3.txt", import.meta.url), "utf8");
   await assert.rejects(() => verifyOct3SourceSync({ candidateText: text.slice(1) }));
   await assert.rejects(() => verifyOct3SourceSync({ candidateText: text + "\nUnapproved extra claim." }));
 });

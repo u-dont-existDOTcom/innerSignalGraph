@@ -29,9 +29,9 @@ regression_refs:
   - G050
   - G056
   - G061
-base_record_sha256: b9842371f78ecc6470d6fcef52051d386d01feac5093cfce5e19f1706ea72790
-base_graph_sha256: c2df953667889a1a8f2a6216ef37bed8f0c6361c23ffbb90b12c7e3d7a3ae381
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+base_record_sha256: dcbb8d0f454eea54bd6b152fc2e485e09dd80cc3e431bb924fe516a003f571b2
+base_graph_sha256: 56b6c779e5768764339d46718e808a66c206c9c9dc0ae3ffdc42e8c1717c4883
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -107,7 +107,8 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
       "Do not treat disagreement, emotional intensity, one mistake, a diagnosis, or the user's disappointment as proof of emotional immaturity.",
       "Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character.",
       "Do not claim that seeking healthy support or mutual co-regulation makes another person a reassurance machine or invalidates the relationship.",
-      "Do not claim that relief from acceptance or nonjudgment proves romantic love, compatibility, or earned trust."
+      "Do not claim that relief from acceptance or nonjudgment proves romantic love, compatibility, or earned trust.",
+      "Do not claim that social-anxiety or exposure practice overrides consent, requires sexual or romantic contact, or requires disclosure in an unsafe relationship."
     ],
     "requiredNuance": [
       "Relational capacity is not motive or diagnosis. The relevant evidence is what the person has demonstrated in the domain at issue, especially under disagreement, limits, accountability, and repair.",

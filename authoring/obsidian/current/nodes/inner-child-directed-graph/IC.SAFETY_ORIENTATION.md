@@ -23,7 +23,7 @@ regression_refs:
   - G035
 base_record_sha256: b1e65d2504260a9a984e57eccfe96057e0116ab9e8b7aeba5957e00552b94344
 base_graph_sha256: 705e3128dad34c17dac83871e9a9a0350eb97c0c53a5dee07bc43d995b651bb6
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # Outside safety and present orientation first

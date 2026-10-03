@@ -7,23 +7,23 @@ source_id: IC.REGULATION_BEFORE_DIALOGUE
 guide_id: inner-child-guide
 heading: Regulation May Come Before Dialogue
 source_role: primary-framework
-source_hash: cbd4cac90a10cb31cc2b8a9291bd53963a69e729dc22d5e7b3227f3bddbc414b
-section_hash: dbb45f7585dbd26d61d34702a086a1b976fc8843418df6476ce9eca8fa4b7cf1
+source_hash: 3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb
+section_hash: d12568f2aa236ada602d32317edf3283b09ec9893972dd4f32b5daf910ef2daa
 locator_kind: text-lines
 cited_by_node_ids:
   - IC.MUSIC_EMOTIONAL_ACCESS_STOP
   - IC.SAFETY_ORIENTATION
   - IC.SOLAR_PLEXUS_RELAXATION
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # Regulation May Come Before Dialogue
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-03-r2.txt`
+Authority path: `guides/inner-child-guide-2026-10-03-r3.txt`
 
-Locator: Lines 89–132
+Locator: Lines 89–134
 
 ```text
 Regulation May Come Before Dialogue

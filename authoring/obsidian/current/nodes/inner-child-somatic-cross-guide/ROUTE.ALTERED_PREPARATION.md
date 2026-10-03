@@ -22,9 +22,9 @@ source_refs:
 regression_refs:
   - G048
   - G058
-base_record_sha256: d415d28b026f7169f104175b84a3db7da50667b98764aa8051369fb1bbefa9f5
-base_graph_sha256: c2df953667889a1a8f2a6216ef37bed8f0c6361c23ffbb90b12c7e3d7a3ae381
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+base_record_sha256: babc18992ccee78e469741a6e26d85edbd528e71c24a91985ce5cc95b891f7b3
+base_graph_sha256: 56b6c779e5768764339d46718e808a66c206c9c9dc0ae3ffdc42e8c1717c4883
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # Give planned altered-state work a beginning, support plan, and ending
@@ -60,17 +60,23 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
   "avoid": [
     "Do not use ceremony planning once an acute crisis has started; return to acute triage instead.",
     "Do not make a sitter, playlist, spiritual frame, or expected insight into an authority the person cannot stop or change.",
-    "Do not treat feeling stable now as proof that retesting is safe after a psychotic-type or persisting perceptual reaction, and do not convert that history into a blanket anti-drug rule."
+    "Do not treat feeling stable now as proof that retesting is safe after a psychotic-type or persisting perceptual reaction, and do not convert that history into a blanket anti-drug rule.",
+    "Do not advise abrupt discontinuation of prescribed medication or anything the person is physically dependent on; stopping may require medical guidance."
   ],
   "defaultQuestion": "",
   "effects": {
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [
-      "Do not claim that a different psychoactive is automatically safe merely because the prior severe reaction involved another substance."
+      "Do not claim that a different psychoactive is automatically safe merely because the prior severe reaction involved another substance.",
+      "Do not imply that repeated psychotic-type reactions are required before a prior episode matters for retest planning.",
+      "Do not advise abrupt discontinuation of prescribed medication or a substance the person is physically dependent on."
     ],
     "requiredNuance": [
-      "Psychoactive risk is informed by both substance-specific history and person-level vulnerability; the response remains proportional rather than universally prohibitive."
+      "Psychoactive risk is informed by both substance-specific history and person-level vulnerability; the response remains proportional rather than universally prohibitive.",
+      "One psychotic-type reaction—voices, paranoia, major loss of reality testing, or a perceptual disturbance persisting beyond expected intoxication—is enough to gate retesting the same substance pending professional assessment; repeated episodes are not required.",
+      "Severe, current, risky, or safety-uncertain psychotic-type symptoms call for prompt professional or emergency assessment rather than another altered-state experiment.",
+      "The altered-state gate must not be implemented through abrupt stopping of prescribed medication or a physically dependent substance; appropriate medical guidance may be required."
     ]
   },
   "recommendations": [
@@ -79,7 +85,8 @@ projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceced
     "Plan closure, food and hydration when safe, sleep, and protected integration time rather than leaving the session psychologically open-ended.",
     "Familiarize the person soberly with any relevant inner-child, guard, Nurturer, Protector, or Guide map and practice at least one small adult function, so newly accessible material has somewhere to land without requiring belief in advance.",
     "Choose a simple way to preserve what becomes newly real or accessible and name what useful sober carryover would look like afterward; this is a container for whatever happens, not a demand for a breakthrough.",
-    "Before planning another altered-state session, ask about prior voices, paranoia, major loss of reality testing, persistent perceptual disturbance, or repeated destabilizing confusion/dissociation from psychoactive substances; one psychotic-type or persisting perceptual reaction warrants professional assessment before retesting that substance and should inform consideration of other psychoactives that can disturb reality testing."
+    "Before planning another altered-state session, ask about prior voices, paranoia, major loss of reality testing, persistent perceptual disturbance, or repeated destabilizing confusion/dissociation from psychoactive substances; one psychotic-type or persisting perceptual reaction warrants professional assessment before retesting that substance and should inform consideration of other psychoactives that can disturb reality testing.",
+    "If psychotic-type or perceptual symptoms are current, severe, risky, or make safety uncertain, prioritize prompt professional or emergency assessment over planning another altered-state session."
   ],
   "successSignals": [
     "The session has clear safety, consent, stopping, closure, and integration boundaries before altered-state work begins."

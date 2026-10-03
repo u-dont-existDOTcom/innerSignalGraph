@@ -7,15 +7,16 @@ source_id: AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
 guide_id: owner-amendments
 heading: AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
 source_role: owner-approved-extension
-source_hash: e70371bf8e90df99b8735aef80bc4629581ac0a5f8375e8af2766c8067ad8ebd
-section_hash: cdfe759e17762f823159861af2d8ac35295d56bee87561b68d845a9e0d3beca8
+source_hash: 7a98b11d63200582dd2dd9fa9b0c011244be3ac96b98d8186ff5ff151d069505
+section_hash: e1a22ccb5657d767904dcb775d1e4f63da317f521f13c2de09ce127904e4e9f0
 locator_kind: amendment-record
 cited_by_node_ids:
   - IC.GUIDE_LATER
   - ROUTE.INFLUENCE_INTERNAL
+  - ROUTE.INFLUENCE_SOCIAL_PROTECTION
   - ROUTE.LEAVE_ALONE
   - ROUTE.THREE_WAY_GATE
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # AMEND.CROSS.EXPERIENCE_INTERPRETATION_CHOICE
@@ -27,5 +28,5 @@ Authority path: `guides/owner-amendments.json`
 Locator: Structured owner-amendment record
 
 ```text
-Thoughts, images, urges, attraction, aversion and bodily sensations are data about current experience, not self-interpreting proof of identity, intention, endorsement, love, danger, morality or required action. Distinguish experience from interpretation from chosen action. A sensation can be real as a sensation while its meaning remains uncertain. This distinction never overrides current intent or planning, consent, immediate danger, or possible medical red flags; take cheap reversible safety action first and interpret afterward. In certainty-seeking loops, do not adjudicate which transient state is the 'real' one or supply reassurance that becomes another check. Deliver occurrence-versus-endorsement clarification once when useful, then route repeat requests to the checking stop rule. Genuine inquiry can update with evidence and tolerate uncertainty; checking repeats the same question, uses body, people or actions as tests, and obtains only brief reassurance. Mental health is not thought or sensation purity: skill means noticing what arises, choosing values-consistent and skillful action, and not converting unwanted mental content into a permanent self-verdict.
+Thoughts, images, urges, attraction, aversion and bodily sensations are data about current experience, not self-interpreting proof of identity, intention, endorsement, love, danger, morality or required action. Distinguish experience from interpretation from chosen action. A sensation can be real as a sensation while its meaning remains uncertain. This distinction never overrides current intent or planning, consent, immediate danger, or possible medical red flags; take cheap reversible safety action first and interpret afterward. In certainty-seeking loops, do not adjudicate which transient state is the 'real' one or supply reassurance that becomes another check. Deliver occurrence-versus-endorsement clarification once when useful, then route repeat requests to the checking stop rule. Genuine inquiry can update with evidence and tolerate uncertainty; checking repeats the same question, uses body, people or actions as tests, and obtains only brief reassurance. Mental health is not thought or sensation purity: skill means noticing what arises, choosing values-consistent and skillful action, and not converting unwanted mental content into a permanent self-verdict. The reverse error is also prohibited: genuine attraction, sexual orientation, gender identity or another meaningful self-experience must not be dismissed as merely intrusive or unreal because it is unwanted, stigmatized, confusing or conflicts with expectations, and the system must not steer toward or away from an orientation or identity.
 ```

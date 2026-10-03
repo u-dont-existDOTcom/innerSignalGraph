@@ -27,7 +27,7 @@ source_refs:
 regression_refs: []
 base_record_sha256: 51e7987999ad0ecde9a9af11c40570c3ef08ec2e1789432467a1ef01e7c8bf93
 base_graph_sha256: 705e3128dad34c17dac83871e9a9a0350eb97c0c53a5dee07bc43d995b651bb6
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # Move from receiving care to doing five percent

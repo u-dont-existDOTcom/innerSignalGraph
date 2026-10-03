@@ -10,7 +10,7 @@ from_node_id: SOM.DEEP_BRAINSPOTTING
 to_node_id: SOM.MEANING_INTEGRATION
 relation: followed-by
 base_graph_sha256: e498876bf5106a5742a4b66be29c7a78a766034320bf3c5a402704aeedf6bd71
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # SOM.DEEP_BRAINSPOTTING followed-by SOM.MEANING_INTEGRATION

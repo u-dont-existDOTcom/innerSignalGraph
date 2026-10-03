@@ -36,7 +36,9 @@
     ],
     "forbiddenOverclaimPatterns": [
       "true state",
-      "identity, intention or endorsement"
+      "identity, intention or endorsement",
+      "genuine attraction, orientation, or gender identity",
+      "steer the person toward or away"
     ]
   }
 }

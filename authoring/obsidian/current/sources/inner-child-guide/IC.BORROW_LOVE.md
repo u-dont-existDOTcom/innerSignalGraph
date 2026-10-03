@@ -7,7 +7,7 @@ source_id: IC.BORROW_LOVE
 guide_id: inner-child-guide
 heading: Borrow Love—or Borrow the Perspective of Care
 source_role: primary-framework
-source_hash: cbd4cac90a10cb31cc2b8a9291bd53963a69e729dc22d5e7b3227f3bddbc414b
+source_hash: 3bbce295094b1c315112ddd831af9f54226b4e8b7b84105908ea15322526eedb
 section_hash: 6291e0210e9f4b45a0168096b63607a1875afe6cb04d58a866ccfc4703d0d7f0
 locator_kind: text-lines
 cited_by_node_ids:
@@ -16,16 +16,16 @@ cited_by_node_ids:
   - IC.DEEP_CHILD_DIALOGUE
   - IC.DEEP_LOVE_TO_CHILD
   - IC.MUSIC_EMOTIONAL_ACCESS
-projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
+projection_input_sha256: 8ad38196ad538bc21fbd5f7d847c5dd1a5f0e98d1f9238e1b16e362f45acaa85
 ---
 
 # Borrow Love—or Borrow the Perspective of Care
 
 > [!warning] Generated source-section excerpt — the referenced current-source bytes remain authoritative for the compiled graph.
 
-Authority path: `guides/inner-child-guide-2026-10-03-r2.txt`
+Authority path: `guides/inner-child-guide-2026-10-03-r3.txt`
 
-Locator: Lines 205–248
+Locator: Lines 207–250
 
 ```text
 Borrow Love—or Borrow the Perspective of Care

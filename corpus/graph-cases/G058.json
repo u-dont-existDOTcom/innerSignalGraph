@@ -18,10 +18,15 @@
   "expected": {
     "primary": "ROUTE.ALTERED_PREPARATION",
     "requiredNuancePatterns": [
-      "person-level vulnerability"
+      "person-level vulnerability",
+      "One psychotic-type reaction",
+      "prompt professional or emergency assessment",
+      "abrupt stopping of prescribed medication"
     ],
     "forbiddenOverclaimPatterns": [
-      "different psychoactive is automatically safe"
+      "different psychoactive is automatically safe",
+      "repeated psychotic-type reactions are required",
+      "abrupt discontinuation"
     ]
   }
 }

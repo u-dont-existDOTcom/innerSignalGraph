@@ -23,7 +23,14 @@
     ],
     "forbiddenOverclaimPatterns": [
       "every psychoactive substance",
-      "apparent stabilization"
+      "apparent stabilization",
+      "repeated psychotic-type reactions are required",
+      "abrupt discontinuation"
+    ],
+    "requiredNuancePatterns": [
+      "One psychotic-type reaction",
+      "prompt professional or emergency assessment",
+      "must not become advice to abruptly stop"
     ]
   }
 }
