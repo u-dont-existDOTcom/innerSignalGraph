@@ -71,6 +71,7 @@ if (${JSON.stringify(scenario)} === "session_reserve_failure" && args.at(-1).inc
 if (${JSON.stringify(scenario)} === "refuse_failure" && args.at(-1).includes("'attempt-refuse'")) failFirst("attempt-refuse", 1, 42);
 if (${JSON.stringify(scenario)} === "mark_failure" && args.at(-1).includes("'attempt-mark'")) failFirst("attempt-mark", 2, 43);
 if (${JSON.stringify(scenario)} === "mark_failure" && args.at(-1).includes("'close-unanswered'")) failFirst("close-unanswered", 1, 44);
+if (${JSON.stringify(scenario)} === "unstaged_close_failure" && args.at(-1).includes("'close-unanswered'")) failFirst("close-unanswered", 1, 44);
 if (${JSON.stringify(scenario)} === "refuse_unsaved" && args.at(-1).includes("'attempt-refuse'")) {
   // The first failed refusal also leaves the laptop unable to save the hold; the second restores that.
   const pending = path.join(${JSON.stringify(workDir)}, "pending-refusals"), moved = pending + ".moved";
@@ -132,6 +133,7 @@ const config = JSON.parse(fs.readFileSync(args[args.indexOf("--mcp-config") + 1]
 const workId = args[args.indexOf("-p") + 1].match(/item ([^ .]+)/)[1];
 fs.writeFileSync(${JSON.stringify(trace)}, JSON.stringify({ args, env: Object.keys(process.env).sort(), config }));
 let scenario = ${JSON.stringify(scenario)};
+if (scenario === "unstaged_close_failure") scenario = "nothing_staged";
 if (scenario === "isolation_then_success") {
   const marker = ${JSON.stringify(path.join(laptop, "isolation-count"))};
   if (!fs.existsSync(marker)) { fs.writeFileSync(marker, "1"); scenario = "tools_extra"; }
@@ -248,6 +250,7 @@ else {
     console.log(JSON.stringify({ type: "assistant", message: { model: "claude-opus-5-5", content: [
       { type: "tool_use", id: "tool-" + index, name: "mcp__journal__" + name,
         input: { work_id: name === "get_journal_work_packet" ? requestId : workId } }] } }));
+    if (scenario === "late_hook" && index === 0) console.log(JSON.stringify({ type: "hook_started", hook_name: "synthetic" }));
     if (replies[index]) {
       const content = name === "get_journal_work_packet" && scenario === "packet_truncated"
         ? "SYNTHETIC_PREVIEW" : replies[index].result.content;
@@ -609,6 +612,33 @@ test("a run that names another item is stopped, and its scoped server reads noth
   await runJournalWork(["attempt-status", "--work-id", other.work_id], { environment: { INNER_SIGNAL_JOURNAL_WORK_EXCHANGE_ROOT: f.root },
     stdout: { write: (value) => { status += value; } } });
   assert.equal(JSON.parse(status).status, "none");
+});
+
+test("an isolation violation after model reach closes the item and stops the worker", async (t) => {
+  const f = await fixture(t, "late_hook");
+  for (const operationKey of ["job:synthetic-late-hook-first", "job:synthetic-late-hook-second"]) {
+    await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  }
+  assert.equal(await runJournalClaudeWorker(f.args.map((value) => value === "1" ? "2" : value), { environment: f.environment }),
+    CLAUDE_SETUP_REFUSED_EXIT_CODE);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["isolation_refused"]);
+  assert.equal(logs[0].model_reached, true);
+  assert.equal(await fs.readFile(path.join(f.laptop, "claude-starts"), "utf8"), "x", "no further item ran under the bad setup");
+  const statuses = await Promise.all(["job:synthetic-late-hook-first", "job:synthetic-late-hook-second"]
+    .map(async (operationKey) => (await f.port.getCompletion(operationKey)).status));
+  assert.deepEqual(statuses.sort(), ["exhausted", "unknown"]);
+});
+
+test("a failed close of a spent item is retried before the worker takes another item", async (t) => {
+  const f = await fixture(t, "unstaged_close_failure");
+  const operationKey = "job:synthetic-close-retry";
+  await assert.rejects(f.port.invoke({ ...call(operationKey), tier: "hardest" }), { code: "COMPLETION_UNKNOWN" });
+  assert.equal(await runJournalClaudeWorker(f.args, { environment: f.environment }), 0);
+  const logs = (await fs.readFile(f.log, "utf8")).trim().split("\n").map(JSON.parse);
+  assert.deepEqual(logs.map((item) => item.outcome), ["item_close_failed", "rejected:STAGE_MISSING"]);
+  assert.equal((await f.port.getCompletion(operationKey)).status, "exhausted", "the retried close wrote the tombstone");
+  await assertWorkDirClean(f.workDir);
 });
 
 test("a run whose preflight outlasts its limit releases the reservation without starting Claude", async (t) => {

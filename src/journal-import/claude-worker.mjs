@@ -605,10 +605,9 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
       const recorded = kind === "refuse" ? status?.status === "isolation_refused" : status?.model_reached === true;
       if (status?.status !== "none" && !recorded) return false;
     }
-    if (kind === "spend") {
-      try { await host("close-unanswered", ["--work-id", hold.work_id]); }
-      catch { /* The attempt is recorded as spent; a later worker closes the stale item. */ }
-    }
+    // The item's exhausted tombstone is part of a spend: a failed close keeps the hold for another try (closing an
+    // item that already has an answer or tombstone succeeds without change).
+    if (kind === "spend") await host("close-unanswered", ["--work-id", hold.work_id]);
     return true;
   }
   async function keepHold(kind, hold) {
@@ -844,12 +843,20 @@ export async function runJournalClaudeWorker(argv, { environment = process.env, 
         try { await host("stage-remove", ["--stage-dir", stageDir]); }
         catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "stage_remove_failed" }); }
       }
-      const unreachedIsolation = outcome === "isolation_refused" && !reachedModel;
-      if (unreachedIsolation) setupRefused = true;
-      else if (["already_attempted", "isolation_refused", "rejected:PACKET_TOO_LARGE"].includes(outcome)
-        || (reachedModel && !["answered", "already_answered"].includes(outcome))) {
+      // Any isolation violation stops the worker. Whether the model was reached decides only the item's fate: a
+      // refusal before the model keeps a clearable hold, one after it closes the item as spent.
+      const isolation = outcome === "isolation_refused";
+      if (isolation) setupRefused = true;
+      if (!(isolation && !reachedModel) && (["already_attempted", "isolation_refused", "rejected:PACKET_TOO_LARGE"].includes(outcome)
+        || (reachedModel && !["answered", "already_answered"].includes(outcome)))) {
         try { await host("close-unanswered", ["--work-id", record.work_id]); }
-        catch { await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "item_close_failed" }); }
+        catch {
+          await log({ at: new Date().toISOString(), work_id: record.work_id, outcome: "item_close_failed" });
+          // A spent attempt's close is retried (with its mark) before the worker takes another item.
+          if (claimed && reachedModel && !markFailed) {
+            await keepHold("spend", { work_id: record.work_id, attempt_identity: record.attempt_identity, claim });
+          }
+        }
       }
       await log({ at: new Date().toISOString(), work_id: record.work_id, role: record.role,
         model: record.model, effort: record.effort, outcome, duration_ms: Date.now() - started,
