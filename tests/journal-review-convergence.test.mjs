@@ -1380,3 +1380,31 @@ test("withholdFlaggedItems: time evidence follows the graph's precedence when ID
     reviews: [{ review: review({ assessments: [flag("x", "later")] }) }] });
   assert.deepEqual(both.extraction.assertions.find((item) => item.local_id === "a4").event_time.evidence_ids, [U1]);
 });
+
+test("scopeReviewAfterRepair: a repair the earlier review asked for stays asked for until the item is reassessed", () => {
+  const earlier = review({ assessments: [ok("a2", "earlier")], repairs: [repairFor("a2")] });
+  const omitted = scope({ review: review({ assessments: [ok("a1", "later")] }), previousReview: earlier, extraction: story() });
+  assert.deepEqual(omitted.review.proposed_repairs.map((repair) => repair.target_id), ["a2"]);
+  assert.equal(omitted.review.status, "repair_required");
+  const reassessed = scope({ review: review({ assessments: [ok("a2", "later")] }), previousReview: earlier, extraction: story() });
+  assert.deepEqual(reassessed.review.proposed_repairs, []);
+  assert.equal(reassessed.review.status, "sufficient_for_stated_scope");
+  const removed = scope({ review: review({ assessments: [] }), previousReview: earlier,
+    extraction: story(without(storyItems(), "assertions", "a2")) });
+  assert.deepEqual(removed.review.proposed_repairs, [], "the request goes with the removed item");
+});
+
+test("reviewAfterWithholding: a reference item the review still proposes to repair scores as distorted", () => {
+  const audit = review({ role: "fidelity_auditor", assessments: [ok("ref-1", "later"), ok("ref-2", "later")],
+    repairs: [repairFor("ref-2")] });
+  const result = reviewAfterWithholding({ review: audit, withheldTargets: new Set(), candidateTargets: new Set() });
+  validateJournalSchema("review-result", result);
+  assert.equal(result.assessments.find((item) => item.target_id === "ref-2").finding_type, "other");
+  assert.equal(result.assessments.find((item) => item.target_id === "ref-1").finding_type, "none");
+  assert.equal(result.status, "repair_required");
+  const score = scoreReferenceReview({ referenceResult: referenceResult(2, ["ref-2"]), reviewResult: result });
+  assert.equal(score.reference_counts.preserved, 1);
+  assert.equal(score.reference_counts.distorted, 1);
+  assert.equal(score.critical_miss_count, 1);
+  assert.equal(referenceScorePasses(score), false);
+});

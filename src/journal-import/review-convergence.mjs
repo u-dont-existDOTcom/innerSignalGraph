@@ -160,7 +160,8 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
   // omission with new items, which the review assesses under their own IDs, so it stays open only if the review
   // names that target again. (The fidelity score already counts a reference item the review leaves out as
   // unassessed.)
-  const mentioned = new Set([...review.assessments.map((assessment) => assessment.target_id), ...review.unassessed_ids]);
+  const mentioned = new Set([...review.assessments.map((assessment) => assessment.target_id), ...review.unassessed_ids,
+    ...review.proposed_repairs.map((repair) => repair.target_id)]);
   const currentTarget = new Map();
   for (const [target, entries] of byTarget) {
     for (const entry of entries) if (entry.previousTarget !== null) currentTarget.set(entry.previousTarget, target);
@@ -179,6 +180,14 @@ export function scopeReviewAfterRepair({ review, previousReview, previousExtract
     unassessed.push(target);
   }
   const proposedRepairs = review.proposed_repairs.filter((repair) => place(repair.target_id).inScope);
+  // A repair the earlier review asked for on an item that is still there stays asked for until the new review
+  // reassesses that item, like its findings.
+  for (const prior of previousReview.proposed_repairs) {
+    const target = currentTarget.get(prior.target_id) ?? prior.target_id;
+    if (mentioned.has(target) || proposedRepairs.some((repair) => repair.target_id === target)
+      || !stillThere(prior.target_id)) continue;
+    proposedRepairs.push({ ...prior, target_id: target });
+  }
   const open = assessments.some(assessmentIsFinding) || unassessed.length > 0 || proposedRepairs.length > 0;
   // An incomplete review that names nothing it left can't be placed, so it stays incomplete.
   const unplacedIncomplete = review.status === "incomplete" && review.unassessed_ids.length === 0;
@@ -291,21 +300,29 @@ export function withholdFlaggedItems({ extraction, reviews, unitIds }) {
   };
 }
 
-// A fidelity review after withholding: withheld candidates leave it, and a reference item it counted preserved
-// only through withheld candidates now counts omitted. A preserved item with no candidate evidence keeps its
-// verdict, since nothing withheld can be shown to have carried it.
+// A fidelity review after withholding: withheld candidates leave it, a reference item it counted preserved only
+// through withheld candidates now counts omitted, and one it still proposes to repair counts distorted. A preserved
+// item with no candidate evidence and no proposal keeps its verdict, since nothing withheld can be shown to have
+// carried it.
 export function reviewAfterWithholding({ review, withheldTargets, candidateTargets }) {
+  const proposedRepairs = review.proposed_repairs.filter((repair) => !withheldTargets.has(repair.target_id));
+  // A reference item the review still proposes to repair isn't kept as is: it scores as distorted.
+  const stillProposed = new Set(proposedRepairs.map((repair) => repair.target_id));
   const assessments = review.assessments.filter((assessment) => !withheldTargets.has(assessment.target_id))
     .map((assessment) => {
       if (candidateTargets.has(assessment.target_id) || assessment.outcome !== "preserved") return assessment;
       const support = assessment.evidence_ids.filter((id) => candidateTargets.has(id));
-      if (!support.length || !support.every((id) => withheldTargets.has(id))) return assessment;
-      return { ...assessment, outcome: "omitted", finding_type: "missing_evidence",
-        explanation: "Every saved assertion that carried this item was withheld after review." };
+      if (support.length && support.every((id) => withheldTargets.has(id))) {
+        return { ...assessment, outcome: "omitted", finding_type: "missing_evidence",
+          explanation: "Every saved assertion that carried this item was withheld after review." };
+      }
+      if (stillProposed.has(assessment.target_id) && assessment.finding_type === "none") {
+        return { ...assessment, finding_type: "other", explanation: "The review still proposes a repair for this item." };
+      }
+      return assessment;
     });
   const unassessed = review.unassessed_ids.filter((id) => !withheldTargets.has(id));
-  const proposedRepairs = review.proposed_repairs.filter((repair) => !withheldTargets.has(repair.target_id));
-  const open = assessments.some(assessmentIsFinding) || unassessed.length > 0;
+  const open = assessments.some(assessmentIsFinding) || unassessed.length > 0 || proposedRepairs.length > 0;
   return { ...review, assessments, unassessed_ids: unassessed, proposed_repairs: proposedRepairs,
     status: review.status === "incomplete" && unassessed.length > 0 ? "incomplete"
       : open ? "repair_required" : "sufficient_for_stated_scope" };
