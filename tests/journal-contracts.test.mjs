@@ -169,6 +169,11 @@ test("configured doctor verifies the private source while reporting missing oper
   await fs.writeFile(configPath, `${JSON.stringify(invalid)}\n`, { mode: 0o600 });
   const invalidReport = await configuredJournalDoctorReport(configPath, {});
   assert.ok(invalidReport.blockers.includes("JOURNAL_SEMANTIC_CONCURRENCY_INVALID"));
+  invalid.semantic_concurrency = 1;
+  invalid.calibration_failure_limit = 0;
+  await fs.writeFile(configPath, `${JSON.stringify(invalid)}\n`, { mode: 0o600 });
+  const invalidLimitReport = await configuredJournalDoctorReport(configPath, {});
+  assert.ok(invalidLimitReport.blockers.includes("JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID"));
 });
 
 test("configured doctor prepares the exchange before authorizing its inference route", async (t) => {

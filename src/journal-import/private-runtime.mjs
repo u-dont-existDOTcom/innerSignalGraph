@@ -5,7 +5,8 @@ import { spawn } from "node:child_process";
 import { ValidationError } from "../core/errors.mjs";
 import { withOpenedRegularFile } from "../core/opened-regular-file.mjs";
 import { isOutside } from "../core/private-path.mjs";
-import { journalSemanticConcurrency, normalizeJournalHardestLaneConfig, vaultRootMatchesConfig } from "./run-config.mjs";
+import { journalCalibrationFailureLimit, journalSemanticConcurrency, normalizeJournalHardestLaneConfig,
+  vaultRootMatchesConfig } from "./run-config.mjs";
 import { createPrivateJournalCorpusStore } from "../storage/private-journal-corpus.mjs";
 import { acquirePrivateRootWriterLock, withPrivateRootWriterLock } from "../storage/shared-case-coordinator.mjs";
 import { loadHostedPrivateCaseOperatorProvidersFromEnvironment } from "../storage/hosted-private-case-providers.mjs";
@@ -158,6 +159,7 @@ async function removeLegacyPageRenders(root) {
 /** A private operator process owns this runtime. No mutation is added to the MCP. */
 export async function openJournalExecutionRuntime({ config, configPath, environment = process.env, service: suppliedService = null, inferencePort: suppliedPort = null, authContextProvider = null, sourceParser = parseSourceFile, renderVisualPage = renderJournalPdfPage, now = () => new Date() }) {
   const semanticConcurrency = journalSemanticConcurrency(config);
+  const calibrationFailureLimit = journalCalibrationFailureLimit(config);
   invariant(config.max_external_spend_usd === 0, "JOURNAL_ZERO_SPEND_REQUIRED");
   // An empty source has nothing to import, so no run of it could finish; doctor reports the same.
   invariant(Number.isSafeInteger(config.source?.bytes) && config.source.bytes > 0, "JOURNAL_SOURCE_EMPTY");
@@ -992,8 +994,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       // A failed calibration unit is kept as source-only with its reason and counts, and calibration goes on to
       // the next unit. One round therefore shows every failing unit, up to the failure limit, and the gate closes
       // when the round ends.
-      const failureLimit = config.calibration_failure_limit ?? 3;
-      invariant(Number.isSafeInteger(failureLimit) && failureLimit >= 1, "JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID");
+      const failureLimit = calibrationFailureLimit;
       let calibrationFailures = 0;
       const failCalibrationUnit = async (unit, status, reason, diagnostics = unresolvedExtractionDiagnostics([])) => {
         // Visible in the checkpoint while the round continues. The gate's record is rebuilt from the unit

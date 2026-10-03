@@ -10,6 +10,15 @@ export function journalSemanticConcurrency(config) {
   return value;
 }
 
+// How many failed units end a calibration round early. Checked when a run opens and by doctor, before
+// any import step or inference.
+export function journalCalibrationFailureLimit(config) {
+  const value = config.calibration_failure_limit === undefined ? 3 : config.calibration_failure_limit;
+  if (!Number.isSafeInteger(value) || value < 1)
+    throw new ValidationError("JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID", { code: "JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID" });
+  return value;
+}
+
 export function normalizeJournalHardestLaneConfig(config) {
   return Object.freeze({
     enabled: config?.hardest_lane?.enabled === true,

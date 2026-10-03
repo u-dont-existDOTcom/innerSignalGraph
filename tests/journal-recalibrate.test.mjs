@@ -1238,11 +1238,12 @@ test("a calibration failure limit of one stops at the first failing unit, and an
       failed.calibration_failure.calibration_units], [1, 1, 3]);
     assert.equal(calls.filter((call) => call.role === "extractor").length, 3);
   } finally { await runtime.close(); }
+  // An invalid limit is refused when the run opens, before any import step or provider call.
   const g = await fixture(t);
   g.config.calibration_failure_limit = 0;
-  const refused = await g.open(mockPort({ calls: [] }));
-  try { await assert.rejects(refused.execute("run"), { code: "JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID" }); }
-  finally { await refused.close(); }
+  const refusedCalls = [];
+  await assert.rejects(g.open(mockPort({ calls: refusedCalls })), { code: "JOURNAL_CALIBRATION_FAILURE_LIMIT_INVALID" });
+  assert.deepEqual(refusedCalls, []);
 });
 
 test("the failure limit also stops the rest of a split calibration batch", async t => {
