@@ -232,11 +232,24 @@ export function boundedLineReader({ onLine, maxLineBytes = MAX_LINE, maxStreamBy
   } };
 }
 
-// With gate, the command starts only after onSpawn has finished: a shell that leads the new process group waits for
-// one line on stdin and then execs it (same PID, group and start time). If the parent dies or onSpawn fails first,
-// the shell reads end-of-file or is killed, and the command never runs. env drops what the shell itself exports, so
-// the command's environment is exactly the one given.
-const GATE_SCRIPT = 'IFS= read -r _ || exit 97; exec /usr/bin/env -u PWD -u OLDPWD -u SHLVL -u _ "$0" "$@"';
+// With gate, the command starts only after onSpawn has finished. A small Node process leads the new process group,
+// waits for one line on stdin, and only then starts the command as its child in the same group, with the same
+// environment and stdout/stderr, and exits with its status. If the parent dies or onSpawn fails first, the gate
+// reads end-of-file or is killed, and the command never runs. No shell is involved: the command and its arguments
+// are passed as argv.
+const GATE_SOURCE = [
+  'const { spawn } = require("node:child_process");',
+  'let line = "", started = false;',
+  'process.stdin.setEncoding("utf8");',
+  'process.stdin.on("data", (chunk) => { line += chunk; if (!started && line.includes("\\n")) start(); });',
+  'process.stdin.on("end", () => { if (!started) process.exit(97); });',
+  'function start() {',
+  '  started = true; process.stdin.destroy();',
+  '  const child = spawn(process.argv[1], process.argv.slice(2), { stdio: ["ignore", "inherit", "inherit"] });',
+  '  child.once("error", () => process.exit(127));',
+  '  child.once("exit", (code, signal) => process.exit(code ?? (signal ? 128 : 1)));',
+  '}'
+].join("\n");
 
 export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeGroups,
   maxLineBytes = MAX_LINE, maxStreamBytes = MAX_STREAM, killOnClose = false, onSpawn = null, gate = false }) {
@@ -245,7 +258,7 @@ export function runProcess(command, args, { cwd, env, timeoutMs, onLine, activeG
     let child;
     try {
       child = gate
-        ? spawn("/bin/sh", ["-c", GATE_SCRIPT, command, ...args], { cwd, env, detached: true, stdio: ["pipe", "pipe", "pipe"], shell: false })
+        ? spawn(process.execPath, ["-e", GATE_SOURCE, command, ...args], { cwd, env, detached: true, stdio: ["pipe", "pipe", "pipe"], shell: false })
         : spawn(command, args, { cwd, env, detached: true, stdio: ["ignore", "pipe", "pipe"], shell: false });
     }
     catch { resolve({ code: null, timedOut: false, problem: "SPAWN_FAILED", durationMs: Date.now() - started }); return; }
