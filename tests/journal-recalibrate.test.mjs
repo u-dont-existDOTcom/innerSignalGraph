@@ -184,6 +184,50 @@ test("a re-audit distortion feeds one ordinary extraction repair that passes", a
   } finally { await runtime.close(); }
 });
 
+test("an unassessed-only audit after a repair takes the one re-audit before another repair", async t => {
+  const f = await fixture(t);
+  const calls = [];
+  let audits = 0;
+  const runtime = await f.open(mockPort({ calls, reference: syntheticReference,
+    fidelity: packet => syntheticFidelity(packet, ["distorted", "unassessed", "preserved"][audits++],
+      audits === 1 ? "wrong_time" : "none") }));
+  try {
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    // The initial distortion spends repair 1; its unassessed-only audit is re-audited and passes, so repair 2 never runs.
+    assert.equal(calls.filter(call => call.role === "extractor").length, 2);
+    assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, 3);
+    const diagnostics = (await calibrationRecord(f.config)).diagnostics;
+    assert.equal(diagnostics.reaudit.cycle, 1);
+    assert.equal(diagnostics.reaudit.fidelity.calibration_pass, true);
+    assert.deepEqual(diagnostics.fidelity_cycles.map(cycle => cycle.cycle), [0, 1]);
+    assert.equal(JSON.stringify(diagnostics).includes(fidelitySentinel), false);
+  } finally { await runtime.close(); }
+});
+
+test("a failed re-audit of a multi-unit calibration batch splits it and retries each half", async t => {
+  const f = await fixture(t, { pages: 2 });
+  f.config.semantic_batching = { calibration_maximum_units: 2, maximum_units: 2 };
+  const calls = [];
+  let batchUnits = null;
+  const runtime = await f.open(mockPort({ calls, reference: syntheticReference,
+    fidelity: packet => {
+      const units = packet.assigned_core_ids.length;
+      // The whole batch is first unassessed-only, then every checked attempt of its re-audit is invalid. Halves pass.
+      if (batchUnits === null) { batchUnits = units; return syntheticFidelity(packet, "unassessed"); }
+      if (units === batchUnits) return { ...syntheticFidelity(packet, "preserved"), status: "not-a-valid-status" };
+      return syntheticFidelity(packet, "preserved");
+    } }));
+  try {
+    // Each invalid re-audit attempt pauses the run; resuming retries it until its checked attempts are spent.
+    let result = await runtime.execute("run");
+    for (let resume = 0; resume < 8 && result.blocker === "INVALID_STRUCTURED_OUTPUT"; resume += 1) result = await runtime.execute("run");
+    assert.equal(batchUnits, 2, "the calibration batch had two units");
+    assert.equal(result.calibration, "pass");
+    assert.ok(calls.some(call => call.role === "fidelity_auditor" && call.packet.assigned_core_ids.length === 1),
+      "each half was audited on its own");
+  } finally { await runtime.close(); }
+});
+
 test("a still-unassessed re-audit spends no repair cycle and comparisons use canonical output only", async t => {
   const f = await fixture(t);
   const calls = [];

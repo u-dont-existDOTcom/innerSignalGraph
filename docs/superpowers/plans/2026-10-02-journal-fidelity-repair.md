@@ -33,3 +33,5 @@ and finish authorized local work without a commit, push, provider call or releas
 The rule graph's activation and outcome dependencies were read. The suggested-fix
 lane contains only the already-ledgered claim-integrity owner question; its
 existing OPEN disposition remains authoritative.
+
+Review follow-up: the single fresh audit applies to the first unassessed-only audit of a batch, whether initial or after an extraction repair (identity suffixed with the repair cycle), never more than once per batch. A failed re-audit of a multi-unit batch splits and retries the halves, as a failed initial audit does.

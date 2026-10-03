@@ -1082,49 +1082,62 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
           }
           let fidelity = initialFidelity.result;
           await writeOnce(epochId(`calibration:review:batch:${keyId}`, true), { reference, fidelity: fidelity[0], score, unit_ids: units.map((unit) => unit.unit_id) });
-          let calibrationPass = fidelity[0].output.status === "sufficient_for_stated_scope"
-            && score.critical_miss_count === 0
-            && score.qualifier_error_count === 0
-            && score.reference_counts.unassessed === 0
-            && (score.reference_total === 0 || score.provisional_target_met);
+          const auditPasses = (output, value) => output.status === "sufficient_for_stated_scope"
+            && value.critical_miss_count === 0
+            && value.qualifier_error_count === 0
+            && value.reference_counts.unassessed === 0
+            && (value.reference_total === 0 || value.provisional_target_met);
+          // Left references unassessed without a single finding: repairing the extraction can't help.
+          const unassessedOnly = (output, value) => (output.status === "incomplete" || value.reference_counts.unassessed > 0)
+            && value.reference_counts.omitted === 0 && value.reference_counts.distorted === 0
+            && value.critical_miss_count === 0 && value.qualifier_error_count === 0
+            && !output.assessments.some((item) => item.outcome === "omitted"
+              || item.outcome === "distorted" || item.finding_type !== "none");
+          let calibrationPass = auditPasses(fidelity[0].output, score);
           fidelityCycles.push({ cycle: 0, ...extractionCycleDiagnostics(results), blocker_code: null,
             fidelity: fidelityCycleDiagnostics(fidelity[0].output, score, calibrationPass) });
-          // An auditor leaving references unassessed is first given one fresh audit of the same
-          // extraction. This distinct identity never consumes an extraction-repair cycle.
-          if (!calibrationPass
-            && (fidelity[0].output.status === "incomplete" || score.reference_counts.unassessed > 0)
-            && score.reference_counts.omitted === 0 && score.reference_counts.distorted === 0
-            && score.critical_miss_count === 0 && score.qualifier_error_count === 0
-            && !fidelity[0].output.assessments.some((item) => item.outcome === "omitted"
-              || item.outcome === "distorted" || item.finding_type !== "none")) {
-            reauditDiagnostics = { ...extractionCycleDiagnostics(results), blocker_code: null, fidelity: null };
+          // The first audit of this batch, initial or after a repair, that leaves references unassessed without any
+          // finding gets one fresh audit of the same extraction. Its distinct identity never consumes an extraction-
+          // repair cycle, and the batch gets at most one.
+          let reauditUsed = false;
+          const reauditOnce = async (graph, cycle) => {
+            reauditUsed = true;
+            reauditDiagnostics = { ...(cycle ? { cycle } : {}), ...extractionCycleDiagnostics(results), blocker_code: null, fidelity: null };
+            const suffix = cycle ? `:cycle:${cycle}` : "";
             let reauditScore;
-            const reaudit = await checkedWork({
-              id: epochId(`fidelity:calibration-reaudit:batch:${keyId}`, true),
+            const attempt = await checkedWork({
+              id: epochId(`fidelity:calibration-reaudit:batch:${keyId}${suffix}`, true),
               role: "fidelity_auditor", stage: "REFERENCE_AUDIT", units,
               packetInput: { frozen_reference: reference.output, supporting_passages: core,
                 imported_generation: { generation: state.generation,
-                  assertions: combined.nodes.filter((node) => node.kind === "assertion"),
-                  entities: combined.nodes.filter((node) => node.kind === "entity") } }
+                  assertions: graph.nodes.filter((node) => node.kind === "assertion"),
+                  entities: graph.nodes.filter((node) => node.kind === "entity") } }
             }, ([saved]) => { reauditScore = scoreReferenceReview({ referenceResult: reference.output,
               reviewResult: saved.output,
-              candidateIds: combined.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
-            if (reaudit.blocked) return false;
-            if (reaudit.failure) {
-              reauditDiagnostics.blocker_code = diagnosticBlockerCode(reaudit.failure);
-              return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", reaudit.failure, diagnostics());
-            }
-            fidelity = reaudit.result;
+              candidateIds: graph.nodes.filter((node) => node.kind === "assertion").map((node) => node.id) }); });
+            if (attempt.failure) reauditDiagnostics.blocker_code = diagnosticBlockerCode(attempt.failure);
+            if (attempt.blocked || attempt.failure) return attempt;
+            fidelity = attempt.result;
             score = reauditScore;
-            await writeOnce(epochId(`calibration:reaudit-review:batch:${keyId}`, true), {
+            await writeOnce(epochId(`calibration:reaudit-review:batch:${keyId}${suffix}`, true), {
               reference, fidelity: fidelity[0], score, unit_ids: units.map((unit) => unit.unit_id)
             });
-            calibrationPass = fidelity[0].output.status === "sufficient_for_stated_scope"
-              && score.critical_miss_count === 0
-              && score.qualifier_error_count === 0
-              && score.reference_counts.unassessed === 0
-              && (score.reference_total === 0 || score.provisional_target_met);
+            calibrationPass = auditPasses(fidelity[0].output, score);
             reauditDiagnostics.fidelity = fidelityCycleDiagnostics(fidelity[0].output, score, calibrationPass);
+            return attempt;
+          };
+          if (!calibrationPass && unassessedOnly(fidelity[0].output, score)) {
+            const reaudit = await reauditOnce(combined, 0);
+            if (reaudit.blocked) return false;
+            if (reaudit.failure) {
+              // Like a failed initial audit: a batch of several units is split and each half retried.
+              if (units.length > 1) {
+                const middle = Math.ceil(units.length / 2);
+                return await processBatch(units.slice(0, middle), true)
+                  && await processBatch(units.slice(middle), true);
+              }
+              return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", reaudit.failure, diagnostics());
+            }
           }
           if (!calibrationPass && units.length > 1) {
             const middle = Math.ceil(units.length / 2);
@@ -1257,12 +1270,16 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
             });
             fidelity = repairedFidelity;
             score = repairedScore;
-            calibrationPass = fidelity[0].output.status === "sufficient_for_stated_scope"
-              && score.critical_miss_count === 0
-              && score.qualifier_error_count === 0
-              && score.reference_counts.unassessed === 0
-              && (score.reference_total === 0 || score.provisional_target_met);
+            calibrationPass = auditPasses(fidelity[0].output, score);
             repairSnapshot.fidelity = fidelityCycleDiagnostics(fidelity[0].output, score, calibrationPass);
+            if (!calibrationPass && !reauditUsed && unassessedOnly(fidelity[0].output, score)) {
+              const reaudit = await reauditOnce(repairedCombined, auditCycle);
+              if (reaudit.blocked) return false;
+              if (reaudit.failure) {
+                if (hardestRepair) { await recordHardestOutcome(repairId, "failed"); break; }
+                return stopCalibration(units[0], "CALIBRATION_FIDELITY_ATTEMPTS_EXHAUSTED", reaudit.failure, diagnostics());
+              }
+            }
             if (hardestRepair) await recordHardestOutcome(repairId, calibrationPass ? "resolved" : "failed");
           }
           if (!calibrationPass) {
