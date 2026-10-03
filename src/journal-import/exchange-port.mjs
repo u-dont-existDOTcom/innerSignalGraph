@@ -381,6 +381,17 @@ export function createExchangeJournalInferencePort({
         throw new JournalInferencePortError("JOURNAL_EXCHANGE_UNAVAILABLE", { submissionStatus: "not_submitted", cause });
       }
     }
+    // An open speculative item whose dispatch record failed to publish gets it on the next prefetch, so a
+    // worker can see it. Publishing a dispatch record is idempotent.
+    if (dispatchNew && existing?.origin === "lookahead" && !stored
+      && Date.parse(existing.expires_at) > now().getTime()) {
+      try { await ensureDispatch(store, existing, operationKey); }
+      catch (cause) {
+        const error = new JournalInferencePortError("JOURNAL_EXCHANGE_UNAVAILABLE", { submissionStatus: "unknown", cause });
+        error.workPublished = true;
+        throw error;
+      }
+    }
     return { published: false, workId };
   }
 

@@ -21,40 +21,59 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
     const stop = () => { clearTimeout(timer); wake.delete(stop); resolve(); };
     wake.add(stop);
   });
+  // Check access immediately before each publication, including when several lookahead
+  // tasks become ready together and an earlier send changes access state.
+  const prefetch = (request) => {
+    const task = publication.then(async () => {
+      if (closed) return null;
+      await authorize();
+      if (closed) return null;
+      return port.prefetch({ ...request, grant, tier: "standard" });
+    });
+    publication = task.then(() => {}, () => {});
+    return task;
+  };
   const send = async (request) => {
     if (closed) return null;
+    // Without its dispatch record a published item can't be answered, so publication is tried again.
+    let dispatchMissing = false;
     try {
-      // Check access immediately before each publication, including when several lookahead
-      // tasks become ready together and an earlier send changes access state.
-      const task = publication.then(async () => {
-        if (closed) return null;
-        await authorize();
-        if (closed) return null;
-        return port.prefetch({ ...request, grant, tier: "standard" });
-      });
-      publication = task.then(() => {}, () => {});
-      const result = await task;
+      const result = await prefetch(request);
       if (!result) return null;
       if (result?.published) sent.add(request.operationKey);
     } catch (error) {
       if (!error.workPublished) throw error;
       sent.add(request.operationKey);
-      errors += 1;
+      dispatchMissing = true;
     }
     // The item is published, so its slot stays occupied until it resolves or the lookahead closes, also
-    // while reading the exchange fails.
-    let readFailing = false;
+    // while publishing its dispatch record or reading the exchange fails. A failing stretch counts once.
+    let failing = dispatchMissing;
+    if (failing) errors += 1;
     for (;;) {
       if (closed) return null;
+      if (dispatchMissing) {
+        await pause();
+        if (closed) return null;
+        try {
+          if (!(await prefetch(request))) return null;
+          dispatchMissing = false;
+          failing = false;
+        } catch {
+          if (!failing) errors += 1;
+          failing = true;
+        }
+        continue;
+      }
       let peek;
       try { peek = await port.peek(request.operationKey); }
       catch {
-        if (!readFailing) errors += 1;
-        readFailing = true;
+        if (!failing) errors += 1;
+        failing = true;
         await pause();
         continue;
       }
-      readFailing = false;
+      failing = false;
       if (peek.status === "completed") return peek.output;
       if (peek.status !== "pending") return null;
       await pause();

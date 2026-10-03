@@ -27,7 +27,7 @@ export function exchangeHarness({ caseId = "synthetic-case", defaultAnswer = ans
       return { created: true };
     },
     async publishDispatch(record) {
-      if (failDispatch) throw new Error("synthetic dispatch failure");
+      if (typeof failDispatch === "function" ? failDispatch(record) : failDispatch) throw new Error("synthetic dispatch failure");
       dispatch.set(record.work_id, structuredClone(record));
       onDispatch({ work, results, dispatch });
     },

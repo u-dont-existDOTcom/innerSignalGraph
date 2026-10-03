@@ -463,7 +463,33 @@ test("a work item keeps its lookahead slot when dispatch publication fails", asy
   h.port.close();
 });
 
-test("a published lookahead item keeps its slot while reading the exchange fails", async () => {
+test("a speculative item gets its dispatch record once publication recovers, keeping its slot meanwhile", async (t) => {
+  let dispatchFails = true;
+  const h = exchangeHarness({ failDispatch: () => dispatchFails });
+  const snapshot = snapshotFor();
+  const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
+  const direct = { role: "reference_reader", packet, outputSchema: "reference-result", operationKey, grant };
+  const lookahead = createJournalLookahead({ limit: 2, port: h.port, grant, authorize: async () => {}, pollMs: 1,
+    prepare: async descriptor => ({ direct: descriptor.direct }) });
+  t.after(() => lookahead.close());
+  lookahead.ahead([{ jobId: "first", direct },
+    { jobId: "second", direct: { ...direct, operationKey: `${operationKey}:second` } }]);
+  const id = journalExchangeWorkId(operationKey);
+  await until(() => h.work.size === 1);
+  for (let index = 0; index < 20; index += 1) await tick();
+  assert.equal(h.dispatch.has(id), false);
+  assert.equal(h.work.size, 1, "the item without a dispatch record still holds the only slot");
+  assert.equal(lookahead.summary().errors, 1, "one failing stretch counts once");
+  dispatchFails = false;
+  await until(() => h.dispatch.has(id));
+  h.answerWork(id);
+  await until(() => h.work.size === 2);
+  assert.equal(lookahead.summary().sent, 2);
+  await lookahead.close();
+  h.port.close();
+});
+
+test("a published lookahead item keeps its slot while reading the exchange fails", async (t) => {
   const h = exchangeHarness();
   const snapshot = snapshotFor();
   const { packet, operationKey } = await planJournalOperation({ work: snapshot.work_items[0], snapshot, grant });
@@ -475,6 +501,7 @@ test("a published lookahead item keeps its slot while reading the exchange fails
   } };
   const lookahead = createJournalLookahead({ limit: 2, port, grant, authorize: async () => {}, pollMs: 1,
     prepare: async descriptor => ({ direct: descriptor.direct }) });
+  t.after(() => lookahead.close());
   lookahead.ahead([{ jobId: "first", direct },
     { jobId: "second", direct: { ...direct, operationKey: `${operationKey}:second` } }]);
   await until(() => h.work.size === 1);
