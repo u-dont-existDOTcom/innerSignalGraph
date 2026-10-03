@@ -516,14 +516,40 @@ test("a revoked access check prevents further lookahead publication", async () =
     prepare: async descriptor => ({ direct: descriptor.direct }) });
   lookahead.ahead(descriptors);
   await until(() => h.dispatch.size === 1);
-  h.answerWork(journalExchangeWorkId(descriptors[0].direct.operationKey));
-  await tick();
+  // Access is revoked while the first item is out; when its slot frees, the next descriptor is refused.
   authorized = false;
-  lookahead.ahead(descriptors.slice(1));
+  h.answerWork(journalExchangeWorkId(descriptors[0].direct.operationKey));
   await until(() => lookahead.summary().errors === 1);
   await lookahead.close();
   assert.equal(h.dispatch.size, 1);
   assert.equal(lookahead.summary().sent, 1);
+  h.port.close();
+});
+
+test("a slot that frees up takes the next descriptor without another ahead call", async () => {
+  const h = exchangeHarness();
+  const descriptors = ["reference", "extraction", "later"].map(label => ({ jobId: label,
+    direct: { role: "reference_reader", outputSchema: "reference-result",
+      operationKey: `synthetic:${label}`, packet: {
+        ...packetInput, protocol_version: "1.0", output_schema_id: "reference-result",
+        assigned_core_ids: [unit.unit_id], source_locators: journalWorkPlan(request).sourceLocators,
+        expected_generation: "generation:synthetic", controller_provenance_tag: `synthetic:${label}`,
+        grant_purpose: grant.purpose } } }));
+  const lookahead = createJournalLookahead({ limit: 2, port: h.port, grant, pollMs: 1,
+    authorize: async () => {}, prepare: async descriptor => ({ direct: descriptor.direct }) });
+  lookahead.ahead(descriptors);
+  await until(() => h.dispatch.size === 1);
+  assert.equal(h.dispatch.has(journalExchangeWorkId("synthetic:extraction")), false, "one slot at a time");
+  h.answerWork(journalExchangeWorkId("synthetic:reference"));
+  await until(() => h.dispatch.has(journalExchangeWorkId("synthetic:extraction")));
+  // A newer view of upcoming work replaces descriptors that never started.
+  lookahead.ahead([]);
+  h.answerWork(journalExchangeWorkId("synthetic:extraction"));
+  await until(() => lookahead.summary().sent === 2 && [...h.results.keys()].length === 2);
+  await new Promise(resolve => setTimeout(resolve, 20));
+  assert.equal(h.dispatch.has(journalExchangeWorkId("synthetic:later")), false);
+  await lookahead.close();
+  assert.equal(lookahead.summary().sent, 2);
   h.port.close();
 });
 

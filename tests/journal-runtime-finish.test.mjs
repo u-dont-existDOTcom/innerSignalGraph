@@ -306,6 +306,66 @@ test("exchange lookahead preserves the synthetic import and sequential identitie
     `expected parallel dispatch rounds ${parallel.rounds} < ${sequential.rounds}`);
 });
 
+test("audit lookahead reads the current epoch's record of a recalibrated unit", async (t) => {
+  const entries = Array.from({ length: 16 }, (_, index) =>
+    `Synthetic recalibrated entry ${index}: I walked by the river and observed a blue cup.`);
+  const f = await environment(t, entries);
+  f.config.semantic_batching = { calibration_maximum_units: 1, maximum_units: 1 };
+  f.config.calibration_failure_limit = 1;
+  const baseline = handlers();
+  // Round 0: the third calibration unit fails extraction, so its epoch-zero record is source-only.
+  const failingText = entries[3];
+  const failing = createMockJournalInferencePort({ handlers: handlers({ extractor: (packet) =>
+    packet.core_units.some((unit) => unit.text === failingText)
+      ? { ...baseline.extractor(packet), status: "incomplete" } : baseline.extractor(packet) }) });
+  let runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath, service: f.service,
+    sourceParser: f.sourceParser, inferencePort: failing, environment: f.environment });
+  try {
+    const failed = await runtime.execute("run");
+    assert.equal(failed.calibration, "failed");
+    assert.equal(failed.calibration_failure.failed_units, 1);
+    assert.equal((await runtime.execute("recalibrate")).calibration_epoch, 1);
+  } finally { await runtime.close(); }
+  // Round 1 passes through the exchange with lookahead, then the audit runs with lookahead too.
+  const h = exchangeHarness({ waitMs: 30_000 });
+  const prefetched = [];
+  const port = { ...h.port, async prefetch(input) {
+    prefetched.push({ role: input.role, unit_id: input.packet.assigned_core_ids[0] });
+    return h.port.prefetch(input);
+  } };
+  let stopped = false;
+  const answering = (async () => {
+    while (!stopped) {
+      for (const id of [...h.dispatch.keys()].filter((key) => !h.results.has(key))) {
+        const item = h.work.get(id);
+        if (item) h.answerWork(id, baseline[item.role](item.packet));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 15));
+    }
+  })();
+  try {
+    runtime = await openJournalExecutionRuntime({ config: { ...f.config, semantic_concurrency: 4 }, configPath: f.configPath,
+      service: f.service, sourceParser: f.sourceParser, inferencePort: port, environment: f.environment });
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    const auditStart = prefetched.length;
+    const audit = await runtime.execute("audit");
+    const state = JSON.parse(await fs.readFile(path.join(f.config.execution_root, "state.json"), "utf8"));
+    const store = createPrivateJournalCorpusStore({ rootDir: f.config.execution_root, caseId: CASE_ID,
+      corpusId: state.corpus_id, corpusKey: await fs.readFile(path.join(f.config.execution_root, "staging.key")) });
+    let recalibrated;
+    try {
+      const bytes = await store.reassembleOriginal(state.visual_plan_ref ?? state.parsed_ref);
+      try { recalibrated = JSON.parse(bytes.toString("utf8")).units.find((unit) => unit.text === failingText); }
+      finally { bytes.fill(0); }
+    } finally { await store.close(); }
+    // The epoch-zero record of this unit is source-only; the audit reads its current, passing record, and so
+    // does the lookahead, which therefore sends its reference reading ahead and leaves nothing unused.
+    assert.ok(prefetched.slice(auditStart).some((call) => call.role === "reference_reader"
+      && call.unit_id === recalibrated.unit_id));
+    assert.equal(audit.lookahead.unused, 0);
+  } finally { stopped = true; await runtime?.close(); await answering; }
+});
+
 test("corpus parity detects a prepare that writes an object", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "synthetic-lookahead-mutation-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));

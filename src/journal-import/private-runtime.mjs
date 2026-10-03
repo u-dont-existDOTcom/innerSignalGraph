@@ -2045,7 +2045,8 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
       });
       const auditDescriptor = async (unit) => {
         if (await readIfPresent(`audit:result:${graphRevision}:${unit.unit_id}`)) return null;
-        const imported = await readIfPresent(`unit:graph:${unit.unit_id}`);
+        // The same epoch-aware record the sequential audit reads (a recalibrated unit's record is epoch-scoped).
+        const imported = await readUnitRecord(unit.unit_id);
         if (!imported || imported.source_only_unresolved) return null;
         const visual = await readIfPresent(`visual:result:${unit.page_number}`);
         const request = referenceRequestFor(unit, visual);

@@ -13,6 +13,9 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
   let errors = 0;
   let publication = Promise.resolve();
   let scheduling = Promise.resolve();
+  // The latest ahead() call's descriptors not yet started, in order. A slot that frees up takes the next one,
+  // so a short task (a reference reading) doesn't leave the rest of the window idle until the next call.
+  let pending = [];
   const pause = () => new Promise(resolve => {
     const timer = setTimeout(() => { wake.delete(stop); resolve(); }, pollMs);
     const stop = () => { clearTimeout(timer); wake.delete(stop); resolve(); };
@@ -76,29 +79,36 @@ export function createJournalLookahead({ limit, port, authorize, prepare, grant,
       work.status = "completed";
     }
   };
+  // Build candidates outside task slots. A cached or source-only candidate does not consume capacity; work
+  // starts in descriptor order while slots are free.
+  const fill = () => {
+    scheduling = scheduling.then(async () => {
+      while (!closed && running.size < limit - 1 && pending.length) {
+        const descriptor = pending.shift();
+        if (running.has(descriptor.jobId) || finished.has(descriptor.jobId)) continue;
+        let planned;
+        try { planned = await prepare(descriptor); }
+        catch { errors += 1; finished.add(descriptor.jobId); continue; }
+        if (!planned || planned.direct?.tier === "hardest") {
+          finished.add(descriptor.jobId);
+          continue;
+        }
+        const task = walk(planned).catch(() => { errors += 1; }).finally(() => {
+          running.delete(descriptor.jobId);
+          finished.add(descriptor.jobId);
+          fill();
+        });
+        running.set(descriptor.jobId, task);
+      }
+    });
+  };
   return Object.freeze({
     ahead(descriptors) {
       if (closed) return;
-      // Build candidates outside task slots. A cached or source-only candidate does not consume
-      // capacity, but this call still starts only the next available work, in descriptor order.
-      scheduling = scheduling.then(async () => {
-        for (const descriptor of descriptors) {
-          if (closed || running.size >= limit - 1) break;
-          if (running.has(descriptor.jobId) || finished.has(descriptor.jobId)) continue;
-          let planned;
-          try { planned = await prepare(descriptor); }
-          catch { errors += 1; finished.add(descriptor.jobId); continue; }
-          if (!planned || planned.direct?.tier === "hardest") {
-            finished.add(descriptor.jobId);
-            continue;
-          }
-          const task = walk(planned).catch(() => { errors += 1; }).finally(() => {
-            running.delete(descriptor.jobId);
-            finished.add(descriptor.jobId);
-          });
-          running.set(descriptor.jobId, task);
-        }
-      });
+      // Each call is the current view of upcoming work; descriptors from an earlier call that never
+      // started are dropped (the sequential run has reached them or moved past).
+      pending = [...descriptors];
+      fill();
     },
     markUsed(operationKey) { used.add(operationKey); },
     sentOperationKeys() { return [...sent]; },
