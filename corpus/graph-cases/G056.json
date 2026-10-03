@@ -23,6 +23,10 @@
     "requiredNuancePatterns": [
       "Support and mutual co-regulation",
       "protection takes precedence"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "healthy support",
+      "mutual co-regulation"
     ]
   }
 }

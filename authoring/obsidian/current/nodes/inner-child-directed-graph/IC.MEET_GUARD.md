@@ -31,9 +31,9 @@ regression_refs:
   - G052
   - G057
   - G059
-base_record_sha256: 4456956b9eff10aa79ea6ed98f739e47dd3da48a9960d193ce3f9770c0e5119b
-base_graph_sha256: 9330ed7fd7270f9419b45347fa95652332eeb8d4d59a473fc9d623a66e45cc2a
-projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146fdff438765
+base_record_sha256: ef132738544df05f1718ef081eff9550d67e68a541346ddf926c5409936b3cc6
+base_graph_sha256: 705e3128dad34c17dac83871e9a9a0350eb97c0c53a5dee07bc43d995b651bb6
+projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
 ---
 
 # Hear the protective response without automatically obeying it
@@ -86,7 +86,8 @@ projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146f
     ],
     "forbiddenOverclaims": [
       "Do not definitively label a cynical voice as a guard.",
-      "Do not claim that anxiety or another protective alarm proves the feared conclusion is true."
+      "Do not claim that anxiety or another protective alarm proves the feared conclusion is true.",
+      "Do not claim that testing a protective prediction authorizes overriding a protector's no to deeper or altered-state work, or hesitation about touch or sex."
     ],
     "requiredNuance": [
       "The contempt may be child, protector, adult evaluator, or blend.",

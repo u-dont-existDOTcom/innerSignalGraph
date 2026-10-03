@@ -29,7 +29,7 @@ export const THERAPY_POLICY_FINGERPRINT = Object.freeze({
     semanticHash: "e9624348b7e508b2caf1af3736f8aa232c725bd7fb841e253932c60c33ef32e9"
   }),
   reviewed: Object.freeze({
-    semanticHash: "7943491b9a8fea0a750b6bb6ac92f205c7ffab2b38e1b838542ddad0f8546d19"
+    semanticHash: "2db25ce86e4d3dd995fc75286eefea5036b349fd9548f7f4aee7bd504f99d11b"
   })
 });
 

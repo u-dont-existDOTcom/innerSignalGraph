@@ -8,7 +8,7 @@ status: owner-approved
 domain: inner-child
 base_record_sha256: 8b60ca56004d238111be07f2650237bdc00c1f3555cd6c76e1d96d48e714d6ca
 source_file_sha256: e70371bf8e90df99b8735aef80bc4629581ac0a5f8375e8af2766c8067ad8ebd
-projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146fdff438765
+projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
 ---
 
 # AMEND.IC.WISDOM_PAST_COMPETENCE

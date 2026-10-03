@@ -38,7 +38,8 @@
       "Genuine exploration"
     ],
     "forbiddenOverclaimPatterns": [
-      "outside help unnecessary"
+      "completing a date",
+      "proves identity"
     ]
   }
 }

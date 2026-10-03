@@ -29,9 +29,9 @@ regression_refs:
   - G050
   - G056
   - G061
-base_record_sha256: b8004a8c466c93b21a356cda95c43055d0a03ea4abcb6ad3c3eab1588e02c7bb
-base_graph_sha256: 4821f2937e5b6f34b1c4fe27c10e23870372b9542efce8f35b0682d29b9dd367
-projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146fdff438765
+base_record_sha256: b9842371f78ecc6470d6fcef52051d386d01feac5093cfce5e19f1706ea72790
+base_graph_sha256: c2df953667889a1a8f2a6216ef37bed8f0c6361c23ffbb90b12c7e3d7a3ae381
+projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
 ---
 
 # Reality-check relationships and keep social practice reciprocal
@@ -105,7 +105,9 @@ projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146f
     "deferNodes": [],
     "forbiddenOverclaims": [
       "Do not treat disagreement, emotional intensity, one mistake, a diagnosis, or the user's disappointment as proof of emotional immaturity.",
-      "Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character."
+      "Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character.",
+      "Do not claim that seeking healthy support or mutual co-regulation makes another person a reassurance machine or invalidates the relationship.",
+      "Do not claim that relief from acceptance or nonjudgment proves romantic love, compatibility, or earned trust."
     ],
     "requiredNuance": [
       "Relational capacity is not motive or diagnosis. The relevant evidence is what the person has demonstrated in the domain at issue, especially under disagreement, limits, accountability, and repair.",

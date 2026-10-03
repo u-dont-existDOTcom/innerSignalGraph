@@ -25,6 +25,10 @@
     "requiredNuancePatterns": [
       "Consent, immediate safety",
       "Protective intent and predictive accuracy"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "overriding a protector's no",
+      "touch or sex"
     ]
   }
 }

@@ -26,9 +26,9 @@ regression_refs:
   - G014
   - G033
   - G060
-base_record_sha256: 007316f9d9da639b935445f61b8fb660d81bdff6ecabd265f0d724b1eeaee48b
-base_graph_sha256: 4821f2937e5b6f34b1c4fe27c10e23870372b9542efce8f35b0682d29b9dd367
-projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146fdff438765
+base_record_sha256: 5dd5a785995a0df6dcbd48e480c6f5df5b2b6688dbcdc1d90a2981f753b055e5
+base_graph_sha256: c2df953667889a1a8f2a6216ef37bed8f0c6361c23ffbb90b12c7e3d7a3ae381
+projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
 ---
 
 # Act on the concrete problem
@@ -82,7 +82,8 @@ projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146f
     "blockNodes": [],
     "deferNodes": [],
     "forbiddenOverclaims": [
-      "Do not reduce every emotional problem to productivity or behavioral execution."
+      "Do not reduce every emotional problem to productivity or behavioral execution.",
+      "Do not claim that brief relief from an action establishes durable improvement, resolution, or a causal mechanism."
     ],
     "requiredNuance": [
       "A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job.",

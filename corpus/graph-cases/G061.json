@@ -23,6 +23,10 @@
     "requiredNuancePatterns": [
       "Acceptance, attachment relief, attraction, romantic love, compatibility and trust",
       "Support and mutual co-regulation"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "acceptance or nonjudgment",
+      "romantic love"
     ]
   }
 }

@@ -107,7 +107,9 @@
         "deferNodes": [],
         "forbiddenOverclaims": [
           "Do not treat disagreement, emotional intensity, one mistake, a diagnosis, or the user's disappointment as proof of emotional immaturity.",
-          "Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character."
+          "Do not claim that a relational-capacity screen reveals the other person's hidden motives or fixed character.",
+          "Do not claim that seeking healthy support or mutual co-regulation makes another person a reassurance machine or invalidates the relationship.",
+          "Do not claim that relief from acceptance or nonjudgment proves romantic love, compatibility, or earned trust."
         ],
         "requiredNuance": [
           "Relational capacity is not motive or diagnosis. The relevant evidence is what the person has demonstrated in the domain at issue, especially under disagreement, limits, accountability, and repair.",
@@ -230,7 +232,8 @@
         "forbiddenOverclaims": [
           "Do not claim that every internal influence is an inner child, Protector, trauma memory, or psychiatric symptom.",
           "Do not claim that involuntary intrusive content establishes identity, intention or endorsement.",
-          "Do not call a transient thought, feeling or sensation the person's true state merely because it is vivid or distressing."
+          "Do not call a transient thought, feeling or sensation the person's true state merely because it is vivid or distressing.",
+          "Do not claim that ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is checking merely because certainty is unavailable."
         ]
       },
       "defaultQuestion": "Does this behave more like a coherent inner position, an urge or compulsion, or the same thought loop running again without new output?",
@@ -570,7 +573,8 @@
         "blockNodes": [],
         "deferNodes": [],
         "forbiddenOverclaims": [
-          "Do not reduce every emotional problem to productivity or behavioral execution."
+          "Do not reduce every emotional problem to productivity or behavioral execution.",
+          "Do not claim that brief relief from an action establishes durable improvement, resolution, or a causal mechanism."
         ],
         "requiredNuance": [
           "A concrete problem and unresolved inner material can coexist; outward action goes first when the environment can actually be changed, while inward work may remain a parallel or later job.",

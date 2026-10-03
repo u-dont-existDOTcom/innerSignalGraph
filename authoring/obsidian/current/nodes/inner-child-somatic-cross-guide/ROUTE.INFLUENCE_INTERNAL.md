@@ -29,9 +29,9 @@ regression_refs:
   - G049
   - G054
   - G055
-base_record_sha256: 4d8d14c1beec4e5aecdf03a706a0f481b0df27f5b7141c7aa37db0624259ef4e
-base_graph_sha256: 4821f2937e5b6f34b1c4fe27c10e23870372b9542efce8f35b0682d29b9dd367
-projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146fdff438765
+base_record_sha256: 5ac116ca2c8fee13fc67f919edb6484460a42dc79a4f1e805c587aa28b24ca42
+base_graph_sha256: c2df953667889a1a8f2a6216ef37bed8f0c6361c23ffbb90b12c7e3d7a3ae381
+projection_input_sha256: e967ce23f4c59141af29c9a233d076332ce952c804b1721c55ceceda9b501278
 ---
 
 # Separate inner experience from interpretation before routing
@@ -64,7 +64,8 @@ projection_input_sha256: 8851becb30c4bd6b8aaffac6a7f0d4aa4bec0332ed1d4fc91b7146f
     "forbiddenOverclaims": [
       "Do not claim that every internal influence is an inner child, Protector, trauma memory, or psychiatric symptom.",
       "Do not claim that involuntary intrusive content establishes identity, intention or endorsement.",
-      "Do not call a transient thought, feeling or sensation the person's true state merely because it is vivid or distressing."
+      "Do not call a transient thought, feeling or sensation the person's true state merely because it is vivid or distressing.",
+      "Do not claim that ordinary exploration of sexuality, orientation, gender, attraction or relationship fit is checking merely because certainty is unavailable."
     ],
     "requiredNuance": [
       "Internal influence is a route into the existing inner-child, somatic, and metacognitive architecture, not a new modality department.",

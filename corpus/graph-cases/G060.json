@@ -20,6 +20,10 @@
     "primary": "ROUTE.ACT_OUTWARD",
     "requiredNuancePatterns": [
       "Outcome tracking should be brief and bounded"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "brief relief from an action",
+      "durable improvement"
     ]
   }
 }

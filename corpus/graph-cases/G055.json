@@ -24,6 +24,10 @@
     ],
     "selectedExcludes": [
       "ROUTE.LEAVE_ALONE"
+    ],
+    "forbiddenOverclaimPatterns": [
+      "ordinary exploration of sexuality",
+      "checking merely because certainty"
     ]
   }
 }
