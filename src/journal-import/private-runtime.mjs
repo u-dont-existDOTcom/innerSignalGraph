@@ -881,16 +881,47 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }],
         acceptReviewFindings: true
       });
-      const initialExtractionDescriptor = async (ids) => {
+      // A calibration batch's frozen reference reading, shared by processBatch and the lookahead.
+      const calibrationReferenceRequestFor = ({ units, core, adjacentContext, visualContext }) => ({
+        id: epochId(`reference:calibration:batch:${batchKey(units)}`, true),
+        role: "reference_reader",
+        stage: "REFERENCE_AUDIT",
+        units,
+        packetInput: { source_windows: core, adjacent_context: adjacentContext, visual_context: visualContext, neutral_reading_instructions: [] }
+      });
+      // A batch's first packet material, as processBatch computes it before any context is answered; null when
+      // the batch is over the source bound and will be split or kept source-only instead.
+      const initialBatchContext = async (ids) => {
         const units = frozenUnits(ids);
         const core = units.map((unit) => ({ unit_id: unit.unit_id, text: unit.text }));
         const adjacentContext = { by_unit: units.map(neighborsFor) };
         const visualContext = (await visualEntriesFor(units.map((unit) => unit.page_number))).map((entry) => entry.output);
         if (Buffer.byteLength(JSON.stringify({ core_units: core, adjacent_context: adjacentContext,
           visual_transcriptions: visualContext })) > SEMANTIC_PACKET_BYTES) return null;
-        const request = extractionRequestFor({ id: `extract:batch:${batchKey(units)}:cycle:0`, units, core,
-          adjacentContext, visualContext });
+        return { units, core, adjacentContext, visualContext };
+      };
+      const firstExtractionDescriptor = async (ids, calibration) => {
+        const context = await initialBatchContext(ids);
+        if (!context) return null;
+        const request = extractionRequestFor({ ...context,
+          id: epochId(`extract:batch:${batchKey(context.units)}:cycle:0`, calibration) });
         return { jobId: journalJobId(request), request };
+      };
+      const initialExtractionDescriptor = (ids) => firstExtractionDescriptor(ids, false);
+      // Calibration units are independent of one another, and a round now runs every one of them, so each
+      // upcoming unit's reference reading and first extraction can be sent early. Repairs, audits and
+      // hardest-tier calls stay sequential.
+      const calibrationDescriptors = (ids) => {
+        const key = hash(ids.join("\0"));
+        return [
+          { jobId: `lookahead:calibration-reference:${key}`, build: async () => {
+            const context = await initialBatchContext(ids);
+            if (!context) return null;
+            const request = calibrationReferenceRequestFor(context);
+            return { jobId: journalJobId(request), request };
+          } },
+          { jobId: `lookahead:calibration-extract:${key}`, build: () => firstExtractionDescriptor(ids, true) }
+        ];
       };
       const mergeGraphs = (graphs) => {
         const nodes = new Map(), edges = new Map();
@@ -1015,13 +1046,7 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         }
         let reference = null;
         if (calibration) {
-          const frozen = await checkedWork({
-            id: epochId(`reference:calibration:batch:${keyId}`, true),
-            role: "reference_reader",
-            stage: "REFERENCE_AUDIT",
-            units,
-            packetInput: { source_windows: core, adjacent_context: adjacentContext, visual_context: visualContext, neutral_reading_instructions: [] }
-          }, ([saved]) => {
+          const frozen = await checkedWork(calibrationReferenceRequestFor({ units, core, adjacentContext, visualContext }), ([saved]) => {
             for (const item of saved.output.reference_items) {
               for (const anchor of item.anchors) {
                 const unit = units.find((candidate) => candidate.unit_id === anchor.unit_id);
@@ -1479,9 +1504,13 @@ export async function openJournalExecutionRuntime({ config, configPath, environm
         if (calibrationFailures >= failureLimit) break;
         await failCalibrationUnit(unit, "CALIBRATION_SIZE_BOUND_EXCEEDED", "SEMANTIC_BATCH_UNIT_EXCEEDS_BOUND");
       }
-      for (const ids of frozenPlan.calibration_batches) {
+      for (let index = 0; index < frozenPlan.calibration_batches.length; index += 1) {
         if (calibrationFailures >= failureLimit) break;
-        if (!(await processBatch(frozenUnits(ids), true))) return summary();
+        if (lookahead) {
+          lookahead.ahead(frozenPlan.calibration_batches.slice(index + 1, index + 1 + semanticConcurrency)
+            .flatMap(calibrationDescriptors));
+        }
+        if (!(await processBatch(frozenUnits(frozenPlan.calibration_batches[index]), true))) return summary();
       }
       const calibrationFailed = await calibrationFailureRecords();
       if (calibrationFailed.length) {

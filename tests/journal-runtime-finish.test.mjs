@@ -234,6 +234,7 @@ test("exchange lookahead preserves the synthetic import and sequential identitie
       configPath: f.configPath, service: f.service, inferencePort: port,
       sourceParser: f.sourceParser, environment: f.environment });
       const run = await runtime.execute("run");
+      const prefetchedInRun = prefetched.map((call) => call.role);
       // Both copies audit the same sampled units, even when the sample omits units.
       const beforeAudit = JSON.parse(await fs.readFile(path.join(executionRoot, "state.json"), "utf8"));
       const corpus = createPrivateJournalCorpusStore({ rootDir: executionRoot, caseId: CASE_ID,
@@ -260,7 +261,7 @@ test("exchange lookahead preserves the synthetic import and sequential identitie
         execution_root: executionRoot } }, "audit_report_ref");
       const objectIds = await corpusObjectIds(executionRoot);
       return { run, audit, patterns, commit, state, graph, auditReport,
-        objectIds, invoked, prefetched, rounds,
+        objectIds, invoked, prefetched, prefetchedInRun, rounds,
         maxOutstanding,
         duplicatePublishes: [...h.successful.values()].filter(count => count > 1).length };
     } finally { stopped = true; await runtime?.close(); await answering; }
@@ -287,6 +288,9 @@ test("exchange lookahead preserves the synthetic import and sequential identitie
   assert.equal(sequential.prefetched.length, 0);
   assert.ok(parallel.prefetched.length > 0);
   assert.ok(parallel.prefetched.every(call => call.tier === "standard"));
+  // During the run only calibration sends reference readings, so these are calibration units sent ahead.
+  assert.ok(parallel.prefetchedInRun.includes("reference_reader"), "calibration reference readings are sent ahead");
+  assert.ok(parallel.prefetchedInRun.includes("extractor"));
   assert.ok(parallel.maxOutstanding <= 4);
   assert.equal(parallel.duplicatePublishes, 0);
   assert.ok(parallel.run.lookahead.sent > 0);
@@ -392,8 +396,13 @@ test("real lookahead prepare checks access and writes no corpus objects", async 
   const runtime = await openJournalExecutionRuntime({ config: f.config, configPath: f.configPath,
     service: f.service, sourceParser: f.sourceParser, inferencePort: port,
     environment: f.environment, authContextProvider: async () => ({ bearerToken: revoked ? "revoked-synthetic" : WRITER }) });
-  try { await assert.rejects(runtime.execute("run"), { code: "PRIVATE_CASE_ACCESS_DENIED" }); }
-  finally { await runtime.close(); }
+  try {
+    // The first send ahead is now a calibration reference reading. A denial during a reference call is
+    // recorded as unsent and stops the run with that blocker; one during a controller job throws. Either
+    // way nothing further is sent.
+    const outcome = await runtime.execute("run").then((summary) => summary.blocker, (error) => error.code);
+    assert.equal(outcome, "PRIVATE_CASE_ACCESS_DENIED");
+  } finally { await runtime.close(); }
   assert.equal(counts.length, 1);
   assert.equal(counts[0][1], counts[0][0]);
   assert.equal([...h.work.values()].filter(item => item.origin === "lookahead").length, 1);

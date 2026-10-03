@@ -3,6 +3,15 @@
 Updated: 2026-10-03
 
 
+## Journal lookahead brought up to date, with calibration lookahead (2026-10-03, PR #110)
+
+- **Owner outcome:** A journal this size imports in a few hours. The lookahead (PR #110) sends upcoming independent calls early; it had fallen behind main by the Claude lane, the fidelity repair and the calibration changes.
+- **Merge:** Main's hardest-tier packet bound, completion preflight, attempt identity in dispatch records and exhausted tombstones were combined with the lookahead's shared operation planning, prefetch/peek and superseded speculative answers. `processBatch` is main's and builds its extraction requests through the shared `extractionRequestFor` the lookahead uses, including the omission check's visual transcriptions. The pinned batch identities in the lookahead test moved only because #121 changed the extractor and omission checker instructions; with the earlier instructions the shared plan reproduces the earlier values.
+- **Calibration lookahead:** With full calibration rounds the calibration units are independent, so each upcoming unit's frozen reference reading and cycle-0 extraction are sent ahead through the same builders processBatch uses. Repairs, fidelity audits and hardest calls stay sequential; regular batches still wait for a passing calibration.
+- **Evidence:** All 592 journal tests passed on the merge. The end-to-end equivalence test (16 synthetic entries, 12 of them calibration units) now also sees calibration reference readings and extractions sent ahead, with identical results, job IDs, operation keys and corpus objects at concurrency 1 and 4, no duplicate publication and no unused sends. The access test now accepts the run stopping with `PRIVATE_CASE_ACCESS_DENIED`, since the first send ahead is a calibration reference reading, whose denial is recorded as unsent.
+- **Next:** Review; merge after #121; then set `semantic_concurrency` on the import host (default stays 1).
+
+
 ## Journal calibration: answered context, hardest self-repair and full rounds (2026-10-03)
 
 - **Owner outcome:** Import the journal as a committed generation with nothing lost and no journal text leaked, and fix the process so a supervisor review is not needed. Plan: `docs/superpowers/plans/2026-10-03-journal-calibration-context-and-full-rounds.md`.
