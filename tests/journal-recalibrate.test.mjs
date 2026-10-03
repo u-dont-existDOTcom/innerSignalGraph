@@ -12,6 +12,7 @@ import test from "node:test";
 import { runJournalImportCli } from "../src/cli/journal-import.mjs";
 import { openJournalExecutionRuntime } from "../src/journal-import/private-runtime.mjs";
 import { createMockJournalInferencePort, journalRoleInstruction } from "../src/journal-import/provider-port.mjs";
+import { computeJournalWorkId } from "../src/journal-import/controller.mjs";
 import { createPrivateJournalCorpusStore } from "../src/storage/private-journal-corpus.mjs";
 import { extractionCycleDiagnostics, fidelityCycleDiagnostics, unresolvedExtractionDiagnostics, validateCalibrationDiagnostics } from "../src/journal-import/calibration-diagnostics.mjs";
 
@@ -58,7 +59,7 @@ function invalidReferenceItems(packet) {
     importance_reason: "Synthetic calibration failure.", critical: false }];
 }
 
-function mockPort({ fail = false, failReference = false, calls, extractor, omission, fidelity }) {
+function mockPort({ fail = false, failReference = false, calls, extractor, omission, fidelity, reference }) {
   const review = (role, packet) => ({ schema_version: "1.0", target_generation: packet.expected_generation,
     review_role: role, assessments: [], proposed_repairs: [], unassessed_ids: [],
     status: "sufficient_for_stated_scope" });
@@ -68,8 +69,8 @@ function mockPort({ fail = false, failReference = false, calls, extractor, omiss
         transcription: "Synthetic image text.", non_graphic_description: null,
         interpretation_status: "readable", speaker_or_document_label: null, table_cells: [] }],
       page_complete: true, missing_or_uncertain_regions: [] }),
-    reference_reader: packet => ({ schema_version: "1.0", source_only_first_pass: true,
-      reference_items: failReference ? invalidReferenceItems(packet) : [], questions: [], unassessed_unit_ids: [] }),
+    reference_reader: reference ?? (packet => ({ schema_version: "1.0", source_only_first_pass: true,
+      reference_items: failReference ? invalidReferenceItems(packet) : [], questions: [], unassessed_unit_ids: [] })),
     extractor: extractor ?? ((packet) => ({ schema_version: "1.0", status: fail ? "incomplete" : "complete",
       assertions: [], entities: [], episodes: [],
       coverage: packet.core_units.map((unit) => ({ unit_id: unit.unit_id,
@@ -84,7 +85,7 @@ function mockPort({ fail = false, failReference = false, calls, extractor, omiss
   return { capabilities: base.capabilities, getCompletion: base.getCompletion,
     isAuthoritativeCompletion: base.isAuthoritativeCompletion, close: base.close,
     async invoke(input) {
-      calls.push({ role: input.role, operationKey: input.operationKey, packet: input.packet });
+      calls.push({ role: input.role, operationKey: input.operationKey, packet: input.packet, tier: input.tier });
       return base.invoke(input);
     } };
 }
@@ -106,6 +107,281 @@ async function readPlan(config) {
   return withStore(config, async (store, state) => JSON.parse((await store.reassembleOriginal(
     state.visual_plan_ref ?? state.parsed_ref)).toString("utf8")));
 }
+
+const fidelitySentinel = "PRIVATE_SENTINEL_DO_NOT_RECORD_7";
+function syntheticReference(packet) {
+  return { schema_version: "1.0", source_only_first_pass: true,
+    reference_items: [{ id: fidelitySentinel, statement: fidelitySentinel,
+      required_qualifiers: [fidelitySentinel], critical: false,
+      anchors: [{ unit_id: packet.source_windows[0].unit_id, quote: fidelitySentinel, occurrence: null }],
+      importance_reason: fidelitySentinel }], questions: [], unassessed_unit_ids: [] };
+}
+function syntheticFidelity(packet, outcome, findingType = "none", status = null) {
+  return { schema_version: "1.0", target_generation: packet.expected_generation,
+    review_role: "fidelity_auditor",
+    status: status ?? (outcome === "preserved" ? "sufficient_for_stated_scope"
+      : outcome === "unassessed" ? "incomplete" : "repair_required"),
+    assessments: [{ target_id: fidelitySentinel, outcome, critical: false, finding_type: findingType,
+      explanation: fidelitySentinel, evidence_ids: [fidelitySentinel] }],
+    proposed_repairs: outcome === "distorted" ? [{ target_id: fidelitySentinel,
+      repair: fidelitySentinel, evidence_ids: [fidelitySentinel] }] : [],
+    unassessed_ids: outcome === "unassessed" ? [fidelitySentinel] : [] };
+}
+async function calibrationRecord(config, epoch = 0) {
+  const plan = await readPlan(config);
+  return withStore(config, (store) => store.readJsonObject({
+    objectId: `unit:graph:${plan.calibration[0].unit_id}${epoch ? `:epoch:${epoch}` : ""}` }));
+}
+
+for (const status of ["incomplete", "repair_required"]) {
+  test(`an unassessed-only ${status} audit re-audits once and passes without extraction repair`, async t => {
+    const f = await fixture(t);
+    const calls = [];
+    let audits = 0;
+    const runtime = await f.open(mockPort({ calls, reference: syntheticReference,
+      fidelity: packet => ++audits === 1 ? syntheticFidelity(packet, "unassessed", "none", status)
+        : syntheticFidelity(packet, "preserved") }));
+    try {
+      const result = await runtime.execute("run");
+      assert.equal(result.calibration, "pass");
+      assert.equal(result.completion.graph_built, "pass");
+      assert.equal(calls.filter(call => call.role === "extractor").length, 1);
+      const fidelityCalls = calls.filter(call => call.role === "fidelity_auditor");
+      assert.equal(fidelityCalls.length, 2);
+      assert.deepEqual(fidelityCalls[1].packet.imported_generation, fidelityCalls[0].packet.imported_generation);
+      assert.notEqual(fidelityCalls[1].operationKey, fidelityCalls[0].operationKey);
+      const diagnostics = (await calibrationRecord(f.config)).diagnostics;
+      assert.equal(diagnostics.reaudit.fidelity.calibration_pass, true);
+      assert.equal(diagnostics.reaudit.fidelity.reference_counts.preserved, 1);
+      assert.deepEqual(diagnostics.fidelity_cycles.map(cycle => cycle.cycle), [0]);
+      assert.equal(JSON.stringify(diagnostics).includes(fidelitySentinel), false);
+      const count = calls.length;
+      assert.equal((await runtime.execute("run")).calibration, "pass");
+      assert.equal(calls.length, count);
+    } finally { await runtime.close(); }
+  });
+}
+
+test("a re-audit distortion feeds one ordinary extraction repair that passes", async t => {
+  const f = await fixture(t);
+  const calls = [];
+  let audits = 0;
+  const runtime = await f.open(mockPort({ calls, reference: syntheticReference,
+    fidelity: packet => syntheticFidelity(packet, ["unassessed", "distorted", "preserved"][audits++],
+      audits === 2 ? "wrong_time" : "none") }));
+  try {
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    const extractions = calls.filter(call => call.role === "extractor");
+    assert.equal(extractions.length, 2);
+    assert.equal(extractions[1].packet.repair_request.cycle, "fidelity-1");
+    assert.equal(extractions[1].packet.repair_request.fidelity_review.assessments[0].finding_type, "wrong_time");
+    const diagnostics = (await calibrationRecord(f.config)).diagnostics;
+    assert.equal(diagnostics.reaudit.fidelity.reference_counts.distorted, 1);
+    assert.equal(diagnostics.reaudit.fidelity.assessments_by_outcome_and_finding_type.distorted.wrong_time, 1);
+    assert.equal(diagnostics.fidelity_cycles[1].fidelity.calibration_pass, true);
+    assert.equal(diagnostics.fidelity_cycles[1].extraction_changed, false);
+    assert.equal(JSON.stringify(diagnostics).includes(fidelitySentinel), false);
+  } finally { await runtime.close(); }
+});
+
+test("an unassessed-only audit after a repair takes the one re-audit before another repair", async t => {
+  const f = await fixture(t);
+  const calls = [];
+  let audits = 0;
+  const runtime = await f.open(mockPort({ calls, reference: syntheticReference,
+    fidelity: packet => syntheticFidelity(packet, ["distorted", "unassessed", "preserved"][audits++],
+      audits === 1 ? "wrong_time" : "none") }));
+  try {
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    // The initial distortion spends repair 1; its unassessed-only audit is re-audited and passes, so repair 2 never runs.
+    assert.equal(calls.filter(call => call.role === "extractor").length, 2);
+    assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, 3);
+    const diagnostics = (await calibrationRecord(f.config)).diagnostics;
+    assert.equal(diagnostics.reaudit.cycle, 1);
+    assert.equal(diagnostics.reaudit.fidelity.calibration_pass, true);
+    assert.deepEqual(diagnostics.fidelity_cycles.map(cycle => cycle.cycle), [0, 1]);
+    assert.equal(JSON.stringify(diagnostics).includes(fidelitySentinel), false);
+  } finally { await runtime.close(); }
+});
+
+test("a failed re-audit of a multi-unit calibration batch splits it and retries each half", async t => {
+  const f = await fixture(t, { pages: 2 });
+  f.config.semantic_batching = { calibration_maximum_units: 2, maximum_units: 2 };
+  const calls = [];
+  let batchUnits = null;
+  const runtime = await f.open(mockPort({ calls, reference: syntheticReference,
+    fidelity: packet => {
+      const units = packet.assigned_core_ids.length;
+      // The whole batch is first unassessed-only, then every checked attempt of its re-audit is invalid. Halves pass.
+      if (batchUnits === null) { batchUnits = units; return syntheticFidelity(packet, "unassessed"); }
+      if (units === batchUnits) return { ...syntheticFidelity(packet, "preserved"), status: "not-a-valid-status" };
+      return syntheticFidelity(packet, "preserved");
+    } }));
+  try {
+    // Each invalid re-audit attempt pauses the run; resuming retries it until its checked attempts are spent.
+    let result = await runtime.execute("run");
+    for (let resume = 0; resume < 8 && result.blocker === "INVALID_STRUCTURED_OUTPUT"; resume += 1) result = await runtime.execute("run");
+    assert.equal(batchUnits, 2, "the calibration batch had two units");
+    assert.equal(result.calibration, "pass");
+    assert.ok(calls.some(call => call.role === "fidelity_auditor" && call.packet.assigned_core_ids.length === 1),
+      "each half was audited on its own");
+  } finally { await runtime.close(); }
+});
+
+test("a still-unassessed re-audit spends no repair cycle and comparisons use canonical output only", async t => {
+  const f = await fixture(t);
+  const calls = [];
+  const runtime = await f.open(mockPort({ calls, reference: syntheticReference,
+    extractor: packet => {
+      const output = { schema_version: "1.0", status: "complete", assertions: [], entities: [], episodes: [],
+        coverage: packet.core_units.map(unit => ({ unit_id: unit.unit_id, disposition: "no_assertion",
+          assertion_local_ids: [], reason: fidelitySentinel })), requested_context: [] };
+      if (packet.repair_request?.cycle === "fidelity-2") output.coverage[0].reason += " changed";
+      // Reordering object keys is not an extraction change.
+      if (packet.repair_request?.cycle === "fidelity-1")
+        return Object.fromEntries(Object.entries(output).reverse().map(([key, value]) => [key,
+          key === "coverage" ? value.map(item => Object.fromEntries(Object.entries(item).reverse())) : value]));
+      return output;
+    }, fidelity: packet => syntheticFidelity(packet, "unassessed") }));
+  try {
+    const result = await runtime.execute("run");
+    assert.equal(result.calibration_failure.reason, "CALIBRATION_REPAIR_CYCLES_EXHAUSTED");
+    assert.equal(calls.filter(call => call.role === "extractor").length, 3);
+    assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, 4);
+    const diagnostics = result.calibration_failure.diagnostics;
+    assert.equal(diagnostics.reaudit.fidelity.unassessed, 1);
+    assert.deepEqual(diagnostics.fidelity_cycles.slice(1).map(cycle => cycle.extraction_changed), [false, true]);
+    assert.equal(diagnostics.hardest_fidelity, null);
+    for (const value of [diagnostics, await checkpoint(f.config), result, await runtime.execute("status")])
+      assert.equal(JSON.stringify(value).includes(fidelitySentinel), false);
+  } finally { await runtime.close(); }
+});
+
+for (const finding of ["omitted", "distorted", "critical_miss", "qualifier_error"]) {
+  test(`an incomplete audit with ${finding} findings repairs immediately without re-auditing`, async t => {
+    const f = await fixture(t);
+    const calls = [];
+    const runtime = await f.open(mockPort({ calls,
+      reference: packet => {
+        const reference = syntheticReference(packet);
+        if (finding === "critical_miss") reference.reference_items[0].critical = true;
+        return reference;
+      }, fidelity: packet => syntheticFidelity(packet, finding === "critical_miss" ? "unassessed"
+        : finding === "qualifier_error" ? "preserved" : finding,
+        finding === "qualifier_error" ? "lost_qualifier" : "none", "incomplete") }));
+    try {
+      const result = await runtime.execute("run");
+      assert.equal(result.calibration_failure.reason, "CALIBRATION_REPAIR_CYCLES_EXHAUSTED");
+      assert.equal(calls.filter(call => call.role === "fidelity_auditor").length, 3);
+      assert.equal(calls.filter(call => call.role === "extractor").length, 3);
+      assert.equal(result.calibration_failure.diagnostics.reaudit, null);
+    } finally { await runtime.close(); }
+  });
+}
+
+test("fidelity diagnostics count the complete outcome-by-finding matrix without any free text", () => {
+  const outcomes = ["preserved", "omitted", "distorted", "unassessed"];
+  const findingTypes = ["none", "missing_evidence", "wrong_identity", "wrong_time", "wrong_mode",
+    "lost_qualifier", "unsupported_claim", "causal_promotion", "duplicate_support", "other"];
+  const review = { schema_version: "1.0", target_generation: fidelitySentinel, review_role: "fidelity_auditor",
+    status: "repair_required", assessments: outcomes.flatMap(outcome => findingTypes.flatMap(finding_type =>
+      Array.from({ length: outcome === "distorted" ? 2 : 1 }, () => ({ target_id: fidelitySentinel, outcome,
+        finding_type, critical: true, explanation: fidelitySentinel, evidence_ids: [fidelitySentinel] })))),
+    proposed_repairs: [{ target_id: fidelitySentinel, repair: fidelitySentinel, evidence_ids: [fidelitySentinel] }],
+    unassessed_ids: [fidelitySentinel] };
+  const snapshot = fidelityCycleDiagnostics(review, { reference_total: 4,
+    reference_counts: { preserved: 1, omitted: 1, distorted: 1, unassessed: 1 },
+    critical_miss_count: 3, qualifier_error_count: 1, provisional_target_met: false }, false);
+  validateCalibrationDiagnostics({ reaudit: { fidelity: snapshot }, hardest_fidelity: { fidelity: snapshot,
+    extraction_changed: null } });
+  for (const outcome of outcomes) for (const findingType of findingTypes)
+    assert.equal(snapshot.assessments_by_outcome_and_finding_type[outcome][findingType], outcome === "distorted" ? 2 : 1);
+  assert.equal(JSON.stringify(snapshot).includes(fidelitySentinel), false);
+});
+
+test("re-audits and hardest fidelity repairs have fresh append-only identities after recalibration", async t => {
+  const f = await fixture(t);
+  f.config.hardest_lane = { enabled: true };
+  const calls = [];
+  let audits = 0;
+  const open = resumed => f.open(mockPort({ calls, reference: syntheticReference,
+    fidelity: packet => syntheticFidelity(packet, ++audits <= 2 ? "unassessed" : "distorted", audits <= 2 ? "none" : "wrong_time") }), resumed);
+  let runtime = await open(false);
+  try {
+    const first = await runtime.execute("run");
+    assert.equal(first.calibration, "failed");
+    assert.equal(first.residuals.hardest_attempted, 1);
+    await runtime.execute("recalibrate");
+  } finally { await runtime.close(); }
+  const previousKeys = new Set(calls.map(call => call.operationKey));
+  const boundary = calls.length;
+  audits = 0;
+  runtime = await open(true);
+  try {
+    const second = await runtime.execute("run");
+    assert.equal(second.calibration_epoch, 1);
+    assert.equal(second.calibration, "failed");
+    assert.equal(second.residuals.hardest_attempted, 2);
+    assert.equal(second.residuals.hardest_resolved, 0);
+    assert.equal(calls.slice(boundary).some(call => previousKeys.has(call.operationKey)), false);
+    const plan = await readPlan(f.config);
+    const keyId = sha(plan.calibration[0].unit_id).slice(0, 40);
+    await withStore(f.config, async store => {
+      for (const epoch of ["", ":epoch:1"]) {
+        const reaudit = await store.readJsonObject({ objectId: `calibration:reaudit-review:batch:${keyId}${epoch}` });
+        const hardest = await store.readJsonObject({ objectId: `calibration:repair-review:batch:${keyId}:hardest${epoch}` });
+        assert.equal(reaudit.fidelity.output.status, "incomplete");
+        assert.equal(hardest.fidelity.output.status, "repair_required");
+      }
+    });
+  } finally { await runtime.close(); }
+});
+
+test("epoch-zero work identities and passing record shape stay unchanged without recovery", async t => {
+  const f = await fixture(t);
+  const calls = [];
+  const runtime = await f.open(mockPort({ calls }));
+  try {
+    assert.equal((await runtime.execute("run")).calibration, "pass");
+    const plan = await readPlan(f.config);
+    const unit = plan.units.find(item => item.unit_id === plan.calibration[0].unit_id);
+    const keyId = sha(unit.unit_id).slice(0, 40);
+    const core = [{ unit_id: unit.unit_id, text: unit.text }];
+    const extraction = calls.find(call => call.role === "extractor");
+    const identity = { source_representation: unit.representation_id,
+      core_range: { start_byte: unit.start_byte, end_byte: unit.end_byte } };
+    const dependencies = [{ key: "omission", stage: "OMISSION_CHECK", role: "omission_checker", identity,
+      assigned_core_ids: extraction.packet.assigned_core_ids, source_locators: extraction.packet.source_locators,
+      packet_input: { core_units: core, adjacent_context: extraction.packet.adjacent_context,
+        candidate_extraction: { $work_output: "extractor" }, target_generation: extraction.packet.expected_generation } }];
+    for (const call of calls.filter(call => ["reference_reader", "extractor", "fidelity_auditor"].includes(call.role))) {
+      const { protocol_version, output_schema_id, assigned_core_ids, source_locators, expected_generation,
+        controller_provenance_tag, grant_purpose, ...packetInput } = call.packet;
+      const prefix = call.role === "reference_reader" ? "reference:calibration" : call.role === "extractor"
+        ? "extract" : "fidelity:calibration";
+      const id = `${prefix}:batch:${keyId}${call.role === "extractor" ? ":cycle:0" : ""}`;
+      const oldJobId = `job:${sha(JSON.stringify({ id, role: call.role,
+        stage: call.role === "extractor" ? "EXTRACT" : "REFERENCE_AUDIT", packetInput,
+        assigned_core_ids, source_locators, dependencies: call.role === "extractor" ? dependencies : [],
+        instruction: journalRoleInstruction(call.role),
+        dependency_instructions: call.role === "extractor" ? [journalRoleInstruction("omission_checker")] : [] }))}`;
+      if (call.role !== "extractor") assert.equal(call.operationKey, oldJobId);
+      else {
+        const state = await checkpoint(f.config);
+        const secret = await fs.readFile(path.join(f.config.execution_root, "staging.key"));
+        try {
+          const oldWorkId = computeJournalWorkId({ case_id: state.case_id, corpus_id: state.corpus_id,
+            ...identity, role: "extractor", prompt_version: `1.0:${sha(oldJobId).slice(0, 24)}`,
+            model_profile: "synthetic", grant_purpose }, secret);
+          assert.equal(controller_provenance_tag, oldWorkId);
+          assert.equal(call.operationKey, `journal:${oldWorkId.slice(5, 45)}:${sha(JSON.stringify(call.packet)).slice(0, 32)}`);
+        } finally { secret.fill(0); }
+      }
+    }
+    assert.deepEqual(calls.map(call => call.role), ["reference_reader", "extractor", "omission_checker", "fidelity_auditor", "reconciler"]);
+    assert.equal(Object.hasOwn(await calibrationRecord(f.config), "diagnostics"), false);
+  } finally { await runtime.close(); }
+});
 
 test("failed calibration retains three content-free cycle snapshots in state, summary and status", async (t) => {
   const f = await fixture(t);
@@ -185,11 +461,15 @@ test("failed calibration retains three content-free cycle snapshots in state, su
     assert.throws(() => validateCalibrationDiagnostics({ cycles: [{ assertions: unsafe }] }),
       { code: "JOURNAL_DIAGNOSTICS_VALUE_UNSAFE" });
   }
-  const recallMet = fidelityCycleDiagnostics("repair_required", { critical_miss_count: 0, qualifier_error_count: 0,
+  const recallMet = fidelityCycleDiagnostics({ status: "repair_required", assessments: [] }, { critical_miss_count: 0, qualifier_error_count: 0,
     reference_total: 2, reference_counts: { preserved: 2, omitted: 0, distorted: 0, unassessed: 0 },
     provisional_target_met: true, reference_recall: 1 }, false);
   assert.deepEqual(validateCalibrationDiagnostics({ fidelity_cycles: [{ cycle: 0, fidelity: recallMet }] })
-    .fidelity_cycles[0].fidelity, { status: "repair_required", critical_miss_count: 0, qualifier_error_count: 0,
+    .fidelity_cycles[0].fidelity, { status: "repair_required",
+    assessments_by_outcome_and_finding_type: extractionCycleDiagnostics([null, { output: {
+      status: "repair_required", assessments: [], proposed_repairs: [], unassessed_ids: [] } }])
+      .omission.assessments_by_outcome_and_finding_type,
+    critical_miss_count: 0, qualifier_error_count: 0,
     unassessed: 0, reference_total: 2, reference_counts: { preserved: 2, omitted: 0, distorted: 0, unassessed: 0 },
     recall_target_met: true, calibration_pass: false });
 });
